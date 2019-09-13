@@ -22,6 +22,7 @@
 #include "RecordEnumerator.hh"
 #include "function_ref.hh"
 #include <functional>
+#include <vector>
 
 namespace litecore {
 
@@ -86,6 +87,13 @@ namespace litecore {
         /** Creates a database query object. */
         virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
 
+        using WithDocBodyCallback = std::function<alloc_slice(slice docID, slice body, sequence_t)>;
+
+        /** Invokes the callback once for each document found in the database.
+            The callback is given the docID, body and sequence, and returns a string.
+            The return value is the collected strings, in the same order as the docIDs. */
+        virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice> &docIDs,
+                                                       WithDocBodyCallback callback) =0;
 
         //////// Writing:
 

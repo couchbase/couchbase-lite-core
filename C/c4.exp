@@ -53,6 +53,7 @@ _c4db_getSharedFleeceEncoder
 _c4db_getFLSharedKeys
 _c4db_encodeJSON
 _c4db_startHousekeeping
+_c4db_findDocAncestors
 
 _c4raw_free
 _c4raw_get

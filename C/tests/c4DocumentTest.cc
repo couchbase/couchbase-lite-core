@@ -108,6 +108,72 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document PossibleAncestors", "[Document][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
+    if (!isRevTrees()) return;
+
+    C4String doc1 = C4STR("doc1"), doc2 = C4STR("doc2"), doc3 = C4STR("doc3");
+    createRev(doc1, kRevID, kFleeceBody);
+    createRev(doc1, kRev2ID, kFleeceBody);
+    createRev(doc1, kRev3ID, kFleeceBody);
+
+    createRev(doc2, kRevID, kFleeceBody);
+    createRev(doc2, kRev2ID, kFleeceBody);
+    createRev(doc2, kRev3ID, kFleeceBody);
+
+    createRev(doc3, kRevID, kFleeceBody);
+    createRev(doc3, kRev2ID, kFleeceBody);
+    createRev(doc3, kRev3ID, kFleeceBody);
+
+    C4SliceResult ancestors[4] = {};
+    C4Error error;
+
+    unsigned maxResults = 10;
+    bool bodies = false;
+    C4RemoteID remote = 1;
+
+    auto toString = [](C4SliceResult sr) {return std::string(alloc_slice(sr));};
+
+    // Doc I don't have yet:
+    C4String newDocID = "new"_sl;
+    REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &newDocID, &kRev3ID, ancestors, &error));
+    CHECK(ancestors[0].size == 0);
+    CHECK(ancestors[0].buf == 0);       // empty slice
+
+    // Revision I already have:
+    REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &doc1, &kRev3ID, ancestors, &error));
+    CHECK(alloc_slice(ancestors[0]) == kC4AncestorExists);       // null slice
+
+    // Newer revision:
+    C4String newRevID = "4-deadbeef"_sl;
+    REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &doc1, &newRevID, ancestors, &error));
+    CHECK(toString(ancestors[0]) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
+
+    // Conflict:
+    newRevID = "3-00000000"_sl;
+    REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &doc1, &newRevID, ancestors, &error));
+    CHECK(toString(ancestors[0]) == R"(["2-c001d00d","1-abcd"])");
+
+    // Require bodies:
+    newRevID = "4-deadbeef"_sl;
+    REQUIRE(c4db_findDocAncestors(db, 1, maxResults, true, remote, &doc1, &newRevID, ancestors, &error));
+    CHECK(toString(ancestors[0]) == R"(["3-deadbeef"])");
+
+    // Limit number of results:
+    newRevID = "4-deadbeef"_sl;
+    REQUIRE(c4db_findDocAncestors(db, 1, 1, bodies, remote, &doc1, &newRevID, ancestors, &error));
+    CHECK(toString(ancestors[0]) == R"(["3-deadbeef"])");
+
+    // Multiple docs:
+    C4String docIDs[4] = {doc2,            doc1,    C4STR("doc4"),    doc3};
+    C4String revIDs[4] = {"4-deadbeef"_sl, kRev3ID, C4STR("17-eeee"), "2-f000"_sl};
+    REQUIRE(c4db_findDocAncestors(db, 4, maxResults, bodies, remote, docIDs, revIDs, ancestors, &error));
+    CHECK(toString(ancestors[0]) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
+    CHECK(alloc_slice(ancestors[1]) == kC4AncestorExists);
+    CHECK(!slice(ancestors[2]));
+    CHECK(toString(ancestors[3]) == R"(["1-abcd"])");
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
     // Try reading doc with mustExist=true, which should fail:
     C4Error error;

@@ -441,6 +441,28 @@ namespace litecore {
         setResultBlobFromFleeceData(ctx, enc.finish());
     }
 
+
+#pragma mark - REVISION HISTORY:
+
+
+    // fl_callback(docID, body, sequence, callback) -> string
+    static void fl_callback(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        slice docID = valueAsSlice(argv[0]);
+        slice body = valueAsSlice(argv[1]);
+        sequence_t sequence = sqlite3_value_int(argv[2]);
+        auto callback = (KeyStore::WithDocBodyCallback*)sqlite3_value_pointer(argv[3], kWithDocBodiesCallbackPointerType);
+        if (!callback || !docID) {
+            sqlite3_result_error(ctx, "Missing or invalid callback", -1);
+            return;
+        }
+        try {
+            alloc_slice result = (*callback)(docID, body, sequence);
+            setResultTextFromSlice(ctx, result);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_callback: exception!", -1);
+        }
+    }
+
     static void fl_like(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         Collation col;
         col.unicodeAware = true;
@@ -471,6 +493,7 @@ namespace litecore {
         { "dict_of",          -1, dict_of },
         { "fl_like",           2, fl_like },
         { "fl_like",           3, fl_like },
+        { "fl_callback",       4, fl_callback },
         { }
     };
 

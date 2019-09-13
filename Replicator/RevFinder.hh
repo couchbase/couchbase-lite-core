@@ -44,11 +44,9 @@ namespace litecore { namespace repl {
         void _findOrRequestRevs(Retained<blip::MessageIn>,
                                 DocIDMultiset *incomingDocs,
                                 std::function<void(std::vector<bool>)> completion);
-        bool findAncestors(slice docID, slice revID,
-                           std::vector<alloc_slice> &ancestors);
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
-        void updateRemoteRev(C4Document*);
+        void updateRemoteRev(slice docID, slice revID);
 
         bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?
     };

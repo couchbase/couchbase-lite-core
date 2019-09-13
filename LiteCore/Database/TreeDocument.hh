@@ -33,10 +33,15 @@ namespace c4Internal {
         bool isFirstGenRevID(slice revID) override;
         static slice fleeceAccessor(slice docBody);
 
+        vector<alloc_slice> findAncestors(const vector<slice> &docIDs, const vector<slice> &revIDs,
+                                          unsigned maxAncestors, bool mustHaveBodies,
+                                          C4RemoteID remoteDBID) override;
+
         static Document* documentContaining(const fleece::impl::Value *value) {
             auto doc = treeDocumentContaining(value);
             return doc ? doc : leafDocumentContaining(value);
         }
+
 
     private:
         static Document* treeDocumentContaining(const fleece::impl::Value *value);

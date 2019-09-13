@@ -88,6 +88,30 @@ bool c4db_markSynced(C4Database *database,
                      C4RemoteID remoteID,
                      C4Error *outError) C4API;
 
+/** Given a list of document+revision IDs, checks whether each revision exists in the database
+    or if not, what ancestors exist.
+
+    The \ref requireBodies flag, if set, means that only ancestors whose bodies are available
+    will be returned.
+
+    The answer is written into the corresponding entry of \ref ancestors:
+    * If the document doesn't exist at all, the answer will be a null slice.
+    * If the document exists but not that revision, the answer will be a JSON array of existing
+      ancestor revision IDs (maximum length \ref maxAncestors.)
+    * If the document revision exists, the answer will be "1".
+    * ... unless it's not marked as the current server revision, in which case the answer is "2" */
+bool c4db_findDocAncestors(C4Database *database,
+                           unsigned numDocs,
+                           unsigned maxAncestors,
+                           bool requireBodies,
+                           C4RemoteID remoteDBID,
+                           const C4String docIDs[], const C4String revIDs[],
+                           C4StringResult ancestors[],
+                           C4Error *outError) C4API;
+
+#define kC4AncestorExists               C4STR("1")
+#define kC4AncestorExistsButNotCurrent  C4STR("2")
+
 /** Call this to use BuiltInWebSocket as the WebSocket implementation.
     (Only available if linked with libLiteCoreWebSocket) */
 void C4RegisterBuiltInWebSocket();

@@ -186,14 +186,31 @@ namespace litecore {
     }
 
 
+    static void releaseAllocSlice(void *buf) {
+        alloc_slice::release({buf, 1});
+    }
+
+
     void setResultTextFromSlice(sqlite3_context *ctx, slice text) noexcept {
-        if (text)
+        if (text) {
             sqlite3_result_text(ctx, (const char*)text.buf, (int)text.size, SQLITE_TRANSIENT);
-        else
+        } else {
             sqlite3_result_null(ctx);
+        }
     }
 
     
+    void setResultTextFromSlice(sqlite3_context *ctx, alloc_slice text) noexcept {
+        if (text) {
+            // Don't copy the data; retain the alloc_slice till SQLite is done with the text
+            text.retain();
+            sqlite3_result_text(ctx, (const char*)text.buf, (int)text.size, &releaseAllocSlice);
+        } else {
+            sqlite3_result_null(ctx);
+        }
+    }
+
+
     void setResultBlobFromData(sqlite3_context *ctx, slice blob, int subtype) noexcept {
         if (blob) {
             // This copies the blob data into SQLite.
@@ -210,8 +227,7 @@ namespace litecore {
         if (blob) {
             // Don't copy the data; retain the alloc_slice till SQLite is done with the blob
             blob.retain();
-            sqlite3_result_blob(ctx, blob.buf, (int)blob.size,
-                                [](void *buf) { alloc_slice::release({buf, 1}); });
+            sqlite3_result_blob(ctx, blob.buf, (int)blob.size, &releaseAllocSlice);
             if (subtype)
                 sqlite3_result_subtype(ctx, subtype);
         } else {

@@ -229,6 +229,12 @@ namespace c4Internal {
         virtual alloc_slice revIDFromVersion(slice version) =0;
         virtual bool isFirstGenRevID(slice revID)               {return false;}
 
+        virtual vector<alloc_slice> findAncestors(const vector<slice> &docIDs,
+                                                  const vector<slice> &revIDs,
+                                                  unsigned maxAncestors,
+                                                  bool mustHaveBodies,
+                                                  C4RemoteID remoteDBID) =0;
+
     private:
         Database* const _db;
     };

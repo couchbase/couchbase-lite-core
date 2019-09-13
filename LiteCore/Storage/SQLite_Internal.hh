@@ -40,6 +40,9 @@ namespace litecore {
     void LogStatement(const SQLite::Statement &st);
 
 
+    constexpr const char* kWithDocBodiesCallbackPointerType = "WithDocBodiesCallback";
+
+
     // Little helper class that makes sure Statement objects get reset on exit
     class UsingStatement {
     public:

@@ -66,6 +66,9 @@ namespace litecore {
         void deleteIndex(slice name) override;
         std::vector<IndexSpec> getIndexes() const override;
 
+        virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice> &docIDs,
+                                                       WithDocBodyCallback callback) override;
+
         void createSequenceIndex();
         void createConflictsIndex();
         void createBlobsIndex();
@@ -137,7 +140,7 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getCurBySeqStmt, _getMetaBySeqStmt;
         std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
         std::unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
-        std::unique_ptr<SQLite::Statement> _setFlagStmt;
+        std::unique_ptr<SQLite::Statement> _setFlagStmt, _withDocBodiesStmt;
         std::unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
 
         bool _createdSeqIndex {false}, _createdConflictsIndex {false}, _createdBlobsIndex {false};

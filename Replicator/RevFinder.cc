@@ -48,17 +48,17 @@ namespace litecore { namespace repl {
                                        DocIDMultiset *incomingDocs,
                                        std::function<void(std::vector<bool>)> completion)
     {
-        // Iterate over the array in the message, seeing whether I have each revision:
         bool proposed = (req->property("Profile"_sl) == "proposeChanges"_sl);
         auto changes = req->JSONBody().asArray();
+        auto nChanges = changes.count();
         if (willLog() && !changes.empty()) {
             if (proposed) {
-                logInfo("Received %u changes", changes.count());
+                logInfo("Received %u changes", nChanges);
             } else {
                 alloc_slice firstSeq(changes[0].asArray()[0].toString());
-                alloc_slice lastSeq (changes[changes.count()-1].asArray()[0].toString());
+                alloc_slice lastSeq (changes[nChanges-1].asArray()[0].toString());
                 logInfo("Received %u changes (seq '%.*s'..'%.*s')",
-                    changes.count(), SPLAT(firstSeq), SPLAT(lastSeq));
+                    nChanges, SPLAT(firstSeq), SPLAT(lastSeq));
             }
         }
 
@@ -76,27 +76,32 @@ namespace litecore { namespace repl {
             response["deltas"_sl] = "true"_sl;
             _announcedDeltaSupport = true;
         }
-        vector<bool> whichRequested(changes.count());
+
+        Stopwatch st;
+
+        vector<bool> whichRequested(nChanges);
         unsigned itemsWritten = 0, requested = 0;
-        vector<alloc_slice> ancestors;
+
         auto &encoder = response.jsonBody();
         encoder.beginArray();
-        int i = -1;
-        for (auto item : changes) {
-            ++i;
-            // Look up each revision in the `req` list:
-            // "proposeChanges" entry: [docID, revID, parentRevID?, bodySize?]
-            // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
-            auto change = item.asArray();
-            alloc_slice docID( change[proposed ? 0 : 1].asString() );
-            slice revID = change[proposed ? 1 : 2].asString();
-            if (docID.size == 0 || revID.size == 0) {
-                warn("Invalid entry in 'changes' message");
-                continue;     // ???  Should this abort the replication?
-            }
 
-            if (proposed) {
-                // Proposed change (peer is LiteCore)
+        if (proposed) {
+            // Proposed changes (peer is LiteCore):
+            vector<alloc_slice> ancestors;
+            int i = -1;
+            for (auto item : changes) {
+                ++i;
+                // Look up each revision in the `req` list:
+                // "proposeChanges" entry: [docID, revID, parentRevID?, bodySize?]
+                // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
+                auto change = item.asArray();
+                alloc_slice docID( change[proposed ? 0 : 1].asString() );
+                slice revID = change[proposed ? 1 : 2].asString();
+                if (docID.size == 0 || revID.size == 0) {
+                    warn("Invalid entry in 'changes' message");
+                    continue;     // ???  Should this abort the replication?
+                }
+
                 slice parentRevID = change[2].asString();
                 if (parentRevID.size == 0)
                     parentRevID = nullslice;
@@ -116,33 +121,65 @@ namespace litecore { namespace repl {
                         encoder.writeInt(0);
                     encoder.writeInt(status);
                 }
+            }
 
+        } else {
+            // Non-proposed changes:
+            // Compile the docIDs/revIDs into parallel vectors:
+            vector<slice> docIDs, revIDs;
+            docIDs.reserve(nChanges);
+            revIDs.reserve(nChanges);
+            for (auto item : changes) {
+                // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
+                auto change = item.asArray();
+                docIDs.push_back(change[1].asString());
+                revIDs.push_back(change[2].asString());
+            }
+
+            // Ask the database to look up the ancestors:
+            vector<C4StringResult> ancestors(nChanges);
+            C4Error err;
+            bool ok = _db->use<bool>([&](C4Database *db) {
+                return c4db_findDocAncestors(db, nChanges, kMaxPossibleAncestors,
+                                             !_options.disableDeltaSupport(),  // requireBodies
+                                             _db->remoteDBID(),
+                                             (C4String*)docIDs.data(), (C4String*)revIDs.data(),
+                                             ancestors.data(), &err);
+            });
+            if (!ok) {
+                gotError(err);
             } else {
-                // Non-proposed change (peer is SG):
-                ancestors.clear();
-                if (incomingDocs->contains(docID) || !findAncestors(docID, revID, ancestors)) {
-                    // I don't have this revision, so request it:
-                    ++requested;
-                    whichRequested[i] = true;
-                    incomingDocs->add(docID);
-
-                    while (itemsWritten++ < i)
-                        encoder.writeInt(0);
-                    // Append array of ancestor revs I do have:
-                    encoder.beginArray();
-                    for (slice ancestor : ancestors)
-                        encoder.writeString(ancestor);
-                    encoder.endArray();
+                // Look through the database response:
+                for (size_t i = 0; i < nChanges; ++i) {
+                    alloc_slice docID(docIDs[i]);
+                    alloc_slice anc(ancestors[i]);
+                    if (anc == kC4AncestorExistsButNotCurrent) {
+                        // This means the rev exists but is not marked as the latest from the
+                        // remote server, so I better make it so:
+                        updateRemoteRev(docID, revIDs[i]);
+                    } else if (anc != kC4AncestorExists) {
+                        // Don't have revision -- request it:
+                        ++requested;
+                        whichRequested[i] = true;
+                        incomingDocs->add(docID);
+                        // Append zeros for any items I skipped:
+                        while (itemsWritten++ < i)
+                            encoder.writeInt(0);
+                        // Append array of ancestor revs I do have (it's already a JSON array):
+                        if (i > 0)
+                            encoder.writeRaw(","_sl);
+                        encoder.writeRaw(anc ? slice(anc) : "[]"_sl);
+                    }
                 }
             }
         }
-        encoder.endArray();
 
         completion(move(whichRequested));
 
+        encoder.endArray();
         req->respond(response);
-        logInfo("Responded to '%.*s' REQ#%" PRIu64 " w/request for %u revs",
-            SPLAT(req->property("Profile"_sl)), req->number(), requested);
+        logInfo("Responded to '%.*s' REQ#%" PRIu64 " w/request for %u revs in %.6f sec",
+            SPLAT(req->property("Profile"_sl)), req->number(), requested, st.elapsed());
     }
 
 
@@ -183,64 +220,24 @@ namespace litecore { namespace repl {
     }
 
 
-    // Returns true if revision exists; else returns false and sets ancestors to an array of
-    // ancestor revisions I do have (empty if doc doesn't exist at all)
-    bool RevFinder::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
-        C4Error err;
-        c4::ref<C4Document> doc = _db->getDoc(docID, &err);
-        if (!doc) {
-            ancestors.resize(0);
-            if (!isNotFoundError(err))
-                gotError(err);
-            return false;
-        }
-
-        alloc_slice remoteRevID = _db->getDocRemoteAncestor(doc);
-
-        if (c4doc_selectRevision(doc, revID, false, &err)) {
-            // I already have this revision. Make sure it's marked as current for this remote:
-            if (remoteRevID != revID && _db->remoteDBID())
-                updateRemoteRev(doc);
-            return true;
-        }
-
-        bool disableDeltaSupport = _options.disableDeltaSupport();
-        auto addAncestor = [&]() {
-            if (disableDeltaSupport || c4doc_hasRevisionBody(doc))  // need body for deltas
-                ancestors.emplace_back(doc->selectedRev.revID);
-        };
-
-        // Revision isn't found, but look for ancestors. Start with the common ancestor:
-        if (c4doc_selectRevision(doc, remoteRevID, true, &err))
-            addAncestor();
-
-        if (c4doc_selectFirstPossibleAncestorOf(doc, revID)) {
-            do {
-                if (doc->selectedRev.revID != remoteRevID)
-                    addAncestor();
-            } while (c4doc_selectNextPossibleAncestorOf(doc, revID)
-                     && ancestors.size() < kMaxPossibleAncestors);
-        }
-        return false;
-    }
-
-
     // Updates the doc to have the currently-selected rev marked as the remote
-    void RevFinder::updateRemoteRev(C4Document *doc) {
-        slice revID = doc->selectedRev.revID;
+    void RevFinder::updateRemoteRev(slice docID, slice revID) {
         logInfo("Updating remote #%u's rev of '%.*s' to %.*s",
-                   _db->remoteDBID(), SPLAT(doc->docID), SPLAT(revID));
+                   _db->remoteDBID(), SPLAT(docID), SPLAT(revID));
         C4Error error;
         bool ok = _db->use<bool>([&](C4Database *db) {
             c4::Transaction t(db);
-            return t.begin(&error)
+            if (!t.begin(&error))
+                return false;
+            c4::ref<C4Document> doc = c4doc_get(db, docID, true, &error);
+            return doc != nullptr
                    && c4doc_setRemoteAncestor(doc, _db->remoteDBID(), &error)
                    && c4doc_save(doc, 0, &error)
                    && t.commit(&error);
         });
         if (!ok)
             warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d",
-                 _db->remoteDBID(), SPLAT(doc->docID), SPLAT(revID), error.domain, error.code);
+                 _db->remoteDBID(), SPLAT(docID), SPLAT(revID), error.domain, error.code);
     }
 
 } }

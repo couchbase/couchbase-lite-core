@@ -54,6 +54,7 @@ CBL {
 		c4db_getFLSharedKeys;
 		c4db_encodeJSON;
 		c4db_startHousekeeping;
+		c4db_findDocAncestors;
 
 		c4raw_free;
 		c4raw_get;
