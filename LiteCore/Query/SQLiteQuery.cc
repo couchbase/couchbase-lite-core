@@ -134,7 +134,7 @@ namespace litecore {
             if (!_matchedTextStatement) {
                 auto &df = (SQLiteDataFile&) keyStore().dataFile();
                 string sql = "SELECT * FROM \"" + expr + "\" WHERE docid=?";
-                _matchedTextStatement.reset(new SQLite::Statement(df, sql));
+                _matchedTextStatement.reset(new SQLite::Statement(df, sql, true));
             }
 
             alloc_slice matchedText;

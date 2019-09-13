@@ -107,7 +107,7 @@ namespace litecore {
 
     SQLite::Statement* SQLiteKeyStore::compile(const string &sql) const {
         try {
-            return new SQLite::Statement(db(), sql);
+            return new SQLite::Statement(db(), sql, true);
         } catch (const SQLite::Exception &x) {
             db().warn("SQLite error compiling statement \"%s\": %s", sql.c_str(), x.what());
             throw;
