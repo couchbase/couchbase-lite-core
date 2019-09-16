@@ -17,12 +17,16 @@
 //
 
 #include "fleece/Fleece.hh"
-#include "c4Replicator.hh"
+#include "c4RemoteReplicator.hh"
+#include "c4LocalReplicator.hh"
+#include "C4IncomingReplicator.h"
 #include "c4ExceptionUtils.hh"
 #include "DatabaseCookies.hh"
 #include "StringUtil.hh"
 #include <atomic>
 #include <errno.h>
+
+using namespace c4Internal;
 
 
 CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[5] = {
@@ -171,7 +175,7 @@ C4Replicator* c4repl_new(C4Database* db,
             c4::ref<C4Database> otherDBCopy(c4db_openAgain(otherLocalDB, outError));
             if (!otherDBCopy)
                 return nullptr;
-            replicator = new C4Replicator(dbCopy, otherDBCopy, params);
+            replicator = new C4LocalReplicator(dbCopy, params, otherDBCopy);
         } else {
             // Remote:
             if (!params.socketFactory) {
@@ -183,7 +187,7 @@ C4Replicator* c4repl_new(C4Database* db,
                          "unreachable, but if opened, it would give anyone unlimited privileges.");
                 }
             }
-            replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName, params);
+            replicator = new C4RemoteReplicator(dbCopy, params, serverAddress, remoteDatabaseName);
         }
         if (!params.dontStart)
             replicator->start();
@@ -202,7 +206,7 @@ C4Replicator* c4repl_newWithWebSocket(C4Database* db,
         c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
         if (!dbCopy)
             return nullptr;
-        Retained<C4Replicator> replicator = new C4Replicator(dbCopy, openSocket, params);
+        Retained<C4Replicator> replicator = new C4IncomingReplicator(dbCopy, params, openSocket);
         if (!params.dontStart) {
             replicator->start(true);
             Assert(openSocket->hasDelegate());

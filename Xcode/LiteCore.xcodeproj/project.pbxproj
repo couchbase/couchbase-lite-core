@@ -1165,6 +1165,9 @@
 		27D74A8D1D4D3F3400D806E0 /* Transaction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Transaction.h; path = include/SQLiteCpp/Transaction.h; sourceTree = "<group>"; };
 		27D74A8E1D4D3F3400D806E0 /* VariadicBind.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VariadicBind.h; path = include/SQLiteCpp/VariadicBind.h; sourceTree = "<group>"; };
 		27D74A9E1D4FF65000D806E0 /* c4Base.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Base.cc; sourceTree = "<group>"; };
+		27D965252330394C00F4A51C /* c4RemoteReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4RemoteReplicator.hh; sourceTree = "<group>"; };
+		27D9652A23303A2B00F4A51C /* c4LocalReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4LocalReplicator.hh; sourceTree = "<group>"; };
+		27D9652B23303B0C00F4A51C /* C4IncomingReplicator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = C4IncomingReplicator.h; sourceTree = "<group>"; };
 		27DD1511193CD005009A367D /* RevID.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevID.cc; sourceTree = "<group>"; };
 		27DD1512193CD005009A367D /* RevID.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevID.hh; sourceTree = "<group>"; };
 		27DF46C21A12CF46007BB4A4 /* Record.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Record.cc; sourceTree = "<group>"; };
@@ -2142,6 +2145,9 @@
 				27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
 				275A73BD1ED255AF008CB57B /* c4Replicator.hh */,
+				27D965252330394C00F4A51C /* c4RemoteReplicator.hh */,
+				27D9652A23303A2B00F4A51C /* c4LocalReplicator.hh */,
+				27D9652B23303B0C00F4A51C /* C4IncomingReplicator.h */,
 				278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */,
 				278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */,
 			);
@@ -3262,20 +3268,20 @@
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
+				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
 				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
 				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
-				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
-				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
-				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
-				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
-				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
+				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
+				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
 				27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */,
+				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
+				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -119,7 +119,7 @@ TEST_CASE("URL Generation") {
 
 
 // Test invalid URL scheme:
-TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[Push][!throws]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") {
     ExpectingExceptions x;
     _address.scheme = "http"_sl;
     C4Error err;
@@ -131,7 +131,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[Push][!throws]") {
 
 
 // Test missing or invalid database name:
-TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[Push][!throws]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
     ExpectingExceptions x;
     _remoteDBName = ""_sl;
     C4Error err;
@@ -150,7 +150,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[Push][!throws]") {
 
 
 // Test connection-refused error by connecting to a bogus port of localhost
-TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     ExpectingExceptions x;
     _address.hostname = C4STR("localhost");
     _address.port = 1;  // wrong port!
@@ -165,7 +165,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
 
 
 // Test host-not-found error by connecting to a nonexistent hostname
-TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
     ExpectingExceptions x;
     _address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
     replicate(kC4Disabled, kC4OneShot, false);
@@ -178,7 +178,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[Push]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
     createDB2();
@@ -190,7 +190,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[Push][Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Push][Pull]") {
     createRev("doc"_sl, kRevID, kFleeceBody);
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
@@ -210,7 +210,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[Push]
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[Push][Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]") {
     _address.hostname = C4STR("localhost");
     bool factoryCalled = false;
     C4SocketFactory factory = {};
@@ -230,7 +230,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[Push][Pull]") 
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -251,7 +251,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[Push]") {
 }
 
 // CBL-221
-TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]") {
     createDB2();
     // Need a large enough data set so that the pulled documents come
     // through in more than one batch

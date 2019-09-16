@@ -22,105 +22,27 @@
 #include "c4.hh"
 #include "c4Private.h"
 #include "c4Replicator.h"
+#include "Database.hh"
 #include "Replicator.hh"
-#include "Address.hh"
-#include "c4Socket+Internal.hh"
-#include "LoopbackProvider.hh"
+#include "Headers.hh"
 #include "Error.hh"
 
 using namespace std;
 using namespace fleece;
 using namespace litecore;
-using namespace litecore::net;
 using namespace litecore::repl;
-using namespace litecore::websocket;
 
 
 static const char *kReplicatorProtocolName = "+CBMobile_2";
 
 
+/** Glue between C4 API and internal LiteCore replicator. Abstract class. */
 struct C4Replicator : public RefCounted, Replicator::Delegate {
 
-
-    static Replicator::Options replOpts(const C4ReplicatorParameters &params) {
-        Replicator::Options opts(params.push, params.pull, params.optionsDictFleece);
-        opts.pushFilter = params.pushFilter;
-        opts.pullValidator = params.validationFunc;
-        opts.callbackContext = params.callbackContext;
-        return opts;
-    }
-
-
-    static alloc_slice socketOpts(C4Database *db,
-                                  const C4Address &serverAddress,
-                                  const C4ReplicatorParameters &params)
-    {
-        Replicator::Options opts(kC4Disabled, kC4Disabled, params.optionsDictFleece);
-        opts.setProperty(slice(kC4SocketOptionWSProtocols),
-                         (string(Connection::kWSProtocolName) + kReplicatorProtocolName).c_str());
-        return opts.properties.data();
-    }
-
-    // Appends the db name and "/_blipsync" to the Address's path, then returns the resulting URL.
-    static alloc_slice effectiveURL(C4Address address, slice remoteDatabaseName) {
-        slice path = address.path;
-        string newPath = string(path);
-        if (!path.hasSuffix("/"_sl))
-            newPath += "/";
-        newPath += string(remoteDatabaseName) + "/_blipsync";
-        address.path = slice(newPath);
-        return Address::toURL(address);
-    }
-
-
-    // Constructor for replication with remote database
-    C4Replicator(C4Database* db,
-                 const C4Address &serverAddress,
-                 C4String remoteDatabaseName,
-                 const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db,
-                                 CreateWebSocket(effectiveURL(serverAddress, remoteDatabaseName),
-                                                 socketOpts(db, serverAddress, params),
-                                                 db,
-                                                 params.socketFactory),
-                                 *this,
-                                 replOpts(params)),
-                  nullptr,
-                  params)
-    { }
-
-    // Constructor for replication with local database
-    C4Replicator(C4Database* db,
-                 C4Database* otherDB,
-                 const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db,
-                                 new LoopbackWebSocket(Address(db), Role::Client),
-                                 *this,
-                                 replOpts(params).setNoDeltas()),
-                  new Replicator(otherDB,
-                                 new LoopbackWebSocket(Address(otherDB), Role::Server),
-                                 *this,
-                                 Replicator::Options(kC4Passive, kC4Passive).setNoIncomingConflicts()
-                                                                            .setNoDeltas()),
-                  params)
-    {
-        LoopbackWebSocket::bind(_replicator->webSocket(), _otherReplicator->webSocket());
-        _otherLevel = _otherReplicator->status().level;
-    }
-
-    // Constructor for already-open socket
-    C4Replicator(C4Database* db,
-                 WebSocket *openSocket,
-                 const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db, openSocket, *this, replOpts(params)),
-                  nullptr,
-                  params)
-    { }
-
-    void start(bool synchronous =false) {
+    virtual void start(bool synchronous =false) {
+        DebugAssert(_replicator);
         DebugAssert(!_selfRetain);
-        if (_otherReplicator)
-            _otherReplicator->start(synchronous);
+        _status = _replicator->status();
         _selfRetain = this; // keep myself alive till Replicator stops
         _replicator->start(synchronous);
     }
@@ -145,19 +67,25 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
         _params.onDocumentsEnded = nullptr;
     }
 
-private:
+protected:
     // base constructor
-    C4Replicator(Replicator *replicator,
-                 Replicator *otherReplicator,
+    C4Replicator(C4Database* db,
                  const C4ReplicatorParameters &params)
-    :_replicator(replicator)
-    ,_otherReplicator(otherReplicator)
+    :_database(db)
     ,_params(params)
-    ,_status(_replicator->status())
     { }
 
-    virtual ~C4Replicator() =default;
 
+    Replicator::Options options() {
+        Replicator::Options opts(_params.push, _params.pull, _params.optionsDictFleece);
+        opts.pushFilter = _params.pushFilter;
+        opts.pullValidator = _params.validationFunc;
+        opts.callbackContext = _params.callbackContext;
+        return opts;
+    }
+
+
+    // ReplicatorDelegate API:
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
                                            const websocket::Headers &headers) override
@@ -172,19 +100,15 @@ private:
     virtual void replicatorStatusChanged(Replicator *repl,
                                          const Replicator::Status &newStatus) override
     {
-        bool done;
         {
             lock_guard<mutex> lock(_mutex);
-            if (repl == _replicator)
-                _status = newStatus;
-            else if (repl == _otherReplicator)
-                _otherLevel = newStatus.level;
-            done = (_status.level == kC4Stopped && _otherLevel == kC4Stopped);
+            if (repl != _replicator)
+                return;
+            _status = newStatus;
         }
+        notifyStateChanged();
 
-        if (repl == _replicator)
-            notifyStateChanged();
-        if (done)
+        if (newStatus.level == kC4Stopped)
             _selfRetain = nullptr; // balances retain in constructor
     }
 
@@ -246,11 +170,11 @@ private:
     }
 
     mutex _mutex;
-    Retained<Replicator> const _replicator;
-    Retained<Replicator> const _otherReplicator;
-    C4ReplicatorParameters _params;
-    alloc_slice _responseHeaders;
-    C4ReplicatorStatus _status;
-    C4ReplicatorActivityLevel _otherLevel {kC4Stopped};
-    Retained<C4Replicator> _selfRetain;
+    Retained<C4Database> const  _database;
+    C4ReplicatorParameters      _params;
+
+    Retained<Replicator>        _replicator;
+    alloc_slice                 _responseHeaders;
+    C4ReplicatorStatus          _status {kC4Stopped};
+    Retained<C4Replicator>      _selfRetain;            // Keeps me from being deleted
 };
