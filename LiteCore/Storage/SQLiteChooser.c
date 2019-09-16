@@ -19,6 +19,10 @@
 // Compiles the appropriate version of SQLite, depending on whether we are building the
 // Consumer Edition or Enterprise Edition of LiteCore.
 
+#ifdef __linux__
+#define SQLITE_API __attribute__ ((visibility ("hidden")))
+#endif
+
 #ifdef COUCHBASE_ENTERPRISE
     // These source files are NOT in this repository, rather in a Couchbase-private
     // repository that needs to be checked out next to this one.
