@@ -22,12 +22,16 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.h"
+#include <sstream>
 
 using namespace fleece;
 using namespace fleece::impl;
 using namespace std;
 
 namespace litecore {
+
+    static void handle_fts_array(const Value* data, alloc_slice& result);
+    static void handle_fts_dict(const Value* data, alloc_slice& result);
 
     
     // Core SQLite functions for accessing values inside Fleece blobs.
@@ -103,28 +107,72 @@ namespace litecore {
         }
     }
 
+    static void handle_fts_value(const Value* data, alloc_slice& result) {
+        switch(data->type()) {
+            case kBoolean:
+                result.append(data->asBool() ? "T"_sl : "F"_sl);
+                break;
+            case kNumber:
+            {
+                string resultStr;
+                if(data->isInteger()) {
+                    if(data->isUnsigned()) {
+                        resultStr = to_string(data->asUnsigned());
+                    } else {
+                        resultStr = to_string(data->asInt());
+                    }
+                } else {
+                    stringstream ss;
+                    if(data->isDouble()) {
+                        ss << data->asDouble();
+                    } else {
+                        ss << data->asFloat();
+                    }
+
+                    resultStr = ss.str();
+                }
+
+                result.append(slice(resultStr));
+                break;
+            }
+            case kString:
+                result.append(data->asString());
+                break;
+            case kArray:
+                handle_fts_array(data, result);
+                break;
+            case kDict:
+                handle_fts_dict(data, result);
+                break;
+        }
+    }
+
+    static void handle_fts_array(const Value* data, alloc_slice& result) {
+        for (Array::iterator j(data->asArray()); j; ++j) {
+            handle_fts_value(j.value(), result);
+            result.append(" "_sl);
+        }
+    }
+
+    static void handle_fts_dict(const Value* data, alloc_slice& result) {
+        for (Dict::iterator j(data->asDict()); j; ++j) {
+            handle_fts_value(j.value(), result);
+            result.append(" "_sl);
+        }
+    }
+
     // fl_fts_value(body, propertyPath) -> blob data
     static void fl_fts_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
-            if(scope.root->type() == kArray) {
-                alloc_slice result;
-                for (Array::iterator j(scope.root->asArray()); j; ++j) {
-                    if(j->type() != kString) {
-                        Warn("Invalid type detected in array of FTS items (%d), skipping...", scope.root->type());
-                        continue;
-                    }
-
-                    result.append(j->asString());
-                    result.append(" "_sl);
-                }
-
-                setResultBlobFromFleeceData(ctx, result);
-            } else if(scope.root->type() == kString) {
+            if(scope.root == nullptr) {
                 setResultFromValue(ctx, scope.root);
-            } else {
-                sqlite3_result_error(ctx, "Invalid property type for FTS (requires string or array)", kFLUnsupported);
-            }
+                return;
+            } 
+
+            alloc_slice result;
+            handle_fts_value(scope.root, result);
+            setResultBlobFromFleeceData(ctx, result);
         } catch(const std::exception &) {
             sqlite3_result_error(ctx, "fl_nested_value: exception!", -1);
         }
