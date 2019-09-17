@@ -201,6 +201,9 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         with a description of the object; by default this is just the class and address, but
         you can customize it by overriding loggingIdentifier(). */
     class Logging {
+    public:
+        std::string loggingName() const;
+
     protected:
         Logging(LogDomain &domain)
         :_domain(domain)
@@ -229,7 +232,7 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         void _log(LogLevel level, const char *format, ...) const __printflike(3, 4);
         void _logv(LogLevel level, const char *format, va_list) const;
 
-        unsigned getObjectRef() const { return _objectRef; }
+        unsigned getObjectRef(LogLevel level = LogLevel::Info) const;
 
         LogDomain &_domain;
 private:

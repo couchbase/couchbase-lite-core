@@ -13,20 +13,21 @@
 
 namespace c4Internal {
 
+    /** A passive replicator handling an incoming WebSocket connection, for P2P. */
     class C4IncomingReplicator : public C4Replicator {
     public:
-        C4IncomingReplicator(C4Database* db,
+        C4IncomingReplicator(C4Database* db NONNULL,
                              const C4ReplicatorParameters &params,
-                             WebSocket *openSocket)
+                             WebSocket *openSocket NONNULL)
         :C4Replicator(db, params)
         ,_openSocket(openSocket)
         { }
 
         virtual void start(bool synchronous =false) override {
+            LOCK(_mutex);
             Assert(_openSocket);
-            _replicator = new Replicator(_database, _openSocket, *this, options());
+            _start(new Replicator(_database, _openSocket, *this, options()), synchronous);
             _openSocket = nullptr;
-            C4Replicator::start(synchronous);
         }
 
     private:

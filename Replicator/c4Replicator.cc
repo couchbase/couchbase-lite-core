@@ -19,7 +19,7 @@
 #include "fleece/Fleece.hh"
 #include "c4RemoteReplicator.hh"
 #include "c4LocalReplicator.hh"
-#include "C4IncomingReplicator.h"
+#include "c4IncomingReplicator.hh"
 #include "c4ExceptionUtils.hh"
 #include "DatabaseCookies.hh"
 #include "StringUtil.hh"
@@ -234,6 +234,16 @@ void c4repl_start(C4Replicator* repl) C4API {
 
 void c4repl_stop(C4Replicator* repl) C4API {
     repl->stop();
+}
+
+
+bool c4repl_retry(C4Replicator* repl, C4Error *outError) C4API {
+    return tryCatch<bool>(nullptr, std::bind(&C4Replicator::retry, repl, true, outError));
+}
+
+
+bool c4repl_willRetry(C4Replicator* repl) C4API {
+    return repl->willRetry();
 }
 
 

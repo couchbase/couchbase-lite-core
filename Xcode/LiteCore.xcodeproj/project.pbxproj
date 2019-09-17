@@ -1167,7 +1167,7 @@
 		27D74A9E1D4FF65000D806E0 /* c4Base.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Base.cc; sourceTree = "<group>"; };
 		27D965252330394C00F4A51C /* c4RemoteReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4RemoteReplicator.hh; sourceTree = "<group>"; };
 		27D9652A23303A2B00F4A51C /* c4LocalReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4LocalReplicator.hh; sourceTree = "<group>"; };
-		27D9652B23303B0C00F4A51C /* C4IncomingReplicator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = C4IncomingReplicator.h; sourceTree = "<group>"; };
+		27D9652B23303B0C00F4A51C /* c4IncomingReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4IncomingReplicator.hh; sourceTree = "<group>"; };
 		27DD1511193CD005009A367D /* RevID.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevID.cc; sourceTree = "<group>"; };
 		27DD1512193CD005009A367D /* RevID.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevID.hh; sourceTree = "<group>"; };
 		27DF46C21A12CF46007BB4A4 /* Record.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Record.cc; sourceTree = "<group>"; };
@@ -2147,7 +2147,7 @@
 				275A73BD1ED255AF008CB57B /* c4Replicator.hh */,
 				27D965252330394C00F4A51C /* c4RemoteReplicator.hh */,
 				27D9652A23303A2B00F4A51C /* c4LocalReplicator.hh */,
-				27D9652B23303B0C00F4A51C /* C4IncomingReplicator.h */,
+				27D9652B23303B0C00F4A51C /* c4IncomingReplicator.hh */,
 				278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */,
 				278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */,
 			);

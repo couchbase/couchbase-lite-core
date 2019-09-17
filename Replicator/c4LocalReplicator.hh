@@ -14,6 +14,7 @@ using namespace litecore::websocket;
 
 namespace c4Internal {
 
+    /** A replicator with another open C4Database, via LoopbackWebSocket. */
     class C4LocalReplicator : public C4Replicator {
     public:
         C4LocalReplicator(C4Database* db,
@@ -25,19 +26,19 @@ namespace c4Internal {
 
 
         void start(bool synchronous =false) override {
+            LOCK(_mutex);
             auto socket1 = new LoopbackWebSocket(Address(_database), Role::Client);
             auto socket2 = new LoopbackWebSocket(Address(_otherDatabase), Role::Server);
-            _replicator = new Replicator(_database, socket1, *this,
-                                         options().setNoDeltas());
+            LoopbackWebSocket::bind(socket1, socket2);
+
             _otherReplicator = new Replicator(_otherDatabase, socket2, *this,
                                               Replicator::Options(kC4Passive, kC4Passive)
-                                                .setNoIncomingConflicts().setNoDeltas());
-            LoopbackWebSocket::bind(_replicator->webSocket(), _otherReplicator->webSocket());
-
+                                                    .setNoIncomingConflicts().setNoDeltas());
             _selfRetainToo = this;
             _otherReplicator->start(synchronous);
             
-            C4Replicator::start(synchronous);
+            _start(new Replicator(_database, socket1, *this,
+                                  options().setNoDeltas()), synchronous);
         }
 
 
@@ -45,11 +46,10 @@ namespace c4Internal {
                                              const Replicator::Status &newStatus) override
         {
             C4Replicator::replicatorStatusChanged(repl, newStatus);
-            {
-                lock_guard<mutex> lock(_mutex);
-                if (repl == _otherReplicator && newStatus.level == kC4Stopped)
-                    _selfRetainToo = nullptr; // balances retain in constructor
-            }
+
+            LOCK(_mutex);
+            if (repl == _otherReplicator && newStatus.level == kC4Stopped)
+                _selfRetainToo = nullptr; // balances retain in `start`
         }
 
     private:

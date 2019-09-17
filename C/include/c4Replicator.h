@@ -44,7 +44,7 @@ extern "C" {
     /** The possible states of a replicator. */
     typedef C4_ENUM(int32_t, C4ReplicatorActivityLevel) {
         kC4Stopped,     ///< Finished, or got a fatal error.
-        kC4Offline,     ///< Not used by LiteCore; for use by higher-level APIs. */
+        kC4Offline,     ///< Connection failed, but waiting to retry. */
         kC4Connecting,  ///< Connection is in progress.
         kC4Idle,        ///< Continuous replicator has caught up and is waiting for changes.
         kC4Busy         ///< Connected and actively working.
@@ -164,9 +164,10 @@ extern "C" {
 
     /** Creates a new replicator.
         @param db  The local database.
-        @param remoteAddress  The address of the remote server (null if other db is local.)
-        @param remoteDatabaseName  The name of the database at the remote address.
-        @param otherLocalDB  The other local database (null if other db is remote.)
+        @param remoteAddress  The address of the remote server (ignored if \ref otherLocalDB is set.)
+        @param remoteDatabaseName  The name of the database at the remote address
+                                    (ignored if \ref otherLocalDB is set.)
+        @param otherLocalDB  The other local database (NULL if other db is remote.)
         @param params Replication parameters (see above.)
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
@@ -201,6 +202,17 @@ extern "C" {
 
     /** Tells a replicator to stop. */
     void c4repl_stop(C4Replicator* repl C4NONNULL) C4API;
+
+    /** Tells a replicator that's in the offline state to reconnect immediately.
+        @param repl  The replicator.
+        @param outError  On failure, error information is stored here.
+        @return  True if the replicator will reconnect, false if it won't. */
+    bool c4repl_retry(C4Replicator* repl C4NONNULL, C4Error *outError) C4API;
+
+    /** Returns true if the replicator is in Offline state and waiting to retry connecting.
+        If it's offline but this returns false, it means you the client are responsible for
+        calling \ref c4repl_retry when appropriate, e.g. when the network configuration changes. */
+    bool c4repl_willRetry(C4Replicator* repl C4NONNULL) C4API;
 
     /** Returns the current state of a replicator. */
     C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl C4NONNULL) C4API;
@@ -256,6 +268,7 @@ extern "C" {
     #define kC4ReplicatorResetCheckpoint        "reset"     ///< Start over w/o checkpoint (bool)
     #define kC4ReplicatorOptionProgressLevel    "progress"  ///< If >=1, notify on every doc; if >=2, on every attachment (int)
     #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
+    #define kC4ReplicatorOptionMaxRetries       "maxRetries" ///< Max number of retry attempts (int)
 
     // Auth dictionary keys:
     #define kC4ReplicatorAuthType       "type"           ///< Auth type; see below (string)
