@@ -322,8 +322,13 @@ namespace litecore { namespace blip {
 
     fleece::Value MessageIn::JSONBody() {
         lock_guard<mutex> lock(_receiveMutex);
-        if (!_bodyAsFleece)
+        if (!_bodyAsFleece) {
+            if (_body.size == 0)
+                return nullptr;
             _bodyAsFleece = FLData_ConvertJSON({_body.buf, _body.size}, nullptr);
+            if (!_bodyAsFleece && _body != "null"_sl)
+                Warn("MessageIn::JSONBody: Body does not contain valid JSON: %.*s", SPLAT(_body));
+        }
         return fleece::Value::fromData(_bodyAsFleece);
     }
 

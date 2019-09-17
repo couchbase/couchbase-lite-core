@@ -63,6 +63,11 @@ namespace litecore { namespace actor {
             If the duration is zero, the callback will be called ASAP. */
         void fireAfter(duration d)      {manager().setFireTime(this, clock::now() + d);}
 
+        template<class Rep, class Period>
+        void fireAfter(const std::chrono::duration<Rep,Period>& dur) {
+            return fireAfter(std::chrono::duration_cast<duration>(dur));
+        }
+
         /** Unschedules the timer. After this call returns the callback will NOT be invoked
             unless fireAt() or fireAfter() are called. */
         void stop()                     {if (scheduled()) manager().unschedule(this);}
