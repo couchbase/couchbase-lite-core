@@ -33,6 +33,9 @@ namespace litecore { namespace repl {
     class Puller;
 
 
+    static constexpr const char *kReplicatorProtocolName = "+CBMobile_2";
+
+
     /** The top-level replicator object, which runs the BLIP connection.
         Pull and push operations are run by subidiary Puller and Pusher objects.
         The database will only be accessed by the DBAgent object. */

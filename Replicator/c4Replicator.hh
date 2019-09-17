@@ -37,9 +37,6 @@ using namespace litecore::repl;
 #define LOCK(MUTEX)     lock_guard<mutex> _lock(MUTEX)
 
 
-static const char *kReplicatorProtocolName = "+CBMobile_2";
-
-
 /** Glue between C4 API and internal LiteCore replicator. Abstract class. */
 struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
 
@@ -53,9 +50,9 @@ struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
         return false;
     }
 
-    virtual bool willRetry() const {
-        return false;
-    }
+    virtual bool willRetry() const                  {return false;}
+
+    virtual void setHostReachable(bool reachable)   { }
 
     alloc_slice responseHeaders() {
         LOCK(_mutex);

@@ -214,6 +214,13 @@ extern "C" {
         calling \ref c4repl_retry when appropriate, e.g. when the network configuration changes. */
     bool c4repl_willRetry(C4Replicator* repl C4NONNULL) C4API;
 
+    /** Informs the replicator whether it's considered possible to reach the remote host with
+        the current network configuration. The default value is true. This only affects the
+        replicator's behavior while it's in the Offline state:
+        * Setting it to false will cancel any pending retry and prevent future automatic retries.
+        * Setting it back to true will initiate an immediate retry. */
+    void c4repl_setHostReachable(C4Replicator* repl C4NONNULL, bool reachable) C4API;
+
     /** Returns the current state of a replicator. */
     C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl C4NONNULL) C4API;
 

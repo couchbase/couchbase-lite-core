@@ -11,6 +11,7 @@
 #include "c4Socket+Internal.hh"
 #include "c4.hh"
 #include "Address.hh"
+#include "StringUtil.hh"
 #include "Timer.hh"
 #include <chrono>
 #include <functional>
@@ -19,23 +20,25 @@ using namespace litecore::net;
 
 namespace c4Internal {
 
-    // Maximum number of retries before a one-shot replication gives up
-    static constexpr unsigned kMaxOneShotRetryCount = 2;
-
-    // Longest possible retry delay, in seconds (only a continuous replication will reach this.)
-    // But a call to c4repl_retry() will also trigger a retry.
-    static constexpr unsigned kMaxRetryDelay = 10 * 60;
-
-    // The function governing the exponential backoff of retries
-    static unsigned retryDelay(unsigned retryCount) {
-        unsigned delay = 1 << std::min(retryCount, 30u);
-        return std::min(delay, kMaxRetryDelay);
-    }
-
 
     /** A replicator with a remote database via WebSockets. */
     class C4RemoteReplicator : public C4Replicator {
     public:
+
+        // Maximum number of retries before a one-shot replication gives up
+        static constexpr unsigned kMaxOneShotRetryCount = 2;
+
+        // Longest possible retry delay, in seconds (only a continuous replication will reach this.)
+        // But a call to c4repl_retry() will also trigger a retry.
+        static constexpr unsigned kMaxRetryDelay = 10 * 60;
+
+        // The function governing the exponential backoff of retries
+        static unsigned retryDelay(unsigned retryCount) {
+            unsigned delay = 1 << std::min(retryCount, 30u);
+            return std::min(delay, kMaxRetryDelay);
+        }
+
+
         C4RemoteReplicator(C4Database* db,
                            const C4ReplicatorParameters &params,
                            const C4Address &serverAddress,
@@ -66,7 +69,7 @@ namespace c4Internal {
                                "Replicator is stopped"_sl, outError);
                 return false;
             }
-            logInfo("Retrying (attempt #%u)...", _retryCount+1);
+            logInfo("Retrying connection to %.*s (attempt #%u)...", SPLAT(_url), _retryCount+1);
             _restart();
             return true;
         }
@@ -80,6 +83,22 @@ namespace c4Internal {
         virtual void stop() override {
             cancelScheduledRetry();
             C4Replicator::stop();
+        }
+
+
+        // Called by the client when it determines the remote host is [un]reachable.
+        virtual void setHostReachable(bool reachable) override {
+            LOCK(_mutex);
+            if (reachable == _reachable)
+                return;
+            _reachable = reachable;
+            logInfo("Notified server is now %sreachable", (reachable ? "" : "un"));
+            if (!reachable) {
+                cancelScheduledRetry();
+            } else if (_status.level == kC4Offline) {
+                _retryCount = 0;
+                scheduleRetry(0);
+            }
         }
 
 
@@ -105,7 +124,7 @@ namespace c4Internal {
         }
 
 
-        // Overridden to clear the retry count, so after a disconnect we'll get more retries.
+        // Overridden to clear the retry count, so that after a disconnect we'll get more retries.
         virtual void handleConnected() override {
             _retryCount = 0;
         }
@@ -135,7 +154,7 @@ namespace c4Internal {
                 } else {
                     // On other network error, don't retry automatically. The client should await
                     // a network change and call c4repl_retry.
-                    logError("Network error (%s); will retry when told...",
+                    logError("Network error (%s); will retry when host becomes reachable...",
                              c4error_descriptionStr(c4err));
                 }
             }
@@ -177,9 +196,9 @@ namespace c4Internal {
 
     private:
         alloc_slice const       _url;
-        bool                    _reachable {true};
-        unsigned                _retryCount {0};
         litecore::actor::Timer  _retryTimer;
+        unsigned                _retryCount {0};
+        bool                    _reachable {true};
     };
 
 }
