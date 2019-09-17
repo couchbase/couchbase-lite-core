@@ -53,9 +53,13 @@ function(setup_litecore_build_linux)
     )
 endfunction()
 
-function(setup_support_build)
+function(setup_support_build_linux)
     target_include_directories(
         Support PRIVATE
         LiteCore/Unix
     )
+endfunction()
+
+function(setup_support_build)
+    setup_support_build_linux()
 endfunction()

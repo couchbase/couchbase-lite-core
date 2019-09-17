@@ -47,7 +47,7 @@ endfunction()
 function(setup_litecore_build)
     setup_litecore_build_linux()
 
-    
+
     target_compile_definitions(
         LiteCoreStatic PRIVATE
         -DLITECORE_USES_ICU=1
@@ -59,7 +59,7 @@ function(setup_litecore_build)
     )
 
     target_link_libraries(
-        LiteCore PRIVATE 
+        LiteCore PRIVATE
         zlibstatic
     )
 
@@ -67,6 +67,18 @@ function(setup_litecore_build)
         LiteCore PUBLIC
         log
         atomic
+    )
+endfunction()
+
+function(setup_support_build)
+    setup_support_build_linux()
+    target_compile_definitions(
+        Support PRIVATE
+        -DLITECORE_USES_ICU=1
+    )
+    target_include_directories(
+        Support PRIVATE
+        LiteCore/Android
     )
 endfunction()
 
