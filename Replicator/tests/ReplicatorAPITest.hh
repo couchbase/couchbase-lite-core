@@ -241,11 +241,11 @@ public:
         params.onDocumentsEnded = _onDocsEnded;
         params.callbackContext = this;
         params.socketFactory = _socketFactory;
-        params.dontStart = true;    // defer start until I have a chance to set _repl
 
-        _repl = c4repl_new(db, _address, _remoteDBName,
-                           (_remoteDBName.buf ? nullptr : (C4Database*)db2),
-                           params, err);
+        if (_remoteDBName.buf)
+            _repl = c4repl_new(db, _address, _remoteDBName, params, err);
+        else
+            _repl = c4repl_newLocal(db, db2, params, err);
         if (!_repl)
             return false;
         c4repl_start(_repl);

@@ -41,7 +41,7 @@ using namespace litecore::repl;
 struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
 
     // Subclass must override this, creating a Replicator instance and passing it to `_start`.
-    virtual void start(bool synchronous =false) =0;
+    virtual void start() =0;
 
     // Retry is not supported by default. C4RemoteReplicator overrides this.
     virtual bool retry(bool resetCount, C4Error *outError) {
@@ -109,13 +109,13 @@ protected:
 
     // Base implementation of starting the replicator.
     // Subclass implementation of `start` must call this (with the mutex locked).
-    virtual void _start(Replicator *replicator, bool synchronous =false) {
+    virtual void _start(Replicator *replicator) {
         logInfo("Starting Replicator %s", replicator->loggingName().c_str());
         DebugAssert(!_replicator);
         _status = replicator->status();
         _selfRetain = this; // keep myself alive till Replicator stops
         _replicator = replicator;
-        _replicator->start(synchronous);
+        _replicator->start();
     }
 
 

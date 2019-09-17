@@ -25,7 +25,7 @@ namespace c4Internal {
         { }
 
 
-        void start(bool synchronous =false) override {
+        void start() override {
             LOCK(_mutex);
             auto socket1 = new LoopbackWebSocket(Address(_database), Role::Client);
             auto socket2 = new LoopbackWebSocket(Address(_otherDatabase), Role::Server);
@@ -35,10 +35,9 @@ namespace c4Internal {
                                               Replicator::Options(kC4Passive, kC4Passive)
                                                     .setNoIncomingConflicts().setNoDeltas());
             _selfRetainToo = this;
-            _otherReplicator->start(synchronous);
+            _otherReplicator->start();
             
-            _start(new Replicator(_database, socket1, *this,
-                                  options().setNoDeltas()), synchronous);
+            _start(new Replicator(_database, socket1, *this, options().setNoDeltas()));
         }
 
 

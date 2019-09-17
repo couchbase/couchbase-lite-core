@@ -23,10 +23,10 @@ namespace c4Internal {
         ,_openSocket(openSocket)
         { }
 
-        virtual void start(bool synchronous =false) override {
+        virtual void start() override {
             LOCK(_mutex);
             Assert(_openSocket);
-            _start(new Replicator(_database, _openSocket, *this, options()), synchronous);
+            _start(new Replicator(_database, _openSocket, *this, options()));
             _openSocket = nullptr;
         }
 

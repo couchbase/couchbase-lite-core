@@ -78,7 +78,7 @@ namespace litecore { namespace REST {
                 ((ReplicationTask*)context)->onReplStateChanged(status);
             };
             params.callbackContext = this;
-            _repl = c4repl_new(localDB, remoteAddress, remoteDbName, nullptr, params, outError);
+            _repl = c4repl_new(localDB, remoteAddress, remoteDbName, params, outError);
             if (!_repl) {
                 c4log(RESTLog, kC4LogInfo,
                       "Replicator task #%d failed to start!", taskID());

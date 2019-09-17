@@ -158,25 +158,32 @@ extern "C" {
         C4ReplicatorBlobProgressCallback    onBlobProgress;    ///< Callback notifying blob progress
         void*                               callbackContext;   ///< Value to be passed to the callbacks.
         const C4SocketFactory*              socketFactory;     ///< Custom C4SocketFactory, if not NULL
-        bool                                dontStart;         ///< Don't start automatically
     } C4ReplicatorParameters;
 
 
-    /** Creates a new replicator.
+    /** Creates a new networked replicator.
         @param db  The local database.
-        @param remoteAddress  The address of the remote server (ignored if \ref otherLocalDB is set.)
-        @param remoteDatabaseName  The name of the database at the remote address
-                                    (ignored if \ref otherLocalDB is set.)
-        @param otherLocalDB  The other local database (NULL if other db is remote.)
+        @param remoteAddress  The address of the remote server.
+        @param remoteDatabaseName  The name of the database at the remote address.
         @param params Replication parameters (see above.)
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
     C4Replicator* c4repl_new(C4Database* db C4NONNULL,
                              C4Address remoteAddress,
                              C4String remoteDatabaseName,
-                             C4Database* otherLocalDB,
                              C4ReplicatorParameters params,
                              C4Error *outError) C4API;
+
+    /** Creates a new replicator to another local database.
+        @param db  The local database.
+        @param otherLocalDB  The other local database.
+        @param params Replication parameters (see above.)
+        @param outError  Error, if replication can't be created.
+        @return  The newly created replicator, or NULL on error. */
+    C4Replicator* c4repl_newLocal(C4Database* db,
+                                  C4Database* otherLocalDB C4NONNULL,
+                                  C4ReplicatorParameters params,
+                                  C4Error *outError) C4API;
 
     /** Creates a new replicator from an already-open C4Socket. This is for use by listeners
         that accept incoming connections, wrap them by calling `c4socket_fromNative()`, then

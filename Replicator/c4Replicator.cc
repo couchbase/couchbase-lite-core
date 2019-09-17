@@ -157,7 +157,6 @@ C4StringResult c4address_toURL(C4Address address) C4API {
 C4Replicator* c4repl_new(C4Database* db,
                          C4Address serverAddress,
                          C4String remoteDatabaseName,
-                         C4Database* otherLocalDB,
                          C4ReplicatorParameters params,
                          C4Error *outError) C4API
 {
@@ -170,31 +169,38 @@ C4Replicator* c4repl_new(C4Database* db,
         if (!dbCopy)
             return nullptr;
 
-        Retained<C4Replicator> replicator;
-        if (otherLocalDB) {
-            if (!checkParam(otherLocalDB != db, "Can't replicate a database to itself", outError))
+        if (!params.socketFactory) {
+            if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError))
                 return nullptr;
-            // Local-to-local:
-            c4::ref<C4Database> otherDBCopy(c4db_openAgain(otherLocalDB, outError));
-            if (!otherDBCopy)
-                return nullptr;
-            replicator = new C4LocalReplicator(dbCopy, params, otherDBCopy);
-        } else {
-            // Remote:
-            if (!params.socketFactory) {
-                if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError))
-                    return nullptr;
-                if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
-                    Warn("POSSIBLE SECURITY ISSUE: It looks like you're connecting to Sync Gateway's "
-                         "admin port (4985) -- this is usually a bad idea. By default this port is "
-                         "unreachable, but if opened, it would give anyone unlimited privileges.");
-                }
+            if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
+                Warn("POSSIBLE SECURITY ISSUE: It looks like you're connecting to Sync Gateway's "
+                     "admin port (4985) -- this is usually a bad idea. By default this port is "
+                     "unreachable, but if opened, it would give anyone unlimited privileges.");
             }
-            replicator = new C4RemoteReplicator(dbCopy, params, serverAddress, remoteDatabaseName);
         }
-        if (!params.dontStart)
-            replicator->start();
-        return retain(replicator.get());   // to be balanced by release in c4repl_free()
+        return retain(new C4RemoteReplicator(dbCopy, params, serverAddress, remoteDatabaseName));
+    } catchError(outError);
+    return nullptr;
+}
+
+
+C4Replicator* c4repl_newLocal(C4Database* db,
+                              C4Database* otherLocalDB C4NONNULL,
+                              C4ReplicatorParameters params,
+                              C4Error *outError) C4API
+{
+    try {
+        if (!checkParam(params.push != kC4Disabled || params.pull != kC4Disabled,
+                        "Either push or pull must be enabled", outError))
+            return nullptr;
+        if (!checkParam(otherLocalDB != db, "Can't replicate a database to itself", outError))
+            return nullptr;
+
+        c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
+        c4::ref<C4Database> otherDBCopy(c4db_openAgain(otherLocalDB, outError));
+        if (!dbCopy || !otherDBCopy)
+            return nullptr;
+        return retain(new C4LocalReplicator(dbCopy, params, otherDBCopy));
     } catchError(outError);
     return nullptr;
 }
@@ -209,13 +215,7 @@ C4Replicator* c4repl_newWithWebSocket(C4Database* db,
         c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
         if (!dbCopy)
             return nullptr;
-        Retained<C4Replicator> replicator = new C4IncomingReplicator(dbCopy, params, openSocket);
-        if (!params.dontStart) {
-            replicator->start(true);
-            Assert(openSocket->hasDelegate());
-            Assert(replicator->refCount() > 1);  // Replicator is retained by the socket, will be released on close
-        }
-        return retain(replicator.get());   // to be balanced by release in c4repl_free()
+        return retain(new C4IncomingReplicator(dbCopy, params, openSocket));
     } catchError(outError);
     return nullptr;
 }

@@ -49,12 +49,12 @@ namespace c4Internal {
         { }
 
 
-        void start(bool synchronous =false) override {
+        void start() override {
             LOCK(_mutex);
             if (_replicator)
                 return;
             _retryCount = 0;
-            _restart(synchronous);
+            _restart();
         }
 
 
@@ -104,11 +104,10 @@ namespace c4Internal {
 
     protected:
         // Both `start` and `retry` end up calling this.
-        void _restart(bool synchronous =false) {
+        void _restart() {
             cancelScheduledRetry();
             auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _params.socketFactory);
-            _start(new Replicator(_database, webSocket, *this, options()),
-                   synchronous);
+            _start(new Replicator(_database, webSocket, *this, options()));
         }
 
 
