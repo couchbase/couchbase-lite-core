@@ -103,9 +103,9 @@ function(setup_litecore_build)
     endif()
 
     target_link_libraries(
-        LiteCore PRIVATE
-        z
-        ${ICU4C_COMMON}
+        LiteCore PRIVATE 
+        z 
+        ${ICU4C_COMMON} 
         ${ICU4C_I18N}
     )
 endfunction()
