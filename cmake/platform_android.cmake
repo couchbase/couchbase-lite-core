@@ -72,10 +72,7 @@ endfunction()
 
 function(setup_support_build)
     setup_support_build_linux()
-    target_compile_definitions(
-        Support PRIVATE
-        -DLITECORE_USES_ICU=1
-    )
+
     target_include_directories(
         Support PRIVATE
         LiteCore/Android
