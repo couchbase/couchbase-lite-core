@@ -682,6 +682,15 @@ namespace litecore {
             }
             parseCollatableNode(i.value());
         }
+
+        if(_functionWantsCollation) {
+            if(n > 0) {
+                _sql << ", ";
+            }
+
+            _sql << "'" << _collation.sqliteName() << "'";
+            _functionWantsCollation = false;
+        }
     }
 
 
@@ -1119,6 +1128,11 @@ namespace litecore {
         if (op.caseEquivalent(kPredictionFnName) && writeIndexedPrediction((const Array*)_curNode))
             return;
 #endif
+
+        if(!_collationUsed && spec->wants_collation) {
+            _collationUsed = true;
+            _functionWantsCollation = true;
+        }
 
         _sql << op;
         writeArgList(operands);

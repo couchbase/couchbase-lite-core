@@ -214,6 +214,7 @@ namespace litecore {
         bool _checkedExpiration {false};            // Has query accessed _expiration meta-property?
         Collation _collation;                       // Collation in use during parse
         bool _collationUsed {true};                 // Emitted SQL "COLLATION" yet?
+        bool _functionWantsCollation {false};       // The current function wants to receive collation in its argument list
     };
 
 }

@@ -50,6 +50,48 @@ namespace litecore {
         });
     }
 
+    bool LikeUTF8(slice comparand, slice pattern, const Collation& col) {
+        bool insidePercent = false;
+        while(pattern.size > 0 && comparand.size > 0) {
+            const bool escaped = pattern[0] == '\\';
+            const bool special = pattern[0] == '%' || pattern[0] == '_';
+            if(escaped) {
+                pattern.moveStart(1);
+            }
+
+            const size_t nextPatternSize = NextUTF8Length(pattern);
+            const size_t nextComparandSize = NextUTF8Length(comparand);
+            if((escaped || !special) && CompareUTF8({pattern.buf, nextPatternSize}, {comparand.buf, nextComparandSize}, col)) {
+                // Mismatched non-special letter
+                if(!insidePercent) {
+                    // Normally, this means no match
+                    return false;
+                }
+
+                // Keep searching for the match after the percent sign
+                comparand.moveStart(nextComparandSize);
+                continue;
+            }
+
+            insidePercent = false;
+            if(pattern[0] == '%') {
+                // Keep comparand where it is
+                insidePercent = true;
+            } else {
+                comparand.moveStart(nextComparandSize);
+            }
+
+            pattern.moveStart(nextPatternSize);
+        }
+
+        if(comparand.size != 0) {
+            return insidePercent;
+        }
+
+        return pattern.size == 0;
+    }
+
+
     std::string Collation::sqliteName() const {
         if (unicodeAware) {
             std::stringstream name;

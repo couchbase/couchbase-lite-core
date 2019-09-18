@@ -73,7 +73,10 @@ namespace litecore {
     using CollationContextVector = std::vector<std::unique_ptr<CollationContext>>;
 
     /** Unicode-aware comparison of two UTF8-encoded strings. */
-    int CompareUTF8(fleece::slice str1, fleece::slice str2, const Collation&);
+    int CompareUTF8(fleece::slice pattern, fleece::slice comparand, const Collation&);
+
+    /** Unicode-aware LIKE function accepting two UTF-8 encoded strings */
+    bool LikeUTF8(fleece::slice str1, fleece::slice str2, const Collation&);
 
     /** Registers a specific SQLite collation function with the given options.
         The returned object needs to be kept alive until the database is closed, then deleted. */

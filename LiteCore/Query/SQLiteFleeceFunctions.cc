@@ -441,6 +441,16 @@ namespace litecore {
         setResultBlobFromFleeceData(ctx, enc.finish());
     }
 
+    static void fl_like(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        Collation col;
+        col.unicodeAware = true;
+        if(argc > 2) {
+            col.readSQLiteName((const char *)sqlite3_value_text(argv[2]));
+        }
+
+        const bool likeResult = LikeUTF8(valueAsStringSlice(argv[0]), valueAsStringSlice(argv[1]), col);
+        sqlite3_result_int(ctx, likeResult ? 1 : 0);
+    }
 
 #pragma mark - REGISTRATION:
 
@@ -459,6 +469,8 @@ namespace litecore {
         { "fl_bool",           1, fl_bool },
         { "array_of",         -1, array_of },
         { "dict_of",          -1, dict_of },
+        { "fl_like",           2, fl_like },
+        { "fl_like",           3, fl_like },
         { }
     };
 
