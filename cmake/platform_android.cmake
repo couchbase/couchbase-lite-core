@@ -70,6 +70,15 @@ function(setup_litecore_build)
     )
 endfunction()
 
+function(setup_support_build)
+    setup_support_build_linux()
+
+    target_include_directories(
+        Support PRIVATE
+        LiteCore/Android
+    )
+endfunction()
+
 function(setup_rest_build)
     # No-op
 endfunction()
