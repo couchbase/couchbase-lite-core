@@ -142,8 +142,9 @@ protected:
     virtual void _start(Retained<Replicator> replicator) {
         logInfo("Starting Replicator %s", replicator->loggingName().c_str());
         DebugAssert(!_replicator);
-        updateStatusFromReplicator(replicator->status());
         _selfRetain = this; // keep myself alive till Replicator stops
+        updateStatusFromReplicator(replicator->status());
+        _responseHeaders = nullptr;
         _replicator = move(replicator);
         _replicator->start();
     }
