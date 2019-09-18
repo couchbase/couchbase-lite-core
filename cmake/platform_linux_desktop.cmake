@@ -110,6 +110,10 @@ function(setup_litecore_build)
     )
 endfunction()
 
+function(setup_support_build)
+    setup_support_build_linux()
+endfunction()
+
 function(setup_rest_build)
     # No-op
 endfunction()
