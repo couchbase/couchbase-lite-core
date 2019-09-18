@@ -256,6 +256,16 @@ FLMutableDict_Remove
 FLMutableDict_RemoveAll
 FLMutableDict_GetMutableDict
 
+FLSlot_SetNull
+FLSlot_SetBool
+FLSlot_SetInt
+FLSlot_SetUInt
+FLSlot_SetFloat
+FLSlot_SetDouble
+FLSlot_SetString
+FLSlot_SetData
+FLSlot_SetValue
+
 ; C4Tests
 kC4SQLiteStorageEngine
 kC4DatabaseFilenameExtension
