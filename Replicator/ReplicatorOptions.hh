@@ -51,6 +51,15 @@ namespace litecore { namespace repl {
         :push(push_), pull(pull_), properties(propertiesFleece)
         { }
 
+        explicit Options(C4ReplicatorParameters params)
+        :push(params.push)
+        ,pull(params.pull)
+        ,properties(params.optionsDictFleece)
+        ,pushFilter(params.pushFilter)
+        ,pullValidator(params.validationFunc)
+        ,callbackContext(params.callbackContext)
+        { }
+
         static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
         static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
         static Options passive()                       {return Options(kC4Passive,kC4Passive);}

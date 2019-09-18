@@ -17,18 +17,20 @@ namespace c4Internal {
     /** A replicator with another open C4Database, via LoopbackWebSocket. */
     class C4LocalReplicator : public C4Replicator {
     public:
-        C4LocalReplicator(C4Database* db,
+        C4LocalReplicator(C4Database* db NONNULL,
                           const C4ReplicatorParameters &params,
-                          C4Database* otherDB)
+                          C4Database* otherDB NONNULL)
         :C4Replicator(db, params)
         ,_otherDatabase(otherDB)
-        { }
+        {
+            _options.setNoDeltas();
+        }
 
 
         void start() override {
             LOCK(_mutex);
-            auto socket1 = new LoopbackWebSocket(Address(_database), Role::Client);
-            auto socket2 = new LoopbackWebSocket(Address(_otherDatabase), Role::Server);
+            auto socket1 = retained(new LoopbackWebSocket(Address(_database), Role::Client));
+            auto socket2 = retained(new LoopbackWebSocket(Address(_otherDatabase), Role::Server));
             LoopbackWebSocket::bind(socket1, socket2);
 
             _otherReplicator = new Replicator(_otherDatabase, socket2, *this,
@@ -37,7 +39,7 @@ namespace c4Internal {
             _selfRetainToo = this;
             _otherReplicator->start();
             
-            _start(new Replicator(_database, socket1, *this, options().setNoDeltas()));
+            _start(new Replicator(_database, socket1, *this, _options));
         }
 
 

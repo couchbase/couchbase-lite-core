@@ -39,12 +39,13 @@ namespace c4Internal {
         }
 
 
-        C4RemoteReplicator(C4Database* db,
+        C4RemoteReplicator(C4Database* db NONNULL,
                            const C4ReplicatorParameters &params,
                            const C4Address &serverAddress,
                            C4String remoteDatabaseName)
         :C4Replicator(db, params)
         ,_url(effectiveURL(serverAddress, remoteDatabaseName))
+        ,_socketFactory(params.socketFactory)
         ,_retryTimer(std::bind(&C4RemoteReplicator::retry, this, false, nullptr))
         { }
 
@@ -75,12 +76,8 @@ namespace c4Internal {
         }
 
 
-        virtual bool willRetry() const override {
-            return _retryTimer.scheduled();
-        }
-
-
         virtual void stop() override {
+            setStatusFlag(kC4Suspended, false);
             cancelScheduledRetry();
             C4Replicator::stop();
         }
@@ -89,15 +86,27 @@ namespace c4Internal {
         // Called by the client when it determines the remote host is [un]reachable.
         virtual void setHostReachable(bool reachable) override {
             LOCK(_mutex);
-            if (reachable == _reachable)
+            if (!setStatusFlag(kC4HostReachable, reachable))
                 return;
-            _reachable = reachable;
-            logInfo("Notified server is now %sreachable", (reachable ? "" : "un"));
-            if (!reachable) {
+            logInfo("Notified that server is now %sreachable", (reachable ? "" : "un"));
+            if (reachable)
+                maybeScheduleRetry();
+            else
                 cancelScheduledRetry();
-            } else if (_status.level == kC4Offline) {
-                _retryCount = 0;
-                scheduleRetry(0);
+        }
+
+
+        virtual void setSuspended(bool suspended) override {
+            LOCK(_mutex);
+            if (!setStatusFlag(kC4Suspended, suspended))
+                return;
+            logInfo("%s", (suspended ? "Suspended" : "Un-suspended"));
+            if (suspended) {
+                cancelScheduledRetry();
+                if (_replicator)
+                    _replicator->stop();
+            } else {
+                maybeScheduleRetry();
             }
         }
 
@@ -106,20 +115,31 @@ namespace c4Internal {
         // Both `start` and `retry` end up calling this.
         void _restart() {
             cancelScheduledRetry();
-            auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _params.socketFactory);
-            _start(new Replicator(_database, webSocket, *this, options()));
+            auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _socketFactory);
+            _start(new Replicator(_database, webSocket, *this, _options));
+        }
+
+
+        void maybeScheduleRetry() {
+            if (_status.level == kC4Offline &&  statusFlag(kC4HostReachable)
+                                            && !statusFlag(kC4Suspended)) {
+                _retryCount = 0;
+                scheduleRetry(0);
+            }
         }
 
 
         // Starts the timer to call `retry` in the future.
         void scheduleRetry(unsigned delayInSecs) {
             _retryTimer.fireAfter(chrono::seconds(delayInSecs));
+            setStatusFlag(kC4WillRetry, true);
         }
 
 
         // Cancels a previous call to `scheduleRetry`.
         void cancelScheduledRetry() {
             _retryTimer.stop();
+            setStatusFlag(kC4WillRetry, false);
         }
 
 
@@ -130,7 +150,17 @@ namespace c4Internal {
 
 
         // Overridden to handle transient or network-related errors and possibly retry.
-        virtual void handleError(C4Error c4err) override {
+        virtual void handleStopped() override {
+            if (statusFlag(kC4Suspended)) {
+                // If suspended, go to Offline state when Replicator stops
+                _status.level = kC4Offline;
+                return;
+            }
+
+            C4Error c4err = _status.error;
+            if (c4err.code == 0)
+                return;
+
             // If this is a transient error, or if I'm continuous and the error might go away with
             // a change in network (i.e. network down, hostname unknown), then go offline.
             bool transient = c4error_mayBeTransient(c4err);
@@ -142,9 +172,8 @@ namespace c4Internal {
 
                 // OK, we are going offline, to retry later:
                 _status.level = kC4Offline;
-                _replicator = nullptr;
 
-                if (transient || _reachable) {
+                if (transient || statusFlag(kC4HostReachable)) {
                     // On transient error, retry periodically, with exponential backoff:
                     unsigned delay = retryDelay(++_retryCount);
                     logError("Transient error (%s); attempt #%u in %u sec...",
@@ -162,7 +191,7 @@ namespace c4Internal {
 
         // Returns the maximum number of (failed) retry attempts.
         unsigned maxRetryCount() const {
-            auto maxRetries = options().properties[kC4ReplicatorOptionMaxRetries];
+            auto maxRetries = _options.properties[kC4ReplicatorOptionMaxRetries];
             if (maxRetries.type() == kFLNumber)
                 return unsigned(maxRetries.asUnsigned());
             else if (continuous())
@@ -187,7 +216,7 @@ namespace c4Internal {
         // Options to pass to the C4Socket
         alloc_slice socketOptions() const {
             string protocolString = string(Connection::kWSProtocolName) + kReplicatorProtocolName;
-            Replicator::Options opts(kC4Disabled, kC4Disabled, _params.optionsDictFleece);
+            Replicator::Options opts(kC4Disabled, kC4Disabled, _options.properties);
             opts.setProperty(slice(kC4SocketOptionWSProtocols), protocolString.c_str());
             return opts.properties.data();
         }
@@ -195,9 +224,9 @@ namespace c4Internal {
 
     private:
         alloc_slice const       _url;
+        const C4SocketFactory*  _socketFactory;
         litecore::actor::Timer  _retryTimer;
         unsigned                _retryCount {0};
-        bool                    _reachable {true};
     };
 
 }

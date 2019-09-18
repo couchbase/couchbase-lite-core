@@ -63,11 +63,19 @@ extern "C" {
         uint64_t    documentCount;      ///< Number of documents transferred so far
     } C4Progress;
 
+    /** Flags relating to a replicator's connection state. */
+    typedef C4_OPTIONS(int32_t, C4ReplicatorStatusFlags) {
+        kC4WillRetry     = 0x1,         ///< If true, will automatically reconnect when offline
+        kC4HostReachable = 0x2,         ///< If false, it's not possible to connect to the host
+        kC4Suspended     = 0x4          ///< If true, will not connect until unsuspended
+    };
+
     /** Current status of replication. Passed to `C4ReplicatorStatusChangedCallback`. */
     typedef struct {
         C4ReplicatorActivityLevel level;
         C4Progress progress;
         C4Error error;
+        C4ReplicatorStatusFlags flags;
     } C4ReplicatorStatus;
 
     /** Information about a document that's been pushed or pulled. */
@@ -180,7 +188,7 @@ extern "C" {
         @param params Replication parameters (see above.)
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
-    C4Replicator* c4repl_newLocal(C4Database* db,
+    C4Replicator* c4repl_newLocal(C4Database* db C4NONNULL,
                                   C4Database* otherLocalDB C4NONNULL,
                                   C4ReplicatorParameters params,
                                   C4Error *outError) C4API;
@@ -200,38 +208,52 @@ extern "C" {
 
     /** Frees a replicator reference.
         Does not stop the replicator -- if the replicator still has other internal references,
-        it will keep going. If you need the replicator to stop, call `c4repl_stop()` first. */
+        it will keep going. If you need the replicator to stop, call \ref c4repl_stop first.
+        \note This function is thread-safe. */
     void c4repl_free(C4Replicator* repl) C4API;
 
-    /** Tells a replicator to start.
-        **Only call this if you set \ref dontStart in the \ref C4ReplicatorParameters !!** */
+    /** Tells a replicator to start. Ignored if it's not in the Stopped state.
+        \note This function is thread-safe.  */
     void c4repl_start(C4Replicator* repl C4NONNULL) C4API;
 
-    /** Tells a replicator to stop. */
+    /** Tells a replicator to stop. Ignored if in the Stopped state.
+        This function is thread-safe.  */
     void c4repl_stop(C4Replicator* repl C4NONNULL) C4API;
 
     /** Tells a replicator that's in the offline state to reconnect immediately.
+        \note This function is thread-safe.
         @param repl  The replicator.
         @param outError  On failure, error information is stored here.
         @return  True if the replicator will reconnect, false if it won't. */
     bool c4repl_retry(C4Replicator* repl C4NONNULL, C4Error *outError) C4API;
 
-    /** Returns true if the replicator is in Offline state and waiting to retry connecting.
-        If it's offline but this returns false, it means you the client are responsible for
-        calling \ref c4repl_retry when appropriate, e.g. when the network configuration changes. */
-    bool c4repl_willRetry(C4Replicator* repl C4NONNULL) C4API;
-
     /** Informs the replicator whether it's considered possible to reach the remote host with
         the current network configuration. The default value is true. This only affects the
         replicator's behavior while it's in the Offline state:
         * Setting it to false will cancel any pending retry and prevent future automatic retries.
-        * Setting it back to true will initiate an immediate retry. */
+        * Setting it back to true will initiate an immediate retry.
+        \note This function is thread-safe. */
     void c4repl_setHostReachable(C4Replicator* repl C4NONNULL, bool reachable) C4API;
 
-    /** Returns the current state of a replicator. */
+    /** Puts the replicator in or out of "suspended" state.
+        * Setting suspended=true causes the replicator to disconnect and enter Offline state;
+          it will not attempt to reconnect while it's suspended.
+        * Setting suspended=false causes the replicator to attempt to reconnect, _if_ it was
+          connected when suspended, and is still in Offline state.
+        \note This function is thread-safe. */
+    void c4repl_setSuspended(C4Replicator* repl C4NONNULL, bool suspended) C4API;
+
+    /** Sets the replicator's options dictionary.
+        The changes will take effect next time the replicator connects.
+        \note This function is thread-safe.  */
+    void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) C4API;
+
+    /** Returns the current state of a replicator.
+        This function is thread-safe.  */
     C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl C4NONNULL) C4API;
 
-    /** Returns the HTTP response headers as a Fleece-encoded dictionary. */
+    /** Returns the HTTP response headers as a Fleece-encoded dictionary.
+        \note This function is thread-safe.  */
     C4Slice c4repl_getResponseHeaders(C4Replicator *repl C4NONNULL) C4API;
 
 

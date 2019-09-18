@@ -245,13 +245,18 @@ bool c4repl_retry(C4Replicator* repl, C4Error *outError) C4API {
 }
 
 
-bool c4repl_willRetry(C4Replicator* repl) C4API {
-    return repl->willRetry();
+void c4repl_setHostReachable(C4Replicator* repl, bool reachable) C4API {
+    repl->setHostReachable(reachable);
 }
 
 
-void c4repl_setHostReachable(C4Replicator* repl, bool reachable) C4API {
-    repl->setHostReachable(reachable);
+void c4repl_setSuspended(C4Replicator* repl, bool suspended) C4API {
+    repl->setSuspended(suspended);
+}
+
+
+void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) C4API {
+    repl->setProperties(AllocedDict(optionsDictFleece));
 }
 
 

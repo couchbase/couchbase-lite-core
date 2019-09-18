@@ -154,11 +154,13 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     ExpectingExceptions x;
     _address.hostname = C4STR("localhost");
     _address.port = 1;  // wrong port!
+    _mayGoOffline = true;
     replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == POSIXDomain);
     CHECK(_callbackStatus.error.code == ECONNREFUSED);
     CHECK(_callbackStatus.progress.unitsCompleted == 0);
     CHECK(_callbackStatus.progress.unitsTotal == 0);
+    CHECK(_wentOffline);
     CHECK(_numCallbacksWithLevel[kC4Busy] == 0);
     CHECK(_numCallbacksWithLevel[kC4Idle] == 0);
 }

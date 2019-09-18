@@ -162,7 +162,12 @@ public:
         _numCallbacksWithLevel[(int)s.level]++;
         if (s.level == kC4Busy)
             Assert(s.error.code == 0);                          // Busy state shouldn't have error
-
+        if (s.level == kC4Offline) {
+            Assert(_mayGoOffline);
+            _wentOffline = true;
+            Assert((s.flags & kC4WillRetry) != 0);
+        }
+        
         if (!_headers) {
             _headers = AllocedDict(alloc_slice(c4repl_getResponseHeaders(_repl)));
             if (!!_headers) {
@@ -224,6 +229,7 @@ public:
         memset(_numCallbacksWithLevel, 0, sizeof(_numCallbacksWithLevel));
         _docPushErrors = _docPullErrors = { };
         _docsEnded = 0;
+        _wentOffline = false;
 
         if (push > kC4Passive && (slice(_remoteDBName).hasPrefix("scratch"_sl))
                 && !db2 && !_flushedScratch) {
@@ -397,5 +403,7 @@ public:
     set<string> _expectedDocPushErrors, _expectedDocPullErrors;
     int _counter {0};
     bool _logRemoteRequests {true};
+    bool _mayGoOffline {false};
+    bool _wentOffline {false};
 };
 

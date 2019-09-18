@@ -27,6 +27,7 @@
 #include "Headers.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include <atomic>
 
 using namespace std;
 using namespace fleece;
@@ -50,9 +51,8 @@ struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
         return false;
     }
 
-    virtual bool willRetry() const                  {return false;}
-
     virtual void setHostReachable(bool reachable)   { }
+    virtual void setSuspended(bool suspended)       { }
 
     alloc_slice responseHeaders() {
         LOCK(_mutex);
@@ -66,30 +66,44 @@ struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
 
     virtual void stop() {
         LOCK(_mutex);
-        if (_replicator)
+        if (_replicator) {
             _replicator->stop();
+        } else if (_status.level != kC4Stopped) {
+            _status.level = kC4Stopped;
+            _status.progress = {};
+            notifyStateChanged();
+        }
+    }
+
+    virtual void setProperties(AllocedDict properties) {
+        LOCK(_mutex);
+        _options.properties = properties;
     }
 
     // Prevents any future client callbacks (called by `c4repl_free`.)
     void detach() {
         LOCK(_mutex);
-        _params.onStatusChanged  = nullptr;
-        _params.onDocumentsEnded = nullptr;
-        _params.onBlobProgress   = nullptr;
-        _params.callbackContext  = nullptr;
+        _onStatusChanged  = nullptr;
+        _onDocumentsEnded = nullptr;
+        _onBlobProgress   = nullptr;
     }
 
     bool continuous() const {
-        return _params.push == kC4Continuous || _params.pull == kC4Continuous;
+        return _options.push == kC4Continuous || _options.pull == kC4Continuous;
     }
 
 protected:
     // base constructor
-    C4Replicator(C4Database* db, const C4ReplicatorParameters &params)
+    C4Replicator(C4Database* db NONNULL, const C4ReplicatorParameters &params)
     :Logging(SyncLog)
     ,_database(db)
-    ,_params(params)
-    { }
+    ,_options(params)
+    ,_onStatusChanged(params.onStatusChanged)
+    ,_onDocumentsEnded(params.onDocumentsEnded)
+    ,_onBlobProgress(params.onBlobProgress)
+    {
+        _status.flags |= kC4HostReachable;
+    }
 
 
     virtual std::string loggingClassName() const override {
@@ -97,24 +111,40 @@ protected:
     }
 
 
-    // Returns the `Options` to pass to the `Replicator` instance
-    Replicator::Options options() const {
-        Replicator::Options opts(_params.push, _params.pull, _params.optionsDictFleece);
-        opts.pushFilter = _params.pushFilter;
-        opts.pullValidator = _params.validationFunc;
-        opts.callbackContext = _params.callbackContext;
-        return opts;
+    inline bool statusFlag(C4ReplicatorStatusFlags flag) {
+        return (_status.flags & flag) != 0;
+    }
+
+
+    bool setStatusFlag(C4ReplicatorStatusFlags flag, bool on) {
+        auto flags = _status.flags;
+        if (on)
+            flags |= flag;
+        else
+            flags &= ~flag;
+        if (flags == _status.flags)
+            return false;
+        _status.flags = flags;
+        return true;
+    }
+
+
+    void updateStatusFromReplicator(C4ReplicatorStatus status) {
+        // The Replicator doesn't use the flags, so don't copy them:
+        auto flags = _status.flags;
+        _status = status;
+        _status.flags = flags;
     }
 
 
     // Base implementation of starting the replicator.
     // Subclass implementation of `start` must call this (with the mutex locked).
-    virtual void _start(Replicator *replicator) {
+    virtual void _start(Retained<Replicator> replicator) {
         logInfo("Starting Replicator %s", replicator->loggingName().c_str());
         DebugAssert(!_replicator);
-        _status = replicator->status();
+        updateStatusFromReplicator(replicator->status());
         _selfRetain = this; // keep myself alive till Replicator stops
-        _replicator = replicator;
+        _replicator = move(replicator);
         _replicator->start();
     }
 
@@ -144,18 +174,20 @@ protected:
             if (repl != _replicator)
                 return;
             auto oldLevel = _status.level;
-            _status = newStatus;
+            updateStatusFromReplicator(newStatus);
             if (_status.level > kC4Connecting && oldLevel <= kC4Connecting)
                 handleConnected();
-            if (_status.level == kC4Stopped && _status.error.code)
-                handleError(_status.error);     // NOTE: handleError may change _status
+            if (_status.level == kC4Stopped) {
+                _replicator = nullptr;
+                handleStopped();     // NOTE: handleStopped may change _status
+            }
             stopped = (_status.level == kC4Stopped);
         }
         
         notifyStateChanged();
 
         if (stopped)
-            _selfRetain = nullptr; // balances retain in constructor
+            _selfRetain = nullptr; // balances retain in `_start`
     }
 
 
@@ -164,13 +196,6 @@ protected:
                           const std::vector<Retained<ReplicatedRev>>& revs) override
     {
         if (repl != _replicator)
-            return;
-        C4ReplicatorDocumentsEndedCallback onDocsEnded;
-        {
-            LOCK(_mutex);
-            onDocsEnded = _params.onDocumentsEnded;
-        }
-        if (!onDocsEnded)
             return;
 
         auto nRevs = revs.size();
@@ -182,8 +207,12 @@ protected:
                 if ((rev->dir() == Dir::kPushing) == pushing)
                     docsEnded.push_back(rev->asDocumentEnded());
             }
-            if (!docsEnded.empty())
-                onDocsEnded(this, pushing, docsEnded.size(), docsEnded.data(), _params.callbackContext);
+            if (!docsEnded.empty()) {
+                auto onDocsEnded = _onDocumentsEnded.load();
+                if (onDocsEnded)
+                    onDocsEnded(this, pushing, docsEnded.size(), docsEnded.data(),
+                                _options.callbackContext);
+            }
         }
     }
 
@@ -194,11 +223,7 @@ protected:
     {
         if (repl != _replicator)
             return;
-        C4ReplicatorBlobProgressCallback onBlob;
-        {
-            LOCK(_mutex);
-            onBlob = _params.onBlobProgress;
-        }
+        auto onBlob = _onBlobProgress.load();
         if (onBlob)
             onBlob(this, (p.dir == Dir::kPushing),
                    {p.docID.buf, p.docID.size},
@@ -206,7 +231,7 @@ protected:
                    p.key,
                    p.bytesCompleted, p.bytesTotal,
                    p.error,
-                   _params.callbackContext);
+                   _options.callbackContext);
     }
 
 
@@ -217,9 +242,9 @@ protected:
     virtual void handleConnected() { }
 
 
-    // Called when the `Replicator` instance stops with an error, before notifying the client.
+    // Called when the `Replicator` instance stops, before notifying the client.
     // Subclass override may modify `_status` to change the client notification.
-    virtual void handleError(C4Error) { }
+    virtual void handleStopped() { }
 
 
     // Posts a notification to the client.
@@ -241,21 +266,23 @@ protected:
             }
         }
 
-        C4ReplicatorStatusChangedCallback onStatusChanged;
-        {
-            LOCK(_mutex);
-            onStatusChanged = _params.onStatusChanged;
-        }
+        auto onStatusChanged = _onStatusChanged.load();
         if (onStatusChanged)
-            onStatusChanged(this, _status, _params.callbackContext);
+            onStatusChanged(this, _status, _options.callbackContext);
     }
 
-    mutex _mutex;
+
+    mutex                       _mutex;
     Retained<C4Database> const  _database;
-    C4ReplicatorParameters      _params;
+    Replicator::Options         _options;
 
     Retained<Replicator>        _replicator;
-    alloc_slice                 _responseHeaders;
     C4ReplicatorStatus          _status {kC4Stopped};
+
+private:
+    alloc_slice                 _responseHeaders;
     Retained<C4Replicator>      _selfRetain;            // Keeps me from being deleted
+    atomic<C4ReplicatorStatusChangedCallback>   _onStatusChanged;
+    atomic<C4ReplicatorDocumentsEndedCallback>  _onDocumentsEnded;
+    atomic<C4ReplicatorBlobProgressCallback>    _onBlobProgress;
 };

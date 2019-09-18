@@ -166,8 +166,9 @@ _c4repl_start
 _c4repl_stop
 _c4repl_getStatus
 _c4repl_retry
-_c4repl_willRetry
+_c4repl_setOptions
 _c4repl_setHostReachable
+_c4repl_setSuspended
 
 _c4socket_registerFactory
 _c4socket_fromNative
