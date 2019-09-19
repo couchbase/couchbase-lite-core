@@ -322,13 +322,14 @@ extern "C" {
 
     // Proxy dictionary keys:
     #define kC4ReplicatorProxyType      "type"           ///< Proxy type; see below (string)
-    #define kC4ReplicatorProxyURL       "URL"            ///< Proxy URL (string)
+    #define kC4ReplicatorProxyHost      "host"           ///< Proxy hostname (string)
+    #define kC4ReplicatorProxyPort      "port"           ///< Proxy port number (integer)
     #define kC4ReplicatorProxyAuth      "auth"           ///< Proxy auth (Dict); see above
 
     // proxy.type values:
     #define kC4ProxyTypeNone            "none"           ///< Use no proxy (overrides system setting)
-    #define kC4ProxyTypeHTTP            "HTTP"           ///< HTTP(S) proxy
-    #define kC4ProxyTypeCONNECT         "CONNECT"        ///< Tunnel using HTTP CONNECT method
+    #define kC4ProxyTypeHTTP            "HTTP"           ///< HTTP proxy (using CONNECT method)
+    #define kC4ProxyTypeHTTPS           "HTTPS"          ///< HTTPS proxy (using CONNECT method)
     #define kC4ProxyTypeSOCKS           "SOCKS"          ///< SOCKS proxy
 
     /** @} */

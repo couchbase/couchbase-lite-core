@@ -63,7 +63,7 @@ namespace litecore { namespace net {
         // -------- Proxies:
 
         /// Specifies a proxy server to use.
-        void setProxy(nonstd::optional<ProxySpec> p)                {_proxy = p;}
+        void setProxy(nonstd::optional<ProxySpec> p);
         nonstd::optional<ProxySpec> proxy()                         {return _proxy;}
 
         /// Specifies a default proxy server to use for _all_ future requests.
@@ -173,6 +173,7 @@ namespace litecore { namespace net {
         alloc_slice _authHeader;                        // Value of Authorization header to send
         CookieProvider* _cookieProvider {nullptr};      // HTTP cookie storage
         nonstd::optional<ProxySpec> _proxy;             // Proxy settings
+        nonstd::optional<Address> _proxyAddress;        // Proxy converted to Address
 
         static nonstd::optional<ProxySpec> sDefaultProxy; // Default proxy settings
 

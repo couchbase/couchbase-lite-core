@@ -67,16 +67,22 @@ namespace litecore { namespace net {
     }
 
 
-    const Address& HTTPLogic::directAddress() {
-        if (!_proxy)
-            return _address;
+    void HTTPLogic::setProxy(nonstd::optional<ProxySpec> p) {
+        _proxy = p;
+        if (_proxy)
+            _proxyAddress = Address(*_proxy);
         else
-            return _proxy->address;
+            _proxyAddress.reset();
+    }
+
+
+    const Address& HTTPLogic::directAddress() {
+        return _proxy ? *_proxyAddress : _address;
     }
 
 
     bool HTTPLogic::connectingToProxy() {
-        return _proxy && _proxy->type == ProxyType::CONNECT && _lastDisposition != kContinue;
+        return _proxy && _isWebSocket && _lastDisposition != kContinue;
     }
 
 
@@ -89,7 +95,7 @@ namespace litecore { namespace net {
     string HTTPLogic::requestToSend() {
         if (_lastDisposition == kAuthenticate) {
             if (_httpStatus == HTTPStatus::ProxyAuthRequired)
-                Assert(_proxy && _proxy->authHeader);
+                Assert(_proxy && _proxy->username);
             else
                 Assert(_authHeader);
         }
@@ -109,8 +115,8 @@ namespace litecore { namespace net {
               "Host: " << string(slice(_address.hostname)) << ':' << _address.port << "\r\n";
         addHeader(rq, "User-Agent", _userAgent);
 
-        if (_proxy)
-            addHeader(rq, "Proxy-Authorization", _proxy->authHeader);
+        if (_proxy && _proxy->username)
+            addHeader(rq, "Proxy-Authorization", basicAuth(_proxy->username, _proxy->password));
 
         if (!connectingToProxy()) {
             if (_authChallenged)                                    // don't send auth until challenged
@@ -190,7 +196,7 @@ namespace litecore { namespace net {
                 return handleAuthChallenge("Www-Authenticate"_sl, false);
             case HTTPStatus::ProxyAuthRequired:
                 if (_proxy)
-                    _proxy->authHeader = nullslice;
+                    _proxy->username = _proxy->password = nullslice;
                 return handleAuthChallenge("Proxy-Authenticate"_sl, true);
             case HTTPStatus::Upgraded:
                 return handleUpgrade();
@@ -280,13 +286,15 @@ namespace litecore { namespace net {
 
 
     HTTPLogic::Disposition HTTPLogic::handleAuthChallenge(slice headerName, bool forProxy) {
+        if (forProxy)
+            Assert(_proxy);
         string authHeader(_responseHeaders[headerName]);
         // Parse the Authenticate header:
         regex authEx(R"((\w+)\s+(\w+)=((\w+)|"([^"]+)))");     // e.g. Basic realm="Foobar"
         smatch m;
         if (!regex_search(authHeader, m, authEx))
             return failure(WebSocketDomain, 400);
-        AuthChallenge challenge(forProxy ? _proxy->address : _address, forProxy);
+        AuthChallenge challenge((forProxy ? *_proxyAddress : _address), forProxy);
         challenge.type = m[1].str();
         challenge.key = m[2].str();
         challenge.value = m[4].str();

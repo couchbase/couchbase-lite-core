@@ -80,11 +80,8 @@ public:
             _remoteDBName = c4str(remoteDB);
         const char *proxyURL = getenv("REMOTE_PROXY");
         if (proxyURL) {
-            ProxyType type = ProxyType::HTTP;
-            const char *proxyTypeStr = getenv("REMOTE_PROXY_TYPE");
-            if (proxyTypeStr && 0 == strcmp(proxyTypeStr, "CONNECT"))
-                type = ProxyType::CONNECT;
-            _proxy = make_unique<ProxySpec>(type, slice(proxyURL));
+            Address proxyAddr{slice(proxyURL)};
+            _proxy = make_unique<ProxySpec>(proxyAddr);
         }
 
         _onDocsEnded = onDocsEnded;

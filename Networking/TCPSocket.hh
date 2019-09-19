@@ -93,7 +93,7 @@ namespace litecore { namespace net {
         /// Those that are completely written are removed from the head of the vector.
         /// One that's partially written has its `buf` and `size` adjusted to cover only the
         /// unsent bytes. (This will always be the 1st in the vector on return.)
-        ssize_t write(std::vector<fleece::slice> &ioByteRanges);
+        ssize_t write(std::vector<fleece::slice> &ioByteRanges) MUST_USE_RESULT;
 
         bool atWriteEOF() const                         {return _eofOnWrite;}
 

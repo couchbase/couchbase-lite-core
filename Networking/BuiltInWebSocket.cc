@@ -252,19 +252,21 @@ namespace litecore { namespace websocket {
             ProxyType type;
             if (typeStr == slice(kC4ProxyTypeHTTP))
                 type = ProxyType::HTTP;
-            else if (typeStr == slice(kC4ProxyTypeCONNECT))
-                type = ProxyType::CONNECT;
+            else if (typeStr == slice(kC4ProxyTypeHTTPS))
+                type = ProxyType::HTTPS;
             else
                 return false;
+            ProxySpec proxy(type,
+                            proxyOpt[kC4ReplicatorProxyHost].asString(),
+                            uint16_t(proxyOpt[kC4ReplicatorProxyPort].asInt()));
             Dict auth = proxyOpt[kC4ReplicatorProxyAuth].asDict();
             if (auth) {
-                Warn("BuiltInWebSocket: Proxy auth is unimplemented");
-                return false; // TODO: Proxy auth
+                proxy.username = auth[kC4ReplicatorAuthUserName].asString();
+                proxy.password = auth[kC4ReplicatorAuthPassword].asString();
+                if (!proxy.username)
+                    return false;
             }
-            try {
-                ProxySpec proxy {type, Address(proxyOpt[kC4ReplicatorProxyURL].asString())};
-                logic.setProxy(proxy);
-            } catch (...) {return false;}   // Address constructor throws on invalid URL
+            logic.setProxy(proxy);
         }
         return true;
     }

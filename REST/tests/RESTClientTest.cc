@@ -42,7 +42,7 @@ using namespace litecore::net;
 class RESTClientTest : public ReplicatorAPITest {
 public:
 #if TEST_PROXIES
-    static const int numberOfOptions = 3;
+    static const int numberOfOptions = 2;
 #else
     static const int numberOfOptions = 1;
 #endif
@@ -50,17 +50,13 @@ public:
     RESTClientTest(int option)
     :ReplicatorAPITest()
     {
-        if (!_proxy)
-            _proxy = make_unique<ProxySpec>(ProxyType::HTTP, "http://localhost:8888"_sl);
         if (option == 0) {
             _proxy = nullptr;
             fprintf(stderr, "        --- No proxy ---\n");
         } else if (option == 1) {
-            _proxy->type = ProxyType::HTTP;
+            if (!_proxy)
+                _proxy = make_unique<ProxySpec>(ProxyType::HTTP, "localhost"_sl, uint16_t(8888));
             fprintf(stderr, "        --- HTTP proxy ---\n");
-        } else if (option == 2) {
-            _proxy->type = ProxyType::CONNECT;
-            fprintf(stderr, "        --- CONNECT proxy ---\n");
         }
     }
 

@@ -82,18 +82,27 @@ namespace litecore { namespace net {
     /// Types of proxy servers.
     enum class ProxyType {
         HTTP,
-        CONNECT,
+        HTTPS,
         //SOCKS,      // TODO: Add SOCKS support
     };
 
     /// Proxy configuration, used by HTTPLogic.
     struct ProxySpec {
         ProxyType           type;
-        Address             address;
-        fleece::alloc_slice authHeader;
+        fleece::alloc_slice hostname;
+        uint16_t            port;
+        fleece::alloc_slice username;
+        fleece::alloc_slice password;
 
-        ProxySpec(ProxyType t, fleece::slice URL)       :type(t), address(URL) { }
-        ProxySpec(ProxyType t, const C4Address &a)      :type(t), address(a) { }
+        explicit ProxySpec(const C4Address&);
+
+        ProxySpec(ProxyType t, fleece::slice host, uint16_t port_)
+        :type(t), hostname(host), port(port_) { }
+
+        ProxySpec(ProxyType t, const C4Address &a)
+        :type(t), hostname(a.hostname), port(a.port) { }
+
+        explicit operator Address () const;
     };
 
 } }
