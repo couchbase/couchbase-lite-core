@@ -87,6 +87,7 @@ public:
         _onDocsEnded = onDocsEnded;
     }
 
+#ifdef COUCHBASE_ENTERPRISE
     // Create an empty database db2 and make it the target of the replication
     void createDB2() {
         auto db2Path = TempDir() + "cbl_core_test2.cblite2";
@@ -102,6 +103,7 @@ public:
         _address = { };
         _remoteDBName = nullslice;
     }
+#endif
 
     AllocedDict options() {
         Encoder enc;
@@ -245,10 +247,15 @@ public:
         params.callbackContext = this;
         params.socketFactory = _socketFactory;
 
-        if (_remoteDBName.buf)
+        if (_remoteDBName.buf) {
             _repl = c4repl_new(db, _address, _remoteDBName, params, err);
-        else
+        } else {
+#ifdef COUCHBASE_ENTERPRISE
             _repl = c4repl_newLocal(db, db2, params, err);
+#else
+            FAIL("Local replication not supported in CE");
+#endif
+        }
         if (!_repl)
             return false;
         c4repl_start(_repl);

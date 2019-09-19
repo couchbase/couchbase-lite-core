@@ -182,6 +182,7 @@ extern "C" {
                              C4ReplicatorParameters params,
                              C4Error *outError) C4API;
 
+#ifdef COUCHBASE_ENTERPRISE
     /** Creates a new replicator to another local database.
         @param db  The local database.
         @param otherLocalDB  The other local database.
@@ -192,6 +193,7 @@ extern "C" {
                                   C4Database* otherLocalDB C4NONNULL,
                                   C4ReplicatorParameters params,
                                   C4Error *outError) C4API;
+#endif
 
     /** Creates a new replicator from an already-open C4Socket. This is for use by listeners
         that accept incoming connections, wrap them by calling `c4socket_fromNative()`, then

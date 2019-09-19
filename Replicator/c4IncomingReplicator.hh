@@ -10,8 +10,8 @@
 #include "c4Replicator.hh"
 #include "c4Socket+Internal.hh"
 
-
 namespace c4Internal {
+    using namespace litecore::websocket;
 
     /** A passive replicator handling an incoming WebSocket connection, for P2P. */
     class C4IncomingReplicator : public C4Replicator {

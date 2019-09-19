@@ -180,6 +180,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
 }
 
 
+#ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
@@ -190,8 +191,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[C][Push]") {
     CHECK(_docsEnded == 100);
     REQUIRE(c4db_getDocumentCount(db2) == 100);
 }
+#endif
 
 
+#ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Push][Pull]") {
     createRev("doc"_sl, kRevID, kFleeceBody);
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
@@ -210,6 +213,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
     REQUIRE(c4doc_selectParentRevision(doc));
     CHECK(doc->selectedRev.revID == kRevID);
 }
+#endif
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]") {
@@ -232,6 +236,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]
 }
 
 
+#ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
@@ -251,8 +256,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
     CHECK(_docsEnded == 45);
     CHECK(c4db_getDocumentCount(db2) == 45);
 }
+#endif
 
 // CBL-221
+#ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]") {
     createDB2();
     // Need a large enough data set so that the pulled documents come
@@ -277,3 +284,4 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]")
     // failure that cannot be detected from the outside)
     CHECK(c4db_getDocumentCount(db) == _docsEnded);
 }
+#endif

@@ -18,7 +18,9 @@
 
 #include "fleece/Fleece.hh"
 #include "c4RemoteReplicator.hh"
+#ifdef COUCHBASE_ENTERPRISE
 #include "c4LocalReplicator.hh"
+#endif
 #include "c4IncomingReplicator.hh"
 #include "c4ExceptionUtils.hh"
 #include "DatabaseCookies.hh"
@@ -184,6 +186,7 @@ C4Replicator* c4repl_new(C4Database* db,
 }
 
 
+#ifdef COUCHBASE_ENTERPRISE
 C4Replicator* c4repl_newLocal(C4Database* db,
                               C4Database* otherLocalDB C4NONNULL,
                               C4ReplicatorParameters params,
@@ -204,6 +207,7 @@ C4Replicator* c4repl_newLocal(C4Database* db,
     } catchError(outError);
     return nullptr;
 }
+#endif
 
 
 C4Replicator* c4repl_newWithWebSocket(C4Database* db,
