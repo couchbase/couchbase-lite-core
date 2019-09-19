@@ -59,7 +59,7 @@ namespace litecore { namespace repl {
 
 
     RevToSend::RevToSend(const C4DocumentInfo &info)
-    :ReplicatedRev(info.docID, info.revID, info.sequence)
+    :ReplicatedRev(slice(info.docID), slice(info.revID), info.sequence)
     ,bodySize(info.bodySize)
     ,expiration(info.expiration)
     {

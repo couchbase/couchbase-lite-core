@@ -48,9 +48,10 @@ namespace litecore { namespace repl {
         virtual void trim() =0;
 
     protected:
-        template <class SLICE1, class SLICE2>
-        ReplicatedRev(SLICE1 docID_, SLICE2 revID_, C4SequenceNumber sequence_ =0)
-        :docID(docID_), revID(revID_), sequence(sequence_)
+        ReplicatedRev(slice docID_, slice revID_, C4SequenceNumber sequence_ =0)
+        :docID(alloc_slice::nullPaddedString(docID_))
+        ,revID(alloc_slice::nullPaddedString(revID_))
+        ,sequence(sequence_)
         { }
 
         ~ReplicatedRev() =default;
