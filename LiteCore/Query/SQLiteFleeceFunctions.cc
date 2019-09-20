@@ -22,6 +22,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.h"
+#include "DeepIterator.hh"
 #include <sstream>
 
 using namespace fleece;
@@ -30,10 +31,6 @@ using namespace std;
 
 namespace litecore {
 
-    static void handle_fts_array(const Value* data, alloc_slice& result);
-    static void handle_fts_dict(const Value* data, alloc_slice& result);
-
-    
     // Core SQLite functions for accessing values inside Fleece blobs.
 
 
@@ -107,57 +104,25 @@ namespace litecore {
         }
     }
 
-    static void handle_fts_value(const Value* data, alloc_slice& result) {
+    static void handle_fts_value(const Value* data, stringstream& result) {
+        if(_usuallyFalse(!data)) {
+            Warn("Null value received in handle_fts_value");
+            return;
+        }
+
         switch(data->type()) {
             case kBoolean:
-                result.append(data->asBool() ? "T"_sl : "F"_sl);
+                result << (data->asBool() ? "T" : "F");
                 break;
             case kNumber:
             {
-                string resultStr;
-                if(data->isInteger()) {
-                    if(data->isUnsigned()) {
-                        resultStr = to_string(data->asUnsigned());
-                    } else {
-                        resultStr = to_string(data->asInt());
-                    }
-                } else {
-                    stringstream ss;
-                    if(data->isDouble()) {
-                        ss << data->asDouble();
-                    } else {
-                        ss << data->asFloat();
-                    }
-
-                    resultStr = ss.str();
-                }
-
-                result.append(slice(resultStr));
+                const alloc_slice stringified = data->toString();
+                result << stringified.asString();
                 break;
             }
             case kString:
-                result.append(data->asString());
+                result << data->asString().asString();
                 break;
-            case kArray:
-                handle_fts_array(data, result);
-                break;
-            case kDict:
-                handle_fts_dict(data, result);
-                break;
-        }
-    }
-
-    static void handle_fts_array(const Value* data, alloc_slice& result) {
-        for (Array::iterator j(data->asArray()); j; ++j) {
-            handle_fts_value(j.value(), result);
-            result.append(" "_sl);
-        }
-    }
-
-    static void handle_fts_dict(const Value* data, alloc_slice& result) {
-        for (Dict::iterator j(data->asDict()); j; ++j) {
-            handle_fts_value(j.value(), result);
-            result.append(" "_sl);
         }
     }
 
@@ -166,13 +131,17 @@ namespace litecore {
         try {
             QueryFleeceScope scope(ctx, argv);
             if(scope.root == nullptr) {
-                setResultFromValue(ctx, scope.root);
                 return;
             } 
 
-            alloc_slice result;
-            handle_fts_value(scope.root, result);
-            setResultBlobFromFleeceData(ctx, result);
+            stringstream result;
+            for (DeepIterator j(scope.root); j; ++j) {
+                handle_fts_value(j.value(), result);
+                result << " ";
+            }
+
+            const string resultStr = result.str();
+            setResultTextFromSlice(ctx, slice(resultStr.substr(0, resultStr.size() - 1)));
         } catch(const std::exception &) {
             sqlite3_result_error(ctx, "fl_nested_value: exception!", -1);
         }
