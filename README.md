@@ -1,6 +1,8 @@
 **Couchbase Lite Core** (aka **LiteCore**) is the next-generation core storage and query engine for [Couchbase Lite][CBL]. It provides a cross-platform implementation of the database CRUD and query features, document versioning, and replication/sync.
 
-All platform implementations of Couchbase Lite (from 2.0 onward) are built atop this core, adding higher-level language & platform bindings. But LiteCore may find other uses too, perhaps for applications that want a fast minimalist data store with map/reduce indexing and queries, but don't need the higher-level features of Couchbase Lite.
+All platform implementations of Couchbase Lite (from 2.0 onward) are built atop this core, adding higher-level language & platform bindings.
+
+**IMPORTANT:** We do _not_ recommend (or support) using LiteCore directly in other projects. Its API is unstable and can be tricky to use. Instead, use [Couchbase Lite for C][CBL_C], a cross-platform version of Couchbase Lite with a C (and C++) API.
 
 ![Travis CI status](https://travis-ci.org/couchbase/couchbase-lite-core.svg?branch=master)
 
@@ -18,6 +20,7 @@ All platform implementations of Couchbase Lite (from 2.0 onward) are built atop 
 * Direct querying of schemaless JSON documents:
     * Semantics based on SQL; supports most [N1QL][N1QL] functionality
     * JSON query syntax, similar to a parse tree; easy to generate from platform APIs like NSPredicate or LINQ
+    * N1QL parser that translates to the above JSON syntax
     * Can search and index arbitrary document properties without requiring any schema
     * Can index arrays in documents, enabling efficient denormalized one-to-many relations
     * Queries compile into SQL and from there into SQLite compiled bytecode
@@ -40,7 +43,7 @@ All platform implementations of Couchbase Lite (from 2.0 onward) are built atop 
 * Command-line `cblite` tool
     * Easy database inspection, document lookups and queries
     * Can run replications (push and/or pull)
-    * Can serve the REST API over HTTP
+    * Can serve a CouchDB-like REST API over HTTP
 * C and C++ APIs (rather low-level; not considered "public" APIs yet.)
 * Bindings to C# and Java
 
@@ -54,13 +57,15 @@ It does not currently support Raspberry Pi or other similar devices, due to buil
 
 # Status
 
-**As of November 2018:** LiteCore is in active use as the engine of Couchbase Lite 2.0 and 2.1! Development continues...
+**As of September 2019:** LiteCore is in active use as the engine of Couchbase Lite 2! Development continues...
 
 * Active development usually happens on the `master` branch, which may therefore be temporarily broken. We don't currently have a "stable" branch.
 * Most development is done on macOS using Xcode, so the Xcode project should always build, and the code should pass its unit tests on Mac. iOS is pretty likely to work too, since it's so similar to Mac at this level.
 * The CMake build is generally up to date but may fall behind.  CMake can be used to build every variant except for iOS and tvOS.
 
 # Building It
+
+We do _not_ recommend (or support) using LiteCore directly in other projects. Its API is unstable and can be tricky to use. (Instead see [Couchbase Lite for C][CBL_C], a cross-platform version of Couchbase Lite with a C (and C++) API.) The build instructions here are for the benefit of developers who want to debug or extend Couchbase Lite at the LiteCore level.
 
 **Very Important:**
 
@@ -70,7 +75,9 @@ Once you've cloned or downloaded the source tree...
 
 ## macOS, iOS
 
-If you want to use Objective-C or Swift APIs, you should use Couchbase Lite instead — check out and build the `feature/2.0` branch of the [couchbase-lite-ios][CBL_iOS_2] repo, which itself includes LiteCore as a submodule. The following instructions are to build just LiteCore on its own:
+If you want to use Objective-C or Swift APIs, you should use Couchbase Lite instead — check out and build the [couchbase-lite-ios][CBL_iOS_2] repo, which itself includes LiteCore as a submodule.
+
+The following instructions are to build just LiteCore on its own:
 
 * Make sure you have Xcode **10.0** or later.
 * Open **Xcode/LiteCore.xcodeproj**. 
@@ -192,6 +199,7 @@ Jens Alfke ([@snej](https://github.com/snej)), Jim Borden ([@borrrden](https://g
 Like all Couchbase open source code, this is released under the Apache 2 [license](LICENSE).
 
 [CBL]: http://www.couchbase.com/nosql-databases/couchbase-mobile
+[CBL_C]: https://github.com/couchbaselabs/couchbase-lite-C
 [N1QL]: https://www.couchbase.com/n1ql
 [FLEECE]: https://github.com/couchbaselabs/fleece
 [BLIP]: https://github.com/couchbaselabs/BLIP-Cpp/blob/master/docs/BLIP%20Protocol.md
