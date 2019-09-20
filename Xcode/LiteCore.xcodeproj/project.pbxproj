@@ -83,8 +83,6 @@
 		273E55661F79B535000182F1 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		273E55671F79B564000182F1 /* libSupport.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279691631ED4B29E0086565D /* libSupport.a */; };
 		273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
-		273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273E9ED31C506DB4003115A6 /* SecureDigest.hh */; };
-		273E9ED91C506DB4003115A6 /* SecureRandomize.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273E9ED41C506DB4003115A6 /* SecureRandomize.hh */; };
 		273E9F721C51612E003115A6 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
 		273E9F731C51612E003115A6 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
 		273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */; };
@@ -92,7 +90,6 @@
 		27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
 		2742D10C2305C25D003197E1 /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
 		27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */; };
-		274711CA2037BE5B008E9A5A /* SecureSymmetricCrypto.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274711C92037BE5A008E9A5A /* SecureSymmetricCrypto.cc */; };
 		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
@@ -258,6 +255,11 @@
 		27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8D1D4D3F3400D806E0 /* Transaction.h */; };
 		27D74A971D4D3F3400D806E0 /* VariadicBind.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8E1D4D3F3400D806E0 /* VariadicBind.h */; };
 		27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A9E1D4FF65000D806E0 /* c4Base.cc */; };
+		27D9655A23355DC900F4A51C /* SecureDigest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D965522334608B00F4A51C /* SecureDigest.cc */; };
+		27D9655C23355DC900F4A51C /* SecureSymmetricCrypto.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274711C92037BE5A008E9A5A /* SecureSymmetricCrypto.cc */; };
+		27D9655D2335663D00F4A51C /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
+		27D9655E2335664E00F4A51C /* SQLiteKeyStore+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */; };
+		27D9655F2335667A00F4A51C /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		27DD1513193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		27DE2E862125F32700123597 /* libactors.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DE2E852125F32700123597 /* libactors.a */; };
 		27DE2EE72125FAD600123597 /* libfleeceBase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DE2EE62125FAD600123597 /* libfleeceBase.a */; };
@@ -369,8 +371,6 @@
 		27FC8DB622135BCE0083B033 /* Pusher+DB.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DB522135BCE0083B033 /* Pusher+DB.cc */; };
 		27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DBC22135BDA0083B033 /* RevFinder.cc */; };
 		27FC8E77221399AC0083B033 /* LeafDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8E76221399AC0083B033 /* LeafDocument.cc */; };
-		27FC8E862214E4CA0083B033 /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
-		27FC8E8C2214E4EF0083B033 /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */; };
 		726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
@@ -1166,6 +1166,7 @@
 		27D965252330394C00F4A51C /* c4RemoteReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4RemoteReplicator.hh; sourceTree = "<group>"; };
 		27D9652A23303A2B00F4A51C /* c4LocalReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4LocalReplicator.hh; sourceTree = "<group>"; };
 		27D9652B23303B0C00F4A51C /* c4IncomingReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4IncomingReplicator.hh; sourceTree = "<group>"; };
+		27D965522334608B00F4A51C /* SecureDigest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SecureDigest.cc; sourceTree = "<group>"; };
 		27DD1511193CD005009A367D /* RevID.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevID.cc; sourceTree = "<group>"; };
 		27DD1512193CD005009A367D /* RevID.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevID.hh; sourceTree = "<group>"; };
 		27DF46C21A12CF46007BB4A4 /* Record.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Record.cc; sourceTree = "<group>"; };
@@ -1797,11 +1798,6 @@
 				273407211DEE116600EA5532 /* PlatformIO.cc */,
 				273407221DEE116600EA5532 /* PlatformIO.hh */,
 				2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */,
-				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
-				274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */,
-				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
-				274711C92037BE5A008E9A5A /* SecureSymmetricCrypto.cc */,
-				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
 				2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */,
 				2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */,
 				2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */,
@@ -1840,13 +1836,19 @@
 		2754616A22F21F3900DF87B0 /* Crypto */ = {
 			isa = PBXGroup;
 			children = (
-				2762A01B22EB933100F9AB18 /* mbedUtils.hh */,
-				2762A01C22EB933100F9AB18 /* mbedUtils.cc */,
+				27D965522334608B00F4A51C /* SecureDigest.cc */,
+				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
+				274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */,
+				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
+				274711C92037BE5A008E9A5A /* SecureSymmetricCrypto.cc */,
+				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
 				2762A00C22EA65E200F9AB18 /* Certificate.hh */,
 				2762A00D22EA65E200F9AB18 /* Certificate.cc */,
 				2762A01722EB92B900F9AB18 /* PublicKey.hh */,
 				2762A01822EB92B900F9AB18 /* PublicKey.cc */,
 				2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */,
+				2762A01B22EB933100F9AB18 /* mbedUtils.hh */,
+				2762A01C22EB933100F9AB18 /* mbedUtils.cc */,
 				275E6B9B22C29EDB0032362A /* build_setup.sh */,
 				2771A0EC228B832400B18E0A /* build_mbedtls.sh */,
 				2754622322FB3BC200DF87B0 /* tests */,
@@ -2651,7 +2653,6 @@
 				27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */,
 				27D74A911D4D3F3400D806E0 /* Column.h in Headers */,
 				27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */,
-				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
 				27D74A921D4D3F3400D806E0 /* Database.h in Headers */,
 				27ADA78B1F2AB6C800D9DE25 /* UnicodeCollator.hh in Headers */,
 				276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */,
@@ -2683,7 +2684,6 @@
 				278BD68D1EEB6756000DBF41 /* DatabaseCookies.hh in Headers */,
 				2728512B1EA46421009CA22F /* Request.hh in Headers */,
 				27D74A941D4D3F3400D806E0 /* SQLiteCpp.h in Headers */,
-				273E9ED91C506DB4003115A6 /* SecureRandomize.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3353,9 +3353,9 @@
 			files = (
 				27BF024A1FB62647003D5BB8 /* LibC++Debug.cc in Sources */,
 				2796916E1ED4B2D50086565D /* Error.cc in Sources */,
+				27D9655D2335663D00F4A51C /* SecureRandomize.cc in Sources */,
 				2796916F1ED4B2D50086565D /* FilePath.cc in Sources */,
 				2796917C1ED4B5780086565D /* Logging_Stub.cc in Sources */,
-				27FC8E862214E4CA0083B033 /* SecureRandomize.cc in Sources */,
 				275FA35222398875001C392D /* c4ExceptionUtils.cc in Sources */,
 				279691711ED4B2D50086565D /* StringUtil.cc in Sources */,
 			);
@@ -3458,7 +3458,6 @@
 				2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */,
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
-				27FC8E8C2214E4EF0083B033 /* SecureRandomize.cc in Sources */,
 				27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
 				27098A97216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */,
@@ -3479,7 +3478,6 @@
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
-				274711CA2037BE5B008E9A5A /* SecureSymmetricCrypto.cc in Sources */,
 				93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */,
 				27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,
@@ -3506,6 +3504,7 @@
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
 				2763012B1F3A36BD004A1592 /* StringUtil_Apple.mm in Sources */,
 				27098AA1216C1E88002751DA /* SQLitePredictionFunction.cc in Sources */,
+				27D9655A23355DC900F4A51C /* SecureDigest.cc in Sources */,
 				27ADA7891F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc in Sources */,
 				274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */,
 				27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */,
@@ -3531,6 +3530,7 @@
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */,
+				27D9655F2335667A00F4A51C /* SecureRandomize.cc in Sources */,
 				27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */,
 				279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
@@ -3538,6 +3538,7 @@
 				2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */,
 				275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */,
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
+				27D9655C23355DC900F4A51C /* SecureSymmetricCrypto.cc in Sources */,
 				27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */,
 				276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				27F0426C2196264900D7C6FA /* SQLiteDataFile+Indexes.cc in Sources */,

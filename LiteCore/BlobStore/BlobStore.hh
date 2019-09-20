@@ -23,10 +23,6 @@
 #include "SecureDigest.hh"
 #include <unordered_set>
 
-#if !SECURE_DIGEST_AVAILABLE
-#error No SHA digest API configured (See SecureDigest.hh)
-#endif
-
 namespace litecore {
     class BlobStore;
     class FilePath;
@@ -34,22 +30,22 @@ namespace litecore {
 
     /** A raw SHA-1 digest used as the unique identifier of a blob. */
     struct blobKey {
-        uint8_t bytes[20];
+        SHA1 digest;
 
-        blobKey() :bytes{} { }
+        blobKey() { }
         blobKey(slice);
         blobKey(const std::string &base64);
 
         bool readFromBase64(slice base64, bool prefixed =true);
         bool readFromFilename(std::string filename);
 
-        operator slice() const          {return slice(bytes, sizeof(bytes));}
+        operator slice() const          {return slice(digest);}
         std::string hexString() const   {return operator slice().hexString();}
         std::string base64String() const;
         std::string filename() const;
 
         bool operator== (const blobKey &k) const {
-            return 0 == memcmp(bytes, k.bytes, sizeof(bytes));
+            return digest == k.digest;
         }
         bool operator!= (const blobKey &k) const {
             return !(*this == k);
@@ -112,7 +108,7 @@ namespace litecore {
         FilePath _tmpPath;
         std::shared_ptr<WriteStream> _writer;
         uint64_t _bytesWritten {0};
-        sha1Context _sha1ctx;
+        SHA1Builder _sha1ctx;
         blobKey _key;
         bool _computedKey {false};
         bool _installed {false};

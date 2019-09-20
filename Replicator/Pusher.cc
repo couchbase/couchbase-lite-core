@@ -521,8 +521,7 @@ namespace litecore { namespace repl {
         c4::ref<C4ReadStream> blob = readBlobFromRequest(request, digest, progress, &err);
         if (blob) {
             logVerbose("Sending proof of attachment %.*s", SPLAT(digest));
-            sha1Context sha;
-            sha1_begin(&sha);
+            SHA1Builder sha;
 
             // First digest the length-prefixed nonce:
             slice nonce = request->body();
@@ -530,25 +529,21 @@ namespace litecore { namespace repl {
                 request->respondWithError({"BLIP"_sl, 400, "Missing nonce"_sl});
                 return;
             }
-            uint8_t nonceLen = (nonce.size & 0xFF);
-            sha1_add(&sha, &nonceLen, 1);
-            sha1_add(&sha, nonce.buf, nonce.size);
+            sha << (nonce.size & 0xFF) << nonce;
 
             // Now digest the attachment itself:
             static constexpr size_t kBufSize = 8192;
             auto buf = make_unique<uint8_t[]>(kBufSize);
             size_t bytesRead;
-            while ((bytesRead = c4stream_read(blob, buf.get(), kBufSize, &err)) > 0) {
-                sha1_add(&sha, buf.get(), bytesRead);
-            }
+            while ((bytesRead = c4stream_read(blob, buf.get(), kBufSize, &err)) > 0)
+                sha << slice(buf.get(), bytesRead);
             buf.reset();
             blob = nullptr;
             
             if (err.code == 0) {
                 // Respond with the base64-encoded digest:
                 C4BlobKey proofDigest;
-                static_assert(sizeof(proofDigest) == 20, "proofDigest is wrong size for SHA-1");
-                sha1_end(&sha, &proofDigest);
+                sha.finish(proofDigest.bytes, sizeof(proofDigest.bytes));
                 alloc_slice proofStr = c4blob_keyToString(proofDigest);
 
                 MessageBuilder reply(request);

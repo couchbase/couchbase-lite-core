@@ -171,6 +171,7 @@ target_include_directories(
     LiteCore/Storage
     LiteCore/Query
     LiteCore/RevID
+    Crypto
     Network
     vendor/mbedtls/include
     C
@@ -278,6 +279,7 @@ target_include_directories(
     LiteCore/Support
     C
     C/include 
+    Crypto
     Networking
     Replicator
     REST

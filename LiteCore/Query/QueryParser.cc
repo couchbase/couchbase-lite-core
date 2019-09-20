@@ -1469,9 +1469,7 @@ namespace litecore {
     // Constructs a unique identifier of an expression, from a digest of its JSON.
     string QueryParser::expressionIdentifier(const Array *expression, unsigned maxItems) const {
         require(expression, "Invalid expression to index");
-        uint8_t digest[20];
-        sha1Context ctx;
-        sha1_begin(&ctx);
+        SHA1Builder ctx;
         unsigned item = 0;
         for (Array::iterator i(expression); i; ++i) {
             if (maxItems > 0 && ++item > maxItems)
@@ -1481,13 +1479,12 @@ namespace litecore {
                 // Strip ".doc" from property paths if necessary:
                 string s = json.asString();
                 replace(s, "[\"." + _dbAlias + ".", "[\".");
-                sha1_add(&ctx, s.data(), s.size());
+                ctx << slice(s);
             } else {
-                sha1_add(&ctx, json.buf, json.size);
+                ctx << json;
             }
         }
-        sha1_end(&ctx, &digest);
-        return slice(&digest, sizeof(digest)).base64String();
+        return slice(ctx.finish()).base64String();
     }
 
 

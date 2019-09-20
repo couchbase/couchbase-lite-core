@@ -65,6 +65,8 @@ function(set_litecore_source_base)
         LiteCore/Storage/SQLiteEnumerator.cc
         LiteCore/Storage/SQLiteKeyStore.cc
         LiteCore/Storage/UnicodeCollator.cc
+        Crypto/SecureDigest.cc
+        Crypto/SecureSymmetricCrypto.cc
         Networking/Address.cc
         Networking/CookieStore.cc
         vendor/SQLiteCpp/src/Backup.cpp
@@ -113,9 +115,8 @@ function(set_support_source_base)
         LiteCore/Support/LogEncoder.cc
         LiteCore/Support/Logging_Stub.cc
         LiteCore/Support/PlatformIO.cc
-        LiteCore/Support/SecureRandomize.cc
-        LiteCore/Support/SecureSymmetricCrypto.cc
         LiteCore/Support/StringUtil.cc
+        Crypto/SecureRandomize.cc
         Networking/Address.cc
         PARENT_SCOPE
     )

@@ -19,13 +19,11 @@
 #include "SecureSymmetricCrypto.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#ifdef __APPLE__
-#include <MacTypes.h>
-#endif
 
-#if defined(_CRYPTO_CC)
+#ifdef __APPLE__
+    #include <MacTypes.h>
     #include <CommonCrypto/CommonCrypto.h>
-#elif defined(_CRYPTO_MBEDTLS)
+#else
     #include <mbedtls/cipher.h>
     #include <mbedtls/pkcs5.h>
 #endif
@@ -38,7 +36,7 @@ namespace litecore {
     static constexpr slice kPBKDFSalt = "Salty McNaCl"_sl;
     static constexpr int kPBKDFRounds = 64000;
 
-#if defined(_CRYPTO_CC)
+#ifdef __APPLE__
 
     // iOS and Mac OS implementation based on system-level CommonCrypto library:
 
@@ -83,7 +81,7 @@ namespace litecore {
     }
 
 
-#elif defined(_CRYPTO_MBEDTLS)
+#else
 
     // Cross-platform implementation using mbedTLS library:
 
