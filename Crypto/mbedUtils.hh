@@ -5,18 +5,11 @@
 //
 
 #pragma once
-#include "Error.hh"
-#include "Logging.hh"
+#include "Base.hh"
 #include "function_ref.hh"
 
-#ifdef __clang__
-// mbed header doc-comments use "deprecated" in a way Clang doesn't like
-#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
-#endif
-
-#include "mbedtls/ctr_drbg.h"
-#include "mbedtls/x509_crt.h"
-#include "mbedtls/error.h"
+struct mbedtls_asn1_named_data;
+struct mbedtls_ctr_drbg_context;
 
 namespace litecore { namespace crypto {
 
@@ -30,17 +23,17 @@ namespace litecore { namespace crypto {
     }
 
     // Converts X509 name structure to a string
-    std::string getX509Name(mbedtls_x509_name *xname);
+    std::string getX509Name(mbedtls_asn1_named_data /*mbedtls_x509_name*/ *xname);
 
     // Returns a global random number context, initialized on 1st call.
     mbedtls_ctr_drbg_context* RandomNumberContext();
 
     // Utility wrapper for mbedTLS functions that write to a string buffer.
-    alloc_slice allocString(size_t maxSize, function_ref<int(char*,size_t)> writer);
+    fleece::alloc_slice allocString(size_t maxSize, function_ref<int(char*,size_t)> writer);
 
     // Utility wrapper for mbedTLS functions that write DER to a buffer
-    alloc_slice allocDER(size_t maxSize, function_ref<int(uint8_t*,size_t)> writer);
+    fleece::alloc_slice allocDER(size_t maxSize, function_ref<int(uint8_t*,size_t)> writer);
 
-    alloc_slice convertToPEM(const alloc_slice &derData, const char *name NONNULL);
+    fleece::alloc_slice convertToPEM(const alloc_slice &derData, const char *name NONNULL);
 
 } }

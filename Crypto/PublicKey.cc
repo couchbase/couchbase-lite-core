@@ -20,7 +20,12 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "mbedUtils.hh"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#include "mbedtls/ctr_drbg.h"
 #include "mbedtls/pk.h"
+#pragma clang diagnostic pop
 
 namespace litecore { namespace crypto {
     using namespace std;

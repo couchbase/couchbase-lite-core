@@ -17,10 +17,19 @@
 //
 
 #include "mbedUtils.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#include "mbedtls/ctr_drbg.h"
 #include "mbedtls/entropy.h"
+#include "mbedtls/error.h"
 #include "mbedtls/pem.h"
+#include "mbedtls/x509_crt.h"
+#pragma clang diagnostic pop
+
 #include <mutex>
 
 #if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)

@@ -24,11 +24,15 @@
 
 #include "mbedUtils.hh"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/error.h"
 #include "mbedtls/pk.h"
+#include "mbedtls/md.h"
 #include "mbedtls/x509_crt.h"
 #include "mbedtls/x509_csr.h"
-#include "mbedtls/md.h"
-#include "mbedtls/error.h"
+#pragma clang diagnostic pop
 
 #include <stdlib.h>
 

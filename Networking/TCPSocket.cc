@@ -23,8 +23,6 @@
 #include "SecureRandomize.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "mbedtls/error.h"
-#include "mbedtls/ssl.h"
 #include "sockpp/exception.h"
 #include "sockpp/inet6_address.h"
 #include "sockpp/tcp_acceptor.h"
@@ -35,6 +33,13 @@
 #include <regex>
 #include <string>
 #include <mutex>
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation"
+#include "mbedtls/error.h"
+#include "mbedtls/ssl.h"
+#pragma clang diagnostic pop
+
 #ifndef _WIN32
 #define cbl_strerror strerror
 #endif

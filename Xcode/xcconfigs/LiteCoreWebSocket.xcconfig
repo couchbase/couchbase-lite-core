@@ -13,7 +13,7 @@ HEADER_SEARCH_PATHS = $(HEADER_SEARCH_PATHS)
 
 LIBRARY_SEARCH_PATHS = $(inherited) $(LIBWEBSOCKETS)/build/lib  $(inherited) $(MBEDTLS)/build/library
 
-WARNING_CFLAGS = $(inherited) -Wno-documentation // mbedTLS headers have Doxygen errors
+WARNING_CFLAGS = $(inherited) -Wno-documentation-deprecated-sync // mbedTLS headers have Doxygen errors
 
 OTHER_LDFLAGS = -all_load -lmbedtls -lmbedcrypto -lmbedx509
 

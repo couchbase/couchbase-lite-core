@@ -28,6 +28,7 @@
 
 #include "mbedUtils.hh"
 #include "mbedtls/pk.h"
+#include "mbedtls/x509_crt.h"
 
 #include "fleece/slice.hh"
 #include <Security/Security.h>
