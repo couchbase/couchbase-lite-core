@@ -858,8 +858,7 @@ namespace litecore {
     }
 
     void QueryParser::likeOp(slice op, Array::iterator& operands) {
-        infixOp(op, operands);
-        _sql << " ESCAPE '\\'";
+        functionOp("fl_like()"_sl, operands);
     }
 
     // Handles "fts_index MATCH pattern" expressions (FTS)

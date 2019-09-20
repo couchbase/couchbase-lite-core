@@ -63,6 +63,7 @@ namespace litecore {
         {"IS"_sl,      2, 2,  3,  &QueryParser::infixOp},
         {"IS NOT"_sl,  2, 2,  3,  &QueryParser::infixOp},
         {"IN"_sl,      2, 9,  3,  &QueryParser::inOp},
+        {"LIKE"_sl,    2, 3,  3,  &QueryParser::likeOp},
         {"NOT IN"_sl,  2, 9,  3,  &QueryParser::inOp},
         {"MATCH"_sl,   2, 2,  3,  &QueryParser::matchOp},
         {"BETWEEN"_sl, 3, 3,  3,  &QueryParser::betweenOp},

@@ -55,21 +55,21 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query LIKE", "[Query][C]") {
     SECTION("General") {
-        compile(json5("['FL_LIKE()', ['.name.first'], '%j%']"));
+        compile(json5("['LIKE', ['.name.first'], '%j%']"));
         CHECK(run() == (vector<string>{ "0000085" }));
-        compile(json5("['FL_LIKE()', ['.name.first'], '%J%']"));
+        compile(json5("['LIKE', ['.name.first'], '%J%']"));
         CHECK(run() == (vector<string>{ "0000002", "0000004", "0000008", "0000017", "0000028", "0000030", "0000045", "0000052", "0000067", "0000071",
             "0000088", "0000094" }));
-        compile(json5("['FL_LIKE()', ['.name.first'], 'Jen%']"));
+        compile(json5("['LIKE', ['.name.first'], 'Jen%']"));
         CHECK(run() == (vector<string>{ "0000008", "0000028" }));
 
-        compile(json5("['FL_LIKE()', ['.name.first'], 'Jen_']"));
+        compile(json5("['LIKE', ['.name.first'], 'Jen_']"));
         CHECK(run() == (vector<string>{ "0000028" }));
 
-        compile(json5("['FL_LIKE()', ['.name.first'], '_ene']"));
+        compile(json5("['LIKE', ['.name.first'], '_ene']"));
         CHECK(run() == (vector<string>{ "0000028" }));
 
-        compile(json5("['FL_LIKE()', ['.name.first'], 'J_ne']"));
+        compile(json5("['LIKE', ['.name.first'], 'J_ne']"));
         CHECK(run() == (vector<string>{ "0000028" }));
     }
 
@@ -77,32 +77,32 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query LIKE", "[Query][C]") {
         addPersonInState("weird", "NY", "Bart%Simpson");
         addPersonInState("weirder", "NY", "Bart\\\\Simpson");
         addPersonInState("coder", "CA", "Bart_Simpson");
-        compile(json5("['FL_LIKE()', ['.name.first'], 'Bart\\\\%%']"));
+        compile(json5("['LIKE', ['.name.first'], 'Bart\\\\%%']"));
         CHECK(run() == (vector<string>{ "weird" }));
-        compile(json5("['FL_LIKE()', ['.name.first'], 'Bart\\\\\\\\%']"));
+        compile(json5("['LIKE', ['.name.first'], 'Bart\\\\\\\\%']"));
         CHECK(run() == (vector<string>{ "weirder" }));
-        compile(json5("['FL_LIKE()', ['.name.first'], 'Bart\\\\_Simpson']"));
+        compile(json5("['LIKE', ['.name.first'], 'Bart\\\\_Simpson']"));
         CHECK(run() == (vector<string>{ "coder" }));
     }
 
     SECTION("Collated Case-Insensitive") {
-        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': true}, ['FL_LIKE()', ['.name.first'], 'jen%']]"));
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': true}, ['LIKE', ['.name.first'], 'jen%']]"));
         CHECK(run() == (vector<string>{ "0000008", "0000028" }));
 
-        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': true}, ['FL_LIKE()', ['.name.first'], 'jén%']]"));
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': true}, ['LIKE', ['.name.first'], 'jén%']]"));
         CHECK(run().empty());
     }
 
     SECTION("Collated Diacritic-Insensitive") {
-        compile(json5(u8"['COLLATE', {'unicode': true, 'case': true, 'diac': false}, ['FL_LIKE()', ['.name.first'], 'Jén%']]"));
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': true, 'diac': false}, ['LIKE', ['.name.first'], 'Jén%']]"));
         CHECK(run() == (vector<string>{ "0000008", "0000028" }));
 
-        compile(json5(u8"['COLLATE', {'unicode': true, 'case': true, 'diac': false}, ['FL_LIKE()', ['.name.first'], 'jén%']]"));
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': true, 'diac': false}, ['LIKE', ['.name.first'], 'jén%']]"));
         CHECK(run().empty());
     }
 
     SECTION("Everything insensitive") {
-        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': false}, ['FL_LIKE()', ['.name.first'], 'jén%']]"));
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': false}, ['LIKE', ['.name.first'], 'jén%']]"));
         CHECK(run() == (vector<string>{ "0000008", "0000028" }));
     }
 }
@@ -213,7 +213,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY", "[Query][C]") {
     CHECK(run() == (vector<string>{}));
 
     // Look for people where everything they like contains an L:
-    compile(json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['FL_LIKE()', ['?', 'like'], '%l%']]"));
+    compile(json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['LIKE', ['?', 'like'], '%l%']]"));
     CHECK(run() == (vector<string>{ "0000017", "0000027", "0000060", "0000068" }));
 }
 
