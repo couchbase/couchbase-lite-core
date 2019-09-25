@@ -47,6 +47,13 @@ endfunction()
 function(setup_litecore_build_linux)
     setup_litecore_build_unix()
 
+    if(NOT LITECORE_DISABLE_ICU)
+        target_compile_definitions(
+            LiteCoreStatic PRIVATE
+            -DLITECORE_USES_ICU=1
+        )
+    endif()
+
     target_include_directories(
         LiteCoreStatic PRIVATE
         LiteCore/Unix

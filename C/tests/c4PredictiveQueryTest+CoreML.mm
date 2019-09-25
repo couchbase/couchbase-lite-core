@@ -189,8 +189,8 @@ TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][Predict][C]") {
         alloc_slice explanation(c4query_explain(query));
         C4Log("%.*s", SPLAT(explanation));
         if (pass > 0) {
-            CHECK(explanation.find("prediction("_sl) == nullptr);
-            CHECK(explanation.find("SEARCH TABLE kv_default:predict:"_sl) != nullptr);
+            CHECK(explanation.find("prediction("_sl) == nullslice);
+            CHECK(explanation.find("SEARCH TABLE kv_default:predict:"_sl) != nullslice);
         }
 
         auto collect = [=](C4QueryEnumerator *e) {
@@ -210,8 +210,8 @@ TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][Predict][C]") {
         explanation = c4query_explain(query);
         C4Log("%.*s", SPLAT(explanation));
         if (pass > 0) {
-            CHECK(explanation.find("prediction("_sl) == nullptr);
-            CHECK(explanation.find("SCAN"_sl) == nullptr);
+            CHECK(explanation.find("prediction("_sl) == nullslice);
+            CHECK(explanation.find("SCAN"_sl) == nullslice);
         }
     }
 }
@@ -277,8 +277,8 @@ TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face query", "[Query][Predict][C]") {
         alloc_slice explanation(c4query_explain(query));
         C4Log("%.*s", SPLAT(explanation));
         if (pass > 0) {
-            CHECK(explanation.find("prediction("_sl) == nullptr);
-            CHECK(explanation.find("SEARCH TABLE kv_default:predict:"_sl) != nullptr);
+            CHECK(explanation.find("prediction("_sl) == nullslice);
+            CHECK(explanation.find("SEARCH TABLE kv_default:predict:"_sl) != nullslice);
         }
 
         auto collect = [=](C4QueryEnumerator *e) {
