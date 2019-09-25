@@ -104,9 +104,12 @@ namespace litecore { namespace REST {
     Retained<Identity> RESTListener::loadTLSIdentity(const C4TLSConfig *config) {
         if (!config)
             return nullptr;
-        Retained<Cert> cert = new Cert(config->certificate);
-        if (!cert)
+        Retained<Cert> cert;
+        try {
+            cert = new Cert(config->certificate);
+        } catch (const error &x) {
             error::_throw(error::InvalidParameter, "Can't parse certificate data");
+        }
 
         Retained<PrivateKey> privateKey;
         switch (config->privateKeyRepresentation) {
@@ -119,7 +122,7 @@ namespace litecore { namespace REST {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
                 privateKey = (PrivateKey*) cert->loadPrivateKey();
                 if (!privateKey)
-                    error::_throw(error::InvalidParameter,
+                    error::_throw(error::CryptoError,
                                   "No persistent private key found matching certificate public key");
                 break;
 #else

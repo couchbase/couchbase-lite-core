@@ -17,20 +17,23 @@
 //
 
 #include "ReplicatorAPITest.hh"
-#include "c4Listener.h"
-#include "c4.hh"
+#include "ListenerHarness.hh"
 
-using namespace std;
-using namespace fleece;
 using namespace litecore::REST;
 
 
 #ifdef COUCHBASE_ENTERPRISE
 
-class C4SyncListenerTest : public ReplicatorAPITest {
+class C4SyncListenerTest : public ReplicatorAPITest, public ListenerHarness {
 public:
 
-    C4SyncListenerTest() {
+    C4SyncListenerTest()
+    :ReplicatorAPITest()
+    ,ListenerHarness({49849, kC4SyncAPI,
+                       nullptr,
+                       {}, false, false,    // REST-only stuff
+                       true, true})
+    {
         createDB2();
 
         _address.scheme = kC4Replicator2Scheme;
@@ -39,30 +42,37 @@ public:
         _remoteDBName = C4STR("db2");
     }
 
-    void start() {
-        if (listener)
-            return;
-        if ((c4listener_availableAPIs() & kC4SyncAPI) == 0)
-            FAIL("Sync listener is unavailable in this build of LiteCore");
-        C4Error err;
-        listener = c4listener_start(&config, &err);
-        REQUIRE(listener);
-        REQUIRE(c4listener_shareDB(listener, C4STR("db2"), db2));
+    void run() {
+        ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
+        share(db2, "db2"_sl);
+        if (pinnedCert)
+            _address.scheme = kC4Replicator2TLSScheme;
+        replicate(kC4OneShot, kC4Disabled);
+        CHECK(c4db_getDocumentCount(db2) == 100);
     }
 
-    C4ListenerConfig config = {49849, kC4SyncAPI,
-                               nullptr,
-                               {}, false, false,    // REST-only stuff
-                               true, true};         // allowPush, allowPull
-    c4::ref<C4Listener> listener;
 };
 
 
-TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[Push][C]") {
-    importJSONLines(sFixturesDir + "names_100.json");
-    start();
-    replicate(kC4OneShot, kC4Disabled);
-    CHECK(c4db_getDocumentCount(db2) == 100);
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[Push][Listener][C]") {
+    run();
 }
+
+
+TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert", "[Push][Listener][TLS][C]") {
+    auto identity = useTLSWithTemporaryKey();
+    pinnedCert = identity->cert;
+    run();
+}
+
+
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", "[Push][Listener][TLS][C]") {
+    auto identity = useTLSWithPersistentKey();
+    pinnedCert = identity->cert;
+    run();
+}
+#endif
+
 
 #endif

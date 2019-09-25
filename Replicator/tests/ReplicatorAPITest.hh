@@ -83,6 +83,10 @@ public:
             _proxy = make_unique<ProxySpec>(proxyAddr);
         }
 
+        if (Address::isSecure(_address)) {
+            pinnedCert = sPinnedCert;
+        }
+
         _onDocsEnded = onDocsEnded;
     }
 
@@ -107,9 +111,9 @@ public:
     AllocedDict options() {
         Encoder enc;
         enc.beginDict();
-        if (Address::isSecure(_address)) {
+        if (pinnedCert) {
             enc.writeKey(C4STR(kC4ReplicatorOptionPinnedServerCert));
-            enc.writeData(sPinnedCert->data());
+            enc.writeData(pinnedCert->data());
         }
         if (_enableDocProgressNotifications) {
             enc.writeKey(C4STR(kC4ReplicatorOptionProgressLevel));
@@ -329,7 +333,7 @@ public:
                                              (string)(slice)_address.hostname,
                                              port,
                                              path);
-        r->setHeaders(headers).setBody(body).setPinnedCert(sPinnedCert).setTimeout(5);
+        r->setHeaders(headers).setBody(body).setPinnedCert(pinnedCert).setTimeout(5);
         if (_authHeader)
             r->setAuthHeader(_authHeader);
         if (_proxy)
@@ -387,6 +391,7 @@ public:
     C4String _remoteDBName = kScratchDBName;
     AllocedDict _options;
     alloc_slice _authHeader;
+    Retained<crypto::Cert> pinnedCert;
     unique_ptr<ProxySpec> _proxy;
     bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};

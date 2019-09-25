@@ -1,5 +1,5 @@
 //
-// ListenerTest.cc
+// RESTListenerTest.cc
 //
 // Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
@@ -18,45 +18,27 @@
 
 #include "Error.hh"
 #include "c4Test.hh"
-#include "c4Listener.h"
-#include "c4.hh"
+#include "ListenerHarness.hh"
 #include "FilePath.hh"
 #include "Response.hh"
-#include "Certificate.hh"
 
-using namespace std;
-using namespace fleece;
 using namespace litecore::net;
 using namespace litecore::REST;
-using namespace litecore::crypto;
+
+
+Retained<Identity> ListenerHarness::sTemporaryIdentity, ListenerHarness::sPersistentIdentity;
 
 
 //#ifdef COUCHBASE_ENTERPRISE
 
 
-static string to_str(FLSlice s) {
-    return string((char*)s.buf, s.size);
-}
-
-static string to_str(Value v) {
-    return to_str(v.asString());
-}
-
-
-static Retained<Identity> sTemporaryIdentity, sPersistentIdentity;
-
-
-class C4RESTTest : public C4Test {
+class C4RESTTest : public C4Test, public ListenerHarness {
 public:
 
-    C4RESTTest() :C4Test(0)
+    C4RESTTest()
+    :C4Test(0)
+    ,ListenerHarness({59849, kC4RESTAPI})
     { }
-
-
-    ~C4RESTTest() {
-        listener = nullptr; // stop listener
-        gC4ExpectExceptions = false;
-    }
 
 
     void setUpDirectory() {
@@ -66,64 +48,6 @@ public:
         directory = alloc_slice(tempDir.path().c_str());
         config.directory = directory;
         config.allowCreateDBs = true;
-    }
-
-
-    void useIdentity(Identity *id) {
-        configCertData = id->cert->data();
-        tlsConfig.certificate = configCertData;
-        if (id->privateKey->isPrivateKeyDataAvailable()) {
-            configKeyData = id->privateKey->privateKeyData();
-            tlsConfig.privateKey = configKeyData;
-            tlsConfig.privateKeyRepresentation = kC4PrivateKeyData;
-        } else {
-            tlsConfig.privateKeyRepresentation = kC4PrivateKeyFromCert;
-        }
-        config.tlsConfig = &tlsConfig;
-
-    }
-
-
-    void useTLSWithTemporaryKey() {
-        C4Log("Using TLS w/temporary key for this test");
-        if (!sTemporaryIdentity) {
-            C4Log("Generating TLS key-pair and cert...")
-            Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
-            Cert::IssuerParameters issuerParams;
-            issuerParams.validity_secs = 3600*24;
-            auto cert = retained(new Cert("CN=C4RESTTest, O=Couchbase, OU=Mobile", issuerParams, key));
-            sTemporaryIdentity = new Identity(cert, key);
-        }
-        useIdentity(sTemporaryIdentity);
-    }
-
-
-#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    void useTLSWithPersistentKey() {
-        C4Log("Using TLS w/persistent key for this test");
-        if (!sPersistentIdentity) {
-            Retained<PersistentPrivateKey> key = PersistentPrivateKey::generateRSA(2048);
-            Cert::IssuerParameters issuerParams;
-            issuerParams.validity_secs = 3600*24;
-            auto cert = retained(new Cert("CN=C4RESTTest, O=Couchbase, OU=Mobile", issuerParams, key));
-            cert->makePersistent();
-            sPersistentIdentity = new Identity(cert, key);
-        }
-        useIdentity(sPersistentIdentity);
-    }
-#endif
-
-
-    void start() {
-        if (listener)
-            return;
-        if ((c4listener_availableAPIs() & kC4RESTAPI) == 0)
-            FAIL("REST API is unavailable in this build");
-        C4Error err;
-        listener = c4listener_start(&config, &err);
-        REQUIRE(listener);
-
-        REQUIRE(c4listener_shareDB(listener, C4STR("db"), db));
     }
 
 
@@ -137,7 +61,7 @@ public:
         enc.endDict();
         auto headers = enc.finishDoc();
 
-        start();
+        share(db, "db"_sl);
 
         C4Log("---- %s %s", method.c_str(), uri.c_str());
         string scheme = config.tlsConfig ? "https" : "http";
@@ -159,20 +83,24 @@ public:
         return request(method, uri, {}, nullslice, expectedStatus);
     }
 
-    C4ListenerConfig config = {59849, kC4RESTAPI};
     alloc_slice directory;
-    c4::ref<C4Listener> listener;
-
-    C4TLSConfig tlsConfig = { };
-    alloc_slice configCertData, configKeyData;
     Retained<Cert> pinnedCert;
 };
+
+
+static string to_str(FLSlice s) {
+    return string((char*)s.buf, s.size);
+}
+
+static string to_str(Value v) {
+    return to_str(v.asString());
+}
 
 
 #pragma mark - ROOT LEVEL:
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][Listener][C]") {
     auto r = request("GET", "/", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
     REQUIRE(body);
@@ -180,7 +108,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST _all_databases", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST _all_databases", "[REST][Listener][C]") {
     auto r = request("GET", "/_all_dbs", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asArray();
     REQUIRE(body.count() == 1);
@@ -188,7 +116,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST _all_databases", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST unknown special top-level", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST unknown special top-level", "[REST][Listener][C]") {
     request("GET", "/_foo", HTTPStatus::NotFound);
     request("GET", "/_", HTTPStatus::NotFound);
 }
@@ -197,7 +125,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST unknown special top-level", "[REST][C]") {
 #pragma mark - DATABASE:
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST GET database", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST GET database", "[REST][Listener][C]") {
     unique_ptr<Response> r;
     SECTION("No slash") {
         r = request("GET", "/db", HTTPStatus::OK);
@@ -220,7 +148,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST GET database", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST DELETE database", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST DELETE database", "[REST][Listener][C]") {
     unique_ptr<Response> r;
     SECTION("Disallowed") {
         r = request("DELETE", "/db", HTTPStatus::Forbidden);
@@ -236,7 +164,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST DELETE database", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][Listener][C]") {
     unique_ptr<Response> r;
     SECTION("Disallowed") {
         r = request("PUT", "/db", HTTPStatus::Forbidden);
@@ -267,7 +195,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][C]") {
 #pragma mark - DOCUMENTS:
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
     unique_ptr<Response> r;
     Dict body;
     alloc_slice docID;
@@ -336,7 +264,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST _all_docs", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST _all_docs", "[REST][Listener][C]") {
     auto r = request("GET", "/db/_all_docs", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
     auto rows = body["rows"].asArray();
@@ -362,7 +290,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST _all_docs", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][Listener][C]") {
     unique_ptr<Response> r;
     r = request("POST", "/db/_bulk_docs",
                 {{"Content-Type", "application/json"}},
@@ -398,7 +326,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][C]") {
 #pragma mark - TLS:
 
 
-TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][TLS][C]") {
+TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C]") {
     useTLSWithTemporaryKey();
     gC4ExpectExceptions = true;
     auto r = request("GET", "/", HTTPStatus::undefined);
@@ -406,9 +334,9 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][TLS][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][TLS][C]") {
-    useTLSWithTemporaryKey();
-    pinnedCert = sTemporaryIdentity->cert;
+TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][Listener][TLS][C]") {
+    auto identity = useTLSWithTemporaryKey();
+    pinnedCert = identity->cert;
     auto r = request("GET", "/", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
     REQUIRE(body);
@@ -417,9 +345,9 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][TLS][C]") {
 
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][TLS][C]") {
-    useTLSWithPersistentKey();
-    pinnedCert = sPersistentIdentity->cert;
+TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][Listener][TLS][C]") {
+    auto identity = useTLSWithPersistentKey();
+    pinnedCert = identity->cert;
     auto r = request("GET", "/", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
     REQUIRE(body);
