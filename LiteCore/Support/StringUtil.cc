@@ -225,7 +225,9 @@ namespace litecore {
 
 }
 
+// TODO: Is this still needed now that GCC is gone from Android toolchain?
 #if defined __ANDROID__ && !defined __clang__
+#include "NumConversion.hh"
 namespace std  {
     std::string to_string(const double &n) {
             std::ostringstream s;
@@ -253,7 +255,7 @@ namespace std  {
             return s.str();
     }
     double stod(std::string s) {
-        return strtod(s.c_str(),0);
+        return ParseDouble(s.c_str());
     }
     int stoi(std::string s) {
         return strtol(s.c_str(),nullptr,10);

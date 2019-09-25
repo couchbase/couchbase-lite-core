@@ -26,6 +26,7 @@
 #include "function_ref.hh"
 #include "FleeceImpl.hh"
 #include "ParseDate.hh"
+#include "NumConversion.hh"
 #include <regex>
 #include <cmath>
 #include <string>
@@ -1049,7 +1050,7 @@ namespace litecore {
 
     static double tonumber(const string &s) {
         try {
-            return stod(s);
+            return ParseDouble(s.c_str());
         } catch (const invalid_argument&) {
             return NAN;
         } catch (const out_of_range&) {
