@@ -23,6 +23,9 @@ extern "C" {
 namespace sockpp {
     class tls_context;
 }
+namespace litecore { namespace crypto {
+    class Identity;    
+} }
 
 namespace litecore { namespace websocket {
 
@@ -62,6 +65,7 @@ namespace litecore { namespace websocket {
         BuiltInWebSocket(const URL&, Role, const fleece::AllocedDict &options);
         void run();
         void setThreadName();
+        bool configureClientCert(fleece::Dict auth);
         bool configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
         std::unique_ptr<net::ClientSocket> _connectLoop()MUST_USE_RESULT;
         void ioLoop();
@@ -81,6 +85,7 @@ namespace litecore { namespace websocket {
         c4::ref<C4Database> _database;                      // The database (used only for cookies)
         std::unique_ptr<net::TCPSocket> _socket;            // The TCP socket
         std::unique_ptr<sockpp::tls_context> _tlsContext;   // TLS settings
+        Retained<crypto::Identity> _tlsIdentity;            // TLS client identity (only sometimes set)
         std::thread _ioThread;                              // Thread that reads/writes socket
         std::atomic<bool> _waitingForIO {false};            // Blocked in waitForIO()?
 

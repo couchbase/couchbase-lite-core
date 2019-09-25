@@ -74,6 +74,12 @@ namespace litecore { namespace crypto {
     }
 
 
+    string PublicKey::digestString() {
+        SHA1 digest(publicKeyData(KeyFormat::Raw));
+        return slice(digest).hexString();
+    }
+
+
     PrivateKey::PrivateKey(slice data, slice password) {
         TRY( mbedtls_pk_parse_key(context(),
                                   (const uint8_t*)data.buf, data.size,

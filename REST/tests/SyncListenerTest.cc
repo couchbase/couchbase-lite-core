@@ -60,16 +60,22 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[Push][Listener][C]") {
 
 
 TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert", "[Push][Listener][TLS][C]") {
-    auto identity = useTLSWithTemporaryKey();
-    pinnedCert = identity->cert;
+    pinnedCert = useServerTLSWithTemporaryKey();
+    run();
+}
+
+
+TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync client cert", "[Push][Listener][TLS][C]") {
+    pinnedCert = useServerTLSWithTemporaryKey();
+    useClientTLSWithTemporaryKey();
+    identity = clientIdentity;
     run();
 }
 
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", "[Push][Listener][TLS][C]") {
-    auto identity = useTLSWithPersistentKey();
-    pinnedCert = identity->cert;
+    pinnedCert = useServerTLSWithPersistentKey();
     run();
 }
 #endif

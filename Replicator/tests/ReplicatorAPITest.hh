@@ -115,6 +115,18 @@ public:
             enc.writeKey(C4STR(kC4ReplicatorOptionPinnedServerCert));
             enc.writeData(pinnedCert->data());
         }
+        if (identity) {
+            enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+            enc.beginDict();
+            enc[C4STR(kC4ReplicatorAuthType)] = kC4AuthTypeClientCert;
+            enc.writeKey(C4STR(kC4ReplicatorAuthClientCert));
+            enc.writeData(identity->cert->data());
+            if (identity->privateKey->isPrivateKeyDataAvailable()) {
+                enc.writeKey(C4STR(kC4ReplicatorAuthClientCertKey));
+                enc.writeData(identity->privateKey->privateKeyData());
+            }
+            enc.endDict();
+        }
         if (_enableDocProgressNotifications) {
             enc.writeKey(C4STR(kC4ReplicatorOptionProgressLevel));
             enc.writeInt(1);
@@ -392,6 +404,7 @@ public:
     AllocedDict _options;
     alloc_slice _authHeader;
     Retained<crypto::Cert> pinnedCert;
+    Retained<crypto::Identity> identity;
     unique_ptr<ProxySpec> _proxy;
     bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};

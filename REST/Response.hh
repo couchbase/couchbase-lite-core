@@ -30,6 +30,7 @@
 
 namespace litecore { namespace crypto {
     class Cert;
+    class Identity;
 } }
 namespace litecore { namespace net {
     class HTTPLogic;
@@ -92,6 +93,7 @@ namespace litecore { namespace REST {
         Response& setAuthHeader(fleece::slice authHeader);
         Response& setBody(fleece::slice body);
         Response& setPinnedCert(crypto::Cert *pinnedServerCert NONNULL);
+        Response& setIdentity(crypto::Identity* NONNULL);
         Response& setProxy(const net::ProxySpec&);
         Response& setTimeout(double timeoutSecs)        {_timeout = timeoutSecs; return *this;}
 

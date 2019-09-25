@@ -26,7 +26,10 @@ using namespace litecore::net;
 using namespace litecore::REST;
 
 
-Retained<Identity> ListenerHarness::sTemporaryIdentity, ListenerHarness::sPersistentIdentity;
+Retained<Identity> ListenerHarness::sServerTemporaryIdentity,
+                   ListenerHarness::sServerPersistentIdentity,
+                   ListenerHarness::sClientTemporaryIdentity,
+                   ListenerHarness::sClientPersistentIdentity;
 
 
 //#ifdef COUCHBASE_ENTERPRISE
@@ -69,6 +72,8 @@ public:
         r->setHeaders(headers).setBody(body);
         if (pinnedCert)
             r->setPinnedCert(pinnedCert);
+        if (clientIdentity)
+            r->setIdentity(clientIdentity);
         if (!r->run())
             C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
         C4Log("Status: %d %s", r->status(), r->statusMessage().c_str());
@@ -327,7 +332,8 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][Listener][C]") {
 
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C]") {
-    useTLSWithTemporaryKey();
+    useServerTLSWithTemporaryKey();
+    
     gC4ExpectExceptions = true;
     auto r = request("GET", "/", HTTPStatus::undefined);
     CHECK(r->error() == (C4Error{NetworkDomain, kC4NetErrTLSCertUnknownRoot}));
@@ -335,8 +341,8 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C
 
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][Listener][TLS][C]") {
-    auto identity = useTLSWithTemporaryKey();
-    pinnedCert = identity->cert;
+    pinnedCert = useServerTLSWithTemporaryKey();
+
     auto r = request("GET", "/", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
     REQUIRE(body);
@@ -346,14 +352,25 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][Listener][TLS][C]")
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][Listener][TLS][C]") {
-    auto identity = useTLSWithPersistentKey();
-    pinnedCert = identity->cert;
+    pinnedCert = useServerTLSWithPersistentKey();
+
     auto r = request("GET", "/", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
     REQUIRE(body);
     CHECK(to_str(body["couchdb"]) == "Welcome");
 }
 #endif
+
+
+TEST_CASE_METHOD(C4RESTTest, "TLS REST client cert", "[REST][Listener][TLS][C]") {
+    pinnedCert = useServerTLSWithTemporaryKey();
+    useClientTLSWithTemporaryKey();
+
+    auto r = request("GET", "/", HTTPStatus::OK);
+    auto body = r->bodyAsJSON().asDict();
+    REQUIRE(body);
+    CHECK(to_str(body["couchdb"]) == "Welcome");
+}
 
 
 //#endif // COUCHBASE_ENTERPRISE

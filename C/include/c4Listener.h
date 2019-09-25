@@ -47,6 +47,8 @@ extern "C" {
         C4Slice privateKey;             ///< Private key data
         C4String privateKeyPassword;    ///< Password to decrypt private key data
         C4Slice certificate;            ///< X.509 certificate data
+        bool requireClientCerts;        ///< True to require clients to authenticate with a cert
+        C4Slice rootClientCerts;        ///< Root CA certs to trust when verifying client cert
     } C4TLSConfig;
 
 

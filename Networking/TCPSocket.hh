@@ -15,6 +15,9 @@
 #include <thread>
 #include <vector>
 
+namespace litecore { namespace crypto {
+    class Cert;
+}}
 namespace litecore { namespace websocket {
     struct CloseStatus;
     class Headers;
@@ -33,7 +36,7 @@ namespace litecore { namespace net {
     public:
         using slice = fleece::slice;
 
-        TCPSocket(sockpp::tls_context *ctx =nullptr);
+        TCPSocket(bool isClient, sockpp::tls_context *ctx =nullptr);
         virtual ~TCPSocket();
 
         /// Initializes TCPSocket, must call at least once before using any
@@ -51,6 +54,9 @@ namespace litecore { namespace net {
 
         /// Peer's address: IP address + ":" + port number
         std::string peerAddress();
+
+        /// Peer's TLS certificate (if it has one)
+        fleece::Retained<crypto::Cert> peerTLSCertificate();
 
         /// Last error
         C4Error error() const                   {return _error;}
@@ -124,7 +130,7 @@ namespace litecore { namespace net {
     protected:
         bool setSocket(std::unique_ptr<sockpp::stream_socket>);
         void setError(C4ErrorDomain, int code, slice message =fleece::nullslice);
-        bool wrapTLS(slice hostname, bool isClient);
+        bool wrapTLS(slice hostname);
         bool createInterruptPipe();
         void checkStreamError();
         bool checkSocketFailure();
@@ -138,6 +144,7 @@ namespace litecore { namespace net {
         std::unique_ptr<sockpp::stream_socket> _socket;     // The TCP (or TLS) socket
         sockpp::stream_socket* _wrappedSocket {nullptr};    // Underlying TLS socket, when using TCP
         sockpp::tls_context* _tlsContext {nullptr};         // Custom TLS context if any
+        bool _isClient;
         bool _nonBlocking {false};                          // Is socket in non-blocking mode?
         double _timeout {0};                                // read/write/connect timeout in seconds
         C4Error _error {};                                  // last error
@@ -162,7 +169,7 @@ namespace litecore { namespace net {
 
         /// Wrap the existing socket in TLS, performing a handshake.
         /// This is used after connecting to a CONNECT-type proxy, not in a normal connection.
-        bool wrapTLS(slice hostname)        {return TCPSocket::wrapTLS(hostname, true);}
+        bool wrapTLS(slice hostname)        {return TCPSocket::wrapTLS(hostname);}
     };
 
     
@@ -176,7 +183,7 @@ namespace litecore { namespace net {
         bool acceptSocket(std::unique_ptr<sockpp::stream_socket>) MUST_USE_RESULT;
 
         /// Perform server-side TLS handshake.
-        bool wrapTLS()                      {return TCPSocket::wrapTLS(fleece::nullslice, false);}
+        bool wrapTLS()                      {return TCPSocket::wrapTLS(fleece::nullslice);}
     };
 
 

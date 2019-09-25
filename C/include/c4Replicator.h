@@ -313,6 +313,7 @@ extern "C" {
     #define kC4ReplicatorAuthUserName   "username"       ///< User name for basic auth (string)
     #define kC4ReplicatorAuthPassword   "password"       ///< Password for basic auth (string)
     #define kC4ReplicatorAuthClientCert "clientCert"     ///< TLS client certificate (value platform-dependent)
+    #define kC4ReplicatorAuthClientCertKey "clientCertKey" ///< Client cert's private key (data)
     #define kC4ReplicatorAuthToken      "token"          ///< Session cookie or auth token (string)
 
     // auth.type values:

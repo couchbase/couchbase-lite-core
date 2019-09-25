@@ -10,6 +10,7 @@
 #include "c4Listener.h"
 #include "c4.hh"
 #include "Certificate.hh"
+#include "StringUtil.hh"
 
 
 using namespace std;
@@ -31,7 +32,11 @@ public:
     }
 
 
-    void useIdentity(Identity *id) {
+    Cert* useServerIdentity(Identity *id, bool persistent) {
+        C4Log("Using %s server TLS cert %s for this test",
+              (persistent ? "persistent" : "temporary"),
+              id->cert->subjectPublicKey()->digestString().c_str());
+        serverIdentity = id;
         configCertData = id->cert->data();
         tlsConfig.certificate = configCertData;
         if (id->privateKey->isPrivateKeyDataAvailable()) {
@@ -42,38 +47,71 @@ public:
             tlsConfig.privateKeyRepresentation = kC4PrivateKeyFromCert;
         }
         config.tlsConfig = &tlsConfig;
-
+        return id->cert;
     }
 
 
-    Identity* useTLSWithTemporaryKey() {
-        C4Log("Using TLS w/temporary key for this test");
-        if (!sTemporaryIdentity) {
-            C4Log("Generating TLS key-pair and cert...")
-            Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
-            Cert::IssuerParameters issuerParams;
-            issuerParams.validity_secs = 3600*24;
-            auto cert = retained(new Cert("CN=ListenerHarness, O=Couchbase, OU=Mobile", issuerParams, key));
-            sTemporaryIdentity = new Identity(cert, key);
-        }
-        useIdentity(sTemporaryIdentity);
-        return sTemporaryIdentity;
+    Cert* useClientIdentity(Identity *id, bool persistent) {
+        C4Log("Using %s client TLS cert %s for this test",
+              (persistent ? "persistent" : "temporary"),
+              id->cert->subjectPublicKey()->digestString().c_str());
+        clientIdentity = id;
+        configClientRootCertData = id->cert->data();
+        tlsConfig.requireClientCerts = true;
+        tlsConfig.rootClientCerts = configClientRootCertData;
+        return id->cert;
+    }
+
+
+    Cert* useServerTLSWithTemporaryKey() {
+        if (!sServerTemporaryIdentity)
+            sServerTemporaryIdentity = createTemporaryIdentity("LiteCore Listener Test");
+        return useServerIdentity(sServerTemporaryIdentity, false);
+    }
+
+
+    Cert* useClientTLSWithTemporaryKey() {
+        if (!sClientTemporaryIdentity)
+            sClientTemporaryIdentity = createTemporaryIdentity("LiteCore Client Test");
+        return useClientIdentity(sClientTemporaryIdentity, false);
+    }
+
+
+    Identity* createTemporaryIdentity(const char *commonName) {
+        C4Log("Generating temporary TLS key-pair and cert...")
+        Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
+        Cert::IssuerParameters issuerParams;
+        issuerParams.validity_secs = 3600*24;
+        auto cert = retained(new Cert(litecore::format("CN=%s, O=Couchbase, OU=Mobile", commonName),
+                                      issuerParams, key));
+        return new Identity(cert, key);
     }
 
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    Identity* useTLSWithPersistentKey() {
-        C4Log("Using TLS w/persistent key for this test");
-        if (!sPersistentIdentity) {
-            Retained<PersistentPrivateKey> key = PersistentPrivateKey::generateRSA(2048);
-            Cert::IssuerParameters issuerParams;
-            issuerParams.validity_secs = 3600*24;
-            auto cert = retained(new Cert("CN=ListenerHarness, O=Couchbase, OU=Mobile", issuerParams, key));
-            cert->makePersistent();
-            sPersistentIdentity = new Identity(cert, key);
-        }
-        useIdentity(sPersistentIdentity);
-        return sPersistentIdentity;
+    Cert* useServerTLSWithPersistentKey() {
+        C4Log("Using server TLS w/persistent key for this test");
+        if (!sServerPersistentIdentity)
+            sServerPersistentIdentity = createPersistentIdentity();
+        return useServerIdentity(sServerPersistentIdentity, true);
+    }
+
+
+    Cert* useClientTLSWithPersistentKey() {
+        if (!sClientPersistentIdentity)
+            sClientPersistentIdentity = createPersistentIdentity();
+        return useClientIdentity(sClientPersistentIdentity, true);
+    }
+
+
+    Identity* createPersistentIdentity() {
+        C4Log("Generating persistent TLS key-pair and cert...")
+        Retained<PersistentPrivateKey> key = PersistentPrivateKey::generateRSA(2048);
+        Cert::IssuerParameters issuerParams;
+        issuerParams.validity_secs = 3600*24;
+        auto cert = retained(new Cert("CN=ListenerHarness, O=Couchbase, OU=Mobile", issuerParams, key));
+        cert->makePersistent();
+        return new Identity(cert, key);
     }
 #endif
 
@@ -92,13 +130,15 @@ public:
     }
 
     C4ListenerConfig config;
+    Retained<Identity> serverIdentity, clientIdentity;
 
 private:
-    static Retained<Identity> sTemporaryIdentity, sPersistentIdentity;
+    static Retained<Identity> sServerTemporaryIdentity, sServerPersistentIdentity,
+                              sClientTemporaryIdentity, sClientPersistentIdentity;
 
     c4::ref<C4Listener> listener;
 
     C4TLSConfig tlsConfig = { };
-    alloc_slice configCertData, configKeyData;
+    alloc_slice configCertData, configKeyData, configClientRootCertData;
 };
 

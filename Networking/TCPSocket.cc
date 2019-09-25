@@ -19,6 +19,7 @@
 #include "TCPSocket.hh"
 #include "Headers.hh"
 #include "HTTPLogic.hh"
+#include "Certificate.hh"
 #include "WebSocketInterface.hh"
 #include "SecureRandomize.hh"
 #include "Error.hh"
@@ -144,8 +145,9 @@ namespace litecore { namespace net {
     #define LOG(LEVEL, ...) LogToAt(WSLog, LEVEL, ##__VA_ARGS__)
 
 
-    TCPSocket::TCPSocket(tls_context *tls)
-    :_tlsContext(tls) {
+    TCPSocket::TCPSocket(bool isClient, tls_context *tls)
+    :_tlsContext(tls)
+    ,_isClient(isClient) {
         initialize();
     }
 
@@ -178,14 +180,14 @@ namespace litecore { namespace net {
     }
 
 
-    bool TCPSocket::wrapTLS(slice hostname, bool isClient) {
+    bool TCPSocket::wrapTLS(slice hostname) {
         if (!_tlsContext)
             _tlsContext = _tlsContext = &tls_context::default_context();
         string hostnameStr(hostname);
         _wrappedSocket = _socket.get();
         auto oldSocket = move(_socket);
         return setSocket(TLSContext()->wrap_socket(move(oldSocket),
-                                            (isClient ? tls_context::CLIENT : tls_context::SERVER),
+                                            (_isClient ? tls_context::CLIENT : tls_context::SERVER),
                                             hostnameStr.c_str()));
     }
 
@@ -203,7 +205,8 @@ namespace litecore { namespace net {
 
 
     string TCPSocket::peerAddress() {
-        sock_address_any addr = _socket->peer_address();
+        auto baseSocket = _wrappedSocket ? _wrappedSocket : _socket.get();
+        sock_address_any addr = baseSocket->peer_address();
         switch (addr.family()) {
             case AF_INET:   return ((inet_address&)addr).to_string();
             case AF_INET6:  return ((inet_address&)addr).to_string();
@@ -212,11 +215,22 @@ namespace litecore { namespace net {
     }
 
 
+    Retained<crypto::Cert> TCPSocket::peerTLSCertificate() {
+        auto tlsSock = dynamic_cast<tls_socket*>(_socket.get());
+        if (!tlsSock)
+            return nullptr;
+        string certData = tlsSock->peer_certificate();
+        if (certData.empty())
+            return nullptr;
+        return new crypto::Cert(slice(certData));
+    }
+
+
 #pragma mark - CLIENT SOCKET:
 
 
     ClientSocket::ClientSocket(tls_context *tls)
-    :TCPSocket(tls)
+    :TCPSocket(true, tls)
     { }
 
 
@@ -252,7 +266,7 @@ namespace litecore { namespace net {
 
 
     ResponderSocket::ResponderSocket(tls_context *tls)
-    :TCPSocket(tls)
+    :TCPSocket(false, tls)
     { }
 
 
@@ -703,7 +717,9 @@ namespace litecore { namespace net {
         if (err > 0) {
             err = socketToPosixErrCode(err);
             string errStr = cbl_strerror(err);
-            LOG(Warning, "TCPSocket got POSIX error %d \"%s\"", err, errStr.c_str());
+            LOG(Warning, "%s got POSIX error %d \"%s\"",
+                (_isClient ? "ClientSocket" : "ResponderSocket"),
+                err, errStr.c_str());
             if (err == EWOULDBLOCK)     // Occurs in blocking mode when I/O times out
                 setError(NetworkDomain, kC4NetErrTimeout);
             else
@@ -712,7 +728,8 @@ namespace litecore { namespace net {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
             mbedtls_strerror(err, msgbuf, sizeof(msgbuf));
-            LOG(Warning, "TCPSocket got mbedTLS error -0x%04X \"%s\"",
+            LOG(Warning, "%s got mbedTLS error -0x%04X \"%s\"",
+                (_isClient ? "ClientSocket" : "ResponderSocket"),
                 -err, msgbuf);
             setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));
         }

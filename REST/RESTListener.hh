@@ -84,6 +84,7 @@ namespace litecore { namespace REST {
     protected:
         friend class Task;
 
+        std::unique_ptr<sockpp::mbedtls_context> createTLSContext(const C4TLSConfig*);
         Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig*);
         
         Server* server() const              {return _server.get();}
@@ -130,6 +131,7 @@ namespace litecore { namespace REST {
 
         std::unique_ptr<FilePath> _directory;
         const bool _allowCreateDB, _allowDeleteDB;
+        Retained<crypto::Identity> _identity;
         Retained<Server> _server;
         std::mutex _mutex;
         std::set<Retained<Task>> _tasks;

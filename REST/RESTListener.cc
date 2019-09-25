@@ -25,10 +25,12 @@
 #include "PublicKey.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
+#include "sockpp/mbedtls_context.h"
 #include <functional>
 #include <queue>
 
 using namespace std;
+using namespace sockpp;
 using namespace fleece;
 using namespace litecore::crypto;
 
@@ -89,9 +91,10 @@ namespace litecore { namespace REST {
         }
 
         const char *hostname = nullptr;
-        Retained<Identity> identity = loadTLSIdentity(config.tlsConfig);
 
-        _server->start(config.port ? config.port : kDefaultPort, hostname, identity);
+        _server->start(config.port ? config.port : kDefaultPort,
+                       hostname,
+                       createTLSContext(config.tlsConfig));
     }
 
 
@@ -130,6 +133,21 @@ namespace litecore { namespace REST {
 #endif
         }
         return new Identity(cert, privateKey);
+    }
+
+
+    unique_ptr<mbedtls_context> RESTListener::createTLSContext(const C4TLSConfig *tlsConfig) {
+        if (!tlsConfig)
+            return nullptr;
+        _identity = loadTLSIdentity(tlsConfig);
+
+        auto tlsContext = make_unique<mbedtls_context>(tls_context::SERVER);
+        tlsContext->set_identity(_identity->cert->context(), _identity->privateKey->context());
+        if (tlsConfig->requireClientCerts)
+            tlsContext->require_peer_cert(tls_context::SERVER, true);
+        if (tlsConfig->rootClientCerts.buf)
+            tlsContext->set_root_certs(string(slice(tlsConfig->rootClientCerts)));
+        return tlsContext;
     }
 
 

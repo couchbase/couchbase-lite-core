@@ -106,8 +106,17 @@ namespace litecore { namespace REST {
     }
 
     Response& Response::setPinnedCert(crypto::Cert *pinnedServerCert) {
-        _tlsContext.reset(new sockpp::mbedtls_context);
+        if (!_tlsContext)
+            _tlsContext.reset(new sockpp::mbedtls_context);
         _tlsContext->allow_only_certificate(pinnedServerCert->context());
+        return *this;
+    }
+
+    Response& Response::setIdentity(crypto::Identity *identity) {
+        if (!_tlsContext)
+            _tlsContext.reset(new sockpp::mbedtls_context);
+        _tlsContext->set_identity(identity->cert->context(),
+                                  identity->privateKey->context());
         return *this;
     }
 

@@ -49,18 +49,17 @@ namespace litecore { namespace REST {
     }
 
 
-    void Server::start(uint16_t port, const char *hostname, crypto::Identity *identity) {
+    void Server::start(uint16_t port,
+                       const char *hostname,
+                       unique_ptr<sockpp::tls_context>&& tlsContext)
+    {
         TCPSocket::initialize();
 
         _port = port;
         _acceptor.reset(new tcp_acceptor (port));
         if (!*_acceptor)
             error::_throw(error::POSIX, _acceptor->last_error());
-        if (identity) {
-            _identity = identity;
-            _tlsContext.reset(new mbedtls_context(tls_context::SERVER));
-            _tlsContext->set_identity(identity->cert->context(), identity->privateKey->context());
-        }
+        _tlsContext = move(tlsContext);
         _acceptThread = thread(bind(&Server::acceptConnections, this));
     }
 
@@ -103,6 +102,16 @@ namespace litecore { namespace REST {
         if (!responder->acceptSocket(move(sock)) || (_tlsContext && !responder->wrapTLS())) {
             c4log(RESTLog, kC4LogError, "Error accepting incoming connection: %s",
                   c4error_descriptionStr(responder->error()));
+            return;
+        }
+        if (c4log_willLog(RESTLog, kC4LogVerbose)) {
+            auto cert = responder->peerTLSCertificate();
+            if (cert)
+                c4log(RESTLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s",
+                      responder->peerAddress().c_str(), cert->subjectPublicKey()->digestString().c_str());
+            else
+                c4log(RESTLog, kC4LogVerbose, "Accepted connection from %s",
+                      responder->peerAddress().c_str());
         }
         RequestResponse rq(this, move(responder));
         if (rq.isValid()) {

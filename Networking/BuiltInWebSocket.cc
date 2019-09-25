@@ -18,6 +18,7 @@
 
 #include "BuiltInWebSocket.hh"
 #include "HTTPLogic.hh"
+#include "Certificate.hh"
 #include "CookieStore.hh"
 #include "c4Replicator.h"
 #include "c4Socket+Internal.hh"
@@ -149,7 +150,7 @@ namespace litecore { namespace websocket {
 
                 _socket = move(socket);
             } catch (const std::exception &x) {
-                closeWithException(x, "connect");
+                closeWithException(x, "while connecting");
                 release(this);
                 return;
             }
@@ -171,15 +172,22 @@ namespace litecore { namespace websocket {
 
 
     unique_ptr<ClientSocket> BuiltInWebSocket::_connectLoop() {
+        Dict authDict = options()[kC4ReplicatorOptionAuthentication].asDict();
+        slice authType = authDict[kC4ReplicatorAuthType].asString();
+
         // Custom TLS context:
         slice rootCerts = options()[kC4ReplicatorOptionRootCerts].asData();
         slice pinnedCert = options()[kC4ReplicatorOptionPinnedServerCert].asData();
-        if (rootCerts || pinnedCert) {
+        if (rootCerts || pinnedCert || authType == slice(kC4AuthTypeClientCert)) {
             _tlsContext.reset(new sockpp::mbedtls_context);
             if (rootCerts)
                 _tlsContext->set_root_certs(string(rootCerts));
             if (pinnedCert)
                 _tlsContext->allow_only_certificate(string(pinnedCert));
+            if (authType == slice(kC4AuthTypeClientCert)) {
+                if (!configureClientCert(authDict))
+                    return nullptr;
+            }
         }
 
         // Create the HTTPLogic object:
@@ -213,18 +221,15 @@ namespace litecore { namespace websocket {
                 case HTTPLogic::kContinue:
                     break; // Will continue with the same socket (after connecting to a proxy)
                 case HTTPLogic::kAuthenticate: {
-                    if (!usedAuth && !logic.authChallenge()->forProxy
+                    if (!usedAuth && authType == slice(kC4AuthTypeBasic)
+                                  && !logic.authChallenge()->forProxy
                                   && logic.authChallenge()->type == "Basic") {
-                        Dict auth = options()[kC4ReplicatorOptionAuthentication].asDict();
-                        slice authType = auth[kC4ReplicatorAuthType].asString();
-                        if (authType == slice(kC4AuthTypeBasic)) {
-                            slice username = auth[kC4ReplicatorAuthUserName].asString();
-                            slice password = auth[kC4ReplicatorAuthPassword].asString();
-                            if (username && password) {
-                                logic.setAuthHeader(HTTPLogic::basicAuth(username, password));
-                                usedAuth = true;
-                                break; // retry with credentials
-                            }
+                        slice username = authDict[kC4ReplicatorAuthUserName].asString();
+                        slice password = authDict[kC4ReplicatorAuthPassword].asString();
+                        if (username && password) {
+                            logic.setAuthHeader(HTTPLogic::basicAuth(username, password));
+                            usedAuth = true;
+                            break; // retry with credentials
                         }
                     }
                     // give up:
@@ -238,6 +243,43 @@ namespace litecore { namespace websocket {
                     closeWithError(logic.error());
                     return nullptr;
             }
+        }
+    }
+
+
+    bool BuiltInWebSocket::configureClientCert(Dict auth) {
+        try {
+            slice certData = auth[kC4ReplicatorAuthClientCert].asData();
+            if (!certData) {
+                closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
+                                            "Missing TLS client cert in C4Replicator config"_sl));
+                return false;
+            }
+            if (slice keyData = auth[kC4ReplicatorAuthClientCertKey].asData(); keyData) {
+                _tlsContext->set_identity(string(certData), string(keyData));
+                return true;
+            } else {
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+                Retained<crypto::Cert> cert = new crypto::Cert(certData);
+                Retained<crypto::PrivateKey> key = cert->loadPrivateKey();
+                if (!key) {
+                    closeWithError(c4error_make(LiteCoreDomain, kC4ErrorCrypto,
+                                                "Couldn't find private key for identity cert"_sl));
+                    return false;
+                }
+                auto mbedContext = (sockpp::mbedtls_context*)_tlsContext.get();
+                mbedContext->set_identity(cert->context(), key->context());
+                _tlsIdentity = new crypto::Identity(cert, key);
+                return true;
+#else
+                closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
+                                            "Missing TLS private key in C4Replicator config"_sl));
+                return false;
+#endif
+            }
+        } catch (const std::exception &x) {
+            closeWithException(x, "configuring TLS client certificate");
+            return false;
         }
     }
 
@@ -330,7 +372,7 @@ namespace litecore { namespace websocket {
             closeWithError(_socket->error());
 
         } catch (const exception &x) {
-            closeWithException(x, "ioLoop");
+            closeWithException(x, "during I/O");
         }
 
         _socket->close();
@@ -396,7 +438,7 @@ namespace litecore { namespace websocket {
 
     void BuiltInWebSocket::closeWithException(const exception &x, const char *where) {
         // Convert exception to CloseStatus:
-        logError("caught exception on %s: %s", where, x.what());
+        logError("caught exception %s: %s", where, x.what());
         error e = error::convertException(x);
         closeWithError(c4error_make(C4ErrorDomain(e.domain), e.code, slice(e.what())));
     }

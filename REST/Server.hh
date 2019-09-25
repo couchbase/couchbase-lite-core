@@ -33,6 +33,7 @@ namespace sockpp {
     class acceptor;
     class mbedtls_context;
     class stream_socket;
+    class tls_context;
 }
 namespace litecore { namespace crypto {
     class Identity;
@@ -45,7 +46,9 @@ namespace litecore { namespace REST {
     public:
         Server();
 
-        void start(uint16_t port, const char *hostname =nullptr, crypto::Identity* =nullptr);
+        void start(uint16_t port,
+                   const char *hostname =nullptr,
+                   std::unique_ptr<sockpp::tls_context>&& =nullptr);
 
         virtual void stop();
 
@@ -81,7 +84,7 @@ namespace litecore { namespace REST {
         void handleConnection(sockpp::stream_socket&&);
 
         fleece::Retained<crypto::Identity> _identity;
-        std::unique_ptr<sockpp::mbedtls_context> _tlsContext;
+        std::unique_ptr<sockpp::tls_context> _tlsContext;
         std::unique_ptr<sockpp::acceptor> _acceptor;
         std::thread _acceptThread;
         std::mutex _mutex;
