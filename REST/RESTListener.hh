@@ -39,7 +39,7 @@ namespace litecore { namespace REST {
         The HTTP work is done by a Server object. */
     class RESTListener : public Listener {
     public:
-        RESTListener(const Config&);
+        explicit RESTListener(const Config&);
         ~RESTListener();
 
         /** Given a database name (from a URI path) returns the filesystem path to the database. */

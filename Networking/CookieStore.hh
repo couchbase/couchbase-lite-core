@@ -68,7 +68,7 @@ namespace litecore { namespace net {
     class CookieStore : public RefCounted {
     public:
         CookieStore() =default;
-        CookieStore(fleece::slice data);
+        explicit CookieStore(fleece::slice data);
 
         fleece::alloc_slice encode();
 

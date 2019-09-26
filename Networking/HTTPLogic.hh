@@ -27,8 +27,8 @@ namespace litecore { namespace net {
 
         // -------- Setup:
 
-        HTTPLogic(const Address &address,
-                  bool handleRedirects =true);
+        explicit HTTPLogic(const Address &address,
+                           bool handleRedirects =true);
         HTTPLogic(const Address &address,
                   const websocket::Headers &requestHeaders,
                   bool handleRedirects =true);

@@ -34,7 +34,7 @@ namespace litecore { namespace net {
     public:
         using slice = fleece::slice;
 
-        TCPSocket(bool isClient, TLSContext* =nullptr);
+        explicit TCPSocket(bool isClient, TLSContext* =nullptr);
         virtual ~TCPSocket();
 
         /// Initializes TCPSocket, must call at least once before using any
@@ -160,7 +160,7 @@ namespace litecore { namespace net {
     /** A client socket, that opens a TCP connection. */
     class ClientSocket : public TCPSocket {
     public:
-        ClientSocket(TLSContext* =nullptr);
+        explicit ClientSocket(TLSContext* =nullptr);
 
         /// Connects to the host, synchronously. On failure throws an exception.
         bool connect(const Address &addr) MUST_USE_RESULT;
@@ -175,7 +175,7 @@ namespace litecore { namespace net {
     /** A server-side socket, that handles a client connection. */
     class ResponderSocket : public TCPSocket {
     public:
-        ResponderSocket(TLSContext* =nullptr);
+        explicit ResponderSocket(TLSContext* =nullptr);
 
         bool acceptSocket(sockpp::stream_socket&&) MUST_USE_RESULT;
         bool acceptSocket(std::unique_ptr<sockpp::stream_socket>) MUST_USE_RESULT;
