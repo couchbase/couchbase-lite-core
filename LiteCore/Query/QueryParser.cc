@@ -1395,6 +1395,13 @@ namespace litecore {
         return SQL();
     }
 
+    std::string QueryParser::FTSExpressionSQL(const fleece::impl::Value* ftsExpr) {
+        reset();
+        writeFunctionGetter(kFTSValueFnName, ftsExpr);
+        return SQL();
+    }
+
+
 
     // Given an index table name, returns its join alias. If `aliasPrefix` is given, it will add
     // a new alias if necessary, which will begin with that prefix.

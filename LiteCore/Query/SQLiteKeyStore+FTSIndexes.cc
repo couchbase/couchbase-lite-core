@@ -49,7 +49,7 @@ namespace litecore {
         vector<string> colNames, colExprs;
         for (Array::iterator i(params); i; ++i) {
             colNames.push_back(CONCAT('"' << QueryParser::FTSColumnName(i.value()) << '"'));
-            colExprs.push_back(qp.expressionSQL(i.value()));
+            colExprs.push_back(qp.FTSExpressionSQL(i.value()));
         }
         string columns = join(colNames, ", ");
         string exprs = join(colExprs, ", ");
