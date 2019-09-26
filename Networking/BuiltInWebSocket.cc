@@ -17,6 +17,7 @@
 //
 
 #include "BuiltInWebSocket.hh"
+#include "TLSContext.hh"
 #include "HTTPLogic.hh"
 #include "Certificate.hh"
 #include "CookieStore.hh"
@@ -26,7 +27,6 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
-#include "sockpp/mbedtls_context.h"
 #include "sockpp/exception.h"
 #include <string>
 
@@ -179,11 +179,11 @@ namespace litecore { namespace websocket {
         slice rootCerts = options()[kC4ReplicatorOptionRootCerts].asData();
         slice pinnedCert = options()[kC4ReplicatorOptionPinnedServerCert].asData();
         if (rootCerts || pinnedCert || authType == slice(kC4AuthTypeClientCert)) {
-            _tlsContext.reset(new sockpp::mbedtls_context);
+            _tlsContext = new TLSContext(TLSContext::Client);
             if (rootCerts)
-                _tlsContext->set_root_certs(string(rootCerts));
+                _tlsContext->setRootCerts(rootCerts);
             if (pinnedCert)
-                _tlsContext->allow_only_certificate(string(pinnedCert));
+                _tlsContext->allowOnlyCert(pinnedCert);
             if (authType == slice(kC4AuthTypeClientCert)) {
                 if (!configureClientCert(authDict))
                     return nullptr;
@@ -208,7 +208,7 @@ namespace litecore { namespace websocket {
         HTTPLogic::Disposition lastDisposition = HTTPLogic::kFailure;
         while (true) {
             if (lastDisposition != HTTPLogic::kContinue) {
-                socket = make_unique<ClientSocket>(_tlsContext.get());
+                socket = make_unique<ClientSocket>(_tlsContext);
                 socket->setTimeout(kConnectTimeoutSecs);
             }
             switch (logic.sendNextRequest(*socket)) {
@@ -256,7 +256,7 @@ namespace litecore { namespace websocket {
                 return false;
             }
             if (slice keyData = auth[kC4ReplicatorAuthClientCertKey].asData(); keyData) {
-                _tlsContext->set_identity(string(certData), string(keyData));
+                _tlsContext->setIdentity(certData, keyData);
                 return true;
             } else {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
@@ -267,9 +267,7 @@ namespace litecore { namespace websocket {
                                                 "Couldn't find private key for identity cert"_sl));
                     return false;
                 }
-                auto mbedContext = (sockpp::mbedtls_context*)_tlsContext.get();
-                mbedContext->set_identity(cert->context(), key->context());
-                _tlsIdentity = new crypto::Identity(cert, key);
+                _tlsContext->setIdentity(new crypto::Identity(cert, key));
                 return true;
 #else
                 closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,

@@ -12,7 +12,6 @@
 #include "fleece/Fleece.hh"
 #include <memory>
 #include <mutex>
-#include <thread>
 #include <vector>
 
 namespace litecore { namespace crypto {
@@ -23,12 +22,11 @@ namespace litecore { namespace websocket {
     class Headers;
 } }
 namespace sockpp {
-    class socket;
     class stream_socket;
-    class tls_context;
 }
 
 namespace litecore { namespace net {
+    class TLSContext;
     class HTTPLogic;
 
     /** TCP socket class, using the sockpp library. */
@@ -36,7 +34,7 @@ namespace litecore { namespace net {
     public:
         using slice = fleece::slice;
 
-        TCPSocket(bool isClient, sockpp::tls_context *ctx =nullptr);
+        TCPSocket(bool isClient, TLSContext* =nullptr);
         virtual ~TCPSocket();
 
         /// Initializes TCPSocket, must call at least once before using any
@@ -44,7 +42,7 @@ namespace litecore { namespace net {
         static void initialize();
 
         /// Returns the TLS context, if any, used by this socket.
-        sockpp::tls_context* TLSContext();
+        TLSContext* tlsContext();
 
         /// Closes the socket if it's open.
         void close();
@@ -134,7 +132,7 @@ namespace litecore { namespace net {
         bool createInterruptPipe();
         void checkStreamError();
         bool checkSocketFailure();
-        bool checkSocket(const sockpp::socket &sock);
+        bool checkSocket(const sockpp::stream_socket &sock);
         ssize_t _read(void *dst, size_t byteCount) MUST_USE_RESULT;
         void pushUnread(slice);
 
@@ -143,7 +141,7 @@ namespace litecore { namespace net {
         
         std::unique_ptr<sockpp::stream_socket> _socket;     // The TCP (or TLS) socket
         sockpp::stream_socket* _wrappedSocket {nullptr};    // Underlying TLS socket, when using TCP
-        sockpp::tls_context* _tlsContext {nullptr};         // Custom TLS context if any
+        fleece::Retained<TLSContext> _tlsContext;           // Custom TLS context if any
         bool _isClient;
         bool _nonBlocking {false};                          // Is socket in non-blocking mode?
         double _timeout {0};                                // read/write/connect timeout in seconds
@@ -162,7 +160,7 @@ namespace litecore { namespace net {
     /** A client socket, that opens a TCP connection. */
     class ClientSocket : public TCPSocket {
     public:
-        ClientSocket(sockpp::tls_context* =nullptr);
+        ClientSocket(TLSContext* =nullptr);
 
         /// Connects to the host, synchronously. On failure throws an exception.
         bool connect(const Address &addr) MUST_USE_RESULT;
@@ -177,7 +175,7 @@ namespace litecore { namespace net {
     /** A server-side socket, that handles a client connection. */
     class ResponderSocket : public TCPSocket {
     public:
-        ResponderSocket(sockpp::tls_context* =nullptr);
+        ResponderSocket(TLSContext* =nullptr);
 
         bool acceptSocket(sockpp::stream_socket&&) MUST_USE_RESULT;
         bool acceptSocket(std::unique_ptr<sockpp::stream_socket>) MUST_USE_RESULT;

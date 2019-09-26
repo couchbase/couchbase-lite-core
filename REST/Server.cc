@@ -19,6 +19,7 @@
 #include "Server.hh"
 #include "Request.hh"
 #include "TCPSocket.hh"
+#include "TLSContext.hh"
 #include "Certificate.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -32,7 +33,6 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
 #include "sockpp/tcp_acceptor.h"
-#include "sockpp/mbedtls_context.h"
 #pragma clang diagnostic pop
 
 
@@ -51,15 +51,15 @@ namespace litecore { namespace REST {
 
     void Server::start(uint16_t port,
                        const char *hostname,
-                       unique_ptr<sockpp::tls_context>&& tlsContext)
+                       TLSContext *tlsContext)
     {
         TCPSocket::initialize();
 
         _port = port;
+        _tlsContext = tlsContext;
         _acceptor.reset(new tcp_acceptor (port));
         if (!*_acceptor)
             error::_throw(error::POSIX, _acceptor->last_error());
-        _tlsContext = move(tlsContext);
         _acceptThread = thread(bind(&Server::acceptConnections, this));
     }
 
@@ -98,7 +98,7 @@ namespace litecore { namespace REST {
 
 
     void Server::handleConnection(sockpp::stream_socket &&sock) {
-        auto responder = make_unique<ResponderSocket>(_tlsContext.get());
+        auto responder = make_unique<ResponderSocket>(_tlsContext);
         if (!responder->acceptSocket(move(sock)) || (_tlsContext && !responder->wrapTLS())) {
             c4log(RESTLog, kC4LogError, "Error accepting incoming connection: %s",
                   c4error_descriptionStr(responder->error()));

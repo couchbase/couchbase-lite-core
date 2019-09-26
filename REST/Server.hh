@@ -21,7 +21,6 @@
 #include "Request.hh"
 #include "c4Base.h"
 #include "c4Socket.h"
-#include <array>
 #include <map>
 #include <mutex>
 #include <functional>
@@ -31,13 +30,14 @@
 
 namespace sockpp {
     class acceptor;
-    class mbedtls_context;
     class stream_socket;
-    class tls_context;
 }
 namespace litecore { namespace crypto {
     class Identity;
 } }
+namespace litecore::net {
+    class TLSContext;
+}
 
 namespace litecore { namespace REST {
 
@@ -48,7 +48,7 @@ namespace litecore { namespace REST {
 
         void start(uint16_t port,
                    const char *hostname =nullptr,
-                   std::unique_ptr<sockpp::tls_context>&& =nullptr);
+                   net::TLSContext* =nullptr);
 
         virtual void stop();
 
@@ -84,7 +84,7 @@ namespace litecore { namespace REST {
         void handleConnection(sockpp::stream_socket&&);
 
         fleece::Retained<crypto::Identity> _identity;
-        std::unique_ptr<sockpp::tls_context> _tlsContext;
+        fleece::Retained<net::TLSContext> _tlsContext;
         std::unique_ptr<sockpp::acceptor> _acceptor;
         std::thread _acceptThread;
         std::mutex _mutex;

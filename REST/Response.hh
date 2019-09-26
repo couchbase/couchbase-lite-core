@@ -24,21 +24,13 @@
 #include "fleece/Fleece.hh"
 #include "c4Base.h"
 #include <functional>
-#include <map>
 #include <memory>
-#include <sstream>
 
-namespace litecore { namespace crypto {
-    class Cert;
-    class Identity;
-} }
 namespace litecore { namespace net {
     class HTTPLogic;
     struct ProxySpec;
+    class TLSContext;
 } }
-namespace sockpp {
-    class mbedtls_context;
-}
 
 namespace litecore { namespace REST {
 
@@ -89,11 +81,12 @@ namespace litecore { namespace REST {
 
         ~Response();
 
+        net::TLSContext* tlsContext();
+
         Response& setHeaders(fleece::Doc headers);
         Response& setAuthHeader(fleece::slice authHeader);
         Response& setBody(fleece::slice body);
-        Response& setPinnedCert(crypto::Cert *pinnedServerCert NONNULL);
-        Response& setIdentity(crypto::Identity* NONNULL);
+        Response& setTLSContext(net::TLSContext*);
         Response& setProxy(const net::ProxySpec&);
         Response& setTimeout(double timeoutSecs)        {_timeout = timeoutSecs; return *this;}
 
@@ -115,7 +108,7 @@ namespace litecore { namespace REST {
     private:
         double _timeout {0};
         std::unique_ptr<net::HTTPLogic> _logic;
-        std::unique_ptr<sockpp::mbedtls_context> _tlsContext;
+        fleece::Retained<net::TLSContext> _tlsContext;
         fleece::alloc_slice _requestBody;
         HTTPStatus _status {HTTPStatus::undefined};
         std::string _statusMessage;

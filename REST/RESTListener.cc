@@ -21,16 +21,15 @@
 #include "c4Private.h"
 #include "c4Document+Fleece.h"
 #include "Server.hh"
+#include "TLSContext.hh"
 #include "Certificate.hh"
 #include "PublicKey.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
-#include "sockpp/mbedtls_context.h"
 #include <functional>
 #include <queue>
 
 using namespace std;
-using namespace sockpp;
 using namespace fleece;
 using namespace litecore::crypto;
 
@@ -136,17 +135,17 @@ namespace litecore { namespace REST {
     }
 
 
-    unique_ptr<mbedtls_context> RESTListener::createTLSContext(const C4TLSConfig *tlsConfig) {
+    Retained<TLSContext> RESTListener::createTLSContext(const C4TLSConfig *tlsConfig) {
         if (!tlsConfig)
             return nullptr;
         _identity = loadTLSIdentity(tlsConfig);
 
-        auto tlsContext = make_unique<mbedtls_context>(tls_context::SERVER);
-        tlsContext->set_identity(_identity->cert->context(), _identity->privateKey->context());
+        auto tlsContext = retained(new TLSContext(TLSContext::Server));
+        tlsContext->setIdentity(_identity);
         if (tlsConfig->requireClientCerts)
-            tlsContext->require_peer_cert(tls_context::SERVER, true);
+            tlsContext->requirePeerCert(true);
         if (tlsConfig->rootClientCerts.buf)
-            tlsContext->set_root_certs(string(slice(tlsConfig->rootClientCerts)));
+            tlsContext->setRootCerts(tlsConfig->rootClientCerts);
         return tlsContext;
     }
 

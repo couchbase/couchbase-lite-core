@@ -21,6 +21,7 @@
 #include "ListenerHarness.hh"
 #include "FilePath.hh"
 #include "Response.hh"
+#include "TLSContext.hh"
 
 using namespace litecore::net;
 using namespace litecore::REST;
@@ -71,9 +72,9 @@ public:
         unique_ptr<Response> r(new Response(scheme, method, "localhost", config.port, uri));
         r->setHeaders(headers).setBody(body);
         if (pinnedCert)
-            r->setPinnedCert(pinnedCert);
+            r->tlsContext()->allowOnlyCert(pinnedCert);
         if (clientIdentity)
-            r->setIdentity(clientIdentity);
+            r->tlsContext()->setIdentity(clientIdentity);
         if (!r->run())
             C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
         C4Log("Status: %d %s", r->status(), r->statusMessage().c_str());

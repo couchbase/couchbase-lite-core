@@ -90,6 +90,8 @@
 		27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
 		2742D10C2305C25D003197E1 /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
 		27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */; };
+		27469CFD233C35EB00A1EE1A /* TLSContext.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27469CFB233C35EB00A1EE1A /* TLSContext.hh */; };
+		27469CFE233C35EB00A1EE1A /* TLSContext.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27469CFC233C35EB00A1EE1A /* TLSContext.cc */; };
 		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
@@ -865,6 +867,8 @@
 		27416E291E0494DF00F10F65 /* c4QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4QueryTest.cc; sourceTree = "<group>"; };
 		27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTrackerTest.cc; sourceTree = "<group>"; };
 		2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorAPITest.cc; sourceTree = "<group>"; };
+		27469CFB233C35EB00A1EE1A /* TLSContext.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TLSContext.hh; sourceTree = "<group>"; };
+		27469CFC233C35EB00A1EE1A /* TLSContext.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TLSContext.cc; sourceTree = "<group>"; };
 		274711C92037BE5A008E9A5A /* SecureSymmetricCrypto.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SecureSymmetricCrypto.cc; sourceTree = "<group>"; };
 		2747664520190841007B39D1 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2747664720190841007B39D1 /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite3.c; sourceTree = "<group>"; };
@@ -1548,6 +1552,8 @@
 				270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */,
 				27304A0423023FCF0049AC69 /* BuiltInWebSocket.cc */,
 				27304A0323023FCF0049AC69 /* BuiltInWebSocket.hh */,
+				27469CFC233C35EB00A1EE1A /* TLSContext.cc */,
+				27469CFB233C35EB00A1EE1A /* TLSContext.hh */,
 			);
 			name = Networking;
 			path = ../Networking;
@@ -2561,6 +2567,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27727C54230F279D0082BCC9 /* HTTPLogic.hh in Headers */,
+				27469CFD233C35EB00A1EE1A /* TLSContext.hh in Headers */,
 				270F2BD52301E8AE00D8DB21 /* TCPSocket.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3339,6 +3346,7 @@
 				2754620D22F39D5500DF87B0 /* PublicKey.cc in Sources */,
 				2742D10C2305C25D003197E1 /* Response.cc in Sources */,
 				2754620C22F39D5500DF87B0 /* Certificate.cc in Sources */,
+				27469CFE233C35EB00A1EE1A /* TLSContext.cc in Sources */,
 				27AFF3A923036B2500B4D6C4 /* exception.cpp in Sources */,
 				27727C55230F279D0082BCC9 /* HTTPLogic.cc in Sources */,
 				278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */,

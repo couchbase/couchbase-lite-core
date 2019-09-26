@@ -17,6 +17,7 @@
 //
 
 #include "TCPSocket.hh"
+#include "TLSContext.hh"
 #include "Headers.hh"
 #include "HTTPLogic.hh"
 #include "Certificate.hh"
@@ -28,6 +29,7 @@
 #include "sockpp/inet6_address.h"
 #include "sockpp/tcp_acceptor.h"
 #include "sockpp/tcp_connector.h"
+#include "sockpp/mbedtls_context.h"
 #include "sockpp/tls_socket.h"
 #include "PlatformIO.hh"
 #include <chrono>
@@ -49,6 +51,7 @@ namespace litecore { namespace net {
     using namespace std;
     using namespace fleece;
     using namespace sockpp;
+    using namespace litecore::net;
     using namespace litecore::websocket;
 
 
@@ -145,7 +148,7 @@ namespace litecore { namespace net {
     #define LOG(LEVEL, ...) LogToAt(WSLog, LEVEL, ##__VA_ARGS__)
 
 
-    TCPSocket::TCPSocket(bool isClient, tls_context *tls)
+    TCPSocket::TCPSocket(bool isClient, TLSContext *tls)
     :_tlsContext(tls)
     ,_isClient(isClient) {
         initialize();
@@ -175,18 +178,18 @@ namespace litecore { namespace net {
         return true;
     }
 
-    tls_context* TCPSocket::TLSContext() {
+    TLSContext* TCPSocket::tlsContext() {
         return _tlsContext;
     }
 
 
     bool TCPSocket::wrapTLS(slice hostname) {
         if (!_tlsContext)
-            _tlsContext = _tlsContext = &tls_context::default_context();
+            _tlsContext = new TLSContext(_isClient ? TLSContext::Client : TLSContext::Server);
         string hostnameStr(hostname);
         _wrappedSocket = _socket.get();
         auto oldSocket = move(_socket);
-        return setSocket(TLSContext()->wrap_socket(move(oldSocket),
+        return setSocket(_tlsContext->_context->wrap_socket(move(oldSocket),
                                             (_isClient ? tls_context::CLIENT : tls_context::SERVER),
                                             hostnameStr.c_str()));
     }
@@ -229,7 +232,7 @@ namespace litecore { namespace net {
 #pragma mark - CLIENT SOCKET:
 
 
-    ClientSocket::ClientSocket(tls_context *tls)
+    ClientSocket::ClientSocket(TLSContext *tls)
     :TCPSocket(true, tls)
     { }
 
@@ -265,7 +268,7 @@ namespace litecore { namespace net {
 #pragma mark - RESPONDER SOCKET:
 
 
-    ResponderSocket::ResponderSocket(tls_context *tls)
+    ResponderSocket::ResponderSocket(TLSContext *tls)
     :TCPSocket(false, tls)
     { }
 
@@ -736,7 +739,7 @@ namespace litecore { namespace net {
     }
 
 
-    bool TCPSocket::checkSocket(const sockpp::socket &sock) {
+    bool TCPSocket::checkSocket(const sockpp::stream_socket &sock) {
         if (sock.last_error()) {
             setError(POSIXDomain, socketToPosixErrCode(sock.last_error()));
             return false;

@@ -18,6 +18,7 @@
 
 #include "Response.hh"
 #include "TCPSocket.hh"
+#include "TLSContext.hh"
 #include "HTTPLogic.hh"
 #include "Address.hh"
 #include "c4ExceptionUtils.hh"
@@ -28,7 +29,6 @@
 #include "StringUtil.hh"
 #include "netUtils.hh"
 #include "Certificate.hh"
-#include "sockpp/mbedtls_context.h"
 #include <string>
 
 using namespace std;
@@ -105,18 +105,14 @@ namespace litecore { namespace REST {
         return *this;
     }
 
-    Response& Response::setPinnedCert(crypto::Cert *pinnedServerCert) {
+    TLSContext* Response::tlsContext() {
         if (!_tlsContext)
-            _tlsContext.reset(new sockpp::mbedtls_context);
-        _tlsContext->allow_only_certificate(pinnedServerCert->context());
-        return *this;
+            _tlsContext = new TLSContext(TLSContext::Client);
+        return _tlsContext;
     }
 
-    Response& Response::setIdentity(crypto::Identity *identity) {
-        if (!_tlsContext)
-            _tlsContext.reset(new sockpp::mbedtls_context);
-        _tlsContext->set_identity(identity->cert->context(),
-                                  identity->privateKey->context());
+    Response& Response::setTLSContext(net::TLSContext *ctx) {
+        _tlsContext = ctx;
         return *this;
     }
 
@@ -166,7 +162,7 @@ namespace litecore { namespace REST {
             _headers = _logic->responseHeaders();
         } catchError(&_error);
         _logic.reset();
-        _tlsContext.reset();
+        _tlsContext = nullptr;
         return (_error.code == 0);
     }
 

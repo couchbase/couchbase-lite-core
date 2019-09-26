@@ -13,6 +13,7 @@
 #include "Address.hh"
 #include "Response.hh"
 #include "Certificate.hh"
+#include "TLSContext.hh"
 #include "c4Test.hh"
 #include "StringUtil.hh"
 #include <algorithm>
@@ -345,7 +346,9 @@ public:
                                              (string)(slice)_address.hostname,
                                              port,
                                              path);
-        r->setHeaders(headers).setBody(body).setPinnedCert(pinnedCert).setTimeout(5);
+        r->setHeaders(headers).setBody(body).setTimeout(5);
+        if (pinnedCert)
+            r->tlsContext()->allowOnlyCert(pinnedCert);
         if (_authHeader)
             r->setAuthHeader(_authHeader);
         if (_proxy)
