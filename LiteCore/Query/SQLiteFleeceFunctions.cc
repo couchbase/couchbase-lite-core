@@ -123,6 +123,8 @@ namespace litecore {
             case kString:
                 result << data->asString().asString();
                 break;
+            default:
+                break;
         }
     }
 
