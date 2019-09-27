@@ -35,6 +35,7 @@ namespace litecore { namespace crypto {
         struct ::mbedtls_pk_context* context()  {return _pk;}
 
         virtual bool isPrivate() =0;
+        bool isRSA()                            {return true;}//TODO: Change when/if we support ECC
 
         std::string description();
 
@@ -66,8 +67,7 @@ namespace litecore { namespace crypto {
         virtual bool isPrivate() override       {return false;}
 
     protected:
-        friend class Cert;
-        friend class CertSigningRequest;
+        friend class CertBase;
         
         PublicKey()                             { }
         explicit PublicKey(KeyOwner *owner)     :Key(owner) { }

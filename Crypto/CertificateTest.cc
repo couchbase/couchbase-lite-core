@@ -26,10 +26,10 @@ using namespace litecore::crypto;
 using namespace std;
 
 
-static constexpr const char* kSubjectName = "CN=Jane Doe, O=ExampleCorp, C=US, "
-                                            "emailAddress=jane@example.com";
+static constexpr const slice kSubjectName = "CN=Jane Doe, O=ExampleCorp, C=US, "
+                                            "emailAddress=jane@example.com"_sl;
 
-static constexpr const char* kCAName = "CN=TrustMe Root CA, O=TrustMe Corp., C=US";
+static constexpr const slice kCAName = "CN=TrustMe Root CA, O=TrustMe Corp., C=US"_sl;
 
 
 TEST_CASE("Key generation", "[Certs]") {
@@ -58,7 +58,7 @@ TEST_CASE("Self-signed cert generation", "[Certs]") {
     Retained<Cert> cert = new Cert(kSubjectName, issuerParams, key);
 
     cerr << "Subject: " << cert->subjectName() << "\n";
-    cerr << "Info:\n" << cert->info("\t");
+    cerr << "Info:\n" << cert->summary("\t");
 
     alloc_slice data = cert->data();
     cerr << "Raw data: " << cert->data() << '\n';
@@ -127,12 +127,12 @@ TEST_CASE("Cert request", "[Certs]") {
     Cert::IssuerParameters caIssuerParams;
     caIssuerParams.is_ca = true;
     Retained<Cert> caCert = new Cert(kCAName, caIssuerParams, caKey);
-    cerr << "CA cert info:\n" << caCert->info("\t");
+    cerr << "CA cert info:\n" << caCert->summary("\t");
 
     // Sign it:
     Cert::IssuerParameters caClientParams;
     caClientParams.validity_secs = 3600*24;
     Retained<Cert> clientCert = csr2->sign(caClientParams, caKey, caCert);
 
-    cerr << "Client cert info:\n" << clientCert->info("\t");
+    cerr << "Client cert info:\n" << clientCert->summary("\t");
 }

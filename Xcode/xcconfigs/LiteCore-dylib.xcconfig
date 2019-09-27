@@ -13,4 +13,4 @@ PRODUCT_NAME                = LiteCore
 
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_IMPL SQLITE_OMIT_LOAD_EXTENSION   // For SQLiteCpp
 
-OTHER_LDFLAGS                = -ObjC
+OTHER_LDFLAGS                = -ObjC -lmbedtls -lmbedcrypto -lmbedx509

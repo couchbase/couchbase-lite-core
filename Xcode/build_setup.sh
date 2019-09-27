@@ -3,7 +3,13 @@
 # It's used by build_libwebsockets.sh and build_mbedtls.sh.
 
 # Create the CMake build directory:
-CMAKE_BUILD_DIR="$PER_VARIANT_OBJECT_FILE_DIR/$1"
+if [[ "$PER_VARIANT_OBJECT_FILE_DIR" != "" ]]
+then
+    CMAKE_BUILD_DIR="$PER_VARIANT_OBJECT_FILE_DIR/$1"
+else
+    CMAKE_BUILD_DIR="$OBJECT_FILE_DIR/$1"
+fi
+
 mkdir -p "$CMAKE_BUILD_DIR"
 cd "$CMAKE_BUILD_DIR"
 

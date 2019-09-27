@@ -41,6 +41,46 @@ namespace litecore { namespace crypto {
     using namespace fleece;
 
 
+    void CertBase::parseData(fleece::slice data, void *context, ParseFn parse)
+    {
+        Assert(data);
+        bool isPEM = data.hasPrefix("-----"_sl);
+        alloc_slice adjustedData;
+        if (isPEM && !data.hasSuffix('\0')) {
+            // mbedTLS insists PEM data must end with a NUL byte, so add one:
+            adjustedData = alloc_slice(data);
+            adjustedData.resize(data.size + 1);
+            *((char*)adjustedData.end() - 1) = '\0';
+            data = adjustedData;
+        }
+
+        TRY( parse(context, (const uint8_t*)data.buf, data.size) );
+    }
+
+
+
+    alloc_slice CertBase::data(KeyFormat f) {
+        switch (f) {
+            case KeyFormat::DER:
+                return alloc_slice(derData());
+            case KeyFormat::PEM:
+                return convertToPEM(derData(), isSigned() ? "CERTIFICATE" : "CERTIFICATE REQUEST");
+            default:
+                throwMbedTLSError(MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE);
+        }
+    }
+
+
+    alloc_slice CertBase::summary(const char *indent) {
+        return allocString(10000, [&](char *buf, size_t size) {
+            return writeInfo(buf, size, indent);
+        });
+    }
+
+
+#pragma mark - CERT:
+
+
     Cert::Cert()
     :_cert(new mbedtls_x509_crt)
     {
@@ -56,18 +96,7 @@ namespace litecore { namespace crypto {
     Cert::Cert(slice data)
     :Cert()
     {
-        Assert(data);
-        bool isPEM = data.hasPrefix("-----"_sl);
-        alloc_slice adjustedData;
-        if (isPEM && !data.hasSuffix('\0')) {
-            // mbedTLS insists PEM data must end with a NUL byte, so add one:
-            adjustedData = alloc_slice(data);
-            adjustedData.resize(data.size + 1);
-            *((char*)adjustedData.end() - 1) = '\0';
-            data = adjustedData;
-        }
-
-        TRY( mbedtls_x509_crt_parse(context(), (const uint8_t*)data.buf, data.size) );
+        parseData(data, context(), (ParseFn)&mbedtls_x509_crt_parse);
     }
 
 
@@ -76,6 +105,21 @@ namespace litecore { namespace crypto {
                PrivateKey *keyPair)
     :Cert( create(subjectParams, keyPair->publicKey(), issuerParams, keyPair, nullptr) )
     { }
+
+
+    static uint8_t defaultKeyUsage(uint8_t certTypes, bool usingRSA) {
+        // https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/nss_tech_notes/nss_tech_note3
+        uint8_t keyUsage = 0;
+        if (certTypes & (MBEDTLS_X509_NS_CERT_TYPE_SSL_CLIENT | MBEDTLS_X509_NS_CERT_TYPE_EMAIL
+                         | MBEDTLS_X509_NS_CERT_TYPE_OBJECT_SIGNING))
+            keyUsage |= MBEDTLS_X509_KU_DIGITAL_SIGNATURE;
+        if (certTypes & (MBEDTLS_X509_NS_CERT_TYPE_SSL_SERVER | MBEDTLS_X509_NS_CERT_TYPE_EMAIL))
+            keyUsage |= (usingRSA ? MBEDTLS_X509_KU_KEY_ENCIPHERMENT : MBEDTLS_X509_KU_KEY_AGREEMENT);
+        if (certTypes & (MBEDTLS_X509_NS_CERT_TYPE_SSL_CA | MBEDTLS_X509_NS_CERT_TYPE_EMAIL_CA
+                         | MBEDTLS_X509_NS_CERT_TYPE_OBJECT_SIGNING_CA))
+            keyUsage |= MBEDTLS_X509_KU_KEY_CERT_SIGN;
+        return keyUsage;
+    }
 
 
     alloc_slice Cert::create(const SubjectParameters &subjectParams,
@@ -94,10 +138,10 @@ namespace litecore { namespace crypto {
             mbedtls_mpi_free(&serial );
         };
 
-        Log("Signing X.509 cert for '%s'", subjectParams.subject_name.c_str());
-
-        string issuer_name = issuerCert ? issuerCert->subjectName() : subjectParams.subject_name;
-
+        string subjectName(subjectParams.subject_name);
+        string issuerName = issuerCert ? string(issuerCert->subjectName())
+                                       : string(subjectParams.subject_name);
+        Log("Signing X.509 cert for '%s', as issuer '%s'", subjectName.c_str(), issuerName.c_str());
         // Format the dates:
         time_t now = time(nullptr) - 60;
         time_t exp = now + issuerParams.validity_secs;
@@ -109,13 +153,13 @@ namespace litecore { namespace crypto {
         // Set certificate attributes:
         mbedtls_x509write_crt_set_subject_key(&crt, subjectKey->context());
         mbedtls_x509write_crt_set_issuer_key(&crt, issuerKeyPair->context());
-        TRY( mbedtls_x509write_crt_set_subject_name(&crt, subjectParams.subject_name.c_str()) );
-        TRY( mbedtls_x509write_crt_set_issuer_name(&crt, issuer_name.c_str()) );
+        TRY( mbedtls_x509write_crt_set_subject_name(&crt, subjectName.c_str()) );
+        TRY( mbedtls_x509write_crt_set_issuer_name(&crt, issuerName.c_str()) );
         mbedtls_x509write_crt_set_version(&crt, MBEDTLS_X509_CRT_VERSION_3);
         mbedtls_x509write_crt_set_md_alg(&crt, MBEDTLS_MD_SHA256);
         TRY( mbedtls_x509write_crt_set_validity(&crt, notBefore, notAfter) );
 
-        TRY( mbedtls_mpi_read_string(&serial, 10, issuerParams.serial.c_str()));
+        TRY( mbedtls_mpi_read_string(&serial, 10, string(issuerParams.serial).c_str()));
         TRY( mbedtls_x509write_crt_set_serial(&crt, &serial));
 
         if (issuerParams.add_basic_constraints)
@@ -134,10 +178,16 @@ namespace litecore { namespace crypto {
             TRY( mbedtls_x509write_crt_set_authority_key_identifier(&crt) );
             crt.issuer_key = originalIssuer;
         }
-        if (subjectParams.key_usage != 0)
-            TRY( mbedtls_x509write_crt_set_key_usage(&crt, subjectParams.key_usage ));
-        if (subjectParams.ns_cert_type != 0)
+
+        auto key_usage = subjectParams.key_usage;
+        if (subjectParams.ns_cert_type != 0) {
             TRY( mbedtls_x509write_crt_set_ns_cert_type(&crt, subjectParams.ns_cert_type ));
+            if (key_usage == 0) // Set key usage based on cert type:
+                key_usage = defaultKeyUsage(subjectParams.ns_cert_type,
+                                            subjectKey->isRSA());
+        }
+        if (key_usage != 0)
+            TRY( mbedtls_x509write_crt_set_key_usage(&crt, key_usage ));
 
         // Finally, sign and encode the certificate:
         return allocDER(4096, [&](uint8_t *data, size_t size) {
@@ -147,15 +197,8 @@ namespace litecore { namespace crypto {
     }
 
 
-    alloc_slice Cert::data(KeyFormat f) {
-        switch (f) {
-        case KeyFormat::DER:
-            return {_cert->raw.p, _cert->raw.len};
-        case KeyFormat::PEM:
-            return convertToPEM({_cert->raw.p, _cert->raw.len}, "CERTIFICATE");
-        default:
-            throwMbedTLSError(MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE);
-        }
+    slice Cert::derData() {
+        return {_cert->raw.p, _cert->raw.len};
     }
 
 
@@ -164,18 +207,13 @@ namespace litecore { namespace crypto {
     }
 
 
-    std::string Cert::subjectName() {
+    alloc_slice Cert::subjectName() {
         return getX509Name(&_cert->subject);
     }
 
 
-    std::string Cert::info(const char *indent) {
-        string str;
-        str.resize(10000, '\0');
-        int len = mbedtls_x509_crt_info((char*)str.data(), 10000, indent, _cert.get());
-        Assert(len >= 0);
-        str.resize(len);
-        return str;
+    int Cert::writeInfo(char *buf, size_t bufSize, const char *indent) {
+        return mbedtls_x509_crt_info(buf, bufSize, indent, _cert.get());
     }
 
 
@@ -209,14 +247,7 @@ namespace litecore { namespace crypto {
     CertSigningRequest::CertSigningRequest(slice data)
     :CertSigningRequest()
     {
-        Assert(data);
-        TRY( mbedtls_x509_csr_parse(context(), (const uint8_t*)data.buf, data.size) );
-        if (data.hasPrefix("-----"_sl)) {
-            // Input is PEM, but _data should be the parsed DER:
-            _data = alloc_slice(_csr->raw.p, _csr->raw.len);
-        } else {
-            _data = data;
-        }
+        parseData(data, context(), (ParseFn)&mbedtls_x509_csr_parse);
     }
 
 
@@ -234,17 +265,23 @@ namespace litecore { namespace crypto {
         mbedtls_x509write_csr_init( &csr );
         DEFER { mbedtls_x509write_csr_free(&csr); };
 
-        Log("Creating X.509 cert request for '%s'", params.subject_name.c_str());
+        string subjectName(params.subject_name);
+        Log("Creating X.509 cert request for '%s'", subjectName.c_str());
 
         // Set certificate attributes:
         mbedtls_x509write_csr_set_key(&csr, subjectKey->context());
         mbedtls_x509write_csr_set_md_alg(&csr, MBEDTLS_MD_SHA256);
-        TRY( mbedtls_x509write_csr_set_subject_name(&csr, params.subject_name.c_str()) );
+        TRY( mbedtls_x509write_csr_set_subject_name(&csr, subjectName.c_str()) );
 
-        if (params.key_usage != 0)
-            TRY( mbedtls_x509write_csr_set_key_usage(&csr, params.key_usage ));
-        if (params.ns_cert_type != 0)
+        auto key_usage = params.key_usage;
+        if (params.ns_cert_type != 0) {
             TRY( mbedtls_x509write_csr_set_ns_cert_type(&csr, params.ns_cert_type ));
+            if (key_usage == 0) // Set key usage based on cert type:
+                key_usage = defaultKeyUsage(params.ns_cert_type,
+                                            subjectKey->isRSA());
+        }
+        if (key_usage != 0)
+            TRY( mbedtls_x509write_csr_set_key_usage(&csr, key_usage ));
 
         // Finally, encode the request:
         return allocDER(4096, [&](uint8_t *data, size_t size) {
@@ -259,20 +296,18 @@ namespace litecore { namespace crypto {
     }
 
 
-    alloc_slice CertSigningRequest::data(KeyFormat f) {
-        switch (f) {
-        case KeyFormat::DER:
-            return _data;
-        case KeyFormat::PEM:
-            return convertToPEM(_data, "CERTIFICATE REQUEST");
-        default:
-            throwMbedTLSError(MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE);
-        }
+    slice CertSigningRequest::derData() {
+        return {_csr->raw.p, _csr->raw.len};
     }
 
 
-    string CertSigningRequest::subjectName() {
+    alloc_slice CertSigningRequest::subjectName() {
         return getX509Name(&_csr->subject);
+    }
+
+
+    int CertSigningRequest::writeInfo(char *buf, size_t bufSize, const char *indent) {
+        return mbedtls_x509_csr_info(buf, bufSize, indent, _csr.get());
     }
 
 

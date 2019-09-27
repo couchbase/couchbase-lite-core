@@ -82,7 +82,7 @@ public:
         Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
         Cert::IssuerParameters issuerParams;
         issuerParams.validity_secs = 3600*24;
-        auto cert = retained(new Cert(litecore::format("CN=%s, O=Couchbase, OU=Mobile", commonName),
+        auto cert = retained(new Cert(slice(litecore::format("CN=%s, O=Couchbase, OU=Mobile", commonName)),
                                       issuerParams, key));
         return new Identity(cert, key);
     }
@@ -109,7 +109,7 @@ public:
         Retained<PersistentPrivateKey> key = PersistentPrivateKey::generateRSA(2048);
         Cert::IssuerParameters issuerParams;
         issuerParams.validity_secs = 3600*24;
-        auto cert = retained(new Cert("CN=ListenerHarness, O=Couchbase, OU=Mobile", issuerParams, key));
+        auto cert = retained(new Cert("CN=ListenerHarness, O=Couchbase, OU=Mobile"_sl, issuerParams, key));
         cert->makePersistent();
         return new Identity(cert, key);
     }

@@ -49,10 +49,10 @@ namespace litecore { namespace crypto {
     }
 
 
-    string getX509Name(mbedtls_x509_name *xname) {
+    alloc_slice getX509Name(mbedtls_x509_name *xname) {
         char nameBuf[256];
         TRY( mbedtls_x509_dn_gets(nameBuf, sizeof(nameBuf), xname) );
-        return string(nameBuf);
+        return alloc_slice(nameBuf);
     }
 
 
@@ -112,11 +112,11 @@ namespace litecore { namespace crypto {
     }
 
 
-    alloc_slice convertToPEM(const alloc_slice &data, const char *name NONNULL)
+    alloc_slice convertToPEM(const slice &data, const char *name NONNULL)
     {
         if (data.hasPrefix("-----"_sl)) {
             // It's already PEM...
-            return data;
+            return alloc_slice(data);
         }
 
         return allocString(10000, [&](char *buf, size_t size) {

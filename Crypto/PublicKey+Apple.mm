@@ -25,10 +25,14 @@
 #include "Defer.hh"
 #include "ParseDate.hh"
 #include "SecureDigest.hh"
+#include "StringUtil.hh"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
 #include "mbedUtils.hh"
 #include "mbedtls/pk.h"
 #include "mbedtls/x509_crt.h"
+#pragma clang diagnostic pop
 
 #include "fleece/slice.hh"
 #include <Security/Security.h>
@@ -258,7 +262,8 @@ namespace litecore { namespace crypto {
 
     void Cert::makePersistent() {
         @autoreleasepool {
-            Log("Adding certificate to Keychain for %s", subjectName().c_str());
+            auto name = subjectName();
+            Log("Adding certificate to Keychain for %.*s", SPLAT(name));
             SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
                                                                      (CFDataRef)data().copiedNSData());
             if (!certRef)

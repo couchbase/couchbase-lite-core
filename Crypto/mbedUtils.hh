@@ -23,7 +23,7 @@ namespace litecore { namespace crypto {
     }
 
     // Converts X509 name structure to a string
-    std::string getX509Name(mbedtls_asn1_named_data /*mbedtls_x509_name*/ *xname);
+    fleece::alloc_slice getX509Name(mbedtls_asn1_named_data /*mbedtls_x509_name*/ *xname);
 
     // Returns a global random number context, initialized on 1st call.
     mbedtls_ctr_drbg_context* RandomNumberContext();
@@ -34,6 +34,6 @@ namespace litecore { namespace crypto {
     // Utility wrapper for mbedTLS functions that write DER to a buffer
     fleece::alloc_slice allocDER(size_t maxSize, function_ref<int(uint8_t*,size_t)> writer);
 
-    fleece::alloc_slice convertToPEM(const alloc_slice &derData, const char *name NONNULL);
+    fleece::alloc_slice convertToPEM(const slice &derData, const char *name NONNULL);
 
 } }
