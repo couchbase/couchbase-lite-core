@@ -664,6 +664,9 @@ namespace litecore {
     
     // Handles infix operators
     void QueryParser::infixOp(slice op, Array::iterator& operands) {
+        bool functionWantsCollation = _functionWantsCollation;
+        _functionWantsCollation = false;
+
         if (operands.count() >= 2 && operands[1]->type() == kNull) {
             // Ugly special case where SQLite's semantics for 'IS [NOT]' don't match N1QL's (#410)
             if (op.caseEquivalent("IS"_sl))
@@ -683,13 +686,12 @@ namespace litecore {
             parseCollatableNode(i.value());
         }
 
-        if(_functionWantsCollation) {
+        if(functionWantsCollation) {
             if(n > 0) {
                 _sql << ", ";
             }
 
             _sql << "'" << _collation.sqliteName() << "'";
-            _functionWantsCollation = false;
         }
     }
 
