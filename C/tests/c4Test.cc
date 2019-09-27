@@ -295,7 +295,7 @@ C4Database* C4Test::createDatabase(const string &nameSuffix) {
 void C4Test::closeDB() {
     C4Error error;
     REQUIRE(c4db_close(db, &error));
-    c4db_free(db);
+    c4db_release(db);
     db = nullptr;
 }
 
@@ -313,7 +313,7 @@ void C4Test::reopenDBReadOnly() {
     auto config = *c4db_getConfig(db);
     C4Error error;
     REQUIRE(c4db_close(db, &error));
-    c4db_free(db);
+    c4db_release(db);
     db = nullptr;
     config.flags = (config.flags & ~kC4DB_Create) | kC4DB_ReadOnly;
     db = c4db_open(databasePath(), &config, &error);
@@ -326,7 +326,7 @@ void C4Test::deleteDatabase(){
     bool deletedDb = c4db_delete(db, &error);
     INFO("Error " << error.domain << "/" << error.code);
     REQUIRE(deletedDb);
-    c4db_free(db);
+    c4db_release(db);
     db = nullptr;
 }
 
@@ -336,7 +336,7 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
     auto config = *c4db_getConfig(db);
     C4Error error;
     REQUIRE(c4db_delete(db, &error));
-    c4db_free(db);
+    c4db_release(db);
     db = nullptr;
     db = c4db_open({path.buf, path.size}, &config, &error);
     REQUIRE(db);
@@ -354,7 +354,7 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
     auto curDoc = c4doc_get(db, docID, false, &error);
     REQUIRE(curDoc != nullptr);
     createConflictingRev(db, docID, curDoc->revID, revID, body, flags);
-    c4doc_free(curDoc);
+    c4doc_release(curDoc);
 }
 
 void C4Test::createConflictingRev(C4Database *db,
@@ -380,7 +380,7 @@ void C4Test::createConflictingRev(C4Database *db,
 //    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
 //    REQUIRE(doc != nullptr);        // can't use Catch on bg threads
     Assert(doc != nullptr);
-    c4doc_free(doc);
+    c4doc_release(doc);
 }
 
 
@@ -391,7 +391,7 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4Revis
 //    REQUIRE(curDoc != nullptr);        // can't use Catch on bg threads
     Assert(curDoc != nullptr);
     string revID = createNewRev(db, docID, curDoc->revID, body, flags);
-    c4doc_free(curDoc);
+    c4doc_release(curDoc);
     return revID;
 }
 
@@ -414,7 +414,7 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4S
     //REQUIRE(doc != nullptr);        // can't use Catch on bg threads
     Assert(doc != nullptr);
     string revID((char*)doc->revID.buf, doc->revID.size);
-    c4doc_free(doc);
+    c4doc_release(doc);
     return revID;
 }
 
@@ -470,7 +470,7 @@ string C4Test::getDocJSON(C4Database* inDB, C4Slice docID) {
     REQUIRE(doc);
     fleece::alloc_slice json( c4doc_bodyAsJSON(doc, true, &error) );
     REQUIRE(json);
-    c4doc_free(doc);
+    c4doc_release(doc);
     return json.asString();
 }
 
@@ -517,7 +517,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     C4Document* doc = c4doc_put(db, &rq, nullptr, &c4err);
     c4slice_free(body);
     REQUIRE(doc != nullptr);
-    c4doc_free(doc);
+    c4doc_release(doc);
     return keys;
 }
 
@@ -605,7 +605,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
         rq.save = true;
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
         REQUIRE(doc != nullptr);
-        c4doc_free(doc);
+        c4doc_release(doc);
         FLSliceResult_Free(body);
         ++numDocs;
         if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
@@ -647,7 +647,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             rq.save = true;
             C4Document *doc = c4doc_put(database, &rq, nullptr, &c4err);
             REQUIRE(doc != nullptr);
-            c4doc_free(doc);
+            c4doc_release(doc);
             ++numDocs;
             if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
                 C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());

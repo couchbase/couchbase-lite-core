@@ -68,11 +68,11 @@ namespace litecore { namespace repl {
 
     DBAccess::~DBAccess() {
         use([&](C4Database *db) {
-            c4db_free(db);
+            c4db_release(db);
         });
         if (_insertionDB) {
             _insertionDB->use([&](C4Database *idb) {
-                c4db_free(idb);
+                c4db_release(idb);
             });
         }
     }

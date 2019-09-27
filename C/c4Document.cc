@@ -41,7 +41,7 @@ C4Document* c4doc_retain(C4Document *doc) noexcept {
 }
 
 
-void c4doc_free(C4Document *doc) noexcept {
+void c4doc_release(C4Document *doc) noexcept {
    release((Document*)doc);
 }
 
@@ -494,7 +494,7 @@ C4Document* c4doc_put(C4Database *database,
                     return nullptr;
                 commonAncestorIndex = asInternal(doc)->putExistingRevision(*rq, outError);
                 if (commonAncestorIndex < 0) {
-                    c4doc_free(doc);
+                    c4doc_release(doc);
                     return nullptr;
                 }
 
@@ -519,7 +519,7 @@ C4Document* c4doc_put(C4Database *database,
         return doc;
 
     } catchError(outError) {
-        c4doc_free(doc);
+        c4doc_release(doc);
         return nullptr;
     }
 }

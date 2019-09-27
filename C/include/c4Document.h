@@ -130,10 +130,8 @@ extern "C" {
     /** Increments the ref-count of a C4Document. */
     C4Document* c4doc_retain(C4Document *doc) C4API;
 
-    void c4doc_free(C4Document *doc) C4API;
-
     /** Decrements the ref-count of a C4Document, freeing it when it reaches zero. */
-    static inline void c4doc_release(C4Document *doc)    {c4doc_free(doc);}
+    void c4doc_release(C4Document *doc) C4API;
 
     /** @} */
     

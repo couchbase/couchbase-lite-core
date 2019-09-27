@@ -167,16 +167,16 @@ extern "C" {
                         const C4DatabaseConfig2* config C4NONNULL,
                         C4Error* error) C4API;
 
-    /** Increments the reference count of the database handle. The next call to
-        c4db_free() will have no effect. Therefore calls to c4db_retain must be balanced by calls
-        to c4db_free, to avoid leaks. */
-    C4Database* c4db_retain(C4Database* db) C4API;
-
-    void c4db_free(C4Database* database) C4API;
+    /** Increments the reference count of the database handle. */
+    static inline C4Database* c4db_retain(C4Database* db) C4API {
+        return (C4Database*) c4base_retain(db);
+    }
 
     /** Decrements the ref-count of a C4Database,
         closing and freeing it if the ref-count hits zero. */
-    static inline void c4db_release(C4Database* db)    {c4db_free(db);}
+    static inline void c4db_release(C4Database* db)    {
+        c4base_release(db);
+    }
 
     /** Closes the database. Does not free the handle, although any operation other than
         c4db_release() will fail with an error. */

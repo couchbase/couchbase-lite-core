@@ -58,7 +58,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt databas
     string newPathStr = newPath.path();
     CopyPrebuiltDB(original, newPath, &db->config);
     C4DatabaseConfig config = db->config;
-    c4db_free(db);
+    c4db_release(db);
     db = c4db_open(c4str(newPathStr.c_str()), &config, nullptr);
     runPushReplication();
 }

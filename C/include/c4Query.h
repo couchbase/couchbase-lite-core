@@ -61,13 +61,14 @@ extern "C" {
     C4Query* c4query_new(C4Database* C4NONNULL, C4String, C4Error*) C4API;  // for backward compatibility
 
     /** Increments the reference count of a C4Query. */
-    C4Query* c4query_retain(C4Query*) C4API;
-
-    /** Deprecated synonym for \ref c4query_release. */
-    void c4query_free(C4Query*) C4API;
+    static inline C4Query* c4query_retain(C4Query *query) C4API {
+        return (C4Query*) c4base_retain(query);
+    }
 
     /** Decrements the ref-count; at zero, closes and frees the C4Query. */
-    static inline void c4query_release(C4Query* q)    {c4query_free(q);}
+    static inline void c4query_release(C4Query* query) {
+        c4base_release(query);
+    }
 
     /** Returns a string describing the implementation of the compiled query.
         This is intended to be read by a developer for purposes of optimizing the query, especially

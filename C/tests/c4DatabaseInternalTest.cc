@@ -128,7 +128,7 @@ public:
     void forceInsert(C4Slice docID, const C4Slice* history, size_t historyCount,
                             C4Slice body, C4RevisionFlags flags = 0) {
         C4Document* doc = forceInsert(db, docID, history, historyCount, body, flags);
-        c4doc_free(doc);
+        c4doc_release(doc);
     }
     
     C4Document* forceInsert(C4Database *db, C4Slice docID,
@@ -255,7 +255,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "1-") == 0);
     C4String docID = copy(doc->docID);
     C4String revID1 = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Read it back:
     doc = c4doc_get(db, docID, true, &c4err);
@@ -263,7 +263,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc->docID == docID);
     REQUIRE(doc->selectedRev.revID == revID1);
     REQUIRE(doc->selectedRev.body == body);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Now update it:
     doc = putDoc(docID, revID1, updatedBody, kRevKeepBody);
@@ -271,7 +271,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc->selectedRev.body == updatedBody);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "2-") == 0);
     C4String revID2 = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Read it back:
     doc = c4doc_get(db, docID, true, &c4err);
@@ -279,7 +279,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc->docID == docID);
     REQUIRE(doc->selectedRev.revID == revID2);
     REQUIRE(doc->selectedRev.body == updatedBody);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Try to update the first rev, which should fail:
     C4Error err;
@@ -296,7 +296,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
         REQUIRE(doc->selectedRev.sequence == seq);
         REQUIRE(doc->selectedRev.revID == revID2);
         REQUIRE(doc->docID == docID);
-        c4doc_free(doc);
+        c4doc_release(doc);
         seq++;
     }
     REQUIRE(seq == 3); // size check 2 + 0 => 3
@@ -317,7 +317,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc->docID == docID);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "3-") == 0);
     C4String revID3 = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Read the deletion revision:
     doc = c4doc_get(db, docID, true, &c4err);
@@ -328,7 +328,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc->selectedRev.revID == revID3);
     REQUIRE(doc->selectedRev.body != kC4SliceNull);  // valid revision should not have null body
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Delete nonexistent doc:
     putDocMustFail(C4STR("fake"), kC4SliceNull, kC4SliceNull, kRevDeleted, err);
@@ -344,7 +344,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(e);
     seq = 3;
     while (nullptr != (doc = c4enum_nextDocument(e, &c4err))) {
-        c4doc_free(doc);
+        c4doc_release(doc);
         seq++;
     }
     REQUIRE(seq == 3); // size check 3 + 0 => 4
@@ -360,7 +360,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
         REQUIRE(doc->selectedRev.sequence == seq);
         REQUIRE(doc->selectedRev.revID == revID3);
         REQUIRE(doc->docID == docID);
-        c4doc_free(doc);
+        c4doc_release(doc);
         seq++;
     }
     REQUIRE(seq == 4); // size check 3 + 1 => 4
@@ -388,7 +388,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
         latest--;
     }while(c4doc_selectParentRevision(doc));
     REQUIRE(latest == 0);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // NOTE: Following two methods are implemennted in above layer if necessary.
     // - (NSArray<CBL_RevID*>*) getRevisionHistory: (CBL_Revision*)rev
@@ -403,7 +403,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     CHECK(c4doc_selectRevision(doc, revID2, true, &c4err));
     REQUIRE(doc->selectedRev.revID == revID2);
     REQUIRE(doc->selectedRev.body == updatedBody);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Compact the database:
     c4err = {};
@@ -419,7 +419,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     // TODO: c4db_compact() implementation is still work in progress.
     //       Following line should be activated after implementation.
     // REQUIRE(doc->selectedRev.body == kC4SliceNull);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Make sure history still works after compaction:
     doc = c4doc_get(db, docID, true, &c4err);
@@ -443,7 +443,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
         latest--;
     }while(c4doc_selectParentRevision(doc));
     REQUIRE(latest == 0);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // release allocated memories
     free(docID);
@@ -462,7 +462,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "EmptyDoc", "[Database][C]") {
     // Create a document:
     C4Document* doc = putDoc(kC4SliceNull, kC4SliceNull, kEmptyFleeceBody);
     C4String docID = copy(doc->docID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     C4Error error = {};
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
@@ -472,7 +472,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "EmptyDoc", "[Database][C]") {
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         REQUIRE(doc->selectedRev.sequence == seq);
         REQUIRE(doc->docID == docID);
-        c4doc_free(doc);
+        c4doc_release(doc);
         seq++;
     }
     REQUIRE(seq == 2); // size check 1 + 1 => 2
@@ -494,20 +494,20 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]"
     REQUIRE(doc->revID == revID);
     C4String docID = copy(doc->docID);
     C4String revID1 = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Update a document
     doc = putDoc(docID, revID1, C4STR("{'property':'newvalue'}"));
     revID = C4STR("2-eaaa643f551df08eb0c60f87f3f011ac4355f834");
     REQUIRE(doc->revID == revID);
     C4String revID2 = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
 
     // Delete a document
     doc = putDoc(docID, revID2, kC4SliceNull, kRevDeleted);
     revID = C4STR("3-3ae8fab29af3a5bfbfa5a4c5fd91c58214cb0c5a");
     REQUIRE(doc->revID == revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // free copied C4String instances
     free(docID);
@@ -528,13 +528,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
     C4Document* doc = putDoc(kC4SliceNull, kC4SliceNull, body1);
     C4String docID = copy(doc->docID);
     C4String revID1 = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Delete a document
     alloc_slice body2 = json2fleece("{'property':'newvalue'}");
     doc = putDoc(docID, revID1, body2, kRevDeleted);
     C4String revID2 = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // NOTE: LiteCore level c4doc_get() return non-null document, but
     //       higher level should return null.
@@ -545,18 +545,18 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
     REQUIRE(doc->selectedRev.body == body2);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Make sure it's possible to create the doc from scratch again:
     doc = putDoc(docID, kC4SliceNull, body2);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "3-") == 0); // new rev is child of tombstone rev
     C4String revID3 = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     doc = c4doc_get(db, docID, true, &error);
     REQUIRE(doc);
     REQUIRE(doc->revID == revID3);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // free copied C4String instances
     free(docID);
@@ -576,7 +576,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "1-") == 0);
     alloc_slice body(doc->selectedRev.body);
     C4String revID1 = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Delete a document
     doc = putDoc(C4STR("dock"), revID1, kC4SliceNull, kRevDeleted);
@@ -585,13 +585,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
     REQUIRE(doc->selectedRev.body != kC4SliceNull);  // valid revision should not have null body
     C4String revID2 = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Recreate a document with same content with revision 1
     doc = putDoc(C4STR("dock"), revID2, body);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "3-") == 0);
     REQUIRE(doc->selectedRev.body == body);
-    c4doc_free(doc);
+    c4doc_release(doc);
 }
 
 // test05_Validation
@@ -614,7 +614,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     
     C4Document* doc = getDoc(docID);
     verifyRev(doc, history, historyCount, body);
-    c4doc_free(doc);
+    c4doc_release(doc);
 
     // No-op forceInsert: of already-existing revision:
     C4SequenceNumber lastSeq = c4db_getLastSequence(db);
@@ -638,7 +638,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     REQUIRE(c4db_getDocumentCount(db) == 1);
     doc = getDoc(docID);
     verifyRev(doc, history, historyCount, body);
-    c4doc_free(doc);
+    c4doc_release(doc);
     //TODO - conflict check
     
     // Add an unrelated document:
@@ -654,13 +654,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     REQUIRE(c4doc_selectRevision(doc, C4STR("2-2222"), false, &error));
     REQUIRE((doc->selectedRev.flags & (C4RevisionFlags)(kRevKeepBody)) == false);
     REQUIRE(doc->selectedRev.body == kC4SliceNull);
-    c4doc_free(doc);
+    c4doc_release(doc);
 
     doc = getDoc(otherDocID);
     REQUIRE(c4doc_selectRevision(doc, C4STR("666-6666"), false, &error) == false);
     REQUIRE(error.domain == LiteCoreDomain);
     REQUIRE(error.code == kC4ErrorNotFound);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Make sure no duplicate rows were inserted for the common revisions:
     // LiteCore does note assigns sequence to inserted ancestor revs
@@ -670,7 +670,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     doc = getDoc(docID);
     REQUIRE(doc->revID == history[0]);
     REQUIRE(doc->selectedRev.revID == history[0]);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Check that the list of conflicts is accurate:
     doc = getDoc(docID);
@@ -678,7 +678,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     REQUIRE(conflictingRevs.size() == 2);
     REQUIRE(conflictingRevs[0] == history[0]);
     REQUIRE(conflictingRevs[1] == conflictHistory[0]);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Get the _changes feed and verify only the winner is in it:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
@@ -726,7 +726,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
             }
             counter++;
         }while(c4doc_selectNextLeafRevision(doc, true, true, &error));
-        c4doc_free(doc);
+        c4doc_release(doc);
     }
     c4enum_free(e);
     REQUIRE(counter == 3);
@@ -739,17 +739,17 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
 
     // Delete the current winning rev, leaving the other one:
     doc = putDoc(docID, conflictHistory[0], kC4SliceNull, kRevDeleted);
-    c4doc_free(doc);
+    c4doc_release(doc);
     doc = getDoc(docID);
     //TODO: Uncomment once https://github.com/couchbase/couchbase-lite-core/issues/57 is fixed
     //REQUIRE(doc->revID == history[0]); // 4-4444 should be current??
     //REQUIRE(doc->selectedRev.revID == history[0]);
     //verifyRev(doc, history, historyCount, body);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // Delete the remaining rev:
     doc = putDoc(docID, history[0], kC4SliceNull, kRevDeleted);
-    c4doc_free(doc);
+    c4doc_release(doc);
     // TODO: Need to implement following tests
 }
 
@@ -768,14 +768,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTreeConflict", "[Database][C]
     C4Document* doc = forceInsert(db, docID, history, historyCount, body, 0);
     REQUIRE(c4db_getDocumentCount(db) == 1);
     verifyRev(doc, history, historyCount, body);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     const size_t newHistoryCount = 3;
     const C4String newHistory[newHistoryCount] = {C4STR("3-3333"), C4STR("2-2222"), C4STR("1-1111")};
     doc = forceInsert(db, docID, newHistory, newHistoryCount, body, 0);
     REQUIRE(c4db_getDocumentCount(db) == 1);
     verifyRev(doc, newHistory, newHistoryCount, body);
-    c4doc_free(doc);
+    c4doc_release(doc);
 }
 
 // test08_DeterministicRevIDs
@@ -786,14 +786,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeterministicRevIDs", "[Database
     C4String body = C4STR("{'key':'value'}");
     C4Document* doc = putDoc(docID, kC4SliceNull, body);
     C4String revID = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     deleteAndRecreateDB();
     
     doc = putDoc(docID, kC4SliceNull, body);
     REQUIRE(doc->revID == revID);
     REQUIRE(doc->selectedRev.revID == revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     free(revID);
 }
@@ -807,13 +807,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DuplicateRev", "[Database][C]") 
     alloc_slice body = json2fleece("{'key':'value'}");
     C4Document* doc = putDoc(docID, kC4SliceNull, body);
     C4String revID = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // rev2a
     body = json2fleece("{'key':'new-value'}");
     doc = putDoc(docID, revID, body);
     C4String revID2a = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
     
     // rev2b
     {
@@ -834,7 +834,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DuplicateRev", "[Database][C]") 
         REQUIRE(error.code == 0);
     }
     C4String revID2b = copy(doc->revID);
-    c4doc_free(doc);
+    c4doc_release(doc);
 
     REQUIRE(revID2a == revID2b);
     

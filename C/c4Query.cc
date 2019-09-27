@@ -267,16 +267,6 @@ C4Query* c4query_new(C4Database *database C4NONNULL, C4String expression, C4Erro
 }
 
 
-C4Query* c4query_retain(C4Query *query) C4API {
-    return retain(query);
-}
-
-
-void c4query_free(C4Query *query) noexcept {
-    release(query);
-}
-
-
 unsigned c4query_columnCount(C4Query *query) noexcept {
     return query->query()->columnCount();
 }

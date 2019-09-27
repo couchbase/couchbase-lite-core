@@ -148,7 +148,7 @@ static void testOpeningEncryptedDBFixture(const char *dbPath, const void *key) {
         C4Log("---- Opening db %s with flags 0x%x", dbPath, config.flags);
         auto db = c4db_open(copyFixtureDB(dbPath), &config, &error);
         CHECK(db);
-        c4db_free(db);
+        c4db_release(db);
     }
 }
 

@@ -62,7 +62,7 @@ public:
             rq.save = true;
             auto doc = c4doc_put(db, &rq, nullptr, &error);
             REQUIRE(doc);
-            c4doc_free(doc);
+            c4doc_release(doc);
         }
 
         REQUIRE(c4db_endTransaction(db, true, &error));
@@ -85,7 +85,7 @@ N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.
     unsigned i = 0;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
         i++;
-        c4doc_free(doc);
+        c4doc_release(doc);
     }
     c4enum_free(e);
     REQUIRE(i == kNumDocuments);

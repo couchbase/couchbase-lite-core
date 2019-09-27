@@ -75,7 +75,7 @@ public:
 
     void closeDB(C4Database* database) {
         c4db_close(database, nullptr);
-        c4db_free(database);
+        c4db_release(database);
     }
 
 
@@ -116,7 +116,7 @@ public:
             while (c4enum_next(e, &error)) {
                 auto doc = c4enum_getDocument(e, &error);
                 REQUIRE(doc);
-                c4doc_free(doc);
+                c4doc_release(doc);
                 n++;
             }
             REQUIRE(error.code == 0);

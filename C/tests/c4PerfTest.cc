@@ -103,7 +103,7 @@ public:
             rq.save = true;
             C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
             REQUIRE(doc != nullptr);
-            c4doc_free(doc);
+            c4doc_release(doc);
             ++numDocs;
         }
         
@@ -127,7 +127,7 @@ public:
             docIDs.push_back(artist);
         }
         c4queryenum_free(e);
-        c4query_free(query);
+        c4query_release(query);
         if (verbose) std::cerr << "\n";
         return (unsigned) docIDs.size();
     }
@@ -145,7 +145,7 @@ public:
             auto doc = c4doc_get(db, c4str(docID), true, &error);
             REQUIRE(doc);
             REQUIRE(doc->selectedRev.body.size > 30);
-            c4doc_free(doc);
+            c4doc_release(doc);
             b.stop();
         }
         b.printReport(1, "doc");

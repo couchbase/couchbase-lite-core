@@ -422,6 +422,21 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
 }
 // LCOV_EXCL_STOP
 
+
+#pragma mark - REFERENCE COUNTED:
+
+
+void* c4base_retain(void *obj) C4API {
+    return retain((RefCounted*)obj);
+}
+
+
+void c4base_release(void *obj) C4API {
+    release((RefCounted*)obj);
+}
+
+
+
 #pragma mark - INSTANCE COUNTED:
 
 

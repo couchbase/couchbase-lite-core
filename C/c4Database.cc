@@ -141,11 +141,6 @@ C4Database* c4db_openNamed(C4String name,
 }
 
 
-C4Database* c4db_retain(C4Database* db) C4API {
-    return retain(db);
-}
-
-
 C4Database* c4db_openAgain(C4Database* db,
                            C4Error *outError) noexcept
 {
@@ -179,11 +174,6 @@ bool c4db_close(C4Database* database, C4Error *outError) noexcept {
     if (database == nullptr)
         return true;
     return tryCatch(outError, bind(&Database::close, database));
-}
-
-
-void c4db_free(C4Database* database) noexcept {
-    release(database);
 }
 
 

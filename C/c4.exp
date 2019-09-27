@@ -4,10 +4,16 @@
 #  Created by Jens Alfke on 9/15/15.
 #  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 
-# Couchbase Lite .NET
+# Misc.
 _c4_getVersion
 _c4_now
+_c4_getObjectCount
+_c4_shutdown
+_c4_setTempDir
+_c4base_retain
+_c4base_release
 
+# c4log
 _c4log_getLevel
 _c4log_setLevel
 _c4slog
@@ -23,6 +29,7 @@ _c4log_warnOnErrors
 _c4log_getWarnOnErrors
 _c4log_willLog
 
+# c4error
 _c4error_make
 _c4error_getMessage
 _c4error_mayBeTransient
@@ -30,10 +37,9 @@ _c4error_mayBeNetworkDependent
 
 _c4key_setPassword
 
+# c4db
 _c4db_open
 _c4db_openNamed
-_c4db_retain
-_c4db_free
 _c4db_close
 _c4db_copy
 _c4db_copyNamed
@@ -59,13 +65,15 @@ _c4db_getSharedFleeceEncoder
 _c4db_getFLSharedKeys
 _c4db_encodeJSON
 
+# c4raw
 _c4raw_free
 _c4raw_get
 _c4raw_put
 
-_c4doc_generateID
+# c4doc
 _c4doc_retain
-_c4doc_free
+_c4doc_release
+_c4doc_generateID
 _c4doc_get
 _c4doc_getBySequence
 _c4doc_getSingleRevision
@@ -96,17 +104,20 @@ _c4doc_dictContainsBlobs
 
 _c4rev_getGeneration
 
+# c4enum
 _c4db_enumerateChanges
 _c4db_enumerateAllDocs
 _c4db_createIndex
 _c4db_deleteIndex
 _c4db_getIndexes
+
 _c4enum_next
 _c4enum_getDocumentInfo
 _c4enum_getDocument
 _c4enum_close
 _c4enum_free
 
+# c4queryenum
 _c4queryenum_next
 _c4queryenum_seek
 _c4queryenum_refresh
@@ -114,16 +125,16 @@ _c4queryenum_close
 _c4queryenum_retain
 _c4queryenum_free
 
+# c4query
 _c4query_new
 _c4query_new2
-_c4query_retain
-_c4query_free
 _c4query_setParameters
 _c4query_columnCount
 _c4query_columnTitle
 _c4query_run
 _c4query_explain
 
+# c4blob
 _c4blob_keyFromString
 _c4blob_keyToString
 _c4blob_openStore
@@ -138,6 +149,7 @@ _c4blob_delete
 _c4blob_openWriteStream
 _c4db_getBlobStore
 
+# c4stream
 _c4stream_read
 _c4stream_getLength
 _c4stream_seek
@@ -149,6 +161,7 @@ _c4stream_computeBlobKey
 _c4stream_install
 _c4stream_closeWriter
 
+# c4dbobs
 _c4dbobs_create
 _c4dbobs_getChanges
 _c4dbobs_releaseChanges
@@ -159,6 +172,7 @@ _c4queryobs_create
 _c4queryobs_free
 _c4queryobs_getEnumerator
 
+# c4repl
 _c4repl_new
 _c4repl_newWithSocket
 _c4repl_free
@@ -170,6 +184,7 @@ _c4repl_setOptions
 _c4repl_setHostReachable
 _c4repl_setSuspended
 
+# c4socket
 _c4socket_registerFactory
 _c4socket_fromNative
 _c4socket_opened
@@ -179,13 +194,31 @@ _c4socket_completedWrite
 _c4socket_received
 _c4socket_gotHTTPResponse
 
+# c4pred [Apple only]
 _c4pred_registerModel
 _c4pred_unregisterModel
 
-_c4_getObjectCount
-_c4_shutdown
+# c4cert
+_c4cert_createRequest
+_c4cert_fromData
+_c4cert_copyData
+_c4cert_subjectName
+_c4cert_description
+_c4cert_isSigned
+_c4cert_signRequest
+_c4cert_makePersistent
+_c4cert_loadPersistentPrivateKey
+_c4key_createPair
+_c4key_fromPublicKeyData
+_c4key_fromPrivateKeyData
+_c4key_hasPrivateKey
+_c4key_isPersistent
+_c4key_publicKeyData
+_c4key_privateKeyData
 
-_c4_setTempDir
+_kDefaultCertIssuerParameters
+
+#### FLEECE
 
 _FLSlice_Equal
 _FLSlice_Compare

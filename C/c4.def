@@ -3,6 +3,8 @@ EXPORTS
 ; Couchbase Lite .NET
 c4_getVersion
 c4_now
+c4base_retain
+c4base_release
 
 c4log_getLevel
 c4log_setLevel
@@ -23,8 +25,6 @@ c4error_mayBeTransient
 c4error_mayBeNetworkDependent
 
 c4db_open
-c4db_retain
-c4db_free
 c4db_close
 c4db_copy
 c4db_delete
@@ -52,7 +52,7 @@ c4raw_get
 c4raw_put
 
 c4doc_retain
-c4doc_free
+c4doc_release
 c4doc_get
 c4doc_getBySequence
 c4db_purgeDoc
@@ -100,7 +100,6 @@ c4queryenum_free
 
 c4query_new
 c4query_new2
-c4query_free
 c4query_columnCount
 c4query_columnTitle
 c4query_run

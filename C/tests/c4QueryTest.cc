@@ -202,8 +202,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
         C4Document *updatedDoc = c4doc_put(db, &rq, nullptr, &c4err);
         INFO("c4err = " << c4err.domain << "/" << c4err.code);
         REQUIRE(updatedDoc != nullptr);
-        c4doc_free(doc);
-        c4doc_free(updatedDoc);
+        c4doc_release(doc);
+        c4doc_release(updatedDoc);
     }
 
     // Now run a query that would have returned the deleted doc, if it weren't deleted:

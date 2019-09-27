@@ -33,13 +33,13 @@ public:
     { }
 
     ~QueryTest() {
-        c4query_free(query);
+        c4query_release(query);
     }
 
     void compileSelect(const string &queryStr) {
         INFO("Query = " << queryStr);
         C4Error error;
-        c4query_free(query);
+        c4query_release(query);
         query = c4query_new(db, c4str(queryStr.c_str()), &error);
         char errbuf[256];
         INFO("error " << c4error_getDescriptionC(error, errbuf, sizeof(errbuf)));
@@ -172,7 +172,7 @@ public:
         rq.save = true;
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
         REQUIRE(doc != nullptr);
-        c4doc_free(doc);
+        c4doc_release(doc);
         FLSliceResult_Free(body);
     }
 

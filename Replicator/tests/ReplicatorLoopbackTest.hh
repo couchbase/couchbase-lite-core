@@ -49,7 +49,7 @@ public:
         _replClient = _replServer = nullptr;
         C4Error error;
         REQUIRE(c4db_delete(db2, &error));
-        c4db_free(db2);
+        c4db_release(db2);
     }
 
     // opts1 is the options for _db; opts2 is the options for _db2

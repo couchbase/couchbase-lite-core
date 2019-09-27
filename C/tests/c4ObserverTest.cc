@@ -150,7 +150,7 @@ TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     CHECK(dbCallbackCalls == 2);
 
     c4db_close(otherdb, NULL);
-    c4db_free(otherdb);
+    c4db_release(otherdb);
 }
 
 

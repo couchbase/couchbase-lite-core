@@ -332,6 +332,11 @@ void c4_dumpInstances(void) C4API;
 void c4_setTempDir(C4String path) C4API;
 
 
+// The actual functions behind c4xxx_retain / c4xxx_release; don't call directly
+void* c4base_retain(void *obj) C4API;
+void c4base_release(void *obj) C4API;
+
+
 #ifdef __cplusplus
 }
 #endif

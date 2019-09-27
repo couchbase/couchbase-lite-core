@@ -150,14 +150,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     REQUIRE(path == TEMPDIR("cbl_core_test_bundle" kPathSeparator)); // note trailing '/'
     c4slice_free(path);
     REQUIRE(c4db_close(bundle, &error));
-    c4db_free(bundle);
+    c4db_release(bundle);
 
     // Reopen without 'create' flag:
     config.flags &= ~kC4DB_Create;
     bundle = c4db_open(bundlePath, &config, &error);
     REQUIRE(bundle);
     REQUIRE(c4db_close(bundle, &error));
-    c4db_free(bundle);
+    c4db_release(bundle);
 
     // Reopen with wrong storage type:
     {
@@ -259,7 +259,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
         REQUIRE(info.bodySize >= 11);
         REQUIRE(info.bodySize <= 40);   // size includes rev-tree overhead so it's not exact
 
-        c4doc_free(doc);
+        c4doc_release(doc);
         i++;
     }
     c4enum_free(e);
@@ -313,7 +313,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
         char docID[30];
         sprintf(docID, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
-        c4doc_free(doc);
+        c4doc_release(doc);
         seq++;
     }
     c4enum_free(e);
@@ -327,7 +327,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
         char docID[30];
         sprintf(docID, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
-        c4doc_free(doc);
+        c4doc_release(doc);
         seq++;
     }
     c4enum_free(e);
@@ -343,7 +343,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
         char docID[30];
         sprintf(docID, "doc-%03llu", (unsigned long long)seq);
         REQUIRE(doc->docID == c4str(docID));
-        c4doc_free(doc);
+        c4doc_release(doc);
         seq--;
     }
     c4enum_free(e);
@@ -438,7 +438,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[
 
     CHECK(c4db_nextDocExpiration(db2) == expire);
 
-    c4db_free(db2);
+    c4db_release(db2);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C]")
@@ -534,13 +534,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 2);
     REQUIRE(c4db_delete(nudb, &error));
-    c4db_free(nudb);
+    c4db_release(nudb);
     
     nudb = c4db_open(c4str(nuPath.c_str()), &config, &error);
     REQUIRE(nudb);
     createRev(nudb, doc1ID, kRevID, kFleeceBody);
     CHECK(c4db_getDocumentCount(nudb) == 1);
-    c4db_free(nudb);
+    c4db_release(nudb);
     
     string originalDest = nuPath;
     nuPath = TempDir() + "bogus" + kPathSeparator + "nunudb.cblite2" + kPathSeparator;
@@ -554,7 +554,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     nudb = c4db_open(c4str(originalDest.c_str()), &config, &error);
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 1);
-    c4db_free(nudb);
+    c4db_release(nudb);
     
     string originalSrc = srcPathStr;
     srcPathStr += string("bogus") + kPathSeparator;
@@ -569,7 +569,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     nudb = c4db_open(c4str(originalDest.c_str()), &config, &error);
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 1);
-    c4db_free(nudb);
+    c4db_release(nudb);
 
     srcPathStr = originalSrc;
     {
@@ -583,7 +583,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 1);
     REQUIRE(c4db_delete(nudb, &error));
-    c4db_free(nudb);
+    c4db_release(nudb);
 }
 
 
