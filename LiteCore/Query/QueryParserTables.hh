@@ -165,10 +165,10 @@ namespace litecore {
         {"regexp_like"_sl,      2, 2},
         {"regexp_position"_sl,  2, 2},
         {"regexp_replace"_sl,   3, 9},
-        {"fl_like"_sl,          2, 3, nullslice, false, true},
+        {"fl_like"_sl,          2, 2, nullslice, false, true},
 
         // Strings:
-        {"contains"_sl,         2, 3, nullslice, false, true},
+        {"contains"_sl,         2, 2, nullslice, false, true},
         {"length"_sl,           1, 1, "N1QL_length"_sl},
         {"lower"_sl,            1, 1, "N1QL_lower"_sl},
         {"ltrim"_sl,            1, 2, "N1QL_ltrim"_sl},
