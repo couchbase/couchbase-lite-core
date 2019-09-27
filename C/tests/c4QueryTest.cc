@@ -71,6 +71,11 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query LIKE", "[Query][C]") {
 
         compile(json5("['LIKE', ['.name.first'], 'J_ne']"));
         CHECK(run() == (vector<string>{ "0000028" }));
+
+        // Check backtracking (e.g. Janette should not fail because of extra characters
+        // after Jane because there is another e at the end)
+        compile(json5("['LIKE', ['.name.first'], 'J%e']"));
+        CHECK(run() == (vector<string>{ "0000028", "0000052", "0000088" }));
     }
 
     SECTION("Escaped") {

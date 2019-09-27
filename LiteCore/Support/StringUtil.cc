@@ -195,6 +195,15 @@ namespace litecore {
         return 0;
     }
 
+    pure_slice NextUTF8(slice str) noexcept {
+        const size_t nextLength = NextUTF8Length(str);
+        if(nextLength == 0) {
+            return nullslice;
+        }
+
+        return {str.buf, nextLength};
+    }
+
 
     bool UTF16IsSpace(char16_t c) noexcept {
         // "ISO 30112 defines POSIX space characters as Unicode characters U+0009..U+000D, U+0020,

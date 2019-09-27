@@ -22,12 +22,20 @@
 #include "StringUtil.hh"
 #include <sqlite3.h>
 #include <algorithm>
+#define CBL_MATCH             0
+#define CBL_NOMATCH           1
+#define CBL_NOWILDCARDMATCH   2
 
 namespace litecore {
 
     using namespace std;
     using namespace fleece;
-    
+
+    static inline pure_slice ReadUTF8(slice& str) {
+        pure_slice retVal = NextUTF8(str);
+        str.moveStart(retVal.size);
+        return retVal;
+    }
 
     void RegisterSQLiteUnicodeCollations(sqlite3* dbHandle,
                                          CollationContextVector &contexts) {
@@ -50,45 +58,56 @@ namespace litecore {
         });
     }
 
-    bool LikeUTF8(slice comparand, slice pattern, const Collation& col) {
-        bool insidePercent = false;
-        while(pattern.size > 0 && comparand.size > 0) {
-            const bool escaped = pattern[0] == '\\';
-            const bool special = pattern[0] == '%' || pattern[0] == '_';
-            if(escaped) {
-                pattern.moveStart(1);
-            }
-
-            const size_t nextPatternSize = NextUTF8Length(pattern);
-            const size_t nextComparandSize = NextUTF8Length(comparand);
-            if((escaped || !special) && CompareUTF8({pattern.buf, nextPatternSize}, {comparand.buf, nextComparandSize}, col)) {
-                // Mismatched non-special letter
-                if(!insidePercent) {
-                    // Normally, this means no match
-                    return false;
+    int LikeUTF8(slice comparand, slice pattern, const Collation& col) {
+        slice c, c2;                       /* Next pattern and input string chars */
+        slice matchOne = "_"_sl;
+        slice matchAll = "%"_sl;
+        slice zEscaped = nullslice;          /* One past the last escaped input char */
+          
+        while( (c = ReadUTF8(pattern)).size !=0 ){
+            if( c==matchAll ){  /* Match "*" */
+              /* Skip over multiple "*" characters in the pattern.  If there
+              ** are also "?" characters, skip those as well, but consume a
+              ** single character of the input string for each "?" skipped */
+                while( (c = ReadUTF8(pattern)) == matchAll || c == matchOne ){
+                    if( c == matchOne && ReadUTF8(comparand).size == 0 ){
+                      return CBL_NOWILDCARDMATCH;
+                    }
+                }
+                if( c.size == 0 ){
+                    return CBL_MATCH;   /* "*" at the end of the pattern matches */
+                }else if( c == "\\"_sl ){
+                    c = ReadUTF8(pattern);
+                    if( c.size == 0 ) return CBL_NOWILDCARDMATCH;
                 }
 
-                // Keep searching for the match after the percent sign
-                comparand.moveStart(nextComparandSize);
-                continue;
+                /* At this point variable c contains the first character of the
+                ** pattern string past the "*".  Search in the input string for the
+                ** first matching character and recursively continue the match from
+                ** that point.
+                **
+                */
+                while( (c2 = ReadUTF8(comparand)).size != 0 ){
+                    if( CompareUTF8(c2, c, col) ) continue;
+                    int bMatch = LikeUTF8(comparand, pattern, col);
+                    if( bMatch != CBL_NOMATCH ) return bMatch;
+                }
+
+                return CBL_NOWILDCARDMATCH;
             }
 
-            insidePercent = false;
-            if(pattern[0] == '%') {
-                // Keep comparand where it is
-                insidePercent = true;
-            } else {
-                comparand.moveStart(nextComparandSize);
+            if( c == "\\"_sl ) {
+                c = ReadUTF8(pattern);
+                if( c.size == 0 ) return CBL_NOMATCH;
+                zEscaped = pattern;
             }
-
-            pattern.moveStart(nextPatternSize);
-        }
-
-        if(comparand.size != 0) {
-            return insidePercent;
-        }
-
-        return pattern.size == 0;
+            c2 = ReadUTF8(comparand);
+            bool one = pattern != zEscaped;
+            if( !CompareUTF8(c2, c, col) ) continue;
+            if( c == matchOne && pattern.buf != zEscaped.buf && c2.size != 0 ) continue;
+            return CBL_NOMATCH;
+          }
+          return comparand.size == 0 ? CBL_MATCH : CBL_NOMATCH;
     }
 
 
