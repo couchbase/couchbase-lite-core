@@ -56,8 +56,8 @@ namespace litecore { namespace actor {
 
         unsigned eventCount() const                         {return (unsigned)size() + (unsigned)_delayedEventCount;}
 
-        void enqueue(std::function<void()>);
-        void enqueueAfter(delay_t delay, std::function<void()>);
+        void enqueue(const std::function<void()>&);
+        void enqueueAfter(delay_t delay, const std::function<void()>&);
 
         static Actor* currentActor()                        {return sCurrentActor;}
 
