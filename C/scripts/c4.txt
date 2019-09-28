@@ -1,6 +1,4 @@
-EXPORTS
-
-; Couchbase Lite .NET
+# Couchbase Lite
 c4_getVersion
 c4_now
 
@@ -190,9 +188,7 @@ FLValue_ToJSONX
 FLData_ConvertJSON
 FLJSON5_ToJSON
 
-FLValue_Release
 FLArray_Count
-FLArray_IsEmpty
 FLArray_Get
 FLArrayIterator_Begin
 FLArrayIterator_GetCount
@@ -201,11 +197,9 @@ FLArrayIterator_GetValueAt
 FLArrayIterator_Next
 
 FLDict_Count
-FLDict_IsEmpty
 FLDict_Get
 FLDict_GetWithKey
 FLDictIterator_Begin
-FLDictIterator_End
 FLDictIterator_GetKey
 FLDictIterator_GetKeyString
 FLDictIterator_GetValue
@@ -270,7 +264,7 @@ FLSlot_SetString
 FLSlot_SetData
 FLSlot_SetValue
 
-; C4Tests
+# C4Tests
 kC4SQLiteStorageEngine
 kC4DatabaseFilenameExtension
 
@@ -371,4 +365,3 @@ mbedtls_md_init
 mbedtls_md_free
 mbedtls_md_setup
 mbedtls_pkcs5_pbkdf2_hmac
-
