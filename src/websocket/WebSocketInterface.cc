@@ -61,6 +61,13 @@ namespace litecore { namespace websocket {
     }
 
 
+    Value GetHeader(fleece::Dict headers, fleece::slice name) {
+        for (Dict::iterator i(headers); i; ++i)
+            if (i.keyString().caseEquivalent(name))
+                return i.value();
+        return nullptr;
+    }
+        
     const char* CloseStatus::reasonName() const  {
         static const char* kReasonNames[] = {"WebSocket status", "errno",
             "Network error", "Exception", "Unknown error"};

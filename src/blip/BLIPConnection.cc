@@ -170,7 +170,7 @@ namespace litecore { namespace blip {
         }
 
         virtual void onWebSocketGotHTTPResponse(int status,
-                                                const websocket::Headers &headers) override
+                                                const fleece::AllocedDict &headers) override
         {
             _connection->gotHTTPResponse(status, headers);
         }
@@ -667,7 +667,7 @@ namespace litecore { namespace blip {
     }
 
 
-    void Connection::gotHTTPResponse(int status, const websocket::Headers &headers) {
+    void Connection::gotHTTPResponse(int status, const fleece::AllocedDict &headers) {
         delegate().onHTTPResponse(status, headers);
     }
 

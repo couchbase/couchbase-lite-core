@@ -90,7 +90,7 @@ namespace litecore { namespace blip {
         friend class BLIPIO;
 
         void send(MessageOut*);
-        void gotHTTPResponse(int status, const websocket::Headers &headers);
+        void gotHTTPResponse(int status, const fleece::AllocedDict &headers);
         void connected();
         void closed(CloseStatus);
 
@@ -113,7 +113,7 @@ namespace litecore { namespace blip {
         virtual ~ConnectionDelegate()                           { }
 
         /** Called when the HTTP response arrives (just before onConnect or onClose). */
-        virtual void onHTTPResponse(int status, const websocket::Headers &headers) { }
+        virtual void onHTTPResponse(int status, const fleece::AllocedDict &headers) { }
 
         /** Called when the connection opens. */
         virtual void onConnect()                                { }
