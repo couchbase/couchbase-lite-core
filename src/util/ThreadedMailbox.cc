@@ -121,7 +121,7 @@ namespace litecore { namespace actor {
         Scheduler::sharedScheduler()->start();
     }
 
-    void ThreadedMailbox::enqueue(std::function<void()> f) {
+    void ThreadedMailbox::enqueue(const std::function<void()> &f) {
         beginLatency();
         retain(_actor);
         const auto wrappedBlock = [f, SELF]
@@ -136,7 +136,7 @@ namespace litecore { namespace actor {
             reschedule();
     }
 
-    void ThreadedMailbox::enqueueAfter(delay_t delay, std::function<void()> f) {
+    void ThreadedMailbox::enqueueAfter(delay_t delay, const std::function<void()> &f) {
         if (delay <= delay_t::zero())
             return enqueue(f);
 
@@ -152,10 +152,11 @@ namespace litecore { namespace actor {
                 beginBusy();
                 safelyCall(f);
                 --_delayedEventCount;
-                release(_actor); // For enqueueAfter's retain call
                 afterEvent();
             };
-            enqueue(wrappedBlock);
+            
+            if (push(wrappedBlock))
+                reschedule();
         });
 
         timer->autoDelete();
