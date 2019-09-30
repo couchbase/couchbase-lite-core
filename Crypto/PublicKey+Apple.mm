@@ -80,7 +80,13 @@ namespace litecore { namespace crypto {
     }
 
 
-    static CFTypeRef CF_RETURNS_RETAINED findInKeychain(NSDictionary *params) {
+    static NSData* publicKeyHash(PublicKey *key NONNULL) {
+        SHA1 digest(key->data(KeyFormat::Raw));
+        return [NSData dataWithBytes: &digest length: sizeof(digest)];
+    }
+
+
+    static CFTypeRef CF_RETURNS_RETAINED findInKeychain(NSDictionary *params NONNULL) {
         CFTypeRef result = NULL;
         OSStatus err = SecItemCopyMatching((__bridge CFDictionaryRef)params, &result);
         if (err == errSecItemNotFound)
@@ -257,6 +263,43 @@ namespace litecore { namespace crypto {
     }
 
 
+    Retained<PersistentPrivateKey> PersistentPrivateKey::withPublicKey(PublicKey* publicKey) {
+        @autoreleasepool {
+            // First look up a SecCertificateRef from the public-key digest. (We ought to be able
+            // to look up a SecIdentityRef directly, but using kSecClassIdentity doesn't work;
+            // the search matches all the identities in the Keychain...)
+            auto certRef = (SecCertificateRef)findInKeychain(@{
+                (id)kSecClass:              (id)kSecClassCertificate,
+                (id)kSecAttrPublicKeyHash:  publicKeyHash(publicKey),
+                (id)kSecReturnRef:          @YES,
+            });
+            if (!certRef)
+                return nullptr;
+            CFAutorelease(certRef);
+
+            // Get the identity and then the private key:
+            SecIdentityRef identityRef;
+            checkOSStatus(SecIdentityCreateWithCertificate(nullptr, certRef, &identityRef),
+                          "SecIdentityCreateWithCertificate", "get private key from keychain");
+            CFAutorelease(identityRef);
+
+            SecKeyRef privateKeyRef;
+            checkOSStatus(SecIdentityCopyPrivateKey(identityRef, &privateKeyRef),
+                          "SecIdentityCopyPrivateKey", "get private key from keychain");
+
+            // Get the public key from the cert, not from the private key, because calling
+            // SecKeyCopyPublicKey results in a key ref that doesn't allow its data to be read,
+            // for some reason (bug?)
+
+            SecKeyRef publicKeyRef;
+            checkOSStatus(SecCertificateCopyPublicKey(certRef, &publicKeyRef),
+                          "SecCertificateCopyPublicKey", "get private key from keychain");
+            auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
+            return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
+        }
+    }
+
+
 #pragma mark - CERT:
 
 
@@ -281,7 +324,7 @@ namespace litecore { namespace crypto {
             --gC4ExpectExceptions;
 
             if (err == errSecDuplicateItem) {
-                // A cert must already exist in the Keychain with the same label (common name).
+                // Keychain can only have one cert with the same label (common name).
                 // Delete the existing one, then retry:
                 CFStringRef commonName;
                 checkOSStatus( SecCertificateCopyCommonName(certRef, &commonName),
@@ -322,10 +365,9 @@ namespace litecore { namespace crypto {
     Retained<Cert> Cert::load(PublicKey *subjectKey) {
         // The Keychain can look up a cert by the SHA1 digest of the raw form of its public key.
         @autoreleasepool {
-            SHA1 digest(subjectKey->data(KeyFormat::Raw));
             NSData* certData = CFBridgingRelease(findInKeychain(@{
                 (id)kSecClass:              (id)kSecClassCertificate,
-                (id)kSecAttrPublicKeyHash:  [NSData dataWithBytes: &digest length: sizeof(digest)],
+                (id)kSecAttrPublicKeyHash:  publicKeyHash(subjectKey),
                 (id)kSecReturnData:         @YES
             }));
             return certData ? new Cert(slice(certData)) : nullptr;
@@ -334,43 +376,7 @@ namespace litecore { namespace crypto {
 
 
     Retained<PersistentPrivateKey> Cert::loadPrivateKey() {
-        @autoreleasepool {
-            // First look up a SecCertificateRef from the public-key digest. (We ought to be able
-            // to look up a SecIdentityRef directly, but using kSecClassIdentity doesn't work;
-            // the search matches all the identities in the Keychain...)
-            SHA1 digest(this->subjectPublicKey()->data(KeyFormat::Raw));
-            auto certRef = (SecCertificateRef)findInKeychain(@{
-                (id)kSecClass:              (id)kSecClassCertificate,
-                (id)kSecAttrPublicKeyHash:  [NSData dataWithBytes: &digest length: sizeof(digest)],
-                (id)kSecReturnRef:          @YES,
-            });
-            if (!certRef)
-                return nullptr;
-            CFAutorelease(certRef);
-
-            NSData *readData = CFBridgingRelease(SecCertificateCopyData(certRef));
-            Assert(slice(readData) == data()); // sanity check that we read the right cert!
-
-            // Get the identity and then the private key:
-            SecIdentityRef identityRef;
-            checkOSStatus(SecIdentityCreateWithCertificate(nullptr, certRef, &identityRef),
-                          "SecIdentityCreateWithCertificate", "get private key from keychain");
-            CFAutorelease(identityRef);
-
-            SecKeyRef privateKeyRef;
-            checkOSStatus(SecIdentityCopyPrivateKey(identityRef, &privateKeyRef),
-                          "SecIdentityCopyPrivateKey", "get private key from keychain");
-
-            // Get the public key from the cert, not from the private key, because calling
-            // SecKeyCopyPublicKey results in a key ref that doesn't allow its data to be read,
-            // for some reason (bug?)
-
-            SecKeyRef publicKeyRef;
-            checkOSStatus(SecCertificateCopyPublicKey(certRef, &publicKeyRef),
-                          "SecCertificateCopyPublicKey", "get private key from keychain");
-            auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
-            return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
-        }
+        return PersistentPrivateKey::withPublicKey(subjectPublicKey());
     }
 
 } }

@@ -74,6 +74,8 @@ namespace litecore { namespace crypto {
     };
 
 
+    class PersistentPrivateKey;
+
 
     /** An asymmetric key-pair. Usually the PersistentPrivateKey subclass is used. */
     class PrivateKey : public Key {
@@ -86,6 +88,8 @@ namespace litecore { namespace crypto {
         static fleece::Retained<PrivateKey> generateTemporaryRSA(unsigned keySizeInBits);
 
         virtual bool isPrivate() override               {return true;}
+
+        virtual PersistentPrivateKey* asPersistent()    {return nullptr;}
 
         /** The private key's data. This will fail if the key is persistent, since its data is
             locked away in secure storage. */
@@ -129,7 +133,9 @@ namespace litecore { namespace crypto {
             Don't make any more calls to this object afterwards. */
         virtual void remove() =0;
 
-        virtual bool isPrivateKeyDataAvailable() override   {return false;}
+        virtual PersistentPrivateKey* asPersistent() override   {return this;}
+
+        virtual bool isPrivateKeyDataAvailable() override       {return false;}
 
     protected:
         PersistentPrivateKey(unsigned keySizeInBits);

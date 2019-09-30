@@ -69,6 +69,7 @@ extern "C" {
      @{ */
 
     /** Creates a Certificate Signing Request, i.e. an unsigned certificate.
+        \note You are responsible for releasing the returned reference.
         @param subjectName Structured name of the certificate owner. This is an X.509
                 "Relative Distinguished Name" represented as a series of `KEY=VALUE` pairs
                 separated by commas. The keys are defined by LDAP and listed in RFC4519.
@@ -87,22 +88,29 @@ extern "C" {
                                  C4Key *subjectKey C4NONNULL,
                                  C4Error *outError) C4API;
 
-    /** Instantiates a C4Cert from X.509 certificate data in DER or PEM form. */
-    C4Cert* c4cert_fromData(C4Slice certData) C4API;
+    /** Instantiates a C4Cert from X.509 certificate data in DER or PEM form.
+        \note You are responsible for releasing the returned reference. */
+    C4Cert* c4cert_fromData(C4Slice certData,
+                            C4Error *outError) C4API;
 
-    /** Returns the encoded X.509 data in DER form. */
-    C4SliceResult c4cert_copyData(C4Cert* C4NONNULL) C4API;
+    /** Returns the encoded X.509 data in DER (binary) or PEM (ASCII) form.
+        \note You are responsible for releasing the returned data. */
+    C4SliceResult c4cert_copyData(C4Cert* C4NONNULL,
+                                  bool pemEncoded) C4API;
 
-    /** Returns the cert's subject name. */
+    /** Returns the cert's subject name.
+        \note You are responsible for releasing the returned data. */
     C4StringResult c4cert_subjectName(C4Cert* C4NONNULL) C4API;
 
-    /** Returns a human-readable string describing the certificate in detail. */
+    /** Returns a human-readable string describing the certificate in detail.
+        \note You are responsible for releasing the returned data. */
     C4StringResult c4cert_summary(C4Cert* C4NONNULL) C4API;
 
     /** Returns true if this is a signed certificate, false if it's a signing request (CSR). */
     bool c4cert_isSigned(C4Cert* C4NONNULL) C4API;
 
-    /** Signs an unsigned certificate (a CSR.)
+    /** Signs an unsigned certificate (a CSR) and returns the new signed certificate.
+        \note You are responsible for releasing the returned reference.
         @param cert  The unsigned certificate to be signed.
         @param params  Capabilities to store in the cert; if NULL, uses defaults.
         @param issuerPrivateKey  The Certificate Authority's private key. (If self-signing a
@@ -114,16 +122,13 @@ extern "C" {
                                C4Key *issuerPrivateKey C4NONNULL,
                                C4Error *outError) C4API;
 
-    /** Saves a certificate to the OS's persistent store, if there is one. */
-    bool c4cert_makePersistent(C4Cert* C4NONNULL,
-                               C4Error *outError);
-
     /** Returns a certificate's public key.
-        You are responsible for releasing the returned key reference. */
+        \note You are responsible for releasing the returned key reference. */
     C4Key* c4cert_getPublicKey(C4Cert* C4NONNULL) C4API;
 
-    /** Loads a certificate's matching private key from the OS's persistent store, if it exists.
-        You are responsible for releasing the returned key reference. */
+    /** Loads a certificate's matching private key from the OS's persistent store, if it exists,
+        and returns the key-pair with both private and public key.
+        \note You are responsible for releasing the returned key reference. */
     C4Key* c4cert_loadPersistentPrivateKey(C4Cert* C4NONNULL,
                                            C4Error *outError) C4API;
 
@@ -133,6 +138,34 @@ extern "C" {
     /** Releases a C4Cert reference. */
     static inline void c4cert_release(C4Cert* cert) C4API {c4base_release(cert);}
 
+    /** @} */
+
+
+
+    /** \name Certificate Persistence
+     @{ */
+
+    /** Saves a certificate to a database for easy lookup by name, or deletes a saved cert.
+        \note The certificate is saved as a "raw document", and will _not_ be replicated.
+        @param cert  The certificate to store, or NULL to delete any saved cert with that name.
+        @param db  The database in which to store the certificate.
+        @param name  The name to save as.
+        @param outError  On failure, the error info will be stored here.
+        @return  True on success, false on failure. */
+    bool c4cert_save(C4Cert *cert,
+                     C4Database *db C4NONNULL,
+                     C4String name,
+                     C4Error *outError);
+
+    /** Loads a certificate from a database given the name it was saved under.
+        \note You are responsible for releasing the returned key reference.
+        @param db  The database the certificate was saved in.
+        @param name  The name the certificate was saved with.
+        @param outError  On failure, the error info will be stored here.
+        @return  The certificate, or NULL if missing or if it failed to parse. */
+    C4Cert* c4cert_load(C4Database *db C4NONNULL,
+                        C4String name,
+                        C4Error *outError);
 
     /** @} */
 
@@ -148,6 +181,7 @@ extern "C" {
 
 
     /** Creates a new key-pair.
+        \note You are responsible for releasing the returned reference.
         \warning Key-pairs should usually be persistent. This is more secure because the private
                  key data is extremely difficult to access. A non-persistent key-pair's private
                  key data lives in the process's heap, and if you store it yourself it's difficult
@@ -164,12 +198,19 @@ extern "C" {
                             C4Error *outError) C4API;
 
     /** Loads a public key from its data.
-        The resulting C4Key will not have a private key. */
+        The resulting C4Key will not have a private key.
+        \note You are responsible for releasing the returned reference. */
     C4Key* c4key_fromPublicKeyData(C4Slice publicKeyData) C4API;
 
     /** Loads a private key from its data.
-        The resulting C4Key will have both a public and private key. */
+        The resulting C4Key will have both a public and private key.
+        \note You are responsible for releasing the returned reference. */
     C4Key* c4key_fromPrivateKeyData(C4Slice privateKeyData) C4API;
+
+    /** Attempts to find & load the persistent private key matching this public key.
+        \note If there is no matching persistent key, returns false but sets no error. */
+    bool c4key_loadPersistentPrivateKey(C4Key* key,
+                                        C4Error *outError) C4API;
 
     /** Returns true if the C4Key has a private as well as a public key. */
     bool c4key_hasPrivateKey(C4Key* C4NONNULL) C4API;
@@ -177,12 +218,19 @@ extern "C" {
     /** Returns true if the C4Key is stored int the OS's persistent store. */
     bool c4key_isPersistent(C4Key* C4NONNULL) C4API;
 
-    /** Returns the public key data. */
+    /** Returns the public key data.
+        \note You are responsible for releasing the returned data. */
     C4SliceResult c4key_publicKeyData(C4Key* C4NONNULL) C4API;
 
     /** Returns the private key data, if the private key is known and its data is accessible.
-        \note Persistent private keys generally don't have accessible data. */
+        \note Persistent private keys generally don't have accessible data.
+        \note You are responsible for releasing the returned data. */
     C4SliceResult c4key_privateKeyData(C4Key* C4NONNULL) C4API;
+
+    /** Removes a private key from persistent storage.
+        You can't use the private key any more after this. */
+    bool c4key_removePersistent(C4Key* C4NONNULL,
+                                C4Error *outError) C4API;
 
     /** Retains a C4Key, incrementing its reference count. */
     static inline C4Key* c4key_retain(C4Key* key) C4API {return (C4Key*) c4base_retain(key);}

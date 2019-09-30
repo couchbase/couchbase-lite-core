@@ -21,6 +21,7 @@
 #include "c4Certificate.h"
 #include "Certificate.hh"
 #include "PublicKey.hh"
+#include "c4.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -103,16 +104,16 @@ C4Cert* c4cert_createRequest(C4String subjectName,
 }
 
 
-C4Cert* c4cert_fromData(C4Slice certData) C4API {
-    return tryCatch<C4Cert*>(nullptr, [&]() {
+C4Cert* c4cert_fromData(C4Slice certData, C4Error *outError) C4API {
+    return tryCatch<C4Cert*>(outError, [&]() {
         return retainedExternal(new Cert(certData));
     });
 }
 
 
-C4SliceResult c4cert_copyData(C4Cert* cert) C4API {
+C4SliceResult c4cert_copyData(C4Cert* cert, bool pemEncoded) C4API {
     return tryCatch<C4SliceResult>(nullptr, [&]() {
-        return C4SliceResult(internal(cert)->data());
+        return C4SliceResult(internal(cert)->data(pemEncoded ? KeyFormat::PEM : KeyFormat::DER));
     });
 }
 
@@ -167,17 +168,6 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
 }
 
 
-bool c4cert_makePersistent(C4Cert* cert, C4Error *outError) {
-    return tryCatch<bool>(outError, [&]() {
-        if (auto signedCert = asSignedCert(cert); signedCert) {
-            signedCert->makePersistent();
-            return true;
-        }
-        return false;
-    });
-}
-
-
 C4Key* c4cert_getPublicKey(C4Cert* cert) C4API {
     return tryCatch<C4Key*>(nullptr, [&]() -> C4Key* {
         if (auto signedCert = asSignedCert(cert); signedCert)
@@ -188,6 +178,7 @@ C4Key* c4cert_getPublicKey(C4Cert* cert) C4API {
 
 
 C4Key* c4cert_loadPersistentPrivateKey(C4Cert* cert, C4Error *outError) C4API {
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     return tryCatch<C4Key*>(outError, [&]() -> C4Key* {
         if (auto signedCert = asSignedCert(cert, outError); signedCert) {
             if (auto key = signedCert->loadPrivateKey(); key)
@@ -195,6 +186,37 @@ C4Key* c4cert_loadPersistentPrivateKey(C4Cert* cert, C4Error *outError) C4API {
         }
         return nullptr;
     });
+#else
+    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
+    return nullptr;
+#endif
+}
+
+
+static constexpr slice kCertStoreName = "certs"_sl;
+
+
+bool c4cert_save(C4Cert *cert,
+                 C4Database *db C4NONNULL,
+                 C4String name,
+                 C4Error *outError)
+{
+    alloc_slice data;
+    if (cert)
+        data = alloc_slice(c4cert_copyData(cert, false));
+    return c4raw_put(db, kCertStoreName, name, nullslice, data, outError);
+}
+
+
+/** Loads a certificate from a database given the name it was saved under. */
+C4Cert* c4cert_load(C4Database *db C4NONNULL,
+                    C4String name,
+                    C4Error *outError)
+{
+    c4::ref<C4RawDocument> doc = c4raw_get(db, kCertStoreName, name, outError);
+    if (!doc)
+        return nullptr;
+    return c4cert_fromData(doc->body, outError);
 }
 
 
@@ -212,10 +234,16 @@ C4Key* c4key_createPair(C4KeyPairAlgorithm algorithm,
             return nullptr;
         }
         Retained<PrivateKey> privateKey;
-        if (persistent)
+        if (persistent) {
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
             privateKey = PersistentPrivateKey::generateRSA(sizeInBits);
-        else
+#else
+            c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
+            return nullptr;
+#endif
+        } else {
             privateKey = PrivateKey::generateTemporaryRSA(sizeInBits);
+        }
         return C4Key::create(privateKey);
     });
 }
@@ -235,13 +263,37 @@ C4Key* c4key_fromPrivateKeyData(C4Slice privateKeyData) C4API {
 }
 
 
+bool c4key_loadPersistentPrivateKey(C4Key* key, C4Error *outError) C4API {
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    return tryCatch<bool>(outError, [&]() {
+        if (key->privateKey->asPersistent())
+            return true;
+        auto privKey = PersistentPrivateKey::withPublicKey(key->publicKey);
+        if (!privKey) {
+            clearError(outError);
+            return false;
+        }
+        key->privateKey = privKey;
+        return true;
+    });
+#else
+    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
+    return false;
+#endif
+}
+
+
 bool c4key_hasPrivateKey(C4Key* key) C4API {
     return key->privateKey != nullptr;
 }
 
 
 bool c4key_isPersistent(C4Key* key) C4API {
-    return dynamic_cast<PersistentPrivateKey*>(key->privateKey.get()) != nullptr;
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    return key->privateKey && key->privateKey->asPersistent() != nullptr;
+#else
+    return false;
+#endif
 }
 
 
@@ -258,6 +310,25 @@ C4SliceResult c4key_privateKeyData(C4Key* key) C4API {
             return C4SliceResult(priv->privateKeyData());
         return C4SliceResult{};
     });
+}
+
+
+bool c4key_removePersistent(C4Key* key, C4Error *outError) C4API {
+    if (!key->privateKey) {
+        c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "No private key"_sl, outError);
+        return false;
+    }
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    return tryCatch(outError, [&]() {
+        auto persistentKey = key->privateKey->asPersistent();
+        if (persistentKey)
+            persistentKey->remove();
+        key->privateKey = nullptr;
+    });
+#else
+    key->privateKey = nullptr;
+    return true;
+#endif
 }
 
 
