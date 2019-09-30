@@ -28,6 +28,8 @@ using namespace std;
 
 static constexpr const slice kSubjectName = "CN=Jane Doe, O=ExampleCorp, C=US, "
                                             "emailAddress=jane@example.com"_sl;
+static constexpr const slice kSubject2Name = "CN=Richard Roe, O=ExampleCorp, C=US, "
+                                            "emailAddress=dick@example.com"_sl;
 
 static constexpr const slice kCAName = "CN=TrustMe Root CA, O=TrustMe Corp., C=US"_sl;
 
@@ -51,12 +53,16 @@ TEST_CASE("Key generation", "[Certs]") {
 }
 
 
-TEST_CASE("Self-signed cert generation", "[Certs]") {
+static pair<Retained<PrivateKey>,Retained<Cert>> makeCert(slice subjectName) {
     Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
     Cert::IssuerParameters issuerParams;
     issuerParams.validity_secs = 3600*24;
-    Retained<Cert> cert = new Cert(kSubjectName, issuerParams, key);
+    return {key, new Cert(subjectName, issuerParams, key)};
+}
 
+
+TEST_CASE("Self-signed cert generation", "[Certs]") {
+    auto [key, cert] = makeCert(kSubjectName);
     cerr << "Subject: " << cert->subjectName() << "\n";
     cerr << "Info:\n" << cert->summary("\t");
 
@@ -135,4 +141,53 @@ TEST_CASE("Cert request", "[Certs]") {
     Retained<Cert> clientCert = csr2->sign(caClientParams, caKey, caCert);
 
     cerr << "Client cert info:\n" << clientCert->summary("\t");
+}
+
+
+TEST_CASE("Cert concatenation") {
+    alloc_slice pem;
+    {
+        auto [key1, cert1] = makeCert(kSubjectName);
+        auto [key2, cert2] = makeCert(kSubject2Name);
+        CHECK(!cert1->hasChain());
+        CHECK(!cert1->next());
+        CHECK(cert1->dataOfChain() == cert1->data(KeyFormat::PEM));
+
+        cert1->append(cert2);
+
+        cerr << string(cert1->summary()) << "\n";
+        cerr << string(cert2->summary()) << "\n";
+
+        CHECK(cert1->hasChain());
+        CHECK(!cert2->hasChain());
+        CHECK(!cert2->next());
+        REQUIRE(cert1->next() == cert2);
+
+        // Convert to PEM:
+        pem = cert1->dataOfChain();
+        cerr << string(pem) << "\n";
+
+        // Release 2nd cert in chain, then access it again:
+        cerr << "Freeing cert2\n";
+        cert2 = nullptr;
+
+        CHECK(cert1->hasChain());
+        auto next = cert1->next();
+        REQUIRE(next);
+        CHECK(!next->hasChain());
+        CHECK(cert1->next() == next);
+        CHECK(cert1->dataOfChain() == pem);
+        cerr << "Done\n";
+    }
+
+    // Reconstitute both certs from the saved PEM data:
+    Retained<Cert> cert = new Cert(pem);
+    CHECK(cert->hasChain());
+    auto next = cert->next();
+    REQUIRE(next);
+    CHECK(!next->hasChain());
+    CHECK(cert->next() == next);
+    CHECK(cert->dataOfChain() == pem);
+    CHECK(cert->subjectName() == kSubjectName);
+    CHECK(next->subjectName() == kSubject2Name);
 }

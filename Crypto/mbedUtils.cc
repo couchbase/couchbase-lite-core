@@ -125,7 +125,11 @@ namespace litecore { namespace crypto {
                                                format("-----END %s-----\n", name).c_str(),
                                                (const uint8_t*)data.buf, data.size,
                                                (uint8_t*)buf, size, &olen);
-            return err ? err : (int)olen;
+            if (err != 0)
+                return err;
+            if (olen > 0 && buf[olen-1] == '\0')
+                --olen;
+            return (int)olen;
         });
     }
 

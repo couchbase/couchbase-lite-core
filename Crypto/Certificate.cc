@@ -21,6 +21,7 @@
 #include "Logging.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
+#include "Writer.hh"
 
 #include "mbedUtils.hh"
 
@@ -28,6 +29,7 @@
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/error.h"
+#include "mbedtls/platform.h"
 #include "mbedtls/pk.h"
 #include "mbedtls/md.h"
 #include "mbedtls/x509_crt.h"
@@ -41,8 +43,7 @@ namespace litecore { namespace crypto {
     using namespace fleece;
 
 
-    void CertBase::parseData(fleece::slice data, void *context, ParseFn parse)
-    {
+    int CertBase::parseData(fleece::slice data, void *context, ParseFn parse) {
         Assert(data);
         bool isPEM = data.hasPrefix("-----"_sl);
         alloc_slice adjustedData;
@@ -54,7 +55,7 @@ namespace litecore { namespace crypto {
             data = adjustedData;
         }
 
-        TRY( parse(context, (const uint8_t*)data.buf, data.size) );
+        return TRY( parse(context, (const uint8_t*)data.buf, data.size) );
     }
 
 
@@ -81,21 +82,17 @@ namespace litecore { namespace crypto {
 #pragma mark - CERT:
 
 
-    Cert::Cert()
-    :_cert(new mbedtls_x509_crt)
-    {
-        mbedtls_x509_crt_init(_cert.get());
-    }
+    Cert::Cert(Cert *prev, mbedtls_x509_crt *crt)
+    :_cert(crt)
+    ,_prev(prev)
+    { }
 
-
-    Cert::~Cert()  {
-        mbedtls_x509_crt_free(_cert.get());
-    }
 
 
     Cert::Cert(slice data)
-    :Cert()
+    :_cert((mbedtls_x509_crt*)mbedtls_calloc(1, sizeof(mbedtls_x509_crt)))
     {
+        mbedtls_x509_crt_init(_cert);
         parseData(data, context(), (ParseFn)&mbedtls_x509_crt_parse);
     }
 
@@ -107,6 +104,20 @@ namespace litecore { namespace crypto {
     { }
 
 
+    Cert::~Cert()  {
+        Log("~Cert %p", this);
+        if (_prev) {                        // If I'm not the first:
+            _prev->_next = nullptr;         // tell the previous cert I'm gone.
+        } else {                            // Or if I'm the first:
+            Assert(!_next);
+            mbedtls_x509_crt_free(_cert);   // free the whole chain (except the memory of _cert)
+            mbedtls_free(_cert);            // finally, free the memory of _cert
+        }
+    }
+
+
+    // Given a set of cert-type flags, returns the key-usage flags that are required for a cert
+    // of those type(s) to be valid.
     static uint8_t defaultKeyUsage(uint8_t certTypes, bool usingRSA) {
         // https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/nss_tech_notes/nss_tech_note3
         uint8_t keyUsage = 0;
@@ -213,7 +224,61 @@ namespace litecore { namespace crypto {
 
 
     int Cert::writeInfo(char *buf, size_t bufSize, const char *indent) {
-        return mbedtls_x509_crt_info(buf, bufSize, indent, _cert.get());
+        return mbedtls_x509_crt_info(buf, bufSize, indent, _cert);
+    }
+
+
+    bool Cert::hasChain() {
+        // mbedTLS certs are chained as a linked list through their `next` pointers.
+        return _cert->next != nullptr;
+    }
+
+
+    Retained<Cert> Cert::next() {
+        if (!_cert->next)
+            return nullptr;
+        if (_next)
+            return _next;
+        Retained<Cert> newNext = new Cert(this, _cert->next);
+        _next = newNext;
+        return newNext;
+    }
+
+
+    void Cert::append(Cert *other) {
+        Assert(!other->_prev);          // other must be the start of a chain (or standalone)
+        if (hasChain()) {
+            next()->append(other);
+        } else {
+            _cert->next = other->_cert;
+            _next = other;
+            other->_prev = this;
+        }
+    }
+
+
+    alloc_slice Cert::dataOfChain() {
+        if (!hasChain())
+            return data(KeyFormat::PEM);
+
+        // Convert each cert to PEM:
+        vector<alloc_slice> pems;
+        size_t totalSize = 0;
+        for (Retained<Cert> cert = this; cert; cert = cert->next()) {
+            alloc_slice pem = cert->data(KeyFormat::PEM);
+            pems.push_back(pem);
+            totalSize += pem.size;
+        }
+
+        // Concatenate the data:
+        alloc_slice result(totalSize);
+        void *dst = (void*) result.buf;
+        for (alloc_slice &pem : pems) {
+            memcpy(dst, pem.buf, pem.size);
+            dst = offsetby(dst, pem.size);
+        }
+        DebugAssert(dst == result.end());
+        return result;
     }
 
 

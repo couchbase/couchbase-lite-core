@@ -14,6 +14,12 @@ struct mbedtls_x509_csr;
 
 namespace litecore { namespace crypto {
 
+    class CertEntry {
+    public:
+    private:
+        CertEntry(const mbedtls_x509_crt*);
+    };
+
     /** Abstract superclass of Cert and CertRequest. */
     class CertBase : public KeyOwner {
     public:
@@ -61,7 +67,7 @@ namespace litecore { namespace crypto {
 
     protected:
         using ParseFn = int (*)(void*,const uint8_t*,size_t);
-        void parseData(fleece::slice data, void *context, ParseFn parse);
+        int parseData(fleece::slice data, void *context, ParseFn parse);
         virtual fleece::slice derData() =0;
         virtual int writeInfo(char *buf, size_t bufSize, const char *indent) =0;
     };
@@ -71,7 +77,9 @@ namespace litecore { namespace crypto {
     class Cert : public CertBase {
     public:
 
-        /** Instantiates a Cert from DER- or PEM-encoded certificate data. */
+        /** Instantiates a Cert from DER- or PEM-encoded certificate data.
+            \note PEM data may contain multiple certs, forming a chain. If so, you can find the
+                next cert in the chain by calling the \ref next method. */
         explicit Cert(fleece::slice data);
 
         /** Creates and self-signs a certificate with the given options. */
@@ -94,7 +102,21 @@ namespace litecore { namespace crypto {
         fleece::Retained<PersistentPrivateKey> loadPrivateKey();
 #endif
         
-        struct ::mbedtls_x509_crt* context()                    {return _cert.get();}
+        struct ::mbedtls_x509_crt* context()                    {return _cert;}
+
+        //---- Certificate chains
+
+        /** Returns true if there are following certs in a chain. */
+        bool hasChain();
+
+        /** Returns the next certificate in the chain, if any. */
+        fleece::Retained<Cert> next();
+
+        /** Appends a cert to the end of the chain. */
+        void append(Cert* NONNULL);
+
+        /** Converts the entire chain into a series of certs in PEM format. */
+        fleece::alloc_slice dataOfChain();
 
     protected:
         virtual fleece::slice derData() override;
@@ -103,7 +125,7 @@ namespace litecore { namespace crypto {
     private:
         friend class CertSigningRequest;
 
-        Cert();
+        Cert(Cert *prev NONNULL, mbedtls_x509_crt*);
         ~Cert();
         static fleece::alloc_slice create(const SubjectParameters&,
                                           PublicKey *subjectKey NONNULL,
@@ -111,7 +133,9 @@ namespace litecore { namespace crypto {
                                           PrivateKey *issuerKeyPair NONNULL,
                                           Cert *issuerCert =nullptr);
 
-        std::unique_ptr<struct ::mbedtls_x509_crt> _cert;
+        struct ::mbedtls_x509_crt* _cert;       // mbedTLS parsed cert object
+        fleece::Retained<Cert> _prev;           // Previous Cert in chain (strong ref)
+        Cert* _next {nullptr};                  // Next Cert in chain (weak ref)
     };
 
 
