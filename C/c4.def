@@ -366,9 +366,3 @@ FLSharedKeys_Release
 
 FLValue_ToJSON5
 
-mbedtls_md_info_from_type
-mbedtls_md_init
-mbedtls_md_free
-mbedtls_md_setup
-mbedtls_pkcs5_pbkdf2_hmac
-

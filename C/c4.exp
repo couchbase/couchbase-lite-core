@@ -365,11 +365,5 @@ _FLSharedKeys_Release
 
 _FLValue_ToJSON5
 
-_mbedtls_md_info_from_type
-_mbedtls_md_init
-_mbedtls_md_free
-_mbedtls_md_setup
-_mbedtls_pkcs5_pbkdf2_hmac
-
 # Apple specific
 _FLEncoder_WriteNSObject
