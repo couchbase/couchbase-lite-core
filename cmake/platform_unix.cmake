@@ -23,3 +23,12 @@ function(setup_litecore_build_unix)
         set_property(TARGET Support       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
 endfunction()
+
+function(setup_rest_build_unix)
+    target_link_libraries(
+        LiteCoreREST PRIVATE
+        FleeceBase
+        Support
+        CivetWeb
+    )
+endfunction()

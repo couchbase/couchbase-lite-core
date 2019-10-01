@@ -68,13 +68,4 @@ function(setup_rest_build)
         LiteCoreREST PROPERTIES LINK_FLAGS
         "-exported_symbols_list ${CMAKE_CURRENT_SOURCE_DIR}/c4REST.exp"
     )
-
-    # These actually cause issues on Linux due to multiply
-    # imported symbols at runtime
-    target_link_libraries(
-        LiteCoreREST PRIVATE
-        FleeceBase
-        Support
-        CivetWeb
-    )
 endfunction()
