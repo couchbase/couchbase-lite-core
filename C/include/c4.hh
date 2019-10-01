@@ -57,7 +57,7 @@ namespace c4 {
 
         ref& operator=(T *t)        {if (_obj) freeRef(_obj); _obj = t; return *this;}
         ref& operator=(ref &&r)     {_obj = r._obj; r._obj = nullptr; return *this;}
-        ref& operator=(const ref &r){*this = retainRef(r._ref);}
+        ref& operator=(const ref &r){*this = retainRef(r._obj); return *this;}
 
     private:
         // The functions the ref<> template calls to free a reference.
@@ -74,11 +74,15 @@ namespace c4 {
         static inline void freeRef(C4WriteStream* c)       {c4stream_closeWriter(c);}
         static inline void freeRef(C4Replicator* c)        {c4repl_free(c);}
         static inline void freeRef(C4Listener* c)          {c4listener_free(c);}
+        static inline void freeRef(C4Cert* c)              {c4cert_release(c);}
+        static inline void freeRef(C4KeyPair* c)           {c4keypair_release(c);}
 
         static inline C4Database* retainRef(C4Database* c) {return c4db_retain(c);}
         static inline C4Document* retainRef(C4Document* c) {return c4doc_retain(c);}
         static inline C4Query*    retainRef(C4Query* c)    {return c4query_retain(c);}
         static inline C4QueryEnumerator* retainRef(C4QueryEnumerator* c) {return c4queryenum_retain(c);}
+        static inline C4Cert*     retainRef(C4Cert* c)     {return c4cert_retain(c);}
+        static inline C4KeyPair*  retainRef(C4KeyPair* c)  {return c4keypair_retain(c);}
 
         T* _obj;
     };

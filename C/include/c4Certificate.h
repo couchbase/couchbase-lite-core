@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "c4Base.h"
+#include "c4Database.h"
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -230,6 +230,10 @@ extern "C" {
     /** Returns true if the C4KeyPair has a private as well as a public key. */
     bool c4keypair_hasPrivateKey(C4KeyPair* C4NONNULL) C4API;
 
+    /** Returns a hex digest of the public key.
+        \note You are responsible for releasing the returned data. */
+    C4SliceResult c4keypair_publicKeyDigest(C4KeyPair* C4NONNULL) C4API;
+
     /** Returns the public key data.
         \note You are responsible for releasing the returned data. */
     C4SliceResult c4keypair_publicKeyData(C4KeyPair* C4NONNULL) C4API;
@@ -242,10 +246,11 @@ extern "C" {
     /** Returns true if the C4KeyPair is stored int the OS's persistent store. */
     bool c4keypair_isPersistent(C4KeyPair* C4NONNULL) C4API;
 
-    /** Attempts to find & load the persistent private key matching this public key.
-     \note If there is no matching persistent key, returns false but sets no error. */
-    bool c4keypair_findPersistentPrivateKey(C4KeyPair* key,
-                                            C4Error *outError) C4API;
+    /** Attempts to find & load the persistent key-pair matching this public key.
+        \note If there is no matching persistent key, returns NULL but sets no error.
+        \note You are responsible for releasing the returned reference. */
+    C4KeyPair* c4keypair_persistentWithPublicKey(C4KeyPair* C4NONNULL,
+                                                 C4Error *outError) C4API;
 
     /** Removes a private key from persistent storage. */
     bool c4keypair_removePersistent(C4KeyPair* C4NONNULL,

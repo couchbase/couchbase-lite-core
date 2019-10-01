@@ -54,39 +54,30 @@ static Cert* asSignedCert(C4Cert *cert, C4Error *outError =nullptr) {
 }
 
 
-// A wrapper around a crypto::Key. The double indirection is so we can swap out the Key.
-class C4KeyPair : public RefCounted {
-    public:
-    C4KeyPair(Key *key NONNULL)     :_key(key) { }
+static inline Key* internal(C4KeyPair *key)    {return (Key*)key;}
+static inline C4KeyPair* external(Key *key)    {return (C4KeyPair*)key;}
 
-    static C4KeyPair* create(Key *key NONNULL) {
-        return retain(new C4KeyPair(key));
-    }
+static C4KeyPair* retainedExternal(Key *key) {
+    return external(retain(key));
+}
 
-    Key* key()                      {return _key;}
-    void setKey(Key *key)           {_key = key;}
+static PublicKey* publicKey(C4KeyPair *c4key) {
+    auto key = internal(c4key);
+    return key->isPrivate() ? ((PrivateKey*)key)->publicKey().get() : (PublicKey*)key;
+}
 
-    PublicKey* publicKey() {
-        if (_key->isPrivate())
-            return privateKey()->publicKey();
-        return (PublicKey*)_key.get();
-    }
-
-    PrivateKey* privateKey() {
-        return _key->isPrivate() ? (PrivateKey*)_key.get() : nullptr;
-    }
+static PrivateKey* privateKey(C4KeyPair *c4key) {
+    auto key = internal(c4key);
+    return key->isPrivate() ? (PrivateKey*)key : nullptr;
+}
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    PersistentPrivateKey* persistentPrivateKey() {
-        if (PrivateKey *priv = privateKey(); priv)
-            return priv->asPersistent();
-        return nullptr;
-    }
+static PersistentPrivateKey* persistentPrivateKey(C4KeyPair *c4key) {
+    if (PrivateKey *priv = privateKey(c4key); priv)
+        return priv->asPersistent();
+    return nullptr;
+}
 #endif
-
-private:
-    Retained<Key> _key;
-};
 
 
 const C4CertIssuerParameters kDefaultCertIssuerParameters = {
@@ -115,7 +106,7 @@ C4Cert* c4cert_createRequest(C4String subjectName,
         }
         Cert::SubjectParameters params(subjectName);
         params.ns_cert_type = certUsages;
-        return retainedExternal(new CertSigningRequest(params, subjectKey->privateKey()));
+        return retainedExternal(new CertSigningRequest(params, privateKey(subjectKey)));
     });
 }
 
@@ -162,7 +153,7 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
         auto csr = asUnsignedCert(c4Cert, outError);
         if (!csr)
             return nullptr;
-        if (!issuerPrivateKey->privateKey()) {
+        if (!privateKey(issuerPrivateKey)) {
             c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "No private key"_sl, outError);
             return nullptr;
         }
@@ -178,7 +169,7 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
         params.add_subject_identifier = c4Params->addSubjectIdentifier;
         params.add_basic_constraints = c4Params->addBasicConstraints;
 
-        Retained<Cert> cert = csr->sign(params, issuerPrivateKey->privateKey());
+        Retained<Cert> cert = csr->sign(params, privateKey(issuerPrivateKey));
         return retainedExternal(cert.get());
     });
 }
@@ -187,7 +178,7 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
 C4KeyPair* c4cert_getPublicKey(C4Cert* cert) C4API {
     return tryCatch<C4KeyPair*>(nullptr, [&]() -> C4KeyPair* {
         if (auto signedCert = asSignedCert(cert); signedCert)
-            return C4KeyPair::create(signedCert->subjectPublicKey());
+            return retainedExternal(signedCert->subjectPublicKey());
         return nullptr;
     });
 }
@@ -198,7 +189,7 @@ C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert* cert, C4Error *outError) C4AP
     return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
         if (auto signedCert = asSignedCert(cert, outError); signedCert) {
             if (auto key = signedCert->loadPrivateKey(); key)
-                return C4KeyPair::create(key);
+                return retainedExternal(key);
         }
         return nullptr;
     });
@@ -284,69 +275,73 @@ C4KeyPair* c4keypair_generate(C4KeyPairAlgorithm algorithm,
         } else {
             privateKey = PrivateKey::generateTemporaryRSA(sizeInBits);
         }
-        return C4KeyPair::create(privateKey);
+        return retainedExternal(privateKey);
     });
 }
 
 
 C4KeyPair* c4keypair_fromPublicKeyData(C4Slice publicKeyData) C4API {
     return tryCatch<C4KeyPair*>(nullptr, [&]() {
-        return C4KeyPair::create(new PublicKey(publicKeyData));
+        return retainedExternal(new PublicKey(publicKeyData));
     });
 }
 
 
 C4KeyPair* c4keypair_fromPrivateKeyData(C4Slice privateKeyData) C4API {
     return tryCatch<C4KeyPair*>(nullptr, [&]() {
-        return C4KeyPair::create(new PrivateKey(privateKeyData));
+        return retainedExternal(new PrivateKey(privateKeyData));
     });
 }
 
 
-bool c4keypair_findPersistentPrivateKey(C4KeyPair* key, C4Error *outError) C4API {
+C4KeyPair* c4keypair_persistentWithPublicKey(C4KeyPair* key, C4Error *outError) C4API {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    return tryCatch<bool>(outError, [&]() {
-        if (key->persistentPrivateKey() != nullptr)
-            return true;
-        auto privKey = PersistentPrivateKey::withPublicKey(key->publicKey());
+    return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
+        if (auto persistent = persistentPrivateKey(key); persistent != nullptr)
+            return retainedExternal(persistent);
+        auto privKey = PersistentPrivateKey::withPublicKey(publicKey(key));
         if (!privKey) {
             clearError(outError);
-            return false;
+            return nullptr;
         }
-        key->setKey(privKey);
-        return true;
+        return retainedExternal(privKey);
     });
 #else
     c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
-    return false;
+    return nullptr;
 #endif
 }
 
 
 bool c4keypair_hasPrivateKey(C4KeyPair* key) C4API {
-    return key->privateKey() != nullptr;
+    return privateKey(key) != nullptr;
 }
 
 
 bool c4keypair_isPersistent(C4KeyPair* key) C4API {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    return key->persistentPrivateKey() != nullptr;
+    return persistentPrivateKey(key) != nullptr;
 #else
     return false;
 #endif
 }
 
 
+C4SliceResult c4keypair_publicKeyDigest(C4KeyPair* key) C4API {
+    return sliceResult(internal(key)->digestString());
+}
+
+
 C4SliceResult c4keypair_publicKeyData(C4KeyPair* key) C4API {
     return tryCatch<C4SliceResult>(nullptr, [&]() {
-        return C4SliceResult(key->key()->publicKeyData());
+        return C4SliceResult(internal(key)->publicKeyData());
     });
 }
 
 
 C4SliceResult c4keypair_privateKeyData(C4KeyPair* key) C4API {
     return tryCatch<C4SliceResult>(nullptr, [&]() {
-        if (auto priv = key->privateKey(); priv && priv->isPrivateKeyDataAvailable())
+        if (auto priv = privateKey(key); priv && priv->isPrivateKeyDataAvailable())
             return C4SliceResult(priv->privateKeyData());
         return C4SliceResult{};
     });
@@ -354,18 +349,14 @@ C4SliceResult c4keypair_privateKeyData(C4KeyPair* key) C4API {
 
 
 bool c4keypair_removePersistent(C4KeyPair* key, C4Error *outError) C4API {
-    if (!key->privateKey()) {
+    if (!privateKey(key)) {
         c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "No private key"_sl, outError);
         return false;
     }
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     return tryCatch(outError, [&]() {
-        auto persistentKey = key->persistentPrivateKey();
-        if (persistentKey) {
-            Retained<PublicKey> publicKey = persistentKey->publicKey();
+        if (auto persistentKey = persistentPrivateKey(key); persistentKey)
             persistentKey->remove();
-            key->setKey(publicKey);
-        }
     });
 #else
     return true;

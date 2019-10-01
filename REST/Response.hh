@@ -26,6 +26,9 @@
 #include <functional>
 #include <memory>
 
+struct C4Cert;
+struct C4KeyPair;
+
 namespace litecore { namespace net {
     class HTTPLogic;
     struct ProxySpec;
@@ -81,14 +84,15 @@ namespace litecore { namespace REST {
 
         ~Response();
 
-        net::TLSContext* tlsContext();
-
         Response& setHeaders(fleece::Doc headers);
         Response& setAuthHeader(fleece::slice authHeader);
         Response& setBody(fleece::slice body);
         Response& setTLSContext(net::TLSContext*);
         Response& setProxy(const net::ProxySpec&);
         Response& setTimeout(double timeoutSecs)        {_timeout = timeoutSecs; return *this;}
+
+        Response& allowOnlyCert(C4Cert*);
+        Response& setIdentity(C4Cert*, C4KeyPair*);
 
         bool run();
 
@@ -99,6 +103,7 @@ namespace litecore { namespace REST {
         std::string statusMessage()   {run(); return _statusMessage;}
 
     protected:
+        net::TLSContext* tlsContext();
         bool hasRun()                 {return _logic == nullptr;}
         void setStatus(int status, const std::string &msg) {
             _status = (HTTPStatus)status;

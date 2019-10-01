@@ -68,7 +68,8 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert", "[Push][Listene
 TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync client cert", "[Push][Listener][TLS][C]") {
     pinnedCert = useServerTLSWithTemporaryKey();
     useClientTLSWithTemporaryKey();
-    identity = clientIdentity;
+    identityCert = clientIdentity.cert;
+    identityKey  = clientIdentity.key;
     run();
 }
 

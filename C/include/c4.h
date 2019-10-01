@@ -20,9 +20,11 @@
 
 #include "c4Base.h"
 #include "c4BlobStore.h"
+#include "c4Certificate.h"
 #include "c4Database.h"
 #include "c4Document.h"
 #include "c4DocEnumerator.h"
 #include "c4Query.h"
 #include "c4Observer.h"
 #include "c4Replicator.h"
+#include "c4Socket.h"

@@ -21,8 +21,9 @@
 #include "TLSContext.hh"
 #include "HTTPLogic.hh"
 #include "Address.hh"
+#include "c4.h"
+#include "c4Certificate.h"
 #include "c4ExceptionUtils.hh"
-#include "c4Socket.h"
 #include "Writer.hh"
 #include "Error.hh"
 #include "Logging.hh"
@@ -36,6 +37,7 @@ using namespace fleece;
 
 namespace litecore { namespace REST {
     using namespace litecore::net;
+    using namespace litecore::crypto;
 
 
     bool Body::hasContentType(slice contentType) const {
@@ -120,6 +122,21 @@ namespace litecore { namespace REST {
         _logic->setProxy(proxy);
         return *this;
     }
+
+    Response& Response::allowOnlyCert(C4Cert *cert) {
+        Assert(c4cert_isSigned(cert));
+        tlsContext()->allowOnlyCert((Cert*)cert);
+        return *this;
+    }
+
+    Response& Response::setIdentity(C4Cert *cert, C4KeyPair *key) {
+        Assert(c4cert_isSigned(cert));
+        Assert(c4keypair_hasPrivateKey(key));
+        Retained<Identity> id = new Identity((Cert*)cert, (PrivateKey*)key);
+        tlsContext()->setIdentity(id);
+        return *this;
+    }
+
 
     bool Response::run() {
         if (hasRun())

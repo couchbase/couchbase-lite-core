@@ -69,14 +69,14 @@ namespace litecore { namespace crypto {
     }
 
 
-    PublicKey::PublicKey(slice data) {
-        TRY( mbedtls_pk_parse_public_key(context(), (const uint8_t*)data.buf, data.size) );
+    string Key::digestString() {
+        SHA1 digest(publicKeyData(KeyFormat::Raw));
+        return slice(digest).hexString();
     }
 
 
-    string PublicKey::digestString() {
-        SHA1 digest(publicKeyData(KeyFormat::Raw));
-        return slice(digest).hexString();
+    PublicKey::PublicKey(slice data) {
+        TRY( mbedtls_pk_parse_public_key(context(), (const uint8_t*)data.buf, data.size) );
     }
 
 

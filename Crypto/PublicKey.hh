@@ -41,6 +41,8 @@ namespace litecore { namespace crypto {
 
         fleece::alloc_slice publicKeyData(KeyFormat =KeyFormat::DER);
 
+        std::string digestString();
+
     protected:
         explicit Key(KeyOwner *owner)     :_owner(owner), _pk(owner->keyContext()) { }
         Key();
@@ -61,8 +63,6 @@ namespace litecore { namespace crypto {
         explicit PublicKey(fleece::slice data);
 
         fleece::alloc_slice data(KeyFormat f =KeyFormat::DER)   {return Key::publicKeyData(f);}
-
-        std::string digestString();
 
         virtual bool isPrivate() override       {return false;}
 

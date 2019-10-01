@@ -21,16 +21,16 @@
 #include "ListenerHarness.hh"
 #include "FilePath.hh"
 #include "Response.hh"
-#include "TLSContext.hh"
+#include "c4Internal.hh"
 
 using namespace litecore::net;
 using namespace litecore::REST;
 
 
-Retained<Identity> ListenerHarness::sServerTemporaryIdentity,
-                   ListenerHarness::sServerPersistentIdentity,
-                   ListenerHarness::sClientTemporaryIdentity,
-                   ListenerHarness::sClientPersistentIdentity;
+Identity ListenerHarness::sServerTemporaryIdentity,
+         ListenerHarness::sServerPersistentIdentity,
+         ListenerHarness::sClientTemporaryIdentity,
+         ListenerHarness::sClientPersistentIdentity;
 
 
 //#ifdef COUCHBASE_ENTERPRISE
@@ -72,9 +72,9 @@ public:
         unique_ptr<Response> r(new Response(scheme, method, "localhost", config.port, uri));
         r->setHeaders(headers).setBody(body);
         if (pinnedCert)
-            r->tlsContext()->allowOnlyCert(pinnedCert);
-        if (clientIdentity)
-            r->tlsContext()->setIdentity(clientIdentity);
+            r->allowOnlyCert(pinnedCert);
+        if (clientIdentity.cert)
+            r->setIdentity(clientIdentity.cert, clientIdentity.key);
         if (!r->run())
             C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
         C4Log("Status: %d %s", r->status(), r->statusMessage().c_str());
@@ -90,7 +90,7 @@ public:
     }
 
     alloc_slice directory;
-    Retained<Cert> pinnedCert;
+    c4::ref<C4Cert> pinnedCert;
 };
 
 
@@ -342,7 +342,7 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C
 
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][Listener][TLS][C]") {
-    pinnedCert = useServerTLSWithTemporaryKey();
+    pinnedCert = c4cert_retain(useServerTLSWithTemporaryKey());
 
     auto r = request("GET", "/", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
@@ -353,7 +353,7 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][Listener][TLS][C]")
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][Listener][TLS][C]") {
-    pinnedCert = useServerTLSWithPersistentKey();
+    pinnedCert = c4cert_retain(useServerTLSWithPersistentKey());
 
     auto r = request("GET", "/", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
@@ -364,7 +364,7 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][List
 
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST client cert", "[REST][Listener][TLS][C]") {
-    pinnedCert = useServerTLSWithTemporaryKey();
+    pinnedCert = c4cert_retain(useServerTLSWithTemporaryKey());
     useClientTLSWithTemporaryKey();
 
     auto r = request("GET", "/", HTTPStatus::OK);

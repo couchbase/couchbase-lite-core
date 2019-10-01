@@ -12,8 +12,6 @@
 #include "c4.hh"
 #include "Address.hh"
 #include "Response.hh"
-#include "Certificate.hh"
-#include "TLSContext.hh"
 #include "c4Test.hh"
 #include "StringUtil.hh"
 #include <algorithm>
@@ -46,7 +44,7 @@ public:
     constexpr static const C4String kProtectedDBName = C4STR("seekrit");
     constexpr static const C4String kImagesDBName = C4STR("images");
 
-    static Retained<litecore::crypto::Cert> sPinnedCert;
+    static C4Cert* sPinnedCert;
 
     ReplicatorAPITest()
     :C4Test(0)
@@ -62,8 +60,9 @@ public:
 #else
             alloc_slice cert = readFile("Replicator/tests/data/cert.pem");
 #endif
-
-            sPinnedCert = new litecore::crypto::Cert(cert);
+            C4Error error;
+            sPinnedCert = c4cert_fromData(cert, &error);
+            REQUIRE(sPinnedCert);
         });
 
         // Environment variables can also override the default address above:
@@ -114,17 +113,18 @@ public:
         enc.beginDict();
         if (pinnedCert) {
             enc.writeKey(C4STR(kC4ReplicatorOptionPinnedServerCert));
-            enc.writeData(pinnedCert->data());
+            enc.writeData(alloc_slice(c4cert_copyData(pinnedCert, false)));
         }
-        if (identity) {
+        if (identityCert) {
             enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
             enc.beginDict();
             enc[C4STR(kC4ReplicatorAuthType)] = kC4AuthTypeClientCert;
             enc.writeKey(C4STR(kC4ReplicatorAuthClientCert));
-            enc.writeData(identity->cert->data());
-            if (identity->privateKey->isPrivateKeyDataAvailable()) {
+            enc.writeData(alloc_slice(c4cert_copyData(identityCert, false)));
+            alloc_slice privateKeyData(c4keypair_privateKeyData(identityKey));
+            if (privateKeyData) {
                 enc.writeKey(C4STR(kC4ReplicatorAuthClientCertKey));
-                enc.writeData(identity->privateKey->privateKeyData());
+                enc.writeData(privateKeyData);
             }
             enc.endDict();
         }
@@ -348,7 +348,7 @@ public:
                                              path);
         r->setHeaders(headers).setBody(body).setTimeout(5);
         if (pinnedCert)
-            r->tlsContext()->allowOnlyCert(pinnedCert);
+            r->allowOnlyCert(pinnedCert);
         if (_authHeader)
             r->setAuthHeader(_authHeader);
         if (_proxy)
@@ -406,8 +406,9 @@ public:
     C4String _remoteDBName = kScratchDBName;
     AllocedDict _options;
     alloc_slice _authHeader;
-    Retained<crypto::Cert> pinnedCert;
-    Retained<crypto::Identity> identity;
+    C4Cert* pinnedCert {nullptr};
+    c4::ref<C4Cert> identityCert;
+    c4::ref<C4KeyPair> identityKey;
     unique_ptr<ProxySpec> _proxy;
     bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};

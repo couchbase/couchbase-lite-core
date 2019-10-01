@@ -105,7 +105,6 @@ namespace litecore { namespace crypto {
 
 
     Cert::~Cert()  {
-        Log("~Cert %p", this);
         if (_prev) {                        // If I'm not the first:
             _prev->_next = nullptr;         // tell the previous cert I'm gone.
         } else {                            // Or if I'm the first:
