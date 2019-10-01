@@ -43,6 +43,76 @@ namespace litecore { namespace crypto {
     using namespace fleece;
 
 
+#pragma mark - DISTINGUISHED NAME
+
+
+    DistinguishedName::DistinguishedName(const Entry *begin,  const Entry *end) {
+        Writer out;
+        for (auto e = begin; e != end; ++e) {
+            if (e != begin)
+                out << ", "_sl;
+
+            out << e->key << '=';
+
+            // Escape commas in the value:
+            slice value = e->value;
+            const uint8_t *comma;
+            while (nullptr != (comma = value.findByte(','))) {
+                out << slice(value.buf, comma) << "\\,"_sl;
+                value.setStart(comma + 1);
+            }
+            out << value;
+        }
+        *this = out.finish();
+    }
+
+
+    DistinguishedName DistinguishedName::parse(slice str) {
+        return DistinguishedName(alloc_slice(str));
+    }
+
+
+    alloc_slice DistinguishedName::operator[] (slice key) {
+        slice dn = *this;
+        while (dn.size > 0) {
+            slice foundKey = dn.readToDelimiterOrEnd("="_sl);
+            bool found = (foundKey == key);
+
+            alloc_slice value;
+            uint8_t delim;
+            do {
+                auto next = dn.findAnyByteOf(",\\"_sl);
+                if (next) {
+                    delim = *next;
+                    if (found)
+                        value.append(slice(dn.buf, next));
+                    if (delim == '\\') {
+                        ++next;
+                        if (found)
+                            value.append(slice(next, 1));
+                    }
+                    dn.setStart(next + 1);
+                } else {
+                    if (found)
+                        value.append(dn);
+                    dn = nullslice;
+                    break;
+                }
+            } while (delim != ',');
+
+            if (found)
+                return value;
+            auto next = dn.findByteNotIn(" "_sl);
+            if (next)
+                dn.setStart(next);
+        }
+        return nullslice;
+    }
+
+
+#pragma mark - CERT BASE:
+
+
     int CertBase::parseData(fleece::slice data, void *context, ParseFn parse) {
         Assert(data);
         bool isPEM = data.hasPrefix("-----"_sl);
@@ -217,8 +287,8 @@ namespace litecore { namespace crypto {
     }
 
 
-    alloc_slice Cert::subjectName() {
-        return getX509Name(&_cert->subject);
+    DistinguishedName Cert::subjectName() {
+        return DistinguishedName(getX509Name(&_cert->subject));
     }
 
 
@@ -365,8 +435,8 @@ namespace litecore { namespace crypto {
     }
 
 
-    alloc_slice CertSigningRequest::subjectName() {
-        return getX509Name(&_csr->subject);
+    DistinguishedName CertSigningRequest::subjectName() {
+        return DistinguishedName(getX509Name(&_csr->subject));
     }
 
 

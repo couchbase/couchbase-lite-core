@@ -65,25 +65,46 @@ extern "C" {
     extern const C4CertIssuerParameters kDefaultCertIssuerParameters;
 
 
+    /** Standard Distinguished Name attributes, from RFC 4519.
+        Only the CommonName is required; it's used as the visible name of the certificate.
+        If the cert is to be used for a TLS server, the CommonName must match its DNS name. */
+    typedef C4_ENUM(uint8_t, C4CertNameAttributeID) {
+        kC4Cert_CommonName,        // "Jane Doe", (or "jane.example.com")
+        kC4Cert_Pseudonym,         // "plainjane837"
+        kC4Cert_GivenName,         // "Jane"
+        kC4Cert_Surname,           // "Doe"
+        kC4Cert_EmailAddress,      // "jane@example.com"
+        kC4Cert_Organization,      // "Example Corp."
+        kC4Cert_OrganizationUnit,  // "Marketing"
+        kC4Cert_PostalAddress,     // "123 Example Blvd #2A"
+        kC4Cert_Locality,          // "Boston"
+        kC4Cert_PostalCode,        // "02134"
+        kC4Cert_StateOrProvince,   // "Massachusetts" (or "Quebec", ...)
+        kC4Cert_Country,           // "us" (2-letter ISO country code)
+    };
+
+    /** A component of an X.509 "Relative Distinguished Name". */
+    typedef struct {
+        C4CertNameAttributeID attributeID; ///< Attribute ID; use one of the `kC4Cert_...` symbols defined
+                                ///< above. Arbitrary strings are not supported!
+        C4String value;         ///< Value of the attribute
+    } C4CertNameComponent;
+
+
     /** \name Certificate and CSR Functions
      @{ */
 
     /** Creates a Certificate Signing Request, i.e. an unsigned certificate.
         \note You are responsible for releasing the returned reference.
-        @param subjectName Structured name of the certificate owner. This is an X.509
-                "Relative Distinguished Name" represented as a series of `KEY=VALUE` pairs
-                separated by commas. The keys are defined by LDAP and listed in RFC4519.
-                The ones recognized by LiteCore (actually mbedTLS) include:
-                "commonName" (aka "CN"), "pseudonym", "emailAddress", "postalAddress",
-                "locality" (aka "L"), "stateOrProvinceName" ("ST"), "country" ("C"),
-                "organization" ("O"), "organizationalUnitName" ("OU").
-                Example: "CN=Buffy Summers,emailAddress=buffy@example.com,L=Sunnydale,ST=CA,C=US"
+        @param nameComponents  Pointer to an array of one or more \ref C4CertNameComponent structs.
+        @param nameCount  Number of items in the \p nameComponents array.
         @param certUsages  Flags giving intended usage. (The certificate will be rejected by peers
                 if you try to use it for something not specified in its certUsages!)
         @param subjectKey  The owner's private key that this certificate will attest to.
         @param outError  On failure, the error info will be stored here.
         @return  The new certificate request, or NULL on failure. */
-    C4Cert* c4cert_createRequest(C4String subjectName,
+    C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents C4NONNULL,
+                                 size_t nameCount,
                                  C4CertUsage certUsages,
                                  C4KeyPair *subjectKey C4NONNULL,
                                  C4Error *outError) C4API;
@@ -97,15 +118,24 @@ extern "C" {
                             C4Error *outError) C4API;
 
     /** Returns the encoded X.509 data in DER (binary) or PEM (ASCII) form.
+        \warning DER format can only encode a _single_ certificate, so if this C4Cert includes
+            multiple certificates, use PEM format to preserve them.
         \note You are responsible for releasing the returned data. */
     C4SliceResult c4cert_copyData(C4Cert* C4NONNULL,
                                   bool pemEncoded) C4API;
 
-    /** Returns the cert's subject name.
+    /** Returns the cert's Subject Name, which identifies the cert's owner.
+        This is an X.509 structured string consisting of "KEY=VALUE" pairs separated by commas,
+        where the keys are attribute names. (Commas in values are backslash-escaped.)
+        \note Rather than parsing this yourself, use \ref c4cert_subjectNameComponent.
         \note You are responsible for releasing the returned data. */
     C4StringResult c4cert_subjectName(C4Cert* C4NONNULL) C4API;
 
-    /** Returns a human-readable string describing the certificate in detail.
+    /** Returns one component of a cert's subject name, given the attribute name.
+        \note You are responsible for releasing the returned data. */
+    C4StringResult c4cert_subjectNameComponent(C4Cert* C4NONNULL, C4CertNameAttributeID) C4API;
+
+    /** Returns a human-readable, multi-line string describing the certificate in detail.
         \note You are responsible for releasing the returned data. */
     C4StringResult c4cert_summary(C4Cert* C4NONNULL) C4API;
 

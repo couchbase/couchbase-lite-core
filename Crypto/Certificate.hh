@@ -6,6 +6,7 @@
 
 #pragma once
 #include "PublicKey.hh"
+#include <initializer_list>
 #include <memory>
 #include <time.h>
 
@@ -14,12 +15,33 @@ struct mbedtls_x509_csr;
 
 namespace litecore { namespace crypto {
 
-    class CertEntry {
+    /** An X.509 Distinguished Name encoded as a string in LDAP format. */
+    class DistinguishedName : public fleece::alloc_slice {
     public:
+        struct Entry {
+            fleece::slice key;      // LDAP attribute like "CN", "O", etc (as supported by mbedTLS)
+            fleece::slice value;    // Value of the attribute
+        };
+
+        /** Creates a subject_name from a list of key/value strings. */
+        DistinguishedName(const Entry *begin NONNULL, const Entry *end NONNULL);
+
+        DistinguishedName(std::initializer_list<Entry> entries)
+        :DistinguishedName(entries.begin(), entries.end())
+        { }
+
+        static DistinguishedName parse(fleece::slice string);
+
+        fleece::alloc_slice operator[] (fleece::slice key);
+
     private:
-        CertEntry(const mbedtls_x509_crt*);
+        DistinguishedName(fleece::alloc_slice s)          :alloc_slice(s) { }
+
+        friend class Cert;
+        friend class CertSigningRequest;
     };
 
+    
     /** Abstract superclass of Cert and CertRequest. */
     class CertBase : public KeyOwner {
     public:
@@ -27,12 +49,11 @@ namespace litecore { namespace crypto {
 
         /** Parameters relating to the certificate subject, used when self-signing or requesting. */
         struct SubjectParameters {
-            fleece::alloc_slice subject_name;       // subject name for certificate (see below)
+            DistinguishedName subject_name;         // subject name for certificate (see below)
             uint8_t key_usage {0};                  // key usage flags (MBEDTLS_X509_KU_*)
             uint8_t ns_cert_type {0};               // Netscape flags (MBEDTLS_X509_NS_CERT_TYPE_*)
 
-            SubjectParameters(fleece::slice subjectName) :subject_name(subjectName) { }
-            SubjectParameters(fleece::alloc_slice subjectName) :subject_name(subjectName) { }
+            SubjectParameters(DistinguishedName dn) :subject_name(dn) { }
         };
 
         /** Parameters for signing a certificate, used when self-signing or signing a request. */
@@ -60,7 +81,7 @@ namespace litecore { namespace crypto {
 
         fleece::alloc_slice summary(const char *indent ="");
 
-        virtual fleece::alloc_slice subjectName() =0;
+        virtual DistinguishedName subjectName() =0;
 
         /** The subject's public key. */
         fleece::Retained<PublicKey> subjectPublicKey()  {return new PublicKey(this);}
@@ -91,7 +112,7 @@ namespace litecore { namespace crypto {
         static fleece::Retained<Cert> load(PublicKey*);
 
         virtual bool isSigned() override                        {return true;}
-        fleece::alloc_slice subjectName() override;
+        DistinguishedName subjectName() override;
 
         /** Makes the certificate persistent by adding it to the platform-specific store
             (e.g. the Keychain on Apple devices.) */
@@ -161,7 +182,7 @@ namespace litecore { namespace crypto {
         explicit CertSigningRequest(fleece::slice data);
 
         /** The Subject Name specified in the request. */
-        fleece::alloc_slice subjectName() override;
+        DistinguishedName subjectName() override;
 
         /** Signs the request, returning the completed Cert. */
         fleece::Retained<Cert> sign(const Cert::IssuerParameters&,

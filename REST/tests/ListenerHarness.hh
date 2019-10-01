@@ -91,8 +91,11 @@ public:
         id.key = c4keypair_generate(kC4RSA, 2048, persistent, &error);
         REQUIRE(id.key);
 
-        string subjectName = litecore::format("CN=%s, O=Couchbase, OU=Mobile", commonName);
-        c4::ref<C4Cert> csr = c4cert_createRequest(slice(subjectName), usage, id.key, &error);
+        const C4CertNameComponent subjectName[3] = {
+            {kC4Cert_CommonName,       slice(commonName)},
+            {kC4Cert_Organization,     "Couchbase"_sl},
+            {kC4Cert_OrganizationUnit, "Mobile"_sl} };
+        c4::ref<C4Cert> csr = c4cert_createRequest(subjectName, 3, usage, id.key, &error);
         REQUIRE(csr);
 
         id.cert = c4cert_signRequest(csr, nullptr, id.key, &error);

@@ -203,6 +203,7 @@ _c4cert_createRequest
 _c4cert_fromData
 _c4cert_copyData
 _c4cert_subjectName
+_c4cert_subjectNameComponent
 _c4cert_summary
 _c4cert_isSigned
 _c4cert_signRequest

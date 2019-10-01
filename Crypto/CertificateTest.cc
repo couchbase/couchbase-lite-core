@@ -24,6 +24,7 @@
 
 using namespace litecore::crypto;
 using namespace std;
+using namespace fleece;
 
 
 static constexpr const slice kSubjectName = "CN=Jane Doe, O=ExampleCorp, C=US, "
@@ -32,6 +33,42 @@ static constexpr const slice kSubject2Name = "CN=Richard Roe, O=ExampleCorp, C=U
                                             "emailAddress=dick@example.com"_sl;
 
 static constexpr const slice kCAName = "CN=TrustMe Root CA, O=TrustMe Corp., C=US"_sl;
+
+
+TEST_CASE("Creating subject names", "[Certs]") {
+    DistinguishedName name({
+        {"CN"_sl, "Jane Doe"_sl}, {"O"_sl, "ExampleCorp"_sl}, {"C"_sl, "US"_sl},
+        {"emailAddress"_sl, "jane@example.com"_sl}});
+    CHECK(name == kSubjectName);
+
+    CHECK(name["CN"_sl] == "Jane Doe"_sl);
+    CHECK(name["O"_sl] == "ExampleCorp"_sl);
+    CHECK(name["C"_sl] == "US"_sl);
+    CHECK(name["emailAddress"_sl] == "jane@example.com"_sl);
+    CHECK(name["foo"_sl] == nullslice);
+
+    name = DistinguishedName({
+        {"CN"_sl, "Jane Doe, MD"_sl}});
+    CHECK(name == "CN=Jane Doe\\, MD"_sl);
+    CHECK(name["CN"_sl] == "Jane Doe, MD"_sl);
+    CHECK(name["foo"_sl] == nullslice);
+
+    name = DistinguishedName({
+        {"CN"_sl, ",Jane,,Doe,"_sl}});
+    CHECK(name == "CN=\\,Jane\\,\\,Doe\\,"_sl);
+    CHECK(name["CN"_sl] == ",Jane,,Doe,"_sl);
+    CHECK(name["foo"_sl] == nullslice);
+
+    name = DistinguishedName::parse("CN=Zegpold"_sl);
+    CHECK(name["CN"_sl] == "Zegpold"_sl);
+    CHECK(name["foo"_sl] == nullslice);
+
+    name = DistinguishedName::parse("CN=Zegpold\\, Jr,O=Example\\, Inc.,   OU=Mailroom"_sl);
+    CHECK(name["CN"_sl] == "Zegpold, Jr"_sl);
+    CHECK(name["O"_sl] == "Example, Inc."_sl);
+    CHECK(name["OU"_sl] == "Mailroom"_sl);
+    CHECK(name["foo"_sl] == nullslice);
+}
 
 
 TEST_CASE("Key generation", "[Certs]") {
@@ -57,7 +94,7 @@ static pair<Retained<PrivateKey>,Retained<Cert>> makeCert(slice subjectName) {
     Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
     Cert::IssuerParameters issuerParams;
     issuerParams.validity_secs = 3600*24;
-    return {key, new Cert(subjectName, issuerParams, key)};
+    return {key, new Cert(DistinguishedName::parse(subjectName), issuerParams, key)};
 }
 
 
@@ -92,7 +129,7 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
 
     Cert::IssuerParameters issuerParams;
     issuerParams.validity_secs = 3600*24;
-    Retained<Cert> cert = new Cert(kSubjectName, issuerParams, key);
+    Retained<Cert> cert = new Cert(DistinguishedName::parse(kSubjectName), issuerParams, key);
 
     cert->makePersistent();
 
@@ -112,7 +149,7 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
 
 TEST_CASE("Cert request", "[Certs]") {
     Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
-    Retained<CertSigningRequest> csr = new CertSigningRequest(kSubjectName, key);
+    Retained<CertSigningRequest> csr = new CertSigningRequest(DistinguishedName::parse(kSubjectName), key);
     CHECK(csr->subjectName() == kSubjectName);
     CHECK(csr->subjectPublicKey()->data(KeyFormat::Raw) == key->publicKey()->data(KeyFormat::Raw));
 
@@ -132,7 +169,7 @@ TEST_CASE("Cert request", "[Certs]") {
     Retained<PrivateKey> caKey = PrivateKey::generateTemporaryRSA(2048);
     Cert::IssuerParameters caIssuerParams;
     caIssuerParams.is_ca = true;
-    Retained<Cert> caCert = new Cert(kCAName, caIssuerParams, caKey);
+    Retained<Cert> caCert = new Cert(DistinguishedName::parse(kCAName), caIssuerParams, caKey);
     cerr << "CA cert info:\n" << caCert->summary("\t");
 
     // Sign it:

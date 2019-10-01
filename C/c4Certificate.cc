@@ -94,17 +94,35 @@ const C4CertIssuerParameters kDefaultCertIssuerParameters = {
 #pragma mark - C4CERT:
 
 
-C4Cert* c4cert_createRequest(C4String subjectName,
+static const slice kAttributeNames[] = {
+    "CN"_sl,
+    "pseudonym"_sl,
+    "GN"_sl,
+    "SN"_sl,
+    "emailAddress"_sl,
+    "O"_sl,
+    "OU"_sl,
+    "postalAddress"_sl,
+    "locality"_sl,
+    "postalCode"_sl,
+    "ST"_sl,
+    "C"_sl,
+};
+
+
+C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
+                             size_t nameCount,
                              C4CertUsage certUsages,
                              C4KeyPair *subjectKey C4NONNULL,
                              C4Error *outError) C4API
 {
     return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
-        if (subjectName.size == 0) {
-            c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Missing subjectName"_sl, outError);
-            return nullptr;
+        vector<DistinguishedName::Entry> name(nameCount);
+        for (size_t i = 0; i < nameCount; ++i) {
+            name[i].key = kAttributeNames[nameComponents[i].attributeID];
+            name[i].value = nameComponents[i].value;
         }
-        Cert::SubjectParameters params(subjectName);
+        Cert::SubjectParameters params({&name[0], &name[nameCount]});
         params.ns_cert_type = certUsages;
         return retainedExternal(new CertSigningRequest(params, privateKey(subjectKey)));
     });
@@ -128,6 +146,13 @@ C4SliceResult c4cert_copyData(C4Cert* cert, bool pemEncoded) C4API {
 C4StringResult c4cert_subjectName(C4Cert* cert) C4API {
     return tryCatch<C4StringResult>(nullptr, [&]() {
         return C4StringResult(internal(cert)->subjectName());
+    });
+}
+
+
+C4StringResult c4cert_subjectNameComponent(C4Cert* cert, C4CertNameAttributeID attrID) C4API {
+    return tryCatch<C4StringResult>(nullptr, [&]() {
+        return C4StringResult(internal(cert)->subjectName()[kAttributeNames[attrID]]);
     });
 }
 
