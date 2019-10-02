@@ -37,7 +37,7 @@ static C4Cert* retainedExternal(CertBase *cert) {
     return external(retain(cert));
 }
 
-static CertSigningRequest* asUnsignedCert(C4Cert *cert, C4Error *outError =nullptr) {
+static CertSigningRequest* asUnsignedCert(C4Cert *cert NONNULL, C4Error *outError =nullptr) {
     if (internal(cert)->isSigned()) {
         c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Cert already signed"_sl, outError);
         return nullptr;
@@ -45,7 +45,7 @@ static CertSigningRequest* asUnsignedCert(C4Cert *cert, C4Error *outError =nullp
     return (CertSigningRequest*)cert;
 }
 
-static Cert* asSignedCert(C4Cert *cert, C4Error *outError =nullptr) {
+static Cert* asSignedCert(C4Cert *cert NONNULL, C4Error *outError =nullptr) {
     if (!internal(cert)->isSigned()) {
         c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Cert not signed"_sl, outError);
         return nullptr;
@@ -61,18 +61,18 @@ static C4KeyPair* retainedExternal(Key *key) {
     return external(retain(key));
 }
 
-static PublicKey* publicKey(C4KeyPair *c4key) {
+static PublicKey* publicKey(C4KeyPair *c4key NONNULL) {
     auto key = internal(c4key);
     return key->isPrivate() ? ((PrivateKey*)key)->publicKey().get() : (PublicKey*)key;
 }
 
-static PrivateKey* privateKey(C4KeyPair *c4key) {
+static PrivateKey* privateKey(C4KeyPair *c4key NONNULL) {
     auto key = internal(c4key);
     return key->isPrivate() ? (PrivateKey*)key : nullptr;
 }
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-static PersistentPrivateKey* persistentPrivateKey(C4KeyPair *c4key) {
+static PersistentPrivateKey* persistentPrivateKey(C4KeyPair *c4key NONNULL) {
     if (PrivateKey *priv = privateKey(c4key); priv)
         return priv->asPersistent();
     return nullptr;
@@ -117,7 +117,7 @@ C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
                              C4Error *outError) C4API
 {
     return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
-        vector<DistinguishedName::Entry> name(nameCount);
+        vector<DistinguishedName::Entry> name(nameCount+1);
         for (size_t i = 0; i < nameCount; ++i) {
             name[i].key = kAttributeNames[nameComponents[i].attributeID];
             name[i].value = nameComponents[i].value;
@@ -172,6 +172,7 @@ bool c4cert_isSigned(C4Cert* cert) C4API {
 C4Cert* c4cert_signRequest(C4Cert *c4Cert,
                            const C4CertIssuerParameters *c4Params,
                            C4KeyPair *issuerPrivateKey,
+                           C4Cert *issuerC4Cert,
                            C4Error *outError) C4API
 {
     return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
@@ -194,7 +195,17 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
         params.add_subject_identifier = c4Params->addSubjectIdentifier;
         params.add_basic_constraints = c4Params->addBasicConstraints;
 
-        Retained<Cert> cert = csr->sign(params, privateKey(issuerPrivateKey));
+        Cert *issuerCert = nullptr;
+        if (issuerC4Cert) {
+            issuerCert = asSignedCert(issuerC4Cert);
+            if (!issuerCert) {
+                c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter,
+                               "issuerCert is not signed"_sl, outError);
+                return nullptr;
+            }
+        }
+
+        Retained<Cert> cert = csr->sign(params, privateKey(issuerPrivateKey), issuerCert);
         return retainedExternal(cert.get());
     });
 }

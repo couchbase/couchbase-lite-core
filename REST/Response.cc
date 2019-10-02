@@ -123,6 +123,12 @@ namespace litecore { namespace REST {
         return *this;
     }
 
+    Response& Response::setRootCerts(C4Cert *cert) {
+        Assert(c4cert_isSigned(cert));
+        tlsContext()->setRootCerts((Cert*)cert);
+        return *this;
+    }
+
     Response& Response::allowOnlyCert(C4Cert *cert) {
         Assert(c4cert_isSigned(cert));
         tlsContext()->allowOnlyCert((Cert*)cert);

@@ -148,11 +148,14 @@ extern "C" {
         @param params  Capabilities to store in the cert; if NULL, uses defaults.
         @param issuerPrivateKey  The Certificate Authority's private key. (If self-signing a
                     cert, this should be the same as the `subjectKey` it was created with.)
+        @param issuerCert  The Certificate Authority's certificate (which must match
+                    \p issuerPrivateKey), or NULL if self-signing.
         @param outError  On failure, the error info will be stored here.
         @return  The signed certificate, or NULL on failure. */
     C4Cert* c4cert_signRequest(C4Cert *cert C4NONNULL,
                                const C4CertIssuerParameters *params,
                                C4KeyPair *issuerPrivateKey C4NONNULL,
+                               C4Cert *issuerCert,
                                C4Error *outError) C4API;
 
     /** Returns a certificate's public key.

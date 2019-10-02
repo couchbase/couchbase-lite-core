@@ -79,7 +79,7 @@ namespace litecore { namespace crypto {
 
         virtual bool isSigned()                         {return false;}
 
-        fleece::alloc_slice summary(const char *indent ="");
+        virtual fleece::alloc_slice summary(const char *indent ="");
 
         virtual DistinguishedName subjectName() =0;
 
@@ -113,6 +113,7 @@ namespace litecore { namespace crypto {
 
         virtual bool isSigned() override                        {return true;}
         DistinguishedName subjectName() override;
+        virtual fleece::alloc_slice summary(const char *indent ="") override;
 
         /** Makes the certificate persistent by adding it to the platform-specific store
             (e.g. the Keychain on Apple devices.) */

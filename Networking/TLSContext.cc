@@ -18,6 +18,8 @@
 
 #include "TLSContext.hh"
 #include "Certificate.hh"
+#include "Logging.hh"
+#include "WebSocketInterface.hh"
 #include "sockpp/mbedtls_context.h"
 #include <string>
 
@@ -30,7 +32,17 @@ namespace litecore { namespace net {
     TLSContext::TLSContext(role_t role)
     :_context(new mbedtls_context(role == Client ? tls_context::CLIENT : tls_context::SERVER))
     ,_role(role)
-    { }
+    {
+        _context->set_logger(4, [=](int level, const char *filename, int line, const char *message) {
+            static const LogLevel kLogLevels[] = {LogLevel::Error, LogLevel::Error,
+                LogLevel::Verbose, LogLevel::Verbose, LogLevel::Debug};
+            size_t len = strlen(message);
+            if (message[len-1] == '\n')
+                --len;
+            websocket::WSLogDomain.log(kLogLevels[level], "mbedTLS(%s): %.*s",
+                                       (role == Client ? "C" : "S"), int(len), message);
+        });
+    }
 
     TLSContext::~TLSContext()
     { }
@@ -38,6 +50,10 @@ namespace litecore { namespace net {
 
     void TLSContext::setRootCerts(slice certsData) {
         _context->set_root_certs(string(certsData));
+    }
+
+    void TLSContext::setRootCerts(crypto::Cert *cert) {
+        setRootCerts(cert->data());
     }
 
     void TLSContext::requirePeerCert(bool require) {

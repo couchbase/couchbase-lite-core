@@ -29,6 +29,7 @@ namespace litecore { namespace net {
 
         explicit TLSContext(role_t);
 
+        void setRootCerts(crypto::Cert* NONNULL);
         void setRootCerts(fleece::slice);
 
         void requirePeerCert(bool);

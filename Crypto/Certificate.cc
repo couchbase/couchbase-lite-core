@@ -208,6 +208,20 @@ namespace litecore { namespace crypto {
                              PrivateKey *issuerKeyPair NONNULL,
                              Cert *issuerCert)
     {
+        {
+            alloc_slice issuerKeyData = issuerKeyPair->publicKeyData();
+            Retained<PublicKey> issuerPublicKey;
+            if (issuerCert) {
+                if(!issuerCert->_cert->ca_istrue)
+                    error::_throw(error::InvalidParameter, "Issuer cert must be a CA");
+                issuerPublicKey = issuerCert->subjectPublicKey();
+            } else {
+                issuerPublicKey =  subjectKey;
+            }
+            if (issuerKeyData != issuerPublicKey->publicKeyData())
+                error::_throw(error::InvalidParameter, "Issuer cert does not match issuer key");
+        }
+        
         mbedtls_x509write_cert crt;
         mbedtls_mpi serial;
 
@@ -294,6 +308,21 @@ namespace litecore { namespace crypto {
 
     int Cert::writeInfo(char *buf, size_t bufSize, const char *indent) {
         return mbedtls_x509_crt_info(buf, bufSize, indent, _cert);
+    }
+
+
+    alloc_slice Cert::summary(const char *indent) {
+        alloc_slice summary;
+        for (Retained<Cert> cert = this; cert; cert = cert->next()) {
+            alloc_slice single = cert->CertBase::summary(indent);
+            if (!summary)
+                summary = move(single);
+            else {
+                summary.append("----------------\n"_sl);
+                summary.append(single);
+            }
+        }
+        return summary;
     }
 
 
@@ -458,8 +487,13 @@ namespace litecore { namespace crypto {
         //FIX: mbedTLS doesn't have any API to get the key usage or NS cert type from a CSR.
 //        subjectParams.key_usage = ??;
 //        subjectParams.ns_cert_type = ??;
-        return new Cert(Cert::create(subjectParams, subjectPublicKey(),
-                                     issuerParams, issuerKeyPair, issuerCert));
+        auto cert = retained(new Cert(Cert::create(subjectParams, subjectPublicKey(),
+                                                   issuerParams, issuerKeyPair, issuerCert)));
+        if (issuerCert) {
+            auto issuerCopy = retained(new Cert(issuerCert->dataOfChain()));
+            cert->append(issuerCopy);
+        }
+        return cert;
     }
 
 

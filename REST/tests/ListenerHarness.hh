@@ -37,13 +37,13 @@ public:
     }
 
 
-    C4Cert* useServerIdentity(Identity &id, bool persistent) {
+    C4Cert* useServerIdentity(const Identity &id) {
         alloc_slice digest = c4keypair_publicKeyDigest(id.key);
         C4Log("Using %s server TLS cert %.*s for this test",
-              (persistent ? "persistent" : "temporary"), SPLAT(digest));
+              (c4keypair_isPersistent(id.key) ? "persistent" : "temporary"), SPLAT(digest));
         serverIdentity = id;
 
-        configCertData = alloc_slice(c4cert_copyData(id.cert, false));
+        configCertData = alloc_slice(c4cert_copyChainData(id.cert));
         tlsConfig.certificate = configCertData;
 
         configKeyData = alloc_slice(c4keypair_privateKeyData(id.key));
@@ -58,33 +58,39 @@ public:
     }
 
 
-    C4Cert* useClientIdentity(Identity &id, bool persistent) {
+    C4Cert* useClientIdentity(const Identity &id) {
         alloc_slice digest = c4keypair_publicKeyDigest(id.key);
         C4Log("Using %s client TLS cert %.*s for this test",
-              (persistent ? "persistent" : "temporary"), SPLAT(digest));
+              (c4keypair_isPersistent(id.key) ? "persistent" : "temporary"), SPLAT(digest));
         clientIdentity = id;
-        configClientRootCertData = alloc_slice(c4cert_copyData(id.cert, false));
+        setListenerRootClientCerts(id.cert);
+        return id.cert;
+    }
+
+
+    void setListenerRootClientCerts(C4Cert *certs) {
+        configClientRootCertData = alloc_slice(c4cert_copyChainData(certs));
         tlsConfig.requireClientCerts = true;
         tlsConfig.rootClientCerts = configClientRootCertData;
-        return id.cert;
     }
 
 
     C4Cert* useServerTLSWithTemporaryKey() {
         if (!sServerTemporaryIdentity.cert)
             sServerTemporaryIdentity = createIdentity(false, kC4CertUsage_TLSServer, "LiteCore Listener Test");
-        return useServerIdentity(sServerTemporaryIdentity, false);
+        return useServerIdentity(sServerTemporaryIdentity);
     }
 
 
     C4Cert* useClientTLSWithTemporaryKey() {
         if (!sClientTemporaryIdentity.cert)
             sClientTemporaryIdentity = createIdentity(false, kC4CertUsage_TLSClient, "LiteCore Client Test");
-        return useClientIdentity(sClientTemporaryIdentity, false);
+        return useClientIdentity(sClientTemporaryIdentity);
     }
 
 
-    Identity createIdentity(bool persistent, C4CertUsage usage, const char *commonName) {
+    Identity createIdentity(bool persistent, C4CertUsage usage, const char *commonName,
+                            const Identity *signingIdentity =nullptr, bool isCA =false) {
         C4Log("Generating %s TLS key-pair and cert...", (persistent ? "persistent" : "temporary"))
         C4Error error;
         Identity id;
@@ -98,7 +104,13 @@ public:
         c4::ref<C4Cert> csr = c4cert_createRequest(subjectName, 3, usage, id.key, &error);
         REQUIRE(csr);
 
-        id.cert = c4cert_signRequest(csr, nullptr, id.key, &error);
+        if (!signingIdentity)
+            signingIdentity = &id;
+
+        C4CertIssuerParameters issuerParams = kDefaultCertIssuerParameters;
+        issuerParams.validityInSeconds = 3600;
+        issuerParams.isCA = isCA;
+        id.cert = c4cert_signRequest(csr, &issuerParams, signingIdentity->key, signingIdentity->cert, &error);
         REQUIRE(id.cert);
         return id;
     }
@@ -109,14 +121,14 @@ public:
         C4Log("Using server TLS w/persistent key for this test");
         if (!sServerPersistentIdentity)
             sServerPersistentIdentity = createIdentity(true, kC4CertUsage_TLSServer, "ListenerHarness");
-        return useServerIdentity(sServerPersistentIdentity, true);
+        return useServerIdentity(sServerPersistentIdentity);
     }
 
 
     C4Cert* useClientTLSWithPersistentKey() {
         if (!sClientPersistentIdentity)
             sClientPersistentIdentity = createIdentity(true, kC4CertUsage_TLSClient, "ListenerHarness");
-        return useClientIdentity(sClientPersistentIdentity, true);
+        return useClientIdentity(sClientPersistentIdentity);
     }
 #endif
 

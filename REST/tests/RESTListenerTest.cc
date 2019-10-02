@@ -36,6 +36,15 @@ Identity ListenerHarness::sServerTemporaryIdentity,
 //#ifdef COUCHBASE_ENTERPRISE
 
 
+static string to_str(FLSlice s) {
+    return string((char*)s.buf, s.size);
+}
+
+static string to_str(Value v) {
+    return to_str(v.asString());
+}
+
+
 class C4RESTTest : public C4Test, public ListenerHarness {
 public:
 
@@ -73,6 +82,8 @@ public:
         r->setHeaders(headers).setBody(body);
         if (pinnedCert)
             r->allowOnlyCert(pinnedCert);
+        if (rootCerts)
+            r->setRootCerts(rootCerts);
         if (clientIdentity.cert)
             r->setIdentity(clientIdentity.cert, clientIdentity.key);
         if (!r->run())
@@ -89,28 +100,24 @@ public:
         return request(method, uri, {}, nullslice, expectedStatus);
     }
 
+    void testRootLevel() {
+        auto r = request("GET", "/", HTTPStatus::OK);
+        auto body = r->bodyAsJSON().asDict();
+        REQUIRE(body);
+        CHECK(to_str(body["couchdb"]) == "Welcome");
+    }
+
     alloc_slice directory;
     c4::ref<C4Cert> pinnedCert;
+    c4::ref<C4Cert> rootCerts;
 };
-
-
-static string to_str(FLSlice s) {
-    return string((char*)s.buf, s.size);
-}
-
-static string to_str(Value v) {
-    return to_str(v.asString());
-}
 
 
 #pragma mark - ROOT LEVEL:
 
 
 TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][Listener][C]") {
-    auto r = request("GET", "/", HTTPStatus::OK);
-    auto body = r->bodyAsJSON().asDict();
-    REQUIRE(body);
-    CHECK(to_str(body["couchdb"]) == "Welcome");
+    testRootLevel();
 }
 
 
@@ -343,22 +350,14 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][Listener][TLS][C]") {
     pinnedCert = c4cert_retain(useServerTLSWithTemporaryKey());
-
-    auto r = request("GET", "/", HTTPStatus::OK);
-    auto body = r->bodyAsJSON().asDict();
-    REQUIRE(body);
-    CHECK(to_str(body["couchdb"]) == "Welcome");
+    testRootLevel();
 }
 
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][Listener][TLS][C]") {
     pinnedCert = c4cert_retain(useServerTLSWithPersistentKey());
-
-    auto r = request("GET", "/", HTTPStatus::OK);
-    auto body = r->bodyAsJSON().asDict();
-    REQUIRE(body);
-    CHECK(to_str(body["couchdb"]) == "Welcome");
+    testRootLevel();
 }
 #endif
 
@@ -366,11 +365,18 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][List
 TEST_CASE_METHOD(C4RESTTest, "TLS REST client cert", "[REST][Listener][TLS][C]") {
     pinnedCert = c4cert_retain(useServerTLSWithTemporaryKey());
     useClientTLSWithTemporaryKey();
+    testRootLevel();
+}
 
-    auto r = request("GET", "/", HTTPStatus::OK);
-    auto body = r->bodyAsJSON().asDict();
-    REQUIRE(body);
-    CHECK(to_str(body["couchdb"]) == "Welcome");
+
+TEST_CASE_METHOD(C4RESTTest, "TLS REST cert chain", "[REST][Listener][TLS][C]") {
+    Identity ca = createIdentity(false, kC4CertUsage_TLS_CA, "Test CA", nullptr, true);
+    useServerIdentity(createIdentity(false, kC4CertUsage_TLSServer, "localhost", &ca));
+    auto summary = alloc_slice(c4cert_summary(serverIdentity.cert));
+    useClientIdentity(createIdentity(false, kC4CertUsage_TLSClient, "Test Client", &ca));
+    setListenerRootClientCerts(ca.cert);
+    rootCerts = c4cert_retain(ca.cert);
+    testRootLevel();
 }
 
 
