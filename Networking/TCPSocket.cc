@@ -166,6 +166,7 @@ namespace litecore { namespace net {
             ::closesocket(_interruptWriteFD);
 #endif
         }
+        _socket.reset(); // Make sure socket is closed before TLSContext
     }
 
 
