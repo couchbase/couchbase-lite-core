@@ -22,6 +22,8 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.h"
+#include "DeepIterator.hh"
+#include <sstream>
 
 using namespace fleece;
 using namespace fleece::impl;
@@ -29,7 +31,6 @@ using namespace std;
 
 namespace litecore {
 
-    
     // Core SQLite functions for accessing values inside Fleece blobs.
 
 
@@ -99,6 +100,51 @@ namespace litecore {
             val = evaluatePathFromArg(ctx, argv, 1, val);
             setResultFromValue(ctx, val);
         } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_nested_value: exception!", -1);
+        }
+    }
+
+    static void handle_fts_value(const Value* data, stringstream& result) {
+        if(_usuallyFalse(!data)) {
+            Warn("Null value received in handle_fts_value");
+            return;
+        }
+
+        switch(data->type()) {
+            case kBoolean:
+                result << (data->asBool() ? "T" : "F");
+                break;
+            case kNumber:
+            {
+                const alloc_slice stringified = data->toString();
+                result << stringified.asString();
+                break;
+            }
+            case kString:
+                result << data->asString().asString();
+                break;
+            default:
+                break;
+        }
+    }
+
+    // fl_fts_value(body, propertyPath) -> blob data
+    static void fl_fts_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        try {
+            QueryFleeceScope scope(ctx, argv);
+            if(scope.root == nullptr) {
+                return;
+            } 
+
+            stringstream result;
+            for (DeepIterator j(scope.root); j; ++j) {
+                handle_fts_value(j.value(), result);
+                result << " ";
+            }
+
+            const string resultStr = result.str();
+            setResultTextFromSlice(ctx, slice(resultStr.substr(0, resultStr.size() - 1)));
+        } catch(const std::exception &) {
             sqlite3_result_error(ctx, "fl_nested_value: exception!", -1);
         }
     }
@@ -403,6 +449,7 @@ namespace litecore {
         { "fl_root",           1, fl_root },
         { "fl_value",          2, fl_value },
         { "fl_nested_value",   2, fl_nested_value },
+        { "fl_fts_value",      2, fl_fts_value },
         { "fl_blob",           2, fl_blob },
         { "fl_exists",         2, fl_exists },
         { "fl_count",          2, fl_count },

@@ -887,9 +887,9 @@ public:
 
 N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query collated", "[Query][C]") {
     compileSelect(json5("{WHAT: [ ['.Name'] ], \
-                         WHERE: ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false},\
+                         WHERE: ['COLLATE', {'unicode': true, 'case': false, 'diac': false},\
                                             ['=', ['.Artist'], 'Benoît Pioulard']],\
-                      ORDER_BY: [ ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false}, \
+                      ORDER_BY: [ ['COLLATE', {'unicode': true, 'case': false, 'diac': false}, \
                                                 ['.Name']] ]}"));
 
     vector<string> tracks = run();
@@ -898,14 +898,14 @@ N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query collated", "[Query][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query aggregate collated", "[Query][C]") {
-    compileSelect(json5("{WHAT: [ ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false}, \
+    compileSelect(json5("{WHAT: [ ['COLLATE', {'unicode': true, 'case': false, 'diac': false}, \
                                               ['.Artist']] ], \
                       DISTINCT: true, \
-                      ORDER_BY: [ ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false}, \
+                      ORDER_BY: [ ['COLLATE', {'unicode': true, 'case': false, 'diac': false}, \
                                               ['.Artist']] ]}"));
 
     vector<string> artists = run();
-    CHECK(artists.size() == 2097);
+    CHECK(artists.size() == 2094);
 
     // Benoît Pioulard appears twice in the database, once miscapitalized as BenoÎt Pioulard.
     // Check that these got coalesced by the DISTINCT operator:
@@ -914,7 +914,7 @@ N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query aggregate collated", "[Query
     CHECK(artists[216] == "Bernhard Weiss");
 
     // Make sure "Zoë Keating" sorts correctly:
-    CHECK(artists[2082] == "ZENИTH (feat. saåad)");
-    CHECK(artists[2083] == "Zoë Keating");
-    CHECK(artists[2084] == "Zola Jesus");
+    CHECK(artists[2079] == "ZENИTH (feat. saåad)");
+    CHECK(artists[2080] == "Zoë Keating");
+    CHECK(artists[2081] == "Zola Jesus");
 }

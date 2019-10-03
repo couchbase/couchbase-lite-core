@@ -94,13 +94,6 @@ endfunction()
 
 function(setup_litecore_build)
     setup_litecore_build_linux()
-    
-    if(NOT LITECORE_DISABLE_ICU)
-        target_compile_definitions(
-            LiteCoreStatic PRIVATE
-            -DLITECORE_USES_ICU=1
-        )
-    endif()
 
     target_link_libraries(
         LiteCore PRIVATE 
@@ -108,6 +101,10 @@ function(setup_litecore_build)
         ${ICU4C_COMMON} 
         ${ICU4C_I18N}
     )
+endfunction()
+
+function(setup_support_build)
+    setup_support_build_linux()
 endfunction()
 
 function(setup_rest_build)

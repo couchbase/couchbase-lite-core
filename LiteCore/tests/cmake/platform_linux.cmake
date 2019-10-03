@@ -16,6 +16,11 @@ function(set_source_files)
 endfunction()
 
 function(setup_build)
+    target_compile_definitions(
+        CppTests PRIVATE
+        -DLITECORE_USES_ICU=1
+    )
+    
     target_include_directories(
         CppTests PRIVATE
         ${TOP}vendor/mbedtls/include

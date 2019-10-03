@@ -30,6 +30,7 @@
 #include "StringUtil.hh"
 #include "PlatformIO.hh"
 #include "SecureDigest.hh"
+#include "NumConversion.hh"
 #include <utility>
 #include <algorithm>
 
@@ -548,18 +549,7 @@ namespace litecore {
                 _sql << kNullFnName << "()";
                 break;
             case kNumber:
-                if(node->isInteger()) {
-                    _sql << node->toString();
-                } else {
-                    // https://github.com/couchbase/couchbase-lite-core/issues/555
-                    // Too much precision and stringifying is affected, but too little
-                    // and the above issue happens so query parser needs to use a higher
-                    // precision version of the floating point number
-                    char buf[32];
-                    sprintf(buf, "%.17g", node->asDouble());
-                    _sql << buf;
-                }
-                
+                _sql << node->toString();                
                 break;
             case kBoolean:
                 _sql << kBoolFnName << '(' << (int)node->asBool() << ')';
@@ -1404,6 +1394,13 @@ namespace litecore {
         writeEachExpression(arrayExpr);
         return SQL();
     }
+
+    std::string QueryParser::FTSExpressionSQL(const fleece::impl::Value* ftsExpr) {
+        reset();
+        writeFunctionGetter(kFTSValueFnName, ftsExpr);
+        return SQL();
+    }
+
 
 
     // Given an index table name, returns its join alias. If `aliasPrefix` is given, it will add

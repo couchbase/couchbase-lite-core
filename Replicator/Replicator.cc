@@ -492,7 +492,7 @@ namespace litecore { namespace repl {
             if (!refresh && _hadLocalCheckpoint) {
                 // Compare checkpoints, reset if mismatched:
                 bool valid = _checkpoint.validateWith(remoteCheckpoint);
-                if (!valid)
+                if (!valid && _pusher)
                     _pusher->checkpointIsInvalid();
 
                 // Now we have the checkpoints! Time to start replicating:

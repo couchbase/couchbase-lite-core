@@ -249,6 +249,12 @@ namespace litecore { namespace repl {
         decrement(_pendingRevMessages);
         increment(_activeIncomingRevs);
         increment(_unfinishedIncomingRevs);
+        if(!connection()) {
+            // Connection already closed, continuing would cause a crash
+            logVerbose("startIncomingRev called after connection close, ignoring...");
+            return;
+        }
+
         Retained<IncomingRev> inc;
         if (_spareIncomingRevs.empty()) {
             inc = new IncomingRev(this);

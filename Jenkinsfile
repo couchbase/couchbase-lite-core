@@ -1,10 +1,13 @@
 pipeline {
     agent none
+    options {
+        timeout(time: 30, unit: 'MINUTES') 
+    }
     stages {
         stage("Build and Test") {
             parallel {
                 stage("Windows") {
-                   agent { label 's61114win10_(litecore)' }
+                   agent { label 'couchbase-lite-net-validation' }
                    environment {
                        BRANCH = "${BRANCH_NAME}"
                    }

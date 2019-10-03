@@ -1620,3 +1620,21 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
           "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10},"
           "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}]}");
 }
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch", "[Pull]") {
+    // CBSE-7341
+    auto serverOpts = Replicator::Options::passive();
+
+    // Push db --> db2:
+    importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":100}");
+
+    deleteAndRecreateDB(db2);
+    _expectedDocumentCount = 0;
+
+    // This line causes a null deference SIGSEGV before the fix
+    runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
+}
