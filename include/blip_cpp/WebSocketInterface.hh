@@ -139,9 +139,6 @@ namespace litecore { namespace websocket {
         /** Closes the WebSocket. Callable from any thread. */
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) =0;
 
-        static constexpr const char *kProtocolsOption = "WS-Protocols";     // string
-        static constexpr const char *kHeartbeatOption = "heartbeat";        // seconds
-
     protected:
         WebSocket(const URL &url, Role role);
         virtual ~WebSocket();

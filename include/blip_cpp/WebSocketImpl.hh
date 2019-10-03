@@ -42,10 +42,17 @@ namespace litecore { namespace websocket {
         messages. */
     class WebSocketImpl : public WebSocket, protected Logging {
     public:
+
+        struct Parameters {
+            fleece::alloc_slice     webSocketProtocols; ///< Sec-WebSocket-Protocol value
+            int                     heartbeatSecs;      ///< WebSocket heartbeat interval in seconds (default if 0)
+            fleece::AllocedDict     options;            ///< Other options
+        };
+
         WebSocketImpl(const URL &url,
                       Role role,
-                      const fleece::AllocedDict &options,
-                      bool framing);
+                      bool framing,
+                      const Parameters&);
 
         virtual void connect() override;
         virtual bool send(fleece::slice message, bool binary =true) override;
@@ -60,8 +67,8 @@ namespace litecore { namespace websocket {
         void onReceive(fleece::slice);
         void onWriteComplete(size_t);
 
-        const fleece::AllocedDict& options() const   {return _options;}
-
+        const Parameters& parameters() const         {return _parameters;}
+        const fleece::AllocedDict& options() const   {return _parameters.options;}
     protected:
         // Timeout for WebSocket connection (until HTTP response received)
         static constexpr long kConnectTimeoutSecs = 15;
@@ -100,7 +107,7 @@ namespace litecore { namespace websocket {
         void startResponseTimer(std::chrono::seconds timeout);
         void timedOut();
 
-        fleece::AllocedDict _options;
+        Parameters const _parameters;
         bool _framing;
         std::unique_ptr<ClientProtocol> _clientProtocol;  // 3rd party class that does the framing
         std::unique_ptr<ServerProtocol> _serverProtocol;  // 3rd party class that does the framing

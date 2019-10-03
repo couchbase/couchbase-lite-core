@@ -66,11 +66,11 @@ namespace litecore { namespace websocket {
 
     WebSocketImpl::WebSocketImpl(const URL &url,
                                  Role role,
-                                 const fleece::AllocedDict &options,
-                                 bool framing)
+                                 bool framing,
+                                 const Parameters &parameters)
     :WebSocket(url, role)
     ,Logging(WSLogDomain)
-    ,_options(options)
+    ,_parameters(parameters)
     ,_framing(framing)
     ,_responseTimer(new actor::Timer(bind(&WebSocketImpl::timedOut, this)))
     {
@@ -299,9 +299,8 @@ namespace litecore { namespace websocket {
     int WebSocketImpl::heartbeatInterval() const {
         if (!_framing)
             return 0;
-        fleece::Value heartbeat = options().get(kHeartbeatOption);
-        if (heartbeat.type() == kFLNumber)
-            return (int)heartbeat.asInt();
+        else if (_parameters.heartbeatSecs > 0)
+            return _parameters.heartbeatSecs;
         else
             return (int)kDefaultHeartbeatInterval.count();
     }
