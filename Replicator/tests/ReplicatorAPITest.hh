@@ -314,6 +314,8 @@ public:
         CHECK(_callbackStatus.error.code == status.error.code);
         CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
         CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
+
+        _repl = nullptr;
     }
 
 
