@@ -47,6 +47,8 @@ namespace litecore { namespace repl {
                                                               C4Database* NONNULL);
         static void registerInternalFactory(InternalFactory);
 
+        static Parameters convertParams(fleece::slice c4SocketOptions);
+
         C4SocketImpl(websocket::URL,
                      websocket::Role,
                      fleece::alloc_slice options,

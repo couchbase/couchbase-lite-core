@@ -76,6 +76,15 @@ namespace litecore { namespace repl {
     }
 
 
+    WebSocketImpl::Parameters C4SocketImpl::convertParams(slice c4SocketOptions) {
+        WebSocketImpl::Parameters params = {};
+        params.options = AllocedDict(c4SocketOptions);
+        params.webSocketProtocols = params.options[kC4SocketOptionWSProtocols].asString();
+        params.heartbeatSecs = (int)params.options[kC4ReplicatorHeartbeatInterval].asInt();
+        return params;
+    }
+
+
     /** Implementation of C4Socket */
     C4SocketImpl::C4SocketImpl(websocket::URL url,
                                Role role,
@@ -84,8 +93,8 @@ namespace litecore { namespace repl {
                                void *nativeHandle_)
     :WebSocketImpl(url,
                    role,
-                   AllocedDict(options),
-                   fac(factory_).framing != kC4NoFraming)
+                   fac(factory_).framing != kC4NoFraming,
+                   convertParams(options))
     ,_factory(fac(factory_))
     {
         nativeHandle = nativeHandle_;

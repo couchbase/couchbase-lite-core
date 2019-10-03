@@ -31,15 +31,15 @@
 #include <string>
 
 using namespace litecore;
+using namespace litecore::repl;
 using namespace litecore::websocket;
 
 
 void C4RegisterBuiltInWebSocket() {
-    repl::C4SocketImpl::registerInternalFactory([](websocket::URL url,
-                                                   fleece::alloc_slice options,
-                                                   C4Database *database) -> WebSocketImpl*
-                                                {
-        return new BuiltInWebSocket(url, fleece::AllocedDict(options), database);
+    C4SocketImpl::registerInternalFactory([](websocket::URL url,
+                                             fleece::alloc_slice options,
+                                             C4Database *database) -> WebSocketImpl* {
+        return new BuiltInWebSocket(url, C4SocketImpl::convertParams(options), database);
     });
 }
 
@@ -60,8 +60,8 @@ namespace litecore { namespace websocket {
     // private shared constructor
     BuiltInWebSocket::BuiltInWebSocket(const URL &url,
                                        Role role,
-                                       const fleece::AllocedDict &options)
-    :WebSocketImpl(url, role, options, true)
+                                       const Parameters &parameters)
+    :WebSocketImpl(url, role, true, parameters)
     ,_readBuffer(kReadBufferSize)
     {
         TCPSocket::initialize();
@@ -70,9 +70,9 @@ namespace litecore { namespace websocket {
 
     // client constructor
     BuiltInWebSocket::BuiltInWebSocket(const URL &url,
-                                       const fleece::AllocedDict &options,
+                                       const Parameters &parameters,
                                        C4Database *database)
-    :BuiltInWebSocket(url, Role::Client, options)
+    :BuiltInWebSocket(url, Role::Client, parameters)
     {
         _database = c4db_retain(database);
     }
@@ -81,7 +81,7 @@ namespace litecore { namespace websocket {
     // server constructor
     BuiltInWebSocket::BuiltInWebSocket(const URL &url,
                                        unique_ptr<net::ResponderSocket> socket)
-    :BuiltInWebSocket(url, Role::Server, AllocedDict())
+    :BuiltInWebSocket(url, Role::Server, Parameters())
     {
         _socket.reset(socket.release());
     }
@@ -194,7 +194,7 @@ namespace litecore { namespace websocket {
         Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
         HTTPLogic logic {Address(url()), Headers(headers)};
         logic.setCookieProvider(this);
-        logic.setWebSocketProtocol(options()[kC4SocketOptionWSProtocols].asString());
+        logic.setWebSocketProtocol(parameters().webSocketProtocols);
 
         if (!configureProxy(logic, options()[kC4ReplicatorOptionProxyServer].asDict())) {
             closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,

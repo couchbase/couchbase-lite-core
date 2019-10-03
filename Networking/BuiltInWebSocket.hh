@@ -33,7 +33,7 @@ namespace litecore { namespace websocket {
 
         /** Client-side constructor. Call \ref connect() afterwards. */
         BuiltInWebSocket(const URL &url,
-                         const fleece::AllocedDict &options,
+                         const Parameters&,
                          C4Database *database);
 
         /** Server-side constructor; takes an already-connected socket that's been through the
@@ -58,7 +58,7 @@ namespace litecore { namespace websocket {
         virtual void setCookie(const net::Address&, fleece::slice cookieHeader) override;
 
     private:
-        BuiltInWebSocket(const URL&, Role, const fleece::AllocedDict &options);
+        BuiltInWebSocket(const URL&, Role, const Parameters &);
         void run();
         void setThreadName();
         bool configureClientCert(fleece::Dict auth);
