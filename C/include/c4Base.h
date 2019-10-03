@@ -68,6 +68,113 @@ static inline bool c4SliceEqual(C4Slice a, C4Slice b)       {return FLSlice_Equa
 static inline void c4slice_free(C4SliceResult s)            {FLSliceResult_Free(s);}
 
 
+//////// COMMON TYPES
+
+/** A raw SHA-1 digest used as the unique identifier of a blob. */
+typedef struct C4BlobKey {
+    uint8_t bytes[20];
+} C4BlobKey;
+
+
+/** A simple parsed-URL type. */
+typedef struct C4Address C4Address;
+
+/** Opaque handle for an object that manages storage of blobs. */
+typedef struct c4BlobStore C4BlobStore;
+
+/** An X.509 certificate, or certificate signing request (CSR). */
+typedef struct C4Cert C4Cert;
+
+/** Opaque handle to an opened database. */
+typedef struct c4Database C4Database;
+
+/** A database-observer reference. */
+typedef struct c4DatabaseObserver C4DatabaseObserver;
+
+/** Describes a version-controlled document. */
+typedef struct C4Document C4Document;
+
+/** A document-observer reference. */
+typedef struct c4DocumentObserver C4DocumentObserver;
+
+/** Opaque handle to a document enumerator. */
+typedef struct C4DocEnumerator C4DocEnumerator;
+
+/** An asymmetric key or key-pair (RSA, etc.) The private key may or may not be present. */
+typedef struct C4KeyPair C4KeyPair;
+
+/** A LiteCore network listener -- supports the REST API, replication, or both. */
+typedef struct C4Listener C4Listener;
+
+/** Opaque handle to a compiled query. */
+typedef struct c4Query C4Query;
+
+/** A query result enumerator. */
+typedef struct C4QueryEnumerator C4QueryEnumerator;
+
+/** A query-observer reference. */
+typedef struct c4QueryObserver C4QueryObserver;
+
+/** Contents of a raw document. */
+typedef struct C4RawDocument C4RawDocument;
+
+/** An open stream for reading data from a blob. */
+typedef struct c4ReadStream C4ReadStream;
+
+/** Opaque reference to a replicator. */
+typedef struct C4Replicator C4Replicator;
+
+/** Represents an open bidirectional stream of bytes or messages (typically a TCP socket.) */
+typedef struct C4Socket C4Socket;
+
+/** A group of callbacks that define the implementation of sockets. */
+typedef struct C4SocketFactory C4SocketFactory;
+
+/** An open stream for writing data to a blob. */
+typedef struct c4WriteStream C4WriteStream;
+
+
+//////// REFERENCE COUNTING
+
+
+// The actual functions behind c4xxx_retain / c4xxx_release; don't call directly
+void* c4base_retain(void *obj) C4API;
+void c4base_release(void *obj) C4API;
+
+#define C4_REFCOUNTED_DECLARATION(TYPE, SHORT) \
+    TYPE* c4##SHORT##_retain(TYPE* ref) C4API; \
+    void c4##SHORT##_release(TYPE* ref) C4API;
+#define C4_REFCOUNTED_BOILERPLATE(TYPE, SHORT) \
+    static inline TYPE* c4##SHORT##_retain(TYPE* ref) C4API {return (TYPE*) c4base_retain(ref);} \
+    static inline void c4##SHORT##_release(TYPE* ref) C4API {c4base_release(ref);}
+
+// These types are reference counted and have c4xxx_retain / c4xxx_release functions:
+C4_REFCOUNTED_BOILERPLATE(C4Cert,            cert)
+C4_REFCOUNTED_BOILERPLATE(C4KeyPair,         keypair)
+C4_REFCOUNTED_BOILERPLATE(C4Database,        db)
+C4_REFCOUNTED_BOILERPLATE(C4Query,           query)
+C4_REFCOUNTED_DECLARATION(C4Document,        doc)
+C4_REFCOUNTED_DECLARATION(C4QueryEnumerator, queryenum)
+
+// These types are _not_ ref-counted but must be freed after use:
+void c4dbobs_free   (C4DatabaseObserver*) C4API;
+void c4docobs_free  (C4DocumentObserver*) C4API;
+void c4enum_free    (C4DocEnumerator*) C4API;
+void c4listener_free(C4Listener*) C4API;
+void c4queryobs_free(C4QueryObserver*) C4API;
+void c4raw_free     (C4RawDocument*) C4API;
+void c4repl_free    (C4Replicator*) C4API;
+void c4stream_close(C4ReadStream*) C4API;
+void c4stream_closeWriter(C4WriteStream*) C4API;
+
+
+/** Returns the number of objects that have been created but not yet freed.
+    This can be used as a debugging/testing tool to detect leaks. */
+int c4_getObjectCount(void) C4API;
+
+void c4_dumpInstances(void) C4API;
+
+
 //////// ERRORS:
 
 
@@ -313,13 +420,6 @@ C4StringResult c4_getBuildInfo(void) C4API;
 C4StringResult c4_getVersion(void) C4API;
 
 
-/** Returns the number of objects that have been created but not yet freed.
-    This can be used as a debugging/testing tool to detect leaks. */
-int c4_getObjectCount(void) C4API;
-
-void c4_dumpInstances(void) C4API;
-
-
 //////// CONFIGURATION:
 
 
@@ -330,12 +430,6 @@ void c4_dumpInstances(void) C4API;
     @note  If you do call this function, you should call it before opening any databases.
     @note  Needless to say, the directory must already exist. */
 void c4_setTempDir(C4String path) C4API;
-
-
-// The actual functions behind c4xxx_retain / c4xxx_release; don't call directly
-void* c4base_retain(void *obj) C4API;
-void c4base_release(void *obj) C4API;
-
 
 #ifdef __cplusplus
 }

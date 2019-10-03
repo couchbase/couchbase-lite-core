@@ -17,6 +17,7 @@
 //
 
 #include "c4Test.hh"
+#include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "fleece/slice.hh"

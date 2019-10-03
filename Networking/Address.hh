@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "c4Socket.h"
+#include "c4Replicator.h"
 #include "PlatformCompat.hh"
 #include <fleece/slice.hh>
 

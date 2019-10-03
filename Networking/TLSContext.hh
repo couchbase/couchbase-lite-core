@@ -6,6 +6,7 @@
 
 #pragma once
 #include "RefCounted.hh"
+#include "fleece/slice.hh"
 #include <memory>
 
 namespace sockpp {

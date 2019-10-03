@@ -18,6 +18,8 @@
 
 #pragma once
 #include "c4.hh"
+#include "c4Database.h"
+#include "c4Document.h"
 #include "Batcher.hh"
 #include "Logging.hh"
 #include "Timer.hh"

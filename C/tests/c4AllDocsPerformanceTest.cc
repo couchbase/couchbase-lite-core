@@ -17,6 +17,7 @@
 //
 
 #include "c4Test.hh"
+#include "c4DocEnumerator.h"
 #include "Benchmark.hh"
 #include "SecureRandomize.hh"
 #include <chrono>

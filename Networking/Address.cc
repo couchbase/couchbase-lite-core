@@ -18,9 +18,9 @@
 
 #include "fleece/Fleece.hh"
 #include "Address.hh"
-#include "c4Replicator.h"
 #include "Error.hh"
 #include "StringUtil.hh"
+#include "c4Database.h"
 
 using namespace std;
 using namespace fleece;

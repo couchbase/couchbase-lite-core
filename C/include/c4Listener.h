@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "c4Database.h"
+#include "c4Base.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,10 +67,6 @@ extern "C" {
         bool allowPush;
         bool allowPull;
     } C4ListenerConfig;
-
-
-    /** A LiteCore network listener -- supports the REST API, replication, or both. */
-    typedef struct C4Listener C4Listener;
 
 
     /** Returns flags for the available APIs in this build (REST, sync, or both.) */

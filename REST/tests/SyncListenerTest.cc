@@ -16,8 +16,8 @@
 // limitations under the License.
 //
 
-#include "ReplicatorAPITest.hh"
 #include "ListenerHarness.hh"
+#include "ReplicatorAPITest.hh"
 
 using namespace litecore::REST;
 

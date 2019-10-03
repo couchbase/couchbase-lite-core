@@ -27,6 +27,8 @@
 
 using namespace litecore::blip;
 
+struct C4UUID;
+
 namespace litecore { namespace repl {
 
     class Pusher;

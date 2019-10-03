@@ -20,6 +20,7 @@
 #include "Replicator.hh"
 #include "StringUtil.hh"
 #include "MessageBuilder.hh"
+#include "c4BlobStore.h"
 #include <atomic>
 
 using namespace fleece;

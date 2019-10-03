@@ -18,10 +18,12 @@
 
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
+#include "c4Database.h"
 #include "c4Certificate.h"
 #include "Certificate.hh"
 #include "PublicKey.hh"
 #include "c4.hh"
+#include <vector>
 
 #ifdef COUCHBASE_ENTERPRISE
 

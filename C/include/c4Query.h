@@ -17,8 +17,7 @@
 //
 
 #pragma once
-#include "c4Database.h"
-#include "c4Document.h"
+#include "c4Base.h"
 #include "fleece/Fleece.h"
 
 #ifdef __cplusplus
@@ -38,10 +37,6 @@ extern "C" {
         kC4N1QLQuery,   ///< N1QL syntax
     };
 
-
-    /** Opaque handle to a compiled query. */
-    typedef struct c4Query C4Query;
-
     
     /** Compiles a query from an expression given as JSON.
         The expression is a predicate that describes which documents should be returned.
@@ -59,16 +54,6 @@ extern "C" {
                           C4Error *error) C4API;
 
     C4Query* c4query_new(C4Database* C4NONNULL, C4String, C4Error*) C4API;  // for backward compatibility
-
-    /** Increments the reference count of a C4Query. */
-    static inline C4Query* c4query_retain(C4Query *query) C4API {
-        return (C4Query*) c4base_retain(query);
-    }
-
-    /** Decrements the ref-count; at zero, closes and frees the C4Query. */
-    static inline void c4query_release(C4Query* query) {
-        c4base_release(query);
-    }
 
     /** Returns a string describing the implementation of the compiled query.
         This is intended to be read by a developer for purposes of optimizing the query, especially
@@ -112,10 +97,10 @@ extern "C" {
 
 
     /** A query result enumerator.
-        Created by c4db_query. Must be freed with c4queryenum_free.
+        Created by c4db_query. Must be freed with c4queryenum_release.
         The fields of this struct represent the current matched index row, and are valid until the
-        next call to c4queryenum_next or c4queryenum_free. */
-    typedef struct {
+        next call to c4queryenum_next or c4queryenum_release. */
+    typedef struct C4QueryEnumerator {
         /** The columns of this result, in the same order as in the query's `WHAT` clause. */
         FLArrayIterator columns;
 
@@ -203,15 +188,6 @@ extern "C" {
     /** Closes an enumerator without freeing it. This is optional, but can be used to free up
         resources if the enumeration has not reached its end, but will not be freed for a while. */
     void c4queryenum_close(C4QueryEnumerator*) C4API;
-
-    /** Increments the reference count of a C4QueryEnumerator. */
-    C4QueryEnumerator* c4queryenum_retain(C4QueryEnumerator*) C4API;
-
-    /** Deprecated synonym for \ref c4queryenum_release. */
-    void c4queryenum_free(C4QueryEnumerator*) C4API;
-
-    /** Decrements the ref-count; at zero, closes and frees the C4QueryEnumerator. */
-    static inline void c4queryenum_release(C4QueryEnumerator *q)    {c4queryenum_free(q);}
 
 
     /** @} */

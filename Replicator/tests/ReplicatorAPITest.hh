@@ -10,6 +10,7 @@
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
 #include "c4.hh"
+#include "c4Certificate.h"
 #include "Address.hh"
 #include "Response.hh"
 #include "c4Test.hh"

@@ -9,6 +9,9 @@
 #pragma once
 #include "fleece/Fleece.hh"
 #include "c4.hh"
+#include "c4BlobStore.h"
+#include "c4Transaction.hh"
+#include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
 #include "Replicator.hh"
 #include "LoopbackProvider.hh"
@@ -403,6 +406,10 @@ public:
 
 #define fastREQUIRE(EXPR)  if (EXPR) ; else REQUIRE(EXPR)       // REQUIRE() is kind of expensive
 
+    static inline fleece::Doc getFleeceDoc(C4Document *doc) {
+        return fleece::Doc(c4doc_createFleeceDoc(doc), false);
+    }
+
     void compareDocs(C4Document *doc1, C4Document *doc2) {
         const auto kPublicDocumentFlags = (kDocDeleted | kDocConflicted | kDocHasAttachments);
 
@@ -411,7 +418,7 @@ public:
         fastREQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
 
         // Compare canonical JSON forms of both docs:
-        Doc rev1 = c4::getFleeceDoc(doc1), rev2 = c4::getFleeceDoc(doc2);
+        Doc rev1 = getFleeceDoc(doc1), rev2 = getFleeceDoc(doc2);
         if (!rev1.root().isEqual(rev2.root())) {        // fast check to avoid expensive toJSON
             alloc_slice json1 = rev1.root().toJSON(true, true);
             alloc_slice json2 = rev2.root().toJSON(true, true);

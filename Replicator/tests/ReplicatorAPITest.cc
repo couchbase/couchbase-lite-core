@@ -9,6 +9,7 @@
 #include "ReplicatorAPITest.hh"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
+#include "c4Socket.h"
 #include "fleece/Fleece.hh"
 
 using namespace fleece;

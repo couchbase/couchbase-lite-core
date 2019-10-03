@@ -20,6 +20,7 @@
 #include "IncomingRev.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
+#include "c4DocEnumerator.h"
 #include <sstream>
 
 using namespace std;

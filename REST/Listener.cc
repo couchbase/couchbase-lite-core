@@ -17,6 +17,7 @@
 //
 
 #include "Listener.hh"
+#include "c4Database.h"
 #include "c4ListenerInternal.hh"
 #include "StringUtil.hh"
 #include <vector>

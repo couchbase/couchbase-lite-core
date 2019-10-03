@@ -18,8 +18,9 @@
 
 #include "RESTListener.hh"
 #include "c4.hh"
-#include "c4Private.h"
+#include "c4Database.h"
 #include "c4Document+Fleece.h"
+#include "c4Private.h"
 #include "Server.hh"
 #include "TLSContext.hh"
 #include "Certificate.hh"

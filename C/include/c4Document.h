@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "c4Database.h"
+#include "c4Base.h"
 
 #ifdef __cplusplus
 extern "C" {

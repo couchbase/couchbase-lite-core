@@ -18,7 +18,7 @@
 //  This code is adapted from civetweb.c and CivetServer.cpp; see original license at end of file.
 
 #include "netUtils.hh"
-#include "c4.h"
+#include "c4Base.h"
 #include "PlatformIO.hh"
 #include "StringUtil.hh"
 #include <assert.h>

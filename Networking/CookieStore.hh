@@ -19,12 +19,13 @@
 #pragma once
 #include "RefCounted.hh"
 #include "fleece/Fleece.hh"
-#include "c4Replicator.h" // for C4Address
 #include <iostream>
 #include <memory>
 #include <mutex>
 #include <time.h>
 #include <vector>
+
+struct C4Address;
 
 namespace litecore { namespace net {
     using fleece::RefCounted;

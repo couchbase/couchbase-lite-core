@@ -21,7 +21,6 @@
 #include "TLSContext.hh"
 #include "HTTPLogic.hh"
 #include "Address.hh"
-#include "c4.h"
 #include "c4Certificate.h"
 #include "c4ExceptionUtils.hh"
 #include "Writer.hh"

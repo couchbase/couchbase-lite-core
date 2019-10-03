@@ -29,6 +29,8 @@
 #include "BLIP.hh"
 #include "Address.hh"
 #include "Instrumentation.hh"
+#include "c4DocEnumerator.h"
+#include "c4Socket.h"
 
 using namespace std;
 using namespace std::placeholders;

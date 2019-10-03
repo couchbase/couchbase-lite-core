@@ -55,7 +55,7 @@ extern "C" {
     
 
     /** Metadata about a document (actually about its current revision.) */
-    typedef struct {
+    typedef struct C4DocumentInfo {
         C4DocumentFlags flags;      ///< Document flags
         C4HeapString docID;         ///< Document ID
         C4HeapString revID;         ///< RevID of current revision
@@ -64,9 +64,6 @@ extern "C" {
         int64_t expiration;         ///< Expiration time, or 0 if none
     } C4DocumentInfo;
 
-
-    /** Opaque handle to a document enumerator. */
-    typedef struct C4DocEnumerator C4DocEnumerator;
 
 
     /** Closes an enumeration. This is optional, but can be used to free up resources if the

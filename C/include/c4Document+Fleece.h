@@ -19,14 +19,12 @@
 #pragma once
 
 #include "c4Document.h"
-#include "c4BlobStore.h"
 #include "fleece/Fleece.h"
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
     /** \defgroup Documents Documents
         @{ */

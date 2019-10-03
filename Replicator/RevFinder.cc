@@ -23,6 +23,7 @@
 #include "StringUtil.hh"
 #include "Instrumentation.hh"
 #include "c4.hh"
+#include "c4Transaction.hh"
 #include "c4Private.h"
 #include "c4Document+Fleece.h"
 #include "c4Replicator.h"

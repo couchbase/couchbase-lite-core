@@ -22,8 +22,14 @@
 #include "Error.hh"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
+#include "c4BlobStore.h"
+#include "c4Document+Fleece.h"
+#include "c4DocEnumerator.h"
 #include "c4Private.h"
+#include "c4Transaction.hh"
+#include <functional>
 #include <set>
+#include <utility>
 
 
 namespace litecore { namespace repl {

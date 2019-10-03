@@ -17,10 +17,7 @@
 //
 
 #pragma once
-#include "c4Socket.h"
-#include "c4Database.h"
 #include "c4Document.h"
-#include "c4BlobStore.h"
 #include "fleece/Fleece.h"
 
 #ifdef __cplusplus
@@ -52,6 +49,15 @@ extern "C" {
 
     /** For convenience, an array of C strings naming the C4ReplicatorActivityLevel values. */
     CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[5];
+
+
+    /** A simple parsed-URL type. */
+    typedef struct C4Address {
+        C4String scheme;
+        C4String hostname;
+        uint16_t port;
+        C4String path;
+    } C4Address;
 
 
     /** Represents the current progress of a replicator.
@@ -88,9 +94,6 @@ extern "C" {
         bool errorIsTransient;
     } C4DocumentEnded;
 
-
-    /** Opaque reference to a replicator. */
-    typedef struct C4Replicator C4Replicator;
 
     /** Callback a client can register, to get progress information.
         This will be called on arbitrary background threads, and should not block. */

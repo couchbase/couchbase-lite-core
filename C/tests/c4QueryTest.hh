@@ -83,7 +83,7 @@ public:
         while (c4queryenum_next(e, &error))
             results.push_back(callback(e));
         CHECK(error.code == 0);
-        c4queryenum_free(e);
+        c4queryenum_release(e);
         return results;
     }
 

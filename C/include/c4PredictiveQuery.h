@@ -18,7 +18,7 @@
 //
 
 #pragma once
-#include "c4BlobStore.h"
+#include "c4Base.h"
 #include "fleece/Fleece.h"
 
 #ifdef __cplusplus

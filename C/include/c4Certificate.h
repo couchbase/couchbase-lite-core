@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "c4Database.h"
+#include "c4Base.h"
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -28,13 +28,6 @@ extern "C" {
 
     /** \defgroup certificates Certificates
         @{ */
-
-    /** An X.509 certificate, or certificate signing request (CSR). */
-    typedef struct C4Cert C4Cert;
-
-    /** An asymmetric key or key-pair (RSA, etc.) The private key may or may not be present. */
-    typedef struct C4KeyPair C4KeyPair;
-
 
     /** Certificate types. A certificate may be of one or more of these.*/
     typedef C4_OPTIONS(uint8_t, C4CertUsage) { // Note: Same values as `MBEDTLS_X509_NS_CERT_TYPE_*`
@@ -168,12 +161,6 @@ extern "C" {
     C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert* C4NONNULL,
                                            C4Error *outError) C4API;
 
-    /** Retains a C4Cert, incrementing its reference count. */
-    static inline C4Cert* c4cert_retain(C4Cert* cert) C4API {return (C4Cert*) c4base_retain(cert);}
-
-    /** Releases a C4Cert reference. */
-    static inline void c4cert_release(C4Cert* cert) C4API {c4base_release(cert);}
-
     /** @} */
 
 
@@ -288,12 +275,6 @@ extern "C" {
     /** Removes a private key from persistent storage. */
     bool c4keypair_removePersistent(C4KeyPair* C4NONNULL,
                                 C4Error *outError) C4API;
-
-    /** Retains a C4KeyPair, incrementing its reference count. */
-    static inline C4KeyPair* c4keypair_retain(C4KeyPair* key) C4API {return (C4KeyPair*) c4base_retain(key);}
-
-    /** Releases a C4KeyPair reference. */
-    static inline void c4keypair_release(C4KeyPair* key) C4API {c4base_release(key);}
 
     /** @} */
 

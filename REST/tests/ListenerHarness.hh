@@ -9,6 +9,9 @@
 #pragma once
 #include "c4Listener.h"
 #include "c4Certificate.h"
+#include "c4Private.h"
+#include "c4Test.hh"
+
 #include "c4.hh"
 #include "StringUtil.hh"
 

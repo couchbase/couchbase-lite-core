@@ -17,6 +17,8 @@
 //
 
 #include "c4QueryTest.hh"
+#include "c4BlobStore.h"
+#include "c4Observer.h"
 #include "StringUtil.hh"
 #include <thread>
 
@@ -429,7 +431,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Aggregate Full-text query", "[Query][C][FTS]"
     // Just test whether the enumerator starts without an error:
     auto e = c4query_run(query, nullptr, nullslice, &err);
     REQUIRE(e);
-    c4queryenum_free(e);
+    c4queryenum_release(e);
 }
 
 
@@ -446,7 +448,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query with alias", "[Query][C][FTS]
     // Just test whether the enumerator starts without an error:
     auto e = c4query_run(query, nullptr, nullslice, &err);
     REQUIRE(e);
-    c4queryenum_free(e);
+    c4queryenum_release(e);
 }
 
 
@@ -483,7 +485,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query with accents", "[Query][C][FT
     auto e = c4query_run(query, nullptr, nullslice, &err);
     REQUIRE(e);
     CHECK(c4queryenum_getRowCount(e, &err) == 1);
-    c4queryenum_free(e);
+    c4queryenum_release(e);
 }
 
 
@@ -511,7 +513,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
     }
     CHECK(error.code == 0);
     CHECK(i == 3);
-    c4queryenum_free(e);
+    c4queryenum_release(e);
 }
 
 
@@ -541,7 +543,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT returning object", "[Query][C]"
     }
     CHECK(error.code == 0);
     CHECK(i == 3);
-    c4queryenum_free(e);
+    c4queryenum_release(e);
 }
 
 
@@ -559,7 +561,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Aggregate", "[Query][C]") {
     }
     CHECK(error.code == 0);
     CHECK(i == 1);
-    c4queryenum_free(e);
+    c4queryenum_release(e);
 }
 
 
@@ -593,7 +595,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Grouped", "[Query][C]") {
     CHECK(error.code == 0);
     CHECK(i == expectedRowCount);
     CHECK(c4queryenum_getRowCount(e, &error) == 42);
-    c4queryenum_free(e);
+    c4queryenum_release(e);
 }
 
 
@@ -622,7 +624,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Join", "[Query][C]") {
     }
     CHECK(error.code == 0);
     CHECK(i == 3);
-    c4queryenum_free(e);
+    c4queryenum_release(e);
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query UNNEST", "[Query][C]") {
@@ -713,7 +715,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Seek", "[Query][C]") {
     
     CHECK(error.code == kC4ErrorInvalidParameter);
     CHECK(error.domain == LiteCoreDomain);
-    c4queryenum_free(e);
+    c4queryenum_release(e);
 }
 
 
@@ -755,8 +757,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
     REQUIRE(c4queryenum_seek(refreshed, count - 1, &error));
     CHECK(FLValue_AsString(FLArrayIterator_GetValueAt(&refreshed->columns, 0)) == "added_later"_sl);
     
-    c4queryenum_free(e);
-    c4queryenum_free(refreshed);
+    c4queryenum_release(e);
+    c4queryenum_release(refreshed);
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query observer", "[Query][C][!throws]") {

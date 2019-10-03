@@ -18,8 +18,7 @@
 
 #pragma once
 
-#include "c4Database.h"
-#include "c4Query.h"
+#include "c4Base.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,9 +38,6 @@ extern "C" {
         C4SequenceNumber sequence;  ///< The latest sequence number (or 0 if doc was purged)
         uint32_t bodySize;          ///< The size of the revision body in bytes
     } C4DatabaseChange;
-
-    /** A database-observer reference. */
-    typedef struct c4DatabaseObserver C4DatabaseObserver;
 
     /** Callback invoked by a database observer.
      
@@ -110,9 +106,6 @@ extern "C" {
     /** \name Document Observer
      @{ */
 
-    /** A document-observer reference. */
-    typedef struct c4DocumentObserver C4DocumentObserver;
-
     /** Callback invoked by a document observer.
         @param observer  The observer that initiated the callback.
         @param docID  The ID of the document that changed.
@@ -144,9 +137,6 @@ extern "C" {
 
     /** \name Query Observer
      @{ */
-
-    /** A query-observer reference. */
-    typedef struct c4QueryObserver C4QueryObserver;
 
     /** Callback invoked by a query observer, notifying that the query results have changed.
         The actual enumerator is not passed to the callback, but can be retrieved by calling

@@ -22,9 +22,9 @@
 
 using namespace fleece;
 
-#include "c4.h"
-#include "c4Private.h"
+#include "c4Database.h"
 #include "c4Document+Fleece.h"
+#include "c4Private.h"
 
 #include "CatchHelper.hh"
 #include "PlatformCompat.hh"

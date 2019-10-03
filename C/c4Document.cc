@@ -21,7 +21,7 @@
 #endif
 #include "c4Internal.hh"
 #include "Database.hh"
-#include "c4.h"
+#include "c4Document.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 

@@ -24,6 +24,7 @@
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
 #include "c4.hh"
+#include "c4Transaction.hh"
 #include "BLIP.hh"
 #include "RevID.hh"
 #include <chrono>

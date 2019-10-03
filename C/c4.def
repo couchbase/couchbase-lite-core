@@ -96,7 +96,7 @@ c4queryenum_next
 c4queryenum_seek
 c4queryenum_refresh
 c4queryenum_close
-c4queryenum_free
+c4queryenum_release
 
 c4query_new
 c4query_new2
@@ -323,7 +323,6 @@ c4repl_isValidRemote
 c4repl_getResponseHeaders
 
 kC4ReplicatorActivityLevelNames
-kC4SocketOptionWSProtocols
 
 c4address_fromURL
 c4address_toURL

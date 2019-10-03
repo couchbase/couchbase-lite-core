@@ -27,21 +27,11 @@ extern "C" {
     /** \defgroup Blobs Blobs
         @{ */
 
-    /** Opaque handle for an object that manages storage of blobs. */
-    typedef struct c4BlobStore C4BlobStore;
-
-
     //////// BLOB KEYS:
 
     /** \name Blob Keys
         @{ */
 
-    /** A raw SHA-1 digest used as the unique identifier of a blob. */
-    typedef struct C4BlobKey {
-        uint8_t bytes[20];
-    } C4BlobKey;
-
-    
     /** Decodes a string of the form "sha1-"+base64 into a raw key. */
     bool c4blob_keyFromString(C4String str, C4BlobKey* C4NONNULL) C4API;
 
@@ -134,9 +124,6 @@ extern "C" {
        section, with the additional restriction that a stream cannot be called concurrently on
        multiple threads. */
 
-    /** An open stream for reading data from a blob. */
-    typedef struct c4ReadStream C4ReadStream;
-
     /** Opens a blob for reading, as a random-access byte stream. */
     C4ReadStream* c4blob_openReadStream(C4BlobStore* C4NONNULL, C4BlobKey, C4Error*) C4API;
 
@@ -168,9 +155,6 @@ extern "C" {
 
     /** \name Streamed Writes
         @{ */
-
-    /** An open stream for writing data to a blob. */
-    typedef struct c4WriteStream C4WriteStream;
 
     /** Opens a write stream for creating a new blob. You should then call c4stream_write to
         write the data, ending with c4stream_install to compute the blob's key and add it to

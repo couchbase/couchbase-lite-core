@@ -118,10 +118,6 @@ extern "C" {
     CBL_CORE_API extern const char* const kC4DatabaseFilenameExtension;
 
 
-    /** Opaque handle to an opened database. */
-    typedef struct c4Database C4Database;
-
-
     /** \name Lifecycle
         @{ */
 
@@ -166,17 +162,6 @@ extern "C" {
                         C4String destinationName,
                         const C4DatabaseConfig2* config C4NONNULL,
                         C4Error* error) C4API;
-
-    /** Increments the reference count of the database handle. */
-    static inline C4Database* c4db_retain(C4Database* db) C4API {
-        return (C4Database*) c4base_retain(db);
-    }
-
-    /** Decrements the ref-count of a C4Database,
-        closing and freeing it if the ref-count hits zero. */
-    static inline void c4db_release(C4Database* db)    {
-        c4base_release(db);
-    }
 
     /** Closes the database. Does not free the handle, although any operation other than
         c4db_release() will fail with an error. */
@@ -240,7 +225,7 @@ extern "C" {
     /** Configures the number of revisions of a document that are tracked. */
     void c4db_setMaxRevTreeDepth(C4Database *database C4NONNULL, uint32_t maxRevTreeDepth) C4API;
 
-    typedef struct {
+    typedef struct C4UUID {
         uint8_t bytes[16];
     } C4UUID;
 
@@ -294,7 +279,7 @@ extern "C" {
 
 
     /** Contents of a raw document. */
-    typedef struct {
+    typedef struct C4RawDocument {
         C4String key;    ///< The key (document ID)
         C4String meta;   ///< Metadata (usage is up to the caller)
         C4String body;   ///< Body data

@@ -375,7 +375,7 @@ void c4queryenum_close(C4QueryEnumerator *e) noexcept {
     }
 }
 
-void c4queryenum_free(C4QueryEnumerator *e) noexcept {
+void c4queryenum_release(C4QueryEnumerator *e) noexcept {
     release(asInternal(e));
 }
 

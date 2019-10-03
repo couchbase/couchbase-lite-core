@@ -29,6 +29,8 @@
 #include <set>
 #include <vector>
 
+struct C4DatabaseConfig;
+
 namespace litecore { namespace REST {
     using fleece::RefCounted;
     using fleece::Retained;

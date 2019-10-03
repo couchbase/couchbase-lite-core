@@ -18,7 +18,9 @@
 
 #include "fleece/Fleece.h"
 #include "c4Test.hh"
+#include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
+#include "c4Query.h"
 #include "Base.hh"
 #include "Benchmark.hh"
 #include "FilePath.hh"
@@ -126,7 +128,7 @@ public:
             if (verbose) std::cerr << artist << "  ";
             docIDs.push_back(artist);
         }
-        c4queryenum_free(e);
+        c4queryenum_release(e);
         c4query_release(query);
         if (verbose) std::cerr << "\n";
         return (unsigned) docIDs.size();

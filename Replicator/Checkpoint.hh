@@ -18,7 +18,7 @@
 
 #pragma once
 #include "Timer.hh"
-#include "c4.h"
+#include "c4Base.h"  // for C4SequenceNumber
 #include "fleece/slice.hh"
 #include <chrono>
 #include <mutex>

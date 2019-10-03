@@ -123,7 +123,7 @@ _c4queryenum_seek
 _c4queryenum_refresh
 _c4queryenum_close
 _c4queryenum_retain
-_c4queryenum_free
+_c4queryenum_release
 
 # c4query
 _c4query_new

@@ -20,9 +20,11 @@
 #include "IncomingBlob.hh"
 #include "Puller.hh"
 #include "StringUtil.hh"
+#include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "Instrumentation.hh"
 #include "BLIP.hh"
+#include <atomic>
 #include <deque>
 #include <set>
 
