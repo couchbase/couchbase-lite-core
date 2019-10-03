@@ -374,7 +374,6 @@ _c4repl_isValidRemote
 _c4repl_getResponseHeaders
 
 _kC4ReplicatorActivityLevelNames
-_kC4SocketOptionWSProtocols
 
 _c4address_fromURL
 _c4address_toURL

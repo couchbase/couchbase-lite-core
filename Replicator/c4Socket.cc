@@ -37,9 +37,6 @@ using namespace fleece;
 using namespace litecore;
 using namespace litecore::net;
 
-CBL_CORE_API const char* const kC4SocketOptionWSProtocols = litecore::websocket::WebSocket::kProtocolsOption;
-
-
 namespace litecore { namespace repl {
 
     using namespace websocket;

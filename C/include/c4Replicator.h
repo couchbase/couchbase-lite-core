@@ -290,12 +290,6 @@ extern "C" {
 
 
     // Replicator option dictionary keys:
-    #define kC4ReplicatorOptionExtraHeaders     "headers"  ///< Extra HTTP headers (string[])
-    #define kC4ReplicatorOptionCookies          "cookies"  ///< HTTP Cookie header value (string)
-    #define kC4ReplicatorOptionAuthentication   "auth"     ///< Auth settings (Dict); see below
-    #define kC4ReplicatorOptionProxyServer      "proxy"    ///< Proxy settings (Dict); see below
-    #define kC4ReplicatorOptionRootCerts        "rootCerts"  ///< Trusted root certs (data)
-    #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
     #define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
     #define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
     #define kC4ReplicatorOptionFilter           "filter"   ///< Pull filter name (string)
@@ -305,34 +299,47 @@ extern "C" {
     #define kC4ReplicatorOptionOutgoingConflicts   "outgoingConflicts" ///< Allow creating conflicts on remote (bool)
     #define kC4ReplicatorCheckpointInterval     "checkpointInterval" ///< How often to checkpoint, in seconds (number)
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" ///< Stable ID for remote db with unstable URL (string)
-    #define kC4ReplicatorHeartbeatInterval      "heartbeat" ///< Interval in secs to send a keepalive ping
     #define kC4ReplicatorResetCheckpoint        "reset"     ///< Start over w/o checkpoint (bool)
     #define kC4ReplicatorOptionProgressLevel    "progress"  ///< If >=1, notify on every doc; if >=2, on every attachment (int)
     #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
     #define kC4ReplicatorOptionMaxRetries       "maxRetries" ///< Max number of retry attempts (int)
 
-    // Auth dictionary keys:
-    #define kC4ReplicatorAuthType       "type"           ///< Auth type; see below (string)
+    // TLS options:
+    #define kC4ReplicatorOptionRootCerts        "rootCerts"  ///< Trusted root certs (data)
+    #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
+
+    // HTTP options:
+    #define kC4ReplicatorOptionExtraHeaders     "headers"  ///< Extra HTTP headers (string[])
+    #define kC4ReplicatorOptionCookies          "cookies"  ///< HTTP Cookie header value (string)
+    #define kC4ReplicatorOptionAuthentication   "auth"     ///< Auth settings (Dict); see [1]
+    #define kC4ReplicatorOptionProxyServer      "proxy"    ///< Proxy settings (Dict); see [3]]
+
+    // WebSocket options:
+    #define kC4ReplicatorHeartbeatInterval      "heartbeat" ///< Interval in secs to send a keepalive ping
+    #define kC4SocketOptionWSProtocols          "WS-Protocols" ///< Sec-WebSocket-Protocol header value
+
+    // [1]: Auth dictionary keys:
+    #define kC4ReplicatorAuthType       "type"           ///< Auth type; see [2] (string)
     #define kC4ReplicatorAuthUserName   "username"       ///< User name for basic auth (string)
     #define kC4ReplicatorAuthPassword   "password"       ///< Password for basic auth (string)
     #define kC4ReplicatorAuthClientCert "clientCert"     ///< TLS client certificate (value platform-dependent)
     #define kC4ReplicatorAuthClientCertKey "clientCertKey" ///< Client cert's private key (data)
     #define kC4ReplicatorAuthToken      "token"          ///< Session cookie or auth token (string)
 
-    // auth.type values:
+    // [2]: auth.type values:
     #define kC4AuthTypeBasic            "Basic"          ///< HTTP Basic (the default)
     #define kC4AuthTypeSession          "Session"        ///< SG session cookie
     #define kC4AuthTypeOpenIDConnect    "OpenID Connect" ///< OpenID Connect token
     #define kC4AuthTypeFacebook         "Facebook"       ///< Facebook auth token
     #define kC4AuthTypeClientCert       "Client Cert"    ///< TLS client cert
 
-    // Proxy dictionary keys:
-    #define kC4ReplicatorProxyType      "type"           ///< Proxy type; see below (string)
+    // [3]: Proxy dictionary keys:
+    #define kC4ReplicatorProxyType      "type"           ///< Proxy type; see [4] (string)
     #define kC4ReplicatorProxyHost      "host"           ///< Proxy hostname (string)
     #define kC4ReplicatorProxyPort      "port"           ///< Proxy port number (integer)
     #define kC4ReplicatorProxyAuth      "auth"           ///< Proxy auth (Dict); see above
 
-    // proxy.type values:
+    // [4]: proxy.type values:
     #define kC4ProxyTypeNone            "none"           ///< Use no proxy (overrides system setting)
     #define kC4ProxyTypeHTTP            "HTTP"           ///< HTTP proxy (using CONNECT method)
     #define kC4ProxyTypeHTTPS           "HTTPS"          ///< HTTPS proxy (using CONNECT method)

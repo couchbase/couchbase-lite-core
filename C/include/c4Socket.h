@@ -19,7 +19,6 @@
 #pragma once
 #include "c4Base.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -47,16 +46,6 @@ extern "C" {
     };
 
 
-    // Socket option dictionary keys:
-
-    /** A key used in the C4Socket options dictionary; the value is a string naming the
-        replication protocol and its version. This is added to the options dictionary by the
-        replicator, to be used by the socket implementation. For example, the default WebSocket
-        transport sends its value as the value of the "Sec-WebSocket-Protocol" HTTP header in the
-        WebSocket handshake. */
-    CBL_CORE_API extern const char* const kC4SocketOptionWSProtocols;
-    
-    
     /** Represents an open bidirectional stream of bytes or messages (typically a TCP socket.)
         C4Socket is allocated and freed by LiteCore, but the client can associate it with a native
         stream/socket (like a file descriptor or a Java stream reference) by storing a value in its
