@@ -27,7 +27,12 @@ namespace litecore {
 
     using namespace std;
     using namespace fleece;
-    
+
+    static inline pure_slice ReadUTF8(slice& str) {
+        pure_slice retVal = NextUTF8(str);
+        str.moveStart(retVal.size);
+        return retVal;
+    }
 
     void RegisterSQLiteUnicodeCollations(sqlite3* dbHandle,
                                          CollationContextVector &contexts) {
@@ -49,6 +54,60 @@ namespace litecore {
             }
         });
     }
+
+    int LikeUTF8(slice comparand, slice pattern, const Collation& col) {
+        // Based on SQLite's 'patternCompare' function (simplified)
+        slice c, c2;                       /* Next pattern and input string chars */
+        slice matchOne = "_"_sl;
+        slice matchAll = "%"_sl;
+        slice zEscaped = nullslice;          /* One past the last escaped input char */
+          
+        while( (c = ReadUTF8(pattern)).size !=0 ){
+            if( c==matchAll ){  /* Match "*" */
+              /* Skip over multiple "*" characters in the pattern.  If there
+              ** are also "?" characters, skip those as well, but consume a
+              ** single character of the input string for each "?" skipped */
+                while( (c = ReadUTF8(pattern)) == matchAll || c == matchOne ){
+                    if( c == matchOne && ReadUTF8(comparand).size == 0 ){
+                      return kLikeNoWildcardMatch;
+                    }
+                }
+                if( c.size == 0 ){
+                    return kLikeMatch;   /* "*" at the end of the pattern matches */
+                }else if( c == "\\"_sl ){
+                    c = ReadUTF8(pattern);
+                    if( c.size == 0 ) return kLikeNoWildcardMatch;
+                }
+
+                /* At this point variable c contains the first character of the
+                ** pattern string past the "*".  Search in the input string for the
+                ** first matching character and recursively continue the match from
+                ** that point.
+                **
+                */
+                while( (c2 = ReadUTF8(comparand)).size != 0 ){
+                    if( CompareUTF8(c2, c, col) ) continue;
+                    int bMatch = LikeUTF8(comparand, pattern, col);
+                    if( bMatch != kLikeNoMatch ) return bMatch;
+                }
+
+                return kLikeNoWildcardMatch;
+            }
+
+            if( c == "\\"_sl ) {
+                c = ReadUTF8(pattern);
+                if( c.size == 0 ) return kLikeNoMatch;
+                zEscaped = pattern;
+            }
+            c2 = ReadUTF8(comparand);
+            bool one = pattern != zEscaped;
+            if( !CompareUTF8(c2, c, col) ) continue;
+            if( c == matchOne && pattern.buf != zEscaped.buf && c2.size != 0 ) continue;
+            return kLikeNoMatch;
+          }
+          return comparand.size == 0 ? kLikeMatch : kLikeNoMatch;
+    }
+
 
     std::string Collation::sqliteName() const {
         if (unicodeAware) {

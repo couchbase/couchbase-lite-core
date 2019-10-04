@@ -162,23 +162,48 @@ namespace litecore {
     size_t UTF8Length(slice str) noexcept {
         // See <https://en.wikipedia.org/wiki/UTF-8>
         size_t length = 0;
-        auto s = (const uint8_t*)str.buf, e = (const uint8_t*)str.end();
-        while (s < e) {
-            uint8_t c = *s;
-            if (_usuallyTrue((c & 0x80) == 0))
-                s += 1;
-            else if (_usuallyTrue((c & 0xE0) == 0xC0))
-                s += 2;
-            else if ((c & 0xF0) == 0xE0)
-                s += 3;
-            else if ((c & 0xF8) == 0xF0)
-                s += 4;
-            else
-                s += 1;        // Invalid byte; skip over it
+        while (str.size > 0) {
+            const size_t nextByteLength = NextUTF8Length(str);
+            if(nextByteLength == 0) {
+                str.moveStart(1);
+            } else {
+                str.moveStart(nextByteLength);
+            }
             ++length;
         }
         return length;
     }
+
+    size_t NextUTF8Length(slice str) noexcept {
+        if(str.size == 0) {
+            return 0;
+        }
+
+        uint8_t c = *(const uint8_t*)str.buf;
+        if (_usuallyTrue((c & 0x80) == 0))
+            return 1;
+        
+        if (_usuallyTrue((c & 0xE0) == 0xC0))
+            return _usuallyTrue(str.size > 1) ? 2 : 0;
+        
+        if ((c & 0xF0) == 0xE0)
+            return _usuallyTrue(str.size > 2) ? 3 : 0;
+        
+        if ((c & 0xF8) == 0xF0)
+            return _usuallyTrue(str.size > 3) ? 4 : 0;
+
+        return 0;
+    }
+
+    pure_slice NextUTF8(slice str) noexcept {
+        const size_t nextLength = NextUTF8Length(str);
+        if(nextLength == 0) {
+            return nullslice;
+        }
+
+        return {str.buf, nextLength};
+    }
+
 
     bool UTF16IsSpace(char16_t c) noexcept {
         // "ISO 30112 defines POSIX space characters as Unicode characters U+0009..U+000D, U+0020,

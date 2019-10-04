@@ -664,6 +664,9 @@ namespace litecore {
     
     // Handles infix operators
     void QueryParser::infixOp(slice op, Array::iterator& operands) {
+        bool functionWantsCollation = _functionWantsCollation;
+        _functionWantsCollation = false;
+
         if (operands.count() >= 2 && operands[1]->type() == kNull) {
             // Ugly special case where SQLite's semantics for 'IS [NOT]' don't match N1QL's (#410)
             if (op.caseEquivalent("IS"_sl))
@@ -681,6 +684,14 @@ namespace litecore {
                 _sql << op << ' ';
             }
             parseCollatableNode(i.value());
+        }
+
+        if(functionWantsCollation) {
+            if(n > 0) {
+                _sql << ", ";
+            }
+
+            _sql << "'" << _collation.sqliteName() << "'";
         }
     }
 
@@ -849,8 +860,7 @@ namespace litecore {
     }
 
     void QueryParser::likeOp(slice op, Array::iterator& operands) {
-        infixOp(op, operands);
-        _sql << " ESCAPE '\\'";
+        functionOp("fl_like()"_sl, operands);
     }
 
     // Handles "fts_index MATCH pattern" expressions (FTS)
@@ -1119,6 +1129,11 @@ namespace litecore {
         if (op.caseEquivalent(kPredictionFnName) && writeIndexedPrediction((const Array*)_curNode))
             return;
 #endif
+
+        if(!_collationUsed && spec->wants_collation) {
+            _collationUsed = true;
+            _functionWantsCollation = true;
+        }
 
         _sql << op;
         writeArgList(operands);

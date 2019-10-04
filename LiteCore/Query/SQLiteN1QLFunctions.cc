@@ -506,10 +506,34 @@ namespace litecore {
 
     // contains(string, substring) returns 1 if `string` contains `substring`, else 0
     static void contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        Collation col;
+        col.unicodeAware = true;
+        if(argc > 2) {
+            col.readSQLiteName((const char*)sqlite3_value_text(argv[2]));
+        }
+
         auto str = stringSliceArgument(argv[0]);
         auto substr = stringSliceArgument(argv[1]);
-        if (str)
-            sqlite3_result_int(ctx, str.find(substr).buf != nullptr);
+        auto current = substr;
+        while(str.size > 0) {
+            size_t nextStrSize = NextUTF8Length(str);
+            size_t nextSubstrSize = NextUTF8Length(current);
+            if(!CompareUTF8({str.buf, nextStrSize}, {current.buf, nextSubstrSize}, col)) {
+                // The characters are a match, move to the next substring character
+                current.moveStart(nextSubstrSize);
+                if(current.size == 0) {
+                    // Found a match!
+                    sqlite3_result_int(ctx, 1);
+                    return;
+                }
+            } else {
+                current = substr;
+            }
+
+            str.moveStart(nextStrSize);
+        }
+
+        sqlite3_result_int(ctx, 0);
     }
 
     // length() returns the length in characters of a string.
@@ -1211,6 +1235,7 @@ namespace litecore {
 //        { "base64_decode",     1, fl_base64_decode },
 
         { "contains",          2, contains },
+        { "contains",          3, contains },
 //        { "initcap",           1, init_cap },
         { "N1QL_length",       1, length },
         { "N1QL_lower",        1, lower },
