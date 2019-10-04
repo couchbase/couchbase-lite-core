@@ -91,9 +91,12 @@ namespace litecore { namespace REST {
         Response& setProxy(const net::ProxySpec&);
         Response& setTimeout(double timeoutSecs)        {_timeout = timeoutSecs; return *this;}
 
-        Response& setRootCerts(C4Cert*);
+        Response& allowOnlyCert(fleece::slice certData);
+#ifdef COUCHBASE_ENTERPRISE
         Response& allowOnlyCert(C4Cert*);
+        Response& setRootCerts(C4Cert*);
         Response& setIdentity(C4Cert*, C4KeyPair*);
+#endif
 
         bool run();
 

@@ -199,28 +199,29 @@ _c4pred_registerModel
 _c4pred_unregisterModel
 
 # c4cert, c4keypair
-_c4cert_createRequest
-_c4cert_fromData
-_c4cert_copyData
-_c4cert_subjectName
-_c4cert_subjectNameComponent
-_c4cert_summary
-_c4cert_isSigned
-_c4cert_signRequest
-_c4cert_loadPersistentPrivateKey
-_c4cert_save
-_c4cert_load
-_c4keypair_generate
-_c4keypair_fromPublicKeyData
-_c4keypair_fromPrivateKeyData
-_c4keypair_persistentWithPublicKey
-_c4keypair_hasPrivateKey
-_c4keypair_isPersistent
-_c4keypair_publicKeyData
-_c4keypair_privateKeyData
-_c4keypair_publicKeyDigest
-
-_kDefaultCertIssuerParameters
+# TODO: These should be exported from EE builds, but not CE
+#_c4cert_createRequest
+#_c4cert_fromData
+#_c4cert_copyData
+#_c4cert_subjectName
+#_c4cert_subjectNameComponent
+#_c4cert_summary
+#_c4cert_isSigned
+#_c4cert_signRequest
+#_c4cert_loadPersistentPrivateKey
+#_c4cert_save
+#_c4cert_load
+#_c4keypair_generate
+#_c4keypair_fromPublicKeyData
+#_c4keypair_fromPrivateKeyData
+#_c4keypair_persistentWithPublicKey
+#_c4keypair_hasPrivateKey
+#_c4keypair_isPersistent
+#_c4keypair_publicKeyData
+#_c4keypair_privateKeyData
+#_c4keypair_publicKeyDigest
+#
+#_kDefaultCertIssuerParameters
 
 #### FLEECE
 

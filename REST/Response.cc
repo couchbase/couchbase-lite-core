@@ -122,15 +122,21 @@ namespace litecore { namespace REST {
         return *this;
     }
 
-    Response& Response::setRootCerts(C4Cert *cert) {
-        Assert(c4cert_isSigned(cert));
-        tlsContext()->setRootCerts((Cert*)cert);
+    Response& Response::allowOnlyCert(slice certData) {
+        tlsContext()->allowOnlyCert(certData);
         return *this;
     }
 
+#ifdef COUCHBASE_ENTERPRISE
     Response& Response::allowOnlyCert(C4Cert *cert) {
         Assert(c4cert_isSigned(cert));
         tlsContext()->allowOnlyCert((Cert*)cert);
+        return *this;
+    }
+    
+    Response& Response::setRootCerts(C4Cert *cert) {
+        Assert(c4cert_isSigned(cert));
+        tlsContext()->setRootCerts((Cert*)cert);
         return *this;
     }
 
@@ -141,6 +147,7 @@ namespace litecore { namespace REST {
         tlsContext()->setIdentity(id);
         return *this;
     }
+#endif
 
 
     bool Response::run() {

@@ -20,7 +20,7 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
                          ReplicatorAPITest::kProtectedDBName,
                          ReplicatorAPITest::kImagesDBName;
 
-C4Cert* ReplicatorAPITest::sPinnedCert;
+alloc_slice ReplicatorAPITest::sPinnedCert;
 
 
 

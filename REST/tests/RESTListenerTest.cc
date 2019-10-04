@@ -27,10 +27,12 @@ using namespace litecore::net;
 using namespace litecore::REST;
 
 
+#ifdef COUCHBASE_ENTERPRISE
 Identity ListenerHarness::sServerTemporaryIdentity,
          ListenerHarness::sServerPersistentIdentity,
          ListenerHarness::sClientTemporaryIdentity,
          ListenerHarness::sClientPersistentIdentity;
+#endif
 
 
 //#ifdef COUCHBASE_ENTERPRISE
@@ -82,10 +84,12 @@ public:
         r->setHeaders(headers).setBody(body);
         if (pinnedCert)
             r->allowOnlyCert(pinnedCert);
+#ifdef COUCHBASE_ENTERPRISE
         if (rootCerts)
             r->setRootCerts(rootCerts);
         if (clientIdentity.cert)
             r->setIdentity(clientIdentity.cert, clientIdentity.key);
+#endif
         if (!r->run())
             C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
         C4Log("Status: %d %s", r->status(), r->statusMessage().c_str());
@@ -108,8 +112,10 @@ public:
     }
 
     alloc_slice directory;
-    c4::ref<C4Cert> pinnedCert;
+    alloc_slice pinnedCert;
+#ifdef COUCHBASE_ENTERPRISE
     c4::ref<C4Cert> rootCerts;
+#endif
 };
 
 
@@ -339,6 +345,8 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][Listener][C]") {
 #pragma mark - TLS:
 
 
+#ifdef COUCHBASE_ENTERPRISE
+
 TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C]") {
     useServerTLSWithTemporaryKey();
     
@@ -379,5 +387,4 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST cert chain", "[REST][Listener][TLS][C]") 
     testRootLevel();
 }
 
-
-//#endif // COUCHBASE_ENTERPRISE
+#endif // COUCHBASE_ENTERPRISE

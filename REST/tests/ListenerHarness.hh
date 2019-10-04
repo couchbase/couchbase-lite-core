@@ -40,6 +40,8 @@ public:
     }
 
 
+#ifdef COUCHBASE_ENTERPRISE
+
     C4Cert* useServerIdentity(const Identity &id) {
         alloc_slice digest = c4keypair_publicKeyDigest(id.key);
         C4Log("Using %s server TLS cert %.*s for this test",
@@ -134,7 +136,7 @@ public:
         return useClientIdentity(sClientPersistentIdentity);
     }
 #endif
-
+#endif // COUCHBASE_ENTERPRISE
 
     void share(C4Database *dbToShare, slice name) {
         if (listener)
@@ -150,12 +152,16 @@ public:
     }
 
     C4ListenerConfig config;
+#ifdef COUCHBASE_ENTERPRISE
     Identity serverIdentity, clientIdentity;
+#endif
 
 private:
+#ifdef COUCHBASE_ENTERPRISE
     static Identity sServerTemporaryIdentity, sServerPersistentIdentity,
                     sClientTemporaryIdentity, sClientPersistentIdentity;
-
+#endif
+    
     c4::ref<C4Listener> listener;
 
     C4TLSConfig tlsConfig = { };

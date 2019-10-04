@@ -45,7 +45,7 @@ public:
     constexpr static const C4String kProtectedDBName = C4STR("seekrit");
     constexpr static const C4String kImagesDBName = C4STR("images");
 
-    static C4Cert* sPinnedCert;
+    static alloc_slice sPinnedCert;
 
     ReplicatorAPITest()
     :C4Test(0)
@@ -57,13 +57,10 @@ public:
 
             // Pin the server certificate:
 #ifdef _MSC_VER
-            alloc_slice cert = readFile("..\\Replicator\\tests\\data\\cert.pem");
+            sPinnedCert = readFile("..\\Replicator\\tests\\data\\cert.pem");
 #else
-            alloc_slice cert = readFile("Replicator/tests/data/cert.pem");
+            sPinnedCert = readFile("Replicator/tests/data/cert.pem");
 #endif
-            C4Error error;
-            sPinnedCert = c4cert_fromData(cert, &error);
-            REQUIRE(sPinnedCert);
         });
 
         // Environment variables can also override the default address above:
@@ -114,8 +111,9 @@ public:
         enc.beginDict();
         if (pinnedCert) {
             enc.writeKey(C4STR(kC4ReplicatorOptionPinnedServerCert));
-            enc.writeData(alloc_slice(c4cert_copyData(pinnedCert, false)));
+            enc.writeData(pinnedCert);
         }
+#ifdef COUCHBASE_ENTERPRISE
         if (identityCert) {
             enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
             enc.beginDict();
@@ -129,6 +127,7 @@ public:
             }
             enc.endDict();
         }
+#endif
         if (_enableDocProgressNotifications) {
             enc.writeKey(C4STR(kC4ReplicatorOptionProgressLevel));
             enc.writeInt(1);
@@ -409,9 +408,11 @@ public:
     C4String _remoteDBName = kScratchDBName;
     AllocedDict _options;
     alloc_slice _authHeader;
-    C4Cert* pinnedCert {nullptr};
+    alloc_slice pinnedCert;
+#ifdef COUCHBASE_ENTERPRISE
     c4::ref<C4Cert> identityCert;
     c4::ref<C4KeyPair> identityKey;
+#endif
     unique_ptr<ProxySpec> _proxy;
     bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};
