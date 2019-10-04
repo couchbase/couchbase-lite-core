@@ -114,11 +114,12 @@ namespace litecore { namespace crypto {
 
     void parsePEMorDER(slice data, const char *what, void *context, ParseFn fn) {
         int err;
-        if (isPEM(data) && !data.hasSuffix('\0')) {
+        if (data.containsBytes("-----BEGIN "_sl) && !data.hasSuffix('\0')) {
             // mbedTLS requires a null byte at the end of PEM data:
             alloc_slice adjustedData(data);
             adjustedData.resize(data.size + 1);
             *((char*)adjustedData.end() - 1) = '\0';
+            
             err = fn(context, (const uint8_t*)adjustedData.buf, adjustedData.size);
         } else {
             err = fn(context, (const uint8_t*)data.buf, data.size);
@@ -133,9 +134,6 @@ namespace litecore { namespace crypto {
 
 
     alloc_slice convertToPEM(const slice &data, const char *name NONNULL) {
-        if (isPEM(data))
-            return alloc_slice(data);
-
         return allocString(10000, [&](char *buf, size_t size) {
             size_t olen = 0;
             int err = mbedtls_pem_write_buffer(format("-----BEGIN %s-----\n", name).c_str(),

@@ -38,10 +38,6 @@ namespace litecore { namespace crypto {
 
     void parsePEMorDER(slice data, const char *what, void *context, ParseFn);
 
-    static inline bool isPEM(slice data) {
-        return data.hasPrefix(fleece::slice("-----"));
-    }
-
     fleece::alloc_slice convertToPEM(const slice &derData, const char *name NONNULL);
 
 } }
