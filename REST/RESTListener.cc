@@ -118,8 +118,6 @@ namespace litecore { namespace REST {
         switch (config->privateKeyRepresentation) {
             case kC4PrivateKeyData:
                 privateKey = new PrivateKey(config->privateKey, config->privateKeyPassword);
-                if (!privateKey)
-                    error::_throw(error::InvalidParameter, "Can't parse private key data");
                 break;
             case kC4PrivateKeyFromCert:
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE

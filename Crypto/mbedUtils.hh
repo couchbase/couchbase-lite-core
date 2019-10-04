@@ -34,6 +34,14 @@ namespace litecore { namespace crypto {
     // Utility wrapper for mbedTLS functions that write DER to a buffer
     fleece::alloc_slice allocDER(size_t maxSize, function_ref<int(uint8_t*,size_t)> writer);
 
+    using ParseFn = int (*)(void*, const uint8_t*, size_t);
+
+    void parsePEMorDER(slice data, const char *what, void *context, ParseFn);
+
+    static inline bool isPEM(slice data) {
+        return data.hasPrefix(fleece::slice("-----"));
+    }
+
     fleece::alloc_slice convertToPEM(const slice &derData, const char *name NONNULL);
 
 } }

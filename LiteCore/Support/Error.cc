@@ -37,7 +37,9 @@
 #include <cxxabi.h>
 #endif
 
-#ifndef LITECORE_IMPL
+#ifdef LITECORE_IMPL
+#include <mbedtls/error.h>
+#else
 #include "c4Base.h"     // Ugly layering violation, but needed for using Error in other libs
 #include "c4Private.h"
 #endif
@@ -256,8 +258,15 @@ namespace litecore {
                 return network_errstr(code);
             case WebSocket:
                 return websocket_errstr(code);
-            case MbedTLS:
+            case MbedTLS: {
+#ifdef LITECORE_IMPL
+                char buf[100];
+                mbedtls_strerror(code, buf, sizeof(buf));
+                return string(buf);
+#else
                 return format("(mbedTLS %s0x%x)", (code < 0 ? "-" : ""), abs(code));
+#endif
+            }
             default:
                 return "unknown error domain";
         }

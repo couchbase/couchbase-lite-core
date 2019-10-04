@@ -87,8 +87,6 @@ namespace litecore { namespace crypto {
         fleece::Retained<PublicKey> subjectPublicKey()  {return new PublicKey(this);}
 
     protected:
-        using ParseFn = int (*)(void*,const uint8_t*,size_t);
-        int parseData(fleece::slice data, void *context, ParseFn parse);
         virtual fleece::slice derData() =0;
         virtual int writeInfo(char *buf, size_t bufSize, const char *indent) =0;
     };

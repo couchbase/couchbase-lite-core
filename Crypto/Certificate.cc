@@ -113,23 +113,6 @@ namespace litecore { namespace crypto {
 #pragma mark - CERT BASE:
 
 
-    int CertBase::parseData(fleece::slice data, void *context, ParseFn parse) {
-        Assert(data);
-        bool isPEM = data.hasPrefix("-----"_sl);
-        alloc_slice adjustedData;
-        if (isPEM && !data.hasSuffix('\0')) {
-            // mbedTLS insists PEM data must end with a NUL byte, so add one:
-            adjustedData = alloc_slice(data);
-            adjustedData.resize(data.size + 1);
-            *((char*)adjustedData.end() - 1) = '\0';
-            data = adjustedData;
-        }
-
-        return TRY( parse(context, (const uint8_t*)data.buf, data.size) );
-    }
-
-
-
     alloc_slice CertBase::data(KeyFormat f) {
         switch (f) {
             case KeyFormat::DER:
@@ -163,7 +146,7 @@ namespace litecore { namespace crypto {
     :_cert((mbedtls_x509_crt*)mbedtls_calloc(1, sizeof(mbedtls_x509_crt)))
     {
         mbedtls_x509_crt_init(_cert);
-        parseData(data, context(), (ParseFn)&mbedtls_x509_crt_parse);
+        parsePEMorDER(data, "certificate", context(), (ParseFn)&mbedtls_x509_crt_parse);
     }
 
 
@@ -410,7 +393,7 @@ namespace litecore { namespace crypto {
     CertSigningRequest::CertSigningRequest(slice data)
     :CertSigningRequest()
     {
-        parseData(data, context(), (ParseFn)&mbedtls_x509_csr_parse);
+        parsePEMorDER(data, "certificate request", context(), (ParseFn)&mbedtls_x509_csr_parse);
     }
 
 
