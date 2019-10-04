@@ -449,9 +449,7 @@ namespace litecore {
         }
 
         const int likeResult = LikeUTF8(valueAsStringSlice(argv[0]), valueAsStringSlice(argv[1]), col);
-
-        // 0 means "CBL_MATCH", only valid success
-        sqlite3_result_int(ctx, !likeResult);
+        sqlite3_result_int(ctx, likeResult == kLikeMatch);
     }
 
 #pragma mark - REGISTRATION:

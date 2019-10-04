@@ -22,9 +22,6 @@
 #include "StringUtil.hh"
 #include <sqlite3.h>
 #include <algorithm>
-#define CBL_MATCH             0
-#define CBL_NOMATCH           1
-#define CBL_NOWILDCARDMATCH   2
 
 namespace litecore {
 
@@ -59,6 +56,7 @@ namespace litecore {
     }
 
     int LikeUTF8(slice comparand, slice pattern, const Collation& col) {
+        // Based on SQLite's 'patternCompare' function (simplified)
         slice c, c2;                       /* Next pattern and input string chars */
         slice matchOne = "_"_sl;
         slice matchAll = "%"_sl;
@@ -71,14 +69,14 @@ namespace litecore {
               ** single character of the input string for each "?" skipped */
                 while( (c = ReadUTF8(pattern)) == matchAll || c == matchOne ){
                     if( c == matchOne && ReadUTF8(comparand).size == 0 ){
-                      return CBL_NOWILDCARDMATCH;
+                      return kLikeNoWildcardMatch;
                     }
                 }
                 if( c.size == 0 ){
-                    return CBL_MATCH;   /* "*" at the end of the pattern matches */
+                    return kLikeMatch;   /* "*" at the end of the pattern matches */
                 }else if( c == "\\"_sl ){
                     c = ReadUTF8(pattern);
-                    if( c.size == 0 ) return CBL_NOWILDCARDMATCH;
+                    if( c.size == 0 ) return kLikeNoWildcardMatch;
                 }
 
                 /* At this point variable c contains the first character of the
@@ -90,24 +88,24 @@ namespace litecore {
                 while( (c2 = ReadUTF8(comparand)).size != 0 ){
                     if( CompareUTF8(c2, c, col) ) continue;
                     int bMatch = LikeUTF8(comparand, pattern, col);
-                    if( bMatch != CBL_NOMATCH ) return bMatch;
+                    if( bMatch != kLikeNoMatch ) return bMatch;
                 }
 
-                return CBL_NOWILDCARDMATCH;
+                return kLikeNoWildcardMatch;
             }
 
             if( c == "\\"_sl ) {
                 c = ReadUTF8(pattern);
-                if( c.size == 0 ) return CBL_NOMATCH;
+                if( c.size == 0 ) return kLikeNoMatch;
                 zEscaped = pattern;
             }
             c2 = ReadUTF8(comparand);
             bool one = pattern != zEscaped;
             if( !CompareUTF8(c2, c, col) ) continue;
             if( c == matchOne && pattern.buf != zEscaped.buf && c2.size != 0 ) continue;
-            return CBL_NOMATCH;
+            return kLikeNoMatch;
           }
-          return comparand.size == 0 ? CBL_MATCH : CBL_NOMATCH;
+          return comparand.size == 0 ? kLikeMatch : kLikeNoMatch;
     }
 
 

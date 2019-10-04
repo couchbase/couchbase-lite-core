@@ -26,6 +26,12 @@ struct sqlite3;
 
 namespace litecore {
 
+    enum {
+        kLikeMatch,
+        kLikeNoMatch,
+        kLikeNoWildcardMatch
+    };
+
     // https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema#collation
     struct Collation {
         bool unicodeAware {false};
