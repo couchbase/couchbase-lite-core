@@ -248,19 +248,12 @@ namespace litecore { namespace net {
                 && (!addr.isSecure() || wrapTLS(addr.hostname));
 
         } catch (const sockpp::sys_error &sx) {
-            setError(POSIXDomain, sx.error(), slice(sx.what()));
+            auto e = error::convertException(sx);
+            setError(C4ErrorDomain(e.domain), e.code, slice(e.what()));
             return false;
         } catch (const sockpp::getaddrinfo_error &gx) {
-            int code;
-            string messagebuf;
-            if (gx.error() == EAI_NONAME || gx.error() == HOST_NOT_FOUND) {
-                code = kC4NetErrUnknownHost;
-                messagebuf = "Unknown hostname \"" + gx.hostname() + "\"";
-            } else {
-                code = kC4NetErrDNSFailure;
-                messagebuf = "Error resolving hostname \"" + gx.hostname() + "\": " + gx.what();
-            }
-            setError(NetworkDomain, code, slice(messagebuf));
+            auto e = error::convertException(gx);
+            setError(C4ErrorDomain(e.domain), e.code, slice(e.what()));
             return false;
         }
     }

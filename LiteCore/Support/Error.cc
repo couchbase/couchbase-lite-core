@@ -28,6 +28,13 @@
 #include <string>
 #include <sstream>
 
+#ifdef _MSC_VER
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <netdb.h>
+#endif
+
 #if __ANDROID__
 #include <android/log.h>
 #endif
@@ -39,6 +46,7 @@
 
 #ifdef LITECORE_IMPL
 #include <mbedtls/error.h>
+#include <sockpp/exception.h>
 #else
 #include "c4Base.h"     // Ugly layering violation, but needed for using Error in other libs
 #include "c4Private.h"
@@ -351,23 +359,35 @@ namespace litecore {
 
 
     error error::convertRuntimeError(const std::runtime_error &re) {
-        auto e = dynamic_cast<const error*>(&re);
-        if (e)
+        if (auto e = dynamic_cast<const error*>(&re); e) {
             return *e;
-        auto se = dynamic_cast<const SQLite::Exception*>(&re);
-        if (se)
+        } else if (auto se = dynamic_cast<const SQLite::Exception*>(&re); se) {
             return error(SQLite, se->getExtendedErrorCode(), se->what());
-        auto fe = dynamic_cast<const fleece::FleeceException*>(&re);
-        if (fe)
+        } else if (auto fe = dynamic_cast<const fleece::FleeceException*>(&re); fe) {
             return error(Fleece, fe->code, fe->what());
-        return unexpectedException(re);
+#ifdef LITECORE_IMPL
+        } else if (auto syserr = dynamic_cast<const sockpp::sys_error*>(&re); syserr) {
+            int code = syserr->error();
+            return error((code < 0 ? MbedTLS : POSIX), code);
+        } else if (auto gx = dynamic_cast<const sockpp::getaddrinfo_error*>(&re); gx) {
+            if (gx->error() == EAI_NONAME || gx->error() == HOST_NOT_FOUND) {
+                return error(Network, websocket::kNetErrUnknownHost,
+                             "Unknown hostname \"" + gx->hostname() + "\"");
+            } else {
+                return error(Network, websocket::kNetErrDNSFailure,
+                             "Error resolving hostname \"" + gx->hostname() + "\": " + gx->what());
+            }
+#endif
+        } else {
+            return unexpectedException(re);
+        }
     }
 
     error error::convertException(const std::exception &x) {
-        auto re = dynamic_cast<const std::runtime_error*>(&x);
-        if (re)
+        if (auto re = dynamic_cast<const std::runtime_error*>(&x); re)
             return convertRuntimeError(*re);
-        return unexpectedException(x);
+        else
+            return unexpectedException(x);
     }
 
 
