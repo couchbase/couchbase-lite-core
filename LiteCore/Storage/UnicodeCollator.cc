@@ -100,7 +100,6 @@ namespace litecore {
                 zEscaped = pattern;
             }
             c2 = ReadUTF8(comparand);
-            bool one = pattern != zEscaped;
             if( !CompareUTF8(c2, c, col) ) continue;
             if( c == matchOne && pattern.buf != zEscaped.buf && c2.size != 0 ) continue;
             return kLikeNoMatch;
