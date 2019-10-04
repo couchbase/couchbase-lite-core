@@ -4,7 +4,7 @@ set -e
 shopt -s extglob dotglob
 
 function build_xcode {
-    pushd "Xcode"
+    pushd "couchbase-lite-core/Xcode"
     xcodebuild -project LiteCore.xcproj -configuration Debug-EE -derivedDataPath ios -scheme "LiteCore framework" -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO
     popd
 }
