@@ -35,24 +35,26 @@ function(setup_globals)
         endif()
         include_directories("/usr/include/libcxxabi") # this fixed path is here to avoid Clang issue noted at http://lists.alioth.debian.org/pipermail/pkg-llvm-team/2015-September/005208.html
     endif()
-    find_library(ICU4C_COMMON icuuc)
-    if (NOT ICU4C_COMMON)
-        message(FATAL_ERROR "libicuuc not found")
+    if(NOT LITECORE_DISABLE_ICU)
+        find_library(ICU4C_COMMON icuuc)
+        if (NOT ICU4C_COMMON)
+            message(FATAL_ERROR "libicuuc not found")
+        endif()
+        message("Found libicuuc at ${ICU4C_COMMON}")
+        find_library(ICU4C_I18N icui18n)
+        if (NOT ICU4C_I18N)
+            message(FATAL_ERROR "libicui18n not found")
+        endif()
+        message("Found libicui18n at ${ICU4C_I18N}")
+        find_path(LIBICU_INCLUDE unicode/ucol.h
+            HINTS "${CMAKE_BINARY_DIR}/tlm/deps/icu4c.exploded"
+            PATH_SUFFIXES include)
+        if (NOT LIBICU_INCLUDE)
+            message(FATAL_ERROR "libicu header files not found")
+        endif()
+        message("Using libicu header files in ${LIBICU_INCLUDE}")
+        include_directories("${LIBICU_INCLUDE}")
     endif()
-    message("Found libicuuc at ${ICU4C_COMMON}")
-    find_library(ICU4C_I18N icui18n)
-    if (NOT ICU4C_I18N)
-        message(FATAL_ERROR "libicui18n not found")
-    endif()
-    message("Found libicui18n at ${ICU4C_I18N}")
-    find_path(LIBICU_INCLUDE unicode/ucol.h
-        HINTS "${CMAKE_BINARY_DIR}/tlm/deps/icu4c.exploded"
-        PATH_SUFFIXES include)
-    if (NOT LIBICU_INCLUDE)
-        message(FATAL_ERROR "libicu header files not found")
-    endif()
-    message("Using libicu header files in ${LIBICU_INCLUDE}")
-    include_directories("${LIBICU_INCLUDE}")
 
     # libc++ is special - clang will introduce an implicit -lc++ when it is used.
     # That means we need to tell the linker the path to the directory containing
