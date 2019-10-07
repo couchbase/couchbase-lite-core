@@ -215,6 +215,7 @@ _FLData_ConvertJSON
 _FLJSON5_ToJSON
 
 _FLArray_Count
+_FLArray_IsEmpty
 _FLArray_Get
 _FLArrayIterator_Begin
 _FLArrayIterator_GetCount
@@ -223,6 +224,7 @@ _FLArrayIterator_GetValueAt
 _FLArrayIterator_Next
 
 _FLDict_Count
+_FLDict_IsEmpty
 _FLDict_Get
 _FLDict_GetWithKey
 _FLDictIterator_Begin

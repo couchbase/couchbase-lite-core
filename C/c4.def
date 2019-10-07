@@ -191,6 +191,7 @@ FLData_ConvertJSON
 FLJSON5_ToJSON
 
 FLArray_Count
+FLArray_IsEmpty
 FLArray_Get
 FLArrayIterator_Begin
 FLArrayIterator_GetCount
@@ -199,6 +200,7 @@ FLArrayIterator_GetValueAt
 FLArrayIterator_Next
 
 FLDict_Count
+FLDict_IsEmpty
 FLDict_Get
 FLDict_GetWithKey
 FLDictIterator_Begin
