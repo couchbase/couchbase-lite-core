@@ -876,12 +876,11 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     c4queryobs_setEnabled(state.obs, true);
 
     C4Log("---- Waiting for query observer...");
-    while (state.count == 0)
-        this_thread::sleep_for(chrono::milliseconds(100));
+    WaitUntil(2000, [&]{return state.count > 0;});
 
     C4Log("Checking query observer...");
     CHECK(state.count == 1);
-    auto e = c4queryobs_getEnumerator(state.obs, &error);
+    C4QueryEnumerator *e = c4queryobs_getEnumerator(state.obs, &error);
     REQUIRE(e);
     CHECK(c4queryenum_getRowCount(e, &error) == 8);
     state.count = 0;
@@ -895,15 +894,32 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     addPersonInState("after2", "CA");
 
     C4Log("---- Waiting for 2nd call of query observer...");
-    while (state.count == 0)
-        this_thread::sleep_for(chrono::milliseconds(100));
+    WaitUntil(2000, [&]{return state.count > 0;});
 
     C4Log("---- Checking query observer again...");
     CHECK(state.count == 1);
-    auto e2 = c4queryobs_getEnumerator(state.obs, &error);
+    C4QueryEnumerator *e2 = c4queryobs_getEnumerator(state.obs, &error); // NOT a retained reference
     REQUIRE(e2);
     CHECK(e2 != e);
     CHECK(c4queryenum_getRowCount(e2, &error) == 9);
+
+    // Testing with purged document:
+    C4Log("---- Purging a document...");
+    state.count = 0;
+    {
+        TransactionHelper t(db);
+        REQUIRE(c4db_purgeDoc(db, "after2"_sl, &error));
+    }
+
+    C4Log("---- Waiting for 3rd call of query observer...");
+    WaitUntil(2000, [&]{return state.count > 0;});
+
+    C4Log("---- Checking query observer again...");
+    CHECK(state.count == 1);
+    e2 = c4queryobs_getEnumerator(state.obs, &error);
+    REQUIRE(e2);
+    CHECK(e2 != e);
+    CHECK(c4queryenum_getRowCount(e2, &error) == 8);
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
