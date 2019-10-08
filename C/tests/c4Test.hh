@@ -28,6 +28,7 @@ using namespace fleece;
 
 #include "CatchHelper.hh"
 #include "PlatformCompat.hh"
+#include <function_ref.hh>
 #include <functional>
 
 
@@ -104,6 +105,11 @@ fleece::alloc_slice json5slice(std::string str);
 void CheckError(C4Error err,
                 C4ErrorDomain expectedDomain, int expectedCode,
                 const char *expectedMessage =nullptr);
+
+    
+// Waits for the predicate to return true, checking every 100ms.
+// If the timeout elapses, calls FAIL.
+void WaitUntil(int timeoutMillis, function_ref<bool()> predicate);
 
 
 // This helper is necessary because it ends an open transaction if an assertion fails.

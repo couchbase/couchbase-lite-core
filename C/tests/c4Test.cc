@@ -159,6 +159,16 @@ void CheckError(C4Error error,
 }
 
 
+void WaitUntil(int timeoutMillis, function_ref<bool()> predicate) {
+    for (int remaining = timeoutMillis; remaining >= 0; remaining -= 100) {
+        if (predicate())
+            return;
+        this_thread::sleep_for(chrono::milliseconds(100));
+    }
+    FAIL("Wait timed out after " << timeoutMillis << "ms");
+}
+
+
 #pragma mark - C4TEST CLASS
 
 #if defined(CMAKE) && defined(_MSC_VER)
