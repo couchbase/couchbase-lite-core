@@ -169,7 +169,7 @@ namespace litecore { namespace repl {
             }
 
             Encoder retEncoder;
-            retEncoder.beginArray(dbLastSequence - replLastSequence);
+            retEncoder.beginArray(size_t(dbLastSequence - replLastSequence));
             C4DocumentInfo info;
             outErr->code = 0;
             while(c4enum_next(e, outErr)) {
