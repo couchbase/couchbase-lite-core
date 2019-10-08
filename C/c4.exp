@@ -228,7 +228,10 @@ _c4pred_unregisterModel
 _FLSlice_Equal
 _FLSlice_Compare
 _FLSliceResult_Release
+_FLSlice_New
 _FLSlice_Copy
+__FLBuf_Retain
+__FLBuf_Release
 
 _FLDoc_FromResultData
 _FLDoc_GetAllocedData

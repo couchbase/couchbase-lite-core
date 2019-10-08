@@ -857,7 +857,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Database alias column names", "[Query][C][!th
     FLSlice expected2 = FLSTR("secondary");
     CHECK(c4query_columnTitle(query, 0) == expected1);
     CHECK(c4query_columnTitle(query, 1) == expected2);
-    FLSliceResult_Free(queryStr);
+    FLSliceResult_Release(queryStr);
 }
 
 #pragma mark - COLLATION:
