@@ -58,10 +58,20 @@ namespace litecore { namespace actor {
             If the fire time is now or in the past, the callback will be called ASAP. */
         void fireAt(time t)             {manager().setFireTime(this, t);}
 
+        /** Schedules the timer to fire _earlier_ than it otherwise would.
+            If the timer is already scheduled, and its fire time is before `t`, nothing changes.
+            Otherwise it's the same as calling `fireAt(t)`. */
+        bool fireEarlierAt(time t)      {return manager().setFireTime(this, t, true);}
+
         /** Schedules the timer to fire after the given duration from the current time.
             (This just converts the duration to an absolute time_point and calls fireAt().)
             If the duration is zero, the callback will be called ASAP. */
         void fireAfter(duration d)      {manager().setFireTime(this, clock::now() + d);}
+
+        /** Schedules the timer to fire _earlier_ than it otherwise would.
+            If the timer is already scheduled, and will fire before `d` elapses, nothing changes.
+            Otherwise it's the same as calling `fireAfter(d)`. */
+        bool fireEarlierAfter(duration d) {return fireEarlierAt(clock::now() + d);}
 
         template<class Rep, class Period>
         void fireAfter(const std::chrono::duration<Rep,Period>& dur) {
@@ -88,7 +98,7 @@ namespace litecore { namespace actor {
             using map = std::multimap<time, Timer*>;
             
             Manager();
-            void setFireTime(Timer*, time);
+            bool setFireTime(Timer*, time, bool ifEarlier =false);
             void unschedule(Timer*);
             
         private:

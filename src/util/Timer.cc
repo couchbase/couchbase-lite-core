@@ -88,6 +88,7 @@ namespace litecore { namespace actor {
         _schedule.erase(timer->_entry);
         timer->_entry = _schedule.end();
         timer->_state = kUnscheduled;
+        timer->_fireTime = time();
         return affectsTiming && !_schedule.empty();
     }
 
@@ -104,15 +105,20 @@ namespace litecore { namespace actor {
 
 
     // Schedules or re-schedules a timer. (Called by Timer::fireAt/fireAfter())
+    // If `earlier` is true, it will only move the fire time closer, else it returns `false`.
     // Precondition: _mutex must NOT be locked.
     // Postcondition: timer is in _scheduled. timer->_state == kScheduled.
-    void Timer::Manager::setFireTime(Timer *timer, clock::time_point when) {
+    bool Timer::Manager::setFireTime(Timer *timer, clock::time_point when, bool earlier) {
         unique_lock<mutex> lock(_mutex);
+        if (earlier && timer->scheduled() && when >= timer->_fireTime)
+            return false;
         bool notify = _unschedule(timer);
         timer->_entry = _schedule.insert({when, timer});
         timer->_state = kScheduled;
+        timer->_fireTime = when;
         if (timer->_entry == _schedule.begin() || notify)
             _condition.notify_one();        // wakes up run() so it can recalculate its wait time
+        return true;
     }
 
 
