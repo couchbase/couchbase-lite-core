@@ -452,31 +452,21 @@ namespace c4Internal {
     Database::UUID Database::getUUID(slice key) {
         UUID uuid;
         if (!getUUIDIfExists(key, uuid)) {
-            beginTransaction();
-            try {
-                uuid = generateUUID(key, transaction());
-            } catch (...) {
-                endTransaction(false);
-                throw;
-            }
-            endTransaction(true);
+            TransactionHelper t(this);
+            uuid = generateUUID(key, t);
+            t.commit();
         }
         return uuid;
     }
     
     void Database::resetUUIDs() {
-        beginTransaction();
-        try {
-            UUID previousPrivate = getUUID(kPrivateUUIDKey);
-            auto &store = getKeyStore(toString(kC4InfoStore));
-            store.set(constants::kPreviousPrivateUUIDKey, {&previousPrivate, sizeof(UUID)}, transaction());
-            generateUUID(kPublicUUIDKey, transaction(), true);
-            generateUUID(kPrivateUUIDKey, transaction(), true);
-        } catch (...) {
-            endTransaction(false);
-            throw;
-        }
-        endTransaction(true);
+        TransactionHelper t(this);
+        UUID previousPrivate = getUUID(kPrivateUUIDKey);
+        auto &store = getKeyStore(toString(kC4InfoStore));
+        store.set(constants::kPreviousPrivateUUIDKey, {&previousPrivate, sizeof(UUID)}, transaction());
+        generateUUID(kPublicUUIDKey, t, true);
+        generateUUID(kPrivateUUIDKey, t, true);
+        t.commit();
     }
     
     

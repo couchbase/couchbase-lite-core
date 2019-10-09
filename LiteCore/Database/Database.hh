@@ -86,6 +86,33 @@ namespace c4Internal {
 
         bool inTransaction() noexcept;
 
+        class TransactionHelper {
+        public:
+            explicit TransactionHelper(Database* db)
+            :_db(db)
+            {
+                db->beginTransaction();
+            }
+
+            void commit() {
+                auto db = _db;
+                _db = nullptr;
+                db->endTransaction(true);
+            }
+
+            operator Transaction& () {
+                return *_db->_transaction;
+            }
+
+            ~TransactionHelper() {
+                if (_db)
+                    _db->endTransaction(false);
+            }
+
+        private:
+            Database* _db;
+        };
+
         KeyStore& defaultKeyStore();
         KeyStore& getKeyStore(const string &name) const;
 

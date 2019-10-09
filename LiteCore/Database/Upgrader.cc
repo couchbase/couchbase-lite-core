@@ -72,20 +72,19 @@ namespace litecore {
             else if (userVersion > kMaxOldUserVersion)
                 error::_throw(error::CantUpgradeDatabase);
 
-            _newDB->beginTransaction();
+            Database::TransactionHelper t(_newDB);
             try {
                 copyDocs();
 #if 0
                 copyLocalDocs();
 #endif
+                t.commit();
             } catch (const std::exception &x) {
-                _newDB->endTransaction(false);
                 error e = error::convertException(x);
                 const char *what = e.what();
                 if (!what) what = "";
                 error::_throw(error::CantUpgradeDatabase, "Error upgrading database: %s", what);
             }
-            _newDB->endTransaction(true);
         }
 
 
