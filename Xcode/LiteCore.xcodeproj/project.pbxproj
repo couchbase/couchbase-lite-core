@@ -119,6 +119,7 @@
 		275A74D11ED3A4E1008CB57B /* Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74CF1ED3A4E1008CB57B /* Listener.cc */; };
 		275A74D31ED3A4E1008CB57B /* Listener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275A74D01ED3A4E1008CB57B /* Listener.hh */; };
 		275A74D61ED3AA11008CB57B /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
+		275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275B35A4234E753800FE9CF0 /* Housekeeper.cc */; };
 		275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275E4CCB22417D13006C5B71 /* Inserter.cc */; };
@@ -936,6 +937,8 @@
 		275A74D01ED3A4E1008CB57B /* Listener.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Listener.hh; sourceTree = "<group>"; };
 		275A74D51ED3AA11008CB57B /* c4Listener.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener.cc; sourceTree = "<group>"; };
 		275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ListenerInternal.hh; sourceTree = "<group>"; };
+		275B35A3234E753800FE9CF0 /* Housekeeper.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Housekeeper.hh; sourceTree = "<group>"; };
+		275B35A4234E753800FE9CF0 /* Housekeeper.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Housekeeper.cc; sourceTree = "<group>"; };
 		275BF36B1F5F671C0051374A /* get_repo_version.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = get_repo_version.sh; sourceTree = "<group>"; };
 		275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseInternalTest.cc; sourceTree = "<group>"; };
 		275CE0E11E57B7E70084E014 /* c4Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Replicator.cc; sourceTree = "<group>"; };
@@ -1981,6 +1984,8 @@
 				27E3DD571DB8524300F2872D /* Database.cc */,
 				272F00E9226FC15D00E62F72 /* BackgroundDB.cc */,
 				272F00E3226FC15D00E62F72 /* BackgroundDB.hh */,
+				275B35A4234E753800FE9CF0 /* Housekeeper.cc */,
+				275B35A3234E753800FE9CF0 /* Housekeeper.hh */,
 				272F00F42273D45000E62F72 /* LiveQuerier.hh */,
 				272F00F52273D45000E62F72 /* LiveQuerier.cc */,
 				277C14701EA8102B0075348F /* Document.cc */,
@@ -3493,6 +3498,7 @@
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
+				275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */,
 				93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */,
 				27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,

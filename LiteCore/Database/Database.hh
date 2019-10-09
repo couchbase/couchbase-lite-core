@@ -39,6 +39,7 @@ namespace litecore {
     class SequenceTracker;
     class BlobStore;
     class BackgroundDB;
+    class Housekeeper;
 }
 
 
@@ -118,6 +119,8 @@ namespace c4Internal {
 
         bool purgeDocument(slice docID);
         int64_t purgeExpiredDocs();
+        bool setExpiration(slice docID, expiration_t);
+        bool startHousekeeping();
 
 #if DEBUG
         void validateRevisionBody(slice body);
@@ -145,7 +148,7 @@ namespace c4Internal {
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
 
         BackgroundDB* backgroundDatabase();
-        void closeBackgroundDatabase();
+        void stopBackgroundTasks();
 
     public:
         // should be private, but called from Document
@@ -179,6 +182,7 @@ namespace c4Internal {
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
         recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
         unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
+        Retained<Housekeeper>       _housekeeper;           // for expiration/cleanup tasks
     };
 
 

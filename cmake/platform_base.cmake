@@ -28,6 +28,7 @@ function(set_litecore_source_base)
         LiteCore/Database/BackgroundDB.cc
         LiteCore/Database/Database.cc
         LiteCore/Database/Document.cc
+        LiteCore/Database/Housekeeper.cc
         LiteCore/Database/LeafDocument.cc
         LiteCore/Database/LegacyAttachments.cc
         LiteCore/Database/LiveQuerier.cc

@@ -217,7 +217,11 @@ extern "C" {
 
     /** Purges all documents that have expired.
         @return  The number of documents purged, or -1 on error. */
-    int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error*) C4API;
+    int64_t c4db_purgeExpiredDocs(C4Database *db C4NONNULL, C4Error*) C4API;
+
+    /** Starts a background task that automatically purges expired documents.
+        @return  True if the task started, false if it couldn't (i.e. database is read-only.) */
+    bool c4db_startHousekeeping(C4Database *db C4NONNULL) C4API;
 
     /** Returns the number of revisions of a document that are tracked. (Defaults to 20.) */
     uint32_t c4db_getMaxRevTreeDepth(C4Database *database C4NONNULL) C4API;

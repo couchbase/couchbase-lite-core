@@ -351,6 +351,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
 }
 
 static constexpr int secs = 1000;
+static constexpr int ms = 1;
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     C4Error err;
@@ -402,6 +403,52 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
 
     C4Log("---- Purge expired docs (again)");
     CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C]")
+{
+    c4db_startHousekeeping(db);
+
+    createRev("expire_me"_sl, kRevID, kFleeceBody);
+    C4Timestamp expire = c4_now() + 10000*ms;
+    C4Error err;
+    REQUIRE(c4doc_setExpiration(db, "expire_me"_sl, expire, &err));
+
+    createRev("expire_me_first"_sl, kRevID, kFleeceBody);
+    expire = c4_now() + 1500*ms;
+    REQUIRE(c4doc_setExpiration(db, "expire_me_first"_sl, expire, &err));
+
+    // Wait for the expiration time to pass:
+    C4Log("---- Wait till expiration time...");
+    sleep(2u);
+    REQUIRE(c4_now() >= expire);
+
+    CHECK(c4doc_get(db, "expire_me_first"_sl, true, &err) == nullptr);
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorNotFound);
+    C4Log("---- Done...");
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration After Reopen", "[Database][C]")
+{
+    createRev("expire_me_first"_sl, kRevID, kFleeceBody);
+    auto expire = c4_now() + 1500*ms;
+    C4Error err;
+    REQUIRE(c4doc_setExpiration(db, "expire_me_first"_sl, expire, &err));
+
+    C4Log("---- Reopening DB...");
+    reopenDB();
+    c4db_startHousekeeping(db);
+
+    // Wait for the expiration time to pass:
+    C4Log("---- Wait till expiration time...");
+    sleep(2u);
+    REQUIRE(c4_now() >= expire);
+
+    CHECK(c4doc_get(db, "expire_me_first"_sl, true, &err) == nullptr);
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorNotFound);
+    C4Log("---- Done...");
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")

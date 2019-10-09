@@ -22,6 +22,7 @@
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
 #include "BackgroundDB.hh"
+#include "Housekeeper.hh"
 #include "DataFile.hh"
 #include "Record.hh"
 #include "SequenceTracker.hh"
@@ -197,14 +198,14 @@ namespace c4Internal {
 
     void Database::close() {
         mustNotBeInTransaction();
-        closeBackgroundDatabase();
+        stopBackgroundTasks();
         _dataFile->close();
     }
 
 
     void Database::deleteDatabase() {
         mustNotBeInTransaction();
-        closeBackgroundDatabase();
+        stopBackgroundTasks();
         FilePath bundle = path().dir();
         _dataFile->deleteDataFile();
         bundle.delRecursive();
@@ -304,7 +305,8 @@ namespace c4Internal {
             newKey = &keyBuf;
 
         mustNotBeInTransaction();
-        closeBackgroundDatabase();
+        bool housekeeping = (_housekeeper != nullptr);
+        stopBackgroundTasks();
 
         // Create a new BlobStore and copy/rekey the blobs into it:
         BlobStore *realBlobStore = blobStore();
@@ -325,6 +327,8 @@ namespace c4Internal {
 
         // Finally replace the old BlobStore with the new one:
         newStore->moveTo(*realBlobStore);
+        if (housekeeping)
+            startHousekeeping();
         _dataFile->_logInfo("Finished rekeying database!");
     }
 
@@ -417,11 +421,26 @@ namespace c4Internal {
     }
 
 
-    void Database::closeBackgroundDatabase() {
+    void Database::stopBackgroundTasks() {
+        if (_housekeeper) {
+            _housekeeper->stop();
+            _housekeeper = nullptr;
+        }
         if (_backgroundDB) {
             _backgroundDB->close();
             _backgroundDB = nullptr;
         }
+    }
+
+
+    bool Database::startHousekeeping() {
+        if (!_housekeeper) {
+            if (config.flags & kC4DB_ReadOnly)
+                return false;
+            _housekeeper = new Housekeeper(this);
+            _housekeeper->start();
+        }
+        return true;
     }
 
 
@@ -660,6 +679,19 @@ namespace c4Internal {
         } else {
             return _dataFile->defaultKeyStore().expireRecords(nullptr);
         }
+    }
+
+
+    bool Database::setExpiration(slice docID, expiration_t expiration) {
+        {
+            TransactionHelper t(this);
+            if (!_dataFile->defaultKeyStore().setExpiration(docID, expiration))
+                return false;
+            t.commit();
+        }
+        if (_housekeeper)
+            _housekeeper->documentExpirationChanged(expiration);
+        return true;
     }
 
 }
