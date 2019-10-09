@@ -98,6 +98,7 @@ _c4doc_setExpiration
 _c4doc_getExpiration
 _c4db_nextDocExpiration
 _c4db_purgeExpiredDocs
+_c4db_startHousekeeping
 _c4doc_containingValue
 _c4doc_isOldMetaProperty
 _c4doc_dictContainsBlobs
@@ -227,8 +228,7 @@ _c4pred_unregisterModel
 
 _FLSlice_Equal
 _FLSlice_Compare
-_FLSliceResult_Release
-_FLSlice_New
+_FLSliceResult_New
 _FLSlice_Copy
 __FLBuf_Retain
 __FLBuf_Release
@@ -396,8 +396,6 @@ _c4error_return
 _c4db_markSynced
 _c4_dumpInstances
 _gC4ExpectExceptions
-
-_FLSliceResult_Retain
 
 _FLDoc_FromJSON
 _FLDoc_Retain
