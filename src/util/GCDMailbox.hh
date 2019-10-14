@@ -51,6 +51,8 @@ namespace litecore { namespace actor {
 
         static Actor* currentActor();
 
+        static void runAsyncTask(void (*task)(void*), void *context);
+
     private:
         void runEvent(void (^block)());
         void afterEvent();

@@ -61,6 +61,8 @@ namespace litecore { namespace actor {
 
         static Actor* currentActor()                        {return sCurrentActor;}
 
+        static void runAsyncTask(void (*task)(void*), void *context);
+
         void logStats() const;
 
     private:

@@ -220,5 +220,10 @@ namespace litecore { namespace actor {
     }
 
 
+    void ThreadedMailbox::runAsyncTask(void (*task)(void*), void *context) {
+        Assert(false, "UNIMPLEMENTED"); //FIXME IMPLEMENT
+    }
+
+
 } }
 #endif

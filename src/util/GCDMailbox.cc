@@ -147,4 +147,18 @@ namespace litecore { namespace actor {
 #endif
     }
 
+
+    void GCDMailbox::runAsyncTask(void (*task)(void*), void *context) {
+        static dispatch_queue_t sAsyncTaskQueue;
+        static once_flag once;
+        call_once(once, [] {
+            dispatch_queue_attr_t attr = DISPATCH_QUEUE_CONCURRENT;
+            attr = dispatch_queue_attr_make_with_qos_class(attr, QOS_CLASS_BACKGROUND, 0);
+            sAsyncTaskQueue = dispatch_queue_create("CBL Async Tasks", attr);
+        });
+        
+        dispatch_async_f(sAsyncTaskQueue, context, task);
+    }
+
+
 } }
