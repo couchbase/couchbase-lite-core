@@ -19,6 +19,7 @@
 #include "c4Internal.hh"
 #include "c4Private.h"
 
+#include "Actor.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -452,6 +453,9 @@ void c4_dumpInstances(void) C4API {
 }
 
 
+#pragma mark - MISCELLANEOUS:
+
+
 void c4_setTempDir(C4String path) C4API {
     auto pathStr = slice(path).asString();
     FilePath::setTempDirectory(pathStr);
@@ -460,3 +464,8 @@ void c4_setTempDir(C4String path) C4API {
     sqlite3_temp_directory = cbl_strdup(pathStr.c_str());
 }
 // LCOV_EXCL_STOP
+
+
+void c4_runAsyncTask(void (*task)(void*), void *context) C4API {
+    actor::Mailbox::runAsyncTask(task, context);
+}

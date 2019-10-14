@@ -400,8 +400,8 @@ void c4slog(C4LogDomain domain C4NONNULL, C4LogLevel level, C4String msg) C4API;
 
 // Convenient aliases for c4log:
 #define C4LogToAt(DOMAIN, LEVEL, FMT, ...)        \
-        {if (c4log_willLog(DOMAIN, LEVEL))   \
-            c4log(DOMAIN, LEVEL, FMT, ## __VA_ARGS__);}
+        do {if (c4log_willLog(DOMAIN, LEVEL))   \
+            c4log(DOMAIN, LEVEL, FMT, ## __VA_ARGS__);} while (false)
 #define C4Debug(FMT, ...)           C4LogToAt(kC4DefaultLog, kC4LogDebug,   FMT, ## __VA_ARGS__)
 #define C4Log(FMT, ...)             C4LogToAt(kC4DefaultLog, kC4LogInfo,    FMT, ## __VA_ARGS__)
 #define C4LogVerbose(FMT, ...)      C4LogToAt(kC4DefaultLog, kC4LogVerbose, FMT, ## __VA_ARGS__)
@@ -420,7 +420,7 @@ C4StringResult c4_getBuildInfo(void) C4API;
 C4StringResult c4_getVersion(void) C4API;
 
 
-//////// CONFIGURATION:
+//////// MISCELLANEOUS:
 
 
 /** Specifies a directory to use for temporary files. You don't normally need to call this,
@@ -430,6 +430,15 @@ C4StringResult c4_getVersion(void) C4API;
     @note  If you do call this function, you should call it before opening any databases.
     @note  Needless to say, the directory must already exist. */
 void c4_setTempDir(C4String path) C4API;
+
+/** Schedules a function to be called asynchronously on a background thread.
+    @param task  A pointer to the function to run. It must take a single `void*` argument and
+        return `void`. If it needs to return a value, it should call some other function you
+        define and pass that value as a parameter.
+    @param context  An arbitrary pointer that will be passed to the function. You can use this
+        to provide state. Obviously, whatever this points to must remain valid until the
+        future time when `task` is called. */
+void c4_runAsyncTask(void (*task)(void*) C4NONNULL, void *context) C4API;
 
 #ifdef __cplusplus
 }

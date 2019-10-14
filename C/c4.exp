@@ -12,6 +12,7 @@ _c4_shutdown
 _c4_setTempDir
 _c4base_retain
 _c4base_release
+_c4_runAsyncTask
 
 # c4log
 _c4log_getLevel
