@@ -162,8 +162,8 @@ namespace litecore {
         UErrorCode status = U_ZERO_ERROR;
         UStringSearch *search = NULL;
         
-        u_uastrcpy(target, str.buf);
-        u_uastrcpy(pattern, substr.buf);
+        u_uastrcpy(target, (const char*)str.buf);
+        u_uastrcpy(pattern, (const char*)substr.bufs);
         
         search = usearch_open(pattern,
                               substr_len,
