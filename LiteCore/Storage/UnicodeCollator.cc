@@ -138,6 +138,29 @@ namespace litecore {
         return true;
     }
 
+#if !__APPLE__
+    int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
+        auto current = substr;
+        while(str.size > 0) {
+            size_t nextStrSize = NextUTF8Length(str);
+            size_t nextSubstrSize = NextUTF8Length(current);
+            if(!CompareUTF8({str.buf, nextStrSize}, {current.buf, nextSubstrSize}, coll)) {
+                // The characters are a match, move to the next substring character
+                current.moveStart(nextSubstrSize);
+                if(current.size == 0) {
+                    // Found a match!
+                    return 1;
+                }
+            } else {
+                current = substr;
+            }
+
+            str.moveStart(nextStrSize);
+        }
+        
+        return 0;
+    }
+#endif
 
     // This source file does not implement CompareUTF8() or RegisterSQLiteUnicodeCollation(),
     // which are platform-dependent. Those appear in platform-specific source files.

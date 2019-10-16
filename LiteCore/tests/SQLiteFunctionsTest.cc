@@ -530,3 +530,86 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite collation", "[Query][Collati
     }
 }
 #endif //__APPLE__ || defined(_MSC_VER) || LITECORE_USES_ICU
+
+#if __APPLE__ //FIXME: collator isn't available on all platforms yet
+TEST_CASE("Unicode Contains collation", "[Query][Collation]") {
+    struct {slice a; slice b; int result; bool caseSensitive; bool diacriticSensitive;} tests[] = {
+        //---- First, test just ASCII:
+
+        // Edge cases: empty and 1-char strings
+        {""_sl,  ""_sl,   -1, true, true},
+        {""_sl,  "a"_sl, -1, true, true},
+        {"aa"_sl, "a"_sl,  0, true, true},
+
+        // Case sensitive: lowercase comes first by Unicode rules
+        {"a"_sl,   "A"_sl,   -1, true, true},
+        {"abc"_sl, "abc"_sl,  0, true, true},
+        {"Aaa"_sl, "abc"_sl, -1, true, true},               // Because 'a'-vs-'b' beats 'A'-vs-'a'
+        {"abc"_sl, "abC"_sl, -1, true, true},
+        {"AB"_sl,  "abc"_sl, -1, true, true},
+
+        // Case insensitive:
+        {"ABCDEF"_sl, "ZYXWVU"_sl, -1,  false, true},
+        {"ABCDEF"_sl, "Z"_sl,      -1,  false, true},
+
+        {"a"_sl,   "A"_sl,    0, false, true},
+        {"abc"_sl, "ABC"_sl,  0, false, true},
+        {"ABA"_sl, "abc"_sl, -1, false, true},
+
+        {"commonprefix1"_sl, "commonprefix2"_sl, -1,    false, true},
+        {"commonPrefix1"_sl, "commonprefix2"_sl, -1,    false, true},
+
+        {"abcdef"_sl, "abcdefghijklm"_sl, -1,    false, true},
+        {"abcdeF"_sl, "abcdefghijklm"_sl, -1,    false, true},
+
+        //---- Now bring in non-ASCII characters:
+
+        {"a"_sl,  "á"_sl, -1,   false, true},
+        {""_sl,   "á"_sl, -1,   false, true},
+        {"á"_sl,  "á"_sl,  0,   false, true},
+        {"•a"_sl, "•A"_sl, 0,   false, true},
+
+        {"test a"_sl,  "test á"_sl,  -1,    false, true},
+        {"test á"_sl,  "test b"_sl,  -1,    false, true},
+        {"test á"_sl,  "test Á"_sl,   0,    false, true},
+        {"test á1"_sl, "test Á2"_sl, -1,    false, true},
+
+        // Case sensitive, diacritic sensitive:
+        {"ABCDEF"_sl, "ZYXWVU"_sl, -1,      true, true },
+        {"ABCDEF"_sl, "Z"_sl, -1,           true, true },
+        {"a"_sl, "A"_sl, -1,                true, true },
+        {"abc"_sl, "ABC"_sl, -1,            true, true },
+        {"•a"_sl, "•A"_sl, -1,              true, true },
+        {"test a"_sl, "test á"_sl, -1,      true, true },
+        {"Ähnlichkeit"_sl, "apple"_sl, -1,  true, true }, // Because 'h'-vs-'p' beats 'Ä'-vs-'a'
+        {"ax"_sl, "Äz"_sl, -1,      true, true },
+        {"test a"_sl, "test Á"_sl, -1,      true, true },
+        {"test Á"_sl, "test e"_sl, -1,      true, true },
+        {"test á"_sl, "test Á"_sl, -1,      true, true },
+        {"test á"_sl, "test b"_sl, -1,      true, true },
+        {"test u"_sl, "test Ü"_sl, -1,      true, true },
+
+        // Case sensitive, diacritic insensitive:
+        {"abc"_sl,    "ABC"_sl, -1,    true, false},
+        {"test á"_sl, "test a"_sl, 0,  true, false},
+        {"test á"_sl, "test A"_sl, -1, true, false},
+        {"test á"_sl, "test b"_sl, -1, true, false},
+        {"test á"_sl, "test Á"_sl, -1, true, false},
+
+        // Case and diacritic insensitive:
+        {"test á"_sl, "test Á"_sl, 0,  false, false},
+
+        { }
+    };
+
+    for (auto test = &tests[0]; test->a; ++test) {
+        Collation coll;
+        coll.unicodeAware = true;
+        coll.caseSensitive = test->caseSensitive;
+        coll.diacriticSensitive = test->diacriticSensitive;
+        INFO("Contains '" << test->a.asString() << "', '" << test->b.asString()
+             << "' (casesens=" << test->caseSensitive << ", diacsens=" << test->diacriticSensitive << ")");
+        CHECK(ContainsUTF8(test->a, test->b, coll) ==  test->result);
+    }
+}
+#endif
