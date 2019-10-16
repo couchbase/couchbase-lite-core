@@ -190,6 +190,7 @@ FLValue_ToJSONX
 FLData_ConvertJSON
 FLJSON5_ToJSON
 
+FLValue_Release
 FLArray_Count
 FLArray_IsEmpty
 FLArray_Get
@@ -204,6 +205,7 @@ FLDict_IsEmpty
 FLDict_Get
 FLDict_GetWithKey
 FLDictIterator_Begin
+FLDictIterator_End
 FLDictIterator_GetKey
 FLDictIterator_GetKeyString
 FLDictIterator_GetValue
