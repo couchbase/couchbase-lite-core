@@ -515,10 +515,7 @@ namespace litecore {
         auto str = stringSliceArgument(argv[0]);
         auto substr = stringSliceArgument(argv[1]);
         
-        if (ContainsUTF8(str, substr, col))
-            sqlite3_result_int(ctx, 1);
-        else
-            sqlite3_result_int(ctx, 0);
+        sqlite3_result_int(ctx, ContainsUTF8(str, substr, col) == 0);
     }
 
     // length() returns the length in characters of a string.
