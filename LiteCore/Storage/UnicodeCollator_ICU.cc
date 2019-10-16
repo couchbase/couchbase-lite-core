@@ -163,7 +163,7 @@ namespace litecore {
         UStringSearch *search = NULL;
         
         u_uastrcpy(target, (const char*)str.buf);
-        u_uastrcpy(pattern, (const char*)substr.bufs);
+        u_uastrcpy(pattern, (const char*)substr.buf);
         
         search = usearch_open(pattern,
                               substr_len,
