@@ -531,7 +531,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite collation", "[Query][Collati
 }
 #endif //__APPLE__ || defined(_MSC_VER) || LITECORE_USES_ICU
 
-#if __APPLE__ //FIXME: collator isn't available on all platforms yet
+#if __APPLE__ || LITECORE_USES_ICU //FIXME: collator isn't available on all platforms yet
 TEST_CASE("Unicode Contains collation", "[Query][Collation]") {
     struct {slice a; slice b; int result; bool caseSensitive; bool diacriticSensitive;} tests[] = {
         //---- First, test just ASCII:

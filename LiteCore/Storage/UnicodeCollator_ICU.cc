@@ -152,6 +152,43 @@ namespace litecore {
         return context;
     }
 
+    int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
+        int pos = 0;
+        int str_len = (int)str.size;
+        int substr_len = (int)substr.size;
+        UChar target[str_len];
+        UChar pattern[substr_len];
+        UErrorCode status = U_ZERO_ERROR;
+        UStringSearch *search = NULL;
+        
+        u_uastrcpy(target, str);
+        u_uastrcpy(pattern, substr);
+        
+        search = usearch_open(pattern,
+                              substr_len,
+                              target,
+                              str_len,
+                              collation.localeName.asString().c_str(),
+                              NULL,
+                              &status);
+        if (U_FAILURE(status)) {
+            Warn("Could not create a UStringSearch.\n %d", status);
+            return -1;
+        }
+        for(pos = usearch_first(search, &status);
+            U_SUCCESS(status) && pos != USEARCH_DONE;
+            pos = usearch_next(search, &status))
+        {
+            return 0;
+        }
+
+        if (U_FAILURE(status)) {
+            Warn("Error searching for pattern. %d\n", status);
+        }
+        
+        return -1;
+    }
+
 }
 
 #endif // !__APPLE__
