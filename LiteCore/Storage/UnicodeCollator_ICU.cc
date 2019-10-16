@@ -162,14 +162,14 @@ namespace litecore {
         UErrorCode status = U_ZERO_ERROR;
         UStringSearch *search = NULL;
         
-        u_uastrcpy(target, str);
-        u_uastrcpy(pattern, substr);
+        u_uastrcpy(target, str.buf);
+        u_uastrcpy(pattern, substr.buf);
         
         search = usearch_open(pattern,
                               substr_len,
                               target,
                               str_len,
-                              collation.localeName.asString().c_str(),
+                              coll.localeName.asString().c_str(),
                               NULL,
                               &status);
         if (U_FAILURE(status)) {
