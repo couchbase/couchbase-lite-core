@@ -149,7 +149,7 @@ namespace litecore {
                 current.moveStart(nextSubstrSize);
                 if(current.size == 0) {
                     // Found a match!
-                    return 1;
+                    return 0;
                 }
             } else {
                 current = substr;
@@ -158,7 +158,7 @@ namespace litecore {
             str.moveStart(nextStrSize);
         }
         
-        return 0;
+        return -1;
     }
 #endif
 
