@@ -299,6 +299,17 @@ namespace c4Internal {
 
             if (mergedBody.buf) {
                 // Then add the new merged rev as a child of winningRev:
+
+                alloc_slice emptyDictBody;
+                if (mergedBody.size == 0) {
+                    // An empty body isn't legal, so replace it with an encoded empty Dict:
+                    Encoder enc;
+                    enc.beginDictionary();
+                    enc.endDictionary();
+                    emptyDictBody = enc.finish();
+                    mergedBody = emptyDictBody;
+                }
+
                 selectRevision(winningRev);
                 C4DocPutRequest rq = { };
                 rq.revFlags = mergedFlags & (kRevDeleted | kRevHasAttachments);
