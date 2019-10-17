@@ -154,6 +154,7 @@ namespace litecore {
     }
 
     int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
+        ICUCollationContext ctx(coll);
         int pos = 0;
         int str_len = (int)str.size;
         int substr_len = (int)substr.size;
@@ -165,13 +166,8 @@ namespace litecore {
         u_uastrcpy(target, (const char*)str.buf);
         u_uastrcpy(pattern, (const char*)substr.buf);
         
-        search = usearch_open(pattern,
-                              substr_len,
-                              target,
-                              str_len,
-                              coll.localeName.asString().c_str(),
-                              NULL,
-                              &status);
+        search = usearch_openFromCollator(pattern, substr_len, target, str_len,
+                                          ctx.ucoll, NULL, &status);
         if (U_FAILURE(status)) {
             Warn("Could not create a UStringSearch.\n %d", status);
             return -1;
