@@ -42,6 +42,16 @@ namespace litecore { namespace repl {
             _checkpointValid = false;
         }
 
+        // Checks if a given document should be filtered by this pusher.  The revision body
+        // must be loaded prior to this call.
+        bool documentShouldBeFiltered(C4Document* doc) const {
+            const auto body = doc->selectedRev.body;
+            Assert(body.buf);
+            const auto bodyContent = FLValue_FromData(body, kFLTrusted);
+            return _options.pushFilter
+                && _options.pushFilter(doc->docID, doc->selectedRev.flags, FLValue_AsDict(bodyContent), _options.callbackContext);
+        }
+
     private:
         void _start(C4SequenceNumber sinceSequence);
         bool passive() const                         {return _options.push <= kC4Passive;}

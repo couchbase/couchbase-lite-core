@@ -152,6 +152,14 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
         _params.onDocumentsEnded = nullptr;
     }
 
+    C4SliceResult pendingDocumentIDs(C4Error* outErr) const {
+        return (C4SliceResult)_replicator->pendingDocumentIDs(outErr);
+    }
+
+    bool isDocumentPending(C4Slice docID, C4Error* outErr) const {
+        return _replicator->isDocumentPending(docID, outErr);
+    }
+
 private:
     // base constructor
     C4Replicator(Replicator *replicator,

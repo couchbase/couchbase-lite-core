@@ -110,5 +110,5 @@ function(setup_support_build)
 endfunction()
 
 function(setup_rest_build)
-    # No-op
+    setup_rest_build_unix()
 endfunction()
