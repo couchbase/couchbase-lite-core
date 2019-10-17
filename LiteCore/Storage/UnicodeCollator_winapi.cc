@@ -151,6 +151,28 @@ namespace litecore {
             throw SQLite::Exception(dbHandle, rc);
         return context;
     }
+
+    int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
+        LPWSTR locale = ctx.localeName;
+        DWORD winFlags = ctx.flags;
+
+        TempArray(wchars1, WCHAR, len1 + 1);
+        int size1 = MultiByteToWideChar(CP_UTF8, 0, (char *)str.buf, len1, wchars1, len1 + 1);
+        while(size1 < len1 + 1) {
+            wchars1[size1++] = 0;
+        }
+
+        TempArray(wchars2, WCHAR, len2 + 1);
+        int size2 = MultiByteToWideChar(CP_UTF8, 0, (char *)substr.buf, len2, wchars2, len2 + 1);
+        while(size2 < len2 + 1) {
+            wchars2[size2++] = 0;
+        }
+        
+        INT found = 0;
+        int result = FindNLSString(locale, winFlags, wchars1, -1, wchars2, -1, &found);
+        
+        return result;
+    }
 }
 
 #endif
