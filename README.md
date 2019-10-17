@@ -106,7 +106,7 @@ If CMake's initial configuration checks fail, the setup may be left in a broken 
 
 ## Android
 
-Android has a bit longer of a command line invocation but it is the same idea as the Linux build above.  There are some key properties that you need to be aware of though.  
+Android has a bit longer of a command line invocation but it is the same idea as the Linux build above.  There are some key properties that you need to be aware of though.  Be sure to have the environment variable `ANDROID_NDK_ROOT` defined to where the NDK lives on your system.
 
 - Architecture:  The architecture of the device being built for (x86, x86_64, armeabi-v7a [in example], arm64-v8a)
 - Version: The minimum Android API level that the library will support (22 in the following)
