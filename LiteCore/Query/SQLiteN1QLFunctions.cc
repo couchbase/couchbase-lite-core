@@ -517,7 +517,6 @@ namespace litecore {
         
         auto current = substr;
         while(str.size > 0) {
-        sqlite3_result_int(ctx, ContainsUTF8(str, substr, col) == 0);
             size_t nextStrSize = NextUTF8Length(str);
             size_t nextSubstrSize = NextUTF8Length(current);
             if(!CompareUTF8({str.buf, nextStrSize}, {current.buf, nextSubstrSize}, col)) {
