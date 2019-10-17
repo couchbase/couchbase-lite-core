@@ -151,37 +151,6 @@ namespace litecore {
             throw SQLite::Exception(dbHandle, rc);
         return context;
     }
-
-    int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
-        WinApiCollationContext ctx(coll);
-        LPWSTR locale = ctx.localeName;
-        DWORD winFlags = ctx.flags;
-        int len1 = (int)str.size;
-        int len2 = (int)substr.size;
-        LCID  lcid;
-
-        TempArray(wchars1, WCHAR, len1 + 1);
-        int size1 = MultiByteToWideChar(CP_UTF8, 0, (char *)str.buf, len1, wchars1, len1 + 1);
-        while(size1 < len1 + 1) {
-            wchars1[size1++] = 0;
-        }
-
-        TempArray(wchars2, WCHAR, len2 + 1);
-        int size2 = MultiByteToWideChar(CP_UTF8, 0, (char *)substr.buf, len2, wchars2, len2 + 1);
-        while(size2 < len2 + 1) {
-            wchars2[size2++] = 0;
-        }
-        
-        INT found = 0;
-        lcid  = LocaleNameToLCID(localeName, 0);
-        if (lcid == 0) {
-            DWORD err = GetLastError();
-            Warn("Failed to get te locale ID (Error %d)", GetLastError());
-        }
-        int result = FindNLSString(lcid, winFlags, wchars1, -1, wchars2, -1, &found);
-        
-        return result;
-    }
 }
 
 #endif

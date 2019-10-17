@@ -138,9 +138,8 @@ namespace litecore {
         return true;
     }
 
-    // This source file does not implement CompareUTF8() or ContainsUTF8()
-    // or RegisterSQLiteUnicodeCollation(), which are platform-dependent.
-    // Those appear in platform-specific source files.
+    // This source file does not implement CompareUTF8() or RegisterSQLiteUnicodeCollation(),
+    // which are platform-dependent. Those appear in platform-specific source files.
 
 
 #pragma mark - ASCII COLLATOR:

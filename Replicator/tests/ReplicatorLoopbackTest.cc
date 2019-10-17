@@ -1638,4 +1638,3 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch",
     // This line causes a null deference SIGSEGV before the fix
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
 }
-
