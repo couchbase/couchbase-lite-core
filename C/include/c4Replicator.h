@@ -208,6 +208,26 @@ extern "C" {
     /** Returns the HTTP response headers as a Fleece-encoded dictionary. */
     C4Slice c4repl_getResponseHeaders(C4Replicator *repl C4NONNULL) C4API;
 
+    /** Gets a fleece encoded list of IDs of documents who have revisions pending push.  This
+     *  API is a snapshot and results may change between the time the call was made and the time
+     *  the call returns.
+     *
+     *  @param outErr Records error information, if any
+     *  @return A fleece encoded array of document IDs, each of which has one or more pending
+     *  revisions
+     */
+    C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl C4NONNULL, C4Error* outErr) C4API;
+
+    /** Checks if the document with the given ID has revisions pending push.  This
+     *  API is a snapshot and results may change between the time the call was made and the time
+     *  the call returns.
+     *
+     * @param docID The ID of the document to check
+     * @param outErr Records error information, if any
+     * @return true if the document has one or more revisions pending, false otherwise
+     */
+    bool c4repl_isDocumentPending(C4Replicator* repl C4NONNULL, C4String docID, C4Error* outErr) C4API;
+
 
 #pragma mark - COOKIES:
 

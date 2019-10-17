@@ -270,3 +270,82 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[Pull]") {
     // failure that cannot be detected from the outside)
     CHECK(c4db_getDocumentCount(db) == _docsEnded);
 }
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    createDB2();
+
+    C4Error err;
+    C4ReplicatorParameters params = {};
+    params.push = kC4OneShot;
+    params.pull = kC4Disabled;
+    params.callbackContext = this;
+    params.socketFactory = _socketFactory;
+    params.dontStart = true;
+
+    int expectedPending;
+    SECTION("Normal") {
+        expectedPending = 100;
+    }
+
+    SECTION("Filtered") {
+        expectedPending = 99;
+        params.pushFilter = [](C4String docID, C4RevisionFlags flags, FLDict flbody, void *context) {
+            return !FLSlice_Compare(docID, "0000005"_sl);
+        };
+    }
+
+    _repl = c4repl_new(db, _address, kC4SliceNull, (C4Database*)db2,
+                       params, &err);
+
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, &err);
+    REQUIRE(encodedDocIDs != nullslice);
+    FLArray docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
+    CHECK(FLArray_Count(docIDs) == expectedPending);
+    c4slice_free(encodedDocIDs);
+
+    c4repl_start(_repl);
+    while (c4repl_getStatus(_repl).level != kC4Stopped)
+           this_thread::sleep_for(chrono::milliseconds(100));
+
+    encodedDocIDs = c4repl_getPendingDocIDs(_repl, &err);
+    CHECK(encodedDocIDs == nullslice);
+}
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    createDB2();
+
+    C4Error err;
+    C4ReplicatorParameters params = {};
+    params.push = kC4OneShot;
+    params.pull = kC4Disabled;
+    params.callbackContext = this;
+    params.socketFactory = _socketFactory;
+    params.dontStart = true;
+
+    bool expectedIsPending;
+    SECTION("Normal") {
+        expectedIsPending = true;
+    }
+
+    SECTION("Filtered") {
+        expectedIsPending = false;
+        params.pushFilter = [](C4String docID, C4RevisionFlags flags, FLDict flbody, void *context) {
+            return !FLSlice_Compare(docID, "0000005"_sl);
+        };
+    }
+
+    _repl = c4repl_new(db, _address, kC4SliceNull, (C4Database*)db2,
+                       params, &err);
+
+    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, &err);
+    CHECK(isPending == expectedIsPending);
+
+    c4repl_start(_repl);
+    while (c4repl_getStatus(_repl).level != kC4Stopped)
+           this_thread::sleep_for(chrono::milliseconds(100));
+
+    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, &err);
+    CHECK(!isPending);
+}
