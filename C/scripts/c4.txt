@@ -1,6 +1,4 @@
-EXPORTS
-
-; Couchbase Lite .NET
+# Couchbase Lite
 c4_getVersion
 c4_now
 
@@ -142,8 +140,6 @@ c4repl_free
 c4repl_start
 c4repl_stop
 c4repl_getStatus
-c4repl_getPendingDocIDs
-c4repl_isDocumentPending
 
 c4socket_registerFactory
 c4socket_fromNative
@@ -273,7 +269,7 @@ FLSlot_SetString
 FLSlot_SetData
 FLSlot_SetValue
 
-; C4Tests
+# C4Tests
 kC4SQLiteStorageEngine
 kC4DatabaseFilenameExtension
 
@@ -368,4 +364,3 @@ FLSharedKeys_Retain
 FLSharedKeys_Release
 
 FLValue_ToJSON5
-
