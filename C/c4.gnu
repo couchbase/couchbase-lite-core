@@ -141,6 +141,8 @@
 		c4repl_start;
 		c4repl_stop;
 		c4repl_getStatus;
+		c4repl_getPendingDocIDs;
+		c4repl_isDocumentPending;
 
 		c4socket_registerFactory;
 		c4socket_fromNative;
