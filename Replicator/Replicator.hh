@@ -86,7 +86,7 @@ namespace litecore { namespace repl {
         /** Returns a fleece encoded list of the IDs of documents which have revisions pending push */
         alloc_slice pendingDocumentIDs(C4Error* outErr) const;
 
-        /** Checks if the document with the given ID has any pending revisions */
+        /** Checks if the document with the given ID has any pending revisions to push*/
         bool isDocumentPending(slice docId, C4Error* outErr) const;
 
         // exposed for unit tests:
