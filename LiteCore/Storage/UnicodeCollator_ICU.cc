@@ -155,6 +155,12 @@ namespace litecore {
 
     int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
         ICUCollationContext ctx(coll);
+        int str_len = (int)str.size;
+        int substr_len = (int)substr.size;
+        
+        // in case of illegal argument, return failure
+        if (!str || !substr || str_len == 0 || substr_len == 0)
+            return -1;
         
         // Case level string search is done with the strength set to tertiary.
         UErrorCode status = U_ZERO_ERROR;
@@ -165,8 +171,6 @@ namespace litecore {
                 error::_throw(error::UnexpectedError, "Error seting collator strength (ICU error %d)", (int)status);
         }
         
-        int str_len = (int)str.size;
-        int substr_len = (int)substr.size;
         UChar target[str_len];
         UChar pattern[substr_len];
 
