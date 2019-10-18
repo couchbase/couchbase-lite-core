@@ -31,6 +31,7 @@ function(setup_build)
         mbedcrypto
         ${LIBCXX_LIB}
         ${LIBCXXABI_LIB}
+        ${ZLIB_LIB}
         dl
     )
 endfunction()
