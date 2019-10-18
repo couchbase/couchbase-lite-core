@@ -49,6 +49,7 @@
 #pragma clang diagnostic ignored "-Wdocumentation"
 #include <unicode/uloc.h>
 #include <unicode/ucol.h>
+#include <unicode/usearch.h>
 #pragma clang diagnostic pop
 
 // http://userguide.icu-project.org/collation
@@ -150,6 +151,40 @@ namespace litecore {
         if (rc != SQLITE_OK)
             throw SQLite::Exception(dbHandle, rc);
         return context;
+    }
+
+    int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
+        ICUCollationContext ctx(coll);
+        int str_len = (int)str.size;
+        int substr_len = (int)substr.size;
+        UChar target[str_len];
+        UChar pattern[substr_len];
+
+        u_uastrcpy(target, (const char*)str.buf);
+        u_uastrcpy(pattern, (const char*)substr.buf);
+
+        UErrorCode status = U_ZERO_ERROR;
+        UStringSearch *search = NULL;
+        search = usearch_openFromCollator(pattern, -1, target, -1, ctx.ucoll,
+                                          NULL, &status);
+        if (U_FAILURE(status)) {
+            Warn("Could not create a UStringSearch.\n %d", status);
+            return -1;
+        }
+        
+        int pos = 0;
+        for(pos = usearch_first(search, &status);
+            U_SUCCESS(status) && pos != USEARCH_DONE;
+            pos = usearch_next(search, &status))
+        {
+            return 0;
+        }
+
+        if (U_FAILURE(status)) {
+            Warn("Error searching for pattern. %d\n", status);
+        }
+
+        return -1;
     }
 }
 
