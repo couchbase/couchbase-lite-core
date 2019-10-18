@@ -31,9 +31,8 @@ function(setup_build)
         CppTests PRIVATE
         ${LIBCXX_LIB}
         ${LIBCXXABI_LIB}
-        ${ICU4C_COMMON}
-        ${ICU4C_I18N}
-        z
+        ${ICU_LIBS}
+        ${ZLIB_LIB}
         pthread
         dl
     )

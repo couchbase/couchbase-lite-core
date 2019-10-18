@@ -64,13 +64,14 @@ option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 
 add_definitions(
-    -DCMAKE                             # Let the source know this is a CMAKE build
+    -DCMAKE                  # Let the source know this is a CMAKE build
+    -D__STDC_FORMAT_MACROS   # Enables printf format macros for variable sized types (e.g. size_t)
 )
 
 if(BUILD_ENTERPRISE)
     add_definitions(
         -DCOUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
-    )         
+    )
 endif()
 
 if(MSVC)
@@ -118,10 +119,12 @@ set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
 file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
 if (UNIX)
     execute_process(COMMAND /bin/bash "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.sh"
-                                      "${GENERATED_HEADERS_DIR}/repo_version.h")
+                                      "${GENERATED_HEADERS_DIR}/repo_version.h"
+                                      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 else()
     execute_process(COMMAND powershell "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.ps1"
-                                      "${GENERATED_HEADERS_DIR}/repo_version.h")
+                                      "${GENERATED_HEADERS_DIR}/repo_version.h"
+                                      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 endif()
 include_directories(${GENERATED_HEADERS_DIR})
 
@@ -150,7 +153,7 @@ target_include_directories(
     LiteCore/RevID
     vendor/mbedtls/include
     C
-    C/include 
+    C/include
     vendor/BLIP-Cpp/include/blip_cpp
     vendor/BLIP-Cpp/src/util
     vendor/BLIP-Cpp/src/websocket
@@ -164,7 +167,7 @@ setup_support_build()
 set_litecore_source(RESULT ALL_SRC_FILES)
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 target_compile_definitions(
-    LiteCoreStatic PRIVATE 
+    LiteCoreStatic PRIVATE
     -DLITECORE_IMPL
     -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1  # Default to NORMAL sync mode on SQLite (safe with WAL mode)
     -DSQLITE_LIKE_DOESNT_MATCH_BLOBS    # Optimize SQLite "like" queries
@@ -189,7 +192,7 @@ if(BUILD_ENTERPRISE)
     target_compile_definitions(
         LiteCoreStatic PRIVATE
         -DSQLITE_HAS_CODEC              # Enables SQLite encryption extension (SEE)
-    )   
+    )
 endif()
 
 target_include_directories(
@@ -207,7 +210,7 @@ target_include_directories(
     LiteCore/Support
     vendor/mbedtls/include
     C
-    C/include 
+    C/include
     vendor/BLIP-Cpp/include/blip_cpp
     vendor/BLIP-Cpp/src/util
     vendor/SQLiteCpp/sqlite3
@@ -232,7 +235,7 @@ endif()
 # Library flags defined in platform_linux
 # LITECORE_CRYPTO_LIB defined in platform CMake files
 set(
-    LITECORE_LIBRARIES_PRIVATE  
+    LITECORE_LIBRARIES_PRIVATE
     ${WHOLE_LIBRARY_FLAG}
     LiteCoreStatic
     FleeceStatic
