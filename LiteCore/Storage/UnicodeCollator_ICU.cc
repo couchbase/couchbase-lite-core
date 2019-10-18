@@ -175,8 +175,8 @@ namespace litecore {
 
         status = U_ZERO_ERROR;
         UStringSearch *search = NULL;
-        search = usearch_openFromCollator(pattern, -1, target, -1, ctx.ucoll,
-                                          NULL, &status);
+        search = usearch_openFromCollator(pattern, substr_len, target, str_len,
+                                          ctx.ucoll, NULL, &status);
         if (U_FAILURE(status))
             error::_throw(error::UnexpectedError, "Error creating usearch (ICU error %d)", (int)status);
         
