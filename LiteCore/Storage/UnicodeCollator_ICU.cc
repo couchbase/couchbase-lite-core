@@ -174,6 +174,7 @@ namespace litecore {
         UChar target[str_len];
         UChar pattern[substr_len];
 
+        // byte string to ustring
         u_uastrcpy(target, (const char*)str.buf);
         u_uastrcpy(pattern, (const char*)substr.buf);
 
@@ -190,6 +191,7 @@ namespace litecore {
             U_SUCCESS(status) && pos != USEARCH_DONE;
             pos = usearch_next(search, &status))
         {
+            // match found!
             return 0;
         }
 
