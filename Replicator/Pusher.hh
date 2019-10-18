@@ -66,7 +66,7 @@ namespace litecore { namespace repl {
         void maybeSendMoreRevs();
         void sendRevision(Retained<RevToSend>);
         void couldntSendRevision(RevToSend* NONNULL);
-        void doneWithRev(const RevToSend*, bool successful, bool pushed);
+        void doneWithRev(RevToSend*, bool successful, bool pushed);
         void updateCheckpoint();
         void handleGetAttachment(Retained<MessageIn>);
         void handleProveAttachment(Retained<MessageIn>);
@@ -119,6 +119,7 @@ namespace litecore { namespace repl {
         MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
         unsigned _blobsInFlight {0};              // # of blobs being sent
         std::deque<Retained<RevToSend>> _revsToSend;  // Revs to send to peer but not sent yet
+        RevToSendList _revsToRetry;                     // Revs that failed with a transient error
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash>;
 

@@ -410,7 +410,11 @@ namespace litecore { namespace repl {
                 } else {
                     auto err = progress.reply->getError();
                     auto c4err = blipToC4Error(err);
-                    bool transient = c4error_mayBeTransient(c4err);
+                    
+                    // CBL-123: Retry HTTP forbidden once
+                    bool transient = c4error_mayBeTransient(c4err) ||
+                        (c4err.code == 403 && rev->retryCount++ == 0);
+                    
                     logError("Got error response to rev '%.*s' #%.*s (seq #%" PRIu64 "): %.*s %d '%.*s'",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
@@ -567,12 +571,14 @@ namespace litecore { namespace repl {
 #pragma mark - PROGRESS:
 
 
-    void Pusher::doneWithRev(const RevToSend *rev, bool completed, bool synced) {
+    void Pusher::doneWithRev(RevToSend *rev, bool completed, bool synced) {
         if (!passive()) {
             addProgress({rev->bodySize, 0});
             if (completed) {
                 _pendingSequences.remove(rev->sequence);
                 updateCheckpoint();
+            } else {
+                _revsToRetry.push_back(rev);
             }
         }
 
@@ -650,6 +656,16 @@ namespace litecore { namespace repl {
                 || !_pushingDocs.empty()
                 || _revisionBytesAwaitingReply > 0) {
             level = kC4Busy;
+        } else if (!_revsToRetry.empty()) {
+            level = kC4Busy;
+            Pusher* pusher = const_cast<Pusher *>(this);
+            for(auto& rev : _revsToRetry) {
+                pusher->_revsToSend.push_back(rev);
+                pusher->_pushingDocs[rev->docID] = rev;
+            }
+            
+            pusher->_revsToRetry.clear();
+            pusher->maybeSendMoreRevs();
         } else if (_options.push == kC4Continuous || isOpenServer()) {
             level = kC4Idle;
         } else {
