@@ -154,7 +154,7 @@ namespace litecore { namespace repl {
             return;
         if (err.code)
             return gotError(err);
-        DebugAssert(lastSequence >= _lastSequenceRead + changes->size());
+        
         _lastSequenceRead = lastSequence;
         _pendingSequences.seen(lastSequence);
         if (changes->empty()) {
@@ -424,6 +424,10 @@ namespace litecore { namespace repl {
                     completed = !transient;
                 }
                 doneWithRev(rev, completed, synced);
+                if(!passive() && !completed) {
+                    _revsToRetry.push_back(rev);
+                }
+                
                 maybeSendMoreRevs();
             }
         });
@@ -577,8 +581,6 @@ namespace litecore { namespace repl {
             if (completed) {
                 _pendingSequences.remove(rev->sequence);
                 updateCheckpoint();
-            } else {
-                _revsToRetry.push_back(rev);
             }
         }
 
@@ -657,15 +659,17 @@ namespace litecore { namespace repl {
                 || _revisionBytesAwaitingReply > 0) {
             level = kC4Busy;
         } else if (!_revsToRetry.empty()) {
+            logInfo("%d documents failed to push and will be retried", (int)_pendingSequences.size());
             level = kC4Busy;
             Pusher* pusher = const_cast<Pusher *>(this);
-            for(auto& rev : _revsToRetry) {
-                pusher->_revsToSend.push_back(rev);
-                pusher->_pushingDocs[rev->docID] = rev;
+            pusher->_caughtUp = false;
+            auto revsToRetry = move(_revsToRetry);
+            pusher->_revsToRetry.clear();
+            for(const auto& revToRetry : revsToRetry) {
+                pusher->_pushingDocs[revToRetry->docID] = revToRetry;
             }
             
-            pusher->_revsToRetry.clear();
-            pusher->maybeSendMoreRevs();
+            pusher->gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
         } else if (_options.push == kC4Continuous || isOpenServer()) {
             level = kC4Idle;
         } else {
