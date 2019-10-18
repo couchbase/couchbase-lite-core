@@ -153,7 +153,7 @@ namespace litecore {
 
         CFRelease(cfstr);
         CFRelease(cfsubstr);
-        return int(result);
+        return result == kCFNotFound ? -1 : 0;
     }
 }
 
