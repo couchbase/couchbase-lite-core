@@ -155,6 +155,18 @@ namespace litecore {
 
     int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
         ICUCollationContext ctx(coll);
+        
+        // Case level string search is done with the strength set to tertiary.
+        UErrorCode status = U_ZERO_ERROR;
+        if (collation.caseSensitive) {
+            ucol_setAttribute(ucoll, UCOL_STRENGTH, UCOL_DEFAULT_STRENGTH, &status);
+            
+            if (U_FAILURE(status)) {
+                Warn("Could not setup the collation strenth.\n %d", status);
+                return -1;
+            }
+        }
+        
         int str_len = (int)str.size;
         int substr_len = (int)substr.size;
         UChar target[str_len];
@@ -163,7 +175,7 @@ namespace litecore {
         u_uastrcpy(target, (const char*)str.buf);
         u_uastrcpy(pattern, (const char*)substr.buf);
 
-        UErrorCode status = U_ZERO_ERROR;
+        status = U_ZERO_ERROR;
         UStringSearch *search = NULL;
         search = usearch_openFromCollator(pattern, -1, target, -1, ctx.ucoll,
                                           NULL, &status);
