@@ -515,7 +515,26 @@ namespace litecore {
         auto str = stringSliceArgument(argv[0]);
         auto substr = stringSliceArgument(argv[1]);
         
-        sqlite3_result_int(ctx, ContainsUTF8(str, substr, col) == 0);
+        auto current = substr;
+        while(str.size > 0) {
+            size_t nextStrSize = NextUTF8Length(str);
+            size_t nextSubstrSize = NextUTF8Length(current);
+            if(!CompareUTF8({str.buf, nextStrSize}, {current.buf, nextSubstrSize}, col)) {
+                // The characters are a match, move to the next substring character
+                current.moveStart(nextSubstrSize);
+                if(current.size == 0) {
+                    // Found a match!
+                    sqlite3_result_int(ctx, 1);
+                    return;
+                }
+            } else {
+                current = substr;
+            }
+
+            str.moveStart(nextStrSize);
+        }
+
+        sqlite3_result_int(ctx, 0);
     }
 
     // length() returns the length in characters of a string.

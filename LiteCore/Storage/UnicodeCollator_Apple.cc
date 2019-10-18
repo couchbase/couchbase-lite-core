@@ -134,27 +134,6 @@ namespace litecore {
             throw SQLite::Exception(dbHandle, rc);
         return context;
     }
-
-    int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
-        CFCollationContext ctx(coll);
-        auto cfstr = CFStringCreateWithBytesNoCopy(nullptr, (const UInt8*)str.buf, str.size,
-                                                    kCFStringEncodingUTF8, false, kCFAllocatorNull);
-        if (_usuallyFalse(!cfstr))
-            return -1;
-        
-        auto cfsubstr = CFStringCreateWithBytesNoCopy(nullptr, (const UInt8*)substr.buf, substr.size,
-                                                    kCFStringEncodingUTF8, false, kCFAllocatorNull);
-        if (_usuallyFalse(!cfsubstr)) {
-            CFRelease(cfstr);
-            return -1;
-        }
-        
-        auto result = CFStringFind(cfstr, cfsubstr, ctx.flags).location;
-        
-        CFRelease(cfstr);
-        CFRelease(cfsubstr);
-        return int(result);
-    }
 }
 
 #endif // __APPLE__

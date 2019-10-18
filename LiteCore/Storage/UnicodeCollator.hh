@@ -104,7 +104,4 @@ namespace litecore {
     /** The value CompareASCII returns if it finds non-ASCII characters in either string. */
     static constexpr int kCompareASCIIGaveUp = 2;
 
-    /** why capitalized the first char? */
-    int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation&);
-
 }
