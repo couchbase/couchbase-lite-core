@@ -166,7 +166,7 @@ namespace litecore {
         UErrorCode status = U_ZERO_ERROR;
         if (coll.caseSensitive) {
             ucol_setAttribute(ctx.ucoll, UCOL_STRENGTH, UCOL_DEFAULT_STRENGTH, &status);
-            ucol_setAttribute(ucoll, UCOL_CASE_LEVEL, UCOL_OFF, &status);
+            ucol_setAttribute(ctx.ucoll, UCOL_CASE_LEVEL, UCOL_OFF, &status);
             
             if (U_FAILURE(status))
                 error::_throw(error::UnexpectedError, "Error seting collator strength (ICU error %d)", (int)status);
