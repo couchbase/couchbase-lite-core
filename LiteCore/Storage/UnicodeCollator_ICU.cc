@@ -158,13 +158,11 @@ namespace litecore {
         
         // Case level string search is done with the strength set to tertiary.
         UErrorCode status = U_ZERO_ERROR;
-        if (collation.caseSensitive) {
-            ucol_setAttribute(ucoll, UCOL_STRENGTH, UCOL_DEFAULT_STRENGTH, &status);
+        if (coll.caseSensitive) {
+            ucol_setAttribute(ctx.ucoll, UCOL_STRENGTH, UCOL_DEFAULT_STRENGTH, &status);
             
-            if (U_FAILURE(status)) {
-                Warn("Could not setup the collation strenth.\n %d", status);
-                return -1;
-            }
+            if (U_FAILURE(status))
+                error::_throw(error::UnexpectedError, "Error seting collator strength (ICU error %d)", (int)status);
         }
         
         int str_len = (int)str.size;
@@ -179,12 +177,11 @@ namespace litecore {
         UStringSearch *search = NULL;
         search = usearch_openFromCollator(pattern, -1, target, -1, ctx.ucoll,
                                           NULL, &status);
-        if (U_FAILURE(status)) {
-            Warn("Could not create a UStringSearch.\n %d", status);
-            return -1;
-        }
+        if (U_FAILURE(status))
+            error::_throw(error::UnexpectedError, "Error creating usearch (ICU error %d)", (int)status);
         
         int pos = 0;
+        status = U_ZERO_ERROR;
         for(pos = usearch_first(search, &status);
             U_SUCCESS(status) && pos != USEARCH_DONE;
             pos = usearch_next(search, &status))
@@ -192,9 +189,8 @@ namespace litecore {
             return 0;
         }
 
-        if (U_FAILURE(status)) {
-            Warn("Error searching for pattern. %d\n", status);
-        }
+        if (U_FAILURE(status))
+            error::_throw(error::UnexpectedError, "Error searching for pattern (ICU error %d)", (int)status);
 
         return -1;
     }
