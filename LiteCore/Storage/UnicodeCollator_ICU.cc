@@ -165,9 +165,11 @@ namespace litecore {
         // Case level string search is done with the strength set to tertiary.
         UErrorCode status = U_ZERO_ERROR;
         if (coll.caseSensitive) {
+            Warn(">>>> UCOL_TERTIARY %d; UCOL_DEFAULT_STRENGTH %d", UCOL_TERTIARY, UCOL_DEFAULT_STRENGTH);
             ucol_setAttribute(ctx.ucoll, UCOL_STRENGTH, UCOL_DEFAULT_STRENGTH, &status);
-            ucol_setAttribute(ctx.ucoll, UCOL_CASE_LEVEL, UCOL_OFF, &status);
-            
+            Warn(">>>> GET STRENGTH  %d; LEVEL %d",
+                 ucol_getAttribute(ctx.ucoll, UCOL_STRENGTH, &status),
+                 ucol_getAttribute(ctx.ucoll, UCOL_CASE_LEVEL, &status));
             if (U_FAILURE(status))
                 error::_throw(error::UnexpectedError, "Error seting collator strength (ICU error %d)", (int)status);
         }
