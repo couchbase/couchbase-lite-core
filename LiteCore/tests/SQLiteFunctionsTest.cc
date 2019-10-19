@@ -577,11 +577,11 @@ TEST_CASE("Unicode Contains collation", "[Query][Collation]") {
 
         // Case sensitive, diacritic insensitive:
         {"Aabcd"_sl, "ABC"_sl,      -1, true, false},
-        {"á"_sl, "a"_sl,            0,  true, false},
+        {"test á"_sl, "test a"_sl,  0,  true, false},
         {"testá"_sl, "test á"_sl,   -1, true, false},
         {"testábcd "_sl, "á"_sl,    0, true, false},
-        {"test á test"_sl, "test A"_sl,  -1, true, false},
-        {"testtest á"_sl, "test Á"_sl,  -1, true, false},
+        {"test á"_sl, "test A"_sl,  -1, true, false},
+        {"test á"_sl, "test Á"_sl,  -1, true, false},
 
         // Case and diacritic insensitive:
         {"abcdtest á"_sl, "test Á"_sl, 0,  false, false},
