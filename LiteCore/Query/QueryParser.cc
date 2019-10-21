@@ -420,9 +420,13 @@ namespace litecore {
                 // Determine the alias type:
                 auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
                 auto on = getCaseInsensitive(entry, "ON"_sl);
+                auto select = getCaseInsensitive(entry, "SELECT"_sl);
 
                 aliasType type;
-                if (first) {
+                if (select) {
+                    require(!unnest && !on, "a FROM item cannot be both a SELECT and a JOIN");
+                    type = kSelectAlias;
+                } else if (first) {
                     require(!on && !unnest, "first FROM item cannot have an ON or UNNEST clause");
                     type = kDBAlias;
                     _dbAlias = alias;
@@ -450,7 +454,7 @@ namespace litecore {
     void QueryParser::writeFromClause(const Value *from) {
         auto fromArray = (const Array*)from;    // already type-checked by parseFromClause
 
-        _sql << " FROM " << _tableName;
+        _sql << " FROM ";
 
         if (fromArray && !fromArray->empty()) {
             for (Array::iterator i(fromArray); i; ++i) {
@@ -462,7 +466,7 @@ namespace litecore {
                 switch (_aliases[alias]) {
                     case kDBAlias:
                         // The first item is the database alias:
-                        _sql << " AS \"" << alias << "\"";
+                        _sql << _tableName << " AS \"" << alias << "\"";
                         break;
                     case kUnnestVirtualTableAlias:
                         // UNNEST: Use fl_each() to make a virtual table:
@@ -511,13 +515,21 @@ namespace litecore {
                         }
                         break;
                     }
+                    case kSelectAlias: {
+                        auto select = requiredDict(getCaseInsensitive(entry, "SELECT"_sl),
+                                                   "SELECT in FROM item");
+                        _sql << "(";
+                        writeSelect(select);
+                        _sql << ") AS \"" << alias << "\"";
+                        break;
+                    }
                     default:
                         Assert(false, "Impossible alias type");
                         break;
                 }
             }
         } else {
-            _sql << " AS " << quoteTableName(_dbAlias);
+            _sql << _tableName << " AS " << quoteTableName(_dbAlias);
         }
 
         // Add joins to index tables (FTS, predictive):

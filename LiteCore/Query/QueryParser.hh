@@ -94,7 +94,8 @@ namespace litecore {
             kJoinAlias,
             kResultAlias,
             kUnnestVirtualTableAlias,
-            kUnnestTableAlias
+            kUnnestTableAlias,
+            kSelectAlias
         };
 
         QueryParser(const delegate &delegate, const std::string& tableName, const std::string& bodyColumnName)

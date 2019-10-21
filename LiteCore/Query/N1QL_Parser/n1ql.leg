@@ -75,7 +75,9 @@ from =
          )*                             { $$ = d;}
 
 dataSource =
-    n:databaseName (AS? a:databaseAlias )?  { $$ = dictWith("AS"_sl, a.isNull() ? n : a);}
+    '(' _ s:selectStatement _ ')' _         { s = dictWith("SELECT"_sl, s); }
+        AS a:databaseAlias                  { setAny(s, "AS"_sl, a); $$ = s; }
+  | n:databaseName (AS? a:databaseAlias )?  { $$ = dictWith("AS"_sl, a.isNull() ? n : a);}
 
 join =
     o:joinOperator _ s:dataSource _     { setAny(s, "JOIN"_sl, o); }

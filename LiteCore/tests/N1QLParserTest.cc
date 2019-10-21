@@ -185,6 +185,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
 TEST_CASE_METHOD(N1QLParserTest, "N1QL sub-queries", "[Query][N1QL][C]") {
     CHECK(translate("SELECT EXISTS (SELECT 6 IS 9)") == "{'WHAT':[['EXISTS',['SELECT',{'WHAT':[['IS',6,9]]}]]]}");
     CHECK(translate("SELECT a WHERE b IN (SELECT c WHERE d=e)") == "{'WHAT':[['.a']],'WHERE':['IN',['.b'],['SELECT',{'WHAT':[['.c']],'WHERE':['=',['.d'],['.e']]}]]}");
+    CHECK(translate("SELECT subq.b FROM (SELECT b WHERE c=d) AS subq WHERE subq.b>0") == "{'FROM':[{'AS':'subq','SELECT':{'WHAT':[['.b']],'WHERE':['=',['.c'],['.d']]}}],'WHAT':[['.subq.b']],'WHERE':['>',['.subq.b'],0]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {
