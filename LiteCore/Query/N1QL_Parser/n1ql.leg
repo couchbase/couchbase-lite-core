@@ -217,7 +217,7 @@ OP_PREC_1 = <'||'>                      { $$ = trim(yytext);}
 
 inExpression =
     x:expr5 i:IN_OR_NOT
-        (s:selectExpr                  &{false} # TODO: Support in LiteCore   { $$ = op(i, x, s); }
+        (s:selectExpr                   { $$ = op(i, x, s); }
         | p:parenExprs                  { $$ = op(i, x, insertAny(p, 0, string("[]"))); }
         )
 

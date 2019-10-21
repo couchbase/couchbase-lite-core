@@ -214,6 +214,12 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(QueryParserTest, "QueryParser nested SELECT", "[Query]") {
+    CHECK(parseWhere("['SELECT', {'WHAT':[['.a']],'WHERE':['IN',['.b'],['SELECT',{'WHAT':[['.c']],'WHERE':['=',['.d'],['.e']]}]]}]")
+          == "SELECT fl_result(fl_value(_doc.body, 'a')) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'b') IN (SELECT fl_result(fl_value(_doc.body, 'c')) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'd') = fl_value(_doc.body, 'e')) AND (_doc.flags & 1 = 0))) AND (_doc.flags & 1 = 0)");
+}
+
+
 TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT FTS", "[Query][FTS]") {
     CHECK(parseWhere("['SELECT', {\
                      WHERE: ['MATCH', 'bio', 'mobile']}]")

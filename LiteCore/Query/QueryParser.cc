@@ -820,13 +820,24 @@ namespace litecore {
     // Handles "x IN y" and "x NOT IN y" expressions
     void QueryParser::inOp(slice op, Array::iterator& operands) {
         bool notIn = (op != "IN"_sl);
+
+        slice operandName;
         auto arrayOperand = operands[1]->asArray();
-        if (arrayOperand && arrayOperand->count() > 0 && arrayOperand->get(0)->asString() == "[]"_sl) {
-            // RHS is a literal array, so use SQL "IN" syntax:
+        if (arrayOperand && arrayOperand->count() > 0)
+            operandName = arrayOperand->get(0)->asString();
+
+        if (operandName == "[]"_sl || operandName.caseEquivalent("SELECT"_sl)) {
+            // Can use SQL "IN" syntax:
             parseCollatableNode(operands[0]);
             _sql << ' ' << op << ' ';
-            Array::iterator arrayOperands(arrayOperand);
-            writeArgList(++arrayOperands);
+            if (operandName == "[]"_sl) {
+                // RHS is a literal array, so emit it in parentheses:
+                Array::iterator arrayOperands(arrayOperand);
+                writeArgList(++arrayOperands);
+            } else {
+                // RHS is a SELECT expression:
+                parseNode(arrayOperand);
+            }
 
         } else {
             // Otherwise generate a call to array_contains():
