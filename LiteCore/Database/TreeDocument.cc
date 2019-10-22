@@ -227,10 +227,7 @@ namespace c4Internal {
         }
 
         Retained<Doc> fleeceDoc() override {
-            slice body = selectedRev.body;
-            if (!body)
-                return nullptr;
-            return new Doc(_versionedDoc.scopeFor(body), body, Doc::kTrusted);
+            return _versionedDoc.fleeceDocFor(selectedRev.body);
         }
 
         bool save(unsigned maxRevTreeDepth =0) override {

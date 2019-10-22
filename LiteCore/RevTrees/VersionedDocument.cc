@@ -89,7 +89,8 @@ namespace litecore {
         // A Scope associates the SharedKeys with the Fleece data in the body, so Fleece Dict
         // accessors can decode the int keys.
         if (body)
-            _fleeceScopes.emplace_back(body, _store.dataFile().documentKeys(), this);
+            _fleeceScopes.push_back(new VersFleeceDoc(body, _store.dataFile().documentKeys(),
+                                                      this));
         return body;
     }
 
@@ -108,7 +109,7 @@ namespace litecore {
         const Scope *scope = fleece::impl::Scope::containing(value);
         if (!scope)
             return nullptr;
-        auto versScope = dynamic_cast<const VersDocScope*>(scope);
+        auto versScope = dynamic_cast<const VersFleeceDoc*>(scope);
         if (!versScope)
             return nullptr;
         return versScope->document;
@@ -122,12 +123,15 @@ namespace litecore {
         return addScope(RevTree::copyBody(body));
     }
 
-    const fleece::impl::Scope& VersionedDocument::scopeFor(slice s) const {
-        for (auto &scope : _fleeceScopes) {
-            if (scope.data().containsAddressRange(s))
-                return scope;
+    Retained<fleece::impl::Doc> VersionedDocument::fleeceDocFor(slice s) const {
+        if (!s)
+            return nullptr;
+        for (auto &doc : _fleeceScopes) {
+            if (doc->data().containsAddressRange(s))
+                return new Doc(doc, s, Doc::kTrusted);
         }
-        error::_throw(error::AssertionFailed, "VersionedDocument has no scope for slice");
+        error::_throw(error::AssertionFailed,
+                      "VersionedDocument has no fleece::Doc containing slice");
     }
 
 

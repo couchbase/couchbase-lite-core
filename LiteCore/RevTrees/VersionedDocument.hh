@@ -21,7 +21,7 @@
 #include "Record.hh"
 #include "Doc.hh"
 #include <memory>
-#include <deque>
+#include <vector>
 
 namespace fleece { namespace impl {
     class Scope;
@@ -66,7 +66,7 @@ namespace litecore {
 
         bool updateMeta();
 
-        const fleece::impl::Scope& scopeFor(slice) const;
+        fleece::Retained<fleece::impl::Doc> fleeceDocFor(slice) const;
 
         /** Given a Fleece Value, finds the VersionedDocument it belongs to. */
         static VersionedDocument* containing(const fleece::impl::Value*);
@@ -85,11 +85,11 @@ namespace litecore {
 #endif
 
     private:
-        class VersDocScope : public fleece::impl::Scope {
+        class VersFleeceDoc : public fleece::impl::Doc {
         public:
-            VersDocScope(const alloc_slice &fleeceData, fleece::impl::SharedKeys* sk,
+            VersFleeceDoc(const alloc_slice &fleeceData, fleece::impl::SharedKeys* sk,
                          VersionedDocument *document_)
-            :fleece::impl::Scope(fleeceData, sk)
+            :fleece::impl::Doc(fleeceData, Doc::kDontParse, sk)
             ,document(document_)
             { }
 
@@ -102,6 +102,6 @@ namespace litecore {
 
         KeyStore&       _store;
         Record          _rec;
-        std::deque<VersDocScope> _fleeceScopes;
+        std::vector<Retained<VersFleeceDoc>> _fleeceScopes;
     };
 }
