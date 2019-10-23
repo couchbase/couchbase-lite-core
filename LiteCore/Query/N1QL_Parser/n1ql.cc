@@ -4285,7 +4285,7 @@ YY_PARSE(yycontext *) YYRELEASE(yycontext *yyctx)
 
 
 static int n1ql_input(yycontext *ctx, char *buf, size_t max_size) {
-    ctx->stream->get(buf, max_size+1, -1);
+    ctx->stream->get(buf, max_size);
     return (int) ctx->stream->gcount();
 }
 
