@@ -83,7 +83,7 @@ public:
         auto e = c4query_run(query, &options, nullslice, &error);
         CHECK(!e);
         char errbuf[256];
-        C4Log("Error is %s", c4error_getDescriptionC(error, errbuf, sizeof(errbuf)))
+        C4Log("Error is %s", c4error_getDescriptionC(error, errbuf, sizeof(errbuf)));
         CHECK(error.domain == SQLiteDomain);
         CHECK(error.code != 0);
         alloc_slice msg = c4error_getMessage(error);

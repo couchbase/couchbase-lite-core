@@ -80,10 +80,11 @@ public:
     }
 
 
-    C4Cert* useServerTLSWithTemporaryKey() {
+    alloc_slice useServerTLSWithTemporaryKey() {
         if (!sServerTemporaryIdentity.cert)
             sServerTemporaryIdentity = createIdentity(false, kC4CertUsage_TLSServer, "LiteCore Listener Test");
-        return useServerIdentity(sServerTemporaryIdentity);
+        useServerIdentity(sServerTemporaryIdentity);
+        return alloc_slice(c4cert_copyData(sServerTemporaryIdentity.cert, false));
     }
 
 
@@ -96,7 +97,7 @@ public:
 
     Identity createIdentity(bool persistent, C4CertUsage usage, const char *commonName,
                             const Identity *signingIdentity =nullptr, bool isCA =false) {
-        C4Log("Generating %s TLS key-pair and cert...", (persistent ? "persistent" : "temporary"))
+        C4Log("Generating %s TLS key-pair and cert...", (persistent ? "persistent" : "temporary"));
         C4Error error;
         Identity id;
         id.key = c4keypair_generate(kC4RSA, 2048, persistent, &error);

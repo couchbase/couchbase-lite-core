@@ -357,7 +357,7 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C
 
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][Listener][TLS][C]") {
-    pinnedCert = c4cert_retain(useServerTLSWithTemporaryKey());
+    pinnedCert = useServerTLSWithTemporaryKey();
     testRootLevel();
 }
 
@@ -371,7 +371,7 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][List
 
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST client cert", "[REST][Listener][TLS][C]") {
-    pinnedCert = c4cert_retain(useServerTLSWithTemporaryKey());
+    pinnedCert = useServerTLSWithTemporaryKey();
     useClientTLSWithTemporaryKey();
     testRootLevel();
 }
