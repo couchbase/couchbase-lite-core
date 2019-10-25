@@ -355,6 +355,10 @@ public:
             r->setAuthHeader(_authHeader);
         if (_proxy)
             r->setProxy(*_proxy);
+#ifdef COUCHBASE_ENTERPRISE
+        if (identityCert)
+            r->setIdentity(identityCert, identityKey);
+#endif
 
         if (r->run()) {
             *outStatus = r->status();
