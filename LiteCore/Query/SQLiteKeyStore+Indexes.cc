@@ -53,13 +53,13 @@ namespace litecore {
      */
 
     static void validateIndexName(slice name);
-    static pair<alloc_slice, const Array*> parseIndexExpr(slice expression, KeyStore::IndexType);
+    static pair<Retained<Doc>, const Array*> parseIndexExpr(slice expression, KeyStore::IndexType);
 
 
     bool SQLiteKeyStore::createIndex(const IndexSpec &spec,
                                      const IndexOptions *options) {
         validateIndexName(spec.name);
-        auto [expressionFleece, params] = parseIndexExpr(spec.expressionJSON, spec.type);
+        auto [doc, params] = parseIndexExpr(spec.expressionJSON, spec.type);
 
         Stopwatch st;
         Transaction t(db());
@@ -161,19 +161,19 @@ namespace litecore {
 
 
     // Parses the JSON index-spec expression into an Array:
-    static pair<alloc_slice, const Array*> parseIndexExpr(slice expression,
+    static pair<Retained<Doc>, const Array*> parseIndexExpr(slice expression,
                                                           KeyStore::IndexType type)
     {
+        Retained<Doc> doc;
         alloc_slice expressionFleece;
         const Array *params = nullptr;
         try {
-            Retained<Doc> doc = Doc::fromJSON(expression);
-            expressionFleece = doc->allocedData();
+            doc = Doc::fromJSON(expression);
             params = doc->asArray();
         } catch (const FleeceException &) { }
         if (!params || params->count() == 0)
             error::_throw(error::InvalidQuery, "JSON syntax error, or not an array");
-        return {expressionFleece, params};
+        return {doc, params};
     }
 
 }
