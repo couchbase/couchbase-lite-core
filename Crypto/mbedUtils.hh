@@ -34,9 +34,23 @@ namespace litecore { namespace crypto {
     // Utility wrapper for mbedTLS functions that write DER to a buffer
     fleece::alloc_slice allocDER(size_t maxSize, function_ref<int(uint8_t*,size_t)> writer);
 
-    using ParseFn = int (*)(void*, const uint8_t*, size_t);
+    using ParseCallback = function_ref<int(const uint8_t*, size_t)>;
 
-    void parsePEMorDER(slice data, const char *what, void *context, ParseFn);
+    // Invokes the callback with the given data. If the data is in PEM format, it will be
+    // null-terminated when passed to the callback (mbedTLS expects this.)
+    // If the callback returns nonzero, it's thrown as an mbedTLS error.
+    void parsePEMorDER(slice data, const char *what, ParseCallback);
+
+    // alternative form that takes a C function directly, like `mbedtls_pk_parse_public_key`.
+    template <typename CTX>
+    void parsePEMorDER(slice data, const char *what, CTX *context,
+                       int (*cfn)(CTX*, const uint8_t*, size_t))
+    {
+        parsePEMorDER(data, what, [=](const uint8_t* bytes, size_t size) {
+            return cfn(context, bytes, size);
+        });
+    }
+
 
     fleece::alloc_slice convertToPEM(const slice &derData, const char *name NONNULL);
 

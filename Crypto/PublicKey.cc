@@ -76,12 +76,17 @@ namespace litecore { namespace crypto {
 
 
     PublicKey::PublicKey(slice data) {
-        parsePEMorDER(data, "public key", context(), (ParseFn)&mbedtls_pk_parse_public_key);
+        parsePEMorDER(data, "public key", context(), &mbedtls_pk_parse_public_key);
     }
 
 
     PrivateKey::PrivateKey(slice data, slice password) {
-        parsePEMorDER(data, "private key", context(), (ParseFn)&mbedtls_pk_parse_key);
+        if (password.size == 0)
+            password = nullslice; // interpret empty password as 'no password'
+        parsePEMorDER(data, "private key", [&](const uint8_t* bytes, size_t size) {
+            return mbedtls_pk_parse_key(context(), bytes, size,
+                                        (const uint8_t*)password.buf, password.size);
+        });
     }
 
 

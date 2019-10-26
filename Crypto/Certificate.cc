@@ -146,7 +146,7 @@ namespace litecore { namespace crypto {
     :_cert((mbedtls_x509_crt*)mbedtls_calloc(1, sizeof(mbedtls_x509_crt)))
     {
         mbedtls_x509_crt_init(_cert);
-        parsePEMorDER(data, "certificate", context(), (ParseFn)&mbedtls_x509_crt_parse);
+        parsePEMorDER(data, "certificate", context(), &mbedtls_x509_crt_parse);
     }
 
 
@@ -393,7 +393,7 @@ namespace litecore { namespace crypto {
     CertSigningRequest::CertSigningRequest(slice data)
     :CertSigningRequest()
     {
-        parsePEMorDER(data, "certificate request", context(), (ParseFn)&mbedtls_x509_csr_parse);
+        parsePEMorDER(data, "certificate request", context(), &mbedtls_x509_csr_parse);
     }
 
 

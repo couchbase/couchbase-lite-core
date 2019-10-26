@@ -240,12 +240,15 @@ extern "C" {
     /** Loads a public key from its data.
         The resulting C4KeyPair will not have a private key.
         \note You are responsible for releasing the returned reference. */
-    C4KeyPair* c4keypair_fromPublicKeyData(C4Slice publicKeyData) C4API;
+    C4KeyPair* c4keypair_fromPublicKeyData(C4Slice publicKeyData,
+                                           C4Error *outError) C4API;
 
     /** Loads a private key from its data.
         The resulting C4KeyPair will have both a public and private key.
         \note You are responsible for releasing the returned reference. */
-    C4KeyPair* c4keypair_fromPrivateKeyData(C4Slice privateKeyData) C4API;
+    C4KeyPair* c4keypair_fromPrivateKeyData(C4Slice privateKeyData,
+                                            C4Slice passwordOrNull,
+                                            C4Error *outError) C4API;
 
     /** Returns true if the C4KeyPair has a private as well as a public key. */
     bool c4keypair_hasPrivateKey(C4KeyPair* C4NONNULL) C4API;

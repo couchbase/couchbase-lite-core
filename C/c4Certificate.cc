@@ -101,7 +101,7 @@ static const slice kAttributeNames[] = {
     "pseudonym"_sl,
     "GN"_sl,
     "SN"_sl,
-    "emailAddress"_sl,
+    "emailAddress"_sl, //FIXME: should be in a Subject Alternative Name instead: https://tools.ietf.org/html/rfc5280#section-4.2.1.6
     "O"_sl,
     "OU"_sl,
     "postalAddress"_sl,
@@ -318,16 +318,17 @@ C4KeyPair* c4keypair_generate(C4KeyPairAlgorithm algorithm,
 }
 
 
-C4KeyPair* c4keypair_fromPublicKeyData(C4Slice publicKeyData) C4API {
-    return tryCatch<C4KeyPair*>(nullptr, [&]() {
+C4KeyPair* c4keypair_fromPublicKeyData(C4Slice publicKeyData, C4Error *outError) C4API {
+    return tryCatch<C4KeyPair*>(outError, [&]() {
         return retainedExternal(new PublicKey(publicKeyData));
     });
 }
 
 
-C4KeyPair* c4keypair_fromPrivateKeyData(C4Slice privateKeyData) C4API {
-    return tryCatch<C4KeyPair*>(nullptr, [&]() {
-        return retainedExternal(new PrivateKey(privateKeyData));
+C4KeyPair* c4keypair_fromPrivateKeyData(C4Slice data, C4Slice password, C4Error *outError) C4API
+{
+    return tryCatch<C4KeyPair*>(outError, [&]() {
+        return retainedExternal(new PrivateKey(data, password));
     });
 }
 
