@@ -293,7 +293,7 @@ namespace litecore { namespace net {
         regex authEx(R"((\w+)\s+(\w+)=((\w+)|"([^"]+)))");     // e.g. Basic realm="Foobar"
         smatch m;
         if (!regex_search(authHeader, m, authEx))
-            return failure(WebSocketDomain, 400);
+            return failure();
         AuthChallenge challenge((forProxy ? *_proxyAddress : _address), forProxy);
         challenge.type = m[1].str();
         challenge.key = m[2].str();
@@ -377,7 +377,21 @@ namespace litecore { namespace net {
         if (!response)
             return failure(socket);
         C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Got response:\n%s", formatHTTP(response).c_str());
-        return receivedResponse(response);
+
+        Disposition disposition = receivedResponse(response);
+        if (disposition == kFailure && _error.domain == WebSocketDomain
+                                    && _error.code == int(_httpStatus)) {
+            // Look for a more detailed HTTP error message in the response body:
+            if (_responseHeaders["Content-Type"_sl].hasPrefix("application/json"_sl)) {
+                alloc_slice responseBody;
+                if (socket.readHTTPBody(_responseHeaders, responseBody)) {
+                    Doc json = Doc::fromJSON(responseBody);
+                    if (slice reason = json["reason"].asString(); reason)
+                        _error = c4error_make(WebSocketDomain, int(_httpStatus), reason);
+                }
+            }
+        }
+        return disposition;
     }
 
 
