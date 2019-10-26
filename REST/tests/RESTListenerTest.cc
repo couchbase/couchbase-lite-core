@@ -27,14 +27,6 @@ using namespace litecore::net;
 using namespace litecore::REST;
 
 
-#ifdef COUCHBASE_ENTERPRISE
-Identity ListenerHarness::sServerTemporaryIdentity,
-         ListenerHarness::sServerPersistentIdentity,
-         ListenerHarness::sClientTemporaryIdentity,
-         ListenerHarness::sClientPersistentIdentity;
-#endif
-
-
 //#ifdef COUCHBASE_ENTERPRISE
 
 
@@ -364,7 +356,7 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][Listener][TLS][C]")
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][Listener][TLS][C]") {
-    pinnedCert = c4cert_retain(useServerTLSWithPersistentKey());
+    pinnedCert = useServerTLSWithPersistentKey();
     testRootLevel();
 }
 #endif
@@ -378,10 +370,10 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST client cert", "[REST][Listener][TLS][C]")
 
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST cert chain", "[REST][Listener][TLS][C]") {
-    Identity ca = createIdentity(false, kC4CertUsage_TLS_CA, "Test CA", nullptr, true);
-    useServerIdentity(createIdentity(false, kC4CertUsage_TLSServer, "localhost", &ca));
+    Identity ca = CertHelper::createIdentity(false, kC4CertUsage_TLS_CA, "Test CA", nullptr, nullptr, true);
+    useServerIdentity(CertHelper::createIdentity(false, kC4CertUsage_TLSServer, "localhost", nullptr, &ca));
     auto summary = alloc_slice(c4cert_summary(serverIdentity.cert));
-    useClientIdentity(createIdentity(false, kC4CertUsage_TLSClient, "Test Client", &ca));
+    useClientIdentity(CertHelper::createIdentity(false, kC4CertUsage_TLSClient, "Test Client", nullptr, &ca));
     setListenerRootClientCerts(ca.cert);
     rootCerts = c4cert_retain(ca.cert);
     testRootLevel();

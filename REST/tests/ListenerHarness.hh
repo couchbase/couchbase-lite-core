@@ -7,23 +7,10 @@
 //
 
 #pragma once
-#include "c4Listener.h"
-#include "c4Certificate.h"
-#include "c4Private.h"
-#include "c4Test.hh"
-
-#include "c4.hh"
-#include "StringUtil.hh"
-
+#include "CertHelper.hh"
 
 using namespace std;
 using namespace fleece;
-
-
-struct Identity {
-    c4::ref<C4Cert> cert = nullptr;
-    c4::ref<C4KeyPair> key = nullptr;
-};
 
 
 class ListenerHarness {
@@ -81,60 +68,26 @@ public:
 
 
     alloc_slice useServerTLSWithTemporaryKey() {
-        if (!sServerTemporaryIdentity.cert)
-            sServerTemporaryIdentity = createIdentity(false, kC4CertUsage_TLSServer, "LiteCore Listener Test");
-        useServerIdentity(sServerTemporaryIdentity);
-        return alloc_slice(c4cert_copyData(sServerTemporaryIdentity.cert, false));
+        auto cert = useServerIdentity( CertHelper::instance().temporaryServerIdentity );
+        return alloc_slice(c4cert_copyData(cert, false));
     }
 
 
     C4Cert* useClientTLSWithTemporaryKey() {
-        if (!sClientTemporaryIdentity.cert)
-            sClientTemporaryIdentity = createIdentity(false, kC4CertUsage_TLSClient, "LiteCore Client Test");
-        return useClientIdentity(sClientTemporaryIdentity);
-    }
-
-
-    Identity createIdentity(bool persistent, C4CertUsage usage, const char *commonName,
-                            const Identity *signingIdentity =nullptr, bool isCA =false) {
-        C4Log("Generating %s TLS key-pair and cert...", (persistent ? "persistent" : "temporary"));
-        C4Error error;
-        Identity id;
-        id.key = c4keypair_generate(kC4RSA, 2048, persistent, &error);
-        REQUIRE(id.key);
-
-        const C4CertNameComponent subjectName[3] = {
-            {kC4Cert_CommonName,       slice(commonName)},
-            {kC4Cert_Organization,     "Couchbase"_sl},
-            {kC4Cert_OrganizationUnit, "Mobile"_sl} };
-        c4::ref<C4Cert> csr = c4cert_createRequest(subjectName, 3, usage, id.key, &error);
-        REQUIRE(csr);
-
-        if (!signingIdentity)
-            signingIdentity = &id;
-
-        C4CertIssuerParameters issuerParams = kDefaultCertIssuerParameters;
-        issuerParams.validityInSeconds = 3600;
-        issuerParams.isCA = isCA;
-        id.cert = c4cert_signRequest(csr, &issuerParams, signingIdentity->key, signingIdentity->cert, &error);
-        REQUIRE(id.cert);
-        return id;
+        return useServerIdentity( CertHelper::instance().temporaryClientIdentity );
     }
 
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    C4Cert* useServerTLSWithPersistentKey() {
+    alloc_slice useServerTLSWithPersistentKey() {
         C4Log("Using server TLS w/persistent key for this test");
-        if (!sServerPersistentIdentity)
-            sServerPersistentIdentity = createIdentity(true, kC4CertUsage_TLSServer, "ListenerHarness");
-        return useServerIdentity(sServerPersistentIdentity);
+        auto cert = useServerIdentity( CertHelper::instance().persistentServerIdentity() );
+        return alloc_slice(c4cert_copyData(cert, false));
     }
 
 
     C4Cert* useClientTLSWithPersistentKey() {
-        if (!sClientPersistentIdentity)
-            sClientPersistentIdentity = createIdentity(true, kC4CertUsage_TLSClient, "ListenerHarness");
-        return useClientIdentity(sClientPersistentIdentity);
+        return useClientIdentity(CertHelper::instance().persistentClientIdentity());
     }
 #endif
 #endif // COUCHBASE_ENTERPRISE
@@ -158,11 +111,6 @@ public:
 #endif
 
 private:
-#ifdef COUCHBASE_ENTERPRISE
-    static Identity sServerTemporaryIdentity, sServerPersistentIdentity,
-                    sClientTemporaryIdentity, sClientPersistentIdentity;
-#endif
-    
     c4::ref<C4Listener> listener;
 
     C4TLSConfig tlsConfig = { };

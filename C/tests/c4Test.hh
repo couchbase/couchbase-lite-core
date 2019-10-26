@@ -147,6 +147,7 @@ public:
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
+    static std::string sReplicatorFixturesDir;  // directory where replicator test files live
     static const std::string kDatabaseName;
 
     C4Test(int testOption);
@@ -203,7 +204,7 @@ public:
 
     std::string listSharedKeys(std::string delimiter =", ");
 
-    fleece::alloc_slice readFile(std::string path); // caller must free buf when done
+    static fleece::alloc_slice readFile(std::string path);
     unsigned importJSONFile(std::string path,
                             std::string idPrefix ="",
                             double timeout =15.0,

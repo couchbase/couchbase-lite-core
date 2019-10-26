@@ -789,6 +789,7 @@
 		27098ABB217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+FTSIndexes.cc"; sourceTree = "<group>"; };
 		27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+ArrayIndexes.cc"; sourceTree = "<group>"; };
 		27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+PredictiveIndexes.cc"; sourceTree = "<group>"; };
+		2709D3A52363651B00462AF7 /* CertHelper.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CertHelper.hh; sourceTree = "<group>"; };
 		270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTSyncListener_stub.cc; sourceTree = "<group>"; };
 		270BEE29206483C0005E8BE8 /* Listener */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Listener; path = "../../../couchbase-lite-core-EE/Listener"; sourceTree = "<group>"; };
 		270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "RESTListener+Replicate.cc"; sourceTree = "<group>"; };
@@ -2058,6 +2059,7 @@
 		276E020F1EA9712700FEFE8A /* tests */ = {
 			isa = PBXGroup;
 			children = (
+				2709D3A52363651B00462AF7 /* CertHelper.hh */,
 				27047CE3233AE8DE009D1CE9 /* ListenerHarness.hh */,
 				27E19D652316EDEA00E031F8 /* RESTClientTest.cc */,
 				276E02101EA9717200FEFE8A /* RESTListenerTest.cc */,

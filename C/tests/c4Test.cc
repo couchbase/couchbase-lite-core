@@ -157,8 +157,10 @@ void CheckError(C4Error error,
 
 #if defined(CMAKE) && defined(_MSC_VER)
 string C4Test::sFixturesDir = "../C/tests/data/";
+string C4Test::sReplicatorFixturesDir = "../Replicator/tests/data/";
 #else
 string C4Test::sFixturesDir = "C/tests/data/";
+string C4Test::sReplicatorFixturesDir = "Replicator/tests/data/";
 #endif
 
 const string C4Test::kDatabaseName = "cbl_core_test";

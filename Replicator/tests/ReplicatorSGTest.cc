@@ -17,7 +17,7 @@
 //
 
 #include "ReplicatorAPITest.hh"
-#include "ListenerHarness.hh"
+#include "CertHelper.hh"
 #include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
@@ -56,18 +56,21 @@ using namespace fleece;
  */
 
 
-class ReplicatorSGTest : public ReplicatorAPITest, private ListenerHarness {
+class ReplicatorSGTest : public ReplicatorAPITest {
 public:
-    ReplicatorSGTest()
-    :ReplicatorAPITest()
-    ,ListenerHarness({})
-    {
+    ReplicatorSGTest() {
         if (getenv("USE_CLIENT_CERT")) {
 #ifdef COUCHBASE_ENTERPRISE
             REQUIRE(Address::isSecure(_address));
-            useClientTLSWithTemporaryKey();
-            identityCert = clientIdentity.cert;
-            identityKey  = clientIdentity.key;
+            Identity ca = CertHelper::readIdentity(sReplicatorFixturesDir + "ca_cert.pem",
+                                                   sReplicatorFixturesDir + "ca_key.pem",
+                                                   "Couchbase");
+            // The Common Name in the client cert has to be the email address of a user account
+            // in Sync Gateway, or you only get guest access.
+            Identity id = CertHelper::createIdentity(false, kC4CertUsage_TLSClient,
+                                                     "Pupshaw", "pupshaw@couchbase.org", &ca);
+            identityCert = id.cert;
+            identityKey  = id.key;
 #else
             FAIL("USE_CLIENT_CERT only works with EE builds");
 #endif
