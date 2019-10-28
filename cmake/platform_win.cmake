@@ -42,9 +42,6 @@ function(set_support_source)
 endfunction()
 
 function(setup_globals)
-    # Use mbedcrypto for hashing, random numbers, etc
-    add_definitions(-D_CRYPTO_MBEDTLS)
-    set(LITECORE_CRYPTO_LIB mbedcrypto CACHE INTERNAL "")
     set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
     set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")

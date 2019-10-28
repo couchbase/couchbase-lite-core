@@ -29,3 +29,4 @@ make
 # Copy the resulting static libraries to the Xcode build dir where the linker will find them:
 mkdir -p "$TARGET_BUILD_DIR"
 cp -pv library/libmbed*.a "$TARGET_BUILD_DIR/"
+cp -pv crypto/library/libmbed*.a "$TARGET_BUILD_DIR/"

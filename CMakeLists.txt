@@ -113,22 +113,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LITECORE_CXX_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LITECORE_SHARED_LINKER_FLAGS}")
 set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LITECORE_STATIC_LINKER_FLAGS}")
 set(SQLITE3_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/vendor/SQLiteCpp/sqlite3) # For SQLite3_UnicodeSN
-option(LWS_WITHOUT_SERVER "" OFF)
-option(LWS_WITH_HTTP2 "" OFF)
-option(LWS_WITH_LEJP OFF)
-option(LWS_WITH_STRUCT_JSON OFF)
-option(LWS_WITH_MBEDTLS "" ON)
-option(LWS_WITHOUT_TESTAPPS "" ON)
-option(LWS_WITHOUT_TEST_CLIENT "" ON)
-option(LWS_WITHOUT_TEST_SERVER "" ON)
-option(LWS_WITHOUT_TEST_SERVER_EXTPOLL "" ON)
-option(LWS_WITH_SHARED "" OFF)
-option(LWS_WITH_EXPORT_LWSTARGETS "" OFF)
-set(LWS_MBEDTLS_INCLUDE_DIRS vendor/mbedtls/include)
-set(LWS_MBEDTLS_LIBRARIES)
-list(APPEND LWS_MBEDTLS_LIBRARIES mbedtls)
-list(APPEND LWS_MBEDTLS_LIBRARIES mbedx509)
-list(APPEND LWS_MBEDTLS_LIBRARIES mbedcrypto)
 
 add_subdirectory(REST                       EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
@@ -174,6 +158,7 @@ target_include_directories(
     Crypto
     Network
     vendor/mbedtls/include
+    vendor/mbedtls/crypto/include
     C
     C/include 
     vendor/BLIP-Cpp/include/blip_cpp
@@ -195,6 +180,7 @@ set(
     Networking/HTTPLogic.cc
     Networking/TCPSocket.cc
     Networking/BuiltInWebSocket.cc
+    Networking/TLSContext.cc
     REST/netUtils.cc
     vendor/sockpp/src/acceptor.cpp
     vendor/sockpp/src/connector.cpp
@@ -228,6 +214,7 @@ target_include_directories(
     vendor/fleece/API
     vendor/sockpp/include
     vendor/mbedtls/include
+    vendor/mbedtls/crypto/include
 )
 
 ### LITECORE LIBRARY:
@@ -289,6 +276,7 @@ target_include_directories(
     vendor/SQLiteCpp/include
     vendor/sqlite3-unicodesn
     vendor/mbedtls/include
+    vendor/mbedtls/crypto/include
     vendor/sockpp/include
 )
 
@@ -306,7 +294,6 @@ else()
 endif()
 
 # Library flags defined in platform_linux
-# LITECORE_CRYPTO_LIB defined in platform CMake files
 set(
     LITECORE_LIBRARIES_PRIVATE  
     ${WHOLE_LIBRARY_FLAG}
@@ -316,7 +303,7 @@ set(
     Support
     SQLite3_UnicodeSN
     BLIPStatic
-    ${LITECORE_CRYPTO_LIB}
+    mbedcrypto
 )
 
 target_include_directories(

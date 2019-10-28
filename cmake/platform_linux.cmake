@@ -3,9 +3,6 @@ include("${CMAKE_CURRENT_LIST_DIR}/platform_unix.cmake")
 function(setup_globals_linux)
     setup_globals_unix()
 
-    set(LITECORE_CRYPTO_LIB mbedcrypto CACHE INTERNAL "")
-    add_definitions(-D_CRYPTO_MBEDTLS)
-
     set(WHOLE_LIBRARY_FLAG "-Wl,--whole-archive" CACHE INTERNAL "")
     set(NO_WHOLE_LIBRARY_FLAG "-Wl,--no-whole-archive" CACHE INTERNAL "")
 endfunction()

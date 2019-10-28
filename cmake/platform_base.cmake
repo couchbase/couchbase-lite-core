@@ -16,6 +16,7 @@ function(set_litecore_source_base)
         ${BASE_SSS_RESULT} 
         C/c4Base.cc
         C/c4BlobStore.cc
+        C/c4Certificate.cc
         C/c4Database.cc
         C/c4DocEnumerator.cc
         C/c4DocExpiration.cc
@@ -66,6 +67,9 @@ function(set_litecore_source_base)
         LiteCore/Storage/SQLiteEnumerator.cc
         LiteCore/Storage/SQLiteKeyStore.cc
         LiteCore/Storage/UnicodeCollator.cc
+        Crypto/Certificate.cc
+        Crypto/mbedUtils.cc
+        Crypto/PublicKey.cc
         Crypto/SecureDigest.cc
         Crypto/SecureSymmetricCrypto.cc
         Networking/Address.cc
