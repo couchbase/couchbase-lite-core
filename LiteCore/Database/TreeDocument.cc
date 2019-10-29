@@ -31,7 +31,7 @@
 #include "varint.hh"
 #include <ctime>
 #include <algorithm>
-#include <zlib.h>
+#include "crc32c.h"
 
 namespace c4Internal {
 
@@ -473,15 +473,15 @@ namespace c4Internal {
 
 
         static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
-            uLong crc = 0;
+            uint32_t crc = 0;
             slice digest;
             // Get CRC32 of (length-prefixed) parent rev ID, deletion flag, and revision body:
             uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-            crc = crc32(crc, &revLen, 1);
-            crc = crc32(crc, (const Bytef *)parentRevID.buf, revLen);
+            crc = crc32c(&revLen, 1, crc);
+            crc = crc32c((const uint8_t *)parentRevID.buf, revLen, crc);
             uint8_t delByte = deleted;
-            crc = crc32(crc, &delByte, 1);
-            crc = crc32(crc, (const Bytef *)body.buf, (uInt)body.size);
+            crc = crc32c(&delByte, 1, crc);
+            crc = crc32c((const uint8_t *)body.buf, body.size, crc);
             digest = slice((uint8_t *)&crc, 4);
 
             // Derive new rev's generation #:
