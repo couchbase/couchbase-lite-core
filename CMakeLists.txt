@@ -213,6 +213,8 @@ target_include_directories(
     C/include
     vendor/BLIP-Cpp/include/blip_cpp
     vendor/BLIP-Cpp/src/util
+    vendor/BLIP-Cpp/vendor/zlib
+    "${CMAKE_CURRENT_BINARY_DIR}/vendor/BLIP-Cpp/vendor/zlib"
     vendor/SQLiteCpp/sqlite3
     vendor/SQLiteCpp/include
     vendor/sqlite3-unicodesn
