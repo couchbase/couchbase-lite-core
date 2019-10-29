@@ -58,7 +58,7 @@ extern "C" {
     extern const C4CertIssuerParameters kDefaultCertIssuerParameters;
 
 
-    /** Standard Distinguished Name attributes, from RFC 4519.
+    /** Certificate subject name attributes, from RFC 4519.
         Only the CommonName is required; it's used as the visible name of the certificate.
         If the cert is to be used for a TLS server, the CommonName must match its DNS name. */
     typedef C4_ENUM(uint8_t, C4CertNameAttributeID) {
@@ -66,7 +66,6 @@ extern "C" {
         kC4Cert_Pseudonym,         // "plainjane837"
         kC4Cert_GivenName,         // "Jane"
         kC4Cert_Surname,           // "Doe"
-        kC4Cert_EmailAddress,      // "jane@example.com"
         kC4Cert_Organization,      // "Example Corp."
         kC4Cert_OrganizationUnit,  // "Marketing"
         kC4Cert_PostalAddress,     // "123 Example Blvd #2A"
@@ -74,6 +73,10 @@ extern "C" {
         kC4Cert_PostalCode,        // "02134"
         kC4Cert_StateOrProvince,   // "Massachusetts" (or "Quebec", ...)
         kC4Cert_Country,           // "us" (2-letter ISO country code)
+        // These are Subject Alternative Name attributes:
+        kC4Cert_EmailAddress,      // "jane@example.com"
+        kC4Cert_Hostname,          // "www.example.com"
+        kC4Cert_URL,               // "https://example.com/jane"
     };
 
     /** A component of an X.509 "Relative Distinguished Name". */
@@ -127,6 +130,9 @@ extern "C" {
     /** Returns one component of a cert's subject name, given the attribute name.
         \note You are responsible for releasing the returned data. */
     C4StringResult c4cert_subjectNameComponent(C4Cert* C4NONNULL, C4CertNameAttributeID) C4API;
+
+    /** Returns the usage flags of a cert. */
+    C4CertUsage c4cert_usages(C4Cert* C4NONNULL) C4API;
 
     /** Returns a human-readable, multi-line string describing the certificate in detail.
         \note You are responsible for releasing the returned data. */

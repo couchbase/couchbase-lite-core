@@ -96,19 +96,23 @@ const C4CertIssuerParameters kDefaultCertIssuerParameters = {
 #pragma mark - C4CERT:
 
 
-static const slice kAttributeNames[] = {
-    "CN"_sl,
-    "pseudonym"_sl,
-    "GN"_sl,
-    "SN"_sl,
-    "emailAddress"_sl, //FIXME: should be in a Subject Alternative Name instead: https://tools.ietf.org/html/rfc5280#section-4.2.1.6
-    "O"_sl,
-    "OU"_sl,
-    "postalAddress"_sl,
-    "locality"_sl,
-    "postalCode"_sl,
-    "ST"_sl,
-    "C"_sl,
+static const pair<slice, SANTag> kAttributeNames[] = {
+    // These go in the DistinguishedName:
+    {"CN"_sl,           SANTag::kOtherName},
+    {"pseudonym"_sl,    SANTag::kOtherName},
+    {"GN"_sl,           SANTag::kOtherName},
+    {"SN"_sl,           SANTag::kOtherName},
+    {"O"_sl,            SANTag::kOtherName},
+    {"OU"_sl,           SANTag::kOtherName},
+    {"postalAddress"_sl,SANTag::kOtherName},
+    {"locality"_sl,     SANTag::kOtherName},
+    {"postalCode"_sl,   SANTag::kOtherName},
+    {"ST"_sl,           SANTag::kOtherName},
+    {"C"_sl,            SANTag::kOtherName},
+    // These go in the SubjectAlternativeName:
+    {nullslice,         SANTag::kRFC822Name},
+    {nullslice,         SANTag::kDNSName},
+    {nullslice,         SANTag::kURIName},
 };
 
 
@@ -119,13 +123,18 @@ C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
                              C4Error *outError) C4API
 {
     return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
-        vector<DistinguishedName::Entry> name(nameCount+1);
+        vector<DistinguishedName::Entry> name;
+        SubjectAltNames altNames;
         for (size_t i = 0; i < nameCount; ++i) {
-            name[i].key = kAttributeNames[nameComponents[i].attributeID];
-            name[i].value = nameComponents[i].value;
+            auto &attr = kAttributeNames[nameComponents[i].attributeID];
+            if (attr.first)
+                name.push_back({attr.first, nameComponents[i].value});
+            else
+                altNames.emplace_back(attr.second, nameComponents[i].value);
         }
-        Cert::SubjectParameters params({&name[0], &name[nameCount]});
-        params.ns_cert_type = certUsages;
+        Cert::SubjectParameters params(name);
+        params.subjectAltNames = move(altNames);
+        params.nsCertType = NSCertType(certUsages);
         return retainedExternal(new CertSigningRequest(params, privateKey(subjectKey)));
     });
 }
@@ -154,8 +163,17 @@ C4StringResult c4cert_subjectName(C4Cert* cert) C4API {
 
 C4StringResult c4cert_subjectNameComponent(C4Cert* cert, C4CertNameAttributeID attrID) C4API {
     return tryCatch<C4StringResult>(nullptr, [&]() {
-        return C4StringResult(internal(cert)->subjectName()[kAttributeNames[attrID]]);
+        auto &attr = kAttributeNames[attrID];
+        if (attr.first)
+            return C4StringResult(internal(cert)->subjectName()[attr.first]);
+        else
+            return C4StringResult(internal(cert)->subjectAltNames()[attr.second]);
     });
+}
+
+
+C4CertUsage c4cert_usages(C4Cert* cert) C4API {
+    return internal(cert)->nsCertType();
 }
 
 

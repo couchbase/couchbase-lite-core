@@ -9,9 +9,11 @@
 #include <initializer_list>
 #include <memory>
 #include <time.h>
+#include <vector>
 
 struct mbedtls_x509_crt;
 struct mbedtls_x509_csr;
+struct mbedtls_asn1_sequence;
 
 namespace litecore { namespace crypto {
 
@@ -23,11 +25,13 @@ namespace litecore { namespace crypto {
             fleece::slice value;    // Value of the attribute
         };
 
-        /** Creates a subject_name from a list of key/value strings. */
+        /** Creates a subjectName from a list of key/value strings. */
         DistinguishedName(const Entry *begin NONNULL, const Entry *end NONNULL);
 
+        DistinguishedName(const std::vector<Entry>&);
+
         DistinguishedName(std::initializer_list<Entry> entries)
-        :DistinguishedName(entries.begin(), entries.end())
+        :DistinguishedName(std::vector<Entry>(entries.begin(), entries.end()))
         { }
 
         static DistinguishedName parse(fleece::slice string);
@@ -41,7 +45,50 @@ namespace litecore { namespace crypto {
         friend class CertSigningRequest;
     };
 
+
+    /** X.509 tag values for a Subject Alternative Name */
+    enum class SANTag : uint8_t {
+        kOtherName = 0,     // these byte values are defined as part of X.509v3
+        kRFC822Name,
+        kDNSName,
+        kX400AddressName,
+        kDirectoryName,
+        kEDIPartyName,
+        kURIName,
+        kIPAddress,
+        kRegisteredID,
+    };
+
+    using SubjectAltName = std::pair<SANTag,fleece::alloc_slice>;
+
+
+    /** An X.509 Subject Alternative Name entry. */
+    class SubjectAltNames : public std::vector<SubjectAltName> {
+    public:
+        using Tag = SANTag;
+
+        SubjectAltNames() { }
+        explicit SubjectAltNames(::mbedtls_asn1_sequence*);
+
+        fleece::alloc_slice encode() const;
+
+        fleece::alloc_slice operator[] (Tag) const;
+        const SubjectAltName& operator[] (size_t i) const   {return vector<SubjectAltName>::operator[](i);}
+    };
+
     
+    enum NSCertType : uint8_t {
+        SSL_CLIENT         = 0x80,     // these byte values are defined as part NS's cert extensions
+        SSL_SERVER         = 0x40,
+        EMAIL              = 0x20,
+        OBJECT_SIGNING     = 0x10,
+        RESERVED           = 0x08,
+        SSL_CA             = 0x04,
+        EMAIL_CA           = 0x02,
+        OBJECT_SIGNING_CA  = 0x01,
+    };
+
+
     /** Abstract superclass of Cert and CertRequest. */
     class CertBase : public KeyOwner {
     public:
@@ -49,11 +96,12 @@ namespace litecore { namespace crypto {
 
         /** Parameters relating to the certificate subject, used when self-signing or requesting. */
         struct SubjectParameters {
-            DistinguishedName subject_name;         // subject name for certificate (see below)
-            uint8_t key_usage {0};                  // key usage flags (MBEDTLS_X509_KU_*)
-            uint8_t ns_cert_type {0};               // Netscape flags (MBEDTLS_X509_NS_CERT_TYPE_*)
+            DistinguishedName subjectName;          // Identity info for certificate (see below)
+            SubjectAltNames   subjectAltNames;      // More identity info
+            unsigned          keyUsage {0};         // key usage flags (MBEDTLS_X509_KU_*)
+            NSCertType        nsCertType {0};       // Netscape flags (MBEDTLS_X509_NS_CERT_TYPE_*)
 
-            SubjectParameters(DistinguishedName dn) :subject_name(dn) { }
+            SubjectParameters(DistinguishedName dn) :subjectName(dn) { }
         };
 
         /** Parameters for signing a certificate, used when self-signing or signing a request. */
@@ -67,7 +115,7 @@ namespace litecore { namespace crypto {
             bool add_basic_constraints {true};      // add basic constraints extension to cert?
         };
 
-        // subject_name is a "Relative Distinguished Name" represented as a series of KEY=VALUE
+        // subjectName is a "Relative Distinguished Name" represented as a series of KEY=VALUE
         // pairs separated by commas. The keys are defined by LDAP and listed in RFC4519. The ones
         // recognized by mbedTLS (see x509_create.c) include:
         //      commonName (aka CN), pseudonym, emailAddress, postalAddress,
@@ -82,6 +130,9 @@ namespace litecore { namespace crypto {
         virtual fleece::alloc_slice summary(const char *indent ="");
 
         virtual DistinguishedName subjectName() =0;
+        virtual unsigned keyUsage() =0;
+        virtual NSCertType nsCertType() =0;
+        virtual SubjectAltNames subjectAltNames() =0;
 
         /** The subject's public key. */
         fleece::Retained<PublicKey> subjectPublicKey()  {return new PublicKey(this);}
@@ -111,6 +162,9 @@ namespace litecore { namespace crypto {
 
         virtual bool isSigned() override                        {return true;}
         DistinguishedName subjectName() override;
+        unsigned keyUsage() override;
+        NSCertType nsCertType() override;
+        SubjectAltNames subjectAltNames() override;
         virtual fleece::alloc_slice summary(const char *indent ="") override;
 
         /** Makes the certificate persistent by adding it to the platform-specific store
@@ -182,6 +236,10 @@ namespace litecore { namespace crypto {
 
         /** The Subject Name specified in the request. */
         DistinguishedName subjectName() override;
+
+        unsigned keyUsage() override;
+        NSCertType nsCertType() override;
+        SubjectAltNames subjectAltNames() override;
 
         /** Signs the request, returning the completed Cert. */
         fleece::Retained<Cert> sign(const Cert::IssuerParameters&,

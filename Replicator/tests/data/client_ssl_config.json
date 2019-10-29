@@ -7,7 +7,10 @@
     "SSLKey":  "privkey.pem",
     
     "unsupported": {
-        "SSLClientCACert": "ca_cert.pem"
+        "SSLClientCerts": {
+            "CA_cert": "ca_cert.pem",
+            "required": true
+        }
     },
 
 	"databases": {

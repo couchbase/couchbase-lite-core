@@ -15,7 +15,7 @@
 	url = https://github.com/couchbase/couchbase-lite-core.wiki.git
 [submodule "vendor/mbedtls"]
 	path = vendor/mbedtls
-	url = https://github.com/ARMmbed/mbedtls.git
+	url = https://github.com/couchbasedeps/mbedtls.git
 [submodule "vendor/ios-cmake"]
 	path = vendor/ios-cmake
 	url = https://github.com/leetal/ios-cmake.git

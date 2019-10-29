@@ -21,17 +21,20 @@
 #include "Logging.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
+#include "TempArray.hh"
 #include "Writer.hh"
 
 #include "mbedUtils.hh"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#include "mbedtls/asn1write.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/error.h"
+#include "mbedtls/md.h"
+#include "mbedtls/oid.h"
 #include "mbedtls/platform.h"
 #include "mbedtls/pk.h"
-#include "mbedtls/md.h"
 #include "mbedtls/x509_crt.h"
 #include "mbedtls/x509_csr.h"
 #pragma clang diagnostic pop
@@ -46,16 +49,16 @@ namespace litecore { namespace crypto {
 #pragma mark - DISTINGUISHED NAME
 
 
-    DistinguishedName::DistinguishedName(const Entry *begin,  const Entry *end) {
+    DistinguishedName::DistinguishedName(const std::vector<Entry> &entries) {
         Writer out;
-        for (auto e = begin; e != end; ++e) {
-            if (e != begin)
+        for (auto &e : entries) {
+            if (out.length() > 0)
                 out << ", "_sl;
 
-            out << e->key << '=';
+            out << e.key << '=';
 
             // Escape commas in the value:
-            slice value = e->value;
+            slice value = e.value;
             const uint8_t *comma;
             while (nullptr != (comma = value.findByte(','))) {
                 out << slice(value.buf, comma) << "\\,"_sl;
@@ -105,6 +108,57 @@ namespace litecore { namespace crypto {
             auto next = dn.findByteNotIn(" "_sl);
             if (next)
                 dn.setStart(next);
+        }
+        return nullslice;
+    }
+
+
+#pragma mark - SUBJECT ALT NAME
+
+
+    SubjectAltNames::SubjectAltNames(mbedtls_x509_sequence *subject_alt_names) {
+        const mbedtls_x509_sequence *cur;
+        for (cur = subject_alt_names; cur; cur = cur->next) {
+            auto rawTag = cur->buf.tag;
+            if ((rawTag & MBEDTLS_ASN1_TAG_CLASS_MASK) != MBEDTLS_ASN1_CONTEXT_SPECIFIC)
+                continue;
+            emplace_back(SANTag(rawTag & MBEDTLS_ASN1_TAG_VALUE_MASK),
+                         alloc_slice(cur->buf.p, cur->buf.len));
+        }
+        reverse(begin(), end());    // subject_alt_names list is in reverse order!
+    }
+    
+    
+    alloc_slice SubjectAltNames::encode() const {
+        // Allocate enough buffer space:
+        size_t bufferSize = 0;
+        for (auto &name : *this)
+            bufferSize += name.second.size + 16;
+        TempArray(start, uint8_t, bufferSize);
+        uint8_t *pos = start + bufferSize;
+
+        size_t totalLen = 0;
+        for (auto &name : *this) {
+            size_t len = 0;
+            len += TRY( mbedtls_asn1_write_raw_buffer(&pos, start, (const uint8_t*)name.second.buf,
+                                                      name.second.size) );
+            len += TRY( mbedtls_asn1_write_len(&pos, start, len) );
+            len += TRY( mbedtls_asn1_write_tag(&pos, start, MBEDTLS_ASN1_CONTEXT_SPECIFIC
+                                                            | uint8_t(name.first)) );
+            totalLen += len;
+        }
+
+        totalLen += TRY( mbedtls_asn1_write_len(&pos, start, totalLen) );
+        totalLen += TRY( mbedtls_asn1_write_tag(&pos, start, MBEDTLS_ASN1_CONSTRUCTED
+                                                        | MBEDTLS_ASN1_SEQUENCE));
+        return alloc_slice(pos, totalLen);
+    }
+
+
+    alloc_slice SubjectAltNames::operator[](SANTag tag) const {
+        for (auto &altName : *this) {
+            if (altName.first == tag)
+                return altName.second;
         }
         return nullslice;
     }
@@ -170,7 +224,7 @@ namespace litecore { namespace crypto {
 
     // Given a set of cert-type flags, returns the key-usage flags that are required for a cert
     // of those type(s) to be valid.
-    static uint8_t defaultKeyUsage(uint8_t certTypes, bool usingRSA) {
+    static uint8_t defaultKeyUsage(NSCertType certTypes, bool usingRSA) {
         // https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/nss_tech_notes/nss_tech_note3
         uint8_t keyUsage = 0;
         if (certTypes & (MBEDTLS_X509_NS_CERT_TYPE_SSL_CLIENT | MBEDTLS_X509_NS_CERT_TYPE_EMAIL
@@ -215,9 +269,9 @@ namespace litecore { namespace crypto {
             mbedtls_mpi_free(&serial );
         };
 
-        string subjectName(subjectParams.subject_name);
+        string subjectName(subjectParams.subjectName);
         string issuerName = issuerCert ? string(issuerCert->subjectName())
-                                       : string(subjectParams.subject_name);
+                                       : string(subjectParams.subjectName);
         Log("Signing X.509 cert for '%s', as issuer '%s'", subjectName.c_str(), issuerName.c_str());
         // Format the dates:
         time_t now = time(nullptr) - 60;
@@ -235,6 +289,16 @@ namespace litecore { namespace crypto {
         mbedtls_x509write_crt_set_version(&crt, MBEDTLS_X509_CRT_VERSION_3);
         mbedtls_x509write_crt_set_md_alg(&crt, MBEDTLS_MD_SHA256);
         TRY( mbedtls_x509write_crt_set_validity(&crt, notBefore, notAfter) );
+
+        if (!subjectParams.subjectAltNames.empty()) {
+            // Subject Alternative Name -- mbedTLS doesn't have high-level APIs for this
+            alloc_slice ext = subjectParams.subjectAltNames.encode();
+            TRY( mbedtls_x509write_crt_set_extension(&crt,
+                                                     MBEDTLS_OID_SUBJECT_ALT_NAME,
+                                                     MBEDTLS_OID_SIZE(MBEDTLS_OID_SUBJECT_ALT_NAME),
+                                                     true, // ????
+                                                     (const uint8_t*)ext.buf, ext.size) );
+        }
 
         TRY( mbedtls_mpi_read_string(&serial, 10, string(issuerParams.serial).c_str()));
         TRY( mbedtls_x509write_crt_set_serial(&crt, &serial));
@@ -256,11 +320,11 @@ namespace litecore { namespace crypto {
             crt.issuer_key = originalIssuer;
         }
 
-        auto key_usage = subjectParams.key_usage;
-        if (subjectParams.ns_cert_type != 0) {
-            TRY( mbedtls_x509write_crt_set_ns_cert_type(&crt, subjectParams.ns_cert_type ));
+        unsigned key_usage = subjectParams.keyUsage;
+        if (subjectParams.nsCertType != 0) {
+            TRY( mbedtls_x509write_crt_set_ns_cert_type(&crt, subjectParams.nsCertType ));
             if (key_usage == 0) // Set key usage based on cert type:
-                key_usage = defaultKeyUsage(subjectParams.ns_cert_type,
+                key_usage = defaultKeyUsage(subjectParams.nsCertType,
                                             subjectKey->isRSA());
         }
         if (key_usage != 0)
@@ -286,6 +350,20 @@ namespace litecore { namespace crypto {
 
     DistinguishedName Cert::subjectName() {
         return DistinguishedName(getX509Name(&_cert->subject));
+    }
+
+
+    unsigned Cert::keyUsage() {
+        return _cert->key_usage;
+    }
+
+    NSCertType Cert::nsCertType() {
+        return NSCertType(_cert->ns_cert_type);
+    }
+
+
+    SubjectAltNames Cert::subjectAltNames() {
+        return SubjectAltNames(&_cert->subject_alt_names);
     }
 
 
@@ -411,7 +489,7 @@ namespace litecore { namespace crypto {
         mbedtls_x509write_csr_init( &csr );
         DEFER { mbedtls_x509write_csr_free(&csr); };
 
-        string subjectName(params.subject_name);
+        string subjectName(params.subjectName);
         Log("Creating X.509 cert request for '%s'", subjectName.c_str());
 
         // Set certificate attributes:
@@ -419,15 +497,24 @@ namespace litecore { namespace crypto {
         mbedtls_x509write_csr_set_md_alg(&csr, MBEDTLS_MD_SHA256);
         TRY( mbedtls_x509write_csr_set_subject_name(&csr, subjectName.c_str()) );
 
-        auto key_usage = params.key_usage;
-        if (params.ns_cert_type != 0) {
-            TRY( mbedtls_x509write_csr_set_ns_cert_type(&csr, params.ns_cert_type ));
+        if (!params.subjectAltNames.empty()) {
+            // Subject Alternative Name -- mbedTLS doesn't have high-level APIs for this
+            alloc_slice ext = params.subjectAltNames.encode();
+            TRY( mbedtls_x509write_csr_set_extension(&csr,
+                                                     MBEDTLS_OID_SUBJECT_ALT_NAME,
+                                                     MBEDTLS_OID_SIZE(MBEDTLS_OID_SUBJECT_ALT_NAME),
+                                                     (const uint8_t*)ext.buf, ext.size) );
+        }
+
+        auto key_usage = params.keyUsage;
+        if (params.nsCertType != 0) {
+            TRY( mbedtls_x509write_csr_set_ns_cert_type(&csr, params.nsCertType ));
             if (key_usage == 0) // Set key usage based on cert type:
-                key_usage = defaultKeyUsage(params.ns_cert_type,
+                key_usage = defaultKeyUsage(params.nsCertType,
                                             subjectKey->isRSA());
         }
         if (key_usage != 0)
-            TRY( mbedtls_x509write_csr_set_key_usage(&csr, key_usage ));
+            TRY( mbedtls_x509write_csr_set_key_usage(&csr, uint8_t(key_usage)));
 
         // Finally, encode the request:
         return allocDER(4096, [&](uint8_t *data, size_t size) {
@@ -452,6 +539,20 @@ namespace litecore { namespace crypto {
     }
 
 
+    SubjectAltNames CertSigningRequest::subjectAltNames() {
+        return SubjectAltNames(&_csr->subject_alt_names);
+    }
+
+
+    unsigned CertSigningRequest::keyUsage() {
+        return _csr->key_usage;
+    }
+
+    NSCertType CertSigningRequest::nsCertType() {
+        return NSCertType(_csr->ns_cert_type);
+    }
+
+
     int CertSigningRequest::writeInfo(char *buf, size_t bufSize, const char *indent) {
         return mbedtls_x509_csr_info(buf, bufSize, indent, _csr.get());
     }
@@ -467,9 +568,9 @@ namespace litecore { namespace crypto {
                                             Cert *issuerCert)
     {
         Cert::SubjectParameters subjectParams(subjectName());
-        //FIX: mbedTLS doesn't have any API to get the key usage or NS cert type from a CSR.
-//        subjectParams.key_usage = ??;
-//        subjectParams.ns_cert_type = ??;
+        subjectParams.keyUsage = keyUsage();
+        subjectParams.nsCertType = nsCertType();
+        subjectParams.subjectAltNames = subjectAltNames();
         auto cert = retained(new Cert(Cert::create(subjectParams, subjectPublicKey(),
                                                    issuerParams, issuerKeyPair, issuerCert)));
         if (issuerCert) {

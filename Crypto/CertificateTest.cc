@@ -28,9 +28,8 @@ using namespace fleece;
 
 
 static constexpr const slice kSubjectName = "CN=Jane Doe, O=ExampleCorp, C=US, "
-                                            "emailAddress=jane@example.com"_sl;
-static constexpr const slice kSubject2Name = "CN=Richard Roe, O=ExampleCorp, C=US, "
-                                            "emailAddress=dick@example.com"_sl;
+                                            "pseudonym=3Jane"_sl;
+static constexpr const slice kSubject2Name = "CN=Richard Roe, O=ExampleCorp, C=US, ST=AZ"_sl;
 
 static constexpr const slice kCAName = "CN=TrustMe Root CA, O=TrustMe Corp., C=US"_sl;
 
@@ -38,13 +37,13 @@ static constexpr const slice kCAName = "CN=TrustMe Root CA, O=TrustMe Corp., C=U
 TEST_CASE("Creating subject names", "[Certs]") {
     DistinguishedName name({
         {"CN"_sl, "Jane Doe"_sl}, {"O"_sl, "ExampleCorp"_sl}, {"C"_sl, "US"_sl},
-        {"emailAddress"_sl, "jane@example.com"_sl}});
+        {"pseudonym"_sl, "3Jane"_sl}});
     CHECK(name == kSubjectName);
 
     CHECK(name["CN"_sl] == "Jane Doe"_sl);
     CHECK(name["O"_sl] == "ExampleCorp"_sl);
     CHECK(name["C"_sl] == "US"_sl);
-    CHECK(name["emailAddress"_sl] == "jane@example.com"_sl);
+    CHECK(name["pseudonym"_sl] == "3Jane"_sl);
     CHECK(name["foo"_sl] == nullslice);
 
     name = DistinguishedName({
@@ -115,6 +114,36 @@ TEST_CASE("Self-signed cert generation", "[Certs]") {
 }
 
 
+TEST_CASE("Self-signed cert with Subject Alternative Name", "[Certs]") {
+    Cert::SubjectParameters subjectParams(DistinguishedName::parse("CN=Jane Doe, O=ExampleCorp, C=US"_sl));
+    subjectParams.subjectAltNames.emplace_back(SANTag::kRFC822Name,
+                                                       "jane@example.com"_sl);
+    subjectParams.subjectAltNames.emplace_back(SANTag::kDNSName,
+                                                       "https://example.com/jane/"_sl);
+    subjectParams.nsCertType = NSCertType(SSL_CLIENT | EMAIL);
+    Cert::IssuerParameters issuerParams;
+    issuerParams.validity_secs = 3600*24;
+    Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);;
+    Retained<Cert> cert;
+
+    SECTION("Self-signed") {
+        cert = new Cert(subjectParams, issuerParams, key);
+    }
+    SECTION("Issuer-signed") {
+        Retained<CertSigningRequest> csr = new CertSigningRequest(subjectParams, key);
+        cert = csr->sign(issuerParams, key);
+    }
+
+    CHECK(cert->nsCertType() == subjectParams.nsCertType);
+    auto names = cert->subjectAltNames();
+    REQUIRE(names.size() == 2);
+    CHECK(names[0].first == SANTag::kRFC822Name);
+    CHECK(names[0].second == "jane@example.com"_sl);
+    CHECK(names[1].first == SANTag::kDNSName);
+    CHECK(names[1].second == "https://example.com/jane/"_sl);
+}
+
+
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE("Persistent key and cert", "[Certs]") {
     Retained<PersistentPrivateKey> key = PersistentPrivateKey::generateRSA(2048);
@@ -181,7 +210,7 @@ TEST_CASE("Cert request", "[Certs]") {
 }
 
 
-TEST_CASE("Cert concatenation") {
+TEST_CASE("Cert concatenation", "[Certs]") {
     alloc_slice pem;
     {
         auto [key1, cert1] = makeCert(kSubjectName);
@@ -228,3 +257,34 @@ TEST_CASE("Cert concatenation") {
     CHECK(cert->subjectName() == kSubjectName);
     CHECK(next->subjectName() == kSubject2Name);
 }
+
+TEST_CASE("Cert request parsing", "[Certs]") {
+    const char *kCSR = "-----BEGIN CERTIFICATE REQUEST-----\n"
+                        "MIICzzCCAbcCAQAwNzEQMA4GA1UEAwwHUHVwc2hhdzESMBAGA1UECgwJQ291Y2hi\n"
+                        "YXNlMQ8wDQYDVQQLDAZNb2JpbGUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK\n"
+                        "AoIBAQC7hY5Q7zi49HKBL4iG0kmefWMvIEknUnCkour86HNxQhckePISyeHtXWgu\n"
+                        "Mnugz7Y2qsO3Nje2c2PgNeFmxuDl0Zg5XdpWPe2OoKqABo8HqtICLDSlu61MkSdG\n"
+                        "FXh4h2SLu0H5U7+Y40OnQB5VTSDDt9ThwVFJCCF/8o3THyIGZCphq0J00HllJpbI\n"
+                        "AbrPBVd3ytvAixAYFyOCtkX/wpTykdNkv8D4DHg7x7Eu6+/lLkyi27m5ohJtkPbl\n"
+                        "6YAXXuiQNs1MjWBke/dcOXRiqht/KOAZrox87kSz89LBoULqp1iyjsIpUn9MhHRi\n"
+                        "8/R86OArHjwPppf66U2FLtP/j/DNAgMBAAGgUzBRBgkqhkiG9w0BCQ4xRDBCMCAG\n"
+                        "A1UdEQQZMBeBFXB1cHNoYXdAY291Y2hiYXNlLm9yZzARBglghkgBhvhCAQEEBAMC\n"
+                        "B4AwCwYDVR0PBAQDAgeAMA0GCSqGSIb3DQEBCwUAA4IBAQCSrGPATWk8eUT9lBUM\n"
+                        "UXNchheMx4D+5SQDFKcy17njOVe+RKU2Y5iRMYxZ3MMzjj3YivLpVpVXBqR5HU52\n"
+                        "pHytIUcs/jM5OlLWHLQ+5V++FkGl5f/KiLFFjf3kgvZctySt+cxiGQbCOd05C9RK\n"
+                        "pyHsBaX9bToLflioCN2d9nRoXljtXwFh3507p970pQBXdBNdoLB55mg6VkLPO6gp\n"
+                        "PR1Ks+RTqczX1a3Cst4dLP5E7RgY3Z0SiRQJeIv0plNc+Stebz8VZOYIBDA1Y0Dv\n"
+                        "yKnZyB2LcxENgDD3fCw+4zjZWbuS0kHg6SXQ78IphnpB7gTCYG1QjNfKh/wNkvuQ\n"
+                        "1ZF7\n"
+                        "-----END CERTIFICATE REQUEST-----\n";
+
+    Retained<CertSigningRequest> csr = new CertSigningRequest(slice(kCSR));
+    CHECK(slice(csr->subjectName()) == "CN=Pupshaw, O=Couchbase, OU=Mobile"_sl);
+    CHECK(csr->keyUsage() == 0x80);
+    CHECK(csr->nsCertType() == 0x80);
+    auto san = csr->subjectAltNames();
+    REQUIRE(san.size() == 1);
+    CHECK(san[0].first == SANTag::kRFC822Name);
+    CHECK(san[0].second == "pupshaw@couchbase.org"_sl);
+}
+
