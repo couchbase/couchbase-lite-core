@@ -31,7 +31,7 @@
 #include "varint.hh"
 #include <ctime>
 #include <algorithm>
-
+#include <zlib.h>
 
 namespace c4Internal {
 
@@ -473,20 +473,16 @@ namespace c4Internal {
 
 
         static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
-        #if SECURE_DIGEST_AVAILABLE
-            uint8_t digestBuf[20];
+            uLong crc = 0;
             slice digest;
-            // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
-            sha1Context ctx;
-            sha1_begin(&ctx);
+            // Get CRC32 of (length-prefixed) parent rev ID, deletion flag, and revision body:
             uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-            sha1_add(&ctx, &revLen, 1);
-            sha1_add(&ctx, parentRevID.buf, revLen);
+            crc = crc32(crc, &revLen, 1);
+            crc = crc32(crc, (const Bytef *)parentRevID.buf, revLen);
             uint8_t delByte = deleted;
-            sha1_add(&ctx, &delByte, 1);
-            sha1_add(&ctx, body.buf, body.size);
-            sha1_end(&ctx, digestBuf);
-            digest = slice(digestBuf, 20);
+            crc = crc32(crc, &delByte, 1);
+            crc = crc32(crc, (const Bytef *)body.buf, body.size);
+            digest = slice((uint8_t *)&crc, 4);
 
             // Derive new rev's generation #:
             unsigned generation = 1;
@@ -495,9 +491,6 @@ namespace c4Internal {
                 generation = parentID.generation() + 1;
             }
             return revidBuffer(generation, digest, kDigestType);
-        #else
-            error::_throw(error::Unimplemented);
-        #endif
         }
 
 
