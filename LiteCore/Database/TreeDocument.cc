@@ -481,7 +481,7 @@ namespace c4Internal {
             crc = crc32(crc, (const Bytef *)parentRevID.buf, revLen);
             uint8_t delByte = deleted;
             crc = crc32(crc, &delByte, 1);
-            crc = crc32(crc, (const Bytef *)body.buf, body.size);
+            crc = crc32_z(crc, (const Bytef *)body.buf, body.size);
             digest = slice((uint8_t *)&crc, 4);
 
             // Derive new rev's generation #:
