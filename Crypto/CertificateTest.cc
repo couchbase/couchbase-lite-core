@@ -58,11 +58,11 @@ TEST_CASE("Creating subject names", "[Certs]") {
     CHECK(name["CN"_sl] == ",Jane,,Doe,"_sl);
     CHECK(name["foo"_sl] == nullslice);
 
-    name = DistinguishedName::parse("CN=Zegpold"_sl);
+    name = DistinguishedName("CN=Zegpold"_sl);
     CHECK(name["CN"_sl] == "Zegpold"_sl);
     CHECK(name["foo"_sl] == nullslice);
 
-    name = DistinguishedName::parse("CN=Zegpold\\, Jr,O=Example\\, Inc.,   OU=Mailroom"_sl);
+    name = DistinguishedName("CN=Zegpold\\, Jr,O=Example\\, Inc.,   OU=Mailroom"_sl);
     CHECK(name["CN"_sl] == "Zegpold, Jr"_sl);
     CHECK(name["O"_sl] == "Example, Inc."_sl);
     CHECK(name["OU"_sl] == "Mailroom"_sl);
@@ -93,7 +93,7 @@ static pair<Retained<PrivateKey>,Retained<Cert>> makeCert(slice subjectName) {
     Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
     Cert::IssuerParameters issuerParams;
     issuerParams.validity_secs = 3600*24;
-    return {key, new Cert(DistinguishedName::parse(subjectName), issuerParams, key)};
+    return {key, new Cert(DistinguishedName(subjectName), issuerParams, key)};
 }
 
 
@@ -115,7 +115,7 @@ TEST_CASE("Self-signed cert generation", "[Certs]") {
 
 
 TEST_CASE("Self-signed cert with Subject Alternative Name", "[Certs]") {
-    Cert::SubjectParameters subjectParams(DistinguishedName::parse("CN=Jane Doe, O=ExampleCorp, C=US"_sl));
+    Cert::SubjectParameters subjectParams(DistinguishedName("CN=Jane Doe, O=ExampleCorp, C=US"_sl));
     subjectParams.subjectAltNames.emplace_back(SANTag::kRFC822Name,
                                                        "jane@example.com"_sl);
     subjectParams.subjectAltNames.emplace_back(SANTag::kDNSName,
@@ -158,7 +158,7 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
 
     Cert::IssuerParameters issuerParams;
     issuerParams.validity_secs = 3600*24;
-    Retained<Cert> cert = new Cert(DistinguishedName::parse(kSubjectName), issuerParams, key);
+    Retained<Cert> cert = new Cert(DistinguishedName(kSubjectName), issuerParams, key);
 
     cert->makePersistent();
 
@@ -178,7 +178,7 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
 
 TEST_CASE("Cert request", "[Certs]") {
     Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
-    Retained<CertSigningRequest> csr = new CertSigningRequest(DistinguishedName::parse(kSubjectName), key);
+    Retained<CertSigningRequest> csr = new CertSigningRequest(DistinguishedName(kSubjectName), key);
     CHECK(csr->subjectName() == kSubjectName);
     CHECK(csr->subjectPublicKey()->data(KeyFormat::Raw) == key->publicKey()->data(KeyFormat::Raw));
 
@@ -198,7 +198,7 @@ TEST_CASE("Cert request", "[Certs]") {
     Retained<PrivateKey> caKey = PrivateKey::generateTemporaryRSA(2048);
     Cert::IssuerParameters caIssuerParams;
     caIssuerParams.is_ca = true;
-    Retained<Cert> caCert = new Cert(DistinguishedName::parse(kCAName), caIssuerParams, caKey);
+    Retained<Cert> caCert = new Cert(DistinguishedName(kCAName), caIssuerParams, caKey);
     cerr << "CA cert info:\n" << caCert->summary("\t");
 
     // Sign it:

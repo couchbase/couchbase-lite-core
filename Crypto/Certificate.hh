@@ -6,6 +6,7 @@
 
 #pragma once
 #include "PublicKey.hh"
+#include "function_ref.hh"
 #include <initializer_list>
 #include <memory>
 #include <time.h>
@@ -34,12 +35,16 @@ namespace litecore { namespace crypto {
         :DistinguishedName(std::vector<Entry>(entries.begin(), entries.end()))
         { }
 
-        static DistinguishedName parse(fleece::slice string);
+        explicit DistinguishedName(fleece::alloc_slice s)          :alloc_slice(s) { }
+        explicit DistinguishedName(fleece::slice s)                :alloc_slice(s) { }
+
+        using VectorForm = std::vector<std::pair<fleece::slice, fleece::alloc_slice>>;
+
+        VectorForm asVector();
 
         fleece::alloc_slice operator[] (fleece::slice key);
 
     private:
-        DistinguishedName(fleece::alloc_slice s)          :alloc_slice(s) { }
 
         friend class Cert;
         friend class CertSigningRequest;

@@ -110,10 +110,18 @@ static const pair<slice, SANTag> kAttributeNames[] = {
     {"ST"_sl,           SANTag::kOtherName},
     {"C"_sl,            SANTag::kOtherName},
     // These go in the SubjectAlternativeName:
-    {nullslice,         SANTag::kRFC822Name},
-    {nullslice,         SANTag::kDNSName},
-    {nullslice,         SANTag::kURIName},
+    {"otherName"_sl,    SANTag::kOtherName},
+    {"rfc822Name"_sl,   SANTag::kRFC822Name},
+    {"dNSName"_sl,      SANTag::kDNSName},
+    {"x400Address"_sl,  SANTag::kX400AddressName},
+    {"directoryName"_sl,SANTag::kDirectoryName},
+    {"ediPartyName"_sl, SANTag::kEDIPartyName},
+    {"uniformResourceIdentifier"_sl, SANTag::kURIName},
+    {"iPAddress"_sl,    SANTag::kIPAddress},
+    {"registeredID"_sl, SANTag::kRegisteredID},
 };
+
+static constexpr size_t kNumAttributeNames = sizeof(kAttributeNames) / sizeof(kAttributeNames[0]);
 
 
 C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
@@ -126,8 +134,13 @@ C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
         vector<DistinguishedName::Entry> name;
         SubjectAltNames altNames;
         for (size_t i = 0; i < nameCount; ++i) {
-            auto &attr = kAttributeNames[nameComponents[i].attributeID];
-            if (attr.first)
+            auto attributeID = nameComponents[i].attributeID;
+            if (attributeID >= kNumAttributeNames) {
+                c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Attribute ID out of range"_sl, outError);
+                return nullptr;
+            }
+            auto &attr = kAttributeNames[attributeID];
+            if (attributeID < kC4Cert_OtherName)
                 name.push_back({attr.first, nameComponents[i].value});
             else
                 altNames.emplace_back(attr.second, nameComponents[i].value);
@@ -143,6 +156,13 @@ C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
 C4Cert* c4cert_fromData(C4Slice certData, C4Error *outError) C4API {
     return tryCatch<C4Cert*>(outError, [&]() {
         return retainedExternal(new Cert(certData));
+    });
+}
+
+
+C4Cert* c4cert_requestFromData(C4Slice certRequestData, C4Error *outError) C4API {
+    return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
+        return retainedExternal(new CertSigningRequest(certRequestData));
     });
 }
 
@@ -169,6 +189,41 @@ C4StringResult c4cert_subjectNameComponent(C4Cert* cert, C4CertNameAttributeID a
         else
             return C4StringResult(internal(cert)->subjectAltNames()[attr.second]);
     });
+}
+
+
+bool c4cert_subjectNameAtIndex(C4Cert* cert,
+                               unsigned index,
+                               C4CertNameInfo *outInfo C4NONNULL) C4API
+{
+    outInfo->id = kC4Cert_NoAttributeID;
+    outInfo->nameString = nullslice;
+    outInfo->value = {};
+
+    // First go through the DistinguishedNames:
+    if (auto dn = internal(cert)->subjectName().asVector(); index < dn.size()) {
+        outInfo->nameString = dn[index].first;
+        outInfo->value = C4StringResult(dn[index].second);
+        for (size_t id = 0; id < kC4Cert_OtherName; ++id) {
+            if (kAttributeNames[id].first == outInfo->nameString) {
+                outInfo->id = C4CertNameAttributeID(id);
+                break;
+            }
+        }
+        return true;
+    } else {
+        index -= dn.size();
+    }
+
+    // Then look in SubjectAlternativeName:
+    if (auto san = internal(cert)->subjectAltNames(); index < san.size()) {
+        outInfo->id = C4CertNameAttributeID(kC4Cert_OtherName + unsigned(san[index].first));
+        outInfo->nameString = kAttributeNames[outInfo->id].first;
+        outInfo->value = C4StringResult(alloc_slice(san[index].second));
+        return true;
+    }
+
+    return false;
 }
 
 
@@ -203,9 +258,10 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
             c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "No private key"_sl, outError);
             return nullptr;
         }
+
+        // Construct the issuer parameters:
         if (!c4Params)
             c4Params = &kDefaultCertIssuerParameters;
-
         CertSigningRequest::IssuerParameters params;
         params.validity_secs = c4Params->validityInSeconds;
         params.serial = c4Params->serialNumber;
@@ -215,6 +271,7 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
         params.add_subject_identifier = c4Params->addSubjectIdentifier;
         params.add_basic_constraints = c4Params->addBasicConstraints;
 
+        // Get the issuer cert:
         Cert *issuerCert = nullptr;
         if (issuerC4Cert) {
             issuerCert = asSignedCert(issuerC4Cert);
@@ -225,6 +282,7 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
             }
         }
 
+        // Sign!
         Retained<Cert> cert = csr->sign(params, privateKey(issuerPrivateKey), issuerCert);
         return retainedExternal(cert.get());
     });

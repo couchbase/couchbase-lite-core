@@ -66,20 +66,15 @@ namespace litecore { namespace crypto {
             }
             out << value;
         }
-        *this = out.finish();
+        *this = DistinguishedName(out.finish());
     }
 
 
-    DistinguishedName DistinguishedName::parse(slice str) {
-        return DistinguishedName(alloc_slice(str));
-    }
-
-
-    alloc_slice DistinguishedName::operator[] (slice key) {
+    DistinguishedName::VectorForm DistinguishedName::asVector() {
+        VectorForm result;
         slice dn = *this;
         while (dn.size > 0) {
-            slice foundKey = dn.readToDelimiterOrEnd("="_sl);
-            bool found = (foundKey == key);
+            slice key = dn.readToDelimiterOrEnd("="_sl);
 
             alloc_slice value;
             uint8_t delim;
@@ -87,30 +82,37 @@ namespace litecore { namespace crypto {
                 auto next = dn.findAnyByteOf(",\\"_sl);
                 if (next) {
                     delim = *next;
-                    if (found)
-                        value.append(slice(dn.buf, next));
+                    value.append(slice(dn.buf, next));
                     if (delim == '\\') {
                         ++next;
-                        if (found)
-                            value.append(slice(next, 1));
+                        value.append(slice(next, 1));
                     }
                     dn.setStart(next + 1);
                 } else {
-                    if (found)
-                        value.append(dn);
+                    value.append(dn);
                     dn = nullslice;
                     break;
                 }
             } while (delim != ',');
 
-            if (found)
-                return value;
+            result.emplace_back(key, value);
             auto next = dn.findByteNotIn(" "_sl);
-            if (next)
-                dn.setStart(next);
+            if (!next)
+                break;
+            dn.setStart(next);
+        }
+        return result;
+    }
+
+
+    alloc_slice DistinguishedName::operator[] (slice key) {
+        for (auto [k, v] : asVector()) {
+            if (k == key)
+                return v;
         }
         return nullslice;
     }
+
 
 
 #pragma mark - SUBJECT ALT NAME
@@ -293,10 +295,11 @@ namespace litecore { namespace crypto {
         if (!subjectParams.subjectAltNames.empty()) {
             // Subject Alternative Name -- mbedTLS doesn't have high-level APIs for this
             alloc_slice ext = subjectParams.subjectAltNames.encode();
+            bool critical = (subjectParams.subjectName.size == 0);
             TRY( mbedtls_x509write_crt_set_extension(&crt,
                                                      MBEDTLS_OID_SUBJECT_ALT_NAME,
                                                      MBEDTLS_OID_SIZE(MBEDTLS_OID_SUBJECT_ALT_NAME),
-                                                     true, // ????
+                                                     critical,
                                                      (const uint8_t*)ext.buf, ext.size) );
         }
 

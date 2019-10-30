@@ -58,7 +58,7 @@ extern "C" {
     extern const C4CertIssuerParameters kDefaultCertIssuerParameters;
 
 
-    /** Certificate subject name attributes, from RFC 4519.
+    /** Certificate subject name attributes, from RFC 4519 and RFC 5280 (sec. 4.2.1.6)
         Only the CommonName is required; it's used as the visible name of the certificate.
         If the cert is to be used for a TLS server, the CommonName must match its DNS name. */
     typedef C4_ENUM(uint8_t, C4CertNameAttributeID) {
@@ -74,9 +74,16 @@ extern "C" {
         kC4Cert_StateOrProvince,   // "Massachusetts" (or "Quebec", ...)
         kC4Cert_Country,           // "us" (2-letter ISO country code)
         // These are Subject Alternative Name attributes:
-        kC4Cert_EmailAddress,      // "jane@example.com"
-        kC4Cert_Hostname,          // "www.example.com"
+        kC4Cert_OtherName,         // ???
+        kC4Cert_EmailAddress,      // rfc822Name, e.g. "jane@example.com"
+        kC4Cert_Hostname,          // dnsName, e.g. "www.example.com"
+        kC4Cert_X400Name,          // Yeah, I don't know what this is either
+        kC4Cert_EDIPartyName,      // Ditto
         kC4Cert_URL,               // "https://example.com/jane"
+        kC4Cert_IPAddress,         // *Binary* IP address, e.g. "\x0A\x00\x01\x01"
+        kC4Cert_RegisteredID,      // Some sort of domain-specific ID?
+
+        kC4Cert_NoAttributeID
     };
 
     /** A component of an X.509 "Relative Distinguished Name". */
@@ -113,6 +120,11 @@ extern "C" {
     C4Cert* c4cert_fromData(C4Slice certData,
                             C4Error *outError) C4API;
 
+    /** Instantiates a C4Cert from an X.509 certificate signing request (CSR) in DER or PEM form.
+        \note You are responsible for releasing the returned reference. */
+    C4Cert* c4cert_requestFromData(C4Slice certRequestData,
+                                   C4Error *outError) C4API;
+
     /** Returns the encoded X.509 data in DER (binary) or PEM (ASCII) form.
         \warning DER format can only encode a _single_ certificate, so if this C4Cert includes
             multiple certificates, use PEM format to preserve them.
@@ -127,9 +139,28 @@ extern "C" {
         \note You are responsible for releasing the returned data. */
     C4StringResult c4cert_subjectName(C4Cert* C4NONNULL) C4API;
 
-    /** Returns one component of a cert's subject name, given the attribute name.
-        \note You are responsible for releasing the returned data. */
+    /** Returns one component of a cert's subject name, given the attribute ID.
+        \note If there are multiple names with this ID, only the first is returned.
+        \note You are responsible for releasing the returned string. */
     C4StringResult c4cert_subjectNameComponent(C4Cert* C4NONNULL, C4CertNameAttributeID) C4API;
+
+    /** Information about a single component of a certificate's subject name. */
+    typedef struct C4CertNameInfo {
+        C4CertNameAttributeID id;    ///< Enum value for this name, or else `kC4Cert_NoAttributeID`
+        C4Slice        nameString;   ///< X.509 Distinguished Name string, if any (e.g. "CN", "O")
+        C4StringResult value;        ///< The value of the name component, i.e. the name.
+    } C4CertNameInfo;
+
+    /** Returns one component of a cert's subject name, given a zero-based index into the list.
+        If the index is out of range, it returns a null slice.
+        @param cert  The certificate to examine.
+        @param index  Zero-based index into the subject name list.
+        @param outInfo  The component's name and value will be written here.
+        @return  True if the index was valid, false if out of range.
+        \note You are responsible for releasing `outInfo->value`. */
+    bool c4cert_subjectNameAtIndex(C4Cert* cert C4NONNULL,
+                                   unsigned index,
+                                   C4CertNameInfo *outInfo C4NONNULL) C4API;
 
     /** Returns the usage flags of a cert. */
     C4CertUsage c4cert_usages(C4Cert* C4NONNULL) C4API;
