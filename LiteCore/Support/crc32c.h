@@ -33,7 +33,7 @@
 #define CB_CRC32_HW_SUPPORTED 1
 #endif
 
-#ifdef __APPLE__ || defined(__linux)
+#if defined(__APPLE__) || defined(__linux)
 #define SSE_4_2 __attribute__((__always_inline__, __nodebug__, __target__("sse4.2")))
 #else
 #define SSE_4_2
