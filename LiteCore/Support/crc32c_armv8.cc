@@ -16,20 +16,21 @@
 // limitations under the License.
 //
 
-#ifdef __ARM_FEATURE_CRC32
+#if __ARM_FEATURE_CRC32
 
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <arm_acle.h>
+#include <arm_neon.h>
 #include "crc32c.h"
 
-uint32_t crc32c_hw(uint32_t crc, const uint8_t *p, unsigned int len)
+uint32_t crc32c_hw(const uint8_t *p, size_t len, uint32_t crc)
 {
 	int64_t length = len;
 
 	while ((length -= sizeof(uint64_t)) >= 0) {
-		__crc32x(crc, *((uint64_t *)p));
+		__crc32cd(crc, *((uint64_t *)p));
 		p += sizeof(uint64_t);
 	}
 
@@ -44,7 +45,7 @@ uint32_t crc32c_hw(uint32_t crc, const uint8_t *p, unsigned int len)
 	}
     
 	if (length & sizeof(uint8_t))
-		__crc32b(crc, *p);
+		__crc32cb(crc, *p);
 
 	return crc;
 }

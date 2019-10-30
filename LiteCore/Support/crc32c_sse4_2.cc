@@ -73,6 +73,8 @@ typedef uint64_t crc_max_size_t;
 #define _mm_crc32_max_size _mm_crc32_u64
 #endif
 
+uint32_t crc32c_hw_short_block(const uint8_t* buf, size_t len, uint32_t crc_in) SSE_4_2;
+
 //
 // CRC32-C implementation using SSE4.2 acceleration
 // no pipeline optimisation.

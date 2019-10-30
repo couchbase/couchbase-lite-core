@@ -33,6 +33,12 @@
 #define CB_CRC32_HW_SUPPORTED 1
 #endif
 
+#ifdef __APPLE__
+#define SSE_4_2 __attribute__((__target__("sse4.2")))
+#else
+#define SSE_4_2
+#endif
+
 const uintptr_t ALIGN64_MASK = sizeof(uint64_t)-1;
 const int LONG_BLOCK = 8192;
 const int SHORT_BLOCK = 256;
@@ -53,8 +59,8 @@ uint32_t crc32c(const uint8_t* buf, size_t len, uint32_t crc_in);
 // of the checksum by using a given implementation.
 uint32_t crc32c_sw(const uint8_t* buf, size_t len, uint32_t crc_in);
 #ifdef CB_CRC32_HW_SUPPORTED
-uint32_t crc32c_hw(const uint8_t* buf, size_t len, uint32_t crc_in);
+uint32_t crc32c_hw(const uint8_t* buf, size_t len, uint32_t crc_in) SSE_4_2;
 #ifndef __ARM_FEATURE_CRC32
-uint32_t crc32c_hw_1way(const uint8_t* buf, size_t len, uint32_t crc_in);
+uint32_t crc32c_hw_1way(const uint8_t* buf, size_t len, uint32_t crc_in) SSE_4_2;
 #endif
 #endif

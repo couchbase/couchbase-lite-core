@@ -61,7 +61,7 @@
  // select header file for cpuid.
 #if defined(WIN32)
 #include <intrin.h>
-#elif defined(__clang__) || defined(__GNUC__)
+#elif (defined(__clang__) || defined(__GNUC__)) && (defined(__x86_64__) || defined(_M_X64) || defined(_M_IX86))
 #include <cpuid.h>
 #endif
 
@@ -177,7 +177,7 @@ static inline uint64_t crc32c_sw_inner(uint64_t crc, const uint8_t* buffer) {
 // CRC32-C implementation using software
 // No optimisation
 //
-uint32_t crc32c_sw_1way(const uint8_t* buf, size_t len, uint32_t crc_in) {
+static uint32_t crc32c_sw_1way(const uint8_t* buf, size_t len, uint32_t crc_in) {
     uint64_t crc = static_cast<uint64_t>(~crc_in);
 
     while ((reinterpret_cast<uintptr_t>(buf) & ALIGN64_MASK) != 0 && len > 0) {
@@ -205,7 +205,7 @@ uint32_t crc32c_sw_1way(const uint8_t* buf, size_t len, uint32_t crc_in) {
 // Partially optimised CRC32C which divides the data into 3 blocks
 // allowing some free CPU pipelining/parallelisation.
 //
-uint32_t crc32c_sw_short_block(const uint8_t* buf, size_t len, uint32_t crc_in) {
+static uint32_t crc32c_sw_short_block(const uint8_t* buf, size_t len, uint32_t crc_in) {
     // If len is less the 3 x SHORT_BLOCK just use the 1-way sw version
     if (len < (3 * SHORT_BLOCK)) {
         return crc32c_sw_1way(buf, len, crc_in);
@@ -362,7 +362,7 @@ typedef uint32_t (*crc32c_function)(const uint8_t* buf,
 // Return the appropriate function for the platform.
 // If SSE4.2 is available then hardware acceleration is used.
 //
-crc32c_function setup_crc32c() {
+static crc32c_function setup_crc32c() {
 #if defined(__x86_64__) || defined(_M_X64) || defined(_M_IX86)
     const uint32_t SSE42 = 0x00100000;
 
@@ -382,7 +382,7 @@ crc32c_function setup_crc32c() {
 
     return f;
 #elif defined(__ARM_FEATURE_CRC32)
-    crc32c_function f = crc32_hw;
+    return crc32c_hw;
 #else
     // No hardware support
     return crc32c_sw;
