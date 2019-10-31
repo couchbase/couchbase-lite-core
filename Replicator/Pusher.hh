@@ -52,6 +52,9 @@ namespace litecore { namespace repl {
                 && _options.pushFilter(doc->docID, doc->selectedRev.flags, FLValue_AsDict(bodyContent), _options.callbackContext);
         }
 
+    protected:
+        virtual void afterEvent() override;
+
     private:
         void _start(C4SequenceNumber sinceSequence);
         bool passive() const                         {return _options.push <= kC4Passive;}
@@ -66,7 +69,7 @@ namespace litecore { namespace repl {
         void maybeSendMoreRevs();
         void sendRevision(Retained<RevToSend>);
         void couldntSendRevision(RevToSend* NONNULL);
-        void doneWithRev(const RevToSend*, bool successful, bool pushed);
+        void doneWithRev(RevToSend*, bool successful, bool pushed);
         void updateCheckpoint();
         void handleGetAttachment(Retained<MessageIn>);
         void handleProveAttachment(Retained<MessageIn>);
@@ -119,6 +122,7 @@ namespace litecore { namespace repl {
         MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
         unsigned _blobsInFlight {0};              // # of blobs being sent
         std::deque<Retained<RevToSend>> _revsToSend;  // Revs to send to peer but not sent yet
+        RevToSendList _revsToRetry;                     // Revs that failed with a transient error
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash>;
 

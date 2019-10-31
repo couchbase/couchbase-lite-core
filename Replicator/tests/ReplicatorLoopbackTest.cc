@@ -906,7 +906,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     runReplicators(Replicator::Options::pushing(),
                    pullOptions);
     validateCheckpoints(db, db2, "{\"local\":100}");
-    CHECK(validationCount == 100);
+    
+    // CBL-123: Change from == 100 to >= 100 to account for 403 getting
+    // one retry before giving up
+    CHECK(validationCount >= 100);
     CHECK(c4db_getDocumentCount(db2) == 96);
 }
 
