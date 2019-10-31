@@ -556,7 +556,7 @@
 		27EF69AF1E282549004748DF /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1020;
+				LastUpgradeCheck = 1110;
 				ORGANIZATIONNAME = Couchbase;
 				TargetAttributes = {
 					27EF69B61E282549004748DF = {
@@ -573,11 +573,11 @@
 			};
 			buildConfigurationList = 27EF69B21E282549004748DF /* Build configuration list for PBXProject "blip_cpp" */;
 			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				English,
 				en,
+				Base,
 			);
 			mainGroup = 27EF69AE1E282549004748DF;
 			productRefGroup = 27EF69B81E282549004748DF /* Products */;
