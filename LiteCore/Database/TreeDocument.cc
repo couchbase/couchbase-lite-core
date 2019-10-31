@@ -29,9 +29,10 @@
 #include "SecureDigest.hh"
 #include "FleeceImpl.hh"
 #include "varint.hh"
+#include "crc32c.h"
+#include "Endian.hh"
 #include <ctime>
 #include <algorithm>
-#include "crc32c.h"
 
 namespace c4Internal {
 
@@ -482,6 +483,7 @@ namespace c4Internal {
             uint8_t delByte = deleted;
             crc = crc32c(&delByte, 1, crc);
             crc = crc32c((const uint8_t *)body.buf, body.size, crc);
+            crc = _enc32(crc);
             digest = slice((uint8_t *)&crc, 4);
 
             // Derive new rev's generation #:
