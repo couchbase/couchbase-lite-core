@@ -38,7 +38,7 @@ namespace litecore::REST {
                             const Address &address,
                             AllocedDict netConfig,
                             CompletionRoutine onComplete) {
-        Assert(_response);
+        Assert(!_response);
         _response.reset(new Response(address, net::POST));
         _csr = csr;
         _onComplete = onComplete;
@@ -114,6 +114,8 @@ namespace litecore::REST {
 
         // Finally call the completion routine:
         _onComplete(cert, error);
+        
+        _thread.detach();
         release(this); // balances retain() at end of start()
     }
 

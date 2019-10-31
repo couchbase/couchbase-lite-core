@@ -56,11 +56,7 @@ public:
             C4RegisterBuiltInWebSocket();
 
             // Pin the server certificate:
-#ifdef _MSC_VER
-            sPinnedCert = readFile("..\\Replicator\\tests\\data\\cert.pem");
-#else
-            sPinnedCert = readFile("Replicator/tests/data/cert.pem");
-#endif
+            sPinnedCert = readFile(sReplicatorFixturesDir + "cert.pem");
         });
 
         // Environment variables can also override the default address above:

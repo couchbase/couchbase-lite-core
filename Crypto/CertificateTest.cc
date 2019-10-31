@@ -20,6 +20,7 @@
 #include "c4.hh"
 #include "PublicKey.hh"
 #include "Certificate.hh"
+#include "CertRequest.hh"
 #include <iostream>
 
 using namespace litecore::crypto;
@@ -295,3 +296,34 @@ TEST_CASE("Cert request parsing", "[Certs]") {
     CHECK(san[0].second == "pupshaw@couchbase.org"_sl);
 }
 
+TEST_CASE_METHOD(C4Test, "Send CSR to CA failure", "[Certs][.SyncServer]") {
+    Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
+    Retained<CertSigningRequest> csr = new CertSigningRequest(DistinguishedName(kSubjectName), key);
+
+    // Bogus URL on local SG
+    litecore::net::Address address(alloc_slice("https://localhost:4994/_certsign"_sl));
+
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionPinnedServerCert));
+    enc.writeData(readFile(sReplicatorFixturesDir + "cert.pem"));
+    enc.endDict();
+    AllocedDict options(enc.finish());
+
+    atomic<bool> finished = false;
+    Retained<Cert> cert;
+    C4Error error;
+    auto rq = retained(new litecore::REST::CertRequest);
+    rq->start(csr, address, options, [&](Cert *cert_, C4Error error_) {
+        cert = cert_;
+        error = error_;
+        finished = true;
+    });
+
+    while (!finished)
+        this_thread::sleep_for(chrono::milliseconds(100));
+
+    CHECK(cert == nullptr);
+    CHECK(error.domain == WebSocketDomain);
+    CHECK(error.code == 404);
+}

@@ -150,7 +150,7 @@ public:
     static std::string sReplicatorFixturesDir;  // directory where replicator test files live
     static const std::string kDatabaseName;
 
-    C4Test(int testOption);
+    C4Test(int testOption =1);
     ~C4Test();
 
     C4Slice databasePath() const                {return c4str(_dbPath.c_str());}
