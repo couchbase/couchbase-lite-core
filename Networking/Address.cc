@@ -42,6 +42,17 @@ namespace litecore { namespace net {
     { }
 
 
+    Address::Address(slice scheme, slice hostname, uint16_t port, slice uri) {
+        C4Address address = {};
+        address.scheme = scheme;
+        address.hostname = hostname;
+        address.port = port;
+        address.path = uri;
+        _url = c4address_toURL(address);
+    }
+
+
+
     Address& Address::operator= (const Address &other) {
         *((C4Address*)this) = other;
         _url = other._url;

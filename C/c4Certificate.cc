@@ -22,6 +22,7 @@
 #include "c4Certificate.h"
 #include "Certificate.hh"
 #include "PublicKey.hh"
+#include "CertRequest.hh"
 #include "c4.hh"
 #include <vector>
 
@@ -285,6 +286,28 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
         // Sign!
         Retained<Cert> cert = csr->sign(params, privateKey(issuerPrivateKey), issuerCert);
         return retainedExternal(cert.get());
+    });
+}
+
+
+bool c4cert_sendSigningRequest(C4Cert *c4Cert C4NONNULL,
+                               C4Address address,
+                               C4Slice optionsDictFleece,
+                               C4CertSigningCallback callback C4NONNULL,
+                               void *context,
+                               C4Error *outError) C4API
+{
+    auto csr = asUnsignedCert(c4Cert, outError);
+    if (!csr)
+        return false;
+    return tryCatch(outError, [&] {
+        auto request = retained(new litecore::REST::CertRequest());
+        request->start(csr,
+                       net::Address(address),
+                       AllocedDict(optionsDictFleece),
+                       [=](crypto::Cert *cert, C4Error error) {
+                           callback(context, external(cert), error);
+                       });
     });
 }
 

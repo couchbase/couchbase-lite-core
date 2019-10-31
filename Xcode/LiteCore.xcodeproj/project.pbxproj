@@ -264,6 +264,8 @@
 		27D9655D2335663D00F4A51C /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		27D9655F2335667A00F4A51C /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		27DD1513193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
+		27DDC54B236B56D000580B2B /* CertRequest.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27DDC549236B56D000580B2B /* CertRequest.hh */; };
+		27DDC54C236B56D000580B2B /* CertRequest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DDC54A236B56D000580B2B /* CertRequest.cc */; };
 		27DE2E862125F32700123597 /* libactors.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DE2E852125F32700123597 /* libactors.a */; };
 		27DE2EE72125FAD600123597 /* libfleeceBase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DE2EE62125FAD600123597 /* libfleeceBase.a */; };
 		27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Record.cc */; };
@@ -1138,6 +1140,8 @@
 		27DDC53F23689BB100580B2B /* x509.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = x509.c; sourceTree = "<group>"; };
 		27DDC54023689BB100580B2B /* x509write_crt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = x509write_crt.c; sourceTree = "<group>"; };
 		27DDC54123689BB100580B2B /* net_sockets.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = net_sockets.c; sourceTree = "<group>"; };
+		27DDC549236B56D000580B2B /* CertRequest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CertRequest.hh; sourceTree = "<group>"; };
+		27DDC54A236B56D000580B2B /* CertRequest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CertRequest.cc; sourceTree = "<group>"; };
 		27DF46C21A12CF46007BB4A4 /* Record.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Record.cc; sourceTree = "<group>"; };
 		27DF46C31A12CF46007BB4A4 /* Record.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Record.hh; sourceTree = "<group>"; };
 		27DF7D631F4236500022F3DF /* libSQLite.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSQLite.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1626,6 +1630,8 @@
 				275A74D51ED3AA11008CB57B /* c4Listener.cc */,
 				279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */,
 				275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */,
+				27DDC549236B56D000580B2B /* CertRequest.hh */,
+				27DDC54A236B56D000580B2B /* CertRequest.cc */,
 				279D40F51EA533D900D8DD9D /* netUtils.cc */,
 				279D40F61EA533D900D8DD9D /* netUtils.hh */,
 				270BEE1C20647E8A005E8BE8 /* EE */,
@@ -2683,6 +2689,7 @@
 				27727C54230F279D0082BCC9 /* HTTPLogic.hh in Headers */,
 				27469CFD233C35EB00A1EE1A /* TLSContext.hh in Headers */,
 				270F2BD52301E8AE00D8DB21 /* TCPSocket.hh in Headers */,
+				27DDC54B236B56D000580B2B /* CertRequest.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3438,6 +3445,7 @@
 				27AFF3AE23036B2500B4D6C4 /* stream_socket.cpp in Sources */,
 				27AFF3B023036B5800B4D6C4 /* TCPSocket.cc in Sources */,
 				27AFF3B123036B5800B4D6C4 /* BuiltInWebSocket.cc in Sources */,
+				27DDC54C236B56D000580B2B /* CertRequest.cc in Sources */,
 				277071D6230B696E00F7EB95 /* HTTPTypes.cc in Sources */,
 				27AFF3A723036B2500B4D6C4 /* inet6_address.cpp in Sources */,
 				2742D10C2305C25D003197E1 /* Response.cc in Sources */,

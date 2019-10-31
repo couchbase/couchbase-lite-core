@@ -29,7 +29,7 @@ extern "C" {
     /** \defgroup certificates Certificates
         @{ */
 
-    /** Certificate types. A certificate may be of one or more of these.*/
+    /** Certificate usage types. A certificate may have one or more of these. */
     typedef C4_OPTIONS(uint8_t, C4CertUsage) { // Note: Same values as `MBEDTLS_X509_NS_CERT_TYPE_*`
         kC4CertUsage_NotSpecified      = 0x00, ///< No specified usage (not generally useful)
         kC4CertUsage_TLSClient         = 0x80, ///< TLS (SSL) client cert
@@ -42,41 +42,26 @@ extern "C" {
     };
 
 
-    /** Parameters for signing a certificate. These will be used by the Certificate Authority
-        (CA), which might be the same as the subject if self-signing. */
-    typedef struct {
-        unsigned validityInSeconds;         ///< seconds from signing till expiration (default 1 year)
-        C4String serialNumber;              ///< serial number string (default "1")
-        int maxPathLen;                     ///< maximum CA path length (default -1, meaning none)
-        bool isCA;                          ///< will this be a CA certificate? (default false)
-        bool addAuthorityIdentifier;        ///< add authority identifier to cert? (default true)
-        bool addSubjectIdentifier;          ///< add subject identifier to cert? (default true)
-        bool addBasicConstraints;           ///< add basic constraints extension? (default true)
-    } C4CertIssuerParameters;
-
-    /** Default issuer parameters. Every C4CertIssuerParameters should be initialized from this. */
-    extern const C4CertIssuerParameters kDefaultCertIssuerParameters;
-
-
     /** Certificate subject name attributes, from RFC 4519 and RFC 5280 (sec. 4.2.1.6)
         Only the CommonName is required; it's used as the visible name of the certificate.
         If the cert is to be used for a TLS server, the CommonName must match its DNS name. */
     typedef C4_ENUM(uint8_t, C4CertNameAttributeID) {
-        kC4Cert_CommonName,        // "Jane Doe", (or "jane.example.com")
-        kC4Cert_Pseudonym,         // "plainjane837"
-        kC4Cert_GivenName,         // "Jane"
-        kC4Cert_Surname,           // "Doe"
-        kC4Cert_Organization,      // "Example Corp."
-        kC4Cert_OrganizationUnit,  // "Marketing"
-        kC4Cert_PostalAddress,     // "123 Example Blvd #2A"
-        kC4Cert_Locality,          // "Boston"
-        kC4Cert_PostalCode,        // "02134"
-        kC4Cert_StateOrProvince,   // "Massachusetts" (or "Quebec", ...)
-        kC4Cert_Country,           // "us" (2-letter ISO country code)
-        // These are Subject Alternative Name attributes:
-        kC4Cert_OtherName,         // ???
-        kC4Cert_EmailAddress,      // rfc822Name, e.g. "jane@example.com"
-        kC4Cert_Hostname,          // dnsName, e.g. "www.example.com"
+        // Some common Distinguished Name attributes:
+        kC4Cert_CommonName,        // e.g. "Jane Doe", (or "jane.example.com")
+        kC4Cert_Pseudonym,         // e.g. "plainjane837"
+        kC4Cert_GivenName,         // e.g. "Jane"
+        kC4Cert_Surname,           // e.g. "Doe"
+        kC4Cert_Organization,      // e.g. "Example Corp."
+        kC4Cert_OrganizationUnit,  // e.g. "Marketing"
+        kC4Cert_PostalAddress,     // e.g. "123 Example Blvd #2A"
+        kC4Cert_Locality,          // e.g. "Boston"
+        kC4Cert_PostalCode,        // e.g. "02134"
+        kC4Cert_StateOrProvince,   // e.g. "Massachusetts" (or "Quebec", ...)
+        kC4Cert_Country,           // e.g. "us" (2-letter ISO country code)
+        // These are the Subject Alternative Name attributes:
+        kC4Cert_OtherName,         // Binary ASN.1 data containing a type and value
+        kC4Cert_EmailAddress,      // 'rfc822Name', e.g. "jane@example.com"
+        kC4Cert_Hostname,          // 'dnsName', e.g. "www.example.com"
         kC4Cert_X400Name,          // Yeah, I don't know what this is either
         kC4Cert_EDIPartyName,      // Ditto
         kC4Cert_URL,               // "https://example.com/jane"
@@ -86,31 +71,8 @@ extern "C" {
         kC4Cert_NoAttributeID
     };
 
-    /** A component of an X.509 "Relative Distinguished Name". */
-    typedef struct {
-        C4CertNameAttributeID attributeID; ///< Attribute ID; use one of the `kC4Cert_...` symbols defined
-                                ///< above. Arbitrary strings are not supported!
-        C4String value;         ///< Value of the attribute
-    } C4CertNameComponent;
-
-
     /** \name Certificate and CSR Functions
      @{ */
-
-    /** Creates a Certificate Signing Request, i.e. an unsigned certificate.
-        \note You are responsible for releasing the returned reference.
-        @param nameComponents  Pointer to an array of one or more \ref C4CertNameComponent structs.
-        @param nameCount  Number of items in the \p nameComponents array.
-        @param certUsages  Flags giving intended usage. (The certificate will be rejected by peers
-                if you try to use it for something not specified in its certUsages!)
-        @param subjectKey  The owner's private key that this certificate will attest to.
-        @param outError  On failure, the error info will be stored here.
-        @return  The new certificate request, or NULL on failure. */
-    C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents C4NONNULL,
-                                 size_t nameCount,
-                                 C4CertUsage certUsages,
-                                 C4KeyPair *subjectKey C4NONNULL,
-                                 C4Error *outError) C4API;
 
     /** Instantiates a C4Cert from X.509 certificate data in DER or PEM form.
         \note PEM data might consist of a series of certificates. If so, the returned C4Cert
@@ -120,17 +82,16 @@ extern "C" {
     C4Cert* c4cert_fromData(C4Slice certData,
                             C4Error *outError) C4API;
 
-    /** Instantiates a C4Cert from an X.509 certificate signing request (CSR) in DER or PEM form.
-        \note You are responsible for releasing the returned reference. */
-    C4Cert* c4cert_requestFromData(C4Slice certRequestData,
-                                   C4Error *outError) C4API;
-
     /** Returns the encoded X.509 data in DER (binary) or PEM (ASCII) form.
         \warning DER format can only encode a _single_ certificate, so if this C4Cert includes
             multiple certificates, use PEM format to preserve them.
         \note You are responsible for releasing the returned data. */
     C4SliceResult c4cert_copyData(C4Cert* C4NONNULL,
                                   bool pemEncoded) C4API;
+
+    /** Returns a human-readable, multi-line string describing the certificate in detail.
+        \note You are responsible for releasing the returned data. */
+    C4StringResult c4cert_summary(C4Cert* C4NONNULL) C4API;
 
     /** Returns the cert's Subject Name, which identifies the cert's owner.
         This is an X.509 structured string consisting of "KEY=VALUE" pairs separated by commas,
@@ -165,29 +126,6 @@ extern "C" {
     /** Returns the usage flags of a cert. */
     C4CertUsage c4cert_usages(C4Cert* C4NONNULL) C4API;
 
-    /** Returns a human-readable, multi-line string describing the certificate in detail.
-        \note You are responsible for releasing the returned data. */
-    C4StringResult c4cert_summary(C4Cert* C4NONNULL) C4API;
-
-    /** Returns true if this is a signed certificate, false if it's a signing request (CSR). */
-    bool c4cert_isSigned(C4Cert* C4NONNULL) C4API;
-
-    /** Signs an unsigned certificate (a CSR) and returns the new signed certificate.
-        \note You are responsible for releasing the returned reference.
-        @param cert  The unsigned certificate to be signed.
-        @param params  Capabilities to store in the cert; if NULL, uses defaults.
-        @param issuerPrivateKey  The Certificate Authority's private key. (If self-signing a
-                    cert, this should be the same as the `subjectKey` it was created with.)
-        @param issuerCert  The Certificate Authority's certificate (which must match
-                    \p issuerPrivateKey), or NULL if self-signing.
-        @param outError  On failure, the error info will be stored here.
-        @return  The signed certificate, or NULL on failure. */
-    C4Cert* c4cert_signRequest(C4Cert *cert C4NONNULL,
-                               const C4CertIssuerParameters *params,
-                               C4KeyPair *issuerPrivateKey C4NONNULL,
-                               C4Cert *issuerCert,
-                               C4Error *outError) C4API;
-
     /** Returns a certificate's public key.
         \note You are responsible for releasing the returned key reference. */
     C4KeyPair* c4cert_getPublicKey(C4Cert* C4NONNULL) C4API;
@@ -197,6 +135,104 @@ extern "C" {
         \note You are responsible for releasing the returned key reference. */
     C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert* C4NONNULL,
                                            C4Error *outError) C4API;
+
+    /** @} */
+
+
+
+    /** \name Certificate Requests and Signing
+     @{ */
+
+    /** A component of an X.509 "Relative Distinguished Name" or "Subject Alternative Name". */
+    typedef struct {
+        C4CertNameAttributeID attributeID;  ///< Attribute ID
+        C4String value;                     ///< Value of the attribute
+    } C4CertNameComponent;
+
+    /** Parameters for signing a certificate. These will be used by the Certificate Authority
+        (CA), which might be the same as the subject if self-signing. */
+    typedef struct {
+        unsigned validityInSeconds;         ///< seconds from signing till expiration (default 1 year)
+        C4String serialNumber;              ///< serial number string (default "1")
+        int maxPathLen;                     ///< maximum CA path length (default -1, meaning none)
+        bool isCA;                          ///< will this be a CA certificate? (default false)
+        bool addAuthorityIdentifier;        ///< add authority identifier to cert? (default true)
+        bool addSubjectIdentifier;          ///< add subject identifier to cert? (default true)
+        bool addBasicConstraints;           ///< add basic constraints extension? (default true)
+    } C4CertIssuerParameters;
+
+    /** Default issuer parameters. Every C4CertIssuerParameters should be initialized from this. */
+    extern const C4CertIssuerParameters kDefaultCertIssuerParameters;
+
+
+    /** Creates a Certificate Signing Request, i.e. an unsigned certificate.
+        \note You are responsible for releasing the returned reference.
+        @param nameComponents  Pointer to an array of one or more \ref C4CertNameComponent structs.
+        @param nameCount  Number of items in the \p nameComponents array.
+        @param certUsages  Flags giving intended usage. (The certificate will be rejected by peers
+                if you try to use it for something not specified in its certUsages!)
+        @param subjectKey  The owner's private key that this certificate will attest to.
+        @param outError  On failure, the error info will be stored here.
+        @return  The new certificate request, or NULL on failure. */
+    C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents C4NONNULL,
+                                 size_t nameCount,
+                                 C4CertUsage certUsages,
+                                 C4KeyPair *subjectKey C4NONNULL,
+                                 C4Error *outError) C4API;
+
+    /** Instantiates a C4Cert from an X.509 certificate signing request (CSR) in DER or PEM form.
+        \note You are responsible for releasing the returned reference. */
+    C4Cert* c4cert_requestFromData(C4Slice certRequestData,
+                                   C4Error *outError) C4API;
+
+    /** Returns true if this is a signed certificate, false if it's a signing request (CSR). */
+    bool c4cert_isSigned(C4Cert* C4NONNULL) C4API;
+
+    /** Completion routine called when an async \ref c4cert_sendSigningRequest finishes.
+        @param context  The same `context` value passed to \ref c4cert_sendSigningRequest.
+        @param signedCert  The signed certificate, if the operation was successful, else NULL.
+        @param error  The error, if the operation failed. */
+    typedef void (*C4CertSigningCallback)(void *context,
+                                          C4Cert *signedCert,
+                                          C4Error error);
+
+    /** Sends an unsigned certificate (a CSR) to a Certificate Authority (CA) over HTTP
+        to be signed, and _asynchronously_ returns the signed certificate.
+        \note There is no standard protocol for sending CSRs; this function uses the protocol
+                defined by Cloudflare's CFSSL.
+        @param request  The certificate request to be signed.
+        @param address  The URL of the CA server.
+        @param optionsDictFleece  Network options, just like the corresponding field in
+                    \ref C4ReplicatorParameters. Most importantly, this is used to specify
+                    authentication, without which the CA server won't sign anything.
+        @param callback A function that will be called, on a background thread, after the request
+                    completes.
+        @param context  An arbitrary value that will be passed to the callback function.
+        @param outError If the parameters are invalid, error info will be written here.
+        @return  True if the parameters are valid and the request will be sent; else false. */
+    bool c4cert_sendSigningRequest(C4Cert *certRequest C4NONNULL,
+                                   C4Address address,
+                                   C4Slice optionsDictFleece,
+                                   C4CertSigningCallback callback C4NONNULL,
+                                   void *context,
+                                   C4Error *outError) C4API;
+    /** Signs an unsigned certificate (a CSR) with a private key, and returns the new signed
+        certificate. This is the primary function of a Certificate Authority; but it can also
+        be used to create self-signed certificates.
+        \note You are responsible for releasing the returned reference.
+        @param certRequest  The unsigned certificate to be signed.
+        @param params  Capabilities to store in the cert; if NULL, uses defaults.
+        @param issuerPrivateKey  The Certificate Authority's private key. (If self-signing a
+                    cert, this should be the same as the `subjectKey` it was created with.)
+        @param issuerCert  The Certificate Authority's certificate (which must match
+                    \p issuerPrivateKey), or NULL if self-signing.
+        @param outError  On failure, the error info will be stored here.
+        @return  The signed certificate, or NULL on failure. */
+    C4Cert* c4cert_signRequest(C4Cert *certRequest C4NONNULL,
+                               const C4CertIssuerParameters *params,
+                               C4KeyPair *issuerPrivateKey C4NONNULL,
+                               C4Cert *issuerCert,
+                               C4Error *outError) C4API;
 
     /** @} */
 

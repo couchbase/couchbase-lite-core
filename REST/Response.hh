@@ -69,6 +69,9 @@ namespace litecore { namespace REST {
         I.e. this is a simple HTTP client API. */
     class Response : public Body {
     public:
+        Response(const net::Address&,
+                 net::Method =net::GET);
+
         Response(const std::string &scheme,
                  const std::string &method,
                  const std::string &hostname,
@@ -85,6 +88,8 @@ namespace litecore { namespace REST {
         ~Response();
 
         Response& setHeaders(fleece::Doc headers);
+        Response& setHeaders(const websocket::Headers &headers);
+
         Response& setAuthHeader(fleece::slice authHeader);
         Response& setBody(fleece::slice body);
         Response& setTLSContext(net::TLSContext*);
@@ -92,6 +97,7 @@ namespace litecore { namespace REST {
         Response& setTimeout(double timeoutSecs)        {_timeout = timeoutSecs; return *this;}
 
         Response& allowOnlyCert(fleece::slice certData);
+        Response& setRootCerts(fleece::slice certsData);
 #ifdef COUCHBASE_ENTERPRISE
         Response& allowOnlyCert(C4Cert*);
         Response& setRootCerts(C4Cert*);

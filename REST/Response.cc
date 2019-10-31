@@ -68,31 +68,35 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE:
 
 
+    Response::Response(const net::Address &address, Method method)
+    :_logic(new HTTPLogic(address))
+    {
+        _logic->setMethod(method);
+    }
+
+
     Response::Response(const string &scheme,
                        const std::string &method,
                        const string &hostname,
                        uint16_t port,
                        const string &uri)
-    {
-        C4Address address = {};
-        address.scheme = slice(scheme);
-        address.hostname = slice(hostname);
-        address.port = port;
-        address.path = slice(uri);
-        _logic.reset(new HTTPLogic(net::Address(address)));
-        _logic->setMethod(MethodNamed(method));
-    }
-
-
-    Response& Response::setHeaders(Doc headersDict) {
-        websocket::Headers headers(headersDict.root().asDict());
-        _logic->setHeaders(headers);
-        return *this;
-    }
+    :Response(Address(slice(scheme), slice(hostname), port, slice(uri)),
+              MethodNamed(method))
+    { }
 
 
     Response::~Response()
     { }
+
+
+    Response& Response::setHeaders(const websocket::Headers &headers) {
+        _logic->setHeaders(headers);
+        return *this;
+    }
+
+    Response& Response::setHeaders(Doc headersDict) {
+        return setHeaders( websocket::Headers(headersDict.root().asDict()) );
+    }
 
 
     Response& Response::setBody(slice body) {
@@ -124,6 +128,11 @@ namespace litecore { namespace REST {
 
     Response& Response::allowOnlyCert(slice certData) {
         tlsContext()->allowOnlyCert(certData);
+        return *this;
+    }
+
+    Response& Response::setRootCerts(slice certsData) {
+        tlsContext()->setRootCerts(certsData);
         return *this;
     }
 

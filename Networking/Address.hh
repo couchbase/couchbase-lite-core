@@ -35,6 +35,11 @@ namespace litecore { namespace net {
         explicit Address(const C4Address&);
         explicit Address(c4Database* NONNULL);
 
+        Address(slice scheme,
+                slice hostname,
+                uint16_t port,
+                slice uri);
+
         Address& operator= (const Address &addr);
 
         alloc_slice url() const                             {return _url;}
