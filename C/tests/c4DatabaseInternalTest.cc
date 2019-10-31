@@ -490,7 +490,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]"
     
     // Create a document:
     C4Document* doc = putDoc(C4STR("doc"), kC4SliceNull, C4STR("{'property':'value'}"));
-    C4Slice revID = C4STR("1-2cd690dd");
+    C4Slice revID = C4STR("1-dd90d62c");
     REQUIRE(doc->revID == revID);
     C4String docID = copy(doc->docID);
     C4String revID1 = copy(doc->revID);
@@ -498,14 +498,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]"
     
     // Update a document
     doc = putDoc(docID, revID1, C4STR("{'property':'newvalue'}"));
-    revID = C4STR("2-ea39cb8b");
+    revID = C4STR("2-297d79bd");
     REQUIRE(doc->revID == revID);
     C4String revID2 = copy(doc->revID);
     c4doc_free(doc);
 
     // Delete a document
     doc = putDoc(docID, revID2, kC4SliceNull, kRevDeleted);
-    revID = C4STR("3-fa06e49b");
+    revID = C4STR("3-d3b55aec");
     REQUIRE(doc->revID == revID);
     c4doc_free(doc);
     

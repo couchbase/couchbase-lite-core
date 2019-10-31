@@ -566,7 +566,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     REQUIRE(doc->docID == kDocID);
     C4Slice kExpectedRevID;
 	if(isRevTrees()) {
-		kExpectedRevID = C4STR("1-ef5bb512");
+		kExpectedRevID = C4STR("1-12b55bef");
 	} else {
         kExpectedRevID = C4STR("1@*");
 	}
@@ -587,7 +587,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     CHECK((unsigned long)commonAncestorIndex == 0ul);
     C4Slice kExpectedRev2ID;
 	if(isRevTrees()) {
-		kExpectedRev2ID = C4STR("2-56922592");
+		kExpectedRev2ID = C4STR("2-5c59e21c");
 	} else {
         kExpectedRev2ID = C4STR("2@*");
 	}
@@ -642,7 +642,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
     C4Log("After save");
     C4Slice kExpectedRevID;
 	if(isRevTrees()) {
-		kExpectedRevID = C4STR("1-ef5bb512");
+		kExpectedRevID = C4STR("1-12b55bef");
 	} else {
         kExpectedRevID = C4STR("1@*");
 	}
@@ -671,7 +671,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
     C4Log("After multiple updates");
 	C4Slice kExpectedRev2ID;
 	if(isRevTrees()) {
-		kExpectedRev2ID = C4STR("5-be9e0bc6");
+		kExpectedRev2ID = C4STR("5-38175e58");
 	} else {
         kExpectedRev2ID = C4STR("5@*");
 	}
@@ -769,7 +769,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
         REQUIRE(c4doc_resolveConflict(doc, C4STR("4-dddd"), C4STR("3-aaaaaa"),
                                       mergedBody, 0, &err));
         c4doc_selectCurrentRevision(doc);
-		revID = C4STR("5-af542432");
+		revID = C4STR("5-322454af");
         CHECK(doc->selectedRev.revID == revID);
         CHECK(doc->selectedRev.body == mergedBody);
         CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
@@ -787,7 +787,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
         REQUIRE(c4doc_resolveConflict(doc, C4STR("3-aaaaaa"), C4STR("4-dddd"),
                                       mergedBody, 0, &err));
         c4doc_selectCurrentRevision(doc);
-		revID = C4STR("4-bdb19437");
+		revID = C4STR("4-3794b1bd");
         CHECK(doc->selectedRev.revID == revID);
         CHECK(doc->selectedRev.body == mergedBody);
         CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
