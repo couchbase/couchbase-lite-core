@@ -3107,7 +3107,7 @@
 			attributes = {
 				CLASSPREFIX = "";
 				LastSwiftUpdateCheck = 0730;
-				LastUpgradeCheck = 1100;
+				LastUpgradeCheck = 1110;
 				ORGANIZATIONNAME = Couchbase;
 				TargetAttributes = {
 					27139B2F18F8E9750021A9A3 = {
@@ -3161,10 +3161,9 @@
 			};
 			buildConfigurationList = 2750723618E3E52800A80C5A /* Build configuration list for PBXProject "LiteCore" */;
 			compatibilityVersion = "Xcode 6.3";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				English,
 				en,
 				Base,
 			);
