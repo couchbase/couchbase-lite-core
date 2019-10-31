@@ -40,6 +40,7 @@ function(set_support_source_linux)
         LiteCore/Unix/strlcat.c
         LiteCore/Unix/arc4random.cc
         LiteCore/Support/StringUtil_icu.cc
+        LiteCore/Support/crc32c_sse4_2.cc
         PARENT_SCOPE
     )
 endfunction()
