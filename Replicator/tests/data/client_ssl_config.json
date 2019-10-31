@@ -7,9 +7,10 @@
     "SSLKey":  "privkey.pem",
     
     "unsupported": {
-        "SSLClientCerts": {
-            "CA_cert": "ca_cert.pem",
-            "required": true
+        "client_cert_auth": {
+            "required": true,
+            "ca_cert": "ca_cert.pem",
+            "prefixes": [ {"path": "san.email", "delimiters": "@"} ]
         }
     },
 
