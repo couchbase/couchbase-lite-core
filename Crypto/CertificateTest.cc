@@ -88,11 +88,12 @@ TEST_CASE("Key generation", "[Certs]") {
     CHECK(publicKey->data(KeyFormat::DER) == data);
 }
 
+static constexpr int kValidSeconds = 3600*24;
 
 static pair<Retained<PrivateKey>,Retained<Cert>> makeCert(slice subjectName) {
     Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
     Cert::IssuerParameters issuerParams;
-    issuerParams.validity_secs = 3600*24;
+    issuerParams.validity_secs = kValidSeconds;
     return {key, new Cert(DistinguishedName(subjectName), issuerParams, key)};
 }
 
@@ -107,8 +108,14 @@ TEST_CASE("Self-signed cert generation", "[Certs]") {
     cerr << "PEM data:\n" << string(cert->data(KeyFormat::PEM)) << '\n';
 
     CHECK(cert->subjectName() == kSubjectName);
-    cert = nullptr;
 
+    auto [created, expires] = cert->validTimespan();
+    time_t now = time(nullptr);
+    CHECK(difftime(now, created) >= 0);
+    CHECK(difftime(now, created) <= 100);
+    CHECK(difftime(expires, created) == kValidSeconds);
+
+    cert = nullptr;
     cert = new Cert(data);
     CHECK(cert->subjectName() == kSubjectName);
 }

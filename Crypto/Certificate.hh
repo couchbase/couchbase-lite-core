@@ -172,6 +172,9 @@ namespace litecore { namespace crypto {
         SubjectAltNames subjectAltNames() override;
         virtual fleece::alloc_slice summary(const char *indent ="") override;
 
+        /** Returns the cert's creation and expiration times. */
+        std::pair<time_t,time_t> validTimespan();
+
         /** Makes the certificate persistent by adding it to the platform-specific store
             (e.g. the Keychain on Apple devices.) */
         void makePersistent();

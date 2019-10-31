@@ -19,6 +19,7 @@
 #pragma once
 
 #include "c4Base.h"
+#include <time.h>
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -123,6 +124,14 @@ extern "C" {
                                    unsigned index,
                                    C4CertNameInfo *outInfo C4NONNULL) C4API;
 
+    /** Returns the time range during which a (signed) certificate is valid.
+        @param cert  The signed certificate.
+        @param outCreated  On return, the date/time the cert became valid (was signed).
+        @param outExpires  On return, the date/time at which the certificate expires. */
+    void c4cert_getValidTimespan(C4Cert* cert C4NONNULL,
+                                 C4Timestamp *outCreated,
+                                 C4Timestamp *outExpires);
+
     /** Returns the usage flags of a cert. */
     C4CertUsage c4cert_usages(C4Cert* C4NONNULL) C4API;
 
@@ -200,7 +209,7 @@ extern "C" {
         to be signed, and _asynchronously_ returns the signed certificate.
         \note There is no standard protocol for sending CSRs; this function uses the protocol
                 defined by Cloudflare's CFSSL.
-        @param request  The certificate request to be signed.
+        @param certRequest  The certificate request to be signed.
         @param address  The URL of the CA server.
         @param optionsDictFleece  Network options, just like the corresponding field in
                     \ref C4ReplicatorParameters. Most importantly, this is used to specify

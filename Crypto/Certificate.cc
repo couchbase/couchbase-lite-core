@@ -390,6 +390,27 @@ namespace litecore { namespace crypto {
     }
 
 
+    static time_t x509_to_time_t(const mbedtls_x509_time &xtime) {
+        // Note: X.509 times are in GMT.
+        ::tm time = {};
+        time.tm_year = xtime.year - 1900;
+        time.tm_mon  = xtime.mon - 1;
+        time.tm_mday = xtime.day;
+        time.tm_hour = xtime.hour;
+        time.tm_min  = xtime.min;
+        time.tm_sec  = xtime.sec;
+
+        time_t t = timegm(&time);
+        if (t == -1)
+            error::_throw(error::CorruptData, "Invalid date/time in X.509 certificate");
+        return t;
+    }
+
+    pair<time_t,time_t> Cert::validTimespan() {
+        return {x509_to_time_t(_cert->valid_from), x509_to_time_t(_cert->valid_to)};
+    }
+
+
     bool Cert::hasChain() {
         // mbedTLS certs are chained as a linked list through their `next` pointers.
         return _cert->next != nullptr;

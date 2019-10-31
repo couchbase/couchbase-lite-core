@@ -240,6 +240,23 @@ C4StringResult c4cert_summary(C4Cert* cert) C4API {
 }
 
 
+void c4cert_getValidTimespan(C4Cert* cert C4NONNULL,
+                             C4Timestamp *outCreated,
+                             C4Timestamp *outExpires)
+{
+    try {
+        if (Cert *signedCert = asSignedCert(cert); signedCert) {
+            time_t tCreated, tExpires;
+            tie(tCreated, tExpires) = signedCert->validTimespan();
+            *outCreated = C4Timestamp(difftime(tCreated, 0) * 1000.0);
+            *outExpires = C4Timestamp(difftime(tExpires, 0) * 1000.0);
+            return;
+        }
+    } catch (...) { }
+    *outCreated = *outExpires = 0;
+}
+
+
 bool c4cert_isSigned(C4Cert* cert) C4API {
     return internal(cert)->isSigned();
 }

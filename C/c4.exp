@@ -209,8 +209,10 @@ _c4pred_unregisterModel
 #_c4cert_subjectNameComponent
 #_c4cert_usages
 #_c4cert_summary
+#_c4cert_getValidTimespan
 #_c4cert_isSigned
 #_c4cert_signRequest
+#_c4cert_sendSigningRequest
 #_c4cert_loadPersistentPrivateKey
 #_c4cert_save
 #_c4cert_load
