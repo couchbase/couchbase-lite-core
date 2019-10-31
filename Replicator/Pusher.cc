@@ -641,6 +641,21 @@ namespace litecore { namespace repl {
         }
     }
 
+    void Pusher::afterEvent() {
+        Worker::afterEvent();
+
+        if(!_revsToRetry.empty()) {
+            _caughtUp = false;
+            auto revsToRetry = move(_revsToRetry);
+            _revsToRetry.clear();
+            for(const auto& revToRetry : revsToRetry) {
+                _pushingDocs[revToRetry->docID] = revToRetry;
+            }
+            
+            gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
+        }
+    }
+
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
         ActivityLevel level;
@@ -659,17 +674,8 @@ namespace litecore { namespace repl {
                 || _revisionBytesAwaitingReply > 0) {
             level = kC4Busy;
         } else if (!_revsToRetry.empty()) {
-            logInfo("%d documents failed to push and will be retried", (int)_pendingSequences.size());
+            logInfo("%d documents failed to push and will be retried", int(_revsToRetry.size()));
             level = kC4Busy;
-            Pusher* pusher = const_cast<Pusher *>(this);
-            pusher->_caughtUp = false;
-            auto revsToRetry = move(_revsToRetry);
-            pusher->_revsToRetry.clear();
-            for(const auto& revToRetry : revsToRetry) {
-                pusher->_pushingDocs[revToRetry->docID] = revToRetry;
-            }
-            
-            pusher->gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
         } else if (_options.push == kC4Continuous || isOpenServer()) {
             level = kC4Idle;
         } else {

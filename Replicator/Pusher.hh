@@ -52,6 +52,9 @@ namespace litecore { namespace repl {
                 && _options.pushFilter(doc->docID, doc->selectedRev.flags, FLValue_AsDict(bodyContent), _options.callbackContext);
         }
 
+    protected:
+        virtual void afterEvent() override;
+
     private:
         void _start(C4SequenceNumber sinceSequence);
         bool passive() const                         {return _options.push <= kC4Passive;}
