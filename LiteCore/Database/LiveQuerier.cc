@@ -52,7 +52,7 @@ namespace litecore {
 
     void LiveQuerier::run(Query::Options options) {
         _lastTime = clock::now();
-        enqueue(&LiveQuerier::_run, options);
+        enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_run), options);
     }
 
 
@@ -152,7 +152,7 @@ namespace litecore {
         delay_t delay = (idleTime <= kRapidChanges) ? kLongDelay : kShortDelay;
         logVerbose("DB changed after %.3f sec. Triggering query in %.3f secs",
                    idleTime.count(), delay.count());
-        enqueueAfter(delay, &LiveQuerier::_run, _currentEnumerator->options());
+        enqueueAfter(delay, FUNCTION_TO_QUEUE(LiveQuerier::_run), _currentEnumerator->options());
     }
 
 }

@@ -39,7 +39,7 @@ namespace litecore { namespace repl {
 
     Inserter::Inserter(Replicator *repl)
     :Worker(repl, "Insert")
-    ,_revsToInsert(this, &Inserter::_insertRevisionsNow,
+    ,_revsToInsert(this, FUNCTION_TO_QUEUE(Inserter::_insertRevisionsNow),
                    tuning::kInsertionDelay, tuning::kInsertionBatchSize)
     { }
 

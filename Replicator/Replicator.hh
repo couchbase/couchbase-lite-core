@@ -81,7 +81,7 @@ namespace litecore { namespace repl {
         Status status() const                   {return Worker::status();}   //FIX: Needs to be thread-safe
 
         void start(bool synchronous =false); 
-        void stop()                             {enqueue(&Replicator::_stop);}
+        void stop()                             {enqueue(FUNCTION_TO_QUEUE(Replicator::_stop));}
 
         /** Returns a fleece encoded list of the IDs of documents which have revisions pending push */
         alloc_slice pendingDocumentIDs(C4Error* outErr) const;
@@ -99,7 +99,7 @@ namespace litecore { namespace repl {
 
         void endedDocument(ReplicatedRev *d NONNULL);
         void onBlobProgress(const BlobProgress &progress) {
-            enqueue(&Replicator::_onBlobProgress, progress);
+            enqueue(FUNCTION_TO_QUEUE(Replicator::_onBlobProgress), progress);
         }
 
     protected:
@@ -109,13 +109,13 @@ namespace litecore { namespace repl {
 
         // BLIP ConnectionDelegate API:
         virtual void onHTTPResponse(int status, const fleece::AllocedDict &headers) override
-                                        {enqueue(&Replicator::_onHTTPResponse, status, headers);}
+                                        {enqueue(FUNCTION_TO_QUEUE(Replicator::_onHTTPResponse), status, headers);}
         virtual void onConnect() override
-                                                {enqueue(&Replicator::_onConnect);}
+                                                {enqueue(FUNCTION_TO_QUEUE(Replicator::_onConnect));}
         virtual void onClose(Connection::CloseStatus status, Connection::State state) override
-                                                {enqueue(&Replicator::_onClose, status, state);}
+                                                {enqueue(FUNCTION_TO_QUEUE(Replicator::_onClose), status, state);}
         virtual void onRequestReceived(blip::MessageIn *msg) override
-                                        {enqueue(&Replicator::_onRequestReceived, retained(msg));}
+                                        {enqueue(FUNCTION_TO_QUEUE(Replicator::_onRequestReceived), retained(msg));}
         virtual void changedStatus() override;
 
         virtual void onError(C4Error error) override;
@@ -138,7 +138,7 @@ namespace litecore { namespace repl {
         void reportStatus();
 
         void updateCheckpoint();
-        void saveCheckpoint(alloc_slice json)       {enqueue(&Replicator::_saveCheckpoint, json);}
+        void saveCheckpoint(alloc_slice json)       {enqueue(FUNCTION_TO_QUEUE(Replicator::_saveCheckpoint), json);}
         void _saveCheckpoint(alloc_slice json);
         void saveCheckpointNow();
 

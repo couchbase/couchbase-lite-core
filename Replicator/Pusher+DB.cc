@@ -83,7 +83,7 @@ namespace litecore { namespace repl {
                 _changeObserver = c4dbobs_create(db,
                                                  [](C4DatabaseObserver* observer, void *context) {
                                                      auto self = (Pusher*)context;
-                                                     self->enqueue(&Pusher::dbChanged);
+                                                     self->enqueue(FUNCTION_TO_QUEUE(Pusher::dbChanged));
                                                  },
                                                  this);
                 logDebug("Started DB observer");

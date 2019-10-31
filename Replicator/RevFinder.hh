@@ -35,7 +35,7 @@ namespace litecore { namespace repl {
                                DocIDMultiset *incomingDocs NONNULL,
                                std::function<void(std::vector<bool>)> completion)
         {
-            enqueue(&RevFinder::_findOrRequestRevs, retained(msg), incomingDocs, completion);
+            enqueue(FUNCTION_TO_QUEUE(RevFinder::_findOrRequestRevs), retained(msg), incomingDocs, completion);
         }
 
     private:

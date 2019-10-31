@@ -36,7 +36,7 @@ namespace litecore { namespace repl {
 
         // Called by the Puller:
         void handleRev(blip::MessageIn* revMessage NONNULL) {
-            enqueue(&IncomingRev::_handleRev, retained(revMessage));
+            enqueue(FUNCTION_TO_QUEUE(IncomingRev::_handleRev), retained(revMessage));
         }
         RevToInsert* rev() const                {return _rev;}
         alloc_slice remoteSequence() const      {return _remoteSequence;}
@@ -44,7 +44,7 @@ namespace litecore { namespace repl {
 
         // Called by the Inserter:
         void revisionProvisionallyInserted();
-        void revisionInserted()                 {enqueue(&IncomingRev::_revisionInserted);}
+        void revisionInserted()                 {enqueue(FUNCTION_TO_QUEUE(IncomingRev::_revisionInserted));}
 
     protected:
         ActivityLevel computeActivityLevel() const override;

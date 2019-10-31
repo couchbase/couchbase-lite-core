@@ -29,7 +29,7 @@ namespace litecore { namespace repl {
         IncomingBlob(Worker *parent NONNULL, C4BlobStore* NONNULL);
 
         void start(const PendingBlob &blob) {
-            enqueue(&IncomingBlob::_start, blob);
+            enqueue(FUNCTION_TO_QUEUE(IncomingBlob::_start), blob);
         }
 
         virtual std::string loggingIdentifier() const override;

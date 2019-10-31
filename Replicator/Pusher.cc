@@ -437,7 +437,7 @@ namespace litecore { namespace repl {
     void Pusher::couldntSendRevision(RevToSend* rev) {
         decrement(_revisionsInFlight);
         doneWithRev(rev, false, false);
-        enqueue(&Pusher::maybeSendMoreRevs);  // async call to avoid recursion
+        enqueue(FUNCTION_TO_QUEUE(Pusher::maybeSendMoreRevs));  // async call to avoid recursion
     }
 
 
@@ -492,7 +492,7 @@ namespace litecore { namespace repl {
                 progress.bytesCompleted += bytesRead;
                 if (bytesRead < capacity) {
                     c4stream_close(blob);
-                    this->enqueue(&Pusher::_attachmentSent);
+                    this->enqueue(FUNCTION_TO_QUEUE(Pusher::_attachmentSent));
                     done = true;
                 }
                 if (err.code) {

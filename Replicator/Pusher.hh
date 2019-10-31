@@ -36,7 +36,7 @@ namespace litecore { namespace repl {
         Pusher(Replicator *replicator NONNULL);
 
         // Starts an active push
-        void start(C4SequenceNumber sinceSequence)  {enqueue(&Pusher::_start, sinceSequence);}
+        void start(C4SequenceNumber sinceSequence)  {enqueue(FUNCTION_TO_QUEUE(Pusher::_start), sinceSequence);}
 
         void checkpointIsInvalid() {
             _checkpointValid = false;

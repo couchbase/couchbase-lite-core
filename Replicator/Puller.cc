@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
     :Worker(replicator, "Pull")
     ,_inserter(new Inserter(replicator))
     ,_revFinder(new RevFinder(replicator))
-    ,_returningRevs(this, &Puller::_revsFinished)
+    ,_returningRevs(this, FUNCTION_TO_QUEUE(Puller::_revsFinished))
 #if __APPLE__
     ,_revMailbox(nullptr, "Puller revisions")
 #endif
@@ -176,7 +176,7 @@ namespace litecore { namespace repl {
             // Pass the buck to the RevFinder so it can find the missing revs & request them...
             increment(_pendingRevFinderCalls);
             _revFinder->findOrRequestRevs(req, &_incomingDocIDs,
-                                          asynchronize([=](vector<bool> which) {
+                                          asynchronize("findOrRequestRevs Response", [=](vector<bool> which) {
                 // ... after the RevFinder returns:
                 decrement(_pendingRevFinderCalls);
                 for (size_t i = 0; i < which.size(); ++i) {

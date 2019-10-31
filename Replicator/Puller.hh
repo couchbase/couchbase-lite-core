@@ -36,13 +36,13 @@ namespace litecore { namespace repl {
     public:
         Puller(Replicator* NONNULL);
 
-        void setSkipDeleted()                   {enqueue(&Puller::_setSkipDeleted);}
+        void setSkipDeleted()                   {enqueue(FUNCTION_TO_QUEUE(Puller::_setSkipDeleted));}
 
         // Starts an active pull
-        void start(alloc_slice sinceSequence)   {enqueue(&Puller::_start, sinceSequence);}
+        void start(alloc_slice sinceSequence)   {enqueue(FUNCTION_TO_QUEUE(Puller::_start), sinceSequence);}
 
         // Called only by IncomingRev
-        void revWasProvisionallyHandled()       {enqueue(&Puller::_revWasProvisionallyHandled);}
+        void revWasProvisionallyHandled()       {enqueue(FUNCTION_TO_QUEUE(Puller::_revWasProvisionallyHandled));}
         void revWasHandled(IncomingRev *inc NONNULL);
 
         void insertRevision(RevToInsert *rev NONNULL);

@@ -130,7 +130,7 @@ namespace litecore { namespace websocket {
         }
 
         void open() {
-            enqueue(&CivetWebSocket::_open);
+            enqueue(FUNCTION_TO_QUEUE(CivetWebSocket::_open));
         }
 
         void onConnected(const mg_connection *connection) {
@@ -140,23 +140,23 @@ namespace litecore { namespace websocket {
         }
 
         void completedReceive(size_t byteCount) {
-            enqueue(&CivetWebSocket::_completedReceive, byteCount);
+            enqueue(FUNCTION_TO_QUEUE(CivetWebSocket::_completedReceive), byteCount);
         }
 
         void send(const alloc_slice &message) {
-            enqueue(&CivetWebSocket::_sendMessage, message);
+            enqueue(FUNCTION_TO_QUEUE(CivetWebSocket::_sendMessage), message);
         }
 
         void onMessage(int headerByte, const alloc_slice &data) {
-            enqueue(&CivetWebSocket::_onMessage, headerByte, data);
+            enqueue(FUNCTION_TO_QUEUE(CivetWebSocket::_onMessage), headerByte, data);
         }
 
         void close(int status, const alloc_slice &message) {
-            enqueue(&CivetWebSocket::_close, status, message);
+            enqueue(FUNCTION_TO_QUEUE(CivetWebSocket::_close), status, message);
         }
 
         void onClosed() {
-            enqueue(&CivetWebSocket::_onClosed);
+            enqueue(FUNCTION_TO_QUEUE(CivetWebSocket::_onClosed));
         }
 
     private:

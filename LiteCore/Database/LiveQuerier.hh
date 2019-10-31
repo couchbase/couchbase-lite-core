@@ -35,13 +35,13 @@ namespace litecore {
 
         void run(Query::Options options);
 
-        void stop()                             {enqueue(&LiveQuerier::_stop); waitTillCaughtUp();}
+        void stop()                             {enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_stop)); waitTillCaughtUp();}
 
     protected:
         virtual ~LiveQuerier();
 
     private:
-        void dbChanged(DatabaseChangeNotifier&) {enqueue(&LiveQuerier::_dbChanged);}
+        void dbChanged(DatabaseChangeNotifier&) {enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_dbChanged));}
 
         void _run(Query::Options);
         void _stop();
