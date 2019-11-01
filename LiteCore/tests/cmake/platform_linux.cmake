@@ -37,7 +37,8 @@ function(setup_build)
         dl
     )
 
-    if(NOT DISABLE_LTO_BUILD)
+    if(NOT DISABLE_LTO_BUILD AND
+       NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL ""))
         # When clang enables LTO, it compiles bitcode instead of machine code.  This means
         # that if the final product statically linking in LTO code is not also LTO-enabled
         # the linker will fail because it thinks bitcode is bad machine code
