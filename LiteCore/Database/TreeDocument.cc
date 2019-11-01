@@ -26,10 +26,10 @@
 #include "VersionedDocument.hh"
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
-#include "SecureDigest.hh"
+#include "CRC32Writer.hh"
 #include "FleeceImpl.hh"
+#include "JSONEncoder.hh"
 #include "varint.hh"
-#include "crc32c.h"
 #include "Endian.hh"
 #include <ctime>
 #include <algorithm>
@@ -429,7 +429,8 @@ namespace c4Internal {
             if (!body)
                 error::_throw((error::Domain)err.domain, err.code); //FIX: Ick.
 
-            revidBuffer encodedNewRevID = generateDocRevID(body, selectedRev.revID, deletion);
+            revidBuffer encodedNewRevID = generateDocRevID(body, _db->documentKeys(),
+                                                           selectedRev.revID, deletion);
 
             int httpStatus;
             auto newRev = _versionedDoc.insert(encodedNewRevID,
@@ -473,7 +474,7 @@ namespace c4Internal {
         }
 
 
-        static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
+        static revidBuffer generateDocRevID(C4Slice body, SharedKeys *sharedKeys, C4Slice parentRevID, bool deleted) {
             uint32_t crc = 0;
             slice digest;
             // Get CRC32 of (length-prefixed) parent rev ID, deletion flag, and revision body:
@@ -482,9 +483,9 @@ namespace c4Internal {
             crc = crc32c((const uint8_t *)parentRevID.buf, revLen, crc);
             uint8_t delByte = deleted;
             crc = crc32c(&delByte, 1, crc);
-            crc = crc32c((const uint8_t *)body.buf, body.size, crc);
+            crc = digestDocumentBody(body, sharedKeys, crc);
             crc = _enc32(crc);
-            digest = slice((uint8_t *)&crc, 4);
+            digest = slice(&crc, sizeof(crc));
 
             // Derive new rev's generation #:
             unsigned generation = 1;
@@ -493,6 +494,19 @@ namespace c4Internal {
                 generation = parentID.generation() + 1;
             }
             return revidBuffer(generation, digest, kDigestType);
+        }
+
+
+        static uint32_t digestDocumentBody(C4Slice body, SharedKeys *sharedKeys, uint32_t crc) {
+            if (body.size == 0)
+                return crc;
+            // The digest needs to be of the body as canonical JSON:
+            Scope scope(body, sharedKeys);
+            const Value *root = Value::fromTrustedData(body);
+            JSONEncoderTo<CRC32Writer> enc{CRC32Writer(crc)};
+            enc.setCanonical(true);
+            enc.writeValue(root);
+            return enc.writer().digest();
         }
 
 
@@ -529,6 +543,19 @@ namespace c4Internal {
         VersionedDocument *vdoc = VersionedDocument::containing(value);
         return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
     }
+
+    revidBuffer TreeDocumentFactory::generateDocRevID(C4Slice body, SharedKeys *sharedKeys,
+                                                      C4Slice parentRevID, bool deleted)
+    {
+        return TreeDocument::generateDocRevID(body, sharedKeys, parentRevID, deleted);
+    }
+
+    uint32_t TreeDocumentFactory::digestDocumentBody(C4Slice body, SharedKeys *sharedKeys,
+                                                     uint32_t initialCRC32)
+    {
+        return TreeDocument::digestDocumentBody(body, sharedKeys, initialCRC32);
+    }
+
 
 } // end namespace c4Internal
 

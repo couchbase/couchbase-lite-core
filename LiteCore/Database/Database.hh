@@ -21,6 +21,7 @@
 #include "c4Internal.hh"
 #include "c4Database.h"
 #include "c4Document.h"
+#include "RevID.hh"
 #include "DataFile.hh"
 #include "FilePath.hh"
 #include "InstanceCounted.hh"
@@ -193,6 +194,12 @@ namespace c4Internal {
             auto doc = treeDocumentContaining(value);
             return doc ? doc : leafDocumentContaining(value);
         }
+
+        // exposed for unit tests:
+        static revidBuffer generateDocRevID(C4Slice fleeceBody, fleece::impl::SharedKeys*,
+                                            C4Slice parentRevID, bool deleted);
+        static uint32_t digestDocumentBody(C4Slice body, fleece::impl::SharedKeys *sharedKeys,
+                                           uint32_t initialCRC32);
 
     private:
         static Document* treeDocumentContaining(const fleece::impl::Value *value);

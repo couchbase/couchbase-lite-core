@@ -238,6 +238,7 @@
 		27B64960206975F900FC12F7 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
 		27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */; };
 		27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */; };
+		27BB9DE8236CC3970039C896 /* DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BB9DE7236CC3970039C896 /* DatabaseTest.cc */; };
 		27BF024A1FB62647003D5BB8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
@@ -1051,6 +1052,8 @@
 		27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceUtil.cc; sourceTree = "<group>"; };
 		27B8425B1E5BC8380094903E /* c4.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4.hh; sourceTree = "<group>"; };
 		27B8425F1E5CC6500094903E /* Replicator+Checkpoints.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "Replicator+Checkpoints.cc"; sourceTree = "<group>"; };
+		27BB9DE0236C95F30039C896 /* CRC32Writer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CRC32Writer.hh; sourceTree = "<group>"; };
+		27BB9DE7236CC3970039C896 /* DatabaseTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseTest.cc; sourceTree = "<group>"; };
 		27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "LibC++Debug.cc"; sourceTree = "<group>"; };
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
@@ -1439,6 +1442,7 @@
 			children = (
 				275FF6D11E4947E1005F90DD /* c4BaseTest.cc */,
 				277015081D523E2E008BADD7 /* DataFileTest.cc */,
+				27BB9DE7236CC3970039C896 /* DatabaseTest.cc */,
 				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
 				272B1BEA1FB1513100F56620 /* FTSTest.cc */,
 				270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */,
@@ -1675,10 +1679,7 @@
 				275A74461ED37992008CB57B /* Base.hh */,
 				729272F12238DB8500E7208E /* c4ExceptionUtils.cc */,
 				729272F22238DB8500E7208E /* c4ExceptionUtils.hh */,
-				720E2CAA23690A7D008FC1B2 /* crc32c_armv8.cc */,
-				720E2CB023690A7D008FC1B2 /* crc32c_sse4_2.cc */,
-				720E2CB123690A7D008FC1B2 /* crc32c.cc */,
-				720E2CB523690B18008FC1B2 /* crc32c.h */,
+				27BB9DE6236C988E0039C896 /* CRC32 */,
 				27393A861C8A353A00829C9B /* Error.cc */,
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
@@ -1956,6 +1957,18 @@
 			);
 			path = "LiteCore-iOS Tests";
 			sourceTree = SOURCE_ROOT;
+		};
+		27BB9DE6236C988E0039C896 /* CRC32 */ = {
+			isa = PBXGroup;
+			children = (
+				27BB9DE0236C95F30039C896 /* CRC32Writer.hh */,
+				720E2CB523690B18008FC1B2 /* crc32c.h */,
+				720E2CB123690A7D008FC1B2 /* crc32c.cc */,
+				720E2CAA23690A7D008FC1B2 /* crc32c_armv8.cc */,
+				720E2CB023690A7D008FC1B2 /* crc32c_sse4_2.cc */,
+			);
+			name = CRC32;
+			sourceTree = "<group>";
 		};
 		27BF033C1FB62A87003D5BB8 /* Logging */ = {
 			isa = PBXGroup;
@@ -3004,6 +3017,7 @@
 				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
+				27BB9DE8236CC3970039C896 /* DatabaseTest.cc in Sources */,
 				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
 			);
