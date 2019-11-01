@@ -150,6 +150,95 @@ namespace litecore { namespace repl {
         _disconnect(websocket::kCodeNormal, {});
     }
 
+    alloc_slice Replicator::pendingDocumentIDs(C4Error* outErr) const {
+        if(!_pusher) {
+            // Couchbase Lite should not allow this case
+            return nullslice;
+        }
+
+        return _db->use<alloc_slice>([this, outErr](C4Database* db)
+        {
+            const auto dbLastSequence = c4db_getLastSequence(db);
+            const auto replLastSequence = _checkpoint.sequences().local;
+            if(replLastSequence >= dbLastSequence) {
+                return alloc_slice(nullslice);
+            }
+
+            C4EnumeratorOptions opts { kC4IncludeNonConflicted | kC4IncludeDeleted };
+            c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, replLastSequence, &opts, outErr);
+            if(!e) {
+                WarnError("Unable to enumerate changes for pending document IDs (%d / %d)", outErr->domain, outErr->code);
+                return alloc_slice(nullslice);
+            }
+
+            Encoder retEncoder;
+            retEncoder.beginArray(size_t(dbLastSequence - replLastSequence));
+            C4DocumentInfo info;
+            outErr->code = 0;
+            while(c4enum_next(e, outErr)) {
+                if(_options.pushFilter) {
+                    c4::ref<C4Document> nextDoc = c4enum_getDocument(e, outErr);
+                    if(!nextDoc) {
+                        if(outErr->code != 0) {
+                            Warn("Error getting document during pending document IDs (%d / %d)", outErr->domain, outErr->code);
+                        } else {
+                            Warn("Got non-existent document during pending document IDs, skipping...");
+                        }
+
+                        continue;
+                    }
+
+                    if(!c4doc_loadRevisionBody(nextDoc, outErr)) {
+                        Warn("Error loading revision body in pending document IDs (%d / %d)", outErr->domain, outErr->code);
+                        continue;
+                    }
+
+                    if(!_pusher->documentShouldBeFiltered(nextDoc)) {
+                        retEncoder.writeString(nextDoc->docID);
+                    }
+                } else {
+                    const bool success = c4enum_getDocumentInfo(e, &info);
+                    if(!success) {
+                        Warn("Unable to get document info during pending document IDs, skipping...");
+                        continue;
+                    }
+
+                    retEncoder.writeString(info.docID);
+                }
+            }
+
+            retEncoder.endArray();
+            FLError flErr;
+            auto retVal = retEncoder.finish(&flErr);
+            if(retVal == nullslice) {
+                WarnError("Unable to encode pending document IDs (%d)", flErr);
+                outErr->domain = FleeceDomain;
+                outErr->code = flErr;
+            }
+
+            return retVal;
+        });
+    }
+
+    bool Replicator::isDocumentPending(slice docId, C4Error* outErr) const {
+        if(!_pusher) {
+            // Couchbase Lite should not allow this case
+            return false;
+        }
+
+        return _db->use<bool>([this, docId, outErr](C4Database* db)
+        {
+            c4::ref<C4Document> doc = c4doc_get(db, docId, false, outErr);
+            if(!doc) {
+                return false;
+            }
+            
+            const auto replLastSequence = _checkpoint.sequences().local;
+            return doc->sequence > replLastSequence && !_pusher->documentShouldBeFiltered(doc);
+        });
+    }
+
+
     void Replicator::_disconnect(websocket::CloseCode closeCode, slice message) {
         auto conn = connection();
         if (conn) {

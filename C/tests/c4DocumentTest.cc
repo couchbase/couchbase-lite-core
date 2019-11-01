@@ -566,7 +566,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     REQUIRE(doc->docID == kDocID);
     C4Slice kExpectedRevID;
 	if(isRevTrees()) {
-		kExpectedRevID = C4STR("1-042ca1d3a1d16fd5ab2f87efc7ebbf50b7498032");
+		kExpectedRevID = C4STR("1-12b55bef");
 	} else {
         kExpectedRevID = C4STR("1@*");
 	}
@@ -587,7 +587,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     CHECK((unsigned long)commonAncestorIndex == 0ul);
     C4Slice kExpectedRev2ID;
 	if(isRevTrees()) {
-		kExpectedRev2ID = C4STR("2-201796aeeaa6ddbb746d6cab141440f23412ac51");
+		kExpectedRev2ID = C4STR("2-5c59e21c");
 	} else {
         kExpectedRev2ID = C4STR("2@*");
 	}
@@ -642,7 +642,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
     C4Log("After save");
     C4Slice kExpectedRevID;
 	if(isRevTrees()) {
-		kExpectedRevID = C4STR("1-042ca1d3a1d16fd5ab2f87efc7ebbf50b7498032");
+		kExpectedRevID = C4STR("1-12b55bef");
 	} else {
         kExpectedRevID = C4STR("1@*");
 	}
@@ -671,7 +671,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
     C4Log("After multiple updates");
 	C4Slice kExpectedRev2ID;
 	if(isRevTrees()) {
-		kExpectedRev2ID = C4STR("5-a452899fa8e69b06d936a5034018f6fff0a8f906");
+		kExpectedRev2ID = C4STR("5-38175e58");
 	} else {
         kExpectedRev2ID = C4STR("5@*");
 	}
@@ -769,7 +769,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
         REQUIRE(c4doc_resolveConflict(doc, C4STR("4-dddd"), C4STR("3-aaaaaa"),
                                       mergedBody, 0, &err));
         c4doc_selectCurrentRevision(doc);
-		revID = C4STR("5-79b2ecd897d65887a18c46cc39db6f0a3f7b38c4");
+		revID = C4STR("5-322454af");
         CHECK(doc->selectedRev.revID == revID);
         CHECK(doc->selectedRev.body == mergedBody);
         CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
@@ -787,7 +787,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
         REQUIRE(c4doc_resolveConflict(doc, C4STR("3-aaaaaa"), C4STR("4-dddd"),
                                       mergedBody, 0, &err));
         c4doc_selectCurrentRevision(doc);
-		revID = C4STR("4-1fa2dbcb66b5e0456f6d6fc4a90918d42f3dd302");
+		revID = C4STR("4-3794b1bd");
         CHECK(doc->selectedRev.revID == revID);
         CHECK(doc->selectedRev.body == mergedBody);
         CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));

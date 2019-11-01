@@ -35,6 +35,7 @@ function(set_support_source)
         LiteCore/Support/StringUtil_Apple.mm
         LiteCore/Support/LibC++Debug.cc
         LiteCore/Support/Instrumentation.cc
+        LiteCore/Support/crc32c_sse4_2.cc
         PARENT_SCOPE
     )
 endfunction()
@@ -61,5 +62,5 @@ function(setup_support_build)
 endfunction()
 
 function(setup_rest_build)
-    # No-op
+    setup_rest_build_unix()
 endfunction()

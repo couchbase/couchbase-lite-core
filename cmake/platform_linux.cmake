@@ -37,6 +37,7 @@ function(set_support_source_linux)
         LiteCore/Unix/strlcat.c
         LiteCore/Unix/arc4random.cc
         LiteCore/Support/StringUtil_icu.cc
+        LiteCore/Support/crc32c_sse4_2.cc
         PARENT_SCOPE
     )
 endfunction()
@@ -54,6 +55,12 @@ function(setup_litecore_build_linux)
     target_include_directories(
         LiteCoreStatic PRIVATE
         LiteCore/Unix
+    )
+
+    # Specify list of symbols to export
+    set_target_properties(
+        LiteCore PROPERTIES LINK_FLAGS
+        "-Wl,--version-script=${PROJECT_SOURCE_DIR}/C/c4.gnu"
     )
 endfunction()
 

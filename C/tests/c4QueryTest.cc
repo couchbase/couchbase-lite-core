@@ -64,15 +64,87 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query LIKE", "[Query][C]") {
             "0000088", "0000094" }));
         compile(json5("['LIKE', ['.name.first'], 'Jen%']"));
         CHECK(run() == (vector<string>{ "0000008", "0000028" }));
+
+        compile(json5("['LIKE', ['.name.first'], 'Jen_']"));
+        CHECK(run() == (vector<string>{ "0000028" }));
+
+        compile(json5("['LIKE', ['.name.first'], '_ene']"));
+        CHECK(run() == (vector<string>{ "0000028" }));
+
+        compile(json5("['LIKE', ['.name.first'], 'J_ne']"));
+        CHECK(run() == (vector<string>{ "0000028" }));
+
+        // Check backtracking (e.g. Janette should not fail because of extra characters
+        // after Jane because there is another e at the end)
+        compile(json5("['LIKE', ['.name.first'], 'J%e']"));
+        CHECK(run() == (vector<string>{ "0000028", "0000052", "0000088" }));
     }
 
     SECTION("Escaped") {
         addPersonInState("weird", "NY", "Bart%Simpson");
         addPersonInState("weirder", "NY", "Bart\\\\Simpson");
+        addPersonInState("coder", "CA", "Bart_Simpson");
         compile(json5("['LIKE', ['.name.first'], 'Bart\\\\%%']"));
         CHECK(run() == (vector<string>{ "weird" }));
         compile(json5("['LIKE', ['.name.first'], 'Bart\\\\\\\\%']"));
         CHECK(run() == (vector<string>{ "weirder" }));
+        compile(json5("['LIKE', ['.name.first'], 'Bart\\\\_Simpson']"));
+        CHECK(run() == (vector<string>{ "coder" }));
+    }
+
+    SECTION("Collated Case-Insensitive") {
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': true}, ['LIKE', ['.name.first'], 'jen%']]"));
+        CHECK(run() == (vector<string>{ "0000008", "0000028" }));
+
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': true}, ['LIKE', ['.name.first'], 'jén%']]"));
+        CHECK(run().empty());
+    }
+
+    SECTION("Collated Diacritic-Insensitive") {
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': true, 'diac': false}, ['LIKE', ['.name.first'], 'Jén%']]"));
+        CHECK(run() == (vector<string>{ "0000008", "0000028" }));
+
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': true, 'diac': false}, ['LIKE', ['.name.first'], 'jén%']]"));
+        CHECK(run().empty());
+    }
+
+    SECTION("Everything insensitive") {
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': false}, ['LIKE', ['.name.first'], 'jén%']]"));
+        CHECK(run() == (vector<string>{ "0000008", "0000028" }));
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Contains", "[Query][C]") {
+    SECTION("General") {
+        compile(json5("['CONTAINS()', ['.name.first'], 'Jen']"));
+        CHECK(run() == (vector<string>{ "0000008", "0000028" }));
+
+        compile(json5("['CONTAINS()', ['.name.first'], 'jen']"));
+        CHECK(run().empty());
+
+        compile(json5("['CONTAINS()', ['.name.first'], 'Jén']"));
+        CHECK(run().empty());
+    }
+
+    SECTION("Collated Case-Insensitive") {
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': true}, ['CONTAINS()', ['.name.first'], 'jen']]"));
+        CHECK(run() == (vector<string>{ "0000008", "0000028" }));
+
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': true}, ['CONTAINS()', ['.name.first'], 'jén']]"));
+        CHECK(run().empty());
+    }
+
+    SECTION("Collated Diacritic-Insensitive") {
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': true, 'diac': false}, ['CONTAINS()', ['.name.first'], 'Jén']]"));
+        CHECK(run() == (vector<string>{ "0000008", "0000028" }));
+
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': true, 'diac': false}, ['CONTAINS()', ['.name.first'], 'jén']]"));
+        CHECK(run().empty());
+    }
+
+    SECTION("Everything insensitive") {
+        compile(json5(u8"['COLLATE', {'unicode': true, 'case': false, 'diac': false}, ['CONTAINS()', ['.name.first'], 'jén']]"));
+        CHECK(run() == (vector<string>{ "0000008", "0000028" }));
     }
 }
 

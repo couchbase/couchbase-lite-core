@@ -81,6 +81,7 @@ namespace litecore { namespace repl {
         bool            noConflicts {false};        // Server is in no-conflicts mode
         bool            legacyAttachments {false};  // Add _attachments property when sending
         bool            deltaOK {false};            // Can send a delta
+        int8_t          retryCount {0};             // Number of times this revision has been retried
         std::unique_ptr<std::set<alloc_slice>> ancestorRevIDs; // Known ancestor revIDs the peer already has
 
         RevToSend(const C4DocumentInfo &info);

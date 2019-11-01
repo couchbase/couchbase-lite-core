@@ -92,6 +92,14 @@ struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
         return _options.push == kC4Continuous || _options.pull == kC4Continuous;
     }
 
+    C4SliceResult pendingDocumentIDs(C4Error* outErr) const {
+        return (C4SliceResult)_replicator->pendingDocumentIDs(outErr);
+    }
+
+    bool isDocumentPending(C4Slice docID, C4Error* outErr) const {
+        return _replicator->isDocumentPending(docID, outErr);
+    }
+
 protected:
     // base constructor
     C4Replicator(C4Database* db NONNULL, const C4ReplicatorParameters &params)
@@ -149,7 +157,7 @@ protected:
         _replicator->start();
     }
 
-
+    
     // ---- ReplicatorDelegate API:
 
 

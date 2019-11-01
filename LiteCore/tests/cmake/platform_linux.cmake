@@ -31,9 +31,8 @@ function(setup_build)
         CppTests PRIVATE
         ${LIBCXX_LIB}
         ${LIBCXXABI_LIB}
-        ${ICU4C_COMMON}
-        ${ICU4C_I18N}
-        z
+        ${ICU_LIBS}
+        ${ZLIB_LIB}
         pthread
         dl
     )
@@ -43,5 +42,11 @@ function(setup_build)
             CppTests PRIVATE
             atomic
         )
+
+    if(NOT DISABLE_LTO_BUILD)
+        # When clang enables LTO, it compiles bitcode instead of machine code.  This means
+        # that if the final product statically linking in LTO code is not also LTO-enabled
+        # the linker will fail because it thinks bitcode is bad machine code
+        set_property(TARGET CppTests PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
 endfunction()

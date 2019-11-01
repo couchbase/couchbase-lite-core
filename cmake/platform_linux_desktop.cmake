@@ -23,7 +23,7 @@ function(setup_globals)
         endif()
         message("Found libc++abi at ${LIBCXXABI_LIB}")
         find_path(LIBCXX_INCLUDE c++/v1/string
-            HINTS "${CMAKE_BINARY_DIR}/tlm/deps/libcxx.exploded"
+            PATHS "${CMAKE_BINARY_DIR}/tlm/deps/libcxx.exploded"
             PATH_SUFFIXES include)
         if (NOT LIBCXX_INCLUDE)
             message(FATAL_ERROR "libc++ header files not found")
@@ -35,24 +35,43 @@ function(setup_globals)
         endif()
         include_directories("/usr/include/libcxxabi") # this fixed path is here to avoid Clang issue noted at http://lists.alioth.debian.org/pipermail/pkg-llvm-team/2015-September/005208.html
     endif()
-    find_library(ICU4C_COMMON icuuc)
-    if (NOT ICU4C_COMMON)
-        message(FATAL_ERROR "libicuuc not found")
+    if(NOT LITECORE_DISABLE_ICU)
+        set (_icu_libs)
+        foreach (_lib icuuc icui18n icudata)
+            unset (_iculib CACHE)
+            find_library(_iculib ${_lib})
+            if (NOT _iculib)
+                message(FATAL_ERROR "${_lib} not found")
+            endif()
+            list(APPEND _icu_libs ${_iculib})
+        endforeach()
+        set (ICU_LIBS ${_icu_libs} CACHE STRING "ICU libraries" FORCE)
+        message("Found ICU libs at ${ICU_LIBS}")
+
+        find_path(LIBICU_INCLUDE unicode/ucol.h
+            HINTS "${CMAKE_BINARY_DIR}/tlm/deps/icu4c.exploded"
+            PATH_SUFFIXES include)
+        if (NOT LIBICU_INCLUDE)
+            message(FATAL_ERROR "libicu header files not found")
+        endif()
+        message("Using libicu header files in ${LIBICU_INCLUDE}")
+        include_directories("${LIBICU_INCLUDE}")
+        mark_as_advanced(ICU_LIBS LIBICU_INCLUDE)
     endif()
-    message("Found libicuuc at ${ICU4C_COMMON}")
-    find_library(ICU4C_I18N icui18n)
-    if (NOT ICU4C_I18N)
-        message(FATAL_ERROR "libicui18n not found")
+
+    find_library(ZLIB_LIB z)
+    if (NOT ZLIB_LIB)
+        message(FATAL_ERROR "libz not found")
     endif()
-    message("Found libicui18n at ${ICU4C_I18N}")
-    find_path(LIBICU_INCLUDE unicode/ucol.h
-        HINTS "${CMAKE_BINARY_DIR}/tlm/deps/icu4c.exploded"
+    message("Found libz at ${ZLIB_LIB}")
+    find_path(ZLIB_INCLUDE NAMES zlib.h
+        HINTS "${CMAKE_BINARY_DIR}/tlm/deps/zlib.exploded"
         PATH_SUFFIXES include)
-    if (NOT LIBICU_INCLUDE)
-        message(FATAL_ERROR "libicu header files not found")
+    if (NOT ZLIB_INCLUDE)
+        message(FATAL_ERROR "libz header files not found")
     endif()
-    message("Using libicu header files in ${LIBICU_INCLUDE}")
-    include_directories("${LIBICU_INCLUDE}")
+    include_directories(${ZLIB_INCLUDE})
+    message("Using libz header files in ${ZLIB_INCLUDE}")
 
     # libc++ is special - clang will introduce an implicit -lc++ when it is used.
     # That means we need to tell the linker the path to the directory containing
@@ -60,6 +79,11 @@ function(setup_globals)
     # *before* the target declaration as it affects all subsequent targets.
     get_filename_component (LIBCXX_LIBDIR "${LIBCXX_LIB}" DIRECTORY)
     link_directories (${LIBCXX_LIBDIR})
+
+    mark_as_advanced(
+        LIBCXX_INCLUDE LIBCXX_LIB LIBCXXABI_LIB LIBCXX_LIBDIR
+        ZLIB_LIB ZLIB_INCLUDE
+    )
 endfunction()
 
 function(set_litecore_source)
@@ -97,9 +121,8 @@ function(setup_litecore_build)
 
     target_link_libraries(
         LiteCore PRIVATE 
-        z 
-        ${ICU4C_COMMON} 
-        ${ICU4C_I18N}
+        ${ZLIB_LIB}
+        ${ICU_LIBS}
     )
 endfunction()
 
@@ -108,5 +131,5 @@ function(setup_support_build)
 endfunction()
 
 function(setup_rest_build)
-    # No-op
+    setup_rest_build_unix()
 endfunction()

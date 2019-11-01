@@ -151,7 +151,6 @@ namespace litecore {
             throw SQLite::Exception(dbHandle, rc);
         return context;
     }
-
 }
 
 #endif // !__APPLE__

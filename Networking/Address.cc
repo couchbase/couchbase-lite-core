@@ -42,15 +42,19 @@ namespace litecore { namespace net {
     { }
 
 
-    Address::Address(slice scheme, slice hostname, uint16_t port, slice uri) {
+    inline C4Address mkAddr(slice scheme, slice hostname, uint16_t port, slice uri) {
         C4Address address = {};
         address.scheme = scheme;
         address.hostname = hostname;
         address.port = port;
         address.path = uri;
-        _url = c4address_toURL(address);
+        return address;
     }
 
+
+    Address::Address(slice scheme, slice hostname, uint16_t port, slice uri)
+    :Address(mkAddr(scheme, hostname, port, uri))
+    { }
 
 
     Address& Address::operator= (const Address &other) {

@@ -24,8 +24,14 @@ function(setup_build)
     target_link_libraries(
         C4Tests PRIVATE
         pthread
+        FleeceBase
+        Support
+        BLIPStatic
+        CivetWeb
+        mbedcrypto
         ${LIBCXX_LIB}
         ${LIBCXXABI_LIB}
+        ${ZLIB_LIB}
         dl
     )
 endfunction()

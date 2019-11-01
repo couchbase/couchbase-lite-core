@@ -43,11 +43,8 @@ _c4db_open
 _c4db_openNamed
 _c4db_close
 _c4db_copy
-_c4db_copyNamed
 _c4db_delete
 _c4db_deleteAtPath
-_c4db_deleteNamed
-_c4db_exists
 _c4db_compact
 _c4db_rekey
 _c4db_getPath
@@ -77,7 +74,6 @@ _c4doc_release
 _c4doc_generateID
 _c4doc_get
 _c4doc_getBySequence
-_c4doc_getSingleRevision
 _c4db_purgeDoc
 _c4doc_selectRevision
 _c4doc_selectCurrentRevision
@@ -141,7 +137,6 @@ _c4blob_keyFromString
 _c4blob_keyToString
 _c4blob_openStore
 _c4blob_deleteStore
-_c4blob_freeStore
 _c4blob_getSize
 _c4blob_getContents
 _c4blob_getFilePath
@@ -158,7 +153,6 @@ _c4stream_seek
 _c4stream_close
 
 _c4stream_write
-_c4stream_bytesWritten
 _c4stream_computeBlobKey
 _c4stream_install
 _c4stream_closeWriter
@@ -170,9 +164,6 @@ _c4dbobs_releaseChanges
 _c4dbobs_free
 _c4docobs_create
 _c4docobs_free
-_c4queryobs_create
-_c4queryobs_free
-_c4queryobs_getEnumerator
 
 # c4repl
 _c4repl_new
@@ -185,6 +176,8 @@ _c4repl_retry
 _c4repl_setOptions
 _c4repl_setHostReachable
 _c4repl_setSuspended
+_c4repl_getPendingDocIDs
+_c4repl_isDocumentPending
 
 # c4socket
 _c4socket_registerFactory
@@ -261,12 +254,14 @@ _FLValue_AsDict
 _FLValue_ToString
 _FLValue_ToJSON
 _FLValue_ToJSONX
+_FLValue_Release
 
 _FLData_ConvertJSON
 _FLJSON5_ToJSON
 
 _FLArray_Count
 _FLArray_Get
+_FLArray_IsEmpty
 _FLArrayIterator_Begin
 _FLArrayIterator_GetCount
 _FLArrayIterator_GetValue
@@ -276,12 +271,14 @@ _FLArrayIterator_Next
 _FLDict_Count
 _FLDict_Get
 _FLDict_GetWithKey
+_FLDict_IsEmpty
 _FLDictIterator_Begin
 _FLDictIterator_GetCount
 _FLDictIterator_GetKey
 _FLDictIterator_GetKeyString
 _FLDictIterator_GetValue
 _FLDictIterator_Next
+_FLDictIterator_End
 _FLDictKey_Init
 _FLDictKey_GetString
 
@@ -303,7 +300,6 @@ _FLEncoder_BeginArray
 _FLEncoder_EndArray
 _FLEncoder_BeginDict
 _FLEncoder_WriteKey
-_FLEncoder_WriteKeyValue
 _FLEncoder_EndDict
 _FLEncoder_FinishDoc
 _FLEncoder_Finish
@@ -348,6 +344,7 @@ _kC4SQLiteStorageEngine
 _kC4DatabaseFilenameExtension
 
 _c4_getBuildInfo
+_c4_setTempDir
 
 _c4log
 _c4vlog
@@ -358,23 +355,34 @@ _kC4QueryLog
 _kC4SyncLog
 _kC4WebSocketLog
 
+_c4log_willLog
+
 _c4error_getDescription
 _c4error_getDescriptionC
 
+_c4key_setPassword
+
+_c4db_copyNamed
+_c4db_deleteNamed
 _c4db_openAgain
+_c4db_openNamed
 _c4db_createFleeceEncoder
 _c4db_lock
 _c4db_unlock
 _c4db_getRemoteDBID
+_c4db_exists
 
 _c4doc_removeRevisionBody
 _c4doc_getForPut
 _c4doc_bodyAsJSON
 _c4doc_hasOldMetaProperties
+_c4doc_containingValue
 _c4doc_encodeStrippingOldMetaProperties
 _c4doc_detachRevisionBody
 _c4doc_getRemoteAncestor
 _c4doc_getBlobData
+_c4doc_getSingleRevision
+_c4doc_generateID
 
 _c4db_getIndexesInfo
 
@@ -385,7 +393,14 @@ _c4queryenum_getRowCount
 
 _c4query_fullTextMatched
 
+_c4queryobs_create
+_c4queryobs_getEnumerator
+_c4queryobs_free
+
 _c4blob_computeKey
+_c4blob_freeStore
+
+_c4stream_bytesWritten
 
 _c4repl_isValidDatabaseName
 _c4repl_isValidRemote
@@ -415,6 +430,5 @@ _FLSharedKeys_Release
 
 _FLValue_ToJSON5
 
-# C4Tests, Mac only
+# Apple specific
 _FLEncoder_WriteNSObject
-

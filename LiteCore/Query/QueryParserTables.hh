@@ -63,8 +63,8 @@ namespace litecore {
         {"IS"_sl,      2, 2,  3,  &QueryParser::infixOp},
         {"IS NOT"_sl,  2, 2,  3,  &QueryParser::infixOp},
         {"IN"_sl,      2, 9,  3,  &QueryParser::inOp},
+        {"LIKE"_sl,    2, 3,  3,  &QueryParser::likeOp},
         {"NOT IN"_sl,  2, 9,  3,  &QueryParser::inOp},
-        {"LIKE"_sl,    2, 2,  3,  &QueryParser::likeOp},
         {"MATCH"_sl,   2, 2,  3,  &QueryParser::matchOp},
         {"BETWEEN"_sl, 3, 3,  3,  &QueryParser::betweenOp},
         {"EXISTS"_sl,  1, 1,  8,  &QueryParser::existsOp},
@@ -106,7 +106,7 @@ namespace litecore {
     // https://developer.couchbase.com/documentation/server/current/n1ql/n1ql-language-reference/functions.html
     // http://www.sqlite.org/lang_corefunc.html
     // http://www.sqlite.org/lang_aggfunc.html
-    struct FunctionSpec {slice name; int minArgs; int maxArgs; slice sqlite_name; bool aggregate;};
+    struct FunctionSpec {slice name; int minArgs; int maxArgs; slice sqlite_name; bool aggregate; bool wants_collation;};
     static const FunctionSpec kFunctionList[] = {
         // Array:
         {"array_avg"_sl,        1, 1},
@@ -165,9 +165,10 @@ namespace litecore {
         {"regexp_like"_sl,      2, 2},
         {"regexp_position"_sl,  2, 2},
         {"regexp_replace"_sl,   3, 9},
+        {"fl_like"_sl,          2, 2, nullslice, false, true},
 
         // Strings:
-        {"contains"_sl,         2, 2},
+        {"contains"_sl,         2, 2, nullslice, false, true},
         {"length"_sl,           1, 1, "N1QL_length"_sl},
         {"lower"_sl,            1, 1, "N1QL_lower"_sl},
         {"ltrim"_sl,            1, 2, "N1QL_ltrim"_sl},

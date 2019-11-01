@@ -153,7 +153,7 @@ namespace litecore { namespace repl {
             return;
         if (err.code)
             return gotError(err);
-        DebugAssert(lastSequence >= _lastSequenceRead + changes->size());
+        
         _lastSequenceRead = lastSequence;
         _pendingSequences.seen(lastSequence);
         if (changes->empty()) {
@@ -409,7 +409,11 @@ namespace litecore { namespace repl {
                 } else {
                     auto err = progress.reply->getError();
                     auto c4err = blipToC4Error(err);
-                    bool transient = c4error_mayBeTransient(c4err);
+                    
+                    // CBL-123: Retry HTTP forbidden once
+                    bool transient = c4error_mayBeTransient(c4err) ||
+                        (c4err.code == 403 && rev->retryCount++ == 0);
+                    
                     logError("Got error response to rev '%.*s' #%.*s (seq #%" PRIu64 "): %.*s %d '%.*s'",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
@@ -419,6 +423,10 @@ namespace litecore { namespace repl {
                     completed = !transient;
                 }
                 doneWithRev(rev, completed, synced);
+                if(!passive() && !completed) {
+                    _revsToRetry.push_back(rev);
+                }
+                
                 maybeSendMoreRevs();
             }
         });
@@ -561,7 +569,7 @@ namespace litecore { namespace repl {
 #pragma mark - PROGRESS:
 
 
-    void Pusher::doneWithRev(const RevToSend *rev, bool completed, bool synced) {
+    void Pusher::doneWithRev(RevToSend *rev, bool completed, bool synced) {
         if (!passive()) {
             addProgress({rev->bodySize, 0});
             if (completed) {
@@ -627,6 +635,21 @@ namespace litecore { namespace repl {
         }
     }
 
+    void Pusher::afterEvent() {
+        Worker::afterEvent();
+
+        if(!_revsToRetry.empty()) {
+            _caughtUp = false;
+            auto revsToRetry = move(_revsToRetry);
+            _revsToRetry.clear();
+            for(const auto& revToRetry : revsToRetry) {
+                _pushingDocs[revToRetry->docID] = revToRetry;
+            }
+            
+            gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
+        }
+    }
+
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
         ActivityLevel level;
@@ -643,6 +666,9 @@ namespace litecore { namespace repl {
                 || !_revsToSend.empty()
                 || !_pushingDocs.empty()
                 || _revisionBytesAwaitingReply > 0) {
+            level = kC4Busy;
+        } else if (!_revsToRetry.empty()) {
+            logInfo("%d documents failed to push and will be retried", int(_revsToRetry.size()));
             level = kC4Busy;
         } else if (_options.push == kC4Continuous || isOpenServer()) {
             level = kC4Idle;
