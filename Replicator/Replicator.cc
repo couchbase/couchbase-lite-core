@@ -111,7 +111,7 @@ namespace litecore { namespace repl {
                 stop();
             }
             // Get the local checkpoint:
-            getLocalCheckpoint();
+            getLocalCheckpoint(false);
         }
     }
     
@@ -161,7 +161,7 @@ namespace litecore { namespace repl {
     }
 
 
-    alloc_slice Replicator::pendingDocumentIDs(C4Error* outErr) const {
+    alloc_slice Replicator::pendingDocumentIDs(C4Error* outErr) {
         if(!_pusher) {
             // Couchbase Lite should not allow this case
             return nullslice;
@@ -169,6 +169,10 @@ namespace litecore { namespace repl {
 
         return _db->use<alloc_slice>([this, outErr](C4Database* db)
         {
+            if(!_checkpointDocID) {
+                getLocalCheckpoint(true);
+            }
+
             const auto dbLastSequence = c4db_getLastSequence(db);
             const auto replLastSequence = _checkpoint.sequences().local;
             if(replLastSequence >= dbLastSequence) {
@@ -187,6 +191,17 @@ namespace litecore { namespace repl {
             C4DocumentInfo info;
             outErr->code = 0;
             while(c4enum_next(e, outErr)) {
+                const bool success = c4enum_getDocumentInfo(e, &info);
+                if(!success) {
+                    Warn("Unable to get document info during pending document IDs, skipping...");
+                    continue;
+                }
+
+                if(status().level != kC4Stopped && status().level != kC4Connecting && !_pusher->isSequencePending(info.sequence)) {
+                    // isSequencePending is not reliable until replication has started
+                    continue;
+                }
+
                 if(_options.pushFilter) {
                     c4::ref<C4Document> nextDoc = c4enum_getDocument(e, outErr);
                     if(!nextDoc) {
@@ -208,12 +223,6 @@ namespace litecore { namespace repl {
                         retEncoder.writeString(nextDoc->docID);
                     }
                 } else {
-                    const bool success = c4enum_getDocumentInfo(e, &info);
-                    if(!success) {
-                        Warn("Unable to get document info during pending document IDs, skipping...");
-                        continue;
-                    }
-
                     retEncoder.writeString(info.docID);
                 }
             }
@@ -231,7 +240,7 @@ namespace litecore { namespace repl {
         });
     }
 
-    bool Replicator::isDocumentPending(slice docId, C4Error* outErr) const {
+    bool Replicator::isDocumentPending(slice docId, C4Error* outErr) {
         if(!_pusher) {
             // Couchbase Lite should not allow this case
             return false;
@@ -239,13 +248,22 @@ namespace litecore { namespace repl {
 
         return _db->use<bool>([this, docId, outErr](C4Database* db)
         {
+            if(!_checkpointDocID) {
+                getLocalCheckpoint(true);
+            }
+
             c4::ref<C4Document> doc = c4doc_get(db, docId, false, outErr);
             if(!doc) {
                 return false;
             }
             
             const auto replLastSequence = _checkpoint.sequences().local;
-            return doc->sequence > replLastSequence && !_pusher->documentShouldBeFiltered(doc);
+            if(status().level == kC4Stopped || status().level == kC4Connecting) {
+                // isSequencePending is not reliable until replication has started
+                return doc->sequence > replLastSequence && !_pusher->documentShouldBeFiltered(doc);
+            }
+
+            return _pusher->isSequencePending(doc->sequence) && !_pusher->documentShouldBeFiltered(doc);
         });
     }
 
@@ -528,7 +546,7 @@ namespace litecore { namespace repl {
 
 
     // Start off by getting the local checkpoint, if this is an active replicator:
-    void Replicator::getLocalCheckpoint() {
+    void Replicator::getLocalCheckpoint(bool noRemote) {
         auto cp = getCheckpoint();
         _checkpointDocID = cp.checkpointID;
 
@@ -553,7 +571,9 @@ namespace litecore { namespace repl {
             return;
         }
 
-        getRemoteCheckpoint(false);
+        if(!noRemote) {
+            getRemoteCheckpoint(false);
+        }
     }
 
 
