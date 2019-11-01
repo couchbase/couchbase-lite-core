@@ -36,4 +36,11 @@ function(setup_build)
         pthread
         dl
     )
+
+    if(NOT DISABLE_LTO_BUILD)
+        # When clang enables LTO, it compiles bitcode instead of machine code.  This means
+        # that if the final product statically linking in LTO code is not also LTO-enabled
+        # the linker will fail because it thinks bitcode is bad machine code
+        set_property(TARGET CppTests PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    endif()
 endfunction()
