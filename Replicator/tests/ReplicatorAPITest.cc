@@ -324,7 +324,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     params.socketFactory = _socketFactory;
     params.dontStart = true;
 
-    bool expectedIsPending;
+    bool expectedIsPending = true;
     SECTION("Normal") {
         expectedIsPending = true;
     }
