@@ -41,7 +41,13 @@ function(setup_build)
        NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL ""))
         # When clang enables LTO, it compiles bitcode instead of machine code.  This means
         # that if the final product statically linking in LTO code is not also LTO-enabled
-        # the linker will fail because it thinks bitcode is bad machine code
-        set_property(TARGET CppTests PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        # the linker will fail because it thinks bitcode is bad machine code.  Furthermore, 
+        # there is a bug in the LLVM plugin for LTO in 3.9.1 that causes invalid linker flags
+        # when combined with -Oz optimization
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_VERSION GREATER "3.9.1")
+            set_property(TARGET CppTests PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+        else()
+            message("Disabling LTO for CppTests to work around LLVM 3.9.1 issue")
+        endif()
     endif()
 endfunction()
