@@ -38,7 +38,6 @@ function(set_support_source)
         LiteCore/Support/StringUtil_Apple.mm
         LiteCore/Support/LibC++Debug.cc
         LiteCore/Support/Instrumentation.cc
-        LiteCore/Support/crc32c_sse4_2.cc
         PARENT_SCOPE
     )
 endfunction()

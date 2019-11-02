@@ -24,7 +24,6 @@ function(set_litecore_source)
         ${ANDROID_SSS_RESULT}
         ${BASE_LITECORE_FILES}
         LiteCore/Android/unicode/ndk_icu.c
-        LiteCore/Support/crc32c_armv8.cc
         PARENT_SCOPE
     )
 endfunction()

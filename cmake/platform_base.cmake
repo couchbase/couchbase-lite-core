@@ -117,7 +117,6 @@ function(set_support_source_base)
         LiteCore/Support/SecureRandomize.cc
         LiteCore/Support/SecureSymmetricCrypto.cc
         LiteCore/Support/StringUtil.cc
-        LiteCore/Support/crc32c.cc
         Replicator/Address.cc
         PARENT_SCOPE
     )

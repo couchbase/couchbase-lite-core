@@ -379,12 +379,6 @@
 		27FC8E8C2214E4EF0083B033 /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */; };
-		720E2CB223690A7D008FC1B2 /* crc32c_armv8.cc in Sources */ = {isa = PBXBuildFile; fileRef = 720E2CAA23690A7D008FC1B2 /* crc32c_armv8.cc */; };
-		720E2CB323690A7D008FC1B2 /* crc32c_sse4_2.cc in Sources */ = {isa = PBXBuildFile; fileRef = 720E2CB023690A7D008FC1B2 /* crc32c_sse4_2.cc */; };
-		720E2CB423690A7D008FC1B2 /* crc32c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 720E2CB123690A7D008FC1B2 /* crc32c.cc */; };
-		720E2CB623690B25008FC1B2 /* crc32c.cc in Sources */ = {isa = PBXBuildFile; fileRef = 720E2CB123690A7D008FC1B2 /* crc32c.cc */; };
-		720E2CB723690B27008FC1B2 /* crc32c_sse4_2.cc in Sources */ = {isa = PBXBuildFile; fileRef = 720E2CB023690A7D008FC1B2 /* crc32c_sse4_2.cc */; };
-		720E2CB823690B29008FC1B2 /* crc32c_armv8.cc in Sources */ = {isa = PBXBuildFile; fileRef = 720E2CAA23690A7D008FC1B2 /* crc32c_armv8.cc */; };
 		726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
 		7280F7F11E3AC9A600E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
@@ -1217,10 +1211,6 @@
 		27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLiteFleeceUtil.hh; sourceTree = "<group>"; };
 		27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFunctionsTest.cc; sourceTree = "<group>"; };
 		27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-dylib_Release.xcconfig"; sourceTree = "<group>"; };
-		720E2CAA23690A7D008FC1B2 /* crc32c_armv8.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = crc32c_armv8.cc; sourceTree = "<group>"; };
-		720E2CB023690A7D008FC1B2 /* crc32c_sse4_2.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = crc32c_sse4_2.cc; sourceTree = "<group>"; };
-		720E2CB123690A7D008FC1B2 /* crc32c.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = crc32c.cc; sourceTree = "<group>"; };
-		720E2CB523690B18008FC1B2 /* crc32c.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = crc32c.h; sourceTree = "<group>"; };
 		720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DefaultLogger.cc; sourceTree = "<group>"; };
 		7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libLiteCore.dylib; path = ../build_cmake/libLiteCore.dylib; sourceTree = "<group>"; };
@@ -1675,10 +1665,6 @@
 				275A74461ED37992008CB57B /* Base.hh */,
 				729272F12238DB8500E7208E /* c4ExceptionUtils.cc */,
 				729272F22238DB8500E7208E /* c4ExceptionUtils.hh */,
-				720E2CAA23690A7D008FC1B2 /* crc32c_armv8.cc */,
-				720E2CB023690A7D008FC1B2 /* crc32c_sse4_2.cc */,
-				720E2CB123690A7D008FC1B2 /* crc32c.cc */,
-				720E2CB523690B18008FC1B2 /* crc32c.h */,
 				27393A861C8A353A00829C9B /* Error.cc */,
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
@@ -3060,15 +3046,12 @@
 			files = (
 				27BF024A1FB62647003D5BB8 /* LibC++Debug.cc in Sources */,
 				2796916E1ED4B2D50086565D /* Error.cc in Sources */,
-				720E2CB223690A7D008FC1B2 /* crc32c_armv8.cc in Sources */,
 				2796916F1ED4B2D50086565D /* FilePath.cc in Sources */,
 				27CE4CFB207C1A7E00ACA225 /* Address.cc in Sources */,
 				2796917C1ED4B5780086565D /* Logging_Stub.cc in Sources */,
 				27FC8E862214E4CA0083B033 /* SecureRandomize.cc in Sources */,
 				275FA35222398875001C392D /* c4ExceptionUtils.cc in Sources */,
 				279691711ED4B2D50086565D /* StringUtil.cc in Sources */,
-				720E2CB423690A7D008FC1B2 /* crc32c.cc in Sources */,
-				720E2CB323690A7D008FC1B2 /* crc32c_sse4_2.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3199,7 +3182,6 @@
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
 				27FC8E8C2214E4EF0083B033 /* SecureRandomize.cc in Sources */,
-				720E2CB723690B27008FC1B2 /* crc32c_sse4_2.cc in Sources */,
 				27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
 				27098A97216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */,
@@ -3255,7 +3237,6 @@
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
 				72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */,
-				720E2CB623690B25008FC1B2 /* crc32c.cc in Sources */,
 				272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */,
 				729272F52238DC0C00E7208E /* c4ExceptionUtils.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
@@ -3275,7 +3256,6 @@
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */,
-				720E2CB823690B29008FC1B2 /* crc32c_armv8.cc in Sources */,
 				279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */,

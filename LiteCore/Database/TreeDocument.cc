@@ -29,10 +29,9 @@
 #include "SecureDigest.hh"
 #include "FleeceImpl.hh"
 #include "varint.hh"
-#include "crc32c.h"
-#include "Endian.hh"
 #include <ctime>
 #include <algorithm>
+
 
 namespace c4Internal {
 
@@ -474,17 +473,20 @@ namespace c4Internal {
 
 
         static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
-            uint32_t crc = 0;
+        #if SECURE_DIGEST_AVAILABLE
+            uint8_t digestBuf[20];
             slice digest;
-            // Get CRC32 of (length-prefixed) parent rev ID, deletion flag, and revision body:
+            // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
+            sha1Context ctx;
+            sha1_begin(&ctx);
             uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-            crc = crc32c(&revLen, 1, crc);
-            crc = crc32c((const uint8_t *)parentRevID.buf, revLen, crc);
+            sha1_add(&ctx, &revLen, 1);
+            sha1_add(&ctx, parentRevID.buf, revLen);
             uint8_t delByte = deleted;
-            crc = crc32c(&delByte, 1, crc);
-            crc = crc32c((const uint8_t *)body.buf, body.size, crc);
-            crc = _enc32(crc);
-            digest = slice((uint8_t *)&crc, 4);
+            sha1_add(&ctx, &delByte, 1);
+            sha1_add(&ctx, body.buf, body.size);
+            sha1_end(&ctx, digestBuf);
+            digest = slice(digestBuf, 20);
 
             // Derive new rev's generation #:
             unsigned generation = 1;
@@ -493,6 +495,9 @@ namespace c4Internal {
                 generation = parentID.generation() + 1;
             }
             return revidBuffer(generation, digest, kDigestType);
+        #else
+            error::_throw(error::Unimplemented);
+        #endif
         }
 
 
