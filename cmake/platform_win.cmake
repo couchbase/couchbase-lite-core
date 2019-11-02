@@ -37,8 +37,6 @@ function(set_support_source)
         MSVC/strptime.cc
         LiteCore/Support/StringUtil_winapi.cc
         LiteCore/Support/Error_windows.cc
-        LiteCore/Support/crc32c_sse4_2.cc
-        LiteCore/Support/crc32c_armv8.cc
         PARENT_SCOPE
     )
 endfunction()
