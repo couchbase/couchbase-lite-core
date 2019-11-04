@@ -203,7 +203,8 @@ namespace litecore { namespace REST {
         uncacheable();
 
         if (status >= HTTPStatus::OK && status != HTTPStatus::NoContent
-            && status != HTTPStatus::NotModified) {
+                                                && status != HTTPStatus::NotModified) {
+            _jsonEncoder.reset(); // drop any prior buffered output
             auto &json = jsonEncoder();
             json.beginDict();
             writeStatusJSON(status, message);

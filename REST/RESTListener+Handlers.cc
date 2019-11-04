@@ -351,17 +351,16 @@ namespace litecore { namespace REST {
 
         auto &json = rq.jsonEncoder();
         json.beginDict();
-
         C4Error error;
-        if (modifyDoc(body, docID, rq.query("rev"), deleting, true, db, json, &error)) {
-            if (deleting)
-                rq.setStatus(HTTPStatus::OK, "Deleted");
-            else
-                rq.setStatus(HTTPStatus::Created, "Created");
-        } else {
+        if (!modifyDoc(body, docID, rq.query("rev"), deleting, true, db, json, &error)) {
             rq.respondWithError(error);
+            return;
         }
         json.endDict();
+        if (deleting)
+            rq.setStatus(HTTPStatus::OK, "Deleted");
+        else
+            rq.setStatus(HTTPStatus::Created, "Created");
     }
 
 
