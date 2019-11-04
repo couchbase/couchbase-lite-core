@@ -8,7 +8,7 @@
     
     "unsupported": {
         "client_cert_auth": {
-            "required": true,
+            "state": "mandatory",
             "ca_cert": "ca_cert.pem",
             "prefixes": [ {"path": "san.email", "delimiters": "@"} ]
         }
