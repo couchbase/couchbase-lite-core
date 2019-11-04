@@ -49,7 +49,6 @@
 #pragma clang diagnostic ignored "-Wdocumentation"
 #include <unicode/uloc.h>
 #include <unicode/ucol.h>
-#include <unicode/usearch.h>
 #pragma clang diagnostic pop
 
 // http://userguide.icu-project.org/collation
