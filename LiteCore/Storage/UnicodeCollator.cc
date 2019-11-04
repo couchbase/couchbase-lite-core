@@ -138,7 +138,7 @@ namespace litecore {
         return true;
     }
 
-#if !__APPLE__ && !LITECORE_USES_ICU
+#if !__APPLE__
     int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
         auto current = substr;
         while(str.size > 0) {

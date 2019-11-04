@@ -152,59 +152,6 @@ namespace litecore {
             throw SQLite::Exception(dbHandle, rc);
         return context;
     }
-
-    int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation& coll) {
-        ICUCollationContext ctx(coll);
-        int str_len = (int)str.size;
-        int substr_len = (int)substr.size;
-        
-        // in case of illegal argument, return failure
-        if (!str || !substr || str_len == 0 || substr_len == 0)
-            return -1;
-        
-        // Case level string search is done with the strength set to tertiary.
-        UErrorCode status = U_ZERO_ERROR;
-        if (coll.caseSensitive) {
-            Warn(">>>> before>>>UCOL_NORMALIZATION_MODE %d; UCOL_STRENGTH %d",
-                 ucol_getAttribute(ctx.ucoll, UCOL_NORMALIZATION_MODE, &status),
-                 ucol_getAttribute(ctx.ucoll, UCOL_STRENGTH, &status));
-            ucol_setAttribute(ctx.ucoll, UCOL_STRENGTH, UCOL_DEFAULT_STRENGTH, &status);
-            Warn(">>>> before>>>UCOL_NORMALIZATION_MODE %d; UCOL_STRENGTH %d",
-                 ucol_getAttribute(ctx.ucoll, UCOL_NORMALIZATION_MODE, &status),
-                 ucol_getAttribute(ctx.ucoll, UCOL_STRENGTH, &status));
-            if (U_FAILURE(status))
-                error::_throw(error::UnexpectedError, "Error seting collator strength (ICU error %d)", (int)status);
-        }
-        
-        UChar target[str_len];
-        UChar pattern[substr_len];
-
-        // byte string to ustring
-        u_uastrcpy(target, (const char*)str.buf);
-        u_uastrcpy(pattern, (const char*)substr.buf);
-
-        status = U_ZERO_ERROR;
-        UStringSearch *search = NULL;
-        search = usearch_openFromCollator(pattern, substr_len, target, str_len,
-                                          ctx.ucoll, NULL, &status);
-        if (U_FAILURE(status))
-            error::_throw(error::UnexpectedError, "Error creating usearch (ICU error %d)", (int)status);
-        
-        int pos = 0;
-        status = U_ZERO_ERROR;
-        for(pos = usearch_first(search, &status);
-            U_SUCCESS(status) && pos != USEARCH_DONE;
-            pos = usearch_next(search, &status))
-        {
-            // match found!
-            return 0;
-        }
-
-        if (U_FAILURE(status))
-            error::_throw(error::UnexpectedError, "Error searching for pattern (ICU error %d)", (int)status);
-
-        return -1;
-    }
 }
 
 #endif // !__APPLE__
