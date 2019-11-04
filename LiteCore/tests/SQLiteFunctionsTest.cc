@@ -555,33 +555,35 @@ TEST_CASE("Unicode Contains collation", "[Query][Collation]") {
         {"abc"_sl, "ABC"_sl,        0, false, true},
         {"ABA"_sl, "abc"_sl,        -1, false, true},
         {"abcdeF"_sl, "abcdef"_sl,  0,    false, true},
-        {"abcdef"_sl, "abcdefghijklm"_sl, -1,    false, true},
+        {"abcdef"_sl, "abcdefg"_sl, -1,    false, true},
 
-        //----non-ASCII:
+        //----non-ASCII: case non-sensitive
         {"abcd"_sl, "á"_sl,     -1, false, true},
-        {""_sl, "á"_sl,         -1, false, true},
+        {"a"_sl, "á"_sl,        -1, false, true},
         {"dcbá"_sl, "á"_sl,     0, false, true},
         {"•abcd"_sl, "•A"_sl,   0, false, true},
 
         // Case sensitive, diacritic sensitive:
         {"abcd"_sl, "A"_sl,         -1, true, true },
-        {"bcdabc"_sl, "ABC"_sl,     -1, true, true },
         {"•a"_sl, "•A"_sl,          -1, true, true },
         {"test a"_sl, "test á"_sl,  -1, true, true },
+        {"t á t"_sl, "t á"_sl,       0, true, true },
         {"ax"_sl, "Äz"_sl,          -1, true, true },
         {"abcd"_sl, "Á"_sl,         -1, true, true },
         {"bcdÁbcd"_sl, "e"_sl,      -1, true, true },
         {"dbcáb"_sl, "Á"_sl,        -1, true, true },
         {"acdá"_sl, "b"_sl,         -1, true, true },
         {"u"_sl, "Ü"_sl,            -1, true, true },
+        {"abÜcd"_sl, "Ü"_sl,         0, true, true },
 
         // Case sensitive, diacritic insensitive:
         {"Aabcd"_sl, "ABC"_sl,      -1, true, false},
-        {"test á"_sl, "test a"_sl,  0,  true, false},
+        {"test á"_sl, "test a"_sl,   0, true, false},
         {"testá"_sl, "test á"_sl,   -1, true, false},
-        {"testábcd "_sl, "á"_sl,    0, true, false},
+        {"testábcd "_sl, "á"_sl,     0, true, false},
         {"test á"_sl, "test A"_sl,  -1, true, false},
         {"test á"_sl, "test Á"_sl,  -1, true, false},
+        {"u"_sl, "Ü"_sl,             0, true, false},
 
         // Case and diacritic insensitive:
         {"abcdtest á"_sl, "test Á"_sl, 0,  false, false},
