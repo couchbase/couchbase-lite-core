@@ -104,5 +104,6 @@ namespace litecore {
     /** The value CompareASCII returns if it finds non-ASCII characters in either string. */
     static constexpr int kCompareASCIIGaveUp = 2;
 
+    /** Unicode-aware contains check for a substring(pattern/stringToFind) on a string. */
     int ContainsUTF8(fleece::slice str, fleece::slice substr, const Collation&);
 }
