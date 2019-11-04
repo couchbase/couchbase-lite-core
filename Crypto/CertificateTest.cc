@@ -180,6 +180,15 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     CHECK(pubKey->data(KeyFormat::Raw) == key->publicKeyData(KeyFormat::Raw));
     CHECK(pubKey->data(KeyFormat::DER) == key->publicKeyData(KeyFormat::DER));
     CHECK(pubKey->data(KeyFormat::PEM) == key->publicKeyData(KeyFormat::PEM));
+
+    // Try a CSR:
+    Retained<CertSigningRequest> csr = new CertSigningRequest(DistinguishedName(kSubjectName), key);
+    CHECK(csr->subjectName() == kSubjectName);
+    CHECK(csr->subjectPublicKey()->data(KeyFormat::Raw) == key->publicKey()->data(KeyFormat::Raw));
+    alloc_slice data = csr->data();
+    Retained<CertSigningRequest> csr2 = new CertSigningRequest(data);
+    CHECK(csr2->subjectName() == kSubjectName);
+    CHECK(csr2->subjectPublicKey()->data(KeyFormat::Raw) == key->publicKey()->data(KeyFormat::Raw));
 }
 #endif
 

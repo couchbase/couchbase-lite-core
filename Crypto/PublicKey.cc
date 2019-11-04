@@ -23,6 +23,7 @@
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#include "mbedtls/asn1.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/pk.h"
 #pragma clang diagnostic pop
@@ -127,6 +128,11 @@ namespace litecore { namespace crypto {
     PersistentPrivateKey::PersistentPrivateKey(unsigned keySizeInBits)
     :_keyLength( (keySizeInBits + 7) / 8)
     {
+        // mbedTLS's "RSA-alt" feature lets you create a public key (mbedtls_pk_context) whose
+        // operations delegate to custom callbacks. Here we create one that calls the
+        // _decrypt, _sign, and publicKeyRawData methods, all of which are implemented by the
+        // platform-specific subclass.
+
         auto decryptFunc = [](void *ctx, int mode, size_t *olen,
                               const unsigned char *input, unsigned char *output,
                               size_t output_max_len ) -> int {
@@ -144,7 +150,22 @@ namespace litecore { namespace crypto {
             return ((PersistentPrivateKey*)ctx)->_keyLength;
         };
 
-        TRY( mbedtls_pk_setup_rsa_alt(context(), this, decryptFunc, signFunc, keyLengthFunc) );
+        auto writeKeyFunc = [](void *ctx, uint8_t **p, uint8_t *start) -> int {
+            try {
+                alloc_slice keyData = ((PersistentPrivateKey*)ctx)->publicKeyRawData();
+                if (keyData.size > *p - start)
+                    return MBEDTLS_ERR_ASN1_BUF_TOO_SMALL;
+                memcpy(*p - keyData.size, keyData.buf, keyData.size);
+                *p -= keyData.size;
+                return int(keyData.size);
+            } catch (const std::exception &x) {
+                Warn("Unable to get data of public key: %s", x.what());
+                return MBEDTLS_ERR_PK_FILE_IO_ERROR;
+            }
+        };
+
+        TRY( mbedtls_pk_setup_rsa_alt2(context(), this,
+                                       decryptFunc, signFunc, keyLengthFunc, writeKeyFunc) );
     }
 
 
