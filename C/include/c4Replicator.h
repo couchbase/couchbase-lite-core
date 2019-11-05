@@ -212,9 +212,10 @@ extern "C" {
      *  API is a snapshot and results may change between the time the call was made and the time
      *  the call returns.
      *
-     *  @param outErr Records error information, if any
+     *  @param outErr Records error information, if any.  This will be set to 0 on success.
      *  @return A fleece encoded array of document IDs, each of which has one or more pending
-     *  revisions
+     *  revisions.  If none are pending, nullslice is returned (note that an error
+     * condition will return nullslice with the outErr code set to non-zero)
      */
     C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl C4NONNULL, C4Error* outErr) C4API;
 
@@ -223,8 +224,9 @@ extern "C" {
      *  the call returns.
      *
      * @param docID The ID of the document to check
-     * @param outErr Records error information, if any
-     * @return true if the document has one or more revisions pending, false otherwise
+     * @param outErr Records error information, if any.  This will be set to 0 on success.
+     * @return true if the document has one or more revisions pending, false otherwise (note that an error
+     * condition will return false with the outErr code set to non-zero)
      */
     bool c4repl_isDocumentPending(C4Replicator* repl C4NONNULL, C4String docID, C4Error* outErr) C4API;
 
