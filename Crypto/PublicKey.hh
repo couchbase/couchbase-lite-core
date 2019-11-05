@@ -129,6 +129,9 @@ namespace litecore { namespace crypto {
         /** Loads an existing stored key-pair that matches the given public key. */
         static fleece::Retained<PersistentPrivateKey> withPublicKey(PublicKey* NONNULL);
 
+        /** Loads an existing stored key-pair that matches the given cert's public key. */
+        static fleece::Retained<PersistentPrivateKey> withCertificate(Cert* NONNULL);
+
         /** Permanently removes the key-pair from storage.
             Don't make any more calls to this object afterwards. */
         virtual void remove() =0;

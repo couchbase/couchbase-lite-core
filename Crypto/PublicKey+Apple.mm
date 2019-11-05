@@ -126,7 +126,7 @@ namespace litecore { namespace crypto {
 
         virtual alloc_slice publicKeyRawData() override {
             CFErrorRef error;
-            ++gC4ExpectExceptions;
+            ++gC4ExpectExceptions;  // ignore internal C++ exceptions in Apple Security framework
             CFDataRef data = SecKeyCopyExternalRepresentation(_publicKeyRef, &error);
             --gC4ExpectExceptions;
             if (!data) {
@@ -263,6 +263,28 @@ namespace litecore { namespace crypto {
     }
 
 
+    Retained<PersistentPrivateKey> PersistentPrivateKey::withCertificate(Cert *cert) {
+        SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
+                                                        (CFDataRef)cert->data().copiedNSData());
+        if (!certRef)
+            throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // impossible?
+        CFAutorelease(certRef);
+        SecKeyRef publicKeyRef;
+        checkOSStatus(SecCertificateCopyPublicKey(certRef, &publicKeyRef),
+                      "SecCertificateCopyPublicKey", "get private key from keychain");
+
+        SecIdentityRef identityRef;
+        checkOSStatus(SecIdentityCreateWithCertificate(nullptr, certRef, &identityRef),
+                      "SecIdentityCreateWithCertificate", "get private key from keychain");
+        CFAutorelease(identityRef);
+        SecKeyRef privateKeyRef;
+        checkOSStatus(SecIdentityCopyPrivateKey(identityRef, &privateKeyRef),
+                          "SecIdentityCopyPrivateKey", "get private key from keychain");
+        auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
+        return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
+    }
+
+
     Retained<PersistentPrivateKey> PersistentPrivateKey::withPublicKey(PublicKey* publicKey) {
         @autoreleasepool {
             // First look up a SecCertificateRef from the public-key digest. (We ought to be able
@@ -376,7 +398,7 @@ namespace litecore { namespace crypto {
 
 
     Retained<PersistentPrivateKey> Cert::loadPrivateKey() {
-        return PersistentPrivateKey::withPublicKey(subjectPublicKey());
+        return PersistentPrivateKey::withCertificate(this);
     }
 
 } }

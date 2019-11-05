@@ -168,12 +168,6 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     issuerParams.validity_secs = 3600*24;
     Retained<Cert> cert = new Cert(DistinguishedName(kSubjectName), issuerParams, key);
 
-    cert->makePersistent();
-
-    Retained<Cert> cert2 = Cert::load(pubKey);
-    CHECK(cert2);
-    CHECK(cert2->data() == cert->data());
-
     // Try reloading from cert:
     key = cert->loadPrivateKey();
     REQUIRE(key);
@@ -189,6 +183,12 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     Retained<CertSigningRequest> csr2 = new CertSigningRequest(data);
     CHECK(csr2->subjectName() == kSubjectName);
     CHECK(csr2->subjectPublicKey()->data(KeyFormat::Raw) == key->publicKey()->data(KeyFormat::Raw));
+
+    // Make the cert persistent:
+    cert->makePersistent();
+    Retained<Cert> cert2 = Cert::load(pubKey);
+    REQUIRE(cert2);
+    CHECK(cert2->data() == cert->data());
 }
 #endif
 

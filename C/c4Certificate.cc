@@ -409,9 +409,9 @@ C4Cert* c4cert_load(C4Database *db C4NONNULL,
 
 
 C4KeyPair* c4keypair_generate(C4KeyPairAlgorithm algorithm,
-                        unsigned sizeInBits,
-                        bool persistent,
-                        C4Error *outError) C4API
+                              unsigned sizeInBits,
+                              bool persistent,
+                              C4Error *outError) C4API
 {
     return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
         if (algorithm != kC4RSA) {

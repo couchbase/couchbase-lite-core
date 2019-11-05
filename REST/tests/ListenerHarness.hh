@@ -74,7 +74,7 @@ public:
 
 
     C4Cert* useClientTLSWithTemporaryKey() {
-        return useServerIdentity( CertHelper::instance().temporaryClientIdentity );
+        return useClientIdentity( CertHelper::instance().temporaryClientIdentity );
     }
 
 
