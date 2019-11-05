@@ -583,7 +583,7 @@ TEST_CASE("Unicode Contains collation", "[Query][Collation]") {
         {"testábcd "_sl, "á"_sl,     0, true, false},
         {"test á"_sl, "test A"_sl,  -1, true, false},
         {"test á"_sl, "test Á"_sl,  -1, true, false},
-        {"u"_sl, "Ü"_sl,             0, true, false},
+        {"U"_sl, "Ü"_sl,             0, true, false},
 
         // Case and diacritic insensitive:
         {"abcdtest á"_sl, "test Á"_sl, 0,  false, false},
