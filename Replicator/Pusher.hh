@@ -49,7 +49,7 @@ namespace litecore { namespace repl {
             Assert(body.buf);
             const auto bodyContent = FLValue_FromData(body, kFLTrusted);
             return _options.pushFilter
-                && _options.pushFilter(doc->docID, doc->selectedRev.flags, FLValue_AsDict(bodyContent), _options.callbackContext);
+                && !_options.pushFilter(doc->docID, doc->selectedRev.flags, FLValue_AsDict(bodyContent), _options.callbackContext);
         }
 
         // Checks if a given sequence number is pending to be pushed
