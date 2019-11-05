@@ -29,10 +29,9 @@
 #include "SecureDigest.hh"
 #include "FleeceImpl.hh"
 #include "varint.hh"
-#include "crc32c.h"
-#include "Endian.hh"
 #include <ctime>
 #include <algorithm>
+
 
 namespace c4Internal {
 
@@ -482,25 +481,19 @@ namespace c4Internal {
 
 
         static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
-            uint32_t crc = 0;
-            slice digest;
-            // Get CRC32 of (length-prefixed) parent rev ID, deletion flag, and revision body:
+            // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
             uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-            crc = crc32c(&revLen, 1, crc);
-            crc = crc32c((const uint8_t *)parentRevID.buf, revLen, crc);
             uint8_t delByte = deleted;
-            crc = crc32c(&delByte, 1, crc);
-            crc = crc32c((const uint8_t *)body.buf, body.size, crc);
-            crc = _enc32(crc);
-            digest = slice((uint8_t *)&crc, 4);
-
+            SHA1 digest = (SHA1Builder() << revLen << slice(parentRevID.buf, revLen)
+                                         << delByte << body)
+                           .finish();
             // Derive new rev's generation #:
             unsigned generation = 1;
             if (parentRevID.buf) {
                 revidBuffer parentID(parentRevID);
                 generation = parentID.generation() + 1;
             }
-            return revidBuffer(generation, digest, kDigestType);
+            return revidBuffer(generation, slice(digest), kDigestType);
         }
 
 

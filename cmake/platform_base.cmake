@@ -123,7 +123,6 @@ function(set_support_source_base)
         LiteCore/Support/StringUtil.cc
         Crypto/SecureRandomize.cc
         Networking/Address.cc
-        LiteCore/Support/crc32c.cc
         PARENT_SCOPE
     )
 endfunction()
