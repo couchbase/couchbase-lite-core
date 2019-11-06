@@ -150,6 +150,20 @@ namespace litecore { namespace repl {
         _disconnect(websocket::kCodeNormal, {});
     }
 
+
+    void Replicator::terminate() {
+        auto conn = connection();
+        if (conn) {
+            Assert(_connectionState == Connection::kClosed);
+            conn->terminate();
+            _delegate = nullptr;
+            _pusher = nullptr;
+            _puller = nullptr;
+            _db.reset();
+        }
+    }
+
+
     alloc_slice Replicator::pendingDocumentIDs(C4Error* outErr) const {
         if(!_pusher) {
             // Couchbase Lite should not allow this case

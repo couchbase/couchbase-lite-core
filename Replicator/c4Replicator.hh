@@ -116,6 +116,15 @@ protected:
     }
 
 
+    virtual ~C4Replicator() {
+        // Tear down the Replicator instance -- this is important in the case where it was
+        // never started, because otherwise there will be a bunch of ref cycles that cause many
+        // objects (including C4Databases) to be leaked. [CBL-524]
+        if (_replicator)
+            _replicator->terminate();
+    }
+
+
     virtual std::string loggingClassName() const override {
         return "C4Replicator";
     }
