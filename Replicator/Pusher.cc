@@ -72,6 +72,32 @@ namespace litecore { namespace repl {
     }
 
 
+    bool Pusher::isDocumentAllowed(C4Document* doc) const {
+        if(!isDocumentIDAllowed(doc->docID)) {
+            return false;
+        }
+
+        if(!_options.pushFilter) {
+            return true;
+        }
+
+        const auto body = doc->selectedRev.body;
+        Assert(body.buf);
+        const auto bodyContent = FLValue_FromData(body, kFLTrusted);
+        return _options.pushFilter(doc->docID, doc->selectedRev.flags, FLValue_AsDict(bodyContent), _options.callbackContext);
+    }
+
+
+    bool Pusher::isDocumentIDAllowed(C4Slice docID) const {
+        if(!_docIDs) {
+            return true;
+        }
+
+        std::string docID_str = slice(docID).asString();
+        return _docIDs->find(docID_str) != _docIDs->end();
+    }
+
+
     // Begins active push, starting from the next sequence after sinceSequence
     void Pusher::_start(C4SequenceNumber sinceSequence) {
         logInfo("Starting %spush from local seq #%" PRIu64,

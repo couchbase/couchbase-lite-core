@@ -135,7 +135,7 @@ namespace litecore { namespace repl {
         void _stop();
         void _disconnect(websocket::CloseCode closeCode, slice message);
         void _findExistingConflicts();        
-        void getLocalCheckpoint(bool noRemote);
+        bool getLocalCheckpoint();
         void getRemoteCheckpoint(bool refresh);
         void startReplicating();
         virtual ActivityLevel computeActivityLevel() const override;

@@ -110,8 +110,11 @@ namespace litecore { namespace repl {
                 gotError(err);
                 stop();
             }
-            // Get the local checkpoint:
-            getLocalCheckpoint(false);
+
+            // Get the checkpoints:
+            if(getLocalCheckpoint()) {
+                getRemoteCheckpoint(false);
+            }
         }
     }
     
@@ -439,7 +442,7 @@ namespace litecore { namespace repl {
 
 
     // Start off by getting the local checkpoint, if this is an active replicator:
-    void Replicator::getLocalCheckpoint(bool noRemote) {
+    bool Replicator::getLocalCheckpoint() {
         auto cp = getCheckpoint();
         _checkpointDocID = cp.checkpointID;
 
@@ -461,12 +464,10 @@ namespace litecore { namespace repl {
             logInfo("Fatal error getting local checkpoint");
             gotError(cp.err);
             stop();
-            return;
+            return false;
         }
 
-        if(!noRemote) {
-            getRemoteCheckpoint(false);
-        }
+        return true;
     }
 
 
@@ -594,7 +595,10 @@ namespace litecore { namespace repl {
         return _db->use<alloc_slice>([this, outErr](C4Database* db)
         {
             if(!_checkpointDocID) {
-                getLocalCheckpoint(true);
+                if(!getLocalCheckpoint()) {
+                    *outErr = status().error;
+                    return alloc_slice(nullslice);
+                }
             }
 
             const auto dbLastSequence = c4db_getLastSequence(db);
@@ -648,7 +652,7 @@ namespace litecore { namespace repl {
                         continue;
                     }
 
-                    if(!_pusher->documentShouldBeFiltered(nextDoc)) {
+                    if(_pusher->isDocumentAllowed(nextDoc)) {
                         retEncoder.writeString(nextDoc->docID);
                     }
                 } else {
@@ -673,7 +677,10 @@ namespace litecore { namespace repl {
         return _db->use<bool>([this, docId, outErr](C4Database* db)
         {
             if(!_checkpointDocID) {
-                getLocalCheckpoint(true);
+                if(!getLocalCheckpoint()) {
+                    *outErr = status().error;
+                    return false;
+                }
             }
 
             c4::ref<C4Document> doc = c4doc_get(db, docId, false, outErr);
@@ -685,10 +692,10 @@ namespace litecore { namespace repl {
             outErr->code = 0;
             if(status().level == kC4Stopped || status().level == kC4Connecting) {
                 // isSequencePending is not reliable until replication has started
-                return doc->sequence > replLastSequence && !_pusher->documentShouldBeFiltered(doc);
+                return doc->sequence > replLastSequence && _pusher->isDocumentAllowed(doc);
             }
 
-            return _pusher->isSequencePending(doc->sequence) && !_pusher->documentShouldBeFiltered(doc);
+            return _pusher->isSequencePending(doc->sequence) && _pusher->isDocumentAllowed(doc);
         });
     }
 
