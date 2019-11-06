@@ -248,10 +248,13 @@ namespace litecore { namespace websocket {
             }
 
             virtual void _close(int status, fleece::alloc_slice message) {
-                Assert(_state == State::connecting || _state == State::connected);
-                logInfo("CLOSE; status=%d", status);
-                std::string messageStr(message);
-                _peer->closed(kWebSocketClose, status, messageStr.c_str(), _latency);
+                if (_state != State::unconnected) {
+                    Assert(_state == State::connecting || _state == State::connected);
+                    logInfo("CLOSE; status=%d", status);
+                    std::string messageStr(message);
+                    if (_peer)
+                        _peer->closed(kWebSocketClose, status, messageStr.c_str(), _latency);
+                }
                 _closed({kWebSocketClose, status, message});
             }
 

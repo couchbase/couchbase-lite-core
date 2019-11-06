@@ -64,6 +64,10 @@ namespace litecore { namespace blip {
 
         void start();
 
+        /** Tears down a Connection's state including any reference cycles.
+            The Connection must have either already stopped, or never started. */
+        void terminate();
+
         /** Sends a built message as a new request. */
         void sendRequest(MessageBuilder&);
 
