@@ -115,6 +115,7 @@ namespace litecore { namespace blip {
         size_t                  _maxOutboxDepth {0}, _totalOutboxDepth {0}, _countOutboxDepth {0};
         uint64_t                _totalBytesWritten {0}, _totalBytesRead {0};
         Stopwatch               _timeOpen;
+        atomic_flag             _connectedWebSocket = ATOMIC_FLAG_INIT;
 
     public:
 
@@ -132,8 +133,17 @@ namespace litecore { namespace blip {
         }
 
         void start() {
+            Assert(!_connectedWebSocket.test_and_set());
             retain(this); // keep myself from being freed while I'm the webSocket's delegate
             _webSocket->connect(this);
+        }
+
+        void terminate() {
+            if (!_connectedWebSocket.test_and_set()) {
+                _webSocket->close();
+                _webSocket = nullptr;
+                _connection = nullptr;
+            }
         }
 
         void queueMessage(MessageOut *msg) {
@@ -693,6 +703,13 @@ namespace litecore { namespace blip {
         _state = status.isNormal() ? kClosed : kDisconnected;
         _closeStatus = status;
         delegate().onClose(status, _state);
+    }
+
+
+    void Connection::terminate() {
+        Assert(_state == kClosed);
+        _io->terminate();
+        _io = nullptr;
     }
 
 

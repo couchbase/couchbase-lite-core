@@ -33,6 +33,7 @@ namespace litecore { namespace websocket {
 
     static constexpr size_t kSendBufferSize = 64 * 1024;
 
+    // Timeout for WebSocket connection (until HTTP response received)
     constexpr long WebSocketImpl::kConnectTimeoutSecs;
 
     // Default interval at which to send PING messages (configurable via options)
