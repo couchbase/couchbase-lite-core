@@ -294,6 +294,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
+    FLSliceResult options {};
+
     C4Error err;
     C4ReplicatorParameters params = {};
     params.push = kC4OneShot;
@@ -310,12 +312,29 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     SECTION("Filtered") {
         expectedPending = 99;
         params.pushFilter = [](C4String docID, C4RevisionFlags flags, FLDict flbody, void *context) {
-            return !FLSlice_Compare(docID, "0000005"_sl);
+            return FLSlice_Compare(docID, "0000005"_sl) != 0;
         };
+    }
+
+    SECTION("Set Doc IDs") {
+        expectedPending = 2;
+        FLEncoder e = FLEncoder_New();
+        FLEncoder_BeginDict(e, 1);
+        FLEncoder_WriteKey(e, FLSTR(kC4ReplicatorOptionDocIDs));
+        FLEncoder_BeginArray(e, 2);
+        FLEncoder_WriteString(e, FLSTR("0000002"));
+        FLEncoder_WriteString(e, FLSTR("0000004"));
+        FLEncoder_EndArray(e);
+        FLEncoder_EndDict(e);
+        options = FLEncoder_Finish(e, nullptr);
+        params.optionsDictFleece = C4Slice(options);
+        FLEncoder_Free(e);
     }
 
     _repl = c4repl_new(db, _address, kC4SliceNull, (C4Database*)db2,
                        params, &err);
+
+    FLSliceResult_Release(options);
 
     C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, &err);
     REQUIRE(encodedDocIDs != nullslice);
@@ -335,6 +354,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
+    FLSliceResult options {};
+
     C4Error err;
     C4ReplicatorParameters params = {};
     params.push = kC4OneShot;
@@ -351,8 +372,23 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     SECTION("Filtered") {
         expectedIsPending = false;
         params.pushFilter = [](C4String docID, C4RevisionFlags flags, FLDict flbody, void *context) {
-            return !FLSlice_Compare(docID, "0000005"_sl);
+            return FLSlice_Compare(docID, "0000005"_sl) != 0;
         };
+    }
+
+    SECTION("Set Doc IDs") {
+        expectedIsPending = false;
+        FLEncoder e = FLEncoder_New();
+        FLEncoder_BeginDict(e, 1);
+        FLEncoder_WriteKey(e, FLSTR(kC4ReplicatorOptionDocIDs));
+        FLEncoder_BeginArray(e, 2);
+        FLEncoder_WriteString(e, FLSTR("0000002"));
+        FLEncoder_WriteString(e, FLSTR("0000004"));
+        FLEncoder_EndArray(e);
+        FLEncoder_EndDict(e);
+        options = FLEncoder_Finish(e, nullptr);
+        params.optionsDictFleece = C4Slice(options);
+        FLEncoder_Free(e);
     }
 
     _repl = c4repl_new(db, _address, kC4SliceNull, (C4Database*)db2,

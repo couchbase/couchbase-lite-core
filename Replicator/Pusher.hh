@@ -27,6 +27,7 @@
 #include <deque>
 #include <unordered_map>
 #include <unordered_set>
+#include <string>
 
 namespace litecore { namespace repl {
 
@@ -44,14 +45,17 @@ namespace litecore { namespace repl {
 
         // Checks if a given document should be filtered by this pusher.  The revision body
         // must be loaded prior to this call.
-        bool documentShouldBeFiltered(C4Document* doc) const {
-            const auto body = doc->selectedRev.body;
-            Assert(body.buf);
-            const auto bodyContent = FLValue_FromData(body, kFLTrusted);
-            return _options.pushFilter
-                && _options.pushFilter(doc->docID, doc->selectedRev.flags, FLValue_AsDict(bodyContent), _options.callbackContext);
+        bool isDocumentAllowed(C4Document* doc) const;
+
+        // Checks if a given sequence number is pending to be pushed
+        bool isSequencePending(sequence_t seq) const {
+            return _pendingSequences.contains(seq);
         }
 
+        // Checks if a given document ID is allowed to be pushed
+        // (aka is not missing from the list of specified docIDs)
+        bool isDocumentIDAllowed(slice docID) const;
+        
     protected:
         virtual void afterEvent() override;
 
