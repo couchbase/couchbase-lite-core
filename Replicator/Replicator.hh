@@ -83,6 +83,10 @@ namespace litecore { namespace repl {
         void start(bool synchronous =false); 
         void stop()                             {enqueue(&Replicator::_stop);}
 
+        /** Tears down a Replicator state including any reference cycles.
+            The Replicator must have either already stopped, or never started. */
+        void terminate();
+
         /** Returns a fleece encoded list of the IDs of documents which have revisions pending push */
         alloc_slice pendingDocumentIDs(C4Error* outErr) const;
 

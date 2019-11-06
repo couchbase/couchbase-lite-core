@@ -115,6 +115,25 @@ TEST_CASE("URL Generation") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[Push]") {
+    // For CBL-524 "Lazy c4replicator initialize cause memory leak"
+    createDB2();
+
+    C4Error err;
+    C4ReplicatorParameters params = {};
+    params.push = kC4OneShot;
+    params.pull = kC4Disabled;
+    params.callbackContext = this;
+    params.socketFactory = _socketFactory;
+    params.dontStart = true;
+
+    _repl = c4repl_new(db, _address, kC4SliceNull, (C4Database*)db2,
+                       params, &err);
+    C4Log("---- Releasing C4Replicator ----");
+    _repl = nullptr;
+}
+
+
 // Test invalid URL scheme:
 TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[Push][!throws]") {
     ExpectingExceptions x;

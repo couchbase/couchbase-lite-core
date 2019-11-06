@@ -171,7 +171,15 @@ private:
     ,_status(_replicator->status())
     { }
 
-    virtual ~C4Replicator() =default;
+    
+    virtual ~C4Replicator() {
+        // Tear down the Replicator instance(s) -- this is important in the case where they were
+        // never started, because otherwise there will be a bunch of ref cycles that cause many
+        // objects (including C4Databases) to be leaked. [CBL-524]
+        _replicator->terminate();
+        if (_otherReplicator)
+            _otherReplicator->terminate();
+    }
 
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
