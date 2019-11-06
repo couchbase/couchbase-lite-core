@@ -54,7 +54,7 @@ namespace litecore { namespace repl {
 
         // Checks if a given document ID is allowed to be pushed
         // (aka is not missing from the list of specified docIDs)
-        bool isDocumentIDAllowed(C4Slice docID) const;
+        bool isDocumentIDAllowed(slice docID) const;
         
     protected:
         virtual void afterEvent() override;

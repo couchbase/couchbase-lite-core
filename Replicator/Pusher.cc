@@ -73,28 +73,15 @@ namespace litecore { namespace repl {
 
 
     bool Pusher::isDocumentAllowed(C4Document* doc) const {
-        if(!isDocumentIDAllowed(doc->docID)) {
-            return false;
-        }
-
-        if(!_options.pushFilter) {
-            return true;
-        }
-
-        const auto body = doc->selectedRev.body;
-        Assert(body.buf);
-        const auto bodyContent = FLValue_FromData(body, kFLTrusted);
-        return _options.pushFilter(doc->docID, doc->selectedRev.flags, FLValue_AsDict(bodyContent), _options.callbackContext);
+        return isDocumentIDAllowed(doc->docID)
+            && (!_options.pushFilter || _options.pushFilter(doc->docID, doc->selectedRev.flags,
+                                                            DBAccess::getDocRoot(doc),
+                                                            _options.callbackContext));
     }
 
 
-    bool Pusher::isDocumentIDAllowed(C4Slice docID) const {
-        if(!_docIDs) {
-            return true;
-        }
-
-        std::string docID_str = slice(docID).asString();
-        return _docIDs->find(docID_str) != _docIDs->end();
+    bool Pusher::isDocumentIDAllowed(slice docID) const {
+       return !_docIDs || _docIDs->find(string(docID)) != _docIDs->end();
     }
 
 
