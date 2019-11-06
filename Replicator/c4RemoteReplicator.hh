@@ -112,11 +112,16 @@ namespace c4Internal {
 
 
     protected:
+        virtual void createReplicator() override {
+            auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _socketFactory);
+            _replicator = new Replicator(_database, webSocket, *this, _options);
+        }
+
+
         // Both `start` and `retry` end up calling this.
         void _restart() {
             cancelScheduledRetry();
-            auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _socketFactory);
-            _start(new Replicator(_database, webSocket, *this, _options));
+            _start();
         }
 
 

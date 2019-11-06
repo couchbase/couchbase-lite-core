@@ -25,8 +25,12 @@ namespace c4Internal {
 
         virtual void start() override {
             LOCK(_mutex);
+            _start();
+        }
+
+        virtual void createReplicator() override {
             Assert(_openSocket);
-            _start(new Replicator(_database, _openSocket, *this, _options));
+            _replicator = new Replicator(_database, _openSocket, *this, _options);
             _openSocket = nullptr;
         }
 

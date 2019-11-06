@@ -88,15 +88,17 @@ struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
         _onBlobProgress   = nullptr;
     }
 
-    bool continuous() const {
-        return _options.push == kC4Continuous || _options.pull == kC4Continuous;
-    }
-
     C4SliceResult pendingDocumentIDs(C4Error* outErr) const {
+        LOCK(_mutex);
+        if (!_replicator)
+            const_cast<C4Replicator*>(this)->createReplicator();
         return (C4SliceResult)_replicator->pendingDocumentIDs(outErr);
     }
 
     bool isDocumentPending(C4Slice docID, C4Error* outErr) const {
+        LOCK(_mutex);
+        if (!_replicator)
+            const_cast<C4Replicator*>(this)->createReplicator();
         return _replicator->isDocumentPending(docID, outErr);
     }
 
@@ -118,6 +120,10 @@ protected:
         return "C4Replicator";
     }
 
+
+    bool continuous() const {
+        return _options.push == kC4Continuous || _options.pull == kC4Continuous;
+    }
 
     inline bool statusFlag(C4ReplicatorStatusFlags flag) {
         return (_status.flags & flag) != 0;
@@ -145,15 +151,18 @@ protected:
     }
 
 
+    virtual void createReplicator() =0;
+
+
     // Base implementation of starting the replicator.
     // Subclass implementation of `start` must call this (with the mutex locked).
-    virtual void _start(Retained<Replicator> replicator) {
-        logInfo("Starting Replicator %s", replicator->loggingName().c_str());
-        DebugAssert(!_replicator);
+    virtual void _start() {
+        if (!_replicator)
+            createReplicator();
+        logInfo("Starting Replicator %s", _replicator->loggingName().c_str());
         _selfRetain = this; // keep myself alive till Replicator stops
-        updateStatusFromReplicator(replicator->status());
+        updateStatusFromReplicator(_replicator->status());
         _responseHeaders = nullptr;
-        _replicator = move(replicator);
         _replicator->start();
     }
 
@@ -281,7 +290,7 @@ protected:
     }
 
 
-    mutex                       _mutex;
+    mutable mutex               _mutex;
     Retained<C4Database> const  _database;
     Replicator::Options         _options;
 

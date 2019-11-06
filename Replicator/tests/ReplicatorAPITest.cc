@@ -287,6 +287,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]")
 }
 #endif
 
+#ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
@@ -325,7 +326,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     encodedDocIDs = c4repl_getPendingDocIDs(_repl, &err);
     CHECK(encodedDocIDs == nullslice);
 }
+#endif
 
+#ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
@@ -361,3 +364,4 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, &err);
     CHECK(!isPending);
 }
+#endif
