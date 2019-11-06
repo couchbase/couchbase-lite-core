@@ -93,10 +93,10 @@ namespace litecore { namespace repl {
         void terminate();
 
         /** Returns a fleece encoded list of the IDs of documents which have revisions pending push */
-        alloc_slice pendingDocumentIDs(C4Error* outErr) const;
+        alloc_slice pendingDocumentIDs(C4Error* outErr);
 
         /** Checks if the document with the given ID has any pending revisions to push*/
-        bool isDocumentPending(slice docId, C4Error* outErr) const;
+        bool isDocumentPending(slice docId, C4Error* outErr);
 
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection()->webSocket();}
@@ -140,7 +140,7 @@ namespace litecore { namespace repl {
         void _stop();
         void _disconnect(websocket::CloseCode closeCode, slice message);
         void _findExistingConflicts();        
-        void getLocalCheckpoint();
+        bool getLocalCheckpoint();
         void getRemoteCheckpoint(bool refresh);
         void startReplicating();
         virtual ActivityLevel computeActivityLevel() const override;
