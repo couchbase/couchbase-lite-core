@@ -265,8 +265,8 @@ namespace litecore {
                         enc->writeDouble(sqlite3_value_double(arg));
                         break;
                     case SQLITE_TEXT:
-                        enc->writeString({sqlite3_value_text(arg),
-                                          (size_t)sqlite3_value_bytes(arg)});
+                        enc->writeString(slice(sqlite3_value_text(arg),
+                                               (size_t)sqlite3_value_bytes(arg)));
                         break;
                     case SQLITE_BLOB: {
                         const Value *value = fleeceParam(ctx, arg);
