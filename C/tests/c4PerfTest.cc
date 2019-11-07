@@ -21,6 +21,7 @@
 #include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "c4Query.h"
+#include "c4Index.h"
 #include "Base.hh"
 #include "Benchmark.hh"
 #include "FilePath.hh"

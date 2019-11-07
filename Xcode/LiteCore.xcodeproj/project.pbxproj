@@ -806,6 +806,7 @@
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27139B3018F8E9750021A9A3 /* LiteCore Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LiteCore Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		271507F1212259DE005FE6E8 /* c4Compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Compat.h; sourceTree = "<group>"; };
+		271AB00F2374A41E007B0319 /* c4Index.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Index.h; sourceTree = "<group>"; };
 		271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseEncryptionTest.cc; sourceTree = "<group>"; };
 		271BA53C2297008200D49D13 /* HTTPTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPTypes.hh; sourceTree = "<group>"; };
 		271C069723078176000EC09B /* HTTPTypes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPTypes.cc; sourceTree = "<group>"; };
@@ -2694,6 +2695,7 @@
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
 				27098A96216C1D2E002751DA /* c4PredictiveQuery.h */,
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
+				271AB00F2374A41E007B0319 /* c4Index.h */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
 				27491C9A1E7B1001001DC54B /* c4Socket.h */,
 				27B64936206971FC00FC12F7 /* LiteCore.h */,

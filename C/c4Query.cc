@@ -18,6 +18,7 @@
 
 #include "c4Internal.hh"
 #include "c4Query.h"
+#include "c4Index.h"
 #include "c4Observer.h"
 #include "c4ExceptionUtils.hh"
 

@@ -24,6 +24,7 @@
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
+#include "c4Index.h"
 #include "c4Listener.h"
 #include "c4Observer.h"
 #include "c4Query.h"
