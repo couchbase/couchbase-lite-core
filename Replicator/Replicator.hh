@@ -24,6 +24,7 @@
 #include "Batcher.hh"
 #include "fleece/Fleece.hh"
 #include "Stopwatch.hh"
+#include <unordered_set>
 
 using namespace litecore::blip;
 
@@ -171,6 +172,10 @@ namespace litecore { namespace repl {
         std::string _getOldCheckpoint(C4Error*);
         alloc_slice _checkpointFromID(const slice &, C4Error*);
 
+        bool isDocumentAllowed(C4Document* doc);
+        bool isDocumentIDAllowed(slice docID);
+        void initializeDocIDs();
+
         // Member variables:
         
         CloseStatus _closeStatus;
@@ -194,6 +199,8 @@ namespace litecore { namespace repl {
 
         const websocket::URL _remoteURL;
         std::string _remoteCheckpointDocID;                 // docID of checkpoint
+
+        std::unordered_set<std::string> _docIDs;
     };
 
 } }

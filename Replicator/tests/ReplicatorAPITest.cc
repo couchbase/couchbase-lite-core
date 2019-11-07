@@ -396,6 +396,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
 
     bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, &err);
     CHECK(isPending == expectedIsPending);
+    CHECK(err.code == 0);
 
     c4repl_start(_repl);
     while (c4repl_getStatus(_repl).level != kC4Stopped)
@@ -403,4 +404,5 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
 
     isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, &err);
     CHECK(!isPending);
+    CHECK(err.code == 0);
 }
