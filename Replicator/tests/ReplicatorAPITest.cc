@@ -312,7 +312,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
 
     SECTION("Filtered") {
         expectedPending = 99;
-        params.pushFilter = [](C4String docID, C4RevisionFlags flags, FLDict flbody, void *context) {
+        params.pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
             return FLSlice_Compare(docID, "0000005"_sl) != 0;
         };
     }
@@ -372,7 +372,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
 
     SECTION("Filtered") {
         expectedIsPending = false;
-        params.pushFilter = [](C4String docID, C4RevisionFlags flags, FLDict flbody, void *context) {
+        params.pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
             return FLSlice_Compare(docID, "0000005"_sl) != 0;
         };
     }
