@@ -193,21 +193,22 @@ namespace litecore {
                      "BEGIN; "
                      "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
                      "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) WITHOUT ROWID; "
+                     "PRAGMA user_version=202; "
+                     "END;"
                      );
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
             } else if(userVersion == 201) {
                 // Add the purgeCnt column to the kvmeta table
                 _exec("BEGIN; "
-                          "ALTER TABLE kvmeta ADD COLUMN purgeCnt INTEGER DEFAULT 0; ");
+                          "ALTER TABLE kvmeta ADD COLUMN purgeCnt INTEGER DEFAULT 0; "
+                          "PRAGMA user_version=202; "
+                          "END;");
             } else if (userVersion < kMinUserVersion) {
                 error::_throw(error::DatabaseTooOld);
             } else if (userVersion > kMaxUserVersion) {
                 error::_throw(error::DatabaseTooNew);
             }
-
-            _exec("PRAGMA user_version=202; "
-                  "END;");
         });
 
         _exec(format("PRAGMA cache_size=%d; "            // Memory cache
