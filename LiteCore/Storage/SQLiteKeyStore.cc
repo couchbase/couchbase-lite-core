@@ -362,15 +362,19 @@ namespace litecore {
     }
 
 
-    void SQLiteKeyStore::createTrigger(const string &triggerName,
-                                       const char *triggerSuffix,
-                                       const char *operation,
-                                       const char *when,
-                                       const string &statements)
+    void SQLiteKeyStore::createTrigger(string_view triggerName,
+                                       string_view triggerSuffix,
+                                       string_view operation,
+                                       string when,
+                                       string_view statements)
     {
-        db().exec(CONCAT("CREATE TRIGGER \"" << triggerName << "::" << triggerSuffix  << "\" "
-                         << operation << " ON kv_" << name() << ' ' << when << ' '
-                         << " BEGIN " << statements << "; END"));
+        if (hasPrefix(when, "WHERE"))
+            when.replace(0, 5, "WHEN");
+        string sql = CONCAT("CREATE TRIGGER \"" << triggerName << "::" << triggerSuffix  << "\" "
+                            << operation << " ON kv_" << name() << ' ' << when << ' '
+                            << " BEGIN " << statements << "; END");
+        LogTo(QueryLog, "    ...for index: %s", sql.c_str());
+        db().exec(sql);
     }
 
 

@@ -123,7 +123,7 @@ namespace litecore {
     }
 
 
-    void replace(std::string &str, const std::string &oldStr, const std::string &newStr) {
+    void replace(std::string &str, string_view oldStr, string_view newStr) {
         string::size_type pos = 0;
         while (string::npos != (pos = str.find(oldStr, pos))) {
             str.replace(pos, oldStr.size(), newStr);
@@ -132,18 +132,18 @@ namespace litecore {
     }
 
 
-    bool hasPrefix(const std::string &str, const std::string &prefix) noexcept {
+    bool hasPrefix(std::string_view str, std::string_view prefix) noexcept {
         return str.size() >= prefix.size() && memcmp(str.data(), prefix.data(), prefix.size()) == 0;
     }
 
-    bool hasSuffix(const std::string &str, const std::string &suffix) noexcept {
+    bool hasSuffix(std::string_view str, std::string_view suffix) noexcept {
         return str.size() >= suffix.size()
             && memcmp(&str[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
     }
 
-    bool hasSuffixIgnoringCase(const std::string &str, const std::string &suffix) noexcept {
+    bool hasSuffixIgnoringCase(std::string_view str, std::string_view suffix) noexcept {
         return str.size() >= suffix.size()
-            && strcasecmp(&str.c_str()[str.size() - suffix.size()], suffix.data()) == 0;
+            && strncasecmp(&str.data()[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
     }
 
     int compareIgnoringCase(const std::string &a, const std::string &b) {

@@ -378,10 +378,8 @@ namespace litecore {
                 Assert(isUnnestedTable);
                 _sql << '(' << kUnnestedValueFnName << "(" << _bodyColumnName << "))";
             }
-            if (whereClause) {
-                _sql << " WHERE ";
-                parseNode(whereClause);
-            }
+            if (!isUnnestedTable)
+                writeWhereClause(whereClause);
         } catch (const FleeceException &x) {handleFleeceException(x);}
     }
 
@@ -407,6 +405,8 @@ namespace litecore {
         require(_aliases.find(alias) == _aliases.end(),
                 "duplicate AS identifier '%s'", alias.c_str());
         _aliases.insert({alias, type});
+        if (type == kDBAlias)
+            _dbAlias = alias;
     }
 
 
@@ -429,7 +429,6 @@ namespace litecore {
                 if (first) {
                     require(!on && !unnest, "first FROM item cannot have an ON or UNNEST clause");
                     type = kDBAlias;
-                    _dbAlias = alias;
                 } else if (!unnest) {
                     type = kJoinAlias;
                 } else {
@@ -444,10 +443,8 @@ namespace litecore {
                 first = false;
             }
         }
-        if (first) {
-            _dbAlias = kDefaultTableAlias;
-            _aliases.insert({_dbAlias, kDBAlias});
-        }
+        if (first)
+            addAlias(kDefaultTableAlias, kDBAlias);
     }
 
 
@@ -1407,6 +1404,18 @@ namespace litecore {
         return SQL();
     }
 
+    std::string QueryParser::whereClauseSQL(const fleece::impl::Value* arrayExpr,
+                                            string_view dbAlias)
+    {
+        reset();
+        if (!dbAlias.empty())
+            addAlias(string(dbAlias), kDBAlias);
+        writeWhereClause(arrayExpr);
+        string sql = SQL();
+        if (sql[0] == ' ')
+            sql.erase(sql.begin(), sql.begin() + 1);
+        return sql;
+    }
 
     std::string QueryParser::eachExpressionSQL(const fleece::impl::Value* arrayExpr) {
         reset();

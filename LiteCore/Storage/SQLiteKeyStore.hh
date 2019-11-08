@@ -104,11 +104,11 @@ namespace litecore {
         SQLiteDataFile& db() const                    {return (SQLiteDataFile&)dataFile();}
         std::string subst(const char *sqlTemplate) const;
         void setLastSequence(sequence_t seq);
-        void createTrigger(const std::string &triggerName,
-                           const char *triggerSuffix,
-                           const char *operation,
-                           const char *when,
-                           const std::string &statements);
+        void createTrigger(std::string_view triggerName,
+                           std::string_view triggerSuffix,
+                           std::string_view operation,
+                           std::string when,
+                           std::string_view statements);
         bool createValueIndex(const IndexSpec&);
         bool createIndex(const IndexSpec&,
                               const std::string &sourceTableName,

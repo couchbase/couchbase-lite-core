@@ -37,23 +37,30 @@ public:
         "To use FTS5, the user creates an FTS5 virtual table with one or more columns.",
         "Looking for things, searching for things, going on adventures..."};
 
+    vector<string> _stringsInDB;
+
     FTSTest() {
-        {
-            Transaction t(store->dataFile());
-            for (int i = 0; i < sizeof(kStrings)/sizeof(kStrings[0]); i++) {
-                string docID = stringWithFormat("rec-%03d", i);
+        Transaction t(store->dataFile());
+        for (int i = 0; i < sizeof(kStrings)/sizeof(kStrings[0]); i++)
+            createDoc(t, i, kStrings[i]);
+        t.commit();
+    }
 
-                fleece::impl::Encoder enc;
-                enc.beginDictionary();
-                enc.writeKey("sentence");
-                enc.writeString(kStrings[i]);
-                enc.endDictionary();
-                alloc_slice body = enc.finish();
+    void createDoc(Transaction &t, int i, string_view sentence) {
+        string docID = stringWithFormat("rec-%03d", i);
 
-                store->set(slice(docID), body, t);
-            }
-            t.commit();
-        }
+        fleece::impl::Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("sentence");
+        enc.writeString(sentence);
+        enc.endDictionary();
+        alloc_slice body = enc.finish();
+
+        store->set(slice(docID), body, t);
+
+        if (_stringsInDB.size() <= i)
+            _stringsInDB.resize(i + 1);
+        _stringsInDB[i] = sentence;
     }
 
     void createIndex(IndexSpec::Options options) {
@@ -73,7 +80,7 @@ public:
             REQUIRE(row < expectedOrder.size());
             int stringNo = expectedOrder[row];
             slice sentence = cols[0]->asString();
-            CHECK(sentence == slice(kStrings[stringNo]));
+            CHECK(sentence == slice(_stringsInDB[stringNo]));
             CHECK(e->hasFullText());
             CHECK(e->fullTextTerms().size() == expectedTerms[row]);
             for (auto term : e->fullTextTerms()) {
@@ -176,6 +183,37 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words In Target", "[Query][FTS]"
               {1, 3},
               {3, 3});
 }
+
+
+TEST_CASE_METHOD(FTSTest, "Query Full-Text Partial Index", "[Query][FTS]") {
+    // the WHERE clause prevents row 4 from being indexed/searched.
+    IndexSpec::Options options {"english", true};
+    store->createIndex("sentence",
+                       R"-({"WHAT": [[".sentence"]], "WHERE": [">", ["length()", [".sentence"]], 70]})-",
+                       IndexSpec::kFullText, &options);
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
+                        WHAT: [['.sentence']]}]",
+              {1, 2, 0},
+              {3, 3, 1});
+
+    // Now update docs so one is removed from the index and another added:
+    {
+        Transaction t(store->dataFile());
+        createDoc(t, 4, "The expression on the right must be a text value specifying the term to search for. For the table-valued function syntax, the term to search for is specified as the first table argument.");
+        createDoc(t, 1, "Search, search");
+        t.commit();
+    }
+
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
+                        WHAT: [['.sentence']]}]",
+              {2, 4, 0},
+              {3, 2, 1});
+}
+
 
 TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     // Tests fix for <https://issues.couchbase.com/browse/CBL-218>

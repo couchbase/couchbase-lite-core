@@ -52,43 +52,52 @@ namespace litecore {
         string columns = join(colNames, ", ");
         string exprs = join(colExprs, ", ");
 
+        auto where = spec.where();
+        qp.setBodyColumnName("body");
+        string whereNewSQL = qp.whereClauseSQL(where, "new");
+        string whereOldSQL = qp.whereClauseSQL(where, "old");
+
         // Build the SQL that creates an FTS table, including the tokenizer options:
-        string sqlStr;
         {
             stringstream sql;
             sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(" << columns << ", ";
             writeTokenizerOptions(sql, spec.optionsPtr());
             sql << ")";
-            sqlStr = sql.str();
+            if (!db().createIndex(spec, this, ftsTableName, sql.str()))
+                return false;
         }
-
-        if (!db().createIndex(spec, this, ftsTableName, sqlStr))
-            return false;
 
         // Index the existing records:
         db().exec(CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
-                         "SELECT rowid, " << exprs << " FROM kv_" << name() << " AS new"));
+                         "SELECT rowid, " << exprs << " FROM kv_" << name() << " AS new "
+                         << whereNewSQL));
 
         // Set up triggers to keep the FTS table up to date
         // ...on insertion:
-        createTrigger(ftsTableName, "ins", "AFTER INSERT", "",
-                      CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
-                             "VALUES (new.rowid, " << exprs << ")"));
+        string insertNewSQL = CONCAT("INSERT INTO \"" << ftsTableName
+                                     << "\" (docid, " << columns << ") "
+                                     "VALUES (new.rowid, " << exprs << ")");
+        createTrigger(ftsTableName, "ins",
+                      "AFTER INSERT",
+                      whereNewSQL,
+                      insertNewSQL);
 
         // ...on delete:
-        createTrigger(ftsTableName, "del", "AFTER DELETE", "",
-                      CONCAT("DELETE FROM \"" << ftsTableName << "\" WHERE docid = old.rowid"));
+        string deleteOldSQL = CONCAT("DELETE FROM \"" << ftsTableName << "\" WHERE docid = old.rowid");
+        createTrigger(ftsTableName, "del",
+                      "AFTER DELETE",
+                      whereOldSQL,
+                      deleteOldSQL);
 
         // ...on update:
-        stringstream upd;
-        upd << "UPDATE \"" << ftsTableName << "\" SET ";
-        for (size_t i = 0; i < colNames.size(); ++i) {
-            if (i > 0)
-                upd << ", ";
-            upd << colNames[i] << " = " << colExprs[i];
-        }
-        upd << " WHERE docid = new.rowid";
-        createTrigger(ftsTableName, "upd", "AFTER UPDATE", "", upd.str());
+        createTrigger(ftsTableName, "preupdate",
+                      "BEFORE UPDATE OF body",
+                      whereOldSQL,
+                      deleteOldSQL);
+        createTrigger(ftsTableName, "postupdate",
+                      "AFTER UPDATE OF body",
+                      whereNewSQL,
+                      insertNewSQL);
         return true;
     }
 
