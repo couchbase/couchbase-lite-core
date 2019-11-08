@@ -43,18 +43,10 @@ namespace litecore { namespace repl {
             _checkpointValid = false;
         }
 
-        // Checks if a given document should be filtered by this pusher.  The revision body
-        // must be loaded prior to this call.
-        bool isDocumentAllowed(C4Document* doc) const;
-
         // Checks if a given sequence number is pending to be pushed
         bool isSequencePending(sequence_t seq) const {
             return _pendingSequences.contains(seq);
         }
-
-        // Checks if a given document ID is allowed to be pushed
-        // (aka is not missing from the list of specified docIDs)
-        bool isDocumentIDAllowed(slice docID) const;
         
     protected:
         virtual void afterEvent() override;

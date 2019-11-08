@@ -72,19 +72,6 @@ namespace litecore { namespace repl {
     }
 
 
-    bool Pusher::isDocumentAllowed(C4Document* doc) const {
-        return isDocumentIDAllowed(doc->docID)
-            && (!_options.pushFilter || _options.pushFilter(doc->docID, doc->selectedRev.flags,
-                                                            DBAccess::getDocRoot(doc),
-                                                            _options.callbackContext));
-    }
-
-
-    bool Pusher::isDocumentIDAllowed(slice docID) const {
-       return !_docIDs || _docIDs->find(string(docID)) != _docIDs->end();
-    }
-
-
     // Begins active push, starting from the next sequence after sinceSequence
     void Pusher::_start(C4SequenceNumber sinceSequence) {
         logInfo("Starting %spush from local seq #%" PRIu64,
