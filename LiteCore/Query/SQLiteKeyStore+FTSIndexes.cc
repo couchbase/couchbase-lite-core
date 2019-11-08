@@ -34,20 +34,18 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    static void writeTokenizerOptions(stringstream &sql, const KeyStore::IndexOptions*);
+    static void writeTokenizerOptions(stringstream &sql, const IndexSpec::Options*);
 
 
     // Creates a FTS index.
-    bool SQLiteKeyStore::createFTSIndex(const IndexSpec &spec,
-                                        const Array *params,
-                                        const IndexOptions *options)
+    bool SQLiteKeyStore::createFTSIndex(const IndexSpec &spec)
     {
         auto ftsTableName = FTSTableName(spec.name);
         // Collect the name of each FTS column and the SQL expression that populates it:
         QueryParser qp(*this);
         qp.setBodyColumnName("new.body");
         vector<string> colNames, colExprs;
-        for (Array::iterator i(params); i; ++i) {
+        for (Array::iterator i(spec.what()); i; ++i) {
             colNames.push_back(CONCAT('"' << QueryParser::FTSColumnName(i.value()) << '"'));
             colExprs.push_back(qp.FTSExpressionSQL(i.value()));
         }
@@ -59,7 +57,7 @@ namespace litecore {
         {
             stringstream sql;
             sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(" << columns << ", ";
-            writeTokenizerOptions(sql, options);
+            writeTokenizerOptions(sql, spec.optionsPtr());
             sql << ")";
             sqlStr = sql.str();
         }
@@ -101,7 +99,7 @@ namespace litecore {
 
 
     // subroutine that generates the option string passed to the FTS tokenizer
-    static void writeTokenizerOptions(stringstream &sql, const KeyStore::IndexOptions *options) {
+    static void writeTokenizerOptions(stringstream &sql, const IndexSpec::Options *options) {
         // See https://www.sqlite.org/fts3.html#tokenizer . 'unicodesn' is our custom tokenizer.
         sql << "tokenize=unicodesn";
         if (options) {

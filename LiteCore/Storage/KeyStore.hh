@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "Base.hh"
+#include "IndexSpec.hh"
 #include "RefCounted.hh"
 #include "RecordEnumerator.hh"
 #include "function_ref.hh"
@@ -135,40 +135,12 @@ namespace litecore {
 
         //////// Indexing:
 
-        enum IndexType {
-            kValueIndex,         ///< Regular index of property value
-            kFullTextIndex,      ///< Full-text index, for MATCH queries
-            kArrayIndex,         ///< Index of array values, for UNNEST queries
-            kPredictiveIndex,    ///< Index of prediction results
-        };
-
-        static const char* kIndexTypeName[];
-
-        struct IndexOptions {
-            const char *language;   ///< NULL or an ISO language code ("en", etc)
-            bool ignoreDiacritics;  ///< True to strip diacritical marks/accents from letters
-            bool disableStemming;   ///< Disables stemming
-            const char *stopWords;  ///< NULL for default, or comma-delimited string, or empty
-        };
-
-        struct IndexSpec {
-            std::string name;
-            IndexType type;
-            alloc_slice expressionJSON;
-
-            IndexSpec() { }
-            IndexSpec(std::string name_, KeyStore::IndexType type_, alloc_slice expressionJSON_)
-            :name(name_), type(type_), expressionJSON(expressionJSON_)
-            { }
-            explicit operator bool() const {return !name.empty();}
-        };
-
-        virtual bool supportsIndexes(IndexType) const                   {return false;}
-        virtual bool createIndex(const IndexSpec&, const IndexOptions* = nullptr) =0;
+        virtual bool supportsIndexes(IndexSpec::Type) const                   {return false;}
+        virtual bool createIndex(const IndexSpec&) =0;
         bool createIndex(slice name,
                          slice expressionJSON,
-                         IndexType =kValueIndex,
-                         const IndexOptions* = nullptr); // convenience method
+                         IndexSpec::Type =IndexSpec::kValue,
+                         const IndexSpec::Options* = nullptr); // convenience method
         virtual void deleteIndex(slice name) =0;
         virtual std::vector<IndexSpec> getIndexes() const =0;
 

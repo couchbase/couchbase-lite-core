@@ -67,6 +67,8 @@ namespace litecore { namespace qp {
         return val;
     }
 
+    const Value* getCaseInsensitive(const Dict *dict, slice key);
+
     const Array* requiredArray(const Value *v, const char *what);
     const Dict* requiredDict(const Value *v, const char *what);
     slice requiredString(const Value *v, const char *what);

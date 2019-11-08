@@ -28,17 +28,14 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    bool SQLiteKeyStore::createArrayIndex(const IndexSpec &spec,
-                                          const Array *expressions,
-                                          const IndexOptions *options)
-    {
-        Array::iterator iExprs(expressions);
-        string arrayTableName = createUnnestedTable(iExprs.value(), options);
-        return createValueIndex(spec, arrayTableName, ++iExprs, options);
+    bool SQLiteKeyStore::createArrayIndex(const IndexSpec &spec) {
+        Array::iterator iExprs(spec.what());
+        string arrayTableName = createUnnestedTable(iExprs.value(), spec.optionsPtr());
+        return createIndex(spec, arrayTableName, ++iExprs);
     }
 
 
-    string SQLiteKeyStore::createUnnestedTable(const Value *expression, const IndexOptions *options) {
+    string SQLiteKeyStore::createUnnestedTable(const Value *expression, const IndexSpec::Options *options) {
         // Derive the table name from the expression it unnests:
         auto kvTableName = tableName();
         auto unnestTableName = QueryParser(*this).unnestedTableName(expression);

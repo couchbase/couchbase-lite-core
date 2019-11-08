@@ -56,8 +56,8 @@ public:
         }
     }
 
-    void createIndex(KeyStore::IndexOptions options) {
-        store->createIndex({"sentence", KeyStore::kFullTextIndex, alloc_slice("[[\".sentence\"]]")}, &options);
+    void createIndex(IndexSpec::Options options) {
+        store->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText, &options);
     }
 
     void testQuery(const char *queryStr,
@@ -182,8 +182,8 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
 
     store->deleteIndex("List"_sl);
     SECTION("Create Index First") {
-        KeyStore::IndexOptions options { "en", false, true };
-        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, KeyStore::kFullTextIndex, &options));
+        IndexSpec::Options options { "en", false, true };
+        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, IndexSpec::kFullText, &options));
     }
 
     {
@@ -263,8 +263,8 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     }
 
     SECTION("Create Index After") {
-        KeyStore::IndexOptions options { "en", false, true };
-        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, KeyStore::kFullTextIndex, &options));
+        IndexSpec::Options options { "en", false, true };
+        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, IndexSpec::kFullText, &options));
     }
 
     Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH', 'List', ['$title']]}"));
@@ -326,8 +326,8 @@ TEST_CASE_METHOD(FTSTest, "Test with Dictionary Values", "[FTS][Query]") {
         t.commit();
     }
 
-    KeyStore::IndexOptions options { "en", false, false };
-    CHECK(store->createIndex("fts"_sl, "[[\".dict_value\"]]"_sl, KeyStore::kFullTextIndex, &options));
+    IndexSpec::Options options { "en", false, false };
+    CHECK(store->createIndex("fts"_sl, "[[\".dict_value\"]]"_sl, IndexSpec::kFullText, &options));
     Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH', 'fts', 'bar']}"));
     Retained<QueryEnumerator> results(query->createEnumerator(nullptr));        
     CHECK(results->getRowCount() == 1);
@@ -399,8 +399,8 @@ TEST_CASE_METHOD(FTSTest, "Test with non-string values", "[FTS][Query]") {
         valueToCheck = "1.234"_sl;
     }
 
-    KeyStore::IndexOptions options { "en", false, true };
-    CHECK(store->createIndex("fts"_sl, "[[\".value\"]]"_sl, KeyStore::kFullTextIndex, &options));
+    IndexSpec::Options options { "en", false, true };
+    CHECK(store->createIndex("fts"_sl, "[[\".value\"]]"_sl, IndexSpec::kFullText, &options));
     Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH', 'fts', ['$value']]}"));
     Encoder e;
     e.beginDictionary(1);

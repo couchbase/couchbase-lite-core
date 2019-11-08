@@ -19,7 +19,9 @@
 #pragma once
 
 #include "DataFile.hh"
+#include "IndexSpec.hh"
 #include "UnicodeCollator.hh"
+#include <optional>
 
 namespace SQLite {
     class Database;
@@ -31,6 +33,7 @@ namespace SQLite {
 namespace litecore {
 
     class SQLiteKeyStore;
+    struct SQLiteIndexSpec;
 
 
     /** SQLite implementation of DataFile. */
@@ -100,27 +103,13 @@ namespace litecore {
         void optimizeAndVacuum();
 
         // Indexes:
-        struct IndexSpec : public KeyStore::IndexSpec {
-            std::string keyStoreName;
-            std::string indexTableName;
-
-            IndexSpec() { }
-            IndexSpec(const std::string &name, KeyStore::IndexType type, alloc_slice expressionJSON,
-                      const std::string &ksName, const std::string &itName)
-            :KeyStore::IndexSpec(name, type, expressionJSON)
-            ,keyStoreName(ksName)
-            ,indexTableName(itName)
-            { }
-
-        };
-
-        bool createIndex(const KeyStore::IndexSpec &spec,
+        bool createIndex(const litecore::IndexSpec &spec,
                          SQLiteKeyStore *keyStore,
                          const std::string &indexTableName,
                          const std::string &indexSQL);
-        void deleteIndex(const IndexSpec&);
-        IndexSpec getIndex(slice name);
-        std::vector<IndexSpec> getIndexes(const KeyStore*);
+        void deleteIndex(const SQLiteIndexSpec&);
+        std::optional<SQLiteIndexSpec> getIndex(slice name);
+        std::vector<SQLiteIndexSpec> getIndexes(const KeyStore*);
 
     private:
         friend class SQLiteKeyStore;
@@ -132,18 +121,35 @@ namespace litecore {
 
         bool indexTableExists();
         void ensureIndexTableExists();
-        void registerIndex(const KeyStore::IndexSpec&,
+        void registerIndex(const litecore::IndexSpec&,
                            const std::string &keyStoreName,
                            const std::string &indexTableName);
         void unregisterIndex(slice indexName);
         void garbageCollectIndexTable(const std::string &tableName);
-        IndexSpec specFromStatement(SQLite::Statement &stmt);
-        std::vector<IndexSpec> getIndexesOldStyle(const KeyStore *store =nullptr);
+        SQLiteIndexSpec specFromStatement(SQLite::Statement &stmt);
+        std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore *store =nullptr);
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
         CollationContextVector _collationContexts;
     };
+
+
+    struct SQLiteIndexSpec : public IndexSpec {
+        SQLiteIndexSpec(const std::string &name,
+                        IndexSpec::Type type,
+                        alloc_slice expressionJSON,
+                        const std::string &ksName,
+                        const std::string &itName)
+        :IndexSpec(name, type, expressionJSON)
+        ,keyStoreName(ksName)
+        ,indexTableName(itName)
+        { }
+
+        std::string const keyStoreName;
+        std::string const indexTableName;
+    };
+
 
 }
 

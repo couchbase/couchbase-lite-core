@@ -64,7 +64,8 @@ namespace litecore {
         void parseJustExpression(const fleece::impl::Value *expression);
 
         void writeCreateIndex(const std::string &name,
-                              fleece::impl::Array::iterator &expressions,
+                              fleece::impl::Array::iterator &whatExpressions,
+                              const fleece::impl::Array *whereClause,
                               bool isUnnestedTable);
 
         static void writeSQLString(std::ostream &out, slice str, char quote ='\'');

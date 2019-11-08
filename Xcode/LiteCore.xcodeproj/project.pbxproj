@@ -56,6 +56,7 @@
 		270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		270F2BD52301E8AE00D8DB21 /* TCPSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
+		271AB0162374AD09007B0319 /* IndexSpec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271AB0152374AD09007B0319 /* IndexSpec.cc */; };
 		271BA454227B691500D49D13 /* c4DatabaseEncryptionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */; };
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
@@ -807,6 +808,8 @@
 		27139B3018F8E9750021A9A3 /* LiteCore Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LiteCore Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		271507F1212259DE005FE6E8 /* c4Compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Compat.h; sourceTree = "<group>"; };
 		271AB00F2374A41E007B0319 /* c4Index.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Index.h; sourceTree = "<group>"; };
+		271AB0142374AD09007B0319 /* IndexSpec.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IndexSpec.hh; sourceTree = "<group>"; };
+		271AB0152374AD09007B0319 /* IndexSpec.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IndexSpec.cc; sourceTree = "<group>"; };
 		271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseEncryptionTest.cc; sourceTree = "<group>"; };
 		271BA53C2297008200D49D13 /* HTTPTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPTypes.hh; sourceTree = "<group>"; };
 		271C069723078176000EC09B /* HTTPTypes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPTypes.cc; sourceTree = "<group>"; };
@@ -2025,6 +2028,19 @@
 			path = ../C;
 			sourceTree = "<group>";
 		};
+		275BED7B2374E7FF003AEAFD /* Indexes */ = {
+			isa = PBXGroup;
+			children = (
+				271AB0142374AD09007B0319 /* IndexSpec.hh */,
+				271AB0152374AD09007B0319 /* IndexSpec.cc */,
+				27F0426B2196264900D7C6FA /* SQLiteDataFile+Indexes.cc */,
+				2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */,
+				27098ABB217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc */,
+				27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */,
+			);
+			name = Indexes;
+			sourceTree = "<group>";
+		};
 		275BF36A1F5F671C0051374A /* Scripts */ = {
 			isa = PBXGroup;
 			children = (
@@ -2139,10 +2155,6 @@
 		276D153D1DFF528B00543B1B /* Query */ = {
 			isa = PBXGroup;
 			children = (
-				27F0426B2196264900D7C6FA /* SQLiteDataFile+Indexes.cc */,
-				2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */,
-				27098ABB217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc */,
-				27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */,
 				27E6DFEE1DA5AFF3008EB681 /* Query.cc */,
 				27E6DFEF1DA5AFF3008EB681 /* Query.hh */,
 				276D15401DFF541000543B1B /* SQLiteQuery.cc */,
@@ -2156,6 +2168,7 @@
 				279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */,
 				27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */,
 				27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */,
+				275BED7B2374E7FF003AEAFD /* Indexes */,
 				276CE676226798D200B681AC /* N1QL_Parser */,
 				274D178B2178101B007FD01A /* EE */,
 			);
@@ -3748,6 +3761,7 @@
 				275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
 				275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */,
+				271AB0162374AD09007B0319 /* IndexSpec.cc in Sources */,
 				93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */,
 				27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,

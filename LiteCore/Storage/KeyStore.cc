@@ -31,8 +31,6 @@ namespace litecore {
 
     const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false};
 
-    const char* KeyStore::kIndexTypeName[] = {"value", "full-text", "array", "predictive"};
-
 
     Record KeyStore::get(slice key, ContentOption option) const {
         Record rec(key);
@@ -73,10 +71,10 @@ namespace litecore {
 
     bool KeyStore::createIndex(slice name,
                                slice expressionJSON,
-                               IndexType type,
-                               const IndexOptions* options)
+                               IndexSpec::Type type,
+                               const IndexSpec::Options* options)
     {
-        return createIndex({string(name), type, alloc_slice(expressionJSON)}, options);
+        return createIndex({string(name), type, alloc_slice(expressionJSON), options});
     }
 
     expiration_t KeyStore::now() noexcept {

@@ -402,18 +402,18 @@ C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs, C4Error *outEr
 
 bool c4db_createIndex(C4Database *database,
                       C4Slice name,
-                      C4Slice propertyPath,
+                      C4Slice indexSpecJSON,
                       C4IndexType indexType,
                       const C4IndexOptions *indexOptions,
                       C4Error *outError) noexcept
 {
-    static_assert(sizeof(C4IndexOptions) == sizeof(KeyStore::IndexOptions),
-                  "IndexOptions types must match");
+    static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options),
+                  "IndexSpec::Options types must match");
     return tryCatch(outError, [&]{
-        database->defaultKeyStore().createIndex({string(slice(name)),
-                                                 (KeyStore::IndexType)indexType,
-                                                 alloc_slice(propertyPath)},
-                                                (const KeyStore::IndexOptions*)indexOptions);
+        database->defaultKeyStore().createIndex(slice(name),
+                                                indexSpecJSON,
+                                                (IndexSpec::Type)indexType,
+                                                (const IndexSpec::Options*)indexOptions);
     });
 }
 

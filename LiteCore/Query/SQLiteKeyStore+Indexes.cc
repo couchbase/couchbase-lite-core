@@ -52,30 +52,21 @@ namespace litecore {
      The SQL index always is always named `name`.
      */
 
-    static void validateIndexName(slice name);
-    static pair<Retained<Doc>, const Array*> parseIndexExpr(slice expression, KeyStore::IndexType);
 
-
-    bool SQLiteKeyStore::createIndex(const IndexSpec &spec,
-                                     const IndexOptions *options) {
-        validateIndexName(spec.name);
-        auto [doc, params] = parseIndexExpr(spec.expressionJSON, spec.type);
+    bool SQLiteKeyStore::createIndex(const IndexSpec &spec) {
+        spec.validateName();
 
         Stopwatch st;
         Transaction t(db());
         bool created;
         switch (spec.type) {
-            case kValueIndex: {
-                Array::iterator iParams(params);
-                created = createValueIndex(spec, tableName(), iParams, options);
-                break;
-            }
-            case kFullTextIndex:  created = createFTSIndex(spec, params, options); break;
-            case kArrayIndex:     created = createArrayIndex(spec, params, options); break;
+            case IndexSpec::kValue:      created = createValueIndex(spec); break;
+            case IndexSpec::kFullText:   created = createFTSIndex(spec); break;
+            case IndexSpec::kArray:      created = createArrayIndex(spec); break;
 #ifdef COUCHBASE_ENTERPRISE
-            case kPredictiveIndex:created = createPredictiveIndex(spec, params, options); break;
+            case IndexSpec::kPredictive: created = createPredictiveIndex(spec); break;
 #endif
-            default:             error::_throw(error::Unimplemented);
+            default:                     error::_throw(error::Unimplemented);
         }
 
         if (created) {
@@ -89,11 +80,28 @@ namespace litecore {
     }
 
 
+    // Actually creates the index (called by the createXXXIndex methods)
+    bool SQLiteKeyStore::createIndex(const IndexSpec &spec,
+                                     const string &sourceTableName,
+                                     Array::iterator &expressions)
+    {
+        Assert(spec.type != IndexSpec::kFullText);
+        QueryParser qp(*this);
+        qp.setTableName(CONCAT('"' << sourceTableName << '"'));
+        qp.writeCreateIndex(spec.name,
+                            expressions,
+                            spec.where(),
+                            (spec.type != IndexSpec::kValue));
+        string sql = qp.SQL();
+        return db().createIndex(spec, this, sourceTableName, sql);
+    }
+
+
     void SQLiteKeyStore::deleteIndex(slice name)  {
         Transaction t(db());
         auto spec = db().getIndex(name);
         if (spec) {
-            db().deleteIndex(spec);
+            db().deleteIndex(*spec);
             t.commit();
         } else {
             t.abort();
@@ -112,11 +120,11 @@ namespace litecore {
     }
 
 
-    vector<KeyStore::IndexSpec> SQLiteKeyStore::getIndexes() const {
-        vector<KeyStore::IndexSpec> result;
+    vector<IndexSpec> SQLiteKeyStore::getIndexes() const {
+        vector<IndexSpec> result;
         for (auto &spec : db().getIndexes(nullptr)) {
             if (spec.keyStoreName == name())
-                result.push_back(spec);
+                result.push_back(move(spec));
         }
         return result;
     }
@@ -125,18 +133,9 @@ namespace litecore {
 #pragma mark - VALUE INDEX:
 
 
-    // Creates a value index.
-    bool SQLiteKeyStore::createValueIndex(const IndexSpec &spec,
-                                          const string &sourceTableName,
-                                          Array::iterator &expressions,
-                                          const IndexOptions *options)
-    {
-        Assert(spec.type != kFullTextIndex);
-        QueryParser qp(*this);
-        qp.setTableName(CONCAT('"' << sourceTableName << '"'));
-        qp.writeCreateIndex(spec.name, expressions, (spec.type != kValueIndex));
-        string sql = qp.SQL();
-        return db().createIndex(spec, this, sourceTableName, sql);
+    bool SQLiteKeyStore::createValueIndex(const IndexSpec &spec) {
+        Array::iterator expressions(spec.what());
+        return createIndex(spec, tableName(), expressions);
     }
 
 
@@ -146,34 +145,6 @@ namespace litecore {
     // Part of the QueryParser delegate API
     bool SQLiteKeyStore::tableExists(const std::string &tableName) const {
         return db().tableExists(tableName);
-    }
-
-
-    static void validateIndexName(slice name) {
-        if(name.size == 0) {
-            error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty");
-        }
-        if(name.findByte((uint8_t)'"') != nullptr) {
-            error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not contain "
-                          "the double quote (\") character");
-        }
-    }
-
-
-    // Parses the JSON index-spec expression into an Array:
-    static pair<Retained<Doc>, const Array*> parseIndexExpr(slice expression,
-                                                          KeyStore::IndexType type)
-    {
-        Retained<Doc> doc;
-        alloc_slice expressionFleece;
-        const Array *params = nullptr;
-        try {
-            doc = Doc::fromJSON(expression);
-            params = doc->asArray();
-        } catch (const FleeceException &) { }
-        if (!params || params->count() == 0)
-            error::_throw(error::InvalidQuery, "JSON syntax error, or not an array");
-        return {doc, params};
     }
 
 }

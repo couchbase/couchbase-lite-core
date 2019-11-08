@@ -94,10 +94,6 @@ extern "C" {
         Note: If some documents are missing the values to be indexed,
         those documents will just be omitted from the index. It's not an error.
 
-        Expressions are defined in JSON, as in a query, and wrapped in a JSON array. For example,
-        `[[".name.first"]]` will index on the first-name property. Note the two levels of brackets,
-        since an expression is already an array.
-
         Currently, full-text indexes are limited to a single expression only.
 
         In an array index, the first expression must evaluate to an array to be unnested; it's
@@ -108,19 +104,30 @@ extern "C" {
         In a predictive index, the expression is a PREDICTION() call in JSON query syntax,
         including the optional 3rd parameter that gives the result property to extract (and index.)
 
+        `indexSpecJSON` specifies the index as a JSON object, with properties:
+        * `WHAT`: An array of expressions in the JSON query syntax. (Note that each
+          expression is already an array, so there are two levels of nesting.)
+        * `WHERE`: An optional expression. Including this creates a _partial index_: documents
+          for which this expression returns `false` or `null` will be skipped.
+
+        For backwards compatibility, `indexSpecJSON` may be an array; this is treated as if it were
+        a dictionary with a `WHAT` key mapping to that array.
+
+        Expressions are defined in JSON, as in a query, and wrapped in a JSON array. For example,
+        `[[".name.first"]]` will index on the first-name property. Note the two levels of brackets,
+        since an expression is already an array.
+
         @param database  The database to index.
         @param name  The name of the index. Any existing index with the same name will be replaced,
                      unless it has the identical expressions (in which case this is a no-op.)
-        @param expressionsJSON  A JSON array of one or more expressions to index. Each expression
-                     takes the same form as in a query, which means it's a JSON array as well;
-                     don't get mixed up by the nesting!
+        @param indexSpecJSON  The definition of the index in JSON form. (See above.)
         @param indexType  The type of index (value or full-text.)
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
     bool c4db_createIndex(C4Database *database C4NONNULL,
                           C4String name,
-                          C4String expressionsJSON,
+                          C4String indexSpecJSON,
                           C4IndexType indexType,
                           const C4IndexOptions *indexOptions,
                           C4Error *outError) C4API;

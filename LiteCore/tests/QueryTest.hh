@@ -42,6 +42,8 @@ protected:
         return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder &enc) {
             enc.writeKey("num");
             enc.writeInt(i);
+            enc.writeKey("type");
+            enc.writeString("number");
             if (str) {
                 enc.writeKey("str");
                 enc.writeString(str);
@@ -65,6 +67,8 @@ protected:
             for (int j = max(i-5, 1); j <= i; j++)
                 enc.writeString(numberString(j));
             enc.endArray();
+            enc.writeKey("type");
+            enc.writeString("array");
         });
     }
 
@@ -148,7 +152,7 @@ protected:
         t.commit();
     }
 
-    vector<string> extractIndexes(vector<KeyStore::IndexSpec> indexes) {
+    vector<string> extractIndexes(vector<IndexSpec> indexes) {
         set<string> retVal;
         for (auto &i : indexes)
             retVal.insert(i.name);
@@ -175,6 +179,14 @@ protected:
             REQUIRE(e->next());
             CHECK(e->columns()[0]->toString() == slice(test.second));
         }
+    }
+
+    void checkOptimized(Query *query, bool expectOptimized =true) {
+        string explanation = query->explain();
+        Log("Query:\n%s", explanation.c_str());
+        auto optimized = (explanation.find("SCAN") == string::npos);
+        CHECK(optimized == expectOptimized);
+
     }
 
 };

@@ -143,7 +143,7 @@ TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]"
     model->registerAs("8ball");
 
     store->createIndex("nums"_sl, json5("[['PREDICTION()', '8ball', {number: ['.num']}, '.square']]"),
-                       KeyStore::kPredictiveIndex);
+                       IndexSpec::kPredictive);
     store->deleteIndex("nums"_sl);
 
     PredictiveModel::unregister("8ball");
@@ -167,7 +167,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
         INFO("During pass #" << pass);
         if (pass > 1) {
             store->createIndex("nums"_sl, json5("["+prediction+"]"),
-                               KeyStore::kPredictiveIndex);
+                               IndexSpec::kPredictive);
 
             // Now that it's indexed, there should be no more calls to the model:
             model->allowCalls = false;
@@ -220,7 +220,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predic
         if (pass > 1) {
             string index = "['PREDICTION()', '8ball', {number: ['.num']}, '.square', '.even']";
             store->createIndex("nums"_sl, json5("["+index+"]"),
-                               KeyStore::kPredictiveIndex);
+                               IndexSpec::kPredictive);
             
             // Now that it's indexed, there should be no more calls to the model:
             model->allowCalls = false;
@@ -270,7 +270,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") 
         if (pass > 1) {
             string index = "['PREDICTION()', '8ball', {number: ['.num']}]";
             store->createIndex("nums"_sl, json5("["+index+"]"),
-                               KeyStore::kPredictiveIndex);
+                               IndexSpec::kPredictive);
             
             // Now that it's indexed, there should be no more calls to the model:
             model->allowCalls = false;

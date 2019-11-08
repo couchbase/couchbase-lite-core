@@ -67,6 +67,13 @@ namespace litecore {
             return required(required(v, what)->asString(), what, "must be a string");
         }
 
+        const Value* getCaseInsensitive(const Dict *dict, slice key) {
+            for (Dict::iterator i(dict); i; ++i)
+                if (i.key()->asString().caseEquivalent(key))
+                    return i.value();
+            return nullptr;
+        }
+
         unsigned findNodes(const Value *root, slice op, unsigned argCount,
                            function_ref<void(const Array*)> callback)
         {
@@ -98,13 +105,6 @@ namespace litecore {
 
     static bool isValidAlias(const string& alias) {
         return alias.find('"') == string::npos && alias.find('\\') == string::npos;
-    }
-
-    static const Value* getCaseInsensitive(const Dict *dict, slice key) {
-        for (Dict::iterator i(dict); i; ++i)
-            if (i.key()->asString().caseEquivalent(key))
-                return i.value();
-        return nullptr;
     }
 
 
@@ -363,6 +363,7 @@ namespace litecore {
 
     void QueryParser::writeCreateIndex(const string &name,
                                        Array::iterator &expressionsIter,
+                                       const Array *whereClause,
                                        bool isUnnestedTable)
     {
         reset();
@@ -377,7 +378,10 @@ namespace litecore {
                 Assert(isUnnestedTable);
                 _sql << '(' << kUnnestedValueFnName << "(" << _bodyColumnName << "))";
             }
-            // TODO: Add 'WHERE' clause for use with SQLite 3.15+
+            if (whereClause) {
+                _sql << " WHERE ";
+                parseNode(whereClause);
+            }
         } catch (const FleeceException &x) {handleFleeceException(x);}
     }
 

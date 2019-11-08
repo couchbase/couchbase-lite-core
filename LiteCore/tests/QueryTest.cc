@@ -48,27 +48,27 @@ static string local_to_utc(const char* format, int days, int hours, int minutes,
 TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
 
-    KeyStore::IndexOptions options { "en", true };
+    IndexSpec::Options options { "en", true };
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
         store->createIndex(""_sl, "[[\".num\"]]"_sl);
     });
     
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
-        store->createIndex("\"num\""_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+        store->createIndex("\"num\""_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options);
     });
 
-    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kValueIndex, &options));
+    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
-    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kValueIndex, &options));
+    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
 
-    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options));
-    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options));
+    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options));
+    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
 
     store->deleteIndex("num"_sl);
-    CHECK(store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options));
-    CHECK(store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, KeyStore::kFullTextIndex, &options));
+    CHECK(store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options));
+    CHECK(store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, IndexSpec::kFullText, &options));
     CHECK(extractIndexes(store->getIndexes()) == vector<string>{"num_second"});
     
     CHECK(store->createIndex("num"_sl, "[\".num\"]"_sl));
@@ -77,9 +77,9 @@ TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     store->deleteIndex("num"_sl);
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second"}));
 
-    CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options));
-    CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options));
-    CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, KeyStore::kArrayIndex, &options));
+    CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, &options));
+    CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, &options));
+    CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, IndexSpec::kArray, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
 
     store->deleteIndex("num_second"_sl);
@@ -94,8 +94,46 @@ TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
 
 TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
-    store->createIndex("nums"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex);
+    store->createIndex("nums"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray);
     store->deleteIndex("nums"_sl);
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
+    addNumberedDocs(1, 100);
+    addArrayDocs(101, 100);
+
+    store->createIndex("nums"_sl, R"({"WHAT":[[".num"]], "WHERE":["=",[".type"],"number"]})"_sl);
+
+    const char *queryJson = nullptr;
+    bool expectOptimized = false;
+    SECTION("Using index") {
+        queryJson = "['AND', ['=', ['.type'], 'number'], "
+                            "['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
+        expectOptimized = true;
+    }
+    SECTION("Not using index") {
+        queryJson = "['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
+        expectOptimized = false;
+    }
+    Retained<Query> query = store->compileQuery(json5(queryJson));
+    checkOptimized(query, expectOptimized);
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Partial Index with NOT MISSING", "[Query]") {
+    // This tests whether SQLite is smart enough to know that a query on a property (.num) can
+    // use a partial index whose condition is that the property is not MISSING.
+    // Apparently it is :)
+    addNumberedDocs(1, 100);
+    addArrayDocs(101, 100);
+
+    store->createIndex("nums"_sl, R"({"WHAT":[[".num"]], "WHERE":["IS NOT",[".num"],["MISSING"]]})"_sl);
+
+    const char *queryJson = "['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
+
+    Retained<Query> query = store->compileQuery(json5(queryJson));
+    checkOptimized(query);
 }
 
 
@@ -1186,13 +1224,10 @@ protected:
         Log("-------- Creating index --------");
         store->createIndex("numbersIndex"_sl,
                            "[[\".numbers\"]]"_sl,
-                           KeyStore::kArrayIndex);
+                           IndexSpec::kArray);
         Log("-------- Recompiling query with index --------");
         query = store->compileQuery(json);
-        explanation = query->explain();
-        Log("%s", explanation.c_str());
-        if (checkOptimization)
-            CHECK(explanation.find("SCAN") == string::npos);    // should be no linear table scans
+        checkOptimized(query, checkOptimization);
         checkQuery(88, 3);
 
         Log("-------- Adding a doc --------");
@@ -1259,12 +1294,10 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
     Log("-------- Creating index --------");
     store->createIndex("numbersIndex"_sl,
                        json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"),
-                       KeyStore::kArrayIndex);
+                       IndexSpec::kArray);
     Log("-------- Recompiling query with index --------");
     query = store->compileQuery(json);
-    explanation = query->explain();
-    Log("%s", explanation.c_str());
-    CHECK(explanation.find("SCAN") == string::npos);    // should be no linear table scans
+    checkOptimized(query);
 
     checkQuery(22, 2);
 }
