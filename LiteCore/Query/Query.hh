@@ -69,13 +69,19 @@ namespace litecore {
             :paramBindings(o.paramBindings), afterSequence(o.afterSequence) { }
 
             template <class T>
-            Options(T bindings, sequence_t afterSeq =0)
-            :paramBindings(bindings), afterSequence(afterSeq) { }
+            Options(T bindings, sequence_t afterSeq =0, uint64_t withPurgeCount =0)
+            :paramBindings(bindings), afterSequence(afterSeq), purgeCount(withPurgeCount) { }
 
-            Options after(sequence_t afterSeq) const {return Options(paramBindings, afterSeq);}
+            Options after(sequence_t afterSeq) const {return Options(paramBindings, afterSeq, purgeCount);}
+            Options withPurgeCount(uint64_t purgeCnt) const {return Options(paramBindings, afterSequence, purgeCnt);}
+
+            bool notOlderThan(sequence_t afterSeq, uint64_t purgeCnt) const {
+                return afterSequence > 0 && afterSequence >= afterSeq && purgeCnt == purgeCount;
+            }
 
             alloc_slice const paramBindings;
             sequence_t const  afterSequence {0};
+            uint64_t const purgeCount {0};
         };
 
         virtual QueryEnumerator* createEnumerator(const Options* =nullptr) =0;
@@ -99,6 +105,7 @@ namespace litecore {
 
         const Query::Options& options() const                   {return _options;}
         sequence_t lastSequence() const                         {return _lastSequence;}
+        uint64_t purgeCount() const                             {return _purgeCount;}
 
         virtual bool next() =0;
 
@@ -120,14 +127,16 @@ namespace litecore {
         virtual bool obsoletedBy(const QueryEnumerator*) =0;
 
     protected:
-        QueryEnumerator(const Query::Options *options, sequence_t lastSeq)
+        QueryEnumerator(const Query::Options *options, sequence_t lastSeq, uint64_t purgeCount)
         :_options(options ? *options : Query::Options{})
         ,_lastSequence(lastSeq)
+        ,_purgeCount(purgeCount)
         { }
         virtual ~QueryEnumerator() =default;
 
         Query::Options _options;
         std::atomic<sequence_t> _lastSequence;       // DB's lastSequence at the time the query ran
+        std::atomic<uint64_t> _purgeCount;           // DB's purgeCount at the time the query ran
         // The implementation of fullTextTerms() should populate this and return a reference:
         FullTextTerms _fullTextTerms;
     };

@@ -192,17 +192,22 @@ namespace litecore {
                      "PRAGMA auto_vacuum=incremental; " // incremental vacuum mode
                      "BEGIN; "
                      "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
-                     "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID; "
+                     "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) WITHOUT ROWID; "
                      );
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
-                _exec("PRAGMA user_version=201; "
-                      "END;");
+            } else if(userVersion == 201) {
+                // Add the purgeCnt column to the kvmeta table
+                _exec("BEGIN; "
+                          "ALTER TABLE kvmeta ADD COLUMN purgeCnt INTEGER DEFAULT 0; ");
             } else if (userVersion < kMinUserVersion) {
                 error::_throw(error::DatabaseTooOld);
             } else if (userVersion > kMaxUserVersion) {
                 error::_throw(error::DatabaseTooNew);
             }
+
+            _exec("PRAGMA user_version=202; "
+                  "END;");
         });
 
         _exec(format("PRAGMA cache_size=%d; "            // Memory cache
@@ -257,6 +262,8 @@ namespace litecore {
     void SQLiteDataFile::_close(bool forDelete) {
         _getLastSeqStmt.reset();
         _setLastSeqStmt.reset();
+        _getPurgeCntStmt.reset();
+        _setPurgeCntStmt.reset();
         if (_sqlDb) {
             optimizeAndVacuum();
             // Close the SQLite database:
@@ -530,11 +537,37 @@ namespace litecore {
 
     void SQLiteDataFile::setLastSequence(SQLiteKeyStore &store, sequence_t seq) {
         compile(_setLastSeqStmt,
-                "INSERT OR REPLACE INTO kvmeta (name, lastSeq) VALUES (?, ?)");
+                "INSERT INTO kvmeta (name, lastSeq) VALUES (?, ?) "
+                "ON CONFLICT (name) "
+                "DO UPDATE SET lastSeq = excluded.lastSeq");
         UsingStatement u(_setLastSeqStmt);
         _setLastSeqStmt->bindNoCopy(1, store.name());
         _setLastSeqStmt->bind(2, (long long)seq);
         _setLastSeqStmt->exec();
+    }
+
+
+    uint64_t SQLiteDataFile::purgeCount(const std::string& keyStoreName) const {
+        uint64_t purgeCnt = 0;
+        compile(_getPurgeCntStmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
+        UsingStatement u(_getPurgeCntStmt);
+        _getPurgeCntStmt->bindNoCopy(1, keyStoreName);
+        if(_getPurgeCntStmt->executeStep()) {
+            purgeCnt = (int64_t)_getPurgeCntStmt->getColumn(0);
+        }
+
+        return purgeCnt;
+    }
+
+    void SQLiteDataFile::setPurgeCount(SQLiteKeyStore& store, uint64_t count) {
+        compile(_setPurgeCntStmt,
+            "INSERT INTO kvmeta (name, purgeCnt) VALUES (?, ?) "
+            "ON CONFLICT (name) "
+            "DO UPDATE SET purgeCnt = excluded.purgeCnt");
+        UsingStatement u(_setPurgeCntStmt);
+        _setPurgeCntStmt->bindNoCopy(1, store.name());
+        _setPurgeCntStmt->bind(2, (long long)count);
+        _setPurgeCntStmt->exec();
     }
 
 

@@ -160,13 +160,40 @@ namespace litecore {
     }
 
 
+    uint64_t SQLiteKeyStore::purgeCount() const {
+        if(_purgeCountValid)
+            return _purgeCount;
+        uint64_t cnt = db().purgeCount(_name);
+        if(db().inTransaction()) {
+            _purgeCount = cnt;
+            _purgeCountValid = true;
+        }
+
+        return cnt;
+    }
+
+    void SQLiteKeyStore::incrementPurgeCount() {
+        
+        ++_purgeCount;
+        _purgeCountChanged = true;
+    }
+
+
     void SQLiteKeyStore::transactionWillEnd(bool commit) {
         if (_lastSequenceChanged) {
             if (commit)
                 db().setLastSequence(*this, _lastSequence);
             _lastSequenceChanged = false;
         }
+
+        if(_purgeCountChanged) {
+            if(commit)
+                db().setPurgeCount(*this, _purgeCount);
+            _purgeCountChanged = false;
+        }
+
         _lastSequence = -1;
+        _purgeCountValid = false;
     }
 
 
@@ -338,7 +365,11 @@ namespace litecore {
         }
         stmt->bindNoCopy(1, (const char*)key.buf, (int)key.size);
         UsingStatement u(*stmt);
-        return stmt->exec() > 0;
+        if(stmt->exec() == 0)
+            return false;
+
+        incrementPurgeCount();
+        return true;
     }
 
 
