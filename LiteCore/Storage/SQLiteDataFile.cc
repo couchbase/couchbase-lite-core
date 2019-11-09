@@ -16,6 +16,13 @@
 // limitations under the License.
 //
 
+/*
+ * DataFile version history
+ * 201: Initial Version
+ * 301: Add index table for use with FTS
+ * 302: Add purgeCnt entry to kvmeta
+ */
+
 #include "SQLiteDataFile.hh"
 #include "SQLiteKeyStore.hh"
 #include "SQLite_Internal.hh"
@@ -193,19 +200,19 @@ namespace litecore {
                      "BEGIN; "
                      "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
                      "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) WITHOUT ROWID; "
-                     "PRAGMA user_version=202; "
+                     "PRAGMA user_version=302; "
                      "END;"
                      );
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
-            } else if(userVersion == 201) {
+            } else if (userVersion < kMinUserVersion) {
+                error::_throw(error::DatabaseTooOld);
+            } else if(userVersion <= 301) {
                 // Add the purgeCnt column to the kvmeta table
                 _exec("BEGIN; "
                           "ALTER TABLE kvmeta ADD COLUMN purgeCnt INTEGER DEFAULT 0; "
-                          "PRAGMA user_version=202; "
+                          "PRAGMA user_version=302; "
                           "END;");
-            } else if (userVersion < kMinUserVersion) {
-                error::_throw(error::DatabaseTooOld);
             } else if (userVersion > kMaxUserVersion) {
                 error::_throw(error::DatabaseTooNew);
             }
