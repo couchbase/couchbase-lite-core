@@ -822,11 +822,23 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
     
     refreshed = c4queryenum_refresh(e, &error);
     REQUIRE(refreshed);
-    c4queryenum_close(e);
     auto count = c4queryenum_getRowCount(refreshed, &error);
     REQUIRE(c4queryenum_seek(refreshed, count - 1, &error));
     CHECK(FLValue_AsString(FLArrayIterator_GetValueAt(&refreshed->columns, 0)) == "added_later"_sl);
-    
+    c4queryenum_free(refreshed);
+
+    {
+        TransactionHelper t(db);
+        REQUIRE(c4db_purgeDoc(db, "added_later"_sl, &error));
+    }
+
+    refreshed = c4queryenum_refresh(e, &error);
+    REQUIRE(refreshed);
+    c4queryenum_close(e);
+    count = c4queryenum_getRowCount(refreshed, &error);
+    REQUIRE(c4queryenum_seek(refreshed, count - 1, &error));
+    CHECK(FLValue_AsString(FLArrayIterator_GetValueAt(&refreshed->columns, 0)) != "added_later"_sl);
+
     c4queryenum_free(e);
     c4queryenum_free(refreshed);
 }
