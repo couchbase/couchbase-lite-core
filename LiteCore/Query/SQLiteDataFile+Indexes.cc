@@ -296,6 +296,7 @@ namespace litecore {
                 for (int i = 0; i < nCols; ++i) {
                     SQLite::Column col = st.getColumn(i);
                     switch (col.getType()) {
+                        case SQLITE_NULL:    enc << nullValue; break;
                         case SQLITE_INTEGER: enc << col.getInt(); break;
                         case SQLITE_FLOAT:   enc << col.getDouble(); break;
                         case SQLITE_TEXT:    enc << col.getString(); break;
