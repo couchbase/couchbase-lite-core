@@ -17,6 +17,7 @@
 //
 
 #include "QueryTest.hh"
+#include "SQLiteDataFile.hh"
 #include <time.h>
 #include <float.h>
 
@@ -118,6 +119,14 @@ TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     }
     Retained<Query> query = store->compileQuery(json5(queryJson));
     checkOptimized(query, expectOptimized);
+
+    int64_t rowCount;
+    alloc_slice rows;
+    ((SQLiteDataFile&)store->dataFile()).inspectIndex("nums"_sl, rowCount, &rows);
+    string rowsJSON = Value::fromTrustedData(rows)->toJSONString();
+    Log("Index has %lld rows", rowCount);
+    Log("Index contents: %s", rowsJSON.c_str());
+    CHECK(rowCount == 100);
 }
 
 

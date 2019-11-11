@@ -94,8 +94,6 @@ extern "C" {
         Note: If some documents are missing the values to be indexed,
         those documents will just be omitted from the index. It's not an error.
 
-        Currently, full-text indexes are limited to a single expression only.
-
         In an array index, the first expression must evaluate to an array to be unnested; it's
         usually a property path but could be some other expression type. If the array items are
         nonscalar (dictionaries or arrays), you should add a second expression defining the sub-

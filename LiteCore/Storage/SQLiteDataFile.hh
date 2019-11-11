@@ -77,6 +77,11 @@ namespace litecore {
         static Factory& sqliteFactory();
         virtual Factory& factory() const override   {return SQLiteDataFile::sqliteFactory();};
 
+        // Get an index's row count, and/or all its rows. For debugging/troubleshooting only!
+        void inspectIndex(slice name,
+                          int64_t &outRowCount,
+                          alloc_slice *outRows =nullptr);
+
     protected:
         std::string loggingClassName() const override       {return "DB";}
         void logKeyStoreOp(SQLiteKeyStore&, const char *op, slice key);

@@ -24,7 +24,7 @@
 
 #include "Database.hh"
 #include "LiveQuerier.hh"
-#include "DataFile.hh"
+#include "SQLiteDataFile.hh"
 #include "Query.hh"
 #include "Record.hh"
 #include "Timer.hh"
@@ -454,6 +454,16 @@ C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError) noexcept 
 
 C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* outError) noexcept {
     return getIndexes(database, true, outError);
+}
+
+
+C4SliceResult c4db_getIndexRows(C4Database* database, C4String indexName, C4Error* outError) noexcept {
+    return tryCatch<C4SliceResult>(outError, [&]{
+        int64_t rowCount;
+        alloc_slice rows;
+        ((SQLiteDataFile*)database->dataFile())->inspectIndex(indexName, rowCount, &rows);
+        return C4SliceResult(rows);
+    });
 }
 
 

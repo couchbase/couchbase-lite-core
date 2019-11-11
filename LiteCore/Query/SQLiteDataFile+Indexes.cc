@@ -22,9 +22,14 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
+#include "FleeceImpl.hh"
+#include "Doc.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include "sqlite3.h"
 
 using namespace std;
+using namespace fleece;
+using namespace fleece::impl;
 
 namespace litecore {
 
@@ -222,5 +227,88 @@ namespace litecore {
                                stmt.getColumn(4).getString());
     }
 
+
+    void SQLiteDataFile::inspectIndex(slice name,
+                                      int64_t &outRowCount,
+                                      alloc_slice *outRows)
+    {
+        /* See  https://sqlite.org/imposter.html
+           "Unlike all other SQLite APIs, sqlite3_test_control() interface is subject to incompatible
+            changes from one release to the next, and so the mechanism described below is not
+            guaranteed to work in future releases of SQLite. ...
+            Imposter tables are for analysis and testing use only." */
+
+        auto spec = getIndex(name);
+        if (!spec)
+            error::_throw(error::NoSuchIndex);
+        else if (spec->type == IndexSpec::kFullText)
+            error::_throw(error::UnsupportedOperation);
+
+        // Construct a list of column names:
+        stringstream columns;
+        int n = 1;
+        for (Array::iterator i(spec->what()); i; ++i, ++n) {
+            auto col = i.value();
+            if (auto array = col->asArray(); array)
+                col = array->get(0);
+            slice colStr = col->asString();
+            if (colStr.hasPrefix("."_sl) && colStr.size > 1) {
+                colStr.moveStart(1);
+                columns << '"' << string_view(colStr) << '"';
+            } else {
+                columns << "c" << n;
+            }
+            columns << ", ";
+        }
+        columns << "_rowid";
+
+        // Get the root page number of the index in the SQLite database file:
+        int pageNo;
+        {
+            SQLite::Statement check(*_sqlDb, "SELECT sql, rootpage FROM sqlite_master "
+                                    "WHERE type = 'index' AND name = ?");
+            check.bind(1, spec->name);
+            LogStatement(check);
+            if (!check.executeStep())
+                error::_throw(error::UnexpectedError, "Couldn't get internal index info");
+            string sql = check.getColumn(0);
+            pageNo = check.getColumn(1);
+        }
+
+        string tableName = "\"imposter::" + string(name) + "\"";
+
+        sqlite3_test_control(SQLITE_TESTCTRL_IMPOSTER, _sqlDb->getHandle(), "main", 1, pageNo);
+        _sqlDb->exec("CREATE TABLE IF NOT EXISTS " + tableName + " (" + columns.str()
+                     + ", PRIMARY KEY(" + columns.str() + ")) WITHOUT ROWID");
+        sqlite3_test_control(SQLITE_TESTCTRL_IMPOSTER, _sqlDb->getHandle(), "main", 0, 0);
+
+        // Write the index's rows to a Fleece doc:
+        if (outRows) {
+            Encoder enc;
+            enc.beginArray();
+            SQLite::Statement st(*_sqlDb, "SELECT * FROM " + tableName);
+            LogStatement(st);
+            auto nCols = st.getColumnCount();
+            outRowCount = 0;
+            while (st.executeStep()) {
+                ++outRowCount;
+                enc.beginArray();
+                for (int i = 0; i < nCols; ++i) {
+                    SQLite::Column col = st.getColumn(i);
+                    switch (col.getType()) {
+                        case SQLITE_INTEGER: enc << col.getInt(); break;
+                        case SQLITE_FLOAT:   enc << col.getDouble(); break;
+                        case SQLITE_TEXT:    enc << col.getString(); break;
+                        case SQLITE_BLOB:    enc << "?BLOB?"; break; // TODO: Decode Fleece blobs
+                    }
+                }
+                enc.endArray();
+            }
+            enc.endArray();
+            *outRows = enc.finish();
+        } else {
+            outRowCount = this->intQuery(("SELECT count(*) FROM " + tableName).c_str());
+        }
+    }
 
 }

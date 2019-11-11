@@ -74,6 +74,13 @@ C4Document* c4doc_getForPut(C4Database *database C4NONNULL,
 /** Converts C4DocumentFlags to the equivalent C4RevisionFlags. */
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags);
 
+
+/** Returns the contents of the index as a Fleece-encoded array of arrays.
+    (The last column of each row is the internal SQLite rowid of the document.) */
+C4SliceResult c4db_getIndexRows(C4Database* database C4NONNULL,
+                                C4String indexName,
+                                C4Error* outError) C4API;
+
 /** Sets the document flag kSynced. Used by the replicator to track synced documents. */
 bool c4db_markSynced(C4Database *database,
                      C4String docID,
