@@ -209,7 +209,7 @@ namespace litecore { namespace repl {
             }
 
             if (_options.pushFilter) {
-                if (!_options.pushFilter(doc->docID, doc->selectedRev.flags,
+                if (!_options.pushFilter(doc->docID, doc->selectedRev.revID, doc->selectedRev.flags,
                                          DBAccess::getDocRoot(doc), _options.callbackContext)) {
                     logVerbose("Doc '%.*s' rejected by push filter", SPLAT(doc->docID));
                     return false;

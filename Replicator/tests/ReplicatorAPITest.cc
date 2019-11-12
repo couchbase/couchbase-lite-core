@@ -248,9 +248,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
-    _pushFilter = [](C4String docID, C4RevisionFlags flags, FLDict flbody, void *context) {
+    _pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
         ((ReplicatorAPITest*)context)->_counter++;
         assert(docID.size > 0);
+        assert(revID.size > 0);
         Dict body(flbody);
         assert(body.count() >= 4);
         return body["gender"_sl].asString() == "male"_sl;
@@ -311,7 +312,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
 
     SECTION("Filtered") {
         expectedPending = 99;
-        params.pushFilter = [](C4String docID, C4RevisionFlags flags, FLDict flbody, void *context) {
+        params.pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
             return FLSlice_Compare(docID, "0000005"_sl) != 0;
         };
     }
@@ -371,7 +372,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
 
     SECTION("Filtered") {
         expectedIsPending = false;
-        params.pushFilter = [](C4String docID, C4RevisionFlags flags, FLDict flbody, void *context) {
+        params.pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
             return FLSlice_Compare(docID, "0000005"_sl) != 0;
         };
     }
