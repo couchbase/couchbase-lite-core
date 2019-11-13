@@ -37,6 +37,7 @@ namespace litecore { namespace repl {
     :Worker(puller, "inc")
     ,_puller(puller)
     {
+        _passive = _options.pull <= kC4Passive;
         _important = false;
         static atomic<uint32_t> sRevSignpostCount {0};
         _serialNumber = ++sRevSignpostCount;

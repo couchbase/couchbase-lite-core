@@ -29,6 +29,9 @@ namespace litecore { namespace repl {
 
     /** Replication configuration options */
     struct Options {
+
+        //---- Public fields:
+
         using Mode = C4ReplicatorMode;
         using Validator = bool(*)(C4String docID, C4String revID, C4RevisionFlags, FLDict body, void *context);
 
@@ -38,6 +41,8 @@ namespace litecore { namespace repl {
         Validator               pushFilter              {nullptr};
         Validator               pullValidator           {nullptr};
         void*                   callbackContext         {nullptr};
+
+        //---- Constructors/factories:
 
         Options()
         { }
@@ -54,6 +59,8 @@ namespace litecore { namespace repl {
         static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
         static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
         static Options passive()                       {return Options(kC4Passive,kC4Passive);}
+
+        //---- Property accessors:
 
         static constexpr unsigned kDefaultCheckpointSaveDelaySecs = 5;
 
@@ -76,12 +83,21 @@ namespace litecore { namespace repl {
         int progressLevel() const  {return (int)properties[kC4ReplicatorOptionProgressLevel].asInt();}
         bool disableDeltaSupport() const {return properties[kC4ReplicatorOptionDisableDeltas].asBool();}
 
+        /** Returns a string that uniquely identifies the remote database; by default its URL,
+            or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.) */
+        fleece::slice remoteDBIDString(fleece::slice remoteURL) const {
+            auto uniqueID = properties[kC4ReplicatorOptionRemoteDBUniqueID].asString();
+            return uniqueID ? uniqueID : remoteURL;
+        }
+
         fleece::Array arrayProperty(const char *name) const {
             return properties[name].asArray();
         }
         fleece::Dict dictProperty(const char *name) const {
             return properties[name].asDict();
         }
+
+        //---- Property setters (used only by tests)
 
         /** Sets/clears the value of a property.
             Warning: This rewrites the backing store of the properties, invalidating any

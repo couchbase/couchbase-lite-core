@@ -11,6 +11,7 @@
 #include "c4.hh"
 #include "c4Document+Fleece.h"
 #include "Replicator.hh"
+#include "Checkpoint.hh"
 #include "LoopbackProvider.hh"
 #include "ReplicatorTuning.hh"
 #include "StringUtil.hh"
@@ -41,6 +42,7 @@ public:
         // Change tuning param so that tests will actually create deltas, despite using small
         // document bodies:
         litecore::repl::tuning::kMinBodySizeForDelta = 0;
+        litecore::repl::Checkpoint::gWriteTimestamps = false;
     }
 
     ~ReplicatorLoopbackTest() {
@@ -99,7 +101,7 @@ public:
         }
         
         Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
-        _checkpointID = _replClient->checkpointID();
+        _checkpointID = _replClient->checkpointer().checkpointID();
         _replClient = _replServer = nullptr;
 
         CHECK(_gotResponse);
@@ -455,7 +457,7 @@ public:
 
     void validateCheckpoint(C4Database *database, bool local,
                             const char *body, const char *meta = "1-") {
-        C4Error err;
+        C4Error err = {};
 		C4Slice storeName;
 		if(local) {
 			storeName = C4STR("checkpoints");

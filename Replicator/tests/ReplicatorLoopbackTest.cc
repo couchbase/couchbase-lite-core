@@ -630,6 +630,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][C
     addRevsInParallel(chrono::milliseconds(10), docID, 2, 200);
     runPushReplication(kC4Continuous);
     compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":201}");
 }
 
 

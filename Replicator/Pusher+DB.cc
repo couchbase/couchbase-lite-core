@@ -69,9 +69,8 @@ namespace litecore { namespace repl {
                 while (c4enum_next(e, &error) && limit > 0) {
                     C4DocumentInfo info;
                     c4enum_getDocumentInfo(e, &info);
-                    _maxPushedSequence = info.sequence;
-                    auto rev = retained(new RevToSend(info));
-                    if (shouldPushRev(rev, e, db)) {
+                    auto rev = revToSend(info, e, db);
+                    if (rev) {
                         changes->push_back(rev);
                         --limit;
                     }
@@ -129,13 +128,13 @@ namespace litecore { namespace repl {
                         changes = make_shared<RevToSendList>();
                         changes->reserve(nChanges - i);
                     }
-                    _maxPushedSequence = c4change->sequence;
-                    auto rev = retained(new RevToSend({0, c4change->docID, c4change->revID,
-                                                       c4change->sequence, c4change->bodySize}));
+                    C4DocumentInfo info {0, c4change->docID, c4change->revID,
+                                         c4change->sequence, c4change->bodySize};
                     // Note: we send tombstones even if the original getChanges() call specified
                     // skipDeletions. This is intentional; skipDeletions applies only to the initial
                     // dump of existing docs, not to 'live' changes.
-                    if (shouldPushRev(rev, nullptr, db)) {
+                    auto rev = revToSend(info, nullptr, db);
+                    if (rev) {
                         changes->push_back(rev);
                         if (changes->size() >= kMaxChanges) {
                             gotChanges(move(changes), _maxPushedSequence, {});
@@ -148,17 +147,34 @@ namespace litecore { namespace repl {
             c4dbobs_releaseChanges(c4changes, nChanges);
         }
 
-        if (changes && changes->size() > 0)
+        if (changes)
             gotChanges(move(changes), _maxPushedSequence, {});
     }
 
 
     // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
-    bool Pusher::shouldPushRev(RevToSend *rev, C4DocEnumerator *e, C4Database *db) {
-        if (_pushDocIDs != nullptr)
-            if (_pushDocIDs->find(slice(rev->docID).asString()) == _pushDocIDs->end())
-                return false;
+    // It does some quick tests, and if those pass creates a RevToSend and passes it on to the
+    // other shouldPushRev, which does more expensive checks.
+    Retained<RevToSend> Pusher::revToSend(C4DocumentInfo &info, C4DocEnumerator *e, C4Database *db)
+    {
+        _maxPushedSequence = info.sequence;
+        if (info.expiration > 0 && info.expiration < c4_now()) {
+            logVerbose("'%.*s' is expired; not pushing it", SPLAT(info.docID));
+            return nullptr;             // skip rev: expired
+        } else if (!passive() && _checkpointer.isSequenceCompleted(info.sequence)) {
+            return nullptr;             // skip rev: checkpoint says we already pushed it before
+        } else if (_pushDocIDs != nullptr
+                    && _pushDocIDs->find(slice(info.docID).asString()) == _pushDocIDs->end()) {
+            return nullptr;             // skip rev: not in list of docIDs
+        } else {
+            auto rev = retained(new RevToSend(info));
+            return shouldPushRev(rev, e, db) ? rev : nullptr;
+        }
+    }
 
+
+    // This is called both by the above version of shouldPushRev, and by doneWithRev.
+    bool Pusher::shouldPushRev(Retained<RevToSend> rev, C4DocEnumerator *e, C4Database *db) {
         // _pushingDocs has an entry for each docID involved in the push process, from change
         // detection all the way to confirmation of the upload. The value of the entry is usually
         // null; if not, it holds a later revision of that document that should be processed
@@ -169,12 +185,9 @@ namespace litecore { namespace repl {
             logVerbose("Holding off on change '%.*s' %.*s till earlier rev is done",
                        SPLAT(rev->docID), SPLAT(rev->revID));
             active->second = rev;
-            return false;
-        }
-
-        if (rev->expiration > 0 && rev->expiration < c4_now()) {
-            logVerbose("'%.*s' is expired; not pushing it", SPLAT(rev->docID));
-            return false;
+            if (!passive())
+                _checkpointer.addPendingSequence(rev->sequence);
+            return false;             // defer rev: already sending a previous revision
         }
 
         bool needRemoteRevID = _getForeignAncestors && !rev->remoteAncestorRevID &&_checkpointValid;
@@ -184,40 +197,50 @@ namespace litecore { namespace repl {
             doc = e ? c4enum_getDocument(e, &error) : c4doc_get(db, rev->docID, true, &error);
             if (!doc) {
                 finishedDocumentWithError(rev, error, false);
-                return false;   // reject rev: error getting doc
+                return false;         // fail the rev: error getting doc
             }
             if (slice(doc->revID) != slice(rev->revID))
-                return false;   // ignore rev: there's a newer one already
+                return false;         // skip rev: there's a newer one already
 
             if (needRemoteRevID) {
                 // For proposeChanges, find the nearest foreign ancestor of the current rev:
-                Assert(_db->remoteDBID());
-                alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
-                logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
-                if (_skipForeignChanges && foreignAncestor == slice(rev->revID))
-                    return false;   // skip this rev: it's already on the peer
-                if (foreignAncestor
-                        && c4rev_getGeneration(foreignAncestor) >= c4rev_getGeneration(rev->revID)) {
-                    if (_options.pull <= kC4Passive) {
-                        error = c4error_make(WebSocketDomain, 409,
-                                             "conflicts with newer server revision"_sl);
-                        finishedDocumentWithError(rev, error, false);
-                    }
-                    return false;    // ignore rev: there's a newer one on the server
-                }
-                rev->remoteAncestorRevID = foreignAncestor;
+                if (!getRemoteRevID(rev, doc))
+                    return false;     // skip or fail rev: it's already on the peer
             }
-
             if (_options.pushFilter) {
+                // If there's a push filter, ask it whether to push the doc:
                 if (!_options.pushFilter(doc->docID, doc->selectedRev.revID, doc->selectedRev.flags,
                                          DBAccess::getDocRoot(doc), _options.callbackContext)) {
                     logVerbose("Doc '%.*s' rejected by push filter", SPLAT(doc->docID));
-                    return false;
+                    return false;     // skip rev: rejected by push filter
                 }
             }
         }
 
         _pushingDocs.insert({rev->docID, nullptr});
+        return true;
+    }
+
+
+    // Assigns rev->remoteAncestorRevID based on the document.
+    // Returns false to reject the document if the remote is equal to or newer than this rev.
+    bool Pusher::getRemoteRevID(RevToSend *rev, C4Document *doc) {
+        // For proposeChanges, find the nearest foreign ancestor of the current rev:
+        Assert(_db->remoteDBID());
+        alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
+        logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
+        if (_skipForeignChanges && foreignAncestor == slice(doc->revID))
+            return false;   // skip this rev: it's already on the peer
+        if (foreignAncestor
+                    && c4rev_getGeneration(foreignAncestor) >= c4rev_getGeneration(doc->revID)) {
+            if (_options.pull <= kC4Passive) {
+                C4Error error = c4error_make(WebSocketDomain, 409,
+                                     "conflicts with newer server revision"_sl);
+                finishedDocumentWithError(rev, error, false);
+            }
+            return false;    // skip or fail rev: there's a newer one on the peer
+        }
+        rev->remoteAncestorRevID = foreignAncestor;
         return true;
     }
 
@@ -313,16 +336,24 @@ namespace litecore { namespace repl {
 
 
     slice Pusher::getRevToSend(C4Document* doc, const RevToSend &request, C4Error *c4err) {
-        if (!c4doc_selectRevision(doc, request.revID, true, c4err))
+        if (!c4doc_selectRevision(doc, request.revID, true, c4err)) {
+            if (c4err->code == kC4ErrorNotFound && c4err->domain == LiteCoreDomain)
+                revToSendIsObsolete(request, c4err);
             return nullslice;
-
-        slice revisionBody(doc->selectedRev.body);
-        if (!revisionBody) {
-            logInfo("Revision '%.*s' #%.*s is obsolete; not sending it",
-                SPLAT(request.docID), SPLAT(request.revID));
-            *c4err = {WebSocketDomain, 410}; // Gone
         }
+        slice revisionBody(doc->selectedRev.body);
+        if (!revisionBody)
+            revToSendIsObsolete(request, c4err);
         return revisionBody;
+    }
+
+
+    void Pusher::revToSendIsObsolete(const RevToSend &request, C4Error *c4err) {
+        logInfo("Revision '%.*s' #%.*s is obsolete; not sending it",
+                SPLAT(request.docID), SPLAT(request.revID));
+        if (!passive())
+            _checkpointer.completedSequence(request.sequence);
+        *c4err = {WebSocketDomain, 410}; // Gone
     }
 
 

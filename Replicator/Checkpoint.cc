@@ -1,7 +1,7 @@
 //
 // Checkpoint.cc
 //
-// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+// Copyright © 2019 Couchbase. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,149 +17,185 @@
 //
 
 #include "Checkpoint.hh"
-#include "Error.hh"
-#include "StringUtil.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include "fleece/Fleece.hh"
-#include <assert.h>
+#include <limits>
+#include <sstream>
 
-using namespace fleece;
-using namespace std;
+#define SPARSE_CHECKPOINTS  // If defined, save entire sparse set to JSON
 
 namespace litecore { namespace repl {
+    using namespace std;
+    using namespace fleece;
 
-#define LOCK()  lock_guard<mutex> lock(_mutex)
 
-    Checkpoint::Sequences Checkpoint::sequences() const {
-        LOCK();
-        return _seq;
+    bool Checkpoint::gWriteTimestamps = true;
+
+
+    static constexpr auto InfinitySequence = numeric_limits<SequenceSet::sequence>::max() - 1;
+
+
+    Checkpoint::Checkpoint() {
+        resetLocal();
     }
 
-    void Checkpoint::set(const C4SequenceNumber *local, const slice *remote) {
-        LOCK();
-        if (local)
-            _seq.local = *local;
-        if (remote)
-            _seq.remote = *remote;
 
-        if (_timer) {
-            _changed = true;
-            if (!_saving && !_timer->scheduled())
-                _timer->fireAfter(_saveTime);
+    void Checkpoint::resetLocal() {
+        _completed.clear();
+        _completed.add(0, 1);
+        _lastChecked = 0;
+    }
+
+
+    alloc_slice Checkpoint::toJSON() const {
+        JSONEncoder enc;
+        enc.beginDict();
+        if (gWriteTimestamps) {
+            enc.writeKey("time"_sl);
+            enc.writeInt(c4_now() / 1000);
         }
+
+        auto minSeq = localMinSequence();
+        if (minSeq > 0) {
+            enc.writeKey("local"_sl);
+            enc.writeUInt(minSeq);
+        }
+
+#ifdef SPARSE_CHECKPOINTS
+        if (_completed.rangesCount() > 1) {
+            // New property for sparse checkpoint. Write the pending sequence ranges as
+            // (sequence, length) pairs in an array, omitting the 'infinity' at the end of the last.
+            enc.writeKey("localCompleted"_sl);
+            enc.beginArray();
+            for (auto &range : _completed) {
+                enc.writeInt(range.first);
+                enc.writeInt(range.second - range.first);
+            };
+            enc.endArray();
+        }
+#endif
+
+        if (_remote) {
+            enc.writeKey("remote"_sl);
+            enc.writeRaw(_remote);   // remote is already JSON
+        }
+        
+        enc.endDict();
+        return enc.finish();
     }
 
 
-    bool Checkpoint::validateWith(const Checkpoint &checkpoint) {
-        LOCK();
+    void Checkpoint::readJSON(slice json) {
+        resetLocal();
+        if (json) {
+            Doc root = Doc::fromJSON(json, nullptr);
+            _remote = root["remote"_sl].toJSON();
+
+#ifdef SPARSE_CHECKPOINTS
+            // New properties for sparse checkpoint:
+            Array pending = root["localPending"].asArray();
+            if (pending) {
+                for (Array::iterator i(pending); i; ++i) {
+                    C4SequenceNumber first = i->asInt();
+                    C4SequenceNumber last = (++i)->asInt();
+                    if (last >= first)
+                        _completed.add(first, last + 1);
+                }
+            } else
+#endif
+            {
+                auto minSequence = (C4SequenceNumber) root["local"_sl].asInt();
+                _completed.add(0, minSequence + 1);
+            }
+        } else {
+            _remote = nullslice;
+        }
+
+    }
+
+
+    bool Checkpoint::validateWith(const Checkpoint &remoteSequences) {
         bool match = true;
-        auto itsState = checkpoint.sequences();
-        if (_seq.local > 0 && _seq.local != itsState.local) {
-            LogTo(SyncLog, "Local sequence mismatch: I had %llu, remote had %llu",
-                  (unsigned long long)_seq.local,
-                  (unsigned long long)itsState.local);
-            _seq.local = 0;
+        if (_completed != remoteSequences._completed) {
+            LogTo(SyncLog, "Local sequence mismatch: I had completed: %s, remote had %s",
+                  _completed.to_string().c_str(),
+                  remoteSequences._completed.to_string().c_str());
+            resetLocal();
             match = false;
         }
-        if (_seq.remote && _seq.remote != itsState.remote) {
+        if (_remote && _remote != remoteSequences._remote) {
             LogTo(SyncLog, "Remote sequence mismatch: I had '%.*s', remote had '%.*s'",
-                  SPLAT(_seq.remote), SPLAT(itsState.remote));
-            _seq.remote = nullslice;
+                  SPLAT(_remote), SPLAT(remoteSequences._remote));
+            _remote = nullslice;
             match = false;
         }
         return match;
     }
 
 
-    // Decodes the JSON body of a checkpoint doc into a Checkpoint struct
-    void Checkpoint::decodeFrom(slice json) {
-        LOCK();
-        _seq.local = 0;
-        _seq.remote = nullslice;
-        if (json) {
-            Doc root = Doc::fromJSON(json, nullptr);
-            _seq.local = (C4SequenceNumber) root["local"_sl].asInt();
-            _seq.remote = root["remote"_sl].toJSON();
+    C4SequenceNumber Checkpoint::localMinSequence() const {
+        assert(!_completed.empty());
+        return _completed.begin()->second - 1;
+    }
+
+
+    void Checkpoint::addPendingSequence(C4SequenceNumber seq) {
+        _completed.remove(seq);
+        LogTo(SyncLog, "$$$ PENDING #%llu, COMPLETED: %s", seq, _completed.to_string().c_str());//TEMP
+    }
+
+
+    void Checkpoint::completedSequence(C4SequenceNumber seq) {
+        _completed.add(seq);
+        LogTo(SyncLog, "$$$ COMPLETED #%llu, NOW: %s", seq, _completed.to_string().c_str());//TEMP
+    }
+
+
+    size_t Checkpoint::pendingSequenceCount() const {
+        // Count the gaps between the ranges:
+        size_t count = 0;
+        C4SequenceNumber end = 0;
+        for (auto &range : _completed) {
+            count += range.first - end;
+            end = range.second;
         }
-    }
-
-    
-    // Encodes a Checkpoint to JSON
-    alloc_slice Checkpoint::_encode() const {
-        JSONEncoder enc;
-        enc.beginDict();
-        if (_seq.local) {
-            enc.writeKey("local"_sl);
-            enc.writeUInt(_seq.local);
-        }
-        if (_seq.remote) {
-            enc.writeKey("remote"_sl);
-            enc.writeRaw(_seq.remote);   // _seq.remote is already JSON
-        }
-        enc.endDict();
-        return enc.finish();
-    }
-
-    alloc_slice Checkpoint::encode() const {
-        LOCK();
-        return _encode();
+        if (_lastChecked > end - 1)
+            count += _lastChecked - (end - 1);
+        return count;
     }
 
 
-    void Checkpoint::enableAutosave(duration saveTime, SaveCallback cb) {
-        DebugAssert(saveTime > duration(0));
-        LOCK();
-        _saveCallback = cb;
-        _saveTime = saveTime;
-        _timer.reset( new actor::Timer( bind(&Checkpoint::save, this) ) );
-    }
-
-
-    void Checkpoint::stopAutosave() {
-        LOCK();
-        _timer.reset();
-        _changed = false;
-    }
-
-
-    bool Checkpoint::save() {
-        alloc_slice json;
-        {
-            LOCK();
-            if (!_changed || !_timer)
-                return true;
-            if (_saving) {
-                // Can't save immediately because a save is still in progress.
-                // Remember that I'm in this state, so when save finishes I can re-save.
-                _overdueForSave = true;
-                return false;
-            }
-            _changed = false;
-            _saving = true;
-            json = _encode();
-        }
-        _saveCallback(json);
+    bool Checkpoint::setRemoteMinSequence(fleece::slice s) {
+        if (s == _remote)
+            return false;
+        _remote = s;
         return true;
     }
 
+} }
 
-    void Checkpoint::saved() {
-        bool saveNow = false;
-        {
-            LOCK();
-            if (_saving) {
-                _saving = false;
-                if (_overdueForSave)
-                    saveNow = true;
-                else if (_changed)
-                    _timer->fireAfter(_saveTime);
+
+
+namespace litecore {
+
+    // The one SequenceSet method I didn't want in the header (because it drags in <stringstream>)
+
+    std::string SequenceSet::to_string() const {
+        std::stringstream str;
+        str << "{";
+        int n = 0;
+        for (auto &range : _sequences) {
+            if (n++ > 0) str << ", ";
+            str << range.first;
+            if (range.second != range.first + 1) {
+                str << "-";
+                if (range.second < repl::InfinitySequence)
+                    str << (range.second - 1);
             }
         }
-        if (saveNow)
-            save();
+        str << "}";
+        return str.str();
     }
 
-    bool Checkpoint::isUnsaved() const        {LOCK(); return _changed  || _saving;}
-
-
-} }
+}

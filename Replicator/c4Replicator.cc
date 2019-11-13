@@ -241,6 +241,7 @@ C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
     return repl->responseHeaders().data();
 }
 
+
 C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) C4API {
     try {
         return repl->pendingDocumentIDs(outErr);
@@ -249,6 +250,7 @@ C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) C4API
     return {nullptr, 0};
 }
 
+
 bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr) C4API {
     try {
         return repl->isDocumentPending(docID, outErr);
@@ -256,6 +258,40 @@ bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr
 
     return false;
 }
+
+
+C4PendingPush* c4pending_new(C4Database* db,
+                             C4Address serverAddress,
+                             C4String remoteDatabaseName,
+                             C4ReplicatorParameters params) C4API
+{
+    try {
+        return new C4PendingPush(db, serverAddress, remoteDatabaseName, params);
+    } catchError(nullptr);
+    return nullptr;
+}
+
+void c4pending_free(C4PendingPush *p) C4API {
+    delete p;
+}
+
+
+C4SliceResult c4pending_getPendingDocIDs(C4PendingPush *p, C4Error* outErr) C4API {
+    try {
+        return p->pendingDocumentIDs(outErr);
+    } catchError(outErr);
+
+    return {nullptr, 0};
+}
+
+
+bool c4pending_isDocumentPending(C4PendingPush *p, C4Slice docID, C4Error* outErr) C4API {
+    try {
+        return p->isDocumentPending(docID, outErr);
+    } catchError(outErr);
+    return false;
+}
+
 
 #pragma mark - COOKIES:
 
