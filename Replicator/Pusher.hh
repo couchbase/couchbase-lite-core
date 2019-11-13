@@ -20,6 +20,7 @@
 #include "Replicator.hh"
 #include "ReplicatorTuning.hh"
 #include "ReplicatorTypes.hh"
+#include "access_lock.hh"
 #include "Actor.hh"
 #include "SequenceSet.hh"
 #include "fleece/slice.hh"
