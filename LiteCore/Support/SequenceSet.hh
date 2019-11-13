@@ -17,12 +17,14 @@
 //
 
 #pragma once
+#include <mutex>
 #include <set>
 
 namespace litecore {
 
     /** A set of positive integers, generally representing database sequences.
-        This is used by the replicator to keep track of which revisions are being pushed. */
+        This is used by the replicator to keep track of which revisions are being pushed.
+        \note  This class is thread-safe. */
     class SequenceSet {
     public:
         typedef uint64_t sequence;
@@ -30,31 +32,36 @@ namespace litecore {
 
         SequenceSet() { }
 
+        #define SSLOCK std::lock_guard<std::mutex> lock(_mutex)
+
         /** Empties the set.
             The optional `max` parameter sets the initial value of the `maxEver` property. */
-        void clear(sequence max =0)             {_sequences.clear(); _max = max;}
+        void clear(sequence max =0)             {SSLOCK; _sequences.clear(); _max = max;}
 
-        bool empty() const                      {return _sequences.empty();}
-        size_t size() const                     {return _sequences.size();}
+        bool empty() const                      {SSLOCK; return _sequences.empty();}
+        size_t size() const                     {SSLOCK; return _sequences.size();}
 
         /** Returns the lowest sequence in the set. If the set is empty, returns 0. */
-        sequence first() const                  {return empty() ? 0 : *_sequences.begin();}
+        sequence first() const                  {SSLOCK; return _sequences.empty() ? 0 : *_sequences.begin();}
 
         /** The largest sequence ever stored in the set. (The clear() function resets this.) */
-        sequence maxEver() const                {return _max;}
+        sequence maxEver() const                {SSLOCK; return _max;}
 
-        bool contains(sequence s) const         {return _sequences.find(s) != _sequences.end();}
+        bool contains(sequence s) const         {SSLOCK; return _sequences.find(s) != _sequences.end();}
+        bool hasRemoved(sequence s) const       {SSLOCK; return s <= _max && _sequences.find(s) == _sequences.end();}
 
-        void add(sequence s)                    {_sequences.insert(s); _max = std::max(_max, s);}
-        void remove(sequence s)                 {_sequences.erase(s);}
+        void add(sequence s)                    {SSLOCK; _sequences.insert(s); _max = std::max(_max, s);}
+        void remove(sequence s)                 {SSLOCK; _sequences.erase(s);}
         void set(sequence s, bool present)      {present ? add(s) : remove(s);}
 
         /** Marks a sequence as seen but not in the set; equivalent to add() then remove(). */
-        void seen(sequence s)                   {_max = std::max(_max, s);}
+        void seen(sequence s)                   {SSLOCK; _max = std::max(_max, s);}
 
         reference operator[] (sequence s)               {return reference(*this, s);}
         const reference operator[] (sequence s) const   {return reference(*(SequenceSet*)this, s);}
 
+        #undef SSLOCK
+        
 
         // just used as part of the implementation of operator[]
         class reference {
@@ -69,6 +76,7 @@ namespace litecore {
         };
 
     private:
+        mutable std::mutex _mutex;
         std::set<sequence> _sequences;
         sequence _max {0};
     };
