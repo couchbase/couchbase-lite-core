@@ -27,6 +27,7 @@
 #include "c4Socket+Internal.hh"
 #include "LoopbackProvider.hh"
 #include "Error.hh"
+#include "fleece/Fleece.hh"
 
 using namespace std;
 using namespace fleece;
@@ -154,7 +155,14 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
 
     C4SliceResult pendingDocumentIDs(C4Error* outErr) {
         lock_guard<mutex> lock(_mutex);
-        return (C4SliceResult)_replicator->pendingDocumentIDs(outErr);
+        Encoder enc;
+        enc.beginArray();
+        if (!_replicator->pendingDocumentIDs([&](const C4DocumentInfo &info) {
+                                                    enc.writeString(info.docID);
+                                             }, outErr))
+            return {};
+        enc.endArray();
+        return C4SliceResult(enc.finish());
     }
 
     bool isDocumentPending(C4Slice docID, C4Error* outErr) {
@@ -278,4 +286,41 @@ private:
     C4ReplicatorStatus _status;
     C4ReplicatorActivityLevel _otherLevel {kC4Stopped};
     Retained<C4Replicator> _selfRetain;
+};
+
+
+
+class C4PendingPush {
+public:
+    C4PendingPush(C4Database* db NONNULL,
+                  const C4Address &serverAddress,
+                  C4String remoteDatabaseName,
+                  const C4ReplicatorParameters &params)
+    :_db(db)
+    ,_options(C4Replicator::replOpts(params))
+    ,_checkpt(_options, C4Replicator::effectiveURL(serverAddress, remoteDatabaseName))
+    { }
+
+    C4SliceResult pendingDocumentIDs(C4Error* outErr) {
+        _checkpt.read(_db, outErr); // (re)read, in case db has changed
+        fleece::Encoder enc;
+        enc.beginArray();
+        if (!_checkpt.pendingDocumentIDs(_db,
+                                         [&](const C4DocumentInfo &info) {
+                                               enc.writeString(info.docID);
+                                         }, outErr))
+            return {};
+        enc.endArray();
+        return C4SliceResult(enc.finish());
+    }
+
+    bool isDocumentPending(C4Slice docID, C4Error* outErr) {
+        _checkpt.read(_db, outErr); // (re)read, in case db has changed
+        return _checkpt.isDocumentPending(_db, docID, outErr);
+    }
+
+private:
+    c4::ref<C4Database> _db;
+    Replicator::Options _options;
+    Checkpointer _checkpt;
 };

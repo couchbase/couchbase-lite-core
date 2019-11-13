@@ -256,6 +256,44 @@ extern "C" {
     void c4db_clearCookies(C4Database *db C4NONNULL) C4API;
 
 
+#pragma mark - PENDING DOCUMENTS:
+
+    /** Opaque reference to an object tracking pending documents to be pushed by a replicator. */
+    typedef struct C4PendingPush C4PendingPush;
+
+    /** Creates a C4PendingPush, given the same parameters that a replicator would take. */
+    C4PendingPush* c4pending_new(C4Database* db,
+                                 C4Address serverAddress,
+                                 C4String remoteDatabaseName,
+                                 C4ReplicatorParameters params) C4API;
+
+    /** Frees a C4PendingPush object. */
+    void c4pending_free(C4PendingPush *p) C4API;
+
+    /** Gets a fleece encoded list of IDs of documents who have revisions pending push.  This
+     *  API is a snapshot and results may change between the time the call was made and the time
+     *  the call returns.
+     *
+     *  @param outErr Records error information, if any.  This will be set to 0 on success.
+     *  @return A fleece encoded array of document IDs, each of which has one or more pending
+     *  revisions.  If none are pending, nullslice is returned (note that an error
+     * condition will return nullslice with the outErr code set to non-zero)
+     */
+    C4SliceResult c4pending_getPendingDocIDs(C4PendingPush *p, C4Error* outErr) C4API;
+
+    /** Checks if the document with the given ID has revisions pending push.  This
+     *  API is a snapshot and results may change between the time the call was made and the time
+     *  the call returns.
+     *
+     * @param docID The ID of the document to check
+     * @param outErr Records error information, if any.  This will be set to 0 on success.
+     * @return true if the document has one or more revisions pending, false otherwise (note that an error
+     * condition will return false with the outErr code set to non-zero)
+     */
+    bool c4pending_isDocumentPending(C4PendingPush *p, C4Slice docID, C4Error* outErr) C4API;
+
+
+
 #pragma mark - CONSTANTS:
 
 

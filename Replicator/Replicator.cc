@@ -29,6 +29,7 @@
 #include "Address.hh"
 #include "Instrumentation.hh"
 #include "Array.hh"
+#include "RevID.hh"
 
 using namespace std;
 using namespace std::placeholders;
@@ -64,6 +65,7 @@ namespace litecore { namespace repl {
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_docsEnded(this, &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     ,_remoteURL(webSocket->url())
+    ,_checkpointer(_options, _remoteURL)
     {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;
@@ -74,8 +76,8 @@ namespace litecore { namespace repl {
             _pusher = new Pusher(this);
         if (options.pull != kC4Disabled)
             _puller = new Puller(this);
-        _checkpoint.enableAutosave(options.checkpointSaveDelay(),
-                                   bind(&Replicator::saveCheckpoint, this, _1));
+        _checkpointer.enableAutosave(options.checkpointSaveDelay(),
+                                     bind(&Replicator::saveCheckpoint, this, _1));
 
         registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
@@ -100,7 +102,7 @@ namespace litecore { namespace repl {
 
         if (_options.push > kC4Passive || _options.pull > kC4Passive) {
             // Get the remote DB ID:
-            string key = remoteDBIDString();
+            string key = _checkpointer.remoteDBIDString();
             C4Error err;
             C4RemoteID remoteDBID = _db->lookUpRemoteDBID(slice(key), &err);
             if (remoteDBID) {
@@ -182,7 +184,7 @@ namespace litecore { namespace repl {
 
     // Called after the checkpoint is established.
     void Replicator::startReplicating() {
-        auto cp = _checkpoint.sequences();
+        auto cp = _checkpointer.checkpoint();
         if (_options.push > kC4Passive)
             _pusher->start(cp.local);
         if (_options.pull > kC4Passive)
@@ -222,7 +224,7 @@ namespace litecore { namespace repl {
         // Save a checkpoint immediately when push or pull finishes or goes idle:
         if ((taskStatus.level == kC4Stopped || taskStatus.level == kC4Idle)
                 && (task == _pusher || task == _puller))
-            _checkpoint.save();
+            _checkpointer.save();
     }
 
 
@@ -238,7 +240,7 @@ namespace litecore { namespace repl {
                 level = kC4Connecting;
                 break;
             case Connection::kConnected: {
-                if (_checkpoint.isUnsaved())
+                if (_checkpointer.isUnsaved())
                     level = kC4Busy;
                 else
                     level = Worker::computeActivityLevel();
@@ -397,7 +399,7 @@ namespace litecore { namespace repl {
         bool closedByPeer = (_connectionState != Connection::kClosing);
         _connectionState = state;
 
-        _checkpoint.stopAutosave();
+        _checkpointer.stopAutosave();
 
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
@@ -449,45 +451,44 @@ namespace litecore { namespace repl {
 
     // Start off by getting the local checkpoint, if this is an active replicator:
     bool Replicator::getLocalCheckpoint() {
-        auto cp = getCheckpoint();
-        _checkpointDocID = cp.checkpointID;
-
-        if (_options.properties[kC4ReplicatorResetCheckpoint].asBool()) {
-            logInfo("Ignoring local checkpoint ('reset' option is set)");
-        } else if (cp.data) {
-            _checkpoint.decodeFrom(cp.data);
-            auto seq = _checkpoint.sequences();
-            logInfo("Local checkpoint '%.*s' is [%" PRIu64 ", '%.*s']; getting remote ...",
-                SPLAT(cp.checkpointID), seq.local, SPLAT(seq.remote));
-            _hadLocalCheckpoint = true;
-        } else if (cp.err.code == 0) {
-            logInfo("No local checkpoint '%.*s'", SPLAT(cp.checkpointID));
-            // If pulling into an empty db with no checkpoint, it's safe to skip deleted
-            // revisions as an optimization.
-            if (cp.dbIsEmpty && _options.pull > kC4Passive && _puller)
-                _puller->setSkipDeleted();
-        } else {
-            logInfo("Fatal error getting local checkpoint");
-            gotError(cp.err);
-            stop();
-            return false;
-        }
-
-        return true;
+        return _db->use<bool>([&](C4Database *db) {
+            C4Error error;
+            if (_checkpointer.read(db, &error)) {
+                auto seq = _checkpointer.checkpoint();
+                logInfo("Local checkpoint '%.*s' is [%" PRIu64 ", '%.*s']",
+                        SPLAT(_checkpointer.initialCheckpointID()), seq.local, SPLAT(seq.remote));
+                _hadLocalCheckpoint = true;
+            } else if (error.code != 0) {
+                logInfo("Fatal error getting local checkpoint");
+                gotError(error);
+                stop();
+                return false;
+            } else if (_options.properties[kC4ReplicatorResetCheckpoint].asBool()) {
+                logInfo("Ignoring local checkpoint ('reset' option is set)");
+            } else {
+                logInfo("No local checkpoint '%.*s'", SPLAT(_checkpointer.initialCheckpointID()));
+                // If pulling into an empty db with no checkpoint, it's safe to skip deleted
+                // revisions as an optimization.
+                if (_options.pull > kC4Passive && _puller && c4db_getLastSequence(db) == 0)
+                    _puller->setSkipDeleted();
+            }
+            return true;
+        });
     }
 
 
     // Get the remote checkpoint, after we've got the local one and the BLIP connection is up.
     void Replicator::getRemoteCheckpoint(bool refresh) {
-        // Get the remote checkpoint, using the same checkpointID:
-        if (!_checkpointDocID || _connectionState != Connection::kConnected)
-            return;     // not ready yet
         if (_remoteCheckpointRequested)
             return;     // already in progress
+        if (!_remoteCheckpointDocID)
+            _remoteCheckpointDocID = _checkpointer.initialCheckpointID();
+        if (!_remoteCheckpointDocID || _connectionState != Connection::kConnected)
+            return;     // not ready yet
 
-        logVerbose("Requesting remote checkpoint");
+        logVerbose("Requesting remote checkpoint '%.*s'", SPLAT(_remoteCheckpointDocID));
         MessageBuilder msg("getCheckpoint"_sl);
-        msg["client"_sl] = _checkpointDocID;
+        msg["client"_sl] = _remoteCheckpointDocID;
         Signpost::begin(Signpost::blipSent);
         sendRequest(msg, [this, refresh](MessageProgress progress) {
             // ...after the checkpoint is received:
@@ -501,22 +502,21 @@ namespace litecore { namespace repl {
                 auto err = response->getError();
                 if (!(err.domain == "HTTP"_sl && err.code == 404))
                     return gotError(response);
-                logInfo("No remote checkpoint");
-                _checkpointRevID.reset();
+                logInfo("No remote checkpoint '%.*s'", SPLAT(_remoteCheckpointDocID));
+                _remoteCheckpointRevID.reset();
             } else {
-                remoteCheckpoint.decodeFrom(response->body());
-                _checkpointRevID = response->property("rev"_sl);
+                remoteCheckpoint = Checkpoint(response->body());
+                _remoteCheckpointRevID = response->property("rev"_sl);
                 if (willLog()) {
-                    auto gotcp = remoteCheckpoint.sequences();
                     logInfo("Received remote checkpoint: [%" PRIu64 ", '%.*s'] rev='%.*s'",
-                        gotcp.local, SPLAT(gotcp.remote), SPLAT(_checkpointRevID));
+                        remoteCheckpoint.local, SPLAT(remoteCheckpoint.remote), SPLAT(_remoteCheckpointRevID));
                 }
             }
             _remoteCheckpointReceived = true;
 
             if (!refresh && _hadLocalCheckpoint) {
                 // Compare checkpoints, reset if mismatched:
-                bool valid = _checkpoint.validateWith(remoteCheckpoint);
+                bool valid = _checkpointer.validateWith(remoteCheckpoint);
                 if (!valid && _pusher)
                     _pusher->checkpointIsInvalid();
 
@@ -525,7 +525,7 @@ namespace litecore { namespace repl {
             }
 
             if (_checkpointJSONToSave)
-                saveCheckpointNow();    // _saveCheckpoint() was waiting for _checkpointRevID
+                saveCheckpointNow();    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
         });
 
         _remoteCheckpointRequested = true;
@@ -548,16 +548,23 @@ namespace litecore { namespace repl {
 
 
     void Replicator::saveCheckpointNow() {
+        // Switch to the permanent checkpoint ID:
+        alloc_slice checkpointID = _checkpointer.checkpointID();
+        if (checkpointID != _remoteCheckpointDocID) {
+            _remoteCheckpointDocID = checkpointID;
+            _remoteCheckpointRevID = nullslice;
+        }
+
         alloc_slice json = move(_checkpointJSONToSave);
 
-        logVerbose("Saving remote checkpoint %.*s with rev='%.*s': %.*s ...",
-                   SPLAT(_checkpointDocID), SPLAT(_checkpointRevID), SPLAT(json));
+        logVerbose("Saving remote checkpoint '%.*s' with rev='%.*s': %.*s ...",
+                   SPLAT(_remoteCheckpointDocID), SPLAT(_remoteCheckpointRevID), SPLAT(json));
         Assert(_remoteCheckpointReceived);
         Assert(json);
 
         MessageBuilder msg("setCheckpoint"_sl);
-        msg["client"_sl] = _checkpointDocID;
-        msg["rev"_sl] = _checkpointRevID;
+        msg["client"_sl] = _remoteCheckpointDocID;
+        msg["rev"_sl] = _remoteCheckpointRevID;
         msg << json;
         Signpost::begin(Signpost::blipSent);
         sendRequest(msg, [=](MessageProgress progress) {
@@ -568,170 +575,189 @@ namespace litecore { namespace repl {
             if (response->isError()) {
                 Error responseErr = response->getError();
                 if(responseErr.domain == "HTTP"_sl && responseErr.code == 409) {
+                    // On conflict, read the remote checkpoint to get the real revID:
                     _checkpointJSONToSave = json; // move() has no effect here
                     _remoteCheckpointRequested = _remoteCheckpointReceived = false;
                     getRemoteCheckpoint(true);
                 } else {
                     gotError(response);
-                    warn("Failed to save checkpoint!");
+                    warn("Failed to save remote checkpoint!");
                     // If the checkpoint didn't save, something's wrong; but if we don't mark it as
                     // saved, the replicator will stay busy (see computeActivityLevel, line 169).
-                    _checkpoint.saved();
+                    _checkpointer.saveCompleted();
                 }
             } else {
                 // Remote checkpoint saved, so update local one:
-                _checkpointRevID = response->property("rev"_sl);
-                logInfo("Saved remote checkpoint %.*s as rev='%.*s'",
-                    SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
-                setCheckpoint(json);
-                _checkpoint.saved();
+                _remoteCheckpointRevID = response->property("rev"_sl);
+                logInfo("Saved remote checkpoint '%.*s' as rev='%.*s'",
+                    SPLAT(_remoteCheckpointDocID), SPLAT(_remoteCheckpointRevID));
+
+                C4Error err;
+                bool ok = _db->use<bool>([&](C4Database *db) {
+                    _db->markRevsSyncedNow();
+                    return _checkpointer.write(db, json, &err);
+                });
+                if (ok)
+                    logInfo("Saved local checkpoint to db");
+                else
+                    gotError(err);
+                _checkpointer.saveCompleted();
             }
         });
     }
 
 
-    alloc_slice Replicator::pendingDocumentIDs(C4Error* outErr) {
-        if(_options.push < kC4OneShot) {
-            // Couchbase Lite should not allow this case
-            outErr->code = kC4ErrorUnsupported;
-            outErr->domain = LiteCoreDomain;
-            return nullslice;
-        }
+    bool Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback, C4Error* outErr){
+        return _db->use<bool>([&](C4Database *db) {
+            bool checkPusher = status().level >= kC4Idle && _pusher != nullptr;
+            auto mycb = [&](const C4DocumentInfo &info) {
+                if (!checkPusher || _pusher->isSequencePending(info.sequence))
+                    callback(info);
+            };
+            return _checkpointer.pendingDocumentIDs(db, mycb, outErr);
+        });
+    }
 
-        return _db->use<alloc_slice>([this, outErr](C4Database* db)
-        {
-            if(!_checkpointDocID) {
-                if(!getLocalCheckpoint()) {
-                    *outErr = status().error;
-                    return alloc_slice(nullslice);
-                }
-            }
 
-            const auto dbLastSequence = c4db_getLastSequence(db);
-            const auto replLastSequence = _checkpoint.sequences().local;
-            if(replLastSequence >= dbLastSequence) {
-                return alloc_slice(nullslice);
-            }
-
-            C4EnumeratorOptions opts { kC4IncludeNonConflicted | kC4IncludeDeleted };
-            const auto hasDocIDs = bool(_options.docIDs());
-            if(!hasDocIDs && _options.pushFilter) {
-                // docIDs has precedence over push filter
-                opts.flags |= kC4IncludeBodies;
-            }
-
-            c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, replLastSequence, &opts, outErr);
-            if(!e) {
-                WarnError("Unable to enumerate changes for pending document IDs (%d / %d)", outErr->domain, outErr->code);
-                return alloc_slice(nullslice);
-            }
-
-            Encoder retEncoder;
-            retEncoder.beginArray(size_t(dbLastSequence - replLastSequence));
-            C4DocumentInfo info;
+    bool Replicator::isDocumentPending(slice docID, C4Error* outErr) {
+        return _db->use<bool>([&](C4Database *db) {
+            c4::ref<C4Document> doc = c4doc_get(db, docID, false, outErr);
+            if (!doc)
+                return false;
             outErr->code = 0;
-            while(c4enum_next(e, outErr)) {
-                c4enum_getDocumentInfo(e, &info);
-                if(status().level != kC4Stopped && status().level != kC4Connecting && 
-                    _pusher && !_pusher->isSequencePending(info.sequence)) {
-                    // isSequencePending is not reliable until replication has started
-                    continue;
-                }
 
-                if(!isDocumentIDAllowed(info.docID)) {
-                    continue;
-                }
+            if (status().level >= kC4Idle && _pusher && !_pusher->isSequencePending(doc->sequence))
+                return false;
 
-                if(!hasDocIDs && _options.pushFilter) {
-                    c4::ref<C4Document> nextDoc = c4enum_getDocument(e, outErr);
-                    if(!nextDoc) {
-                        if(outErr->code != 0) {
-                            Warn("Error getting document during pending document IDs (%d / %d)", outErr->domain, outErr->code);
-                        } else {
-                            Warn("Got non-existent document during pending document IDs, skipping...");
-                        }
-
-                        continue;
-                    }
-
-                    if(!c4doc_loadRevisionBody(nextDoc, outErr)) {
-                        Warn("Error loading revision body in pending document IDs (%d / %d)", outErr->domain, outErr->code);
-                        continue;
-                    }
-
-                    if(isDocumentAllowed(nextDoc)) {
-                        retEncoder.writeString(nextDoc->docID);
-                    }
-                } else {
-                    retEncoder.writeString(info.docID);
-                }
-            }
-
-            retEncoder.endArray();
-            return retEncoder.finish(nullptr);
+            const auto replLastSequence = _checkpointer.checkpoint().local;
+            return doc->sequence > replLastSequence && _checkpointer.isDocumentAllowed(doc);
         });
     }
 
 
-    bool Replicator::isDocumentPending(slice docId, C4Error* outErr) {
-        if(_options.push < kC4OneShot) {
-            // Couchbase Lite should not allow this case
-            outErr->code = kC4ErrorUnsupported;
-            outErr->domain = LiteCoreDomain;
+    void Replicator::setCookie(slice setCookieHeader) {
+        Address addr(_remoteURL);
+        C4Error err;
+        bool ok = _db->use<bool>([&](C4Database *db) {
+            return c4db_setCookie(db, setCookieHeader, addr.hostname, addr.path, &err);
+        });
+        if (ok) {
+            logVerbose("Set cookie: `%.*s`", SPLAT(setCookieHeader));
+        } else {
+            alloc_slice message = c4error_getDescription(err);
+            warn("Unable to set cookie `%.*s`: %.*s",
+                 SPLAT(setCookieHeader), SPLAT(message));
+        }
+    }
+
+
+#pragma mark - PEER CHECKPOINT ACCESS:
+
+
+    // Reads the doc in which a peer's remote checkpoint is saved.
+    bool Replicator::getPeerCheckpointDoc(MessageIn* request, bool getting,
+                                          slice &checkpointID, c4::ref<C4RawDocument> &doc) const
+    {
+        checkpointID = request->property("client"_sl);
+        if (!checkpointID) {
+            request->respondWithError({"BLIP"_sl, 400, "missing checkpoint ID"_sl});
             return false;
         }
+        logInfo("Request to %s checkpoint '%.*s'",
+            (getting ? "get" : "set"), SPLAT(checkpointID));
 
-        return _db->use<bool>([this, docId, outErr](C4Database* db)
-        {
-            if(!_checkpointDocID) {
-                if(!getLocalCheckpoint()) {
-                    *outErr = status().error;
-                    return false;
+        C4Error err;
+        doc = _db->getRawDoc(constants::kPeerCheckpointStore, checkpointID, &err);
+        if (!doc) {
+            const int status = isNotFoundError(err) ? 404 : 502;
+            if (getting || (status != 404)) {
+                request->respondWithError({"HTTP"_sl, status});
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+    // Handles a "getCheckpoint" request by looking up a peer checkpoint.
+    void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
+        c4::ref<C4RawDocument> doc;
+        slice checkpointID;
+        if (!getPeerCheckpointDoc(request, true, checkpointID, doc))
+            return;
+        MessageBuilder response(request);
+        response["rev"_sl] = doc->meta;
+        response << doc->body;
+        request->respond(response);
+    }
+
+
+    // Handles a "setCheckpoint" request by storing a peer checkpoint.
+    void Replicator::handleSetCheckpoint(Retained<MessageIn> request) {
+        char newRevBuf[30];
+        alloc_slice rev;
+        bool needsResponse = false;
+        _db->use([&](C4Database *db) {
+            C4Error err;
+            c4::Transaction t(db);
+            if (!t.begin(&err)) {
+                request->respondWithError(c4ToBLIPError(err));
+                return;
+            }
+
+            // Get the existing raw doc so we can check its revID:
+            slice checkpointID;
+            c4::ref<C4RawDocument> doc;
+            if (!getPeerCheckpointDoc(request, false, checkpointID, doc))
+                return;
+
+            slice actualRev;
+            unsigned long generation = 0;
+            if (doc) {
+                actualRev = (slice)doc->meta;
+                try {
+                    revid parsedRev(actualRev);
+                    generation = parsedRev.generation();
+                } catch(error &e) {
+                    if(e.domain == error::Domain::LiteCore
+                            && e.code == error::LiteCoreError::CorruptRevisionData) {
+                        actualRev = nullslice;
+                    } else {
+                        throw;
+                    }
                 }
             }
 
-            c4::ref<C4Document> doc = c4doc_get(db, docId, false, outErr);
-            if(!doc) {
-                return false;
-            }
-            
-            const auto replLastSequence = _checkpoint.sequences().local;
-            outErr->code = 0;
-            if(status().level == kC4Stopped || status().level == kC4Connecting || !_pusher) {
-                // isSequencePending is not reliable until replication has started
-                return doc->sequence > replLastSequence && isDocumentAllowed(doc);
+            // Check for conflict:
+            if (request->property("rev"_sl) != actualRev) {
+                request->respondWithError({"HTTP"_sl, 409, "revision ID mismatch"_sl});
+                return;
             }
 
-            return _pusher->isSequencePending(doc->sequence) && isDocumentAllowed(doc);
+            // Generate new revID:
+            rev = slice(newRevBuf, sprintf(newRevBuf, "%lu-cc", ++generation));
+
+            // Save:
+            if (!c4raw_put(db, constants::kPeerCheckpointStore,
+                           checkpointID, rev, request->body(), &err)
+                    || !t.commit(&err)) {
+                request->respondWithError(c4ToBLIPError(err));
+                return;
+            }
+
+            needsResponse = true;
         });
-    }
 
-    void Replicator::initializeDocIDs() {
-        if(!_docIDs.empty() || !_options.docIDs() || _options.docIDs().empty()) {
+        // In other words, an error response was generated above if this
+        // is false
+        if(!needsResponse) {
             return;
         }
 
-        Array::iterator i(_options.docIDs());
-        while(i) {
-            string docID = i.value().asString().asString();
-            if(!docID.empty()) {
-                _docIDs.insert(docID);
-            }
-
-            ++i;
-        }
-    }
-
-
-    bool Replicator::isDocumentAllowed(C4Document* doc) {
-        return isDocumentIDAllowed(doc->docID) &&
-            (!_options.pushFilter || _options.pushFilter(doc->docID, doc->selectedRev.revID, doc->selectedRev.flags, DBAccess::getDocRoot(doc), _options.callbackContext));
-    }
-
-
-    bool Replicator::isDocumentIDAllowed(slice docID) {
-        initializeDocIDs();
-        return _docIDs.empty() || _docIDs.find(string(docID)) != _docIDs.end();
+        // Success!
+        MessageBuilder response(request);
+        response["rev"_sl] = rev;
+        request->respond(response);
     }
 
 } }

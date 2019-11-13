@@ -99,7 +99,7 @@ public:
         }
         
         Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
-        _checkpointID = _replClient->checkpointID();
+        _checkpointID = _replClient->checkpointer().checkpointID();
         _replClient = _replServer = nullptr;
 
         CHECK(_gotResponse);

@@ -29,6 +29,9 @@ namespace litecore { namespace repl {
 
     /** Replication configuration options */
     struct Options {
+
+        //---- Public fields:
+
         using Mode = C4ReplicatorMode;
         using Validator = bool(*)(C4String docID, C4String revID, C4RevisionFlags, FLDict body, void *context);
 
@@ -38,6 +41,8 @@ namespace litecore { namespace repl {
         Validator               pushFilter              {nullptr};
         Validator               pullValidator           {nullptr};
         void*                   callbackContext         {nullptr};
+
+        //---- Constructors/factories:
 
         Options()
         { }
@@ -54,6 +59,8 @@ namespace litecore { namespace repl {
         static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
         static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
         static Options passive()                       {return Options(kC4Passive,kC4Passive);}
+
+        //---- Property accessors:
 
         static constexpr unsigned kDefaultCheckpointSaveDelaySecs = 5;
 
@@ -82,6 +89,8 @@ namespace litecore { namespace repl {
         fleece::Dict dictProperty(const char *name) const {
             return properties[name].asDict();
         }
+
+        //---- Property setters (used only by tests)
 
         /** Sets/clears the value of a property.
             Warning: This rewrites the backing store of the properties, invalidating any
