@@ -26,6 +26,12 @@ namespace litecore {
 
     class KeyStore;
 
+    enum SortOption {
+        kDescending = -1,
+        kUnsorted = 0,
+        kAscending = 1
+    };
+
     enum ContentOption {
         kEntireBody,
         kCurrentRevOnly,
@@ -44,13 +50,13 @@ namespace litecore {
     class RecordEnumerator {
     public:
         struct Options {
-            bool           descending     :1;   ///< Reverse order? (Start must be
-            bool           includeDeleted :1;   ///< Include deleted records?
-            bool           onlyBlobs      :1;   ///< Only include records which contain linked binary data
-            ContentOption  contentOption  :4;   ///< Load record bodies?
+            bool           includeDeleted = false;   ///< Include deleted records?
+            bool           onlyBlobs      = false;   ///< Only include records which contain linked binary data
+            bool           onlyConflicts  = false;   ///< Only include records with conflicts
+            SortOption     sortOption     = kAscending;    ///< Sort order, or unsorted
+            ContentOption  contentOption  = kEntireBody;       ///< Load record bodies?
 
-            /** Default options have all flags false, and kEntireBody */
-            Options();
+            Options() { }
         };
 
         RecordEnumerator(KeyStore&,

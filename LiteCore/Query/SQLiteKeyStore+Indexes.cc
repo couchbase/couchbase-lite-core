@@ -114,6 +114,26 @@ namespace litecore {
     }
 
 
+    // Creates indexes on flags
+    void SQLiteKeyStore::_createFlagsIndex(const char *indexName, DocumentFlags flag, bool &created) {
+        if (!created) {
+            db().execWithLock(CONCAT(
+                                 "CREATE INDEX IF NOT EXISTS kv_" << name() << "_" << indexName <<
+                                 " ON kv_" << name() << " (flags)"
+                                 " WHERE (flags & " << int(flag) << ") != 0"));
+            created = true;
+        }
+    }
+
+    void SQLiteKeyStore::createConflictsIndex() {
+        _createFlagsIndex("conflicts", DocumentFlags::kConflicted, _createdConflictsIndex);
+    }
+
+    void SQLiteKeyStore::createBlobsIndex() {
+        _createFlagsIndex("blobs", DocumentFlags::kHasAttachments, _createdBlobsIndex);
+    }
+
+
     vector<KeyStore::IndexSpec> SQLiteKeyStore::getIndexes() const {
         vector<KeyStore::IndexSpec> result;
         for (auto &spec : db().getIndexes(nullptr)) {

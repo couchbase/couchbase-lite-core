@@ -249,6 +249,7 @@ namespace c4Internal {
     unordered_set<string> Database::collectBlobs() {
         RecordEnumerator::Options options;
         options.onlyBlobs = true;
+        options.sortOption = kUnsorted;
         RecordEnumerator e(defaultKeyStore(), options);
         unordered_set<string> usedDigests;
         while (e.next()) {
