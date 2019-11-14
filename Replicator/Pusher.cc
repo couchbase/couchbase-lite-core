@@ -31,10 +31,11 @@ using namespace fleece;
 
 namespace litecore { namespace repl {
 
-    Pusher::Pusher(Replicator *replicator)
+    Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer)
     :Worker(replicator, "Push")
     ,_continuous(_options.push == kC4Continuous)
     ,_skipDeleted(_options.skipDeleted())
+    ,_checkpointer(checkpointer)
     {
         if (passive()) {
             // Passive replicator always sends "changes"
@@ -73,11 +74,11 @@ namespace litecore { namespace repl {
 
 
     // Begins active push, starting from the next sequence after sinceSequence
-    void Pusher::_start(C4SequenceNumber sinceSequence) {
+    void Pusher::_start() {
+        auto sinceSequence = _checkpointer.localSequence();
         logInfo("Starting %spush from local seq #%" PRIu64,
             (_continuous ? "continuous " : ""), sinceSequence+1);
         _started = true;
-        _pendingSequences.clear(sinceSequence);
         startSending(sinceSequence);
     }
 
@@ -89,11 +90,11 @@ namespace litecore { namespace repl {
             req->respondWithError({"LiteCore"_sl, 501, "Not implemented."_sl});
             return;
         }
-        auto since = max(req->intProperty("since"_sl), 0l);
+        C4SequenceNumber since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
         _skipDeleted = req->boolProperty("activeOnly"_sl);
         logInfo("Peer is pulling %schanges from seq #%" PRIu64,
-            (_continuous ? "continuous " : ""), _lastSequence);
+            (_continuous ? "continuous " : ""), since);
 
         auto filter = req->property("filter"_sl);
         if (filter) {
@@ -114,7 +115,7 @@ namespace litecore { namespace repl {
 
     // Starts active or passive push from the given sequence number.
     void Pusher::startSending(C4SequenceNumber sinceSequence) {
-        _lastSequenceRead = _lastSequence = sinceSequence;
+        _lastSequenceRead = sinceSequence;
         maybeGetMoreChanges();
     }
 
@@ -156,10 +157,11 @@ namespace litecore { namespace repl {
             return gotError(err);
         
         _lastSequenceRead = lastSequence;
-        _pendingSequences.seen(lastSequence);
+        if (!passive())
+            _checkpointer.add(*changes.get(), lastSequence);
         if (changes->empty()) {
             logInfo("Found 0 changes up to #%" PRIu64, lastSequence);
-            updateCheckpoint();
+            logCheckpoint();
         } else {
             uint64_t bodySize = 0;
             for (auto &change : *changes)
@@ -210,7 +212,7 @@ namespace litecore { namespace repl {
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 change->sequence);
         _lastSequenceRead = max(_lastSequenceRead, change->sequence);
-        _pendingSequences.seen(change->sequence);
+        _checkpointer.add(change->sequence);
         addProgress({0, change->bodySize});
         sendChanges(make_shared<RevToSendList>(1, change));
     }
@@ -226,8 +228,6 @@ namespace litecore { namespace repl {
         auto &enc = req.jsonBody();
         enc.beginArray();
         for (RevToSend *change : *changes) {
-            if (!passive())
-                _pendingSequences.add(change->sequence);
             // Write the info array for this change:
             enc.beginArray();
             if (_proposeChanges) {
@@ -579,8 +579,8 @@ namespace litecore { namespace repl {
         if (!passive()) {
             addProgress({rev->bodySize, 0});
             if (completed) {
-                _pendingSequences.remove(rev->sequence);
-                updateCheckpoint();
+                _checkpointer.remove(rev->sequence);
+                logCheckpoint();
             }
         }
 
@@ -627,17 +627,14 @@ namespace litecore { namespace repl {
     }
 
 
-    void Pusher::updateCheckpoint() {
-        auto firstPending = _pendingSequences.first();
-        auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
-        if (lastSeq > _lastSequence) {
-            if (lastSeq / 1000 > _lastSequence / 1000)
+    void Pusher::logCheckpoint() {
+        auto lastSeq = _checkpointer.localSequence();
+        if (lastSeq > _lastSequenceLogged) {
+            if (lastSeq / 1000 > _lastSequenceLogged / 1000)
                 logInfo("Checkpoint now at #%" PRIu64, lastSeq);
             else
                 logVerbose("Checkpoint now at #%" PRIu64, lastSeq);
-            _lastSequence = lastSeq;
-            if (replicator())
-                replicator()->updatePushCheckpoint(_lastSequence);
+            _lastSequenceLogged = lastSeq;
         }
     }
 
@@ -683,10 +680,11 @@ namespace litecore { namespace repl {
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
             logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%" PRIu64 ", revsToSend=%zu, pushingDocs=%zu, pendingSequences=%zu",
-                kC4ReplicatorActivityLevelNames[level],
-                pendingResponseCount(),
-                _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
-                _revisionBytesAwaitingReply, _revsToSend.size(), _pushingDocs.size(), _pendingSequences.size());
+                    kC4ReplicatorActivityLevelNames[level],
+                    pendingResponseCount(),
+                    _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
+                    _revisionBytesAwaitingReply, _revsToSend.size(), _pushingDocs.size(),
+                    _checkpointer.numPendingDocs());
         }
         return level;
     }

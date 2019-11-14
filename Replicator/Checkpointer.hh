@@ -6,7 +6,10 @@
 
 #pragma once
 #include "ReplicatorOptions.hh"
+#include "ReplicatorTypes.hh"
+#include "SequenceSet.hh"
 #include "Error.hh"
+#include "Logging.hh"
 #include "RefCounted.hh"
 #include "Timer.hh"
 #include "c4Base.h"
@@ -21,20 +24,37 @@ namespace litecore { namespace repl {
 
 
     /** A pair of remote and local sequences; the persistent data of a checkpoint. */
-    struct Checkpoint {
-        C4SequenceNumber    local {0};
-        fleece::alloc_slice remote;
-
+    class Checkpoint {
+    public:
         Checkpoint() { }
+        Checkpoint(fleece::slice json)      {readJSON(json);}
 
-        Checkpoint(fleece::slice json);
+        C4SequenceNumber    local() const   {return _local;}
+        fleece::alloc_slice remote() const  {return _remote;}
+        const SequenceSet&  pending() const {return _pending;}
+        SequenceSet&        pending()       {return _pending;}
+
+        bool setLocal(C4SequenceNumber s) {if (s == _local) return false; _local = s; return true;}
+        bool setRemote(slice s)           {if (s == _remote) return false; _remote = s; return true;}
+
+        void readJSON(slice json);
         fleece::alloc_slice toJSON() const;
 
         bool validateWith(const Checkpoint &remoteSequences);
 
-        bool operator== (const Checkpoint &other) const    {return local==other.local && remote==other.remote;}
+        bool operator== (const Checkpoint &other) const    {return _local==other._local && _remote==other._remote;}
         bool operator!= (const Checkpoint &other) const    {return ! (*this == other);}
+
+        bool updateLocalFromPending();
+
+        static bool gWriteTimestamps;   // for testing; set to false to disable timestamps in JSON
+
+    private:
+        C4SequenceNumber    _local {0};
+        fleece::alloc_slice _remote;
+        SequenceSet _pending;
     };
+
 
 
     /** Manages a Replicator's checkpoint. */
@@ -44,20 +64,24 @@ namespace litecore { namespace repl {
 
         // Checkpoint:
 
-        /** Returns the local and remote sequences. */
-        Checkpoint checkpoint() const;
-
-        void setCheckpoint(const Checkpoint&);
+        C4SequenceNumber    localSequence() const   {return _chk.local();}
+        fleece::alloc_slice remoteSequence() const  {return _chk.remote();}
 
         /** Sets my local sequence without affecting the remote one. */
-        void setLocalSeq(C4SequenceNumber s)        {setCheckpoint(&s, nullptr);}
+        void setLocalSequence(C4SequenceNumber s);
 
         /** Sets my remote sequence without affecting the local one. */
-        void setRemoteSeq(fleece::slice s)          {setCheckpoint(nullptr, &s);}
+        void setRemoteSequence(fleece::slice s);
 
-        /** Compares my state with another Checkpoint. If the local sequences differ, mine
-            will be reset to 0; if the remote sequences differ, mine will be reset to empty. */
+        /** Compares my state with another Checkpoint.
+            If the local sequences differ, mine will be reset to 0;
+            if the remote sequences differ, mine will be reset to empty. */
         bool validateWith(const Checkpoint&);
+
+        void add(C4SequenceNumber);
+        void add(RevToSendList &sequences, C4SequenceNumber lastSequence);
+        void remove(C4SequenceNumber);
+        size_t numPendingDocs() const;
 
         // IDs:
 
@@ -126,15 +150,15 @@ namespace litecore { namespace repl {
         bool isDocumentIDAllowed(slice docID);
 
     private:
-        void _setCheckpoint(const Checkpoint&);
-        void setCheckpoint(const C4SequenceNumber *local, const fleece::slice *remote);
-        void setCheckpoint(C4Database *db NONNULL, slice data);
+//        void setCheckpoint(C4Database *db NONNULL, slice data);
         void checkpointIsInvalid();
         std::string docIDForUUID(const C4UUID&);
         slice remoteDocID(C4Database *db NONNULL, C4Error* err);
         alloc_slice _read(C4Database *db NONNULL, slice, C4Error*);
         void initializeDocIDs();
+        void saveSoon();
 
+        Logging*                        _logger;
         const Options&                  _options;
         alloc_slice const               _remoteURL;
         std::unordered_set<std::string> _docIDs;

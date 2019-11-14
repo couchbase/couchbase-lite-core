@@ -73,7 +73,7 @@ namespace litecore { namespace repl {
         logInfo("%s", string(options).c_str());
 
         if (options.push != kC4Disabled)
-            _pusher = new Pusher(this);
+            _pusher = new Pusher(this, _checkpointer);
         if (options.pull != kC4Disabled)
             _puller = new Puller(this);
         _checkpointer.enableAutosave(options.checkpointSaveDelay(),
@@ -184,11 +184,10 @@ namespace litecore { namespace repl {
 
     // Called after the checkpoint is established.
     void Replicator::startReplicating() {
-        auto cp = _checkpointer.checkpoint();
         if (_options.push > kC4Passive)
-            _pusher->start(cp.local);
+            _pusher->start();
         if (_options.pull > kC4Passive)
-            _puller->start(cp.remote);
+            _puller->start(_checkpointer.remoteSequence());
     }
 
 
@@ -454,9 +453,11 @@ namespace litecore { namespace repl {
         return _db->use<bool>([&](C4Database *db) {
             C4Error error;
             if (_checkpointer.read(db, &error)) {
-                auto seq = _checkpointer.checkpoint();
+                auto remote = _checkpointer.remoteSequence();
                 logInfo("Local checkpoint '%.*s' is [%" PRIu64 ", '%.*s']",
-                        SPLAT(_checkpointer.initialCheckpointID()), seq.local, SPLAT(seq.remote));
+                        SPLAT(_checkpointer.initialCheckpointID()),
+                        _checkpointer.localSequence(),
+                        SPLAT(remote));
                 _hadLocalCheckpoint = true;
             } else if (error.code != 0) {
                 logInfo("Fatal error getting local checkpoint");
@@ -505,11 +506,11 @@ namespace litecore { namespace repl {
                 logInfo("No remote checkpoint '%.*s'", SPLAT(_remoteCheckpointDocID));
                 _remoteCheckpointRevID.reset();
             } else {
-                remoteCheckpoint = Checkpoint(response->body());
+                remoteCheckpoint.readJSON(response->body());
                 _remoteCheckpointRevID = response->property("rev"_sl);
                 if (willLog()) {
                     logInfo("Received remote checkpoint: [%" PRIu64 ", '%.*s'] rev='%.*s'",
-                        remoteCheckpoint.local, SPLAT(remoteCheckpoint.remote), SPLAT(_remoteCheckpointRevID));
+                        remoteCheckpoint.local(), SPLAT(remoteCheckpoint.remote()), SPLAT(_remoteCheckpointRevID));
                 }
             }
             _remoteCheckpointReceived = true;
@@ -609,28 +610,14 @@ namespace litecore { namespace repl {
 
     bool Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback, C4Error* outErr){
         return _db->use<bool>([&](C4Database *db) {
-            bool checkPusher = status().level >= kC4Idle && _pusher != nullptr;
-            auto mycb = [&](const C4DocumentInfo &info) {
-                if (!checkPusher || _pusher->isSequencePending(info.sequence))
-                    callback(info);
-            };
-            return _checkpointer.pendingDocumentIDs(db, mycb, outErr);
+            return _checkpointer.pendingDocumentIDs(db, callback, outErr);
         });
     }
 
 
     bool Replicator::isDocumentPending(slice docID, C4Error* outErr) {
         return _db->use<bool>([&](C4Database *db) {
-            c4::ref<C4Document> doc = c4doc_get(db, docID, false, outErr);
-            if (!doc)
-                return false;
-            outErr->code = 0;
-
-            if (status().level >= kC4Idle && _pusher && !_pusher->isSequencePending(doc->sequence))
-                return false;
-
-            const auto replLastSequence = _checkpointer.checkpoint().local;
-            return doc->sequence > replLastSequence && _checkpointer.isDocumentAllowed(doc);
+            return _checkpointer.isDocumentPending(db, docID, outErr);
         });
     }
 

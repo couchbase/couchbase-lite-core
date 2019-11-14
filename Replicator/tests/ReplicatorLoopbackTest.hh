@@ -41,6 +41,7 @@ public:
         // Change tuning param so that tests will actually create deltas, despite using small
         // document bodies:
         litecore::repl::tuning::kMinBodySizeForDelta = 0;
+        litecore::repl::Checkpoint::gWriteTimestamps = false;
     }
 
     ~ReplicatorLoopbackTest() {
@@ -455,7 +456,7 @@ public:
 
     void validateCheckpoint(C4Database *database, bool local,
                             const char *body, const char *meta = "1-") {
-        C4Error err;
+        C4Error err = {};
 		C4Slice storeName;
 		if(local) {
 			storeName = C4STR("checkpoints");
