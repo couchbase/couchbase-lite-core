@@ -45,7 +45,7 @@ namespace litecore { namespace repl {
 
         // Checks if a given sequence number is pending to be pushed
         bool isSequencePending(sequence_t seq) const {
-            return _pendingSequences.contains(seq);
+            return !_pendingSequences.hasRemoved(seq);
         }
         
     protected:
