@@ -340,7 +340,7 @@ namespace litecore { namespace repl {
             _lastSequence = since;
             logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
             if (replicator())
-                replicator()->updatePullCheckpoint(_lastSequence);
+                replicator()->checkpointer().setRemoteMinSequence(_lastSequence);
         }
     }
 

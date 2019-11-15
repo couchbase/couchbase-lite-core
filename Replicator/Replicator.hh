@@ -96,11 +96,8 @@ namespace litecore { namespace repl {
 
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection()->webSocket();}
+        
         Checkpointer& checkpointer()            {return _checkpointer;}
-
-        // internal API for Pusher/Puller:
-        void updatePushCheckpoint(C4SequenceNumber s)   {_checkpointer.setLocalSequence(s);}
-        void updatePullCheckpoint(const alloc_slice &s) {_checkpointer.setRemoteSequence(s);}
 
         void endedDocument(ReplicatedRev *d NONNULL);
         void onBlobProgress(const BlobProgress &progress) {

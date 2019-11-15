@@ -83,6 +83,13 @@ namespace litecore { namespace repl {
         int progressLevel() const  {return (int)properties[kC4ReplicatorOptionProgressLevel].asInt();}
         bool disableDeltaSupport() const {return properties[kC4ReplicatorOptionDisableDeltas].asBool();}
 
+        /** Returns a string that uniquely identifies the remote database; by default its URL,
+            or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.) */
+        fleece::slice remoteDBIDString(fleece::slice remoteURL) const {
+            auto uniqueID = properties[kC4ReplicatorOptionRemoteDBUniqueID].asString();
+            return uniqueID ? uniqueID : remoteURL;
+        }
+
         fleece::Array arrayProperty(const char *name) const {
             return properties[name].asArray();
         }

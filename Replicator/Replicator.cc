@@ -102,14 +102,14 @@ namespace litecore { namespace repl {
 
         if (_options.push > kC4Passive || _options.pull > kC4Passive) {
             // Get the remote DB ID:
-            string key = _checkpointer.remoteDBIDString();
+            slice key = _options.remoteDBIDString(_remoteURL);
             C4Error err;
-            C4RemoteID remoteDBID = _db->lookUpRemoteDBID(slice(key), &err);
+            C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key, &err);
             if (remoteDBID) {
-                logVerbose("Remote-DB ID %u found for target <%s>", remoteDBID, key.c_str());
+                logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
             } else {
-                warn("Couldn't get remote-DB ID for target <%s>: error %d/%d",
-                     key.c_str(), err.domain, err.code);
+                warn("Couldn't get remote-DB ID for target <%.*s>: error %d/%d",
+                     SPLAT(key), err.domain, err.code);
                 gotError(err);
                 stop();
             }
@@ -187,7 +187,7 @@ namespace litecore { namespace repl {
         if (_options.push > kC4Passive)
             _pusher->start();
         if (_options.pull > kC4Passive)
-            _puller->start(_checkpointer.remoteSequence());
+            _puller->start(_checkpointer.remoteMinSequence());
     }
 
 
@@ -453,10 +453,10 @@ namespace litecore { namespace repl {
         return _db->use<bool>([&](C4Database *db) {
             C4Error error;
             if (_checkpointer.read(db, &error)) {
-                auto remote = _checkpointer.remoteSequence();
+                auto remote = _checkpointer.remoteMinSequence();
                 logInfo("Local checkpoint '%.*s' is [%" PRIu64 ", '%.*s']",
                         SPLAT(_checkpointer.initialCheckpointID()),
-                        _checkpointer.localSequence(),
+                        _checkpointer.localMinSequence(),
                         SPLAT(remote));
                 _hadLocalCheckpoint = true;
             } else if (error.code != 0) {
@@ -509,8 +509,9 @@ namespace litecore { namespace repl {
                 remoteCheckpoint.readJSON(response->body());
                 _remoteCheckpointRevID = response->property("rev"_sl);
                 if (willLog()) {
+                    auto remoteSeq = remoteCheckpoint.remoteMinSequence();
                     logInfo("Received remote checkpoint: [%" PRIu64 ", '%.*s'] rev='%.*s'",
-                        remoteCheckpoint.local(), SPLAT(remoteCheckpoint.remote()), SPLAT(_remoteCheckpointRevID));
+                        remoteCheckpoint.localMinSequence(), SPLAT(remoteSeq), SPLAT(_remoteCheckpointRevID));
                 }
             }
             _remoteCheckpointReceived = true;

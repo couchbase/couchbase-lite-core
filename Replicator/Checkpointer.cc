@@ -26,110 +26,11 @@
 #include "c4.hh"
 #include <inttypes.h>
 
-#undef SPARSE_CHECKPOINTS  // Under construction -- don't enable this yet
-
 #define LOCK()  lock_guard<mutex> lock(_mutex)
 
 namespace litecore { namespace repl {
     using namespace std;
     using namespace fleece;
-
-
-#pragma mark - CHECKPOINT DATA:
-
-
-    bool Checkpoint::gWriteTimestamps = true;
-
-
-    void Checkpoint::readJSON(slice json) {
-        if (json) {
-            Doc root = Doc::fromJSON(json, nullptr);
-            _local = (C4SequenceNumber) root["local"_sl].asInt();
-            _remote = root["remote"_sl].toJSON();
-            _pending.clear(_local);
-#ifdef SPARSE_CHECKPOINTS
-            // New properties for sparse checkpoint:
-            Array pending = root["localPending"].asArray();
-            for (Array::iterator i(pending); i; ++i) {
-                C4SequenceNumber first = i->asInt();
-                ++i;
-                _pending.add(first, first + i->asInt() - 1);
-            }
-            C4SequenceNumber localMax = root["localMax"].asInt();
-            if (localMax)
-                _pending.seen(localMax);
-#endif
-        } else {
-            _local = 0;
-            _remote = nullslice;
-            _pending.clear(_local);
-        }
-    }
-
-
-    alloc_slice Checkpoint::toJSON() const {
-        JSONEncoder enc;
-        enc.beginDict();
-        if (_local) {
-            enc.writeKey("local"_sl);
-            enc.writeUInt(_local);
-        }
-        if (_remote) {
-            enc.writeKey("remote"_sl);
-            enc.writeRaw(_remote);   // remote is already JSON
-        }
-        if (gWriteTimestamps) {
-            enc.writeKey("time"_sl);
-            enc.writeInt(c4_now() / 1000);
-        }
-
-#ifdef SPARSE_CHECKPOINTS
-        if (!_pending.empty()) {
-            // New properties for sparse checkpoint:
-            enc.writeKey("localPending"_sl);
-            enc.beginArray();
-            _pending.ranges([&](C4SequenceNumber first, C4SequenceNumber last) {
-                enc.writeInt(first);
-                enc.writeInt(last - first + 1);
-            });
-            enc.endArray();
-            if (_pending.maxEver() > _pending.last()) {
-                enc.writeKey("localMax"_sl);
-                enc.writeInt(_pending.maxEver());
-            }
-        }
-#endif
-        enc.endDict();
-        return enc.finish();
-    }
-
-
-    bool Checkpoint::validateWith(const Checkpoint &remoteSequences) {
-        bool match = true;
-        if (_local > 0 && _local != remoteSequences._local) {
-            LogTo(SyncLog, "Local sequence mismatch: I had %llu, remote had %llu",
-                  (unsigned long long)_local,
-                  (unsigned long long)remoteSequences._local);
-            _local = 0;
-            match = false;
-        }
-        if (_remote && _remote != remoteSequences._remote) {
-            LogTo(SyncLog, "Remote sequence mismatch: I had '%.*s', remote had '%.*s'",
-                  SPLAT(_remote), SPLAT(remoteSequences._remote));
-            _remote = nullslice;
-            match = false;
-        }
-        return match;
-    }
-
-
-    bool Checkpoint::updateLocalFromPending() {
-        auto lastComplete = _pending.lastComplete();
-        if (lastComplete <= _local)
-            return false;
-        _local = lastComplete;
-        return true;
-    }
 
 
 #pragma mark - CHECKPOINT ACCESSORS:
@@ -142,54 +43,43 @@ namespace litecore { namespace repl {
     { }
 
 
-    void Checkpointer::setLocalSequence(C4SequenceNumber s) {
+    void Checkpointer::setRemoteMinSequence(fleece::slice s) {
         LOCK();
-        if (_chk.setLocal(s))
-            saveSoon();
-    }
-
-    void Checkpointer::setRemoteSequence(fleece::slice s) {
-        LOCK();
-        if (_chk.setRemote(s))
+        if (_checkpoint.setRemoteMinSequence(s))
             saveSoon();
     }
 
 
     bool Checkpointer::validateWith(const Checkpoint &remote) {
         LOCK();
-        if (_chk.validateWith(remote))
+        if (_checkpoint.validateWith(remote))
             return true;
         saveSoon();
         return false;
     }
 
 
-    void Checkpointer::add(C4SequenceNumber s) {
+    void Checkpointer::addPendingSequence(C4SequenceNumber s) {
         LOCK();
-        _chk.pending().add(s);
-        _chk.updateLocalFromPending();
+        _checkpoint.addPendingSequence(s);
         saveSoon();
     }
 
-    void Checkpointer::add(RevToSendList &sequences, C4SequenceNumber lastSequence) {
+    void Checkpointer::addPendingSequences(RevToSendList &sequences, C4SequenceNumber lastSequence) {
         LOCK();
-        for (auto rev : sequences)
-            _chk.pending().add(rev->sequence);
-        _chk.pending().seen(lastSequence);
-        _chk.updateLocalFromPending();
+        _checkpoint.addPendingSequences(sequences, lastSequence);
         saveSoon();
     }
 
-    void Checkpointer::remove(C4SequenceNumber s) {
+    void Checkpointer::completedSequence(C4SequenceNumber s) {
         LOCK();
-        _chk.pending().remove(s);
-        _chk.updateLocalFromPending();
+        _checkpoint.completedSequence(s);
         saveSoon();
     }
 
     size_t Checkpointer::numPendingDocs() const {
         LOCK();
-        return _chk.pending().size();
+        return _checkpoint.pendingSequences().size();
     }
 
 
@@ -236,7 +126,7 @@ namespace litecore { namespace repl {
             }
             _changed = false;
             _saving = true;
-            json = _chk.toJSON();
+            json = _checkpoint.toJSON();
         }
         _saveCallback(json);
         return true;
@@ -267,14 +157,6 @@ namespace litecore { namespace repl {
 
 
 #pragma mark - CHECKPOINT DOC ID:
-
-
-    string Checkpointer::remoteDBIDString() const {
-        slice uniqueID = _options.properties[kC4ReplicatorOptionRemoteDBUniqueID].asString();
-        if (uniqueID)
-            return string(uniqueID);
-        return string(_remoteURL);
-    }
 
 
     slice Checkpointer::remoteDocID(C4Database *db, C4Error* err) {
@@ -312,7 +194,7 @@ namespace litecore { namespace repl {
         enc.beginArray();
         enc.writeString({&localUUID, sizeof(C4UUID)});
 
-        enc.writeString(remoteDBIDString());
+        enc.writeString(_options.remoteDBIDString(_remoteURL));
         if (!channels.empty() || !docIDs.empty() || filter) {
             // Optional stuff:
             writeValueOrNull(enc, channels);
@@ -369,7 +251,7 @@ namespace litecore { namespace repl {
 
         if (body && !_resetCheckpoint) {
             LOCK();
-            _chk.readJSON(body);
+            _checkpoint.readJSON(body);
             return true;
         } else {
             *outError = {};
@@ -448,7 +330,7 @@ namespace litecore { namespace repl {
             return false;
 
         const auto dbLastSequence = c4db_getLastSequence(db);
-        const auto replLastSequence = this->localSequence();
+        const auto replLastSequence = this->localMinSequence();
         if(replLastSequence >= dbLastSequence) {
             // No changes since the last checkpoint
             return true;
@@ -472,9 +354,11 @@ namespace litecore { namespace repl {
         while(c4enum_next(e, outErr)) {
             c4enum_getDocumentInfo(e, &info);
 
-            if(!isDocumentIDAllowed(info.docID)) {
+            if (!_checkpoint.isSequencePending(info.sequence))
                 continue;
-            }
+
+            if(!isDocumentIDAllowed(info.docID))
+                continue;
 
             if (!hasDocIDs && _options.pushFilter) {
                 // If there is a push filter, we have to get the doc body for it to peruse:
@@ -520,9 +404,8 @@ namespace litecore { namespace repl {
         if (!doc)
             return false;
 
-        const auto replLastSequence = this->localSequence();
         outErr->code = 0;
-        return doc->sequence > replLastSequence && isDocumentAllowed(doc);
+        return _checkpoint.isSequencePending(doc->sequence) && isDocumentAllowed(doc);
     }
 
 

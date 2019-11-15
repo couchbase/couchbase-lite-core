@@ -7,7 +7,7 @@
 #pragma once
 #include "ReplicatorOptions.hh"
 #include "ReplicatorTypes.hh"
-#include "SequenceSet.hh"
+#include "Checkpoint.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "RefCounted.hh"
@@ -23,71 +23,33 @@ namespace litecore { namespace repl {
     using namespace fleece;
 
 
-    /** A pair of remote and local sequences; the persistent data of a checkpoint. */
-    class Checkpoint {
-    public:
-        Checkpoint() { }
-        Checkpoint(fleece::slice json)      {readJSON(json);}
-
-        C4SequenceNumber    local() const   {return _local;}
-        fleece::alloc_slice remote() const  {return _remote;}
-        const SequenceSet&  pending() const {return _pending;}
-        SequenceSet&        pending()       {return _pending;}
-
-        bool setLocal(C4SequenceNumber s) {if (s == _local) return false; _local = s; return true;}
-        bool setRemote(slice s)           {if (s == _remote) return false; _remote = s; return true;}
-
-        void readJSON(slice json);
-        fleece::alloc_slice toJSON() const;
-
-        bool validateWith(const Checkpoint &remoteSequences);
-
-        bool operator== (const Checkpoint &other) const    {return _local==other._local && _remote==other._remote;}
-        bool operator!= (const Checkpoint &other) const    {return ! (*this == other);}
-
-        bool updateLocalFromPending();
-
-        static bool gWriteTimestamps;   // for testing; set to false to disable timestamps in JSON
-
-    private:
-        C4SequenceNumber    _local {0};
-        fleece::alloc_slice _remote;
-        SequenceSet _pending;
-    };
-
-
-
-    /** Manages a Replicator's checkpoint. */
+    /** Manages a Replicator's checkpoint, including local storage (but not remote). */
     class Checkpointer {
     public:
         Checkpointer(const Options&, fleece::slice remoteURL);
 
         // Checkpoint:
 
-        C4SequenceNumber    localSequence() const   {return _chk.local();}
-        fleece::alloc_slice remoteSequence() const  {return _chk.remote();}
-
-        /** Sets my local sequence without affecting the remote one. */
-        void setLocalSequence(C4SequenceNumber s);
-
-        /** Sets my remote sequence without affecting the local one. */
-        void setRemoteSequence(fleece::slice s);
-
         /** Compares my state with another Checkpoint.
             If the local sequences differ, mine will be reset to 0;
             if the remote sequences differ, mine will be reset to empty. */
         bool validateWith(const Checkpoint&);
 
-        void add(C4SequenceNumber);
-        void add(RevToSendList &sequences, C4SequenceNumber lastSequence);
-        void remove(C4SequenceNumber);
+        /** The checkpoint's local sequence. All sequences up to this are pushed. */
+        C4SequenceNumber localMinSequence() const       {return _checkpoint.localMinSequence();}
+
+        void addPendingSequence(C4SequenceNumber);
+        void addPendingSequences(RevToSendList &sequences, C4SequenceNumber lastSequence);
+        void completedSequence(C4SequenceNumber);
         size_t numPendingDocs() const;
 
-        // IDs:
+        /** The checkpoint's remote sequence, the last one up to which all is pulled. */
+        fleece::alloc_slice remoteMinSequence() const   {return _checkpoint.remoteMinSequence();}
 
-        /** Returns a string that uniquely identifies the remote database; by default its URL,
-            or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.) */
-        std::string remoteDBIDString() const;
+        /** Updates the checkpoint's remote sequence. */
+        void setRemoteMinSequence(fleece::slice s);
+
+        // Checkpoint IDs:
 
         /** Returns the doc ID where the checkpoint should initially be read from.
             This is usually the same as \ref checkpointID, but not in the case of a copied
@@ -150,7 +112,6 @@ namespace litecore { namespace repl {
         bool isDocumentIDAllowed(slice docID);
 
     private:
-//        void setCheckpoint(C4Database *db NONNULL, slice data);
         void checkpointIsInvalid();
         std::string docIDForUUID(const C4UUID&);
         slice remoteDocID(C4Database *db NONNULL, C4Error* err);
@@ -166,7 +127,7 @@ namespace litecore { namespace repl {
 
         // Checkpoint state:
         mutable std::mutex              _mutex;
-        Checkpoint                      _chk {};
+        Checkpoint                      _checkpoint {};
 
         // Document IDs:
         alloc_slice                     _initialDocID;      // DocID checkpoints are read from

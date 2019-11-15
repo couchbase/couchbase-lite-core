@@ -75,7 +75,7 @@ namespace litecore { namespace repl {
 
     // Begins active push, starting from the next sequence after sinceSequence
     void Pusher::_start() {
-        auto sinceSequence = _checkpointer.localSequence();
+        auto sinceSequence = _checkpointer.localMinSequence();
         logInfo("Starting %spush from local seq #%" PRIu64,
             (_continuous ? "continuous " : ""), sinceSequence+1);
         _started = true;
@@ -158,7 +158,7 @@ namespace litecore { namespace repl {
         
         _lastSequenceRead = lastSequence;
         if (!passive())
-            _checkpointer.add(*changes.get(), lastSequence);
+            _checkpointer.addPendingSequences(*changes.get(), lastSequence);
         if (changes->empty()) {
             logInfo("Found 0 changes up to #%" PRIu64, lastSequence);
             logCheckpoint();
@@ -212,7 +212,7 @@ namespace litecore { namespace repl {
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 change->sequence);
         _lastSequenceRead = max(_lastSequenceRead, change->sequence);
-        _checkpointer.add(change->sequence);
+        _checkpointer.addPendingSequence(change->sequence);
         addProgress({0, change->bodySize});
         sendChanges(make_shared<RevToSendList>(1, change));
     }
@@ -579,7 +579,7 @@ namespace litecore { namespace repl {
         if (!passive()) {
             addProgress({rev->bodySize, 0});
             if (completed) {
-                _checkpointer.remove(rev->sequence);
+                _checkpointer.completedSequence(rev->sequence);
                 logCheckpoint();
             }
         }
@@ -628,7 +628,7 @@ namespace litecore { namespace repl {
 
 
     void Pusher::logCheckpoint() {
-        auto lastSeq = _checkpointer.localSequence();
+        auto lastSeq = _checkpointer.localMinSequence();
         if (lastSeq > _lastSequenceLogged) {
             if (lastSeq / 1000 > _lastSequenceLogged / 1000)
                 logInfo("Checkpoint now at #%" PRIu64, lastSeq);
