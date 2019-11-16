@@ -68,6 +68,7 @@ namespace litecore { namespace repl {
     ,_checkpointer(_options, _remoteURL)
     {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
+        _passive = _options.pull <= kC4Passive && _options.push <= kC4Passive;
         _important = 2;
 
         logInfo("%s", string(options).c_str());

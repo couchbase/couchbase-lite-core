@@ -48,7 +48,6 @@ namespace litecore { namespace repl {
         void insertRevision(RevToInsert *rev NONNULL);
 
     protected:
-        bool nonPassive() const                 {return _options.pull > kC4Passive;}
         virtual void _childChangedStatus(Worker *task NONNULL, Status) override;
         virtual ActivityLevel computeActivityLevel() const override;
         void activityLevelChanged(ActivityLevel level);

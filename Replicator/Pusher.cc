@@ -37,8 +37,9 @@ namespace litecore { namespace repl {
     ,_skipDeleted(_options.skipDeleted())
     ,_checkpointer(checkpointer)
     {
-        if (passive()) {
+        if (_options.push <= kC4Passive) {
             // Passive replicator always sends "changes"
+            _passive = true;
             _proposeChanges = false;
             _proposeChangesKnown = true;
         } else if (_options.properties[kC4ReplicatorOptionOutgoingConflicts].asBool()) {
