@@ -89,6 +89,7 @@ namespace litecore { namespace repl {
                                         fleece::Dict root, size_t revSize,
                                         bool sendLegacyAttachments);
         fleece::slice getRevToSend(C4Document* NONNULL, const RevToSend&, C4Error *outError);
+        void revToSendIsObsolete(const RevToSend &request, C4Error *c4err);
 
         static constexpr unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
         static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one

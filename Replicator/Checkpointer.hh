@@ -39,7 +39,9 @@ namespace litecore { namespace repl {
         C4SequenceNumber localMinSequence() const       {return _checkpoint.localMinSequence();}
 
         void addPendingSequence(C4SequenceNumber);
-        void addPendingSequences(RevToSendList &sequences, C4SequenceNumber lastSequence);
+        void addPendingSequences(RevToSendList &sequences,
+                                 C4SequenceNumber firstInRange,
+                                 C4SequenceNumber lastInRange);
         void completedSequence(C4SequenceNumber);
         size_t numPendingDocs() const;
 

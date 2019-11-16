@@ -148,7 +148,7 @@ namespace litecore { namespace repl {
             c4dbobs_releaseChanges(c4changes, nChanges);
         }
 
-        if (changes && changes->size() > 0)
+        if (changes)
             gotChanges(move(changes), _maxPushedSequence, {});
     }
 
@@ -169,6 +169,8 @@ namespace litecore { namespace repl {
             logVerbose("Holding off on change '%.*s' %.*s till earlier rev is done",
                        SPLAT(rev->docID), SPLAT(rev->revID));
             active->second = rev;
+            if (!passive())
+                _checkpointer.addPendingSequence(rev->sequence);
             return false;
         }
 
@@ -313,16 +315,24 @@ namespace litecore { namespace repl {
 
 
     slice Pusher::getRevToSend(C4Document* doc, const RevToSend &request, C4Error *c4err) {
-        if (!c4doc_selectRevision(doc, request.revID, true, c4err))
+        if (!c4doc_selectRevision(doc, request.revID, true, c4err)) {
+            if (c4err->code == kC4ErrorNotFound && c4err->domain == LiteCoreDomain)
+                revToSendIsObsolete(request, c4err);
             return nullslice;
-
-        slice revisionBody(doc->selectedRev.body);
-        if (!revisionBody) {
-            logInfo("Revision '%.*s' #%.*s is obsolete; not sending it",
-                SPLAT(request.docID), SPLAT(request.revID));
-            *c4err = {WebSocketDomain, 410}; // Gone
         }
+        slice revisionBody(doc->selectedRev.body);
+        if (!revisionBody)
+            revToSendIsObsolete(request, c4err);
         return revisionBody;
+    }
+
+
+    void Pusher::revToSendIsObsolete(const RevToSend &request, C4Error *c4err) {
+        logInfo("Revision '%.*s' #%.*s is obsolete; not sending it",
+                SPLAT(request.docID), SPLAT(request.revID));
+        if (!passive())
+            _checkpointer.completedSequence(request.sequence);
+        *c4err = {WebSocketDomain, 410}; // Gone
     }
 
 

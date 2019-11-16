@@ -6,6 +6,7 @@
 
 #pragma once
 #include "SequenceSet.hh"
+#include "Logging.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
 #include <algorithm>
@@ -37,15 +38,17 @@ namespace litecore { namespace repl {
      */
     class Checkpoint {
     public:
-        Checkpoint() { }
+        Checkpoint();
         Checkpoint(fleece::slice json)                  {readJSON(json);}
 
         void readJSON(fleece::slice json);
         fleece::alloc_slice toJSON() const;
 
+        void resetLocal();
+
         bool validateWith(const Checkpoint &remoteSequences);
 
-        C4SequenceNumber    localMinSequence() const    {return _minSequence;}
+        C4SequenceNumber    localMinSequence() const;
 
         const SequenceSet&  pendingSequences() const    {return _pending;}
 
@@ -56,14 +59,15 @@ namespace litecore { namespace repl {
         void completedSequence(C4SequenceNumber seq);
 
         template <class REV_LIST>
-        void addPendingSequences(REV_LIST& revs, C4SequenceNumber lastSequenceSeen) {
-            _maxSequence = std::max(_maxSequence, lastSequenceSeen);
-            if (revs.empty()) {
-                updateLocalFromPending();
-            } else {
-                for (auto rev : revs)
-                    _pending.add(rev->sequence);
-            }
+        void addPendingSequences(REV_LIST& revs,
+                                 C4SequenceNumber firstSequenceChecked,
+                                 C4SequenceNumber lastSequenceChecked)
+        {
+            _pending.remove(firstSequenceChecked, lastSequenceChecked + 1);
+            for (auto rev : revs)
+                _pending.add(rev->sequence);
+            LogTo(SyncLog, "$$$ AFTER [%llu-%llu], PENDING: %s",
+                  firstSequenceChecked, lastSequenceChecked, _pending.to_string().c_str());//TEMP
         }
 
         fleece::alloc_slice remoteMinSequence() const   {return _remote;}
@@ -75,8 +79,6 @@ namespace litecore { namespace repl {
     private:
         void updateLocalFromPending();
 
-        C4SequenceNumber    _minSequence {0};   // All sequences up through this are completed
-        C4SequenceNumber    _maxSequence {0};   // All sequences after this are pending
         SequenceSet         _pending;           // Set of pending sequences between min/max
         fleece::alloc_slice _remote;            // Remote checkpoint (last completed sequence)
     };

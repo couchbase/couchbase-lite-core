@@ -131,12 +131,12 @@ namespace litecore { namespace repl {
             logVerbose("Asking DB for %u changes since sequence #%" PRIu64 " ...",
                 _changesBatchSize, _lastSequenceRead);
             getChanges({_lastSequenceRead,
-                                   _docIDs,
-                                   _changesBatchSize,
-                                   _continuous,
-                                   _proposeChanges || !_proposeChangesKnown,  // getForeignAncestors
-                                   _skipDeleted,                              // skipDeleted
-                                   _proposeChanges});                         // skipForeign
+                        _docIDs,
+                        _changesBatchSize,
+                        _continuous,
+                        _proposeChanges || !_proposeChangesKnown,  // getForeignAncestors
+                        _skipDeleted,                              // skipDeleted
+                        _proposeChanges});                         // skipForeign
             // response will be to call _gotChanges
         }
     }
@@ -144,8 +144,8 @@ namespace litecore { namespace repl {
 
     // Received a list of changes from the database [initiated in maybeGetMoreChanges]
     void Pusher::gotChanges(std::shared_ptr<RevToSendList> changes,
-                             C4SequenceNumber lastSequence,
-                             C4Error err)
+                            C4SequenceNumber lastSequence,
+                            C4Error err)
     {
         if (_gettingChanges) {
             _gettingChanges = false;
@@ -157,9 +157,11 @@ namespace litecore { namespace repl {
         if (err.code)
             return gotError(err);
         
+        if (!passive() && lastSequence > _lastSequenceRead)
+            _checkpointer.addPendingSequences(*changes.get(),
+                                              _lastSequenceRead + 1, lastSequence);
         _lastSequenceRead = lastSequence;
-        if (!passive())
-            _checkpointer.addPendingSequences(*changes.get(), lastSequence);
+
         if (changes->empty()) {
             logInfo("Found 0 changes up to #%" PRIu64, lastSequence);
             logCheckpoint();
@@ -213,7 +215,8 @@ namespace litecore { namespace repl {
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 change->sequence);
         _lastSequenceRead = max(_lastSequenceRead, change->sequence);
-        _checkpointer.addPendingSequence(change->sequence);
+        if (!passive())
+            _checkpointer.addPendingSequence(change->sequence);
         addProgress({0, change->bodySize});
         sendChanges(make_shared<RevToSendList>(1, change));
     }
@@ -579,7 +582,7 @@ namespace litecore { namespace repl {
     void Pusher::doneWithRev(RevToSend *rev, bool completed, bool synced) {
         if (!passive()) {
             addProgress({rev->bodySize, 0});
-            if (completed) {
+            if (completed && !passive()) {
                 _checkpointer.completedSequence(rev->sequence);
                 logCheckpoint();
             }
@@ -629,6 +632,8 @@ namespace litecore { namespace repl {
 
 
     void Pusher::logCheckpoint() {
+        if (passive())
+            return;
         auto lastSeq = _checkpointer.localMinSequence();
         if (lastSeq > _lastSequenceLogged) {
             if (lastSeq / 1000 > _lastSequenceLogged / 1000)

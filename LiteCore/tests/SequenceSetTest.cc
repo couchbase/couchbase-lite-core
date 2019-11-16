@@ -25,21 +25,6 @@ using namespace std;
 using namespace litecore;
 
 
-static string to_string(const SequenceSet &s) {
-    stringstream str;
-    str << "{";
-    int n = 0;
-    for (auto &range : s) {
-        if (n++ > 0) str << ", ";
-        str << range.first;
-        if (range.second != range.first + 1)
-            str << "-" << (range.second - 1);
-    }
-    str << "}";
-    return str.str();
-}
-
-
 static void checkEmpty(const SequenceSet &s) {
     CHECK(s.empty());
     CHECK(s.size() == 0);
@@ -47,7 +32,7 @@ static void checkEmpty(const SequenceSet &s) {
     CHECK(s.last() == 0);
     CHECK(!s.contains(1234));
     CHECK(s.begin() == s.end());
-    CHECK(to_string(s) == "{}");
+    CHECK(s.to_string() == "{}");
 }
 
 
@@ -74,10 +59,10 @@ TEST_CASE("SequenceSet: single item", "[SequenceSet]") {
     CHECK(i->second == 1235);
     ++i;
     CHECK(i == s.end());
-    CHECK(to_string(s) == "{1234}");
+    CHECK(s.to_string() == "{1234}");
 
     s.add(1234);
-    CHECK(to_string(s) == "{1234}");
+    CHECK(s.to_string() == "{1234}");
 
     CHECK(s.remove(1234));
     checkEmpty(s);
@@ -115,12 +100,12 @@ TEST_CASE("SequenceSet: two separate items", "[SequenceSet]") {
     CHECK(i->second == 111);
     ++i;
     CHECK(i == s.end());
-    CHECK(to_string(s) == "{100, 110}");
+    CHECK(s.to_string() == "{100, 110}");
 
     s.add(100);
-    CHECK(to_string(s) == "{100, 110}");
+    CHECK(s.to_string() == "{100, 110}");
     s.add(110);
-    CHECK(to_string(s) == "{100, 110}");
+    CHECK(s.to_string() == "{100, 110}");
 }
 
 
@@ -150,7 +135,7 @@ TEST_CASE("SequenceSet: two consecutive items", "[SequenceSet]") {
     CHECK(i->second == 102);
     ++i;
     CHECK(i == s.end());
-    CHECK(to_string(s) == "{100-101}");
+    CHECK(s.to_string() == "{100-101}");
 }
 
 
@@ -163,12 +148,12 @@ TEST_CASE("SequenceSet: remove item", "[SequenceSet]") {
     SECTION("Remove first") {
         CHECK(s.remove(100));
         other = 101;
-        CHECK(to_string(s) == "{101}");
+        CHECK(s.to_string() == "{101}");
     }
     SECTION("Remove last") {
         CHECK(s.remove(101));
         other = 100;
-        CHECK(to_string(s) == "{100}");
+        CHECK(s.to_string() == "{100}");
     }
     CHECK(!s.empty());
     CHECK(s.size() == 1);
@@ -184,9 +169,9 @@ TEST_CASE("SequenceSet: merge ranges", "[SequenceSet]") {
     s.add(101);
     s.add(103);
     s.add(104);
-    CHECK(to_string(s) == "{100-101, 103-104}");
+    CHECK(s.to_string() == "{100-101, 103-104}");
     s.add(102);
-    CHECK(to_string(s) == "{100-104}");
+    CHECK(s.to_string() == "{100-104}");
 }
 
 
@@ -197,7 +182,7 @@ TEST_CASE("SequenceSet: remove", "[SequenceSet]") {
     s.add(102);
     s.add(103);
     s.add(104);
-    CHECK(to_string(s) == "{100-104}");
+    CHECK(s.to_string() == "{100-104}");
 
     SECTION("Remove 99") {
         CHECK(!s.remove(99));
@@ -208,23 +193,23 @@ TEST_CASE("SequenceSet: remove", "[SequenceSet]") {
     SECTION("Actually remove") {
         SECTION("Remove 100") {
             CHECK(s.remove(100));
-            CHECK(to_string(s) == "{101-104}");
+            CHECK(s.to_string() == "{101-104}");
         }
         SECTION("Remove 101") {
             CHECK(s.remove(101));
-            CHECK(to_string(s) == "{100, 102-104}");
+            CHECK(s.to_string() == "{100, 102-104}");
         }
         SECTION("Remove 102") {
             CHECK(s.remove(102));
-            CHECK(to_string(s) == "{100-101, 103-104}");
+            CHECK(s.to_string() == "{100-101, 103-104}");
         }
         SECTION("Remove 103") {
             CHECK(s.remove(103));
-            CHECK(to_string(s) == "{100-102, 104}");
+            CHECK(s.to_string() == "{100-102, 104}");
         }
         SECTION("Remove 104") {
             CHECK(s.remove(104));
-            CHECK(to_string(s) == "{100-103}");
+            CHECK(s.to_string() == "{100-103}");
         }
         CHECK(!s.empty());
         CHECK(s.size() == 4);
@@ -239,18 +224,18 @@ TEST_CASE("SequenceSet: add ranges", "[SequenceSet]") {
     REQUIRE(s.empty());
 
     s.add(100, 101);
-    REQUIRE(to_string(s) == "{100}");
+    REQUIRE(s.to_string() == "{100}");
 
     s.add(200, 210);
-    REQUIRE(to_string(s) == "{100, 200-209}");
+    REQUIRE(s.to_string() == "{100, 200-209}");
 
     SECTION("Extend") {
         s.add(90, 150);
-        REQUIRE(to_string(s) == "{90-149, 200-209}");
+        REQUIRE(s.to_string() == "{90-149, 200-209}");
     }
     SECTION("Merge") {
         s.add(101, 205);
-        REQUIRE(to_string(s) == "{100-209}");
+        REQUIRE(s.to_string() == "{100-209}");
     }
     SECTION("Merge multiple") {
         s.add(150, 160);
@@ -258,7 +243,7 @@ TEST_CASE("SequenceSet: add ranges", "[SequenceSet]") {
         s.add(300, 400);
 
         s.add(101, 205);
-        REQUIRE(to_string(s) == "{100-209, 300-399}");
+        REQUIRE(s.to_string() == "{100-209, 300-399}");
     }
 }
 

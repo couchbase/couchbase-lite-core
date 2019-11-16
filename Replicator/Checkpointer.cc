@@ -65,9 +65,11 @@ namespace litecore { namespace repl {
         saveSoon();
     }
 
-    void Checkpointer::addPendingSequences(RevToSendList &sequences, C4SequenceNumber lastSequence) {
+    void Checkpointer::addPendingSequences(RevToSendList &sequences,
+                                           C4SequenceNumber firstInRange,
+                                           C4SequenceNumber lastInRange) {
         LOCK();
-        _checkpoint.addPendingSequences(sequences, lastSequence);
+        _checkpoint.addPendingSequences(sequences, firstInRange, lastInRange);
         saveSoon();
     }
 

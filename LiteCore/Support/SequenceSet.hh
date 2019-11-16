@@ -18,6 +18,7 @@
 
 #pragma once
 #include <map>
+#include <string>
 #include <utility>
 #include "betterassert.hh"
 
@@ -63,6 +64,9 @@ namespace litecore {
             i = prev(i);
             return s < i->second;
         }
+
+        bool operator== (const SequenceSet &other) const  {return _sequences == other._sequences;}
+        bool operator!= (const SequenceSet &other) const  {return _sequences != other._sequences;}
 
         /** Adds a sequence. */
         void add(sequence s) {
@@ -123,12 +127,35 @@ namespace litecore {
         }
 
 
+        /** Removes all sequences in the range [s0...s1), _not including s1_ */
+        void remove(sequence s0, sequence s1) {
+            assert (s1 >= s0);
+            if (s1 > s0) {
+                remove(s0);
+                if (s1 > s0 + 1) {
+                    remove(s1 - 1);
+                    if (s1 > s0 + 2) {
+                        // Remove any remaining ranges between s0 and s1:
+                        auto begin = _sequences.upper_bound(s0); // first range with start > s0
+                        auto end = begin;
+                        while (end != _sequences.end() && end->second <= s1)
+                            ++end;
+                        _sequences.erase(begin, end);
+                    }
+                }
+            }
+        }
+
+
         /** Iteration is over pair<sequence,sequence> values, where the first sequence is the
             start of a consecutive range, and the second sequence is the end of the range
             (one past the last sequence in the range.) */
         using const_iterator = Map::const_iterator;
         const_iterator begin() const                  {return _sequences.begin();}
         const_iterator end() const                    {return _sequences.end();}
+
+        /** Returns a human-readable description, like "{1, 4, 7-9}". */
+        std::string to_string() const;
 
     private:
         // Implementation of add; returns an iterator pointing to the range containing `s`
