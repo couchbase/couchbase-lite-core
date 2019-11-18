@@ -81,12 +81,15 @@ namespace litecore {
             destructor might not be called soon enough.) */
         void close() noexcept;
 
+        /** True if the enumerator is at a record, false if it's at the end. */
+        bool hasRecord() const            {return _record.key().buf != nullptr;}
+
         /** The current record. */
         const Record& record() const      {return _record;}
 
         // Can treat an enumerator as a record pointer:
-        operator const Record*() const    {return _record.key().buf ? &_record : nullptr;}
-        const Record* operator->() const  {return _record.key().buf ? &_record : nullptr;}
+        operator const Record*() const    {return hasRecord() ? &_record : nullptr;}
+        const Record* operator->() const  {return hasRecord() ? &_record : nullptr;}
 
         /** Internal implementation of enumerator; each storage type must subclass it. */
         class Impl {

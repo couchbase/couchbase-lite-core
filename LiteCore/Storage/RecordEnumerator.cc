@@ -74,7 +74,7 @@ namespace litecore {
                 close();
                 return false;
             }
-            //LogToAt(QueryLog, Debug, "RecordEnumerator %p  --> '%.*s'", this, SPLAT(_record.key()));
+            LogToAt(QueryLog, Debug, "RecordEnumerator %p  --> '%.*s'", this, SPLAT(_record.key()));
             return true;
         }
     }

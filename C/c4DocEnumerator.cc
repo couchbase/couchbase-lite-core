@@ -63,7 +63,9 @@ struct C4DocEnumerator : public RecordEnumerator, fleece::InstanceCounted {
     }
 
     Retained<Document> getDoc() {
-        return *this ? _database->documentFactory().newDocumentInstance(record()) : nullptr;
+        if (!hasRecord())
+            return nullptr;
+        return _database->documentFactory().newDocumentInstance(record());
     }
 
     bool getDocInfo(C4DocumentInfo *outInfo) {
