@@ -39,48 +39,69 @@ namespace litecore { namespace repl {
     class Checkpoint {
     public:
         Checkpoint();
-        Checkpoint(fleece::slice json)                  {readJSON(json);}
+        Checkpoint(fleece::slice json)                      {readJSON(json);}
 
         void readJSON(fleece::slice json);
-        fleece::alloc_slice toJSON() const;
 
-        void resetLocal();
+        fleece::alloc_slice toJSON() const;
 
         bool validateWith(const Checkpoint &remoteSequences);
 
+        //---- Local sequences:
+
+        /** The last fully-complete local sequence, such that it and all lesser sequences are
+            complete. In other words, the sequence before the first pending sequence. */
         C4SequenceNumber    localMinSequence() const;
 
-        const SequenceSet&  pendingSequences() const    {return _pending;}
+        /** The set of sequences that have been "completed": either pushed, or skipped, or else
+            don't exist. */
+        const SequenceSet&  completedSequences() const      {return _completed;}
 
-        bool isSequencePending(C4SequenceNumber) const;
+        /** Has this sequence been completed? */
+        bool isSequenceCompleted(C4SequenceNumber s) const  {return _completed.contains(s);}
 
-        void addPendingSequence(C4SequenceNumber);
+        /** Removes a sequence from the set of completed sequences. */
+        void addPendingSequence(C4SequenceNumber s);//TEMP         {_completed.remove(seq);}
 
-        void completedSequence(C4SequenceNumber seq);
+        /** Adds a sequence to the set of completed sequences. */
+        void completedSequence(C4SequenceNumber s);//TEMP      {_completed.add(seq);}
 
+        /** Updates the state of a range of sequences:
+            All sequences in the range [first...last] are marked completed,
+            then the sequences in the collection `revs` are marked uncompleted/pending.*/
         template <class REV_LIST>
         void addPendingSequences(REV_LIST& revs,
                                  C4SequenceNumber firstSequenceChecked,
                                  C4SequenceNumber lastSequenceChecked)
         {
-            _pending.remove(firstSequenceChecked, lastSequenceChecked + 1);
+            _lastChecked = lastSequenceChecked;
+            _completed.add(firstSequenceChecked, lastSequenceChecked + 1);
             for (auto rev : revs)
-                _pending.add(rev->sequence);
-            LogTo(SyncLog, "$$$ AFTER [%llu-%llu], PENDING: %s",
-                  firstSequenceChecked, lastSequenceChecked, _pending.to_string().c_str());//TEMP
+                _completed.remove(rev->sequence);
+            LogTo(SyncLog, "$$$ AFTER [%llu-%llu], COMPLETED: %s",
+                  firstSequenceChecked, lastSequenceChecked, _completed.to_string().c_str());//TEMP
         }
 
-        fleece::alloc_slice remoteMinSequence() const   {return _remote;}
+        /** The number of uncompleted sequences up through the last sequence checked. */
+        size_t pendingSequenceCount() const;
+
+        //---- Remote sequences:
+
+        /** The last fully-complete _remote_ sequence, such that it and all earlier sequences are
+            complete. */
+        fleece::alloc_slice remoteMinSequence() const       {return _remote;}
 
         bool setRemoteMinSequence(fleece::slice s);
 
         static bool gWriteTimestamps;   // for testing; set to false to disable timestamps in JSON
 
     private:
+        void resetLocal();
         void updateLocalFromPending();
 
-        SequenceSet         _pending;           // Set of pending sequences between min/max
-        fleece::alloc_slice _remote;            // Remote checkpoint (last completed sequence)
+        SequenceSet         _completed;         // Set of completed local sequences
+        C4SequenceNumber    _lastChecked;       // Last local sequence checked in the db
+        fleece::alloc_slice _remote;            // Last completed remote sequence
     };
 
 } }

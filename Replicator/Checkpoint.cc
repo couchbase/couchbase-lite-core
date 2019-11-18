@@ -42,8 +42,9 @@ namespace litecore { namespace repl {
 
 
     void Checkpoint::resetLocal() {
-        _pending.clear();
-        _pending.add(1, InfinitySequence);
+        _completed.clear();
+        _completed.add(0, 1);
+        _lastChecked = 0;
     }
 
 
@@ -62,15 +63,14 @@ namespace litecore { namespace repl {
         }
 
 #ifdef SPARSE_CHECKPOINTS
-        if (!_pending.empty() && _pending.begin()->second < InfinitySequence) {
+        if (_completed.rangesCount() > 1) {
             // New property for sparse checkpoint. Write the pending sequence ranges as
             // (sequence, length) pairs in an array, omitting the 'infinity' at the end of the last.
-            enc.writeKey("localPending"_sl);
+            enc.writeKey("localComplete"_sl);
             enc.beginArray();
-            for (auto &range : _pending) {
+            for (auto &range : _completed) {
                 enc.writeInt(range.first);
-                if (range.second < InfinitySequence)
-                    enc.writeInt(range.second - range.first);
+                enc.writeInt(range.second - range.first);
             };
             enc.endArray();
         }
@@ -87,7 +87,7 @@ namespace litecore { namespace repl {
 
 
     void Checkpoint::readJSON(slice json) {
-        _pending.clear();
+        resetLocal();
         if (json) {
             Doc root = Doc::fromJSON(json, nullptr);
             _remote = root["remote"_sl].toJSON();
@@ -98,19 +98,18 @@ namespace litecore { namespace repl {
             if (pending) {
                 for (Array::iterator i(pending); i; ++i) {
                     C4SequenceNumber first = i->asInt();
-                    ++i;
-                    C4SequenceNumber last = i ? (first + i->asInt()) : InfinitySequence;
-                    _pending.add(first, last);
+                    C4SequenceNumber last = (++i)->asInt();
+                    if (last >= first)
+                        _completed.add(first, last + 1);
                 }
             } else
 #endif
             {
                 auto minSequence = (C4SequenceNumber) root["local"_sl].asInt();
-                _pending.add(minSequence + 1, InfinitySequence);
+                _completed.add(0, minSequence + 1);
             }
         } else {
             _remote = nullslice;
-            resetLocal();
         }
 
     }
@@ -118,10 +117,10 @@ namespace litecore { namespace repl {
 
     bool Checkpoint::validateWith(const Checkpoint &remoteSequences) {
         bool match = true;
-        if (_pending != remoteSequences._pending) {
-            LogTo(SyncLog, "Local sequence mismatch: I had %s, remote had %s",
-                  _pending.to_string().c_str(),
-                  remoteSequences._pending.to_string().c_str());
+        if (_completed != remoteSequences._completed) {
+            LogTo(SyncLog, "Local sequence mismatch: I had completed: %s, remote had %s",
+                  _completed.to_string().c_str(),
+                  remoteSequences._completed.to_string().c_str());
             resetLocal();
             match = false;
         }
@@ -136,25 +135,34 @@ namespace litecore { namespace repl {
 
 
     C4SequenceNumber Checkpoint::localMinSequence() const {
-        assert(!_pending.empty());
-        return _pending.first() - 1;
-    }
-
-
-    bool Checkpoint::isSequencePending(C4SequenceNumber seq) const {
-        return _pending.contains(seq);
+        assert(!_completed.empty());
+        return _completed.begin()->second - 1;
     }
 
 
     void Checkpoint::addPendingSequence(C4SequenceNumber seq) {
-        _pending.add(seq);
-        LogTo(SyncLog, "$$$ ADDED %llu, PENDING: %s", seq, _pending.to_string().c_str());//TEMP
+        _completed.remove(seq);
+        LogTo(SyncLog, "$$$ PENDING #%llu, COMPLETED: %s", seq, _completed.to_string().c_str());//TEMP
     }
 
 
     void Checkpoint::completedSequence(C4SequenceNumber seq) {
-        _pending.remove(seq);
-        LogTo(SyncLog, "$$$ COMPLETED %llu, PENDING: %s", seq, _pending.to_string().c_str());//TEMP
+        _completed.add(seq);
+        LogTo(SyncLog, "$$$ COMPLETED #%llu, NOW: %s", seq, _completed.to_string().c_str());//TEMP
+    }
+
+
+    size_t Checkpoint::pendingSequenceCount() const {
+        // Count the gaps between the ranges:
+        size_t count = 0;
+        C4SequenceNumber end = 0;
+        for (auto &range : _completed) {
+            count += range.first - end;
+            end = range.second;
+        }
+        if (_lastChecked > end - 1)
+            count += _lastChecked - (end - 1);
+        return count;
     }
 
 
@@ -168,7 +176,10 @@ namespace litecore { namespace repl {
 } }
 
 
+
 namespace litecore {
+
+    // The one SequenceSet method I didn't want in the header (because it drags in <stringstream>)
 
     std::string SequenceSet::to_string() const {
         std::stringstream str;

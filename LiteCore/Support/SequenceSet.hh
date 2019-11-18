@@ -50,6 +50,9 @@ namespace litecore {
             return total;
         }
 
+        /** The number of ranges of consecutive sequences in the set. */
+        size_t rangesCount() const              {return _sequences.size();}
+
         /** Returns the lowest sequence in the set. If the set is empty, returns 0. */
         sequence first() const                  {return empty() ? 0 : _sequences.begin()->first;}
 

@@ -43,7 +43,8 @@ namespace litecore { namespace repl {
                                  C4SequenceNumber firstInRange,
                                  C4SequenceNumber lastInRange);
         void completedSequence(C4SequenceNumber);
-        size_t numPendingDocs() const;
+        bool isSequenceCompleted(C4SequenceNumber) const;
+        size_t pendingSequenceCount() const;
 
         /** The checkpoint's remote sequence, the last one up to which all is pulled. */
         fleece::alloc_slice remoteMinSequence() const   {return _checkpoint.remoteMinSequence();}

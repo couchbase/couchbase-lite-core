@@ -690,7 +690,7 @@ namespace litecore { namespace repl {
                     pendingResponseCount(),
                     _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
                     _revisionBytesAwaitingReply, _revsToSend.size(), _pushingDocs.size(),
-                    _checkpointer.numPendingDocs());
+                    _checkpointer.pendingSequenceCount());
         }
         return level;
     }

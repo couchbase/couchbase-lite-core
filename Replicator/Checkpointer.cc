@@ -79,9 +79,14 @@ namespace litecore { namespace repl {
         saveSoon();
     }
 
-    size_t Checkpointer::numPendingDocs() const {
+    bool Checkpointer::isSequenceCompleted(C4SequenceNumber seq) const {
         LOCK();
-        return _checkpoint.pendingSequences().size();
+        return _checkpoint.isSequenceCompleted(seq);
+    }
+
+    size_t Checkpointer::pendingSequenceCount() const {
+        LOCK();
+        return _checkpoint.pendingSequenceCount();
     }
 
 
@@ -356,7 +361,7 @@ namespace litecore { namespace repl {
         while(c4enum_next(e, outErr)) {
             c4enum_getDocumentInfo(e, &info);
 
-            if (!_checkpoint.isSequencePending(info.sequence))
+            if (_checkpoint.isSequenceCompleted(info.sequence))
                 continue;
 
             if(!isDocumentIDAllowed(info.docID))
@@ -407,7 +412,7 @@ namespace litecore { namespace repl {
             return false;
 
         outErr->code = 0;
-        return _checkpoint.isSequencePending(doc->sequence) && isDocumentAllowed(doc);
+        return !_checkpoint.isSequenceCompleted(doc->sequence) && isDocumentAllowed(doc);
     }
 
 
