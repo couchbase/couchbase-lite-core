@@ -128,6 +128,7 @@ namespace litecore {
         friend class SQLiteKeyStore;
 
         void reopenSQLiteHandle();
+        void ensureUserVersionAtLeast(int32_t version);
         void decrypt();
         bool _decrypt(EncryptionAlgorithm, slice key);
         int _exec(const std::string &sql);

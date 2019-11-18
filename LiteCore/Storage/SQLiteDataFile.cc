@@ -261,6 +261,16 @@ namespace litecore {
     }
 
 
+    void SQLiteDataFile::ensureUserVersionAtLeast(int32_t version) {
+        int userVersion = _sqlDb->execAndGet("PRAGMA user_version");
+        if(userVersion <= version) {
+            const auto versionSql = "PRAGMA user_version=" + to_string(version);
+            _exec(versionSql);   
+        }
+    }
+
+
+
     bool SQLiteDataFile::isOpen() const noexcept {
         return _sqlDb != nullptr;
     }

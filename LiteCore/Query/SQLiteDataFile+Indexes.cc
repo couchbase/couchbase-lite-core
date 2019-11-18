@@ -46,7 +46,7 @@ namespace litecore {
         LogTo(DBLog, "Upgrading database to use 'indexes' table...");
         _exec("CREATE TABLE indexes (name TEXT PRIMARY KEY, type INTEGER NOT NULL,"
                                   " keyStore TEXT NOT NULL, expression TEXT, indexTableName TEXT)");
-        _exec("PRAGMA user_version=301");   // Backward-incompatible with version 2.0/2.1
+        ensureUserVersionAtLeast(301); // Backward-incompatible with version 2.0/2.1
 
         for (auto &spec : getIndexesOldStyle())
             registerIndex(spec, spec.keyStoreName, spec.indexTableName);
