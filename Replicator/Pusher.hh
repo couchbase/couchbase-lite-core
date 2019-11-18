@@ -82,13 +82,15 @@ namespace litecore { namespace repl {
         };
         void getChanges(const GetChangesParams&);
         void dbChanged();
-        bool shouldPushRev(RevToSend* NONNULL, C4DocEnumerator*, C4Database* NONNULL);
+        Retained<RevToSend> revToSend(C4DocumentInfo&, C4DocEnumerator*, C4Database* NONNULL);
+        bool shouldPushRev(Retained<RevToSend>, C4DocEnumerator*, C4Database* NONNULL);
         void sendRevision(RevToSend *request NONNULL,
                           blip::MessageProgressCallback onProgress);
         alloc_slice createRevisionDelta(C4Document *doc NONNULL, RevToSend *request NONNULL,
                                         fleece::Dict root, size_t revSize,
                                         bool sendLegacyAttachments);
         fleece::slice getRevToSend(C4Document* NONNULL, const RevToSend&, C4Error *outError);
+        bool getRemoteRevID(RevToSend *rev, C4Document *doc);
         void revToSendIsObsolete(const RevToSend &request, C4Error *c4err);
 
         static constexpr unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
