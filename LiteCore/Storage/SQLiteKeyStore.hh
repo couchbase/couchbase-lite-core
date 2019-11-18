@@ -21,6 +21,7 @@
 #include "QueryParser.hh"
 #include "FleeceImpl.hh"
 #include <mutex>
+#include <atomic>
 
 namespace SQLite {
     class Column;
@@ -28,7 +29,7 @@ namespace SQLite {
 }
 
 
-namespace litecore {
+namespace litecore {   
 
     class SQLiteDataFile;
     
@@ -38,6 +39,7 @@ namespace litecore {
     public:
         uint64_t recordCount() const override;
         sequence_t lastSequence() const override;
+        uint64_t purgeCount() const override;
 
         Record get(sequence_t) const override;
         bool read(Record &rec, ContentOption) const override;
@@ -104,6 +106,7 @@ namespace litecore {
         SQLiteDataFile& db() const                    {return (SQLiteDataFile&)dataFile();}
         std::string subst(const char *sqlTemplate) const;
         void setLastSequence(sequence_t seq);
+        void incrementPurgeCount();
         void createTrigger(std::string_view triggerName,
                            std::string_view triggerSuffix,
                            std::string_view operation,
@@ -136,7 +139,10 @@ namespace litecore {
 
         bool _createdSeqIndex {false};     // Created by-seq index yet?
         bool _lastSequenceChanged {false};
+        bool _purgeCountChanged {false};
+        mutable bool _purgeCountValid {false};      // TODO: Use optional class from C++17
         mutable int64_t _lastSequence {-1};
+        mutable std::atomic<uint64_t> _purgeCount {0};
         bool _hasExpirationColumn {false};
         mutable std::mutex _stmtMutex;
     };

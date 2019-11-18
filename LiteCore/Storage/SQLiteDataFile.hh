@@ -99,6 +99,8 @@ namespace litecore {
 
         sequence_t lastSequence(const std::string& keyStoreName) const;
         void setLastSequence(SQLiteKeyStore&, sequence_t);
+        uint64_t purgeCount(const std::string& keyStoreName) const;
+        void setPurgeCount(SQLiteKeyStore&, uint64_t);
 
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
                                    const char *sql) const;
@@ -136,6 +138,7 @@ namespace litecore {
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
+        std::unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
         CollationContextVector _collationContexts;
     };
 

@@ -120,6 +120,11 @@ namespace litecore {
         }
 
 
+        uint64_t purgeCount() const {
+            return keyStore().purgeCount();
+        }
+
+
         alloc_slice getMatchedText(const FullTextTerm &term) override {
             // Get the expression that generated the text
             if (_ftsTables.size() == 0)
@@ -209,10 +214,11 @@ namespace litecore {
         SQLiteQueryEnumerator(SQLiteQuery *query,
                               const Query::Options *options,
                               sequence_t lastSequence,
+                              uint64_t purgeCount,
                               Doc *recording,
                               unsigned long long rowCount,
                               double elapsedTime)
-        :QueryEnumerator(options, lastSequence)
+        :QueryEnumerator(options, lastSequence, purgeCount)
         ,Logging(QueryLog)
         ,_recording(recording)
         ,_iter(_recording->asArray())
@@ -277,10 +283,18 @@ namespace litecore {
             if (!otherE)
                 return false;
             auto other = dynamic_cast<const SQLiteQueryEnumerator*>(otherE);
-            if (!other || other->lastSequence() <= _lastSequence) {
+            if(!other || other->purgeCount() != _purgeCount) {
+                // If other is null for some weird reason all bets are off.  Otherwise
+                // a purge will make changes that are unrecognizable to either lastSequence
+                // or the data doc, so don't consult them
+                return true;
+            }
+
+            if (other->lastSequence() <= _lastSequence) {
                 return false;
             } else if (_recording->data() == other->_recording->data()) {
                 _lastSequence = (sequence_t)other->_lastSequence;
+                _purgeCount = (uint64_t)other->_purgeCount;
                 return false;
             } else {
                 return true;
@@ -288,7 +302,7 @@ namespace litecore {
         }
 
         QueryEnumerator* refresh(Query *query) override {
-            auto newOptions = _options.after(_lastSequence);
+            auto newOptions = _options.after(_lastSequence).withPurgeCount(_purgeCount);
             auto sqliteQuery = (SQLiteQuery*)query;
             unique_ptr<SQLiteQueryEnumerator> newEnum(
                 (SQLiteQueryEnumerator*)sqliteQuery->createEnumerator(&newOptions) );
@@ -339,9 +353,10 @@ namespace litecore {
     // which is then used as the data source of a SQLiteQueryEnum.
     class SQLiteQueryRunner {
     public:
-        SQLiteQueryRunner(SQLiteQuery *query, const Query::Options *options, sequence_t lastSequence)
+        SQLiteQueryRunner(SQLiteQuery *query, const Query::Options *options, sequence_t lastSequence, uint64_t purgeCount)
         :_query(query)
         ,_lastSequence(lastSequence)
+        ,_purgeCount(purgeCount)
         ,_statement(query->statement())
         ,_sk(query->keyStore().dataFile().documentKeys())
         ,_options(options ? *options : Query::Options())
@@ -481,14 +496,15 @@ namespace litecore {
 
             enc.endArray();
             Retained<Doc> recording = enc.finishDoc();
-            return new SQLiteQueryEnumerator(_query, &_options, _lastSequence, recording,
-                                             rowCount, st.elapsed());
+            return new SQLiteQueryEnumerator(_query, &_options, _lastSequence, _purgeCount,
+                                             recording, rowCount, st.elapsed());
         }
 
     private:
         Retained<SQLiteQuery> _query;
         Query::Options _options;
         sequence_t _lastSequence;       // DB's lastSequence at the time the query ran
+        uint64_t _purgeCount;           // DB's purgeCount at the time the query ran
         shared_ptr<SQLite::Statement> _statement;
         set<string> _unboundParameters;
         SharedKeys* _sk;
@@ -505,14 +521,15 @@ namespace litecore {
     // The factory method that creates a SQLite QueryEnumerator, but only if the database has
     // changed since lastSeq.
     QueryEnumerator* SQLiteQuery::createEnumerator(const Options *options) {
-        // Start a read-only transaction, to ensure that the result of lastSequence() will be
+        // Start a read-only transaction, to ensure that the result of lastSequence() and purgeCount() will be
         // consistent with the query results.
         ReadOnlyTransaction t(keyStore().dataFile());
 
         sequence_t curSeq = lastSequence();
-        if (options && options->afterSequence > 0 && options->afterSequence >= curSeq)
+        uint64_t purgeCnt = purgeCount();
+        if(options && options->notOlderThan(curSeq, purgeCnt))
             return nullptr;
-        SQLiteQueryRunner recorder(this, options, curSeq);
+        SQLiteQueryRunner recorder(this, options, curSeq, purgeCnt);
         return recorder.fastForward();
     }
 

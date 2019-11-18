@@ -60,6 +60,7 @@ namespace litecore {
 
         virtual uint64_t recordCount() const =0;
         virtual sequence_t lastSequence() const =0;
+        virtual uint64_t purgeCount() const =0;
 
         virtual void erase() =0;
 

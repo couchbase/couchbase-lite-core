@@ -29,6 +29,7 @@
 #include "BLIP.hh"
 #include "Address.hh"
 #include "Instrumentation.hh"
+#include "Array.hh"
 #include "c4DocEnumerator.h"
 #include "c4Socket.h"
 
@@ -162,8 +163,9 @@ namespace litecore { namespace repl {
             _delegate = nullptr;
             _pusher = nullptr;
             _puller = nullptr;
-            _db.reset();
         }
+
+        _db.reset();
     }
 
 
@@ -294,7 +296,6 @@ namespace litecore { namespace repl {
             DebugAssert(!connection());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
-            _db.reset();
             Signpost::end(Signpost::replication, uintptr_t(this));
         }
         if (_delegate) {
@@ -583,7 +584,7 @@ namespace litecore { namespace repl {
 
 
     alloc_slice Replicator::pendingDocumentIDs(C4Error* outErr) {
-        if(!_pusher) {
+        if(_options.push < kC4OneShot) {
             // Couchbase Lite should not allow this case
             outErr->code = kC4ErrorUnsupported;
             outErr->domain = LiteCoreDomain;
@@ -624,12 +625,13 @@ namespace litecore { namespace repl {
             outErr->code = 0;
             while(c4enum_next(e, outErr)) {
                 c4enum_getDocumentInfo(e, &info);
-                if(status().level != kC4Stopped && status().level != kC4Connecting && !_pusher->isSequencePending(info.sequence)) {
+                if(status().level != kC4Stopped && status().level != kC4Connecting && 
+                    _pusher && !_pusher->isSequencePending(info.sequence)) {
                     // isSequencePending is not reliable until replication has started
                     continue;
                 }
 
-                if(!_pusher->isDocumentIDAllowed(info.docID)) {
+                if(!isDocumentIDAllowed(info.docID)) {
                     continue;
                 }
 
@@ -650,7 +652,7 @@ namespace litecore { namespace repl {
                         continue;
                     }
 
-                    if(_pusher->isDocumentAllowed(nextDoc)) {
+                    if(isDocumentAllowed(nextDoc)) {
                         retEncoder.writeString(nextDoc->docID);
                     }
                 } else {
@@ -665,7 +667,7 @@ namespace litecore { namespace repl {
 
 
     bool Replicator::isDocumentPending(slice docId, C4Error* outErr) {
-        if(!_pusher) {
+        if(_options.push < kC4OneShot) {
             // Couchbase Lite should not allow this case
             outErr->code = kC4ErrorUnsupported;
             outErr->domain = LiteCoreDomain;
@@ -688,13 +690,41 @@ namespace litecore { namespace repl {
             
             const auto replLastSequence = _checkpoint.sequences().local;
             outErr->code = 0;
-            if(status().level == kC4Stopped || status().level == kC4Connecting) {
+            if(status().level == kC4Stopped || status().level == kC4Connecting || !_pusher) {
                 // isSequencePending is not reliable until replication has started
-                return doc->sequence > replLastSequence && _pusher->isDocumentAllowed(doc);
+                return doc->sequence > replLastSequence && isDocumentAllowed(doc);
             }
 
-            return _pusher->isSequencePending(doc->sequence) && _pusher->isDocumentAllowed(doc);
+            return _pusher->isSequencePending(doc->sequence) && isDocumentAllowed(doc);
         });
+    }
+
+    void Replicator::initializeDocIDs() {
+        if(!_docIDs.empty() || !_options.docIDs() || _options.docIDs().empty()) {
+            return;
+        }
+
+        Array::iterator i(_options.docIDs());
+        while(i) {
+            string docID = i.value().asString().asString();
+            if(!docID.empty()) {
+                _docIDs.insert(docID);
+            }
+
+            ++i;
+        }
+    }
+
+
+    bool Replicator::isDocumentAllowed(C4Document* doc) {
+        return isDocumentIDAllowed(doc->docID) &&
+            (!_options.pushFilter || _options.pushFilter(doc->docID, doc->selectedRev.revID, doc->selectedRev.flags, DBAccess::getDocRoot(doc), _options.callbackContext));
+    }
+
+
+    bool Replicator::isDocumentIDAllowed(slice docID) {
+        initializeDocIDs();
+        return _docIDs.empty() || _docIDs.find(string(docID)) != _docIDs.end();
     }
 
 } }

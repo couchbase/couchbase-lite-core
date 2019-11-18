@@ -896,7 +896,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     auto pullOptions = Replicator::Options::passive();
     atomic<int> validationCount {0};
     pullOptions.callbackContext = &validationCount;
-    pullOptions.pullValidator = [](FLString docID, C4RevisionFlags flags, FLDict body, void *context)->bool {
+    pullOptions.pullValidator = [](FLString docID, FLString revID, C4RevisionFlags flags, FLDict body, void *context)->bool {
         assert_always(flags == 0);      // can't use CHECK on a bg thread
         ++(*(atomic<int>*)context);
         return (Dict(body)["birthday"].asstring() < "1993");
@@ -1451,7 +1451,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     SECTION("With filter") {
         // Using a pull filter forces deltas to be applied earlier, before rev insertion.
         serverOpts.callbackContext = &validationCount;
-        serverOpts.pullValidator = [](FLString docID, C4RevisionFlags flags, FLDict body, void *context)->bool {
+        serverOpts.pullValidator = [](FLString docID, FLString revID, C4RevisionFlags flags, FLDict body, void *context)->bool {
             assert_always(flags == 0);      // can't use CHECK on a bg thread
             ++(*(atomic<int>*)context);
             return true;

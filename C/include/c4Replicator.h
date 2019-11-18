@@ -127,6 +127,7 @@ extern "C" {
         (Note: In the case of an incoming revision, no flags other than 'deletion' and
         'hasAttachments' will be set.) */
     typedef bool (*C4ReplicatorValidationFunction)(C4String docID,
+                                                   C4String revID,
                                                    C4RevisionFlags,
                                                    FLDict body,
                                                    void* context);
