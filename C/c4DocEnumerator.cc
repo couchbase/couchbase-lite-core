@@ -26,7 +26,6 @@
 #include "RecordEnumerator.hh"
 #include "Logging.hh"
 #include "InstanceCounted.hh"
-#include <set>
 
 
 #pragma mark - DOC ENUMERATION:
@@ -36,89 +35,53 @@ CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
 };
 
 
-typedef function<bool(const Record&, uint32_t/*C4DocumentFlags*/ documentFlags)> EnumFilter;
-
-
-struct C4DocEnumerator: fleece::InstanceCounted {
+struct C4DocEnumerator : public RecordEnumerator, fleece::InstanceCounted {
     C4DocEnumerator(C4Database *database,
                     sequence_t since,
                     const C4EnumeratorOptions &options)
-    :_database(database),
-     _e(database->defaultKeyStore(), since, allDocOptions(options)),
-     _options(options)
+    :RecordEnumerator(database->defaultKeyStore(), since, recordOptions(options))
+    ,_database(database)
     { }
 
     C4DocEnumerator(C4Database *database,
                     const C4EnumeratorOptions &options)
-    :_database(database),
-     _e(database->defaultKeyStore(), allDocOptions(options)),
-     _options(options)
+    :RecordEnumerator(database->defaultKeyStore(), recordOptions(options))
+    ,_database(database)
     { }
 
-    void close() {
-        _e.close();
-    }
-
-    static RecordEnumerator::Options allDocOptions(const C4EnumeratorOptions &c4options) {
+    static RecordEnumerator::Options recordOptions(const C4EnumeratorOptions &c4options) {
         RecordEnumerator::Options options;
-        options.descending      = (c4options.flags & kC4Descending) != 0;
-        options.includeDeleted  = (c4options.flags & kC4IncludeDeleted) != 0;
+        if (c4options.flags & kC4Descending)
+            options.sortOption = kDescending;
+        else if (c4options.flags & kC4Unsorted)
+            options.sortOption = kUnsorted;
+        options.includeDeleted = (c4options.flags & kC4IncludeDeleted) != 0;
+        options.onlyConflicts  = (c4options.flags & kC4IncludeNonConflicted) == 0;
         if ((c4options.flags & kC4IncludeBodies) == 0)
             options.contentOption = kMetaOnly;
         return options;
     }
 
-    void setFilter(const EnumFilter &f)  {_filter = f;}
-
-    C4Database* database() const {return external(_database);}
-
-    bool next() {
-        do {
-            if (!_e.next())
-                return false;
-        } while (!useDoc());
-        return true;
-    }
-
     Retained<Document> getDoc() {
-        return _e ? _database->documentFactory().newDocumentInstance(_e.record()) : nullptr;
+        if (!hasRecord())
+            return nullptr;
+        return _database->documentFactory().newDocumentInstance(record());
     }
 
     bool getDocInfo(C4DocumentInfo *outInfo) {
-        if (!_e)
+        if (!*this)
             return false;
-        outInfo->docID = _e.record().key();
-        outInfo->revID = _docRevID;
-        outInfo->flags = _docFlags;
-        outInfo->sequence = _e.record().sequence();
-        outInfo->bodySize = _e.record().bodySize();
-        outInfo->expiration = _e.record().expiration();
+        outInfo->docID = record().key();
+        outInfo->revID = _docRevID = _database->documentFactory().revIDFromVersion(record().version());
+        outInfo->flags = (C4DocumentFlags)record().flags() | kDocExists;
+        outInfo->sequence = record().sequence();
+        outInfo->bodySize = record().bodySize();
+        outInfo->expiration = record().expiration();
         return true;
     }
 
 private:
-    inline bool useDoc() {
-        auto &rec = _e.record();
-        if (!rec.exists()) {
-            // Client must be enumerating a list of docIDs, and this doc doesn't exist.
-            // Return it anyway, without the kDocExists flag.
-            _docFlags = 0;
-            _docRevID = nullslice;
-            return (!_filter || _filter(rec, 0));
-        }
-        _docRevID = _database->documentFactory().revIDFromVersion(rec.version());
-        _docFlags = (C4DocumentFlags)rec.flags() | kDocExists;
-        auto optFlags = _options.flags;
-        return (optFlags & kC4IncludeNonConflicted ||  (_docFlags & ::kDocConflicted))
-            && (!_filter || _filter(rec, _docFlags));
-    }
-
     Retained<Database> _database;
-    RecordEnumerator _e;
-    C4EnumeratorOptions _options;
-    EnumFilter _filter;
-
-    C4DocumentFlags _docFlags;
     alloc_slice _docRevID;
 };
 

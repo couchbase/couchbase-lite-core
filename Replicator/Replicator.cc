@@ -122,10 +122,13 @@ namespace litecore { namespace repl {
     void Replicator::_findExistingConflicts() {
         if (_options.pull <= kC4Passive) // only check in pull mode
             return;
-        
+
+        Stopwatch st;
         C4Error err;
-        C4DocEnumerator* e = _db->unresolvedDocsEnumerator(&err);
+        C4DocEnumerator* e = _db->unresolvedDocsEnumerator(false, &err);
         if (e) {
+            logInfo("Scanning for pre-existing conflicts...");
+            unsigned nConflicts = 0;
             while(c4enum_next(e, &err)) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
@@ -137,8 +140,10 @@ namespace litecore { namespace repl {
                                                     false));
                 rev->error = c4error_make(LiteCoreDomain, kC4ErrorConflict, {});
                 _docsEnded.push(rev);
+                ++nConflicts;
             }
             c4enum_free(e);
+            logInfo("Found %u conflicted docs in %.3f sec", nConflicts, st.elapsed());
         } else {
             warn("Couldn't get unresolved docs enumerator: error %d/%d", err.domain, err.code);
             gotError(err);

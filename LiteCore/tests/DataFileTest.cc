@@ -165,7 +165,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending", "[DataFile]") {
     RecordEnumerator::Options opts;
-    opts.descending = true;
+    opts.sortOption = kDescending;
 
     createNumberedDocs(store);
 

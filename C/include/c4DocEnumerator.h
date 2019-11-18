@@ -33,6 +33,7 @@ extern "C" {
 
     typedef C4_OPTIONS(uint16_t, C4EnumeratorFlags) {
         kC4Descending           = 0x01, ///< If true, iteration goes by descending document IDs.
+        kC4Unsorted             = 0x02, ///< If true, iteration order is undefined (may be faster!)
         kC4IncludeDeleted       = 0x08, ///< If true, include deleted documents.
         kC4IncludeNonConflicted = 0x10, ///< If false, include _only_ documents in conflict.
         kC4IncludeBodies        = 0x20  /**< If false, document bodies will not be preloaded, just
@@ -48,9 +49,7 @@ extern "C" {
         C4EnumeratorFlags flags;    ///< Option flags */
     } C4EnumeratorOptions;
 
-    /** Default all-docs enumeration options.
-        Includes includeBodies, includeNonConflicted.
-        Does not include descending, includeDeleted. */
+    /** Default all-docs enumeration options. (Equal to kC4IncludeNonConflicted | kC4IncludeBodies) */
     CBL_CORE_API extern const C4EnumeratorOptions kC4DefaultEnumeratorOptions;
     
 
