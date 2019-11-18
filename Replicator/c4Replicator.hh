@@ -155,14 +155,16 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
 
     C4SliceResult pendingDocumentIDs(C4Error* outErr) {
         lock_guard<mutex> lock(_mutex);
+        bool any = false;
         Encoder enc;
         enc.beginArray();
         if (!_replicator->pendingDocumentIDs([&](const C4DocumentInfo &info) {
                                                     enc.writeString(info.docID);
+                                                    any = true;
                                              }, outErr))
             return {};
         enc.endArray();
-        return C4SliceResult(enc.finish());
+        return any ? C4SliceResult(enc.finish()) : C4SliceResult{};
     }
 
     bool isDocumentPending(C4Slice docID, C4Error* outErr) {
@@ -302,20 +304,22 @@ public:
     { }
 
     C4SliceResult pendingDocumentIDs(C4Error* outErr) {
-        _checkpt.read(_db, outErr); // (re)read, in case db has changed
+        _checkpt.forgetCheckpoint();
+        bool any = false;
         fleece::Encoder enc;
         enc.beginArray();
         if (!_checkpt.pendingDocumentIDs(_db,
                                          [&](const C4DocumentInfo &info) {
                                                enc.writeString(info.docID);
+                                               any = true;
                                          }, outErr))
             return {};
         enc.endArray();
-        return C4SliceResult(enc.finish());
+        return any ? C4SliceResult(enc.finish()) : C4SliceResult{};
     }
 
     bool isDocumentPending(C4Slice docID, C4Error* outErr) {
-        _checkpt.read(_db, outErr); // (re)read, in case db has changed
+        _checkpt.forgetCheckpoint();
         return _checkpt.isDocumentPending(_db, docID, outErr);
     }
 

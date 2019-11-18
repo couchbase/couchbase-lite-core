@@ -23,7 +23,7 @@
 #include <limits>
 #include <sstream>
 
-#define SPARSE_CHECKPOINTS  // Under construction -- don't enable this yet
+#define SPARSE_CHECKPOINTS  // If defined, save entire sparse set to JSON
 
 namespace litecore { namespace repl {
     using namespace std;
@@ -66,7 +66,7 @@ namespace litecore { namespace repl {
         if (_completed.rangesCount() > 1) {
             // New property for sparse checkpoint. Write the pending sequence ranges as
             // (sequence, length) pairs in an array, omitting the 'infinity' at the end of the last.
-            enc.writeKey("localComplete"_sl);
+            enc.writeKey("localCompleted"_sl);
             enc.beginArray();
             for (auto &range : _completed) {
                 enc.writeInt(range.first);

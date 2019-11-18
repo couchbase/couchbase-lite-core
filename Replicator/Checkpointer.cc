@@ -17,6 +17,7 @@
 //
 
 #include "Checkpointer.hh"
+#include "Checkpoint.hh"
 #include "DBAccess.hh"
 #include "Logging.hh"
 #include "SecureDigest.hh"
@@ -43,16 +44,31 @@ namespace litecore { namespace repl {
     { }
 
 
+    Checkpointer::~Checkpointer()
+    { }
+
+
+    C4SequenceNumber Checkpointer::localMinSequence() const {
+        LOCK();
+        return _checkpoint->localMinSequence();
+    }
+
+    fleece::alloc_slice Checkpointer::remoteMinSequence() const {
+        LOCK();
+        return _checkpoint->remoteMinSequence();
+    }
+
+
     void Checkpointer::setRemoteMinSequence(fleece::slice s) {
         LOCK();
-        if (_checkpoint.setRemoteMinSequence(s))
+        if (_checkpoint->setRemoteMinSequence(s))
             saveSoon();
     }
 
 
     bool Checkpointer::validateWith(const Checkpoint &remote) {
         LOCK();
-        if (_checkpoint.validateWith(remote))
+        if (_checkpoint->validateWith(remote))
             return true;
         saveSoon();
         return false;
@@ -61,7 +77,7 @@ namespace litecore { namespace repl {
 
     void Checkpointer::addPendingSequence(C4SequenceNumber s) {
         LOCK();
-        _checkpoint.addPendingSequence(s);
+        _checkpoint->addPendingSequence(s);
         saveSoon();
     }
 
@@ -69,24 +85,24 @@ namespace litecore { namespace repl {
                                            C4SequenceNumber firstInRange,
                                            C4SequenceNumber lastInRange) {
         LOCK();
-        _checkpoint.addPendingSequences(sequences, firstInRange, lastInRange);
+        _checkpoint->addPendingSequences(sequences, firstInRange, lastInRange);
         saveSoon();
     }
 
     void Checkpointer::completedSequence(C4SequenceNumber s) {
         LOCK();
-        _checkpoint.completedSequence(s);
+        _checkpoint->completedSequence(s);
         saveSoon();
     }
 
     bool Checkpointer::isSequenceCompleted(C4SequenceNumber seq) const {
         LOCK();
-        return _checkpoint.isSequenceCompleted(seq);
+        return _checkpoint->isSequenceCompleted(seq);
     }
 
     size_t Checkpointer::pendingSequenceCount() const {
         LOCK();
-        return _checkpoint.pendingSequenceCount();
+        return _checkpoint->pendingSequenceCount();
     }
 
 
@@ -131,9 +147,10 @@ namespace litecore { namespace repl {
                 _overdueForSave = true;
                 return false;
             }
+            Assert(_checkpoint);
             _changed = false;
             _saving = true;
-            json = _checkpoint.toJSON();
+            json = _checkpoint->toJSON();
         }
         _saveCallback(json);
         return true;
@@ -220,6 +237,13 @@ namespace litecore { namespace repl {
 #pragma mark - READING THE CHECKPOINT:
 
 
+    void Checkpointer::forgetCheckpoint() {
+        LOCK();
+        Assert(!_changed);
+        _checkpoint.reset();
+    }
+
+
     static inline bool isNotFoundError(C4Error err) {
         return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
     }
@@ -227,6 +251,9 @@ namespace litecore { namespace repl {
 
     // Reads the local checkpoint
     bool Checkpointer::read(C4Database *db, C4Error *outError) {
+        if (_checkpoint)
+            return true;
+
         alloc_slice body;
         if (_initialDocID) {
             body = _read(db, _initialDocID, outError);
@@ -256,9 +283,11 @@ namespace litecore { namespace repl {
             }
         }
 
+        // Checkpoint doc is either read, or nonexistent:
+        LOCK();
+        _checkpoint.reset(new Checkpoint);
         if (body && !_resetCheckpoint) {
-            LOCK();
-            _checkpoint.readJSON(body);
+            _checkpoint->readJSON(body);
             return true;
         } else {
             *outError = {};
@@ -333,7 +362,7 @@ namespace litecore { namespace repl {
             return false;
         }
 
-        if(!read(db, outErr))
+        if(!read(db, outErr) && outErr->code != 0)
             return false;
 
         const auto dbLastSequence = c4db_getLastSequence(db);
@@ -361,7 +390,7 @@ namespace litecore { namespace repl {
         while(c4enum_next(e, outErr)) {
             c4enum_getDocumentInfo(e, &info);
 
-            if (_checkpoint.isSequenceCompleted(info.sequence))
+            if (_checkpoint->isSequenceCompleted(info.sequence))
                 continue;
 
             if(!isDocumentIDAllowed(info.docID))
@@ -385,12 +414,11 @@ namespace litecore { namespace repl {
                     continue;
                 }
 
-                if(isDocumentAllowed(nextDoc))
-                    callback(info);
-
-            } else {
-                callback(info);
+                if(!isDocumentAllowed(nextDoc))
+                    continue;
             }
+
+            callback(info);
         }
         return true;
     }
@@ -404,7 +432,7 @@ namespace litecore { namespace repl {
             return false;
         }
 
-        if(!read(db, outErr))
+        if(!read(db, outErr) && outErr->code != 0)
             return false;
 
         c4::ref<C4Document> doc = c4doc_get(db, docId, false, outErr);
@@ -412,7 +440,7 @@ namespace litecore { namespace repl {
             return false;
 
         outErr->code = 0;
-        return !_checkpoint.isSequenceCompleted(doc->sequence) && isDocumentAllowed(doc);
+        return !_checkpoint->isSequenceCompleted(doc->sequence) && isDocumentAllowed(doc);
     }
 
 

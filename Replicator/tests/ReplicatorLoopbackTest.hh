@@ -11,6 +11,7 @@
 #include "c4.hh"
 #include "c4Document+Fleece.h"
 #include "Replicator.hh"
+#include "Checkpoint.hh"
 #include "LoopbackProvider.hh"
 #include "ReplicatorTuning.hh"
 #include "StringUtil.hh"

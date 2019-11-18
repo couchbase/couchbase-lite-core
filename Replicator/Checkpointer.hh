@@ -7,14 +7,13 @@
 #pragma once
 #include "ReplicatorOptions.hh"
 #include "ReplicatorTypes.hh"
-#include "Checkpoint.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#include "RefCounted.hh"
 #include "Timer.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
 #include <chrono>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_set>
@@ -22,11 +21,15 @@
 namespace litecore { namespace repl {
     using namespace fleece;
 
+    class Checkpoint;
+
 
     /** Manages a Replicator's checkpoint, including local storage (but not remote). */
     class Checkpointer {
     public:
         Checkpointer(const Options&, fleece::slice remoteURL);
+
+        ~Checkpointer();
 
         // Checkpoint:
 
@@ -36,7 +39,7 @@ namespace litecore { namespace repl {
         bool validateWith(const Checkpoint&);
 
         /** The checkpoint's local sequence. All sequences up to this are pushed. */
-        C4SequenceNumber localMinSequence() const       {return _checkpoint.localMinSequence();}
+        C4SequenceNumber localMinSequence() const;
 
         void addPendingSequence(C4SequenceNumber);
         void addPendingSequences(RevToSendList &sequences,
@@ -47,7 +50,7 @@ namespace litecore { namespace repl {
         size_t pendingSequenceCount() const;
 
         /** The checkpoint's remote sequence, the last one up to which all is pulled. */
-        fleece::alloc_slice remoteMinSequence() const   {return _checkpoint.remoteMinSequence();}
+        fleece::alloc_slice remoteMinSequence() const;
 
         /** Updates the checkpoint's remote sequence. */
         void setRemoteMinSequence(fleece::slice s);
@@ -64,7 +67,10 @@ namespace litecore { namespace repl {
 
         // Database I/O:
 
-        /** Reads the checkpoint state from the local database. This needs to happen first. */
+        /** Reads the checkpoint state from the local database. This needs to happen first.
+            If the checkpoint has already been read, this is a no-op.
+            Returns false if the checkpoint wasn't read; if this was due to an error, not just
+            because it's missing, `outError` will be set. */
         bool read(C4Database *db NONNULL, C4Error *outError);
 
         /** Updates the checkpoint from the database if it's changed. */
@@ -75,6 +81,10 @@ namespace litecore { namespace repl {
             remote save. It's important that the saved data be the same as what was saved on
             the remote peer. */
         bool write(C4Database *db NONNULL, slice checkpointData, C4Error *outError);
+
+        /** Clears the in-memory checkpoint; the next call to \ref read will read it from the
+            database again. (Not used by the replicator, only by \ref C4PendingPush.) */
+        void forgetCheckpoint();
 
         // Autosave:
 
@@ -130,7 +140,7 @@ namespace litecore { namespace repl {
 
         // Checkpoint state:
         mutable std::mutex              _mutex;
-        Checkpoint                      _checkpoint {};
+        std::unique_ptr<Checkpoint>     _checkpoint;
 
         // Document IDs:
         alloc_slice                     _initialDocID;      // DocID checkpoints are read from

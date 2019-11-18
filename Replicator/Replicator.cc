@@ -21,6 +21,7 @@
 #include "ReplicatorTuning.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
+#include "Checkpoint.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "Logging.hh"
