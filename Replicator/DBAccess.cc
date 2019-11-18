@@ -118,13 +118,15 @@ namespace litecore { namespace repl {
     }
     
     
-    C4DocEnumerator* DBAccess::unresolvedDocsEnumerator(C4Error *outError) {
+    C4DocEnumerator* DBAccess::unresolvedDocsEnumerator(bool orderByID, C4Error *outError) {
         C4DocEnumerator* e;
         use([&](C4Database *db) {
             C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
             options.flags &= ~kC4IncludeBodies;
             options.flags &= ~kC4IncludeNonConflicted;
             options.flags |= kC4IncludeDeleted;
+            if (!orderByID)
+                options.flags |= kC4Unsorted;
             e = c4db_enumerateAllDocs(db, &options, outError);
         });
         return e;

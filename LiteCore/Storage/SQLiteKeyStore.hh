@@ -67,6 +67,8 @@ namespace litecore {
         std::vector<IndexSpec> getIndexes() const override;
 
         void createSequenceIndex();
+        void createConflictsIndex();
+        void createBlobsIndex();
 
         // QueryParser::delegate:
         virtual std::string tableName() const override  {return std::string("kv_") + name();}
@@ -116,6 +118,7 @@ namespace litecore {
         bool createIndex(const IndexSpec&,
                               const std::string &sourceTableName,
                               fleece::impl::Array::iterator &expressions);
+        void _createFlagsIndex(const char *indexName NONNULL, DocumentFlags flag, bool &created);
         bool createFTSIndex(const IndexSpec&);
         bool createArrayIndex(const IndexSpec&);
         std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexSpec::Options*);
@@ -137,7 +140,7 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement> _setFlagStmt;
         std::unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
 
-        bool _createdSeqIndex {false};     // Created by-seq index yet?
+        bool _createdSeqIndex {false}, _createdConflictsIndex {false}, _createdBlobsIndex {false};
         bool _lastSequenceChanged {false};
         bool _purgeCountChanged {false};
         mutable bool _purgeCountValid {false};      // TODO: Use optional class from C++17

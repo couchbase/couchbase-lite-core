@@ -19,6 +19,7 @@
 #include "RecordEnumerator.hh"
 #include "KeyStore.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include <algorithm>
 #include <limits.h>
 #include <string.h>
@@ -28,26 +29,16 @@ using namespace std;
 
 namespace litecore {
 
-    LogDomain EnumLog("Enum");
-
-#pragma mark - ENUMERATION:
-
-
-    RecordEnumerator::Options::Options()
-    :descending(false),
-     includeDeleted(false),
-     onlyBlobs(false),
-     contentOption(kEntireBody)
-    { }
-
 
     // By-key constructor
     RecordEnumerator::RecordEnumerator(KeyStore &store,
                                        Options options)
     :_store(&store)
     {
-        LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s%s) --> %p",
-              store.name().c_str(), (options.descending ? " desc" : ""), this);
+        LogToAt(QueryLog, Verbose, "RecordEnumerator %p: (%s, %d%d%d %d)",
+                this, store.name().c_str(),
+                options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
+                options.sortOption);
         _impl.reset(_store->newEnumeratorImpl(false, 0, options));
     }
 
@@ -57,9 +48,10 @@ namespace litecore {
                                        Options options)
     :_store(&store)
     {
-        LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, #%llu --) --> %p",
-                store.name().c_str(), (unsigned long long)since, this);
-
+        LogToAt(QueryLog, Verbose, "RecordEnumerator %p: (%s, #%llu..., %d%d%d %d)",
+                this, store.name().c_str(), (unsigned long long)since,
+                options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
+                options.sortOption);
         _impl.reset(_store->newEnumeratorImpl(true, since, options));
     }
 
@@ -82,7 +74,7 @@ namespace litecore {
                 close();
                 return false;
             }
-            LogToAt(EnumLog, Debug, "enum:     --> [%s]", _record.key().hexCString());
+            LogToAt(QueryLog, Debug, "RecordEnumerator %p  --> '%.*s'", this, SPLAT(_record.key()));
             return true;
         }
     }

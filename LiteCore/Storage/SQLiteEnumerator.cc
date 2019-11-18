@@ -36,7 +36,7 @@ namespace litecore {
 
    class SQLiteEnumerator : public RecordEnumerator::Impl {
     public:
-        SQLiteEnumerator(SQLite::Statement *stmt, bool descending, ContentOption content)
+        SQLiteEnumerator(SQLite::Statement *stmt, ContentOption content)
         :_stmt(stmt),
          _content(content)
         {
@@ -66,8 +66,14 @@ namespace litecore {
                                                               sequence_t since,
                                                               RecordEnumerator::Options options)
     {
-        if (bySequence && _db.options().writeable)
-            createSequenceIndex();
+        if (_db.options().writeable) {
+            if (bySequence)
+                createSequenceIndex();
+            if (options.onlyConflicts)
+                createConflictsIndex();
+            if (options.onlyBlobs)
+                createBlobsIndex();
+        }
 
         stringstream sql;
         const char* kBodyItem[3] = {"body", "fl_root(body)", "length(body)"};
@@ -83,25 +89,47 @@ namespace litecore {
             sql << " WHERE sequence > ?";
             writeAnd = true;
         } else {
-            if (!options.includeDeleted || options.onlyBlobs)
+            if (!options.includeDeleted || options.onlyBlobs || options.onlyConflicts)
                 sql << " WHERE ";
         }
-        if (!options.includeDeleted) {
-            if (writeAnd) sql << " AND "; else writeAnd = true;
-            sql << "(flags & 1) != 1";
-        }
-        if (options.onlyBlobs) {
-            if(writeAnd) sql << " AND "; // else writeAnd = true;
-            sql << "(flags & 4) != 0";
-        }
-        sql << (bySequence ? " ORDER BY sequence" : " ORDER BY key");
-        if (options.descending)
-            sql << " DESC";
 
-        auto stmt = new SQLite::Statement(db(), sql.str());        // TODO: Cache a statement
+        auto writeFlagTest = [&](DocumentFlags flag, const char *test) {
+            if (writeAnd) sql << " AND "; else writeAnd = true;
+            sql << "(flags & " << int(flag) << ") " << test;
+        };
+        
+        if (!options.includeDeleted)
+            writeFlagTest(DocumentFlags::kDeleted, "== 0");
+        if (options.onlyBlobs)
+            writeFlagTest(DocumentFlags::kHasAttachments, "!= 0");
+        if (options.onlyConflicts)
+            writeFlagTest(DocumentFlags::kConflicted, "!= 0");
+
+        if (options.sortOption != kUnsorted) {
+            sql << (bySequence ? " ORDER BY sequence" : " ORDER BY key");
+            if (options.sortOption == kDescending)
+                sql << " DESC";
+        }
+
+        auto sqlStr = sql.str();
+        auto stmt = new SQLite::Statement(db(), sqlStr);        // TODO: Cache a statement
+        LogTo(SQL, "%s", sqlStr.c_str());
+        if (QueryLog.willLog(LogLevel::Debug)) {
+            // https://www.sqlite.org/eqp.html
+            SQLite::Statement x(db(), "EXPLAIN QUERY PLAN " + sqlStr);
+            while (x.executeStep()) {
+                sql << "\n\t";
+                for (int i = 0; i < 3; ++i)
+                    sql << x.getColumn(i).getInt() << "|";
+                sql << " " << x.getColumn(3).getText();
+            }
+            LogToAt(QueryLog, Debug, "%s", sql.str().c_str());
+        }
+
+
         if (bySequence)
             stmt->bind(1, (long long)since);
-        return new SQLiteEnumerator(stmt, options.descending, options.contentOption);
+        return new SQLiteEnumerator(stmt, options.contentOption);
     }
 
 }

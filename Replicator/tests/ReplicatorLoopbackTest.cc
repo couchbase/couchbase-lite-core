@@ -1360,7 +1360,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     
     C4Error err = {};
     std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(db, false);
-    C4DocEnumerator* e = acc->unresolvedDocsEnumerator(&err);
+    C4DocEnumerator* e = acc->unresolvedDocsEnumerator(true, &err);
     
     // verify only returns the conflicted documents, including the deleted ones.
     vector<C4Slice> docIDs = {"conflict"_sl,   "db-deleted"_sl, "db2-deleted"_sl};

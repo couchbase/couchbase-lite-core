@@ -26,6 +26,12 @@ namespace litecore {
 
     class KeyStore;
 
+    enum SortOption {
+        kDescending = -1,
+        kUnsorted = 0,
+        kAscending = 1
+    };
+
     enum ContentOption {
         kEntireBody,
         kCurrentRevOnly,
@@ -44,13 +50,13 @@ namespace litecore {
     class RecordEnumerator {
     public:
         struct Options {
-            bool           descending     :1;   ///< Reverse order? (Start must be
-            bool           includeDeleted :1;   ///< Include deleted records?
-            bool           onlyBlobs      :1;   ///< Only include records which contain linked binary data
-            ContentOption  contentOption  :4;   ///< Load record bodies?
+            bool           includeDeleted = false;   ///< Include deleted records?
+            bool           onlyBlobs      = false;   ///< Only include records which contain linked binary data
+            bool           onlyConflicts  = false;   ///< Only include records with conflicts
+            SortOption     sortOption     = kAscending;    ///< Sort order, or unsorted
+            ContentOption  contentOption  = kEntireBody;       ///< Load record bodies?
 
-            /** Default options have all flags false, and kEntireBody */
-            Options();
+            Options() { }
         };
 
         RecordEnumerator(KeyStore&,
@@ -75,12 +81,15 @@ namespace litecore {
             destructor might not be called soon enough.) */
         void close() noexcept;
 
+        /** True if the enumerator is at a record, false if it's at the end. */
+        bool hasRecord() const            {return _record.key().buf != nullptr;}
+
         /** The current record. */
         const Record& record() const      {return _record;}
 
         // Can treat an enumerator as a record pointer:
-        operator const Record*() const    {return _record.key().buf ? &_record : nullptr;}
-        const Record* operator->() const  {return _record.key().buf ? &_record : nullptr;}
+        operator const Record*() const    {return hasRecord() ? &_record : nullptr;}
+        const Record* operator->() const  {return hasRecord() ? &_record : nullptr;}
 
         /** Internal implementation of enumerator; each storage type must subclass it. */
         class Impl {
