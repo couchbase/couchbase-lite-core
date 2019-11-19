@@ -122,21 +122,14 @@ namespace litecore { namespace repl {
 
     // Request another batch of changes from the db, if there aren't too many in progress
     void Pusher::maybeGetMoreChanges() {
-        if (!_gettingChanges && !_caughtUp
-                             && _changeListsInFlight < tuning::kMaxChangeListsInFlight
-                             && _revsToSend.size() < tuning::kMaxRevsQueued) {
+        if (!_gettingChanges && (!_caughtUp || _continuous)
+                         && _changeListsInFlight < (_caughtUp ? 1 : tuning::kMaxChangeListsInFlight)
+                         && _revsToSend.size() < tuning::kMaxRevsQueued) {
             _gettingChanges = true;
-            increment(_changeListsInFlight); // will be decremented at start of _gotChanges
             logVerbose("Asking DB for %u changes since sequence #%" PRIu64 " ...",
-                _changesBatchSize, _lastSequenceRead);
-            getChanges({_lastSequenceRead,
-                        _docIDs,
-                        _changesBatchSize,
-                        _continuous,
-                        _proposeChanges || !_proposeChangesKnown,  // getForeignAncestors
-                        _skipDeleted,                              // skipDeleted
-                        _proposeChanges});                         // skipForeign
-            // response will be to call _gotChanges
+                       _changesBatchSize, _lastSequenceRead);
+            // Call getMoreChanges asynchronously. Response will be to call gotChanges
+            enqueue(&Pusher::getMoreChanges);
         }
     }
 
@@ -146,10 +139,7 @@ namespace litecore { namespace repl {
                             C4SequenceNumber lastSequence,
                             C4Error err)
     {
-        if (_gettingChanges) {
-            _gettingChanges = false;
-            decrement(_changeListsInFlight);
-        }
+        _gettingChanges = false;
 
         if (!connection())
             return;
@@ -183,7 +173,7 @@ namespace litecore { namespace repl {
 #endif
         }
 
-        // Send the "changes" request, and asynchronously handle the response:
+        // Send the "changes" request:
         auto changeCount = changes->size();
         sendChanges(move(changes));
 
@@ -197,9 +187,9 @@ namespace litecore { namespace repl {
                     sendChanges(make_unique<RevToSendList>());
                 }
             }
-        } else {
-            maybeGetMoreChanges();
         }
+
+        maybeGetMoreChanges();
     }
 
 
@@ -598,13 +588,13 @@ namespace litecore { namespace repl {
         Retained<RevToSend> newRev = i->second;
         _pushingDocs.erase(i);
         if (newRev) {
-            if (synced && _getForeignAncestors)
+            if (synced && getForeignAncestors())
                 newRev->remoteAncestorRevID = rev->revID;
             logVerbose("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
                        SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
                        SPLAT(newRev->remoteAncestorRevID));
             bool ok = false;
-            if (synced && _getForeignAncestors
+            if (synced && getForeignAncestors()
                 && c4rev_getGeneration(newRev->revID) <= c4rev_getGeneration(rev->revID)) {
                 // Don't send; it'll conflict with what's on the server
             } else {

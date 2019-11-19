@@ -71,14 +71,8 @@ namespace litecore { namespace repl {
 
         using DocIDSet = std::shared_ptr<std::unordered_set<std::string>>;
 
-        struct GetChangesParams {
-            C4SequenceNumber since;
-            DocIDSet docIDs;
-            unsigned limit;
-            bool continuous, getForeignAncestors;
-            bool skipDeleted, skipForeign;
-        };
-        void getChanges(const GetChangesParams&);
+        void getMoreChanges();
+        void getObservedChanges();
         void dbChanged();
         Retained<RevToSend> revToSend(C4DocumentInfo&, C4DocEnumerator*, C4Database* NONNULL);
         bool shouldPushRev(Retained<RevToSend>, C4DocEnumerator*, C4Database* NONNULL);
@@ -90,6 +84,8 @@ namespace litecore { namespace repl {
         fleece::slice getRevToSend(C4Document* NONNULL, const RevToSend&, C4Error *outError);
         bool getRemoteRevID(RevToSend *rev, C4Document *doc);
         void revToSendIsObsolete(const RevToSend &request, C4Error *c4err);
+
+        bool getForeignAncestors() const    {return _proposeChanges || !_proposeChangesKnown;}
 
         static constexpr unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
         static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one
@@ -118,13 +114,10 @@ namespace litecore { namespace repl {
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash>;
 
-        C4BlobStore* _blobStore;
         c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
-        DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push
         C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
         DocIDToRevMap _pushingDocs;                         // Revs being processed by push
-        bool _getForeignAncestors {false};
-        bool _skipForeignChanges {false};
+        bool _waitingForObservedChanges {false};
     };
     
     
