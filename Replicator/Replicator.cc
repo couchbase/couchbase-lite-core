@@ -455,10 +455,9 @@ namespace litecore { namespace repl {
             C4Error error;
             if (_checkpointer.read(db, &error)) {
                 auto remote = _checkpointer.remoteMinSequence();
-                logInfo("Local checkpoint '%.*s' is [%" PRIu64 ", '%.*s']",
+                logInfo("Read local checkpoint '%.*s': %.*s",
                         SPLAT(_checkpointer.initialCheckpointID()),
-                        _checkpointer.localMinSequence(),
-                        SPLAT(remote));
+                        SPLAT(_checkpointer.checkpointJSON()));
                 _hadLocalCheckpoint = true;
             } else if (error.code != 0) {
                 logInfo("Fatal error getting local checkpoint");
@@ -509,11 +508,8 @@ namespace litecore { namespace repl {
             } else {
                 remoteCheckpoint.readJSON(response->body());
                 _remoteCheckpointRevID = response->property("rev"_sl);
-                if (willLog()) {
-                    auto remoteSeq = remoteCheckpoint.remoteMinSequence();
-                    logInfo("Received remote checkpoint: [%" PRIu64 ", '%.*s'] rev='%.*s'",
-                        remoteCheckpoint.localMinSequence(), SPLAT(remoteSeq), SPLAT(_remoteCheckpointRevID));
-                }
+                logInfo("Received remote checkpoint (rev='%.*s'): %.*s",
+                        SPLAT(_remoteCheckpointRevID), SPLAT(response->body()));
             }
             _remoteCheckpointReceived = true;
 
@@ -601,7 +597,8 @@ namespace litecore { namespace repl {
                     return _checkpointer.write(db, json, &err);
                 });
                 if (ok)
-                    logInfo("Saved local checkpoint to db");
+                    logInfo("Saved local checkpoint '%.*s': %.*s",
+                            SPLAT(_remoteCheckpointDocID), SPLAT(json));
                 else
                     gotError(err);
                 _checkpointer.saveCompleted();
@@ -652,7 +649,7 @@ namespace litecore { namespace repl {
             request->respondWithError({"BLIP"_sl, 400, "missing checkpoint ID"_sl});
             return false;
         }
-        logInfo("Request to %s checkpoint '%.*s'",
+        logInfo("Request to %s peer checkpoint '%.*s'",
             (getting ? "get" : "set"), SPLAT(checkpointID));
 
         C4Error err;

@@ -6,7 +6,6 @@
 
 #pragma once
 #include "SequenceSet.hh"
-#include "Logging.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
 #include <algorithm>
@@ -38,7 +37,7 @@ namespace litecore { namespace repl {
      */
     class Checkpoint {
     public:
-        Checkpoint();
+        Checkpoint()                                        {resetLocal();}
         Checkpoint(fleece::slice json)                      {readJSON(json);}
 
         void readJSON(fleece::slice json);
@@ -61,10 +60,10 @@ namespace litecore { namespace repl {
         bool isSequenceCompleted(C4SequenceNumber s) const  {return _completed.contains(s);}
 
         /** Removes a sequence from the set of completed sequences. */
-        void addPendingSequence(C4SequenceNumber s);//TEMP         {_completed.remove(seq);}
+        void addPendingSequence(C4SequenceNumber s)         {_completed.remove(s);}
 
         /** Adds a sequence to the set of completed sequences. */
-        void completedSequence(C4SequenceNumber s);//TEMP      {_completed.add(seq);}
+        void completedSequence(C4SequenceNumber s)          {_completed.add(s);}
 
         /** Updates the state of a range of sequences:
             All sequences in the range [first...last] are marked completed,
@@ -78,8 +77,6 @@ namespace litecore { namespace repl {
             _completed.add(firstSequenceChecked, lastSequenceChecked + 1);
             for (auto rev : revs)
                 _completed.remove(rev->sequence);
-            LogTo(SyncLog, "$$$ AFTER [%llu-%llu], COMPLETED: %s",
-                  firstSequenceChecked, lastSequenceChecked, _completed.to_string().c_str());//TEMP
         }
 
         /** The number of uncompleted sequences up through the last sequence checked. */

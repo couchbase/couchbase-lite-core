@@ -49,6 +49,12 @@ namespace litecore { namespace repl {
     { }
 
 
+    string Checkpointer::to_string() const {
+        LOCK();
+        return _checkpoint->completedSequences().to_string();
+    }
+
+
     C4SequenceNumber Checkpointer::localMinSequence() const {
         LOCK();
         return _checkpoint->localMinSequence();
@@ -289,6 +295,7 @@ namespace litecore { namespace repl {
         _checkpoint.reset(new Checkpoint);
         if (body && !_resetCheckpoint) {
             _checkpoint->readJSON(body);
+            _checkpointJSON = body;
             return true;
         } else {
             *outError = {};
@@ -297,6 +304,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // subroutine that actually reads the checkpoint doc from the db
     alloc_slice Checkpointer::_read(C4Database *db, slice checkpointID, C4Error* err) {
         const c4::ref<C4RawDocument> doc( c4raw_get(db, constants::kLocalCheckpointStore,
                                                     checkpointID, err) );
@@ -312,6 +320,7 @@ namespace litecore { namespace repl {
         // Now that we've saved, use the real checkpoint ID for any future reads:
         _initialDocID = checkpointID;
         _resetCheckpoint = false;
+        _checkpointJSON = nullslice;
         return true;
     }
 

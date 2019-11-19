@@ -163,7 +163,6 @@ namespace litecore { namespace repl {
 
         if (changes->empty()) {
             logInfo("Found 0 changes up to #%" PRIu64, lastSequence);
-            logCheckpoint();
         } else {
             uint64_t bodySize = 0;
             for (auto &change : *changes)
@@ -576,9 +575,13 @@ namespace litecore { namespace repl {
     void Pusher::doneWithRev(RevToSend *rev, bool completed, bool synced) {
         if (!passive()) {
             addProgress({rev->bodySize, 0});
-            if (completed && !passive()) {
+            if (completed) {
                 _checkpointer.completedSequence(rev->sequence);
-                logCheckpoint();
+
+                auto lastSeq = _checkpointer.localMinSequence();
+                if (lastSeq / 1000 > _lastSequenceLogged / 1000 || willLog(LogLevel::Verbose))
+                    logInfo("Checkpoint now %s", _checkpointer.to_string().c_str());
+                _lastSequenceLogged = lastSeq;
             }
         }
 
@@ -624,19 +627,6 @@ namespace litecore { namespace repl {
         }
     }
 
-
-    void Pusher::logCheckpoint() {
-        if (passive())
-            return;
-        auto lastSeq = _checkpointer.localMinSequence();
-        if (lastSeq > _lastSequenceLogged) {
-            if (lastSeq / 1000 > _lastSequenceLogged / 1000)
-                logInfo("Checkpoint now at #%" PRIu64, lastSeq);
-            else
-                logVerbose("Checkpoint now at #%" PRIu64, lastSeq);
-            _lastSequenceLogged = lastSeq;
-        }
-    }
 
     void Pusher::afterEvent() {
         Worker::afterEvent();

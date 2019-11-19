@@ -33,14 +33,6 @@ namespace litecore { namespace repl {
     bool Checkpoint::gWriteTimestamps = true;
 
 
-    static constexpr auto InfinitySequence = numeric_limits<SequenceSet::sequence>::max() - 1;
-
-
-    Checkpoint::Checkpoint() {
-        resetLocal();
-    }
-
-
     void Checkpoint::resetLocal() {
         _completed.clear();
         _completed.add(0, 1);
@@ -140,18 +132,6 @@ namespace litecore { namespace repl {
     }
 
 
-    void Checkpoint::addPendingSequence(C4SequenceNumber seq) {
-        _completed.remove(seq);
-        LogTo(SyncLog, "$$$ PENDING #%llu, COMPLETED: %s", seq, _completed.to_string().c_str());//TEMP
-    }
-
-
-    void Checkpoint::completedSequence(C4SequenceNumber seq) {
-        _completed.add(seq);
-        LogTo(SyncLog, "$$$ COMPLETED #%llu, NOW: %s", seq, _completed.to_string().c_str());//TEMP
-    }
-
-
     size_t Checkpoint::pendingSequenceCount() const {
         // Count the gaps between the ranges:
         size_t count = 0;
@@ -183,18 +163,15 @@ namespace litecore {
 
     std::string SequenceSet::to_string() const {
         std::stringstream str;
-        str << "{";
+        str << "[";
         int n = 0;
         for (auto &range : _sequences) {
             if (n++ > 0) str << ", ";
             str << range.first;
-            if (range.second != range.first + 1) {
-                str << "-";
-                if (range.second < repl::InfinitySequence)
-                    str << (range.second - 1);
-            }
+            if (range.second != range.first + 1)
+                str << "-" << (range.second - 1);
         }
-        str << "}";
+        str << "]";
         return str.str();
     }
 

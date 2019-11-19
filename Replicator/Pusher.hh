@@ -60,7 +60,6 @@ namespace litecore { namespace repl {
         void sendRevision(Retained<RevToSend>);
         void couldntSendRevision(RevToSend* NONNULL);
         void doneWithRev(RevToSend*, bool successful, bool pushed);
-        void logCheckpoint();
         void handleGetAttachment(Retained<MessageIn>);
         void handleProveAttachment(Retained<MessageIn>);
         void _attachmentSent();
