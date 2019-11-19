@@ -112,6 +112,11 @@ namespace c4Internal {
 
 
     protected:
+        virtual alloc_slice URL() const override {
+            return _url;
+        }
+
+
         virtual void createReplicator() override {
             auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _socketFactory);
             _replicator = new Replicator(_database, webSocket, *this, _options);

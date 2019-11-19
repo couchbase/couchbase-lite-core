@@ -28,6 +28,12 @@ namespace c4Internal {
             _start();
         }
 
+        
+        virtual alloc_slice URL() const override {
+            return _openSocket->url();
+        }
+
+
         virtual void createReplicator() override {
             Assert(_openSocket);
             _replicator = new Replicator(_database, _openSocket, *this, _options);

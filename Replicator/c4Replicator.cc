@@ -281,6 +281,7 @@ C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
     return repl->responseHeaders();
 }
 
+
 C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) C4API {
     try {
         return repl->pendingDocumentIDs(outErr);
@@ -289,6 +290,7 @@ C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) C4API
     return {nullptr, 0};
 }
 
+
 bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr) C4API {
     try {
         return repl->isDocumentPending(docID, outErr);
@@ -296,6 +298,7 @@ bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr
 
     return false;
 }
+
 
 #pragma mark - COOKIES:
 

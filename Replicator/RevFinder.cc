@@ -37,7 +37,9 @@ namespace litecore { namespace repl {
 
     RevFinder::RevFinder(Replicator *replicator)
     :Worker(replicator, "RevFinder")
-    { }
+    {
+        _passive = _options.pull <= kC4Passive;
+    }
 
 
     // Called by the Puller; handles a "changes" or "proposeChanges" message by checking which of

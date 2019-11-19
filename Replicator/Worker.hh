@@ -56,6 +56,8 @@ namespace litecore { namespace repl {
 
         Replicator* replicator() const;
 
+        bool passive() const                                {return _passive;}
+
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
             enqueue(&Worker::_connectionClosed);
@@ -147,6 +149,7 @@ namespace litecore { namespace repl {
         Retained<Worker> _parent;
         std::shared_ptr<DBAccess> _db;
         uint8_t _important {1};
+        bool _passive {false};
         std::string _loggingID;
 
     private:

@@ -378,6 +378,11 @@ namespace litecore { namespace repl {
     }
 
 
+    void DBAccess::markRevSynced(ReplicatedRev *rev NONNULL) {
+        _revsToMarkSynced.push(rev);
+    }
+
+
     // Mark all the queued revisions as synced to the server.
     void DBAccess::markRevsSyncedNow() {
         _timer.stop();

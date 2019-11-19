@@ -84,7 +84,7 @@ namespace litecore { namespace repl {
              return the correct answer, because the change hasn't been made in the database yet.
              For that reason, you must ensure that markRevsSyncedNow() is called before any call
              to c4doc_getRemoteAncestor(). */
-        void markRevSynced(ReplicatedRev *rev NONNULL)          {_revsToMarkSynced.push(rev);}
+        void markRevSynced(ReplicatedRev *rev NONNULL);
 
         /** Synchronously fulfills all markRevSynced requests. */
         void markRevsSyncedNow();

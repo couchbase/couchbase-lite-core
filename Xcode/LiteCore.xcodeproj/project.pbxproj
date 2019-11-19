@@ -124,6 +124,7 @@
 		275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275E4CCB22417D13006C5B71 /* Inserter.cc */; };
+		275E9905238360B200EA516B /* Checkpointer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275E98FF238360B200EA516B /* Checkpointer.cc */; };
 		275FA35222398875001C392D /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 729272F12238DB8500E7208E /* c4ExceptionUtils.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
 		2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */; };
@@ -389,7 +390,6 @@
 		72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
 		72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* Worker.cc */; };
-		93CD010C1E933BE100AFB3FA /* Replicator+Checkpoints.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B8425F1E5CC6500094903E /* Replicator+Checkpoints.cc */; };
 		93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7D61E52613C00CE1989 /* Replicator.cc */; };
 		93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7DE1E526CCC00CE1989 /* Puller.cc */; };
 		93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7E21E52965200CE1989 /* Pusher.cc */; };
@@ -961,6 +961,8 @@
 		275E6B9D22C2A3860032362A /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
 		275E6BBE22C2A3860032362A /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		275E6BC022C2A3860032362A /* ios.toolchain.cmake */ = {isa = PBXFileReference; lastKnownFileType = text; path = ios.toolchain.cmake; sourceTree = "<group>"; };
+		275E98FF238360B200EA516B /* Checkpointer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Checkpointer.cc; sourceTree = "<group>"; };
+		275E9904238360B200EA516B /* Checkpointer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Checkpointer.hh; sourceTree = "<group>"; };
 		275FF6661E42A90C005F90DD /* QueryParserTables.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryParserTables.hh; sourceTree = "<group>"; };
 		275FF6D11E4947E1005F90DD /* c4BaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BaseTest.cc; sourceTree = "<group>"; };
 		2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStore.cc; sourceTree = "<group>"; };
@@ -1084,7 +1086,6 @@
 		27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteN1QLFunctions.cc; sourceTree = "<group>"; };
 		27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceUtil.cc; sourceTree = "<group>"; };
 		27B8425B1E5BC8380094903E /* c4.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4.hh; sourceTree = "<group>"; };
-		27B8425F1E5CC6500094903E /* Replicator+Checkpoints.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "Replicator+Checkpoints.cc"; sourceTree = "<group>"; };
 		27BB9DFB236D05650039C896 /* aes.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = aes.c; sourceTree = "<group>"; };
 		27BB9DFC236D05650039C896 /* psa_crypto_slot_management.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = psa_crypto_slot_management.c; sourceTree = "<group>"; };
 		27BB9DFD236D05650039C896 /* md4.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = md4.c; sourceTree = "<group>"; };
@@ -2435,8 +2436,9 @@
 				27F2BE9D221DE44B006C13EE /* ReplicatorOptions.hh */,
 				27687C6121A4E3E800F7209F /* ReplicatedRev.hh */,
 				27CCC7D61E52613C00CE1989 /* Replicator.cc */,
-				27B8425F1E5CC6500094903E /* Replicator+Checkpoints.cc */,
 				27CCC7D71E52613C00CE1989 /* Replicator.hh */,
+				275E98FF238360B200EA516B /* Checkpointer.cc */,
+				275E9904238360B200EA516B /* Checkpointer.hh */,
 				275E4CD22241C701006C5B71 /* Pull */,
 				275E4CD32241C726006C5B71 /* Push */,
 				277B9567224597E1005B7E79 /* Support */,
@@ -3760,6 +3762,7 @@
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
+				275E9905238360B200EA516B /* Checkpointer.cc in Sources */,
 				275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */,
 				271AB0162374AD09007B0319 /* IndexSpec.cc in Sources */,
 				93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */,
@@ -3774,7 +3777,6 @@
 				276D15411DFF541000543B1B /* SQLiteQuery.cc in Sources */,
 				27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */,
 				93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */,
-				93CD010C1E933BE100AFB3FA /* Replicator+Checkpoints.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				276CE6832267991500B681AC /* n1ql.cc in Sources */,

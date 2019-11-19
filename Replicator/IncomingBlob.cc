@@ -36,7 +36,9 @@ namespace litecore { namespace repl {
     IncomingBlob::IncomingBlob(Worker *parent, C4BlobStore *blobStore)
     :Worker(parent, "blob")
     ,_blobStore(blobStore)
-    { }
+    {
+        _passive = _options.pull <= kC4Passive;
+    }
 
 
     std::string IncomingBlob::loggingIdentifier() const {

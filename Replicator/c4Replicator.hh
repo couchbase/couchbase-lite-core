@@ -20,13 +20,16 @@
 
 #include "fleece/Fleece.hh"
 #include "c4.hh"
+#include "c4DocEnumerator.h"
 #include "c4Private.h"
 #include "c4Replicator.h"
 #include "Database.hh"
 #include "Replicator.hh"
+#include "Checkpointer.hh"
 #include "Headers.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "fleece/Fleece.hh"
 #include <atomic>
 
 using namespace std;
@@ -90,16 +93,32 @@ struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
 
     C4SliceResult pendingDocumentIDs(C4Error* outErr) const {
         LOCK(_mutex);
-        if (!_replicator)
-            const_cast<C4Replicator*>(this)->createReplicator();
-        return (C4SliceResult)_replicator->pendingDocumentIDs(outErr);
+        Encoder enc;
+        enc.beginArray();
+
+        bool any = false;
+        auto callback = [&](const C4DocumentInfo &info) {
+            enc.writeString(info.docID);
+            any = true;
+        };
+        bool ok;
+        if (_replicator)
+            ok = _replicator->pendingDocumentIDs(callback, outErr);
+        else
+            ok = Checkpointer(_options, URL()).pendingDocumentIDs(_database, callback, outErr);
+        if (!ok)
+            return {};
+
+        enc.endArray();
+        return any ? C4SliceResult(enc.finish()) : C4SliceResult{};
     }
 
     bool isDocumentPending(C4Slice docID, C4Error* outErr) const {
         LOCK(_mutex);
-        if (!_replicator)
-            const_cast<C4Replicator*>(this)->createReplicator();
-        return _replicator->isDocumentPending(docID, outErr);
+        if (_replicator)
+            return _replicator->isDocumentPending(docID, outErr);
+        else
+            return Checkpointer(_options, URL()).isDocumentPending(_database, docID, outErr);
     }
 
 protected:
@@ -161,6 +180,8 @@ protected:
 
 
     virtual void createReplicator() =0;
+
+    virtual alloc_slice URL() const =0;
 
 
     // Base implementation of starting the replicator.

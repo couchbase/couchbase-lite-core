@@ -18,8 +18,8 @@
 
 #pragma once
 #include "Worker.hh"
+#include "Checkpointer.hh"
 #include "ReplicatedRev.hh"
-#include "Checkpoint.hh"
 #include "BLIPConnection.hh"
 #include "Batcher.hh"
 #include "fleece/Fleece.hh"
@@ -93,19 +93,16 @@ namespace litecore { namespace repl {
             The Replicator must have either already stopped, or never started. */
         void terminate();
 
-        /** Returns a fleece encoded list of the IDs of documents which have revisions pending push */
-        alloc_slice pendingDocumentIDs(C4Error* outErr);
+        /** Invokes the callback for each document which has revisions pending push */
+        bool pendingDocumentIDs(Checkpointer::PendingDocCallback, C4Error* outErr);
 
-        /** Checks if the document with the given ID has any pending revisions to push*/
+        /** Checks if the document with the given ID has any pending revisions to push */
         bool isDocumentPending(slice docId, C4Error* outErr);
 
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection()->webSocket();}
-        alloc_slice checkpointID() const        {return _checkpointDocID;}
-
-        // internal API for Pusher/Puller:
-        void updatePushCheckpoint(C4SequenceNumber s)   {_checkpoint.setLocalSeq(s);}
-        void updatePullCheckpoint(const alloc_slice &s) {_checkpoint.setRemoteSeq(s);}
+        
+        Checkpointer& checkpointer()            {return _checkpointer;}
 
         void endedDocument(ReplicatedRev *d NONNULL);
         void onBlobProgress(const BlobProgress &progress) {
@@ -157,31 +154,17 @@ namespace litecore { namespace repl {
         void _onBlobProgress(BlobProgress);
 
         // Checkpoints:
-        struct CheckpointResult {
-            alloc_slice checkpointID;
-            alloc_slice data;
-            bool dbIsEmpty;
-            C4Error err;
-        };
-        CheckpointResult getCheckpoint();
-        void setCheckpoint(slice data);
         void checkpointIsInvalid();
+        void setCookie(slice setCookieHeader);
         std::string remoteDBIDString() const;
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
         bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
                                   fleece::slice &checkpointID, c4::ref<C4RawDocument> &doc) const;
-        slice effectiveRemoteCheckpointDocID(C4Error*);
-        std::string effectiveRemoteCheckpointDocID(const C4UUID*, C4Error*);
-        std::string _getOldCheckpoint(C4Error*);
-        alloc_slice _checkpointFromID(const slice &, C4Error*);
-
-        bool isDocumentAllowed(C4Document* doc);
-        bool isDocumentIDAllowed(slice docID);
-        void initializeDocIDs();
 
         // Member variables:
         
+        const websocket::URL _remoteURL;
         CloseStatus _closeStatus;
         Delegate* _delegate;
         Retained<Pusher> _pusher;
@@ -193,18 +176,13 @@ namespace litecore { namespace repl {
         bool _waitingToCallDelegate {false};
         actor::ActorBatcher<Replicator, ReplicatedRev> _docsEnded;
 
-        Checkpoint _checkpoint;
-        alloc_slice _checkpointDocID;
-        alloc_slice _checkpointRevID;
+        Checkpointer _checkpointer;
         bool _hadLocalCheckpoint {false};
         bool _remoteCheckpointRequested {false};
         bool _remoteCheckpointReceived {false};
         alloc_slice _checkpointJSONToSave;
-
-        const websocket::URL _remoteURL;
-        std::string _remoteCheckpointDocID;                 // docID of checkpoint
-
-        std::unordered_set<std::string> _docIDs;
+        alloc_slice _remoteCheckpointDocID;
+        alloc_slice _remoteCheckpointRevID;
     };
 
 } }
