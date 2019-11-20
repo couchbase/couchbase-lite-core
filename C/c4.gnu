@@ -1,4 +1,4 @@
-{
+CBL_2.7 {
 	global:
 		c4_getVersion;
 		c4_now;
