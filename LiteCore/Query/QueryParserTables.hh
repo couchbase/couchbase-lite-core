@@ -43,7 +43,7 @@ namespace litecore {
 
         {"MISSING"_sl, 0, 0, 99,  &QueryParser::missingOp},
 
-        {"||"_sl,      2, 9,  8,  &QueryParser::infixOp},       // string concatenation
+        {"||"_sl,      2, 9,  3,  &QueryParser::concatOp},       // converted to concat(...) call
 
         {"*"_sl,       2, 9,  7,  &QueryParser::infixOp},
         {"/"_sl,       2, 2,  7,  &QueryParser::infixOp},
@@ -168,6 +168,7 @@ namespace litecore {
         {"fl_like"_sl,          2, 2, nullslice, false, true},
 
         // Strings:
+        {"concat"_sl,           2, 9},
         {"contains"_sl,         2, 2, nullslice, false, true},
         {"length"_sl,           1, 1, "N1QL_length"_sl},
         {"lower"_sl,            1, 1, "N1QL_lower"_sl},

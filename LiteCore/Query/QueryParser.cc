@@ -831,6 +831,11 @@ namespace litecore {
     }
 
 
+    // Handles "x || y", turning it into a call to the concat() function
+    void QueryParser::concatOp(slice op, Array::iterator& operands) {
+        functionOp("concat()"_sl, operands);
+    }
+
     // Handles "x BETWEEN y AND z" expressions
     void QueryParser::betweenOp(slice op, Array::iterator& operands) {
         parseCollatableNode(operands[0]);
