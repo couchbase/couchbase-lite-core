@@ -133,16 +133,16 @@ namespace litecore {
     }
 
 
-    bool hasPrefix(std::string_view str, std::string_view prefix) noexcept {
+    bool hasPrefix(string_view str, string_view prefix) noexcept {
         return str.size() >= prefix.size() && memcmp(str.data(), prefix.data(), prefix.size()) == 0;
     }
 
-    bool hasSuffix(std::string_view str, std::string_view suffix) noexcept {
+    bool hasSuffix(string_view str, string_view suffix) noexcept {
         return str.size() >= suffix.size()
             && memcmp(&str[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
     }
 
-    bool hasSuffixIgnoringCase(std::string_view str, std::string_view suffix) noexcept {
+    bool hasSuffixIgnoringCase(string_view str, string_view suffix) noexcept {
         return str.size() >= suffix.size()
             && strncasecmp(&str.data()[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
     }

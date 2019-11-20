@@ -109,11 +109,11 @@ namespace litecore {
         std::string subst(const char *sqlTemplate) const;
         void setLastSequence(sequence_t seq);
         void incrementPurgeCount();
-        void createTrigger(std::string_view triggerName,
-                           std::string_view triggerSuffix,
-                           std::string_view operation,
+        void createTrigger(string_view triggerName,
+                           string_view triggerSuffix,
+                           string_view operation,
                            std::string when,
-                           std::string_view statements);
+                           string_view statements);
         bool createValueIndex(const IndexSpec&);
         bool createIndex(const IndexSpec&,
                               const std::string &sourceTableName,

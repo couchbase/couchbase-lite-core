@@ -23,7 +23,7 @@
 #include <memory>
 #include <set>
 #include <sstream>
-#include <string_view>
+#include <string>
 #include <vector>
 
 namespace fleece { namespace impl {
@@ -82,7 +82,7 @@ namespace litecore {
         bool usesExpiration() const                                 {return _checkedExpiration;}
 
         std::string expressionSQL(const fleece::impl::Value*);
-        std::string whereClauseSQL(const fleece::impl::Value*, std::string_view dbAlias);
+        std::string whereClauseSQL(const fleece::impl::Value*, string_view dbAlias);
         std::string eachExpressionSQL(const fleece::impl::Value*);
         std::string FTSExpressionSQL(const fleece::impl::Value*);
         static std::string FTSColumnName(const fleece::impl::Value *expression);

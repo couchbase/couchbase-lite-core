@@ -17,14 +17,10 @@
 //
 
 #pragma once
-#include "fleece/slice.hh"
-#include "PlatformCompat.hh"
-#include "function_ref.hh"
+#include "Base.hh"
 #include <ctype.h>
 #include <stdarg.h>
 #include <string.h>
-#include <string>
-#include <string_view>
 #include <vector>
 #include <sstream>
 
@@ -101,17 +97,17 @@ namespace litecore {
     void replace(std::string &str, char oldChar, char newChar);
 
     /** Replaces all occurrences of `oldStr` with `newStr`. */
-    void replace(std::string &str, std::string_view oldStr, std::string_view newStr);
+    void replace(std::string &str, string_view oldStr, string_view newStr);
 
     /** Returns true if `str` begins with the string `prefix`. */
-    bool hasPrefix(std::string_view str, std::string_view prefix) noexcept;
+    bool hasPrefix(string_view str, string_view prefix) noexcept;
 
     /** Returns true if `str` ends with the string `prefix`. */
-    bool hasSuffix(std::string_view str, std::string_view suffix) noexcept;
+    bool hasSuffix(string_view str, string_view suffix) noexcept;
 
     /** Returns true if `str` ends with the string `prefix`, treating ASCII upper/lower case
         letters as equivalent. */
-    bool hasSuffixIgnoringCase(std::string_view str, std::string_view suffix) noexcept;
+    bool hasSuffixIgnoringCase(string_view str, string_view suffix) noexcept;
 
     /** Compares strings, treating ASCII upper/lowercase letters equivalent. Returns -1, 0 or 1. */
     int compareIgnoringCase(const std::string &a, const std::string &b);
