@@ -326,9 +326,11 @@ namespace litecore { namespace REST {
         char *str;
         va_list args;
         va_start(args, format);
-        size_t length = vasprintf(&str, format, args);
+        int length = vasprintf(&str, format, args);
+        if (length < 0)
+            throw bad_alloc();
         va_end(args);
-        write({str, length});
+        write({str, size_t(length)});
         free(str);
     }
 

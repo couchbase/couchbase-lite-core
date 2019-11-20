@@ -39,6 +39,7 @@
 #include "mbedtls/x509_csr.h"
 #pragma clang diagnostic pop
 
+#include <algorithm>
 #include <stdlib.h>
 
 namespace litecore { namespace crypto {

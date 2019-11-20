@@ -71,7 +71,8 @@ namespace cbl {
             va_list args;
             va_start(args, format);
             char *message = nullptr;
-            vasprintf(&message, format, args);
+            if (vasprintf(&message, format, args) < 0)
+                throw bad_alloc();
             va_end(args);
             if (outError)
                 *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidQuery, slice(message));

@@ -67,7 +67,8 @@ namespace litecore {
 
     std::string vformat(const char *fmt, va_list args) {
         char *cstr = nullptr;
-        vasprintf(&cstr, fmt, args);
+        if (vasprintf(&cstr, fmt, args) < 0)
+            throw bad_alloc();
         std::string result(cstr);
         free(cstr);
         return result;

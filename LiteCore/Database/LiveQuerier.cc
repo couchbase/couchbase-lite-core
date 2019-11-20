@@ -22,6 +22,7 @@
 #include "Database.hh"
 #include "SequenceTracker.hh"
 #include "c4ExceptionUtils.hh"
+#include <inttypes.h>
 
 namespace litecore {
     using namespace actor;
@@ -86,10 +87,10 @@ namespace litecore {
 
         if (newQE) {
             if (_currentEnumerator && !_currentEnumerator->obsoletedBy(newQE)) {
-                logVerbose("Results unchanged at seq %lld (%.3fms)",
+                logVerbose("Results unchanged at seq %" PRIu64 " (%.3fms)",
                            newQE->lastSequence(), time);
             } else {
-                logInfo("Results changed at seq %lld (%.3fms)", newQE->lastSequence(), time);
+                logInfo("Results changed at seq %" PRIu64 " (%.3fms)", newQE->lastSequence(), time);
                 _currentEnumerator = newQE;
                 _delegate->liveQuerierUpdated(newQE, error);
             }
@@ -104,9 +105,9 @@ namespace litecore {
                 _dbNotifier.reset(new DatabaseChangeNotifier(st,
                                                              bind(&LiveQuerier::dbChanged, this, _1),
                                                              after));
-                logVerbose("Started DB change notifier after sequence %lld", after);
+                logVerbose("Started DB change notifier after sequence %" PRIu64, after);
             } else {
-                logVerbose("Re-arming DB change notifier, after sequence %lld", after);
+                logVerbose("Re-arming DB change notifier, after sequence %" PRIu64, after);
             }
 
             // Read changes from db change notifier, so it can fire again:
@@ -118,7 +119,8 @@ namespace litecore {
         });
 
         if (lastSequence > after && _currentEnumerator) {
-            logVerbose("Hm, DB has changed to %lld already; triggering another run", lastSequence);
+            logVerbose("Hm, DB has changed to %" PRIu64 " already; triggering another run",
+                       lastSequence);
             _dbChanged();
         }
     }

@@ -440,10 +440,13 @@ namespace litecore {
         char *msg = nullptr;
         va_list args;
         va_start(args, fmt);
-        vasprintf(&msg, fmt, args);
+        int len = vasprintf(&msg, fmt, args);
         va_end(args);
-        std::string message(msg);
-        free(msg);
+        std::string message;
+        if (len >= 0) {
+            message = msg;
+            free(msg);
+        }
         error{LiteCore, code, message}._throw();
     }
 
@@ -489,7 +492,8 @@ namespace litecore {
                 if (unmangled && status == 0)
                     function = unmangled;
                 char *cstr = nullptr;
-                asprintf(&cstr, "%2d  %-25s %s + %d", i, library, function, offset);
+                if (asprintf(&cstr, "%2d  %-25s %s + %d", i, library, function, offset) < 0)
+                    return "(error printing backtrace)";
                 out << cstr;
                 free(cstr);
             } else {

@@ -22,6 +22,7 @@
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
 #include "Logging.hh"
+#include <inttypes.h>
 
 namespace litecore {
     using namespace c4Internal;
@@ -59,7 +60,7 @@ namespace litecore {
             LogToAt(DBLog, Verbose, "Housekeeper: no scheduled document expiration");
             return;
         } else if (expiration_t delay = nextExp - KeyStore::now(); delay > 0) {
-            LogToAt(DBLog, Verbose, "Housekeeper: scheduling expiration in %lldms", delay);
+            LogToAt(DBLog, Verbose, "Housekeeper: scheduling expiration in %" PRIi64 "ms", delay);
             _expiryTimer.fireAfter(chrono::milliseconds(delay));
         } else {
             _doExpiration();
@@ -88,7 +89,7 @@ namespace litecore {
             return;
         expiration_t delay = exp - KeyStore::now();
         if (_expiryTimer.fireEarlierAfter(chrono::milliseconds(delay)))
-            LogToAt(DBLog, Verbose, "Housekeeper: rescheduled expiration, now in %lldms", delay);
+            LogToAt(DBLog, Verbose, "Housekeeper: rescheduled expiration, now in %" PRIi64 "ms", delay);
     }
 
 }
