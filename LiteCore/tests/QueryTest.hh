@@ -186,7 +186,13 @@ protected:
         Log("Query:\n%s", explanation.c_str());
         auto optimized = (explanation.find("SCAN") == string::npos);
         CHECK(optimized == expectOptimized);
+    }
 
+    string queryWhat(const char *what) {
+        auto query = store->compileQuery(json5(CONCAT("{'WHAT': [" << what << "]}")));
+        Retained<QueryEnumerator> e(query->createEnumerator());
+        REQUIRE(e->next());
+        return e->columns()[0]->toJSONString();
     }
 
 };

@@ -508,7 +508,8 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
 
 
 #pragma mark Targeted N1QL tests
-    
+
+
 TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
     {
         Transaction t(store->dataFile());
@@ -586,6 +587,18 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
+    addNumberedDocs(1,1);
+    CHECK(queryWhat("['concat()', 'hello', 'world']") == "\"helloworld\"");
+    CHECK(queryWhat("['||', 'hello', 'world']") == "\"helloworld\"");
+    CHECK(queryWhat("['concat()', 'hello', ' ', 'world']") == "\"hello world\"");
+    CHECK(queryWhat("['concat()', 99, ' ', 123.45, ' ', true, ' ', false]") == "\"99 123.45 true false\"");
+
+    CHECK(queryWhat("['concat()', 'goodbye ', null, ' world']") == "\"goodbye null world\"");
+    CHECK(queryWhat("['concat()', 'goodbye', ['.bogus'], 'world']") == "null");
 }
 
 

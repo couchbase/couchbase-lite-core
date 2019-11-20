@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 // Implementations of N1QL functions (except for a few that are built into SQLite.)
+// https://docs.couchbase.com/server/current/n1ql/n1ql-language-reference/functions.html
 
 #include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
@@ -504,6 +505,47 @@ namespace litecore {
     }
 #endif
 
+    // concat(string, string, ...) concatenates strings. Returns MISSING if any param is MISSING.
+    // Other types are converted to strings.
+    static void concat(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        if (argc < 2) {
+            sqlite3_result_error(ctx, "concat() requires two or more parameters", -1);
+            return;
+        }
+        stringstream result;
+        for (int i = 0; i < argc; ++i) {
+            switch(auto arg = argv[i]; sqlite3_value_type(arg)) {
+                case SQLITE_NULL:
+                    sqlite3_result_null(ctx);   // return MISSING if any param is MISSING
+                    return;
+                case SQLITE_FLOAT: {
+                    char buf[30];
+                    double num = sqlite3_value_double(arg);
+                    WriteDouble(num, buf, sizeof(buf));
+                    result << buf;
+                    break;
+                }
+                case SQLITE_INTEGER: {
+                    auto num = sqlite3_value_int64(arg);
+                    if(sqlite3_value_subtype(arg) == kFleeceIntBoolean)
+                        result << (num ? "true" : "false");
+                    else
+                        result << num;
+                    break;
+                }
+                case SQLITE_TEXT:
+                    result.write((const char*)sqlite3_value_text(arg), sqlite3_value_bytes(arg));
+                    break;
+                case SQLITE_BLOB:
+                    // A blob is a Fleece array, dict, or null
+                    result << fleeceParam(ctx, arg)->toJSONString();
+                    break;
+            }
+        }
+
+        string str = result.str();
+        sqlite3_result_text(ctx, str.data(), int(str.size()), SQLITE_TRANSIENT);
+    }
 
     // contains(string, substring) returns 1 if `string` contains `substring`, else 0
     static void contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
@@ -1215,6 +1257,7 @@ namespace litecore {
 //        { "base64_encode",     1, fl_base64 },
 //        { "base64_decode",     1, fl_base64_decode },
 
+        { "concat",           -1, concat },
         { "contains",          2, contains },
         { "contains",          3, contains },
 //        { "initcap",           1, init_cap },
