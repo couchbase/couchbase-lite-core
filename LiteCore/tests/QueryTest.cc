@@ -762,9 +762,13 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     {
         Transaction t(store->dataFile());
         writeMultipleTypeDocs(t);
+        writeDoc("doc6"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeString("602214076000000000000000");    // overflows uint64_t
+        });
         t.commit();
     }
-    
+
     Retained<Query> query{ store->compileQuery(json5(
     "{'WHAT': [['TONUMBER()', ['.value']]]}")) };
     Retained<QueryEnumerator> e;
@@ -772,7 +776,7 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
         ExpectingExceptions x;      // tonumber() will internally throw/catch an exception while indexing
         e = (query->createEnumerator());
     }
-    REQUIRE(e->getRowCount() == 5);
+    REQUIRE(e->getRowCount() == 6);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 0.0);
     REQUIRE(e->next());
@@ -783,6 +787,8 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     CHECK(e->columns()[0]->asDouble() == 0.0);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 1.0);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asDouble() == 6.02214076e23);
 }
 
 
