@@ -254,7 +254,7 @@ namespace litecore {
             slice colStr = col->asString();
             if (colStr.hasPrefix("."_sl) && colStr.size > 1) {
                 colStr.moveStart(1);
-                columns << '"' << string_view(colStr) << '"';
+                columns << '"' << string(colStr) << '"';
             } else {
                 columns << "c" << n;
             }
