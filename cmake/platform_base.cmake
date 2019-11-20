@@ -37,6 +37,7 @@ function(set_litecore_source_base)
         LiteCore/Database/SequenceTracker.cc
         LiteCore/Database/TreeDocument.cc
         LiteCore/Database/Upgrader.cc 
+        LiteCore/Query/IndexSpec.cc
         LiteCore/Query/PredictiveModel.cc
         LiteCore/Query/Query.cc
         LiteCore/Query/QueryParser+Prediction.cc
@@ -83,6 +84,7 @@ function(set_litecore_source_base)
         Replicator/c4Replicator.cc
         Replicator/c4Socket.cc
         Replicator/Checkpoint.cc
+        Replicator/Checkpointer.cc
         Replicator/DatabaseCookies.cc
         Replicator/DBAccess.cc
         Replicator/IncomingBlob.cc
@@ -92,7 +94,6 @@ function(set_litecore_source_base)
         Replicator/Pusher.cc
         Replicator/Pusher+DB.cc
         Replicator/Replicator.cc
-        Replicator/Replicator+Checkpoints.cc
         Replicator/ReplicatorTypes.cc
         Replicator/RevFinder.cc
         Replicator/Worker.cc
