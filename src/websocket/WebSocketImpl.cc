@@ -343,7 +343,8 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::timedOut() {
-        logError("No response received after %lld sec -- disconnecting", _curTimeout.count());
+        logError("No response received after %lld sec -- disconnecting",
+                 (long long)_curTimeout.count());
         _timedOut = true;
         if (_framing)
             closeSocket();
