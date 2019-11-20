@@ -107,9 +107,9 @@ namespace litecore { namespace crypto {
 
 
     alloc_slice DistinguishedName::operator[] (slice key) {
-        for (auto [k, v] : asVector()) {
-            if (k == key)
-                return v;
+        for (auto &kv : asVector()) {
+            if (kv.first == key)
+                return kv.second;
         }
         return nullslice;
     }

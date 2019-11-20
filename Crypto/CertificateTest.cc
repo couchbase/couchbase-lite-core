@@ -100,7 +100,9 @@ static pair<Retained<PrivateKey>,Retained<Cert>> makeCert(slice subjectName) {
 
 
 TEST_CASE("Self-signed cert generation", "[Certs]") {
-    auto [key, cert] = makeCert(kSubjectName);
+    Retained<PrivateKey> key;
+    Retained<Cert> cert;
+    tie(key, cert) = makeCert(kSubjectName);
     cerr << "Subject: " << cert->subjectName() << "\n";
     cerr << "Info:\n" << cert->summary("\t");
 
@@ -110,7 +112,8 @@ TEST_CASE("Self-signed cert generation", "[Certs]") {
 
     CHECK(cert->subjectName() == kSubjectName);
 
-    auto [created, expires] = cert->validTimespan();
+    time_t created, expires;
+    tie(created, expires) = cert->validTimespan();
     time_t now = time(nullptr);
     CHECK(difftime(now, created) >= 0);
     CHECK(difftime(now, created) <= 100);
@@ -230,8 +233,10 @@ TEST_CASE("Cert request", "[Certs]") {
 TEST_CASE("Cert concatenation", "[Certs]") {
     alloc_slice pem;
     {
-        auto [key1, cert1] = makeCert(kSubjectName);
-        auto [key2, cert2] = makeCert(kSubject2Name);
+        Retained<PrivateKey> key1, key2;
+        Retained<Cert> cert1, cert2;
+        tie(key1, cert1) = makeCert(kSubjectName);
+        tie(key2, cert2) = makeCert(kSubject2Name);
         CHECK(!cert1->hasChain());
         CHECK(!cert1->next());
         CHECK(cert1->dataOfChain() == cert1->data(KeyFormat::PEM));
