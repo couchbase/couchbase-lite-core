@@ -93,8 +93,8 @@ else()
 endif(MSVC)
 
 if(CMAKE_COMPILER_IS_GNUCC)
-    # Suppress an annoying note about GCC 7 ABI changes
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi")
+    # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi -Wno-odr")
 endif()
 
 if(CODE_COVERAGE_ENABLED)
