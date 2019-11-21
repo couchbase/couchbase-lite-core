@@ -874,7 +874,6 @@
 		273B542E23037A8400E4FC19 /* datagram_socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = datagram_socket.h; sourceTree = "<group>"; };
 		273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocEnumerator.cc; sourceTree = "<group>"; };
 		273E9EC11C506C60003115A6 /* c4DocEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4DocEnumerator.h; sourceTree = "<group>"; };
-		273E9EC61C506C70003115A6 /* c4.def */ = {isa = PBXFileReference; lastKnownFileType = text; path = c4.def; sourceTree = "<group>"; };
 		273E9ED31C506DB4003115A6 /* SecureDigest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SecureDigest.hh; sourceTree = "<group>"; };
 		273E9ED41C506DB4003115A6 /* SecureRandomize.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SecureRandomize.hh; sourceTree = "<group>"; };
 		273E9F7A1C516B76003115A6 /* c4Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Private.h; sourceTree = "<group>"; };
@@ -909,7 +908,6 @@
 		274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseTest.cc; sourceTree = "<group>"; };
 		274D04081BA75E1C00FF7C35 /* C4Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = C4Tests; sourceTree = BUILT_PRODUCTS_DIR; };
 		274D040A1BA75E1C00FF7C35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		274D04231BA8932800FF7C35 /* c4.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4.exp; sourceTree = "<group>"; };
 		274D04261BA8A5BC00FF7C35 /* c4Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Internal.hh; sourceTree = "<group>"; };
 		274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "QueryParser+Prediction.cc"; sourceTree = "<group>"; };
 		274D17842177F212007FD01A /* QueryParser+Private.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "QueryParser+Private.hh"; sourceTree = "<group>"; };
@@ -984,6 +982,8 @@
 		2763012A1F3A36BD004A1592 /* StringUtil_Apple.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = StringUtil_Apple.mm; sourceTree = "<group>"; };
 		2764ED3123870A72007F020F /* TreeDocument.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TreeDocument.hh; sourceTree = "<group>"; };
 		2764ED3623870F15007F020F /* c4Database.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Database.hh; sourceTree = "<group>"; };
+		2764ED3723873B9E007F020F /* c4.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = c4.txt; path = scripts/c4.txt; sourceTree = "<group>"; };
+		2764ED3823873B9E007F020F /* c4_exp.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = c4_exp.txt; path = scripts/c4_exp.txt; sourceTree = "<group>"; };
 		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTracker.cc; sourceTree = "<group>"; };
 		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceTracker.hh; sourceTree = "<group>"; };
 		2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceSet.hh; sourceTree = "<group>"; };
@@ -2023,8 +2023,8 @@
 				27098A95216C1D2E002751DA /* c4PredictiveQuery.cc */,
 				2705154C1D8CBE6C00D62D05 /* c4Query.cc */,
 				27ECCB011D89DCDB00FA8C4A /* Doxyfile */,
-				274D04231BA8932800FF7C35 /* c4.exp */,
-				273E9EC61C506C70003115A6 /* c4.def */,
+				2764ED3723873B9E007F020F /* c4.txt */,
+				2764ED3823873B9E007F020F /* c4_exp.txt */,
 				27B64937206971FC00FC12F7 /* Info.plist */,
 				274D03FF1BA7554700FF7C35 /* tests */,
 			);
@@ -3244,6 +3244,7 @@
 			buildConfigurationList = 720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "LiteCore dylib" */;
 			buildPhases = (
 				275BF3731F5F6CA20051374A /* Generate repo_version.h */,
+				2764ED3923873D92007F020F /* Generate .exp file */,
 				720EA3DE1BA7EAD9002B8416 /* Sources */,
 				720EA3E91BA7EAD9002B8416 /* Frameworks */,
 				720EA3EF1BA7EAD9002B8416 /* Headers */,
@@ -3517,7 +3518,30 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/bin/sh -e";
-			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"";
+			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"\n";
+			showEnvVarsInLog = 0;
+		};
+		2764ED3923873D92007F020F /* Generate .exp file */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../C/scripts/generate_export_list.py",
+				"$(SRCROOT)/../C/scripts/c4.txt",
+				"$(SRCROOT)/../C/scripts/c4_exp.txt",
+			);
+			name = "Generate .exp file";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/../C/c4.exp",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "python \"$SCRIPT_INPUT_FILE_0\"\n";
 			showEnvVarsInLog = 0;
 		};
 		27E6739E1EC8D958008F50C4 /* ShellScript */ = {
