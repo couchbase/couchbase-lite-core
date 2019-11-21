@@ -1,7 +1,14 @@
-CBL_2.7 {
+CBL {
 	global:
 		c4_getVersion;
 		c4_now;
+		c4_getObjectCount;
+		c4_shutdown;
+		c4_setTempDir;
+		c4_runAsyncTask;
+
+		c4base_retain;
+		c4base_release;
 
 		c4log_getLevel;
 		c4log_setLevel;
@@ -15,6 +22,8 @@ CBL_2.7 {
 		c4log_getDomain;
 		c4log_getDomainName;
 		c4log_warnOnErrors;
+		c4log_getWarnOnErrors;
+		c4log_willLog;
 
 		c4error_make;
 		c4error_getMessage;
@@ -22,8 +31,7 @@ CBL_2.7 {
 		c4error_mayBeNetworkDependent;
 
 		c4db_open;
-		c4db_retain;
-		c4db_free;
+		c4db_openNamed;
 		c4db_close;
 		c4db_copy;
 		c4db_delete;
@@ -45,13 +53,15 @@ CBL_2.7 {
 		c4db_getSharedFleeceEncoder;
 		c4db_getFLSharedKeys;
 		c4db_encodeJSON;
+		c4db_startHousekeeping;
 
 		c4raw_free;
 		c4raw_get;
 		c4raw_put;
 
 		c4doc_retain;
-		c4doc_free;
+		c4doc_release;
+		c4doc_generateID;
 		c4doc_get;
 		c4doc_getBySequence;
 		c4db_purgeDoc;
@@ -77,6 +87,7 @@ CBL_2.7 {
 		c4db_purgeExpiredDocs;
 		c4doc_isOldMetaProperty;
 		c4doc_dictContainsBlobs;
+		c4doc_containingValue;
 
 		c4rev_getGeneration;
 
@@ -95,11 +106,12 @@ CBL_2.7 {
 		c4queryenum_seek;
 		c4queryenum_refresh;
 		c4queryenum_close;
-		c4queryenum_free;
+		c4queryenum_retain;
+		c4queryenum_release;
 
 		c4query_new;
 		c4query_new2;
-		c4query_free;
+		c4query_setParameters;
 		c4query_columnCount;
 		c4query_columnTitle;
 		c4query_run;
@@ -141,6 +153,10 @@ CBL_2.7 {
 		c4repl_start;
 		c4repl_stop;
 		c4repl_getStatus;
+		c4repl_retry;
+		c4repl_setOptions;
+		c4repl_setHostReachable;
+		c4repl_setSuspended;
 		c4repl_getPendingDocIDs;
 		c4repl_isDocumentPending;
 
@@ -156,15 +172,15 @@ CBL_2.7 {
 		c4pred_registerModel;
 		c4pred_unregisterModel;
 
-		c4_getObjectCount;
-		c4_shutdown;
-
 		FLSlice_Equal;
 		FLSlice_Compare;
-		FLSliceResult_Release;
+		FLSliceResult_New;
 		FLSlice_Copy;
+		_FLBuf_Retain;
+		_FLBuf_Release;
 
 		FLDoc_FromResultData;
+		FLDoc_GetAllocedData;
 		FLDoc_GetRoot;
 		FLDoc_GetSharedKeys;
 		FLDoc_Release;
@@ -339,7 +355,6 @@ CBL_2.7 {
 		c4repl_getResponseHeaders;
 
 		kC4ReplicatorActivityLevelNames;
-		kC4SocketOptionWSProtocols;
 
 		c4address_fromURL;
 		c4address_toURL;
@@ -348,10 +363,6 @@ CBL_2.7 {
 		c4db_markSynced;
 		c4_dumpInstances;
 		gC4ExpectExceptions;
-
-		FLSliceResult_Retain;
-
-		FLDictIterator_GetCount;
 
 		FLDoc_FromJSON;
 		FLDoc_Retain;

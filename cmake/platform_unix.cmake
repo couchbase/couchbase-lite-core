@@ -31,14 +31,6 @@ function(setup_litecore_build_unix)
             atomic
         )
     endif()
-
-    if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-        # List of symbols to export from LiteCore:
-        target_link_libraries(
-            LiteCore PRIVATE
-            "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/C/c4exports.gnu"
-        )
-    endif()
 endfunction()
 
 function(setup_rest_build_unix)
