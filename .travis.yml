@@ -10,10 +10,10 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - g++-5
+            - g++-7
       env: 
-        - CXX_COMPILER=g++-5
-        - C_COMPILER=gcc-5
+        - CXX_COMPILER=g++-7
+        - C_COMPILER=gcc-7
     - compiler: gcc
       addons:
         apt:
