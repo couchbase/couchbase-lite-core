@@ -16,11 +16,12 @@
 // limitations under the License.
 //
 
+#include "c4Database.hh"
 #include "c4Internal.hh"
-#include "Database.hh"
 #include "c4Database.h"
 #include "c4Private.h"
 
+#include "Document.hh"
 #include "SQLiteDataFile.hh"
 #include "KeyStore.hh"
 #include "Record.hh"
@@ -48,43 +49,6 @@ CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 c4Database::~c4Database() {
     destructExtraInfo(extraInfo);
-    FLEncoder_Free(_flEncoder);
-}
-
-
-FLEncoder c4Database::sharedFLEncoder() {
-    if (_flEncoder) {
-        FLEncoder_Reset(_flEncoder);
-    } else {
-        _flEncoder = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
-        FLEncoder_SetSharedKeys(_flEncoder, (FLSharedKeys)documentKeys());
-    }
-    return _flEncoder;
-}
-
-
-bool c4Database::mustUseVersioning(C4DocumentVersioning requiredVersioning,
-                                   C4Error *outError) noexcept
-{
-    if (config.versioning == requiredVersioning)
-        return true;
-    recordError(LiteCoreDomain, kC4ErrorUnsupported, outError);
-    return false;
-}
-
-
-bool c4Database::mustBeInTransaction(C4Error *outError) noexcept {
-    if (inTransaction())
-        return true;
-    recordError(LiteCoreDomain, kC4ErrorNotInTransaction, outError);
-    return false;
-}
-
-bool c4Database::mustNotBeInTransaction(C4Error *outError) noexcept {
-    if (!inTransaction())
-        return true;
-    recordError(LiteCoreDomain, kC4ErrorTransactionNotClosed, outError);
-    return false;
 }
 
 

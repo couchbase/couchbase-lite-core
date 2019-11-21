@@ -16,8 +16,7 @@
 // limitations under the License.
 //
 
-#include "Document.hh"
-#include "c4Database.h"
+#include "TreeDocument.hh"
 #include "c4Private.h"
 
 #include "Database.hh"
@@ -542,8 +541,10 @@ bool c4doc_save(C4Document *doc,
                 C4Error *outError) noexcept
 {
     auto idoc = asInternal(doc);
+#if 0 // unused
     if (!idoc->mustUseVersioning(kC4RevisionTrees, outError))
         return false;
+#endif
     if (!idoc->mustBeInTransaction(outError))
         return false;
     try {

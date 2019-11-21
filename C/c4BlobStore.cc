@@ -18,8 +18,8 @@
 
 #include "c4Internal.hh"
 #include "c4BlobStore.h"
+#include "c4Database.hh"
 #include "BlobStore.hh"
-#include "Database.hh"
 
 
 // This is a no-op class that just serves to make c4BlobStore type-compatible with BlobStore.

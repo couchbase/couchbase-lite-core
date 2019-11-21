@@ -21,8 +21,8 @@
 #include "c4Index.h"
 #include "c4Observer.h"
 #include "c4ExceptionUtils.hh"
+#include "c4Database.hh"
 
-#include "Database.hh"
 #include "LiveQuerier.hh"
 #include "SQLiteDataFile.hh"
 #include "Query.hh"

@@ -982,6 +982,8 @@
 		2763011E1F338B77004A1592 /* wiki */ = {isa = PBXFileReference; lastKnownFileType = folder; name = wiki; path = ../wiki; sourceTree = "<group>"; };
 		276301261F394407004A1592 /* UnicodeCollator_winapi.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_winapi.cc; sourceTree = "<group>"; };
 		2763012A1F3A36BD004A1592 /* StringUtil_Apple.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = StringUtil_Apple.mm; sourceTree = "<group>"; };
+		2764ED3123870A72007F020F /* TreeDocument.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TreeDocument.hh; sourceTree = "<group>"; };
+		2764ED3623870F15007F020F /* c4Database.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Database.hh; sourceTree = "<group>"; };
 		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTracker.cc; sourceTree = "<group>"; };
 		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceTracker.hh; sourceTree = "<group>"; };
 		2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceSet.hh; sourceTree = "<group>"; };
@@ -2013,6 +2015,7 @@
 				2722504D1D7892610006D5A5 /* c4BlobStore.cc */,
 				27469D04233D58D900A1EE1A /* c4Certificate.cc */,
 				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
+				2764ED3623870F15007F020F /* c4Database.hh */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
 				72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */,
@@ -2115,6 +2118,7 @@
 				277C14701EA8102B0075348F /* Document.cc */,
 				271057D61D3D70B10018247B /* Document.hh */,
 				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
+				2764ED3123870A72007F020F /* TreeDocument.hh */,
 				27FC8E76221399AC0083B033 /* LeafDocument.cc */,
 				2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */,
 				2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */,

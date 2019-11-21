@@ -19,7 +19,7 @@
 #include "c4Internal.hh"
 #include "c4DocEnumerator.h"
 
-#include "Database.hh"
+#include "c4Database.hh"
 #include "Document.hh"
 #include "DataFile.hh"
 #include "Record.hh"

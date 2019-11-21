@@ -20,11 +20,12 @@
 #define NOMINMAX
 #endif
 #include "c4Internal.hh"
-#include "Database.hh"
+#include "c4Database.hh"
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 
+#include "TreeDocument.hh"
 #include "Document.hh"
 #include "Database.hh"
 #include "LegacyAttachments.hh"

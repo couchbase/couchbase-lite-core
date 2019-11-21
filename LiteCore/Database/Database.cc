@@ -17,7 +17,7 @@
 //
 
 #include "Database.hh"
-#include "Document.hh"
+#include "TreeDocument.hh"
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
@@ -185,7 +185,7 @@ namespace c4Internal {
     Database::~Database() {
         Assert(_transactionLevel == 0,
                "Database being destructed while in a transaction");
-
+        FLEncoder_Free(_flEncoder);
         // Eagerly close the data file to ensure that no other instances will
         // be trying to use me as a delegate (for example in externalTransactionCommitted)
         // after I'm already in an invalid state
@@ -509,6 +509,21 @@ namespace c4Internal {
     }
 
 
+    bool Database::mustBeInTransaction(C4Error *outError) noexcept {
+        if (inTransaction())
+            return true;
+        recordError(LiteCoreDomain, kC4ErrorNotInTransaction, outError);
+        return false;
+    }
+
+    bool Database::mustNotBeInTransaction(C4Error *outError) noexcept {
+        if (!inTransaction())
+            return true;
+        recordError(LiteCoreDomain, kC4ErrorTransactionNotClosed, outError);
+        return false;
+    }
+
+
     void Database::endTransaction(bool commit) {
         if (_transactionLevel == 0)
             error::_throw(error::NotInTransaction);
@@ -591,6 +606,17 @@ namespace c4Internal {
     fleece::impl::Encoder& Database::sharedEncoder() {
         _encoder->reset();
         return *_encoder.get();
+    }
+
+
+    FLEncoder Database::sharedFLEncoder() {
+        if (_flEncoder) {
+            FLEncoder_Reset(_flEncoder);
+        } else {
+            _flEncoder = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
+            FLEncoder_SetSharedKeys(_flEncoder, (FLSharedKeys)documentKeys());
+        }
+        return _flEncoder;
     }
 
 
@@ -694,5 +720,18 @@ namespace c4Internal {
             _housekeeper->documentExpirationChanged(expiration);
         return true;
     }
+
+
+#if 0 // unused
+    bool Database::mustUseVersioning(C4DocumentVersioning requiredVersioning,
+                                     C4Error *outError) noexcept
+    {
+        if (config.versioning == requiredVersioning)
+            return true;
+        recordError(LiteCoreDomain, kC4ErrorUnsupported, outError);
+        return false;
+    }
+#endif
+
 
 }

@@ -23,7 +23,7 @@
 #include "c4DocEnumerator.h"
 #include "c4Private.h"
 #include "c4Replicator.h"
-#include "Database.hh"
+#include "c4Database.hh"
 #include "Replicator.hh"
 #include "Checkpointer.hh"
 #include "Headers.hh"

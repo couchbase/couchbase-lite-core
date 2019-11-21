@@ -20,7 +20,7 @@
 #include "c4Database.h"
 #include "c4Document.h"
 
-#include "Database.hh"
+#include "c4Database.hh"
 #include "KeyStore.hh"
 #include "fleece/slice.hh"
 #include <stdint.h>

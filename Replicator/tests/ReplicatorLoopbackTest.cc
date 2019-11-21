@@ -10,7 +10,7 @@
 #include "Worker.hh"
 #include "DBAccess.hh"
 #include "Timer.hh"
-#include "Database.hh"
+#include "c4Database.hh"
 #include "PrebuiltCopier.hh"
 #include <chrono>
 #include "betterassert.hh"

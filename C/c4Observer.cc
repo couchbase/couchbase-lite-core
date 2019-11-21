@@ -18,7 +18,7 @@
 
 #include "c4Internal.hh"
 #include "c4Observer.h"
-#include "Database.hh"
+#include "c4Database.hh"
 #include "SequenceTracker.hh"
 #include "InstanceCounted.hh"
 

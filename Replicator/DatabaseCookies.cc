@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "Database.hh"
+#include "c4Database.hh"
 #include "DatabaseCookies.hh"
 #include "CookieStore.hh"
 
