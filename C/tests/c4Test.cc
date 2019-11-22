@@ -605,7 +605,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
         REQUIRE(doc != nullptr);
         c4doc_free(doc);
-        FLSliceResult_Free(body);
+        FLSliceResult_Release(body);
         ++numDocs;
         if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
             C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());

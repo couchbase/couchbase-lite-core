@@ -65,7 +65,7 @@ static C4INLINE C4Slice c4str(const char *str) {return FLStr(str);}
 #define kC4SliceNull kFLSliceNull
 
 static inline bool c4SliceEqual(C4Slice a, C4Slice b)       {return FLSlice_Equal(a,b);}
-static inline void c4slice_free(C4SliceResult s)            {FLSliceResult_Free(s);}
+static inline void c4slice_free(C4SliceResult s)            {FLSliceResult_Release(s);}
 
 
 //////// ERRORS:

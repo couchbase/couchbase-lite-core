@@ -173,7 +173,7 @@ public:
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
         REQUIRE(doc != nullptr);
         c4doc_free(doc);
-        FLSliceResult_Free(body);
+        FLSliceResult_Release(body);
     }
 
 protected:
