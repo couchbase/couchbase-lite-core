@@ -61,7 +61,7 @@ namespace litecore {
         public:
             virtual ~Delegate() =default;
             virtual bool tableExists(const string &tableName) const =0;
-            virtual string collectionTableName(const string &collection) const =0;
+            virtual string collectionTableName(const string &collection, bool deleted) const =0;
             virtual string FTSTableName(const string &onTable, const string &property) const =0;
             virtual string unnestedTableName(const string &onTable, const string &property) const =0;
 #ifdef COUCHBASE_ENTERPRISE
@@ -246,6 +246,7 @@ namespace litecore {
         Collation _collation;                    // Collation in use during parse
         bool _collationUsed {true};              // Emitted SQL "COLLATION" yet?
         bool _functionWantsCollation {false};    // Current fn wants collation param in its arg list
+        bool _queryingDeletedDocs {false};       // True if WHERE clause matches only deleteded docs
     };
 
 }

@@ -106,8 +106,8 @@ namespace litecore {
     // open the database and grab the write lock.
     static const unsigned kBusyTimeoutSecs = 10;
 
-    // Name of the KeyStore for deleted documents
-    static const string kDeletedKeyStoreName = "deleted";
+    // Prefix of the KeyStores for deleted documents
+    static const string kDeletedKeyStorePrefix = "del_";
 
     LogDomain SQL("SQL", LogLevel::Warning);
 
@@ -286,14 +286,7 @@ namespace litecore {
                     error::_throw(error::CantUpgradeDatabase,
                                   "Database needs upgrade to newer deleted-document storage format");
                 logInfo("SCHEMA UPGRADE: Migrating deleted docs to 'dead' KeyStore");
-                (void)defaultKeyStore();    // create the "kv_deleted" table
-                _exec(format("BEGIN;"
-                             "INSERT INTO kv_%s SELECT * FROM kv_%s WHERE (flags&1)!=0;"
-                             "DELETE FROM kv_%s WHERE (flags&1)!=0;"
-                             "PRAGMA user_version=400;"
-                             "END",
-                             kDeletedKeyStoreName.c_str(), kDefaultKeyStoreName.c_str(),
-                             kDefaultKeyStoreName.c_str()));
+                migrateDeletedDocs();
                 _schemaVersion = SchemaVersion::WithDeletedTable;
             }
         });
@@ -323,6 +316,23 @@ namespace litecore {
         int rc = register_unicodesn_tokenizer(sqlite);
         if (rc != SQLITE_OK)
             warn("Unable to register FTS tokenizer: SQLite err %d", rc);
+    }
+
+
+    // Moves deleted docs to the new `kv_del_` tables during schema upgrade
+    void SQLiteDataFile::migrateDeletedDocs() {
+        _exec("BEGIN");
+        for(string keyStoreName : allKeyStoreNames()) {
+            if (!hasPrefix(keyStoreName, kDeletedKeyStorePrefix)) {
+                getKeyStore(keyStoreName);  // this creates the "kv_del_..." table
+                _exec(format("INSERT INTO kv_%s%s SELECT * FROM kv_%s WHERE (flags&1)!=0; "
+                             "DELETE FROM kv_%s WHERE (flags&1)!=0;",
+                             kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
+                             keyStoreName.c_str(),
+                             keyStoreName.c_str()));
+            }
+        }
+        _exec("PRAGMA user_version=500; END");
     }
 
 
@@ -511,11 +521,12 @@ namespace litecore {
 
 
     KeyStore* SQLiteDataFile::newKeyStore(const string &name, KeyStore::Capabilities options) {
-        Assert(name != kDeletedKeyStoreName); // can't access this store directly
+        Assert(!hasPrefix(name, kDeletedKeyStorePrefix)); // can't access deleted stores directly
         auto keyStore = new SQLiteKeyStore(*this, name, options);
-        if (name == kDefaultKeyStoreName) {
+        if (options.sequences) {
             // Wrap the default store in a BothKeyStore that manages it and the deleted store
-            return new BothKeyStore(keyStore, new SQLiteKeyStore(*this, kDeletedKeyStoreName, options));
+            auto deletedStore = new SQLiteKeyStore(*this, kDeletedKeyStorePrefix + name, options);
+            return new BothKeyStore(keyStore, deletedStore);
         } else {
             return keyStore;
         }
@@ -698,11 +709,17 @@ namespace litecore {
 #pragma mark - QUERIES:
 
 
-    string SQLiteDataFile::collectionTableName(const string &collection) const {
-        if (collection == "_default")
-            return "kv_default";
-        else
-            return "kv_coll_" + collection;
+    string SQLiteDataFile::collectionTableName(const string &collection, bool deleted) const {
+        string name = "kv_";
+        if (deleted)
+            name += kDeletedKeyStorePrefix;
+        if (collection == "_default") {
+            name += "default";
+        } else {
+            name += "coll_";
+            name + collection;
+        }
+        return name;
     }
 
     string SQLiteDataFile::FTSTableName(const string &onTable, const string &property) const {

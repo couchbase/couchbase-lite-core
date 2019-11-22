@@ -35,12 +35,16 @@ public:
     void mustFail(string json);
 
 protected:
-    virtual string collectionTableName(const string &collection) const override {
+    virtual string collectionTableName(const string &collection, bool deleted) const override {
         CHECK(!hasPrefix(collection, "kv_"));   // make sure I didn't get passed a table name
+        string table = "kv_";
+        if (deleted)
+            table += "_del";
         if (collection == "_default")
-            return "kv_default";
+            table += "default";
         else
-            return "kv_coll_" + collection;
+            table += collection;
+        return table;
     }
     virtual std::string FTSTableName(const string &onTable, const std::string &property) const override {
         return onTable + "::" + property;

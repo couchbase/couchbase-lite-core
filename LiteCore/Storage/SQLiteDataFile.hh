@@ -96,7 +96,7 @@ namespace litecore {
 
     // QueryParser::delegate:
         virtual bool tableExists(const std::string &tableName) const override;
-        virtual string collectionTableName(const string &collection) const override;
+        virtual string collectionTableName(const string &collection, bool deleted) const override;
         virtual std::string FTSTableName(const string &collection, const std::string &property) const override;
         virtual std::string unnestedTableName(const string &collection, const std::string &property) const override;
 #ifdef COUCHBASE_ENTERPRISE
@@ -161,6 +161,7 @@ namespace litecore {
 
         void reopenSQLiteHandle();
         void ensureSchemaVersionAtLeast(SchemaVersion);
+        void migrateDeletedDocs();
         void decrypt();
         bool _decrypt(EncryptionAlgorithm, slice key);
         int _exec(const std::string &sql);
