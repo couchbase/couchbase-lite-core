@@ -27,7 +27,7 @@ public:
     ScopeGuard() = delete;
     ScopeGuard(const ScopeGuard&) = delete;
     ScopeGuard& operator=(const ScopeGuard&) = delete;
-    ScopeGuard(ScopeGuard&& rhs)
+    ScopeGuard(ScopeGuard&& rhs) noexcept
     : f_(std::move(rhs.f_))
     , active_(rhs.active_) {
         rhs.dismiss();

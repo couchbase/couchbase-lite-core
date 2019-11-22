@@ -78,7 +78,7 @@ namespace c4 {
     public:
         ref()                       :_obj(nullptr) { }
         ref(T *t)                   :_obj(t) { }
-        ref(ref &&r)                :_obj(r._obj) {r._obj = nullptr;}
+        ref(ref &&r) noexcept       :_obj(r._obj) {r._obj = nullptr;}
         ref(const ref &r)           :_obj(retainRef(r._obj)) { }
         ~ref()                      {releaseRef(_obj);}
 
@@ -86,7 +86,7 @@ namespace c4 {
         T* operator -> () const     {return _obj;}
 
         ref& operator=(T *t)        {if (_obj) releaseRef(_obj); _obj = t; return *this;}
-        ref& operator=(ref &&r)     {_obj = r._obj; r._obj = nullptr; return *this;}
+        ref& operator=(ref &&r) noexcept {_obj = r._obj; r._obj = nullptr; return *this;}
         ref& operator=(const ref &r){*this = retainRef(r._obj); return *this;}
 
     private:
