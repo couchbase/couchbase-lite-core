@@ -66,7 +66,7 @@ namespace litecore {
         const std::string& name() const             {return _name;}
         Capabilities capabilities() const           {return _capabilities;}
 
-        virtual uint64_t recordCount() const =0;
+        virtual uint64_t recordCount(bool includeDeleted =false) const =0;
         virtual sequence_t lastSequence() const =0;
         virtual uint64_t purgeCount() const =0;
 

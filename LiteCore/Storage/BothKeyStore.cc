@@ -32,6 +32,14 @@ namespace litecore {
     }
 
 
+    uint64_t BothKeyStore::recordCount(bool includeDeleted) const {
+        auto count = _liveStore->recordCount(true);  // true is faster, and there are none anyway
+        if (includeDeleted)
+            count += _deadStore->recordCount(true);
+        return count;
+    }
+
+
     sequence_t BothKeyStore::set(const RecordUpdate &rec,
                                  bool updateSequence,
                                  ExclusiveTransaction &t)
@@ -98,11 +106,17 @@ namespace litecore {
         if (lx > 0 && dx > 0)
             return std::min(lx, dx);        // choose the earliest time
         else
-            return std::max(lx, dx);        // choose the nonzero time
+            return std::max(lx, dx);        // or choose the nonzero time
     }
 
 
 #pragma mark - ENUMERATOR:
+
+
+    template <typename T>
+    static inline int compare(T a, T b) {
+        return (a < b) ? -1 : ((a > b) ? 1 : 0);
+    }
 
 
     // Enumerator implementation for BothKeyStore. It enumerates both KeyStores in parallel,
@@ -116,34 +130,43 @@ namespace litecore {
         :_liveImpl(liveStore->newEnumeratorImpl(bySequence, since, options))
         ,_deadImpl(deadStore->newEnumeratorImpl(bySequence, since, options))
         ,_bySequence(bySequence)
+        ,_descending(options.sortOption == kDescending)
         { }
 
         virtual bool next() override {
-            // Advance the enumerator whose value was used last:
-            if (_current == nullptr || _current == _liveImpl.get()) {
+            // Advance the enumerator with the lowest key, or both if they're equal:
+            if (_cmp <= 0) {
                 if (!_liveImpl->next())
                     _liveImpl.reset();
             }
-            if (_current == nullptr || _current == _deadImpl.get()) {
+            if (_cmp >= 0) {
                 if (!_deadImpl->next())
                     _deadImpl.reset();
             }
 
-            // Pick the enumerator with the lowest key/sequence to be used next:
-            bool useLive;
+            // Compare the enumerators' keys or sequences:
             if (_liveImpl && _deadImpl) {
                 if (_bySequence)
-                    useLive = _liveImpl->sequence() < _deadImpl->sequence();
+                    _cmp = compare(_liveImpl->sequence(), _deadImpl->sequence());
                 else
-                    useLive = _liveImpl->key() < _deadImpl->key();
-            } else if (_liveImpl || _deadImpl) {
-                useLive = _liveImpl != nullptr;
+                    _cmp = _liveImpl->key().compare(_deadImpl->key());
+            } else if (_liveImpl) {
+                _cmp = -1;
+            } else if (_deadImpl) {
+                _cmp = 1;
             } else {
+                // finished
+                _cmp = 0;
                 _current = nullptr;
                 return false;
             }
 
-            _current = (useLive ? _liveImpl : _deadImpl).get();
+            if (_descending)
+                _cmp = -_cmp;
+
+            // Pick the enumerator with the lowest key/sequence to be used next.
+            // In case of a tie, pick the live one since it has priority.
+            _current = ((_cmp <= 0) ? _liveImpl : _deadImpl).get();
             return true;
         }
 
@@ -154,7 +177,8 @@ namespace litecore {
     private:
         unique_ptr<RecordEnumerator::Impl> _liveImpl, _deadImpl;    // Real enumerators
         RecordEnumerator::Impl* _current {nullptr};                 // Enumerator w/lowest key
-        bool _bySequence;                                           // Sorting by sequence?
+        int _cmp {0};                                               // Comparison of live to dead
+        bool _bySequence, _descending;                              // Sorting by sequence?
     };
 
 
@@ -163,9 +187,12 @@ namespace litecore {
                                                             RecordEnumerator::Options options)
     {
         if (options.includeDeleted) {
+            if (options.sortOption == kUnsorted)
+                options.sortOption = kAscending;    // we need ordering to merge
             return new BothEnumeratorImpl(bySequence, since, options,
                                           _liveStore.get(), _deadStore.get());
         } else {
+            options.includeDeleted = true;  // no need for enum to filter out deleted docs
             return _liveStore->newEnumeratorImpl(bySequence, since, options);
         }
     }

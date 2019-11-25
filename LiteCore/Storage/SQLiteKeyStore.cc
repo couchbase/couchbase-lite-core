@@ -131,8 +131,9 @@ namespace litecore {
     }
 
 
-    uint64_t SQLiteKeyStore::recordCount() const {
-        auto &stmt = compileCached("SELECT count(*) FROM kv_@ WHERE (flags & 1) != 1");
+    uint64_t SQLiteKeyStore::recordCount(bool includeDeleted) const {
+        auto &stmt = compileCached(includeDeleted ? "SELECT count(*) FROM kv_@"
+                                              : "SELECT count(*) FROM kv_@ WHERE (flags & 1) != 1");
         UsingStatement u(stmt);
         if (stmt.executeStep())
             return (int64_t)stmt.getColumn(0);
