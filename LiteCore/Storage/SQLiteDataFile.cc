@@ -61,10 +61,6 @@ namespace litecore {
 
     static const int64_t MB = 1024 * 1024;
 
-    // Min/max user_version of db files I can read
-    static const int kMinUserVersion = 201;
-    static const int kMaxUserVersion = 399;
-
     // SQLite page size
     static const int64_t kPageSize = 4096;
 
@@ -190,9 +186,9 @@ namespace litecore {
 
         withFileLock([this]{
             // http://www.sqlite.org/pragma.html
-            int userVersion = _sqlDb->execAndGet("PRAGMA user_version");
+            _schemaVersion = SchemaVersion((int)_sqlDb->execAndGet("PRAGMA user_version"));
             bool isNew = false;
-            if (userVersion == 0) {
+            if (_schemaVersion == SchemaVersion::None) {
                 isNew = true;
                 // Configure persistent db settings, and create the schema:
                 _exec("PRAGMA journal_mode=WAL; "        // faster writes, better concurrency
@@ -203,18 +199,32 @@ namespace litecore {
                      "PRAGMA user_version=302; "
                      "END;"
                      );
+                _schemaVersion = SchemaVersion::WithPurgeCount;
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
-            } else if (userVersion < kMinUserVersion) {
+            } else if (_schemaVersion < SchemaVersion::MinReadable) {
                 error::_throw(error::DatabaseTooOld);
-            } else if(userVersion <= 301) {
-                // Add the purgeCnt column to the kvmeta table
-                _exec("BEGIN; "
-                          "ALTER TABLE kvmeta ADD COLUMN purgeCnt INTEGER DEFAULT 0; "
-                          "PRAGMA user_version=302; "
-                          "END;");
-            } else if (userVersion > kMaxUserVersion) {
+            } else if (_schemaVersion > SchemaVersion::MaxReadable) {
                 error::_throw(error::DatabaseTooNew);
+            }
+
+            if (_schemaVersion < SchemaVersion::WithPurgeCount) {
+                // Schema upgrade: Add the `purgeCnt` column to the kvmeta table.
+                // We can postpone this schema change if the db is read-only, since the purge count
+                // is only used to mark changes to the database, and we won't be changing it.
+                if (options().writeable) {
+                    if (!options().upgradeable)
+                        error::_throw(error::CantUpgradeDatabase);
+                    try {
+                        _exec("ALTER TABLE kvmeta ADD COLUMN purgeCnt INTEGER DEFAULT 0; "
+                              "PRAGMA user_version=302; ");
+                        _schemaVersion = SchemaVersion::WithPurgeCount;
+                    } catch (const SQLite::Exception &x) {
+                        // Recover if the db file itself is read-only
+                        if (x.getErrorCode() != SQLITE_READONLY)
+                            throw;
+                    }
+                }
             }
         });
 
@@ -261,14 +271,13 @@ namespace litecore {
     }
 
 
-    void SQLiteDataFile::ensureUserVersionAtLeast(int32_t version) {
-        int userVersion = _sqlDb->execAndGet("PRAGMA user_version");
-        if(userVersion <= version) {
-            const auto versionSql = "PRAGMA user_version=" + to_string(version);
-            _exec(versionSql);   
+    void SQLiteDataFile::ensureSchemaVersionAtLeast(SchemaVersion version) {
+        if (_schemaVersion < version) {
+            const auto versionSql = "PRAGMA user_version=" + to_string(int(version));
+            _exec(versionSql);
+            _schemaVersion = version;
         }
     }
-
 
 
     bool SQLiteDataFile::isOpen() const noexcept {
@@ -567,17 +576,19 @@ namespace litecore {
 
     uint64_t SQLiteDataFile::purgeCount(const std::string& keyStoreName) const {
         uint64_t purgeCnt = 0;
-        compile(_getPurgeCntStmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
-        UsingStatement u(_getPurgeCntStmt);
-        _getPurgeCntStmt->bindNoCopy(1, keyStoreName);
-        if(_getPurgeCntStmt->executeStep()) {
-            purgeCnt = (int64_t)_getPurgeCntStmt->getColumn(0);
+        if (_schemaVersion >= SchemaVersion::WithPurgeCount) {
+            compile(_getPurgeCntStmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
+            UsingStatement u(_getPurgeCntStmt);
+            _getPurgeCntStmt->bindNoCopy(1, keyStoreName);
+            if(_getPurgeCntStmt->executeStep()) {
+                purgeCnt = (int64_t)_getPurgeCntStmt->getColumn(0);
+            }
         }
-
         return purgeCnt;
     }
 
     void SQLiteDataFile::setPurgeCount(SQLiteKeyStore& store, uint64_t count) {
+        Assert(_schemaVersion >= SchemaVersion::WithPurgeCount);
         compile(_setPurgeCntStmt,
             "INSERT INTO kvmeta (name, purgeCnt) VALUES (?, ?) "
             "ON CONFLICT (name) "
