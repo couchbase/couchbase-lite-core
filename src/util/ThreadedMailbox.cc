@@ -24,6 +24,9 @@
 #include "Timer.hh"
 #include "Logging.hh"
 #include "Channel.cc"       // Brings in the definitions of the template methods
+#include <future>
+#include <random>
+#include <map>
 
 using namespace std;
 
@@ -47,7 +50,8 @@ namespace litecore { namespace actor {
 
     
     static Scheduler* sScheduler;
-
+    static random_device rd;
+    static mt19937 sRandGen(rd());
 
     Scheduler* Scheduler::sharedScheduler() {
         if (!sScheduler) {
@@ -221,7 +225,19 @@ namespace litecore { namespace actor {
 
 
     void ThreadedMailbox::runAsyncTask(void (*task)(void*), void *context) {
-        Assert(false, "UNIMPLEMENTED"); //FIXME IMPLEMENT
+        // std::future destructor blocks here, so can cause deadlock.  Need
+        // to keep it around
+        static uniform_int_distribution dis(1, INT32_MAX);
+        static map<int, future<void>> runningMap;
+        auto nextId = 0;
+        do {
+            nextId = dis(sRandGen);
+        } while(runningMap.find(nextId) != runningMap.end());
+
+        runningMap[nextId] = async(launch::async, [nextId, task](void* c) {
+            task(c);
+            runningMap.erase(nextId);
+        }, context);
     }
 
 
