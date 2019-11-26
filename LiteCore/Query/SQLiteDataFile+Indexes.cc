@@ -42,7 +42,7 @@ namespace litecore {
         if (indexTableExists())
             return;
 
-        if (!options().upgradeable)
+        if (!options().upgradeable && _schemaVersion < SchemaVersion::WithIndexTable)
             error::_throw(error::CantUpgradeDatabase,
                           "Accessing indexes requires upgrading the database schema");
 
