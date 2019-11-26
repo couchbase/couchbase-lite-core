@@ -138,7 +138,7 @@ namespace litecore {
         };
 
         void reopenSQLiteHandle();
-        void ensureUserVersionAtLeast(SchemaVersion);
+        void ensureSchemaVersionAtLeast(SchemaVersion);
         void decrypt();
         bool _decrypt(EncryptionAlgorithm, slice key);
         int _exec(const std::string &sql);
@@ -157,7 +157,7 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
         std::unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
         CollationContextVector               _collationContexts;
-        SchemaVersion                        _userVersion {SchemaVersion::None};
+        SchemaVersion                        _schemaVersion {SchemaVersion::None};
     };
 
 }
