@@ -47,6 +47,7 @@ setup_build()
 target_compile_definitions(
     C4Tests PRIVATE
     -DC4_TESTS
+    -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK
 )
 
 target_link_libraries(

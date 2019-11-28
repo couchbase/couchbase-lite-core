@@ -60,6 +60,7 @@ target_compile_definitions(
     -DLITECORE_CPP_TESTS=1
     -D_USE_MATH_DEFINES     # Define math constants like PI
     -DNOMINMAX              # Get rid of min/max macros that interfere with std::min/std::max
+    -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK 
 )
 
 target_include_directories(
