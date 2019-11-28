@@ -555,8 +555,9 @@ namespace c4Internal {
             if (tree[revID]) {
                 if (remoteDBID) {
                     const Rev *curRemoteRev = tree.latestRevisionOnRemote(remoteDBID);
-                    if (curRemoteRev && curRemoteRev->revID != revID)
+                    if (curRemoteRev && curRemoteRev->revID != revID) {
                         return alloc_slice(kC4AncestorExistsButNotCurrent);
+                    }
                 }
                 static alloc_slice kAncestorExists = alloc_slice(kC4AncestorExists);
                 return kAncestorExists;
