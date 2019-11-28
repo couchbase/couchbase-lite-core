@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: false
 language: cpp
 
@@ -29,15 +29,15 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-3.9
+            - llvm-toolchain-trusty-5.0
             - llvm-toolchain-trusty-7
           packages:
-            - clang-3.9
+            - clang-5.0
             - libc++-7-dev
             - libc++abi-7-dev
       env: 
-        - CXX_COMPILER=clang++-3.9
-        - C_COMPILER=clang-3.9
+        - CXX_COMPILER=clang++-5.0
+        - C_COMPILER=clang-5.0
         - PATH=/usr/lib/llvm-7/bin:/usr/lib/llvm-7/include/:$PATH
     - compiler: clang
       addons:
