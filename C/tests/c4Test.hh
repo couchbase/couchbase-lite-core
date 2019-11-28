@@ -22,13 +22,6 @@
 
 using namespace fleece;
 
-namespace fleece {
-    static inline std::ostream& operator<<(std::ostream &out, const fleece::Array &arr) {
-        out << "Array(" << (void*)(FLArray)arr << ")";
-        return out;
-    }
-}
-
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
