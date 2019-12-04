@@ -110,9 +110,10 @@ namespace litecore { namespace crypto {
     };
 
 
-#ifdef __APPLE__
-// TODO: Implement subclasses for other platforms
-#define PERSISTENT_PRIVATE_KEY_AVAILABLE
+#ifdef __APPLE__                // TODO: Implement subclasses for other platforms
+    #if ! TARGET_OS_IPHONE      // TODO: Fix PersistentPrivateKey for iOS
+        #define PERSISTENT_PRIVATE_KEY_AVAILABLE
+    #endif
 #endif
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE

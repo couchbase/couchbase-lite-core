@@ -37,6 +37,8 @@
 #include "fleece/slice.hh"
 #include <Security/Security.h>
 
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE     // Currently not defined for iOS
+
 /*  A WARNING to those working on this code: Apple's Keychain and security APIs are ☠️NASTY☠️.
     They vary a lot by platform, with many functions unavailable on iOS, or only available in
     alternate form. Some functions are on both platforms but behave differently, _especially_
@@ -64,8 +66,8 @@ namespace litecore { namespace crypto {
     using namespace std;
 
     [[noreturn]] static void throwOSStatus(OSStatus err, const char *fnName, const char *what) {
-        WarnError("%s (%s returned %d)", what, fnName, err);
-        error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, err);
+        WarnError("%s (%s returned %d)", what, fnName, int(err));
+        error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, int(err));
     }
 
     static inline void checkOSStatus(OSStatus err, const char *fnName, const char *what) {
@@ -100,10 +102,6 @@ namespace litecore { namespace crypto {
 
 #pragma mark - KEYPAIR:
 
-
-#ifndef PERSISTENT_PRIVATE_KEY_AVAILABLE
-#error PERSISTENT_PRIVATE_KEY_AVAILABLE should have been defined in PublicKey.hh
-#endif
 
     // Concrete subclass of KeyPair that uses Apple's Keychain and SecKey APIs.
     class KeychainKeyPair : public PersistentPrivateKey {
@@ -326,6 +324,9 @@ namespace litecore { namespace crypto {
 
 
     void Cert::makePersistent() {
+#if TARGET_OS_IPHONE
+        error::_throw(error::Unimplemented, "Persistent certs/keys not working on iOS yet");
+#else
         @autoreleasepool {
             auto name = subjectName();
             Log("Adding certificate to Keychain for %.*s", SPLAT(name));
@@ -381,6 +382,7 @@ namespace litecore { namespace crypto {
             NSLog(@"Cert attributes: %@", attrs);
 #endif
         }
+#endif
     }
 
 
@@ -402,3 +404,5 @@ namespace litecore { namespace crypto {
     }
 
 } }
+
+#endif // PERSISTENT_PRIVATE_KEY_AVAILABLE
