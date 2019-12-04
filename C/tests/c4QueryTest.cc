@@ -33,7 +33,7 @@ static ostream& operator<< (ostream& o, C4FullTextMatch match) {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Basic", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     CHECK(run() == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
 
@@ -55,7 +55,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     CHECK(run("{\"offset\":0,\"limit\":4}") == (vector<string>{}));
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query LIKE", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query LIKE", "[Query][C]") {
     SECTION("General") {
         compile(json5("['LIKE', ['.name.first'], '%j%']"));
         CHECK(run() == (vector<string>{ "0000085" }));
@@ -114,7 +114,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query LIKE", "[Query][C]") {
     }
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Contains", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Contains", "[Query][C]") {
     SECTION("General") {
         compile(json5("['CONTAINS()', ['.name.first'], 'Jen']"));
         CHECK(run() == (vector<string>{ "0000008", "0000028" }));
@@ -148,7 +148,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Contains", "[Query][C]") {
     }
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query IN", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query IN", "[Query][C]") {
     // Type 1: RHS is an expression; generates a call to array_contains
     compile(json5("['IN', 'reading', ['.', 'likes']]"));
     CHECK(run() == (vector<string>{"0000004", "0000056", "0000064", "0000079", "0000099"}));
@@ -158,14 +158,14 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query IN", "[Query][C]") {
     CHECK(run() == (vector<string>{"0000091", "0000093"}));
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query sorted", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query sorted", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"),
             json5("[['.', 'name', 'last']]"));
     CHECK(run() == (vector<string>{"0000015", "0000036", "0000072", "0000043", "0000001", "0000064", "0000073", "0000053"}));
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query bindings", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 1]]"));
     CHECK(run("{\"1\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
     compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 'state']]"));
@@ -174,7 +174,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
 
 
 // Check binding arrays and dicts
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query binding types", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query binding types", "[Query][C]") {
     vector<string> queries = {
         "['$param']",
         "['_.', {foo: ['$param']}, 'foo']",
@@ -205,7 +205,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query binding types", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query ANY", "[Query][C]") {
     compile(json5("['ANY', 'like', ['.', 'likes'], ['=', ['?', 'like'], 'climbing']]"));
     CHECK(run() == (vector<string>{"0000017", "0000021", "0000023", "0000045", "0000060"}));
 
@@ -225,7 +225,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(PathsQueryTest, "DB Query ANY w/paths", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(PathsQueryTest, "C4Query ANY w/paths", "[Query][C]") {
     // For https://github.com/couchbase/couchbase-lite-core/issues/238
     compile(json5("['ANY','path',['.paths'],['=',['?path','city'],'San Jose']]"));
     CHECK(run() == (vector<string>{ "0000001" }));
@@ -238,7 +238,7 @@ N_WAY_TEST_CASE_METHOD(PathsQueryTest, "DB Query ANY w/paths", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY of dict", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query ANY of dict", "[Query][C]") {
     compile(json5("['ANY', 'n', ['.', 'name'], ['=', ['?', 'n'], 'Arturo']]"));
     CHECK(run() == (vector<string>{"0000090"}));
     compile(json5("['ANY', 'n', ['.', 'name'], ['contains()', ['?', 'n'], 'V']]"));
@@ -246,7 +246,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY of dict", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query expression index", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query expression index", "[Query][C]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
     compile(json5("['=', ['length()', ['.name.first']], 9]"));
@@ -255,7 +255,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query expression index", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete indexed doc", "[Query][C]") {
     // Create the same index as the above test:
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
@@ -286,7 +286,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Column titles", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "Column titles", "[Query][C]") {
     // Properties:
     compileSelect(json5("['SELECT', {'WHAT': [['.'], ['.name'], '.gender', ['.', 'address', 'zip']]}]"));
     checkColumnTitles({"*", "name", "gender", "zip"});
@@ -302,7 +302,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Column titles", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "Missing columns", "[Query][C]") {
     const char *query = nullptr;
     uint64_t expectedMissing = 0;
     SECTION("None missing1") {
@@ -322,7 +322,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query][C]") {
     }
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Blob access", "[Query][Blob][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "Blob access", "[Query][Blob][C]") {
     string blob = "This is a blob to store in the store!";
     vector<C4BlobKey> keys;
     {
@@ -347,7 +347,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Blob access", "[Query][Blob][C]") {
     CHECK(results == vector<string>{blob});
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query dict literal", "[Query][C]") {
     compileSelect(json5("{WHAT: [{n: null, f: false, t: true, i: 12345, d: 1234.5, s: 'howdy', m: ['.bogus'], id: ['._id']}]}"));
 
     auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
@@ -357,7 +357,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query][C]") {
     CHECK(results[0] == "{d:1234.5,f:false,i:12345,id:\"0000001\",n:null,s:\"howdy\",t:true}");
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL parse error", "[Query][C][N1QL][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query N1QL parse error", "[Query][C][N1QL][!throws]") {
     int errPos;
     C4Error error;
     {
@@ -376,7 +376,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL parse error", "[Query][C][N1QL][!t
 #pragma mark - FTS:
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C][FTS]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     compile(json5("['MATCH', 'byStreet', 'Hwy']"));
@@ -396,7 +396,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C][FTS]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text multiple properties", "[Query][C][FTS]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple properties", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byAddress"),
                              C4STR("[[\".contact.address.street\"], [\".contact.address.city\"], [\".contact.address.state\"]]"), kC4FullTextIndex, nullptr, &err));
@@ -433,7 +433,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text multiple properties", "[Query][C][F
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text indexes", "[Query][C][FTS]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple indexes", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, &err));
@@ -446,7 +446,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text indexes", "[Query][C][FTS]
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query in multiple ANDs", "[Query][C][FTS]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple ANDs", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, &err));
@@ -460,7 +460,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query in multiple ANDs", "[Query][C
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text queries", "[Query][C][FTS][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple queries", "[Query][C][FTS][!throws]") {
     // You can't query the same FTS index multiple times in a query (says SQLite)
     ExpectingExceptions x;
     C4Error err;
@@ -475,7 +475,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text queries", "[Query][C][FTS]
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Buried Full-text queries", "[Query][C][FTS][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Buried", "[Query][C][FTS][!throws]") {
     // You can't put an FTS match inside an expression other than a top-level AND (says SQLite)
     ExpectingExceptions x;
     C4Error err;
@@ -490,7 +490,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Buried Full-text queries", "[Query][C][FTS][!
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Aggregate Full-text query", "[Query][C][FTS]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Aggregate", "[Query][C][FTS]") {
     // https://github.com/couchbase/couchbase-lite-core/issues/703
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
@@ -507,7 +507,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Aggregate Full-text query", "[Query][C][FTS]"
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query with alias", "[Query][C][FTS]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with alias", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     query = c4query_new(db,
@@ -524,7 +524,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query with alias", "[Query][C][FTS]
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query with accents", "[Query][C][FTS]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with accents", "[Query][C][FTS]") {
     // https://github.com/couchbase/couchbase-lite-core/issues/723
     C4Error err;
     C4IndexOptions options = {
@@ -564,7 +564,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query with accents", "[Query][C][FT
 #pragma mark - WHAT, JOIN, etc:
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT", "[Query][C]") {
     vector<string> expectedFirst = {"Cleveland", "Georgetta", "Margaretta"};
     vector<string> expectedLast  = {"Bejcek",    "Kolding",   "Ogwynn"};
     compileSelect(json5("{WHAT: ['.name.first', '.name.last'], \
@@ -589,7 +589,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT returning object", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT returning object", "[Query][C]") {
     vector<string> expectedFirst = {"Cleveland", "Georgetta", "Margaretta"};
     vector<string> expectedLast  = {"Bejcek",    "Kolding",   "Ogwynn"};
     compileSelect(json5("{WHAT: ['.name'], \
@@ -619,7 +619,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT returning object", "[Query][C]"
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Aggregate", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Aggregate", "[Query][C]") {
     compileSelect(json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
     C4Error error;
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
@@ -637,7 +637,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Aggregate", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Grouped", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Grouped", "[Query][C]") {
     const vector<string> expectedState = {"AL",      "AR",        "AZ",       "CA"};
     const vector<string> expectedMin   = {"Laidlaw", "Okorududu", "Kinatyan", "Bejcek"};
     const vector<string> expectedMax   = {"Mulneix", "Schmith",   "Kinatyan", "Visnic"};
@@ -671,7 +671,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Grouped", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Join", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Join", "[Query][C]") {
     importJSONFile(sFixturesDir + "states_titlecase.json", "state-");
     vector<string> expectedFirst = {"Cleveland",   "Georgetta", "Margaretta"};
     vector<string> expectedState  = {"California", "Ohio",      "South Dakota"};
@@ -699,7 +699,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Join", "[Query][C]") {
     c4queryenum_release(e);
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query UNNEST", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
     for (int withIndex = 0; withIndex <= 1; ++withIndex) {
         if (withIndex) {
             C4Log("-------- Repeating with index --------");
@@ -735,7 +735,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query UNNEST", "[Query][C]") {
     }
 }
 
-N_WAY_TEST_CASE_METHOD(NestedQueryTest, "DB Query UNNEST objects", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") {
     for (int withIndex = 0; withIndex <= 1; ++withIndex) {
         if (withIndex) {
             C4Log("-------- Repeating with index --------");
@@ -764,7 +764,7 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "DB Query UNNEST objects", "[Query][C]")
     }
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Seek", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
@@ -791,13 +791,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Seek", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(NestedQueryTest, "DB Query ANY nested", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query ANY nested", "[Query][C]") {
     compile(json5("['ANY', 'Shape', ['.', 'shapes'], ['=', ['?', 'Shape', 'color'], 'red']]"));
     CHECK(run() == (vector<string>{"0000001", "0000003"}));
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query parser error messages", "[Query][C][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query parser error messages", "[Query][C][!throws]") {
     ExpectingExceptions x;
 
     C4Error error;
@@ -806,7 +806,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query parser error messages", "[Query][C][!th
     CheckError(error, LiteCoreDomain, kC4ErrorInvalidQuery, "Wrong number of arguments to =");
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
     
@@ -845,7 +845,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
     c4queryenum_release(refreshed);
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query observer", "[Query][C][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
 
@@ -899,7 +899,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query observer", "[Query][C][!throws]") {
     CHECK(c4queryenum_getRowCount(e2, &error) == 9);
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
     C4Error err;
     C4String names[2] = { C4STR("length"), C4STR("byStreet") };
     string desc1 = json5("[['length()', ['.name.first']]]");
@@ -930,7 +930,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
     }
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Database alias column names", "[Query][C][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "Database alias column names", "[Query][C][!throws]") {
     // https://github.com/couchbase/couchbase-lite-core/issues/750
 
     C4Error err;
@@ -946,10 +946,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Database alias column names", "[Query][C][!th
 
 #pragma mark - COLLATION:
 
-class CollatedQueryTest : public QueryTest {
+class CollatedQueryTest : public C4QueryTest {
 public:
     CollatedQueryTest(int which)
-    :QueryTest(which, "iTunesMusicLibrary.json")
+    :C4QueryTest(which, "iTunesMusicLibrary.json")
     { }
 
     vector<string> run() {
@@ -969,7 +969,7 @@ public:
 };
 
 
-N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query collated", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "C4Query collated", "[Query][C]") {
     compileSelect(json5("{WHAT: [ ['.Name'] ], \
                          WHERE: ['COLLATE', {'unicode': true, 'case': false, 'diac': false},\
                                             ['=', ['.Artist'], 'Benoît Pioulard']],\
@@ -981,7 +981,7 @@ N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query collated", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query aggregate collated", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "C4Query aggregate collated", "[Query][C]") {
     compileSelect(json5("{WHAT: [ ['COLLATE', {'unicode': true, 'case': false, 'diac': false}, \
                                               ['.Artist']] ], \
                       DISTINCT: true, \

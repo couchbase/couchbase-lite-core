@@ -36,7 +36,7 @@ static NSString* asNSString(const string &str) {
 
 
 // Test class that uses a CoreML model
-class API_AVAILABLE(macos(10.13)) CoreMLTest : public QueryTest {
+class API_AVAILABLE(macos(10.13)) CoreMLTest : public C4QueryTest {
 public:
     // The default model file comes from Apple's MarsHabitatPricePredictor sample app.
     CoreMLTest()
@@ -47,7 +47,7 @@ public:
                const char *modelName,
                const string &modelFilename,
                bool required =true)
-    :QueryTest(0, jsonFilename)
+    :C4QueryTest(0, jsonFilename)
     {
         if (@available(macOS 10.13, iOS 11.0, *)) {
             NSURL *url = [NSURL fileURLWithPath: asNSString(sFixturesDir + modelFilename)];

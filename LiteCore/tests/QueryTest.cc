@@ -1084,7 +1084,7 @@ TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
     {
         Transaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {

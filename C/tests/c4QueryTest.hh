@@ -20,20 +20,20 @@ using namespace std;
 using namespace fleece;
 
 
-class QueryTest : public C4Test {
+class C4QueryTest : public C4Test {
 public:
-    QueryTest(int which, string filename)
+    C4QueryTest(int which, string filename)
     :C4Test(which)
     {
         if (!filename.empty())
             importJSONLines(sFixturesDir + filename);
     }
 
-    QueryTest(int which)
-    :QueryTest(which, "names_100.json")
+    C4QueryTest(int which)
+    :C4QueryTest(which, "names_100.json")
     { }
 
-    ~QueryTest() {
+    ~C4QueryTest() {
         c4query_release(query);
     }
 
@@ -182,16 +182,16 @@ protected:
 };
 
 
-class PathsQueryTest : public QueryTest {
+class PathsQueryTest : public C4QueryTest {
 public:
     PathsQueryTest(int which)
-    :QueryTest(which, "paths.json")
+    :C4QueryTest(which, "paths.json")
     { }
 };
 
-class NestedQueryTest : public QueryTest {
+class NestedQueryTest : public C4QueryTest {
 public:
     NestedQueryTest(int which)
-    :QueryTest(which, "nested.json")
+    :C4QueryTest(which, "nested.json")
     { }
 };
