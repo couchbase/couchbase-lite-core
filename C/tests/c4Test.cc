@@ -32,6 +32,10 @@
 #include <mutex>
 #include <chrono>
 
+#if TARGET_OS_IPHONE
+#include <CoreFoundation/CFBundle.h>
+#endif
+
 using namespace std;
 
 const std::string& TempDir() {
@@ -189,6 +193,22 @@ _versioning(kC4RevisionTrees)
         //c4log_setBinaryFileLevel(kC4LogDebug);
         if (getenv("LiteCoreTestsQuiet"))
             c4log_setCallbackLevel(kC4LogWarning);
+
+#if TARGET_OS_IPHONE
+        static once_flag once;
+        call_once(once, [] {
+            // iOS tests copy the fixture files into the test bundle.
+            CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("org.couchbase.LiteCoreTests"));
+            CFURLRef url = CFBundleCopyResourcesDirectoryURL(bundle);
+            CFStringRef path = CFURLCopyPath(url);
+            char resourcesDir[1024];
+            Assert(CFStringGetCString(path, resourcesDir, sizeof(resourcesDir), kCFStringEncodingUTF8));
+            sFixturesDir           = string(resourcesDir) + "TestData/C/tests/data/";
+            sReplicatorFixturesDir = string(resourcesDir) + "TestData/Replicator/tests/data/";
+            CFRelease(path);
+            CFRelease(url);
+        });
+#endif
     });
     c4log_warnOnErrors(true);
 

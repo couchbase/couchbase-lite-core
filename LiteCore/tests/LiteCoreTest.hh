@@ -85,6 +85,8 @@ public:
     unsigned warningsLogged() noexcept;
     litecore::FilePath GetPath(const std::string& name, const std::string& extension) noexcept;
     
+    static std::string sFixturesDir;
+
 private:
     unsigned const _warningsAlreadyLogged;
     int _objectCount;
@@ -95,8 +97,6 @@ class DataFileTestFixture : public TestFixture, public DataFile::Delegate {
 public:
 
     static const int numberOfOptions = 1;
-
-    static std::string sFixturesDir;
 
     DataFileTestFixture()   :DataFileTestFixture(0) { }     // defaults to SQLite, rev-trees
     DataFileTestFixture(int testOption, const DataFile::Options *options =nullptr);

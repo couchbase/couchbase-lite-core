@@ -454,7 +454,7 @@ namespace litecore { namespace net {
         if (contentLength >= 0) {
             // Read exactly Content-Length bytes:
             if (contentLength > 0) {
-                body.resize(contentLength);
+                body.resize(size_t(contentLength));
                 if (readExactly((void*)body.buf, (size_t)contentLength) < contentLength) {
                     body.reset();
                     return false;

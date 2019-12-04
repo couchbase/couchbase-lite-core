@@ -26,6 +26,7 @@
 
     Catch::Session session;
     session.configData().reporterNames.push_back("list");
+    session.configData().useColour = Catch::UseColour::No; // otherwise it tries to use ANSI escapes in Xcode console
 
     NSArray* args = [NSProcessInfo.processInfo arguments];
     NSUInteger nargs = args.count;
