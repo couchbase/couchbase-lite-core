@@ -64,7 +64,7 @@ static C4KeyPair* retainedExternal(Key *key) {
     return external(retain(key));
 }
 
-static PublicKey* publicKey(C4KeyPair *c4key NONNULL) {
+LITECORE_UNUSED static PublicKey* publicKey(C4KeyPair *c4key NONNULL) {
     auto key = internal(c4key);
     return key->isPrivate() ? ((PrivateKey*)key)->publicKey().get() : (PublicKey*)key;
 }

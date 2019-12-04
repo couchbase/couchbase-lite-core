@@ -36,7 +36,7 @@ static NSString* asNSString(const string &str) {
 
 
 // Test class that uses a CoreML model
-class API_AVAILABLE(macos(10.13)) CoreMLTest : public C4QueryTest {
+class CoreMLTest : public C4QueryTest {
 public:
     // The default model file comes from Apple's MarsHabitatPricePredictor sample app.
     CoreMLTest()
@@ -90,7 +90,7 @@ public:
         CHECK(string(msg) == expectedErrorMessage);
     }
 
-    unique_ptr<cbl::CoreMLPredictiveModel> _model;
+    unique_ptr<cbl::PredictiveModel> _model;
 };
 
 

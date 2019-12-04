@@ -262,6 +262,8 @@
 		27B64960206975F900FC12F7 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
 		27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */; };
 		27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */; };
+		27B953DD239872C700C8AA90 /* CoreML.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2700BB4D216FF2DA00797537 /* CoreML.framework */; settings = {ATTRIBUTES = (Required, ); }; };
+		27B953DE239872D900C8AA90 /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27098AB721714AB0002751DA /* Vision.framework */; };
 		27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* RESTListenerTest.cc */; };
 		27BF024A1FB62647003D5BB8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
@@ -1485,6 +1487,8 @@
 				2719251F2396FE780053DDA6 /* libz.tbd in Frameworks */,
 				27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */,
 				27766E161982DA8E00CAA464 /* Security.framework in Frameworks */,
+				27B953DD239872C700C8AA90 /* CoreML.framework in Frameworks */,
+				27B953DE239872D900C8AA90 /* Vision.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3329,10 +3333,10 @@
 				279691621ED4B29E0086565D /* Support */,
 				2708FE3E1CF4CC880022F721 /* LiteCoreCppTests */,
 				274D04071BA75E1C00FF7C35 /* C4Tests */,
+				27139B2F18F8E9750021A9A3 /* LiteCore XCTests */,
 				27DF7D621F4236500022F3DF /* SQLite */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
 				2752B26A233D76000014AD9D /* mbedTLS */,
-				27139B2F18F8E9750021A9A3 /* LiteCore XCTests */,
 				27A924931D9B316D00086206 /* LiteCore-iOS */,
 				27A924AB1D9B316D00086206 /* LiteCore-iOS Tests */,
 				27B7E0F118F8FB4700044EBA /* All */,

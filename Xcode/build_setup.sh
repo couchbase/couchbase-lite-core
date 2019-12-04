@@ -19,10 +19,12 @@ if [[ "$PLATFORM_NAME" == "iphoneos" ]]
 then
     CMAKE_OPTS="$CMAKE_OPTS \
                 -DCMAKE_TOOLCHAIN_FILE=$SRCROOT/../vendor/ios-cmake/ios.toolchain.cmake \
-                -DPLATFORM=OS"
+                -DPLATFORM=OS \
+                -DDEPLOYMENT_TARGET=$IPHONEOS_DEPLOYMENT_TARGET"
 elif [[ "$PLATFORM_NAME" == "iphonesimulator" ]]
 then
     CMAKE_OPTS="$CMAKE_OPTS \
                 -DCMAKE_TOOLCHAIN_FILE=$SRCROOT/../vendor/ios-cmake/ios.toolchain.cmake \
-                -DPLATFORM=SIMULATOR64"
+                -DPLATFORM=SIMULATOR64 \
+                -DDEPLOYMENT_TARGET=$IPHONEOS_DEPLOYMENT_TARGET"
 fi
