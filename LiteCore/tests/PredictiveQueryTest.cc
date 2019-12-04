@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "C4QueryTest.hh"
+#include "QueryTest.hh"
 #include "PredictiveModel.hh"
 #include <math.h>
 
@@ -69,7 +69,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(C4QueryTest, "Predictive Query unregistered", "[Query][Predict]") {
+TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Predict]") {
     addNumberedDocs(1, 10);
     Retained<Query> query{ store->compileQuery(json5(
                                 "{'WHAT': [['PREDICTION()', '8ball', {number: ['.num']}]]}")) };
@@ -99,7 +99,7 @@ static void testResults(Query *query) {
 }
 
 
-TEST_CASE_METHOD(C4QueryTest, "Predictive Query", "[Query][Predict]") {
+TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
         Transaction t(db);
@@ -118,7 +118,7 @@ TEST_CASE_METHOD(C4QueryTest, "Predictive Query", "[Query][Predict]") {
 }
 
 
-TEST_CASE_METHOD(C4QueryTest, "Predictive Query invalid input", "[Query][Predict]") {
+TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]") {
     {
         Transaction t(db);
         writeMultipleTypeDocs(t);
@@ -138,7 +138,7 @@ TEST_CASE_METHOD(C4QueryTest, "Predictive Query invalid input", "[Query][Predict
 }
 
 
-TEST_CASE_METHOD(C4QueryTest, "Create/Delete Predictive Index", "[Query][Predict]") {
+TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]") {
     Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
@@ -150,7 +150,7 @@ TEST_CASE_METHOD(C4QueryTest, "Create/Delete Predictive Index", "[Query][Predict
 }
 
 
-TEST_CASE_METHOD(C4QueryTest, "Predictive Query indexed", "[Query][Predict]") {
+TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
         Transaction t(db);
@@ -201,7 +201,7 @@ TEST_CASE_METHOD(C4QueryTest, "Predictive Query indexed", "[Query][Predict]") {
 }
 
 
-TEST_CASE_METHOD(C4QueryTest, "Predictive Query compound indexed", "[Query][Predict]") {
+TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
         Transaction t(db);
@@ -251,7 +251,7 @@ TEST_CASE_METHOD(C4QueryTest, "Predictive Query compound indexed", "[Query][Pred
 }
 
 
-TEST_CASE_METHOD(C4QueryTest, "Predictive Query cached only", "[Query][Predict]") {
+TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
         Transaction t(db);
