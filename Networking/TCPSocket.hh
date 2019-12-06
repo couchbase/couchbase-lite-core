@@ -22,6 +22,7 @@ namespace litecore { namespace websocket {
     class Headers;
 } }
 namespace sockpp {
+    class socket;
     class stream_socket;
 }
 
@@ -132,7 +133,7 @@ namespace litecore { namespace net {
         bool createInterruptPipe();
         void checkStreamError();
         bool checkSocketFailure();
-        bool checkSocket(const sockpp::stream_socket &sock);
+        bool checkSocket(const sockpp::socket &sock);
         ssize_t _read(void *dst, size_t byteCount) MUST_USE_RESULT;
         void pushUnread(slice);
 

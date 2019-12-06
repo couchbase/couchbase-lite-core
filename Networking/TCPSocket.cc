@@ -733,7 +733,7 @@ namespace litecore { namespace net {
     }
 
 
-    bool TCPSocket::checkSocket(const sockpp::stream_socket &sock) {
+    bool TCPSocket::checkSocket(const sockpp::socket &sock) {
         if (sock.last_error()) {
             setError(POSIXDomain, socketToPosixErrCode(sock.last_error()));
             return false;
