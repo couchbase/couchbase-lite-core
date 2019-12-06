@@ -22,9 +22,14 @@
 #include "c4Certificate.h"
 #include "Certificate.hh"
 #include "PublicKey.hh"
-#include "CertRequest.hh"
 #include "c4.hh"
 #include <vector>
+
+#undef ENABLE_SENDING_CERT_REQUESTS
+#ifdef ENABLE_SENDING_CERT_REQUESTS
+#include "CertRequest.hh"
+#endif
+
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -162,9 +167,15 @@ C4Cert* c4cert_fromData(C4Slice certData, C4Error *outError) C4API {
 
 
 C4Cert* c4cert_requestFromData(C4Slice certRequestData, C4Error *outError) C4API {
+#ifdef ENABLE_CERT_REQUEST
     return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
         return retainedExternal(new CertSigningRequest(certRequestData));
     });
+#else
+    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented,
+                   "Certificate requests are disabled"_sl, outError);
+    return nullptr;
+#endif
 }
 
 
@@ -314,6 +325,7 @@ bool c4cert_sendSigningRequest(C4Cert *c4Cert C4NONNULL,
                                void *context,
                                C4Error *outError) C4API
 {
+#ifdef ENABLE_SENDING_CERT_REQUESTS
     auto csr = asUnsignedCert(c4Cert, outError);
     if (!csr)
         return false;
@@ -326,6 +338,10 @@ bool c4cert_sendSigningRequest(C4Cert *c4Cert C4NONNULL,
                            callback(context, external(cert), error);
                        });
     });
+#else
+    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "Sending CSRs is disabled"_sl, outError);
+    return false;
+#endif
 }
 
 
