@@ -10,6 +10,7 @@
 #include "HTTPTypes.hh"
 #include "function_ref.hh"
 #include "fleece/Fleece.hh"
+#include "sockpp/socket.h"
 #include <memory>
 #include <mutex>
 #include <vector>

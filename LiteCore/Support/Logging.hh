@@ -156,8 +156,8 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 
 #ifdef _MSC_VER
 #define LogToAt(DOMAIN, LEVEL, FMT, ...) \
-    {if (_usuallyFalse((DOMAIN).willLog(LogLevel::LEVEL))) \
-        (DOMAIN).log(LogLevel::LEVEL, FMT, ##__VA_ARGS__);}
+    do{if (_usuallyFalse((DOMAIN).willLog(LogLevel::LEVEL))) \
+        (DOMAIN).log(LogLevel::LEVEL, FMT, ##__VA_ARGS__);} while(0)
 
 #define LogTo(DOMAIN, FMT, ...)         LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
 #define LogVerbose(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)

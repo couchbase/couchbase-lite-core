@@ -307,6 +307,8 @@ set(
     SQLite3_UnicodeSN
     BLIPStatic
     mbedcrypto
+    mbedtls
+    mbedx509
 )
 
 target_include_directories(

@@ -45,7 +45,11 @@
 #pragma clang diagnostic pop
 
 #ifndef _WIN32
-#define cbl_strerror strerror
+#define tcp_read ::read
+#define tcp_write ::write
+#else
+#define tcp_read(s, buf, len) ::recv(s, (char *)(buf), len, 0)
+#define tcp_write(s, buf, len) ::send(s, (const char *)(buf), len, 0)
 #endif
 
 namespace litecore { namespace net {
@@ -126,6 +130,7 @@ namespace litecore { namespace net {
     }
 #endif
 
+    static int lastSocketsError();
     static constexpr size_t kInitialDelimitedReadBufferSize = 1024;
 
 
@@ -563,6 +568,7 @@ namespace litecore { namespace net {
             {WSA_INVALID_HANDLE, EBADF},
             {WSA_NOT_ENOUGH_MEMORY, ENOMEM},
             {WSA_INVALID_PARAMETER, EINVAL},
+            {WSAEINVAL, EINVAL},
             {WSAECONNREFUSED, ECONNREFUSED},
             {WSAEADDRINUSE, EADDRINUSE},
             {WSAEADDRNOTAVAIL, EADDRNOTAVAIL},
@@ -627,7 +633,7 @@ namespace litecore { namespace net {
         Assert(err != 0);
         if (err > 0) {
             err = socketToPosixErrCode(err);
-            string errStr = cbl_strerror(err);
+            string errStr = error::_what(error::POSIX, err);
             LOG(Warning, "%s got POSIX error %d \"%s\"",
                 (_isClient ? "ClientSocket" : "ResponderSocket"),
                 err, errStr.c_str());
