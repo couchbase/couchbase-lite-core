@@ -31,6 +31,8 @@ namespace litecore { namespace net {
     class TLSContext;
     class HTTPLogic;
 
+    using namespace sockpp;
+
     /** TCP socket class, using the sockpp library. */
     class TCPSocket {
     public:
