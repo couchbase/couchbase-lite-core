@@ -26,10 +26,10 @@ namespace litecore {
     class DataFile::Shared : public RefCounted, fleece::InstanceCountedIn<RefCounted>, Logging {
     public:
 
-        static Shared* forPath(const FilePath &path, DataFile *dataFile) {
+        static Retained<Shared> forPath(const FilePath &path, DataFile *dataFile) {
             string pathStr = path.canonicalPath();
             unique_lock<mutex> lock(sFileMapMutex);
-            Shared* file = sFileMap[pathStr];
+            Retained<Shared> file = sFileMap[pathStr];
             if (!file) {
                 file = new Shared(pathStr);
                 sFileMap[pathStr] = file;

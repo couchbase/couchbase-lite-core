@@ -637,3 +637,14 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "JSON null chars", "[Upgrade]") {
     CHECK(root->asDict()->get("foo"_sl)->asString() == "Hello\0There"_sl);
 }
 
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Index table creation", "[Upgrade]") {
+    // https://issues.couchbase.com/browse/CBL-550
+
+    // Create an index, which triggers the logic to upgrade to version 301, which should not happen (and was)
+    // if the version is already higher
+    KeyStore::IndexOptions options { "en", true };
+    store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kValueIndex, &options);
+
+    // Before the fix, this would throw
+    reopenDatabase();
+}

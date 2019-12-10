@@ -121,7 +121,18 @@ namespace litecore {
     private:
         friend class SQLiteKeyStore;
 
+        // SQLite schema versioning (values of `pragma user_version`)
+        enum class SchemaVersion {
+            None            = 0,    // Newly created database
+            MinReadable     = 201,  // Cannot open earlier versions than this (CBL 2.0)
+            MaxReadable     = 399,  // Cannot open versions newer than this
+
+            WithIndexTable  = 301,  // Added 'indexes' table (CBL 2.5)
+            WithPurgeCount  = 302,  // Added 'purgeCnt' column to KeyStores (CBL 2.7)
+        };
+
         void reopenSQLiteHandle();
+        void ensureSchemaVersionAtLeast(SchemaVersion);
         void decrypt();
         bool _decrypt(EncryptionAlgorithm, slice key);
         int _exec(const std::string &sql);
@@ -139,7 +150,8 @@ namespace litecore {
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
         std::unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
-        CollationContextVector _collationContexts;
+        CollationContextVector               _collationContexts;
+        SchemaVersion                        _schemaVersion {SchemaVersion::None};
     };
 
 
