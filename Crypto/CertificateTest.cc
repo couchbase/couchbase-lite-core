@@ -310,6 +310,7 @@ TEST_CASE("Cert request parsing", "[Certs]") {
     CHECK(san[0].second == "pupshaw@couchbase.org"_sl);
 }
 
+#if 0
 TEST_CASE_METHOD(C4Test, "Send CSR to CA failure", "[Certs][.SyncServer]") {
     Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
     Retained<CertSigningRequest> csr = new CertSigningRequest(DistinguishedName(kSubjectName), key);
@@ -341,3 +342,4 @@ TEST_CASE_METHOD(C4Test, "Send CSR to CA failure", "[Certs][.SyncServer]") {
     CHECK(error.domain == WebSocketDomain);
     CHECK(error.code == 404);
 }
+#endif

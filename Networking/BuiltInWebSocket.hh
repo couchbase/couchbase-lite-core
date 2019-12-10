@@ -59,14 +59,16 @@ namespace litecore { namespace websocket {
 
     private:
         BuiltInWebSocket(const URL&, Role, const Parameters &);
-        void run();
+        void _bgConnect();
         void setThreadName();
         bool configureClientCert(fleece::Dict auth);
         bool configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
-        std::unique_ptr<net::ClientSocket> _connectLoop()MUST_USE_RESULT;
+        std::unique_ptr<net::ClientSocket> _connectLoop() MUST_USE_RESULT;
         void ioLoop();
-        bool readFromSocket();
-        bool writeToSocket();
+        void awaitReadable();
+        void awaitWriteable();
+        void readFromSocket();
+        void writeToSocket();
         void closeWithException(const std::exception&, const char *where);
         void closeWithError(C4Error);
 
@@ -80,9 +82,8 @@ namespace litecore { namespace websocket {
 
         c4::ref<C4Database> _database;                      // The database (used only for cookies)
         std::unique_ptr<net::TCPSocket> _socket;            // The TCP socket
-        Retained<net::TLSContext> _tlsContext;                   // TLS settings
-        std::thread _ioThread;                              // Thread that reads/writes socket
-        std::atomic<bool> _waitingForIO {false};            // Blocked in waitForIO()?
+        Retained<net::TLSContext> _tlsContext;              // TLS settings
+        std::thread _connectThread;                         // Thread that opens the connection
 
         std::vector<fleece::slice> _outbox;                 // Byte ranges to be sent by writer
         std::vector<fleece::alloc_slice> _outboxAlloced;    // Same, but retains the heap data

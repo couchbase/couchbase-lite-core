@@ -111,20 +111,9 @@ namespace litecore { namespace net {
         /// Enables or disables non-blocking mode.
         bool setNonBlocking(bool);
 
-        using interruption_t = uint8_t;
-
-        /// Blocks until the socket has data to read (if `ioReadable` is true) and/or has
-        /// space for output (if `ioWriteable` is true.) On return, `ioReadable` and `ioWriteable`
-        /// will be set according to which condition is now true.
-        /// If `interruptWait()` was called, `outMessage` will be set to the interruption
-        /// message it was called with. Otherwise `outMessage` is zero on return.
-        bool waitForIO(bool &ioReadable, bool &ioWriteable, interruption_t &outMessage);
-
-        /// Interrupts a `waitForIO()` call on another thread. The given interruption message
-        /// will be set as the `outMessage` parameter when `waitForIO` returns.
-        /// If `waitForIO()` is not currently running, then the next call will immediately
-        /// be interrupted, with this message.
-        bool interruptWait(interruption_t);
+        void onReadable(std::function<void()>);
+        void onWriteable(std::function<void()>);
+        void interrupt();
 
     protected:
         bool setSocket(std::unique_ptr<sockpp::stream_socket>);
@@ -136,6 +125,7 @@ namespace litecore { namespace net {
         bool checkSocket(const sockpp::socket &sock);
         ssize_t _read(void *dst, size_t byteCount) MUST_USE_RESULT;
         void pushUnread(slice);
+        int fileDescriptor();
 
     private:
         bool _setTimeout(double secs);
@@ -151,8 +141,6 @@ namespace litecore { namespace net {
         size_t _unreadLen {0};              // Length of valid data in _unread
         bool _eofOnRead {false};            // Has read stream reached EOF?
         bool _eofOnWrite {false};           // Has write stream reached EOF?
-        int _interruptReadFD {-1};          // File descriptor of pipe used to interrupt select()
-        int _interruptWriteFD {-1};         // Other end of the pipe used to interrupt select()
         std::mutex _mutex;                  // Synchronizes creation of the above FDs
     };
 

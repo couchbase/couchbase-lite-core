@@ -290,6 +290,8 @@
 		27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8D1D4D3F3400D806E0 /* Transaction.h */; };
 		27D74A971D4D3F3400D806E0 /* VariadicBind.h in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A8E1D4D3F3400D806E0 /* VariadicBind.h */; };
 		27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A9E1D4FF65000D806E0 /* c4Base.cc */; };
+		27D95BA9239F217A0090CE46 /* Poller.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D95BA7239F217A0090CE46 /* Poller.hh */; };
+		27D95BAA239F217A0090CE46 /* Poller.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D95BA8239F217A0090CE46 /* Poller.cc */; };
 		27D9655A23355DC900F4A51C /* SecureDigest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D965522334608B00F4A51C /* SecureDigest.cc */; };
 		27D9655C23355DC900F4A51C /* SecureSymmetricCrypto.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274711C92037BE5A008E9A5A /* SecureSymmetricCrypto.cc */; };
 		27D9655D2335663D00F4A51C /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
@@ -1186,6 +1188,8 @@
 		27D74A8D1D4D3F3400D806E0 /* Transaction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Transaction.h; path = include/SQLiteCpp/Transaction.h; sourceTree = "<group>"; };
 		27D74A8E1D4D3F3400D806E0 /* VariadicBind.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VariadicBind.h; path = include/SQLiteCpp/VariadicBind.h; sourceTree = "<group>"; };
 		27D74A9E1D4FF65000D806E0 /* c4Base.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Base.cc; sourceTree = "<group>"; };
+		27D95BA7239F217A0090CE46 /* Poller.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Poller.hh; sourceTree = "<group>"; };
+		27D95BA8239F217A0090CE46 /* Poller.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Poller.cc; sourceTree = "<group>"; };
 		27D965252330394C00F4A51C /* c4RemoteReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4RemoteReplicator.hh; sourceTree = "<group>"; };
 		27D9652A23303A2B00F4A51C /* c4LocalReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4LocalReplicator.hh; sourceTree = "<group>"; };
 		27D9652B23303B0C00F4A51C /* c4IncomingReplicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4IncomingReplicator.hh; sourceTree = "<group>"; };
@@ -1671,6 +1675,8 @@
 				270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */,
 				27304A0423023FCF0049AC69 /* BuiltInWebSocket.cc */,
 				27304A0323023FCF0049AC69 /* BuiltInWebSocket.hh */,
+				27D95BA8239F217A0090CE46 /* Poller.cc */,
+				27D95BA7239F217A0090CE46 /* Poller.hh */,
 				27469CFC233C35EB00A1EE1A /* TLSContext.cc */,
 				27469CFB233C35EB00A1EE1A /* TLSContext.hh */,
 			);
@@ -2847,6 +2853,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27727C54230F279D0082BCC9 /* HTTPLogic.hh in Headers */,
+				27D95BA9239F217A0090CE46 /* Poller.hh in Headers */,
 				27469CFD233C35EB00A1EE1A /* TLSContext.hh in Headers */,
 				270F2BD52301E8AE00D8DB21 /* TCPSocket.hh in Headers */,
 				27DDC54B236B56D000580B2B /* CertRequest.hh in Headers */,
@@ -3627,6 +3634,7 @@
 				27AFF3AB23036B2500B4D6C4 /* acceptor.cpp in Sources */,
 				27AFF3AF23036B2500B4D6C4 /* datagram_socket.cpp in Sources */,
 				27AFF3AD23036B2500B4D6C4 /* connector.cpp in Sources */,
+				27D95BAA239F217A0090CE46 /* Poller.cc in Sources */,
 				27AFF3AE23036B2500B4D6C4 /* stream_socket.cpp in Sources */,
 				27AFF3B023036B5800B4D6C4 /* TCPSocket.cc in Sources */,
 				27AFF3B123036B5800B4D6C4 /* BuiltInWebSocket.cc in Sources */,

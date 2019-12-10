@@ -18,6 +18,7 @@
 
 #include "TCPSocket.hh"
 #include "TLSContext.hh"
+#include "Poller.hh"
 #include "Headers.hh"
 #include "HTTPLogic.hh"
 #include "Certificate.hh"
@@ -53,9 +54,6 @@ namespace litecore { namespace net {
     using namespace sockpp;
     using namespace litecore::net;
     using namespace litecore::websocket;
-
-
-    static int lastSocketsError();
 
 
 #ifdef _WIN32
@@ -157,16 +155,7 @@ namespace litecore { namespace net {
 
     TCPSocket::~TCPSocket()
     {
-        if (_interruptReadFD >= 0) {
-#ifndef _WIN32
-            ::close(_interruptReadFD);
-            ::close(_interruptWriteFD);
-#else
-            ::closesocket(_interruptReadFD);
-            ::closesocket(_interruptWriteFD);
-#endif
-        }
-        _socket.reset(); // Make sure socket is closed before TLSContext
+        _socket.reset(); // Make sure socket closes before _tlsContext does
     }
 
 
@@ -202,9 +191,8 @@ namespace litecore { namespace net {
 
 
     void TCPSocket::close() {
-        if (_socket) {
+        if (_socket)
             _socket->close();
-        }
     }
 
 
@@ -510,98 +498,24 @@ namespace litecore { namespace net {
     }
 
 
-    bool TCPSocket::waitForIO(bool &readable, bool &writeable, uint8_t &message) {
-        LOG(Debug, "waitForIO(readable=%d, writeable=%d) ...", readable, writeable);
-        if (!createInterruptPipe())
-            return false;
-
-        if (_usuallyFalse(_unreadLen > 0) && readable) {
-            // There is buffered data, so indicate that I'm readable:
-            writeable = false;
-            message = 0;
-        } else {
-            fd_set readSet, writeSet;
-            FD_ZERO(&readSet);
-            FD_ZERO(&writeSet);
-
-            socket_t sockfd = _wrappedSocket ? _wrappedSocket->handle() : _socket->handle();
-            if (readable)
-                FD_SET(sockfd, &readSet);
-            if (writeable)
-                FD_SET(sockfd, &writeSet);
-            FD_SET(_interruptReadFD, &readSet);
-
-            while (::select(max(sockfd, _interruptReadFD) + 1,
-                            &readSet,
-                            (writeable ? &writeSet : nullptr),
-                            nullptr, nullptr) < 0) {
-                int error = lastSocketsError();
-                if (error != EINTR) {
-                    setError(POSIXDomain, error);
-                    return false;
-                }
-            }
-
-            readable  = FD_ISSET(sockfd, &readSet);
-            writeable = FD_ISSET(sockfd, &writeSet);
-            message   = 0;
-            if (FD_ISSET(_interruptReadFD, &readSet))
-                cbl_read(_interruptReadFD, &message, sizeof(message));
-        }
-
-        LOG(Debug, "...after waitForIO: readable=%d, writeable=%d, interruption=%d",
-            readable, writeable, message);
-        return true;
+    int TCPSocket::fileDescriptor() {
+        return _wrappedSocket ? _wrappedSocket->handle() : _socket->handle();
     }
 
 
-    bool TCPSocket::interruptWait(interruption_t message) {
-        if (!createInterruptPipe())
-            return false;
-        LOG(Debug, "Interrupting waitForIO with %d", message);
-        if (cbl_write(_interruptWriteFD, &message, sizeof(message)) < 0) {
-            setError(POSIXDomain, lastSocketsError());
-            return false;
-        }
-        return true;
+    void TCPSocket::onReadable(function<void()> listener) {
+        Poller::instance().addListener(fileDescriptor(), Poller::kReadable, listener);
     }
 
 
-    bool TCPSocket::createInterruptPipe() {
-        // To allow select() system calls to be interrupted, we create a pipe and have select()
-        // watch its read end. Then writing to the pipe will cause select() to return. As a bonus,
-        // we can use the data written to the pipe as a message, to let the client that called
-        // waitForIO know what happened.
-        lock_guard<mutex> lock(_mutex);
-        if (_interruptReadFD >= 0)
-            return true;
-
-#ifndef _WIN32
-        int fd[2];
-        if (::pipe(fd) < 0) {
-            setError(POSIXDomain, errno);
-            return false;
-        }
-        _interruptReadFD = fd[0];
-        _interruptWriteFD = fd[1];
-#else
-        // On Windows, pipes aren't available so we have to create a pair of TCP sockets
-        // connected through the loopback interface. <https://stackoverflow.com/a/3333565/98077>
-        tcp_acceptor acc(inet_address(INADDR_LOOPBACK, 0));
-        if (!checkSocket(acc))
-            return false;
-        tcp_connector readSock(acc.address());
-        if (!checkSocket(readSock))
-            return false;
-        tcp_socket writeSock = acc.accept();
-        if (!checkSocket(writeSock))
-            return false;
-        _interruptReadFD = readSock.release();
-        _interruptWriteFD = writeSock.release();
-#endif
-        return true;
+    void TCPSocket::onWriteable(function<void()> listener) {
+        Poller::instance().addListener(fileDescriptor(), Poller::kWriteable, listener);
     }
 
+
+    void TCPSocket::interrupt() {
+        Poller::instance().interrupt(fileDescriptor());
+    }
 
 
 #pragma mark - ERRORS:
@@ -740,15 +654,6 @@ namespace litecore { namespace net {
         } else {
             return true;
         }
-    }
-
-
-    static int lastSocketsError() {
-#ifdef _WIN32
-        return ::WSAGetLastError();
-#else
-        return errno;
-#endif
     }
 
 } }

@@ -18,6 +18,7 @@
 
 #pragma once
 #include "RefCounted.hh"
+#include "InstanceCounted.hh"
 #include "Request.hh"
 #include "c4Base.h"
 #include <map>
@@ -41,10 +42,10 @@ namespace litecore::net {
 namespace litecore { namespace REST {
 
     /** HTTP server with configurable URI handlers. */
-    class Server : public fleece::RefCounted {
+    class Server : public fleece::RefCounted, fleece::InstanceCountedIn<Server> {
     public:
         Server();
-
+        
         void start(uint16_t port,
                    const char *hostname =nullptr,
                    net::TLSContext* =nullptr);
@@ -67,25 +68,25 @@ namespace litecore { namespace REST {
 
     protected:
         struct URIRule {
-            net::Methods     methods;
+            net::Methods methods;
             std::string pattern;
             std::regex  regex;
             Handler     handler;
         };
 
         URIRule* findRule(net::Method method, const std::string &path);
-        ~Server() = default;
+        ~Server();
 
         void dispatchRequest(RequestResponse*);
 
     private:
-        void acceptConnections();
+        void awaitConnection();
+        void acceptConnection();
         void handleConnection(sockpp::stream_socket&&);
 
         fleece::Retained<crypto::Identity> _identity;
         fleece::Retained<net::TLSContext> _tlsContext;
         std::unique_ptr<sockpp::acceptor> _acceptor;
-        std::thread _acceptThread;
         std::mutex _mutex;
         std::vector<URIRule> _rules;
         std::map<std::string, std::string> _extraHeaders;

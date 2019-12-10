@@ -20,6 +20,7 @@
 #include "Request.hh"
 #include "TCPSocket.hh"
 #include "TLSContext.hh"
+#include "Poller.hh"
 #include "Certificate.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -42,9 +43,11 @@ namespace litecore { namespace REST {
     using namespace litecore::net;
     using namespace sockpp;
 
-
     Server::Server()
-    {
+    { }
+
+    
+    Server::~Server() {
         stop();
     }
 
@@ -60,40 +63,60 @@ namespace litecore { namespace REST {
         _acceptor.reset(new tcp_acceptor (port));
         if (!*_acceptor)
             error::_throw(error::POSIX, _acceptor->last_error());
-        _acceptThread = thread(bind(&Server::acceptConnections, this));
+        _acceptor->set_non_blocking();
+        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", _port);
+        awaitConnection();
     }
 
     
     void Server::stop() {
+        lock_guard<mutex> lock(_mutex);
         if (!_acceptor)
             return;
 
+        c4log(RESTLog, kC4LogInfo,"Stopping server");
+        Poller::instance().removeListeners(_acceptor->handle());
         _acceptor->close();
-        _acceptThread.join();
         _acceptor.reset();
         _rules.clear();
     }
 
 
-    void Server::acceptConnections() {
-        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", _port);
-        while (true) {
-            try {
-                // Accept a new client connection
-                tcp_socket sock = _acceptor->accept();
-                if (sock) {
-                    handleConnection(move(sock));
-                } else {
-                    if (!_acceptor->is_open())
-                        break;
+    void Server::awaitConnection() {
+        lock_guard<mutex> lock(_mutex);
+        if (!_acceptor)
+            return;
+        
+        Poller::instance().addListener(_acceptor->handle(), Poller::kReadable, [=] {
+            Retained<Server> selfRetain = this;
+            acceptConnection();
+        });
+    }
+
+
+    void Server::acceptConnection() {
+        try {
+            // Accept a new client connection
+            tcp_socket sock;
+            {
+                lock_guard<mutex> lock(_mutex);
+                if (!_acceptor || !_acceptor->is_open())
+                    return;
+                sock = _acceptor->accept();
+                if (!sock) {
                     c4log(RESTLog, kC4LogError, "Error accepting incoming connection: %d %s",
                           _acceptor->last_error(), _acceptor->last_error_str().c_str());
                 }
-            } catch (const std::exception &x) {
-                c4log(RESTLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());
             }
+            if (sock) {
+                sock.set_non_blocking(false);
+                handleConnection(move(sock));
+            }
+        } catch (const std::exception &x) {
+            c4log(RESTLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());
         }
-        c4log(RESTLog, kC4LogInfo,"Server stopped accepting connections");
+        // Start another async accept:
+        awaitConnection();
     }
 
 

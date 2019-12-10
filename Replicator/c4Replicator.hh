@@ -226,6 +226,7 @@ protected:
             if (_status.level > kC4Connecting && oldLevel <= kC4Connecting)
                 handleConnected();
             if (_status.level == kC4Stopped) {
+                _replicator->terminate();
                 _replicator = nullptr;
                 handleStopped();     // NOTE: handleStopped may change _status
             }
