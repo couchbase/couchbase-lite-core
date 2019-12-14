@@ -28,8 +28,8 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
-    static inline pure_slice ReadUTF8(slice& str) {
-        pure_slice retVal = NextUTF8(str);
+    static inline slice ReadUTF8(slice& str) {
+        slice retVal = NextUTF8(str);
         str.moveStart(retVal.size);
         return retVal;
     }

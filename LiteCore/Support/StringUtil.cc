@@ -239,7 +239,7 @@ namespace litecore {
         return 0;
     }
 
-    pure_slice NextUTF8(slice str) noexcept {
+    slice NextUTF8(slice str) noexcept {
         const size_t nextLength = NextUTF8Length(str);
         if(nextLength == 0) {
             return nullslice;

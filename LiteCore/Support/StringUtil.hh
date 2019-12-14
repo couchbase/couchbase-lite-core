@@ -146,7 +146,7 @@ namespace litecore {
 
     /** Returns a slice containing the bytes of the next UTF-8 encoded character, or nullslice if
      *  not valid or no more characters remain */
-    fleece::pure_slice NextUTF8(fleece::slice) noexcept;
+    fleece::slice NextUTF8(fleece::slice) noexcept;
 
     /** Returns a copy of a UTF-8 string with all letters converted to upper- or lowercase.
         This function is Unicode-aware and will convert non-ASCII letters.
