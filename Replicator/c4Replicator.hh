@@ -101,11 +101,11 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                  C4Database* otherDB,
                  const C4ReplicatorParameters &params)
     :C4Replicator(new Replicator(db,
-                                 new LoopbackWebSocket(Address(db), Role::Client),
+                                 new LoopbackWebSocket(Address(otherDB), Role::Client),
                                  *this,
                                  replOpts(params).setNoDeltas()),
                   new Replicator(otherDB,
-                                 new LoopbackWebSocket(Address(otherDB), Role::Server),
+                                 new LoopbackWebSocket(Address(db), Role::Server),
                                  *this,
                                  Replicator::Options(kC4Passive, kC4Passive).setNoIncomingConflicts()
                                                                             .setNoDeltas()),
