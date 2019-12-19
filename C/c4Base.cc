@@ -234,7 +234,6 @@ bool c4error_mayBeTransient(C4Error err) C4API {
     static CodeList kTransientWebSocket = {
         408, /* Request Timeout */
         429, /* Too Many Requests (RFC 6585) */
-        500, /* Internal Server Error */
         502, /* Bad Gateway */
         503, /* Service Unavailable */
         504, /* Gateway Timeout */
