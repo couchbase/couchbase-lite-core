@@ -504,7 +504,8 @@ string C4Test::getDocJSON(C4Database* inDB, C4Slice docID) {
 vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
                                                 vector<string> attachments,
                                                 const char *contentType,
-                                                vector<string>* legacyNames)
+                                                vector<string>* legacyNames,
+                                                C4RevisionFlags flags)
 {
     vector<C4BlobKey> keys;
     C4Error c4err;
@@ -534,7 +535,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     // Save document:
     C4DocPutRequest rq = {};
     rq.docID = docID;
-    rq.revFlags = kRevHasAttachments;
+    rq.revFlags = flags | kRevHasAttachments;
     rq.allocedBody = body;
     rq.save = true;
     C4Document* doc = c4doc_put(db, &rq, nullptr, &c4err);

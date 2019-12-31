@@ -1558,14 +1558,28 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     Log("-------- Mutate Doc In db --------");
-    // Simulate modifying an attachment. In order to avoid having to save a new blob to the db,
-    // use the same digest as the 2nd blob.
-    mutateDoc(db, "att1"_sl, [](MutableDict rev) {
-        auto atts = rev["attached"_sl].asArray().asMutable();
-        auto blob = atts[0].asDict().asMutable();
-        blob["digest"_sl] = "sha1-rATs731fnP+PJv2Pm/WXWZsCw48=";
-        blob["content_type"_sl] = "image/jpeg";
-    });
+    bool modifiedDigest = false;
+    SECTION("Not Modifying Digest") {
+        // Modify attachment metadata (other than the digest):
+        mutateDoc(db, "att1"_sl, [](MutableDict rev) {
+            auto atts = rev["attached"_sl].asArray().asMutable();
+            auto blob = atts[0].asDict().asMutable();
+            blob["content_type"_sl] = "image/jpeg";
+        });
+    }
+    SECTION("Not Modifying Digest") {
+        // Simulate modifying an attachment, i.e. changing its "digest" property.
+        // This goes through a different code path than other metadata changes; see comment in
+        // IncomingRev::_handleRev()...
+        // (In order to avoid having to save a new blob to the db, use same digest as 2nd blob.)
+        mutateDoc(db, "att1"_sl, [](MutableDict rev) {
+            auto atts = rev["attached"_sl].asArray().asMutable();
+            auto blob = atts[0].asDict().asMutable();
+            blob["digest"_sl] = "sha1-rATs731fnP+PJv2Pm/WXWZsCw48=";
+            blob["content_type"_sl] = "image/jpeg";
+        });
+        modifiedDigest = true;
+    }
 
     Log("-------- Push To db2 Again --------");
     _expectedDocumentCount = 1;
@@ -1575,15 +1589,88 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
 
     c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
-    CHECK(string(json) ==
-          "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27,\"revpos\":1,\"stub\":true},"
-          "\"blob_/attached/1\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10,\"revpos\":1,\"stub\":true},"
-          "\"blob_/attached/2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0,\"revpos\":1,\"stub\":true}},"
-          "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
-          "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10},"
-          "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}]}");
+    if (modifiedDigest) {
+        CHECK(string(json) ==
+              "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27,\"revpos\":1,\"stub\":true},"
+              "\"blob_/attached/1\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10,\"revpos\":1,\"stub\":true},"
+              "\"blob_/attached/2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0,\"revpos\":1,\"stub\":true}},"
+              "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
+              "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10},"
+              "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}]}");
+    } else {
+        CHECK(string(json) ==
+              "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27,\"revpos\":1,\"stub\":true},"
+              "\"blob_/attached/1\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10,\"revpos\":1,\"stub\":true},"
+              "\"blob_/attached/2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0,\"revpos\":1,\"stub\":true}},"
+              "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27},"
+              "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10},"
+              "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}]}");
+    }
 }
 
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][Delta][blob]") {
+    // Simulate SG which requires old-school "_attachments" property:
+    auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
+
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        vector<string> legacyNames {"attachment1", "attachment2", "attachment3"};
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain",
+                                         &legacyNames,
+                                         kRevKeepBody);
+        _expectedDocumentCount = 1;
+    }
+    Log("-------- Pull To db2 --------");
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
+    validateCheckpoints(db2, db, "{\"remote\":1}");
+
+    Log("-------- Mutate Doc In db --------");
+    bool modifiedDigest = false;
+    SECTION("Not Modifying Digest") {
+        // Modify attachment metadata (other than the digest):
+        mutateDoc(db, "att1"_sl, [](MutableDict rev) {
+            auto atts = rev["_attachments"_sl].asDict().asMutable();
+            auto blob = atts["attachment1"_sl].asDict().asMutable();
+            blob["content_type"_sl] = "image/jpeg";
+        });
+    }
+    SECTION("Not Modifying Digest") {
+        // Simulate modifying an attachment, i.e. changing its "digest" property.
+        // This goes through a different code path than other metadata changes; see comment in
+        // IncomingRev::_handleRev()...
+        // (In order to avoid having to save a new blob to the db, use same digest as 2nd blob.)
+        mutateDoc(db, "att1"_sl, [](MutableDict rev) {
+            auto atts = rev["_attachments"_sl].asDict().asMutable();
+            auto blob = atts["attachment1"_sl].asDict().asMutable();
+            blob["digest"_sl] = "sha1-rATs731fnP+PJv2Pm/WXWZsCw48=";
+            blob["content_type"_sl] = "image/jpeg";
+        });
+        modifiedDigest = true;
+    }
+
+    Log("-------- Pull To db2 Again --------");
+    _expectedDocumentCount = 1;
+    auto before = DBAccess::gNumDeltasApplied.load();
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
+    CHECK(DBAccess::gNumDeltasApplied - before == 1);
+
+    c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
+    alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
+    if (modifiedDigest) {
+        CHECK(string(json) ==
+              "{\"_attachments\":{\"attachment1\":{\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
+              "\"attachment2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10},"
+              "\"attachment3\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}}}");
+    } else {
+        CHECK(string(json) ==
+              "{\"_attachments\":{\"attachment1\":{\"content_type\":\"image/jpeg\",\"digest\":\"sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=\",\"length\":27},"
+              "\"attachment2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10},"
+              "\"attachment3\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}}}");
+    }
+}
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][Pull][Delta][blob]") {

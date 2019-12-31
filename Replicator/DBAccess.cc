@@ -319,7 +319,7 @@ namespace litecore { namespace repl {
         Doc reEncodedDoc;
         if (useLegacyAttachments || !useDBSharedKeys) {
             Encoder enc;
-            enc.setSharedKeys(_tempSharedKeys);
+            enc.setSharedKeys(tempSharedKeys());
             if (useLegacyAttachments) {
                 // Delta refers to legacy attachments, so convert my base revision to have them:
                 encodeRevWithLegacyAttachments(enc, srcRoot, 1);

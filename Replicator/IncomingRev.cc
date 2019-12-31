@@ -150,7 +150,7 @@ namespace litecore { namespace repl {
         }
 
         // Note: fleeceDoc is _not_ yet suitable for inserting into the
-        // database because it doesn't use the SharedKeys, but it lets us look at the doc
+        // database because it doesn't use the same SharedKeys, but it lets us look at the doc
         // metadata and blobs.
         Dict root = fleeceDoc.root().asDict();
 
