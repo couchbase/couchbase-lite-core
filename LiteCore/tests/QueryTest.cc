@@ -344,11 +344,26 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
         
         t.commit();
     }
-    
-    Retained<Query> query{ store->compileQuery(json5(
-        "{WHAT: ['._id'], WHERE: ['ISBOOLEAN()', ['.value']]}")) };
+
+    // Check the data type of the returned values:
+    Retained<Query> query = store->compileQuery(json5( "{WHAT: ['.value']}"));
+    Retained<QueryEnumerator> e = query->createEnumerator();
+    REQUIRE(e->getRowCount() == 4);
+    int row = 0;
+    while (e->next()) {
+        auto type = e->columns()[0]->type();
+        if (row < 2)
+            CHECK(type == kBoolean);
+        else
+            CHECK(type == kNumber);
+        ++row;
+    }
+
+    // Check the ISBOOLEAN function:
+    query = store->compileQuery(json5(
+        "{WHAT: ['._id'], WHERE: ['ISBOOLEAN()', ['.value']]}"));
     CHECK(query->columnTitles() == (vector<string>{"id"}));
-    Retained<QueryEnumerator> e(query->createEnumerator());
+    e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
     int i = 1;
     while (e->next()) {
