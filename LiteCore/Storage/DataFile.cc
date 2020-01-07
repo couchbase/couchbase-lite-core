@@ -34,6 +34,13 @@
 
 #include "SQLiteDataFile.hh"
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#define AndroidLog __android_log_print
+#else
+#define AndroidLog(x, y, z, ...)
+#endif
+
 using namespace std;
 
 
@@ -303,16 +310,14 @@ namespace litecore {
             mutableThis->_documentKeys = keys;
         }
 
-#ifdef TMP_619_LOGGING
         if(exists) {
-            Warn("SharedKeys 0x%p requested for 0x%p", keys, this);
+            AndroidLog(3, "CouchbaseLite/Keys", "SharedKeys 0x%p requested for 0x%p", keys, this);
         } else {
-            Warn("SharedKeys 0x%p created for 0x%p", keys, this);
+            AndroidLog(3, "CouchbaseLite/Keys", "SharedKeys 0x%p created for 0x%p", keys, this);
             if(keys->count() != 0) {
-                Warn("\t...count would have been 0 previously (actually %u)", keys->count());
+                AndroidLog(3, "CouchbaseLite/Keys", "\t...count would have been 0 previously (actually %u)", keys->count());
             }
         }
-#endif
 
         return keys;
     }
