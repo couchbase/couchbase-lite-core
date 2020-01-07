@@ -294,11 +294,26 @@ namespace litecore {
 
     fleece::impl::SharedKeys* DataFile::documentKeys() const {
         auto keys = _documentKeys.get();
+        bool exists = true;
         if (!keys && _options.useDocumentKeys) {
+            exists = false;
             auto mutableThis = const_cast<DataFile*>(this);
             keys = new DocumentKeys(*mutableThis);
+            keys->refresh();
             mutableThis->_documentKeys = keys;
         }
+
+#ifdef TMP_619_LOGGING
+        if(exists) {
+            Warn("SharedKeys 0x%p requested for 0x%p", keys, this);
+        } else {
+            Warn("SharedKeys 0x%p created for 0x%p", keys, this);
+            if(keys->count() != 0) {
+                Warn("\t...count would have been 0 previously (actually %u)", keys->count());
+            }
+        }
+#endif
+
         return keys;
     }
 
@@ -314,7 +329,7 @@ namespace litecore {
     }
 
     void DataFile::transactionBegan(Transaction*) {
-        if (documentKeys())
+        if (_documentKeys)
             _documentKeys->transactionBegan();
     }
 

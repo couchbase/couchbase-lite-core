@@ -65,6 +65,7 @@ option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 
 add_definitions(
     -DCMAKE                             # Let the source know this is a CMAKE build
+    -DTMP_619_LOGGING
 )
 
 if(BUILD_ENTERPRISE)
