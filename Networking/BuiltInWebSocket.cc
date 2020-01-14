@@ -103,8 +103,10 @@ namespace litecore { namespace websocket {
 
     void BuiltInWebSocket::closeSocket() {
         logVerbose("closeSocket");
-        if (_socket &&_socket->connected())
-            _socket->close();   // This will be detected in readFromSocket(), which will close it
+        if (_socket &&_socket->connected()) {
+            _socket->close();   // This will often be detected in readFromSocket(), which will close it
+            _socket->interrupt(); // But on Windows it usually is not, so interrupt it to poke it into doing the right thing
+        }
     }
 
 

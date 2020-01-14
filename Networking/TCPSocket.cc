@@ -44,14 +44,6 @@
 #include "mbedtls/ssl.h"
 #pragma clang diagnostic pop
 
-#ifndef _WIN32
-#define tcp_read ::read
-#define tcp_write ::write
-#else
-#define tcp_read(s, buf, len) ::recv(s, (char *)(buf), len, 0)
-#define tcp_write(s, buf, len) ::send(s, (const char *)(buf), len, 0)
-#endif
-
 namespace litecore { namespace net {
     using namespace std;
     using namespace fleece;
@@ -197,7 +189,7 @@ namespace litecore { namespace net {
 
     void TCPSocket::close() {
         if (_socket)
-            _socket->close();
+            _socket->shutdown();
     }
 
 
@@ -519,7 +511,11 @@ namespace litecore { namespace net {
 
 
     void TCPSocket::interrupt() {
-        Poller::instance().interrupt(fileDescriptor());
+        if(fileDescriptor() >= 0) {
+            // If an interrupt is called with an invalid socket, the poller's
+            // loop will exit, so don't do that
+            Poller::instance().interrupt(fileDescriptor());
+        }
     }
 
 
@@ -568,32 +564,6 @@ namespace litecore { namespace net {
             {WSA_INVALID_HANDLE, EBADF},
             {WSA_NOT_ENOUGH_MEMORY, ENOMEM},
             {WSA_INVALID_PARAMETER, EINVAL},
-            {WSAEINVAL, EINVAL},
-            {WSAECONNREFUSED, ECONNREFUSED},
-            {WSAEADDRINUSE, EADDRINUSE},
-            {WSAEADDRNOTAVAIL, EADDRNOTAVAIL},
-            {WSAEAFNOSUPPORT, EAFNOSUPPORT},
-            {WSAECONNABORTED, ECONNABORTED},
-            {WSAECONNRESET, ECONNRESET},
-            {WSAEHOSTUNREACH, EHOSTUNREACH},
-            {WSAENETDOWN, ENETDOWN},
-            {WSAENETRESET, ENETRESET},
-            {WSAENETUNREACH, ENETUNREACH},
-            {WSAENOBUFS, ENOBUFS},
-            {WSAEISCONN, EISCONN},
-            {WSAENOTCONN, ENOTCONN},
-            {WSAETIMEDOUT, ETIMEDOUT},
-            {WSAELOOP, ELOOP},
-            {WSAENAMETOOLONG, ENAMETOOLONG},
-            {WSAEACCES, EACCES},
-            {WSAEMFILE, EMFILE},
-            {WSAEWOULDBLOCK, EWOULDBLOCK},
-            {WSAEALREADY, EALREADY},
-            {WSAENOTSOCK, ENOTSOCK},
-            {WSAEDESTADDRREQ, EDESTADDRREQ},
-            {WSAEPROTOTYPE, EPROTOTYPE},
-            {WSAENOPROTOOPT, ENOPROTOOPT},
-            {WSAEPROTONOSUPPORT, EPROTONOSUPPORT},
             {0, 0}
         };
 
@@ -602,10 +572,6 @@ namespace litecore { namespace net {
                 //Log("Mapping WSA error %d to POSIX %d", err, kWSAToPosixErr[i].toErr);
                 return kWSAToPosixErr[i].toErr;
             }
-        }
-
-        if(err >= WSAEINTR) {
-            Warn("No mapping for WSA error %d", err);
         }
 #endif
         return err;
@@ -651,15 +617,4 @@ namespace litecore { namespace net {
             setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));
         }
     }
-
-
-    bool TCPSocket::checkSocket(const sockpp::socket &sock) {
-        if (sock.last_error()) {
-            setError(POSIXDomain, socketToPosixErrCode(sock.last_error()));
-            return false;
-        } else {
-            return true;
-        }
-    }
-
 } }

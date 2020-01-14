@@ -57,10 +57,23 @@ namespace litecore {
     using namespace std;
 
 #ifdef _WIN32
+    static string win32_message(int err) {
+        char buf[1024];
+        buf[0] = '\x0';
+        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			nullptr, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			buf, sizeof(buf), nullptr);
+        return string(buf);
+    }
+
     static string cbl_strerror(int err) {
         if(err < sys_nerr) {
             // As of Windows 10, only errors 0 - 42 have a message in strerror
             return strerror(err);
+        }
+
+        if(err >= 10000 && err < 12000) {
+            return win32_message(err);
         }
 
         // Hope the POSIX definitions don't change...
@@ -114,15 +127,11 @@ namespace litecore {
 
         const long equivalent = wsaEquivalent[err - 100];
         if(equivalent == 0) {
+            // WSA error codes are between 10000 and 11999
             return "Unknown Error";
         }
 
-        char buf[1024];
-        buf[0] = '\x0';
-        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			nullptr, equivalent, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-			buf, sizeof(buf), nullptr);
-        return string(buf);
+        return win32_message(equivalent);
     }
 #else
 #define cbl_strerror strerror

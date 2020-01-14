@@ -11,6 +11,7 @@
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+#include "sockpp/platform.h"
 
 namespace litecore { namespace net {
 
@@ -50,12 +51,12 @@ namespace litecore { namespace net {
         void callAndRemoveListener(int fd, Event);
         
         std::mutex _mutex;
-        std::unordered_map<int, std::array<Listener,2>> _listeners;
+        std::unordered_map<socket_t, std::array<Listener,2>> _listeners;
         std::thread _thread;
         std::atomic_bool _waiting {false};
 
-        int _interruptReadFD {-1};          // File descriptor of pipe used to interrupt poll()
-        int _interruptWriteFD {-1};         // Other end of the pipe used to interrupt poll()
+        socket_t _interruptReadFD {INVALID_SOCKET};          // File descriptor of pipe used to interrupt poll()
+        socket_t _interruptWriteFD {INVALID_SOCKET};         // Other end of the pipe used to interrupt poll()
     };
 
 } }
