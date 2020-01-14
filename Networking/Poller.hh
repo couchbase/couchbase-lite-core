@@ -12,8 +12,10 @@
 #include <thread>
 #include <unordered_map>
 #include "sockpp/platform.h"
+#include "sockpp/socket.h"
 
 namespace litecore { namespace net {
+    using namespace sockpp;
 
     /** Enables async I/O by running `poll` on a background thread. */
     class Poller {
