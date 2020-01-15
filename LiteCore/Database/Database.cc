@@ -427,10 +427,8 @@ namespace c4Internal {
             _housekeeper->stop();
             _housekeeper = nullptr;
         }
-        if (_backgroundDB) {
-            _backgroundDB->close();
-            _backgroundDB = nullptr;
-        }
+
+        _backgroundDB = nullptr;
     }
 
 
