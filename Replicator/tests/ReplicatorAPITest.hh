@@ -165,7 +165,12 @@ public:
     void stateChanged(C4Replicator *r, C4ReplicatorStatus s) {
         lock_guard<mutex> lock(_mutex);
 
-        Assert(r == _repl);      // can't call REQUIRE on a background thread
+        if(r != _repl) {
+            WARN("Stray stateChange received, check C4Log for details!");
+            C4Warn("Stray stateChanged message received (possibly from previous test?): (r = %p, _repl = %p)");
+            return;
+        }
+
         logState(s);
         _callbackStatus = s;
         ++_numCallbacks;
