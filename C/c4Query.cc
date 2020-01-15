@@ -146,10 +146,14 @@ public:
 
     C4Query* query() const          {return _query;}
 
+    void setEnabled(bool enabled)   {LOCK(_mutex); _enabled = enabled;}
+
     // called on a background thread
     void notify(C4QueryEnumeratorImpl *e, C4Error err) noexcept {
         {
             LOCK(_mutex);
+            if (!_enabled)
+                return;
             _currentEnumerator = e;
             _currentError = err;
         }
@@ -172,6 +176,7 @@ private:
     Retained<C4QueryEnumeratorImpl> _lastEnumerator;
     Retained<C4QueryEnumeratorImpl> _currentEnumerator;
     C4Error                         _currentError {};
+    bool                            _enabled {false};
 };
 
 
@@ -201,6 +206,7 @@ struct c4Query : public RefCounted, fleece::InstanceCounted, LiveQuerier::Delega
 
     //// Observing:
 
+    // After creation, observer must be enabled before it will invoke the callback
     c4QueryObserver* createObserver(C4QueryObserverCallback callback, void *context) {
         LOCK(_mutex);
         if (_observers.empty()) {
@@ -386,6 +392,10 @@ void c4queryenum_release(C4QueryEnumerator *e) noexcept {
 
 C4QueryObserver* c4queryobs_create(C4Query *query, C4QueryObserverCallback cb, void *ctx) C4API {
     return query->createObserver(cb, ctx);
+}
+
+void c4queryobs_setEnabled(C4QueryObserver *obs, bool enabled) C4API {
+    obs->setEnabled(enabled);
 }
 
 void c4queryobs_free(C4QueryObserver* obs) C4API {

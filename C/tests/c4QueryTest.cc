@@ -872,6 +872,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     state.query = query;
     state.obs = c4queryobs_create(query, callback, &state);
     CHECK(state.obs);
+    c4queryobs_setEnabled(state.obs, true);
 
     C4Log("---- Waiting for query observer...");
     while (state.count == 0)

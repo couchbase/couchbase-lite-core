@@ -343,6 +343,7 @@ _c4queryenum_getRowCount
 _c4query_fullTextMatched
 
 _c4queryobs_create
+_c4queryobs_setEnabled
 _c4queryobs_getEnumerator
 _c4queryobs_free
 
