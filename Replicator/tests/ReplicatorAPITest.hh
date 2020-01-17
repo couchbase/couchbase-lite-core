@@ -168,7 +168,7 @@ public:
         logState(s);
         if(r != _repl) {
             WARN("Stray stateChange received, check C4Log for details!");
-            C4Warn("Stray stateChanged message received (possibly from previous test?): (r = %p, _repl = %p)", r, _repl);
+            C4Warn("Stray stateChanged message received (possibly from previous test?): (r = %p, _repl = %p)", r, (C4Replicator *)_repl);
             return;
         }
 
