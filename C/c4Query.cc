@@ -146,16 +146,43 @@ public:
 
     C4Query* query() const          {return _query;}
 
-    void setEnabled(bool enabled)   {LOCK(_mutex); _enabled = enabled;}
+    void setEnabled(bool enabled) {
+        bool hasExisting;
+        {
+            LOCK(_mutex);
+            _enabled = enabled;
+            if(!enabled) {
+                // Reset these to reset the logic noted below, otherwise a stale
+                // notification is sent by disabling, then re-enabling.
+                _currentEnumerator = nullptr;
+                _currentError = {};
+                return;
+            }
+
+            hasExisting = _currentEnumerator != nullptr || _currentError.domain != 0;
+        }
+
+        // If a notification from the query comes in before the observer is enabled, it will
+        // miss it forever.  Post it now, if it has come in already.
+        if(hasExisting) {
+            c4_runAsyncTask([](void* c)
+            {
+                auto me = static_cast<c4QueryObserver*>(c);
+                LOCK(me->_mutex);
+                me->_callback(me, me->_query, me->_context);
+            }, this);
+        }
+    }
 
     // called on a background thread
     void notify(C4QueryEnumeratorImpl *e, C4Error err) noexcept {
         {
             LOCK(_mutex);
-            if (!_enabled)
-                return;
             _currentEnumerator = e;
             _currentError = err;
+
+            if (!_enabled)
+                return;
         }
         _callback(this, _query, _context);
     }
