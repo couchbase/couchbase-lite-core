@@ -119,10 +119,8 @@ namespace litecore { namespace net {
         bool setSocket(std::unique_ptr<sockpp::stream_socket>);
         void setError(C4ErrorDomain, int code, slice message =fleece::nullslice);
         bool wrapTLS(slice hostname);
-        bool createInterruptPipe();
         void checkStreamError();
         bool checkSocketFailure();
-        bool checkSocket(const sockpp::socket &sock);
         ssize_t _read(void *dst, size_t byteCount) MUST_USE_RESULT;
         void pushUnread(slice);
         int fileDescriptor();

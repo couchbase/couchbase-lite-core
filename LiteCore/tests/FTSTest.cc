@@ -46,7 +46,7 @@ public:
         t.commit();
     }
 
-    void createDoc(Transaction &t, int i, string_view sentence) {
+    void createDoc(Transaction &t, int i, string sentence) {
         string docID = stringWithFormat("rec-%03d", i);
 
         fleece::impl::Encoder enc;

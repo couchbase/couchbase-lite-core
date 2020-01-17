@@ -580,15 +580,15 @@ bool C4Test::readFileByLines(string path, function<bool(FLSlice)> callback) {
     INFO("Reading lines from " << path);
     fstream fd(path.c_str(), ios_base::in);
     REQUIRE(fd);
-    char buf[1000000];  // The Wikipedia dumps have verrry long lines
+    vector<char> buf(1000000);  // The Wikipedia dumps have verrry long lines
     while (fd.good()) {
-        fd.getline(buf, sizeof(buf));
+        fd.getline(buf.data(), buf.capacity());
         auto len = fd.gcount();
         if (len <= 0)
             break;
         REQUIRE(buf[len-1] == '\0');
         --len;
-        if (!callback({buf, (size_t)len}))
+        if (!callback({buf.data(), (size_t)len}))
             return false;
     }
     REQUIRE(fd.eof());

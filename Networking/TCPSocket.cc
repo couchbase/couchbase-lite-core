@@ -44,10 +44,6 @@
 #include "mbedtls/ssl.h"
 #pragma clang diagnostic pop
 
-#ifndef _WIN32
-#define cbl_strerror strerror
-#endif
-
 namespace litecore { namespace net {
     using namespace std;
     using namespace fleece;
@@ -126,6 +122,7 @@ namespace litecore { namespace net {
     }
 #endif
 
+    static int lastSocketsError();
     static constexpr size_t kInitialDelimitedReadBufferSize = 1024;
 
 
@@ -192,7 +189,7 @@ namespace litecore { namespace net {
 
     void TCPSocket::close() {
         if (_socket)
-            _socket->close();
+            _socket->shutdown();
     }
 
 
@@ -514,7 +511,11 @@ namespace litecore { namespace net {
 
 
     void TCPSocket::interrupt() {
-        Poller::instance().interrupt(fileDescriptor());
+        if(fileDescriptor() >= 0) {
+            // If an interrupt is called with an invalid socket, the poller's
+            // loop will exit, so don't do that
+            Poller::instance().interrupt(fileDescriptor());
+        }
     }
 
 
@@ -597,10 +598,6 @@ namespace litecore { namespace net {
                 return kWSAToPosixErr[i].toErr;
             }
         }
-
-        if(err >= WSAEINTR) {
-            Warn("No mapping for WSA error %d", err);
-        }
 #endif
         return err;
     }
@@ -627,7 +624,7 @@ namespace litecore { namespace net {
         Assert(err != 0);
         if (err > 0) {
             err = socketToPosixErrCode(err);
-            string errStr = cbl_strerror(err);
+            string errStr = error::_what(error::POSIX, err);
             LOG(Warning, "%s got POSIX error %d \"%s\"",
                 (_isClient ? "ClientSocket" : "ResponderSocket"),
                 err, errStr.c_str());
@@ -645,15 +642,4 @@ namespace litecore { namespace net {
             setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));
         }
     }
-
-
-    bool TCPSocket::checkSocket(const sockpp::socket &sock) {
-        if (sock.last_error()) {
-            setError(POSIXDomain, socketToPosixErrCode(sock.last_error()));
-            return false;
-        } else {
-            return true;
-        }
-    }
-
 } }

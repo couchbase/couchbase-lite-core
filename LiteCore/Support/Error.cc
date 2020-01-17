@@ -56,6 +56,87 @@ namespace litecore {
 
     using namespace std;
 
+#ifdef _WIN32
+    static string win32_message(int err) {
+        char buf[1024];
+        buf[0] = '\x0';
+        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			nullptr, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			buf, sizeof(buf), nullptr);
+        return string(buf);
+    }
+
+    static string cbl_strerror(int err) {
+        if(err < sys_nerr) {
+            // As of Windows 10, only errors 0 - 42 have a message in strerror
+            return strerror(err);
+        }
+
+        if(err >= 10000 && err < 12000) {
+            return win32_message(err);
+        }
+
+        // Hope the POSIX definitions don't change...
+        if(err < 100 || err > 140) {
+            return "Unknown Error";
+        }
+
+        static long wsaEquivalent[] = {
+            WSAEADDRINUSE,
+            WSAEADDRNOTAVAIL,
+            WSAEAFNOSUPPORT,
+            WSAEALREADY,
+            0,
+            WSAECANCELLED,
+            WSAECONNABORTED,
+            WSAECONNREFUSED,
+            WSAECONNRESET,
+            WSAEDESTADDRREQ,
+            WSAEHOSTUNREACH,
+            0,
+            WSAEINPROGRESS,
+            WSAEISCONN,
+            WSAELOOP,
+            WSAEMSGSIZE,
+            WSAENETDOWN,
+            WSAENETRESET,
+            WSAENETUNREACH,
+            WSAENOBUFS,
+            0,
+            0,
+            0,
+            WSAENOPROTOOPT,
+            0,
+            0,
+            WSAENOTCONN,
+            0,
+            WSAENOTSOCK,
+            0,
+            WSAEOPNOTSUPP,
+            0,
+            0,
+            0,
+            0,
+            WSAEPROTONOSUPPORT,
+            WSAEPROTOTYPE,
+            0,
+            WSAETIMEDOUT,
+            0,
+            WSAEWOULDBLOCK
+        };
+
+        const long equivalent = wsaEquivalent[err - 100];
+        if(equivalent == 0) {
+            // WSA error codes are between 10000 and 11999
+            return "Unknown Error";
+        }
+
+        return win32_message(equivalent);
+    }
+#else
+#define cbl_strerror strerror
+#endif
+
 
 #pragma mark ERROR CODES, NAMES, etc.
 
@@ -248,7 +329,7 @@ namespace litecore {
             case LiteCore:
                 return litecore_errstr((LiteCoreError)code);
             case POSIX:
-                return strerror(code);
+                return cbl_strerror(code);
             case SQLite:
             {
                 const int primary = code & 0xFF;

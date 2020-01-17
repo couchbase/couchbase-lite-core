@@ -22,12 +22,15 @@
 #include "ThreadUtil.hh"
 #include "PlatformIO.hh"
 #include "c4Base.h"
+#include "sockpp/platform.h"
+#include "sockpp/tcp_acceptor.h"
+#include "sockpp/tcp_connector.h"
 #include <vector>
 #include <errno.h>
-#include <poll.h>
 
 #ifndef _WIN32
 #include <unistd.h>
+#include <poll.h>
 #endif
 
 #define WSLog (*(LogDomain*)kC4WebSocketLog)
@@ -35,7 +38,7 @@
 
 namespace litecore { namespace net {
     using namespace std;
-
+    using namespace sockpp;
 
 
 
@@ -62,14 +65,14 @@ namespace litecore { namespace net {
         // On Windows, pipes aren't available so we have to create a pair of TCP sockets
         // connected through the loopback interface. <https://stackoverflow.com/a/3333565/98077>
         tcp_acceptor acc(inet_address(INADDR_LOOPBACK, 0));
-        if (!checkSocket(acc))
-            return false;
+        if (acc.last_error() != 0)
+            throwSocketError();
         tcp_connector readSock(acc.address());
-        if (!checkSocket(readSock))
-            return false;
+        if (readSock.last_error() != 0)
+            throwSocketError();
         tcp_socket writeSock = acc.accept();
-        if (!checkSocket(writeSock))
-            return false;
+        if (writeSock.last_error() != 0)
+            throwSocketError();
         _interruptReadFD = readSock.release();
         _interruptWriteFD = writeSock.release();
 #endif
@@ -132,7 +135,11 @@ namespace litecore { namespace net {
 
 
     void Poller::interrupt(int message) {
-        if (cbl_write(_interruptWriteFD, &message, sizeof(message)) < 0)
+#ifdef WIN32
+        if(::send(_interruptWriteFD, (const char *)&message, sizeof(message), 0) < 0)
+#else
+        if(::write(_interruptWriteFD, &message, sizeof(message)) < 0)
+#endif
             throwSocketError();
     }
 
@@ -175,10 +182,15 @@ namespace litecore { namespace net {
         }
 
         // Wait in poll():
+#ifdef WIN32
+        while (WSAPoll(pollfds.data(), pollfds.size(), -1) == SOCKET_ERROR) {
+#else
         while (::poll(pollfds.data(), nfds_t(pollfds.size()), -1) < 0) {
             if (errno != EINTR)
                 return false;
+#endif
         }
+
         _waiting = false;
 
         // Find the events and dispatch them:
@@ -189,7 +201,11 @@ namespace litecore { namespace net {
                 if (fd == _interruptReadFD) {
                     // This is an interrupt -- read the byte from the pipe:
                     int message;
-                    cbl_read(_interruptReadFD, &message, sizeof(message));
+#ifdef WIN32
+                    ::recv(_interruptReadFD, (char *)&message, sizeof(message), 0);
+#else
+                    ::read(_interruptReadFD, &message, sizeof(message));
+#endif
                     LOG(Debug, "Poller: interruption %d", message);
                     if (message < 0) {
                         // Receiving a negative message aborts the loop

@@ -32,8 +32,6 @@
     #define strncasecmp _strnicmp
     #define strcasecmp  _stricmp
     #define fdclose ::_close
-    #define cbl_read ::_read
-    #define cbl_write ::_write
 
     #define R_OK 1
     #define W_OK 2
@@ -59,8 +57,6 @@
     #include <unistd.h>
 
     #define fdclose ::close
-    #define cbl_read ::read
-    #define cbl_write ::write
 
     namespace litecore {
         inline int mkdir_u8(const char* const path NONNULL , int mode) {
