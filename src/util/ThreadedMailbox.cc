@@ -48,6 +48,21 @@ namespace litecore { namespace actor {
 
 #pragma mark - SCHEDULER:
 
+    struct RunAsyncActor : Actor
+    {
+        RunAsyncActor()
+            : Actor("runAsync") {
+        }
+
+        void runAsync(void (*task)(void*), void *context) {
+            enqueue(&RunAsyncActor::_runAsync, task, context);
+        }
+
+    private:
+        void _runAsync(void (*task)(void*), void *context) {
+            task(context);
+        }
+    };
     
     static Scheduler* sScheduler;
     static random_device rd;
@@ -225,19 +240,8 @@ namespace litecore { namespace actor {
 
 
     void ThreadedMailbox::runAsyncTask(void (*task)(void*), void *context) {
-        // std::future destructor blocks here, so can cause deadlock.  Need
-        // to keep it around
-        static uniform_int_distribution dis(1, INT32_MAX);
-        static map<int, future<void>> runningMap;
-        auto nextId = 0;
-        do {
-            nextId = dis(sRandGen);
-        } while(runningMap.find(nextId) != runningMap.end());
-
-        runningMap[nextId] = async(launch::async, [nextId, task](void* c) {
-            task(c);
-            runningMap.erase(nextId);
-        }, context);
+        static RunAsyncActor* sRunAsyncActor = retain(new RunAsyncActor()); // I grant unto thee the gift of eternal life
+        sRunAsyncActor->runAsync(task, context);
     }
 
 
