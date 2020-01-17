@@ -10,7 +10,6 @@
 #include "HTTPTypes.hh"
 #include "function_ref.hh"
 #include "fleece/Fleece.hh"
-#include "sockpp/socket.h"
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -120,7 +119,6 @@ namespace litecore { namespace net {
         bool setSocket(std::unique_ptr<sockpp::stream_socket>);
         void setError(C4ErrorDomain, int code, slice message =fleece::nullslice);
         bool wrapTLS(slice hostname);
-        bool createInterruptPipe();
         void checkStreamError();
         bool checkSocketFailure();
         ssize_t _read(void *dst, size_t byteCount) MUST_USE_RESULT;

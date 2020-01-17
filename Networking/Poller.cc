@@ -16,7 +16,6 @@
 // limitations under the License.
 //
 
-#define NOMINMAX
 #include "Poller.hh"
 #include "Error.hh"
 #include "Logging.hh"
@@ -32,13 +31,6 @@
 #ifndef _WIN32
 #include <unistd.h>
 #include <poll.h>
-#define tcp_read ::read
-#define tcp_write ::write
-#define tcp_poll ::poll(fdArray, nfds_t(fdSize), timeout)
-#else
-#define tcp_read(s, buf, len) ::recv(s, (char *)(buf), len, 0)
-#define tcp_write(s, buf, len) ::send(s, (const char *)(buf), len, 0)
-#define tcp_poll(fdArray, fdSize, timeout) WSAPoll(fdArray, ULONG(fdSize), timeout)
 #endif
 
 #define WSLog (*(LogDomain*)kC4WebSocketLog)
@@ -143,7 +135,11 @@ namespace litecore { namespace net {
 
 
     void Poller::interrupt(int message) {
-        if (tcp_write(_interruptWriteFD, &message, sizeof(message)) < 0)
+#ifdef WIN32
+        if(::send(_interruptWriteFD, (const char *)&message, sizeof(message), 0) < 0)
+#else
+        if(::write(_interruptWriteFD, &message, sizeof(message)) < 0)
+#endif
             throwSocketError();
     }
 
@@ -205,8 +201,12 @@ namespace litecore { namespace net {
                 if (fd == _interruptReadFD) {
                     // This is an interrupt -- read the byte from the pipe:
                     int message;
-                    tcp_read(_interruptReadFD, &message, sizeof(message));
-                    LOG(Info, "Poller: interruption %d", message);
+#ifdef WIN32
+                    ::recv(_interruptReadFD, (char *)&message, sizeof(message), 0);
+#else
+                    ::read(_interruptReadFD, &message, sizeof(message));
+#endif
+                    LOG(Debug, "Poller: interruption %d", message);
                     if (message < 0) {
                         // Receiving a negative message aborts the loop
                         result = false;
