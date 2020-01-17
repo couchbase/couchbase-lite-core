@@ -164,14 +164,14 @@ public:
 
     void stateChanged(C4Replicator *r, C4ReplicatorStatus s) {
         lock_guard<mutex> lock(_mutex);
-
+        
+        logState(s);
         if(r != _repl) {
             WARN("Stray stateChange received, check C4Log for details!");
-            C4Warn("Stray stateChanged message received (possibly from previous test?): (r = %p, _repl = %p)");
+            C4Warn("Stray stateChanged message received (possibly from previous test?): (r = %p, _repl = %p)", r, _repl);
             return;
         }
 
-        logState(s);
         _callbackStatus = s;
         ++_numCallbacks;
         Assert(_numCallbacksWithLevel[(int)kC4Stopped] == 0);   // Stopped must be the final state
@@ -299,6 +299,11 @@ public:
         while ((status = c4repl_getStatus(_repl)).level != kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));
 
+        int attempts = 0;
+        while(_numCallbacksWithLevel[kC4Stopped] != 1 && attempts++ < 5) {
+            this_thread::sleep_for(chrono::milliseconds(100));
+        }
+        
         lock_guard<mutex> lock(_mutex);
 
         CHECK(_numCallbacks > 0);
