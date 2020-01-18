@@ -145,6 +145,11 @@ public:
     // must be holding _mutex to call this
     bool _checkStopWhenIdle() {
         if (_stopOnIdle && _statusReceived.level == kC4Idle) {
+            if(_conflictHandlerRunning) {
+                Log(">>    Conflict resolution active, delaying stop...");
+                return false;
+            }
+
             Log(">>    Stopping idle replicator...");
             _replClient->stop();
             return true;
@@ -276,7 +281,9 @@ public:
     void installConflictHandler() {
         c4::ref<C4Database> resolvDB = c4db_openAgain(db, nullptr);
         REQUIRE(resolvDB);
-        _conflictHandler = [resolvDB](ReplicatedRev *rev) {
+        auto& conflictHandlerRunning = _conflictHandlerRunning;
+        _conflictHandler = [resolvDB, &conflictHandlerRunning](ReplicatedRev *rev) {
+            conflictHandlerRunning = true;
             // Careful: This is called on a background thread!
             TransactionHelper t(resolvDB);
             C4Error error;
@@ -315,6 +322,7 @@ public:
             CHECK(c4doc_resolveConflict(doc, remoteRevID, localRevID,
                                         mergedBody, mergedFlags, &error));
             CHECK(c4doc_save(doc, 0, &error));
+            conflictHandlerRunning = false;
         };
     }
 
@@ -529,5 +537,6 @@ public:
     unsigned _blobPushProgressCallbacks {0}, _blobPullProgressCallbacks {0};
     Replicator::BlobProgress _lastBlobPushProgress {}, _lastBlobPullProgress {};
     function<void(ReplicatedRev*)> _conflictHandler;
+    bool _conflictHandlerRunning {false};
 };
 

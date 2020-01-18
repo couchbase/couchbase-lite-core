@@ -35,6 +35,7 @@
 #include <math.h>
 #include <limits.h>
 #include <mutex>
+#include <set>
 
 using namespace std;
 using namespace litecore;
@@ -200,23 +201,22 @@ struct c4Query : public RefCounted, fleece::InstanceCounted, LiveQuerier::Delega
     }
 
     //// Observing:
+    
 
-    c4QueryObserver* createObserver(C4QueryObserverCallback callback, void *context) {
+    void enableObserver(c4QueryObserver *obs, bool enable) {
         LOCK(_mutex);
-        if (_observers.empty()) {
-            _bgQuerier = new LiveQuerier(_database, _query, true, this);
-            _bgQuerier->run(_parameters);
-        }
-        _observers.emplace_back(this, callback, context);
-        return &_observers.back();
-    }
-
-    void freeObserver(c4QueryObserver *obs) {
-        LOCK(_mutex);
-        _observers.remove_if([obs](const c4QueryObserver &o) {return &o == obs;});
-        if (_observers.empty()) {
-            _bgQuerier->stop();
-            _bgQuerier = nullptr;
+        if (enable) {
+            _observers.insert(obs);
+            if (!_bgQuerier) {
+                _bgQuerier = new LiveQuerier(_database, _query, true, this);
+                _bgQuerier->run(_parameters);
+            }
+        } else {
+            _observers.erase(obs);
+            if (_observers.empty() && _bgQuerier) {
+                _bgQuerier->stop();
+                _bgQuerier = nullptr;
+            }
         }
     }
 
@@ -227,7 +227,7 @@ struct c4Query : public RefCounted, fleece::InstanceCounted, LiveQuerier::Delega
         if (!_bgQuerier)
             return;
         for (auto &obs : _observers)
-            obs.notify(c4e, err);
+            obs->notify(c4e, err);
     }
 
 private:
@@ -237,8 +237,9 @@ private:
 
     mutable mutex _mutex;
     Retained<LiveQuerier> _bgQuerier;
-    std::list<c4QueryObserver> _observers;
+    std::set<c4QueryObserver*> _observers;
 };
+
 
 
 #pragma mark - QUERY API:
@@ -385,17 +386,24 @@ void c4queryenum_release(C4QueryEnumerator *e) noexcept {
 
 
 C4QueryObserver* c4queryobs_create(C4Query *query, C4QueryObserverCallback cb, void *ctx) C4API {
-    return query->createObserver(cb, ctx);
+    return new C4QueryObserver(query, cb, ctx);
+}
+
+void c4queryobs_setEnabled(C4QueryObserver *obs, bool enabled) C4API {
+    obs->query()->enableObserver(obs, enabled);
 }
 
 void c4queryobs_free(C4QueryObserver* obs) C4API {
-    if (obs)
-        obs->query()->freeObserver(obs);
+    if (obs) {
+        obs->query()->enableObserver(obs, false);
+        delete obs;
+    }
 }
 
 C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs, C4Error *outError) C4API {
     return obs->currentEnumerator(outError);
 }
+
 
 #pragma mark - INDEXES:
 

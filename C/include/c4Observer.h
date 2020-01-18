@@ -153,11 +153,16 @@ extern "C" {
 
     /** Creates a new query observer, with a callback that will be invoked when the query
         results change, with an enumerator containing the new results.
-        The callback won't be invoked immediately after a change, and won't be invoked after
-        every change, to avoid performance problems. */
+        \note The callback isn't invoked immediately after a change, and won't be invoked after
+        every change, to avoid performance problems. Instead, there's a brief delay so multiple
+        changes can be coalesced.
+        \note The new observer needs to be enabled by calling \ref c4queryobs_setEnabled.*/
     C4QueryObserver* c4queryobs_create(C4Query *query C4NONNULL,
                                        C4QueryObserverCallback callback,
                                        void *context) C4API;
+
+    /** Enables a query observer so its callback can be called, or disables it to stop callbacks. */
+    void c4queryobs_setEnabled(C4QueryObserver *obs, bool enabled) C4API;
 
     /** Returns the current query results, or NULL and the current error; then forgets the results.
         When the observer is created, the results are initially NULL until the query finishes

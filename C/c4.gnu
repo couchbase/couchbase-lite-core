@@ -343,6 +343,7 @@ CBL {
 		c4query_fullTextMatched;
 
 		c4queryobs_create;
+		c4queryobs_setEnabled;
 		c4queryobs_getEnumerator;
 		c4queryobs_free;
 

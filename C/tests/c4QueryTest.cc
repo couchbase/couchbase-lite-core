@@ -859,12 +859,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
         C4Log("---- Query observer called!");
         auto state = (State*)context;
         CHECK(query == state->query);
-        if(state->obs) {
-            // Avoid a false test failure.  If it is null here then it means that
-            // the callback won the race against returning from c4queryobs_create
-            // (and therefore assigning state.obs in this case)
-            CHECK(obs == state->obs);
-        }
+        CHECK(obs == state->obs);
         CHECK(state->count == 0);
         ++state->count;
     };
@@ -872,6 +867,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     state.query = query;
     state.obs = c4queryobs_create(query, callback, &state);
     CHECK(state.obs);
+    c4queryobs_setEnabled(state.obs, true);
 
     C4Log("---- Waiting for query observer...");
     while (state.count == 0)
