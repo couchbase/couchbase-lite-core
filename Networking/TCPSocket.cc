@@ -122,7 +122,6 @@ namespace litecore { namespace net {
     }
 #endif
 
-    static int lastSocketsError();
     static constexpr size_t kInitialDelimitedReadBufferSize = 1024;
 
 
@@ -450,7 +449,7 @@ namespace litecore { namespace net {
             body.resize(1024);
             size_t length = 0;
             while (true) {
-                size_t n = read((void*)&body[length], body.size - length);
+                ssize_t n = read((void*)&body[length], body.size - length);
                 if (n < 0) {
                     body.reset();
                     return false;

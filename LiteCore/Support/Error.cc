@@ -376,7 +376,7 @@ namespace litecore {
         static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
                       "Incomplete domain name table");
         
-        if (domain < 0 || domain >= NumDomainsPlus1)
+        if (domain >= NumDomainsPlus1)
             return "INVALID_DOMAIN";
         return kDomainNames[domain];
     }
