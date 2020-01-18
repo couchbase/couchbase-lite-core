@@ -17,7 +17,12 @@
 //
 
 #include "ReplicatorAPITest.hh"
+#include "CertHelper.hh"
+#include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
+#include "c4DocEnumerator.h"
+#include "c4Index.h"
+#include "c4Query.h"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
@@ -33,17 +38,50 @@ using namespace fleece;
  This is because they require that an external replication server is running.
 
  The default URL the tests connect to is blip://localhost:4984/scratch/, but this can be
- overridden by setting environment vars REMOTE_HOST, REMOTE_PORT, REMOTE_DB.
- WARNING: The tests will erase this database (via the SG REST API.)
+ overridden by setting environment vars listed below.
+
+ WARNING: The tests will erase the database named by REMOTE_DB (via the SG REST API.)
 
  Some tests connect to other databases by setting `_remoteDBName`. These have fixed contents.
  The directory Replicator/tests/data/ contains Sync Gateway config files and Walrus data files,
  so if you `cd` to that directory and enter `sync_gateway config.json` you should be good to go.
  (For more details, see the README.md file in that directory.)
+
+ Environment variables to configure the connection:
+     REMOTE_TLS (or REMOTE_SSL)     If defined, use TLS
+     REMOTE_HOST                    Hostname to connect to (default: localhost)
+     REMOTE_PORT                    Port number (default: 4984)
+     REMOTE_DB                      Database name (default: "scratch")
+     REMOTE_PROXY                   HTTP proxy URL to use (default: none)
+     USE_CLIENT_CERT                If defined, send a TLS client cert [EE only!]
  */
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[.SyncServer]") {
+class ReplicatorSGTest : public ReplicatorAPITest {
+public:
+    ReplicatorSGTest() {
+        if (getenv("USE_CLIENT_CERT")) {
+#ifdef COUCHBASE_ENTERPRISE
+            REQUIRE(Address::isSecure(_address));
+            Identity ca = CertHelper::readIdentity(sReplicatorFixturesDir + "ca_cert.pem",
+                                                   sReplicatorFixturesDir + "ca_key.pem",
+                                                   "Couchbase");
+            // The Common Name in the client cert has to be the email address of a user account
+            // in Sync Gateway, or you only get guest access.
+            Identity id = CertHelper::createIdentity(false, kC4CertUsage_TLSClient,
+                                                     "Pupshaw", "pupshaw@couchbase.org", &ca);
+            identityCert = id.cert;
+            identityKey  = id.key;
+#else
+            FAIL("USE_CLIENT_CERT only works with EE builds");
+#endif
+        }
+    }
+
+};
+
+
+TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Failure", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
     replicate(kC4OneShot, kC4Disabled, false);
     CHECK(_callbackStatus.error.domain == WebSocketDomain);
@@ -52,7 +90,28 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[.SyncServer]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API ExtraHeaders", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Auth Success", "[.SyncServer]") {
+    _remoteDBName = kProtectedDBName;
+
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+
+    replicate(kC4OneShot, kC4Disabled, true);
+}
+
+
+TEST_CASE_METHOD(ReplicatorSGTest, "API ExtraHeaders", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
 
     // Use the extra-headers option to add HTTP Basic auth:
@@ -70,18 +129,18 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API ExtraHeaders", "[.SyncServer]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty DB", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Push Empty DB", "[.SyncServer]") {
     replicate(kC4OneShot, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Non-Empty DB", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Push Non-Empty DB", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty Doc", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Push Empty Doc", "[.SyncServer]") {
     Encoder enc;
     enc.beginDict();
     enc.endDict();
@@ -92,21 +151,21 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty Doc", "[.SyncServer]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Push Big DB", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 
 
 #if 0
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Push Large-Docs DB", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "en-wikipedia-articles-1000-1.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 #endif
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push 5000 Changes", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Push 5000 Changes", "[.SyncServer]") {
     string revID;
     {
         TransactionHelper t(db);
@@ -126,13 +185,13 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push 5000 Changes", "[.SyncServer]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Pull", "[.SyncServer]") {
     _remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Pull With Indexes", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Pull With Indexes", "[.SyncServer]") {
     // Indexes slow down doc insertion, so they affect replicator performance.
     REQUIRE(c4db_createIndex(db, C4STR("Name"),   C4STR("[[\".Name\"]]"), kC4FullTextIndex, nullptr, nullptr));
     REQUIRE(c4db_createIndex(db, C4STR("Artist"), C4STR("[[\".Artist\"]]"), kC4ValueIndex, nullptr, nullptr));
@@ -143,21 +202,21 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull With Indexes", "[.SyncServer]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Push", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Push", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     _stopWhenIdle = true;
     replicate(kC4Continuous, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Pull", "[.SyncServer]") {
     _remoteDBName = kITunesDBName;
     _stopWhenIdle = true;
     replicate(kC4Disabled, kC4Continuous);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Deletion", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Deletion", "[.SyncServer]") {
     createRev("doc"_sl, kRevID, kFleeceBody);
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
@@ -180,7 +239,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Deletion", "[.SyncServer]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
     vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
     {
@@ -219,7 +278,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[.SyncServer]") 
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Prove Attachments", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "Prove Attachments", "[.SyncServer]") {
     vector<string> attachments = {"Hey, this is an attachment!"};
     {
         TransactionHelper t(db);
@@ -239,7 +298,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Prove Attachments", "[.SyncServer]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Pull Big Attachments", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Pull Big Attachments", "[.SyncServer]") {
     _remoteDBName = kImagesDBName;
     replicate(kC4Disabled, kC4OneShot);
 
@@ -256,10 +315,14 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull Big Attachments", "[.SyncServer]")
     c4blob_keyFromString(digest, &blobKey);
     auto size = c4blob_getSize(c4db_getBlobStore(db, nullptr), blobKey);
     CHECK(size == 15198281);
+
+    C4Log("-------- Pushing --------");
+    _remoteDBName = kScratchDBName;
+    replicate(kC4OneShot, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Conflict", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     const string originalRevID = "1-3cb9cfb09f3f0b5142e618553966ab73539b8888";
     importJSONLines(sFixturesDir + "names_100.json");
     replicate(kC4OneShot, kC4Disabled);
@@ -315,7 +378,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Conflict", "[.SyncServer]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Update Once-Conflicted Doc", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]") {
     // For issue #448.
     // Create a conflicted doc on SG, and resolve the conflict:
     _remoteDBName = "scratch_allows_conflicts"_sl;
@@ -352,7 +415,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Update Once-Conflicted Doc", "[.SyncServer]
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Pull multiply-updated", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "Pull multiply-updated", "[.SyncServer]") {
     // From <https://github.com/couchbase/couchbase-lite-core/issues/652>:
     // 1. Setup CB cluster & Configure SG
     // 2. Create a document using POST API via SG
@@ -384,7 +447,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull multiply-updated", "[.SyncServer]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Pull deltas from SG", "[.SyncServer][Delta]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]") {
     static constexpr int kNumDocs = 1000, kNumProps = 1000;
     flushScratchDatabase();
     _logRemoteRequests = false;
@@ -443,7 +506,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull deltas from SG", "[.SyncServer][Delta]
         }
         enc.endArray();
         enc.endDict();
-        sendRemoteRequest("POST", "_bulk_docs", enc.finish());
+        sendRemoteRequest("POST", "_bulk_docs", enc.finish(), false, HTTPStatus::Created);
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
@@ -490,7 +553,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull deltas from SG", "[.SyncServer][Delta]
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Pull iTunes deltas from SG", "[.SyncServer][Delta]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][Delta]") {
     flushScratchDatabase();
     _logRemoteRequests = false;
 
@@ -537,7 +600,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull iTunes deltas from SG", "[.SyncServer]
         }
         enc.endArray();
         enc.endDict();
-        sendRemoteRequest("POST", "_bulk_docs", enc.finish());
+        sendRemoteRequest("POST", "_bulk_docs", enc.finish(), false, HTTPStatus::Created);
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;

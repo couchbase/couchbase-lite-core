@@ -31,6 +31,10 @@
 #include "SecureRandomize.hh"
 #include "TempArray.hh"
 
+#if TARGET_OS_IPHONE
+#include <CoreFoundation/CFBundle.h>
+#endif
+
 #ifdef _MSC_VER
     #undef min
 #endif
@@ -39,9 +43,9 @@
 using namespace std;
 
 #if defined(CMAKE) && defined(_MSC_VER)
-string DataFileTestFixture::sFixturesDir = "../LiteCore/tests/data/";
+string TestFixture::sFixturesDir = "../LiteCore/tests/data/";
 #else
-string DataFileTestFixture::sFixturesDir = "LiteCore/tests/data/";
+string TestFixture::sFixturesDir = "LiteCore/tests/data/";
 #endif
 
 
@@ -166,6 +170,19 @@ TestFixture::TestFixture()
         if (getenv("LiteCoreTestsQuiet"))
             LogDomain::setCallbackLogLevel(LogLevel::Warning);
         c4slice_free(version);
+
+#if TARGET_OS_IPHONE
+        // iOS tests copy the fixture files into the test bundle.
+        CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("org.couchbase.LiteCoreTests"));
+        CFURLRef url = CFBundleCopyResourcesDirectoryURL(bundle);
+        CFStringRef path = CFURLCopyPath(url);
+        CFRelease(url);
+        char buf[1024];
+        Assert(CFStringGetCString(path, buf, sizeof(buf), kCFStringEncodingUTF8));
+        sFixturesDir = string(buf) + "TestData/LiteCore/tests/data/";
+        CFRelease(path);
+#endif
+
     });
     error::sWarnOnError = true;
 }

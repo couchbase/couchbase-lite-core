@@ -18,6 +18,7 @@
 
 #include "CoreMLPredictiveModel.hh"
 #include "c4PredictiveQuery.h"
+#include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "fleece/Fleece.hh"
 #include "fleece/Fleece+CoreFoundation.h"
@@ -70,7 +71,8 @@ namespace cbl {
             va_list args;
             va_start(args, format);
             char *message = nullptr;
-            vasprintf(&message, format, args);
+            if (vasprintf(&message, format, args) < 0)
+                throw bad_alloc();
             va_end(args);
             if (outError)
                 *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidQuery, slice(message));
@@ -384,6 +386,7 @@ namespace cbl {
     }
 
 
+    API_AVAILABLE(macos(10.13), ios(11))
     static void encodeMultiArray(Encoder &enc, MLMultiArray* array,
                                  NSUInteger dimension, const uint8_t *data)
     {
@@ -419,6 +422,7 @@ namespace cbl {
     }
 
     // Encodes a multi-array feature as nested Fleece arrays of numbers.
+    API_AVAILABLE(macos(10.13), ios(11))
     static void encodeMultiArray(Encoder &enc, MLMultiArray* array) {
         encodeMultiArray(enc, array, 0, (const uint8_t*)array.dataPointer);
     }
@@ -426,7 +430,7 @@ namespace cbl {
 
 #ifdef SDK_HAS_SEQUENCES
     // Encodes a sequence feature as a Fleece array of strings or numbers.
-    API_AVAILABLE(macos(10.14))
+    API_AVAILABLE(macos(10.14), ios(12.0))
     static void encodeSequence(Encoder &enc, MLSequence *sequence) {
         switch (sequence.type) {
             case MLFeatureTypeString:
@@ -441,6 +445,7 @@ namespace cbl {
 
 
     // Encodes an ML feature to Fleece.
+    API_AVAILABLE(macos(10.13), ios(11))
     void PredictiveModel::encodeMLFeature(Encoder &enc, MLFeatureValue *feature) {
         switch (feature.type) {
             case MLFeatureTypeInt64:
@@ -460,7 +465,7 @@ namespace cbl {
                 break;
 #ifdef SDK_HAS_SEQUENCES
             case MLFeatureTypeSequence:
-                if (@available(macOS 10.14, *))
+                if (@available(macOS 10.14, ios 12.0, *))
                     encodeSequence(enc, feature.sequenceValue);
                 else
                     enc.writeNull();

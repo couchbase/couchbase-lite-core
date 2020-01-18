@@ -20,9 +20,17 @@
 
 #include "fleece/slice.hh"
 #include "PlatformCompat.hh"
-#include "make_unique.h"
 #include "function_ref.hh"
 #include "RefCounted.hh"
+#include <stddef.h>
+#include <stdint.h>
+#include <string>
+
+#if __has_include(<string_view>)
+    #include <string_view>
+#else
+    #include <experimental/string_view>
+#endif
 
 
 namespace litecore {
@@ -32,6 +40,14 @@ namespace litecore {
     using fleece::function_ref;
     using fleece::RefCounted;
     using fleece::Retained;
+
+    using std::string;
+
+#if __has_include(<string_view>)
+    using std::string_view;
+#else
+    using std::experimental::string_view;
+#endif
 
     // Database sequence number
     typedef uint64_t sequence_t;

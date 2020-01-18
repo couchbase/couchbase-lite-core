@@ -63,13 +63,7 @@ namespace litecore {
                                         slice encryptionKey,
                                         slice nonce)
     {
-        bool available = false;
-        if (alg == kAES256) {
-#if AES256_AVAILABLE
-            available = true;
-#endif
-        }
-        if (!available)
+        if (alg != kAES256)
             error::_throw(error::UnsupportedEncryption);
 
         memcpy(&_key, encryptionKey.buf, kAES256KeySize);
@@ -105,7 +99,6 @@ namespace litecore {
 
 
     void EncryptedWriteStream::writeBlock(slice plaintext, bool finalBlock) {
-#if AES256_AVAILABLE
         DebugAssert(plaintext.size <= kFileBlockSize, "Block is too large");
         uint64_t iv[2] = {0, _endian_encode(_blockID)};
         ++_blockID;
@@ -119,9 +112,6 @@ namespace litecore {
         _output->write(ciphertext);
         LogVerbose(BlobLog, "WRITE #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
             (unsigned long long)(_blockID-1), (unsigned long long)plaintext.size, finalBlock, (unsigned long long)ciphertext.size);
-#else
-        error::_throw(error::Unimplemented);
-#endif
     }
 
 
@@ -190,7 +180,6 @@ namespace litecore {
 
     // Reads & decrypts the next block from the file into `output`
     size_t EncryptedReadStream::readBlockFromFile(slice output) {
-#if AES256_AVAILABLE
         if (_blockID > _finalBlockID)
             return 0; // at EOF already
         uint8_t blockBuf[kFileBlockSize + kAESBlockSize];
@@ -210,9 +199,6 @@ namespace litecore {
         LogVerbose(BlobLog, "READ  #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
             (unsigned long long)(_blockID-1), (unsigned long long)bytesRead, finalBlock, (unsigned long long)outputSize);
         return outputSize;
-#else
-        error::_throw(error::Unimplemented);
-#endif
     }
 
 

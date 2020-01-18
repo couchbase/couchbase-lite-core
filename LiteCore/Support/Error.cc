@@ -20,11 +20,20 @@
 #include "Logging.hh"
 #include "FleeceException.hh"
 #include "PlatformIO.hh"
+#include "StringUtil.hh"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
+#include "WebSocketInterface.hh"    // for Network error codes
 #include <cerrno>
 #include <string>
 #include <sstream>
+
+#ifdef _MSC_VER
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <netdb.h>
+#endif
 
 #if __ANDROID__
 #include <android/log.h>
@@ -35,14 +44,98 @@
 #include <cxxabi.h>
 #endif
 
-#ifndef LITECORE_IMPL
+#ifdef LITECORE_IMPL
+#include <mbedtls/error.h>
+#include <sockpp/exception.h>
+#else
 #include "c4Base.h"     // Ugly layering violation, but needed for using Error in other libs
+#include "c4Private.h"
 #endif
-
 
 namespace litecore {
 
     using namespace std;
+
+#if defined(_WIN32) && defined(LITECORE_IMPL)
+    static string win32_message(int err) {
+        char buf[1024];
+        buf[0] = '\x0';
+        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			nullptr, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			buf, sizeof(buf), nullptr);
+        return string(buf);
+    }
+
+    static string cbl_strerror(int err) {
+        if(err < sys_nerr) {
+            // As of Windows 10, only errors 0 - 42 have a message in strerror
+            return strerror(err);
+        }
+
+        if(err >= 10000 && err < 12000) {
+            return win32_message(err);
+        }
+
+        // Hope the POSIX definitions don't change...
+        if(err < 100 || err > 140) {
+            return "Unknown Error";
+        }
+
+        static long wsaEquivalent[] = {
+            WSAEADDRINUSE,
+            WSAEADDRNOTAVAIL,
+            WSAEAFNOSUPPORT,
+            WSAEALREADY,
+            0,
+            WSAECANCELLED,
+            WSAECONNABORTED,
+            WSAECONNREFUSED,
+            WSAECONNRESET,
+            WSAEDESTADDRREQ,
+            WSAEHOSTUNREACH,
+            0,
+            WSAEINPROGRESS,
+            WSAEISCONN,
+            WSAELOOP,
+            WSAEMSGSIZE,
+            WSAENETDOWN,
+            WSAENETRESET,
+            WSAENETUNREACH,
+            WSAENOBUFS,
+            0,
+            0,
+            0,
+            WSAENOPROTOOPT,
+            0,
+            0,
+            WSAENOTCONN,
+            0,
+            WSAENOTSOCK,
+            0,
+            WSAEOPNOTSUPP,
+            0,
+            0,
+            0,
+            0,
+            WSAEPROTONOSUPPORT,
+            WSAEPROTOTYPE,
+            0,
+            WSAETIMEDOUT,
+            0,
+            WSAEWOULDBLOCK
+        };
+
+        const long equivalent = wsaEquivalent[err - 100];
+        if(equivalent == 0) {
+            // WSA error codes are between 10000 and 11999
+            return "Unknown Error";
+        }
+
+        return win32_message(equivalent);
+    }
+#else
+#define cbl_strerror strerror
+#endif
 
 
 #pragma mark ERROR CODES, NAMES, etc.
@@ -185,6 +278,9 @@ namespace litecore {
             "server rejected the TLS client certificate",
             "server TLS certificate is self-signed or has unknown root cert",
             "invalid HTTP redirect, or redirect loop",
+            "unknown network error",
+            "server TLS certificate has been revoked",
+            "server TLS certificate name mismatch"
         };
         const char *str = nullptr;
         if (code < sizeof(kNetworkMessages)/sizeof(char*))
@@ -233,7 +329,7 @@ namespace litecore {
             case LiteCore:
                 return litecore_errstr((LiteCoreError)code);
             case POSIX:
-                return strerror(code);
+                return cbl_strerror(code);
             case SQLite:
             {
                 const int primary = code & 0xFF;
@@ -251,6 +347,15 @@ namespace litecore {
                 return network_errstr(code);
             case WebSocket:
                 return websocket_errstr(code);
+            case MbedTLS: {
+#ifdef LITECORE_IMPL
+                char buf[100];
+                mbedtls_strerror(code, buf, sizeof(buf));
+                return string(buf);
+#else
+                return format("(mbedTLS %s0x%x)", (code < 0 ? "-" : ""), abs(code));
+#endif
+            }
             default:
                 return "unknown error domain";
         }
@@ -267,11 +372,11 @@ namespace litecore {
         // Indexed by Domain
         static const char* kDomainNames[] = {"0",
                                              "LiteCore", "POSIX", "SQLite", "Fleece",
-                                             "Network", "WebSocket"};
+                                             "Network", "WebSocket", "mbedTLS"};
         static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
                       "Incomplete domain name table");
         
-        if (domain < 0 || domain >= NumDomainsPlus1)
+        if (domain >= NumDomainsPlus1)
             return "INVALID_DOMAIN";
         return kDomainNames[domain];
     }
@@ -292,8 +397,14 @@ namespace litecore {
     :runtime_error(what),
     domain(d),
     code(getPrimaryCode(d, c))
-    {
-        
+    { }
+
+
+    error& error::operator= (const error &e) {
+        // This has to be hacked, since `domain` and `code` are marked `const`.
+        this->~error();
+        new (this) error(e);
+        return *this;
     }
 
 
@@ -329,23 +440,35 @@ namespace litecore {
 
 
     error error::convertRuntimeError(const std::runtime_error &re) {
-        auto e = dynamic_cast<const error*>(&re);
-        if (e)
+        if (auto e = dynamic_cast<const error*>(&re); e) {
             return *e;
-        auto se = dynamic_cast<const SQLite::Exception*>(&re);
-        if (se)
+        } else if (auto se = dynamic_cast<const SQLite::Exception*>(&re); se) {
             return error(SQLite, se->getExtendedErrorCode(), se->what());
-        auto fe = dynamic_cast<const fleece::FleeceException*>(&re);
-        if (fe)
+        } else if (auto fe = dynamic_cast<const fleece::FleeceException*>(&re); fe) {
             return error(Fleece, fe->code, fe->what());
-        return unexpectedException(re);
+#ifdef LITECORE_IMPL
+        } else if (auto syserr = dynamic_cast<const sockpp::sys_error*>(&re); syserr) {
+            int code = syserr->error();
+            return error((code < 0 ? MbedTLS : POSIX), code);
+        } else if (auto gx = dynamic_cast<const sockpp::getaddrinfo_error*>(&re); gx) {
+            if (gx->error() == EAI_NONAME || gx->error() == HOST_NOT_FOUND) {
+                return error(Network, websocket::kNetErrUnknownHost,
+                             "Unknown hostname \"" + gx->hostname() + "\"");
+            } else {
+                return error(Network, websocket::kNetErrDNSFailure,
+                             "Error resolving hostname \"" + gx->hostname() + "\": " + gx->what());
+            }
+#endif
+        } else {
+            return unexpectedException(re);
+        }
     }
 
     error error::convertException(const std::exception &x) {
-        auto re = dynamic_cast<const std::runtime_error*>(&x);
-        if (re)
+        if (auto re = dynamic_cast<const std::runtime_error*>(&x); re)
             return convertRuntimeError(*re);
-        return unexpectedException(x);
+        else
+            return unexpectedException(x);
     }
 
 
@@ -357,6 +480,8 @@ namespace litecore {
                 return code == NotFound || code == DatabaseTooOld;
             case POSIX:
                 return code == ENOENT;
+            case Network:
+                return code != websocket::kNetErrUnknown;
             default:
                 return false;
         }
@@ -364,7 +489,12 @@ namespace litecore {
 
 
     void error::_throw() {
-        if (sWarnOnError && !isUnremarkable()) {
+#ifdef LITECORE_IMPL
+        bool warn = sWarnOnError;
+#else
+        bool warn = c4log_getWarnOnErrors();
+#endif
+        if (warn && !isUnremarkable()) {
             WarnError("LiteCore throwing %s error %d: %s%s",
                       nameOfDomain(domain), code, what(), backtrace(1).c_str());
         }
@@ -391,10 +521,13 @@ namespace litecore {
         char *msg = nullptr;
         va_list args;
         va_start(args, fmt);
-        vasprintf(&msg, fmt, args);
+        int len = vasprintf(&msg, fmt, args);
         va_end(args);
-        std::string message(msg);
-        free(msg);
+        std::string message;
+        if (len >= 0) {
+            message = msg;
+            free(msg);
+        }
         error{LiteCore, code, message}._throw();
     }
 
@@ -440,7 +573,8 @@ namespace litecore {
                 if (unmangled && status == 0)
                     function = unmangled;
                 char *cstr = nullptr;
-                asprintf(&cstr, "%2d  %-25s %s + %d", i, library, function, offset);
+                if (asprintf(&cstr, "%2d  %-25s %s + %d", i, library, function, offset) < 0)
+                    return "(error printing backtrace)";
                 out << cstr;
                 free(cstr);
             } else {

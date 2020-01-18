@@ -18,11 +18,12 @@
 
 #include "RESTListener.hh"
 #include "c4.hh"
+#include "c4Transaction.hh"
 #include "c4Private.h"
+#include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
 #include "c4Replicator.h"
 #include "Server.hh"
-#include "Request.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include <functional>
@@ -32,6 +33,7 @@ using namespace fleece;
 
 
 namespace litecore { namespace REST {
+    using namespace net;
 
 #pragma mark - ROOT HANDLERS:
 
@@ -150,7 +152,9 @@ namespace litecore { namespace REST {
         bool includeDocs = rq.boolQuery("include_docs");
         if (includeDocs)
             options.flags |= kC4IncludeBodies;
-        // TODO: Implement startkey, endkey, skip, limit, etc.
+        int64_t skip = rq.intQuery("skip", 0);
+        int64_t limit = rq.intQuery("limit", INT64_MAX);
+        // TODO: Implement startkey, endkey, etc.
 
         // Create enumerator:
         C4Error err;
@@ -164,6 +168,10 @@ namespace litecore { namespace REST {
         json.writeKey("rows"_sl);
         json.beginArray();
         while (c4enum_next(e, &err)) {
+            if (skip-- > 0)
+                continue;
+            else if (limit-- <= 0)
+                break;
             C4DocumentInfo info;
             c4enum_getDocumentInfo(e, &info);
             json.beginDict();
@@ -220,7 +228,6 @@ namespace litecore { namespace REST {
 
         // Splice the _id and _rev into the start of the JSON:
         rq.setHeader("Content-Type", "application/json");
-        rq.setChunked();    // OPT: Buffer this and write in one go
         rq.write("{\"_id\":\"");
         rq.write(docID);
         rq.write("\",\"_rev\":\"");
@@ -335,7 +342,7 @@ namespace litecore { namespace REST {
         string docID = rq.path(1);                       // will be empty for POST
 
         // Parse the body:
-        bool deleting = (rq.method() == "DELETE"_sl);
+        bool deleting = (rq.method() == Method::DELETE);
         Dict body = rq.bodyAsJSON().asDict();
         if (!body) {
             if (!deleting || rq.body())
@@ -344,17 +351,16 @@ namespace litecore { namespace REST {
 
         auto &json = rq.jsonEncoder();
         json.beginDict();
-
         C4Error error;
-        if (modifyDoc(body, docID, rq.query("rev"), deleting, true, db, json, &error)) {
-            if (deleting)
-                rq.setStatus(HTTPStatus::OK, "Deleted");
-            else
-                rq.setStatus(HTTPStatus::Created, "Created");
-        } else {
+        if (!modifyDoc(body, docID, rq.query("rev"), deleting, true, db, json, &error)) {
             rq.respondWithError(error);
+            return;
         }
         json.endDict();
+        if (deleting)
+            rq.setStatus(HTTPStatus::OK, "Deleted");
+        else
+            rq.setStatus(HTTPStatus::Created, "Created");
     }
 
 

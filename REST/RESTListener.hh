@@ -29,23 +29,26 @@
 #include <set>
 #include <vector>
 
+struct C4DatabaseConfig;
+
 namespace litecore { namespace REST {
     using fleece::RefCounted;
     using fleece::Retained;
-    class RequestResponse;
-    class Request;
     class Server;
 
+
+    /** Listener subclass that serves (some of) the venerable CouchDB REST API.
+        The HTTP work is done by a Server object. */
     class RESTListener : public Listener {
     public:
-        RESTListener(const Config&);
+        explicit RESTListener(const Config&);
         ~RESTListener();
 
+        /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string &name, FilePath &outPath);
 
         /** Opens a database and makes it visible via the REST API.
-            If the name is an empty string, a default name will be used based on the
-            filename. */
+            If the name is an empty string, a default name will be used based on the filename. */
         bool openDatabase(std::string name,
                           const FilePath&,
                           const C4DatabaseConfig*,
@@ -77,11 +80,15 @@ namespace litecore { namespace REST {
             time_t _timeStarted {0};
         };
 
+        /** The currently-running tasks. */
         std::vector<Retained<Task>> tasks();
 
     protected:
         friend class Task;
 
+        Retained<net::TLSContext> createTLSContext(const C4TLSConfig*);
+        Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig*);
+        
         Server* server() const              {return _server.get();}
 
         /** Returns the database for this request, or null on error. */
@@ -92,8 +99,10 @@ namespace litecore { namespace REST {
         using HandlerMethod = void(RESTListener::*)(RequestResponse&);
         using DBHandlerMethod = void(RESTListener::*)(RequestResponse&, C4Database*);
 
-        void addHandler(Server::Method, const char *uri, HandlerMethod);
-        void addDBHandler(Server::Method, const char *uri, DBHandlerMethod);
+        void addHandler(net::Method, const char *uri, HandlerMethod);
+        void addDBHandler(net::Method, const char *uri, DBHandlerMethod);
+
+        virtual void handleSync(RequestResponse&, C4Database*);
 
         static std::string serverNameAndVersion();
         static std::string kServerName;
@@ -124,7 +133,8 @@ namespace litecore { namespace REST {
 
         std::unique_ptr<FilePath> _directory;
         const bool _allowCreateDB, _allowDeleteDB;
-        std::unique_ptr<Server> _server;
+        Retained<crypto::Identity> _identity;
+        Retained<Server> _server;
         std::mutex _mutex;
         std::set<Retained<Task>> _tasks;
         unsigned _nextTaskID {1};

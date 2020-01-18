@@ -207,41 +207,59 @@ namespace litecore {
 
 
     // fl_result(value) -> value suitable for use as a result column
-    // Primarily what this does is change the various custom blob subtypes into Fleece containers
+    // Primarily what this does is change the various custom value subtypes into Fleece containers
     // that can be read by SQLiteQueryRunner::encodeColumn().
     static void fl_result(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             auto arg = argv[0];
-            const Value *value = asFleeceValue(arg);
-            if (value) {
-                setResultBlobFromEncodedValue(ctx, value);
-            } else if (sqlite3_value_type(arg) == SQLITE_BLOB) {
-                switch (sqlite3_value_subtype(arg)) {
-                    case kFleeceNullSubtype: {
-                        value = fleeceParam(ctx, arg);
-                        if (!value)
-                            return;
+            switch (sqlite3_value_type(arg)) {
+                case SQLITE_NULL: {
+                    // A SQLite encoded pointer looks like a NULL:
+                    const Value *value = asFleeceValue(arg);
+                    if (value) {
                         setResultBlobFromEncodedValue(ctx, value);
-                        break;
+                        return;
                     }
-                    case 0:
-                        sqlite3_result_value(ctx, arg);
-                        break;
-                    case kPlainBlobSubtype: {
-                        // A plain blob/data value has to be wrapped in a Fleece container to avoid
-                        // misinterpretation, since SQLiteQueryRunner will assume all blob results
-                        // are Fleece containers.
-                        Encoder enc;
-                        enc.writeData(valueAsSlice(arg));
-                        setResultBlobFromFleeceData(ctx, enc.finish());
-                        break;
-                    }
-                    default:
-                        Assert(false, "Invalid blob subtype");
+                    break;
                 }
-            } else {
-                sqlite3_result_value(ctx, arg);
+                case SQLITE_INTEGER:
+                    if (sqlite3_value_subtype(arg) == kFleeceIntBoolean) {
+                        // A tagged boolean:
+                        slice encoded = sqlite3_value_int(arg) ? Encoder::kPreEncodedTrue
+                                                               : Encoder::kPreEncodedFalse;
+                        sqlite3_result_blob(ctx, encoded.buf, int(encoded.size), SQLITE_STATIC);
+                        return;
+                    }
+                    break;
+                case SQLITE_BLOB: {
+                    switch (sqlite3_value_subtype(arg)) {
+                        case 0:
+                            // Untagged blob is already Fleece data
+                            break;
+                        case kFleeceNullSubtype: {
+                            // A tagged Fleece/JSON null:
+                            slice encoded = Encoder::kPreEncodedNull;
+                            sqlite3_result_blob(ctx, encoded.buf, int(encoded.size), SQLITE_STATIC);
+                            return;
+                        }
+                        case kPlainBlobSubtype: {
+                            // A plain blob/data value has to be wrapped in a Fleece container to avoid
+                            // misinterpretation, since SQLiteQueryRunner will assume all blob results
+                            // are Fleece containers.
+                            Encoder enc;
+                            enc.writeData(valueAsSlice(arg));
+                            setResultBlobFromFleeceData(ctx, enc.finish());
+                            return;
+                        }
+                        default:
+                            Assert(false, "Invalid blob subtype");
+                    }
+                    break;
+                }
             }
+
+            // Default behavior if none of the special cases above apply: just return directly
+            sqlite3_result_value(ctx, arg);
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_result: exception!", -1);
         }
@@ -441,6 +459,28 @@ namespace litecore {
         setResultBlobFromFleeceData(ctx, enc.finish());
     }
 
+
+#pragma mark - REVISION HISTORY:
+
+
+    // fl_callback(docID, body, sequence, callback) -> string
+    static void fl_callback(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        slice docID = valueAsSlice(argv[0]);
+        slice body = valueAsSlice(argv[1]);
+        sequence_t sequence = sqlite3_value_int(argv[2]);
+        auto callback = (KeyStore::WithDocBodyCallback*)sqlite3_value_pointer(argv[3], kWithDocBodiesCallbackPointerType);
+        if (!callback || !docID) {
+            sqlite3_result_error(ctx, "Missing or invalid callback", -1);
+            return;
+        }
+        try {
+            alloc_slice result = (*callback)(docID, body, sequence);
+            setResultTextFromSlice(ctx, result);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_callback: exception!", -1);
+        }
+    }
+
     static void fl_like(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         Collation col;
         col.unicodeAware = true;
@@ -471,6 +511,7 @@ namespace litecore {
         { "dict_of",          -1, dict_of },
         { "fl_like",           2, fl_like },
         { "fl_like",           3, fl_like },
+        { "fl_callback",       4, fl_callback },
         { }
     };
 

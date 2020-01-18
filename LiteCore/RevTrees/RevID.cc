@@ -20,27 +20,8 @@
 #include "Error.hh"
 #include "varint.hh"
 #include "PlatformCompat.hh"
+#include "StringUtil.hh"
 #include <math.h>
-
-
-#if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER)
-// digittoint is a BSD function, not available on Android, Linux, etc.
-static int digittoint(char ch) {
-    int d = ch - '0';
-    if ((unsigned) d < 10) {
-        return d;
-    }
-    d = ch - 'a';
-    if ((unsigned) d < 6) {
-        return d + 10;
-    }
-    d = ch - 'A';
-    if ((unsigned) d < 6) {
-        return d + 10;
-    }
-    return 0;
-}
-#endif // defined(__ANDROID__) || defined(__GLIBC__)
 
 
 namespace litecore {

@@ -9,6 +9,7 @@
 #include "ReplicatorAPITest.hh"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
+#include "c4Socket.h"
 #include "fleece/Fleece.hh"
 
 using namespace fleece;
@@ -18,6 +19,9 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
                          ReplicatorAPITest::kWikipedia1kDBName,
                          ReplicatorAPITest::kProtectedDBName,
                          ReplicatorAPITest::kImagesDBName;
+
+alloc_slice ReplicatorAPITest::sPinnedCert;
+
 
 
 TEST_CASE("URL Parsing") {
@@ -117,25 +121,21 @@ TEST_CASE("URL Generation") {
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[Push]") {
     // For CBL-524 "Lazy c4replicator initialize cause memory leak"
-    createDB2();
-
     C4Error err;
     C4ReplicatorParameters params = {};
     params.push = kC4OneShot;
     params.pull = kC4Disabled;
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
-    params.dontStart = true;
 
-    _repl = c4repl_new(db, _address, kC4SliceNull, (C4Database*)db2,
-                       params, &err);
+    _repl = c4repl_new(db, _address, kC4SliceNull, params, &err);
     C4Log("---- Releasing C4Replicator ----");
     _repl = nullptr;
 }
 
 
 // Test invalid URL scheme:
-TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[Push][!throws]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[C][Push][!throws]") {
     ExpectingExceptions x;
     _address.scheme = "http"_sl;
     C4Error err;
@@ -147,7 +147,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[Push][!throws]") {
 
 
 // Test missing or invalid database name:
-TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[Push][!throws]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[C][Push][!throws]") {
     ExpectingExceptions x;
     _remoteDBName = ""_sl;
     C4Error err;
@@ -166,21 +166,25 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[Push][!throws]") {
 
 
 // Test connection-refused error by connecting to a bogus port of localhost
-TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
+    ExpectingExceptions x;
     _address.hostname = C4STR("localhost");
     _address.port = 1;  // wrong port!
+    _mayGoOffline = true;
     replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == POSIXDomain);
     CHECK(_callbackStatus.error.code == ECONNREFUSED);
     CHECK(_callbackStatus.progress.unitsCompleted == 0);
     CHECK(_callbackStatus.progress.unitsTotal == 0);
+    CHECK(_wentOffline);
     CHECK(_numCallbacksWithLevel[kC4Busy] == 0);
     CHECK(_numCallbacksWithLevel[kC4Idle] == 0);
 }
 
 
 // Test host-not-found error by connecting to a nonexistent hostname
-TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
+    ExpectingExceptions x;
     _address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
     replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == NetworkDomain);
@@ -192,24 +196,27 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[Push]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
     createDB2();
-    enableDocProgressNotifications();
+    _enableDocProgressNotifications = true;
     replicate(kC4OneShot, kC4Disabled);
 
     CHECK(_docsEnded == 100);
     REQUIRE(c4db_getDocumentCount(db2) == 100);
 }
+#endif
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[Push][Pull]") {
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Push][Pull]") {
     createRev("doc"_sl, kRevID, kFleeceBody);
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
     createDB2();
-    enableDocProgressNotifications();
+    _enableDocProgressNotifications = true;
     replicate(kC4OneShot, kC4Disabled);
     CHECK(_docsEnded == 1);
 
@@ -222,9 +229,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[Push]
     REQUIRE(c4doc_selectParentRevision(doc));
     CHECK(doc->selectedRev.revID == kRevID);
 }
+#endif
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[Push][Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]") {
     _address.hostname = C4STR("localhost");
     bool factoryCalled = false;
     C4SocketFactory factory = {};
@@ -244,7 +252,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[Push][Pull]") 
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[Push]") {
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -257,22 +266,24 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[Push]") {
         return body["gender"_sl].asString() == "male"_sl;
     };
 
-    enableDocProgressNotifications();
+    _enableDocProgressNotifications = true;
     replicate(kC4OneShot, kC4Disabled);
 
     CHECK(_counter == 100);
     CHECK(_docsEnded == 45);
     CHECK(c4db_getDocumentCount(db2) == 45);
 }
+#endif
 
 // CBL-221
-TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[Pull]") {
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]") {
     createDB2();
     // Need a large enough data set so that the pulled documents come
     // through in more than one batch
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", 15.0, false, db2);
     
-    enableDocProgressNotifications();
+    _enableDocProgressNotifications = true;
     
     _onDocsEnded = [](C4Replicator* repl,
                       bool pushing,
@@ -290,7 +301,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[Pull]") {
     // failure that cannot be detected from the outside)
     CHECK(c4db_getDocumentCount(db) == _docsEnded);
 }
+#endif
 
+#ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
@@ -303,7 +316,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     params.pull = kC4Disabled;
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
-    params.dontStart = true;
 
     int expectedPending;
     SECTION("Normal") {
@@ -332,8 +344,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
         FLEncoder_Free(e);
     }
 
-    _repl = c4repl_new(db, _address, kC4SliceNull, (C4Database*)db2,
-                       params, &err);
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, &err);
 
     FLSliceResult_Release(options);
 
@@ -350,7 +361,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     encodedDocIDs = c4repl_getPendingDocIDs(_repl, &err);
     CHECK(encodedDocIDs == nullslice);
 }
+#endif
 
+#ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
@@ -363,7 +376,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     params.pull = kC4Disabled;
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
-    params.dontStart = true;
 
     bool expectedIsPending = true;
     SECTION("Normal") {
@@ -392,8 +404,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
         FLEncoder_Free(e);
     }
 
-    _repl = c4repl_new(db, _address, kC4SliceNull, (C4Database*)db2,
-                       params, &err);
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, &err);
 
     bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, &err);
     CHECK(isPending == expectedIsPending);
@@ -407,3 +418,4 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     CHECK(!isPending);
     CHECK(err.code == 0);
 }
+#endif

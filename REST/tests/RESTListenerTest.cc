@@ -1,5 +1,5 @@
 //
-// ListenerTest.cc
+// RESTListenerTest.cc
 //
 // Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
@@ -16,15 +16,18 @@
 // limitations under the License.
 //
 
+#include "Error.hh"
 #include "c4Test.hh"
-#include "c4Listener.h"
-#include "c4.hh"
+#include "ListenerHarness.hh"
 #include "FilePath.hh"
 #include "Response.hh"
+#include "c4Internal.hh"
 
-using namespace std;
-using namespace fleece;
+using namespace litecore::net;
 using namespace litecore::REST;
+
+
+//#ifdef COUCHBASE_ENTERPRISE
 
 
 static string to_str(FLSlice s) {
@@ -36,10 +39,12 @@ static string to_str(Value v) {
 }
 
 
-class C4RESTTest : public C4Test {
+class C4RESTTest : public C4Test, public ListenerHarness {
 public:
 
-    C4RESTTest() :C4Test(0)
+    C4RESTTest()
+    :C4Test(0)
+    ,ListenerHarness({59849, kC4RESTAPI})
     { }
 
 
@@ -53,29 +58,36 @@ public:
     }
 
 
-    void start() {
-        if (listener)
-            return;
-        if ((c4listener_availableAPIs() & kC4RESTAPI) == 0)
-            FAIL("REST API is unavailable in this build");
-        C4Error err;
-        listener = c4listener_start(&config, &err);
-        REQUIRE(listener);
+    unique_ptr<Response> request(string method, string uri, map<string,string> headersMap, slice body, HTTPStatus expectedStatus) {
+        Encoder enc;
+        enc.beginDict();
+        for (auto &h : headersMap) {
+            enc.writeKey(h.first);
+            enc.writeString(h.second);
+        }
+        enc.endDict();
+        auto headers = enc.finishDoc();
 
-        REQUIRE(c4listener_shareDB(listener, C4STR("db"), db));
-    }
+        share(db, "db"_sl);
 
-
-    unique_ptr<Response> request(string method, string uri, map<string,string> headers, slice body, HTTPStatus expectedStatus) {
-        start();
         C4Log("---- %s %s", method.c_str(), uri.c_str());
-        unique_ptr<Response> r(new Response(method, "localhost", config.port, uri, headers, body));
-        if (!*r)
-            INFO("Error is " << r->statusMessage());
-        REQUIRE(r);
+        string scheme = config.tlsConfig ? "https" : "http";
+        unique_ptr<Response> r(new Response(scheme, method, "localhost", config.port, uri));
+        r->setHeaders(headers).setBody(body);
+        if (pinnedCert)
+            r->allowOnlyCert(pinnedCert);
+#ifdef COUCHBASE_ENTERPRISE
+        if (rootCerts)
+            r->setRootCerts(rootCerts);
+        if (clientIdentity.cert)
+            r->setIdentity(clientIdentity.cert, clientIdentity.key);
+#endif
+        if (!r->run())
+            C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
         C4Log("Status: %d %s", r->status(), r->statusMessage().c_str());
         string responseBody = r->body().asString();
         C4Log("Body: %s", responseBody.c_str());
+        INFO("Error: " << c4error_descriptionStr(r->error()));
         REQUIRE(r->status() == expectedStatus);
         return r;
     }
@@ -84,24 +96,30 @@ public:
         return request(method, uri, {}, nullslice, expectedStatus);
     }
 
-    C4ListenerConfig config = {59849, kC4RESTAPI};
+    void testRootLevel() {
+        auto r = request("GET", "/", HTTPStatus::OK);
+        auto body = r->bodyAsJSON().asDict();
+        REQUIRE(body);
+        CHECK(to_str(body["couchdb"]) == "Welcome");
+    }
+
     alloc_slice directory;
-    c4::ref<C4Listener> listener;
+    alloc_slice pinnedCert;
+#ifdef COUCHBASE_ENTERPRISE
+    c4::ref<C4Cert> rootCerts;
+#endif
 };
 
 
 #pragma mark - ROOT LEVEL:
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][C]") {
-    auto r = request("GET", "/", HTTPStatus::OK);
-    auto body = r->bodyAsJSON().asDict();
-    REQUIRE(body);
-    CHECK(to_str(body["couchdb"]) == "Welcome");
+TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][Listener][C]") {
+    testRootLevel();
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST _all_databases", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST _all_databases", "[REST][Listener][C]") {
     auto r = request("GET", "/_all_dbs", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asArray();
     REQUIRE(body.count() == 1);
@@ -109,7 +127,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST _all_databases", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST unknown special top-level", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST unknown special top-level", "[REST][Listener][C]") {
     request("GET", "/_foo", HTTPStatus::NotFound);
     request("GET", "/_", HTTPStatus::NotFound);
 }
@@ -118,7 +136,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST unknown special top-level", "[REST][C]") {
 #pragma mark - DATABASE:
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST GET database", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST GET database", "[REST][Listener][C]") {
     unique_ptr<Response> r;
     SECTION("No slash") {
         r = request("GET", "/db", HTTPStatus::OK);
@@ -141,7 +159,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST GET database", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST DELETE database", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST DELETE database", "[REST][Listener][C]") {
     unique_ptr<Response> r;
     SECTION("Disallowed") {
         r = request("DELETE", "/db", HTTPStatus::Forbidden);
@@ -157,12 +175,12 @@ TEST_CASE_METHOD(C4RESTTest, "REST DELETE database", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][Listener][C]") {
     unique_ptr<Response> r;
     SECTION("Disallowed") {
         r = request("PUT", "/db", HTTPStatus::Forbidden);
         r = request("PUT", "/otherdb", HTTPStatus::Forbidden);
-        r = request("PUT", "/and%2For", HTTPStatus::Forbidden);       // that's a slash. This is a legal db name.
+//        r = request("PUT", "/and%2For", HTTPStatus::Forbidden);       // that's a slash. This is a legal db name.
     }
     SECTION("Allowed") {
         setUpDirectory();
@@ -188,7 +206,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][C]") {
 #pragma mark - DOCUMENTS:
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
     unique_ptr<Response> r;
     Dict body;
     alloc_slice docID;
@@ -257,7 +275,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST _all_docs", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST _all_docs", "[REST][Listener][C]") {
     auto r = request("GET", "/db/_all_docs", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
     auto rows = body["rows"].asArray();
@@ -283,7 +301,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST _all_docs", "[REST][C]") {
 }
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][Listener][C]") {
     unique_ptr<Response> r;
     r = request("POST", "/db/_bulk_docs",
                 {{"Content-Type", "application/json"}},
@@ -314,3 +332,51 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][C]") {
     CHECK(doc["status"].asInt() == 404);
     CHECK(doc["error"].asString() == "Not Found"_sl);
 }
+
+
+#pragma mark - TLS:
+
+
+#ifdef COUCHBASE_ENTERPRISE
+
+TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C]") {
+    useServerTLSWithTemporaryKey();
+    
+    gC4ExpectExceptions = true;
+    auto r = request("GET", "/", HTTPStatus::undefined);
+    CHECK(r->error() == (C4Error{NetworkDomain, kC4NetErrTLSCertUnknownRoot}));
+}
+
+
+TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][Listener][TLS][C]") {
+    pinnedCert = useServerTLSWithTemporaryKey();
+    testRootLevel();
+}
+
+
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][Listener][TLS][C]") {
+    pinnedCert = useServerTLSWithPersistentKey();
+    testRootLevel();
+}
+#endif
+
+
+TEST_CASE_METHOD(C4RESTTest, "TLS REST client cert", "[REST][Listener][TLS][C]") {
+    pinnedCert = useServerTLSWithTemporaryKey();
+    useClientTLSWithTemporaryKey();
+    testRootLevel();
+}
+
+
+TEST_CASE_METHOD(C4RESTTest, "TLS REST cert chain", "[REST][Listener][TLS][C]") {
+    Identity ca = CertHelper::createIdentity(false, kC4CertUsage_TLS_CA, "Test CA", nullptr, nullptr, true);
+    useServerIdentity(CertHelper::createIdentity(false, kC4CertUsage_TLSServer, "localhost", nullptr, &ca));
+    auto summary = alloc_slice(c4cert_summary(serverIdentity.cert));
+    useClientIdentity(CertHelper::createIdentity(false, kC4CertUsage_TLSClient, "Test Client", nullptr, &ca));
+    setListenerRootClientCerts(ca.cert);
+    rootCerts = c4cert_retain(ca.cert);
+    testRootLevel();
+}
+
+#endif // COUCHBASE_ENTERPRISE

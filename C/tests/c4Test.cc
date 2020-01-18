@@ -17,6 +17,7 @@
 //
 
 #include "c4Test.hh"
+#include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "fleece/slice.hh"
@@ -30,6 +31,10 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+
+#if TARGET_OS_IPHONE
+#include <CoreFoundation/CFBundle.h>
+#endif
 
 using namespace std;
 
@@ -156,8 +161,10 @@ void CheckError(C4Error error,
 
 #if defined(CMAKE) && defined(_MSC_VER)
 string C4Test::sFixturesDir = "../C/tests/data/";
+string C4Test::sReplicatorFixturesDir = "../Replicator/tests/data/";
 #else
 string C4Test::sFixturesDir = "C/tests/data/";
+string C4Test::sReplicatorFixturesDir = "Replicator/tests/data/";
 #endif
 
 const string C4Test::kDatabaseName = "cbl_core_test";
@@ -183,8 +190,25 @@ _versioning(kC4RevisionTrees)
             C4Error error;
             REQUIRE(c4log_writeToBinaryFile({kC4LogVerbose, c4str(path.c_str()), 16*1024, 1, false}, &error));
         }
+        //c4log_setBinaryFileLevel(kC4LogDebug);
         if (getenv("LiteCoreTestsQuiet"))
             c4log_setCallbackLevel(kC4LogWarning);
+
+#if TARGET_OS_IPHONE
+        static once_flag once;
+        call_once(once, [] {
+            // iOS tests copy the fixture files into the test bundle.
+            CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("org.couchbase.LiteCoreTests"));
+            CFURLRef url = CFBundleCopyResourcesDirectoryURL(bundle);
+            CFStringRef path = CFURLCopyPath(url);
+            char resourcesDir[1024];
+            Assert(CFStringGetCString(path, resourcesDir, sizeof(resourcesDir), kCFStringEncodingUTF8));
+            sFixturesDir           = string(resourcesDir) + "TestData/C/tests/data/";
+            sReplicatorFixturesDir = string(resourcesDir) + "TestData/Replicator/tests/data/";
+            CFRelease(path);
+            CFRelease(url);
+        });
+#endif
     });
     c4log_warnOnErrors(true);
 
@@ -294,7 +318,7 @@ C4Database* C4Test::createDatabase(const string &nameSuffix) {
 void C4Test::closeDB() {
     C4Error error;
     REQUIRE(c4db_close(db, &error));
-    c4db_free(db);
+    c4db_release(db);
     db = nullptr;
 }
 
@@ -312,7 +336,7 @@ void C4Test::reopenDBReadOnly() {
     auto config = *c4db_getConfig(db);
     C4Error error;
     REQUIRE(c4db_close(db, &error));
-    c4db_free(db);
+    c4db_release(db);
     db = nullptr;
     config.flags = (config.flags & ~kC4DB_Create) | kC4DB_ReadOnly;
     db = c4db_open(databasePath(), &config, &error);
@@ -325,7 +349,7 @@ void C4Test::deleteDatabase(){
     bool deletedDb = c4db_delete(db, &error);
     INFO("Error " << error.domain << "/" << error.code);
     REQUIRE(deletedDb);
-    c4db_free(db);
+    c4db_release(db);
     db = nullptr;
 }
 
@@ -335,7 +359,7 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
     auto config = *c4db_getConfig(db);
     C4Error error;
     REQUIRE(c4db_delete(db, &error));
-    c4db_free(db);
+    c4db_release(db);
     db = nullptr;
     db = c4db_open({path.buf, path.size}, &config, &error);
     REQUIRE(db);
@@ -353,7 +377,7 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
     auto curDoc = c4doc_get(db, docID, false, &error);
     REQUIRE(curDoc != nullptr);
     createConflictingRev(db, docID, curDoc->revID, revID, body, flags);
-    c4doc_free(curDoc);
+    c4doc_release(curDoc);
 }
 
 void C4Test::createConflictingRev(C4Database *db,
@@ -379,7 +403,7 @@ void C4Test::createConflictingRev(C4Database *db,
 //    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
 //    REQUIRE(doc != nullptr);        // can't use Catch on bg threads
     Assert(doc != nullptr);
-    c4doc_free(doc);
+    c4doc_release(doc);
 }
 
 
@@ -390,7 +414,7 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4Revis
 //    REQUIRE(curDoc != nullptr);        // can't use Catch on bg threads
     Assert(curDoc != nullptr);
     string revID = createNewRev(db, docID, curDoc->revID, body, flags);
-    c4doc_free(curDoc);
+    c4doc_release(curDoc);
     return revID;
 }
 
@@ -413,7 +437,7 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4S
     //REQUIRE(doc != nullptr);        // can't use Catch on bg threads
     Assert(doc != nullptr);
     string revID((char*)doc->revID.buf, doc->revID.size);
-    c4doc_free(doc);
+    c4doc_release(doc);
     return revID;
 }
 
@@ -469,7 +493,7 @@ string C4Test::getDocJSON(C4Database* inDB, C4Slice docID) {
     REQUIRE(doc);
     fleece::alloc_slice json( c4doc_bodyAsJSON(doc, true, &error) );
     REQUIRE(json);
-    c4doc_free(doc);
+    c4doc_release(doc);
     return json.asString();
 }
 
@@ -480,7 +504,8 @@ string C4Test::getDocJSON(C4Database* inDB, C4Slice docID) {
 vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
                                                 vector<string> attachments,
                                                 const char *contentType,
-                                                vector<string>* legacyNames)
+                                                vector<string>* legacyNames,
+                                                C4RevisionFlags flags)
 {
     vector<C4BlobKey> keys;
     C4Error c4err;
@@ -510,13 +535,13 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     // Save document:
     C4DocPutRequest rq = {};
     rq.docID = docID;
-    rq.revFlags = kRevHasAttachments;
+    rq.revFlags = flags | kRevHasAttachments;
     rq.allocedBody = body;
     rq.save = true;
     C4Document* doc = c4doc_put(db, &rq, nullptr, &c4err);
     c4slice_free(body);
     REQUIRE(doc != nullptr);
-    c4doc_free(doc);
+    c4doc_release(doc);
     return keys;
 }
 
@@ -555,15 +580,15 @@ bool C4Test::readFileByLines(string path, function<bool(FLSlice)> callback) {
     INFO("Reading lines from " << path);
     fstream fd(path.c_str(), ios_base::in);
     REQUIRE(fd);
-    char buf[1000000];  // The Wikipedia dumps have verrry long lines
+    vector<char> buf(1000000);  // The Wikipedia dumps have verrry long lines
     while (fd.good()) {
-        fd.getline(buf, sizeof(buf));
+        fd.getline(buf.data(), buf.capacity());
         auto len = fd.gcount();
         if (len <= 0)
             break;
         REQUIRE(buf[len-1] == '\0');
         --len;
-        if (!callback({buf, (size_t)len}))
+        if (!callback({buf.data(), (size_t)len}))
             return false;
     }
     REQUIRE(fd.eof());
@@ -604,8 +629,8 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
         rq.save = true;
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
         REQUIRE(doc != nullptr);
-        c4doc_free(doc);
-        FLSliceResult_Free(body);
+        c4doc_release(doc);
+        FLSliceResult_Release(body);
         ++numDocs;
         if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
             C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());
@@ -646,7 +671,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             rq.save = true;
             C4Document *doc = c4doc_put(database, &rq, nullptr, &c4err);
             REQUIRE(doc != nullptr);
-            c4doc_free(doc);
+            c4doc_release(doc);
             ++numDocs;
             if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
                 C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());

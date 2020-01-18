@@ -37,6 +37,13 @@ function(setup_build)
         dl
     )
 
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^armv[67]")
+        target_link_libraries(
+            CppTests PRIVATE
+            atomic
+        )
+    endif()
+
     if(NOT DISABLE_LTO_BUILD AND
        NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" OR "${CMAKE_BUILD_TYPE}" STREQUAL ""))
         # When clang enables LTO, it compiles bitcode instead of machine code.  This means

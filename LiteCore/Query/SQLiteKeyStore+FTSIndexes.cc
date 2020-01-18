@@ -34,63 +34,70 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    static void writeTokenizerOptions(stringstream &sql, const KeyStore::IndexOptions*);
+    static void writeTokenizerOptions(stringstream &sql, const IndexSpec::Options*);
 
 
     // Creates a FTS index.
-    bool SQLiteKeyStore::createFTSIndex(const IndexSpec &spec,
-                                        const Array *params,
-                                        const IndexOptions *options)
+    bool SQLiteKeyStore::createFTSIndex(const IndexSpec &spec)
     {
         auto ftsTableName = FTSTableName(spec.name);
         // Collect the name of each FTS column and the SQL expression that populates it:
         QueryParser qp(*this);
         qp.setBodyColumnName("new.body");
         vector<string> colNames, colExprs;
-        for (Array::iterator i(params); i; ++i) {
+        for (Array::iterator i(spec.what()); i; ++i) {
             colNames.push_back(CONCAT('"' << QueryParser::FTSColumnName(i.value()) << '"'));
             colExprs.push_back(qp.FTSExpressionSQL(i.value()));
         }
         string columns = join(colNames, ", ");
         string exprs = join(colExprs, ", ");
 
+        auto where = spec.where();
+        qp.setBodyColumnName("body");
+        string whereNewSQL = qp.whereClauseSQL(where, "new");
+        string whereOldSQL = qp.whereClauseSQL(where, "old");
+
         // Build the SQL that creates an FTS table, including the tokenizer options:
-        string sqlStr;
         {
             stringstream sql;
             sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(" << columns << ", ";
-            writeTokenizerOptions(sql, options);
+            writeTokenizerOptions(sql, spec.optionsPtr());
             sql << ")";
-            sqlStr = sql.str();
+            if (!db().createIndex(spec, this, ftsTableName, sql.str()))
+                return false;
         }
-
-        if (!db().createIndex(spec, this, ftsTableName, sqlStr))
-            return false;
 
         // Index the existing records:
         db().exec(CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
-                         "SELECT rowid, " << exprs << " FROM kv_" << name() << " AS new"));
+                         "SELECT rowid, " << exprs << " FROM kv_" << name() << " AS new "
+                         << whereNewSQL));
 
         // Set up triggers to keep the FTS table up to date
         // ...on insertion:
-        createTrigger(ftsTableName, "ins", "AFTER INSERT", "",
-                      CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
-                             "VALUES (new.rowid, " << exprs << ")"));
+        string insertNewSQL = CONCAT("INSERT INTO \"" << ftsTableName
+                                     << "\" (docid, " << columns << ") "
+                                     "VALUES (new.rowid, " << exprs << ")");
+        createTrigger(ftsTableName, "ins",
+                      "AFTER INSERT",
+                      whereNewSQL,
+                      insertNewSQL);
 
         // ...on delete:
-        createTrigger(ftsTableName, "del", "AFTER DELETE", "",
-                      CONCAT("DELETE FROM \"" << ftsTableName << "\" WHERE docid = old.rowid"));
+        string deleteOldSQL = CONCAT("DELETE FROM \"" << ftsTableName << "\" WHERE docid = old.rowid");
+        createTrigger(ftsTableName, "del",
+                      "AFTER DELETE",
+                      whereOldSQL,
+                      deleteOldSQL);
 
         // ...on update:
-        stringstream upd;
-        upd << "UPDATE \"" << ftsTableName << "\" SET ";
-        for (size_t i = 0; i < colNames.size(); ++i) {
-            if (i > 0)
-                upd << ", ";
-            upd << colNames[i] << " = " << colExprs[i];
-        }
-        upd << " WHERE docid = new.rowid";
-        createTrigger(ftsTableName, "upd", "AFTER UPDATE", "", upd.str());
+        createTrigger(ftsTableName, "preupdate",
+                      "BEFORE UPDATE OF body",
+                      whereOldSQL,
+                      deleteOldSQL);
+        createTrigger(ftsTableName, "postupdate",
+                      "AFTER UPDATE OF body",
+                      whereNewSQL,
+                      insertNewSQL);
         return true;
     }
 
@@ -101,7 +108,7 @@ namespace litecore {
 
 
     // subroutine that generates the option string passed to the FTS tokenizer
-    static void writeTokenizerOptions(stringstream &sql, const KeyStore::IndexOptions *options) {
+    static void writeTokenizerOptions(stringstream &sql, const IndexSpec::Options *options) {
         // See https://www.sqlite.org/fts3.html#tokenizer . 'unicodesn' is our custom tokenizer.
         sql << "tokenize=unicodesn";
         if (options) {

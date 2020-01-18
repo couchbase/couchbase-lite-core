@@ -27,7 +27,6 @@ function(setup_build)
         FleeceBase
         Support
         BLIPStatic
-        CivetWeb
         mbedcrypto
         ${LIBCXX_LIB}
         ${LIBCXXABI_LIB}

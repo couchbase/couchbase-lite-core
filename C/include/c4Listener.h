@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "c4Database.h"
+#include "c4Base.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,10 +34,29 @@ extern "C" {
     };
 
 
+    /** Different ways to provide TLS private keys. */
+    typedef C4_ENUM(unsigned, C4PrivateKeyRepresentation) {
+        kC4PrivateKeyFromCert,          ///< Key in secure storage, associated with certificate
+        kC4PrivateKeyData,              ///< PEM or DER data (may be PKCS12-encrypted)
+    };
+
+
+    /** TLS configuration for C4Listener. */
+    typedef struct C4TLSConfig {
+        C4PrivateKeyRepresentation privateKeyRepresentation; ///< Interpretation of `privateKey`
+        C4Slice privateKey;             ///< Private key data
+        C4String privateKeyPassword;    ///< Password to decrypt private key data
+        C4Slice certificate;            ///< X.509 certificate data
+        bool requireClientCerts;        ///< True to require clients to authenticate with a cert
+        C4Slice rootClientCerts;        ///< Root CA certs to trust when verifying client cert
+    } C4TLSConfig;
+
+
     /** Configuration for a C4Listener. */
     typedef struct C4ListenerConfig {
         uint16_t port;                  ///< TCP port to listen on
         C4ListenerAPIs apis;            ///< Which API(s) to enable
+        C4TLSConfig* tlsConfig;         ///< TLS configuration, or NULL for no TLS
 
         // For REST listeners only:
         C4String directory;             ///< Directory where newly-PUT databases will be created
@@ -48,10 +67,6 @@ extern "C" {
         bool allowPush;
         bool allowPull;
     } C4ListenerConfig;
-
-
-    /** A LiteCore network listener -- supports the REST API, replication, or both. */
-    typedef struct C4Listener C4Listener;
 
 
     /** Returns flags for the available APIs in this build (REST, sync, or both.) */

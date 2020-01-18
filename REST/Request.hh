@@ -18,17 +18,31 @@
 
 #pragma once
 #include "Response.hh"
+#include "HTTPTypes.hh"
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
+#include "Writer.hh"
+
+namespace litecore { namespace net {
+    class ResponderSocket;
+} }
 
 namespace litecore { namespace REST {
+    class Server;
 
     /** Incoming HTTP request; read-only */
     class Request : public Body {
     public:
-        fleece::slice method() const;
+        using Method = net::Method;
 
-        fleece::slice path() const;
+        explicit Request(fleece::slice httpData);
+
+        bool isValid() const                    {return _method != Method::None;}
+        operator bool () const                  {return isValid();}
+        
+        Method method() const                   {return _method;}
+
+        std::string path() const                {return _path;}
         std::string path(int i) const;
 
         std::string query(const char *param) const;
@@ -38,23 +52,33 @@ namespace litecore { namespace REST {
     protected:
         friend class Server;
         
-        Request(mg_connection *conn)
-        :Body(conn) { }
+        Request(Method, const std::string &path, const std::string &queries,
+                websocket::Headers headers, fleece::alloc_slice body);
+        Request() { }
+
+        bool readFromHTTP(fleece::slice httpData);      // data must extend at least to CRLF
+
+        Method _method {Method::None};
+        std::string _path;
+        std::string _queries;
     };
 
 
-    /** Incoming HTTP request, with methods for composing a response */
+    /** Incoming HTTP request (inherited from Request), plus setters for the response. */
     class RequestResponse : public Request {
     public:
-        RequestResponse(mg_connection*);
+        // Response status:
 
-        static HTTPStatus errorToStatus(C4Error);
         void respondWithStatus(HTTPStatus, const char *message =nullptr);
         void respondWithError(C4Error);
 
         void setStatus(HTTPStatus status, const char *message);
 
         HTTPStatus status() const                             {return _status;}
+
+        HTTPStatus errorToStatus(C4Error);
+
+        // Response headers:
 
         void setHeader(const char *header, const char *value);
 
@@ -64,9 +88,9 @@ namespace litecore { namespace REST {
 
         void addHeaders(std::map<std::string, std::string>);
 
-        // If you call write() more than once, you must first call setContentLength or setChunked.
+        // Response body:
+
         void setContentLength(uint64_t length);
-        void setChunked();
         void uncacheable();
 
         void write(fleece::slice);
@@ -78,23 +102,47 @@ namespace litecore { namespace REST {
         void writeStatusJSON(HTTPStatus status, const char *message =nullptr);
         void writeErrorJSON(C4Error);
 
+        // Must be called after everything's written:
         void finish();
 
+        // WebSocket stuff:
+
+        bool isValidWebSocketRequest();
+
+        void sendWebSocketResponse(const std::string &protocol);
+
+        std::unique_ptr<net::ResponderSocket> extractSocket();
+
+        std::string peerAddress();
+
     protected:
-        friend class Server;
-        friend class CivetC4Socket;
+        RequestResponse(Server *server, std::unique_ptr<net::ResponderSocket>);
+        void sendStatus();
+        void sendHeaders();
+        void handleSocketError();
 
     private:
-        void sendHeaders();
+        friend class Server;
 
-        HTTPStatus _status {HTTPStatus::OK};
-        std::stringstream _headers;
-        bool _sentStatus {false};
-        bool _sentHeaders {false};
-        bool _chunked {false};
-        int64_t _contentLength {-1};
-        int64_t _contentSent {0};
-        std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;
+        fleece::Retained<Server> _server;
+        std::unique_ptr<net::ResponderSocket> _socket;
+        C4Error _error {};
+
+        std::vector<fleece::alloc_slice> _requestBody;
+
+        HTTPStatus _status {HTTPStatus::OK};        // Response status code
+        std::string _statusMessage;                 // Response custom status message
+        bool _sentStatus {false};                   // Sent the response line yet?
+
+        fleece::Writer _responseHeaderWriter;
+        bool _endedHeaders {false};                 // True after headers are ended
+        int64_t _contentLength {-1};                // Content-Length, once it's set
+
+        fleece::Writer _responseWriter;             // Output stream for response body
+        std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;  // Used for writing JSON to response
+        fleece::alloc_slice _responseBody;          // Finished response body
+        fleece::slice _unsentBody;                  // Unsent portion of _responseBody
+        bool _finished {false};                     // Finished configuring the response?
     };
 
 } }

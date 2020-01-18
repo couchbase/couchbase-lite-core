@@ -28,6 +28,8 @@
 #include <unordered_set>
 #include <vector>
 
+struct C4DocumentInfo;
+
 namespace litecore { namespace repl {
     using fleece::RefCounted;
     using fleece::Retained;

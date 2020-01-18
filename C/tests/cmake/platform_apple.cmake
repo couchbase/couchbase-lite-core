@@ -23,7 +23,7 @@ function(setup_build)
         FleeceBase
         Support
         BLIPStatic
-        CivetWeb
+        "-framework Security"
     )
     
     if(BUILD_ENTERPRISE)

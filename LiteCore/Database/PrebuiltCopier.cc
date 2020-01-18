@@ -46,10 +46,12 @@ namespace litecore {
         FilePath temp = FilePath::tempDirectory(to.parentDir()).mkTempDir();
         temp.delRecursive();
         from.copyTo(temp);
-        
-        auto db = make_unique<C4Database>(temp.path(), *config);
-        db->resetUUIDs();
-        db->close();
+
+        {
+            auto db = retained(new Database(temp.path(), *config));
+            db->resetUUIDs();
+            db->close();
+        }
         
         try {
             Log("Moving source DB to destination DB...");

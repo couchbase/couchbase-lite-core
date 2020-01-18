@@ -17,11 +17,12 @@
 //
 
 #include "Database.hh"
-#include "Document.hh"
+#include "TreeDocument.hh"
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
 #include "BackgroundDB.hh"
+#include "Housekeeper.hh"
 #include "DataFile.hh"
 #include "Record.hh"
 #include "SequenceTracker.hh"
@@ -30,7 +31,6 @@
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
-#include "make_unique.h"
 #include <functional>
 
 namespace litecore { namespace constants
@@ -149,7 +149,7 @@ namespace c4Internal {
             _encoder->setSharedKeys(documentKeys());
         
         if (!(config.flags & kC4DB_NonObservable))
-            _sequenceTracker.reset(new SequenceTracker());
+            _sequenceTracker.reset(new access_lock<SequenceTracker>());
 
         // Validate that the versioning matches what's used in the database:
         auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
@@ -185,7 +185,7 @@ namespace c4Internal {
     Database::~Database() {
         Assert(_transactionLevel == 0,
                "Database being destructed while in a transaction");
-
+        FLEncoder_Free(_flEncoder);
         // Eagerly close the data file to ensure that no other instances will
         // be trying to use me as a delegate (for example in externalTransactionCommitted)
         // after I'm already in an invalid state
@@ -198,14 +198,14 @@ namespace c4Internal {
 
     void Database::close() {
         mustNotBeInTransaction();
-        closeBackgroundDatabase();
+        stopBackgroundTasks();
         _dataFile->close();
     }
 
 
     void Database::deleteDatabase() {
         mustNotBeInTransaction();
-        closeBackgroundDatabase();
+        stopBackgroundTasks();
         FilePath bundle = path().dir();
         _dataFile->deleteDataFile();
         bundle.delRecursive();
@@ -306,7 +306,8 @@ namespace c4Internal {
             newKey = &keyBuf;
 
         mustNotBeInTransaction();
-        closeBackgroundDatabase();
+        bool housekeeping = (_housekeeper != nullptr);
+        stopBackgroundTasks();
 
         // Create a new BlobStore and copy/rekey the blobs into it:
         BlobStore *realBlobStore = blobStore();
@@ -327,6 +328,8 @@ namespace c4Internal {
 
         // Finally replace the old BlobStore with the new one:
         newStore->moveTo(*realBlobStore);
+        if (housekeeping)
+            startHousekeeping();
         _dataFile->_logInfo("Finished rekeying database!");
     }
 
@@ -405,7 +408,7 @@ namespace c4Internal {
     }
 
 
-    SequenceTracker& Database::sequenceTracker() {
+    access_lock<SequenceTracker>& Database::sequenceTracker() {
         if (!_sequenceTracker)
             error::_throw(error::UnsupportedOperation);
         return *_sequenceTracker;
@@ -419,11 +422,24 @@ namespace c4Internal {
     }
 
 
-    void Database::closeBackgroundDatabase() {
-        if (_backgroundDB) {
-            _backgroundDB->close();
-            _backgroundDB = nullptr;
+    void Database::stopBackgroundTasks() {
+        if (_housekeeper) {
+            _housekeeper->stop();
+            _housekeeper = nullptr;
         }
+
+        _backgroundDB = nullptr;
+    }
+
+
+    bool Database::startHousekeeping() {
+        if (!_housekeeper) {
+            if (config.flags & kC4DB_ReadOnly)
+                return false;
+            _housekeeper = new Housekeeper(this);
+            _housekeeper->start();
+        }
+        return true;
     }
 
 
@@ -454,31 +470,21 @@ namespace c4Internal {
     Database::UUID Database::getUUID(slice key) {
         UUID uuid;
         if (!getUUIDIfExists(key, uuid)) {
-            beginTransaction();
-            try {
-                uuid = generateUUID(key, transaction());
-            } catch (...) {
-                endTransaction(false);
-                throw;
-            }
-            endTransaction(true);
+            TransactionHelper t(this);
+            uuid = generateUUID(key, t);
+            t.commit();
         }
         return uuid;
     }
     
     void Database::resetUUIDs() {
-        beginTransaction();
-        try {
-            UUID previousPrivate = getUUID(kPrivateUUIDKey);
-            auto &store = getKeyStore(toString(kC4InfoStore));
-            store.set(constants::kPreviousPrivateUUIDKey, {&previousPrivate, sizeof(UUID)}, transaction());
-            generateUUID(kPublicUUIDKey, transaction(), true);
-            generateUUID(kPrivateUUIDKey, transaction(), true);
-        } catch (...) {
-            endTransaction(false);
-            throw;
-        }
-        endTransaction(true);
+        TransactionHelper t(this);
+        UUID previousPrivate = getUUID(kPrivateUUIDKey);
+        auto &store = getKeyStore(toString(kC4InfoStore));
+        store.set(constants::kPreviousPrivateUUIDKey, {&previousPrivate, sizeof(UUID)}, transaction());
+        generateUUID(kPublicUUIDKey, t, true);
+        generateUUID(kPrivateUUIDKey, t, true);
+        t.commit();
     }
     
     
@@ -489,14 +495,30 @@ namespace c4Internal {
         if (++_transactionLevel == 1) {
             _transaction = new Transaction(_dataFile.get());
             if (_sequenceTracker) {
-                lock_guard<mutex> lock(_sequenceTracker->mutex());
-                _sequenceTracker->beginTransaction();
+                _sequenceTracker->use([](SequenceTracker &st) {
+                    st.beginTransaction();
+                });
             }
         }
     }
 
     bool Database::inTransaction() noexcept {
         return _transactionLevel > 0;
+    }
+
+
+    bool Database::mustBeInTransaction(C4Error *outError) noexcept {
+        if (inTransaction())
+            return true;
+        recordError(LiteCoreDomain, kC4ErrorNotInTransaction, outError);
+        return false;
+    }
+
+    bool Database::mustNotBeInTransaction(C4Error *outError) noexcept {
+        if (!inTransaction())
+            return true;
+        recordError(LiteCoreDomain, kC4ErrorTransactionNotClosed, outError);
+        return false;
     }
 
 
@@ -522,16 +544,17 @@ namespace c4Internal {
     // The cleanup part of endTransaction
     void Database::_cleanupTransaction(bool committed) {
         if (_sequenceTracker) {
-            lock_guard<mutex> lock(_sequenceTracker->mutex());
-            if (committed) {
-                // Notify other Database instances on this file:
-                _dataFile->forOtherDataFiles([&](DataFile *other) {
-                    auto db = dynamic_cast<Database*>(other->delegate());
-                    if (db)
-                        db->externalTransactionCommitted(*_sequenceTracker);
-                });
-            }
-            _sequenceTracker->endTransaction(committed);
+            _sequenceTracker->use([&](SequenceTracker &st) {
+                if (committed) {
+                    // Notify other Database instances on this file:
+                    _dataFile->forOtherDataFiles([&](DataFile *other) {
+                        auto db = dynamic_cast<Database*>(other->delegate());
+                        if (db)
+                            db->externalTransactionCommitted(st);
+                    });
+                }
+                st.endTransaction(committed);
+            });
         }
         delete _transaction;
         _transaction = nullptr;
@@ -540,8 +563,9 @@ namespace c4Internal {
 
     void Database::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
         if (_sequenceTracker) {
-            lock_guard<mutex> lock(_sequenceTracker->mutex());
-            _sequenceTracker->addExternalTransaction(sourceTracker);
+            _sequenceTracker->use([&](SequenceTracker &st) {
+                st.addExternalTransaction(sourceTracker);
+            });
         }
     }
 
@@ -580,6 +604,17 @@ namespace c4Internal {
     fleece::impl::Encoder& Database::sharedEncoder() {
         _encoder->reset();
         return *_encoder.get();
+    }
+
+
+    FLEncoder Database::sharedFLEncoder() {
+        if (_flEncoder) {
+            FLEncoder_Reset(_flEncoder);
+        } else {
+            _flEncoder = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
+            FLEncoder_SetSharedKeys(_flEncoder, (FLSharedKeys)documentKeys());
+        }
+        return _flEncoder;
     }
 
 
@@ -636,12 +671,13 @@ namespace c4Internal {
 
     void Database::documentSaved(Document* doc) {
         if (_sequenceTracker) {
-            lock_guard<mutex> lock(_sequenceTracker->mutex());
-            Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
-            _sequenceTracker->documentChanged(doc->_docIDBuf,
-                                              doc->_selectedRevIDBuf,
-                                              doc->selectedRev.sequence,
-                                              doc->selectedRev.body.size);
+            _sequenceTracker->use([doc](SequenceTracker &st) {
+                Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
+                st.documentChanged(doc->_docIDBuf,
+                                   doc->_selectedRevIDBuf,
+                                   doc->selectedRev.sequence,
+                                   doc->selectedRev.body.size);
+            });
         }
     }
 
@@ -649,17 +685,51 @@ namespace c4Internal {
     bool Database::purgeDocument(slice docID) {
         if (!defaultKeyStore().del(docID, transaction()))
             return false;
-        if (_sequenceTracker.get())
-            _sequenceTracker->documentPurged(docID);
+        if (_sequenceTracker) {
+            _sequenceTracker->use([&](SequenceTracker &st) {
+                st.documentPurged(docID);
+            });
+        }
         return true;
     }
 
 
     int64_t Database::purgeExpiredDocs() {
-        KeyStore::ExpirationCallback cb = [=](slice docID) {
-            _sequenceTracker->documentPurged(docID);
-        };
-        return _dataFile->defaultKeyStore().expireRecords(_sequenceTracker ? cb : nullptr);
+        if (_sequenceTracker) {
+            return _sequenceTracker->use<int64_t>([&](SequenceTracker &st) {
+                return _dataFile->defaultKeyStore().expireRecords([&](slice docID) {
+                    st.documentPurged(docID);
+                });
+            });
+        } else {
+            return _dataFile->defaultKeyStore().expireRecords(nullptr);
+        }
     }
+
+
+    bool Database::setExpiration(slice docID, expiration_t expiration) {
+        {
+            TransactionHelper t(this);
+            if (!_dataFile->defaultKeyStore().setExpiration(docID, expiration))
+                return false;
+            t.commit();
+        }
+        if (_housekeeper)
+            _housekeeper->documentExpirationChanged(expiration);
+        return true;
+    }
+
+
+#if 0 // unused
+    bool Database::mustUseVersioning(C4DocumentVersioning requiredVersioning,
+                                     C4Error *outError) noexcept
+    {
+        if (config.versioning == requiredVersioning)
+            return true;
+        recordError(LiteCoreDomain, kC4ErrorUnsupported, outError);
+        return false;
+    }
+#endif
+
 
 }

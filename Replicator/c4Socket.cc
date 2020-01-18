@@ -24,6 +24,7 @@
 #include "c4Socket+Internal.hh"
 #include "Address.hh"
 #include "Error.hh"
+#include "Headers.hh"
 #include "Logging.hh"
 #include "WebSocketImpl.hh"
 #include "StringUtil.hh"
@@ -34,18 +35,53 @@ using namespace std;
 using namespace c4Internal;
 using namespace fleece;
 using namespace litecore;
-using namespace litecore::repl;
-
-CBL_CORE_API const char* const kC4SocketOptionWSProtocols = litecore::websocket::WebSocket::kProtocolsOption;
-
+using namespace litecore::net;
 
 namespace litecore { namespace repl {
 
     using namespace websocket;
 
 
+    static C4SocketFactory* sRegisteredFactory;
+    static C4SocketImpl::InternalFactory sRegisteredInternalFactory;
+
+
+    void C4SocketImpl::registerInternalFactory(C4SocketImpl::InternalFactory f) {
+        sRegisteredInternalFactory = f;
+    }
+
+
+    Retained<WebSocket> CreateWebSocket(websocket::URL url,
+                                        alloc_slice options,
+                                        C4Database *database,
+                                        const C4SocketFactory *factory,
+                                        void *nativeHandle)
+    {
+        if (!factory)
+            factory = sRegisteredFactory;
+        
+        if (factory) {
+            return new C4SocketImpl(url, Role::Client, options, factory, nativeHandle);
+        } else if (sRegisteredInternalFactory) {
+            Assert(!nativeHandle);
+            return sRegisteredInternalFactory(url, options, database);
+        } else {
+            throw std::logic_error("No default C4SocketFactory registered; call c4socket_registerFactory())");
+        }
+    }
+
+
     static const C4SocketFactory& fac(const C4SocketFactory *f) {
         return f ? *f : C4SocketImpl::registeredFactory();
+    }
+
+
+    WebSocketImpl::Parameters C4SocketImpl::convertParams(slice c4SocketOptions) {
+        WebSocketImpl::Parameters params = {};
+        params.options = AllocedDict(c4SocketOptions);
+        params.webSocketProtocols = params.options[kC4SocketOptionWSProtocols].asString();
+        params.heartbeatSecs = (int)params.options[kC4ReplicatorHeartbeatInterval].asInt();
+        return params;
     }
 
 
@@ -57,8 +93,8 @@ namespace litecore { namespace repl {
                                void *nativeHandle_)
     :WebSocketImpl(url,
                    role,
-                   AllocedDict(options),
-                   fac(factory_).framing != kC4NoFraming)
+                   fac(factory_).framing != kC4NoFraming,
+                   convertParams(options))
     ,_factory(fac(factory_))
     {
         nativeHandle = nativeHandle_;
@@ -108,7 +144,7 @@ namespace litecore { namespace repl {
     void C4SocketImpl::connect() {
         WebSocketImpl::connect();
         if (_factory.open) {
-            Address c4addr(url());
+            net::Address c4addr(url());
             _factory.open(this, &c4addr, options().data(), _factory.context);
         }
     }
@@ -137,14 +173,13 @@ namespace litecore { namespace repl {
         _factory.completedReceive(this, byteCount);
     }
 
-
-    C4SocketFactory* C4SocketImpl::sRegisteredFactory;
-
 } }
 
 
 #pragma mark - PUBLIC C API:
 
+
+using namespace litecore::repl;
 
 static C4SocketImpl* internal(C4Socket *s)  {return (C4SocketImpl*)s;}
 
@@ -168,7 +203,7 @@ C4Socket* c4socket_fromNative(C4SocketFactory factory,
 
 void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) C4API {
     try {
-        AllocedDict headers((slice)responseHeadersFleece);
+        Headers headers(responseHeadersFleece);
         internal(socket)->gotHTTPResponse(status, headers);
     } catchForSocket(socket)
 }

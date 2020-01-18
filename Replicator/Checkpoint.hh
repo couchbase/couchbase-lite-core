@@ -1,95 +1,104 @@
 //
 // Checkpoint.hh
 //
-// Copyright (c) 2017 Couchbase, Inc All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright © 2019 Couchbase. All rights reserved.
 //
 
 #pragma once
-#include "Timer.hh"
-#include "c4.h"
+#include "SequenceSet.hh"
+#include "c4Base.h"
 #include "fleece/slice.hh"
-#include <chrono>
-#include <mutex>
+#include <algorithm>
 
 namespace litecore { namespace repl {
 
+    /**
+     * Tracks the state of replication, i.e. which sequences have been sent/received and which
+     * haven't. This state is persisted by storing a JSON serialization of the Checkpoint into
+     * a pair of documents, one local and one on the server. At the start of replication both
+     * documents are read, and if they agree, the replication continues from that state, otherwise
+     * it starts over from the beginning.
+     *
+     * The local (push) state is essentially a set of sequences, represented as three values:
+     * - `minSequence`, also just called the "checkpoint". All sequences less than or equal to
+     *   this are known to have been pushed.
+     * - `maxSequence`, the maximum sequence seen by the pusher. All sequences greater than
+     *   this have, obviously, not been pushed.
+     * - `pending`, a set of sequences in the range [minSequence, maxSequence) that are known but
+     *   have not yet been pushed.
+     *
+     * The remote (pull) state is simpler, just one sequence. This is a _server-side_ sequence,
+     * which is not an integer but a string, known to be JSON-encoded but otherwise opaque.
+     * Since these sequences cannot be ordered and may occupy much more space, we don't
+     * attempt to keep track of the exact set of pulled sequences. Instead, we just remember a
+     * single sequence which has the same interpretation as `minSequence` does: this sequence
+     * and all earlier ones are known to have been pulled. That means the replicator can start
+     * by asking the server to send only sequences newer than it.
+     */
     class Checkpoint {
     public:
-        struct Sequences {
-            C4SequenceNumber local;
-            fleece::alloc_slice remote;
-        };
+        Checkpoint()                                        {resetLocal();}
+        Checkpoint(fleece::slice json)                      {readJSON(json);}
 
-        /** Returns my local and remote sequences. */
-        Sequences sequences() const;
+        void readJSON(fleece::slice json);
 
-        /** Sets my local sequence without affecting the remote one. */
-        void setLocalSeq(C4SequenceNumber s)        {set(&s, nullptr);}
+        fleece::alloc_slice toJSON() const;
 
-        /** Sets my remote sequence without affecting the local one. */
-        void setRemoteSeq(fleece::slice s)          {set(nullptr, &s);}
+        bool validateWith(const Checkpoint &remoteSequences);
 
-        /** Sets my state from an encoded JSON representation. */
-        void decodeFrom(fleece::slice json);
+        //---- Local sequences:
 
-        /** Returns a JSON representation of my current state. */
-        fleece::alloc_slice encode() const;
+        /** The last fully-complete local sequence, such that it and all lesser sequences are
+            complete. In other words, the sequence before the first pending sequence. */
+        C4SequenceNumber    localMinSequence() const;
 
-        /** Compares my state with another Checkpoint. If the local sequences differ, mine
-            will be reset to 0; if the remote sequences differ, mine will be reset to empty. */
-        bool validateWith(const Checkpoint&);
+        /** The set of sequences that have been "completed": either pushed, or skipped, or else
+            don't exist. */
+        const SequenceSet&  completedSequences() const      {return _completed;}
 
-        // Autosave:
+        /** Has this sequence been completed? */
+        bool isSequenceCompleted(C4SequenceNumber s) const  {return _completed.contains(s);}
 
-        using duration = std::chrono::nanoseconds;
-        using SaveCallback = std::function<void(fleece::alloc_slice jsonToSave)>;
+        /** Removes a sequence from the set of completed sequences. */
+        void addPendingSequence(C4SequenceNumber s)         {_completed.remove(s);}
 
-        /** Enables autosave: at about the given duration after the first change is made,
-            the callback will be invoked, and passed a JSON representation of my state. */
-        void enableAutosave(duration saveTime, SaveCallback cb);
+        /** Adds a sequence to the set of completed sequences. */
+        void completedSequence(C4SequenceNumber s)          {_completed.add(s);}
 
-        /** Disables autosave. Returns true if no more calls to save() will be made. The only
-            case where another call to save() might be made is if a save is currently in
-            progress, and the checkpoint has been changed since the save began. In that case,
-            another save will have to be triggered immediately when the current one finishes. */
-        void stopAutosave();
+        /** Updates the state of a range of sequences:
+            All sequences in the range [first...last] are marked completed,
+            then the sequences in the collection `revs` are marked uncompleted/pending.*/
+        template <class REV_LIST>
+        void addPendingSequences(REV_LIST& revs,
+                                 C4SequenceNumber firstSequenceChecked,
+                                 C4SequenceNumber lastSequenceChecked)
+        {
+            _lastChecked = lastSequenceChecked;
+            _completed.add(firstSequenceChecked, lastSequenceChecked + 1);
+            for (auto rev : revs)
+                _completed.remove(rev->sequence);
+        }
 
-        /** Triggers an immediate save, if the checkpoint has changed. */
-        bool save();
+        /** The number of uncompleted sequences up through the last sequence checked. */
+        size_t pendingSequenceCount() const;
 
-        /** The client should call this as soon as its save completes, which can be after the
-            SaveCallback returns. */
-        void saved();
+        //---- Remote sequences:
 
-        /** Returns true if the checkpoint has changes that haven't been saved yet. */
-        bool isUnsaved() const;
+        /** The last fully-complete _remote_ sequence, such that it and all earlier sequences are
+            complete. */
+        fleece::alloc_slice remoteMinSequence() const       {return _remote;}
+
+        bool setRemoteMinSequence(fleece::slice s);
+
+        static bool gWriteTimestamps;   // for testing; set to false to disable timestamps in JSON
 
     private:
-        fleece::alloc_slice _encode() const;
-        void set(const C4SequenceNumber *local, const fleece::slice *remote);
+        void resetLocal();
+        void updateLocalFromPending();
 
-        mutable std::mutex _mutex;
-
-        Sequences _seq {};
-
-        bool _changed  {false};
-        bool _saving {false};
-        bool _overdueForSave {false};
-        std::unique_ptr<actor::Timer> _timer;
-        SaveCallback _saveCallback;
-        duration _saveTime;
+        SequenceSet         _completed;         // Set of completed local sequences
+        C4SequenceNumber    _lastChecked;       // Last local sequence checked in the db
+        fleece::alloc_slice _remote;            // Last completed remote sequence
     };
 
 } }

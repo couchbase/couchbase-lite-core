@@ -23,6 +23,7 @@
 #include <memory>
 #include <set>
 #include <sstream>
+#include <string>
 #include <vector>
 
 namespace fleece { namespace impl {
@@ -64,7 +65,8 @@ namespace litecore {
         void parseJustExpression(const fleece::impl::Value *expression);
 
         void writeCreateIndex(const std::string &name,
-                              fleece::impl::Array::iterator &expressions,
+                              fleece::impl::Array::iterator &whatExpressions,
+                              const fleece::impl::Array *whereClause,
                               bool isUnnestedTable);
 
         static void writeSQLString(std::ostream &out, slice str, char quote ='\'');
@@ -80,6 +82,7 @@ namespace litecore {
         bool usesExpiration() const                                 {return _checkedExpiration;}
 
         std::string expressionSQL(const fleece::impl::Value*);
+        std::string whereClauseSQL(const fleece::impl::Value*, string_view dbAlias);
         std::string eachExpressionSQL(const fleece::impl::Value*);
         std::string FTSExpressionSQL(const fleece::impl::Value*);
         static std::string FTSColumnName(const fleece::impl::Value *expression);

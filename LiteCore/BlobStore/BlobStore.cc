@@ -36,13 +36,12 @@ namespace litecore {
 #pragma mark - BLOBKEY:
 
 
-    static constexpr size_t kBlobKeyStringLength = ((sizeof(blobKey::bytes) + 2) / 3) * 4;
+    static constexpr size_t kBlobKeyStringLength = ((sizeof(blobKey::digest) + 2) / 3) * 4;
 
 
     blobKey::blobKey(slice s) {
-        if (s.size != sizeof(bytes))
+        if (!digest.setDigest(s))
             error::_throw(error::WrongFormat);
-        memcpy((void*)bytes, s.buf, sizeof(bytes));
     }
 
     blobKey::blobKey(const string &str) {
@@ -62,22 +61,19 @@ namespace litecore {
             // Decoder always writes a multiple of 3 bytes, so round up:
             uint8_t buf[21];
             slice result = data.readBase64Into(slice(buf, sizeof(buf)));
-            if (result.size == 20) {
-                memcpy(bytes, result.buf, result.size);
-                return true;
-            }
+            return digest.setDigest(result);
         }
         return false;
     }
 
 
     string blobKey::base64String() const {
-        return string("sha1-") + slice(bytes, sizeof(bytes)).base64String();
+        return string("sha1-") + slice(digest).base64String();
     }
 
 
     string blobKey::filename() const {
-        string str = slice(bytes, sizeof(bytes)).base64String();
+        string str = slice(digest).base64String();
         replace(str.begin(), str.end(), '/', '_');
         return str + ".blob";
     }
@@ -93,16 +89,9 @@ namespace litecore {
 
 
     /*static*/ blobKey blobKey::computeFrom(slice data) {
-#if SECURE_DIGEST_AVAILABLE
         blobKey key;
-        sha1Context ctx;
-        sha1_begin(&ctx);
-        sha1_add(&ctx, data.buf, data.size);
-        sha1_end(&ctx, &key.bytes);
+        key.digest.computeFrom(data);
         return key;
-#else
-        error::_throw(error::Unimplemented);
-#endif
     }
 
 
@@ -152,7 +141,6 @@ namespace litecore {
                                                         options.encryptionAlgorithm,
                                                         options.encryptionKey);
         }
-        sha1_begin(&_sha1ctx);
     }
 
 
@@ -173,7 +161,7 @@ namespace litecore {
         Assert(!_computedKey, "Attempted to write after computing digest");
         _writer->write(data);
         _bytesWritten += data.size;
-        sha1_add(&_sha1ctx, data.buf, data.size);
+        _sha1ctx << data;
     }
 
     void BlobWriteStream::close() {
@@ -185,7 +173,7 @@ namespace litecore {
 
     blobKey BlobWriteStream::computeKey() noexcept {
         if (!_computedKey) {
-            sha1_end(&_sha1ctx, &_key.bytes);
+            _key.digest = _sha1ctx.finish();
             _computedKey = true;
         }
         return _key;

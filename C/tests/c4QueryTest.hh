@@ -10,6 +10,7 @@
 
 #include "c4Test.hh"
 #include "c4Query.h"
+#include "c4Index.h"
 #include "c4.hh"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
@@ -19,27 +20,27 @@ using namespace std;
 using namespace fleece;
 
 
-class QueryTest : public C4Test {
+class C4QueryTest : public C4Test {
 public:
-    QueryTest(int which, string filename)
+    C4QueryTest(int which, string filename)
     :C4Test(which)
     {
         if (!filename.empty())
             importJSONLines(sFixturesDir + filename);
     }
 
-    QueryTest(int which)
-    :QueryTest(which, "names_100.json")
+    C4QueryTest(int which)
+    :C4QueryTest(which, "names_100.json")
     { }
 
-    ~QueryTest() {
-        c4query_free(query);
+    ~C4QueryTest() {
+        c4query_release(query);
     }
 
     void compileSelect(const string &queryStr) {
         INFO("Query = " << queryStr);
-        C4Error error;
-        c4query_free(query);
+        C4Error error{};
+        c4query_release(query);
         query = c4query_new(db, c4str(queryStr.c_str()), &error);
         char errbuf[256];
         INFO("error " << c4error_getDescriptionC(error, errbuf, sizeof(errbuf)));
@@ -83,7 +84,7 @@ public:
         while (c4queryenum_next(e, &error))
             results.push_back(callback(e));
         CHECK(error.code == 0);
-        c4queryenum_free(e);
+        c4queryenum_release(e);
         return results;
     }
 
@@ -172,8 +173,8 @@ public:
         rq.save = true;
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
         REQUIRE(doc != nullptr);
-        c4doc_free(doc);
-        FLSliceResult_Free(body);
+        c4doc_release(doc);
+        FLSliceResult_Release(body);
     }
 
 protected:
@@ -181,16 +182,16 @@ protected:
 };
 
 
-class PathsQueryTest : public QueryTest {
+class PathsQueryTest : public C4QueryTest {
 public:
     PathsQueryTest(int which)
-    :QueryTest(which, "paths.json")
+    :C4QueryTest(which, "paths.json")
     { }
 };
 
-class NestedQueryTest : public QueryTest {
+class NestedQueryTest : public C4QueryTest {
 public:
     NestedQueryTest(int which)
-    :QueryTest(which, "nested.json")
+    :C4QueryTest(which, "nested.json")
     { }
 };

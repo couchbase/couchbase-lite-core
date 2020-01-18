@@ -67,6 +67,13 @@ namespace litecore {
             return required(required(v, what)->asString(), what, "must be a string");
         }
 
+        const Value* getCaseInsensitive(const Dict *dict, slice key) {
+            for (Dict::iterator i(dict); i; ++i)
+                if (i.key()->asString().caseEquivalent(key))
+                    return i.value();
+            return nullptr;
+        }
+
         unsigned findNodes(const Value *root, slice op, unsigned argCount,
                            function_ref<void(const Array*)> callback)
         {
@@ -98,13 +105,6 @@ namespace litecore {
 
     static bool isValidAlias(const string& alias) {
         return alias.find('"') == string::npos && alias.find('\\') == string::npos;
-    }
-
-    static const Value* getCaseInsensitive(const Dict *dict, slice key) {
-        for (Dict::iterator i(dict); i; ++i)
-            if (i.key()->asString().caseEquivalent(key))
-                return i.value();
-        return nullptr;
     }
 
 
@@ -363,6 +363,7 @@ namespace litecore {
 
     void QueryParser::writeCreateIndex(const string &name,
                                        Array::iterator &expressionsIter,
+                                       const Array *whereClause,
                                        bool isUnnestedTable)
     {
         reset();
@@ -377,7 +378,8 @@ namespace litecore {
                 Assert(isUnnestedTable);
                 _sql << '(' << kUnnestedValueFnName << "(" << _bodyColumnName << "))";
             }
-            // TODO: Add 'WHERE' clause for use with SQLite 3.15+
+            if (!isUnnestedTable)
+                writeWhereClause(whereClause);
         } catch (const FleeceException &x) {handleFleeceException(x);}
     }
 
@@ -403,6 +405,8 @@ namespace litecore {
         require(_aliases.find(alias) == _aliases.end(),
                 "duplicate AS identifier '%s'", alias.c_str());
         _aliases.insert({alias, type});
+        if (type == kDBAlias)
+            _dbAlias = alias;
     }
 
 
@@ -425,7 +429,6 @@ namespace litecore {
                 if (first) {
                     require(!on && !unnest, "first FROM item cannot have an ON or UNNEST clause");
                     type = kDBAlias;
-                    _dbAlias = alias;
                 } else if (!unnest) {
                     type = kJoinAlias;
                 } else {
@@ -440,10 +443,8 @@ namespace litecore {
                 first = false;
             }
         }
-        if (first) {
-            _dbAlias = kDefaultTableAlias;
-            _aliases.insert({_dbAlias, kDBAlias});
-        }
+        if (first)
+            addAlias(kDefaultTableAlias, kDBAlias);
     }
 
 
@@ -1403,6 +1404,18 @@ namespace litecore {
         return SQL();
     }
 
+    std::string QueryParser::whereClauseSQL(const fleece::impl::Value* arrayExpr,
+                                            string_view dbAlias)
+    {
+        reset();
+        if (!dbAlias.empty())
+            addAlias(string(dbAlias), kDBAlias);
+        writeWhereClause(arrayExpr);
+        string sql = SQL();
+        if (sql[0] == ' ')
+            sql.erase(sql.begin(), sql.begin() + 1);
+        return sql;
+    }
 
     std::string QueryParser::eachExpressionSQL(const fleece::impl::Value* arrayExpr) {
         reset();
@@ -1481,9 +1494,7 @@ namespace litecore {
     // Constructs a unique identifier of an expression, from a digest of its JSON.
     string QueryParser::expressionIdentifier(const Array *expression, unsigned maxItems) const {
         require(expression, "Invalid expression to index");
-        uint8_t digest[20];
-        sha1Context ctx;
-        sha1_begin(&ctx);
+        SHA1Builder ctx;
         unsigned item = 0;
         for (Array::iterator i(expression); i; ++i) {
             if (maxItems > 0 && ++item > maxItems)
@@ -1493,13 +1504,12 @@ namespace litecore {
                 // Strip ".doc" from property paths if necessary:
                 string s = json.asString();
                 replace(s, "[\"." + _dbAlias + ".", "[\".");
-                sha1_add(&ctx, s.data(), s.size());
+                ctx << slice(s);
             } else {
-                sha1_add(&ctx, json.buf, json.size);
+                ctx << json;
             }
         }
-        sha1_end(&ctx, &digest);
-        return slice(&digest, sizeof(digest)).base64String();
+        return slice(ctx.finish()).base64String();
     }
 
 

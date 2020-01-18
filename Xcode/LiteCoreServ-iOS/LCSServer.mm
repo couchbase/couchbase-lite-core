@@ -151,7 +151,7 @@ using namespace litecore::REST;
     if (_listener)
         return;
     
-    C4ListenerConfig config;
+    C4ListenerConfig config = {};
     config.port = (uint16_t)_config.port;
     config.apis = kC4RESTAPI;
     config.allowCreateDBs = true;

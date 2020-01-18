@@ -10,12 +10,15 @@
 [submodule "vendor/BLIP-Cpp"]
 	path = vendor/BLIP-Cpp
     url=https://github.com/couchbaselabs/BLIP-Cpp.git
-[submodule "vendor/civetweb"]
-	path = vendor/civetweb
-	url = https://github.com/couchbasedeps/civetweb.git
 [submodule "wiki"]
 	path = wiki
 	url = https://github.com/couchbase/couchbase-lite-core.wiki.git
 [submodule "vendor/mbedtls"]
 	path = vendor/mbedtls
-	url = https://github.com/ARMmbed/mbedtls.git
+	url = https://github.com/couchbasedeps/mbedtls.git
+[submodule "vendor/ios-cmake"]
+	path = vendor/ios-cmake
+	url = https://github.com/leetal/ios-cmake.git
+[submodule "vendor/sockpp"]
+	path = vendor/sockpp
+	url = https://github.com/couchbasedeps/sockpp.git

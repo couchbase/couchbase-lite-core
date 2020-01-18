@@ -18,6 +18,8 @@
 
 #pragma once
 #include "c4.hh"
+#include "c4Database.h"
+#include "c4Document.h"
 #include "Batcher.hh"
 #include "Logging.hh"
 #include "Timer.hh"
@@ -82,7 +84,7 @@ namespace litecore { namespace repl {
              return the correct answer, because the change hasn't been made in the database yet.
              For that reason, you must ensure that markRevsSyncedNow() is called before any call
              to c4doc_getRemoteAncestor(). */
-        void markRevSynced(ReplicatedRev *rev NONNULL)          {_revsToMarkSynced.push(rev);}
+        void markRevSynced(ReplicatedRev *rev NONNULL);
 
         /** Synchronously fulfills all markRevSynced requests. */
         void markRevsSyncedNow();

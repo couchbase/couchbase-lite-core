@@ -42,13 +42,14 @@ namespace litecore { namespace repl {
     ,_revMailbox(nullptr, "Puller revisions")
 #endif
     {
+        _passive = _options.pull <= kC4Passive;
         registerHandler("changes",          &Puller::handleChanges);
         registerHandler("proposeChanges",   &Puller::handleChanges);
         registerHandler("rev",              &Puller::handleRev);
         registerHandler("norev",            &Puller::handleNoRev);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
         _skipDeleted = _options.skipDeleted();
-        if (nonPassive() && _options.noIncomingConflicts())
+        if (!passive() && _options.noIncomingConflicts())
             warn("noIncomingConflicts mode is not compatible with active pull replications!");
     }
 
@@ -181,7 +182,7 @@ namespace litecore { namespace repl {
                 decrement(_pendingRevFinderCalls);
                 for (size_t i = 0; i < which.size(); ++i) {
                     bool requesting = (which[i]);
-                    if (nonPassive()) {
+                    if (!passive()) {
                         // Add sequence to _missingSequences:
                         auto change = changes[(unsigned)i].asArray();
                         alloc_slice sequence(change[0].toJSON());
@@ -199,7 +200,7 @@ namespace litecore { namespace repl {
                         // now awaiting a handleRev call...
                     }
                 }
-                if (nonPassive()) {
+                if (!passive()) {
                     logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
                                _pendingRevMessages, _missingSequences.size());
                 }
@@ -300,13 +301,13 @@ namespace litecore { namespace repl {
             if (!inc->wasProvisionallyInserted())
                 _revWasProvisionallyHandled();
             auto rev = inc->rev();
-            if (nonPassive())
+            if (!passive())
                 completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
         }
         decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
 
-        if (nonPassive())
+        if (!passive())
             updateLastSequence();
 
         ssize_t capacity = tuning::kMaxActiveIncomingRevs - _spareIncomingRevs.size();
@@ -340,7 +341,7 @@ namespace litecore { namespace repl {
             _lastSequence = since;
             logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
             if (replicator())
-                replicator()->updatePullCheckpoint(_lastSequence);
+                replicator()->checkpointer().setRemoteMinSequence(_lastSequence);
         }
     }
 
@@ -367,7 +368,7 @@ namespace litecore { namespace repl {
         } else if (_fatalError || !connection()) {
             level = kC4Stopped;
         } else if (Worker::computeActivityLevel() == kC4Busy
-                || (!_caughtUp && nonPassive())
+                || (!_caughtUp && !passive())
                 || _pendingRevMessages > 0
                 || _pendingRevFinderCalls > 0) {
             level = kC4Busy;

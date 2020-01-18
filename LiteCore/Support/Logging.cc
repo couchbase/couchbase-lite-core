@@ -561,6 +561,10 @@ namespace litecore {
 #endif
     }
 
+    std::string Logging::loggingName() const {
+        return format("{%s#%u}", loggingClassName().c_str(), _objectRef);
+    }
+
     std::string Logging::loggingClassName() const {
         string name = classNameOf(this);
         auto colon = name.find_last_of(':');
@@ -575,6 +579,17 @@ namespace litecore {
     }
 
 
+    unsigned Logging::getObjectRef(LogLevel level) const {
+        if(_objectRef == 0) {
+            string nickname = loggingClassName();
+            string identifier = classNameOf(this) + " " + loggingIdentifier();
+            _objectRef = _domain.registerObject(this, identifier, nickname, level);
+        }
+        return _objectRef;
+    }
+
+
+
     void Logging::_log(LogLevel level, const char *format, ...) const {
         va_list args;
         va_start(args, format);
@@ -584,16 +599,8 @@ namespace litecore {
     
     void Logging::_logv(LogLevel level, const char *format, va_list args) const {
         _domain.computeLevel();
-        if (!_domain.willLog(level))
-            return;
-
-        if(_objectRef == 0) {
-            string nickname = loggingClassName();
-            string identifier = classNameOf(this) + " " + loggingIdentifier();
-            _objectRef = _domain.registerObject(this, identifier, nickname, level);
-        }
-        
-        _domain.vlog(level, _objectRef, true, format, args);
+        if (_domain.willLog(level))
+            _domain.vlog(level, getObjectRef(), true, format, args);
     }
 
 

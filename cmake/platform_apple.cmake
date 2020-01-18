@@ -2,10 +2,6 @@ include("${CMAKE_CURRENT_LIST_DIR}/platform_unix.cmake")
 
 function(setup_globals)
     setup_globals_unix()
-
-    # Use CommonCrypto for things like hashing and random numbers
-    add_definitions(-D_CRYPTO_CC)
-    set(LITECORE_CRYPTO_LIB "-framework Security" CACHE INTERNAL "")
 endfunction()
 
 function(set_litecore_source)
@@ -20,6 +16,7 @@ function(set_litecore_source)
         ${APPLE_SSS_RESULT}
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_Apple.cc
+        Crypto/PublicKey+Apple.mm
         PARENT_SCOPE
     )
 endfunction()
@@ -65,9 +62,4 @@ endfunction()
 
 function(setup_rest_build)
     setup_rest_build_unix()
-    
-    set_target_properties(
-        LiteCoreREST PROPERTIES LINK_FLAGS
-        "-exported_symbols_list ${CMAKE_CURRENT_SOURCE_DIR}/c4REST.exp"
-    )
 endfunction()

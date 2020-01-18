@@ -673,7 +673,7 @@ namespace litecore {
         int loopCount = 0;
         while(result != 0 && errno == EEXIST) {
             if(loopCount++ == 10) {
-                WarnError("Unable to move blob after 10 attempts, giving up...")
+                WarnError("Unable to move blob after 10 attempts, giving up...");
                 error::_throw(error::POSIX, EEXIST);
             }
 

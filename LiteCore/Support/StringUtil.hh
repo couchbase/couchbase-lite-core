@@ -17,12 +17,13 @@
 //
 
 #pragma once
-#include "fleece/slice.hh"
-#include "PlatformCompat.hh"
+#include "Base.hh"
+#include <ctype.h>
 #include <stdarg.h>
-#include <string>
+#include <string.h>
 #include <vector>
 #include <sstream>
+
 #if defined __ANDROID__ && !defined __clang__
 // gcc for android is not fully c++11 compliant, so we define the missing functions here
 namespace std  {
@@ -39,6 +40,17 @@ namespace std  {
 #endif
 
 namespace litecore {
+
+#if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER)
+    // Converts a decimal or hex digit to its integer equivalent (0..15), or 0 if not a digit.
+    // (This function is part of <ctype.h> in BSD and Apple OSs.)
+    int digittoint(char ch);
+
+    // Like strncpy but guarantees dst will be nul-terminated. `dstSize` is the size of the
+    // destination buffer; the maximum length of string that can be copied is one less.
+    // (This function is part of <string.h> in BSD and Apple OSs.)
+    void strlcpy(char *dst NONNULL, const char *src NONNULL, size_t dstSize);
+#endif
 
     // Adds EXPR to a stringstream and returns the resulting string.
     // Example: CONCAT("2+2=" << 4 << "!") --> "2+2=4!"
@@ -59,6 +71,10 @@ namespace litecore {
 
     /** Like vsprintf(), but returns a std::string */
     std::string vformat(const char *fmt NONNULL, va_list);
+
+    void split(const std::string &str,
+               const std::string &separator,
+               fleece::function_ref<void(const std::string&)> callback);
 
     /** Returns the strings in the vector concatenated together,
         with the separator (if non-null) between them. */
@@ -81,23 +97,28 @@ namespace litecore {
     void replace(std::string &str, char oldChar, char newChar);
 
     /** Replaces all occurrences of `oldStr` with `newStr`. */
-    void replace(std::string &str, const std::string &oldStr, const std::string &newStr);
+    void replace(std::string &str, string_view oldStr, string_view newStr);
 
     /** Returns true if `str` begins with the string `prefix`. */
-    bool hasPrefix(const std::string &str, const std::string &prefix) noexcept;
+    bool hasPrefix(string_view str, string_view prefix) noexcept;
 
     /** Returns true if `str` ends with the string `prefix`. */
-    bool hasSuffix(const std::string &str, const std::string &suffix) noexcept;
+    bool hasSuffix(string_view str, string_view suffix) noexcept;
 
     /** Returns true if `str` ends with the string `prefix`, treating ASCII upper/lower case
         letters as equivalent. */
-    bool hasSuffixIgnoringCase(const std::string &str, const std::string &suffix) noexcept;
+    bool hasSuffixIgnoringCase(string_view str, string_view suffix) noexcept;
 
     /** Compares strings, treating ASCII upper/lowercase letters equivalent. Returns -1, 0 or 1. */
     int compareIgnoringCase(const std::string &a, const std::string &b);
 
     /** Converts an ASCII string to lowercase, in place. */
     void toLowercase(std::string &);
+
+    static inline std::string lowercase(std::string str) {
+        toLowercase(str);
+        return str;
+    }
 
     //////// UNICODE_AWARE FUNCTIONS:
 
@@ -125,7 +146,7 @@ namespace litecore {
 
     /** Returns a slice containing the bytes of the next UTF-8 encoded character, or nullslice if
      *  not valid or no more characters remain */
-    fleece::pure_slice NextUTF8(fleece::slice) noexcept;
+    fleece::slice NextUTF8(fleece::slice) noexcept;
 
     /** Returns a copy of a UTF-8 string with all letters converted to upper- or lowercase.
         This function is Unicode-aware and will convert non-ASCII letters.

@@ -47,6 +47,7 @@ set_source_files(RESULT TEST_SRC)
 
 # Copy data files to output directory
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
+file(COPY ../../Replicator/tests/data/cert.pem DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Replicator/tests/data/)
 file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 file(GLOB FLEECE_FILES "../../vendor/fleece/Tests/*.json" "../../vendor/fleece/Tests/*.json5" "../../vendor/fleece/Tests/*.fleece" "../../vendor/fleece/Tests/*.txt")
 file(COPY ${FLEECE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/vendor/fleece/Tests)
@@ -59,6 +60,7 @@ target_compile_definitions(
     -DLITECORE_CPP_TESTS=1
     -D_USE_MATH_DEFINES     # Define math constants like PI
     -DNOMINMAX              # Get rid of min/max macros that interfere with std::min/std::max
+    -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK 
 )
 
 target_include_directories(
@@ -78,6 +80,8 @@ target_include_directories(
     ${TOP}C
     ${TOP}C/include
     ${TOP}C/tests
+    ${TOP}Crypto
+    ${TOP}Networking
     ${TOP}LiteCore/BlobStore
     ${TOP}LiteCore/Database
     ${TOP}LiteCore/RevTrees
@@ -85,16 +89,21 @@ target_include_directories(
     ${TOP}LiteCore/Support
     ${TOP}LiteCore/Query
     ${TOP}Replicator
-    ${TOP}vendor/civetweb/include
+    ${TOP}Replicator/tests
+    ${TOP}REST
+    ${TOP}vendor/sockpp/include
 )
 
 target_link_libraries(
     CppTests PRIVATE
     LiteCoreStatic
+    LiteCoreREST_Static
+    LiteCoreWebSocket
     FleeceStatic
     SQLite3_UnicodeSN
     BLIPStatic
-    CivetWeb
     Support
+    mbedcrypto
+    mbedtls
     ${LITECORE_CRYPTO_LIB}
 )

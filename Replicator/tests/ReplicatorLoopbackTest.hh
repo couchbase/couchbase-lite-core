@@ -9,8 +9,12 @@
 #pragma once
 #include "fleece/Fleece.hh"
 #include "c4.hh"
+#include "c4BlobStore.h"
+#include "c4Transaction.hh"
+#include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
 #include "Replicator.hh"
+#include "Checkpoint.hh"
 #include "LoopbackProvider.hh"
 #include "ReplicatorTuning.hh"
 #include "StringUtil.hh"
@@ -41,6 +45,7 @@ public:
         // Change tuning param so that tests will actually create deltas, despite using small
         // document bodies:
         litecore::repl::tuning::kMinBodySizeForDelta = 0;
+        litecore::repl::Checkpoint::gWriteTimestamps = false;
     }
 
     ~ReplicatorLoopbackTest() {
@@ -49,7 +54,7 @@ public:
         _replClient = _replServer = nullptr;
         C4Error error;
         REQUIRE(c4db_delete(db2, &error));
-        c4db_free(db2);
+        c4db_release(db2);
     }
 
     // opts1 is the options for _db; opts2 is the options for _db2
@@ -78,12 +83,8 @@ public:
                                      *this, opts2);
 
         // Response headers:
-        Encoder enc;
-        enc.beginDict();
-        enc.writeKey("Set-Cookie"_sl);
-        enc.writeString("flavor=chocolate-chip");
-        enc.endDict();
-        AllocedDict headers(enc.finish());
+        Headers headers;
+        headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
 
         // Bind the replicators' WebSockets and start them:
         LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
@@ -99,7 +100,7 @@ public:
         }
         
         Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
-        _checkpointID = _replClient->checkpointID();
+        _checkpointID = _replClient->checkpointer().checkpointID();
         _replClient = _replServer = nullptr;
 
         CHECK(_gotResponse);
@@ -144,6 +145,11 @@ public:
     // must be holding _mutex to call this
     bool _checkStopWhenIdle() {
         if (_stopOnIdle && _statusReceived.level == kC4Idle) {
+            if(_conflictHandlerRunning) {
+                Log(">>    Conflict resolution active, delaying stop...");
+                return false;
+            }
+
             Log(">>    Stopping idle replicator...");
             _replClient->stop();
             return true;
@@ -156,13 +162,13 @@ public:
 
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
-                                           const AllocedDict &headers) override {
+                                           const websocket::Headers &headers) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         if (repl == _replClient) {
             Assert(!_gotResponse);
             _gotResponse = true;
             Assert(status == 200);
-            Assert(headers["Set-Cookie"].asString() == "flavor=chocolate-chip"_sl);
+            Assert(headers["Set-Cookie"_sl] == "flavor=chocolate-chip"_sl);
         }
     }
 
@@ -275,7 +281,9 @@ public:
     void installConflictHandler() {
         c4::ref<C4Database> resolvDB = c4db_openAgain(db, nullptr);
         REQUIRE(resolvDB);
-        _conflictHandler = [resolvDB](ReplicatedRev *rev) {
+        auto& conflictHandlerRunning = _conflictHandlerRunning;
+        _conflictHandler = [resolvDB, &conflictHandlerRunning](ReplicatedRev *rev) {
+            conflictHandlerRunning = true;
             // Careful: This is called on a background thread!
             TransactionHelper t(resolvDB);
             C4Error error;
@@ -314,6 +322,7 @@ public:
             CHECK(c4doc_resolveConflict(doc, remoteRevID, localRevID,
                                         mergedBody, mergedFlags, &error));
             CHECK(c4doc_save(doc, 0, &error));
+            conflictHandlerRunning = false;
         };
     }
 
@@ -407,6 +416,10 @@ public:
 
 #define fastREQUIRE(EXPR)  if (EXPR) ; else REQUIRE(EXPR)       // REQUIRE() is kind of expensive
 
+    static inline fleece::Doc getFleeceDoc(C4Document *doc) {
+        return fleece::Doc(c4doc_createFleeceDoc(doc), false);
+    }
+
     void compareDocs(C4Document *doc1, C4Document *doc2) {
         const auto kPublicDocumentFlags = (kDocDeleted | kDocConflicted | kDocHasAttachments);
 
@@ -415,7 +428,7 @@ public:
         fastREQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
 
         // Compare canonical JSON forms of both docs:
-        Doc rev1 = c4::getFleeceDoc(doc1), rev2 = c4::getFleeceDoc(doc2);
+        Doc rev1 = getFleeceDoc(doc1), rev2 = getFleeceDoc(doc2);
         if (!rev1.root().isEqual(rev2.root())) {        // fast check to avoid expensive toJSON
             alloc_slice json1 = rev1.root().toJSON(true, true);
             alloc_slice json2 = rev2.root().toJSON(true, true);
@@ -455,7 +468,7 @@ public:
 
     void validateCheckpoint(C4Database *database, bool local,
                             const char *body, const char *meta = "1-") {
-        C4Error err;
+        C4Error err = {};
 		C4Slice storeName;
 		if(local) {
 			storeName = C4STR("checkpoints");
@@ -524,5 +537,6 @@ public:
     unsigned _blobPushProgressCallbacks {0}, _blobPullProgressCallbacks {0};
     Replicator::BlobProgress _lastBlobPushProgress {}, _lastBlobPullProgress {};
     function<void(ReplicatedRev*)> _conflictHandler;
+    bool _conflictHandlerRunning {false};
 };
 

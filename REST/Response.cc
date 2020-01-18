@@ -17,68 +17,37 @@
 //
 
 #include "Response.hh"
+#include "TCPSocket.hh"
+#include "TLSContext.hh"
+#include "HTTPLogic.hh"
+#include "Address.hh"
+#include "c4Certificate.h"
+#include "c4ExceptionUtils.hh"
 #include "Writer.hh"
+#include "Error.hh"
+#include "Logging.hh"
 #include "StringUtil.hh"
-#include "civetUtils.hh"
-#include "civetweb.h"
+#include "netUtils.hh"
+#include "Certificate.hh"
+#include <string>
 
 using namespace std;
 using namespace fleece;
 
 namespace litecore { namespace REST {
-
-    Body::Body(mg_connection *conn)
-    :_conn(conn)
-    { }
-
-
-    slice Body::header(const char *header) const {
-        return slice(mg_get_header(_conn, header));
-    }
-    
-    
-    std::string Body::urlDecode(const std::string &str) {
-        std::string result;
-        result.reserve(str.size());
-        litecore::REST::urlDecode(str.data(), str.size(), result, false);
-        return result;
-    }
-
-
-    std::string Body::urlEncode(const std::string &str) {
-        std::string result;
-        result.reserve(str.size() + 16);
-        litecore::REST::urlEncode(str.data(), str.size(), result, false);
-        return result;
-    }
+    using namespace litecore::net;
+    using namespace litecore::crypto;
 
 
     bool Body::hasContentType(slice contentType) const {
         slice actualType = header("Content-Type");
         return actualType.size >= contentType.size
-        && memcmp(actualType.buf, contentType.buf, contentType.size) == 0
-        && (actualType.size == contentType.size || actualType[contentType.size] == ';');
+            && memcmp(actualType.buf, contentType.buf, contentType.size) == 0
+            && (actualType.size == contentType.size || actualType[contentType.size] == ';');
     }
 
 
     alloc_slice Body::body() const {
-        if (!_gotBody) {
-            fleece::Writer writer;
-            int bytesRead;
-            do {
-                char buf[1024];
-                bytesRead = mg_read(_conn, buf, sizeof(buf));
-                if (bytesRead > 0)
-                    writer.write(buf, bytesRead);
-            } while (bytesRead > 0);
-            if (bytesRead < 0)
-                return {};
-            alloc_slice body = writer.finish();
-            if (body.size == 0)
-                body.reset();
-            _body = body;
-            _gotBody = true;
-        }
         return _body;
     }
 
@@ -99,73 +68,140 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE:
 
 
-    static mg_connection* sendRequest(const std::string &method,
-                                      const std::string &hostname,
-                                      uint16_t port,
-                                      const std::string &uri,
-                                      const std::map<std::string, std::string> &headers,
-                                      fleece::slice body,
-                                      string &errorMessage,
-                                      int &errorCode)
+    Response::Response(const net::Address &address, Method method)
+    :_logic(new HTTPLogic(address))
     {
-        stringstream hdrs;
-        if (!headers.empty()) {
-            for (auto &header : headers)
-                hdrs << header.first << ": " << header.second << "\r\n";
-            hdrs << "Content-Length: " << body.size << "\r\n";
-        }
-        char errorBuf[256];
-        mg_error error {errorBuf, sizeof(errorBuf), 0};
-        auto conn = mg_download(hostname.c_str(), port, false, &error,
-                                "%s %s HTTP/1.0\r\n%s\r\n%.*s",
-                                method.c_str(), uri.c_str(), hdrs.str().c_str(), SPLAT(body));
-        if (!conn) {
-            errorMessage = string(errorBuf);
-            errorCode = error.code;
-        }
-        return conn;
+        _logic->setMethod(method);
     }
 
 
-    Response::Response(const std::string &method,
-                       const std::string &hostname,
-                       uint16_t port,
-                       const std::string &uri,
-                       const std::map<std::string, std::string> &headers,
-                       fleece::slice body)
-    :Body(sendRequest(method, hostname, port, uri, headers, body, _errorMessage, _errorCode))
-    { }
-
-
-    Response::Response(const string &method,
+    Response::Response(const string &scheme,
+                       const std::string &method,
                        const string &hostname,
                        uint16_t port,
-                       const string &uri,
-                       slice body)
-    :Response(method, hostname, port, uri, {}, body)
+                       const string &uri)
+    :Response(Address(slice(scheme), slice(hostname), port, slice(uri)),
+              MethodNamed(method))
     { }
 
 
-    Response::~Response() {
-        if (_conn)
-            mg_close_connection(_conn);
+    Response::~Response()
+    { }
+
+
+    Response& Response::setHeaders(const websocket::Headers &headers) {
+        _logic->setHeaders(headers);
+        return *this;
     }
 
-    HTTPStatus Response::status() const {
-        if (_conn)
-            return (HTTPStatus) stoi(string(mg_get_request_info(_conn)->request_uri));
-        else
-            return HTTPStatus::undefined;
+    Response& Response::setHeaders(Doc headersDict) {
+        return setHeaders( websocket::Headers(headersDict.root().asDict()) );
     }
 
-    std::string Response::statusMessage() const {
-        if (_conn)
-            return string(mg_get_request_info(_conn)->http_version);
-        else if (!_errorMessage.empty())
-            return _errorMessage;
-        else 
-            return format("%s (errno %d)", strerror(_errorCode), _errorCode);
+
+    Response& Response::setBody(slice body) {
+        _requestBody = body;
+        _logic->setContentLength(_requestBody.size);
+        return *this;
     }
 
+    Response& Response::setAuthHeader(slice authHeader) {
+        _logic->setAuthHeader(authHeader);
+        return *this;
+    }
+
+    TLSContext* Response::tlsContext() {
+        if (!_tlsContext)
+            _tlsContext = new TLSContext(TLSContext::Client);
+        return _tlsContext;
+    }
+
+    Response& Response::setTLSContext(net::TLSContext *ctx) {
+        _tlsContext = ctx;
+        return *this;
+    }
+
+    Response& Response::setProxy(const ProxySpec &proxy) {
+        _logic->setProxy(proxy);
+        return *this;
+    }
+
+    Response& Response::allowOnlyCert(slice certData) {
+        tlsContext()->allowOnlyCert(certData);
+        return *this;
+    }
+
+    Response& Response::setRootCerts(slice certsData) {
+        tlsContext()->setRootCerts(certsData);
+        return *this;
+    }
+
+#ifdef COUCHBASE_ENTERPRISE
+    Response& Response::allowOnlyCert(C4Cert *cert) {
+        Assert(c4cert_isSigned(cert));
+        tlsContext()->allowOnlyCert((Cert*)cert);
+        return *this;
+    }
+    
+    Response& Response::setRootCerts(C4Cert *cert) {
+        Assert(c4cert_isSigned(cert));
+        tlsContext()->setRootCerts((Cert*)cert);
+        return *this;
+    }
+
+    Response& Response::setIdentity(C4Cert *cert, C4KeyPair *key) {
+        Assert(c4cert_isSigned(cert));
+        Assert(c4keypair_hasPrivateKey(key));
+        Retained<Identity> id = new Identity((Cert*)cert, (PrivateKey*)key);
+        tlsContext()->setIdentity(id);
+        return *this;
+    }
+#endif
+
+
+    bool Response::run() {
+        if (hasRun())
+            return (_error.code == 0);
+
+        try {
+            unique_ptr<ClientSocket> socket;
+            HTTPLogic::Disposition disposition = HTTPLogic::kFailure;
+            do {
+                if (disposition != HTTPLogic::kContinue) {
+                    socket = make_unique<ClientSocket>(_tlsContext.get());
+                    socket->setTimeout(_timeout);
+                }
+                disposition = _logic->sendNextRequest(*socket, _requestBody);
+                switch (disposition) {
+                    case HTTPLogic::kSuccess:
+                        // On success, read the response body:
+                        if (!socket->readHTTPBody(_logic->responseHeaders(), _body)) {
+                            _error = socket->error();
+                            disposition = HTTPLogic::kFailure;
+                        }
+                        break;
+                    case HTTPLogic::kRetry:
+                        break;
+                    case HTTPLogic::kContinue:
+                        break;
+                    case HTTPLogic::kAuthenticate:
+                        if (!_logic->authHeader())
+                            disposition = HTTPLogic::kFailure;
+                        break;
+                    case HTTPLogic::kFailure:
+                        _error = _logic->error();
+                        break;
+                }
+            } while (disposition != HTTPLogic::kSuccess && disposition != HTTPLogic::kFailure);
+
+            // set up the rest of my properties:
+            _status = _logic->status();
+            _statusMessage = string(_logic->statusMessage());
+            _headers = _logic->responseHeaders();
+        } catchError(&_error);
+        _logic.reset();
+        _tlsContext = nullptr;
+        return (_error.code == 0);
+    }
 
 } }

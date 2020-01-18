@@ -7,6 +7,10 @@
 
 #include "XcodeWarnings.xcconfig"
 
+MBEDTLS = $(SRCROOT)/../vendor/mbedtls
+MBEDCRYPTO = $(MBEDTLS)/crypto
+SOCKPP = $(SRCROOT)/../vendor/sockpp
+
 WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-unknown-warning-option  // ignore unknown warning flags
 CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO
 CLANG_WARN_ASSIGN_ENUM = NO
@@ -20,12 +24,19 @@ CLANG_STATIC_ANALYZER_MODE = shallow
 LITECORE_VERSION_STRING                            = 2.8.0
 LITECORE_BUILD_NUMBER                              = 0
 
-IPHONEOS_DEPLOYMENT_TARGET                         = 9.0
-MACOSX_DEPLOYMENT_TARGET                           = 10.11
-TVOS_DEPLOYMENT_TARGET                             = 9.0
+IPHONEOS_DEPLOYMENT_TARGET                         = 10.0
+MACOSX_DEPLOYMENT_TARGET                           = 10.12
+TVOS_DEPLOYMENT_TARGET                             = 10.0
 ONLY_ACTIVE_ARCH                                   = NO
 SKIP_INSTALL                                       = YES
 SUPPORTED_PLATFORMS                                = macosx iphoneos iphonesimulator appletvos appletvsimulator
+
+VALID_ARCHS                                        = x86_64 arm64 armv7a
+VALID_ARCHS[sdk=macosx*]                           = x86_64
+VALID_ARCHS[sdk=iphonesimulator*]                  = x86_64
+VALID_ARCHS[sdk=appletvsimulator*]                 = x86_64
+VALID_ARCHS[sdk=iphoneos*]                         =        arm64 armv7a
+VALID_ARCHS[sdk=appletvos*]                        =        arm64
 
 CODE_SIGN_IDENTITY                                 =
 VERSION_INFO_PREFIX                                =
@@ -40,7 +51,7 @@ ALWAYS_SEARCH_USER_PATHS                           = NO
 CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW         = YES    // range-check C++ STL containers
 CLANG_UNDEFINED_BEHAVIOR_SANITIZER_INTEGER         = NO     // don't flag int over/underflows
 
-CLANG_CXX_LANGUAGE_STANDARD                        = c++11
+CLANG_CXX_LANGUAGE_STANDARD                        = c++17
 CLANG_CXX_LIBRARY                                  = libc++
 CLANG_ENABLE_MODULES                               = YES
 CLANG_ENABLE_OBJC_ARC                              = YES
@@ -54,7 +65,7 @@ GCC_ENABLE_OBJC_EXCEPTIONS                         = YES
 GCC_NO_COMMON_BLOCKS                               = YES
 GCC_PRECOMPILE_PREFIX_HEADER                       = YES
 
-HEADER_SEARCH_PATHS                                = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/ $(inherited)
-SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/ $(inherited)
+HEADER_SEARCH_PATHS                                = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/   $(SOCKPP)/include   $(MBEDTLS)/include   $(MBEDCRYPTO)/include   $(inherited)
+SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/   $(inherited)
 
 COMBINE_HIDPI_IMAGES                               = YES    // Stop Xcode from complaining

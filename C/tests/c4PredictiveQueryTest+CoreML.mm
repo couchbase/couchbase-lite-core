@@ -36,7 +36,7 @@ static NSString* asNSString(const string &str) {
 
 
 // Test class that uses a CoreML model
-class API_AVAILABLE(macos(10.13)) CoreMLTest : public QueryTest {
+class CoreMLTest : public C4QueryTest {
 public:
     // The default model file comes from Apple's MarsHabitatPricePredictor sample app.
     CoreMLTest()
@@ -47,7 +47,7 @@ public:
                const char *modelName,
                const string &modelFilename,
                bool required =true)
-    :QueryTest(0, jsonFilename)
+    :C4QueryTest(0, jsonFilename)
     {
         if (@available(macOS 10.13, iOS 11.0, *)) {
             NSURL *url = [NSURL fileURLWithPath: asNSString(sFixturesDir + modelFilename)];
@@ -83,14 +83,14 @@ public:
         auto e = c4query_run(query, &options, nullslice, &error);
         CHECK(!e);
         char errbuf[256];
-        C4Log("Error is %s", c4error_getDescriptionC(error, errbuf, sizeof(errbuf)))
+        C4Log("Error is %s", c4error_getDescriptionC(error, errbuf, sizeof(errbuf)));
         CHECK(error.domain == SQLiteDomain);
         CHECK(error.code != 0);
         alloc_slice msg = c4error_getMessage(error);
         CHECK(string(msg) == expectedErrorMessage);
     }
 
-    unique_ptr<cbl::CoreMLPredictiveModel> _model;
+    unique_ptr<cbl::PredictiveModel> _model;
 };
 
 

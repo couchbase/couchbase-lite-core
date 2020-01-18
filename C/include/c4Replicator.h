@@ -17,10 +17,7 @@
 //
 
 #pragma once
-#include "c4Socket.h"
-#include "c4Database.h"
 #include "c4Document.h"
-#include "c4BlobStore.h"
 #include "fleece/Fleece.h"
 
 #ifdef __cplusplus
@@ -44,7 +41,7 @@ extern "C" {
     /** The possible states of a replicator. */
     typedef C4_ENUM(int32_t, C4ReplicatorActivityLevel) {
         kC4Stopped,     ///< Finished, or got a fatal error.
-        kC4Offline,     ///< Not used by LiteCore; for use by higher-level APIs. */
+        kC4Offline,     ///< Connection failed, but waiting to retry. */
         kC4Connecting,  ///< Connection is in progress.
         kC4Idle,        ///< Continuous replicator has caught up and is waiting for changes.
         kC4Busy         ///< Connected and actively working.
@@ -52,6 +49,15 @@ extern "C" {
 
     /** For convenience, an array of C strings naming the C4ReplicatorActivityLevel values. */
     CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[5];
+
+
+    /** A simple parsed-URL type. */
+    typedef struct C4Address {
+        C4String scheme;
+        C4String hostname;
+        uint16_t port;
+        C4String path;
+    } C4Address;
 
 
     /** Represents the current progress of a replicator.
@@ -63,11 +69,19 @@ extern "C" {
         uint64_t    documentCount;      ///< Number of documents transferred so far
     } C4Progress;
 
+    /** Flags relating to a replicator's connection state. */
+    typedef C4_OPTIONS(int32_t, C4ReplicatorStatusFlags) {
+        kC4WillRetry     = 0x1,         ///< If true, will automatically reconnect when offline
+        kC4HostReachable = 0x2,         ///< If false, it's not possible to connect to the host
+        kC4Suspended     = 0x4          ///< If true, will not connect until unsuspended
+    };
+
     /** Current status of replication. Passed to `C4ReplicatorStatusChangedCallback`. */
     typedef struct {
         C4ReplicatorActivityLevel level;
         C4Progress progress;
         C4Error error;
+        C4ReplicatorStatusFlags flags;
     } C4ReplicatorStatus;
 
     /** Information about a document that's been pushed or pulled. */
@@ -80,9 +94,6 @@ extern "C" {
         bool errorIsTransient;
     } C4DocumentEnded;
 
-
-    /** Opaque reference to a replicator. */
-    typedef struct C4Replicator C4Replicator;
 
     /** Callback a client can register, to get progress information.
         This will be called on arbitrary background threads, and should not block. */
@@ -159,24 +170,34 @@ extern "C" {
         C4ReplicatorBlobProgressCallback    onBlobProgress;    ///< Callback notifying blob progress
         void*                               callbackContext;   ///< Value to be passed to the callbacks.
         const C4SocketFactory*              socketFactory;     ///< Custom C4SocketFactory, if not NULL
-        bool                                dontStart;         ///< Don't start automatically
     } C4ReplicatorParameters;
 
 
-    /** Creates a new replicator.
+    /** Creates a new networked replicator.
         @param db  The local database.
-        @param remoteAddress  The address of the remote server (null if other db is local.)
+        @param remoteAddress  The address of the remote server.
         @param remoteDatabaseName  The name of the database at the remote address.
-        @param otherLocalDB  The other local database (null if other db is remote.)
         @param params Replication parameters (see above.)
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
     C4Replicator* c4repl_new(C4Database* db C4NONNULL,
                              C4Address remoteAddress,
                              C4String remoteDatabaseName,
-                             C4Database* otherLocalDB,
                              C4ReplicatorParameters params,
                              C4Error *outError) C4API;
+
+#ifdef COUCHBASE_ENTERPRISE
+    /** Creates a new replicator to another local database.
+        @param db  The local database.
+        @param otherLocalDB  The other local database.
+        @param params Replication parameters (see above.)
+        @param outError  Error, if replication can't be created.
+        @return  The newly created replicator, or NULL on error. */
+    C4Replicator* c4repl_newLocal(C4Database* db C4NONNULL,
+                                  C4Database* otherLocalDB C4NONNULL,
+                                  C4ReplicatorParameters params,
+                                  C4Error *outError) C4API;
+#endif
 
     /** Creates a new replicator from an already-open C4Socket. This is for use by listeners
         that accept incoming connections, wrap them by calling `c4socket_fromNative()`, then
@@ -193,20 +214,52 @@ extern "C" {
 
     /** Frees a replicator reference.
         Does not stop the replicator -- if the replicator still has other internal references,
-        it will keep going. If you need the replicator to stop, call `c4repl_stop()` first. */
+        it will keep going. If you need the replicator to stop, call \ref c4repl_stop first.
+        \note This function is thread-safe. */
     void c4repl_free(C4Replicator* repl) C4API;
 
-    /** Tells a replicator to start.
-        **Only call this if you set \ref dontStart in the \ref C4ReplicatorParameters !!** */
+    /** Tells a replicator to start. Ignored if it's not in the Stopped state.
+        \note This function is thread-safe.  */
     void c4repl_start(C4Replicator* repl C4NONNULL) C4API;
 
-    /** Tells a replicator to stop. */
+    /** Tells a replicator to stop. Ignored if in the Stopped state.
+        This function is thread-safe.  */
     void c4repl_stop(C4Replicator* repl C4NONNULL) C4API;
 
-    /** Returns the current state of a replicator. */
+    /** Tells a replicator that's in the offline state to reconnect immediately.
+        \note This function is thread-safe.
+        @param repl  The replicator.
+        @param outError  On failure, error information is stored here.
+        @return  True if the replicator will reconnect, false if it won't. */
+    bool c4repl_retry(C4Replicator* repl C4NONNULL, C4Error *outError) C4API;
+
+    /** Informs the replicator whether it's considered possible to reach the remote host with
+        the current network configuration. The default value is true. This only affects the
+        replicator's behavior while it's in the Offline state:
+        * Setting it to false will cancel any pending retry and prevent future automatic retries.
+        * Setting it back to true will initiate an immediate retry.
+        \note This function is thread-safe. */
+    void c4repl_setHostReachable(C4Replicator* repl C4NONNULL, bool reachable) C4API;
+
+    /** Puts the replicator in or out of "suspended" state.
+        * Setting suspended=true causes the replicator to disconnect and enter Offline state;
+          it will not attempt to reconnect while it's suspended.
+        * Setting suspended=false causes the replicator to attempt to reconnect, _if_ it was
+          connected when suspended, and is still in Offline state.
+        \note This function is thread-safe. */
+    void c4repl_setSuspended(C4Replicator* repl C4NONNULL, bool suspended) C4API;
+
+    /** Sets the replicator's options dictionary.
+        The changes will take effect next time the replicator connects.
+        \note This function is thread-safe.  */
+    void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) C4API;
+
+    /** Returns the current state of a replicator.
+        This function is thread-safe.  */
     C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl C4NONNULL) C4API;
 
-    /** Returns the HTTP response headers as a Fleece-encoded dictionary. */
+    /** Returns the HTTP response headers as a Fleece-encoded dictionary.
+        \note This function is thread-safe.  */
     C4Slice c4repl_getResponseHeaders(C4Replicator *repl C4NONNULL) C4API;
 
     /** Gets a fleece encoded list of IDs of documents who have revisions pending push.  This
@@ -260,10 +313,6 @@ extern "C" {
 
 
     // Replicator option dictionary keys:
-    #define kC4ReplicatorOptionExtraHeaders     "headers"  ///< Extra HTTP headers (string[])
-    #define kC4ReplicatorOptionCookies          "cookies"  ///< HTTP Cookie header value (string)
-    #define kC4ReplicatorOptionAuthentication   "auth"     ///< Auth settings (Dict)
-    #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
     #define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
     #define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
     #define kC4ReplicatorOptionFilter           "filter"   ///< Pull filter name (string)
@@ -273,24 +322,51 @@ extern "C" {
     #define kC4ReplicatorOptionOutgoingConflicts   "outgoingConflicts" ///< Allow creating conflicts on remote (bool)
     #define kC4ReplicatorCheckpointInterval     "checkpointInterval" ///< How often to checkpoint, in seconds (number)
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" ///< Stable ID for remote db with unstable URL (string)
-    #define kC4ReplicatorHeartbeatInterval      "heartbeat" ///< Interval in secs to send a keepalive ping
     #define kC4ReplicatorResetCheckpoint        "reset"     ///< Start over w/o checkpoint (bool)
     #define kC4ReplicatorOptionProgressLevel    "progress"  ///< If >=1, notify on every doc; if >=2, on every attachment (int)
     #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
+    #define kC4ReplicatorOptionMaxRetries       "maxRetries" ///< Max number of retry attempts (int)
 
-    // Auth dictionary keys:
-    #define kC4ReplicatorAuthType       "type"           ///< Auth type; see below (string)
+    // TLS options:
+    #define kC4ReplicatorOptionRootCerts        "rootCerts"  ///< Trusted root certs (data)
+    #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
+
+    // HTTP options:
+    #define kC4ReplicatorOptionExtraHeaders     "headers"  ///< Extra HTTP headers (string[])
+    #define kC4ReplicatorOptionCookies          "cookies"  ///< HTTP Cookie header value (string)
+    #define kC4ReplicatorOptionAuthentication   "auth"     ///< Auth settings (Dict); see [1]
+    #define kC4ReplicatorOptionProxyServer      "proxy"    ///< Proxy settings (Dict); see [3]]
+
+    // WebSocket options:
+    #define kC4ReplicatorHeartbeatInterval      "heartbeat" ///< Interval in secs to send a keepalive ping
+    #define kC4SocketOptionWSProtocols          "WS-Protocols" ///< Sec-WebSocket-Protocol header value
+
+    // [1]: Auth dictionary keys:
+    #define kC4ReplicatorAuthType       "type"           ///< Auth type; see [2] (string)
     #define kC4ReplicatorAuthUserName   "username"       ///< User name for basic auth (string)
     #define kC4ReplicatorAuthPassword   "password"       ///< Password for basic auth (string)
     #define kC4ReplicatorAuthClientCert "clientCert"     ///< TLS client certificate (value platform-dependent)
+    #define kC4ReplicatorAuthClientCertKey "clientCertKey" ///< Client cert's private key (data)
     #define kC4ReplicatorAuthToken      "token"          ///< Session cookie or auth token (string)
 
-    // auth.type values:
+    // [2]: auth.type values:
     #define kC4AuthTypeBasic            "Basic"          ///< HTTP Basic (the default)
     #define kC4AuthTypeSession          "Session"        ///< SG session cookie
     #define kC4AuthTypeOpenIDConnect    "OpenID Connect" ///< OpenID Connect token
     #define kC4AuthTypeFacebook         "Facebook"       ///< Facebook auth token
     #define kC4AuthTypeClientCert       "Client Cert"    ///< TLS client cert
+
+    // [3]: Proxy dictionary keys:
+    #define kC4ReplicatorProxyType      "type"           ///< Proxy type; see [4] (string)
+    #define kC4ReplicatorProxyHost      "host"           ///< Proxy hostname (string)
+    #define kC4ReplicatorProxyPort      "port"           ///< Proxy port number (integer)
+    #define kC4ReplicatorProxyAuth      "auth"           ///< Proxy auth (Dict); see above
+
+    // [4]: proxy.type values:
+    #define kC4ProxyTypeNone            "none"           ///< Use no proxy (overrides system setting)
+    #define kC4ProxyTypeHTTP            "HTTP"           ///< HTTP proxy (using CONNECT method)
+    #define kC4ProxyTypeHTTPS           "HTTPS"          ///< HTTPS proxy (using CONNECT method)
+    #define kC4ProxyTypeSOCKS           "SOCKS"          ///< SOCKS proxy
 
     /** @} */
 

@@ -22,9 +22,9 @@
 
 using namespace fleece;
 
-#include "c4.h"
-#include "c4Private.h"
+#include "c4Database.h"
 #include "c4Document+Fleece.h"
+#include "c4Private.h"
 
 #include "CatchHelper.hh"
 #include "PlatformCompat.hh"
@@ -147,9 +147,10 @@ public:
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
+    static std::string sReplicatorFixturesDir;  // directory where replicator test files live
     static const std::string kDatabaseName;
 
-    C4Test(int testOption);
+    C4Test(int testOption =1);
     ~C4Test();
 
     C4Slice databasePath() const                {return c4str(_dbPath.c_str());}
@@ -194,7 +195,8 @@ public:
     std::vector<C4BlobKey> addDocWithAttachments(C4Slice docID,
                                                  std::vector<std::string> attachments,
                                                  const char *contentType,
-                                                 std::vector<std::string>* legacyNames =nullptr);
+                                                 std::vector<std::string>* legacyNames =nullptr,
+                                                 C4RevisionFlags flags =0);
     void checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData);
     void checkAttachments(C4Database *inDB, std::vector<C4BlobKey> blobKeys,
                           std::vector<std::string> expectedData);
@@ -203,7 +205,7 @@ public:
 
     std::string listSharedKeys(std::string delimiter =", ");
 
-    fleece::alloc_slice readFile(std::string path); // caller must free buf when done
+    static fleece::alloc_slice readFile(std::string path);
     unsigned importJSONFile(std::string path,
                             std::string idPrefix ="",
                             double timeout =15.0,

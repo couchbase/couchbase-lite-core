@@ -60,11 +60,14 @@ namespace litecore {
         virtual expiration_t nextExpiration() override;
         virtual unsigned expireRecords(ExpirationCallback =nullptr) override;
 
-        bool supportsIndexes(IndexType t) const override               {return true;}
-        bool createIndex(const IndexSpec&, const IndexOptions* = nullptr) override;
+        bool supportsIndexes(IndexSpec::Type t) const override               {return true;}
+        bool createIndex(const IndexSpec&) override;
 
         void deleteIndex(slice name) override;
         std::vector<IndexSpec> getIndexes() const override;
+
+        virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice> &docIDs,
+                                                       WithDocBodyCallback callback) override;
 
         void createSequenceIndex();
         void createConflictsIndex();
@@ -109,26 +112,25 @@ namespace litecore {
         std::string subst(const char *sqlTemplate) const;
         void setLastSequence(sequence_t seq);
         void incrementPurgeCount();
-        void createTrigger(const std::string &triggerName,
-                           const char *triggerSuffix,
-                           const char *operation,
-                           const char *when,
-                           const std::string &statements);
-        void _createFlagsIndex(const char *indexName NONNULL, DocumentFlags flag, bool &created);
-        bool createValueIndex(const IndexSpec&,
+        void createTrigger(string_view triggerName,
+                           string_view triggerSuffix,
+                           string_view operation,
+                           std::string when,
+                           string_view statements);
+        bool createValueIndex(const IndexSpec&);
+        bool createIndex(const IndexSpec&,
                               const std::string &sourceTableName,
-                              fleece::impl::Array::iterator &expressions,
-                              const IndexOptions *options);
-        bool createFTSIndex(const IndexSpec&, const fleece::impl::Array *params, const IndexOptions*);
-        bool createArrayIndex(const IndexSpec&, const fleece::impl::Array *params, const IndexOptions*);
-        std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexOptions*);
+                              fleece::impl::Array::iterator &expressions);
+        void _createFlagsIndex(const char *indexName NONNULL, DocumentFlags flag, bool &created);
+        bool createFTSIndex(const IndexSpec&);
+        bool createArrayIndex(const IndexSpec&);
+        std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexSpec::Options*);
         bool hasExpiration();
         void addExpiration();
 
 #ifdef COUCHBASE_ENTERPRISE
-        bool createPredictiveIndex(const IndexSpec&, const fleece::impl::Array *params,
-                                   const IndexOptions*);
-        std::string createPredictionTable(const fleece::impl::Value *arrayPath, const IndexOptions*);
+        bool createPredictiveIndex(const IndexSpec&);
+        std::string createPredictionTable(const fleece::impl::Value *arrayPath, const IndexSpec::Options*);
         void garbageCollectPredictiveIndexes();
 #endif
 
@@ -138,7 +140,7 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getCurBySeqStmt, _getMetaBySeqStmt;
         std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
         std::unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
-        std::unique_ptr<SQLite::Statement> _setFlagStmt;
+        std::unique_ptr<SQLite::Statement> _setFlagStmt, _withDocBodiesStmt;
         std::unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
 
         bool _createdSeqIndex {false}, _createdConflictsIndex {false}, _createdBlobsIndex {false};

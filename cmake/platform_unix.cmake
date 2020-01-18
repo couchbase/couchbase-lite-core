@@ -23,13 +23,15 @@ function(setup_litecore_build_unix)
         set_property(TARGET BLIPStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         set_property(TARGET Support       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
+
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^armv[67]")
+        # C/C++ atomic operations on ARM6/7 emit calls to functions in libatomic
+        target_link_libraries(
+            LiteCore PRIVATE
+            atomic
+        )
+    endif()
 endfunction()
 
 function(setup_rest_build_unix)
-    target_link_libraries(
-        LiteCoreREST PRIVATE
-        FleeceBase
-        Support
-        CivetWeb
-    )
 endfunction()

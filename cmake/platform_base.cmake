@@ -16,6 +16,7 @@ function(set_litecore_source_base)
         ${BASE_SSS_RESULT} 
         C/c4Base.cc
         C/c4BlobStore.cc
+        C/c4Certificate.cc
         C/c4Database.cc
         C/c4DocEnumerator.cc
         C/c4DocExpiration.cc
@@ -28,6 +29,7 @@ function(set_litecore_source_base)
         LiteCore/Database/BackgroundDB.cc
         LiteCore/Database/Database.cc
         LiteCore/Database/Document.cc
+        LiteCore/Database/Housekeeper.cc
         LiteCore/Database/LeafDocument.cc
         LiteCore/Database/LegacyAttachments.cc
         LiteCore/Database/LiveQuerier.cc
@@ -35,6 +37,7 @@ function(set_litecore_source_base)
         LiteCore/Database/SequenceTracker.cc
         LiteCore/Database/TreeDocument.cc
         LiteCore/Database/Upgrader.cc 
+        LiteCore/Query/IndexSpec.cc
         LiteCore/Query/PredictiveModel.cc
         LiteCore/Query/Query.cc
         LiteCore/Query/QueryParser+Prediction.cc
@@ -65,18 +68,23 @@ function(set_litecore_source_base)
         LiteCore/Storage/SQLiteEnumerator.cc
         LiteCore/Storage/SQLiteKeyStore.cc
         LiteCore/Storage/UnicodeCollator.cc
+        Crypto/Certificate.cc
+        Crypto/mbedUtils.cc
+        Crypto/PublicKey.cc
+        Crypto/SecureDigest.cc
+        Crypto/SecureSymmetricCrypto.cc
+        Networking/Address.cc
+        Networking/CookieStore.cc
         vendor/SQLiteCpp/src/Backup.cpp
         vendor/SQLiteCpp/src/Column.cpp
         vendor/SQLiteCpp/src/Database.cpp
         vendor/SQLiteCpp/src/Exception.cpp
         vendor/SQLiteCpp/src/Statement.cpp
         vendor/SQLiteCpp/src/Transaction.cpp
-        Replicator/Address.cc
         Replicator/c4Replicator.cc
         Replicator/c4Socket.cc
         Replicator/Checkpoint.cc
-        Replicator/CivetWebSocket.cc
-        Replicator/CookieStore.cc
+        Replicator/Checkpointer.cc
         Replicator/DatabaseCookies.cc
         Replicator/DBAccess.cc
         Replicator/IncomingBlob.cc
@@ -86,7 +94,6 @@ function(set_litecore_source_base)
         Replicator/Pusher.cc
         Replicator/Pusher+DB.cc
         Replicator/Replicator.cc
-        Replicator/Replicator+Checkpoints.cc
         Replicator/ReplicatorTypes.cc
         Replicator/RevFinder.cc
         Replicator/Worker.cc
@@ -114,10 +121,9 @@ function(set_support_source_base)
         LiteCore/Support/LogEncoder.cc
         LiteCore/Support/Logging_Stub.cc
         LiteCore/Support/PlatformIO.cc
-        LiteCore/Support/SecureRandomize.cc
-        LiteCore/Support/SecureSymmetricCrypto.cc
         LiteCore/Support/StringUtil.cc
-        Replicator/Address.cc
+        Crypto/SecureRandomize.cc
+        Networking/Address.cc
         PARENT_SCOPE
     )
 endfunction()

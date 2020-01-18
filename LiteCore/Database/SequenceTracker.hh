@@ -21,7 +21,6 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include <list>
-#include <mutex>
 #include <unordered_map>
 #include <vector>
 #include <functional>
@@ -45,9 +44,6 @@ namespace litecore {
         struct Entry;
 
         SequenceTracker();
-
-        /** Multithreaded clients can use this to synchronize access to the tracker. */
-        std::mutex& mutex()                     {return _mutex;}
 
         void beginTransaction();
         void endTransaction(bool commit);
@@ -158,7 +154,6 @@ namespace litecore {
         size_t                                  _numDocObservers {0};
         std::unique_ptr<DatabaseChangeNotifier> _transaction;
         sequence_t                              _preTransactionLastSequence;
-        std::mutex                              _mutex;
     };
 
 

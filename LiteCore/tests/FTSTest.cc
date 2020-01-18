@@ -37,27 +37,34 @@ public:
         "To use FTS5, the user creates an FTS5 virtual table with one or more columns.",
         "Looking for things, searching for things, going on adventures..."};
 
+    vector<string> _stringsInDB;
+
     FTSTest() {
-        {
-            Transaction t(store->dataFile());
-            for (int i = 0; i < sizeof(kStrings)/sizeof(kStrings[0]); i++) {
-                string docID = stringWithFormat("rec-%03d", i);
-
-                fleece::impl::Encoder enc;
-                enc.beginDictionary();
-                enc.writeKey("sentence");
-                enc.writeString(kStrings[i]);
-                enc.endDictionary();
-                alloc_slice body = enc.finish();
-
-                store->set(slice(docID), body, t);
-            }
-            t.commit();
-        }
+        Transaction t(store->dataFile());
+        for (int i = 0; i < sizeof(kStrings)/sizeof(kStrings[0]); i++)
+            createDoc(t, i, kStrings[i]);
+        t.commit();
     }
 
-    void createIndex(KeyStore::IndexOptions options) {
-        store->createIndex({"sentence", KeyStore::kFullTextIndex, alloc_slice("[[\".sentence\"]]")}, &options);
+    void createDoc(Transaction &t, int i, string sentence) {
+        string docID = stringWithFormat("rec-%03d", i);
+
+        fleece::impl::Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("sentence");
+        enc.writeString(sentence);
+        enc.endDictionary();
+        alloc_slice body = enc.finish();
+
+        store->set(slice(docID), body, t);
+
+        if (_stringsInDB.size() <= i)
+            _stringsInDB.resize(i + 1);
+        _stringsInDB[i] = sentence;
+    }
+
+    void createIndex(IndexSpec::Options options) {
+        store->createIndex("sentence", "[[\".sentence\"]]", IndexSpec::kFullText, &options);
     }
 
     void testQuery(const char *queryStr,
@@ -73,7 +80,7 @@ public:
             REQUIRE(row < expectedOrder.size());
             int stringNo = expectedOrder[row];
             slice sentence = cols[0]->asString();
-            CHECK(sentence == slice(kStrings[stringNo]));
+            CHECK(sentence == slice(_stringsInDB[stringNo]));
             CHECK(e->hasFullText());
             CHECK(e->fullTextTerms().size() == expectedTerms[row]);
             for (auto term : e->fullTextTerms()) {
@@ -177,13 +184,44 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words In Target", "[Query][FTS]"
               {3, 3});
 }
 
+
+TEST_CASE_METHOD(FTSTest, "Query Full-Text Partial Index", "[Query][FTS]") {
+    // the WHERE clause prevents row 4 from being indexed/searched.
+    IndexSpec::Options options {"english", true};
+    store->createIndex("sentence",
+                       R"-({"WHAT": [[".sentence"]], "WHERE": [">", ["length()", [".sentence"]], 70]})-",
+                       IndexSpec::kFullText, &options);
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
+                        WHAT: [['.sentence']]}]",
+              {1, 2, 0},
+              {3, 3, 1});
+
+    // Now update docs so one is removed from the index and another added:
+    {
+        Transaction t(store->dataFile());
+        createDoc(t, 4, "The expression on the right must be a text value specifying the term to search for. For the table-valued function syntax, the term to search for is specified as the first table argument.");
+        createDoc(t, 1, "Search, search");
+        t.commit();
+    }
+
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
+                        WHAT: [['.sentence']]}]",
+              {2, 4, 0},
+              {3, 2, 1});
+}
+
+
 TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     // Tests fix for <https://issues.couchbase.com/browse/CBL-218>
 
     store->deleteIndex("List"_sl);
     SECTION("Create Index First") {
-        KeyStore::IndexOptions options { "en", false, true };
-        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, KeyStore::kFullTextIndex, &options));
+        IndexSpec::Options options { "en", false, true };
+        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, IndexSpec::kFullText, &options));
     }
 
     {
@@ -263,8 +301,8 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     }
 
     SECTION("Create Index After") {
-        KeyStore::IndexOptions options { "en", false, true };
-        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, KeyStore::kFullTextIndex, &options));
+        IndexSpec::Options options { "en", false, true };
+        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, IndexSpec::kFullText, &options));
     }
 
     Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH', 'List', ['$title']]}"));
@@ -326,8 +364,8 @@ TEST_CASE_METHOD(FTSTest, "Test with Dictionary Values", "[FTS][Query]") {
         t.commit();
     }
 
-    KeyStore::IndexOptions options { "en", false, false };
-    CHECK(store->createIndex("fts"_sl, "[[\".dict_value\"]]"_sl, KeyStore::kFullTextIndex, &options));
+    IndexSpec::Options options { "en", false, false };
+    CHECK(store->createIndex("fts"_sl, "[[\".dict_value\"]]"_sl, IndexSpec::kFullText, &options));
     Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH', 'fts', 'bar']}"));
     Retained<QueryEnumerator> results(query->createEnumerator(nullptr));        
     CHECK(results->getRowCount() == 1);
@@ -399,8 +437,8 @@ TEST_CASE_METHOD(FTSTest, "Test with non-string values", "[FTS][Query]") {
         valueToCheck = "1.234"_sl;
     }
 
-    KeyStore::IndexOptions options { "en", false, true };
-    CHECK(store->createIndex("fts"_sl, "[[\".value\"]]"_sl, KeyStore::kFullTextIndex, &options));
+    IndexSpec::Options options { "en", false, true };
+    CHECK(store->createIndex("fts"_sl, "[[\".value\"]]"_sl, IndexSpec::kFullText, &options));
     Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH', 'fts', ['$value']]}"));
     Encoder e;
     e.beginDictionary(1);

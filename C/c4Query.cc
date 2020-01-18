@@ -18,12 +18,13 @@
 
 #include "c4Internal.hh"
 #include "c4Query.h"
+#include "c4Index.h"
 #include "c4Observer.h"
 #include "c4ExceptionUtils.hh"
+#include "c4Database.hh"
 
-#include "Database.hh"
 #include "LiveQuerier.hh"
-#include "DataFile.hh"
+#include "SQLiteDataFile.hh"
 #include "Query.hh"
 #include "Record.hh"
 #include "Timer.hh"
@@ -34,6 +35,7 @@
 #include <math.h>
 #include <limits.h>
 #include <mutex>
+#include <set>
 
 using namespace std;
 using namespace litecore;
@@ -199,23 +201,22 @@ struct c4Query : public RefCounted, fleece::InstanceCounted, LiveQuerier::Delega
     }
 
     //// Observing:
+    
 
-    c4QueryObserver* createObserver(C4QueryObserverCallback callback, void *context) {
+    void enableObserver(c4QueryObserver *obs, bool enable) {
         LOCK(_mutex);
-        if (_observers.empty()) {
-            _bgQuerier = new LiveQuerier(_database, _query, true, this);
-            _bgQuerier->run(_parameters);
-        }
-        _observers.emplace_back(this, callback, context);
-        return &_observers.back();
-    }
-
-    void freeObserver(c4QueryObserver *obs) {
-        LOCK(_mutex);
-        _observers.remove_if([obs](const c4QueryObserver &o) {return &o == obs;});
-        if (_observers.empty()) {
-            _bgQuerier->stop();
-            _bgQuerier = nullptr;
+        if (enable) {
+            _observers.insert(obs);
+            if (!_bgQuerier) {
+                _bgQuerier = new LiveQuerier(_database, _query, true, this);
+                _bgQuerier->run(_parameters);
+            }
+        } else {
+            _observers.erase(obs);
+            if (_observers.empty() && _bgQuerier) {
+                _bgQuerier->stop();
+                _bgQuerier = nullptr;
+            }
         }
     }
 
@@ -226,7 +227,7 @@ struct c4Query : public RefCounted, fleece::InstanceCounted, LiveQuerier::Delega
         if (!_bgQuerier)
             return;
         for (auto &obs : _observers)
-            obs.notify(c4e, err);
+            obs->notify(c4e, err);
     }
 
 private:
@@ -236,8 +237,9 @@ private:
 
     mutable mutex _mutex;
     Retained<LiveQuerier> _bgQuerier;
-    std::list<c4QueryObserver> _observers;
+    std::set<c4QueryObserver*> _observers;
 };
+
 
 
 #pragma mark - QUERY API:
@@ -264,16 +266,6 @@ C4Query* c4query_new2(C4Database *database,
 
 C4Query* c4query_new(C4Database *database C4NONNULL, C4String expression, C4Error *error) C4API {
     return c4query_new2(database, kC4JSONQuery, expression, nullptr, error);
-}
-
-
-C4Query* c4query_retain(C4Query *query) C4API {
-    return retain(query);
-}
-
-
-void c4query_free(C4Query *query) noexcept {
-    release(query);
 }
 
 
@@ -385,7 +377,7 @@ void c4queryenum_close(C4QueryEnumerator *e) noexcept {
     }
 }
 
-void c4queryenum_free(C4QueryEnumerator *e) noexcept {
+void c4queryenum_release(C4QueryEnumerator *e) noexcept {
     release(asInternal(e));
 }
 
@@ -394,35 +386,42 @@ void c4queryenum_free(C4QueryEnumerator *e) noexcept {
 
 
 C4QueryObserver* c4queryobs_create(C4Query *query, C4QueryObserverCallback cb, void *ctx) C4API {
-    return query->createObserver(cb, ctx);
+    return new C4QueryObserver(query, cb, ctx);
+}
+
+void c4queryobs_setEnabled(C4QueryObserver *obs, bool enabled) C4API {
+    obs->query()->enableObserver(obs, enabled);
 }
 
 void c4queryobs_free(C4QueryObserver* obs) C4API {
-    if (obs)
-        obs->query()->freeObserver(obs);
+    if (obs) {
+        obs->query()->enableObserver(obs, false);
+        delete obs;
+    }
 }
 
 C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs, C4Error *outError) C4API {
     return obs->currentEnumerator(outError);
 }
 
+
 #pragma mark - INDEXES:
 
 
 bool c4db_createIndex(C4Database *database,
                       C4Slice name,
-                      C4Slice propertyPath,
+                      C4Slice indexSpecJSON,
                       C4IndexType indexType,
                       const C4IndexOptions *indexOptions,
                       C4Error *outError) noexcept
 {
-    static_assert(sizeof(C4IndexOptions) == sizeof(KeyStore::IndexOptions),
-                  "IndexOptions types must match");
+    static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options),
+                  "IndexSpec::Options types must match");
     return tryCatch(outError, [&]{
-        database->defaultKeyStore().createIndex({string(slice(name)),
-                                                 (KeyStore::IndexType)indexType,
-                                                 alloc_slice(propertyPath)},
-                                                (const KeyStore::IndexOptions*)indexOptions);
+        database->defaultKeyStore().createIndex(slice(name),
+                                                indexSpecJSON,
+                                                (IndexSpec::Type)indexType,
+                                                (const IndexSpec::Options*)indexOptions);
     });
 }
 
@@ -463,6 +462,16 @@ C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError) noexcept 
 
 C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* outError) noexcept {
     return getIndexes(database, true, outError);
+}
+
+
+C4SliceResult c4db_getIndexRows(C4Database* database, C4String indexName, C4Error* outError) noexcept {
+    return tryCatch<C4SliceResult>(outError, [&]{
+        int64_t rowCount;
+        alloc_slice rows;
+        ((SQLiteDataFile*)database->dataFile())->inspectIndex(indexName, rowCount, &rows);
+        return C4SliceResult(rows);
+    });
 }
 
 

@@ -17,60 +17,80 @@
 //
 
 #pragma once
+#include "RefCounted.hh"
+#include "InstanceCounted.hh"
+#include "Request.hh"
 #include "c4Base.h"
-#include <array>
 #include <map>
 #include <mutex>
 #include <functional>
+#include <thread>
+#include <vector>
+#include <regex>
 
-struct mg_context;
-struct mg_connection;
+namespace sockpp {
+    class acceptor;
+    class stream_socket;
+}
+namespace litecore { namespace crypto {
+    class Identity;
+} }
+namespace litecore::net {
+    class TLSContext;
+}
 
 namespace litecore { namespace REST {
-    class RequestResponse;
-    class Request;
 
-
-    /** HTTP server, using CivetWeb. */
-    class Server {
+    /** HTTP server with configurable URI handlers. */
+    class Server : public fleece::RefCounted, fleece::InstanceCountedIn<Server> {
     public:
-        Server(const char **options, void *owner =nullptr);
+        Server();
+        
+        void start(uint16_t port,
+                   const char *hostname =nullptr,
+                   net::TLSContext* =nullptr);
 
-        ~Server();
+        virtual void stop();
 
-        void* owner() const                         {return _owner;}
+        C4Address address() const;
 
+        /** Extra HTTP headers to add to every response. */
         void setExtraHeaders(const std::map<std::string, std::string> &headers);
 
-        enum Method {
-            DEFAULT,
-            GET,
-            PUT,
-            DELETE,
-            POST,
-
-            kNumMethods
-        };
-
+        /** A function that handles a request. */
         using Handler = std::function<void(RequestResponse&)>;
 
-        void addHandler(Method, const char *uri, const Handler &h);
+        /** Registers a handler function for a URI pattern.
+            Patterns use glob syntax: <http://man7.org/linux/man-pages/man7/glob.7.html>
+            Multiple patterns can be joined with a "|".
+            Patterns are tested in the order the handlers are added, and the first match is used.*/
+        void addHandler(net::Methods, const std::string &pattern, const Handler&);
 
-        mg_context* mgContext() const               {return _context;}
-
-    private:
-        static int handleRequest(mg_connection *conn, void *cbdata);
-
-        struct URIHandlers {
-            Server* server;
-            std::array<Handler, kNumMethods> methods;
+    protected:
+        struct URIRule {
+            net::Methods methods;
+            std::string pattern;
+            std::regex  regex;
+            Handler     handler;
         };
 
-        void* const _owner;
+        URIRule* findRule(net::Method method, const std::string &path);
+        ~Server();
+
+        void dispatchRequest(RequestResponse*);
+
+    private:
+        void awaitConnection();
+        void acceptConnection();
+        void handleConnection(sockpp::stream_socket&&);
+
+        fleece::Retained<crypto::Identity> _identity;
+        fleece::Retained<net::TLSContext> _tlsContext;
+        std::unique_ptr<sockpp::acceptor> _acceptor;
         std::mutex _mutex;
-        mg_context* _context;
-        std::map<std::string, URIHandlers> _handlers;
+        std::vector<URIRule> _rules;
         std::map<std::string, std::string> _extraHeaders;
+        uint16_t _port;
     };
 
 } }

@@ -17,6 +17,7 @@
 //
 
 #include "QueryTest.hh"
+#include "SQLiteDataFile.hh"
 #include <time.h>
 #include <float.h>
 
@@ -48,27 +49,27 @@ static string local_to_utc(const char* format, int days, int hours, int minutes,
 TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
 
-    KeyStore::IndexOptions options { "en", true };
+    IndexSpec::Options options { "en", true };
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
         store->createIndex(""_sl, "[[\".num\"]]"_sl);
     });
     
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
-        store->createIndex("\"num\""_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+        store->createIndex("\"num\""_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options);
     });
 
-    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kValueIndex, &options));
+    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
-    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kValueIndex, &options));
+    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kValue, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
 
-    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options));
-    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options));
+    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options));
+    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
 
     store->deleteIndex("num"_sl);
-    CHECK(store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options));
-    CHECK(store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, KeyStore::kFullTextIndex, &options));
+    CHECK(store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, IndexSpec::kFullText, &options));
+    CHECK(store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, IndexSpec::kFullText, &options));
     CHECK(extractIndexes(store->getIndexes()) == vector<string>{"num_second"});
     
     CHECK(store->createIndex("num"_sl, "[\".num\"]"_sl));
@@ -77,9 +78,9 @@ TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     store->deleteIndex("num"_sl);
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second"}));
 
-    CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options));
-    CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options));
-    CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, KeyStore::kArrayIndex, &options));
+    CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, &options));
+    CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray, &options));
+    CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, IndexSpec::kArray, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
 
     store->deleteIndex("num_second"_sl);
@@ -94,8 +95,54 @@ TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
 
 TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
-    store->createIndex("nums"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex);
+    store->createIndex("nums"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray);
     store->deleteIndex("nums"_sl);
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
+    addNumberedDocs(1, 100);
+    addArrayDocs(101, 100);
+
+    store->createIndex("nums"_sl, R"({"WHAT":[[".num"]], "WHERE":["=",[".type"],"number"]})"_sl);
+
+    const char *queryJson = nullptr;
+    bool expectOptimized = false;
+    SECTION("Using index") {
+        queryJson = "['AND', ['=', ['.type'], 'number'], "
+                            "['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
+        expectOptimized = true;
+    }
+    SECTION("Not using index") {
+        queryJson = "['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
+        expectOptimized = false;
+    }
+    Retained<Query> query = store->compileQuery(json5(queryJson));
+    checkOptimized(query, expectOptimized);
+
+    int64_t rowCount;
+    alloc_slice rows;
+    ((SQLiteDataFile&)store->dataFile()).inspectIndex("nums"_sl, rowCount, &rows);
+    string rowsJSON = Value::fromTrustedData(rows)->toJSONString();
+    Log("Index has %lld rows", rowCount);
+    Log("Index contents: %s", rowsJSON.c_str());
+    CHECK(rowCount == 100);
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Partial Index with NOT MISSING", "[Query]") {
+    // This tests whether SQLite is smart enough to know that a query on a property (.num) can
+    // use a partial index whose condition is that the property is not MISSING.
+    // Apparently it is :)
+    addNumberedDocs(1, 100);
+    addArrayDocs(101, 100);
+
+    store->createIndex("nums"_sl, R"({"WHAT":[[".num"]], "WHERE":["IS NOT",[".num"],["MISSING"]]})"_sl);
+
+    const char *queryJson = "['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
+
+    Retained<Query> query = store->compileQuery(json5(queryJson));
+    checkOptimized(query);
 }
 
 
@@ -297,11 +344,26 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
         
         t.commit();
     }
-    
-    Retained<Query> query{ store->compileQuery(json5(
-        "{WHAT: ['._id'], WHERE: ['ISBOOLEAN()', ['.value']]}")) };
+
+    // Check the data type of the returned values:
+    Retained<Query> query = store->compileQuery(json5( "{WHAT: ['.value']}"));
+    Retained<QueryEnumerator> e = query->createEnumerator();
+    REQUIRE(e->getRowCount() == 4);
+    int row = 0;
+    while (e->next()) {
+        auto type = e->columns()[0]->type();
+        if (row < 2)
+            CHECK(type == kBoolean);
+        else
+            CHECK(type == kNumber);
+        ++row;
+    }
+
+    // Check the ISBOOLEAN function:
+    query = store->compileQuery(json5(
+        "{WHAT: ['._id'], WHERE: ['ISBOOLEAN()', ['.value']]}"));
     CHECK(query->columnTitles() == (vector<string>{"id"}));
-    Retained<QueryEnumerator> e(query->createEnumerator());
+    e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
     int i = 1;
     while (e->next()) {
@@ -715,9 +777,13 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     {
         Transaction t(store->dataFile());
         writeMultipleTypeDocs(t);
+        writeDoc("doc6"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeString("602214076000000000000000");    // overflows uint64_t
+        });
         t.commit();
     }
-    
+
     Retained<Query> query{ store->compileQuery(json5(
     "{'WHAT': [['TONUMBER()', ['.value']]]}")) };
     Retained<QueryEnumerator> e;
@@ -725,7 +791,7 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
         ExpectingExceptions x;      // tonumber() will internally throw/catch an exception while indexing
         e = (query->createEnumerator());
     }
-    REQUIRE(e->getRowCount() == 5);
+    REQUIRE(e->getRowCount() == 6);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 0.0);
     REQUIRE(e->next());
@@ -736,6 +802,8 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     CHECK(e->columns()[0]->asDouble() == 0.0);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 1.0);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asDouble() == 6.02214076e23);
 }
 
 
@@ -1031,7 +1099,7 @@ TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
     {
         Transaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -1186,13 +1254,10 @@ protected:
         Log("-------- Creating index --------");
         store->createIndex("numbersIndex"_sl,
                            "[[\".numbers\"]]"_sl,
-                           KeyStore::kArrayIndex);
+                           IndexSpec::kArray);
         Log("-------- Recompiling query with index --------");
         query = store->compileQuery(json);
-        explanation = query->explain();
-        Log("%s", explanation.c_str());
-        if (checkOptimization)
-            CHECK(explanation.find("SCAN") == string::npos);    // should be no linear table scans
+        checkOptimized(query, checkOptimization);
         checkQuery(88, 3);
 
         Log("-------- Adding a doc --------");
@@ -1259,12 +1324,10 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
     Log("-------- Creating index --------");
     store->createIndex("numbersIndex"_sl,
                        json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"),
-                       KeyStore::kArrayIndex);
+                       IndexSpec::kArray);
     Log("-------- Recompiling query with index --------");
     query = store->compileQuery(json);
-    explanation = query->explain();
-    Log("%s", explanation.c_str());
-    CHECK(explanation.find("SCAN") == string::npos);    // should be no linear table scans
+    checkOptimized(query);
 
     checkQuery(22, 2);
 }

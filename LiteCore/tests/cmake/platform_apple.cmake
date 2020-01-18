@@ -21,6 +21,7 @@ function(setup_build)
         CppTests PRIVATE
         "-framework Foundation"
         "-framework CFNetwork"
+        "-framework Security"
         z
     )
 endfunction()

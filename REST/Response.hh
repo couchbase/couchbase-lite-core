@@ -17,57 +17,49 @@
 //
 
 #pragma once
+#include "Headers.hh"
+#include "HTTPTypes.hh"
+#include "RefCounted.hh"
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
 #include "c4Base.h"
 #include <functional>
-#include <map>
 #include <memory>
-#include <sstream>
 
-struct mg_connection;
+struct C4Cert;
+struct C4KeyPair;
+
+namespace litecore { namespace net {
+    class HTTPLogic;
+    struct ProxySpec;
+    class TLSContext;
+} }
 
 namespace litecore { namespace REST {
-
-    enum class HTTPStatus : int {
-        undefined = -1,
-        OK = 200,
-        Created = 201,
-        NoContent = 204,
-        NotModified = 304,
-        BadRequest = 400,
-        Unauthorized = 401,
-        Forbidden = 403,
-        NotFound = 404,
-        MethodNotAllowed = 405,
-        Conflict = 409,
-        PreconditionFailed = 412,
-        Locked = 423,
-        ServerError = 500,
-        NotImplemented = 501,
-        GatewayError = 502,
-    };
 
     /** An incoming HTTP body. */
     class Body {
     public:
-        fleece::slice header(const char *name) const;
+        using HTTPStatus = net::HTTPStatus;
+
+        fleece::slice header(const char *name) const        {return _headers[fleece::slice(name)];}
         fleece::slice operator[] (const char *name) const   {return header(name);}
 
         bool hasContentType(fleece::slice contentType) const;
         fleece::alloc_slice body() const;
         fleece::Value bodyAsJSON() const;
 
-        // Utilities:
-        static std::string urlDecode(const std::string&);
-        static std::string urlEncode(const std::string&);
-
     protected:
-        Body(mg_connection*);
+        Body() = default;
+        Body(websocket::Headers headers, fleece::alloc_slice body)
+        :_headers(headers), _body(body)
+        { }
 
-        mg_connection* const _conn;
-        mutable bool _gotBody {false};
-        mutable fleece::alloc_slice _body;
+        void setHeaders(websocket::Headers h)       {_headers = h;}
+        void setBody(fleece::alloc_slice body)      {_body = body;}
+
+        websocket::Headers _headers;
+        fleece::alloc_slice _body;
         mutable bool _gotBodyFleece {false};
         mutable fleece::Doc _bodyFleece;
     };
@@ -77,29 +69,65 @@ namespace litecore { namespace REST {
         I.e. this is a simple HTTP client API. */
     class Response : public Body {
     public:
-        Response(const std::string &method,
+        Response(const net::Address&,
+                 net::Method =net::GET);
+
+        Response(const std::string &scheme,
+                 const std::string &method,
                  const std::string &hostname,
                  uint16_t port,
-                 const std::string &uri,
-                 fleece::slice body =fleece::nullslice);
+                 const std::string &uri);
 
         Response(const std::string &method,
                  const std::string &hostname,
                  uint16_t port,
-                 const std::string &uri,
-                 const std::map<std::string, std::string> &headers,
-                 fleece::slice body =fleece::nullslice);
+                 const std::string &uri)
+        :Response("http", method, hostname, port, uri)
+        { }
 
         ~Response();
 
-        explicit operator bool() const      {return _conn != nullptr;}
+        Response& setHeaders(fleece::Doc headers);
+        Response& setHeaders(const websocket::Headers &headers);
 
-        HTTPStatus status() const;
-        std::string statusMessage() const;
+        Response& setAuthHeader(fleece::slice authHeader);
+        Response& setBody(fleece::slice body);
+        Response& setTLSContext(net::TLSContext*);
+        Response& setProxy(const net::ProxySpec&);
+        Response& setTimeout(double timeoutSecs)        {_timeout = timeoutSecs; return *this;}
+
+        Response& allowOnlyCert(fleece::slice certData);
+        Response& setRootCerts(fleece::slice certsData);
+#ifdef COUCHBASE_ENTERPRISE
+        Response& allowOnlyCert(C4Cert*);
+        Response& setRootCerts(C4Cert*);
+        Response& setIdentity(C4Cert*, C4KeyPair*);
+#endif
+
+        bool run();
+
+        explicit operator bool()      {return run();}
+
+        C4Error error()               {run(); return _error;}
+        HTTPStatus status()           {run(); return _status;}
+        std::string statusMessage()   {run(); return _statusMessage;}
+
+    protected:
+        net::TLSContext* tlsContext();
+        bool hasRun()                 {return _logic == nullptr;}
+        void setStatus(int status, const std::string &msg) {
+            _status = (HTTPStatus)status;
+            _statusMessage = msg;
+        }
 
     private:
-        std::string _errorMessage;
-        int _errorCode;
+        double _timeout {0};
+        std::unique_ptr<net::HTTPLogic> _logic;
+        fleece::Retained<net::TLSContext> _tlsContext;
+        fleece::alloc_slice _requestBody;
+        HTTPStatus _status {HTTPStatus::undefined};
+        std::string _statusMessage;
+        C4Error _error {};
     };
 
 } }

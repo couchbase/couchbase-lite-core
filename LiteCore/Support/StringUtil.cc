@@ -27,6 +27,35 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
+    
+#if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER)
+    // digittoint is a BSD function, not available on Android, Linux, etc.
+    int digittoint(char ch) {
+        int d = ch - '0';
+        if ((unsigned) d < 10) {
+            return d;
+        }
+        d = ch - 'a';
+        if ((unsigned) d < 6) {
+            return d + 10;
+        }
+        d = ch - 'A';
+        if ((unsigned) d < 6) {
+            return d + 10;
+        }
+        return 0;
+    }
+
+
+    void strlcpy(char *dst, const char *src, size_t n) {
+        for (; *src != '\0' && n > 1; n--) {
+            *dst++ = *src++;
+        }
+        *dst = '\0';
+    }
+#endif // defined(__ANDROID__) || defined(__GLIBC__)
+
+
     std::string format(const char *fmt, ...) {
         va_list args;
         va_start(args, fmt);
@@ -38,12 +67,27 @@ namespace litecore {
 
     std::string vformat(const char *fmt, va_list args) {
         char *cstr = nullptr;
-        vasprintf(&cstr, fmt, args);
+        if (vasprintf(&cstr, fmt, args) < 0)
+            throw bad_alloc();
         std::string result(cstr);
         free(cstr);
         return result;
     }
 
+
+    void split(const std::string &str, const std::string &separator,
+               function_ref<void(const std::string&)> callback)
+    {
+        auto end = str.size();
+        string::size_type pos, next;
+        for (pos = 0; pos < end; pos = next + separator.size()) {
+            next = str.find(separator, pos);
+            if (next == string::npos)
+                break;
+            callback( str.substr(pos, next-pos) );
+        }
+        callback( str.substr(pos) );
+    }
 
     stringstream& join(stringstream &s, const std::vector<std::string> &strings, const char *separator) {
         int n = 0;
@@ -80,7 +124,7 @@ namespace litecore {
     }
 
 
-    void replace(std::string &str, const std::string &oldStr, const std::string &newStr) {
+    void replace(std::string &str, string_view oldStr, string_view newStr) {
         string::size_type pos = 0;
         while (string::npos != (pos = str.find(oldStr, pos))) {
             str.replace(pos, oldStr.size(), newStr);
@@ -89,18 +133,18 @@ namespace litecore {
     }
 
 
-    bool hasPrefix(const std::string &str, const std::string &prefix) noexcept {
+    bool hasPrefix(string_view str, string_view prefix) noexcept {
         return str.size() >= prefix.size() && memcmp(str.data(), prefix.data(), prefix.size()) == 0;
     }
 
-    bool hasSuffix(const std::string &str, const std::string &suffix) noexcept {
+    bool hasSuffix(string_view str, string_view suffix) noexcept {
         return str.size() >= suffix.size()
             && memcmp(&str[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
     }
 
-    bool hasSuffixIgnoringCase(const std::string &str, const std::string &suffix) noexcept {
+    bool hasSuffixIgnoringCase(string_view str, string_view suffix) noexcept {
         return str.size() >= suffix.size()
-            && strcasecmp(&str.c_str()[str.size() - suffix.size()], suffix.data()) == 0;
+            && strncasecmp(&str.data()[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
     }
 
     int compareIgnoringCase(const std::string &a, const std::string &b) {
@@ -195,7 +239,7 @@ namespace litecore {
         return 0;
     }
 
-    pure_slice NextUTF8(slice str) noexcept {
+    slice NextUTF8(slice str) noexcept {
         const size_t nextLength = NextUTF8Length(str);
         if(nextLength == 0) {
             return nullslice;

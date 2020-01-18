@@ -12,7 +12,6 @@ The test runner depends on multiple other libraries from multiple git repositori
 
 - LiteCore shared library (../..)
 - LiteCore REST shared library (../../REST)
-- CivetWeb static library (../../endor/civetweb)
 - FleeceBase static library (../../vendor/fleece)
 - Support static library (../../Support [partial])
 - BLIP static library (../../vendor/BLIP-Cpp) 
@@ -48,11 +47,19 @@ setup_build()
 target_compile_definitions(
     C4Tests PRIVATE
     -DC4_TESTS
+    -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK
 )
 
 target_link_libraries(
     C4Tests PRIVATE
-    LiteCoreREST
+    LiteCore
+    LiteCoreREST_Static
+    LiteCoreWebSocket
+    Support
+    BLIPStatic
+    FleeceBase
+    mbedcrypto
+    mbedtls
 )
 
 target_include_directories(
@@ -62,12 +69,15 @@ target_include_directories(
     ${TOP}vendor/fleece/API
     ${TOP}vendor/fleece/Fleece/Support
     ${TOP}C
+    ${TOP}Crypto
     ${TOP}Replicator
     ${TOP}Replicator/tests
+    ${TOP}REST
+    ${TOP}Networking
     ${TOP}LiteCore/Support
     ${TOP}vendor/SQLiteCpp/sqlite3
-    ${TOP}vendor/civetweb/include
     ${TOP}vendor/BLIP-Cpp/src/util
+    ${TOP}vendor/mbedtls/include
 )
 
 # Copy data files to output directory

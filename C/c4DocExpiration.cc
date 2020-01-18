@@ -20,7 +20,7 @@
 #include "c4Database.h"
 #include "c4Document.h"
 
-#include "Database.hh"
+#include "c4Database.hh"
 #include "KeyStore.hh"
 #include "fleece/slice.hh"
 #include <stdint.h>
@@ -35,15 +35,12 @@ C4Timestamp c4_now(void) C4API {
 
 
 bool c4doc_setExpiration(C4Database *db, C4Slice docId, C4Timestamp timestamp, C4Error *outError) C4API {
-    if (!c4db_beginTransaction(db, outError))
-        return false;
-    bool ok = tryCatch<bool>(outError, [=]{
-        if (db->defaultKeyStore().setExpiration(docId, timestamp))
+    return tryCatch<bool>(outError, [=]{
+        if (db->setExpiration(docId, timestamp))
             return true;
         recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         return false;
     });
-    return c4db_endTransaction(db, ok, outError) && ok;
 }
 
 
@@ -73,4 +70,11 @@ int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error *outError) C4API {
             count = -1;
     }
     return count;
+}
+
+
+bool c4db_startHousekeeping(C4Database *db) C4API {
+    return tryCatch<bool>(nullptr, [=]{
+        return db->startHousekeeping();
+    });
 }

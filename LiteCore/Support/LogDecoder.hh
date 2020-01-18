@@ -26,54 +26,77 @@
 
 namespace litecore {
 
+    /** Abstract interface for reading logs. */
+    class LogIterator {
+    public:
+        virtual ~LogIterator() = default;
+
+        /** Decodes the entire log and writes it to the output stream, with timestamps.
+            If you want more control over the presentation, use the other methods below to
+            read the timestamps and messages individually. */
+        virtual void decodeTo(std::ostream&, const std::vector<std::string> &levelNames);
+
+        /** Reads the next line from the log, or returns false at EOF. */
+        virtual bool next() =0;
+
+        /** A timestamp, given as a standard time_t (seconds since 1/1/1970) plus a number of
+         microseconds. */
+        struct Timestamp {
+            time_t secs;
+            unsigned microsecs;
+        };
+
+        /** Returns the time logging began. */
+        virtual Timestamp startTime() const =0;
+
+        /** Returns the current line's timestamp. */
+        virtual Timestamp timestamp() const =0;
+
+        /** Returns the current line's level. */
+        virtual int8_t level() const =0;
+
+        /** Returns the current line's domain. */
+        virtual const std::string& domain() const =0;
+
+        virtual uint64_t objectID() const =0;
+        virtual const std::string* objectDescription() const =0;
+
+        /** Reads the next message from the input and returns it as a string.
+         You can only read each message once; calling this twice in a row will fail. */
+        virtual std::string readMessage();
+
+        /** Reads the next message from the input and writes it to the output.
+         You can only read each message once; calling this twice in a row will fail.  */
+        virtual void decodeMessageTo(std::ostream&) =0;
+
+        static Timestamp now();
+        static std::string formatDate(Timestamp);
+        static void writeISO8601DateTime(Timestamp, std::ostream&);
+        static void writeTimestamp(Timestamp, std::ostream&);
+        static void writeHeader(const std::string &levelName,
+                                const std::string &domainName,
+                                std::ostream&);
+    };
+
+
     /** Decodes logs written by LogEncoder. */
-    class LogDecoder {
+    class LogDecoder : public LogIterator {
     public:
         static const uint8_t kMagicNumber[4];
 
         /** Initializes decoder with a stream written by a LogEncoder. */
         LogDecoder(std::istream&);
 
-        /** Decodes the entire log and writes it to the output stream, with timestamps.
-            If you want more control over the presentation, use the other methods below to
-            read the timestamps and messages individually. */
-        void decodeTo(std::ostream&, const std::vector<std::string> &levelNames);
-
-        /** Reads the next line from the log, or returns false at EOF. */
-        bool next();
-
-        /** A timestamp, given as a standard time_t (seconds since 1/1/1970) plus a number of
-            microseconds. */
-        struct Timestamp {
-            time_t secs;
-            unsigned microsecs;
-        };
-
-        /** Returns the current line's timestamp. */
-        Timestamp timestamp() const;
-
-        /** Returns the current line's level. */
-        int8_t level() const                    {return _curLevel;}
-
-        /** Returns the current line's domain. */
-        const std::string& domain() const       {return *_curDomain;}
-
-        uint64_t objectID() const;
-        const std::string* objectDescription() const;
-
-        /** Reads the next message from the input and returns it as a string.
-            You can only read each message once; calling this twice in a row will fail. */
-        std::string readMessage();
-
-        /** Reads the next message from the input and writes it to the output.
-            You can only read each message once; calling this twice in a row will fail.  */
-        void decodeMessageTo(std::ostream&);
-
-        static Timestamp now();
-        static void writeTimestamp(Timestamp, std::ostream&);
-        static void writeHeader(const std::string &levelName,
-                                const std::string &domainName,
-                                std::ostream&);
+        // LogIterator API:
+        void decodeTo(std::ostream&, const std::vector<std::string> &levelNames) override;
+        bool next() override;
+        Timestamp startTime() const override             {return {_startTime, 0};}
+        Timestamp timestamp() const override             {return _timestamp;}
+        int8_t level() const override                    {return _curLevel;}
+        const std::string& domain() const override       {return *_curDomain;}
+        uint64_t objectID() const override;
+        const std::string* objectDescription() const override;
+        void decodeMessageTo(std::ostream&) override;
 
         static constexpr uint8_t kFormatVersion = 1;
 
@@ -94,6 +117,7 @@ namespace litecore {
         size_t _pointerSize;
         time_t _startTime;
         uint64_t _elapsedTicks {0};
+        Timestamp _timestamp;
         std::vector<std::string> _tokens;
         std::map<uint64_t,std::string> _objects;
 
@@ -104,5 +128,19 @@ namespace litecore {
         mutable bool _putCurObjectInMessage;
         bool _readMessage;
     };
+
+
+    static inline bool operator==(const LogDecoder::Timestamp &a, const LogDecoder::Timestamp &b) {
+        return a.secs == b.secs && a.microsecs == b.microsecs;
+    }
+
+    static inline bool operator< (const LogDecoder::Timestamp &a, const LogDecoder::Timestamp &b) {
+        return a.secs < b.secs || (a.secs == b.secs && a.microsecs < b.microsecs);
+    }
+
+    static inline std::ostream& operator<< (std::ostream &out, const LogDecoder::Timestamp &ts) {
+        LogDecoder::writeTimestamp(ts, out);
+        return out;
+    }
 
 }

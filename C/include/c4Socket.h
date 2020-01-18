@@ -19,7 +19,6 @@
 #pragma once
 #include "c4Base.h"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -47,25 +46,6 @@ extern "C" {
     };
 
 
-    // Socket option dictionary keys:
-
-    /** A key used in the C4Socket options dictionary; the value is a string naming the
-        replication protocol and its version. This is added to the options dictionary by the
-        replicator, to be used by the socket implementation. For example, the default WebSocket
-        transport sends its value as the value of the "Sec-WebSocket-Protocol" HTTP header in the
-        WebSocket handshake. */
-    CBL_CORE_API extern const char* const kC4SocketOptionWSProtocols;
-    
-    
-    /** A simple parsed-URL type. */
-    typedef struct {
-        C4String scheme;
-        C4String hostname;
-        uint16_t port;
-        C4String path;
-    } C4Address;
-
-
     /** Represents an open bidirectional stream of bytes or messages (typically a TCP socket.)
         C4Socket is allocated and freed by LiteCore, but the client can associate it with a native
         stream/socket (like a file descriptor or a Java stream reference) by storing a value in its
@@ -91,9 +71,9 @@ extern "C" {
      
         The `providesWebSockets` flag indicates whether this factory provides a WebSocket
         implementation or just a raw TCP socket. */
-    typedef struct {
-        /** This should be set to `true` if the socket factory acts as a stream of messages,
-            `false` if it's a byte stream. */
+    typedef struct C4SocketFactory {
+        /** This should be set to `kC4NoFraming` if the socket factory acts as a stream of messages,
+            `kC4WebSocketClientFraming` or `kC4WebSocketServerFraming` if it's a byte stream. */
         C4SocketFraming framing;
 
         /** An arbitrary value that will be passed to the `open` callback. */

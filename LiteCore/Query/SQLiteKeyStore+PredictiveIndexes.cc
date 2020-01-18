@@ -33,10 +33,9 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    bool SQLiteKeyStore::createPredictiveIndex(const IndexSpec &spec,
-                                               const Array *expressions,
-                                               const IndexOptions *options)
+    bool SQLiteKeyStore::createPredictiveIndex(const IndexSpec &spec)
     {
+        auto expressions = spec.what();
         if (expressions->count() != 1)
             error::_throw(error::InvalidQuery, "Predictive index requires exactly one expression");
         const Array *expression = expressions->get(0)->asArray();
@@ -47,7 +46,7 @@ namespace litecore {
         auto pred = MutableArray::newArray(expression);
         if (pred->count() > 3)
             pred->remove(3, pred->count() - 3);
-        string predTableName = createPredictionTable(pred, options);
+        string predTableName = createPredictionTable(pred, spec.optionsPtr());
 
         // The final parameters are the result properties to create a SQL index on:
         Array::iterator i(expression);
@@ -62,12 +61,12 @@ namespace litecore {
         }
         
         // Create value index on the specified result properties:
-        return createValueIndex(spec, predTableName, i, options);
+        return createIndex(spec, predTableName, i);
     }
 
 
     string SQLiteKeyStore::createPredictionTable(const Value *expression,
-                                                 const IndexOptions *options)
+                                                 const IndexSpec::Options *options)
     {
         // Derive the table name from the expression (path) it unnests:
         QueryParser qp(*this);

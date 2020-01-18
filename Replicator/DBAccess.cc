@@ -22,8 +22,14 @@
 #include "Error.hh"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
+#include "c4BlobStore.h"
+#include "c4Document+Fleece.h"
+#include "c4DocEnumerator.h"
 #include "c4Private.h"
+#include "c4Transaction.hh"
+#include <functional>
 #include <set>
+#include <utility>
 
 
 namespace litecore { namespace repl {
@@ -68,11 +74,11 @@ namespace litecore { namespace repl {
 
     DBAccess::~DBAccess() {
         use([&](C4Database *db) {
-            c4db_free(db);
+            c4db_release(db);
         });
         if (_insertionDB) {
             _insertionDB->use([&](C4Database *idb) {
-                c4db_free(idb);
+                c4db_release(idb);
             });
         }
     }
@@ -313,7 +319,7 @@ namespace litecore { namespace repl {
         Doc reEncodedDoc;
         if (useLegacyAttachments || !useDBSharedKeys) {
             Encoder enc;
-            enc.setSharedKeys(_tempSharedKeys);
+            enc.setSharedKeys(tempSharedKeys());
             if (useLegacyAttachments) {
                 // Delta refers to legacy attachments, so convert my base revision to have them:
                 encodeRevWithLegacyAttachments(enc, srcRoot, 1);
@@ -369,6 +375,11 @@ namespace litecore { namespace repl {
             }
             return nullptr;
         });
+    }
+
+
+    void DBAccess::markRevSynced(ReplicatedRev *rev NONNULL) {
+        _revsToMarkSynced.push(rev);
     }
 
 

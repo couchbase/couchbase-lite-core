@@ -18,42 +18,129 @@
 
 #include "Server.hh"
 #include "Request.hh"
+#include "TCPSocket.hh"
+#include "TLSContext.hh"
+#include "Poller.hh"
+#include "Certificate.hh"
 #include "Error.hh"
+#include "StringUtil.hh"
 #include "c4Base.h"
 #include "c4ExceptionUtils.hh"
 #include "c4ListenerInternal.hh"
-#include "civetweb.h"
+#include "PlatformCompat.hh"
+#include <mutex>
 
-using namespace std;
+// TODO: Remove these pragmas when doc-comments in sockpp are fixed
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation"
+#include "sockpp/tcp_acceptor.h"
+#pragma clang diagnostic pop
+
 
 namespace litecore { namespace REST {
+    using namespace std;
+    using namespace fleece;
+    using namespace litecore::net;
+    using namespace sockpp;
 
-    Server::Server(const char **options, void *owner)
-    :_owner(owner)
-    {
-		static once_flag f;
-		call_once(f, [=] {
-			// Initialize the library (otherwise Windows crashes)
-			mg_init_library(0);
-		});
+    Server::Server()
+    { }
 
-        mg_callbacks cb { };
-        cb.log_message = [](const struct mg_connection *, const char *message) {
-            c4log(RESTLog, kC4LogInfo, "%s", message);
-            return -1; // disable default logging
-        };
-        cb.log_access = [](const struct mg_connection *, const char *message) {
-            c4log(RESTLog, kC4LogInfo, "%s", message);
-            return -1; // disable default logging
-        };
-        _context = mg_start(&cb, this, options);
-        if (!_context)
-            error::_throw(error::UnexpectedError, "Couldn't start civetweb server");
+    
+    Server::~Server() {
+        stop();
     }
 
-    Server::~Server() {
-        if (_context)
-            mg_stop(_context);
+
+    void Server::start(uint16_t port,
+                       const char *hostname,
+                       TLSContext *tlsContext)
+    {
+        TCPSocket::initialize();
+
+        _port = port;
+        _tlsContext = tlsContext;
+        _acceptor.reset(new tcp_acceptor (port));
+        if (!*_acceptor)
+            error::_throw(error::POSIX, _acceptor->last_error());
+        _acceptor->set_non_blocking();
+        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", _port);
+        awaitConnection();
+    }
+
+    
+    void Server::stop() {
+        lock_guard<mutex> lock(_mutex);
+        if (!_acceptor)
+            return;
+
+        c4log(RESTLog, kC4LogInfo,"Stopping server");
+        Poller::instance().removeListeners(_acceptor->handle());
+        _acceptor->close();
+        _acceptor.reset();
+        _rules.clear();
+    }
+
+
+    void Server::awaitConnection() {
+        lock_guard<mutex> lock(_mutex);
+        if (!_acceptor)
+            return;
+        
+        Poller::instance().addListener(_acceptor->handle(), Poller::kReadable, [=] {
+            Retained<Server> selfRetain = this;
+            acceptConnection();
+        });
+    }
+
+
+    void Server::acceptConnection() {
+        try {
+            // Accept a new client connection
+            tcp_socket sock;
+            {
+                lock_guard<mutex> lock(_mutex);
+                if (!_acceptor || !_acceptor->is_open())
+                    return;
+                sock = _acceptor->accept();
+                if (!sock) {
+                    c4log(RESTLog, kC4LogError, "Error accepting incoming connection: %d %s",
+                          _acceptor->last_error(), _acceptor->last_error_str().c_str());
+                }
+            }
+            if (sock) {
+                sock.set_non_blocking(false);
+                handleConnection(move(sock));
+            }
+        } catch (const std::exception &x) {
+            c4log(RESTLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());
+        }
+        // Start another async accept:
+        awaitConnection();
+    }
+
+
+    void Server::handleConnection(sockpp::stream_socket &&sock) {
+        auto responder = make_unique<ResponderSocket>(_tlsContext);
+        if (!responder->acceptSocket(move(sock)) || (_tlsContext && !responder->wrapTLS())) {
+            c4log(RESTLog, kC4LogError, "Error accepting incoming connection: %s",
+                  c4error_descriptionStr(responder->error()));
+            return;
+        }
+        if (c4log_willLog(RESTLog, kC4LogVerbose)) {
+            auto cert = responder->peerTLSCertificate();
+            if (cert)
+                c4log(RESTLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s",
+                      responder->peerAddress().c_str(), cert->subjectPublicKey()->digestString().c_str());
+            else
+                c4log(RESTLog, kC4LogVerbose, "Accepted connection from %s",
+                      responder->peerAddress().c_str());
+        }
+        RequestResponse rq(this, move(responder));
+        if (rq.isValid()) {
+            dispatchRequest(&rq);
+            rq.finish();
+        }
     }
 
 
@@ -63,61 +150,51 @@ namespace litecore { namespace REST {
     }
 
 
-    void Server::addHandler(Method method, const char *uri, const Handler &h) {
+    void Server::addHandler(Methods methods, const string &patterns, const Handler &handler) {
         lock_guard<mutex> lock(_mutex);
-
-        string uriStr(uri);
-        auto i = _handlers.find(uriStr);
-        if (i == _handlers.end()) {
-            URIHandlers handlers;
-            handlers.server = this;
-            handlers.methods[method] = h;
-            bool inserted;
-            tie(i, inserted) = _handlers.insert({uriStr, handlers});
-            mg_set_request_handler(_context, uri, &handleRequest, &i->second);
-        }
-        i->second.methods[method] = h;
+        split(patterns, "|", [&](const string &pattern) {
+            _rules.push_back({methods, pattern, regex(pattern.c_str()), handler});
+        });
     }
 
 
-    int Server::handleRequest(struct mg_connection *conn, void *cbdata) {
-        try {
-            const char *m = mg_get_request_info(conn)->request_method;
-            Method method;
-            if (strcmp(m, "GET") == 0)
-                method = GET;
-            else if (strcmp(m, "PUT") == 0)
-                method = PUT;
-            else if (strcmp(m, "DELETE") == 0)
-            method = DELETE;
-            else if (strcmp(m, "POST") == 0)
-                method = POST;
-            else
-                return 0;
+    Server::URIRule* Server::findRule(Method method, const string &path) {
+        //lock_guard<mutex> lock(_mutex);       // called from dispatchResponder which locks
+        for (auto &rule : _rules) {
+            if ((rule.methods & method)
+                    && regex_match(path.c_str(), rule.regex))
+                return &rule;
+        }
+        return nullptr;
+    }
 
-            auto handlers = (URIHandlers*)cbdata;
-            Handler handler;
-            map<string, string> extraHeaders;
-            {
-                lock_guard<mutex> lock(handlers->server->_mutex);
-                handler = handlers->methods[method];
-                if (!handler)
-                    handler = handlers->methods[DEFAULT];
-                extraHeaders = handlers->server->_extraHeaders;
+
+    void Server::dispatchRequest(RequestResponse *rq) {
+        Method method = rq->method();
+        if (method == Method::GET && rq->header("Connection") == "Upgrade"_sl)
+            method = Method::UPGRADE;
+
+        c4log(RESTLog, kC4LogInfo, "%s %s", MethodName(method), rq->path().c_str());
+        lock_guard<mutex> lock(_mutex);
+        try{
+            string pathStr(rq->path());
+            auto rule = findRule(method, pathStr);
+            if (rule) {
+                c4log(RESTLog, kC4LogInfo, "Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
+                rule->handler(*rq);
+            } else if (nullptr == (rule = findRule(Methods::ALL, pathStr))) {
+                c4log(RESTLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
+                rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
+            } else {
+                c4log(RESTLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
+                if (method == Method::UPGRADE)
+                    rq->respondWithStatus(HTTPStatus::Forbidden, "No upgrade available");
+                else
+                    rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
             }
-
-            RequestResponse rq(conn);
-            rq.addHeaders(extraHeaders);
-            if (!handler)
-                rq.respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
-            else
-                (handler(rq));
-            rq.finish();
-            return int(rq.status());
         } catch (const std::exception &x) {
-            C4Warn("HTTP handler caught C++ exception: %s", x.what());
-            mg_send_http_error(conn, 500, "Internal exception");
-            return 500;
+            c4log(RESTLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());
+            rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
         }
     }
 

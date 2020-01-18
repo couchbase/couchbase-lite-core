@@ -91,6 +91,7 @@ namespace litecore {
     // Sets the function result to a string, from the given slice.
     // If the slice is null, sets the function result to SQLite null.
     void setResultTextFromSlice(sqlite3_context*, slice) noexcept;
+    void setResultTextFromSlice(sqlite3_context*, alloc_slice) noexcept;
 
     // Sets the function result to a blob, with optional subtype
     void setResultBlobFromData(sqlite3_context*, slice, int subtype =kPlainBlobSubtype) noexcept;

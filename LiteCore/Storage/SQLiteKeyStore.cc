@@ -92,6 +92,7 @@ namespace litecore {
         _getExpStmt.reset();
         _nextExpStmt.reset();
         _findExpStmt.reset();
+        _withDocBodiesStmt.reset();
         KeyStore::close();
     }
 
@@ -107,7 +108,7 @@ namespace litecore {
 
     SQLite::Statement* SQLiteKeyStore::compile(const string &sql) const {
         try {
-            return new SQLite::Statement(db(), sql);
+            return new SQLite::Statement(db(), sql, true);
         } catch (const SQLite::Exception &x) {
             db().warn("SQLite error compiling statement \"%s\": %s", sql.c_str(), x.what());
             throw;
@@ -199,6 +200,10 @@ namespace litecore {
 
     /*static*/ slice SQLiteKeyStore::columnAsSlice(const SQLite::Column &col) {
         return slice(col.getBlob(), col.getBytes());
+    }
+
+    static slice textColumnAsSlice(const SQLite::Column &col) {
+        return slice(col.getText(nullptr), col.getBytes());
     }
 
 
@@ -393,15 +398,68 @@ namespace litecore {
     }
 
 
-    void SQLiteKeyStore::createTrigger(const string &triggerName,
-                                       const char *triggerSuffix,
-                                       const char *operation,
-                                       const char *when,
-                                       const string &statements)
+    void SQLiteKeyStore::createTrigger(string_view triggerName,
+                                       string_view triggerSuffix,
+                                       string_view operation,
+                                       string when,
+                                       string_view statements)
     {
-        db().exec(CONCAT("CREATE TRIGGER \"" << triggerName << "::" << triggerSuffix  << "\" "
-                         << operation << " ON kv_" << name() << ' ' << when << ' '
-                         << " BEGIN " << statements << "; END"));
+        if (hasPrefix(when, "WHERE"))
+            when.replace(0, 5, "WHEN");
+        string sql = CONCAT("CREATE TRIGGER \"" << triggerName << "::" << triggerSuffix  << "\" "
+                            << operation << " ON kv_" << name() << ' ' << when << ' '
+                            << " BEGIN " << statements << "; END");
+        LogTo(QueryLog, "    ...for index: %s", sql.c_str());
+        db().exec(sql);
+    }
+
+
+    vector<alloc_slice> SQLiteKeyStore::withDocBodies(const vector<slice> &docIDs,
+                                                      WithDocBodyCallback callback)
+    {
+        if (docIDs.empty())
+            return {};
+
+        unordered_map<slice,size_t> docIndices; // maps docID -> index in docIDs[]
+        docIndices.reserve(docIDs.size());
+
+        // Construct SQL query with a big "IN (...)" clause for all the docIDs:
+        stringstream sql;
+        sql << "SELECT key, fl_callback(key, body, sequence, ?) FROM kv_" << name()
+            << " WHERE key IN ('";
+        unsigned n = 0;
+        for (slice docID : docIDs) {
+            docIndices.insert({docID, n});
+            if (n++ > 0)
+                sql << "','";
+            if (docID.findByte('\'')) {
+                string escaped(docID);
+                replace(escaped, "'", "''");
+                sql << escaped;
+            } else {
+                sql << docID;
+            }
+        }
+        sql << "')";
+
+        SQLite::Statement stmt(db(), sql.str());
+        LogStatement(stmt);
+        stmt.bindPointer(1, &callback, kWithDocBodiesCallbackPointerType);
+
+        // Run the statement and put the results into an array in the same order as docIDs:
+        alloc_slice empty(size_t(0));
+        vector<alloc_slice> results(docIDs.size());
+        while (stmt.executeStep()) {
+            slice docID = columnAsSlice(stmt.getColumn(0));
+            slice revs = textColumnAsSlice(stmt.getColumn(1));
+            size_t i = docIndices[docID];
+            //Log("    -- %zu: %.*s --> '%.*s'", i, SPLAT(docID), SPLAT(revs));
+            if (revs.size == 0 && revs.buf != 0)
+                results[i] = empty;
+            else
+                results[i] = alloc_slice(revs);
+        }
+        return results;
     }
 
 

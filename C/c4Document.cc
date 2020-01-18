@@ -20,11 +20,12 @@
 #define NOMINMAX
 #endif
 #include "c4Internal.hh"
-#include "Database.hh"
-#include "c4.h"
+#include "c4Database.hh"
+#include "c4Document.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 
+#include "TreeDocument.hh"
 #include "Document.hh"
 #include "Database.hh"
 #include "LegacyAttachments.hh"
@@ -41,7 +42,7 @@ C4Document* c4doc_retain(C4Document *doc) noexcept {
 }
 
 
-void c4doc_free(C4Document *doc) noexcept {
+void c4doc_release(C4Document *doc) noexcept {
    release((Document*)doc);
 }
 
@@ -494,7 +495,7 @@ C4Document* c4doc_put(C4Database *database,
                     return nullptr;
                 commonAncestorIndex = asInternal(doc)->putExistingRevision(*rq, outError);
                 if (commonAncestorIndex < 0) {
-                    c4doc_free(doc);
+                    c4doc_release(doc);
                     return nullptr;
                 }
 
@@ -519,7 +520,7 @@ C4Document* c4doc_put(C4Database *database,
         return doc;
 
     } catchError(outError) {
-        c4doc_free(doc);
+        c4doc_release(doc);
         return nullptr;
     }
 }

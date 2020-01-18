@@ -505,7 +505,7 @@ namespace litecore {
         if (ref == nullptr) {
             try {
                 const_cast<unique_ptr<SQLite::Statement>&>(ref)
-                                                    = make_unique<SQLite::Statement>(*_sqlDb, sql);
+                                            = make_unique<SQLite::Statement>(*_sqlDb, sql, true);
             } catch (const SQLite::Exception &x) {
                 warn("SQLite error compiling statement \"%s\": %s", sql, x.what());
                 throw;

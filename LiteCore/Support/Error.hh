@@ -36,6 +36,7 @@ namespace litecore {
             Fleece,             // See FleeceException.h
             Network,            // See NetworkError enum in WebSocketInterface.hh
             WebSocket,          // See WebSocketInterface.h
+            MbedTLS,            // See mbedtls/error.h
 
             // Add new domain here.
             // You MUST add a name string to kDomainNames in Error.cc!
@@ -90,6 +91,8 @@ namespace litecore {
         error (Domain, int code );
         error(error::Domain, int code, const std::string &what);
         explicit error (LiteCoreError e)     :error(LiteCore, e) {}
+
+        error& operator= (const error &e);
 
         [[noreturn]] void _throw();
 

@@ -110,7 +110,7 @@ namespace litecore { namespace repl {
 
     string Worker::loggingClassName() const  {
         string className = Logging::loggingClassName();
-        if (_options.pull < kC4OneShot)
+        if (passive())
             toLowercase(className);
         return className;
     }

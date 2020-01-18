@@ -42,9 +42,6 @@ function(set_support_source)
 endfunction()
 
 function(setup_globals)
-    # Use mbedcrypto for hashing, random numbers, etc
-    add_definitions(-D_CRYPTO_MBEDTLS)
-    set(LITECORE_CRYPTO_LIB mbedcrypto CACHE INTERNAL "")
     set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
     set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
@@ -140,24 +137,5 @@ function(setup_support_build)
 endfunction()
 
 function(setup_rest_build)
-    set_target_properties(
-        LiteCoreREST PROPERTIES LINK_FLAGS
-        "/def:${CMAKE_CURRENT_SOURCE_DIR}/c4REST.def"
-    )
-
-    target_compile_definitions(
-        CivetWeb PRIVATE 
-        -D_WIN32_WINNT=0x0A00 # (_WIN32_WINNT_WIN10) Needed for some extra Win32 functions that were added in Win7+
-    )
-    target_include_directories(CivetWeb PRIVATE ../MSVC)
     target_include_directories(LiteCoreREST_Static PRIVATE ../MSVC)
-
-    # These actually cause issues on Linux due to multiply
-    # imported symbols at runtime
-    target_link_libraries(
-        LiteCoreREST PRIVATE
-        FleeceBase
-        Support
-        CivetWeb
-    )
 endfunction()

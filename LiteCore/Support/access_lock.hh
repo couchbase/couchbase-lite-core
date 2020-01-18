@@ -8,11 +8,15 @@
 
 #pragma once
 #include <mutex>
+#include <type_traits>
 
 
 namespace litecore {
 
-    template <class T>
+    /** A wrapper that protects an object from being used re-entrantly.
+        The object is only accessible through a callback, and an internal mutex prevents
+        multiple callbacks from running at once. */
+    template <class T, class MUTEX =std::recursive_mutex>
     class access_lock {
     public:
         access_lock()
@@ -23,16 +27,21 @@ namespace litecore {
         :_contents(std::move(contents))
         { }
 
+        explicit access_lock(T &&contents, MUTEX &mutex)
+        :_contents(std::move(contents))
+        ,_mutex(mutex)
+        { }
+
         template <class LAMBDA>
         void use(LAMBDA callback) {
-            std::lock_guard<std::recursive_mutex> lock(_mutex);
+            LOCK lock(_mutex);
             callback(_contents);
         }
 
         // Returns result. Has to be called as `use<actualResultClass>(...)`
         template <class RESULT, class LAMBDA>
         RESULT use(LAMBDA callback) {
-            std::lock_guard<std::recursive_mutex> lock(_mutex);
+            LOCK lock(_mutex);
             return callback(_contents);
         }
 
@@ -40,20 +49,41 @@ namespace litecore {
 
         template <class LAMBDA>
         void use(LAMBDA callback) const {
-            std::lock_guard<std::recursive_mutex> lock(_mutex);
+            LOCK lock(_mutex);
             callback(_contents);
         }
 
         // Returns result. Has to be called as `use<actualResultClass>(...)`
         template <class RESULT, class LAMBDA>
         RESULT use(LAMBDA callback) const {
-            std::lock_guard<std::recursive_mutex> lock(_mutex);
+            LOCK lock(getMutex());
             return callback(_contents);
         }
 
+        MUTEX& getMutex() const {return const_cast<MUTEX&>(_mutex);}
+
     private:
+        using LOCK = std::lock_guard<std::remove_reference_t<MUTEX>>;
+
         T _contents;
-        mutable std::recursive_mutex _mutex;
+        MUTEX _mutex;
+    };
+
+
+    /** An access_lock that shares the same mutex as another instance instead of having its own.
+        Obviously the other instance needs to remain valid as long as this one exists! */
+    template <class T, class MUTEX =std::recursive_mutex>
+    class shared_access_lock : public access_lock<T, MUTEX&> {
+    public:
+        template <class U>
+        explicit shared_access_lock(T &&contents, const access_lock<U,MUTEX> &sharing)
+        :access_lock<T, MUTEX&>(std::move(contents), sharing.getMutex())
+        { }
+
+        template <class U>
+        explicit shared_access_lock(T &&contents, const access_lock<U,MUTEX> *sharing)
+        :access_lock<T, MUTEX&>(std::move(contents), sharing->getMutex())
+        { }
     };
 
 }

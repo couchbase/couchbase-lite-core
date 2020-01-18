@@ -1,6 +1,13 @@
-# Couchbase Lite .NET
+# Couchbase Lite for Apple platforms
 _c4_getVersion
 _c4_now
+_c4_getObjectCount
+_c4_shutdown
+_c4_setTempDir
+_c4_runAsyncTask
+
+_c4base_retain
+_c4base_release
 
 _c4log_getLevel
 _c4log_setLevel
@@ -14,6 +21,8 @@ _c4log_setBinaryFileLevel
 _c4log_getDomain
 _c4log_getDomainName
 _c4log_warnOnErrors
+_c4log_getWarnOnErrors
+_c4log_willLog
 
 _c4error_make
 _c4error_getMessage
@@ -21,8 +30,7 @@ _c4error_mayBeTransient
 _c4error_mayBeNetworkDependent
 
 _c4db_open
-_c4db_retain
-_c4db_free
+_c4db_openNamed
 _c4db_close
 _c4db_copy
 _c4db_delete
@@ -44,13 +52,16 @@ _c4db_isInTransaction
 _c4db_getSharedFleeceEncoder
 _c4db_getFLSharedKeys
 _c4db_encodeJSON
+_c4db_startHousekeeping
+_c4db_findDocAncestors
 
 _c4raw_free
 _c4raw_get
 _c4raw_put
 
 _c4doc_retain
-_c4doc_free
+_c4doc_release
+_c4doc_generateID
 _c4doc_get
 _c4doc_getBySequence
 _c4db_purgeDoc
@@ -76,6 +87,7 @@ _c4db_nextDocExpiration
 _c4db_purgeExpiredDocs
 _c4doc_isOldMetaProperty
 _c4doc_dictContainsBlobs
+_c4doc_containingValue
 
 _c4rev_getGeneration
 
@@ -94,11 +106,12 @@ _c4queryenum_next
 _c4queryenum_seek
 _c4queryenum_refresh
 _c4queryenum_close
-_c4queryenum_free
+_c4queryenum_retain
+_c4queryenum_release
 
 _c4query_new
 _c4query_new2
-_c4query_free
+_c4query_setParameters
 _c4query_columnCount
 _c4query_columnTitle
 _c4query_run
@@ -140,6 +153,10 @@ _c4repl_free
 _c4repl_start
 _c4repl_stop
 _c4repl_getStatus
+_c4repl_retry
+_c4repl_setOptions
+_c4repl_setHostReachable
+_c4repl_setSuspended
 _c4repl_getPendingDocIDs
 _c4repl_isDocumentPending
 
@@ -155,15 +172,15 @@ _c4socket_gotHTTPResponse
 _c4pred_registerModel
 _c4pred_unregisterModel
 
-_c4_getObjectCount
-_c4_shutdown
-
 _FLSlice_Equal
 _FLSlice_Compare
-_FLSliceResult_Release
+_FLSliceResult_New
 _FLSlice_Copy
+__FLBuf_Retain
+__FLBuf_Release
 
 _FLDoc_FromResultData
+_FLDoc_GetAllocedData
 _FLDoc_GetRoot
 _FLDoc_GetSharedKeys
 _FLDoc_Release
@@ -326,6 +343,7 @@ _c4queryenum_getRowCount
 _c4query_fullTextMatched
 
 _c4queryobs_create
+_c4queryobs_setEnabled
 _c4queryobs_getEnumerator
 _c4queryobs_free
 
@@ -339,7 +357,6 @@ _c4repl_isValidRemote
 _c4repl_getResponseHeaders
 
 _kC4ReplicatorActivityLevelNames
-_kC4SocketOptionWSProtocols
 
 _c4address_fromURL
 _c4address_toURL
@@ -348,10 +365,6 @@ _c4error_return
 _c4db_markSynced
 _c4_dumpInstances
 _gC4ExpectExceptions
-
-_FLSliceResult_Retain
-
-_FLDictIterator_GetCount
 
 _FLDoc_FromJSON
 _FLDoc_Retain

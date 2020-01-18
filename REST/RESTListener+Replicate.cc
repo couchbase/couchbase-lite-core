@@ -22,7 +22,6 @@
 #include "c4Document+Fleece.h"
 #include "c4ListenerInternal.hh"
 #include "Server.hh"
-#include "Request.hh"
 #include "RefCounted.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
@@ -36,6 +35,7 @@ using namespace fleece;
 
 
 namespace litecore { namespace REST {
+    using namespace net;
 
     class ReplicationTask : public RESTListener::Task {
     public:
@@ -78,7 +78,7 @@ namespace litecore { namespace REST {
                 ((ReplicationTask*)context)->onReplStateChanged(status);
             };
             params.callbackContext = this;
-            _repl = c4repl_new(localDB, remoteAddress, remoteDbName, nullptr, params, outError);
+            _repl = c4repl_new(localDB, remoteAddress, remoteDbName, params, outError);
             if (!_repl) {
                 c4log(RESTLog, kC4LogInfo,
                       "Replicator task #%d failed to start!", taskID());
@@ -322,5 +322,11 @@ namespace litecore { namespace REST {
             message = "Replicator error: " + message;
         rq.setStatus(statusCode, message.c_str());
     }
+
+
+    void RESTListener::handleSync(RequestResponse &rq, C4Database*) {
+        rq.setStatus(HTTPStatus::NotImplemented, nullptr);
+    }
+
 
 } }

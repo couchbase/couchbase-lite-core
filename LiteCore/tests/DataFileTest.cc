@@ -642,8 +642,8 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "Index table creation", "[Upgrade]")
 
     // Create an index, which triggers the logic to upgrade to version 301, which should not happen (and was)
     // if the version is already higher
-    KeyStore::IndexOptions options { "en", true };
-    store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kValueIndex, &options);
+    IndexSpec::Options options { "en", true };
+    store->createIndex("num", alloc_slice("[[\".num\"]]"), IndexSpec::kValue, &options);
 
     // Before the fix, this would throw
     reopenDatabase();

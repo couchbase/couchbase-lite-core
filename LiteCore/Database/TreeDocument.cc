@@ -16,8 +16,7 @@
 // limitations under the License.
 //
 
-#include "Document.hh"
-#include "c4Database.h"
+#include "TreeDocument.hh"
 #include "c4Private.h"
 
 #include "Database.hh"
@@ -227,10 +226,7 @@ namespace c4Internal {
         }
 
         Retained<Doc> fleeceDoc() override {
-            slice body = selectedRev.body;
-            if (!body)
-                return nullptr;
-            return new Doc(_versionedDoc.scopeFor(body), body, Doc::kTrusted);
+            return _versionedDoc.fleeceDocFor(selectedRev.body);
         }
 
         bool save(unsigned maxRevTreeDepth =0) override {
@@ -299,6 +295,17 @@ namespace c4Internal {
 
             if (mergedBody.buf) {
                 // Then add the new merged rev as a child of winningRev:
+
+                alloc_slice emptyDictBody;
+                if (mergedBody.size == 0) {
+                    // An empty body isn't legal, so replace it with an encoded empty Dict:
+                    Encoder enc;
+                    enc.beginDictionary();
+                    enc.endDictionary();
+                    emptyDictBody = enc.finish();
+                    mergedBody = emptyDictBody;
+                }
+
                 selectRevision(winningRev);
                 C4DocPutRequest rq = { };
                 rq.revFlags = mergedFlags & (kRevDeleted | kRevHasAttachments);
@@ -473,31 +480,19 @@ namespace c4Internal {
 
 
         static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
-        #if SECURE_DIGEST_AVAILABLE
-            uint8_t digestBuf[20];
-            slice digest;
             // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
-            sha1Context ctx;
-            sha1_begin(&ctx);
             uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-            sha1_add(&ctx, &revLen, 1);
-            sha1_add(&ctx, parentRevID.buf, revLen);
             uint8_t delByte = deleted;
-            sha1_add(&ctx, &delByte, 1);
-            sha1_add(&ctx, body.buf, body.size);
-            sha1_end(&ctx, digestBuf);
-            digest = slice(digestBuf, 20);
-
+            SHA1 digest = (SHA1Builder() << revLen << slice(parentRevID.buf, revLen)
+                                         << delByte << body)
+                           .finish();
             // Derive new rev's generation #:
             unsigned generation = 1;
             if (parentRevID.buf) {
                 revidBuffer parentID(parentRevID);
                 generation = parentID.generation() + 1;
             }
-            return revidBuffer(generation, digest, kDigestType);
-        #else
-            error::_throw(error::Unimplemented);
-        #endif
+            return revidBuffer(generation, slice(digest), kDigestType);
         }
 
 
@@ -535,6 +530,69 @@ namespace c4Internal {
         return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
     }
 
+    vector<alloc_slice> TreeDocumentFactory::findAncestors(const vector<slice> &docIDs,
+                                                           const vector<slice> &revIDs,
+                                                           unsigned maxAncestors,
+                                                           bool mustHaveBodies,
+                                                           C4RemoteID remoteDBID)
+    {
+        // Map docID->revID for faster lookup in the callback:
+        unordered_map<slice,slice> revMap(docIDs.size());
+        for (ssize_t i = docIDs.size() - 1; i >= 0; --i)
+            revMap[docIDs[i]] = revIDs[i];
+        stringstream result;
+
+        auto callback = [&](slice docID, slice docBody, sequence_t sequence) -> alloc_slice {
+            // --- This callback runs inside the SQLite query ---
+            // --- It will be called once for each docID in the vector ---
+            // Convert revID to encoded binary form:
+            revidBuffer revID;
+            revID.parse(revMap[docID]);
+
+            RevTree tree(docBody, 0);
+
+            // Does it exist in the doc?
+            if (tree[revID]) {
+                if (remoteDBID) {
+                    const Rev *curRemoteRev = tree.latestRevisionOnRemote(remoteDBID);
+                    if (curRemoteRev && curRemoteRev->revID != revID) {
+                        return alloc_slice(kC4AncestorExistsButNotCurrent);
+                    }
+                }
+                static alloc_slice kAncestorExists = alloc_slice(kC4AncestorExists);
+                return kAncestorExists;
+            }
+
+            // Find revs that could be ancestors of it and write them as a JSON array:
+            result.str("");
+            result << '[';
+            auto generation = revID.generation();
+            char expandedBuf[100];
+            unsigned n = 0;
+            for (auto rev : tree.allRevisions()) {
+                if (rev->revID.generation() < generation
+                            && !(mustHaveBodies && !rev->isBodyAvailable())) {
+                    slice expanded(expandedBuf, sizeof(expandedBuf));
+                    if (rev->revID.expandInto(expanded)) {
+                        if (n++ == 0)
+                            result << '"';
+                        else
+                            result << "\",\"";
+                        result << expanded;
+                        if (n >= maxAncestors)
+                            break;
+                    }
+                }
+            }
+            if (n > 0)
+                result << '"';
+            result << ']';
+            return alloc_slice(result.str());
+        };
+        return database()->dataFile()->defaultKeyStore().withDocBodies(docIDs, callback);
+    }
+
+
 } // end namespace c4Internal
 
 
@@ -546,8 +604,10 @@ bool c4doc_save(C4Document *doc,
                 C4Error *outError) noexcept
 {
     auto idoc = asInternal(doc);
+#if 0 // unused
     if (!idoc->mustUseVersioning(kC4RevisionTrees, outError))
         return false;
+#endif
     if (!idoc->mustBeInTransaction(outError))
         return false;
     try {

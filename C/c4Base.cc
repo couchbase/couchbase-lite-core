@@ -19,6 +19,7 @@
 #include "c4Internal.hh"
 #include "c4Private.h"
 
+#include "Actor.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -110,6 +111,8 @@ namespace c4Internal {
                   "C4 error domains are not in sync with C++ ones");
     static_assert((int)kC4NumErrorCodesPlus1 == (int)error::NumLiteCoreErrorsPlus1,
                   "C4 error codes are not in sync with C++ ones");
+    static_assert((int)kC4NumNetErrorCodesPlus1 == (int)litecore::websocket::kNetErrorMaxPlus1,
+                  "C4 net error codes are not in sync with C++ ones");
 
     // A buffer that stores recently generated error messages, referenced by C4Error.internal_info
     static uint32_t sFirstErrorMessageInternalInfo = 1000;  // internal_info of 1st item in deque
@@ -388,6 +391,11 @@ void c4log_warnOnErrors(bool warn) noexcept {
 }
 
 
+bool c4log_getWarnOnErrors() noexcept {
+    return error::sWarnOnError;
+}
+
+
 void c4log(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, ...) noexcept {
     va_list args;
     va_start(args, fmt);
@@ -414,6 +422,21 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
 }
 // LCOV_EXCL_STOP
 
+
+#pragma mark - REFERENCE COUNTED:
+
+
+void* c4base_retain(void *obj) C4API {
+    return retain((RefCounted*)obj);
+}
+
+
+void c4base_release(void *obj) C4API {
+    release((RefCounted*)obj);
+}
+
+
+
 #pragma mark - INSTANCE COUNTED:
 
 
@@ -429,6 +452,9 @@ void c4_dumpInstances(void) C4API {
 }
 
 
+#pragma mark - MISCELLANEOUS:
+
+
 void c4_setTempDir(C4String path) C4API {
     auto pathStr = slice(path).asString();
     FilePath::setTempDirectory(pathStr);
@@ -437,3 +463,8 @@ void c4_setTempDir(C4String path) C4API {
     sqlite3_temp_directory = cbl_strdup(pathStr.c_str());
 }
 // LCOV_EXCL_STOP
+
+
+void c4_runAsyncTask(void (*task)(void*), void *context) C4API {
+    actor::Mailbox::runAsyncTask(task, context);
+}

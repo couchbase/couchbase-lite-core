@@ -14,6 +14,7 @@
 
 using namespace fleece;
 using namespace litecore;
+using namespace litecore::net;
 using namespace litecore::repl;
 using namespace std;
 
@@ -51,6 +52,9 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         Cookie c("x=y; Domain=example.com", "example.com", "/");
         CHECK(c);
         CHECK(c.domain == "example.com");
+        Cookie d("x=y; doMaIN=example.com", "example.com", "/");
+        CHECK(d);
+        CHECK(d.domain == "example.com");
     }
     SECTION("Subdomain") {
         Cookie c("x=y; Domain=www.example.com", "example.com", "/");
@@ -61,6 +65,11 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         Cookie c("x=y; Domain=WWW.Example.Com", "example.com", "/");
         CHECK(c);
         CHECK(c.domain == "WWW.Example.Com");
+    }
+    SECTION("Subdomain Leading Dot") {
+        Cookie c("x=y; Domain=.www.example.com", "example.com", "/");
+        CHECK(c);
+        CHECK(c.domain == "www.example.com");
     }
     SECTION("Implicit Path") {
         Cookie c("x=y", "example.com", "/db/_blipsync");
@@ -76,14 +85,20 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         Cookie c("x=y; Path=/foo/bar", "example.com", "/db/");
         CHECK(c);
         CHECK(c.path == "/foo/bar");
+        Cookie d("x=y; patH=/foo/bar", "example.com", "/db/");
+        CHECK(d);
+        CHECK(d.path == "/foo/bar");
     }
     SECTION("Secure") {
         Cookie c("x=y; Path=/foo/bar; Secure=", "example.com", "/");
         CHECK(c);
         CHECK(c.secure);
+        Cookie d("x=y; Path=/foo/bar; sEcure=", "example.com", "/");
+        CHECK(d);
+        CHECK(d.secure);
     }
     SECTION("Expires") {
-        Cookie c("x=y; lang=en-US; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "example.com", "/");
+        Cookie c("x=y; lang=en-US; EXPIRES=Wed, 09 Jun 2099 10:18:14 GMT", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");
@@ -99,7 +114,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(!c.expired());        // This check will fail starting in 2099...
     }
     SECTION("Expired") {
-        Cookie c("x=y; lang=en-US; Expires=Wed, 09 Jun 1999 10:18:14 GMT", "example.com", "/");
+        Cookie c("x=y; lang=en-US; expires=Wed, 09 Jun 1999 10:18:14 GMT", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");
@@ -110,7 +125,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(c.expired());
     }
     SECTION("Max-Age") {
-        Cookie c("x=y; lang=en-US; Max-Age=30", "example.com", "/");
+        Cookie c("x=y; lang=en-US; Max-age=30", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");

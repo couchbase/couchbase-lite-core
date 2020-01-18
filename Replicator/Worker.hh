@@ -39,7 +39,7 @@ namespace litecore { namespace repl {
     extern LogDomain SyncBusyLog;
 
     /** Abstract base class of Actors used by the replicator */
-    class Worker : public actor::Actor, fleece::InstanceCountedIn<Worker>, protected Logging {
+    class Worker : public actor::Actor, fleece::InstanceCountedIn<Worker>, public Logging {
     public:
         
         using slice = fleece::slice;
@@ -55,6 +55,8 @@ namespace litecore { namespace repl {
         };
 
         Replicator* replicator() const;
+
+        bool passive() const                                {return _passive;}
 
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
@@ -147,6 +149,7 @@ namespace litecore { namespace repl {
         Retained<Worker> _parent;
         std::shared_ptr<DBAccess> _db;
         uint8_t _important {1};
+        bool _passive {false};
         std::string _loggingID;
 
     private:

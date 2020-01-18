@@ -24,9 +24,12 @@
 
 struct c4Database;
 
-namespace litecore { namespace repl {
+namespace litecore { namespace net {
     class CookieStore;
-    
+} }
+
+namespace litecore { namespace repl {
+
 
     /** Persists a CookieStore to/from a Database. */
     class DatabaseCookies {
@@ -53,7 +56,7 @@ namespace litecore { namespace repl {
 
     private:
         c4Database* _db;
-        Retained<CookieStore> _store;
+        Retained<net::CookieStore> _store;
     };
 
 } }

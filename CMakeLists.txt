@@ -7,12 +7,12 @@ targets that result from this project:
 
 BLIPStatic - The BLIP communication library for crafting messages that can be sent over a provided connection
 C4Tests - A test runner that runs tests based on the shared library
-CivetWeb - A C++ implementation of the websocket client and server protocol (non-secure only)
 CppTests - A test runner that runs test based on the static library
 FleeceStatic - The Fleece serialization library for saving data to a binary format
-LiteCore - The shared LiteCore library
-LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
 LiteCoreStatic - The static LiteCore library
+LiteCore - The shared LiteCore library
+LiteCoreWebSocket - WebSocket implementation with C4Socket API to plug into LiteCore
+LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
 mbedcrypto - The cryptography suite from mbedTLS (https://tls.mbed.org/)
 SQLite3_UnicodeSN - The snowball tokenizer library for SQLite
 Support - A library of shared functionality that is used in some or all of the other targets
@@ -39,9 +39,11 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
 cmake_minimum_required (VERSION 3.9)
 cmake_policy(VERSION 3.9)
 
+# Mac/apple setup -- must appear before the first "project()" line"
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12")
 if(NOT DEFINED CMAKE_OSX_SYSROOT)
     # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
-    set(CMAKE_OSX_SYSROOT macosx)      # this line MUST be above the 1st "project()" line!
+    set(CMAKE_OSX_SYSROOT macosx)
 endif()
 
 project (LiteCore)
@@ -51,7 +53,7 @@ project (LiteCore)
 set(COMPILE_FLAGS   "${COMPILE_FLAGS}   -Wall -Werror")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
@@ -63,18 +65,19 @@ option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 
-add_definitions(
-    -DCMAKE                  # Let the source know this is a CMAKE build
-    -D__STDC_FORMAT_MACROS   # Enables printf format macros for variable sized types (e.g. size_t)
+add_compile_definitions(
+    CMAKE                  # Let the source know this is a CMAKE build
+    __STDC_FORMAT_MACROS   # Enables printf format macros for variable sized types (e.g. size_t)
 )
 
 if(BUILD_ENTERPRISE)
-    add_definitions(
-        -DCOUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
+    add_compile_definitions(
+        COUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
     )
 endif()
 
 if(MSVC)
+    add_compile_definitions(WIN32_LEAN_AND_MEAN)
     if(WINDOWS_STORE)
         include("${PROJECT_SOURCE_DIR}/cmake/platform_win_store.cmake")
     else()
@@ -89,6 +92,11 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 else()
     message(FATAL_ERROR "Unable to determine a supported platform from ${CMAKE_SYSTEM_NAME}")
 endif(MSVC)
+
+if(CMAKE_COMPILER_IS_GNUCC)
+    # Suppress an annoying note about GCC 7 ABI changes, and linker errors about the Fleece C API
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi -Wno-odr")
+endif()
 
 if(CODE_COVERAGE_ENABLED)
   if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
@@ -151,7 +159,10 @@ target_include_directories(
     LiteCore/Storage
     LiteCore/Query
     LiteCore/RevID
+    Crypto
+    Network
     vendor/mbedtls/include
+    vendor/mbedtls/crypto/include
     C
     C/include
     vendor/BLIP-Cpp/include/blip_cpp
@@ -161,6 +172,55 @@ target_include_directories(
     vendor/SQLiteCpp/include
 )
 setup_support_build()
+
+### WebSocket LIBRARY:
+
+set(
+    LC_WEBSOCKET_SRC
+    Crypto/Certificate.cc
+    Crypto/PublicKey.cc
+    Crypto/mbedUtils.cc
+    Networking/HTTPTypes.cc
+    Networking/HTTPLogic.cc
+    Networking/Poller.cc
+    Networking/TCPSocket.cc
+    Networking/BuiltInWebSocket.cc
+    Networking/TLSContext.cc
+    REST/netUtils.cc
+    vendor/sockpp/src/acceptor.cpp
+    vendor/sockpp/src/connector.cpp
+    vendor/sockpp/src/datagram_socket.cpp
+    vendor/sockpp/src/exception.cpp
+    vendor/sockpp/src/inet_address.cpp
+    vendor/sockpp/src/inet6_address.cpp
+    vendor/sockpp/src/mbedtls_context.cpp
+    vendor/sockpp/src/socket.cpp
+    vendor/sockpp/src/stream_socket.cpp
+)
+
+if (APPLE)
+    set(LC_WEBSOCKET_SRC ${LC_WEBSOCKET_SRC}
+    Crypto/PublicKey+Apple.mm)
+endif()
+
+add_library(LiteCoreWebSocket STATIC ${LC_WEBSOCKET_SRC})
+target_include_directories(
+    LiteCoreWebSocket PRIVATE
+    C
+    C/include
+    Crypto
+    LiteCore/Support
+    Networking
+    Replicator
+    REST
+    vendor/BLIP-Cpp/include/blip_cpp
+    vendor/BLIP-Cpp/src/util
+    vendor/fleece/Fleece/Support
+    vendor/fleece/API
+    vendor/sockpp/include
+    vendor/mbedtls/include
+    vendor/mbedtls/crypto/include
+)
 
 ### LITECORE LIBRARY:
 
@@ -186,6 +246,7 @@ target_compile_definitions(
     -DSQLITE_ENABLE_FTS4                # Build FTS versions 3 and 4
     -DSQLITE_ENABLE_FTS3_PARENTHESIS    # Allow AND and NOT support in FTS parser
     -DSQLITE_ENABLE_FTS3_TOKENIZER      # Allow LiteCore to define a tokenizer
+    
 )
 
 if(BUILD_ENTERPRISE)
@@ -208,15 +269,20 @@ target_include_directories(
     LiteCore/RevTrees
     LiteCore/Storage
     LiteCore/Support
-    vendor/mbedtls/include
     C
-    C/include
+    C/include 
+    Crypto
+    Networking
+    Replicator
+    REST
     vendor/BLIP-Cpp/include/blip_cpp
     vendor/BLIP-Cpp/src/util
     vendor/SQLiteCpp/sqlite3
     vendor/SQLiteCpp/include
     vendor/sqlite3-unicodesn
-    vendor/civetweb/include
+    vendor/mbedtls/include
+    vendor/mbedtls/crypto/include
+    vendor/sockpp/include
 )
 
 if(WIN32)
@@ -233,7 +299,6 @@ else()
 endif()
 
 # Library flags defined in platform_linux
-# LITECORE_CRYPTO_LIB defined in platform CMake files
 set(
     LITECORE_LIBRARIES_PRIVATE
     ${WHOLE_LIBRARY_FLAG}
@@ -243,8 +308,9 @@ set(
     Support
     SQLite3_UnicodeSN
     BLIPStatic
-    CivetWeb
-    ${LITECORE_CRYPTO_LIB}
+    mbedcrypto
+    mbedtls
+    mbedx509
 )
 
 target_include_directories(

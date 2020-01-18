@@ -118,10 +118,6 @@ extern "C" {
     CBL_CORE_API extern const char* const kC4DatabaseFilenameExtension;
 
 
-    /** Opaque handle to an opened database. */
-    typedef struct c4Database C4Database;
-
-
     /** \name Lifecycle
         @{ */
 
@@ -166,17 +162,6 @@ extern "C" {
                         C4String destinationName,
                         const C4DatabaseConfig2* config C4NONNULL,
                         C4Error* error) C4API;
-
-    /** Increments the reference count of the database handle. The next call to
-        c4db_free() will have no effect. Therefore calls to c4db_retain must be balanced by calls
-        to c4db_free, to avoid leaks. */
-    C4Database* c4db_retain(C4Database* db) C4API;
-
-    void c4db_free(C4Database* database) C4API;
-
-    /** Decrements the ref-count of a C4Database,
-        closing and freeing it if the ref-count hits zero. */
-    static inline void c4db_release(C4Database* db)    {c4db_free(db);}
 
     /** Closes the database. Does not free the handle, although any operation other than
         c4db_release() will fail with an error. */
@@ -232,7 +217,11 @@ extern "C" {
 
     /** Purges all documents that have expired.
         @return  The number of documents purged, or -1 on error. */
-    int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error*) C4API;
+    int64_t c4db_purgeExpiredDocs(C4Database *db C4NONNULL, C4Error*) C4API;
+
+    /** Starts a background task that automatically purges expired documents.
+        @return  True if the task started, false if it couldn't (i.e. database is read-only.) */
+    bool c4db_startHousekeeping(C4Database *db C4NONNULL) C4API;
 
     /** Returns the number of revisions of a document that are tracked. (Defaults to 20.) */
     uint32_t c4db_getMaxRevTreeDepth(C4Database *database C4NONNULL) C4API;
@@ -240,7 +229,7 @@ extern "C" {
     /** Configures the number of revisions of a document that are tracked. */
     void c4db_setMaxRevTreeDepth(C4Database *database C4NONNULL, uint32_t maxRevTreeDepth) C4API;
 
-    typedef struct {
+    typedef struct C4UUID {
         uint8_t bytes[16];
     } C4UUID;
 
@@ -294,7 +283,7 @@ extern "C" {
 
 
     /** Contents of a raw document. */
-    typedef struct {
+    typedef struct C4RawDocument {
         C4String key;    ///< The key (document ID)
         C4String meta;   ///< Metadata (usage is up to the caller)
         C4String body;   ///< Body data

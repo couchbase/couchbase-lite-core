@@ -17,6 +17,7 @@
 //
 
 #include "Document.hh"
+#include "TreeDocument.hh"
 #include "Database.hh"
 #include "VersionedDocument.hh"
 #include "RevID.hh"
@@ -27,6 +28,7 @@ using namespace fleece::impl;
 
 namespace c4Internal {
 
+    // Fleece Doc that tracks an associated Document
     class LeafFleeceDoc : public fleece::impl::Doc {
     public:
         LeafFleeceDoc(const alloc_slice &fleeceData, Trust trust,
@@ -39,6 +41,7 @@ namespace c4Internal {
     };
 
 
+    // A Document implementation that only stores the body of the current revision.
     class LeafDocument : public Document {
     public:
         LeafDocument(Database *database, slice docID_, slice revID_, bool withBody)
@@ -116,6 +119,11 @@ namespace c4Internal {
     private:
         Retained<LeafFleeceDoc> _fleeceDoc;
     };
+
+
+#pragma mark - DOCUMENT FACTORY METHODS:
+
+    // Bodies of TreeDocumentFactory methods that create LeafDocuments.
 
 
     Retained<Document> TreeDocumentFactory::newLeafDocumentInstance(C4Slice docID, C4Slice revID,

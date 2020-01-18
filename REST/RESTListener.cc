@@ -15,14 +15,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// <https://github.com/civetweb/civetweb/blob/master/docs/UserManual.md#configuration-options>
 
 #include "RESTListener.hh"
 #include "c4.hh"
-#include "c4Private.h"
+#include "c4Database.h"
 #include "c4Document+Fleece.h"
+#include "c4Private.h"
 #include "Server.hh"
-#include "Request.hh"
+#include "TLSContext.hh"
+#include "Certificate.hh"
+#include "PublicKey.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include <functional>
@@ -30,13 +32,14 @@
 
 using namespace std;
 using namespace fleece;
+using namespace litecore::crypto;
 
 
 namespace litecore { namespace REST {
+    using namespace net;
 
-    static constexpr uint16_t kDefaultPort = 4984;
-    static constexpr const char* kKeepAliveTimeoutMS = "1000";
-    static constexpr const char* kMaxConnections = "8";
+    //static constexpr const char* kKeepAliveTimeoutMS = "1000";
+    //static constexpr const char* kMaxConnections = "8";
 
     static int kTaskExpirationTime = 10;
 
@@ -56,52 +59,93 @@ namespace litecore { namespace REST {
     ,_allowCreateDB(config.allowCreateDBs && _directory)
     ,_allowDeleteDB(config.allowDeleteDBs)
     {
-        auto portStr = to_string(config.port ? config.port : kDefaultPort);
-        const char* options[] {
-            "listening_ports",          portStr.c_str(),
-            "enable_keep_alive",        "yes",
-            "keep_alive_timeout_ms",    kKeepAliveTimeoutMS,
-            "num_threads",              kMaxConnections,
-            "decode_url",               "no",   // otherwise it decodes escaped slashes
-            nullptr
-        };
-        _server.reset(new Server(options, this));
+        _server = new Server();
         _server->setExtraHeaders({{"Server", serverNameAndVersion()}});
 
         if (config.apis & kC4RESTAPI) {
-            auto notFound =  [](RequestResponse &rq) {
-                rq.respondWithStatus(HTTPStatus::NotFound, "Not Found");
-            };
-
             // Root:
-            addHandler(Server::GET, "/$", &RESTListener::handleGetRoot);
+            addHandler(Method::GET, "/", &RESTListener::handleGetRoot);
 
             // Top-level special handlers:
-            addHandler(Server::GET, "/_all_dbs$",       &RESTListener::handleGetAllDBs);
-            addHandler(Server::GET, "/_active_tasks$",  &RESTListener::handleActiveTasks);
-            addHandler(Server::POST, "/_replicate$",    &RESTListener::handleReplicate);
-            _server->addHandler(Server::DEFAULT, "/_",  notFound);
+            addHandler(Method::GET,     "/_all_dbs",         &RESTListener::handleGetAllDBs);
+            addHandler(Method::GET,     "/_active_tasks",    &RESTListener::handleActiveTasks);
+            addHandler(Method::POST,    "/_replicate",       &RESTListener::handleReplicate);
 
             // Database:
-            addDBHandler(Server::GET,   "/*$|/*/$", &RESTListener::handleGetDatabase);
-            addHandler  (Server::PUT,   "/*$|/*/$", &RESTListener::handleCreateDatabase);
-            addDBHandler(Server::DELETE,"/*$|/*/$", &RESTListener::handleDeleteDatabase);
-            addDBHandler(Server::POST,  "/*$|/*/$", &RESTListener::handleModifyDoc);
+            addDBHandler(Method::GET,   "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleGetDatabase);
+            addHandler  (Method::PUT,   "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleCreateDatabase);
+            addDBHandler(Method::DELETE,"/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleDeleteDatabase);
+            addDBHandler(Method::POST,  "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleModifyDoc);
 
             // Database-level special handlers:
-            addDBHandler(Server::GET, "/*/_all_docs$", &RESTListener::handleGetAllDocs);
-            addDBHandler(Server::POST, "/*/_bulk_docs$", &RESTListener::handleBulkDocs);
-            _server->addHandler(Server::DEFAULT, "/*/_", notFound);
+            addDBHandler(Method::GET,   "/[^_][^/]*/_all_docs",  &RESTListener::handleGetAllDocs);
+            addDBHandler(Method::POST,  "/[^_][^/]*/_bulk_docs", &RESTListener::handleBulkDocs);
 
             // Document:
-            addDBHandler(Server::GET,   "/*/*$", &RESTListener::handleGetDoc);
-            addDBHandler(Server::PUT,   "/*/*$", &RESTListener::handleModifyDoc);
-            addDBHandler(Server::DELETE,"/*/*$", &RESTListener::handleModifyDoc);
+            addDBHandler(Method::GET,   "/[^_][^/]*/[^_].*",      &RESTListener::handleGetDoc);
+            addDBHandler(Method::PUT,   "/[^_][^/]*/[^_].*",      &RESTListener::handleModifyDoc);
+            addDBHandler(Method::DELETE,"/[^_][^/]*/[^_].*",      &RESTListener::handleModifyDoc);
         }
+        if (config.apis & kC4SyncAPI) {
+            addDBHandler(Method::UPGRADE, "/[^_][^/]*/_blipsync", &RESTListener::handleSync);
+        }
+
+        const char *hostname = nullptr;
+
+        _server->start(config.port ? config.port : kDefaultPort,
+                       hostname,
+                       createTLSContext(config.tlsConfig));
     }
 
 
     RESTListener::~RESTListener() {
+        if (_server)
+            _server->stop();
+    }
+
+
+    Retained<Identity> RESTListener::loadTLSIdentity(const C4TLSConfig *config) {
+        if (!config)
+            return nullptr;
+        Retained<Cert> cert;
+        try {
+            cert = new Cert(config->certificate);
+        } catch (const error &x) {
+            error::_throw(error::InvalidParameter, "Can't parse certificate data");
+        }
+
+        Retained<PrivateKey> privateKey;
+        switch (config->privateKeyRepresentation) {
+            case kC4PrivateKeyData:
+                privateKey = new PrivateKey(config->privateKey, config->privateKeyPassword);
+                break;
+            case kC4PrivateKeyFromCert:
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+                privateKey = (PrivateKey*) cert->loadPrivateKey();
+                if (!privateKey)
+                    error::_throw(error::CryptoError,
+                                  "No persistent private key found matching certificate public key");
+                break;
+#else
+                error::_throw(error::Unimplemented, "kC4PrivateKeyFromCert not implemented");
+#endif
+        }
+        return new Identity(cert, privateKey);
+    }
+
+
+    Retained<TLSContext> RESTListener::createTLSContext(const C4TLSConfig *tlsConfig) {
+        if (!tlsConfig)
+            return nullptr;
+        _identity = loadTLSIdentity(tlsConfig);
+
+        auto tlsContext = retained(new TLSContext(TLSContext::Server));
+        tlsContext->setIdentity(_identity);
+        if (tlsConfig->requireClientCerts)
+            tlsContext->requirePeerCert(true);
+        if (tlsConfig->rootClientCerts.buf)
+            tlsContext->setRootCerts(tlsConfig->rootClientCerts);
+        return tlsContext;
     }
 
 
@@ -219,12 +263,12 @@ namespace litecore { namespace REST {
 #pragma mark - UTILITIES:
 
 
-    void RESTListener::addHandler(Server::Method method, const char *uri, HandlerMethod handler) {
+    void RESTListener::addHandler(Method method, const char *uri, HandlerMethod handler) {
         using namespace std::placeholders;
         _server->addHandler(method, uri, bind(handler, this, _1));
     }
 
-    void RESTListener::addDBHandler(Server::Method method, const char *uri, DBHandlerMethod handler) {
+    void RESTListener::addDBHandler(Method method, const char *uri, DBHandlerMethod handler) {
         _server->addHandler(method, uri, [this,handler](RequestResponse &rq) {
             c4::ref<C4Database> db = databaseFor(rq);
             if (db) {

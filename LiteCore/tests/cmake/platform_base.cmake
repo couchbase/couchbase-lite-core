@@ -20,6 +20,8 @@ function(set_source_files_base)
         SequenceTrackerTest.cc
         SQLiteFunctionsTest.cc
         UpgraderTest.cc
+        ${TOP}REST/tests/RESTListenerTest.cc
+        ${TOP}REST/tests/SyncListenerTest.cc
         ${TOP}vendor/fleece/Tests/API_ValueTests.cc
         ${TOP}vendor/fleece/Tests/DeltaTests.cc
         ${TOP}vendor/fleece/Tests/EncoderTests.cc
@@ -33,6 +35,7 @@ function(set_source_files_base)
         ${TOP}vendor/fleece/Tests/ValueTests.cc
         ${TOP}vendor/fleece/Experimental/KeyTree.cc
         ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
+        ${TOP}Replicator/tests/ReplicatorAPITest.cc
         ${TOP}C/tests/c4Test.cc 
         ${TOP}Replicator/tests/CookieStoreTest.cc
         ${TOP}REST/Response.cc

@@ -1,0 +1,160 @@
+//
+// c4Index.h
+//
+// Copyright (c) 2019 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#pragma once
+#include "c4Base.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+    /** \defgroup Indexing  Database Indexes
+     @{ */
+
+
+    /** Types of indexes. */
+    typedef C4_ENUM(uint32_t, C4IndexType) {
+        kC4ValueIndex,         ///< Regular index of property value
+        kC4FullTextIndex,      ///< Full-text index
+        kC4ArrayIndex,         ///< Index of array values, for use with UNNEST
+        kC4PredictiveIndex,    ///< Index of prediction() results (Enterprise Edition only)
+    };
+
+
+    /** Options for indexes; these each apply to specific types of indexes. */
+    typedef struct {
+        /** Dominant language of text to be indexed; setting this enables word stemming, i.e.
+            matching different cases of the same word ("big" and "bigger", for instance.)
+            Can be an ISO-639 language code or a lowercase (English) language name; supported
+            languages are: da/danish, nl/dutch, en/english, fi/finnish, fr/french, de/german,
+            hu/hungarian, it/italian, no/norwegian, pt/portuguese, ro/romanian, ru/russian,
+            es/spanish, sv/swedish, tr/turkish.
+            If left null,  or set to an unrecognized language, no language-specific behaviors
+            such as stemming and stop-word removal occur. */
+        const char *language;
+
+        /** Should diacritical marks (accents) be ignored? Defaults to false.
+            Generally this should be left false for non-English text. */
+        bool ignoreDiacritics;
+
+        /** "Stemming" coalesces different grammatical forms of the same word ("big" and "bigger",
+            for instance.) Full-text search normally uses stemming if the language is one for
+            which stemming rules are available, but this flag can be set to `true` to disable it.
+            Stemming is currently available for these languages: da/danish, nl/dutch, en/english,
+            fi/finnish, fr/french, de/german, hu/hungarian, it/italian, no/norwegian, pt/portuguese,
+            ro/romanian, ru/russian, s/spanish, sv/swedish, tr/turkish. */
+        bool disableStemming;
+
+        /** List of words to ignore ("stop words") for full-text search. Ignoring common words
+            like "the" and "a" helps keep down the size of the index.
+            If NULL, a default word list will be used based on the `language` option, if there is
+            one for that language.
+            To suppress stop-words, use an empty string.
+            To provide a custom list of words, use a string containing the words in lowercase
+            separated by spaces. */
+        const char *stopWords;
+    } C4IndexOptions;
+
+
+    /** Creates a database index, of the values of specific expressions across all documents.
+        The name is used to identify the index for later updating or deletion; if an index with the
+        same name already exists, it will be replaced unless it has the exact same expressions.
+
+        Currently four types of indexes are supported:
+
+        * Value indexes speed up queries by making it possible to look up property (or expression)
+          values without scanning every document. They're just like regular indexes in SQL or N1QL.
+          Multiple expressions are supported; the first is the primary key, second is secondary.
+          Expressions must evaluate to scalar types (boolean, number, string).
+        * Full-Text Search (FTS) indexes enable fast search of natural-language words or phrases
+          by using the `MATCH` operator in a query. A FTS index is **required** for full-text
+          search: a query with a `MATCH` operator will fail to compile unless there is already a
+          FTS index for the property/expression being matched. Only a single expression is
+          currently allowed, and it must evaluate to a string.
+        * Array indexes optimize UNNEST queries, by materializing an unnested array property
+          (across all documents) as a table in the SQLite database, and creating a SQL index on it.
+        * Predictive indexes optimize queries that use the PREDICTION() function, by materializing
+          the function's results as a table and creating a SQL index on a result property.
+
+        Note: If some documents are missing the values to be indexed,
+        those documents will just be omitted from the index. It's not an error.
+
+        In an array index, the first expression must evaluate to an array to be unnested; it's
+        usually a property path but could be some other expression type. If the array items are
+        nonscalar (dictionaries or arrays), you should add a second expression defining the sub-
+        property (or computed value) to index, relative to the array item.
+
+        In a predictive index, the expression is a PREDICTION() call in JSON query syntax,
+        including the optional 3rd parameter that gives the result property to extract (and index.)
+
+        `indexSpecJSON` specifies the index as a JSON object, with properties:
+        * `WHAT`: An array of expressions in the JSON query syntax. (Note that each
+          expression is already an array, so there are two levels of nesting.)
+        * `WHERE`: An optional expression. Including this creates a _partial index_: documents
+          for which this expression returns `false` or `null` will be skipped.
+
+        For backwards compatibility, `indexSpecJSON` may be an array; this is treated as if it were
+        a dictionary with a `WHAT` key mapping to that array.
+
+        Expressions are defined in JSON, as in a query, and wrapped in a JSON array. For example,
+        `[[".name.first"]]` will index on the first-name property. Note the two levels of brackets,
+        since an expression is already an array.
+
+        @param database  The database to index.
+        @param name  The name of the index. Any existing index with the same name will be replaced,
+                     unless it has the identical expressions (in which case this is a no-op.)
+        @param indexSpecJSON  The definition of the index in JSON form. (See above.)
+        @param indexType  The type of index (value or full-text.)
+        @param indexOptions  Options for the index. If NULL, each option will get a default value.
+        @param outError  On failure, will be set to the error status.
+        @return  True on success, false on failure. */
+    bool c4db_createIndex(C4Database *database C4NONNULL,
+                          C4String name,
+                          C4String indexSpecJSON,
+                          C4IndexType indexType,
+                          const C4IndexOptions *indexOptions,
+                          C4Error *outError) C4API;
+
+    /** Deletes an index that was created by `c4db_createIndex`.
+        @param database  The database to index.
+        @param name The name of the index to delete
+        @param outError  On failure, will be set to the error status.
+        @return  True on success, false on failure. */
+    bool c4db_deleteIndex(C4Database *database C4NONNULL,
+                          C4String name,
+                          C4Error *outError) C4API;
+
+    /** Returns the names of all indexes in the database.
+        @param database  The database to check
+        @param outError  On failure, will be set to the error status.
+        @return  A Fleece-encoded array of strings, or NULL on failure. */
+    C4SliceResult c4db_getIndexes(C4Database* database C4NONNULL,
+                                  C4Error* outError) C4API;
+
+    /** Returns information about all indexes in the database.
+        @param database  The database to check
+        @param outError  On failure, will be set to the error status.
+        @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
+    C4SliceResult c4db_getIndexesInfo(C4Database* database C4NONNULL,
+                                    C4Error* outError) C4API;
+
+    /** @} */
+
+#ifdef __cplusplus
+}
+#endif

@@ -23,6 +23,7 @@
 #ifdef _MSC_VER
 
     #include <cstdio>
+    #include <io.h>
     #include "asprintf.h"
 
     #define fdopen      ::_fdopen

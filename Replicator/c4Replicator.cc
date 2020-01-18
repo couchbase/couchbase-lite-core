@@ -17,12 +17,21 @@
 //
 
 #include "fleece/Fleece.hh"
-#include "c4Replicator.hh"
+#include "c4RemoteReplicator.hh"
+#ifdef COUCHBASE_ENTERPRISE
+#include "c4LocalReplicator.hh"
+#endif
+#include "c4IncomingReplicator.hh"
 #include "c4ExceptionUtils.hh"
 #include "DatabaseCookies.hh"
 #include "StringUtil.hh"
 #include <atomic>
 #include <errno.h>
+
+using namespace c4Internal;
+
+
+constexpr unsigned C4RemoteReplicator::kMaxRetryDelay;
 
 
 CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[5] = {
@@ -150,7 +159,6 @@ C4StringResult c4address_toURL(C4Address address) C4API {
 C4Replicator* c4repl_new(C4Database* db,
                          C4Address serverAddress,
                          C4String remoteDatabaseName,
-                         C4Database* otherLocalDB,
                          C4ReplicatorParameters params,
                          C4Error *outError) C4API
 {
@@ -163,31 +171,55 @@ C4Replicator* c4repl_new(C4Database* db,
         if (!dbCopy)
             return nullptr;
 
-        Retained<C4Replicator> replicator;
-        if (otherLocalDB) {
-            if (!checkParam(otherLocalDB != db, "Can't replicate a database to itself", outError))
+        if (!params.socketFactory) {
+            if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError))
                 return nullptr;
-            // Local-to-local:
-            c4::ref<C4Database> otherDBCopy(c4db_openAgain(otherLocalDB, outError));
-            if (!otherDBCopy)
-                return nullptr;
-            replicator = new C4Replicator(dbCopy, otherDBCopy, params);
-        } else {
-            // Remote:
-            if (!params.socketFactory) {
-                if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError))
-                    return nullptr;
-                if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
-                    Warn("POSSIBLE SECURITY ISSUE: It looks like you're connecting to Sync Gateway's "
-                         "admin port (4985) -- this is usually a bad idea. By default this port is "
-                         "unreachable, but if opened, it would give anyone unlimited privileges.");
-                }
+            if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
+                Warn("POSSIBLE SECURITY ISSUE: It looks like you're connecting to Sync Gateway's "
+                     "admin port (4985) -- this is usually a bad idea. By default this port is "
+                     "unreachable, but if opened, it would give anyone unlimited privileges.");
             }
-            replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName, params);
         }
-        if (!params.dontStart)
-            replicator->start();
-        return retain(replicator.get());   // to be balanced by release in c4repl_free()
+        return retain(new C4RemoteReplicator(dbCopy, params, serverAddress, remoteDatabaseName));
+    } catchError(outError);
+    return nullptr;
+}
+
+
+#ifdef COUCHBASE_ENTERPRISE
+C4Replicator* c4repl_newLocal(C4Database* db,
+                              C4Database* otherLocalDB C4NONNULL,
+                              C4ReplicatorParameters params,
+                              C4Error *outError) C4API
+{
+    try {
+        if (!checkParam(params.push != kC4Disabled || params.pull != kC4Disabled,
+                        "Either push or pull must be enabled", outError))
+            return nullptr;
+        if (!checkParam(otherLocalDB != db, "Can't replicate a database to itself", outError))
+            return nullptr;
+
+        c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
+        c4::ref<C4Database> otherDBCopy(c4db_openAgain(otherLocalDB, outError));
+        if (!dbCopy || !otherDBCopy)
+            return nullptr;
+        return retain(new C4LocalReplicator(dbCopy, params, otherDBCopy));
+    } catchError(outError);
+    return nullptr;
+}
+#endif
+
+
+C4Replicator* c4repl_newWithWebSocket(C4Database* db,
+                                      WebSocket *openSocket,
+                                      C4ReplicatorParameters params,
+                                      C4Error *outError) C4API
+{
+    try {
+        c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
+        if (!dbCopy)
+            return nullptr;
+        return retain(new C4IncomingReplicator(dbCopy, params, openSocket));
     } catchError(outError);
     return nullptr;
 }
@@ -198,19 +230,7 @@ C4Replicator* c4repl_newWithSocket(C4Database* db,
                                    C4ReplicatorParameters params,
                                    C4Error *outError) C4API
 {
-    try {
-        c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
-        if (!dbCopy)
-            return nullptr;
-        Retained<C4Replicator> replicator = new C4Replicator(dbCopy, openSocket, params);
-        if (!params.dontStart) {
-            replicator->start(true);
-            Assert(WebSocketFrom(openSocket)->hasDelegate());
-            Assert(replicator->refCount() > 1);  // Replicator is retained by the socket, will be released on close
-        }
-        return retain(replicator.get());   // to be balanced by release in c4repl_free()
-    } catchError(outError);
-    return nullptr;
+    return c4repl_newWithWebSocket(db, WebSocketFrom(openSocket), params, outError);
 }
 
 
@@ -221,6 +241,26 @@ void c4repl_start(C4Replicator* repl) C4API {
 
 void c4repl_stop(C4Replicator* repl) C4API {
     repl->stop();
+}
+
+
+bool c4repl_retry(C4Replicator* repl, C4Error *outError) C4API {
+    return tryCatch<bool>(nullptr, std::bind(&C4Replicator::retry, repl, true, outError));
+}
+
+
+void c4repl_setHostReachable(C4Replicator* repl, bool reachable) C4API {
+    repl->setHostReachable(reachable);
+}
+
+
+void c4repl_setSuspended(C4Replicator* repl, bool suspended) C4API {
+    repl->setSuspended(suspended);
+}
+
+
+void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) C4API {
+    repl->setProperties(AllocedDict(optionsDictFleece));
 }
 
 
@@ -238,8 +278,9 @@ C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
 
 
 C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
-    return repl->responseHeaders().data();
+    return repl->responseHeaders();
 }
+
 
 C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) C4API {
     try {
@@ -249,6 +290,7 @@ C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) C4API
     return {nullptr, 0};
 }
 
+
 bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr) C4API {
     try {
         return repl->isDocumentPending(docID, outErr);
@@ -256,6 +298,7 @@ bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr
 
     return false;
 }
+
 
 #pragma mark - COOKIES:
 

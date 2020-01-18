@@ -17,11 +17,6 @@ function(set_source_files_base)
         c4QueryTest.cc
         c4Test.cc
         c4ThreadingTest.cc
-        ${TOP}REST/tests/RESTListenerTest.cc
-        ${TOP}REST/tests/SyncListenerTest.cc
-        ${TOP}Replicator/tests/ReplicatorAPITest.cc
-        ${TOP}Replicator/CivetWebSocket.cc
-        ${TOP}REST/Response.cc
         ${TOP}LiteCore/tests/main.cpp
         PARENT_SCOPE
     )

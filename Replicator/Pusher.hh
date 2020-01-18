@@ -20,10 +20,10 @@
 #include "Replicator.hh"
 #include "ReplicatorTuning.hh"
 #include "ReplicatorTypes.hh"
+#include "access_lock.hh"
 #include "Actor.hh"
 #include "SequenceSet.hh"
 #include "fleece/slice.hh"
-#include "make_unique.h"
 #include <deque>
 #include <unordered_map>
 #include <unordered_set>
@@ -34,26 +34,20 @@ namespace litecore { namespace repl {
     /** Top-level object managing the push side of replication (sending revisions.) */
     class Pusher : public Worker {
     public:
-        Pusher(Replicator *replicator NONNULL);
+        Pusher(Replicator *replicator NONNULL, Checkpointer&);
 
         // Starts an active push
-        void start(C4SequenceNumber sinceSequence)  {enqueue(&Pusher::_start, sinceSequence);}
+        void start()  {enqueue(&Pusher::_start);}
 
         void checkpointIsInvalid() {
             _checkpointValid = false;
         }
 
-        // Checks if a given sequence number is pending to be pushed
-        bool isSequencePending(sequence_t seq) const {
-            return !_pendingSequences.hasRemoved(seq);
-        }
-        
     protected:
         virtual void afterEvent() override;
 
     private:
-        void _start(C4SequenceNumber sinceSequence);
-        bool passive() const                         {return _options.push <= kC4Passive;}
+        void _start();
         virtual ActivityLevel computeActivityLevel() const override;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
@@ -66,7 +60,6 @@ namespace litecore { namespace repl {
         void sendRevision(Retained<RevToSend>);
         void couldntSendRevision(RevToSend* NONNULL);
         void doneWithRev(RevToSend*, bool successful, bool pushed);
-        void updateCheckpoint();
         void handleGetAttachment(Retained<MessageIn>);
         void handleProveAttachment(Retained<MessageIn>);
         void _attachmentSent();
@@ -78,22 +71,21 @@ namespace litecore { namespace repl {
 
         using DocIDSet = std::shared_ptr<std::unordered_set<std::string>>;
 
-        struct GetChangesParams {
-            C4SequenceNumber since;
-            DocIDSet docIDs;
-            unsigned limit;
-            bool continuous, getForeignAncestors;
-            bool skipDeleted, skipForeign;
-        };
-        void getChanges(const GetChangesParams&);
+        void getMoreChanges();
+        void getObservedChanges();
         void dbChanged();
-        bool shouldPushRev(RevToSend* NONNULL, C4DocEnumerator*, C4Database* NONNULL);
+        Retained<RevToSend> revToSend(C4DocumentInfo&, C4DocEnumerator*, C4Database* NONNULL);
+        bool shouldPushRev(Retained<RevToSend>, C4DocEnumerator*, C4Database* NONNULL);
         void sendRevision(RevToSend *request NONNULL,
                           blip::MessageProgressCallback onProgress);
         alloc_slice createRevisionDelta(C4Document *doc NONNULL, RevToSend *request NONNULL,
                                         fleece::Dict root, size_t revSize,
                                         bool sendLegacyAttachments);
         fleece::slice getRevToSend(C4Document* NONNULL, const RevToSend&, C4Error *outError);
+        bool getRemoteRevID(RevToSend *rev, C4Document *doc);
+        void revToSendIsObsolete(const RevToSend &request, C4Error *c4err);
+
+        bool getForeignAncestors() const    {return _proposeChanges || !_proposeChangesKnown;}
 
         static constexpr unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
         static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one
@@ -106,9 +98,9 @@ namespace litecore { namespace repl {
         bool _proposeChangesKnown;
         std::atomic<bool> _checkpointValid {true};
 
-        C4SequenceNumber _lastSequence {0};       // Checkpointed last-sequence
+        C4SequenceNumber _lastSequenceLogged {0}; // Checkpointed last-sequence
         bool _gettingChanges {false};             // Waiting for _gotChanges() call?
-        SequenceSet _pendingSequences;            // Sequences rcvd from db but not pushed yet
+        Checkpointer& _checkpointer;              // Tracks checkpoints & pending sequences
         C4SequenceNumber _lastSequenceRead {0};   // Last sequence read from db
         bool _started {false};
         bool _caughtUp {false};                   // Received backlog of existing changes?
@@ -122,13 +114,10 @@ namespace litecore { namespace repl {
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash>;
 
-        C4BlobStore* _blobStore;
         c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
-        DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push
         C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
         DocIDToRevMap _pushingDocs;                         // Revs being processed by push
-        bool _getForeignAncestors {false};
-        bool _skipForeignChanges {false};
+        bool _waitingForObservedChanges {false};
     };
     
     

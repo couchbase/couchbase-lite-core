@@ -49,6 +49,8 @@ void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *o
     an error occurs. */
 void c4log_warnOnErrors(bool) C4API;
 
+bool c4log_getWarnOnErrors(void) C4API;
+
 /** Locks a recursive mutex associated with the C4Database instance.
     Blocks if it's already locked. */
 void c4db_lock(C4Database *db) C4API;
@@ -72,6 +74,13 @@ C4Document* c4doc_getForPut(C4Database *database C4NONNULL,
 /** Converts C4DocumentFlags to the equivalent C4RevisionFlags. */
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags);
 
+
+/** Returns the contents of the index as a Fleece-encoded array of arrays.
+    (The last column of each row is the internal SQLite rowid of the document.) */
+C4SliceResult c4db_getIndexRows(C4Database* database C4NONNULL,
+                                C4String indexName,
+                                C4Error* outError) C4API;
+
 /** Sets the document flag kSynced. Used by the replicator to track synced documents. */
 bool c4db_markSynced(C4Database *database,
                      C4String docID,
@@ -79,8 +88,46 @@ bool c4db_markSynced(C4Database *database,
                      C4RemoteID remoteID,
                      C4Error *outError) C4API;
 
+/** Given a list of document+revision IDs, checks whether each revision exists in the database
+    or if not, what ancestors exist.
+
+    The \ref requireBodies flag, if set, means that only ancestors whose bodies are available
+    will be returned.
+
+    The answer is written into the corresponding entry of \ref ancestors:
+    * If the document doesn't exist at all, the answer will be a null slice.
+    * If the document exists but not that revision, the answer will be a JSON array of existing
+      ancestor revision IDs (maximum length \ref maxAncestors.)
+    * If the document revision exists, the answer will be "1".
+    * ... unless it's not marked as the current server revision, in which case the answer is "2" */
+bool c4db_findDocAncestors(C4Database *database,
+                           unsigned numDocs,
+                           unsigned maxAncestors,
+                           bool requireBodies,
+                           C4RemoteID remoteDBID,
+                           const C4String docIDs[], const C4String revIDs[],
+                           C4StringResult ancestors[],
+                           C4Error *outError) C4API;
+
+#define kC4AncestorExists               C4STR("1")
+#define kC4AncestorExistsButNotCurrent  C4STR("2")
+
+/** Call this to use BuiltInWebSocket as the WebSocket implementation.
+    (Only available if linked with libLiteCoreWebSocket) */
+void C4RegisterBuiltInWebSocket();
+
 #ifdef __cplusplus
 }
+
+namespace litecore { namespace websocket {
+    class WebSocket;
+}}
+
+
+C4Replicator* c4repl_newWithWebSocket(C4Database* db,
+                                      litecore::websocket::WebSocket *openSocket,
+                                      C4ReplicatorParameters params,
+                                      C4Error *outError) C4API;
 
 
 namespace litecore { namespace constants {

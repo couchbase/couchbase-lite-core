@@ -20,210 +20,231 @@
 
 #include "fleece/Fleece.hh"
 #include "c4.hh"
+#include "c4DocEnumerator.h"
 #include "c4Private.h"
 #include "c4Replicator.h"
+#include "c4Database.hh"
 #include "Replicator.hh"
-#include "Address.hh"
-#include "c4Socket+Internal.hh"
-#include "LoopbackProvider.hh"
+#include "Checkpointer.hh"
+#include "Headers.hh"
 #include "Error.hh"
+#include "Logging.hh"
+#include "fleece/Fleece.hh"
+#include <atomic>
 
 using namespace std;
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::repl;
-using namespace litecore::websocket;
 
 
-static const char *kReplicatorProtocolName = "+CBMobile_2";
+#define LOCK(MUTEX)     lock_guard<mutex> _lock(MUTEX)
 
 
-struct C4Replicator : public RefCounted, Replicator::Delegate {
+/** Glue between C4 API and internal LiteCore replicator. Abstract class. */
+struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
 
+    // Subclass must override this, creating a Replicator instance and passing it to `_start`.
+    virtual void start() =0;
 
-    static Replicator::Options replOpts(const C4ReplicatorParameters &params) {
-        Replicator::Options opts(params.push, params.pull, params.optionsDictFleece);
-        opts.pushFilter = params.pushFilter;
-        opts.pullValidator = params.validationFunc;
-        opts.callbackContext = params.callbackContext;
-        return opts;
+    // Retry is not supported by default. C4RemoteReplicator overrides this.
+    virtual bool retry(bool resetCount, C4Error *outError) {
+        c4error_return(LiteCoreDomain, kC4ErrorUnsupported,
+                       "Can't retry this type of replication"_sl, outError);
+        return false;
     }
 
+    virtual void setHostReachable(bool reachable)   { }
+    virtual void setSuspended(bool suspended)       { }
 
-    static alloc_slice socketOpts(C4Database *db,
-                                  const C4Address &serverAddress,
-                                  const C4ReplicatorParameters &params)
-    {
-        Replicator::Options opts(kC4Disabled, kC4Disabled, params.optionsDictFleece);
-        opts.setProperty(slice(kC4SocketOptionWSProtocols),
-                         (string(Connection::kWSProtocolName) + kReplicatorProtocolName).c_str());
-        if (!opts.properties[kC4ReplicatorOptionCookies]) {
-            C4Error err;
-            alloc_slice cookies( c4db_getCookies(db, serverAddress, &err) );
-            if (cookies)
-                opts.setProperty(slice(kC4ReplicatorOptionCookies), cookies);
-            else if (err.code)
-                Warn("Error getting cookies from db: %d/%d", err.domain, err.code);
-        }
-        return opts.properties.data();
-    }
-
-    // Appends the db name and "/_blipsync" to the Address's path, then returns the resulting URL.
-    static alloc_slice effectiveURL(C4Address address, slice remoteDatabaseName) {
-        slice path = address.path;
-        string newPath = string(path);
-        if (!path.hasSuffix("/"_sl))
-            newPath += "/";
-        newPath += string(remoteDatabaseName) + "/_blipsync";
-        address.path = slice(newPath);
-        return Address::toURL(address);
-    }
-
-
-    // Constructor for replication with remote database
-    C4Replicator(C4Database* db,
-                 const C4Address &serverAddress,
-                 C4String remoteDatabaseName,
-                 const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db,
-                                 new C4SocketImpl(effectiveURL(serverAddress, remoteDatabaseName),
-                                                  Role::Client,
-                                                  socketOpts(db, serverAddress, params),
-                                                  params.socketFactory),
-                                 *this,
-                                 replOpts(params)),
-                  nullptr,
-                  params)
-    { }
-
-    // Constructor for replication with local database
-    C4Replicator(C4Database* db,
-                 C4Database* otherDB,
-                 const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db,
-                                 new LoopbackWebSocket(Address(otherDB), Role::Client),
-                                 *this,
-                                 replOpts(params).setNoDeltas()),
-                  new Replicator(otherDB,
-                                 new LoopbackWebSocket(Address(db), Role::Server),
-                                 *this,
-                                 Replicator::Options(kC4Passive, kC4Passive).setNoIncomingConflicts()
-                                                                            .setNoDeltas()),
-                  params)
-    {
-        LoopbackWebSocket::bind(_replicator->webSocket(), _otherReplicator->webSocket());
-        _otherLevel = _otherReplicator->status().level;
-    }
-
-    // Constructor for already-open socket
-    C4Replicator(C4Database* db,
-                 C4Socket *openSocket,
-                 const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db, WebSocketFrom(openSocket), *this, replOpts(params)),
-                  nullptr,
-                  params)
-    { }
-
-    void start(bool synchronous =false) {
-        DebugAssert(!_selfRetain);
-        if (_otherReplicator)
-            _otherReplicator->start(synchronous);
-        _selfRetain = this; // keep myself alive till Replicator stops
-        _replicator->start(synchronous);
-    }
-
-    const AllocedDict& responseHeaders() {
-        lock_guard<mutex> lock(_mutex);
+    alloc_slice responseHeaders() {
+        LOCK(_mutex);
         return _responseHeaders;
     }
 
     C4ReplicatorStatus status() {
-        lock_guard<mutex> lock(_mutex);
+        LOCK(_mutex);
         return _status;
     }
 
-    void stop() {
-        _replicator->stop();
-    }
-
-    void detach() {
-        lock_guard<mutex> lock(_mutex);
-        _params.onStatusChanged = nullptr;
-        _params.onDocumentsEnded = nullptr;
-    }
-
-    C4SliceResult pendingDocumentIDs(C4Error* outErr) {
-        lock_guard<mutex> lock(_mutex);
-        return (C4SliceResult)_replicator->pendingDocumentIDs(outErr);
-    }
-
-    bool isDocumentPending(C4Slice docID, C4Error* outErr) {
-        lock_guard<mutex> lock(_mutex);
-        return _replicator->isDocumentPending(docID, outErr);
-    }
-
-private:
-    // base constructor
-    C4Replicator(Replicator *replicator,
-                 Replicator *otherReplicator,
-                 const C4ReplicatorParameters &params)
-    :_replicator(replicator)
-    ,_otherReplicator(otherReplicator)
-    ,_params(params)
-    ,_status(_replicator->status())
-    { }
-
-    
-    virtual ~C4Replicator() {
-        // Tear down the Replicator instance(s) -- this is important in the case where they were
-        // never started, because otherwise there will be a bunch of ref cycles that cause many
-        // objects (including C4Databases) to be leaked. [CBL-524]
-        _replicator->terminate();
-        if (_otherReplicator)
-            _otherReplicator->terminate();
-    }
-
-
-    virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
-                                           const AllocedDict &headers) override
-    {
-        lock_guard<mutex> lock(_mutex);
-        if (repl == _replicator) {
-            Assert(!_responseHeaders);
-            _responseHeaders = headers;
+    virtual void stop() {
+        LOCK(_mutex);
+        if (_replicator) {
+            _replicator->stop();
+        } else if (_status.level != kC4Stopped) {
+            _status.level = kC4Stopped;
+            _status.progress = {};
+            notifyStateChanged();
         }
     }
 
+    virtual void setProperties(AllocedDict properties) {
+        LOCK(_mutex);
+        _options.properties = properties;
+    }
+
+    // Prevents any future client callbacks (called by `c4repl_free`.)
+    void detach() {
+        LOCK(_mutex);
+        _onStatusChanged  = nullptr;
+        _onDocumentsEnded = nullptr;
+        _onBlobProgress   = nullptr;
+    }
+
+    C4SliceResult pendingDocumentIDs(C4Error* outErr) const {
+        LOCK(_mutex);
+        Encoder enc;
+        enc.beginArray();
+
+        bool any = false;
+        auto callback = [&](const C4DocumentInfo &info) {
+            enc.writeString(info.docID);
+            any = true;
+        };
+        bool ok;
+        if (_replicator)
+            ok = _replicator->pendingDocumentIDs(callback, outErr);
+        else
+            ok = Checkpointer(_options, URL()).pendingDocumentIDs(_database, callback, outErr);
+        if (!ok)
+            return {};
+
+        enc.endArray();
+        return any ? C4SliceResult(enc.finish()) : C4SliceResult{};
+    }
+
+    bool isDocumentPending(C4Slice docID, C4Error* outErr) const {
+        LOCK(_mutex);
+        if (_replicator)
+            return _replicator->isDocumentPending(docID, outErr);
+        else
+            return Checkpointer(_options, URL()).isDocumentPending(_database, docID, outErr);
+    }
+
+protected:
+    // base constructor
+    C4Replicator(C4Database* db NONNULL, const C4ReplicatorParameters &params)
+    :Logging(SyncLog)
+    ,_database(db)
+    ,_options(params)
+    ,_onStatusChanged(params.onStatusChanged)
+    ,_onDocumentsEnded(params.onDocumentsEnded)
+    ,_onBlobProgress(params.onBlobProgress)
+    {
+        _status.flags |= kC4HostReachable;
+    }
+
+
+    virtual ~C4Replicator() {
+        // Tear down the Replicator instance -- this is important in the case where it was
+        // never started, because otherwise there will be a bunch of ref cycles that cause many
+        // objects (including C4Databases) to be leaked. [CBL-524]
+        if (_replicator)
+            _replicator->terminate();
+    }
+
+
+    virtual std::string loggingClassName() const override {
+        return "C4Replicator";
+    }
+
+
+    bool continuous() const {
+        return _options.push == kC4Continuous || _options.pull == kC4Continuous;
+    }
+
+    inline bool statusFlag(C4ReplicatorStatusFlags flag) {
+        return (_status.flags & flag) != 0;
+    }
+
+
+    bool setStatusFlag(C4ReplicatorStatusFlags flag, bool on) {
+        auto flags = _status.flags;
+        if (on)
+            flags |= flag;
+        else
+            flags &= ~flag;
+        if (flags == _status.flags)
+            return false;
+        _status.flags = flags;
+        return true;
+    }
+
+
+    void updateStatusFromReplicator(C4ReplicatorStatus status) {
+        // The Replicator doesn't use the flags, so don't copy them:
+        auto flags = _status.flags;
+        _status = status;
+        _status.flags = flags;
+    }
+
+
+    virtual void createReplicator() =0;
+
+    virtual alloc_slice URL() const =0;
+
+
+    // Base implementation of starting the replicator.
+    // Subclass implementation of `start` must call this (with the mutex locked).
+    virtual void _start() {
+        if (!_replicator)
+            createReplicator();
+        logInfo("Starting Replicator %s", _replicator->loggingName().c_str());
+        _selfRetain = this; // keep myself alive till Replicator stops
+        updateStatusFromReplicator(_replicator->status());
+        _responseHeaders = nullptr;
+        _replicator->start();
+    }
+
+    
+    // ---- ReplicatorDelegate API:
+
+
+    // Replicator::Delegate method, notifying that the WebSocket has connected.
+    virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
+                                           const websocket::Headers &headers) override
+    {
+        LOCK(_mutex);
+        if (repl == _replicator) {
+            Assert(!_responseHeaders);
+            _responseHeaders = headers.encode();
+        }
+    }
+
+
+    // Replicator::Delegate method, notifying that the status level or progress have changed.
     virtual void replicatorStatusChanged(Replicator *repl,
                                          const Replicator::Status &newStatus) override
     {
-        bool done;
+        bool stopped;
         {
-            lock_guard<mutex> lock(_mutex);
-            if (repl == _replicator)
-                _status = newStatus;
-            else if (repl == _otherReplicator)
-                _otherLevel = newStatus.level;
-            done = (_status.level == kC4Stopped && _otherLevel == kC4Stopped);
+            LOCK(_mutex);
+            if (repl != _replicator)
+                return;
+            auto oldLevel = _status.level;
+            updateStatusFromReplicator(newStatus);
+            if (_status.level > kC4Connecting && oldLevel <= kC4Connecting)
+                handleConnected();
+            if (_status.level == kC4Stopped) {
+                _replicator->terminate();
+                _replicator = nullptr;
+                handleStopped();     // NOTE: handleStopped may change _status
+            }
+            stopped = (_status.level == kC4Stopped);
         }
+        
+        notifyStateChanged();
 
-        if (repl == _replicator)
-            notifyStateChanged();
-        if (done)
-            _selfRetain = nullptr; // balances retain in constructor
+        if (stopped)
+            _selfRetain = nullptr; // balances retain in `_start`
     }
 
+
+    // Replicator::Delegate method, notifying that document(s) have finished.
     virtual void replicatorDocumentsEnded(Replicator *repl,
                           const std::vector<Retained<ReplicatedRev>>& revs) override
     {
         if (repl != _replicator)
-            return;
-        C4ReplicatorDocumentsEndedCallback onDocsEnded;
-        {
-            lock_guard<mutex> lock(_mutex);
-            onDocsEnded = _params.onDocumentsEnded;
-        }
-        if (!onDocsEnded)
             return;
 
         auto nRevs = revs.size();
@@ -235,21 +256,23 @@ private:
                 if ((rev->dir() == Dir::kPushing) == pushing)
                     docsEnded.push_back(rev->asDocumentEnded());
             }
-            if (!docsEnded.empty())
-                onDocsEnded(this, pushing, docsEnded.size(), docsEnded.data(), _params.callbackContext);
+            if (!docsEnded.empty()) {
+                auto onDocsEnded = _onDocumentsEnded.load();
+                if (onDocsEnded)
+                    onDocsEnded(this, pushing, docsEnded.size(), docsEnded.data(),
+                                _options.callbackContext);
+            }
         }
     }
 
+
+    // Replicator::Delegate method, notifying of blob up/download progress.
     virtual void replicatorBlobProgress(Replicator *repl,
                                         const Replicator::BlobProgress &p) override
     {
         if (repl != _replicator)
             return;
-        C4ReplicatorBlobProgressCallback onBlob;
-        {
-            lock_guard<mutex> lock(_mutex);
-            onBlob = _params.onBlobProgress;
-        }
+        auto onBlob = _onBlobProgress.load();
         if (onBlob)
             onBlob(this, (p.dir == Dir::kPushing),
                    {p.docID.buf, p.docID.size},
@@ -257,25 +280,58 @@ private:
                    p.key,
                    p.bytesCompleted, p.bytesTotal,
                    p.error,
-                   _params.callbackContext);
+                   _options.callbackContext);
     }
 
+
+    // ---- Responding to state changes
+
+
+    // Called when the replicator's status changes to connected.
+    virtual void handleConnected() { }
+
+
+    // Called when the `Replicator` instance stops, before notifying the client.
+    // Subclass override may modify `_status` to change the client notification.
+    virtual void handleStopped() { }
+
+
+    // Posts a notification to the client.
+    // The mutex MUST NOT be locked, else if the `onStatusChanged` function calls back into me
+    // I will deadlock!
     void notifyStateChanged() {
-        C4ReplicatorStatusChangedCallback onStatusChanged;
-        {
-            lock_guard<mutex> lock(_mutex);
-            onStatusChanged = _params.onStatusChanged;
+        if (willLog()) {
+            double progress = 0.0;
+            if (_status.progress.unitsTotal > 0)
+                progress = 100.0 * double(_status.progress.unitsCompleted)
+                                 / _status.progress.unitsTotal;
+            if (_status.error.code) {
+                logError("State: %-s, progress=%.2f%%, error=%s",
+                        kC4ReplicatorActivityLevelNames[_status.level], progress,
+                        c4error_descriptionStr(_status.error));
+            } else {
+                logInfo("State: %-s, progress=%.2f%%",
+                      kC4ReplicatorActivityLevelNames[_status.level], progress);
+            }
         }
+
+        auto onStatusChanged = _onStatusChanged.load();
         if (onStatusChanged)
-            onStatusChanged(this, _status, _params.callbackContext);
+            onStatusChanged(this, _status, _options.callbackContext);
     }
 
-    mutex _mutex;
-    Retained<Replicator> const _replicator;
-    Retained<Replicator> const _otherReplicator;
-    C4ReplicatorParameters _params;
-    AllocedDict _responseHeaders;
-    C4ReplicatorStatus _status;
-    C4ReplicatorActivityLevel _otherLevel {kC4Stopped};
-    Retained<C4Replicator> _selfRetain;
+
+    mutable mutex               _mutex;
+    Retained<C4Database> const  _database;
+    Replicator::Options         _options;
+
+    Retained<Replicator>        _replicator;
+    C4ReplicatorStatus          _status {kC4Stopped};
+
+private:
+    alloc_slice                 _responseHeaders;
+    Retained<C4Replicator>      _selfRetain;            // Keeps me from being deleted
+    atomic<C4ReplicatorStatusChangedCallback>   _onStatusChanged;
+    atomic<C4ReplicatorDocumentsEndedCallback>  _onDocumentsEnded;
+    atomic<C4ReplicatorBlobProgressCallback>    _onBlobProgress;
 };

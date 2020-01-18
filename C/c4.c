@@ -19,3 +19,9 @@
 // I'm just using this source file as a canary to make sure the headers parse as plain C.
 
 #include "c4.h"
+#include "c4Certificate.h"
+#include "c4DocEnumerator.h"
+#include "c4Document+Fleece.h"
+#include "c4Listener.h"
+#include "c4PredictiveQuery.h"
+#include "c4Socket.h"

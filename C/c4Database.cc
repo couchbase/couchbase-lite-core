@@ -16,11 +16,12 @@
 // limitations under the License.
 //
 
+#include "c4Database.hh"
 #include "c4Internal.hh"
-#include "Database.hh"
 #include "c4Database.h"
 #include "c4Private.h"
 
+#include "Document.hh"
 #include "SQLiteDataFile.hh"
 #include "KeyStore.hh"
 #include "Record.hh"
@@ -48,43 +49,6 @@ CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 c4Database::~c4Database() {
     destructExtraInfo(extraInfo);
-    FLEncoder_Free(_flEncoder);
-}
-
-
-FLEncoder c4Database::sharedFLEncoder() {
-    if (_flEncoder) {
-        FLEncoder_Reset(_flEncoder);
-    } else {
-        _flEncoder = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
-        FLEncoder_SetSharedKeys(_flEncoder, (FLSharedKeys)documentKeys());
-    }
-    return _flEncoder;
-}
-
-
-bool c4Database::mustUseVersioning(C4DocumentVersioning requiredVersioning,
-                                   C4Error *outError) noexcept
-{
-    if (config.versioning == requiredVersioning)
-        return true;
-    recordError(LiteCoreDomain, kC4ErrorUnsupported, outError);
-    return false;
-}
-
-
-bool c4Database::mustBeInTransaction(C4Error *outError) noexcept {
-    if (inTransaction())
-        return true;
-    recordError(LiteCoreDomain, kC4ErrorNotInTransaction, outError);
-    return false;
-}
-
-bool c4Database::mustNotBeInTransaction(C4Error *outError) noexcept {
-    if (!inTransaction())
-        return true;
-    recordError(LiteCoreDomain, kC4ErrorTransactionNotClosed, outError);
-    return false;
 }
 
 
@@ -141,11 +105,6 @@ C4Database* c4db_openNamed(C4String name,
 }
 
 
-C4Database* c4db_retain(C4Database* db) C4API {
-    return retain(db);
-}
-
-
 C4Database* c4db_openAgain(C4Database* db,
                            C4Error *outError) noexcept
 {
@@ -179,11 +138,6 @@ bool c4db_close(C4Database* database, C4Error *outError) noexcept {
     if (database == nullptr)
         return true;
     return tryCatch(outError, bind(&Database::close, database));
-}
-
-
-void c4db_free(C4Database* database) noexcept {
-    release(database);
 }
 
 
@@ -327,6 +281,28 @@ C4SliceResult c4db_rawQuery(C4Database *database, C4String query, C4Error *outEr
     return {};
 }
 // LCOV_EXCL_STOP
+
+
+bool c4db_findDocAncestors(C4Database *database,
+                           unsigned numDocs,
+                           unsigned maxAncestors,
+                           bool requireBodies,
+                           C4RemoteID remoteDBID,
+                           const C4String docIDs[], const C4String revIDs[],
+                           C4StringResult ancestors[],
+                           C4Error *outError) C4API
+{
+    return tryCatch(outError, [&]{
+        vector<slice> vecDocIDs((const slice*)&docIDs[0], (const slice*)&docIDs[numDocs]);
+        vector<slice> vecRevIDs((const slice*)&revIDs[0], (const slice*)&revIDs[numDocs]);
+        auto vecAncestors = database->documentFactory().findAncestors(vecDocIDs, vecRevIDs,
+                                                                      maxAncestors, requireBodies,
+                                                                      remoteDBID);
+        for (unsigned i = 0; i < numDocs; ++i)
+            ancestors[i] = C4SliceResult(vecAncestors[i]);
+    });
+}
+
 
 #pragma mark - RAW DOCUMENTS:
 

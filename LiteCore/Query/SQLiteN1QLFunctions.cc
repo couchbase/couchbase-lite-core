@@ -265,8 +265,8 @@ namespace litecore {
                         enc->writeDouble(sqlite3_value_double(arg));
                         break;
                     case SQLITE_TEXT:
-                        enc->writeString({sqlite3_value_text(arg),
-                                          (size_t)sqlite3_value_bytes(arg)});
+                        enc->writeString(slice(sqlite3_value_text(arg),
+                                               (size_t)sqlite3_value_bytes(arg)));
                         break;
                     case SQLITE_BLOB: {
                         const Value *value = fleeceParam(ctx, arg);
@@ -1073,16 +1073,6 @@ namespace litecore {
         sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
-    static double tonumber(const string &s) {
-        try {
-            return ParseDouble(s.c_str());
-        } catch (const invalid_argument&) {
-            return NAN;
-        } catch (const out_of_range&) {
-            return NAN;
-        }
-    }
-
     // tonumber(v) returns a number derived from `v`:
     // MISSING is MISSING.
     // NULL is NULL.
@@ -1105,12 +1095,16 @@ namespace litecore {
             case SQLITE_TEXT:
             {
                 auto txt = (const char *)sqlite3_value_text(argv[0]);
-                string str(txt, sqlite3_value_bytes(argv[0]));
-                double result = tonumber(str);
-                if(std::isnan(result)) {
-                    setResultFleeceNull(ctx);
+                int64_t integer;
+                if (ParseInteger(txt, integer)) {
+                    sqlite3_result_int64(ctx, integer);
                 } else {
-                    sqlite3_result_double(ctx, result);
+                    double result = ParseDouble(txt);
+                    if (std::isnan(result)) {
+                        setResultFleeceNull(ctx);
+                    } else {
+                        sqlite3_result_double(ctx, result);
+                    }
                 }
                 break;
             }
@@ -1140,8 +1134,9 @@ namespace litecore {
             case SQLITE_FLOAT:
             {
                 auto num = sqlite3_value_double(argv[0]);
-                auto str = to_string(num);
-                sqlite3_result_text(ctx, str.c_str(), (int)str.size(), SQLITE_TRANSIENT);
+                char str[30];
+                size_t length = WriteDouble(num, str, sizeof(str));
+                sqlite3_result_text(ctx, str, (int)length, SQLITE_TRANSIENT);
                 break;
             }
             case SQLITE_INTEGER:

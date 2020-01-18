@@ -20,9 +20,11 @@
 #include "IncomingBlob.hh"
 #include "Puller.hh"
 #include "StringUtil.hh"
+#include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "Instrumentation.hh"
 #include "BLIP.hh"
+#include <atomic>
 #include <deque>
 #include <set>
 
@@ -37,6 +39,7 @@ namespace litecore { namespace repl {
     :Worker(puller, "inc")
     ,_puller(puller)
     {
+        _passive = _options.pull <= kC4Passive;
         _important = false;
         static atomic<uint32_t> sRevSignpostCount {0};
         _serialNumber = ++sRevSignpostCount;
@@ -147,7 +150,7 @@ namespace litecore { namespace repl {
         }
 
         // Note: fleeceDoc is _not_ yet suitable for inserting into the
-        // database because it doesn't use the SharedKeys, but it lets us look at the doc
+        // database because it doesn't use the same SharedKeys, but it lets us look at the doc
         // metadata and blobs.
         Dict root = fleeceDoc.root().asDict();
 

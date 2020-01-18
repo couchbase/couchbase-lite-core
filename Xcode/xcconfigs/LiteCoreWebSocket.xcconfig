@@ -1,0 +1,21 @@
+//
+//  LiteCoreWebSocket.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 5/10/19.
+//  Copyright © 2019 Couchbase. All rights reserved.
+//
+
+#include "LiteCore.xcconfig"
+#include "static_lib.xcconfig"
+
+HEADER_SEARCH_PATHS = $(HEADER_SEARCH_PATHS)
+
+LIBRARY_SEARCH_PATHS = $(inherited) $(LIBWEBSOCKETS)/build/lib  $(inherited) $(MBEDTLS)/build/library
+
+WARNING_CFLAGS = $(inherited) -Wno-documentation-deprecated-sync // mbedTLS headers have Doxygen errors
+
+OTHER_LDFLAGS = -all_load -lmbedtls -lmbedcrypto -lmbedx509
+
+SKIP_INSTALL                 = YES
+STRIP_INSTALLED_PRODUCT      = NO

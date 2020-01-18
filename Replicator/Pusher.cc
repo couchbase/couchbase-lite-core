@@ -23,7 +23,6 @@
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
 #include "BLIP.hh"
-#include "make_unique.h"
 #include <algorithm>
 
 using namespace std;
@@ -31,13 +30,15 @@ using namespace fleece;
 
 namespace litecore { namespace repl {
 
-    Pusher::Pusher(Replicator *replicator)
+    Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer)
     :Worker(replicator, "Push")
     ,_continuous(_options.push == kC4Continuous)
     ,_skipDeleted(_options.skipDeleted())
+    ,_checkpointer(checkpointer)
     {
-        if (passive()) {
+        if (_options.push <= kC4Passive) {
             // Passive replicator always sends "changes"
+            _passive = true;
             _proposeChanges = false;
             _proposeChangesKnown = true;
         } else if (_options.properties[kC4ReplicatorOptionOutgoingConflicts].asBool()) {
@@ -73,11 +74,11 @@ namespace litecore { namespace repl {
 
 
     // Begins active push, starting from the next sequence after sinceSequence
-    void Pusher::_start(C4SequenceNumber sinceSequence) {
+    void Pusher::_start() {
+        auto sinceSequence = _checkpointer.localMinSequence();
         logInfo("Starting %spush from local seq #%" PRIu64,
             (_continuous ? "continuous " : ""), sinceSequence+1);
         _started = true;
-        _pendingSequences.clear(sinceSequence);
         startSending(sinceSequence);
     }
 
@@ -89,11 +90,11 @@ namespace litecore { namespace repl {
             req->respondWithError({"LiteCore"_sl, 501, "Not implemented."_sl});
             return;
         }
-        auto since = max(req->intProperty("since"_sl), 0l);
+        C4SequenceNumber since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
         _skipDeleted = req->boolProperty("activeOnly"_sl);
         logInfo("Peer is pulling %schanges from seq #%" PRIu64,
-            (_continuous ? "continuous " : ""), _lastSequence);
+            (_continuous ? "continuous " : ""), since);
 
         auto filter = req->property("filter"_sl);
         if (filter) {
@@ -114,52 +115,44 @@ namespace litecore { namespace repl {
 
     // Starts active or passive push from the given sequence number.
     void Pusher::startSending(C4SequenceNumber sinceSequence) {
-        _lastSequenceRead = _lastSequence = sinceSequence;
+        _lastSequenceRead = sinceSequence;
         maybeGetMoreChanges();
     }
 
 
     // Request another batch of changes from the db, if there aren't too many in progress
     void Pusher::maybeGetMoreChanges() {
-        if (!_gettingChanges && !_caughtUp
-                             && _changeListsInFlight < tuning::kMaxChangeListsInFlight
-                             && _revsToSend.size() < tuning::kMaxRevsQueued) {
+        if (!_gettingChanges && (!_caughtUp || _continuous)
+                         && _changeListsInFlight < (_caughtUp ? 1 : tuning::kMaxChangeListsInFlight)
+                         && _revsToSend.size() < tuning::kMaxRevsQueued) {
             _gettingChanges = true;
-            increment(_changeListsInFlight); // will be decremented at start of _gotChanges
             logVerbose("Asking DB for %u changes since sequence #%" PRIu64 " ...",
-                _changesBatchSize, _lastSequenceRead);
-            getChanges({_lastSequenceRead,
-                                   _docIDs,
-                                   _changesBatchSize,
-                                   _continuous,
-                                   _proposeChanges || !_proposeChangesKnown,  // getForeignAncestors
-                                   _skipDeleted,                              // skipDeleted
-                                   _proposeChanges});                         // skipForeign
-            // response will be to call _gotChanges
+                       _changesBatchSize, _lastSequenceRead);
+            // Call getMoreChanges asynchronously. Response will be to call gotChanges
+            enqueue(&Pusher::getMoreChanges);
         }
     }
 
 
     // Received a list of changes from the database [initiated in maybeGetMoreChanges]
     void Pusher::gotChanges(std::shared_ptr<RevToSendList> changes,
-                             C4SequenceNumber lastSequence,
-                             C4Error err)
+                            C4SequenceNumber lastSequence,
+                            C4Error err)
     {
-        if (_gettingChanges) {
-            _gettingChanges = false;
-            decrement(_changeListsInFlight);
-        }
+        _gettingChanges = false;
 
         if (!connection())
             return;
         if (err.code)
             return gotError(err);
         
+        if (!passive() && lastSequence > _lastSequenceRead)
+            _checkpointer.addPendingSequences(*changes.get(),
+                                              _lastSequenceRead + 1, lastSequence);
         _lastSequenceRead = lastSequence;
-        _pendingSequences.seen(lastSequence);
+
         if (changes->empty()) {
             logInfo("Found 0 changes up to #%" PRIu64, lastSequence);
-            updateCheckpoint();
         } else {
             uint64_t bodySize = 0;
             for (auto &change : *changes)
@@ -180,7 +173,7 @@ namespace litecore { namespace repl {
 #endif
         }
 
-        // Send the "changes" request, and asynchronously handle the response:
+        // Send the "changes" request:
         auto changeCount = changes->size();
         sendChanges(move(changes));
 
@@ -194,9 +187,9 @@ namespace litecore { namespace repl {
                     sendChanges(make_unique<RevToSendList>());
                 }
             }
-        } else {
-            maybeGetMoreChanges();
         }
+
+        maybeGetMoreChanges();
     }
 
 
@@ -210,7 +203,8 @@ namespace litecore { namespace repl {
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 change->sequence);
         _lastSequenceRead = max(_lastSequenceRead, change->sequence);
-        _pendingSequences.seen(change->sequence);
+        if (!passive())
+            _checkpointer.addPendingSequence(change->sequence);
         addProgress({0, change->bodySize});
         sendChanges(make_shared<RevToSendList>(1, change));
     }
@@ -226,8 +220,6 @@ namespace litecore { namespace repl {
         auto &enc = req.jsonBody();
         enc.beginArray();
         for (RevToSend *change : *changes) {
-            if (!passive())
-                _pendingSequences.add(change->sequence);
             // Write the info array for this change:
             enc.beginArray();
             if (_proposeChanges) {
@@ -530,8 +522,7 @@ namespace litecore { namespace repl {
         c4::ref<C4ReadStream> blob = readBlobFromRequest(request, digest, progress, &err);
         if (blob) {
             logVerbose("Sending proof of attachment %.*s", SPLAT(digest));
-            sha1Context sha;
-            sha1_begin(&sha);
+            SHA1Builder sha;
 
             // First digest the length-prefixed nonce:
             slice nonce = request->body();
@@ -539,25 +530,21 @@ namespace litecore { namespace repl {
                 request->respondWithError({"BLIP"_sl, 400, "Missing nonce"_sl});
                 return;
             }
-            uint8_t nonceLen = (nonce.size & 0xFF);
-            sha1_add(&sha, &nonceLen, 1);
-            sha1_add(&sha, nonce.buf, nonce.size);
+            sha << (nonce.size & 0xFF) << nonce;
 
             // Now digest the attachment itself:
             static constexpr size_t kBufSize = 8192;
             auto buf = make_unique<uint8_t[]>(kBufSize);
             size_t bytesRead;
-            while ((bytesRead = c4stream_read(blob, buf.get(), kBufSize, &err)) > 0) {
-                sha1_add(&sha, buf.get(), bytesRead);
-            }
+            while ((bytesRead = c4stream_read(blob, buf.get(), kBufSize, &err)) > 0)
+                sha << slice(buf.get(), bytesRead);
             buf.reset();
             blob = nullptr;
             
             if (err.code == 0) {
                 // Respond with the base64-encoded digest:
                 C4BlobKey proofDigest;
-                static_assert(sizeof(proofDigest) == 20, "proofDigest is wrong size for SHA-1");
-                sha1_end(&sha, &proofDigest);
+                sha.finish(proofDigest.bytes, sizeof(proofDigest.bytes));
                 alloc_slice proofStr = c4blob_keyToString(proofDigest);
 
                 MessageBuilder reply(request);
@@ -579,8 +566,12 @@ namespace litecore { namespace repl {
         if (!passive()) {
             addProgress({rev->bodySize, 0});
             if (completed) {
-                _pendingSequences.remove(rev->sequence);
-                updateCheckpoint();
+                _checkpointer.completedSequence(rev->sequence);
+
+                auto lastSeq = _checkpointer.localMinSequence();
+                if (lastSeq / 1000 > _lastSequenceLogged / 1000 || willLog(LogLevel::Verbose))
+                    logInfo("Checkpoint now %s", _checkpointer.to_string().c_str());
+                _lastSequenceLogged = lastSeq;
             }
         }
 
@@ -597,13 +588,13 @@ namespace litecore { namespace repl {
         Retained<RevToSend> newRev = i->second;
         _pushingDocs.erase(i);
         if (newRev) {
-            if (synced && _getForeignAncestors)
+            if (synced && getForeignAncestors())
                 newRev->remoteAncestorRevID = rev->revID;
             logVerbose("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
                        SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
                        SPLAT(newRev->remoteAncestorRevID));
             bool ok = false;
-            if (synced && _getForeignAncestors
+            if (synced && getForeignAncestors()
                 && c4rev_getGeneration(newRev->revID) <= c4rev_getGeneration(rev->revID)) {
                 // Don't send; it'll conflict with what's on the server
             } else {
@@ -626,20 +617,6 @@ namespace litecore { namespace repl {
         }
     }
 
-
-    void Pusher::updateCheckpoint() {
-        auto firstPending = _pendingSequences.first();
-        auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
-        if (lastSeq > _lastSequence) {
-            if (lastSeq / 1000 > _lastSequence / 1000)
-                logInfo("Checkpoint now at #%" PRIu64, lastSeq);
-            else
-                logVerbose("Checkpoint now at #%" PRIu64, lastSeq);
-            _lastSequence = lastSeq;
-            if (replicator())
-                replicator()->updatePushCheckpoint(_lastSequence);
-        }
-    }
 
     void Pusher::afterEvent() {
         Worker::afterEvent();
@@ -683,10 +660,11 @@ namespace litecore { namespace repl {
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
             logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%" PRIu64 ", revsToSend=%zu, pushingDocs=%zu, pendingSequences=%zu",
-                kC4ReplicatorActivityLevelNames[level],
-                pendingResponseCount(),
-                _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
-                _revisionBytesAwaitingReply, _revsToSend.size(), _pushingDocs.size(), _pendingSequences.size());
+                    kC4ReplicatorActivityLevelNames[level],
+                    pendingResponseCount(),
+                    _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
+                    _revisionBytesAwaitingReply, _revsToSend.size(), _pushingDocs.size(),
+                    _checkpointer.pendingSequenceCount());
         }
         return level;
     }
