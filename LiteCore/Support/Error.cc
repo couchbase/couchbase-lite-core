@@ -56,7 +56,7 @@ namespace litecore {
 
     using namespace std;
 
-#ifdef _WIN32
+#if defined(_WIN32) && defined(LITECORE_IMPL)
     static string win32_message(int err) {
         char buf[1024];
         buf[0] = '\x0';
