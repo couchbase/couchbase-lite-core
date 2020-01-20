@@ -21,12 +21,16 @@ CLANG_STATIC_ANALYZER_MODE = shallow
 
 GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
 
-IPHONEOS_DEPLOYMENT_TARGET                         =  9.0
-MACOSX_DEPLOYMENT_TARGET                           = 10.11
-TVOS_DEPLOYMENT_TARGET                             =  9.0
+IPHONEOS_DEPLOYMENT_TARGET                         = 10.0
+MACOSX_DEPLOYMENT_TARGET                           = 10.12
+TVOS_DEPLOYMENT_TARGET                             = 10.0
 ONLY_ACTIVE_ARCH                                   = NO
 SKIP_INSTALL                                       = YES
 SUPPORTED_PLATFORMS                                = macosx iphoneos iphonesimulator appletvos appletvsimulator
+
+// For some reason this is needed in iOS builds to support pre-iOS11.
+// See <https://forum.juce.com/t/error-building-ios-for-device-in-release-mode/28595/3>
+OTHER_CPLUSPLUSFLAGS                               = -fno-aligned-allocation
 
 COPY_PHASE_STRIP                                   = NO
 DEBUG_INFORMATION_FORMAT                           = dwarf
@@ -34,7 +38,6 @@ PRODUCT_NAME                                       = $(TARGET_NAME)
 
 ALWAYS_SEARCH_USER_PATHS                           = NO
 HEADER_SEARCH_PATHS                                = $(inherited) $(SRCROOT)/../../LiteCore/Support/ $(SRCROOT)/../fleece/API/ $(SRCROOT)/../fleece/Fleece/Support/
-SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/vendor/zstr/src/
 
 CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW         = YES    // range-check C++ STL containers
 
