@@ -25,7 +25,7 @@ namespace litecore {
 
     using namespace std;
 
-    int CompareUTF8(slice str1, slice str2, const Collation &coll) {
+    int CompareUTF8(slice str1, slice str2, const CollationContext&) {
         error::_throw(error::Unimplemented);
     }
 
@@ -33,6 +33,11 @@ namespace litecore {
                                                                 const Collation &coll) {
         return nullptr;
     }
+
+    unique_ptr<CollationContext> CollationContext::create(const Collation &coll) {
+        error::_throw(error::Unimplemented);
+    }
+
 }
 
 #endif

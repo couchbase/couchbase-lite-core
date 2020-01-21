@@ -96,6 +96,11 @@ namespace litecore {
     };
 
 
+    unique_ptr<CollationContext> CollationContext::create(const Collation &coll) {
+        return make_unique<ICUCollationContext>(coll);
+    }
+
+
     /** Full Unicode-savvy string comparison. */
     static inline int compareStringsUnicode(int len1, const void *chars1,
                                             int len2, const void *chars2,
@@ -133,9 +138,24 @@ namespace litecore {
 
 
     int CompareUTF8(slice str1, slice str2, const Collation &coll) {
-        ICUCollationContext ctx(coll);
-        return collateUnicodeCallback(&ctx, (int)str1.size, str1.buf,
-                                      (int)str2.size, str2.buf);
+        return CompareUTF8(str1, str2, ICUCollationContext(coll));
+    }
+
+
+    int CompareUTF8(slice str1, slice str2, const CollationContext &ctx) {
+        return collateUnicodeCallback((void*)&ctx, (int)str1.size, str1.buf,
+                                                   (int)str2.size, str2.buf);
+    }
+
+
+    int LikeUTF8(fleece::slice str1, fleece::slice str2, const Collation &coll) {
+        return LikeUTF8(str1, str2, ICUCollationContext(coll));
+    }
+
+
+    bool ContainsUTF8(fleece::slice str, fleece::slice substr, const CollationContext &ctx) {
+        // FIXME: This is quite slow! Call ICU instead
+        return ContainsUTF8_Slow(str, substr, ctx);
     }
 
 

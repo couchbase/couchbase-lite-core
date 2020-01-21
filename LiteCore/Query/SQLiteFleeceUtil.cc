@@ -19,6 +19,7 @@
 
 #include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
+#include "UnicodeCollator.hh"
 #include "Path.hh"
 #include "Error.hh"
 #include "Logging.hh"
@@ -295,5 +296,35 @@ namespace litecore {
         context.delegate = nullptr;
         registerFunctionSpecs(db, context, kFleeceNullAccessorFunctionsSpec);
     }
+
+
+    // Given an argument containing the name of a collation, returns a CollationContext pointer.
+    // If the argument doesn't exist, returns a default context (case-sensitive, Unicode-aware.)
+    CollationContext& collationContextFromArg(sqlite3_context* ctx,
+                                              int argc, sqlite3_value **argv,
+                                              int argNo)
+    {
+        if (argNo < argc) {
+            auto collCtx = (CollationContext*) sqlite3_get_auxdata(ctx, argNo);
+            if (!collCtx) {
+                Collation col;
+                col.readSQLiteName((const char *)sqlite3_value_text(argv[argNo]));
+                col.unicodeAware = true;
+                collCtx = CollationContext::create(col).release();
+                sqlite3_set_auxdata(ctx, argNo, collCtx,
+                                    [](void *aux) { delete (CollationContext*)aux; });
+            }
+            return *collCtx;
+        } else {
+            static CollationContext *sDefaultCollCtx = [] {
+                Collation col;
+                col.unicodeAware = true;
+                return CollationContext::create(col).release();
+            } ();
+            return *sDefaultCollCtx;
+        }
+    }
+
+
 
 }

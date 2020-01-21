@@ -41,7 +41,7 @@ namespace litecore {
 
         Collation() { }
 
-        Collation(bool cs, bool ds =true) {
+        explicit Collation(bool cs, bool ds =true) {
             caseSensitive = cs;
             diacriticSensitive = ds;
         }
@@ -63,26 +63,35 @@ namespace litecore {
     /** Base class of context info managed by collation implementations. */
     class CollationContext {
     public:
+        // factory function
+        static std::unique_ptr<CollationContext> create(const Collation&);
+
+        virtual ~CollationContext() =default;
+
+        bool canCompareASCII;
+        bool caseSensitive;
+
+    protected:
         CollationContext(const Collation &collation)
         :caseSensitive(collation.caseSensitive)
         ,canCompareASCII(true)
         {
             //TODO: Some locales have unusual rules for ASCII; for these, clear canCompareASCII.
         }
-
-        virtual ~CollationContext() =default;
-
-        bool canCompareASCII;
-        bool caseSensitive;
     };
 
     using CollationContextVector = std::vector<std::unique_ptr<CollationContext>>;
 
     /** Unicode-aware comparison of two UTF8-encoded strings. */
     int CompareUTF8(fleece::slice pattern, fleece::slice comparand, const Collation&);
+    int CompareUTF8(fleece::slice str1, fleece::slice str2, const CollationContext&);
 
     /** Unicode-aware LIKE function accepting two UTF-8 encoded strings */
     int LikeUTF8(fleece::slice str1, fleece::slice str2, const Collation&);
+    int LikeUTF8(fleece::slice str1, fleece::slice str2, const CollationContext&);
+
+    /** Unicode-aware string containment function accepting two UTF-8 encoded strings*/
+    bool ContainsUTF8(fleece::slice str, fleece::slice substr, const CollationContext &ctx);
 
     /** Registers a specific SQLite collation function with the given options.
         The returned object needs to be kept alive until the database is closed, then deleted. */
@@ -104,4 +113,6 @@ namespace litecore {
     /** The value CompareASCII returns if it finds non-ASCII characters in either string. */
     static constexpr int kCompareASCIIGaveUp = 2;
 
+    // for platform implementors only (default implementation of ContainsUTF8)
+    bool ContainsUTF8_Slow(fleece::slice str, fleece::slice substr, const CollationContext &ctx);
 }

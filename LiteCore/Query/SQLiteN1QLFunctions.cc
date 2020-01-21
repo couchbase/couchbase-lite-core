@@ -504,38 +504,23 @@ namespace litecore {
     }
 #endif
 
+
     // contains(string, substring) returns 1 if `string` contains `substring`, else 0
     static void contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        Collation col;
-        col.unicodeAware = true;
-        if(argc > 2) {
-            col.readSQLiteName((const char*)sqlite3_value_text(argv[2]));
-        }
-
-        auto str = stringSliceArgument(argv[0]);
-        auto substr = stringSliceArgument(argv[1]);
-        
-        auto current = substr;
-        while(str.size > 0) {
-            size_t nextStrSize = NextUTF8Length(str);
-            size_t nextSubstrSize = NextUTF8Length(current);
-            if(!CompareUTF8({str.buf, nextStrSize}, {current.buf, nextSubstrSize}, col)) {
-                // The characters are a match, move to the next substring character
-                current.moveStart(nextSubstrSize);
-                if(current.size == 0) {
-                    // Found a match!
-                    sqlite3_result_int(ctx, 1);
-                    return;
-                }
-            } else {
-                current = substr;
-            }
-
-            str.moveStart(nextStrSize);
-        }
-
-        sqlite3_result_int(ctx, 0);
+        bool result = ContainsUTF8(stringSliceArgument(argv[0]),
+                                   stringSliceArgument(argv[1]),
+                                   collationContextFromArg(ctx, argc, argv, 2));
+        sqlite3_result_int(ctx, result);
     }
+
+
+    // like() implements the LIKE match
+    static void like(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        const int likeResult = LikeUTF8(valueAsStringSlice(argv[0]), valueAsStringSlice(argv[1]),
+                                        collationContextFromArg(ctx, argc, argv, 2));
+        sqlite3_result_int(ctx, likeResult == kLikeMatch);
+    }
+
 
     // length() returns the length in characters of a string.
     static void length(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
@@ -1254,6 +1239,9 @@ namespace litecore {
         { "N1QL_trim",         1, trim },
         { "N1QL_trim",         2, trim },
         { "N1QL_upper",        1, upper },
+
+        { "fl_like",           2, like },
+        { "fl_like",           3, like },
 
         { "regexp_contains",   2, regexp_like, },
         { "regexp_like",       2, regexp_like },
