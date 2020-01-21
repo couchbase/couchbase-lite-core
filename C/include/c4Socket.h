@@ -50,9 +50,9 @@ extern "C" {
         C4Socket is allocated and freed by LiteCore, but the client can associate it with a native
         stream/socket (like a file descriptor or a Java stream reference) by storing a value in its
         `nativeHandle` field. */
-    typedef struct C4Socket {
+    struct C4Socket {
         void* nativeHandle;     ///< for client's use
-    } C4Socket;
+    };
 
 
     /** The type of message framing that should be applied to the socket's data (added to outgoing,
@@ -71,7 +71,7 @@ extern "C" {
      
         The `providesWebSockets` flag indicates whether this factory provides a WebSocket
         implementation or just a raw TCP socket. */
-    typedef struct C4SocketFactory {
+    struct C4SocketFactory {
         /** This should be set to `kC4NoFraming` if the socket factory acts as a stream of messages,
             `kC4WebSocketClientFraming` or `kC4WebSocketServerFraming` if it's a byte stream. */
         C4SocketFraming framing;
@@ -127,7 +127,7 @@ extern "C" {
             Set this to NULL if you don't need the call.
             @param socket  The socket being disposed.  */
         void (*dispose)(C4Socket* socket C4NONNULL);
-    } C4SocketFactory;
+    };
 
 
     /** One-time registration of socket callbacks. Must be called before using any socket-based

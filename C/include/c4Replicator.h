@@ -52,12 +52,12 @@ extern "C" {
 
 
     /** A simple parsed-URL type. */
-    typedef struct C4Address {
+    struct C4Address {
         C4String scheme;
         C4String hostname;
         uint16_t port;
         C4String path;
-    } C4Address;
+    };
 
 
     /** Represents the current progress of a replicator.

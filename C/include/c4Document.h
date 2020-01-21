@@ -60,7 +60,7 @@ extern "C" {
 
 
     /** Describes a version-controlled document. */
-    typedef struct C4Document {
+    struct C4Document {
         C4DocumentFlags flags;      ///< Document flags
         C4HeapString docID;         ///< Document ID
         C4HeapString revID;         ///< Revision ID of current revision
@@ -69,7 +69,7 @@ extern "C" {
         C4Revision selectedRev;     ///< Describes the currently-selected revision
 
         C4ExtraInfo extraInfo;      ///< For client use
-    } C4Document;
+    };
 
 
     /** Identifies a remote database being replicated with. */

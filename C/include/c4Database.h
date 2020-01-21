@@ -283,11 +283,11 @@ extern "C" {
 
 
     /** Contents of a raw document. */
-    typedef struct C4RawDocument {
+    struct C4RawDocument {
         C4String key;    ///< The key (document ID)
         C4String meta;   ///< Metadata (usage is up to the caller)
         C4String body;   ///< Body data
-    } C4RawDocument;
+    };
 
     /** Frees the storage occupied by a raw document. */
     void c4raw_free(C4RawDocument* rawDoc) C4API;

@@ -100,7 +100,7 @@ extern "C" {
         Created by c4db_query. Must be freed with c4queryenum_release.
         The fields of this struct represent the current matched index row, and are valid until the
         next call to c4queryenum_next or c4queryenum_release. */
-    typedef struct C4QueryEnumerator {
+    struct C4QueryEnumerator {
         /** The columns of this result, in the same order as in the query's `WHAT` clause. */
         FLArrayIterator columns;
 
@@ -114,7 +114,7 @@ extern "C" {
 
         /** Array with details of each full-text match */
         const C4FullTextMatch *fullTextMatches;
-    } C4QueryEnumerator;
+    };
 
 
     /** Sets the parameter values to use when running the query, if no parameters are given to
