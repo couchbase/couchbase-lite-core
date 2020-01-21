@@ -65,19 +65,19 @@ option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 
-add_compile_definitions(
-    CMAKE                  # Let the source know this is a CMAKE build
-    __STDC_FORMAT_MACROS   # Enables printf format macros for variable sized types (e.g. size_t)
+add_definitions(
+    -DCMAKE                  # Let the source know this is a CMAKE build
+    -D__STDC_FORMAT_MACROS   # Enables printf format macros for variable sized types (e.g. size_t)
 )
 
 if(BUILD_ENTERPRISE)
-    add_compile_definitions(
-        COUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
+    add_definitions(
+        -DCOUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
     )
 endif()
 
 if(MSVC)
-    add_compile_definitions(WIN32_LEAN_AND_MEAN)
+    add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
     if(WINDOWS_STORE)
         include("${PROJECT_SOURCE_DIR}/cmake/platform_win_store.cmake")
     else()

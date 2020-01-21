@@ -21,6 +21,7 @@
 #if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 #include <sqlite3.h>
 #include <wtypes.h>
+#include <stdlib.h>
 
 extern "C" void setSqliteTempDirectory() {
     LPCWSTR zPath = Windows::Storage::ApplicationData::Current->
