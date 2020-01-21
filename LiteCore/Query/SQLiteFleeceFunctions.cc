@@ -441,6 +441,10 @@ namespace litecore {
         setResultBlobFromFleeceData(ctx, enc.finish());
     }
 
+
+#pragma mark - REVISION HISTORY:
+
+
     static void fl_like(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         Collation col;
         col.unicodeAware = true;

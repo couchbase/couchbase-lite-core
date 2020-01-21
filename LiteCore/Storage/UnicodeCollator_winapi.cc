@@ -35,7 +35,7 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
-    // Stores CF collation parameters for fast lookup; callback context points to this
+    // Stores Windows collation parameters for fast lookup; callback context points to this
     class WinApiCollationContext : public CollationContext {
     public:
         LPWSTR localeName{ nullptr };
@@ -75,6 +75,11 @@ namespace litecore {
                 free(localeName);
         }
     };
+
+
+    unique_ptr<CollationContext> CollationContext::create(const Collation &coll) {
+        return make_unique<WinApiCollationContext>(coll);
+    }
 
 
     /** Full Unicode-savvy string comparison. */
@@ -133,9 +138,24 @@ namespace litecore {
 
 
     int CompareUTF8(slice str1, slice str2, const Collation &coll) {
-        WinApiCollationContext ctx(coll);
-        return collateUnicodeCallback(&ctx, (int)str1.size, str1.buf,
-            (int)str2.size, str2.buf);
+        return CompareUTF8(str1, str2, WinApiCollationContext(coll));
+    }
+
+
+    int CompareUTF8(slice str1, slice str2, const CollationContext &ctx) {
+        return collateUnicodeCallback((void*)&ctx, (int)str1.size, str1.buf,
+                                                   (int)str2.size, str2.buf);
+    }
+
+
+    int LikeUTF8(fleece::slice str1, fleece::slice str2, const Collation &coll) {
+        return LikeUTF8(str1, str2, WinApiCollationContext(coll));
+    }
+
+
+    bool ContainsUTF8(fleece::slice str, fleece::slice substr, const CollationContext &ctx) {
+        // FIXME: This is quite slow! Call Windows API instead
+        return ContainsUTF8_Slow(str, substr, ctx);
     }
 
 
