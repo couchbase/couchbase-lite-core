@@ -25,6 +25,7 @@
 
 
 namespace litecore {
+    class CollationContext;
 
     // SQLite value subtypes to represent type info that SQL doesn't convey:
     enum {
@@ -113,6 +114,13 @@ namespace litecore {
 
     // Common implementation of fl_contains and array_contains
     void collectionContainsImpl(sqlite3_context*, const fleece::impl::Value *collection, sqlite3_value *arg);
+
+    // Given an argument containing the name of a collation, returns a CollationContext.
+    // If the argument doesn't exist, returns a default context (case-sensitive, Unicode-aware.)
+    CollationContext& collationContextFromArg(sqlite3_context* ctx,
+                                              int argc, sqlite3_value **argv,
+                                              int argNo);
+
 
 
     //// Registering SQLite functions:

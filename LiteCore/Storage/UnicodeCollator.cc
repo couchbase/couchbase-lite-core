@@ -55,7 +55,29 @@ namespace litecore {
         });
     }
 
-    int LikeUTF8(slice comparand, slice pattern, const Collation& col) {
+    bool ContainsUTF8_Slow(fleece::slice str, fleece::slice substr, const CollationContext &ctx) {
+        auto current = substr;
+        while(str.size > 0) {
+            size_t nextStrSize = NextUTF8Length(str);
+            size_t nextSubstrSize = NextUTF8Length(current);
+            if(!CompareUTF8({str.buf, nextStrSize}, {current.buf, nextSubstrSize}, ctx)) {
+                // The characters are a match, move to the next substring character
+                current.moveStart(nextSubstrSize);
+                if(current.size == 0) {
+                    // Found a match!
+                    return true;
+                }
+            } else {
+                current = substr;
+            }
+
+            str.moveStart(nextStrSize);
+        }
+        return false;
+    }
+
+
+    int LikeUTF8(slice comparand, slice pattern, const CollationContext& col) {
         // Based on SQLite's 'patternCompare' function (simplified)
         slice c, c2;                       /* Next pattern and input string chars */
         slice matchOne = "_"_sl;
