@@ -127,12 +127,6 @@ extern "C" {
                     uint32_t maxRevTreeDepth,
                     C4Error *outError) C4API;
 
-    /** Increments the ref-count of a C4Document. */
-    C4Document* c4doc_retain(C4Document *doc) C4API;
-
-    /** Decrements the ref-count of a C4Document, freeing it when it reaches zero. */
-    void c4doc_release(C4Document *doc) C4API;
-
     /** @} */
     
 

@@ -142,20 +142,19 @@ void* c4base_retain(void *obj) C4API;
 void c4base_release(void *obj) C4API;
 
 // These types are reference counted and have c4xxx_retain / c4xxx_release functions:
-// This could be a macro, but for the sake of bindings to other languages (readability)
-// write it all out.
-C4Cert* c4cert_retain(C4Cert* ref)  {return (C4Cert*) c4base_retain(ref);}
-void c4cert_release(C4Cert* ref)  {c4base_release(ref);}
-C4KeyPair* c4keypair_retain(C4KeyPair* ref)  {return (C4KeyPair*) c4base_retain(ref);}
-void c4keypair_release(C4KeyPair* ref)  {c4base_release(ref);}
-C4Database* c4db_retain(C4Database* ref)  {return (C4Database*) c4base_retain(ref);}
-void c4db_release(C4Database* ref)  {c4base_release(ref);}
-C4Query* c4query_retain(C4Query* ref)  {return (C4Query*) c4base_retain(ref);}
-void c4query_release(C4Query* ref)  {c4base_release(ref);}
-C4Document* c4doc_retain(C4Document* ref) ; void c4doc_release(C4Document* ref) ;
-C4QueryEnumerator* c4queryenum_retain(C4QueryEnumerator* ref) ;
-void c4queryenum_release(C4QueryEnumerator* ref) ;
-
+static inline C4Cert* c4cert_retain(C4Cert* r) C4API {return (C4Cert*)c4base_retain(r);}
+static inline void    c4cert_release(C4Cert* r) C4API {c4base_release(r);}
+static inline C4KeyPair* c4keypair_retain(C4KeyPair* r) C4API {return (C4KeyPair*)c4base_retain(r);}
+static inline void       c4keypair_release(C4KeyPair* r) C4API {c4base_release(r);}
+static inline C4Database* c4db_retain(C4Database* r) C4API {return (C4Database*)c4base_retain(r);}
+static inline void        c4db_release(C4Database* r) C4API {c4base_release(r);}
+static inline C4Query* c4query_retain(C4Query* r) C4API {return (C4Query*)c4base_retain(r);}
+static inline void     c4query_release(C4Query* r) C4API {c4base_release(r);}
+    
+C4Document* c4doc_retain(C4Document* r) C4API;
+void        c4doc_release(C4Document* r) C4API;
+C4QueryEnumerator* c4queryenum_retain(C4QueryEnumerator* r) C4API;
+void               c4queryenum_release(C4QueryEnumerator* r) C4API;
 
 // These types are _not_ ref-counted but must be freed after use:
 void c4dbobs_free   (C4DatabaseObserver*) C4API;

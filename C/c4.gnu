@@ -28,8 +28,6 @@ CBL {
 
 		c4db_open;
 		c4db_openNamed;
-		c4db_retain;
-		c4db_release;
 		c4db_close;
 		c4db_copy;
 		c4db_delete;
@@ -106,8 +104,6 @@ CBL {
 
 		c4query_new;
 		c4query_new2;
-		c4query_retain;
-		c4query_release;
 		c4query_setParameters;
 		c4query_columnCount;
 		c4query_columnTitle;
@@ -169,7 +165,6 @@ CBL {
 
 		FLSlice_Equal;
 		FLSlice_Compare;
-		FLSliceResult_Release;
 		FLSlice_Copy;
 
 		FLDoc_FromResultData;
@@ -214,12 +209,10 @@ CBL {
 		FLDict_GetWithKey;
 		FLDict_IsEmpty;
 		FLDictIterator_Begin;
-		FLDictIterator_GetCount;
 		FLDictIterator_GetKey;
 		FLDictIterator_GetKeyString;
 		FLDictIterator_GetValue;
 		FLDictIterator_Next;
-		FLDictIterator_End;
 		FLDictKey_Init;
 		FLDictKey_GetString;
 
@@ -279,6 +272,7 @@ CBL {
 		FLSlot_SetString;
 		FLSlot_SetData;
 		FLSlot_SetValue;
+
 
 		kC4SQLiteStorageEngine;
 		kC4DatabaseFilenameExtension;
@@ -381,6 +375,9 @@ CBL {
 		FLSharedKeys_Release;
 
 		FLSliceResult_New;
+
+		FLDictIterator_GetCount;
+		FLDictIterator_End;
 
 		FLValue_ToJSON5;
 	local:
