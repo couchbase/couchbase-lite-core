@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 CMAKE_VER="3.10.2.4988404"
 NDK_VER="20.1.5948944"
 PKG_TYPE="zip"
