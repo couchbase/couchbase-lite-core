@@ -297,6 +297,7 @@ namespace litecore {
         if (!keys && _options.useDocumentKeys) {
             auto mutableThis = const_cast<DataFile*>(this);
             keys = new DocumentKeys(*mutableThis);
+            keys->refresh();
             mutableThis->_documentKeys = keys;
         }
         return keys;
