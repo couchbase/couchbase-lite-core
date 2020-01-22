@@ -177,9 +177,6 @@ setup_support_build()
 
 set(
     LC_WEBSOCKET_SRC
-    Crypto/Certificate.cc
-    Crypto/PublicKey.cc
-    Crypto/mbedUtils.cc
     Networking/HTTPTypes.cc
     Networking/HTTPLogic.cc
     Networking/Poller.cc
@@ -197,11 +194,6 @@ set(
     vendor/sockpp/src/socket.cpp
     vendor/sockpp/src/stream_socket.cpp
 )
-
-if (APPLE)
-    set(LC_WEBSOCKET_SRC ${LC_WEBSOCKET_SRC}
-    Crypto/PublicKey+Apple.mm)
-endif()
 
 add_library(LiteCoreWebSocket STATIC ${LC_WEBSOCKET_SRC})
 target_include_directories(

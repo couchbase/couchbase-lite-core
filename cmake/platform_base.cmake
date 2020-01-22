@@ -68,11 +68,6 @@ function(set_litecore_source_base)
         LiteCore/Storage/SQLiteEnumerator.cc
         LiteCore/Storage/SQLiteKeyStore.cc
         LiteCore/Storage/UnicodeCollator.cc
-        Crypto/Certificate.cc
-        Crypto/mbedUtils.cc
-        Crypto/PublicKey.cc
-        Crypto/SecureDigest.cc
-        Crypto/SecureSymmetricCrypto.cc
         Networking/Address.cc
         Networking/CookieStore.cc
         vendor/SQLiteCpp/src/Backup.cpp
@@ -123,6 +118,11 @@ function(set_support_source_base)
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/StringUtil.cc
         Crypto/SecureRandomize.cc
+        Crypto/mbedUtils.cc
+        Crypto/Certificate.cc
+        Crypto/PublicKey.cc
+        Crypto/SecureDigest.cc
+        Crypto/SecureSymmetricCrypto.cc
         Networking/Address.cc
         PARENT_SCOPE
     )
