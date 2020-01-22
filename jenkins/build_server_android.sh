@@ -67,6 +67,7 @@ cd "${SOURCE_PATH}/${BUILD_REL_TARGET}"
 ${CMAKE_PATH}/cmake \
     -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="${SDK_HOME}/ndk/${NDK_VER}/build/cmake/android.toolchain.cmake" \
+    -DCMAKE_MAKE_PROGRAM="${CMAKE_PATH}/ninja" \
     -DANDROID_NATIVE_API_LEVEL=${ARCH_VERSION} \
     -DANDROID_ABI=${ANDROID_ARCH} \
     -DEDITION=${EDITION} \
@@ -81,6 +82,7 @@ cd ${SOURCE_PATH}/${BUILD_DEBUG_TARGET}
 ${CMAKE_PATH}/cmake \
     -G Ninja \
     -DCMAKE_TOOLCHAIN_FILE="${SDK_HOME}/ndk/${NDK_VER}/build/cmake/android.toolchain.cmake" \
+    -DCMAKE_MAKE_PROGRAM="${CMAKE_PATH}/ninja" \
     -DANDROID_NATIVE_API_LEVEL=${ARCH_VERSION} \
     -DANDROID_ABI=${ANDROID_ARCH} \
     -DEDITION=${EDITION} \
