@@ -3,8 +3,6 @@ _c4_getVersion
 _c4_now
 _c4_getObjectCount
 _c4_shutdown
-_c4_setTempDir
-_c4_runAsyncTask
 
 _c4base_retain
 _c4base_release
@@ -21,8 +19,6 @@ _c4log_setBinaryFileLevel
 _c4log_getDomain
 _c4log_getDomainName
 _c4log_warnOnErrors
-_c4log_getWarnOnErrors
-_c4log_willLog
 
 _c4error_make
 _c4error_getMessage
@@ -31,6 +27,8 @@ _c4error_mayBeNetworkDependent
 
 _c4db_open
 _c4db_openNamed
+_c4db_retain
+_c4db_release
 _c4db_close
 _c4db_copy
 _c4db_delete
@@ -52,8 +50,6 @@ _c4db_isInTransaction
 _c4db_getSharedFleeceEncoder
 _c4db_getFLSharedKeys
 _c4db_encodeJSON
-_c4db_startHousekeeping
-_c4db_findDocAncestors
 
 _c4raw_free
 _c4raw_get
@@ -61,7 +57,6 @@ _c4raw_put
 
 _c4doc_retain
 _c4doc_release
-_c4doc_generateID
 _c4doc_get
 _c4doc_getBySequence
 _c4db_purgeDoc
@@ -87,7 +82,6 @@ _c4db_nextDocExpiration
 _c4db_purgeExpiredDocs
 _c4doc_isOldMetaProperty
 _c4doc_dictContainsBlobs
-_c4doc_containingValue
 
 _c4rev_getGeneration
 
@@ -111,6 +105,8 @@ _c4queryenum_release
 
 _c4query_new
 _c4query_new2
+_c4query_retain
+_c4query_release
 _c4query_setParameters
 _c4query_columnCount
 _c4query_columnTitle
@@ -148,15 +144,13 @@ _c4docobs_create
 _c4docobs_free
 
 _c4repl_new
+_c4repl_newLocal
 _c4repl_newWithSocket
 _c4repl_free
 _c4repl_start
 _c4repl_stop
 _c4repl_getStatus
 _c4repl_retry
-_c4repl_setOptions
-_c4repl_setHostReachable
-_c4repl_setSuspended
 _c4repl_getPendingDocIDs
 _c4repl_isDocumentPending
 
@@ -174,13 +168,10 @@ _c4pred_unregisterModel
 
 _FLSlice_Equal
 _FLSlice_Compare
-_FLSliceResult_New
+_FLSliceResult_Release
 _FLSlice_Copy
-__FLBuf_Retain
-__FLBuf_Release
 
 _FLDoc_FromResultData
-_FLDoc_GetAllocedData
 _FLDoc_GetRoot
 _FLDoc_GetSharedKeys
 _FLDoc_Release
@@ -294,6 +285,7 @@ _kC4DatabaseFilenameExtension
 
 _c4_getBuildInfo
 _c4_setTempDir
+_c4_runAsyncTask
 
 _c4log
 _c4vlog
@@ -305,6 +297,7 @@ _kC4SyncLog
 _kC4WebSocketLog
 
 _c4log_willLog
+_c4log_getWarnOnErrors
 
 _c4error_getDescription
 _c4error_getDescriptionC
@@ -320,6 +313,8 @@ _c4db_lock
 _c4db_unlock
 _c4db_getRemoteDBID
 _c4db_exists
+_c4db_startHousekeeping
+_c4db_findDocAncestors
 
 _c4doc_removeRevisionBody
 _c4doc_getForPut
@@ -355,6 +350,9 @@ _c4stream_bytesWritten
 _c4repl_isValidDatabaseName
 _c4repl_isValidRemote
 _c4repl_getResponseHeaders
+_c4repl_setOptions
+_c4repl_setHostReachable
+_c4repl_setSuspended
 
 _kC4ReplicatorActivityLevelNames
 
@@ -366,8 +364,12 @@ _c4db_markSynced
 _c4_dumpInstances
 _gC4ExpectExceptions
 
+__FLBuf_Retain
+__FLBuf_Release
+
 _FLDoc_FromJSON
 _FLDoc_Retain
+_FLDoc_GetAllocedData
 
 _FLEncoder_NewWithOptions
 _FLEncoder_WriteRaw
@@ -377,6 +379,8 @@ _FLEncoder_GetError
 _FLSharedKeys_Decode
 _FLSharedKeys_Retain
 _FLSharedKeys_Release
+
+_FLSliceResult_New
 
 _FLValue_ToJSON5
 

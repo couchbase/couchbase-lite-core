@@ -4,8 +4,6 @@ CBL {
 		c4_now;
 		c4_getObjectCount;
 		c4_shutdown;
-		c4_setTempDir;
-		c4_runAsyncTask;
 
 		c4base_retain;
 		c4base_release;
@@ -22,8 +20,6 @@ CBL {
 		c4log_getDomain;
 		c4log_getDomainName;
 		c4log_warnOnErrors;
-		c4log_getWarnOnErrors;
-		c4log_willLog;
 
 		c4error_make;
 		c4error_getMessage;
@@ -32,6 +28,8 @@ CBL {
 
 		c4db_open;
 		c4db_openNamed;
+		c4db_retain;
+		c4db_release;
 		c4db_close;
 		c4db_copy;
 		c4db_delete;
@@ -53,8 +51,6 @@ CBL {
 		c4db_getSharedFleeceEncoder;
 		c4db_getFLSharedKeys;
 		c4db_encodeJSON;
-		c4db_startHousekeeping;
-		c4db_findDocAncestors;
 
 		c4raw_free;
 		c4raw_get;
@@ -62,7 +58,6 @@ CBL {
 
 		c4doc_retain;
 		c4doc_release;
-		c4doc_generateID;
 		c4doc_get;
 		c4doc_getBySequence;
 		c4db_purgeDoc;
@@ -88,7 +83,6 @@ CBL {
 		c4db_purgeExpiredDocs;
 		c4doc_isOldMetaProperty;
 		c4doc_dictContainsBlobs;
-		c4doc_containingValue;
 
 		c4rev_getGeneration;
 
@@ -112,6 +106,8 @@ CBL {
 
 		c4query_new;
 		c4query_new2;
+		c4query_retain;
+		c4query_release;
 		c4query_setParameters;
 		c4query_columnCount;
 		c4query_columnTitle;
@@ -149,15 +145,13 @@ CBL {
 		c4docobs_free;
 
 		c4repl_new;
+		c4repl_newLocal;
 		c4repl_newWithSocket;
 		c4repl_free;
 		c4repl_start;
 		c4repl_stop;
 		c4repl_getStatus;
 		c4repl_retry;
-		c4repl_setOptions;
-		c4repl_setHostReachable;
-		c4repl_setSuspended;
 		c4repl_getPendingDocIDs;
 		c4repl_isDocumentPending;
 
@@ -175,13 +169,10 @@ CBL {
 
 		FLSlice_Equal;
 		FLSlice_Compare;
-		FLSliceResult_New;
+		FLSliceResult_Release;
 		FLSlice_Copy;
-		_FLBuf_Retain;
-		_FLBuf_Release;
 
 		FLDoc_FromResultData;
-		FLDoc_GetAllocedData;
 		FLDoc_GetRoot;
 		FLDoc_GetSharedKeys;
 		FLDoc_Release;
@@ -294,6 +285,7 @@ CBL {
 
 		c4_getBuildInfo;
 		c4_setTempDir;
+		c4_runAsyncTask;
 
 		c4log;
 		c4vlog;
@@ -305,6 +297,7 @@ CBL {
 		kC4WebSocketLog;
 
 		c4log_willLog;
+		c4log_getWarnOnErrors;
 
 		c4error_getDescription;
 		c4error_getDescriptionC;
@@ -320,6 +313,8 @@ CBL {
 		c4db_unlock;
 		c4db_getRemoteDBID;
 		c4db_exists;
+		c4db_startHousekeeping;
+		c4db_findDocAncestors;
 
 		c4doc_removeRevisionBody;
 		c4doc_getForPut;
@@ -355,6 +350,9 @@ CBL {
 		c4repl_isValidDatabaseName;
 		c4repl_isValidRemote;
 		c4repl_getResponseHeaders;
+		c4repl_setOptions;
+		c4repl_setHostReachable;
+		c4repl_setSuspended;
 
 		kC4ReplicatorActivityLevelNames;
 
@@ -366,8 +364,12 @@ CBL {
 		c4_dumpInstances;
 		gC4ExpectExceptions;
 
+		_FLBuf_Retain;
+		_FLBuf_Release;
+
 		FLDoc_FromJSON;
 		FLDoc_Retain;
+		FLDoc_GetAllocedData;
 
 		FLEncoder_NewWithOptions;
 		FLEncoder_WriteRaw;
@@ -377,6 +379,8 @@ CBL {
 		FLSharedKeys_Decode;
 		FLSharedKeys_Retain;
 		FLSharedKeys_Release;
+
+		FLSliceResult_New;
 
 		FLValue_ToJSON5;
 	local:

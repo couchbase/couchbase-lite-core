@@ -141,20 +141,21 @@ typedef struct c4WriteStream C4WriteStream;
 void* c4base_retain(void *obj) C4API;
 void c4base_release(void *obj) C4API;
 
-#define C4_REFCOUNTED_DECLARATION(TYPE, SHORT) \
-    TYPE* c4##SHORT##_retain(TYPE* ref) C4API; \
-    void c4##SHORT##_release(TYPE* ref) C4API;
-#define C4_REFCOUNTED_BOILERPLATE(TYPE, SHORT) \
-    static inline TYPE* c4##SHORT##_retain(TYPE* ref) C4API {return (TYPE*) c4base_retain(ref);} \
-    static inline void c4##SHORT##_release(TYPE* ref) C4API {c4base_release(ref);}
-
 // These types are reference counted and have c4xxx_retain / c4xxx_release functions:
-C4_REFCOUNTED_BOILERPLATE(C4Cert,            cert)
-C4_REFCOUNTED_BOILERPLATE(C4KeyPair,         keypair)
-C4_REFCOUNTED_BOILERPLATE(C4Database,        db)
-C4_REFCOUNTED_BOILERPLATE(C4Query,           query)
-C4_REFCOUNTED_DECLARATION(C4Document,        doc)
-C4_REFCOUNTED_DECLARATION(C4QueryEnumerator, queryenum)
+// This could be a macro, but for the sake of bindings to other languages (readability)
+// write it all out.
+C4Cert* c4cert_retain(C4Cert* ref)  {return (C4Cert*) c4base_retain(ref);}
+void c4cert_release(C4Cert* ref)  {c4base_release(ref);}
+C4KeyPair* c4keypair_retain(C4KeyPair* ref)  {return (C4KeyPair*) c4base_retain(ref);}
+void c4keypair_release(C4KeyPair* ref)  {c4base_release(ref);}
+C4Database* c4db_retain(C4Database* ref)  {return (C4Database*) c4base_retain(ref);}
+void c4db_release(C4Database* ref)  {c4base_release(ref);}
+C4Query* c4query_retain(C4Query* ref)  {return (C4Query*) c4base_retain(ref);}
+void c4query_release(C4Query* ref)  {c4base_release(ref);}
+C4Document* c4doc_retain(C4Document* ref) ; void c4doc_release(C4Document* ref) ;
+C4QueryEnumerator* c4queryenum_retain(C4QueryEnumerator* ref) ;
+void c4queryenum_release(C4QueryEnumerator* ref) ;
+
 
 // These types are _not_ ref-counted but must be freed after use:
 void c4dbobs_free   (C4DatabaseObserver*) C4API;
