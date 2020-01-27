@@ -18,6 +18,7 @@ function(set_source_files_base)
         QueryTest.cc
         RevTreeTest.cc
         SequenceTrackerTest.cc
+        SequenceSetTest.cc
         SQLiteFunctionsTest.cc
         UpgraderTest.cc
         ${TOP}vendor/fleece/Tests/API_ValueTests.cc

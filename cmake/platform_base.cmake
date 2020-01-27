@@ -75,6 +75,7 @@ function(set_litecore_source_base)
         Replicator/c4Replicator.cc
         Replicator/c4Socket.cc
         Replicator/Checkpoint.cc
+        Replicator/Checkpointer.cc
         Replicator/CivetWebSocket.cc
         Replicator/CookieStore.cc
         Replicator/DatabaseCookies.cc
@@ -86,7 +87,6 @@ function(set_litecore_source_base)
         Replicator/Pusher.cc
         Replicator/Pusher+DB.cc
         Replicator/Replicator.cc
-        Replicator/Replicator+Checkpoints.cc
         Replicator/ReplicatorTypes.cc
         Replicator/RevFinder.cc
         Replicator/Worker.cc

@@ -165,7 +165,6 @@ namespace litecore { namespace repl {
         auto conn = connection();
         if (conn) {
             Assert(_connectionState == Connection::kClosed);
-            conn->terminate();
             _delegate = nullptr;
             _pusher = nullptr;
             _puller = nullptr;

@@ -337,7 +337,7 @@ namespace litecore { namespace repl {
 
     bool Checkpointer::isDocumentAllowed(C4Document* doc) {
         return isDocumentIDAllowed(doc->docID)
-            && (!_options.pushFilter || _options.pushFilter(doc->docID, doc->selectedRev.flags,
+            && (!_options.pushFilter || _options.pushFilter(doc->docID, doc->revID, doc->selectedRev.flags,
                                                             DBAccess::getDocRoot(doc),
                                                             _options.callbackContext));
     }
