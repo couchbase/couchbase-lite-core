@@ -93,10 +93,6 @@ namespace litecore { namespace repl {
             the remote peer. */
         bool write(C4Database *db NONNULL, slice checkpointData, C4Error *outError);
 
-        /** Clears the in-memory checkpoint; the next call to \ref read will read it from the
-            database again. (Not used by the replicator, only by \ref C4PendingPush.) */
-        void forgetCheckpoint();
-
         // Autosave:
 
         using duration = std::chrono::nanoseconds;
