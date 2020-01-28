@@ -102,7 +102,7 @@ namespace litecore { namespace repl {
 
     size_t Checkpointer::pendingSequenceCount() const {
         LOCK();
-        return _checkpoint->pendingSequenceCount();
+        return _checkpoint ? _checkpoint->pendingSequenceCount() : 0;
     }
 
 
@@ -235,13 +235,6 @@ namespace litecore { namespace repl {
 
 
 #pragma mark - READING THE CHECKPOINT:
-
-
-    void Checkpointer::forgetCheckpoint() {
-        LOCK();
-        Assert(!_changed);
-        _checkpoint.reset();
-    }
 
 
     static inline bool isNotFoundError(C4Error err) {
