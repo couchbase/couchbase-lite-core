@@ -75,6 +75,7 @@ struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
             _status.level = kC4Stopped;
             _status.progress = {};
             notifyStateChanged();
+            _selfRetain = nullptr; // balances retain in `_start`
         }
     }
 
@@ -136,6 +137,7 @@ protected:
 
 
     virtual ~C4Replicator() {
+        logInfo("Freeing C4Replicator");
         // Tear down the Replicator instance -- this is important in the case where it was
         // never started, because otherwise there will be a bunch of ref cycles that cause many
         // objects (including C4Databases) to be leaked. [CBL-524]

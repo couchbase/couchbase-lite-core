@@ -45,9 +45,14 @@ namespace c4Internal {
                            C4String remoteDatabaseName)
         :C4Replicator(db, params)
         ,_url(effectiveURL(serverAddress, remoteDatabaseName))
-        ,_socketFactory(params.socketFactory)
         ,_retryTimer(std::bind(&C4RemoteReplicator::retry, this, false, nullptr))
-        { }
+        {
+            if (params.socketFactory) {
+                // Keep a copy of the C4SocketFactory struct in case original is invalidated:
+                _customSocketFactory = *params.socketFactory;
+                _socketFactory = &_customSocketFactory;
+            }
+        }
 
 
         void start() override {
@@ -234,7 +239,8 @@ namespace c4Internal {
 
     private:
         alloc_slice const       _url;
-        const C4SocketFactory*  _socketFactory;
+        const C4SocketFactory*  _socketFactory {nullptr};
+        C4SocketFactory         _customSocketFactory {};  // Storage for *_socketFactory if non-null
         litecore::actor::Timer  _retryTimer;
         unsigned                _retryCount {0};
     };
