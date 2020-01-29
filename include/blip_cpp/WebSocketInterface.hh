@@ -117,7 +117,7 @@ namespace litecore { namespace websocket {
 
 
     /** Abstract class representing a WebSocket connection. */
-    class WebSocket : public RefCounted, fleece::InstanceCounted {
+    class WebSocket : public RefCounted, public fleece::InstanceCounted {
     public:
         const URL& url() const                      {return _url;}
         Role role() const                           {return _role;}
