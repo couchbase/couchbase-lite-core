@@ -20,7 +20,7 @@
 //
 
 #include "c4PredictiveQuery.h"
-#include "Database.hh"
+#include "c4Database.hh"
 #include "PredictiveModel.hh"
 
 using namespace litecore;
@@ -40,7 +40,7 @@ public:
         try {
             return _c4Model.prediction(_c4Model.context,
                                        (FLDict)input,
-                                       (c4Database*)dfDelegate,
+                                       dynamic_cast<c4Database*>(dfDelegate),
                                        outError);
         } catch (const std::exception &x) {
             if (outError)
