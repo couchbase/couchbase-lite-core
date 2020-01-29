@@ -23,7 +23,7 @@ namespace litecore {
     /** Shared state between all open DataFile instances on the same filesystem file.
         Manages a mutex that ensures that only one DataFile can open a transaction at once.
         This class is internal to DataFile. */
-    class DataFile::Shared : public RefCounted, fleece::InstanceCountedIn<RefCounted>, Logging {
+    class DataFile::Shared : public RefCounted, public fleece::InstanceCountedIn<DataFile::Shared>, Logging {
     public:
 
         static Retained<Shared> forPath(const FilePath &path, DataFile *dataFile) {

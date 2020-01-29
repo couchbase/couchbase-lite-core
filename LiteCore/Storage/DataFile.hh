@@ -46,7 +46,7 @@ namespace litecore {
 
     /** A database file, primarily a container of KeyStores which store the actual data.
         This is an abstract class, with concrete subclasses for different database engines. */
-    class DataFile : public Logging, fleece::InstanceCountedIn<DataFile> {
+    class DataFile : public Logging, public fleece::InstanceCountedIn<DataFile> {
     public:
 
         class Delegate {

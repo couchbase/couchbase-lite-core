@@ -23,6 +23,7 @@
 #include "BLIPConnection.hh"
 #include "Batcher.hh"
 #include "fleece/Fleece.hh"
+#include "InstanceCounted.hh"
 #include "Stopwatch.hh"
 #include <unordered_set>
 
@@ -42,7 +43,7 @@ namespace litecore { namespace repl {
     /** The top-level replicator object, which runs the BLIP connection.
         Pull and push operations are run by subidiary Puller and Pusher objects.
         The database will only be accessed by the DBAgent object. */
-    class Replicator : public Worker, ConnectionDelegate {
+    class Replicator : public Worker, ConnectionDelegate, public InstanceCountedIn<Replicator> {
     public:
 
         class Delegate;

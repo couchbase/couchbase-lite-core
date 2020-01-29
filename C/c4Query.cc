@@ -137,7 +137,7 @@ static C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator *e) {return (C4QueryE
 
 // This is the same as C4QueryObserver.
 // Instances are not directly heap-allocated; they're managed by a std::list (c4Query::observers).
-class c4QueryObserver : fleece::InstanceCounted {
+class c4QueryObserver : public fleece::InstanceCounted {
 public:
     c4QueryObserver(C4Query *query, C4QueryObserverCallback callback, void* context)
     :_query(c4query_retain(query)), _callback(callback), _context(context)
@@ -180,7 +180,7 @@ private:
 
 
 // This is the same as C4Query
-struct c4Query : public RefCounted, fleece::InstanceCounted, LiveQuerier::Delegate {
+struct c4Query : public RefCounted, public fleece::InstanceCountedIn<c4Query>, LiveQuerier::Delegate {
     c4Query(Database *db, C4QueryLanguage language, C4Slice queryExpression)
     :_database(db)
     ,_query(db->defaultKeyStore().compileQuery(queryExpression, (QueryLanguage)language))

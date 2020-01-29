@@ -25,7 +25,7 @@
 using namespace std::placeholders;
 
 
-struct c4DatabaseObserver : fleece::InstanceCounted {
+struct c4DatabaseObserver : public fleece::InstanceCounted {
     c4DatabaseObserver(C4Database *db,
                         SequenceTracker &sequenceTracker,
                         C4SequenceNumber since,
@@ -113,7 +113,7 @@ void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
 #pragma mark - DOCUMENT OBSERVER:
 
 
-struct c4DocumentObserver : fleece::InstanceCounted {
+struct c4DocumentObserver : public fleece::InstanceCounted {
     c4DocumentObserver(C4Database *db,
                         SequenceTracker &sequenceTracker,
                         C4Slice docID,

@@ -447,7 +447,11 @@ int c4_getObjectCount() noexcept {
 // LCOV_EXCL_START
 void c4_dumpInstances(void) C4API {
 #if INSTANCECOUNTED_TRACK
-    fleece::InstanceCounted::dumpInstances();
+    fleece::InstanceCounted::dumpInstances([](const fleece::InstanceCounted *obj) {
+        if (auto logger = dynamic_cast<const Logging*>(obj); logger)
+            fprintf(stderr, "%s, ", logger->loggingName().c_str());
+        fprintf(stderr, "a ");
+    });
 #endif
 }
 

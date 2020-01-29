@@ -39,7 +39,7 @@ namespace litecore { namespace repl {
     extern LogDomain SyncBusyLog;
 
     /** Abstract base class of Actors used by the replicator */
-    class Worker : public actor::Actor, fleece::InstanceCountedIn<Worker>, public Logging {
+    class Worker : public actor::Actor, public fleece::InstanceCountedIn<Worker>, public Logging {
     public:
         
         using slice = fleece::slice;

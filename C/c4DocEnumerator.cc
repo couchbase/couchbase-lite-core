@@ -35,7 +35,7 @@ CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
 };
 
 
-struct C4DocEnumerator : public RecordEnumerator, fleece::InstanceCounted {
+struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted {
     C4DocEnumerator(C4Database *database,
                     sequence_t since,
                     const C4EnumeratorOptions &options)

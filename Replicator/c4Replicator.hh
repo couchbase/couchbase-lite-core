@@ -42,7 +42,7 @@ using namespace litecore::repl;
 
 
 /** Glue between C4 API and internal LiteCore replicator. Abstract class. */
-struct C4Replicator : public RefCounted, Logging, Replicator::Delegate {
+struct C4Replicator : public RefCounted, Logging, Replicator::Delegate, public InstanceCountedIn<C4Replicator> {
 
     // Subclass must override this, creating a Replicator instance and passing it to `_start`.
     virtual void start() =0;

@@ -44,7 +44,7 @@ namespace c4Internal {
         This is an abstract base class whose concrete subclasses are TreeDocument (rev-trees) 
         and VectorDocument (version-vectors).
         Note: Its parent 'class' C4Document is the public struct declared in c4Document.h. */
-    class Document : public RefCounted, public C4Document, fleece::InstanceCountedIn<Document> {
+    class Document : public RefCounted, public C4Document, public fleece::InstanceCountedIn<Document> {
     public:
         alloc_slice const _docIDBuf;
         alloc_slice _revIDBuf;
