@@ -19,6 +19,7 @@ pipeline {
                     agent { label 'mobile-mac-mini'  }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
+                        KEYCHAIN_PWD = credentials("mobile-mac-mini-keychain")
                     }
                     steps {
                         sh 'jenkins/jenkins_unix.sh'

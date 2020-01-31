@@ -27,7 +27,15 @@ git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH
 unameOut="$(uname -s)"
 case "${unameOut}" in
     # Build XCode project on mac because it has stricter warnings
-    Darwin*)    build_xcode;;
+    Darwin*)    
+        build_xcode
+        if [[ -z "$KEYCHAIN_PWD" ]]; then
+            echo "Keychain credentials not found, aborting..."
+            exit 1
+        fi
+        
+        security -v unlock-keychain -p $KEYCHAIN_PWD $HOME/Library/Keychains/login.keychain-db
+        ;;
 esac
 
 ulimit -c unlimited # Enable crash dumps
