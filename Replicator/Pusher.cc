@@ -659,12 +659,13 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
+            size_t pendingSequences = _parent ? _checkpointer.pendingSequenceCount() : 0;
             logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%" PRIu64 ", revsToSend=%zu, pushingDocs=%zu, pendingSequences=%zu",
                     kC4ReplicatorActivityLevelNames[level],
                     pendingResponseCount(),
                     _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
                     _revisionBytesAwaitingReply, _revsToSend.size(), _pushingDocs.size(),
-                    _checkpointer.pendingSequenceCount());
+                    pendingSequences);
         }
         return level;
     }
