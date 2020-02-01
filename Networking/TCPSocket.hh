@@ -13,6 +13,7 @@
 #include <memory>
 #include <mutex>
 #include <vector>
+#include <functional>
 
 namespace litecore { namespace crypto {
     class Cert;

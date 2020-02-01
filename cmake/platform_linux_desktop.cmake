@@ -84,6 +84,12 @@ function(setup_globals)
         LIBCXX_INCLUDE LIBCXX_LIB LIBCXXABI_LIB LIBCXX_LIBDIR
         ZLIB_LIB ZLIB_INCLUDE
     )
+
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        # Work around the archaic requirement that the linker needs
+        # libraries in a certain order
+        link_libraries("-Wl,--start-group")
+    endif()
 endfunction()
 
 function(set_litecore_source)
