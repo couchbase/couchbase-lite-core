@@ -73,6 +73,7 @@ namespace litecore { namespace repl {
 
 
     DBAccess::~DBAccess() {
+        _timer.stop();
         use([&](C4Database *db) {
             c4db_release(db);
         });
