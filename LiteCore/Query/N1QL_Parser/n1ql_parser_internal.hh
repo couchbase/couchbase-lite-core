@@ -73,7 +73,7 @@ static MutableDict setAny(MutableDict dict, slice key, const Any &value) {
 }
 
 static MutableArray setAny(MutableArray array, unsigned index, const Any &value) {
-    assert(!value.isNull());
+    precondition(!value.isNull());
     if (value.with<MutableArray>([&](const MutableArray &v)     {array.set(index, v);})
             || value.with<MutableDict>([&](const MutableDict &v){array.set(index, v);})
             || value.with<Value>([&](const Value &v)            {array.set(index, v);})
@@ -308,7 +308,7 @@ static inline bool isFunction(const char *fn) {
 
 static void extendCollate(MutableArray expr, string collation) {
     auto coll = expr[1].asDict().asMutable();
-    assert(coll);
+    precondition(coll);
     uppercase(collation);
     bool value = (collation.substr(0,2) != "NO");
     if (!value)

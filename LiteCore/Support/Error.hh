@@ -130,9 +130,15 @@ namespace litecore {
 
 
 // Like C assert() but throws an exception instead of aborting
-#define	Assert(e, ...) \
-    (_usuallyFalse(!(e)) ? litecore::error::assertionFailed(__func__, __FILE__, __LINE__, #e, ##__VA_ARGS__) \
-                         : (void)0)
+#ifdef __FILE_NAME__
+    #define	Assert(e, ...) \
+        (_usuallyFalse(!(e)) ? litecore::error::assertionFailed(__func__, __FILE_NAME__, __LINE__, #e, ##__VA_ARGS__) \
+                             : (void)0)
+#else
+    #define	Assert(e, ...) \
+        (_usuallyFalse(!(e)) ? litecore::error::assertionFailed(__func__, __FILE__, __LINE__, #e, ##__VA_ARGS__) \
+                             : (void)0)
+#endif
 
 // DebugAssert is removed from release builds; use when 'e' test is too expensive
 #ifndef DEBUG

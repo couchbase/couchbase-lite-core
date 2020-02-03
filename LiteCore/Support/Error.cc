@@ -21,6 +21,7 @@
 #include "FleeceException.hh"
 #include "PlatformIO.hh"
 #include "StringUtil.hh"
+#include "betterassert.hh"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
 #include "WebSocketInterface.hh"    // for Network error codes
@@ -204,6 +205,7 @@ namespace litecore {
         {0, /*must end with err=0*/     error::Fleece,      0},
     };
 
+    __cold
     static bool mapError(error::Domain &domain, int &code, const codeMapping table[]) {
         for (const codeMapping *row = &table[0]; row->err != 0; ++row) {
             if (row->err == code) {
@@ -215,6 +217,7 @@ namespace litecore {
         return false;
     }
 
+    __cold
     static int getPrimaryCode(const error::Domain &domain, const int& code)
     {
 #ifdef WIN32
@@ -235,6 +238,7 @@ namespace litecore {
     }
 
 #ifdef LITECORE_IMPL
+    __cold
     static const char* litecore_errstr(error::LiteCoreError code) {
         static const char* kLiteCoreMessages[] = {
             // These must match up with the codes in the declaration of LiteCoreError
@@ -282,6 +286,7 @@ namespace litecore {
         return str;
     }
 
+    __cold
     static const char* fleece_errstr(fleece::ErrorCode code) {
         static const char* kFleeceMessages[] = {
             // These must match up with the codes in the declaration of FLError
@@ -305,6 +310,7 @@ namespace litecore {
         return str;
     }
 
+    __cold
     static const char* network_errstr(int code) {
         static const char* kNetworkMessages[] = {
             // These must match up with the codes in the NetworkError enum in WebSocketInterface.hh
@@ -335,6 +341,7 @@ namespace litecore {
         return str;
     }
 
+    __cold
     static const char* websocket_errstr(int code) {
         static const struct {int code; const char* message;} kWebSocketMessages[] = {
             {400, "invalid request"},
@@ -371,6 +378,7 @@ namespace litecore {
     }
 #endif // LITECORE_IMPL
 
+    __cold
     string error::_what(error::Domain domain, int code) noexcept {
 #ifdef LITECORE_IMPL
         switch (domain) {
@@ -416,6 +424,7 @@ namespace litecore {
     }
 
 
+    __cold
     const char* error::nameOfDomain(Domain domain) noexcept {
         // Indexed by Domain
         static const char* kDomainNames[] = {"0",
@@ -436,11 +445,13 @@ namespace litecore {
     bool error::sWarnOnError = false;
 
     
+    __cold
     error::error(error::Domain d, int c)
     :error(d, c, _what(d, c))
     { }
 
 
+    __cold
     error::error(error::Domain d, int c, const std::string &what)
     :runtime_error(what),
     domain(d),
@@ -448,6 +459,7 @@ namespace litecore {
     { }
 
 
+    __cold
     error& error::operator= (const error &e) {
         // This has to be hacked, since `domain` and `code` are marked `const`.
         this->~error();
@@ -456,6 +468,7 @@ namespace litecore {
     }
 
 
+    __cold
     error error::standardized() const {
         Domain d = domain;
         int c = code;
@@ -476,6 +489,7 @@ namespace litecore {
     }
 
 
+    __cold
     static error unexpectedException(const std::exception &x) {
         // Get the actual exception class name using RTTI.
         // Unmangle it by skipping class name prefix like "St12" (may be compiler dependent)
@@ -487,13 +501,19 @@ namespace litecore {
     }
 
 
+    __cold
     error error::convertRuntimeError(const std::runtime_error &re) {
+        const char *what = re.what();
         if (auto e = dynamic_cast<const error*>(&re); e) {
             return *e;
+        } else if (auto iae = dynamic_cast<const invalid_argument*>(&re); iae) {
+            return error(LiteCore, InvalidParameter, what);
+        } else if (auto faf = dynamic_cast<const fleece::assertion_failure*>(&re); faf) {
+            return error(LiteCore, AssertionFailed, what);
         } else if (auto se = dynamic_cast<const SQLite::Exception*>(&re); se) {
-            return error(SQLite, se->getExtendedErrorCode(), se->what());
+            return error(SQLite, se->getExtendedErrorCode(), what);
         } else if (auto fe = dynamic_cast<const fleece::FleeceException*>(&re); fe) {
-            return error(Fleece, fe->code, fe->what());
+            return error(Fleece, fe->code, what);
 #ifdef LITECORE_IMPL
         } else if (auto syserr = dynamic_cast<const sockpp::sys_error*>(&re); syserr) {
             int code = syserr->error();
@@ -504,7 +524,7 @@ namespace litecore {
                              "Unknown hostname \"" + gx->hostname() + "\"");
             } else {
                 return error(Network, websocket::kNetErrDNSFailure,
-                             "Error resolving hostname \"" + gx->hostname() + "\": " + gx->what());
+                             "Error resolving hostname \"" + gx->hostname() + "\": " + what);
             }
 #endif
         } else {
@@ -512,14 +532,22 @@ namespace litecore {
         }
     }
 
+    __cold
     error error::convertException(const std::exception &x) {
         if (auto re = dynamic_cast<const std::runtime_error*>(&x); re)
             return convertRuntimeError(*re);
-        else
-            return unexpectedException(x);
+        if (auto le = dynamic_cast<const std::logic_error*>(&x); le) {
+            LiteCoreError code = AssertionFailed;
+            if (dynamic_cast<const std::invalid_argument*>(le) != nullptr
+                    || dynamic_cast<const std::domain_error*>(le) != nullptr)
+                code = InvalidParameter;
+            return error(LiteCore, code, le->what());
+        }
+        return unexpectedException(x);
     }
 
 
+    __cold
     bool error::isUnremarkable() const {
         if (code == 0)
             return true;
@@ -536,6 +564,7 @@ namespace litecore {
     }
 
 
+    __cold
     void error::_throw() {
 #ifdef LITECORE_IMPL
         bool warn = sWarnOnError;
@@ -550,21 +579,25 @@ namespace litecore {
     }
 
     
+    __cold
     void error::_throw(Domain domain, int code ) {
         DebugAssert(code != 0);
         error{domain, code}._throw();
     }
 
     
+    __cold
     void error::_throw(error::LiteCoreError err) {
         _throw(LiteCore, err);
     }
 
+    __cold
     void error::_throwErrno() {
         _throw(POSIX, errno);
     }
 
 
+    __cold
     void error::_throw(error::LiteCoreError code, const char *fmt, ...) {
         char *msg = nullptr;
         va_list args;
@@ -580,6 +613,7 @@ namespace litecore {
     }
 
 
+    __cold
     void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr,
                                 const char *message, ...)
     {
@@ -600,6 +634,7 @@ namespace litecore {
     }
 
 #if !defined(__ANDROID__) && !defined(_MSC_VER)
+    __cold
     /*static*/ string error::backtrace(unsigned skip) {
 #ifdef __clang__
         ++skip;     // skip the logBacktrace frame itself

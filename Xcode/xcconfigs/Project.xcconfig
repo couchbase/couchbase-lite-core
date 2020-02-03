@@ -11,7 +11,7 @@ MBEDTLS = $(SRCROOT)/../vendor/mbedtls
 MBEDCRYPTO = $(MBEDTLS)/crypto
 SOCKPP = $(SRCROOT)/../vendor/sockpp
 
-WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-unknown-warning-option  // ignore unknown warning flags
+WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-unknown-warning-option -Wno-assume  // ignore unknown warning flags
 CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO
 CLANG_WARN_ASSIGN_ENUM = NO
 CLANG_WARN__EXIT_TIME_DESTRUCTORS = NO
