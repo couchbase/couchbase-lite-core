@@ -18,24 +18,35 @@
 
 #include "c4ExceptionUtils.hh"
 #include "c4Private.h"
+#include <exception>
 
 using namespace std;
 using namespace litecore;
+using namespace fleece;
 
 namespace c4Internal {
 
+    __cold
     void recordException(const exception &e, C4Error* outError) noexcept {
         error err = error::convertException(e).standardized();
         c4error_return((C4ErrorDomain)err.domain, err.code, c4str(e.what()), outError);
     }
 
-
-    bool tryCatch(C4Error *error, function_ref<void()> fn) noexcept {
-        try {
-            fn();
-            return true;
-        } catchError(error);
-        return false;
+    __cold
+    void recordException(C4Error* outError) noexcept {
+        // This rigamarole recovers the current exception being thrown...
+        auto xp = std::current_exception();
+        if (xp) {
+            try {
+                std::rethrow_exception(xp);
+            } catch(const std::exception& x) {
+                // Now we have the exception, so we can record it in outError:
+                recordException(x, outError);
+                return;
+            } catch (...) { }
+        }
+        c4error_return(LiteCoreDomain, kC4ErrorUnexpectedError,
+                       "Unknown C++ exception"_sl, outError);
     }
 
 }

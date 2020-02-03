@@ -133,7 +133,7 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) noexcept {
 
 
 bool c4doc_hasRevisionBody(C4Document* doc) noexcept {
-    return tryCatch<bool>(nullptr, bind(&Document::hasRevisionBody, asInternal(doc)));
+    return tryCatch<bool>(nullptr, [=]{return asInternal(doc)->hasRevisionBody();});
 }
 
 
@@ -143,7 +143,7 @@ bool c4doc_selectParentRevision(C4Document* doc) noexcept {
 
 
 bool c4doc_selectNextRevision(C4Document* doc) noexcept {
-    return tryCatch<bool>(nullptr, bind(&Document::selectNextRevision, asInternal(doc)));
+    return tryCatch<bool>(nullptr, [=]{return asInternal(doc)->selectNextRevision();});
 }
 
 

@@ -22,9 +22,7 @@
 #include "Base.hh"
 #include "Error.hh"
 #include "PlatformCompat.hh"
-#include "function_ref.hh"
 #include <exception>
-#include <functional>
 
 namespace c4Internal {
 
@@ -35,27 +33,28 @@ namespace c4Internal {
     // like LiteCoreREST and the helper tools.
 
     /** Sets up a C4Error from a C++ exception. */
-    void recordException(const std::exception &e, C4Error* outError) noexcept;
+    NOINLINE void recordException(C4Error* outError) noexcept;
+    NOINLINE void recordException(const std::exception &e, C4Error* outError) noexcept;
 
     /** Clears a C4Error back to empty. */
     static inline void clearError(C4Error* outError) noexcept {if (outError) outError->code = 0;}
 
     /** Macro to substitute for a regular 'catch' block, that saves any exception in OUTERR. */
     #define catchError(OUTERR) \
-        catch (const std::exception &x) { \
-            c4Internal::recordException(x, OUTERR); \
+        catch (...) { \
+            c4Internal::recordException(OUTERR); \
         }
 
     #define catchExceptions() \
-        catch (const std::exception &) { }
+        catch (...) { }
 
     #define checkParam(TEST, MSG, OUTERROR) \
         ((TEST) || (c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR(MSG), OUTERROR), false))
 
     // Calls the function, returning its return value. If an exception is thrown, stores the error
     // into `outError`, and returns a default 0/nullptr/false value.
-    template <typename RESULT>
-    NOINLINE RESULT tryCatch(C4Error *outError, fleece::function_ref<RESULT()> fn) noexcept {
+    template <typename RESULT, typename LAMBDA>
+    ALWAYS_INLINE RESULT tryCatch(C4Error *outError, LAMBDA fn) noexcept {
         try {
             return fn();
         } catchError(outError);
@@ -64,7 +63,14 @@ namespace c4Internal {
 
     // Calls the function and returns true. If an exception is thrown, stores the error
     // into `outError`, and returns false.
-    NOINLINE bool tryCatch(C4Error *error, fleece::function_ref<void()> fn) noexcept;
+    template <typename LAMBDA>
+    ALWAYS_INLINE bool tryCatch(C4Error *error, LAMBDA fn) noexcept {
+        try {
+            fn();
+            return true;
+        } catchError(error);
+        return false;
+    }
 
     #define c4error_descriptionStr(ERR)     alloc_slice(c4error_getDescription(ERR)).asString().c_str()
 
