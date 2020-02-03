@@ -29,13 +29,4 @@ namespace c4Internal {
         c4error_return((C4ErrorDomain)err.domain, err.code, c4str(e.what()), outError);
     }
 
-
-    bool tryCatch(C4Error *error, function_ref<void()> fn) noexcept {
-        try {
-            fn();
-            return true;
-        } catchError(error);
-        return false;
-    }
-
 }
