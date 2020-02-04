@@ -726,7 +726,6 @@ namespace litecore {
                 // Handle 'AS':
                 require(expr.count() == 3, "'AS' must have two operands");
                 title = string(requiredString(expr[2], "'AS' alias"));
-                addAlias(title, kResultAlias);
                 result = expr[1];
             }
 
@@ -749,6 +748,7 @@ namespace litecore {
                     title = "*";        // for the property ".", i.e. the entire doc
             } else {
                 _sql << " AS \"" << title << '"';
+                addAlias(title, kResultAlias);
             }
 
             // Make the title unique:
@@ -1296,7 +1296,7 @@ namespace litecore {
             // vs alias -> doc["path"]["to"]["value"])
             if(property.size() == 1) {
                 // Simple case, the alias is being used as-is
-                _sql << string(property);
+                _sql << '"' << string(property) << '"';
                 return;
             }
 

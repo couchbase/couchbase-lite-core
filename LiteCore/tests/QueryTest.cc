@@ -1567,6 +1567,15 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
         expectedResults.emplace_back("uber_doc2"_sl);
     }
 
+    SECTION("WHERE alias that shadows property") {
+        // Here the alias is the same as the property used to define it...
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.dict.key2'], 'dict']], \
+            WHERE: ['=', ['.dict'], 1]}"));
+        expectedResults.emplace_back("uber_doc2"_sl);
+    }
+
     SECTION("WHERE alias with special name") {
         q = store->compileQuery(json5(
             "{WHAT: ['._id', \
