@@ -23,7 +23,9 @@
 #include "fleece/slice.hh"
 #include "FilePath.hh"
 #include "StringUtil.hh"
+#include "Backtrace.hh"
 #include "Benchmark.hh"
+#include <csignal>
 #include <iostream>
 #include <fstream>
 #include <stdio.h>
@@ -180,6 +182,8 @@ _versioning(kC4RevisionTrees)
 {
     static once_flag once;
     call_once(once, [] {
+        Backtrace::installTerminateHandler(SIGILL);
+
         fleece::alloc_slice buildInfo = c4_getBuildInfo();
         fleece::alloc_slice version = c4_getVersion();
         C4Log("This is LiteCore %.*s ... short version %.*s", SPLAT(buildInfo), SPLAT(version));

@@ -22,7 +22,9 @@
 #include "PlatformIO.hh"
 #include "StringUtil.hh"
 #include "c4Private.h"
+#include "Backtrace.hh"
 #include "Encoder.hh"
+#include <csignal>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <mutex>
@@ -156,6 +158,8 @@ TestFixture::TestFixture()
 {
     static once_flag once;
     call_once(once, [] {
+        Backtrace::installTerminateHandler(SIGILL);
+
         C4StringResult version = c4_getBuildInfo();
         Log("This is LiteCore %.*s", SPLAT(version));
 
