@@ -238,6 +238,7 @@ target_compile_definitions(
     -DSQLITE_ENABLE_FTS4                # Build FTS versions 3 and 4
     -DSQLITE_ENABLE_FTS3_PARENTHESIS    # Allow AND and NOT support in FTS parser
     -DSQLITE_ENABLE_FTS3_TOKENIZER      # Allow LiteCore to define a tokenizer
+    -DSQLITE_DQS=0                      # Disallow double-quoted strings (only identifiers)
     
 )
 
