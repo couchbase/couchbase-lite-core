@@ -305,7 +305,10 @@ namespace litecore {
         writeSelectListClause(operands, "ORDER_BY"_sl, " ORDER BY ", true);
 
         // LIMIT, OFFSET clauses:
-        writeOrderOrLimitClause(operands, "LIMIT"_sl,  "LIMIT");
+        if (!writeOrderOrLimitClause(operands, "LIMIT"_sl,  "LIMIT")) {
+            if (getCaseInsensitive(operands, "OFFSET"_sl))
+                _sql << " LIMIT -1";            // SQL does not allow OFFSET without LIMIT
+        }
         writeOrderOrLimitClause(operands, "OFFSET"_sl, "OFFSET");
     }
 
@@ -384,15 +387,16 @@ namespace litecore {
     }
 
 
-    void QueryParser::writeOrderOrLimitClause(const Dict *operands,
+    bool QueryParser::writeOrderOrLimitClause(const Dict *operands,
                                               slice jsonKey,
                                               const char *sqlKeyword) {
         auto value = getCaseInsensitive(operands, jsonKey);
-        if (value) {
-            _sql << " " << sqlKeyword << " MAX(0, ";
-            parseNode(value);
-            _sql << ")";
-        }
+        if (!value)
+            return false;
+        _sql << " " << sqlKeyword << " MAX(0, ";
+        parseNode(value);
+        _sql << ")";
+        return true;
     }
 
 

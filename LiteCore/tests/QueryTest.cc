@@ -1168,6 +1168,16 @@ TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
     REQUIRE(e->next());
     CHECK(e->columns()[0]->toJSONString() == "1234");
     CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
+
+    // Offset without limit:
+    Query::Options opts3(R"({"skip": 0})"_sl);
+    query = store->compileQuery(json5(
+        "{'WHAT': ['.num', '.string'], 'OFFSET': ['$skip']}"));
+    e = (query->createEnumerator(&opts3));
+    CHECK(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->toJSONString() == "1234");
+    CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
 }
 
 

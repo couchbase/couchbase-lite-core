@@ -53,6 +53,12 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Basic", "[Query][C]") {
     // ...whereas null is a JSON null value
     compile(json5("['IS', ['.', 'contact', 'phone', [0]], null]"), "", true);
     CHECK(run("{\"offset\":0,\"limit\":4}") == (vector<string>{}));
+
+    // Check OFFSET and LIMIT individually:
+    compileSelect(json5("{LIMIT:10}"));
+    CHECK(run().size() == 10);
+    compileSelect(json5("{OFFSET:90}"));
+    CHECK(run().size() == 10);
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query LIKE", "[Query][C]") {

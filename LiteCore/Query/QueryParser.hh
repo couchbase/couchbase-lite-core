@@ -138,7 +138,7 @@ namespace litecore {
         void parseFromClause(const fleece::impl::Value *from);
         void writeFromClause(const fleece::impl::Value *from);
         int parseJoinType(fleece::slice);
-        void writeOrderOrLimitClause(const fleece::impl::Dict *operands,
+        bool writeOrderOrLimitClause(const fleece::impl::Dict *operands,
                                      fleece::slice jsonKey,
                                      const char *keyword);
 
