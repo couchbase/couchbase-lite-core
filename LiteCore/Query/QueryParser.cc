@@ -934,19 +934,21 @@ namespace litecore {
     }
 
 
-    // Handles object (dict) property accessors, e.g. ["_.", [..., "prop"] --> fl_property(..., "prop")
+    // Handles object (dict) property accessors, e.g. ["_.", [...], "prop"] --> fl_nested_value(..., "prop")
     void QueryParser::objectPropertyOp(slice op, Array::iterator& operands) {
+        auto nOperands = operands.count();
         _sql << kNestedValueFnName << '(';
         _context.push_back(&kArgListOperation);     // prevents extra parens around operands
+        require(nOperands > 0, "Missing dictionary parameter for '%.*s'", SPLAT(op));
         parseNode(operands[0]);
         _context.pop_back();
 
         slice path;
         if (op.size == 2) {
-            require(operands.count() == 2, "Missing object-property path parameter");
+            require(nOperands == 2, "Missing object-property path parameter");
             path = requiredString(operands[1], "object property path");
         } else {
-            require(operands.count() == 1, "Excess object-property parameter");
+            require(nOperands == 1, "Excess object-property parameter");
             path = op;
             path.moveStart(2);
         }

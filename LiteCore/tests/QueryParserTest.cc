@@ -354,4 +354,5 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser errors", "[Query][!throws]") {
     mustFail("['power()', 1, 2, 3]");
     mustFail("['CASE', ['.color'], 'red']");
     mustFail("['CASE', null, 'red']");
+    mustFail("['_.id']");                 // CBL-530
 }
