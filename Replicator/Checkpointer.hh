@@ -24,7 +24,9 @@ namespace litecore { namespace repl {
     class Checkpoint;
 
 
-    /** Manages a Replicator's checkpoint, including local storage (but not remote). */
+    /** Manages a Replicator's checkpoint, including local storage (but not remote).
+        \note The checkpoint-access methods are thread-safe since they are called by the
+              Replicator, Pusher and Puller. */
     class Checkpointer {
     public:
         Checkpointer(const Options&, fleece::slice remoteURL);
@@ -38,6 +40,8 @@ namespace litecore { namespace repl {
             if the remote sequences differ, mine will be reset to empty. */
         bool validateWith(const Checkpoint&);
 
+        std::string to_string() const;
+
         /** The checkpoint's local sequence. All sequences up to this are pushed. */
         C4SequenceNumber localMinSequence() const;
 
@@ -45,9 +49,10 @@ namespace litecore { namespace repl {
         void addPendingSequences(RevToSendList &sequences,
                                  C4SequenceNumber firstInRange,
                                  C4SequenceNumber lastInRange);
+        size_t pendingSequenceCount() const;
+
         void completedSequence(C4SequenceNumber);
         bool isSequenceCompleted(C4SequenceNumber) const;
-        size_t pendingSequenceCount() const;
 
         /** The checkpoint's remote sequence, the last one up to which all is pulled. */
         fleece::alloc_slice remoteMinSequence() const;
@@ -64,6 +69,10 @@ namespace litecore { namespace repl {
 
         /** Returns the doc ID where the checkpoint is to be stored. */
         alloc_slice checkpointID() const        {Assert(_docID); return _docID;}
+
+        /** The actual JSON read from the local checkpoint.
+            (Kept around for logging. Only available until the checkpoint changes.) */
+        slice checkpointJSON() const            {return _checkpointJSON;}
 
         // Database I/O:
 
@@ -137,6 +146,7 @@ namespace litecore { namespace repl {
         // Checkpoint state:
         mutable std::mutex              _mutex;
         std::unique_ptr<Checkpoint>     _checkpoint;
+        alloc_slice                     _checkpointJSON;
 
         // Document IDs:
         alloc_slice                     _initialDocID;      // DocID checkpoints are read from
