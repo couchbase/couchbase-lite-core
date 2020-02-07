@@ -182,7 +182,7 @@ _versioning(kC4RevisionTrees)
 {
     static once_flag once;
     call_once(once, [] {
-        Backtrace::installTerminateHandler(SIGILL);
+        c4log_enableFatalExceptionBacktrace();
 
         fleece::alloc_slice buildInfo = c4_getBuildInfo();
         fleece::alloc_slice version = c4_getVersion();

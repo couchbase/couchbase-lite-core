@@ -357,6 +357,7 @@ CBL {
 		c4db_markSynced;
 		c4_dumpInstances;
 		gC4ExpectExceptions;
+		c4log_enableFatalExceptionBacktrace;
 
 		_FLBuf_Retain;
 		_FLBuf_Release;

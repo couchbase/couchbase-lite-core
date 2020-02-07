@@ -158,7 +158,7 @@ TestFixture::TestFixture()
 {
     static once_flag once;
     call_once(once, [] {
-        Backtrace::installTerminateHandler(SIGILL);
+        Backtrace::installTerminateHandler(nullptr);
 
         C4StringResult version = c4_getBuildInfo();
         Log("This is LiteCore %.*s", SPLAT(version));
