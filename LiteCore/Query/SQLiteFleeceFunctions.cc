@@ -56,6 +56,7 @@ namespace litecore {
     }
 
     // fl_value(body, propertyPath) -> propertyValue
+    __hot
     static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
@@ -220,6 +221,7 @@ namespace litecore {
     // fl_result(value) -> value suitable for use as a result column
     // Primarily what this does is change the various custom value subtypes into Fleece containers
     // that can be read by SQLiteQueryRunner::encodeColumn().
+    __hot
     static void fl_result(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             auto arg = argv[0];

@@ -107,10 +107,10 @@ namespace litecore {
     }
 
     // Encodes the Value as a Fleece container and sets it as the result
-    bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::impl::Value*);
+    bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::impl::Value*) noexcept;
 
     // Sets the function result to be a Fleece/JSON null (an empty blob with kFleeceNullSubtype)
-    void setResultFleeceNull(sqlite3_context*);
+    void setResultFleeceNull(sqlite3_context*) noexcept;
 
     // Common implementation of fl_contains and array_contains
     void collectionContainsImpl(sqlite3_context*, const fleece::impl::Value *collection, sqlite3_value *arg);
