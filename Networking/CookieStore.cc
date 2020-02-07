@@ -117,7 +117,7 @@ namespace litecore { namespace net {
         time_t gmt = mktime(ptm);
 
         // Offset the original time by the difference that was calculated
-        inputTime->tm_sec += difftime(rawtime, gmt);
+        inputTime->tm_sec += int(difftime(rawtime, gmt));
     }
 
     static time_t parse_gmt_time(const char* timeStr)
