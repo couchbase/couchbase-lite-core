@@ -357,6 +357,7 @@ _c4error_return
 _c4db_markSynced
 _c4_dumpInstances
 _gC4ExpectExceptions
+_c4log_enableFatalExceptionBacktrace
 
 __FLBuf_Retain
 __FLBuf_Release

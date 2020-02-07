@@ -51,6 +51,10 @@ void c4log_warnOnErrors(bool) C4API;
 
 bool c4log_getWarnOnErrors(void) C4API;
 
+/** Registers a handler with the C++ runtime that will log a backtrace when an uncaught C++
+    exception occurs. */
+void c4log_enableFatalExceptionBacktrace(void) C4API;
+
 /** Locks a recursive mutex associated with the C4Database instance.
     Blocks if it's already locked. */
 void c4db_lock(C4Database *db) C4API;
