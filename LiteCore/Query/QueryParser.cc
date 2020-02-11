@@ -381,7 +381,7 @@ namespace litecore {
                 Assert(isUnnestedTable);
                 _sql << '(' << kUnnestedValueFnName << "(" << _bodyColumnName << "))";
             }
-            if (!isUnnestedTable)
+            if (whereClause && !isUnnestedTable)
                 writeWhereClause(whereClause);
         } catch (const FleeceException &x) {handleFleeceException(x);}
     }
