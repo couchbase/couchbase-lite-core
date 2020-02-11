@@ -161,7 +161,7 @@ extern "C" {
     /** Parameters for signing a certificate. These will be used by the Certificate Authority
         (CA), which might be the same as the subject if self-signing. */
     typedef struct {
-        unsigned validityInSeconds;         ///< seconds from signing till expiration (default 1 year)
+        unsigned validityInSeconds;         ///< seconds from signing till expiration (default 1yr)
         C4String serialNumber;              ///< serial number string (default "1")
         int maxPathLen;                     ///< maximum CA path length (default -1, meaning none)
         bool isCA;                          ///< will this be a CA certificate? (default false)
@@ -225,6 +225,7 @@ extern "C" {
                                    C4CertSigningCallback callback C4NONNULL,
                                    void *context,
                                    C4Error *outError) C4API;
+
     /** Signs an unsigned certificate (a CSR) with a private key, and returns the new signed
         certificate. This is the primary function of a Certificate Authority; but it can also
         be used to create self-signed certificates.
