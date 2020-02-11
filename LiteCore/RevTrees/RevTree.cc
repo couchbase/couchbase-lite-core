@@ -104,7 +104,7 @@ namespace litecore {
     const Rev* RevTree::currentRevision() {
         Assert(!_unknown);
         sort();
-        return _revs.size() == 0 ? nullptr : _revs[0];
+        return _revs.empty() ? nullptr : _revs[0];
     }
 
     const Rev* RevTree::get(unsigned index) const {
@@ -209,12 +209,6 @@ namespace litecore {
         return rev->_body.buf != nullptr; // VersionedDocument overrides this
     }
 
-    alloc_slice RevTree::readBodyOfRevision(const Rev* rev) const {
-        if (rev->_body.buf != nullptr)
-            return alloc_slice(rev->_body);
-        return alloc_slice(); // VersionedDocument overrides this
-    }
-
     bool RevTree::confirmLeaf(Rev* testRev) {
         for (Rev *rev : _revs)
             if (rev->parent == testRev)
@@ -280,7 +274,7 @@ namespace litecore {
 
     // Lowest-level insert method. Does no sanity checking, always inserts.
     Rev* RevTree::_insert(revid unownedRevID,
-                          alloc_slice body,
+                          const alloc_slice &body,
                           Rev *parentRev,
                           Rev::Flags revFlags,
                           bool markConflict)
@@ -323,7 +317,7 @@ namespace litecore {
         return newRev;
     }
 
-    const Rev* RevTree::insert(revid revID, alloc_slice body, Rev::Flags revFlags,
+    const Rev* RevTree::insert(revid revID, const alloc_slice &body, Rev::Flags revFlags,
                                const Rev* parent, bool allowConflict, bool markConflict,
                                int &httpStatus)
     {
@@ -366,7 +360,7 @@ namespace litecore {
         return _insert(revID, body, (Rev*)parent, revFlags, markConflict);
     }
 
-    const Rev* RevTree::insert(revid revID, alloc_slice body, Rev::Flags revFlags,
+    const Rev* RevTree::insert(revid revID, const alloc_slice &body, Rev::Flags revFlags,
                                revid parentRevID, bool allowConflict, bool markConflict,
                                int &httpStatus)
     {
@@ -381,8 +375,8 @@ namespace litecore {
         return insert(revID, body, revFlags, parent, allowConflict, markConflict, httpStatus);
     }
 
-    int RevTree::insertHistory(const std::vector<revidBuffer> history,
-                               alloc_slice body,
+    int RevTree::insertHistory(const std::vector<revidBuffer> &history,
+                               const alloc_slice &body,
                                Rev::Flags revFlags,
                                bool allowConflict,
                                bool markConflict)
@@ -563,6 +557,7 @@ void RevTree::resetConflictSequence(const Rev* winningRev) {
 
     // Sort comparison function for an array of Revisions. Higher priority comes _first_, so this
     // is a descending sort. The function returns true if rev1 is higher priority than rev2.
+    __hot
     static bool compareRevs(const Rev *rev1, const Rev *rev2) {
         // Leaf revs go before non-leaves.
         int delta = rev2->isLeaf() - rev1->isLeaf();

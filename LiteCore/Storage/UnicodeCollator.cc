@@ -55,6 +55,7 @@ namespace litecore {
         });
     }
 
+    __hot
     bool ContainsUTF8_Slow(fleece::slice str, fleece::slice substr, const CollationContext &ctx) {
         auto current = substr;
         while(str.size > 0) {
@@ -77,6 +78,7 @@ namespace litecore {
     }
 
 
+    __hot
     int LikeUTF8(slice comparand, slice pattern, const CollationContext& col) {
         // Based on SQLite's 'patternCompare' function (simplified)
         slice c, c2;                       /* Next pattern and input string chars */
@@ -212,6 +214,7 @@ namespace litecore {
 
 
     template <class CHAR>
+    __hot
     int CompareASCII(int len1, const CHAR *chars1,
                      int len2, const CHAR *chars2,
                      bool caseSensitive)

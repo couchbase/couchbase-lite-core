@@ -133,7 +133,7 @@ namespace litecore {
         }
 
 
-        Retained<RefCounted> addSharedObject(const string &key, Retained<RefCounted> object) {
+        Retained<RefCounted> addSharedObject(const string &key, RefCounted *object) {
             lock_guard<mutex> lock(_mutex);
             auto e = _sharedObjects.emplace(key, object);
             return e.first->second;

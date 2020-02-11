@@ -44,8 +44,7 @@ bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
     try {
         if (!str.buf)
             return false;
-        blobKey key(string((char*)str.buf, str.size));
-        *outKey = external(key);
+        *outKey = external(blobKey::withBase64(str));
         return true;
     } catchExceptions()
     return false;

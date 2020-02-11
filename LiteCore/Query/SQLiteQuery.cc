@@ -88,7 +88,7 @@ namespace litecore {
             }
 
             _ftsTables = qp.ftsTablesUsed();
-            for (auto ftsTable : _ftsTables) {
+            for (auto &ftsTable : _ftsTables) {
                 if (!keyStore.db().tableExists(ftsTable))
                     error::_throw(error::NoSuchIndex, "'match' test requires a full-text index");
             }

@@ -88,7 +88,7 @@ protected:
     }
 
     void verifyAttachment(string digest) {
-        CHECK(db->blobStore()->get(blobKey(digest)).exists());
+        CHECK(db->blobStore()->get(blobKey::withBase64(digest)).exists());
     }
 
 };

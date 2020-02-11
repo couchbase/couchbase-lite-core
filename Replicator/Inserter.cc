@@ -98,7 +98,7 @@ namespace litecore { namespace repl {
             warn("Transaction failed!");
 
         // Notify owners of all revs that didn't already fail:
-        for (auto rev : *revs) {
+        for (auto &rev : *revs) {
             if (rev->error.code == 0) {
                 rev->error = transactionErr;
                 rev->owner->revisionInserted();

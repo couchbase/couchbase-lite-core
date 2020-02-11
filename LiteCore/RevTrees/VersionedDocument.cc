@@ -38,7 +38,7 @@ namespace litecore {
     }
 
     VersionedDocument::VersionedDocument(KeyStore& store, const Record& rec)
-    :_store(store), _rec(std::move(rec))
+    :_store(store), _rec(rec)
     {
         decode();
     }

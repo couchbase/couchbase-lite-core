@@ -33,7 +33,7 @@ namespace litecore {
     Record::Record(alloc_slice key)
     :Record()
     {
-        setKey(key);
+        setKey(move(key));
     }
 
     Record::Record(const Record &d)

@@ -133,7 +133,7 @@ namespace litecore {
                     if (!what)
                         what = "exception";
                     throw error(x.domain, x.code,
-                                format("%s, converting doc \"%.*s\"", what, SPLAT(docID)).c_str());
+                                format("%s, converting doc \"%.*s\"", what, SPLAT(docID)));
                 }
             }
         }
@@ -231,16 +231,16 @@ namespace litecore {
                 if (meta) {
                     auto digest = meta->get(slice(kC4BlobDigestProperty));
                     if (digest)
-                        copyAttachment((string)digest->asString());
+                        copyAttachment(digest->asString());
                 }
             }
         }
 
 
         // Copies a blob to the new database if it exists in the old one.
-        bool copyAttachment(string digest) {
-            Log("        ...attachment '%s'", digest.c_str());
-            blobKey key(digest);
+        bool copyAttachment(slice digest) {
+            Log("        ...attachment '%.*s'", SPLAT(digest));
+            blobKey key = blobKey::withBase64(digest);
             string hex = key.hexString();
             for (char &c : hex)
                 c = (char)toupper(c);

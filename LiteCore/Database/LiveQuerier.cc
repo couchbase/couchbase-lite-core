@@ -70,7 +70,7 @@ namespace litecore {
     }
 
 
-    void LiveQuerier::start(Query::Options options) {
+    void LiveQuerier::start(const Query::Options &options) {
         _lastTime = clock::now();
         enqueue(&LiveQuerier::_runQuery, options);
     }

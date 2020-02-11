@@ -33,8 +33,9 @@ namespace litecore {
         SHA1 digest;
 
         blobKey() { }
-        blobKey(slice);
-        blobKey(const std::string &base64);
+        blobKey(slice rawBytes);
+
+        static blobKey withBase64(slice base64, bool prefixed =true);
 
         bool readFromBase64(slice base64, bool prefixed =true);
         bool readFromFilename(std::string filename);

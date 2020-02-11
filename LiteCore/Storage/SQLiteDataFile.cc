@@ -541,7 +541,7 @@ namespace litecore {
                 throw;
             }
         }
-        return *ref.get();
+        return *ref;
     }
 
 
@@ -575,7 +575,7 @@ namespace litecore {
                                              const string &tableName, const string &sql) {
         string existingSQL;
         bool existed = getSchema(name, type, tableName, existingSQL);
-        if (sql != "")
+        if (!sql.empty())
             return existed && existingSQL == sql;
         else
             return !existed;

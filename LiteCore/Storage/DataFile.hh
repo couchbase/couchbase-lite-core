@@ -154,7 +154,7 @@ namespace litecore {
         //////// SHARED OBJECTS:
 
         Retained<RefCounted> sharedObject(const std::string &key);
-        Retained<RefCounted> addSharedObject(const std::string &key, Retained<RefCounted>);
+        Retained<RefCounted> addSharedObject(const std::string &key, RefCounted*);
 
         //////// FACTORY:
 

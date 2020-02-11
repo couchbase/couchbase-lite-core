@@ -58,29 +58,33 @@ namespace litecore {
         Record(const Record&);
         Record(Record&&) noexcept;
 
-        const alloc_slice& key() const          {return _key;}
-        const alloc_slice& version() const      {return _version;}
-        const alloc_slice& body() const         {return _body;}
+        const alloc_slice& key() const FLPURE     {return _key;}
+        const alloc_slice& version() const FLPURE {return _version;}
+        const alloc_slice& body() const FLPURE    {return _body;}
 
-        size_t bodySize() const                 {return _bodySize;}
+        size_t bodySize() const FLPURE            {return _bodySize;}
 
-        sequence_t sequence() const             {return _sequence;}
+        sequence_t sequence() const FLPURE        {return _sequence;}
 
-        DocumentFlags flags() const             {return _flags;}
-        void setFlags(DocumentFlags f)          {_flags = f;}
-        void setFlag(DocumentFlags f)           {_flags = (DocumentFlags)((uint8_t)_flags | (uint8_t)f);}
-        void clearFlag(DocumentFlags f)         {_flags = (DocumentFlags)((uint8_t)_flags & ~(uint8_t)f);}
+        DocumentFlags flags() const FLPURE        {return _flags;}
+        void setFlags(DocumentFlags f)            {_flags = f;}
+        void setFlag(DocumentFlags f)             {_flags = (DocumentFlags)((uint8_t)_flags | (uint8_t)f);}
+        void clearFlag(DocumentFlags f)           {_flags = (DocumentFlags)((uint8_t)_flags & ~(uint8_t)f);}
 
-        bool exists() const                     {return _exists;}
+        bool exists() const FLPURE                {return _exists;}
 
         template <typename T>
-            void setKey(const T &key)           {_key = key;}
+            void setKey(const T &key)            {_key = key;}
         template <typename T>
-            void setVersion(const T &vers)      {_version = vers;}
+            void setVersion(const T &vers)       {_version = vers;}
         template <typename T>
-            void setBody(const T &body)         {_body = body; _bodySize = _body.size;}
+            void setBody(const T &body)          {_body = body; _bodySize = _body.size;}
 
-        uint64_t bodyAsUInt() const noexcept;
+        void setKey(alloc_slice &&key)           {_key = std::move(key);}
+        void setVersion(alloc_slice &&vers)      {_version = std::move(vers);}
+        void setBody(alloc_slice &&body)         {_body = std::move(body); _bodySize = _body.size;}
+
+        uint64_t bodyAsUInt() const noexcept FLPURE;
         void setBodyAsUInt(uint64_t) noexcept;
 
         /** Clears/frees everything. */
@@ -94,7 +98,7 @@ namespace litecore {
         void setExists()                        {_exists = true;}
 
         // Only RecordEnumerator sets the expiration property
-        expiration_t expiration() const         {return _expiration;}
+        expiration_t expiration() const FLPURE         {return _expiration;}
         void setExpiration(expiration_t x)      {_expiration = x;}
 
     private:

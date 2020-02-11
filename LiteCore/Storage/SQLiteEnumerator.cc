@@ -52,7 +52,7 @@ namespace litecore {
             rec.setFlags((DocumentFlags)(int)_stmt->getColumn(1));
             rec.setKey(SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)));
             rec.setExpiration(_stmt->getColumn(5));
-            SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt.get(), _content);
+            SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt, _content);
             return true;
         }
 

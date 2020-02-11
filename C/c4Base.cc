@@ -123,7 +123,7 @@ namespace c4Internal {
     static mutex sErrorMessagesMutex;
 
 
-    void recordError(C4ErrorDomain domain, int code, string message, C4Error* outError) noexcept {
+    void recordError(C4ErrorDomain domain, int code, string_view message, C4Error* outError) noexcept {
         if (outError) {
             outError->domain = domain;
             outError->code = code;
@@ -347,11 +347,11 @@ void c4log_setCallbackLevel(C4LogLevel level) noexcept   {LogDomain::setCallback
 void c4log_setBinaryFileLevel(C4LogLevel level) noexcept {LogDomain::setFileLogLevel((LogLevel)level);}
 
 
-CBL_CORE_API const C4LogDomain kC4DefaultLog    = (C4LogDomain)&kC4Cpp_DefaultLog;
-CBL_CORE_API const C4LogDomain kC4DatabaseLog   = (C4LogDomain)&DBLog;
-CBL_CORE_API const C4LogDomain kC4QueryLog      = (C4LogDomain)&QueryLog;
-CBL_CORE_API const C4LogDomain kC4SyncLog       = (C4LogDomain)&SyncLog;
-CBL_CORE_API const C4LogDomain kC4WebSocketLog  = (C4LogDomain)&websocket::WSLogDomain;
+CBL_CORE_API C4LogDomain const kC4DefaultLog    = (C4LogDomain)&kC4Cpp_DefaultLog;
+CBL_CORE_API C4LogDomain const kC4DatabaseLog   = (C4LogDomain)&DBLog;
+CBL_CORE_API C4LogDomain const kC4QueryLog      = (C4LogDomain)&QueryLog;
+CBL_CORE_API C4LogDomain const kC4SyncLog       = (C4LogDomain)&SyncLog;
+CBL_CORE_API C4LogDomain const kC4WebSocketLog  = (C4LogDomain)&websocket::WSLogDomain;
 
 
 C4LogDomain c4log_getDomain(const char *name, bool create) noexcept {

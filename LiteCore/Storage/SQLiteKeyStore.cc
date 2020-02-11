@@ -134,7 +134,7 @@ namespace litecore {
     {
         if (ref != nullptr) {
             db().checkOpen();
-            return *ref.get();
+            return *ref;
         } else {
             return db().compile(ref, subst(sqlTemplate).c_str());
         }

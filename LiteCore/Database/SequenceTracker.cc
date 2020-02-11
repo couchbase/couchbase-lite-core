@@ -364,7 +364,7 @@ namespace litecore {
     DocChangeNotifier::DocChangeNotifier(SequenceTracker &t, slice docID, Callback cb)
     :tracker(t),
     _docEntry(tracker.addDocChangeNotifier(docID, this)),
-    callback(cb)
+    callback(move(cb))
     {
         t._logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
     }
@@ -383,7 +383,7 @@ namespace litecore {
     DatabaseChangeNotifier::DatabaseChangeNotifier(SequenceTracker &t, Callback cb, sequence_t afterSeq)
     :Logging(ChangesLog)
     ,tracker(t)
-    ,callback(cb)
+    ,callback(move(cb))
     ,_placeholder(tracker.addPlaceholderAfter(this, afterSeq))
     {
         if (callback)

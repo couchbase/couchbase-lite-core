@@ -40,7 +40,7 @@ namespace litecore {
                     bool continuous,
                     Delegate* NONNULL);
 
-        void start(Query::Options);
+        void start(const Query::Options &options);
 
         void stop();
 

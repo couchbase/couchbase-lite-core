@@ -47,19 +47,19 @@ namespace litecore {
         /** Returns false if the record was loaded metadata-only. Revision accessors will fail. */
         bool revsAvailable() const {return !_unknown;}
 
-        const alloc_slice& docID() const {return _rec.key();}
-        revid revID() const         {return revid(_rec.version());}
-        DocumentFlags flags() const {return _rec.flags();}
-        bool isDeleted() const      {return (flags() & DocumentFlags::kDeleted) != 0;}
-        bool isConflicted() const   {return (flags() & DocumentFlags::kConflicted) != 0;}
-        bool hasAttachments() const {return (flags() & DocumentFlags::kHasAttachments) != 0;}
+        const alloc_slice& docID() const FLPURE {return _rec.key();}
+        revid revID() const FLPURE         {return revid(_rec.version());}
+        DocumentFlags flags() const FLPURE {return _rec.flags();}
+        bool isDeleted() const FLPURE      {return (flags() & DocumentFlags::kDeleted) != 0;}
+        bool isConflicted() const FLPURE   {return (flags() & DocumentFlags::kConflicted) != 0;}
+        bool hasAttachments() const FLPURE {return (flags() & DocumentFlags::kHasAttachments) != 0;}
 
-        bool exists() const         {return _rec.exists();}
-        sequence_t sequence() const {return _rec.sequence();}
+        bool exists() const FLPURE         {return _rec.exists();}
+        sequence_t sequence() const FLPURE {return _rec.sequence();}
 
-        const Record& record() const    {return _rec;}
+        const Record& record() const FLPURE    {return _rec;}
 
-        bool changed() const        {return _changed;}
+        bool changed() const FLPURE        {return _changed;}
 
         enum SaveResult {kConflict, kNoNewSequence, kNewSequence};
         SaveResult save(Transaction& transaction);

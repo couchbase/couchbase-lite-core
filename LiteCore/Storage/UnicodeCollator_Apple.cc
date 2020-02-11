@@ -97,6 +97,7 @@ namespace litecore {
 
 
     /** Full Unicode-savvy string comparison. */
+    __hot
     static inline int compareStringsUnicode(int len1, const void * chars1,
                                             int len2, const void * chars2,
                                             const CFCollationContext &ctx)
@@ -115,6 +116,7 @@ namespace litecore {
     }
 
 
+    __hot
     static int collateUnicodeCallback(void *context,
                                       int len1, const void * chars1,
                                       int len2, const void * chars2)
@@ -146,6 +148,7 @@ namespace litecore {
     }
 
 
+    __hot
     bool ContainsUTF8(fleece::slice str, fleece::slice substr, const CollationContext &ctx) {
         TempCFString cfStr(str), cfSubstr(substr);
         if (_usuallyFalse(!cfStr || !cfSubstr))
