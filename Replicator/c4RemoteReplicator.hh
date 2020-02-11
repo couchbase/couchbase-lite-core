@@ -101,18 +101,16 @@ namespace c4Internal {
         }
 
 
-        virtual void setSuspended(bool suspended) override {
-            LOCK(_mutex);
-            if (!setStatusFlag(kC4Suspended, suspended))
-                return;
-            logInfo("%s", (suspended ? "Suspended" : "Un-suspended"));
-            if (suspended) {
-                cancelScheduledRetry();
-                if (_replicator)
-                    _replicator->stop();
-            } else {
-                maybeScheduleRetry();
-            }
+        virtual void _suspend() override {
+            // called with _mutex locked
+            cancelScheduledRetry();
+            C4Replicator::_suspend();
+        }
+
+
+        virtual void _unsuspend() override {
+            // called with _mutex locked
+            maybeScheduleRetry();
         }
 
 
@@ -166,12 +164,6 @@ namespace c4Internal {
 
         // Overridden to handle transient or network-related errors and possibly retry.
         virtual void handleStopped() override {
-            if (statusFlag(kC4Suspended)) {
-                // If suspended, go to Offline state when Replicator stops
-                _status.level = kC4Offline;
-                return;
-            }
-
             C4Error c4err = _status.error;
             if (c4err.code == 0)
                 return;

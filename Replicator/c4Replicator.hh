@@ -38,14 +38,27 @@ using namespace litecore;
 using namespace litecore::repl;
 
 
-#define LOCK(MUTEX)     lock_guard<mutex> _lock(MUTEX)
+#define LOCK(MUTEX)     unique_lock<mutex> _lock(MUTEX)
+#define UNLOCK()        _lock.unlock();
 
 
 /** Glue between C4 API and internal LiteCore replicator. Abstract class. */
-struct C4Replicator : public RefCounted, Logging, Replicator::Delegate, public InstanceCountedIn<C4Replicator> {
+struct C4Replicator : public RefCounted,
+                      Logging,
+                      Replicator::Delegate,
+                      public InstanceCountedIn<C4Replicator>
+{
+    // Bump this when incompatible changes are made to API or implementation.
+    // Subclass c4LocalReplicator is in the couchbase-lite-core-EE repo, which doesn not have a
+    // submodule relationship to this one, so it's possible for it to get out of sync.
+    static constexpr int API_VERSION = 2;
 
-    // Subclass must override this, creating a Replicator instance and passing it to `_start`.
-    virtual void start() =0;
+    virtual void start() {
+        LOCK(_mutex);
+        if (!_replicator)
+            _start();
+    }
+
 
     // Retry is not supported by default. C4RemoteReplicator overrides this.
     virtual bool retry(bool resetCount, C4Error *outError) {
@@ -54,8 +67,23 @@ struct C4Replicator : public RefCounted, Logging, Replicator::Delegate, public I
         return false;
     }
 
-    virtual void setHostReachable(bool reachable)   { }
-    virtual void setSuspended(bool suspended)       { }
+    virtual void setHostReachable(bool reachable) {
+    }
+
+    void setSuspended(bool suspended) {
+        LOCK(_mutex);
+        if (!setStatusFlag(kC4Suspended, suspended))
+            return;
+        logInfo("%s", (suspended ? "Suspended" : "Un-suspended"));
+        if (suspended) {
+            _activeWhenSuspended = (_status.level >= kC4Connecting);
+            if (_activeWhenSuspended)
+                _suspend();
+        } else {
+            if (_status.level == kC4Offline && _activeWhenSuspended)
+                _unsuspend();
+        }
+    }
 
     alloc_slice responseHeaders() {
         LOCK(_mutex);
@@ -198,6 +226,16 @@ protected:
         _replicator->start();
     }
 
+    virtual void _suspend() {
+        // called with _mutex locked
+        if (_replicator)
+            _replicator->stop();
+    }
+
+    virtual void _unsuspend() {
+        // called with _mutex locked
+        _start();
+    }
     
     // ---- ReplicatorDelegate API:
 
@@ -230,7 +268,12 @@ protected:
             if (_status.level == kC4Stopped) {
                 _replicator->terminate();
                 _replicator = nullptr;
-                handleStopped();     // NOTE: handleStopped may change _status
+                if (statusFlag(kC4Suspended)) {
+                    // If suspended, go to Offline state when Replicator stops
+                    _status.level = kC4Offline;
+                } else {
+                    handleStopped();     // NOTE: handleStopped may change _status
+                }
             }
             stopped = (_status.level == kC4Stopped);
         }
@@ -329,6 +372,8 @@ protected:
 
     Retained<Replicator>        _replicator;
     C4ReplicatorStatus          _status {kC4Stopped};
+    bool                        _activeWhenSuspended {false};
+
 
 private:
     alloc_slice                 _responseHeaders;

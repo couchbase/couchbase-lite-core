@@ -23,11 +23,6 @@ namespace c4Internal {
         ,_openSocket(openSocket)
         { }
 
-        virtual void start() override {
-            LOCK(_mutex);
-            _start();
-        }
-
         
         virtual alloc_slice URL() const override {
             return _openSocket->url();
@@ -38,6 +33,11 @@ namespace c4Internal {
             Assert(_openSocket);
             _replicator = new Replicator(_database, _openSocket, *this, _options);
             _openSocket = nullptr;
+        }
+
+
+        virtual void _unsuspend() override {
+            // Restarting doesn't make sense; do nothing
         }
 
     private:
