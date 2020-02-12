@@ -47,15 +47,6 @@ public:
 };
 
 
-static alloc_slice copyFixtureDB(const string &name) {
-    auto srcPath = FilePath(C4Test::sFixturesDir + name);
-    FilePath dbPath = FilePath::tempDirectory()[srcPath.fileOrDirName() + "/"];
-    dbPath.delRecursive();
-    srcPath.copyTo(dbPath);
-    return alloc_slice(string(dbPath));
-}
-
-
 TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
     C4EncryptionKey key = {};
     REQUIRE(!c4key_setPassword(&key, nullslice, kC4EncryptionAES256));
@@ -147,7 +138,7 @@ static void testOpeningEncryptedDBFixture(const char *dbPath, const void *key) {
         memcpy(config.encryptionKey.bytes, key, kC4EncryptionKeySizeAES256);
         C4Error error;
         C4Log("---- Opening db %s with flags 0x%x", dbPath, config.flags);
-        auto db = c4db_open(copyFixtureDB(dbPath), &config, &error);
+        auto db = c4db_open(C4Test::copyFixtureDB(dbPath), &config, &error);
         CHECK(db);
         c4db_release(db);
     }

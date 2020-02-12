@@ -281,7 +281,8 @@ _versioning(kC4RevisionTrees)
 }
 
 C4Test::~C4Test() {
-    deleteDatabase();
+    if (db)
+        deleteDatabase();
 
 #if ATOMIC_INT_LOCK_FREE > 1
     if (!current_exception()) {
@@ -368,6 +369,15 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
     db = c4db_open({path.buf, path.size}, &config, &error);
     REQUIRE(db);
     c4slice_free(path);
+}
+
+
+/*static*/ alloc_slice C4Test::copyFixtureDB(const string &name) {
+    auto srcPath = litecore::FilePath(sFixturesDir + name);
+    auto dbPath = litecore::FilePath::tempDirectory()[srcPath.fileOrDirName() + "/"];
+    dbPath.delRecursive();
+    srcPath.copyTo(dbPath);
+    return alloc_slice(string(dbPath));
 }
 
 

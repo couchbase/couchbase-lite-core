@@ -162,6 +162,7 @@ public:
     bool isSQLite() const                       {return storageType() == kC4SQLiteStorageEngine;}
     C4DocumentVersioning versioning() const     {return _versioning;}
     bool isRevTrees() const                     {return _versioning == kC4RevisionTrees;}
+    bool isEncrypted() const                    {return (c4db_getConfig(db)->encryptionKey.algorithm != kC4EncryptionNone);}
 
     // Creates an extra database, with the same path as db plus the suffix.
     // Caller is responsible for closing & deleting this database when the test finishes.
@@ -172,7 +173,9 @@ public:
     void reopenDBReadOnly();
     void deleteDatabase();
     void deleteAndRecreateDB()                  {deleteAndRecreateDB(db);}
+
     static void deleteAndRecreateDB(C4Database*&);
+    static alloc_slice copyFixtureDB(const std::string &name);
 
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);

@@ -20,6 +20,7 @@
 #include "c4Private.h"
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
+#include "FilePath.hh"
 #include <cmath>
 #include <errno.h>
 #include <iostream>
@@ -559,6 +560,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
     REQUIRE(c4blob_getSize(store, key3) == -1);
 }
 
+
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     C4Slice doc1ID = C4STR("doc001");
     C4Slice doc2ID = C4STR("doc002");
@@ -676,4 +678,102 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
     REQUIRE(c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, &error));
 
     REQUIRE(c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error));
+}
+
+
+#pragma mark - SCHEMA UPGRADES
+
+
+static const string kVersionedFixturesSubDir = "db_versions/";
+
+
+// This isn't normally run. It creates a new database to check into C/tests/data/db_versions/.
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Maintenance]") {
+    {
+        TransactionHelper t(db);
+        char docID[20], json[100];
+        for (unsigned i = 1; i <= 100; i++) {
+            sprintf(docID, "doc-%03u", i);
+            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            createFleeceRev(db, slice(docID), kRevID, slice(json), (i <= 50 ? 0 : kRevDeleted));
+        }
+        // TODO: Create some blobs too
+    }
+    alloc_slice path = c4db_getPath(db);
+    string filename = "NEW_UPGRADE_FIXTURE.cblite2";
+    if (c4db_getConfig(db)->encryptionKey.algorithm != kC4EncryptionNone)
+        filename = "NEW_ENCRYPTED_UPGRADE_FIXTURE.cblite2";
+
+    closeDB();
+
+    litecore::FilePath fixturePath(C4DatabaseTest::sFixturesDir + kVersionedFixturesSubDir + filename, "");
+    litecore::FilePath(string(path), "").moveToReplacingDir(fixturePath, false);
+    C4Log("New fixture is at %s", string(fixturePath).c_str());
+}
+
+
+static void testOpeningOlderDBFixture(const string & dbPath,
+                                      C4DatabaseFlags withFlags,
+                                      int expectedErrorCode =0)
+{
+    C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
+    C4DatabaseConfig config = { };
+    config.flags = withFlags;
+    C4Error error;
+    C4Database *db;
+    auto path = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
+
+    if (expectedErrorCode == 0) {
+        db = c4db_open(path, &config, &error);
+        REQUIRE(db);
+    } else {
+        ExpectingExceptions x;
+        db = c4db_open(path, &config, &error);
+        REQUIRE(!db);
+        REQUIRE(error.domain == LiteCoreDomain);
+        REQUIRE(error.code == expectedErrorCode);
+        return;
+    }
+
+    // Verify getting documents by ID:
+    char docID[20];
+    for (unsigned i = 1; i <= 100; i++) {
+        sprintf(docID, "doc-%03u", i);
+        INFO("Checking docID " << docID);
+        C4Document *doc = c4doc_get(db, slice(docID), true, &error);
+        REQUIRE(doc);
+        if (i <= 50)
+            CHECK((doc->flags & kRevDeleted) == 0);
+        else
+            CHECK((doc->flags & kRevDeleted) != 0);
+        // TODO: Verify the doc contents too
+        c4doc_release(doc);
+    }
+
+    // Verify enumerating documents:
+    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+    options.flags |= kC4IncludeDeleted;
+    C4DocEnumerator *e = c4db_enumerateAllDocs(db, &options, &error);
+    REQUIRE(e);
+    unsigned i = 1;
+    while (c4enum_next(e, &error)) {
+        INFO("Checking enumeration #" << i);
+        sprintf(docID, "doc-%03u", i);
+        C4DocumentInfo info;
+        REQUIRE(c4enum_getDocumentInfo(e, &info));
+        CHECK(slice(info.docID) == slice(docID));
+        ++i;
+    }
+    CHECK(error.code == 0);
+    CHECK(i == 101);
+
+    CHECK(c4db_delete(db, &error));
+    c4db_release(db);
+}
+
+
+TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
+    testOpeningOlderDBFixture("upgrade_2.7.cblite2", 0);
+    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
+    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
 }
