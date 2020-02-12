@@ -82,6 +82,7 @@ namespace litecore { namespace websocket {
 
         c4::ref<C4Database> _database;                      // The database (used only for cookies)
         std::unique_ptr<net::TCPSocket> _socket;            // The TCP socket
+        Retained<BuiltInWebSocket> _selfRetain;             // Keeps me alive while connected
         Retained<net::TLSContext> _tlsContext;              // TLS settings
         std::thread _connectThread;                         // Thread that opens the connection
 

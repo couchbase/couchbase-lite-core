@@ -95,7 +95,7 @@ namespace litecore { namespace websocket {
     void BuiltInWebSocket::connect() {
         // Spawn a thread to connect and run the read loop:
         WebSocketImpl::connect();
-        retain(this);
+        _selfRetain = this; // Keep myself alive until disconnect
         _connectThread = thread(bind(&BuiltInWebSocket::_bgConnect, this));
         _connectThread.detach();
     }
@@ -120,6 +120,7 @@ namespace litecore { namespace websocket {
 
     // This runs on its own thread.
     void BuiltInWebSocket::_bgConnect() {
+        Retained<BuiltInWebSocket> temporarySelfRetain = this;
         setThreadName();
 
         if (!_socket) {
@@ -128,14 +129,13 @@ namespace litecore { namespace websocket {
                 auto socket = _connectLoop();
                 _database = nullptr;
                 if (!socket) {
-                    release(this);
+                    _selfRetain = nullptr;
                     return;
                 }
 
                 _socket = move(socket);
             } catch (const std::exception &x) {
                 closeWithException(x, "while connecting");
-                release(this);
                 return;
             }
         }
@@ -343,9 +343,8 @@ namespace litecore { namespace websocket {
         try {
             if (!_socket->connected()) {
                 // closeSocket() has been called:
-                logDebug("");
+                logDebug("readFromSocket: disconnected");
                 closeWithError(_socket->error());
-                release(this); // balances retain() in connect()
                 return;
             }
 
@@ -463,6 +462,7 @@ namespace litecore { namespace websocket {
                 status.reason = kNetworkError;
             onClose(status);
         }
+        _selfRetain = nullptr; // allow myself to be freed now
     }
 
 } }
