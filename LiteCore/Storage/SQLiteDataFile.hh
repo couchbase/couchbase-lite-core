@@ -161,6 +161,7 @@ namespace litecore {
 
         void reopenSQLiteHandle();
         void ensureSchemaVersionAtLeast(SchemaVersion);
+        bool upgradeSchema(SchemaVersion minVersion, const char *what, function_ref<void()>);
         void migrateDeletedDocs();
         void decrypt();
         bool _decrypt(EncryptionAlgorithm, slice key);
