@@ -65,7 +65,7 @@ namespace litecore {
         // Top-level method to invoke the upgrader.
         void run() {
             int userVersion = _oldDB.execAndGet("PRAGMA user_version");
-            Log("Upgrading CBL 1.x database <%s>, user_version=%d)",
+            Log("SCHEMA UPGRADE: Upgrading CBL 1.x database <%s>, user_version=%d)",
                 _oldPath.path().c_str(), userVersion);
             if (userVersion < kMinOldUserVersion)
                 error::_throw(error::DatabaseTooOld);

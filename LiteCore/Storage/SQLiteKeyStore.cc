@@ -455,13 +455,13 @@ namespace litecore {
         vector<alloc_slice> results(docIDs.size());
         while (stmt.executeStep()) {
             slice docID = columnAsSlice(stmt.getColumn(0));
-            slice revs = textColumnAsSlice(stmt.getColumn(1));
+            slice value = textColumnAsSlice(stmt.getColumn(1));
             size_t i = docIndices[docID];
             //Log("    -- %zu: %.*s --> '%.*s'", i, SPLAT(docID), SPLAT(revs));
-            if (revs.size == 0 && revs.buf != 0)
-                results[i] = empty;
+            if (value.size == 0 && value.buf != 0)
+                results[i] = empty;     // reuse one empty slice instead of creating one per row
             else
-                results[i] = alloc_slice(revs);
+                results[i] = alloc_slice(value);
         }
         return results;
     }
