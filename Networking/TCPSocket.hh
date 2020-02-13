@@ -8,26 +8,22 @@
 #include "RefCounted.hh"
 #include "Address.hh"
 #include "HTTPTypes.hh"
-#include "function_ref.hh"
 #include "fleece/Fleece.hh"
-#include <memory>
-#include <mutex>
-#include <vector>
 #include <functional>
+#include <memory>
+#include <vector>
 
-namespace litecore { namespace crypto {
+namespace litecore::crypto {
     class Cert;
-}}
-namespace litecore { namespace websocket {
-    struct CloseStatus;
+}
+namespace litecore::websocket {
     class Headers;
-} }
+}
 namespace sockpp {
-    class socket;
     class stream_socket;
 }
 
-namespace litecore { namespace net {
+namespace litecore::net {
     class TLSContext;
     class HTTPLogic;
 
@@ -132,15 +128,14 @@ namespace litecore { namespace net {
         std::unique_ptr<sockpp::stream_socket> _socket;     // The TCP (or TLS) socket
         sockpp::stream_socket* _wrappedSocket {nullptr};    // Underlying TLS socket, when using TCP
         fleece::Retained<TLSContext> _tlsContext;           // Custom TLS context if any
-        bool _isClient;
+        bool _isClient;                                     // Am I a client (not server) socket?
         bool _nonBlocking {false};                          // Is socket in non-blocking mode?
         double _timeout {0};                                // read/write/connect timeout in seconds
         C4Error _error {};                                  // last error
-        fleece::alloc_slice _unread;        // Data read from socket that's been "pushed back"
-        size_t _unreadLen {0};              // Length of valid data in _unread
-        bool _eofOnRead {false};            // Has read stream reached EOF?
-        bool _eofOnWrite {false};           // Has write stream reached EOF?
-        std::mutex _mutex;                  // Synchronizes creation of the above FDs
+        fleece::alloc_slice _unread;                        // Data read that's been "pushed back"
+        size_t _unreadLen {0};                              // Length of valid data in _unread
+        bool _eofOnRead {false};                            // Has read stream reached EOF?
+        bool _eofOnWrite {false};                           // Has write stream reached EOF?
     };
 
 
@@ -173,4 +168,4 @@ namespace litecore { namespace net {
     };
 
 
-} }
+}

@@ -36,7 +36,6 @@
 #include <chrono>
 #include <regex>
 #include <string>
-#include <mutex>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
@@ -78,8 +77,7 @@ namespace litecore { namespace net {
     }
 
 
-    TCPSocket::~TCPSocket()
-    {
+    TCPSocket::~TCPSocket() {
         _socket.reset(); // Make sure socket closes before _tlsContext does
     }
 
