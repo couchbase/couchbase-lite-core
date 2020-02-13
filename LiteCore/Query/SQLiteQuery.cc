@@ -140,8 +140,7 @@ namespace litecore {
             alloc_slice matchedText;
             _matchedTextStatement->bind(1, (long long)term.dataSource); // dataSource is docid
             if (_matchedTextStatement->executeStep())
-                matchedText = alloc_slice( ((SQLiteKeyStore&)keyStore()).columnAsSlice(
-                                                _matchedTextStatement->getColumn(term.keyIndex)) );
+                matchedText = alloc_slice( dynamic_cast<SQLiteKeyStore&>(keyStore()).columnAsSlice(_matchedTextStatement->getColumn(term.keyIndex)) );
             else
                 Warn("FTS index %s has no row for docid %" PRIu64, expr.c_str(), term.dataSource);
             _matchedTextStatement->reset();
