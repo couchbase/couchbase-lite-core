@@ -195,6 +195,10 @@ namespace litecore {
 
         _lastSequence = -1;
         _purgeCountValid = false;
+
+        if (!commit && _uncommittedExpirationColumn)
+            _hasExpirationColumn = false;
+        _uncommittedExpirationColumn = false;
     }
 
 
@@ -488,6 +492,7 @@ namespace litecore {
                     "ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
                     "CREATE INDEX kv_@_expiration ON kv_@ (expiration) WHERE expiration not null"));
         _hasExpirationColumn = true;
+        _uncommittedExpirationColumn = true;
     }
 
 

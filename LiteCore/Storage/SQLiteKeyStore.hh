@@ -150,6 +150,7 @@ namespace litecore {
         mutable int64_t _lastSequence {-1};
         mutable std::atomic<uint64_t> _purgeCount {0};
         bool _hasExpirationColumn {false};
+        bool _uncommittedExpirationColumn {false};
         mutable std::mutex _stmtMutex;
     };
 
