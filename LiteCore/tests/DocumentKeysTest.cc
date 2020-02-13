@@ -25,10 +25,8 @@ using namespace fleece::impl;
 
 class DocumentKeysTestFixture : public DataFileTestFixture {
 public:
-    static const DataFile::Options kOptions;
-
     DocumentKeysTestFixture()
-    :DataFileTestFixture(0, &kOptions)
+    :DataFileTestFixture(0, &DataFile::Options::defaults)
     { }
 
     alloc_slice convertJSON(const char *json) {
@@ -46,14 +44,6 @@ public:
         store->set(slice(docID), convertJSON(json), t);
     }
 
-};
-
-
-const DataFile::Options DocumentKeysTestFixture::kOptions = {
-    {true},
-    true,
-    true,
-    true,       // useDocumentKeys
 };
 
 
