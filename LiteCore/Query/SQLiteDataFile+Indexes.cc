@@ -52,6 +52,11 @@ namespace litecore {
                           "Accessing indexes requires upgrading the database schema");
 
         Assert(inTransaction());
+
+        int userVersion = _sqlDb->execAndGet("PRAGMA user_version");
+        if (!options().upgradeable && userVersion < 301)
+            error::_throw(error::CantUpgradeDatabase);
+
         LogTo(DBLog, "Upgrading database to use 'indexes' table...");
         _exec("CREATE TABLE indexes (name TEXT PRIMARY KEY, type INTEGER NOT NULL,"
                                   " keyStore TEXT NOT NULL, expression TEXT, indexTableName TEXT)");
