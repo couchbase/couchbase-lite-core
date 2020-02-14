@@ -373,7 +373,7 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
 
 
 /*static*/ alloc_slice C4Test::copyFixtureDB(const string &name) {
-    auto srcPath = litecore::FilePath(sFixturesDir + name);
+    auto srcPath = litecore::FilePath(sFixturesDir + name, "");
     auto dbPath = litecore::FilePath::tempDirectory()[srcPath.fileOrDirName() + "/"];
     dbPath.delRecursive();
     srcPath.copyTo(dbPath);
