@@ -69,7 +69,6 @@ namespace litecore {
 
 
     void SequenceTracker::endTransaction(bool commit) {
-        // Get a list of Entrys for all docs changed in the transaction:
         Assert(inTransaction());
 
         if (commit) {

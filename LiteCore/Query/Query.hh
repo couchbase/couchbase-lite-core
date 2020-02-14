@@ -21,6 +21,7 @@
 #include "KeyStore.hh"
 #include "FleeceImpl.hh"
 #include "Error.hh"
+#include "Logging.hh"
 #include <atomic>
 
 namespace litecore {
@@ -29,7 +30,7 @@ namespace litecore {
 
     /** Abstract base class of compiled database queries.
         These are created by the factory method KeyStore::compileQuery(). */
-    class Query : public RefCounted {
+    class Query : public RefCounted, public Logging {
     public:
 
         class parseError : public error {
@@ -88,9 +89,9 @@ namespace litecore {
 
     protected:
         Query(KeyStore &keyStore, slice expression, QueryLanguage language);
-        
         virtual ~Query();
-
+        virtual std::string loggingIdentifier() const override;
+        
     private:
         KeyStore* _keyStore;
         alloc_slice _expression;

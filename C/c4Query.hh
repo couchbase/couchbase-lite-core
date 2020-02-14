@@ -53,7 +53,7 @@ struct c4Query : public RefCounted, public fleece::InstanceCountedIn<c4Query>, L
             _observers.insert(obs);
             if (!_bgQuerier) {
                 _bgQuerier = new LiveQuerier(_database, _query, true, this);
-                _bgQuerier->run(_parameters);
+                _bgQuerier->start(_parameters);
             }
         } else {
             _observers.erase(obs);

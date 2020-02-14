@@ -547,11 +547,7 @@ namespace c4Internal {
             _sequenceTracker->use([&](SequenceTracker &st) {
                 if (committed) {
                     // Notify other Database instances on this file:
-                    _dataFile->forOtherDataFiles([&](DataFile *other) {
-                        auto db = dynamic_cast<Database*>(other->delegate());
-                        if (db)
-                            db->externalTransactionCommitted(st);
-                    });
+                    _transaction->notifyCommitted(st);
                 }
                 st.endTransaction(committed);
             });

@@ -174,7 +174,6 @@ namespace litecore {
     }
 
     void SQLiteKeyStore::incrementPurgeCount() {
-        
         ++_purgeCount;
         _purgeCountChanged = true;
     }

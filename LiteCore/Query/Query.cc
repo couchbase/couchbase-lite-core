@@ -29,7 +29,8 @@ namespace litecore {
 
 
     Query::Query(KeyStore &keyStore, slice expression, QueryLanguage language)
-    :_keyStore(&keyStore)
+    :Logging(QueryLog)
+    ,_keyStore(&keyStore)
     ,_expression(expression)
     ,_language(language)
     {
@@ -40,6 +41,11 @@ namespace litecore {
     Query::~Query() {
         if (_keyStore)
             _keyStore->dataFile().unregisterQuery(this);
+    }
+
+
+    std::string Query::loggingIdentifier() const {
+        return string(_expression);
     }
 
 

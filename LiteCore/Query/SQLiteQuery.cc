@@ -53,11 +53,10 @@ namespace litecore {
     };
 
 
-    class SQLiteQuery : public Query, Logging {
+    class SQLiteQuery : public Query {
     public:
         SQLiteQuery(SQLiteKeyStore &keyStore, slice queryStr, QueryLanguage language)
         :Query(keyStore, queryStr, language)
-        ,Logging(QueryLog)
         {
             static constexpr const char* kLanguageName[] = {"JSON", "N1QL"};
             logInfo("Compiling %s query: %.*s", kLanguageName[(int)language], SPLAT(queryStr));

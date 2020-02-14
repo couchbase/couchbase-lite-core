@@ -147,8 +147,10 @@ namespace c4Internal {
         void lockClientMutex()                              {_clientMutex.lock();}
         void unlockClientMutex()                            {_clientMutex.unlock();}
 
+        // DataFile::Delegate API:
         virtual slice fleeceAccessor(slice recordBody) const override;
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
+        virtual void externalTransactionCommitted(const SequenceTracker&) override;
 
         BackgroundDB* backgroundDatabase();
         void stopBackgroundTasks();
@@ -160,7 +162,6 @@ namespace c4Internal {
     public:
         // should be private, but called from Document
         void documentSaved(Document* NONNULL);
-        void externalTransactionCommitted(const SequenceTracker&);
 
     protected:
         virtual ~Database();
