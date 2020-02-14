@@ -117,6 +117,7 @@ namespace litecore {
         [[noreturn]] static void _throw(LiteCoreError);
         [[noreturn]] static void _throwErrno();
         [[noreturn]] static void _throw(LiteCoreError, const char *msg, ...) __printflike(2,3);
+        [[noreturn]] static void _throwErrno(const char *msg, ...) __printflike(1, 2);
 
         /** Throws an assertion failure exception. Called by the Assert() macro. */
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
