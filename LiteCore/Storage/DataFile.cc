@@ -403,6 +403,14 @@ namespace litecore {
     }
 
 
+    void Transaction::notifyCommitted(SequenceTracker &sequenceTracker) {
+        _db.forOtherDataFiles([&](DataFile *other) {
+            if (other->delegate())
+                other->delegate()->externalTransactionCommitted(sequenceTracker);
+        });
+    }
+
+
     Transaction::~Transaction() {
         if (_active) {
             _db._logInfo("Transaction exiting scope without explicit commit; aborting");

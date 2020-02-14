@@ -20,121 +20,13 @@
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
 #include "Database.hh"
-#include "SequenceTracker.hh"
+#include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include <inttypes.h>
 
 namespace litecore {
     using namespace actor;
     using namespace std::placeholders;
-
-
-    LiveQuerier::LiveQuerier(c4Internal::Database *db,
-                                         Query *query,
-                                         bool continuous,
-                                         Delegate *delegate)
-    :Logging(QueryLog)
-    ,_database(db)
-    ,_backgroundDB(db->backgroundDatabase())
-    ,_expression(query->expression())
-    ,_language(query->language())
-    ,_continuous(continuous)
-    ,_delegate(delegate)
-    {
-        logInfo("Created on Query %p", query);
-    }
-
-
-    LiveQuerier::~LiveQuerier() {
-        if (_query || _dbNotifier)
-            _stop();
-    }
-
-
-    void LiveQuerier::run(Query::Options options) {
-        _lastTime = clock::now();
-        enqueue(&LiveQuerier::_run, options);
-    }
-
-
-    // Runs the query.
-    void LiveQuerier::_run(Query::Options options) {
-        logVerbose("Running query...");
-        Retained<QueryEnumerator> newQE;
-        C4Error error = {};
-        fleece::Stopwatch st;
-        _backgroundDB->use([&](DataFile *df) {
-            try {
-                // Create my own Query object associated with the Backgrounder's DataFile:
-                if (!_query) {
-                    _query = df->defaultKeyStore().compileQuery(_expression, _language);
-                    _expression = nullslice;
-                }
-                // Now run the query:
-                newQE = _query->createEnumerator(&options);
-            } catchError(&error);
-        });
-        auto time = st.elapsedMS();
-
-        if (!newQE)
-            logError("Query failed with error %s", c4error_descriptionStr(error));
-
-        if (!_continuous) {
-            logInfo("...finished one-shot query in %.3fms", time);
-            _delegate->liveQuerierUpdated(newQE, error);
-            return;
-        }
-
-        if (newQE) {
-            if (_currentEnumerator && !_currentEnumerator->obsoletedBy(newQE)) {
-                logVerbose("Results unchanged at seq %" PRIu64 " (%.3fms)",
-                           newQE->lastSequence(), time);
-            } else {
-                logInfo("Results changed at seq %" PRIu64 " (%.3fms)", newQE->lastSequence(), time);
-                _currentEnumerator = newQE;
-                _delegate->liveQuerierUpdated(newQE, error);
-            }
-        }
-
-        sequence_t after = _currentEnumerator ? _currentEnumerator->lastSequence() : 0;
-        sequence_t lastSequence = 0;
-
-        _database->sequenceTracker().use([&](SequenceTracker &st) {
-            if (_dbNotifier == nullptr) {
-                // Start the db change notifier:
-                _dbNotifier.reset(new DatabaseChangeNotifier(st,
-                                                             bind(&LiveQuerier::dbChanged, this, _1),
-                                                             after));
-                logVerbose("Started DB change notifier after sequence %" PRIu64, after);
-            } else {
-                logVerbose("Re-arming DB change notifier, after sequence %" PRIu64, after);
-            }
-
-            // Read changes from db change notifier, so it can fire again:
-            SequenceTracker::Change changes[100];
-            bool external;
-            size_t n;
-            while ((n = _dbNotifier->readChanges(changes, 100, external)) > 0)
-                lastSequence = changes[n-1].sequence;
-        });
-
-        if (lastSequence > after && _currentEnumerator) {
-            logVerbose("Hm, DB has changed to %" PRIu64 " already; triggering another run",
-                       lastSequence);
-            _dbChanged();
-        }
-    }
-
-
-    void LiveQuerier::_stop() {
-        _backgroundDB->use([&](DataFile *df) {
-            _query = nullptr;
-        });
-        _currentEnumerator = nullptr;
-        _database->sequenceTracker().use([&](SequenceTracker &st) {
-            _dbNotifier.reset();
-        });
-    }
 
 
     // Threshold for rapidity of database changes. If it's been this long since the last change,
@@ -147,15 +39,134 @@ namespace litecore {
     static constexpr delay_t kLongDelay    = chrono::milliseconds(500);
 
 
-    void LiveQuerier::_dbChanged() {
-        auto now = clock::now();
-        delay_t idleTime = now - _lastTime;
-        _lastTime = now;
+    LiveQuerier::LiveQuerier(c4Internal::Database *db,
+                             Query *query,
+                             bool continuous,
+                             Delegate *delegate)
+    :Logging(QueryLog)
+    ,_database(db)
+    ,_backgroundDB(db->backgroundDatabase())
+    ,_expression(query->expression())
+    ,_language(query->language())
+    ,_continuous(continuous)
+    ,_delegate(delegate)
+    {
+        logInfo("Created on Query %s", query->loggingName().c_str());
+        // Note that we don't keep a reference to `_query`, because it's tied to `db`, but we
+        // need to run the query on `_backgroundDB`. So instead we save the query text and
+        // language, and create a new Query instance the first time `_runQuery` is called.
+    }
+
+
+    LiveQuerier::~LiveQuerier() {
+        if (_query)
+            _stop();
+        logVerbose("Deleted");
+    }
+
+
+    std::string LiveQuerier::loggingIdentifier() const {
+        return string(_expression);
+    }
+
+
+    void LiveQuerier::start(Query::Options options) {
+        _lastTime = clock::now();
+        enqueue(&LiveQuerier::_runQuery, options);
+    }
+
+
+    void LiveQuerier::stop() {
+        logInfo("Stopping");
+        _stopping = true;
+        enqueue(&LiveQuerier::_stop);
+    }
+
+
+    // Database change (transaction committed) notification
+    void LiveQuerier::transactionCommitted() {
+        enqueue(&LiveQuerier::_dbChanged, clock::now());
+    }
+
+
+#pragma mark - ACTOR METHODS (single-threaded):
+
+
+    void LiveQuerier::_stop() {
+        if (_query) {
+            _backgroundDB->use([&](DataFile *df) {
+                _query = nullptr;
+                _currentEnumerator = nullptr;
+                if (_continuous)
+                    _backgroundDB->removeTransactionObserver(this);
+            });
+        }
+        logVerbose("...stopped");
+        _stopping = false;
+    }
+
+
+    void LiveQuerier::_dbChanged(clock::time_point when) {
+        // Do nothing if there's already a _runQuery call pending (but not yet running),
+        // or I've already been told to stop, or the query can't be run:
+        if (_waitingToRun || _stopping || !_currentEnumerator)
+            return;
+
+        delay_t idleTime = when - _lastTime;
+        _lastTime = when;
 
         delay_t delay = (idleTime <= kRapidChanges) ? kLongDelay : kShortDelay;
         logVerbose("DB changed after %.3f sec. Triggering query in %.3f secs",
                    idleTime.count(), delay.count());
-        enqueueAfter(delay, &LiveQuerier::_run, _currentEnumerator->options());
+        enqueueAfter(delay, &LiveQuerier::_runQuery, _currentEnumerator->options());
+        _waitingToRun = true;
+    }
+
+
+    void LiveQuerier::_runQuery(Query::Options options) {
+        if (_stopping)
+            return;
+
+        _waitingToRun = false;
+        logVerbose("Running query...");
+        Retained<QueryEnumerator> newQE;
+        C4Error error = {};
+        fleece::Stopwatch st;
+        _backgroundDB->use([&](DataFile *df) {
+            try {
+                // Create my own Query object associated with the Backgrounder's DataFile:
+                if (!_query) {
+                    _query = df->defaultKeyStore().compileQuery(_expression, _language);
+                    if (_continuous)
+                        _backgroundDB->addTransactionObserver(this);
+                }
+                // Now run the query:
+                newQE = _query->createEnumerator(&options);
+            } catchError(&error);
+        });
+        auto time = st.elapsedMS();
+
+        if (!newQE)
+            logError("Query failed with error %s", c4error_descriptionStr(error));
+
+        if (_continuous) {
+            if (newQE) {
+                if (_currentEnumerator && !_currentEnumerator->obsoletedBy(newQE)) {
+                    logVerbose("Results unchanged at seq %" PRIu64 " (%.3fms)",
+                               newQE->lastSequence(), time);
+                    return; // no delegate call
+                }
+                logInfo("Results changed at seq %" PRIu64 " (%.3fms)", newQE->lastSequence(), time);
+                _currentEnumerator = newQE;
+            }
+        } else {
+            logInfo("...finished one-shot query in %.3fms", time);
+        }
+
+        if (_stopping)
+            return;
+        
+        _delegate->liveQuerierUpdated(newQE, error);
     }
 
 }

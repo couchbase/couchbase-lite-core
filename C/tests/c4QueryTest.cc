@@ -893,7 +893,14 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     this_thread::sleep_for(chrono::milliseconds(1000));
     REQUIRE(state.count == 0);
 
-    addPersonInState("after2", "CA");
+    {
+        C4Log("---- Changing a doc in the query");
+        TransactionHelper t(db);
+        addPersonInState("after2", "CA");
+        // wait, to make sure the observer doesn't try to run the query before the commit
+        this_thread::sleep_for(chrono::milliseconds(1000));
+        C4Log("---- Commiting changes");
+    }
 
     C4Log("---- Waiting for 2nd call of query observer...");
     WaitUntil(2000, [&]{return state.count > 0;});
@@ -913,6 +920,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     {
         TransactionHelper t(db);
         REQUIRE(c4db_purgeDoc(db, "after2"_sl, &error));
+        C4Log("---- Commiting changes");
     }
 
     C4Log("---- Waiting for 3rd call of query observer...");

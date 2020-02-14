@@ -9,6 +9,7 @@
 #include "DataFile.hh"
 #include "access_lock.hh"
 #include "function_ref.hh"
+#include <vector>
 
 namespace c4Internal {
     class Database;
@@ -29,11 +30,23 @@ namespace litecore {
 
         void useInTransaction(TransactionTask task);
 
+        class TransactionObserver {
+        public:
+            virtual ~TransactionObserver() =default;
+            virtual void transactionCommitted() =0;
+        };
+
+        void addTransactionObserver(TransactionObserver* NONNULL);
+        void removeTransactionObserver(TransactionObserver* NONNULL);
+
     private:
         slice fleeceAccessor(slice recordBody) const override;
         alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
+        void externalTransactionCommitted(const SequenceTracker &sourceTracker) override;
+        void notifyTransactionObservers();
 
         c4Internal::Database* _database;
+        std::vector<TransactionObserver*> _transactionObservers;
     };
 
 }
