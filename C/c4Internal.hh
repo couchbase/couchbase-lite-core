@@ -32,6 +32,10 @@ using namespace std;
 using namespace litecore;
 
 
+#define LOCK(MUTEX)     unique_lock<mutex> _lock(MUTEX)
+#define UNLOCK()        _lock.unlock();
+
+
 namespace c4Internal {
 
     // ERRORS & EXCEPTIONS:

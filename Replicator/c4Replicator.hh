@@ -38,10 +38,6 @@ using namespace litecore;
 using namespace litecore::repl;
 
 
-#define LOCK(MUTEX)     unique_lock<mutex> _lock(MUTEX)
-#define UNLOCK()        _lock.unlock();
-
-
 /** Glue between C4 API and internal LiteCore replicator. Abstract class. */
 struct C4Replicator : public RefCounted,
                       Logging,

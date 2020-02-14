@@ -807,6 +807,9 @@
 		272B1BE01FB13B7400F56620 /* stopwordset.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwordset.h; sourceTree = "<group>"; };
 		272B1BE91FB1477800F56620 /* stopwords_en.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_en.h; sourceTree = "<group>"; };
 		272B1BEA1FB1513100F56620 /* FTSTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FTSTest.cc; sourceTree = "<group>"; };
+		272BA50423F61389000EB6E8 /* c4QueryEnumeratorImpl.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4QueryEnumeratorImpl.hh; sourceTree = "<group>"; };
+		272BA50923F61506000EB6E8 /* c4QueryObserver.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4QueryObserver.hh; sourceTree = "<group>"; };
+		272BA50A23F61591000EB6E8 /* c4Query.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Query.hh; sourceTree = "<group>"; };
 		272F00E3226FC15D00E62F72 /* BackgroundDB.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BackgroundDB.hh; sourceTree = "<group>"; };
 		272F00E9226FC15D00E62F72 /* BackgroundDB.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BackgroundDB.cc; sourceTree = "<group>"; };
 		272F00F42273D45000E62F72 /* LiveQuerier.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LiveQuerier.hh; sourceTree = "<group>"; };
@@ -2107,6 +2110,9 @@
 				2769438B1DCD502A00DB2555 /* c4Observer.cc */,
 				27098A95216C1D2E002751DA /* c4PredictiveQuery.cc */,
 				2705154C1D8CBE6C00D62D05 /* c4Query.cc */,
+				272BA50A23F61591000EB6E8 /* c4Query.hh */,
+				272BA50423F61389000EB6E8 /* c4QueryEnumeratorImpl.hh */,
+				272BA50923F61506000EB6E8 /* c4QueryObserver.hh */,
 				27ECCB011D89DCDB00FA8C4A /* Doxyfile */,
 				2764ED3723873B9E007F020F /* c4.txt */,
 				2764ED3823873B9E007F020F /* c4_exp.txt */,
