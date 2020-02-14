@@ -1,5 +1,3 @@
-#ifdef COUCHBASE_ENTERPRISE
-
 //
 // c4PredictiveQuery.cc
 //
@@ -20,6 +18,9 @@
 //
 
 #include "c4PredictiveQuery.h"
+
+#ifdef COUCHBASE_ENTERPRISE
+
 #include "c4Database.hh"
 #include "PredictiveModel.hh"
 
@@ -59,15 +60,25 @@ private:
     C4PredictiveModel _c4Model;
 };
 
+#endif // COUCHBASE_ENTERPRISE
+
 
 void c4pred_registerModel(const char *name, C4PredictiveModel model) C4API {
+#ifdef COUCHBASE_ENTERPRISE
     auto context = retained(new C4PredictiveModelInternal(model));
     context->registerAs(name);
+#else
+    C4WarnError("c4pred_registerModel() is not implemented; aborting");
+    abort();
+#endif
 }
 
 
 bool c4pred_unregisterModel(const char *name) C4API {
+#ifdef COUCHBASE_ENTERPRISE
     return PredictiveModel::unregister(name);
+#else
+    C4WarnError("c4pred_unregisterModel() is not implemented; aborting");
+    abort();
+#endif
 }
-
-#endif // COUCHBASE_ENTERPRISE

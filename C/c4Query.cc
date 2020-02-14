@@ -16,230 +16,25 @@
 // limitations under the License.
 //
 
-#include "c4Internal.hh"
-#include "c4Query.h"
 #include "c4Index.h"
 #include "c4Observer.h"
-#include "c4ExceptionUtils.hh"
-#include "c4Database.hh"
+#include "c4Query.h"
 
-#include "LiveQuerier.hh"
+#include "c4ExceptionUtils.hh"
+#include "c4Query.hh"
+#include "c4QueryEnumeratorImpl.hh"
+#include "c4QueryObserver.hh"
+
 #include "SQLiteDataFile.hh"
-#include "Query.hh"
-#include "Record.hh"
-#include "Timer.hh"
-#include "InstanceCounted.hh"
-#include "StringUtil.hh"
-#include "FleeceImpl.hh"
-#include <list>
-#include <math.h>
-#include <limits.h>
-#include <mutex>
-#include <set>
+
 
 using namespace std;
 using namespace litecore;
 using namespace fleece::impl;
 
-
-#define LOCK(MUTEX)     lock_guard<mutex> _lock(MUTEX)
-
-
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
-    true
+    true    // rankFullText
 };
-
-
-#pragma mark QUERY ENUMERATOR:
-
-
-// Extension of C4QueryEnumerator
-struct C4QueryEnumeratorImpl : public RefCounted,
-                               public C4QueryEnumerator,
-                               fleece::InstanceCountedIn<C4QueryEnumerator>
-{
-    C4QueryEnumeratorImpl(Database *database, Query *query, QueryEnumerator *e)
-    :_database(database)
-    ,_query(query)
-    ,_enum(e)
-    ,_hasFullText(_enum->hasFullText())
-    {
-        clearPublicFields();
-    }
-
-    QueryEnumerator& enumerator() const {
-        if (!_enum)
-            error::_throw(error::InvalidParameter, "Query enumerator has been closed");
-        return *_enum;
-    }
-
-    int64_t getRowCount() const         {return enumerator().getRowCount();}
-
-    bool next() {
-        if (!enumerator().next()) {
-            clearPublicFields();
-            return false;
-        }
-        populatePublicFields();
-        return true;
-    }
-
-    void seek(int64_t rowIndex) {
-        enumerator().seek(rowIndex);
-        if (rowIndex >= 0)
-            populatePublicFields();
-        else
-            clearPublicFields();
-    }
-
-    void clearPublicFields() {
-        ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));
-    }
-
-    void populatePublicFields() {
-        static_assert(sizeof(C4FullTextMatch) == sizeof(Query::FullTextTerm),
-                      "C4FullTextMatch does not match Query::FullTextTerm");
-        (Array::iterator&)columns = _enum->columns();
-        missingColumns = _enum->missingColumns();
-        if (_hasFullText) {
-            auto &ft = _enum->fullTextTerms();
-            fullTextMatches = (const C4FullTextMatch*)ft.data();
-            fullTextMatchCount = (uint32_t)ft.size();
-        }
-    }
-
-    C4QueryEnumeratorImpl* refresh() {
-        QueryEnumerator* newEnum = enumerator().refresh(_query);
-        if (newEnum)
-            return retain(new C4QueryEnumeratorImpl(_database, _query, newEnum));
-        else
-            return nullptr;
-    }
-
-    void close() noexcept {
-        _enum = nullptr;
-    }
-
-    bool usesEnumerator(QueryEnumerator *e) const     {return e == _enum;}
-
-private:
-    Retained<Database> _database;
-    Retained<Query> _query;
-    Retained<QueryEnumerator> _enum;
-    bool _hasFullText;
-};
-
-static C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumeratorImpl*)e;}
-
-
-#pragma mark - QUERY OBSERVER:
-
-
-// This is the same as C4QueryObserver.
-// Instances are not directly heap-allocated; they're managed by a std::list (c4Query::observers).
-class c4QueryObserver : public fleece::InstanceCounted {
-public:
-    c4QueryObserver(C4Query *query, C4QueryObserverCallback callback, void* context)
-    :_query(c4query_retain(query)), _callback(callback), _context(context)
-    { }
-
-    ~c4QueryObserver()              {c4query_release(_query);}
-
-    C4Query* query() const          {return _query;}
-
-    // called on a background thread
-    void notify(C4QueryEnumeratorImpl *e, C4Error err) noexcept {
-        {
-            LOCK(_mutex);
-            _currentEnumerator = e;
-            _currentError = err;
-        }
-        _callback(this, _query, _context);
-    }
-
-    C4QueryEnumerator* currentEnumerator(C4Error *outError) {
-        LOCK(_mutex);
-        _lastEnumerator = _currentEnumerator;   // keep it alive till the next call
-        if (!_currentEnumerator && outError)
-            *outError = _currentError;
-        return _currentEnumerator;
-    }
-
-private:
-    C4Query* const                  _query;
-    C4QueryObserverCallback const   _callback;
-    void* const                     _context;
-    mutable mutex                   _mutex;
-    Retained<C4QueryEnumeratorImpl> _lastEnumerator;
-    Retained<C4QueryEnumeratorImpl> _currentEnumerator;
-    C4Error                         _currentError {};
-};
-
-
-#pragma mark - QUERY:
-
-
-// This is the same as C4Query
-struct c4Query : public RefCounted, public fleece::InstanceCountedIn<c4Query>, LiveQuerier::Delegate {
-    c4Query(Database *db, C4QueryLanguage language, C4Slice queryExpression)
-    :_database(db)
-    ,_query(db->defaultKeyStore().compileQuery(queryExpression, (QueryLanguage)language))
-    { }
-
-    Database* database() const              {return _database;}
-    Query* query() const                    {return _query;}
-    alloc_slice parameters() const          {return _parameters;}
-    void setParameters(slice parameters)    {_parameters = parameters;}
-
-    Retained<C4QueryEnumeratorImpl> createEnumerator(const C4QueryOptions *c4options, slice encodedParameters) {
-        Query::Options options(encodedParameters ? encodedParameters : _parameters);
-        return wrapEnumerator( _query->createEnumerator(&options) );
-    }
-
-    Retained<C4QueryEnumeratorImpl> wrapEnumerator(QueryEnumerator *e) {
-        return e ? new C4QueryEnumeratorImpl(_database, _query, e) : nullptr;
-    }
-
-    //// Observing:
-    
-
-    void enableObserver(c4QueryObserver *obs, bool enable) {
-        LOCK(_mutex);
-        if (enable) {
-            _observers.insert(obs);
-            if (!_bgQuerier) {
-                _bgQuerier = new LiveQuerier(_database, _query, true, this);
-                _bgQuerier->run(_parameters);
-            }
-        } else {
-            _observers.erase(obs);
-            if (_observers.empty() && _bgQuerier) {
-                _bgQuerier->stop();
-                _bgQuerier = nullptr;
-            }
-        }
-    }
-
-    // called on a background thread!
-    void liveQuerierUpdated(QueryEnumerator *qe, C4Error err) override {
-        Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(qe);
-        LOCK(_mutex);
-        if (!_bgQuerier)
-            return;
-        for (auto &obs : _observers)
-            obs->notify(c4e, err);
-    }
-
-private:
-    Retained<Database> _database;
-    Retained<Query> _query;
-    alloc_slice _parameters;
-
-    mutable mutex _mutex;
-    Retained<LiveQuerier> _bgQuerier;
-    std::set<c4QueryObserver*> _observers;
-};
-
 
 
 #pragma mark - QUERY API:
@@ -263,6 +58,7 @@ C4Query* c4query_new2(C4Database *database,
         }
     });
 }
+
 
 C4Query* c4query_new(C4Database *database C4NONNULL, C4String expression, C4Error *error) C4API {
     return c4query_new2(database, kC4JSONQuery, expression, nullptr, error);
@@ -296,7 +92,6 @@ C4QueryEnumerator* c4query_run(C4Query *query,
         return retain(query->createEnumerator(c4options, encodedParameters).get());
     });
 }
-
 
 
 C4StringResult c4query_explain(C4Query *query) noexcept {
@@ -473,18 +268,3 @@ C4SliceResult c4db_getIndexRows(C4Database* database, C4String indexName, C4Erro
         return C4SliceResult(rows);
     });
 }
-
-
-// Stubs for functions only available in EE:
-#ifndef COUCHBASE_ENTERPRISE
-#include "c4PredictiveQuery.h"
-
-void c4pred_registerModel(const char *name, C4PredictiveModel model) C4API {
-    abort();
-}
-
-bool c4pred_unregisterModel(const char *name) C4API {
-    abort();
-}
-
-#endif
