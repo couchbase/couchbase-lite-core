@@ -195,8 +195,11 @@ void c4queryobs_free(C4QueryObserver* obs) C4API {
     }
 }
 
-C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs, C4Error *outError) C4API {
-    return obs->currentEnumerator(outError);
+C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs,
+                                            bool forget,
+                                            C4Error *outError) C4API
+{
+    return retain(obs->currentEnumerator(forget, outError).get());
 }
 
 

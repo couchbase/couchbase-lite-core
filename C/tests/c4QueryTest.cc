@@ -880,8 +880,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
 
     C4Log("Checking query observer...");
     CHECK(state.count == 1);
-    C4QueryEnumerator *e = c4queryobs_getEnumerator(state.obs, &error);
+    c4::ref<C4QueryEnumerator> e = c4queryobs_getEnumerator(state.obs, true, &error);
     REQUIRE(e);
+    CHECK(c4queryobs_getEnumerator(state.obs, true, &error) == nullptr);
+    CHECK(error.code == 0);
     CHECK(c4queryenum_getRowCount(e, &error) == 8);
     state.count = 0;
 
@@ -898,9 +900,11 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
 
     C4Log("---- Checking query observer again...");
     CHECK(state.count == 1);
-    C4QueryEnumerator *e2 = c4queryobs_getEnumerator(state.obs, &error); // NOT a retained reference
+    c4::ref<C4QueryEnumerator> e2 = c4queryobs_getEnumerator(state.obs, false, &error);
     REQUIRE(e2);
     CHECK(e2 != e);
+    c4::ref<C4QueryEnumerator> e3 = c4queryobs_getEnumerator(state.obs, false, &error);
+    CHECK(e3 == e2);
     CHECK(c4queryenum_getRowCount(e2, &error) == 9);
 
     // Testing with purged document:
@@ -916,7 +920,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
 
     C4Log("---- Checking query observer again...");
     CHECK(state.count == 1);
-    e2 = c4queryobs_getEnumerator(state.obs, &error);
+    e2 = c4queryobs_getEnumerator(state.obs, true, &error);
     REQUIRE(e2);
     CHECK(e2 != e);
     CHECK(c4queryenum_getRowCount(e2, &error) == 8);
