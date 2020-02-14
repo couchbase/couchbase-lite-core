@@ -164,14 +164,20 @@ extern "C" {
     /** Enables a query observer so its callback can be called, or disables it to stop callbacks. */
     void c4queryobs_setEnabled(C4QueryObserver *obs, bool enabled) C4API;
 
-    /** Returns the current query results, or NULL and the current error; then forgets the results.
+    /** Returns the current query results, if any.
         When the observer is created, the results are initially NULL until the query finishes
         running in the background.
         Once the observer callback is called, the results are available.
+        \note  You are responsible for releasing the returned reference.
         @param obs  The query observer.
+        @param forget  If true, the observer will not hold onto the enumerator, and subsequent calls
+                    will return NULL until the next time the observer notifies you. This can help
+                    conserve memory, since the query result data will be freed as soon as you
+                    release the enumerator.
         @param error  If the last evaluation of the query failed, the error will be stored here.
-        @return  The current query results, or NULL if the last evaluation of the query failed. */
+        @return  The current query results, or NULL if the query hasn't run or has failed. */
     C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs C4NONNULL,
+                                                bool forget,
                                                 C4Error *error) C4API;
 
     /** Stops an observer and frees the resources it's using.

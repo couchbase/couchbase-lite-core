@@ -25,12 +25,18 @@ using namespace litecore;
 class c4QueryObserver : public fleece::InstanceCounted {
 public:
     c4QueryObserver(C4Query *query, C4QueryObserverCallback callback, void* context)
-    :_query(c4query_retain(query)), _callback(callback), _context(context)
+    :_query(c4query_retain(query))
+    ,_callback(callback)
+    ,_context(context)
     { }
 
-    ~c4QueryObserver()              {c4query_release(_query);}
+    ~c4QueryObserver() {
+        c4query_release(_query);
+    }
 
-    C4Query* query() const          {return _query;}
+    C4Query* query() const {
+        return _query;
+    }
 
     // called on a background thread
     void notify(C4QueryEnumeratorImpl *e, C4Error err) noexcept {
@@ -42,12 +48,14 @@ public:
         _callback(this, _query, _context);
     }
 
-    C4QueryEnumerator* currentEnumerator(C4Error *outError) {
+    Retained<C4QueryEnumeratorImpl> currentEnumerator(bool forget, C4Error *outError) {
         LOCK(_mutex);
-        _lastEnumerator = _currentEnumerator;   // keep it alive till the next call
-        if (!_currentEnumerator && outError)
+        if (outError)
             *outError = _currentError;
-        return _currentEnumerator;
+        if (forget)
+            return move(_currentEnumerator);
+        else
+            return _currentEnumerator;
     }
 
 private:
@@ -55,7 +63,6 @@ private:
     C4QueryObserverCallback const   _callback;
     void* const                     _context;
     mutable mutex                   _mutex;
-    Retained<C4QueryEnumeratorImpl> _lastEnumerator;
     Retained<C4QueryEnumeratorImpl> _currentEnumerator;
     C4Error                         _currentError {};
 };
