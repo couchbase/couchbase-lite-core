@@ -57,7 +57,7 @@ namespace litecore { namespace blip {
     }
 
     void Codec::writeChecksum(slice &output) const {
-        uint32_t chk = _enc32(_checksum);
+        uint32_t chk = endian::enc32(_checksum);
         Assert(output.writeFrom(slice(&chk, sizeof(chk))));
     }
 
@@ -68,7 +68,7 @@ namespace litecore { namespace blip {
         uint32_t chk;
         static_assert(kChecksumSize == sizeof(chk), "kChecksumSize is wrong");
         input.readInto(slice(&chk, sizeof(chk)));
-        chk = _dec32(chk);
+        chk = endian::dec32(chk);
         if (chk != _checksum)
             error::_throw(error::CorruptData, "BLIP message invalid checksum");
     }
