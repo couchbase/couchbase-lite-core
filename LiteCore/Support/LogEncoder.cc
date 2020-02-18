@@ -176,7 +176,7 @@ namespace litecore {
                     case 'f': case 'F':
                     case 'g': case 'G':
                     case 'a': case 'A': {
-                        littleEndianDouble param = va_arg(args, double);
+                        fleece::endian::littleEndianDouble param = va_arg(args, double);
                         _writer.write(&param, sizeof(param));
                         break;
                     }
@@ -202,9 +202,9 @@ namespace litecore {
                     case 'p': {
                         size_t param = va_arg(args, size_t);
                         if (sizeof(param) == 8)
-                            param = _encLittle64(param);
+                            param = fleece::endian::encLittle64(param);
                         else
-                            param = _encLittle32(param);
+                            param = fleece::endian::encLittle32(param);
                         _writer.write(&param, sizeof(param));
                         break;
                     }

@@ -20,6 +20,7 @@
 #include "Endian.hh"
 
 using namespace std;
+using namespace fleece;
 
 namespace litecore {
 
@@ -73,11 +74,11 @@ namespace litecore {
         if (body().size < sizeof(count))
             return 0;
         memcpy(&count, body().buf, sizeof(count));
-        return _endian_decode(count);
+        return endian::dec64(count);
     }
 
     void Record::setBodyAsUInt(uint64_t n) noexcept {
-        uint64_t newBody = _endian_encode(n);
+        uint64_t newBody = endian::enc64(n);
         setBody(slice(&newBody, sizeof(newBody)));
     }
 

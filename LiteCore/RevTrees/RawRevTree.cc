@@ -56,8 +56,8 @@ namespace litecore {
 
         auto entry = (const RemoteEntry*)offsetby(rawRev, sizeof(uint32_t));
         while (entry < raw_tree.end()) {
-            RevTree::RemoteID remoteID = _dec16(entry->remoteDBID_BE);
-            auto revIndex = _dec16(entry->revIndex_BE);
+            RevTree::RemoteID remoteID = endian::dec16(entry->remoteDBID_BE);
+            auto revIndex = endian::dec16(entry->revIndex_BE);
             if (remoteID == 0 || revIndex >= count)
                 error::_throw(error::CorruptRevisionData);
             remoteMap[remoteID] = &revs[revIndex];
@@ -87,12 +87,12 @@ namespace litecore {
         for (Rev *src : revs) {
             dst = dst->copyFrom(*src);
         }
-        dst->size_BE = _enc32(0);   // write trailing 0 size marker
+        dst->size_BE = endian::enc32(0);   // write trailing 0 size marker
 
         auto entry = (RemoteEntry*)offsetby(dst, sizeof(uint32_t));
         for (auto remote : remoteMap) {
-            entry->remoteDBID_BE = (uint16_t)_enc16(remote.first);
-            entry->revIndex_BE = (uint16_t)_enc16(remote.second->index());
+            entry->remoteDBID_BE = endian::enc16(uint16_t(remote.first));
+            entry->revIndex_BE = endian::enc16(uint16_t(remote.second->index()));
             ++entry;
         }
 
@@ -110,10 +110,10 @@ namespace litecore {
 
     RawRevision* RawRevision::copyFrom(const Rev &rev) {
         size_t revSize = sizeToWrite(rev);
-        this->size_BE = _enc32((uint32_t)revSize);
+        this->size_BE = endian::enc32((uint32_t)revSize);
         this->revIDLen = (uint8_t)rev.revID.size;
         memcpy(this->revID, rev.revID.buf, rev.revID.size);
-        this->parentIndex_BE = (uint16_t)_enc16(rev.parent ? rev.parent->index() : kNoParent);
+        this->parentIndex_BE = endian::enc16(uint16_t(rev.parent ? rev.parent->index() : kNoParent));
 
         uint8_t dstFlags = rev.flags & ~kNonPersistentFlags;
         if (rev._body)
@@ -131,7 +131,7 @@ namespace litecore {
         const void* end = this->next();
         dst.revID = {this->revID, this->revIDLen};
         dst.flags = (Rev::Flags)(this->flags & ~kPersistentOnlyFlags);
-        auto parentIndex = _dec16(this->parentIndex_BE);
+        auto parentIndex = endian::dec16(this->parentIndex_BE);
         if (parentIndex == kNoParent)
             dst.parent = nullptr;
         else

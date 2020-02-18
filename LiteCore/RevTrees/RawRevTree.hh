@@ -76,7 +76,7 @@ namespace litecore {
         slice body() const;
 
         const RawRevision *next() const {
-            return (const RawRevision*)fleece::offsetby(this, _dec32(size_BE));
+            return (const RawRevision*)fleece::offsetby(this, fleece::endian::dec32(size_BE));
         }
 
         unsigned count() const {

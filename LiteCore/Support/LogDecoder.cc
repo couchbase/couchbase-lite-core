@@ -274,7 +274,7 @@ namespace litecore {
                         case 'f': case 'F':
                         case 'g': case 'G':
                         case 'a': case 'A': {
-                            littleEndianDouble param;
+                            fleece::endian::littleEndianDouble param;
                             _in.read((char*)&param, sizeof(param));
                             out << param;
                             break;

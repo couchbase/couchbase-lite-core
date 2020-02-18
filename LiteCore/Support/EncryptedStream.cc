@@ -55,6 +55,7 @@
 
 namespace litecore {
     using namespace std;
+    using namespace fleece;
 
     extern LogDomain BlobLog;
 
@@ -100,7 +101,7 @@ namespace litecore {
 
     void EncryptedWriteStream::writeBlock(slice plaintext, bool finalBlock) {
         DebugAssert(plaintext.size <= kFileBlockSize, "Block is too large");
-        uint64_t iv[2] = {0, _endian_encode(_blockID)};
+        uint64_t iv[2] = {0, endian::enc64(_blockID)};
         ++_blockID;
         uint8_t cipherBuf[kFileBlockSize + kAESBlockSize];
         slice ciphertext(cipherBuf, sizeof(cipherBuf));
@@ -189,7 +190,7 @@ namespace litecore {
             readSize = (size_t)(_inputLength - (_blockID * kFileBlockSize));  // don't read trailer
         size_t bytesRead = _input->read(blockBuf, readSize);
 
-        uint64_t iv[2] = {0, _endian_encode(_blockID)};
+        uint64_t iv[2] = {0, endian::enc64(_blockID)};
         ++_blockID;
         size_t outputSize = AES256(false,
                       slice(_key, sizeof(_key)),
