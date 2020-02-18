@@ -37,11 +37,11 @@
     #define W_OK 2
     #define X_OK 4
 
-    struct stat;
+    struct _stat64;
 
     namespace litecore {
         int mkdir_u8(const char* const path, int mode);
-        int stat_u8(const char* const filename, struct stat* const s);
+        int stat_u8(const char* const filename, struct _stat64* const s);
         int rmdir_u8(const char* const path);
         int rename_u8(const char* const oldPath, const char* const newPath);
         int unlink_u8(const char* const filename);

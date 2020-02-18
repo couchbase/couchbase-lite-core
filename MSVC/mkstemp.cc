@@ -53,7 +53,6 @@ int mkstemp(char *tmp)
 	TempArray(cp, char, len);
 	strcpy_s(cp, len, tmp);
     
-	struct _stat64i32 buf{};
 	for(int i = 0; i < INT32_MAX; i++) {
 		mktemp_internal(tmp);
 		const CA2WEX<256> wpath(tmp, CP_UTF8);
