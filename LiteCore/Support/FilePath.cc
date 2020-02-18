@@ -140,12 +140,14 @@ namespace litecore {
     static const char  kBackupSeparatorChar = '/';
     static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = ".\\";
+    typedef struct _stat64 lc_stat_t;
 #else
     const string FilePath::kSeparator = "/";
     static const char  kSeparatorChar = '/';
     static const char  kBackupSeparatorChar = '\\';
     static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = "./";
+    typedef struct stat lc_stat_t;
 #endif
 
 
@@ -376,7 +378,7 @@ namespace litecore {
                 nPath = nPath.parentDir();
             
             // Validate default temp dir with neightbor path
-            struct stat tmp_info, alt_info;
+            lc_stat_t tmp_info, alt_info;
             stat_u8(tmpDir.path().c_str(), &tmp_info);
             stat_u8(nPath.path().c_str(), &alt_info);
             bool sameDeice = tmp_info.st_dev == alt_info.st_dev;
@@ -453,7 +455,7 @@ namespace litecore {
         } else
 #endif
         {
-            struct stat stbuf;
+            lc_stat_t stbuf;
             stat_u8((basePath + entry->d_name).c_str(), &stbuf);
             isDir = S_ISDIR(stbuf.st_mode);
         }
@@ -504,7 +506,7 @@ namespace litecore {
 
     
     int64_t FilePath::dataSize() const {
-        struct stat s;
+        lc_stat_t s;
         if (stat_u8(path().c_str(), &s) != 0) {
             if (errno == ENOENT)
                 return -1;
@@ -514,7 +516,7 @@ namespace litecore {
     }
 
     time_t FilePath::lastModified() const {
-        struct stat s;
+        lc_stat_t s;
         if (stat_u8(path().c_str(), &s) != 0) {
             if (errno == ENOENT)
                 return -1;
@@ -525,17 +527,17 @@ namespace litecore {
 
 
     bool FilePath::exists() const noexcept {
-        struct stat s;
+        lc_stat_t s;
         return stat_u8(path().c_str(), &s) == 0;
     }
 
     bool FilePath::existsAsDir() const noexcept {
-        struct stat s;
+        lc_stat_t s;
         return stat_u8(path().c_str(), &s) == 0 && S_ISDIR(s.st_mode);
     }
 
     void FilePath::mustExistAsDir() const {
-        struct stat s;
+        lc_stat_t s;
         check(stat_u8(path().c_str(), &s));
         if (!S_ISDIR(s.st_mode))
             error::_throw(error::POSIX, ENOTDIR);

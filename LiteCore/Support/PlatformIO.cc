@@ -51,9 +51,9 @@ namespace litecore {
         MIGRATE_ARG(path, ::_wmkdir(wpath));
     }
 
-    int stat_u8(const char* const filename, struct stat * const s)
+    int stat_u8(const char* const filename, struct _stat64 * const s)
     {
-        MIGRATE_ARG(filename, ::_wstat64i32(wfilename, (struct _stat64i32 *)s));
+        MIGRATE_ARG(filename, ::_wstat64(wfilename, s));
     }
 
     int MIGRATE_1(rmdir_u8, ::_wrmdir)
