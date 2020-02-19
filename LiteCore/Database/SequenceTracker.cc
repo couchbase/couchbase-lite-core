@@ -252,7 +252,10 @@ namespace litecore {
             auto end = other._changes.end();
             for (auto e = next(other._transaction->_placeholder); e != end; ++e) {
                 if (!e->isPlaceholder()) {
-                    _lastSequence = e->sequence;
+                    if (e->sequence != 0) {
+                        Assert(e->sequence > _lastSequence);
+                        _lastSequence = e->sequence;
+                    }
                     _documentChanged(e->docID, e->revID, e->sequence, e->bodySize);
                 }
             }
