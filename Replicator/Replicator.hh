@@ -101,7 +101,7 @@ namespace litecore { namespace repl {
         bool isDocumentPending(slice docId, C4Error* outErr);
 
         // exposed for unit tests:
-        websocket::WebSocket* webSocket() const {return connection()->webSocket();}
+        websocket::WebSocket* webSocket() const {return connection().webSocket();}
         
         Checkpointer& checkpointer()            {return _checkpointer;}
 

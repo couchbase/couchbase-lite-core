@@ -141,7 +141,7 @@ namespace litecore { namespace repl {
     {
         _gettingChanges = false;
 
-        if (!connection())
+        if (!connected())
             return;
         if (err.code)
             return gotError(err);
@@ -195,7 +195,7 @@ namespace litecore { namespace repl {
 
     // Called when DBWorker was holding up a revision until an ancestor revision finished.
     void Pusher::gotOutOfOrderChange(RevToSend* change) {
-        if (!connection())
+        if (!connected())
             return;
         logInfo("Read delayed local change '%.*s' #%.*s (remote #%.*s): sending '%-s' with sequence #%" PRIu64,
                 SPLAT(change->docID), SPLAT(change->revID),
@@ -580,7 +580,7 @@ namespace litecore { namespace repl {
 
         auto i = _pushingDocs.find(rev->docID);
         if (i == _pushingDocs.end()) {
-            if (connection())
+            if (connected())
                 warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
             return;
         }
@@ -636,7 +636,7 @@ namespace litecore { namespace repl {
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
         ActivityLevel level;
-        if (!connection()) {
+        if (!connected()) {
             // Does this need a similar guard to what Puller has?  It doesn't
             // seem so since the Puller has stuff that happens even after the
             // connection is closed, while the Pusher does not seem to.
