@@ -132,7 +132,9 @@ namespace litecore { namespace repl {
 
     // Process waiting "changes" messages if not throttled:
     void Puller::handleMoreChanges() {
-        while (!_waitingChangesMessages.empty()
+        // This used to be a while loop, but due to CBL-578 we need to process
+        // batches of changes one at a time in order, as opposed to in parallel
+        if (!_waitingChangesMessages.empty()
                && _pendingRevMessages < tuning::kMaxPendingRevs) {
             auto req = _waitingChangesMessages.front();
             _waitingChangesMessages.pop_front();
@@ -235,9 +237,10 @@ namespace litecore { namespace repl {
         _incomingDocIDs.remove(alloc_slice(msg->property("id"_sl)));
         decrement(_pendingRevMessages);
         slice sequence(msg->property("sequence"_sl));
-        if (sequence)
+        if (sequence) {
             completedSequence(alloc_slice(sequence));
-        handleMoreChanges();
+        }
+
         if (!msg->noReply()) {
             MessageBuilder response(msg);
             msg->respond(response);
@@ -264,7 +267,6 @@ namespace litecore { namespace repl {
             _spareIncomingRevs.pop_back();
         }
         inc->handleRev(msg);  // ... will call _revWasHandled when it's finished
-        handleMoreChanges();
     }
 
 
@@ -279,7 +281,6 @@ namespace litecore { namespace repl {
             if (_waitingRevMessages.empty())
                 Signpost::end(Signpost::revsBackPressure);
             startIncomingRev(msg);
-            handleMoreChanges();
         }
     }
 
@@ -305,7 +306,10 @@ namespace litecore { namespace repl {
                 completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
         }
-        decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
+        auto newUnfinishedCount = decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
+        if(newUnfinishedCount == 0) {
+            handleMoreChanges();
+        }
 
         if (!passive())
             updateLastSequence();
