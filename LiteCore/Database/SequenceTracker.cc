@@ -24,24 +24,42 @@
 #include <sstream>
 
 
-/*
-Placeholders are interspersed with the document change objects in the list.
+/* THEORY OF OPERATION:
+ 
+Placeholders are interspersed with documents (represented by Entry objects) in the _changes list.
     Pl1 -> A -> Z -> Pl2 -> B -> F
-if document A is changed, its sequence is updated and it moves to the end:
+if document A is changed, its Entry's sequence is updated and it moves to the end:
     Pl1 -> Z -> Pl2 -> B -> F -> A
-After a notifier iterates through the changes following its placeholder,
-it moves its placeholder to the end:
-           Z -> Pl2 -> B -> F -> A -> Pl1
-Any document change items before the first placeholder can be removed:
+DatabaseChangeNotifier's readChanges method moves the placeholder forward, adding any Entrys
+passed over to the resulting changes[] array until it reaches the end or the array is full.
+           Z -> Pl2 -> B -> F -> A -> Pl1       (and readChanges results in [Z, B, F, A])
+Any document Entry objects before the first placeholder can now be removed:
                 Pl2 -> B -> F -> A -> Pl1
-After a document changes, if the item(s) directly before its change object are placeholders,
-their notifiers post notifications. Here document F changed, and notifier 1 posts a notification:
+After a document changes and its Entry moves to the end, if the item(s) _directly_ before the Entry
+are placeholders, their notifiers post notifications.
+Here document F changed, and notifier 1 posts a notification:
                 Pl2 -> B -> A -> Pl1 -> F
+Then document A changes, but no notifications are sent:
+                Pl2 -> B -> Pl1 -> F -> A
 
 Transactions:
- When a transaction begins, a placeholder is added at the end of the list.
- On commit: Generate a list of all changes since that placeholder, and broadcast to all other databases open on this file. They add those changes to their SequenceTrackers.
- On abort: Iterate over all changes since that placeholder and call documentChanged, with the old committed sequence number. This will notify all observers that the doc has reverted back.
+ On begin:
+    * A special placeholder (`_transaction`) is added at the end of the list.
+ After the DB transaction commits:
+    * The Database object is responsible for finding all other SequenceTrackers on the same file
+      and calling their `addExternalTransaction` method to notify them (see below.)
+    * For each Entry after `_transaction`:
+        - Set the Entry's `committedSequence` equal to its `sequence`.
+    * Remove the `_transaction` placeholder.
+ After the DB transaction aborts:
+    * For each Entry after `_transaction`:
+        - Call _documentChanged, with the Entry's old committed sequence number;
+          this generates a fake change representing the reversion of uncommitted changes.
+    * Remove the `_transaction` placeholder.
+ When notified that another connection's SequenceTracker is committing changes:
+    * For each Entry after the other's `_transaction`:
+        - Call _documentChanged to add an equivalent Entry. Set the Entry's `external` flag so
+          clients know this change was not made by this database connection.
 */
 
 
@@ -54,16 +72,54 @@ namespace litecore {
     LogDomain ChangesLog("Changes", LogLevel::Warning);
 
 
+    /** Tracks a document's current sequence. */
+    struct SequenceTracker::Entry {
+        alloc_slice const               docID;
+        sequence_t                      sequence {0};
+
+        // Document entry (when docID != nullslice):
+        sequence_t                      committedSequence {0};
+        alloc_slice                     revID;
+        mutable std::vector<DocChangeNotifier*> documentObservers;
+        uint32_t                        bodySize;
+        bool                            idle     :1;
+        bool                            external :1;
+
+        // Placeholder entry (when docID == nullslice):
+        DatabaseChangeNotifier* const   databaseObserver {nullptr};
+
+        Entry(const alloc_slice &d, alloc_slice r, sequence_t s, uint32_t bs)
+        :docID(d), revID(r), sequence(s), bodySize(bs), idle(false), external(false) {
+            DebugAssert(docID != nullslice);
+        }
+
+        explicit Entry(DatabaseChangeNotifier *o NONNULL)
+        :databaseObserver(o) { }    // placeholder
+
+        bool isPlaceholder() const          {return docID.buf == nullptr;}
+        bool isPurge() const                {return sequence == 0 && !isPlaceholder();}
+        bool isIdle() const                 {return idle && !isPlaceholder();}
+
+        Entry(const Entry&) =delete;
+        Entry& operator=(const Entry&) =delete;
+    };
+
+
+
     SequenceTracker::SequenceTracker()
     :Logging(ChangesLog)
     { }
 
 
+    SequenceTracker::~SequenceTracker()
+    { }
+
+
     void SequenceTracker::beginTransaction() {
-        logInfo("begin transaction at #%" PRIu64, _lastSequence);
-        auto notifier = new DatabaseChangeNotifier(*this, nullptr);
         Assert(!inTransaction());
-        _transaction.reset(notifier);
+
+        logInfo("begin transaction at #%" PRIu64, _lastSequence);
+        _transaction = make_unique<DatabaseChangeNotifier>(*this, nullptr);
         _preTransactionLastSequence = _lastSequence;
     }
 
@@ -109,8 +165,9 @@ namespace litecore {
                                           sequence_t sequence,
                                           uint64_t bodySize)
     {
-        Assert(docID && revID && sequence > _lastSequence);
         Assert(inTransaction());
+        Assert(docID && revID && sequence > _lastSequence);
+
         _lastSequence = sequence;
         _documentChanged(docID, revID, sequence, bodySize);
     }
@@ -119,6 +176,7 @@ namespace litecore {
     void SequenceTracker::documentPurged(slice docID) {
         Assert(docID);
         Assert(inTransaction());
+
         _documentChanged(alloc_slice(docID), {}, 0, 0);
     }
 
@@ -144,7 +202,7 @@ namespace litecore {
                 } else if (next(i->second) != _changes.end())
                     _changes.splice(_changes.end(), _changes, i->second);
                 else
-                    listChanged = false;
+                    listChanged = false;  // it was already at the end
             }
             // Update its revID & sequence:
             entry->revID = revID;
@@ -191,7 +249,8 @@ namespace litecore {
         Assert(other.inTransaction());
         if (!_changes.empty() || _numDocObservers > 0) {
             logInfo("addExternalTransaction from %s", other.loggingIdentifier().c_str());
-            for (auto e = next(other._transaction->_placeholder); e != other._changes.end(); ++e) {
+            auto end = other._changes.end();
+            for (auto e = next(other._transaction->_placeholder); e != end; ++e) {
                 if (!e->isPlaceholder()) {
                     _lastSequence = e->sequence;
                     _documentChanged(e->docID, e->revID, e->sequence, e->bodySize);
@@ -218,6 +277,11 @@ namespace litecore {
             }
             return prev(result.base());      // (convert `result` to regular fwd iterator)
         }
+    }
+
+
+    slice SequenceTracker::_docIDAt(sequence_t seq) const {
+        return _since(seq)->docID;
     }
 
 
@@ -253,6 +317,7 @@ namespace litecore {
         auto i = next(placeholder);
         while (i != _changes.end() && n < maxChanges) {
             if (!i->isPlaceholder()) {
+                // During the loop, collect only changes with the same value for `external`:
                 if (n == 0)
                     external = i->external;
                 else if (i->external != external)
@@ -263,6 +328,7 @@ namespace litecore {
             ++i;
         }
         if (n > 0) {
+            // Move `placeholder` to just before `i`:
             _changes.splice(i, _changes, placeholder);
             removeObsoleteEntries();
         }
@@ -296,6 +362,7 @@ namespace litecore {
 
     SequenceTracker::const_iterator
     SequenceTracker::addDocChangeNotifier(slice docID, DocChangeNotifier* notifier) {
+        Assert(docID);
         iterator entry;
         // Find the entry for the document:
         auto i = _byDocID.find(docID);
@@ -314,9 +381,9 @@ namespace litecore {
 
 
     void SequenceTracker::removeDocChangeNotifier(const_iterator entry, DocChangeNotifier* notifier) {
-        auto &observers = const_cast<vector<DocChangeNotifier*>&>(entry->documentObservers);
+        auto &observers = entry->documentObservers;
         auto i = find(observers.begin(), observers.end(), notifier);
-        Assert(i != observers.end());
+        Assert(i != observers.end(), "unknown DocChangeNotifier");
         observers.erase(i);
         --_numDocObservers;
         if (observers.empty() && entry->isIdle()) {
@@ -363,8 +430,8 @@ namespace litecore {
 
     DocChangeNotifier::DocChangeNotifier(SequenceTracker &t, slice docID, Callback cb)
     :tracker(t),
-    _docEntry(tracker.addDocChangeNotifier(docID, this)),
-    callback(move(cb))
+    _docEntry(tracker.addDocChangeNotifier(docID, this))
+    ,callback(move(cb))
     {
         t._logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
     }
@@ -374,6 +441,20 @@ namespace litecore {
         tracker.removeDocChangeNotifier(_docEntry, this);
     }
 
+
+    slice DocChangeNotifier::docID() const {
+        return _docEntry->docID;
+    }
+
+
+    sequence_t DocChangeNotifier::sequence() const {
+        return _docEntry->sequence;
+    }
+
+
+    void DocChangeNotifier::notify(const SequenceTracker::Entry* entry) noexcept {
+        if (callback) callback(*this, entry->docID, entry->sequence);
+    }
 
 
 
@@ -398,7 +479,7 @@ namespace litecore {
     }
 
 
-    void DatabaseChangeNotifier::notify() {
+    void DatabaseChangeNotifier::notify() noexcept {
         if (callback) {
             logInfo("posting notification");
             callback(*this);

@@ -54,6 +54,10 @@ namespace litecore {
         SequenceTracker::const_iterator since(sequence_t s) {
             return tracker._since(s);
         }
+
+        slice docIDAt(sequence_t s) {
+            return tracker._docIDAt(s);
+        }
         
         SequenceTracker::const_iterator end() {
             return tracker.end();
@@ -85,10 +89,10 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker", "[notificatio
     CHECK(tracker.lastSequence() == seq);
     REQUIRE_IF_DEBUG(dump(true) == "[(C@3#3333, B@5#5555, A@6#6666, D@7#7777)]");
 
-    REQUIRE(since(0)->docID == "C"_sl);
-    REQUIRE(since(4)->docID == "B"_sl);
-    REQUIRE(since(5)->docID == "A"_sl);
-    REQUIRE(since(6)->docID == "D"_sl);
+    REQUIRE(docIDAt(0) == "C"_sl);
+    REQUIRE(docIDAt(4) == "B"_sl);
+    REQUIRE(docIDAt(5) == "A"_sl);
+    REQUIRE(docIDAt(6) == "D"_sl);
     REQUIRE(since(7) == end());
 }
 

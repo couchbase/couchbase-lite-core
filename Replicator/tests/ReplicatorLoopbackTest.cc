@@ -590,10 +590,18 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Pus
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Empty", "[Push][Continuous]") {
     auto serverOpts = Replicator::Options::passive();
-    SECTION("Default") {
-    }
-    SECTION("No-conflicts") {
-        serverOpts.setNoIncomingConflicts();
+//    SECTION("Default") {
+//    }
+//    SECTION("No-conflicts") {
+//        serverOpts.setNoIncomingConflicts();
+//    }
+    SECTION("Pre-existing docs") {
+        createRev(db, "doc1"_sl, "1-11"_sl, kFleeceBody);
+        createRev(db, "doc2"_sl, "1-aa"_sl, kFleeceBody);
+        _expectedDocumentCount = 2;
+        runPushReplication();
+        C4Log("-------- Finished pre-existing push --------");
+        createRev(db2, "other1"_sl, "1-11"_sl, kFleeceBody);
     }
     addRevsInParallel(chrono::milliseconds(1000), alloc_slice("docko"), 1, 3);
     _expectedDocumentCount = 3; // only 1 doc, but we get notified about it 3 times...
