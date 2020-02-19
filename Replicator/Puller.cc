@@ -246,6 +246,7 @@ namespace litecore { namespace repl {
 
     // Actually process an incoming "rev" now:
     void Puller::startIncomingRev(MessageIn *msg) {
+        Assert(connected());
         decrement(_pendingRevMessages);
         increment(_activeIncomingRevs);
         increment(_unfinishedIncomingRevs);
@@ -264,9 +265,9 @@ namespace litecore { namespace repl {
     // Callback from an IncomingRev when it's been written to the db but before the commit
     void Puller::_revWasProvisionallyHandled() {
         decrement(_activeIncomingRevs);
-        if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-                    && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs
-                    && !_waitingRevMessages.empty()) {
+        if (connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
+                        && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs
+                        && !_waitingRevMessages.empty()) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
             if (_waitingRevMessages.empty())
@@ -355,7 +356,7 @@ namespace litecore { namespace repl {
     
     Worker::ActivityLevel Puller::computeActivityLevel() const {
         ActivityLevel level;
-        if (_fatalError || !connection()) {
+        if (_fatalError || !connected()) {
             level = kC4Stopped;
         } else if (Worker::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
