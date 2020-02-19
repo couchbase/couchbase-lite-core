@@ -85,7 +85,7 @@ namespace litecore { namespace repl {
 
 
         // exposed for unit tests:
-        websocket::WebSocket* webSocket() const {return connection()->webSocket();}
+        websocket::WebSocket* webSocket() const {return connection().webSocket();}
         alloc_slice checkpointID() const        {return _checkpointDocID;}
 
         // internal API for Pusher/Puller:
