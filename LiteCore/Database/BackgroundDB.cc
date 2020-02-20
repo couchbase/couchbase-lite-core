@@ -61,6 +61,8 @@ namespace litecore {
 
     void BackgroundDB::useInTransaction(TransactionTask task) {
         use([=](DataFile* dataFile) {
+            if (!dataFile)
+                return;
             Transaction t(dataFile);
             SequenceTracker sequenceTracker;
             sequenceTracker.beginTransaction();
@@ -91,14 +93,14 @@ namespace litecore {
 
 
     void BackgroundDB::addTransactionObserver(TransactionObserver *obs) {
-        use([=](DataFile* dataFile) {
+        use([=](DataFile*) {
             _transactionObservers.push_back(obs);
         });
     }
 
 
     void BackgroundDB::removeTransactionObserver(TransactionObserver* obs) {
-        use([=](DataFile* dataFile) {
+        use([=](DataFile*) {
             auto i = std::find(_transactionObservers.begin(), _transactionObservers.end(), obs);
             if (i != _transactionObservers.end())
                 _transactionObservers.erase(i);
@@ -107,7 +109,7 @@ namespace litecore {
 
 
     void BackgroundDB::notifyTransactionObservers() {
-        use([=](DataFile* dataFile) {
+        use([=](DataFile*) {
             if (!_transactionObservers.empty()) {
                 auto obsCopy = _transactionObservers;
                 for (auto obs : obsCopy)
