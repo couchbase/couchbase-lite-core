@@ -64,7 +64,9 @@ namespace litecore {
         }
 
         slice requiredString(const Value *v, const char *what) {
-            return required(required(v, what)->asString(), what, "must be a string");
+            slice str = required(required(v, what)->asString(), what, "must be a string");
+            require(str.size > 0, what, "must be non-empty");
+            return str;
         }
 
         const Value* getCaseInsensitive(const Dict *dict, slice key) {
@@ -640,7 +642,7 @@ namespace litecore {
     // Handles a node that's a string. It's treated as a string literal, except in the context of
     // a column-list ('FROM', 'ORDER BY', creating index, etc.) where it's a property path.
     void QueryParser::parseStringLiteral(slice str) {
-        if (_context.back() == &kColumnListOperation || _context.back() == &kResultListOperation) {
+        if (_context.back() == &kColumnListOperation) {
             writePropertyGetter(kValueFnName, Path(str));
         } else {
             writeSQLString(str);
@@ -719,6 +721,9 @@ namespace litecore {
         unsigned anonCount = 0;
         for (auto &i = operands; i; ++i) {
             // Write the operation/delimiter between arguments
+            if (n++ > 0)
+                _sql << ", ";
+
             auto result = i.value();
             string title;
             Array::iterator expr(result->asArray());
@@ -726,17 +731,23 @@ namespace litecore {
                 // Handle 'AS':
                 require(expr.count() == 3, "'AS' must have two operands");
                 title = string(requiredString(expr[2], "'AS' alias"));
+
                 result = expr[1];
-            }
+                _sql << kResultFnName << "(";
+                parseCollatableNode(result);
+                _sql << ") AS \"" << title << '"';
+                addAlias(title, kResultAlias);
+            } else {
+                _sql << kResultFnName << "(";
+                if (result->type() == kString) {
+                    // Convenience shortcut: interpret a string in a WHAT as a property path
+                    writePropertyGetter(kValueFnName, Path(result->asString()));
+                } else {
+                    parseCollatableNode(result);
+                }
+                _sql << ")";
 
-            if (n++ > 0)
-                _sql << ", ";
-            _sql << kResultFnName << "(";
-            parseCollatableNode(result);
-            _sql << ")";
-
-            // Come up with a column title if there is no 'AS':
-            if (title.empty()) {
+                // Come up with a column title if there is no 'AS':
                 if (result->type() == kString) {
                     title = columnTitleFromProperty(Path(result->asString()), _propertiesUseSourcePrefix);
                 } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
@@ -746,9 +757,6 @@ namespace litecore {
                 }
                 if (title.empty())
                     title = "*";        // for the property ".", i.e. the entire doc
-            } else {
-                _sql << " AS \"" << title << '"';
-                addAlias(title, kResultAlias);
             }
 
             // Make the title unique:
