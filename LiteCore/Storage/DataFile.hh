@@ -91,6 +91,8 @@ namespace litecore {
         /** Opens another instance on the same file. */
         DataFile* openAnother(Delegate* NONNULL);
 
+        virtual uint64_t fileSize();
+
         virtual void compact() =0;
 
         virtual void rekey(EncryptionAlgorithm, slice newKey);

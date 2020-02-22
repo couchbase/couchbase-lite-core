@@ -117,13 +117,15 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
     REQUIRE(aliased_db->defaultKeyStore().get("rec"_sl).sequence() == 3);
 }
 
-static void createNumberedDocs(KeyStore *store) {
+static void createNumberedDocs(KeyStore *store, int n =100, bool withAssertions =true) {
     Transaction t(store->dataFile());
-    for (int i = 1; i <= 100; i++) {
+    for (int i = 1; i <= n; i++) {
         string docID = stringWithFormat("rec-%03d", i);
         sequence_t seq = store->set(slice(docID), slice(docID), t);
-        REQUIRE(seq == (sequence_t)i);
-        REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
+        if (withAssertions) {
+            REQUIRE(seq == (sequence_t)i);
+            REQUIRE(store->get(slice(docID)).body() == slice(docID));
+        }
     }
     t.commit();
 }
@@ -414,11 +416,11 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
-    createNumberedDocs(store);
+    createNumberedDocs(store, 10000, false);
 
     {
         Transaction t(db);
-        for (int i = 1; i <= 100; i += 3) {
+        for (int i = 2000; i <= 7000; i++) {
             auto docID = stringWithFormat("rec-%03d", i);
             Record rec = store->get((slice)docID);
             store->del(rec, t);
@@ -426,7 +428,18 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
         t.commit();
     }
 
-    db->compact();
+    int64_t oldSize = db->fileSize();
+
+    SECTION("Close & reopen (incremental vacuum on close)") {
+        reopenDatabase();
+    }
+    SECTION("Compact database (vacuum)") {
+        db->compact();
+    }
+
+    int64_t newSize = db->fileSize();
+    Log("File size went from %llu to %llu", oldSize, newSize);
+    CHECK(newSize < oldSize - 100000);
 }
 
 TEST_CASE("CanonicalPath") {

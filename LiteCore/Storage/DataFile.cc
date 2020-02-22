@@ -129,6 +129,11 @@ namespace litecore {
     }
 
 
+    uint64_t DataFile::fileSize() {
+        return filePath().dataSize();
+    }
+
+
     void DataFile::close(bool forDelete) {
         // https://github.com/couchbase/couchbase-lite-core/issues/776
         // Need to fulfill two opposing conditions simultaneously
