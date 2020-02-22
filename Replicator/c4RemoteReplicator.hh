@@ -170,7 +170,7 @@ namespace c4Internal {
 
             // If this is a transient error, or if I'm continuous and the error might go away with
             // a change in network (i.e. network down, hostname unknown), then go offline.
-            bool transient = c4error_mayBeTransient(c4err);
+            bool transient = c4error_mayBeTransient(c4err) || (c4err.domain == WebSocketDomain && c4err.code == 4001);
             if (transient || (continuous() && c4error_mayBeNetworkDependent(c4err))) {
                 if (_retryCount >= maxRetryCount()) {
                     logError("Will not retry; max retry count (%u) reached", _retryCount);
