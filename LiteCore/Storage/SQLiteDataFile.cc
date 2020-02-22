@@ -77,10 +77,10 @@ namespace litecore {
     static const int kMMapSize = 50 * MB;
 #endif
 
-    // If this fraction of the database is composed of free pages, vacuum it
+    // If this fraction of the database is composed of free pages, vacuum it on close
     static const float kVacuumFractionThreshold = 0.25;
-    // If the database has many bytes of free space, vacuum it
-    static const int64_t kVacuumSizeThreshold = 50 * MB;
+    // If the database has many bytes of free space, vacuum it on close
+    static const int64_t kVacuumSizeThreshold = 10 * MB;
 
     // Database busy timeout; generally not needed since we have other arbitration that keeps
     // multiple threads from trying to start transactions at once, but another process might
@@ -190,15 +190,18 @@ namespace litecore {
             bool isNew = false;
             if (_schemaVersion == SchemaVersion::None) {
                 isNew = true;
-                // Configure persistent db settings, and create the schema:
-                _exec("PRAGMA journal_mode=WAL; "        // faster writes, better concurrency
-                     "PRAGMA auto_vacuum=incremental; " // incremental vacuum mode
-                     "BEGIN; "
-                     "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
-                     "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) WITHOUT ROWID; "
-                     "PRAGMA user_version=302; "
-                     "END;"
-                     );
+                // Configure persistent db settings, and create the schema.
+                // `auto_vacuum` has to be enabled ASAP, before anything's written to the db!
+                // (even setting `auto_vacuum` writes to the db, it turns out! See CBSE-7971.)
+                _exec("PRAGMA auto_vacuum=incremental; "
+                      "PRAGMA journal_mode=WAL; "
+                      "BEGIN; "
+                      "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
+                      "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) WITHOUT ROWID; "
+                      "PRAGMA user_version=302; "
+                      "END;"
+                      );
+                Assert(intQuery("PRAGMA auto_vacuum") == 2, "Incremental vacuum was not enabled!");
                 _schemaVersion = SchemaVersion::WithPurgeCount;
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
@@ -292,7 +295,10 @@ namespace litecore {
         _getPurgeCntStmt.reset();
         _setPurgeCntStmt.reset();
         if (_sqlDb) {
-            optimizeAndVacuum();
+            if (options().writeable) {
+                optimize();
+                vacuum(false);
+            }
             // Close the SQLite database:
             if (!_sqlDb->closeUnlessStatementsOpen()) {
                 // There are still SQLite statements (queries) open, probably in QueryEnumerators
@@ -600,37 +606,62 @@ namespace litecore {
     }
 
 
-    void SQLiteDataFile::optimize() {
-        bool logged = false;
-        if (SQL.willLog(LogLevel::Verbose)) {
-            // Log the details of what the optimize will do, before actually doing it:
-            SQLite::Statement stmt(*_sqlDb, "PRAGMA optimize(3)");
-            while (stmt.executeStep()) {
-                LogVerbose(SQL, "PRAGMA optimize ... %s", stmt.getColumn(0).getString().c_str());
-                logged = true;
-            }
-        }
-        if (!logged)
-            LogVerbose(SQL, "PRAGMA optimize");
-        _sqlDb->exec("PRAGMA optimize");
+    uint64_t SQLiteDataFile::fileSize() {
+        // Move all WAL changes into the main database file, so its size is accurate:
+        _exec("PRAGMA wal_checkpoint(FULL)");
+        return DataFile::fileSize();
     }
 
 
-    void SQLiteDataFile::optimizeAndVacuum() {
+    void SQLiteDataFile::optimize() {
+        try {
+            bool logged = false;
+            if (SQL.willLog(LogLevel::Verbose)) {
+                // Log the details of what the optimize will do, before actually doing it:
+                SQLite::Statement stmt(*_sqlDb, "PRAGMA optimize(3)");
+                while (stmt.executeStep()) {
+                    LogVerbose(SQL, "PRAGMA optimize ... %s", stmt.getColumn(0).getString().c_str());
+                    logged = true;
+                }
+            }
+            if (!logged)
+                LogVerbose(SQL, "PRAGMA optimize");
+            _sqlDb->exec("PRAGMA optimize");
+        } catch (const SQLite::Exception &x) {
+            warn("Caught SQLite exception while optimizing: %s", x.what());
+        }
+    }
+
+
+    void SQLiteDataFile::vacuum(bool always) {
         // <https://sqlite.org/pragma.html#pragma_optimize>
         // <https://blogs.gnome.org/jnelson/2015/01/06/sqlite-vacuum-and-auto_vacuum/>
         try {
-            optimize();
-
             int64_t pageCount = intQuery("PRAGMA page_count");
             int64_t freePages = intQuery("PRAGMA freelist_count");
-            logVerbose("Pre-close housekeeping: %lld of %lld pages free (%.0f%%)",
-                       (long long)freePages, (long long)pageCount, (float)freePages / pageCount);
-            if ((pageCount > 0 && (float)freePages / pageCount >= kVacuumFractionThreshold)
-                    || (freePages * kPageSize >= kVacuumSizeThreshold)) {
-                logInfo("Vacuuming database...");
-                _exec("PRAGMA incremental_vacuum");
+            logVerbose("Housekeeping: %lld of %lld pages free (%.0f%%)",
+                       (long long)freePages, (long long)pageCount,
+                       100.0 * freePages / pageCount);
+
+            if (!always && (pageCount == 0 || (float)freePages / pageCount < kVacuumFractionThreshold)
+                        && (freePages * kPageSize < kVacuumSizeThreshold))
+                return;
+
+            const char *sql;
+            if (intQuery("PRAGMA auto_vacuum") > 0) {
+                logInfo("Incremental-vacuuming database...");
+                sql = "PRAGMA incremental_vacuum";
+            } else {
+                logInfo("Full-vacuuming database (incremental not enabled)"); // CBSE-7971
+                sql = "VACUUM";
             }
+            fleece::Stopwatch st;
+            _exec(sql);
+            auto elapsed = st.elapsed();
+
+            int64_t shrunk = pageCount - intQuery("PRAGMA page_count");
+            logInfo("    ...removed %lld pages (%lldKB) in %.3f sec",
+                    shrunk, shrunk * kPageSize / 1024, elapsed);
         } catch (const SQLite::Exception &x) {
             warn("Caught SQLite exception while vacuuming: %s", x.what());
         }
@@ -639,7 +670,8 @@ namespace litecore {
 
     void SQLiteDataFile::compact() {
         checkOpen();
-        optimizeAndVacuum();
+        optimize();
+        vacuum(true);
     }
 
 
