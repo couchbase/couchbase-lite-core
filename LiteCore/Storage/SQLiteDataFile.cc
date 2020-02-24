@@ -648,13 +648,20 @@ namespace litecore {
                 return;
 
             const char *sql;
-            if (intQuery("PRAGMA auto_vacuum") > 0) {
+            bool fixAutoVacuum = (always || (pageCount * kPageSize) < 10*MB)
+                                    && (intQuery("PRAGMA auto_vacuum") == 0);
+            if (fixAutoVacuum) {
+                // Due to issue CBL-707, auto-vacuum did not take effect when creating databases.
+                // To enable auto-vacuum on an already-created db, you have to first invoke the
+                // pragma and then run a full VACUUM.
+                logInfo("Running one-time full VACUUM ... this may take a while [CBL-707]");
+                _exec("PRAGMA auto_vacuum=incremental");
+                sql = "VACUUM";
+            } else {
                 logInfo("Incremental-vacuuming database...");
                 sql = "PRAGMA incremental_vacuum";
-            } else {
-                logInfo("Full-vacuuming database (incremental not enabled)"); // CBSE-7971
-                sql = "VACUUM";
             }
+
             fleece::Stopwatch st;
             _exec(sql);
             auto elapsed = st.elapsed();
@@ -662,6 +669,9 @@ namespace litecore {
             int64_t shrunk = pageCount - intQuery("PRAGMA page_count");
             logInfo("    ...removed %lld pages (%lldKB) in %.3f sec",
                     shrunk, shrunk * kPageSize / 1024, elapsed);
+
+            if (fixAutoVacuum && intQuery("PRAGMA auto_vacuum") == 0)
+                warn("auto_vacuum mode did not take effect after running full VACUUM!");
         } catch (const SQLite::Exception &x) {
             warn("Caught SQLite exception while vacuuming: %s", x.what());
         }
