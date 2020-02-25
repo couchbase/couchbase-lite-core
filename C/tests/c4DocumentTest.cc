@@ -772,16 +772,18 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     if (!isRevTrees())
         return;
 
+    static constexpr slice kRev3ID("3-aaaaaa"), kRev3ConflictID("3-ababab"), kRev4ConflictID("4-dddd");
     const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
     const auto kFleeceBody3 = json2fleece("{'ubu':'roi'}");
+
     createRev(kDocID, kRevID, kFleeceBody);
     createRev(kDocID, kRev2ID, kFleeceBody2, kRevKeepBody);
-    createRev(kDocID, C4STR("3-aaaaaa"), kFleeceBody3);
+    createRev(kDocID, kRev3ID, kFleeceBody3);
 
     TransactionHelper t(db);
 
     // "Pull" a conflicting revision:
-    C4Slice history[3] = {C4STR("4-dddd"), C4STR("3-ababab"), kRev2ID};
+    C4Slice history[3] = {kRev4ConflictID, kRev3ConflictID, kRev2ID};
     C4DocPutRequest rq = {};
     rq.existingRevision = true;
     rq.docID = kDocID;
@@ -789,41 +791,43 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     rq.historyCount = 3;
     rq.allowConflict = true;
     rq.body = kFleeceBody3;
+    rq.revFlags = kRevKeepBody;
     rq.save = true;
     rq.remoteDBID = 1;
     C4Error err;
     auto doc = c4doc_put(db, &rq, nullptr, &err);
     REQUIRE(doc);
 
+    // kRevID -- [kRev2ID] -- kRev3ID
+    //                      \ kRev3ConflictID -- [kRev4ConflictID]       [] = remote rev, keep body
+
     // Check that the pulled revision is treated as a conflict:
-	C4Slice revID = C4STR("4-dddd");
-    CHECK(doc->selectedRev.revID == revID);
-    CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict));
+    CHECK(doc->selectedRev.revID == kRev4ConflictID);
+    CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict | kRevKeepBody));
     REQUIRE(c4doc_selectParentRevision(doc));
     CHECK((int)doc->selectedRev.flags == kRevIsConflict);
 
     // Check that the local revision is still current:
-	revID = C4STR("3-aaaaaa");
-    CHECK(doc->revID == revID);
+    CHECK(doc->revID == kRev3ID);
     REQUIRE(c4doc_selectCurrentRevision(doc));
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK(doc->selectedRev.revID == kRev3ID);
     CHECK((int)doc->selectedRev.flags == kRevLeaf);
 
     // Now check the common ancestor algorithm:
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("3-aaaaaa"), C4STR("4-dddd")));
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev4ConflictID));
     CHECK(doc->selectedRev.revID == kRev2ID);
 
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("4-dddd"), C4STR("3-aaaaaa")));
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev4ConflictID, kRev3ID));
     CHECK(doc->selectedRev.revID == kRev2ID);
 
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("3-ababab"), C4STR("3-aaaaaa")));
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ConflictID, kRev3ID));
     CHECK(doc->selectedRev.revID == kRev2ID);
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("3-aaaaaa"), C4STR("3-ababab")));
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev3ConflictID));
     CHECK(doc->selectedRev.revID == kRev2ID);
 
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, C4STR("3-aaaaaa")));
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev3ID));
     CHECK(doc->selectedRev.revID == kRev2ID);
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("3-aaaaaa"), kRev2ID));
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev2ID));
     CHECK(doc->selectedRev.revID == kRev2ID);
 
     REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev2ID));
@@ -832,35 +836,48 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     auto mergedBody = json2fleece("{\"merged\":true}");
 
     SECTION("Merge, 4 wins") {
-        REQUIRE(c4doc_resolveConflict(doc, C4STR("4-dddd"), C4STR("3-aaaaaa"),
-                                      mergedBody, 0, &err));
+        static constexpr slice kMergedRevID("5-79b2ecd897d65887a18c46cc39db6f0a3f7b38c4");
+        REQUIRE(c4doc_resolveConflict(doc, kRev4ConflictID, kRev3ID, mergedBody, 0, &err));
+        // kRevID -- kRev2ID -- kRev3ConflictID -- [kRev4ConflictID] -- kMergedRevID
         c4doc_selectCurrentRevision(doc);
-		revID = C4STR("5-79b2ecd897d65887a18c46cc39db6f0a3f7b38c4");
-        CHECK(doc->selectedRev.revID == revID);
+        CHECK(doc->selectedRev.revID == kMergedRevID);
         CHECK(doc->selectedRev.body == mergedBody);
         CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
+
         c4doc_selectParentRevision(doc);
-		revID = C4STR("4-dddd");
-        CHECK(doc->selectedRev.revID == revID);
-        CHECK((int)doc->selectedRev.flags == 0);
+        CHECK(doc->selectedRev.revID == kRev4ConflictID);
+        CHECK((int)doc->selectedRev.flags == kRevKeepBody);
+
         c4doc_selectParentRevision(doc);
-		revID = C4STR("3-ababab");
-        CHECK(doc->selectedRev.revID == revID);
+        CHECK(doc->selectedRev.revID == kRev3ConflictID);
         CHECK((int)doc->selectedRev.flags == 0);
+
+        c4doc_selectParentRevision(doc);
+        CHECK(doc->selectedRev.revID == kRev2ID);
+        CHECK((int)doc->selectedRev.flags == 0);
+
+        CHECK(! c4doc_selectRevision(doc, kRev3ID, false, nullptr));
     }
 
     SECTION("Merge, 3 wins") {
-        REQUIRE(c4doc_resolveConflict(doc, C4STR("3-aaaaaa"), C4STR("4-dddd"),
-                                      mergedBody, 0, &err));
+        static constexpr slice kMergedRevID("4-1fa2dbcb66b5e0456f6d6fc4a90918d42f3dd302");
+        REQUIRE(c4doc_resolveConflict(doc, kRev3ID, kRev4ConflictID, mergedBody, 0, &err));
+        // kRevID -- [kRev2ID] -- kRev3ID -- kMergedRevID
         c4doc_selectCurrentRevision(doc);
-		revID = C4STR("4-1fa2dbcb66b5e0456f6d6fc4a90918d42f3dd302");
-        CHECK(doc->selectedRev.revID == revID);
+        CHECK(doc->selectedRev.revID == kMergedRevID);
         CHECK(doc->selectedRev.body == mergedBody);
         CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
+
         c4doc_selectParentRevision(doc);
-		revID = C4STR("3-aaaaaa");
-        CHECK(doc->selectedRev.revID == revID);
+        CHECK(doc->selectedRev.revID == kRev3ID);
         CHECK((int)doc->selectedRev.flags == 0);
+
+        c4doc_selectParentRevision(doc);
+        CHECK(doc->selectedRev.revID == kRev2ID);
+        CHECK((int)doc->selectedRev.flags == kRevKeepBody);
+
+        CHECK(! c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
+        CHECK(! c4doc_selectRevision(doc, kRev3ConflictID, false, nullptr));
     }
 
     c4doc_release(doc);

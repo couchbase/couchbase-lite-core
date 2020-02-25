@@ -281,8 +281,8 @@ namespace c4Internal {
             if (winningRev == losingRev)
                 error::_throw(error::InvalidParameter);
 
-            _versionedDoc.markBranchAsNotConflict(winningRev);
-            _versionedDoc.markBranchAsNotConflict(losingRev);
+            _versionedDoc.markBranchAsNotConflict(winningRev, true);
+            _versionedDoc.markBranchAsNotConflict(losingRev, false);
 
             // Deal with losingRev:
             if (pruneLosingBranch) {
@@ -412,7 +412,7 @@ namespace c4Internal {
                         _versionedDoc.purge(oldRev->revID);
                         effect = "purging old branch";
                     } else if (oldRev == priorCurrentRev) {
-                        _versionedDoc.markBranchAsNotConflict(newRev);
+                        _versionedDoc.markBranchAsNotConflict(newRev, true);
                         _versionedDoc.purge(oldRev->revID);
                         effect = "making new branch main & purging old";
                         Assert(_versionedDoc.currentRevision() == newRev);
