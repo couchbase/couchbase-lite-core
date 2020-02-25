@@ -271,6 +271,8 @@ namespace litecore {
             parentRev->clearFlag(Rev::kLeaf);
             if (revFlags & Rev::kKeepBody)
                 keepBody(newRev);
+            else if (revFlags & Rev::kClosed)
+                removeBodiesOnBranch(parentRev);        // no bodies on a closed conflict branch
         } else {
             // Root revision:
             if (markConflict && !_revs.empty())
@@ -393,12 +395,24 @@ namespace litecore {
         return commonAncestorIndex;
     }
 
-    void RevTree::markBranchAsNotConflict(const Rev *rev) {
-        for (; rev; rev = (Rev*)rev->parent) {
-            if (!rev->isConflict())
-                break;
-            const_cast<Rev*>(rev)->clearFlag(Rev::kIsConflict);
-            _changed = true;
+    void RevTree::markBranchAsNotConflict(const Rev *branch, bool winningBranch) {
+        bool keepBodies = winningBranch;
+        for (auto rev = const_cast<Rev*>(branch); rev; rev = const_cast<Rev*>(rev->parent)) {
+            if (rev->isConflict()) {
+                rev->clearFlag(Rev::kIsConflict);
+                _changed = true;
+                if (!winningBranch)
+                    return;  // stop at end of conflicting branch
+            }
+            
+            if (rev->keepBody()) {
+                if (keepBodies) {
+                    keepBodies = false; // Only one rev on a branch may have kKeepBody
+                } else {
+                    rev->clearFlag(Rev::kKeepBody);
+                    _changed = true;
+                }
+            }
         }
     }
 
@@ -423,6 +437,13 @@ namespace litecore {
             const_cast<Rev*>(rev)->removeBody();
             _changed = true;
         }
+    }
+
+    void RevTree::removeBodiesOnBranch(const Rev* rev) {
+        do {
+            removeBody(rev);
+            rev = rev->parent;
+        } while (rev);
     }
 
     // Remove bodies of already-saved revs that are no longer leaves:
@@ -567,7 +588,7 @@ namespace litecore {
     // If there are no non-conflict leaves, remove the conflict marker from the 1st:
     void RevTree::checkForResolvedConflict() {
         if (_sorted && !_revs.empty() && _revs[0]->isConflict())
-            markBranchAsNotConflict(_revs[0]);
+            markBranchAsNotConflict(_revs[0], true);
     }
 
     bool RevTree::hasNewRevisions() const {

@@ -140,7 +140,7 @@ namespace litecore {
                           int &httpStatus);
 
         // Clears the kIsConflict flag for a Rev and its ancestors.
-        void markBranchAsNotConflict(const Rev*);
+        void markBranchAsNotConflict(const Rev*, bool keepBodies);
 
         void setPruneDepth(unsigned depth)              {_pruneDepth = depth;}
         unsigned prune(unsigned maxDepth);
@@ -148,6 +148,7 @@ namespace litecore {
 
         void keepBody(const Rev* NONNULL);
         void removeBody(const Rev* NONNULL);
+        void removeBodiesOnBranch(const Rev* NONNULL);
 
         void removeNonLeafBodies();
 
