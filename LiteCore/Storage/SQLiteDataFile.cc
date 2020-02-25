@@ -614,6 +614,7 @@ namespace litecore {
 
 
     void SQLiteDataFile::optimize() {
+        // <https://sqlite.org/pragma.html#pragma_optimize>
         try {
             bool logged = false;
             if (SQL.willLog(LogLevel::Verbose)) {
@@ -634,7 +635,6 @@ namespace litecore {
 
 
     void SQLiteDataFile::vacuum(bool always) {
-        // <https://sqlite.org/pragma.html#pragma_optimize>
         // <https://blogs.gnome.org/jnelson/2015/01/06/sqlite-vacuum-and-auto_vacuum/>
         try {
             int64_t pageCount = intQuery("PRAGMA page_count");
@@ -647,7 +647,7 @@ namespace litecore {
                         && (freePages * kPageSize < kVacuumSizeThreshold))
                 return;
 
-            const char *sql;
+            string sql;
             bool fixAutoVacuum = (always || (pageCount * kPageSize) < 10*MB)
                                     && (intQuery("PRAGMA auto_vacuum") == 0);
             if (fixAutoVacuum) {
@@ -655,11 +655,13 @@ namespace litecore {
                 // To enable auto-vacuum on an already-created db, you have to first invoke the
                 // pragma and then run a full VACUUM.
                 logInfo("Running one-time full VACUUM ... this may take a while [CBL-707]");
-                _exec("PRAGMA auto_vacuum=incremental");
-                sql = "VACUUM";
+                sql = "PRAGMA auto_vacuum=incremental; VACUUM";
             } else {
                 logInfo("Incremental-vacuuming database...");
-                sql = "PRAGMA incremental_vacuum";
+                // On explicit compact, truncate the WAL file to save disk space:
+                if (always)
+                    sql = "PRAGMA wal_checkpoint(TRUNCATE); ";
+                sql += "PRAGMA incremental_vacuum";
             }
 
             fleece::Stopwatch st;
