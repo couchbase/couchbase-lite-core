@@ -133,7 +133,8 @@ namespace c4Internal {
         virtual void resolveConflict(C4String winningRevID,
                                      C4String losingRevID,
                                      C4Slice mergedBody,
-                                     C4RevisionFlags mergedFlags)
+                                     C4RevisionFlags mergedFlags,
+                                     bool pruneLosingBranch =true)
         {
             failUnsupported();
         }

@@ -47,6 +47,7 @@ namespace litecore {
         bool isNew() const          {return (flags & kNew) != 0;}
         bool isConflict() const     {return (flags & kIsConflict) != 0;}
         bool isClosed() const       {return (flags & kClosed) != 0;}
+        bool keepBody() const       {return (flags & kKeepBody) != 0;}
         bool isActive() const;
 
         unsigned index() const;
@@ -138,8 +139,8 @@ namespace litecore {
                           bool markConflict,
                           int &httpStatus);
 
-        // Sets/clears the kIsConflict flag for a Rev and its ancestors.
-        void markBranchAsConflict(const Rev*, bool);
+        // Clears the kIsConflict flag for a Rev and its ancestors.
+        void markBranchAsNotConflict(const Rev*);
 
         void setPruneDepth(unsigned depth)              {_pruneDepth = depth;}
         unsigned prune(unsigned maxDepth);
