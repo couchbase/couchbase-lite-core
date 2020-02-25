@@ -268,7 +268,8 @@ namespace c4Internal {
         }
 
         void resolveConflict(C4String winningRevID, C4String losingRevID,
-                             C4Slice mergedBody, C4RevisionFlags mergedFlags) override
+                             C4Slice mergedBody, C4RevisionFlags mergedFlags,
+                             bool pruneLosingBranch =true) override
         {
             // Validate the revIDs:
             auto winningRev = _versionedDoc[revidBuffer(winningRevID)];
@@ -280,11 +281,15 @@ namespace c4Internal {
             if (winningRev == losingRev)
                 error::_throw(error::InvalidParameter);
 
-            _versionedDoc.markBranchAsConflict(winningRev, false);
-            _versionedDoc.markBranchAsConflict(losingRev, false);
+            _versionedDoc.markBranchAsNotConflict(winningRev);
+            _versionedDoc.markBranchAsNotConflict(losingRev);
 
-            // Add a tombstone as a child of losingRev:
-            if (!losingRev->isClosed()) {
+            // Deal with losingRev:
+            if (pruneLosingBranch) {
+                // Purge its branch entirely
+                purgeRevision(losingRevID);
+            } else if (!losingRev->isClosed()) {
+                // or just put a tombstone on top of it
                 selectRevision(losingRev);
                 C4DocPutRequest rq = { };
                 rq.revFlags = kRevDeleted | kRevClosed;
@@ -295,7 +300,6 @@ namespace c4Internal {
 
             if (mergedBody.buf) {
                 // Then add the new merged rev as a child of winningRev:
-
                 alloc_slice emptyDictBody;
                 if (mergedBody.size == 0) {
                     // An empty body isn't legal, so replace it with an encoded empty Dict:
@@ -408,7 +412,7 @@ namespace c4Internal {
                         _versionedDoc.purge(oldRev->revID);
                         effect = "purging old branch";
                     } else if (oldRev == priorCurrentRev) {
-                        _versionedDoc.markBranchAsConflict(newRev, false);
+                        _versionedDoc.markBranchAsNotConflict(newRev);
                         _versionedDoc.purge(oldRev->revID);
                         effect = "making new branch main & purging old";
                         Assert(_versionedDoc.currentRevision() == newRev);

@@ -393,14 +393,11 @@ namespace litecore {
         return commonAncestorIndex;
     }
 
-    void RevTree::markBranchAsConflict(const Rev *rev, bool conflict) {
+    void RevTree::markBranchAsNotConflict(const Rev *rev) {
         for (; rev; rev = (Rev*)rev->parent) {
-            if (rev->isConflict() == conflict)
+            if (!rev->isConflict())
                 break;
-            if (conflict)
-                const_cast<Rev*>(rev)->addFlag(Rev::kIsConflict);
-            else
-                const_cast<Rev*>(rev)->clearFlag(Rev::kIsConflict);
+            const_cast<Rev*>(rev)->clearFlag(Rev::kIsConflict);
             _changed = true;
         }
     }
@@ -450,7 +447,7 @@ namespace litecore {
                 // Starting from a leaf rev, trace its ancestry to find its depth:
                 unsigned depth = 0;
                 for (Rev* anc = rev; anc; anc = (Rev*)anc->parent) {
-                    if (++depth > maxDepth) {
+                    if (++depth > maxDepth && !anc->keepBody()) {
                         // Mark revs that are too far away:
                         anc->addFlag(Rev::kPurge);
                         numPruned++;
@@ -570,7 +567,7 @@ namespace litecore {
     // If there are no non-conflict leaves, remove the conflict marker from the 1st:
     void RevTree::checkForResolvedConflict() {
         if (_sorted && !_revs.empty() && _revs[0]->isConflict())
-            markBranchAsConflict(_revs[0], false);
+            markBranchAsNotConflict(_revs[0]);
     }
 
     bool RevTree::hasNewRevisions() const {
