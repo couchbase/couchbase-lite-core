@@ -64,7 +64,8 @@ namespace litecore { namespace repl {
             //... After request is sent:
             if (_busy) {
                 if (progress.state == MessageProgress::kDisconnected) {
-                    closeWriter();
+                    // Set some error, so my IncomingRev will know I didn't complete [CBL-608]
+                    onError({POSIXDomain, ECONNRESET});
                 } else if (progress.reply) {
                     if (progress.reply->isError()) {
                         gotError(progress.reply);
