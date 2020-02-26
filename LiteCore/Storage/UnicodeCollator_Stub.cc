@@ -29,6 +29,14 @@ namespace litecore {
         error::_throw(error::Unimplemented);
     }
 
+    int LikeUTF8(slice comparand, slice pattern, const Collation&) {
+	error::_throw(error::Unimplemented);
+    }
+
+    bool ContainsUTF8(slice str, slice substr, const CollationContext&) {
+	error::_throw(error::Unimplemented);
+    }
+
     unique_ptr<CollationContext> RegisterSQLiteUnicodeCollation(sqlite3* dbHandle,
                                                                 const Collation &coll) {
         return nullptr;
