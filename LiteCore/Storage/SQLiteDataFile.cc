@@ -658,11 +658,12 @@ namespace litecore {
                 sql = "PRAGMA auto_vacuum=incremental; VACUUM";
             } else {
                 logInfo("Incremental-vacuuming database...");
-                // On explicit compact, truncate the WAL file to save disk space:
-                if (always)
-                    sql = "PRAGMA wal_checkpoint(TRUNCATE); ";
-                sql += "PRAGMA incremental_vacuum";
+                sql = "PRAGMA incremental_vacuum";
             }
+
+            // On explicit compact, truncate the WAL file to save disk space:
+            if (always)
+                sql += "; PRAGMA wal_checkpoint(TRUNCATE)";
 
             fleece::Stopwatch st;
             _exec(sql);
