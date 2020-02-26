@@ -42,8 +42,8 @@ extern "C" {
         kWebSocketCloseCantFulfill      = 1011, // Can't fulfill request due to "unexpected condition"
         kWebSocketCloseTLSFailure       = 1015, // Never sent, only received
 
-        kWebSocketCloseUserTransient    = 4001, // transient websocket closure by user
-        kWebSocketCloseUserPermanent    = 4002, // permanent websocket closure by user
+        kWebSocketCloseUserTransient    = 4001, // any transient message endpoint websocket closure by user
+        kWebSocketCloseUserPermanent    = 4002, // any permanent message endpoint websocket closure by user
         kWebSocketCloseFirstAvailable   = 4003, // First unregistered code for freeform use
     };
 
