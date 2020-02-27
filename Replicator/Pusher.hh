@@ -91,6 +91,7 @@ namespace litecore { namespace repl {
         fleece::slice getRevToSend(C4Document* NONNULL, const RevToSend&, C4Error *outError);
         bool getRemoteRevID(RevToSend *rev, C4Document *doc);
         void revToSendIsObsolete(const RevToSend &request, C4Error *c4err);
+        bool isBusy() const;
 
         static constexpr unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
         static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one

@@ -644,19 +644,34 @@ namespace litecore { namespace repl {
         }
     }
 
-    void Pusher::afterEvent() {
-        Worker::afterEvent();
 
-        if(!_revsToRetry.empty()) {
+    bool Pusher::isBusy() const {
+        return Worker::computeActivityLevel() == kC4Busy
+            || (_started && !_caughtUp)
+            || _changeListsInFlight > 0
+            || _revisionsInFlight > 0
+            || _blobsInFlight > 0
+            || !_revsToSend.empty()
+            || !_pushingDocs.empty()
+            || _revisionBytesAwaitingReply > 0;
+    }
+
+
+    void Pusher::afterEvent() {
+        // If I would otherwise go idle or stop, but there are revs I want to retry, restart them:
+        if (!_revsToRetry.empty() && connection() && !isBusy()) {
+            logInfo("%d documents failed to push and will be retried", int(_revsToRetry.size()));
             _caughtUp = false;
             auto revsToRetry = move(_revsToRetry);
             _revsToRetry.clear();
             for(const auto& revToRetry : revsToRetry) {
                 _pushingDocs[revToRetry->docID] = revToRetry;
             }
-            
+
             gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
         }
+
+        Worker::afterEvent();
     }
 
 
@@ -667,17 +682,7 @@ namespace litecore { namespace repl {
             // seem so since the Puller has stuff that happens even after the
             // connection is closed, while the Pusher does not seem to.
             level = kC4Stopped;
-        } else if (Worker::computeActivityLevel() == kC4Busy
-                || (_started && !_caughtUp)
-                || _changeListsInFlight > 0
-                || _revisionsInFlight > 0
-                || _blobsInFlight > 0
-                || !_revsToSend.empty()
-                || !_pushingDocs.empty()
-                || _revisionBytesAwaitingReply > 0) {
-            level = kC4Busy;
-        } else if (!_revsToRetry.empty()) {
-            logInfo("%d documents failed to push and will be retried", int(_revsToRetry.size()));
+        } else if (isBusy()) {
             level = kC4Busy;
         } else if (_options.push == kC4Continuous || isOpenServer()) {
             level = kC4Idle;
