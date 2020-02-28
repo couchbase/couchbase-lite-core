@@ -198,8 +198,10 @@ namespace litecore { namespace repl {
 
         if (c4doc_selectRevision(doc, revID, false, &err)) {
             // I already have this revision. Make sure it's marked as current for this remote:
-            if (remoteRevID != revID && _db->remoteDBID())
-                updateRemoteRev(doc);
+            if (remoteRevID != revID) {
+                _db->setDocRemoteAncestor(doc, revID);
+                replicator()->docRemoteAncestorChanged(alloc_slice(docID), alloc_slice(revID));
+            }
             return true;
         }
 
@@ -221,25 +223,6 @@ namespace litecore { namespace repl {
                      && ancestors.size() < kMaxPossibleAncestors);
         }
         return false;
-    }
-
-
-    // Updates the doc to have the currently-selected rev marked as the remote
-    void RevFinder::updateRemoteRev(C4Document *doc) {
-        slice revID = doc->selectedRev.revID;
-        logInfo("Updating remote #%u's rev of '%.*s' to %.*s",
-                   _db->remoteDBID(), SPLAT(doc->docID), SPLAT(revID));
-        C4Error error;
-        bool ok = _db->use<bool>([&](C4Database *db) {
-            c4::Transaction t(db);
-            return t.begin(&error)
-                   && c4doc_setRemoteAncestor(doc, _db->remoteDBID(), &error)
-                   && c4doc_save(doc, 0, &error)
-                   && t.commit(&error);
-        });
-        if (!ok)
-            warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d",
-                 _db->remoteDBID(), SPLAT(doc->docID), SPLAT(revID), error.domain, error.code);
     }
 
 } }

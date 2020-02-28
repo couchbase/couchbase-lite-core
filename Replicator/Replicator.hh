@@ -104,6 +104,8 @@ namespace litecore { namespace repl {
             enqueue(&Replicator::_onBlobProgress, progress);
         }
 
+        void docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID);
+
     protected:
         virtual std::string loggingClassName() const override  {
             return _options.pull >= kC4OneShot || _options.push >= kC4OneShot ? "Repl" : "repl";

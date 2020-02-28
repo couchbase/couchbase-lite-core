@@ -214,6 +214,7 @@ namespace litecore { namespace repl {
                 SPLAT(change->remoteAncestorRevID),
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 change->sequence);
+        _pushingDocs.insert({change->docID, nullptr});
         _lastSequenceRead = max(_lastSequenceRead, change->sequence);
         if (!passive())
             _checkpointer.addPendingSequence(change->sequence);
@@ -306,7 +307,7 @@ namespace litecore { namespace repl {
             auto requests = reply->JSONBody().asArray();
             unsigned index = 0;
             for (RevToSend *change : *changes) {
-                bool queued = false, synced = false;
+                bool queued = false, completed = true, synced = false;
                 change->deltaOK = _deltasOK;
                 if (proposedChanges) {
                     // Entry in "proposeChanges" response is a status code, with 0 for OK:
@@ -320,22 +321,28 @@ namespace litecore { namespace repl {
                     } else if (status == 304) {
                         // 304 means server has my rev already
                         synced = true;
-                    } else {
-                        slice message;
-                        if (status == 409) {
-                            // 409 means a push conflict
-                            logInfo("Proposed rev '%.*s' #%.*s (ancestor %.*s) conflicts with newer server revision",
-                                     SPLAT(change->docID), SPLAT(change->revID),
-                                     SPLAT(change->remoteAncestorRevID));
-                            message = "conflicts with newer server revision"_sl;
+                    } else if (status == 409) {
+                        // 409 means a push conflict
+                        logInfo("Proposed rev '%.*s' #%.*s (ancestor %.*s) conflicts with newer server revision",
+                                 SPLAT(change->docID), SPLAT(change->revID),
+                                 SPLAT(change->remoteAncestorRevID));
+                        if (_options.pull <= kC4Passive) {
+                            C4Error error = c4error_make(WebSocketDomain, 409,
+                                                         "conflicts with newer server revision"_sl);
+                            finishedDocumentWithError(change, error, false);
+                        } else if (shouldRetryConflictWithNewerAncestor(change)) {
+                            sendChanges(make_shared<RevToSendList>(1, change));
+                            queued = true;
                         } else {
-                            logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
-                                     SPLAT(change->docID), SPLAT(change->revID),
-                                     SPLAT(change->remoteAncestorRevID), status);
-                            message = "rejected by server"_sl;
+                            completed = false;
                         }
-                        auto err = c4error_make(WebSocketDomain, status, message);
-                        finishedDocumentWithError(change, err, false);
+                    } else {
+                        // Other error:
+                        logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
+                                 SPLAT(change->docID), SPLAT(change->revID),
+                                 SPLAT(change->remoteAncestorRevID), status);
+                        auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
+                        finishedDocumentWithError(change, err, !completed);
                     }
                 } else {
                     // Entry in "changes" response is an array of known ancestors, or null to skip:
@@ -355,12 +362,82 @@ namespace litecore { namespace repl {
                                SPLAT(change->docID), SPLAT(change->revID), change->sequence,
                                _revsToSend.size());
                 } else {
-                    doneWithRev(change, true, synced);  // not queued, so we're done with it
+                    doneWithRev(change, completed, synced);  // not queued, so we're done with it
                 }
                 ++index;
             }
             maybeSendMoreRevs();
         });
+    }
+
+
+    // Called after a proposed revision gets a 409 Conflict response from the server.
+    // Check the document's current remote rev, and retry if it's different now.
+    bool Pusher::shouldRetryConflictWithNewerAncestor(RevToSend *rev) {
+        // None of this is relevant if there's no puller getting stuff from the server
+        DebugAssert(_options.pull > kC4Passive);
+
+        bool retry = false;
+        _db->use([&](C4Database *db) {
+            C4Error error;
+            c4::ref<C4Document> doc = c4doc_get(db, rev->docID, true, &error);
+            if (doc && doc->revID == rev->revID) {
+                alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
+                if (foreignAncestor && foreignAncestor != rev->remoteAncestorRevID) {
+                    // Remote ancestor has changed, so retry if it's not a conflict:
+                    c4doc_selectRevision(doc, foreignAncestor, false, nullptr);
+                    if (!(doc->selectedRev.flags & kRevIsConflict)) {
+                        logInfo("I see the remote rev of '%.*s' is now #%.*s; retrying push",
+                                SPLAT(rev->docID), SPLAT(foreignAncestor));
+                        rev->remoteAncestorRevID = foreignAncestor;
+                        retry = true;
+                    }
+                } else {
+                    // No change to remote ancestor, but try again later if it changes:
+                    logInfo("Will try again if remote rev of '%.*s' is updated",
+                            SPLAT(rev->docID));
+                    _conflictsIMightRetry.emplace(rev->docID, rev);
+                }
+            } else {
+                // Doc has changed, so this rev is obsolete
+                revToSendIsObsolete(*rev, &error);
+            }
+        });
+        return retry;
+    }
+
+
+    // Notified (by the Puller) that the remote revision of a document has changed:
+    void Pusher::_docRemoteAncestorChanged(alloc_slice docID, alloc_slice foreignAncestor) {
+        if (status().level == kC4Stopped || !connection())
+            return;
+        auto i = _conflictsIMightRetry.find(docID);
+        if (i != _conflictsIMightRetry.end()) {
+            // OK, this is a potential conflict I noted in shouldRetryConflictWithNewerAncestor().
+            // See if the doc is unchanged, by getting it by sequence:
+            Retained<RevToSend> rev = i->second;
+            _conflictsIMightRetry.erase(i);
+            c4::ref<C4Document> doc = _db->use<C4Document*>([&](C4Database *db) {
+                return c4doc_getBySequence(db, rev->sequence, nullptr);
+            });
+            if (!doc || doc->revID != rev->revID) {
+                // Local document has changed, so stop working on this revision:
+                logVerbose("Notified that remote rev of '%.*s' is now #%.*s, but local doc has changed",
+                           SPLAT(docID), SPLAT(foreignAncestor));
+            } else if (c4doc_selectRevision(doc, foreignAncestor, false, nullptr)
+                                    && !(doc->selectedRev.flags & kRevIsConflict)) {
+                // The remote rev is an ancestor of my revision, so retry it:
+                c4doc_selectCurrentRevision(doc);
+                logInfo("Notified that remote rev of '%.*s' is now #%.*s; retrying push of #%.*s",
+                        SPLAT(docID), SPLAT(foreignAncestor), SPLAT(doc->revID));
+                rev->remoteAncestorRevID = foreignAncestor;
+                gotOutOfOrderChange(rev);
+            } else {
+                // Nope, this really is a conflict:
+                C4Error error = c4error_make(WebSocketDomain, 409, "conflicts with server document"_sl);
+                finishedDocumentWithError(rev, error, false);
+            }
+        }
     }
 
 
@@ -591,6 +668,7 @@ namespace litecore { namespace repl {
         if (synced && _options.push > kC4Passive)
             _db->markRevSynced(const_cast<RevToSend*>(rev));
 
+        // Remove rev from _pushingDocs, and see if there's a newer revision to send next:
         auto i = _pushingDocs.find(rev->docID);
         if (i == _pushingDocs.end()) {
             if (connection())
@@ -645,6 +723,20 @@ namespace litecore { namespace repl {
     }
 
 
+    void Pusher::_connectionClosed() {
+        auto conflicts = move(_conflictsIMightRetry);
+        if (!conflicts.empty()) {
+            // OK, now I must report these as conflicts:
+            _conflictsIMightRetry.clear();
+            C4Error error = c4error_make(WebSocketDomain, 409, "conflicts with server document"_sl);
+            for (auto &entry : conflicts)
+                finishedDocumentWithError(entry.second, error, false);
+        }
+
+        Worker::_connectionClosed();
+    }
+
+
     bool Pusher::isBusy() const {
         return Worker::computeActivityLevel() == kC4Busy
             || (_started && !_caughtUp)
@@ -665,7 +757,7 @@ namespace litecore { namespace repl {
             auto revsToRetry = move(_revsToRetry);
             _revsToRetry.clear();
             for(const auto& revToRetry : revsToRetry) {
-                _pushingDocs[revToRetry->docID] = revToRetry;
+                _pushingDocs.insert({revToRetry->docID, nullptr});
             }
 
             gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
@@ -684,7 +776,7 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         } else if (isBusy()) {
             level = kC4Busy;
-        } else if (_options.push == kC4Continuous || isOpenServer()) {
+        } else if (_continuous || isOpenServer() || !_conflictsIMightRetry.empty()) {
             level = kC4Idle;
         } else {
             level = kC4Stopped;
