@@ -15,7 +15,7 @@ The test runner depends on multiple other libraries from multiple git repositori
 - CivetWeb static library (../../endor/civetweb)
 - FleeceBase static library (../../vendor/fleece)
 - Support static library (../../Support [partial])
-- BLIP static library (../../vendor/BLIP-Cpp) 
+- BLIP static library (../../vendor/BLIP-Cpp)
 
 In addition, there are also some system dependencies that are not listed here
 ]]#
@@ -25,6 +25,10 @@ project (C4Tests)
 if(ANDROID OR WINDOWS_STORE)
     # No sense building it for Android since using an Android executable is
     # tricky and strange.  Windows Store projects are also not supported here.
+    return()
+endif()
+
+if(NOT LITECORE_BUILD_TESTS)
     return()
 endif()
 
