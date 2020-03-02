@@ -246,7 +246,7 @@ bool c4error_mayBeTransient(C4Error err) C4API {
         websocket::kCodeGoingAway,
         websocket::kCodeAbnormal,
         websocket::kCodeUnexpectedCondition,
-        kWebSocketCloseUserTransient,
+        websocket::kCloseAppTransient,
         0};
     static ErrorSet kTransient = { // indexed by C4ErrorDomain
         nullptr,
