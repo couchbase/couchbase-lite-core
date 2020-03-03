@@ -56,6 +56,8 @@ namespace litecore { namespace websocket {
         kCodeExtensionNotNegotiated,
         kCodeUnexpectedCondition,
         kCodeFailedTLSHandshake = 1015,
+        kCloseAppTransient = 4001,          // App-defined transient error
+        kCloseAppPermanent,                 // App-defined permanent error
     };
 
     enum NetworkError {
