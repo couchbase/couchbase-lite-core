@@ -18,6 +18,7 @@
 
 #include "c4Internal.hh"
 #include "c4Private.h"
+#include "c4Socket.h"
 
 #include "Actor.hh"
 #include "Backtrace.hh"
@@ -245,6 +246,7 @@ bool c4error_mayBeTransient(C4Error err) C4API {
         websocket::kCodeGoingAway,
         websocket::kCodeAbnormal,
         websocket::kCodeUnexpectedCondition,
+        websocket::kCloseAppTransient,
         0};
     static ErrorSet kTransient = { // indexed by C4ErrorDomain
         nullptr,
