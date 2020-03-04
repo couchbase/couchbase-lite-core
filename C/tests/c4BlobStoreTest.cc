@@ -19,6 +19,7 @@
 #include "c4Test.hh"
 #include "c4BlobStore.h"
 #include "c4Private.h"
+#include <fstream>
 
 using namespace std;
 
@@ -334,4 +335,59 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob and cancel", "[blob][Encryptio
     CHECK(c4stream_write(stream, buf, strlen(buf), &error));
 
     c4stream_closeWriter(stream);
+}
+
+N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write identical blob", "[blob][C]") {
+    // CBL-670: Installing identical blob can cause filesystem issues on Windows,
+    // but this is hard to reproduce, so simulate having the file open (which is what
+    // somehow ends up happening)
+
+    if(encrypted) {
+        // Can't get file paths with encryption, and can't compile BlobStoreTest with
+        // TEST_CASE_METHOD macro
+        return;
+    }
+
+    C4Error error;
+    const int streamCount = 2;
+    C4WriteStream *streams[streamCount];
+    for(int iter = 0; iter < streamCount; iter++) {
+        C4WriteStream *stream = c4blob_openWriteStream(store, &error);
+        REQUIRE(stream);
+        CHECK(c4stream_bytesWritten(stream) == 0);
+        streams[iter] = stream;
+
+        for (int i = 0; i < 1000; i++) {
+            char buf[100];
+            sprintf(buf, "This is line %03d.\n", i);
+            REQUIRE(c4stream_write(stream, buf, strlen(buf), &error));
+        }
+
+        CHECK(c4stream_bytesWritten(stream) == 18*1000);
+        C4BlobKey key = c4stream_computeBlobKey(stream);
+        if(iter > 0) {
+            auto path = c4blob_getFilePath(store, key, &error);
+            REQUIRE(path.buf != nullptr);
+            auto pathStr = string((char *)path.buf, path.size);
+
+            // Simulate the file being in use
+            ifstream fin(pathStr);
+            CHECK(c4stream_install(stream, nullptr, &error));
+        } else {
+            CHECK(c4stream_install(stream, nullptr, &error));
+        }
+
+        C4SliceResult keyStr = c4blob_keyToString(key);
+        CHECK(string((char*)keyStr.buf, keyStr.size) == "sha1-0htkjBHcrTyIk9K8e1zZq47yWxw=");
+        c4slice_free(keyStr);
+
+        // Read it back using the key:
+        C4SliceResult contents = c4blob_getContents(store, key, &error);
+        CHECK(contents.size == 18*1000);
+        c4slice_free(contents);
+    }
+
+    for (auto& stream : streams) {
+        c4stream_closeWriter(stream);
+    }
 }

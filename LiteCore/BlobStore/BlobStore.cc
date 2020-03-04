@@ -186,8 +186,18 @@ namespace litecore {
         if (expectedKey && *expectedKey != key)
             error::_throw(error::CorruptData);
         Blob blob(_store, key);
-        _tmpPath.setReadOnly(true);
-        _tmpPath.moveTo(blob.path());
+        if(!blob.path().exists()) {
+            _tmpPath.setReadOnly(true);
+            _tmpPath.moveTo(blob.path());
+        } else {
+            // If the destination already exists, then this blob
+            // already exists and doesn't need to be written again
+            if(!_tmpPath.del()) {
+                string tmpPath = _tmpPath.path();
+                Warn("Unable to delete temporary blob %s", tmpPath.c_str());
+            }
+        }
+
         _installed = true;
         return blob;
     }
