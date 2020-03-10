@@ -1,0 +1,55 @@
+//
+//  Project.xcconfig
+//  blip_cpp
+//
+//  Created by Jens Alfke on 3/23/17. (Adapted from LiteCore)
+//  Copyright © 2017 Couchbase. All rights reserved.
+//
+
+#include "XcodeWarnings.xcconfig"
+
+WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-unknown-warning-option  // ignore unknown warning flags
+CLANG_WARN_DOCUMENTATION_COMMENTS = NO
+CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO
+GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = NO
+GCC_WARN_ABOUT_MISSING_NEWLINE = NO
+CLANG_WARN_ASSIGN_ENUM = NO
+GCC_WARN_SIGN_COMPARE = NO
+CLANG_WARN__EXIT_TIME_DESTRUCTORS = NO
+CLANG_WARN_OBJC_EXPLICIT_OWNERSHIP_TYPE = NO
+CLANG_STATIC_ANALYZER_MODE = shallow
+
+GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
+
+IPHONEOS_DEPLOYMENT_TARGET                         = 10.0
+MACOSX_DEPLOYMENT_TARGET                           = 10.12
+TVOS_DEPLOYMENT_TARGET                             = 10.0
+ONLY_ACTIVE_ARCH                                   = NO
+SKIP_INSTALL                                       = YES
+SUPPORTED_PLATFORMS                                = macosx iphoneos iphonesimulator appletvos appletvsimulator
+
+// For some reason this is needed in iOS builds to support pre-iOS11.
+// See <https://forum.juce.com/t/error-building-ios-for-device-in-release-mode/28595/3>
+OTHER_CPLUSPLUSFLAGS                               = -fno-aligned-allocation
+
+COPY_PHASE_STRIP                                   = NO
+DEBUG_INFORMATION_FORMAT                           = dwarf
+PRODUCT_NAME                                       = $(TARGET_NAME)
+
+ALWAYS_SEARCH_USER_PATHS                           = NO
+HEADER_SEARCH_PATHS                                = $(inherited) $(SRCROOT)/../../LiteCore/Support/ $(SRCROOT)/../fleece/API/ $(SRCROOT)/../fleece/Fleece/Support/
+
+CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW         = YES    // range-check C++ STL containers
+
+CLANG_CXX_LANGUAGE_STANDARD                        = c++17
+CLANG_CXX_LIBRARY                                  = libc++
+CLANG_ENABLE_MODULES                               = YES
+CLANG_ENABLE_OBJC_ARC                              = YES
+
+ENABLE_STRICT_OBJC_MSGSEND                         = YES
+
+GCC_C_LANGUAGE_STANDARD                            = c99
+GCC_ENABLE_OBJC_EXCEPTIONS                         = YES
+GCC_NO_COMMON_BLOCKS                               = YES
+
+COMBINE_HIDPI_IMAGES                               = YES    // Stop Xcode from complaining
