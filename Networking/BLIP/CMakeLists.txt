@@ -34,7 +34,7 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
     $<$<CONFIG:Debug>:DEBUG>
 )
 set(LITECORE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/../..)
-set(FLEECE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/../fleece)
+set(FLEECE_LOCATION   ${LITECORE_LOCATION}/vendor/fleece)
 
 if(MSVC)
     include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/platform_win.cmake")

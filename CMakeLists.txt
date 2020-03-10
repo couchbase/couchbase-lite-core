@@ -117,10 +117,10 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LITECORE_SHARED_LI
 set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LITECORE_STATIC_LINKER_FLAGS}")
 set(SQLITE3_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/vendor/SQLiteCpp/sqlite3) # For SQLite3_UnicodeSN
 
+add_subdirectory(Networking/BLIP            EXCLUDE_FROM_ALL)
 add_subdirectory(REST                       EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
-add_subdirectory(vendor/BLIP-Cpp            EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 
 # Generate file repo_version.h containing Git repo information, and add it to #include path:
@@ -161,14 +161,14 @@ target_include_directories(
     LiteCore/Query
     LiteCore/RevID
     Crypto
-    Network
+    Networking
+    Networking/BLIP/include/blip_cpp
+    Networking/BLIP/src/util
+    Networking/BLIP/src/websocket
     vendor/mbedtls/include
     vendor/mbedtls/crypto/include
     C
     C/include
-    vendor/BLIP-Cpp/include/blip_cpp
-    vendor/BLIP-Cpp/src/util
-    vendor/BLIP-Cpp/src/websocket
     vendor/SQLiteCpp/sqlite3
     vendor/SQLiteCpp/include
 )
@@ -204,10 +204,10 @@ target_include_directories(
     Crypto
     LiteCore/Support
     Networking
+    Networking/BLIP/include/blip_cpp
+    Networking/BLIP/src/util
     Replicator
     REST
-    vendor/BLIP-Cpp/include/blip_cpp
-    vendor/BLIP-Cpp/src/util
     vendor/fleece/Fleece/Support
     vendor/fleece/API
     vendor/sockpp/include
@@ -267,10 +267,10 @@ target_include_directories(
     C/include 
     Crypto
     Networking
+    Networking/BLIP/include/blip_cpp
+    Networking/BLIP/src/util
     Replicator
     REST
-    vendor/BLIP-Cpp/include/blip_cpp
-    vendor/BLIP-Cpp/src/util
     vendor/SQLiteCpp/sqlite3
     vendor/SQLiteCpp/include
     vendor/sqlite3-unicodesn

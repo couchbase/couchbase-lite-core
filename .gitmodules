@@ -19,3 +19,6 @@
 [submodule "vendor/sockpp"]
 	path = vendor/sockpp
 	url = https://github.com/couchbasedeps/sockpp.git
+[submodule "vendor/zlib"]
+	path = vendor/zlib
+	url = https://github.com/couchbasedeps/zlib
