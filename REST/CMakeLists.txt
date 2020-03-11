@@ -46,6 +46,9 @@ target_include_directories(
     ../LiteCore/Support
     ../Crypto
     ../Networking
+    ../Networking/BLIP
+    ../Networking/HTTP
+    ../Networking/WebSockets
     ../Replicator
     ../vendor/BLIP-Cpp/include/blip_cpp
     ../vendor/BLIP-Cpp/src/util

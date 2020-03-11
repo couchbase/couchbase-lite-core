@@ -162,6 +162,7 @@ target_include_directories(
     LiteCore/RevID
     Crypto
     Networking
+    Networking/WebSockets/
     Networking/BLIP/include/blip_cpp
     Networking/BLIP/src/util
     Networking/BLIP/src/websocket
@@ -178,12 +179,12 @@ setup_support_build()
 
 set(
     LC_WEBSOCKET_SRC
-    Networking/HTTPTypes.cc
-    Networking/HTTPLogic.cc
+    Networking/HTTP/HTTPTypes.cc
+    Networking/HTTP/HTTPLogic.cc
     Networking/Poller.cc
     Networking/TCPSocket.cc
-    Networking/BuiltInWebSocket.cc
     Networking/TLSContext.cc
+    Networking/WebSockets/BuiltInWebSocket.cc
     REST/netUtils.cc
     vendor/sockpp/src/acceptor.cpp
     vendor/sockpp/src/connector.cpp
@@ -204,8 +205,9 @@ target_include_directories(
     Crypto
     LiteCore/Support
     Networking
-    Networking/BLIP/include/blip_cpp
-    Networking/BLIP/src/util
+    Networking/BLIP/
+    Networking/HTTP
+    Networking/WebSockets
     Replicator
     REST
     vendor/fleece/Fleece/Support
@@ -267,8 +269,9 @@ target_include_directories(
     C/include 
     Crypto
     Networking
-    Networking/BLIP/include/blip_cpp
-    Networking/BLIP/src/util
+    Networking/BLIP/
+    Networking/HTTP
+    Networking/WebSockets
     Replicator
     REST
     vendor/SQLiteCpp/sqlite3

@@ -86,6 +86,9 @@ target_include_directories(
     ${TOP}C/tests
     ${TOP}Crypto
     ${TOP}Networking
+    ${TOP}Networking/BLIP
+    ${TOP}Networking/HTTP
+    ${TOP}Networking/WebSockets
     ${TOP}LiteCore/BlobStore
     ${TOP}LiteCore/Database
     ${TOP}LiteCore/RevTrees

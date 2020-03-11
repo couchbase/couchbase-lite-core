@@ -11,17 +11,17 @@ function(set_source_files)
     set(
         ${ANDROID_SSS_RESULT}
         ${BASE_SRC_FILES}
-        src/util/ThreadedMailbox.cc
+        ${SUPPORT_LOCATION}/ThreadedMailbox.cc
         PARENT_SCOPE
     )
 endfunction()
 
 function(setup_build)
-    add_subdirectory("vendor/zlib")
+    add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../vendor/zlib" "vendor/zlib")
     target_include_directories(
         BLIPStatic PRIVATE
-        vendor/zlib
-        ${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib
+        "${CMAKE_CURRENT_LIST_DIR}/../../vendor/zlib"
+        "${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib"
         ${LITECORE_LOCATION}/LiteCore/Unix
     )
 endfunction()

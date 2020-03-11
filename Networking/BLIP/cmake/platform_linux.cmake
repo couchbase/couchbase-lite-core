@@ -11,7 +11,7 @@ function(set_source_files)
     set(
         ${LINUX_SSS_RESULT}
         ${BASE_SRC_FILES}
-        src/util/ThreadedMailbox.cc
+        ${SUPPORT_LOCATION}/ThreadedMailbox.cc
         PARENT_SCOPE
     )
 endfunction()

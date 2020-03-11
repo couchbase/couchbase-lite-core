@@ -7,19 +7,19 @@ function(set_source_files_base)
 
     set(
         ${BASE_SSS_RESULT}
-        src/blip/BLIPConnection.cc
-        src/blip/Message.cc
-        src/blip/MessageBuilder.cc
-        src/blip/MessageOut.cc
-        src/util/Actor.cc
-        src/util/ActorProperty.cc
-        src/util/Async.cc
-        src/util/Channel.cc
-        src/util/Codec.cc
-        src/util/Timer.cc
-        src/websocket/Headers.cc
-        src/websocket/WebSocketImpl.cc
-        src/websocket/WebSocketInterface.cc
+        ${BLIP_LOCATION}/BLIPConnection.cc
+        ${BLIP_LOCATION}/Message.cc
+        ${BLIP_LOCATION}/MessageBuilder.cc
+        ${BLIP_LOCATION}/MessageOut.cc
+        ${HTTP_LOCATION}/Headers.cc
+        ${WEBSOCKETS_LOCATION}/WebSocketImpl.cc
+        ${WEBSOCKETS_LOCATION}/WebSocketInterface.cc
+        ${SUPPORT_LOCATION}/Actor.cc
+        ${SUPPORT_LOCATION}/ActorProperty.cc
+        ${SUPPORT_LOCATION}/Async.cc
+        ${SUPPORT_LOCATION}/Channel.cc
+        ${SUPPORT_LOCATION}/Codec.cc
+        ${SUPPORT_LOCATION}/Timer.cc
         PARENT_SCOPE
     )
 endfunction()

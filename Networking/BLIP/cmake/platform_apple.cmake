@@ -11,7 +11,7 @@ function(set_source_files)
     set(
         ${APPLE_SSS_RESULT}
         ${BASE_SRC_FILES}
-        src/util/GCDMailbox.cc
+        ${SUPPORT_LOCATION}/GCDMailbox.cc
         PARENT_SCOPE
     )
 endfunction()

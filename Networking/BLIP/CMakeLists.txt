@@ -4,18 +4,9 @@ BLIP-Cpp CMake Project
 This project builds a static library containing the logic for crafting and processing BLIP messages.
 These types of messages are used in Couchbase Lite replication starting with Couchbase Lite 2.0.
 
-This project produces one target, BLIPStatic, that cannot be used on its own.  It requires the Fleece
-and LiteCore libraries to be checked out along with it in the following structure:
+This project produces one target, BLIPStatic.
 
-LiteCore
-|
---vendor
-|
-----fleece
-|
-----BLIPCpp
-
-Also if on Android or Windows this library must be linked with the zlibstatic library from the
+If on Android or Windows this library must be linked with the zlibstatic library from the
 vendor/zlib folder (the target will be automatically added on those platforms, but the final product
 must link with it via target_link_libraries)
 ]]#
@@ -33,8 +24,13 @@ set(CMAKE_C_STANDARD 11)
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
     $<$<CONFIG:Debug>:DEBUG>
 )
-set(LITECORE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/../..)
-set(FLEECE_LOCATION   ${LITECORE_LOCATION}/vendor/fleece)
+
+set(BLIP_LOCATION       ${CMAKE_CURRENT_LIST_DIR})
+set(WEBSOCKETS_LOCATION ${CMAKE_CURRENT_LIST_DIR}/../WebSockets)
+set(HTTP_LOCATION       ${CMAKE_CURRENT_LIST_DIR}/../HTTP)
+set(LITECORE_LOCATION   ${CMAKE_CURRENT_LIST_DIR}/../..)
+set(SUPPORT_LOCATION    ${LITECORE_LOCATION}/LiteCore/Support)
+set(FLEECE_LOCATION     ${LITECORE_LOCATION}/vendor/fleece)
 
 if(MSVC)
     include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/platform_win.cmake")
@@ -53,11 +49,9 @@ add_library(BLIPStatic STATIC ${ALL_SRC_FILES})
 setup_build()
 target_include_directories(
     BLIPStatic PRIVATE
-    include/blip_cpp
-    src/blip
-    src/util
-    src/websocket
+    ${BLIP_LOCATION}
+    ${WEBSOCKETS_LOCATION}
+    ${SUPPORT_LOCATION}
     ${FLEECE_LOCATION}/API
     ${FLEECE_LOCATION}/Fleece/Support
-    ${LITECORE_LOCATION}/LiteCore/Support
 )
