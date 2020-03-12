@@ -69,7 +69,7 @@ function(set_litecore_source_base)
         LiteCore/Storage/SQLiteKeyStore.cc
         LiteCore/Storage/UnicodeCollator.cc
         Networking/Address.cc
-        Networking/CookieStore.cc
+        Networking/HTTP/CookieStore.cc
         vendor/SQLiteCpp/src/Backup.cpp
         vendor/SQLiteCpp/src/Column.cpp
         vendor/SQLiteCpp/src/Database.cpp

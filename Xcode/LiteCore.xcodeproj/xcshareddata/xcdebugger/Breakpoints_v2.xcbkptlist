@@ -9,8 +9,8 @@
          <BreakpointContent
             uuid = "9123C3AE-2BA1-44B2-9916-5EDAF6321D77"
             shouldBeEnabled = "Yes"
-            ignoreCount = "0"
             condition = "!C4ExpectingExceptions()"
+            ignoreCount = "0"
             continueAfterRunningActions = "No"
             symbolName = "__cxa_throw"
             moduleName = "">

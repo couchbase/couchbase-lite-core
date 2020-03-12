@@ -1,0 +1,84 @@
+//
+// Headers.hh
+//
+// Copyright © 2019 Couchbase. All rights reserved.
+//
+
+#pragma once
+#include "fleece/slice.hh"
+#include "Writer.hh"
+#include "function_ref.hh"
+#include <map>
+
+namespace fleece {
+    class Dict;
+}
+
+namespace litecore { namespace websocket {
+
+
+    /** HTTP headers. A specialized map that has case-insensitive keys and allows multiple
+        occurrences of a key. */
+    class Headers {
+    public:
+        using slice = fleece::slice;
+        using alloc_slice = fleece::alloc_slice;
+
+        Headers() =default;
+
+        /** Reconstitute from Fleece data. */
+        explicit Headers(alloc_slice encoded);
+        explicit Headers(slice encoded)                 :Headers(alloc_slice(encoded)) { }
+        explicit Headers(fleece::Dict);
+
+        Headers(const Headers&);
+        Headers(Headers&&);
+        Headers& operator= (const Headers&);
+
+        void clear();
+
+        bool empty() const                              {return _map.empty();}
+
+        /** Keep a reference to this alloc_slice; any keys/values that are added that point
+            within the backing store won't cause any allocation. */
+        void setBackingStore(alloc_slice);
+
+        /** Adds a header. If a header with that name already exists, it adds a second. */
+        void add(slice name, slice value);
+
+        /** Returns the value of a header with that name.*/
+        slice get(slice name) const;
+
+        int64_t getInt(slice name, int64_t defaultValue =0) const;
+
+        /** Returns the value of a header with that name.*/
+        slice operator[] (slice name) const             {return get(name);}
+
+        /** Calls the function once for each header, in ASCII order.*/
+        void forEach(fleece::function_ref<void(slice, slice)> callback) const;
+
+        /** Calls the function once for each value with the given name.*/
+        void forEach(slice name, fleece::function_ref<void(slice)> callback) const;
+
+        /** Encodes the headers as a Fleece dictionary. Each key is a header name, and its
+            value is a string if it's unique, or an array of strings if multiple. */
+        alloc_slice encode() const;
+
+    private:
+        void readFrom(fleece::Dict);
+        slice store(slice s);
+
+        class HeaderCmp {
+        public:
+            bool operator() (fleece::slice a, fleece::slice b) const noexcept{
+                return a.caseEquivalentCompare(b) < 0;
+            }
+        };
+
+        std::multimap<slice, slice, HeaderCmp> _map;
+        alloc_slice _backingStore;
+        fleece::Writer _writer;
+    };
+
+
+} }

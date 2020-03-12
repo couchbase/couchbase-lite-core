@@ -7,9 +7,6 @@
 [submodule "vendor/SQLiteCpp"]
 	path = vendor/SQLiteCpp
 	url = https://github.com/couchbasedeps/SQLiteCpp.git
-[submodule "vendor/BLIP-Cpp"]
-	path = vendor/BLIP-Cpp
-    url=https://github.com/couchbaselabs/BLIP-Cpp.git
 [submodule "wiki"]
 	path = wiki
 	url = https://github.com/couchbase/couchbase-lite-core.wiki.git
@@ -22,3 +19,6 @@
 [submodule "vendor/sockpp"]
 	path = vendor/sockpp
 	url = https://github.com/couchbasedeps/sockpp.git
+[submodule "vendor/zlib"]
+	path = vendor/zlib
+	url = https://github.com/couchbasedeps/zlib

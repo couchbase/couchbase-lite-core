@@ -119,6 +119,20 @@
 		273E9F771C516145003115A6 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
 		2742D10C2305C25D003197E1 /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
+		2744B34F241854F2005A194D /* Headers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B32F241854F2005A194D /* Headers.cc */; };
+		2744B350241854F2005A194D /* WebSocketInterface.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B330241854F2005A194D /* WebSocketInterface.cc */; };
+		2744B351241854F2005A194D /* WebSocketImpl.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B331241854F2005A194D /* WebSocketImpl.cc */; };
+		2744B352241854F2005A194D /* Codec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B334241854F2005A194D /* Codec.cc */; };
+		2744B354241854F2005A194D /* Actor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B337241854F2005A194D /* Actor.cc */; };
+		2744B355241854F2005A194D /* ThreadedMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B33A241854F2005A194D /* ThreadedMailbox.cc */; };
+		2744B356241854F2005A194D /* GCDMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B33B241854F2005A194D /* GCDMailbox.cc */; };
+		2744B358241854F2005A194D /* Channel.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B342241854F2005A194D /* Channel.cc */; };
+		2744B359241854F2005A194D /* Timer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B343241854F2005A194D /* Timer.cc */; };
+		2744B35A241854F2005A194D /* BLIPConnection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B347241854F2005A194D /* BLIPConnection.cc */; };
+		2744B35B241854F2005A194D /* MessageBuilder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B349241854F2005A194D /* MessageBuilder.cc */; };
+		2744B35C241854F2005A194D /* MessageOut.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B34A241854F2005A194D /* MessageOut.cc */; };
+		2744B35D241854F2005A194D /* Message.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B34B241854F2005A194D /* Message.cc */; };
+		2744B36224186142005A194D /* BuiltInWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27304A0423023FCF0049AC69 /* BuiltInWebSocket.cc */; };
 		27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */; };
 		27469CFD233C35EB00A1EE1A /* TLSContext.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27469CFB233C35EB00A1EE1A /* TLSContext.hh */; };
 		27469CFE233C35EB00A1EE1A /* TLSContext.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27469CFC233C35EB00A1EE1A /* TLSContext.cc */; };
@@ -236,7 +250,6 @@
 		27AFF3AE23036B2500B4D6C4 /* stream_socket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27AFF3A523036B2500B4D6C4 /* stream_socket.cpp */; };
 		27AFF3AF23036B2500B4D6C4 /* datagram_socket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27AFF3A623036B2500B4D6C4 /* datagram_socket.cpp */; };
 		27AFF3B023036B5800B4D6C4 /* TCPSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270F2BD42301E8AE00D8DB21 /* TCPSocket.cc */; };
-		27AFF3B123036B5800B4D6C4 /* BuiltInWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27304A0423023FCF0049AC69 /* BuiltInWebSocket.cc */; };
 		27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
 		27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
@@ -299,7 +312,6 @@
 		27DD1513193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		27DDC54B236B56D000580B2B /* CertRequest.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27DDC549236B56D000580B2B /* CertRequest.hh */; };
 		27DDC54C236B56D000580B2B /* CertRequest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DDC54A236B56D000580B2B /* CertRequest.cc */; };
-		27DE2E862125F32700123597 /* libactors.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DE2E852125F32700123597 /* libactors.a */; };
 		27DE2EE72125FAD600123597 /* libfleeceBase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DE2EE62125FAD600123597 /* libfleeceBase.a */; };
 		27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Record.cc */; };
 		27DF7D351F3ACEBF0022F3DF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
@@ -427,7 +439,6 @@
 		93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
 		93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
 		93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
-		93CD011A1E933C0B00AFB3FA /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -553,13 +564,6 @@
 			remoteGlobalIDString = 2752B26A233D76000014AD9D;
 			remoteInfo = mbedTLS;
 		};
-		2754620F22F3A1CE00DF87B0 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 27DE2E472125F2C100123597;
-			remoteInfo = actors;
-		};
 		27732CE11D734EFB006D3802 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -622,27 +626,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
 			remoteInfo = "LiteCore static";
-		};
-		27CCC7BC1E525DD800CE1989 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 27EF69B71E282549004748DF;
-			remoteInfo = blip_cpp;
-		};
-		27CCC7C01E525DD800CE1989 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 27EF6A9E1E2B0CE9004748DF;
-			remoteInfo = bliptest;
-		};
-		27DE2E842125F32700123597 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
-			proxyType = 2;
-			remoteGlobalIDString = 27DE2E822125F2C100123597;
-			remoteInfo = actors;
 		};
 		27DE2EE52125FAD600123597 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -720,13 +703,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
 			remoteInfo = Fleece;
-		};
-		93CD01181E933C0600AFB3FA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 27EF69B61E282549004748DF;
-			remoteInfo = blip_cpp;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -883,6 +859,46 @@
 		273E9FBC1C519A1B003115A6 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project.xcconfig; sourceTree = "<group>"; };
 		273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tokenizer.xcconfig; sourceTree = "<group>"; };
 		27416E291E0494DF00F10F65 /* c4QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4QueryTest.cc; sourceTree = "<group>"; };
+		2744B30C241854F2005A194D /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		2744B316241854F2005A194D /* WebSocketInterface.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketInterface.hh; sourceTree = "<group>"; };
+		2744B317241854F2005A194D /* BLIPConnection.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIPConnection.hh; sourceTree = "<group>"; };
+		2744B318241854F2005A194D /* WebSocketImpl.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketImpl.hh; sourceTree = "<group>"; };
+		2744B319241854F2005A194D /* BLIP.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIP.hh; sourceTree = "<group>"; };
+		2744B31A241854F2005A194D /* Headers.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Headers.hh; sourceTree = "<group>"; };
+		2744B31B241854F2005A194D /* MockProvider.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MockProvider.hh; sourceTree = "<group>"; };
+		2744B31C241854F2005A194D /* MessageBuilder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageBuilder.hh; sourceTree = "<group>"; };
+		2744B31D241854F2005A194D /* LoopbackProvider.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LoopbackProvider.hh; sourceTree = "<group>"; };
+		2744B31E241854F2005A194D /* Message.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Message.hh; sourceTree = "<group>"; };
+		2744B31F241854F2005A194D /* BLIPProtocol.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIPProtocol.hh; sourceTree = "<group>"; };
+		2744B329241854F2005A194D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		2744B32F241854F2005A194D /* Headers.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Headers.cc; sourceTree = "<group>"; };
+		2744B330241854F2005A194D /* WebSocketInterface.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketInterface.cc; sourceTree = "<group>"; };
+		2744B331241854F2005A194D /* WebSocketImpl.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketImpl.cc; sourceTree = "<group>"; };
+		2744B332241854F2005A194D /* WebSocketProtocol.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketProtocol.hh; sourceTree = "<group>"; };
+		2744B334241854F2005A194D /* Codec.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Codec.cc; sourceTree = "<group>"; };
+		2744B335241854F2005A194D /* ActorProperty.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ActorProperty.hh; sourceTree = "<group>"; };
+		2744B336241854F2005A194D /* Async.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Async.cc; sourceTree = "<group>"; };
+		2744B337241854F2005A194D /* Actor.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Actor.cc; sourceTree = "<group>"; };
+		2744B338241854F2005A194D /* ThreadedMailbox.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ThreadedMailbox.hh; sourceTree = "<group>"; };
+		2744B339241854F2005A194D /* GCDMailbox.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GCDMailbox.hh; sourceTree = "<group>"; };
+		2744B33A241854F2005A194D /* ThreadedMailbox.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ThreadedMailbox.cc; sourceTree = "<group>"; };
+		2744B33B241854F2005A194D /* GCDMailbox.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GCDMailbox.cc; sourceTree = "<group>"; };
+		2744B33C241854F2005A194D /* Batcher.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Batcher.hh; sourceTree = "<group>"; };
+		2744B33D241854F2005A194D /* ThreadUtil.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ThreadUtil.hh; sourceTree = "<group>"; };
+		2744B33E241854F2005A194D /* Codec.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Codec.hh; sourceTree = "<group>"; };
+		2744B33F241854F2005A194D /* ActorProperty.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ActorProperty.cc; sourceTree = "<group>"; };
+		2744B340241854F2005A194D /* Actor.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Actor.hh; sourceTree = "<group>"; };
+		2744B341241854F2005A194D /* Async.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Async.hh; sourceTree = "<group>"; };
+		2744B342241854F2005A194D /* Channel.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Channel.cc; sourceTree = "<group>"; };
+		2744B343241854F2005A194D /* Timer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Timer.cc; sourceTree = "<group>"; };
+		2744B344241854F2005A194D /* Channel.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Channel.hh; sourceTree = "<group>"; };
+		2744B345241854F2005A194D /* Timer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Timer.hh; sourceTree = "<group>"; };
+		2744B347241854F2005A194D /* BLIPConnection.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BLIPConnection.cc; sourceTree = "<group>"; };
+		2744B348241854F2005A194D /* BLIPInternal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIPInternal.hh; sourceTree = "<group>"; };
+		2744B349241854F2005A194D /* MessageBuilder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MessageBuilder.cc; sourceTree = "<group>"; };
+		2744B34A241854F2005A194D /* MessageOut.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MessageOut.cc; sourceTree = "<group>"; };
+		2744B34B241854F2005A194D /* Message.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Message.cc; sourceTree = "<group>"; };
+		2744B34C241854F2005A194D /* MessageOut.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageOut.hh; sourceTree = "<group>"; };
 		27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTrackerTest.cc; sourceTree = "<group>"; };
 		2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorAPITest.cc; sourceTree = "<group>"; };
 		27469CFB233C35EB00A1EE1A /* TLSContext.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TLSContext.hh; sourceTree = "<group>"; };
@@ -1161,7 +1177,6 @@
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27C44C5C2345795500AF4265 /* c4Transaction.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Transaction.hh; sourceTree = "<group>"; };
 		27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "c4PredictiveQueryTest+CoreML.mm"; sourceTree = "<group>"; };
-		27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = blip_cpp.xcodeproj; path = "BLIP-Cpp/blip_cpp.xcodeproj"; sourceTree = "<group>"; };
 		27CCC7D61E52613C00CE1989 /* Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Replicator.cc; sourceTree = "<group>"; };
 		27CCC7D71E52613C00CE1989 /* Replicator.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Replicator.hh; sourceTree = "<group>"; };
 		27CCC7DE1E526CCC00CE1989 /* Puller.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Puller.cc; sourceTree = "<group>"; };
@@ -1501,7 +1516,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				27DE2EE72125FAD600123597 /* libfleeceBase.a in Frameworks */,
-				27DE2E862125F32700123597 /* libactors.a in Frameworks */,
 				274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */,
 				279691771ED4B3720086565D /* libSupport.a in Frameworks */,
 				270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */,
@@ -1575,7 +1589,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				27DF7D6A1F4236950022F3DF /* libSQLite.a in Frameworks */,
-				93CD011A1E933C0B00AFB3FA /* libblip_cpp.a in Frameworks */,
 				27FA09CB1D70BA42005888AA /* libfleeceStatic.a in Frameworks */,
 				27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */,
 			);
@@ -1663,20 +1676,15 @@
 		271BA53122960DF900D49D13 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
+				2744B303241854F2005A194D /* BLIP */,
+				2744B36324186210005A194D /* HTTP */,
+				2744B32E241854F2005A194D /* WebSockets */,
 				27CE4CF02077F51000ACA225 /* Address.cc */,
 				27CE4CEF2077F51000ACA225 /* Address.hh */,
-				2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */,
-				2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */,
-				271C069723078176000EC09B /* HTTPTypes.cc */,
-				271BA53C2297008200D49D13 /* HTTPTypes.hh */,
-				27727C53230F279D0082BCC9 /* HTTPLogic.cc */,
-				27727C52230F279D0082BCC9 /* HTTPLogic.hh */,
-				270F2BD42301E8AE00D8DB21 /* TCPSocket.cc */,
-				270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */,
-				27304A0423023FCF0049AC69 /* BuiltInWebSocket.cc */,
-				27304A0323023FCF0049AC69 /* BuiltInWebSocket.hh */,
 				27D95BA8239F217A0090CE46 /* Poller.cc */,
 				27D95BA7239F217A0090CE46 /* Poller.hh */,
+				270F2BD42301E8AE00D8DB21 /* TCPSocket.cc */,
+				270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */,
 				27469CFC233C35EB00A1EE1A /* TLSContext.cc */,
 				27469CFB233C35EB00A1EE1A /* TLSContext.hh */,
 			);
@@ -1806,6 +1814,83 @@
 			path = xcconfigs;
 			sourceTree = "<group>";
 		};
+		2744B303241854F2005A194D /* BLIP */ = {
+			isa = PBXGroup;
+			children = (
+				2744B329241854F2005A194D /* README.md */,
+				2744B30C241854F2005A194D /* CMakeLists.txt */,
+				2744B317241854F2005A194D /* BLIPConnection.hh */,
+				2744B319241854F2005A194D /* BLIP.hh */,
+				2744B31B241854F2005A194D /* MockProvider.hh */,
+				2744B31C241854F2005A194D /* MessageBuilder.hh */,
+				2744B31D241854F2005A194D /* LoopbackProvider.hh */,
+				2744B31E241854F2005A194D /* Message.hh */,
+				2744B31F241854F2005A194D /* BLIPProtocol.hh */,
+				2744B347241854F2005A194D /* BLIPConnection.cc */,
+				2744B348241854F2005A194D /* BLIPInternal.hh */,
+				2744B349241854F2005A194D /* MessageBuilder.cc */,
+				2744B34A241854F2005A194D /* MessageOut.cc */,
+				2744B34B241854F2005A194D /* Message.cc */,
+				2744B34C241854F2005A194D /* MessageOut.hh */,
+			);
+			path = BLIP;
+			sourceTree = "<group>";
+		};
+		2744B32E241854F2005A194D /* WebSockets */ = {
+			isa = PBXGroup;
+			children = (
+				2744B330241854F2005A194D /* WebSocketInterface.cc */,
+				2744B316241854F2005A194D /* WebSocketInterface.hh */,
+				2744B331241854F2005A194D /* WebSocketImpl.cc */,
+				2744B318241854F2005A194D /* WebSocketImpl.hh */,
+				2744B332241854F2005A194D /* WebSocketProtocol.hh */,
+				27304A0423023FCF0049AC69 /* BuiltInWebSocket.cc */,
+				27304A0323023FCF0049AC69 /* BuiltInWebSocket.hh */,
+			);
+			path = WebSockets;
+			sourceTree = "<group>";
+		};
+		2744B3602418566F005A194D /* zlib */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = zlib;
+			sourceTree = "<group>";
+		};
+		2744B36124185D24005A194D /* Actors */ = {
+			isa = PBXGroup;
+			children = (
+				2744B335241854F2005A194D /* ActorProperty.hh */,
+				2744B336241854F2005A194D /* Async.cc */,
+				2744B337241854F2005A194D /* Actor.cc */,
+				2744B338241854F2005A194D /* ThreadedMailbox.hh */,
+				2744B339241854F2005A194D /* GCDMailbox.hh */,
+				2744B33A241854F2005A194D /* ThreadedMailbox.cc */,
+				2744B33B241854F2005A194D /* GCDMailbox.cc */,
+				2744B33F241854F2005A194D /* ActorProperty.cc */,
+				2744B340241854F2005A194D /* Actor.hh */,
+				2744B341241854F2005A194D /* Async.hh */,
+				2744B342241854F2005A194D /* Channel.cc */,
+				2744B344241854F2005A194D /* Channel.hh */,
+			);
+			name = Actors;
+			sourceTree = "<group>";
+		};
+		2744B36324186210005A194D /* HTTP */ = {
+			isa = PBXGroup;
+			children = (
+				2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */,
+				2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */,
+				2744B32F241854F2005A194D /* Headers.cc */,
+				2744B31A241854F2005A194D /* Headers.hh */,
+				271C069723078176000EC09B /* HTTPTypes.cc */,
+				271BA53C2297008200D49D13 /* HTTPTypes.hh */,
+				27727C53230F279D0082BCC9 /* HTTPLogic.cc */,
+				27727C52230F279D0082BCC9 /* HTTPLogic.hh */,
+			);
+			path = HTTP;
+			sourceTree = "<group>";
+		};
 		2747664420190841007B39D1 /* sqlite3 */ = {
 			isa = PBXGroup;
 			children = (
@@ -1917,15 +2002,23 @@
 		2750724318E3E52800A80C5A /* Support */ = {
 			isa = PBXGroup;
 			children = (
+				2744B36124185D24005A194D /* Actors */,
+				27F2BE97221DC9DF006C13EE /* access_lock.hh */,
 				276CE67D2267991400B681AC /* Any.hh */,
 				275A74461ED37992008CB57B /* Base.hh */,
+				2744B33C241854F2005A194D /* Batcher.hh */,
 				729272F12238DB8500E7208E /* c4ExceptionUtils.cc */,
 				729272F22238DB8500E7208E /* c4ExceptionUtils.hh */,
+				2744B334241854F2005A194D /* Codec.cc */,
+				2744B33E241854F2005A194D /* Codec.hh */,
+				2762A01F22EF641900F9AB18 /* Defer.hh */,
 				27393A861C8A353A00829C9B /* Error.cc */,
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
 				27E89BA51D679542002C32B3 /* FilePath.hh */,
 				27700DFD1FB642B80005D48E /* Increment.hh */,
+				27FB0C37205B177100987D9C /* Instrumentation.hh */,
+				27FB0C3C205B18A500987D9C /* Instrumentation.cc */,
 				27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */,
 				27BF033C1FB62A87003D5BB8 /* Logging */,
 				273407211DEE116600EA5532 /* PlatformIO.cc */,
@@ -1937,11 +2030,10 @@
 				2763012A1F3A36BD004A1592 /* StringUtil_Apple.mm */,
 				272AEC3F1F55D87500051F0A /* StringUtil_icu.cc */,
 				272AEC431F55D87500051F0A /* StringUtil_winapi.cc */,
+				2744B33D241854F2005A194D /* ThreadUtil.hh */,
+				2744B343241854F2005A194D /* Timer.cc */,
+				2744B345241854F2005A194D /* Timer.hh */,
 				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
-				27FB0C37205B177100987D9C /* Instrumentation.hh */,
-				27FB0C3C205B18A500987D9C /* Instrumentation.cc */,
-				27F2BE97221DC9DF006C13EE /* access_lock.hh */,
-				2762A01F22EF641900F9AB18 /* Defer.hh */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -2417,16 +2509,6 @@
 			name = Logging;
 			sourceTree = "<group>";
 		};
-		27CCC7B71E525DD800CE1989 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */,
-				27DE2E852125F32700123597 /* libactors.a */,
-				27CCC7C11E525DD800CE1989 /* bliptest */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		27CCC7CA1E525E6D00CE1989 /* Replicator */ = {
 			isa = PBXGroup;
 			children = (
@@ -2479,13 +2561,13 @@
 		27D74A721D4D3EC000D806E0 /* vendor */ = {
 			isa = PBXGroup;
 			children = (
-				27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */,
 				277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */,
 				275E6B9C22C2A3860032362A /* ios-cmake */,
 				2771A01F2284EA9F00B18E0A /* mbedtls */,
 				27AFF38F23036A7100B4D6C4 /* socketpp */,
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
 				27D74A731D4D3F0700D806E0 /* SQLiteCpp */,
+				2744B3602418566F005A194D /* zlib */,
 			);
 			name = vendor;
 			path = ../vendor;
@@ -3054,7 +3136,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				2754621022F3A1CE00DF87B0 /* PBXTargetDependency */,
 				274D04221BA892C500FF7C35 /* PBXTargetDependency */,
 				2796A28A2307345E00774850 /* PBXTargetDependency */,
 				278B8DD623077AA100DB027F /* PBXTargetDependency */,
@@ -3206,7 +3287,6 @@
 			);
 			dependencies = (
 				27DF7D901F4289E60022F3DF /* PBXTargetDependency */,
-				93CD01191E933C0600AFB3FA /* PBXTargetDependency */,
 				27FA09CA1D70BA3C005888AA /* PBXTargetDependency */,
 				27EF81161917EF4000A327B9 /* PBXTargetDependency */,
 				2752B277233D79030014AD9D /* PBXTargetDependency */,
@@ -3322,10 +3402,6 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = 27CCC7B71E525DD800CE1989 /* Products */;
-					ProjectRef = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
-				},
-				{
 					ProductGroup = 27FA09B61D70ADE8005888AA /* Products */;
 					ProjectRef = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
 				},
@@ -3364,27 +3440,6 @@
 			fileType = "compiled.mach-o.dylib";
 			path = libfleece.dylib;
 			remoteRef = 27744B3221406D1B00399DCA /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libblip_cpp.a;
-			remoteRef = 27CCC7BC1E525DD800CE1989 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		27CCC7C11E525DD800CE1989 /* bliptest */ = {
-			isa = PBXReferenceProxy;
-			fileType = "compiled.mach-o.executable";
-			path = bliptest;
-			remoteRef = 27CCC7C01E525DD800CE1989 /* PBXContainerItemProxy */;
-			sourceTree = BUILT_PRODUCTS_DIR;
-		};
-		27DE2E852125F32700123597 /* libactors.a */ = {
-			isa = PBXReferenceProxy;
-			fileType = archive.ar;
-			path = libactors.a;
-			remoteRef = 27DE2E842125F32700123597 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		27DE2EE62125FAD600123597 /* libfleeceBase.a */ = {
@@ -3637,7 +3692,6 @@
 				27D95BAA239F217A0090CE46 /* Poller.cc in Sources */,
 				27AFF3AE23036B2500B4D6C4 /* stream_socket.cpp in Sources */,
 				27AFF3B023036B5800B4D6C4 /* TCPSocket.cc in Sources */,
-				27AFF3B123036B5800B4D6C4 /* BuiltInWebSocket.cc in Sources */,
 				27DDC54C236B56D000580B2B /* CertRequest.cc in Sources */,
 				277071D6230B696E00F7EB95 /* HTTPTypes.cc in Sources */,
 				27AFF3A723036B2500B4D6C4 /* inet6_address.cpp in Sources */,
@@ -3763,9 +3817,14 @@
 				2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */,
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
+				2744B36224186142005A194D /* BuiltInWebSocket.cc in Sources */,
 				27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */,
+				2744B352241854F2005A194D /* Codec.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
+				2744B35C241854F2005A194D /* MessageOut.cc in Sources */,
 				27469D09233D719800A1EE1A /* mbedUtils.cc in Sources */,
+				2744B358241854F2005A194D /* Channel.cc in Sources */,
+				2744B35D241854F2005A194D /* Message.cc in Sources */,
 				27098A97216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */,
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
 				27098AA6216C2108002751DA /* PredictiveModel.cc in Sources */,
@@ -3775,22 +3834,28 @@
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				27FC8DB622135BCE0083B033 /* Pusher+DB.cc in Sources */,
 				27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */,
+				2744B35B241854F2005A194D /* MessageBuilder.cc in Sources */,
+				2744B356241854F2005A194D /* GCDMailbox.cc in Sources */,
 				276301131F2FE960004A1592 /* UnicodeCollator_ICU.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */,
 				27469D08233D719800A1EE1A /* PublicKey+Apple.mm in Sources */,
 				27FC8E77221399AC0083B033 /* LeafDocument.cc in Sources */,
+				2744B351241854F2005A194D /* WebSocketImpl.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
+				2744B354241854F2005A194D /* Actor.cc in Sources */,
 				2705154D1D8CBE6C00D62D05 /* c4Query.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */,
+				2744B34F241854F2005A194D /* Headers.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
 				275E9905238360B200EA516B /* Checkpointer.cc in Sources */,
 				275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */,
 				271AB0162374AD09007B0319 /* IndexSpec.cc in Sources */,
 				93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */,
 				27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
+				2744B350241854F2005A194D /* WebSocketInterface.cc in Sources */,
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 				274D17822177ECCC007FD01A /* QueryParser+Prediction.cc in Sources */,
 				27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */,
@@ -3813,6 +3878,8 @@
 				272F00EA226FC15E00E62F72 /* BackgroundDB.cc in Sources */,
 				27D74A801D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
+				2744B35A241854F2005A194D /* BLIPConnection.cc in Sources */,
+				2744B359241854F2005A194D /* Timer.cc in Sources */,
 				2763012B1F3A36BD004A1592 /* StringUtil_Apple.mm in Sources */,
 				27098AA1216C1E88002751DA /* SQLitePredictionFunction.cc in Sources */,
 				27D9655A23355DC900F4A51C /* SecureDigest.cc in Sources */,
@@ -3828,6 +3895,7 @@
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */,
 				27E3DD581DB8524300F2872D /* Database.cc in Sources */,
+				2744B355241854F2005A194D /* ThreadedMailbox.cc in Sources */,
 				27FB0C3D205B18A500987D9C /* Instrumentation.cc in Sources */,
 				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
@@ -3960,11 +4028,6 @@
 			target = 2752B26A233D76000014AD9D /* mbedTLS */;
 			targetProxy = 2752B276233D79030014AD9D /* PBXContainerItemProxy */;
 		};
-		2754621022F3A1CE00DF87B0 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = actors;
-			targetProxy = 2754620F22F3A1CE00DF87B0 /* PBXContainerItemProxy */;
-		};
 		27732CE21D734EFB006D3802 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 2708FE3E1CF4CC880022F721 /* LiteCoreCppTests */;
@@ -4039,11 +4102,6 @@
 			isa = PBXTargetDependency;
 			name = Fleece;
 			targetProxy = 27FA09C91D70BA3C005888AA /* PBXContainerItemProxy */;
-		};
-		93CD01191E933C0600AFB3FA /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = blip_cpp;
-			targetProxy = 93CD01181E933C0600AFB3FA /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
