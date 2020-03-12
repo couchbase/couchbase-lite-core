@@ -86,7 +86,7 @@ struct C4Replicator : public RefCounted,
         LOCK(_mutex);
         if(_status.level == kC4Stopped) {
             // Suspending a stopped replicator?  Get outta here...
-            logWarn("Ignoring a suspend call on a stopped replicator...")
+            Warn("Ignoring a suspend call on a stopped replicator...");
             return;
         }
         
@@ -94,7 +94,7 @@ struct C4Replicator : public RefCounted,
             // CBL-722: Stop was already called or Replicator is stopped,
             // making suspending meaningless (stop() should override any
             // suspending or unsuspending)
-            logWarn("Ignoring a suspend call on a stopping replicator...")
+            Warn("Ignoring a suspend call on a stopping replicator...");
             return;
         }
         
@@ -108,12 +108,11 @@ struct C4Replicator : public RefCounted,
             // CBL-729: At this point, the suspended state has changed from a previous
             // call that caused a suspension to start.  Register to restart later
             // (or cancel the later restart) and move on
-            logWarn("Request for %s, and Replicator is already in the process of sus")
             _cancelStop = !suspended;
             if(_cancelStop) {
-                logWarn("Request to unsuspend, but Replicator is already suspending.  Will restart after suspending process is completed.");
+                Warn("Request to unsuspend, but Replicator is already suspending.  Will restart after suspending process is completed.");
             } else {
-                logWarn("Replicator suspension process being spammed (request to suspend followed by at least one request to unsuspend and then suspend again), attempting to cancel restart.")
+                Warn("Replicator suspension process being spammed (request to suspend followed by at least one request to unsuspend and then suspend again), attempting to cancel restart.");
             }
             return;
         }
