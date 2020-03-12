@@ -41,6 +41,7 @@ extern "C" {
     /** The possible states of a replicator. */
     typedef C4_ENUM(int32_t, C4ReplicatorActivityLevel) {
         kC4Stopped,     ///< Finished, or got a fatal error.
+        kC4Stopping,    ///< Stopping or going offline
         kC4Offline,     ///< Connection failed, but waiting to retry. */
         kC4Connecting,  ///< Connection is in progress.
         kC4Idle,        ///< Continuous replicator has caught up and is waiting for changes.
