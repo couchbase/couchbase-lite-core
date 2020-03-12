@@ -390,6 +390,15 @@ namespace c4Internal {
             if (rq.remoteDBID) {
                 auto oldRev = _versionedDoc.latestRevisionOnRemote(rq.remoteDBID);
                 if (oldRev && !oldRev->isAncestorOf(newRev)) {
+                    if(newRev->isAncestorOf(oldRev)) {
+                        // CBL-578: Sometimes due to the parallel nature of the rev responses, older
+                        // revs come in after newer ones.  In this case, we will just ignore the older
+                        // rev that has come through
+                        LogTo(DBLog, "Document \"%.*s\" received older revision %.*s after %.*s, ignoring...",
+                              SPLAT(docID), SPLAT(newRev->revID.expanded()), SPLAT(oldRev->revID.expanded()));
+                        return (int32_t)oldRev->revID.generation();
+                    }
+                    
                     // Server has "switched branches": its current revision is now on a different
                     // branch than it used to be, either due to revs added to this branch, or
                     // deletion of the old branch. In either case this is not a conflict.
