@@ -49,7 +49,7 @@ extern "C" {
     };
 
     /** For convenience, an array of C strings naming the C4ReplicatorActivityLevel values. */
-    CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[5];
+    CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[6];
 
 
     /** A simple parsed-URL type. */
