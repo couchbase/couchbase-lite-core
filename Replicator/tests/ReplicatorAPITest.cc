@@ -22,6 +22,14 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
 
 alloc_slice ReplicatorAPITest::sPinnedCert;
 
+static void waitForStatus(C4Replicator* repl, C4ReplicatorActivityLevel level, int sleepMs = 100, int attempts = 50) {
+    int attempt = 0;
+    while (c4repl_getStatus(repl).level != level && ++attempt < attempts) {
+        this_thread::sleep_for(chrono::milliseconds(sleepMs));
+    }
+    
+    CHECK(attempt < attempts);
+}
 
 
 TEST_CASE("URL Parsing") {
@@ -417,5 +425,81 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, &err);
     CHECK(!isPending);
     CHECK(err.code == 0);
+}
+#endif
+
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+
+    createDB2();
+    _mayGoOffline = true;
+    C4Error err;
+    REQUIRE(startReplicator(kC4Continuous, kC4Continuous, &err));
+    waitForStatus(_repl, kC4Busy, 50);
+    
+    C4ReplicatorActivityLevel expected = kC4Stopped;
+    SECTION("Stop / Start") {
+        c4repl_stop(_repl);
+        c4repl_start(_repl);
+        expected = kC4Idle;
+    }
+
+    SECTION("Stop / Start / Stop") {
+        c4repl_stop(_repl);
+        c4repl_start(_repl);
+        c4repl_stop(_repl);
+    }
+
+    SECTION("Suspend / Unsuspend") {
+        c4repl_setSuspended(_repl, true);
+        c4repl_setSuspended(_repl, false);
+        expected = kC4Idle;
+    }
+    
+    SECTION("Suspend / Unsuspend / Suspend") {
+        c4repl_setSuspended(_repl, true);
+        c4repl_setSuspended(_repl, false);
+        c4repl_setSuspended(_repl, true);
+        expected = kC4Offline;
+    }
+    
+    SECTION("Stop / Suspend") {
+        c4repl_stop(_repl);
+        c4repl_setSuspended(_repl, true);
+    }
+    
+    SECTION("Suspend / Stop") {
+        c4repl_setSuspended(_repl, true);
+        c4repl_stop(_repl);
+    }
+    
+    SECTION("Stop / Unsuspend") {
+        c4repl_stop(_repl);
+        c4repl_setSuspended(_repl, false);
+    }
+    
+    SECTION("Suspend / Stop / Unsuspend") {
+        c4repl_setSuspended(_repl, true);
+        c4repl_stop(_repl);
+        c4repl_setSuspended(_repl, false);
+    }
+    
+    SECTION("Stop / Stop") {
+        c4repl_stop(_repl);
+        c4repl_stop(_repl);
+    }
+    
+    SECTION("Offline stop") {
+        c4repl_setSuspended(_repl, true);
+        waitForStatus(_repl, kC4Offline);
+        c4repl_stop(_repl);
+    }
+    
+    waitForStatus(_repl, expected);
+    if(expected != kC4Stopped) {
+        c4repl_stop(_repl);
+        waitForStatus(_repl, kC4Stopped);
+    }
 }
 #endif

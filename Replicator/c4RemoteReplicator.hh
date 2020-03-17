@@ -90,7 +90,6 @@ namespace c4Internal {
 
 
         virtual void stop() override {
-            setStatusFlag(kC4Suspended, false);
             cancelScheduledRetry();
             C4Replicator::stop();
         }

@@ -98,12 +98,6 @@ struct C4Replicator : public RefCounted,
             return;
         }
         
-        if (!setStatusFlag(kC4Suspended, suspended)) {
-            logVerbose("Ignoring redundant suspend call...");
-            // Duplicate call, ignore...
-            return;
-        }
-        
         if(_status.level == kC4Stopping) {
             // CBL-729: At this point, the suspended state has changed from a previous
             // call that caused a suspension to start.  Register to restart later
@@ -114,6 +108,10 @@ struct C4Replicator : public RefCounted,
             } else {
                 logInfo("Replicator suspension process being spammed (request to suspend followed by at least one request to unsuspend and then suspend again), attempting to cancel restart.");
             }
+            return;
+        } else if (!setStatusFlag(kC4Suspended, suspended)) {
+            logVerbose("Ignoring redundant suspend call...");
+            // Duplicate call, ignore...
             return;
         }
         
@@ -147,6 +145,7 @@ struct C4Replicator : public RefCounted,
     virtual void stop() {
         LOCK(_mutex);
         _cancelStop = false;
+        setStatusFlag(kC4Suspended, false);
         if(_status.level == kC4Stopping) {
             // Already stopping, this call is spammy so ignore it
             logVerbose("Duplicate call to stop()...");
@@ -279,7 +278,8 @@ protected:
                 return false;
             }
         }
-        
+
+		setStatusFlag(kC4Suspended, false);
         logInfo("Starting Replicator %s", _replicator->loggingName().c_str());
         _selfRetain = this; // keep myself alive till Replicator stops
         updateStatusFromReplicator(_replicator->status());

@@ -174,14 +174,13 @@ public:
 
         _callbackStatus = s;
         ++_numCallbacks;
-        Assert(_numCallbacksWithLevel[(int)kC4Stopped] == 0);   // Stopped must be the final state
+        Assert(s.level != kC4Stopping);   // No internal state allowed
         _numCallbacksWithLevel[(int)s.level]++;
         if (s.level == kC4Busy)
             Assert(s.error.code == 0);                          // Busy state shouldn't have error
         if (s.level == kC4Offline) {
             Assert(_mayGoOffline);
             _wentOffline = true;
-            Assert((s.flags & kC4WillRetry) != 0);
         }
         
         if (!_headers) {
