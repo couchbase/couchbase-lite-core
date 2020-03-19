@@ -55,8 +55,16 @@ struct C4Replicator : public RefCounted,
 
     virtual void start() {
         LOCK(_mutex);
-        if (!_replicator)
-            _start();
+        if (!_replicator) {
+            try {
+                _start();
+            } catch (const std::exception &x) {
+                c4Internal::recordException(x, &_status.error);
+                UNLOCK();
+                notifyStateChanged();
+                throw; // Stop derived class logic by rethrowing and catching again later
+            }
+        }
     }
 
 
@@ -80,8 +88,15 @@ struct C4Replicator : public RefCounted,
             if (_activeWhenSuspended)
                 _suspend();
         } else {
-            if (_status.level == kC4Offline && _activeWhenSuspended)
-                _unsuspend();
+            if (_status.level == kC4Offline && _activeWhenSuspended) {
+                try {
+                    _unsuspend();
+                } catch (const std::exception &x) {
+                    c4Internal::recordException(x, &_status.error);
+                    UNLOCK();
+                    notifyStateChanged();
+                }
+            }
         }
     }
 

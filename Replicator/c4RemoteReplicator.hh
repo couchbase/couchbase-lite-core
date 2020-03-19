@@ -122,7 +122,14 @@ namespace c4Internal {
 
         virtual void createReplicator() override {
             auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _socketFactory);
-            _replicator = new Replicator(_database, webSocket, *this, _options);
+            
+            C4Error err;
+            c4::ref<C4Database> dbCopy = c4db_openAgain(_database, &err);
+            if(!dbCopy) {
+                error::_throw(error::Domain::LiteCore, err.code);
+            }
+            
+            _replicator = new Replicator(dbCopy, webSocket, *this, _options);
         }
 
 

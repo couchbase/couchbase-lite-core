@@ -167,10 +167,6 @@ C4Replicator* c4repl_new(C4Database* db,
                         "Either push or pull must be enabled", outError))
             return nullptr;
 
-        c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
-        if (!dbCopy)
-            return nullptr;
-
         if (!params.socketFactory) {
             if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError))
                 return nullptr;
@@ -180,7 +176,7 @@ C4Replicator* c4repl_new(C4Database* db,
                      "unreachable, but if opened, it would give anyone unlimited privileges.");
             }
         }
-        return retain(new C4RemoteReplicator(dbCopy, params, serverAddress, remoteDatabaseName));
+        return retain(new C4RemoteReplicator(db, params, serverAddress, remoteDatabaseName));
     } catchError(outError);
     return nullptr;
 }
@@ -209,11 +205,7 @@ C4Replicator* c4repl_newLocal(C4Database* db,
         if (!checkParam(otherLocalDB != db, "Can't replicate a database to itself", outError))
             return nullptr;
 
-        c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
-        c4::ref<C4Database> otherDBCopy(c4db_openAgain(otherLocalDB, outError));
-        if (!dbCopy || !otherDBCopy)
-            return nullptr;
-        return retain(new C4LocalReplicator(dbCopy, params, otherDBCopy));
+        return retain(new C4LocalReplicator(db, params, otherLocalDB));
     } catchError(outError);
     return nullptr;
 #else
@@ -230,10 +222,7 @@ C4Replicator* c4repl_newWithWebSocket(C4Database* db,
                                       C4Error *outError) C4API
 {
     try {
-        c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
-        if (!dbCopy)
-            return nullptr;
-        return retain(new C4IncomingReplicator(dbCopy, params, openSocket));
+        return retain(new C4IncomingReplicator(db, params, openSocket));
     } catchError(outError);
     return nullptr;
 }
@@ -249,7 +238,9 @@ C4Replicator* c4repl_newWithSocket(C4Database* db,
 
 
 void c4repl_start(C4Replicator* repl) C4API {
-    repl->start();
+    try {
+        repl->start();
+    } catchExceptions();
 }
 
 
