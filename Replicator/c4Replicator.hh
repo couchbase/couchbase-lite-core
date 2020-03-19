@@ -109,7 +109,9 @@ struct C4Replicator : public RefCounted,
                 logInfo("Replicator suspension process being spammed (request to suspend followed by at least one request to unsuspend and then suspend again), attempting to cancel restart.");
             }
             return;
-        } else if (!setStatusFlag(kC4Suspended, suspended)) {
+        }
+        
+        if (!setStatusFlag(kC4Suspended, suspended)) {
             logVerbose("Ignoring redundant suspend call...");
             // Duplicate call, ignore...
             return;
