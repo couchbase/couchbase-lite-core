@@ -951,6 +951,36 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Database alias column names", "[Query][C][!
     FLSliceResult_Release(queryStr);
 }
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query RevisionID", "[Query][C][!throws]") {
+    C4Error error;
+    TransactionHelper t(db);
+    
+    // New Doc:
+    auto doc1a = c4doc_create(db, C4STR("doc1"), kC4SliceNull, 0, &error);
+    auto revID = toString(doc1a->revID);
+    compileSelect(json5("{WHAT: [['._revisionID']], WHERE: ['=', ['._id'], 'doc1']}"));
+    CHECK(run() == (vector<string>{revID}));
+    
+    // revisionID in WHERE:
+    compileSelect(json5("{WHAT: [['._id']], WHERE: ['=', ['._revisionID'], '" + revID + "']}"));
+    CHECK(run() == (vector<string>{"doc1"}));
+    
+    // Updated Doc:
+    auto doc1b = c4doc_update(doc1a, json2fleece("{'ok':'go'}"), 0, &error);
+    revID = toString(doc1b->revID);
+    c4doc_release(doc1a);
+    compileSelect(json5("{WHAT: [['._revisionID']], WHERE: ['=', ['._id'], 'doc1']}"));
+    CHECK(run() == (vector<string>{revID}));
+    
+    // Deleted Doc:
+    auto doc1c = c4doc_update(doc1b, kC4SliceNull, kRevDeleted, &error);
+    revID = toString(doc1c->revID);
+    c4doc_release(doc1b);
+    compileSelect(json5("{WHAT: [['._revisionID']], WHERE: ['AND', ['._deleted'], ['=', ['._id'], 'doc1']]}"));
+    CHECK(run() == (vector<string>{revID}));
+    c4doc_release(doc1c);
+}
+
 #pragma mark - COLLATION:
 
 class CollatedQueryTest : public C4QueryTest {

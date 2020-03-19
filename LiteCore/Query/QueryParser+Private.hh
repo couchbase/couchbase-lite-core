@@ -24,6 +24,7 @@ namespace litecore { namespace qp {
     constexpr slice kSequenceProperty     = "_sequence"_sl;
     constexpr slice kDeletedProperty      = "_deleted"_sl;
     constexpr slice kExpirationProperty   = "_expiration"_sl;
+    constexpr slice kRevIDProperty        = "_revisionID"_sl;
 
 
     // Names of the SQLite functions we register for working with Fleece data,
@@ -43,6 +44,7 @@ namespace litecore { namespace qp {
     constexpr slice kBoolFnName = "fl_bool"_sl;
     constexpr slice kArrayFnNameWithParens = "array_of()"_sl;
     constexpr slice kDictFnName = "dict_of"_sl;
+    constexpr slice kVersionFnName  = "fl_version"_sl;
 
     // Existing SQLite FTS rank function:
     constexpr slice kRankFnName  = "rank"_sl;
