@@ -1,13 +1,15 @@
-if($env:CHANGE_TARGET) {
-    $env:BRANCH = $env:CHANGE_TARGET
-}
-
 Push-Location "$PSScriptRoot\.."
 try {
     & 'C:\Program Files\Git\bin\git.exe' submodule update --init --recursive
     New-Item -Type Directory "couchbase-lite-core"
     Get-ChildItem -Path $pwd -Exclude "couchbase-lite-core" | Move-Item -Destination "couchbase-lite-core"
-    & 'C:\Program Files\Git\bin\git.exe' clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $env:BRANCH --recursive --depth 1 couchbase-lite-core-EE
+
+    # Sometimes a PR depends on a PR in the EE repo as well.  This needs to be convention based, so if there is a branch with the same name
+    # as the one in this PR in the EE repo then use that, otherwise use the name of the target branch (master, release/XXX etc)
+    & 'C:\Program Files\Git\bin\git.exe' clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $env:BRANCH_NAME --recursive --depth 1 couchbase-lite-core-EE
+    if($LASTEXITCODE -ne 0) {
+        & 'C:\Program Files\Git\bin\git.exe' clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $env:CHANGE_TARGET --recursive --depth 1 couchbase-lite-core-EE
+    }
 
     New-Item -Type Directory -ErrorAction Ignore couchbase-lite-core\build_cmake\x64
     Set-Location couchbase-lite-core\build_cmake\x64
