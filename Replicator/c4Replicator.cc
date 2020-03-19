@@ -238,9 +238,7 @@ C4Replicator* c4repl_newWithSocket(C4Database* db,
 
 
 void c4repl_start(C4Replicator* repl) C4API {
-    try {
-        repl->start();
-    } catchExceptions();
+    repl->start();
 }
 
 
