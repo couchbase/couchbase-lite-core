@@ -40,15 +40,19 @@ extern "C" {
 
     /** The possible states of a replicator. */
     typedef C4_ENUM(int32_t, C4ReplicatorActivityLevel) {
+        /* EXTERNAL STATES */
         kC4Stopped,     ///< Finished, or got a fatal error.
         kC4Offline,     ///< Connection failed, but waiting to retry. */
         kC4Connecting,  ///< Connection is in progress.
         kC4Idle,        ///< Continuous replicator has caught up and is waiting for changes.
-        kC4Busy         ///< Connected and actively working.
+        kC4Busy,         ///< Connected and actively working.
+        
+        /* INTERNAL STATES */
+        kC4Stopping,    ///< Stopping or going offline
     };
 
     /** For convenience, an array of C strings naming the C4ReplicatorActivityLevel values. */
-    CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[5];
+    CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[6];
 
 
     /** A simple parsed-URL type. */

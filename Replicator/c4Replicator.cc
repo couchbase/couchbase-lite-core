@@ -34,8 +34,8 @@ using namespace c4Internal;
 constexpr unsigned C4RemoteReplicator::kMaxRetryDelay;
 
 
-CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[5] = {
-    "stopped", "offline", "connecting", "idle", "busy"
+CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[6] = {
+    "stopped", "offline", "connecting", "idle", "busy", "stopping"
 };
 
 

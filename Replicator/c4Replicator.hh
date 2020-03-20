@@ -55,6 +55,12 @@ struct C4Replicator : public RefCounted,
 
     virtual void start() {
         LOCK(_mutex);
+        if(_status.level == kC4Stopping) {
+            logInfo("Rapid call to start() (stop() is not finished yet), scheduling a restart after stop() is done...");
+            _cancelStop = true;
+            return;
+        }
+
         if (!_replicator) {
             if(!_start()) {
                 UNLOCK();
@@ -78,8 +84,39 @@ struct C4Replicator : public RefCounted,
 
     void setSuspended(bool suspended) {
         LOCK(_mutex);
-        if (!setStatusFlag(kC4Suspended, suspended))
+        if(_status.level == kC4Stopped) {
+            // Suspending a stopped replicator?  Get outta here...
+            logInfo("Ignoring a suspend call on a stopped replicator...");
             return;
+        }
+        
+        if(_status.level == kC4Stopping && !statusFlag(kC4Suspended)) {
+            // CBL-722: Stop was already called or Replicator is stopped,
+            // making suspending meaningless (stop() should override any
+            // suspending or unsuspending)
+            logInfo("Ignoring a suspend call on a stopping replicator...");
+            return;
+        }
+        
+        if(_status.level == kC4Stopping) {
+            // CBL-729: At this point, the suspended state has changed from a previous
+            // call that caused a suspension to start.  Register to restart later
+            // (or cancel the later restart) and move on
+            _cancelStop = !suspended;
+            if(_cancelStop) {
+                logInfo("Request to unsuspend, but Replicator is already suspending.  Will restart after suspending process is completed.");
+            } else {
+                logInfo("Replicator suspension process being spammed (request to suspend followed by at least one request to unsuspend and then suspend again), attempting to cancel restart.");
+            }
+            return;
+        }
+        
+        if (!setStatusFlag(kC4Suspended, suspended)) {
+            logVerbose("Ignoring redundant suspend call...");
+            // Duplicate call, ignore...
+            return;
+        }
+        
         logInfo("%s", (suspended ? "Suspended" : "Un-suspended"));
         if (suspended) {
             _activeWhenSuspended = (_status.level >= kC4Connecting);
@@ -109,7 +146,16 @@ struct C4Replicator : public RefCounted,
 
     virtual void stop() {
         LOCK(_mutex);
+        _cancelStop = false;
+        setStatusFlag(kC4Suspended, false);
+        if(_status.level == kC4Stopping) {
+            // Already stopping, this call is spammy so ignore it
+            logVerbose("Duplicate call to stop()...");
+            return;
+        }
+        
         if (_replicator) {
+            _status.level = kC4Stopping;
             _replicator->stop();
         } else if (_status.level != kC4Stopped) {
             _status.level = kC4Stopped;
@@ -234,7 +280,8 @@ protected:
                 return false;
             }
         }
-        
+
+		setStatusFlag(kC4Suspended, false);
         logInfo("Starting Replicator %s", _replicator->loggingName().c_str());
         _selfRetain = this; // keep myself alive till Replicator stops
         updateStatusFromReplicator(_replicator->status());
@@ -245,8 +292,10 @@ protected:
 
     virtual void _suspend() {
         // called with _mutex locked
-        if (_replicator)
+        if (_replicator) {
+            _status.level = kC4Stopping;
             _replicator->stop();
+        }
     }
 
     virtual bool _unsuspend() {
@@ -273,7 +322,7 @@ protected:
     virtual void replicatorStatusChanged(Replicator *repl,
                                          const Replicator::Status &newStatus) override
     {
-        bool stopped;
+        bool stopped, resume = false;
         {
             LOCK(_mutex);
             if (repl != _replicator)
@@ -291,6 +340,9 @@ protected:
                 } else {
                     handleStopped();     // NOTE: handleStopped may change _status
                 }
+                
+                resume = _cancelStop;
+                _cancelStop = false;
             }
             stopped = (_status.level == kC4Stopped);
         }
@@ -299,6 +351,10 @@ protected:
 
         if (stopped)
             _selfRetain = nullptr; // balances retain in `_start`
+        
+        if(resume) {
+            start();
+        }
     }
 
 
@@ -378,7 +434,7 @@ protected:
         }
 
         auto onStatusChanged = _onStatusChanged.load();
-        if (onStatusChanged)
+        if (onStatusChanged && _status.level != kC4Stopping /* Don't notify about internal state */)
             onStatusChanged(this, _status, _options.callbackContext);
     }
 
@@ -390,6 +446,7 @@ protected:
     Retained<Replicator>        _replicator;
     C4ReplicatorStatus          _status {kC4Stopped};
     bool                        _activeWhenSuspended {false};
+    bool                        _cancelStop {false};
 
 
 private:
