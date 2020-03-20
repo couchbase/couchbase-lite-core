@@ -9,11 +9,6 @@ function build_xcode {
     popd
 }
 
-
-if [ ! -z $CHANGE_TARGET ]; then
-    BRANCH=$CHANGE_TARGET
-fi
-
 if ! [ -x "$(command -v git)" ]; then
   echo 'Error: git is not installed.' >&2
   exit 1
@@ -22,7 +17,11 @@ fi
 mkdir "couchbase-lite-core"
 git submodule update --init --recursive
 mv !(couchbase-lite-core) couchbase-lite-core
-git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH --recursive --depth 1 couchbase-lite-core-EE
+
+# Sometimes a PR depends on a PR in the EE repo as well.  This needs to be convention based, so if there is a branch with the same name
+# as the one in this PR in the EE repo then use that, otherwise use the name of the target branch (master, release/XXX etc)
+git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH_NAME --recursive --depth 1 couchbase-lite-core-EE || \
+    git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $CHANGE_TARGET --recursive --depth 1 couchbase-lite-core-EE 
 
 unameOut="$(uname -s)"
 case "${unameOut}" in

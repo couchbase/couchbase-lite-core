@@ -55,8 +55,14 @@ struct C4Replicator : public RefCounted,
 
     virtual void start() {
         LOCK(_mutex);
-        if (!_replicator)
-            _start();
+        if (!_replicator) {
+            if(!_start()) {
+                UNLOCK();
+                // error set as part of _start,
+                // but we cannot notify until outside of the lock
+                notifyStateChanged();
+            }
+        }
     }
 
 
@@ -80,8 +86,14 @@ struct C4Replicator : public RefCounted,
             if (_activeWhenSuspended)
                 _suspend();
         } else {
-            if (_status.level == kC4Offline && _activeWhenSuspended)
-                _unsuspend();
+            if (_status.level == kC4Offline && _activeWhenSuspended) {
+                if(!_unsuspend()) {
+                    // error set as part of _unsuspend,
+                    // but we cannot notify until outside of the lock
+                    UNLOCK();
+                    notifyStateChanged();
+                }
+            }
         }
     }
 
@@ -209,21 +221,26 @@ protected:
     }
 
 
-    virtual void createReplicator() =0;
+    virtual bool createReplicator() =0;
 
     virtual alloc_slice URL() const =0;
 
 
     // Base implementation of starting the replicator.
     // Subclass implementation of `start` must call this (with the mutex locked).
-    virtual void _start() {
-        if (!_replicator)
-            createReplicator();
+    virtual bool _start() {
+        if (!_replicator) {
+            if(!createReplicator()) {
+                return false;
+            }
+        }
+        
         logInfo("Starting Replicator %s", _replicator->loggingName().c_str());
         _selfRetain = this; // keep myself alive till Replicator stops
         updateStatusFromReplicator(_replicator->status());
         _responseHeaders = nullptr;
         _replicator->start();
+        return true;
     }
 
     virtual void _suspend() {
@@ -232,9 +249,9 @@ protected:
             _replicator->stop();
     }
 
-    virtual void _unsuspend() {
+    virtual bool _unsuspend() {
         // called with _mutex locked
-        _start();
+        return _start();
     }
     
     // ---- ReplicatorDelegate API:

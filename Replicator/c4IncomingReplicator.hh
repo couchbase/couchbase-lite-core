@@ -29,15 +29,25 @@ namespace c4Internal {
         }
 
 
-        virtual void createReplicator() override {
+        virtual bool createReplicator() override {
             Assert(_openSocket);
-            _replicator = new Replicator(_database, _openSocket, *this, _options);
+            
+            C4Error err;
+            c4::ref<C4Database> dbCopy = c4db_openAgain(_database, &err);
+            if(!dbCopy) {
+                _status.error = err;
+                return false;
+            }
+            
+            _replicator = new Replicator(dbCopy, _openSocket, *this, _options);
             _openSocket = nullptr;
+            return true;
         }
 
 
-        virtual void _unsuspend() override {
+        virtual bool _unsuspend() override {
             // Restarting doesn't make sense; do nothing
+            return true;
         }
 
     private:
