@@ -153,6 +153,12 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Expiration", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(QueryParserTest, "QueryParser RevisionID", "[Query]") {
+    CHECK(parseWhere("['SELECT', {WHAT: ['._id', '._revisionID']}]")
+          == "SELECT fl_result(_doc.key), fl_result(fl_version(_doc.version)) FROM kv_default AS _doc WHERE (_doc.flags & 1 = 0)");
+}
+
+
 TEST_CASE_METHOD(QueryParserTest, "QueryParser ANY", "[Query]") {
     CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X'], 'Smith']]")
           == "fl_contains(body, 'names', 'Smith')");

@@ -23,6 +23,7 @@
 #include "Logging.hh"
 #include "fleece/Fleece.h"
 #include "DeepIterator.hh"
+#include "RevID.hh"
 #include <sstream>
 
 using namespace fleece;
@@ -61,6 +62,16 @@ namespace litecore {
             setResultFromValue(ctx, scope.root);
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_value: exception!", -1);
+        }
+    }
+
+    // fl_version(version) -> propertyValue (string)
+    static void fl_version(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        try {
+            slice version = valueAsSlice(argv[0]);
+            setResultTextFromSlice(ctx, revid(version).expanded());
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_version: exception!", -1);
         }
     }
 
@@ -488,6 +499,7 @@ namespace litecore {
     const SQLiteFunctionSpec kFleeceFunctionsSpec[] = {
         { "fl_root",           1, fl_root },
         { "fl_value",          2, fl_value },
+        { "fl_version",        1, fl_version },
         { "fl_nested_value",   2, fl_nested_value },
         { "fl_fts_value",      2, fl_fts_value },
         { "fl_blob",           2, fl_blob },

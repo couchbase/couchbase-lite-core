@@ -1334,6 +1334,9 @@ namespace litecore {
                 writeDeletionTest(alias, true);
                 _checkedDeleted = true;     // note that the query has tested _deleted
                 return;
+            } else if (meta == kRevIDProperty) {
+                _sql << kVersionFnName << "(" << tablePrefix << "version" << ")";
+                return;
             }
         }
 
