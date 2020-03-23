@@ -109,6 +109,8 @@ namespace litecore { namespace repl {
         void onBlobProgress(const BlobProgress &progress) {
             enqueue(&Replicator::_onBlobProgress, progress);
         }
+        
+        void docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID);
 
     protected:
         virtual std::string loggingClassName() const override  {

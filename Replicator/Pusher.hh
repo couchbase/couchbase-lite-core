@@ -42,9 +42,14 @@ namespace litecore { namespace repl {
         void checkpointIsInvalid() {
             _checkpointValid = false;
         }
+        
+        void docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID) {
+            enqueue(&Pusher::_docRemoteAncestorChanged, docID, remoteAncestorRevID);
+        }
 
     protected:
         virtual void afterEvent() override;
+        virtual void _connectionClosed() override;
 
     private:
         void _start();
@@ -84,6 +89,9 @@ namespace litecore { namespace repl {
         fleece::slice getRevToSend(C4Document* NONNULL, const RevToSend&, C4Error *outError);
         bool getRemoteRevID(RevToSend *rev, C4Document *doc);
         void revToSendIsObsolete(const RevToSend &request, C4Error *c4err);
+        bool shouldRetryConflictWithNewerAncestor(RevToSend* NONNULL);
+        void _docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID);
+        bool isBusy() const;
 
         bool getForeignAncestors() const    {return _proposeChanges || !_proposeChangesKnown;}
 
@@ -117,6 +125,7 @@ namespace litecore { namespace repl {
         c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
         C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
         DocIDToRevMap _pushingDocs;                         // Revs being processed by push
+        DocIDToRevMap _conflictsIMightRetry;
         bool _waitingForObservedChanges {false};
     };
     
