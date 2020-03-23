@@ -1100,6 +1100,36 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pull][Push][Conflict][NoConflicts]") {
+    // CBL-726: Push conflict but server rev is just a newer ancestor of the local rev.
+    // Local:  1-abcd -- 2-c001d00d -- 3-deadbeef -- 4-baba    (known remote rev: 2)
+    // Server: 1-abcd -- 2-c001d00d -- 3-deadbeef
+    // Pusher will fail with a 409 because the remote rev is too old.
+    // When the puller sees the server has 3-deadbeef and updates the remote-rev, the puller
+    // can retry and this time succeed.
+    static constexpr slice kRev4ID = "4-baba"_sl;
+
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+
+    createRev(kDocID, kRevID, kFleeceBody);
+    createRev(kDocID, kRev2ID, kFleeceBody);
+    _expectedDocumentCount = 1;
+
+    Log("-------- First Replication db<->db2 --------");
+    runReplicators(Replicator::Options::pushpull(), serverOpts);
+
+    Log("-------- Update Doc --------");
+    createRev(db, kDocID, kRev3ID, kFleeceBody);
+    createRev(db, kDocID, kRev4ID, kFleeceBody);
+
+    createRev(db2, kDocID, kRev3ID, kFleeceBody);
+
+    Log("-------- Second Replication db<->db2 --------");
+    runReplicators(Replicator::Options::pushpull(), serverOpts);
+    compareDatabases();
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push][Conflict][NoConflicts]") {
     auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
 

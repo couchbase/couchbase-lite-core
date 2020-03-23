@@ -152,11 +152,13 @@ namespace litecore { namespace repl {
                 // Look through the database response:
                 for (size_t i = 0; i < nChanges; ++i) {
                     alloc_slice docID(docIDs[i]);
+                    alloc_slice revID(revIDs[i]);
                     alloc_slice anc(ancestors[i]);
                     if (anc == kC4AncestorExistsButNotCurrent) {
                         // This means the rev exists but is not marked as the latest from the
                         // remote server, so I better make it so:
-                        updateRemoteRev(docID, revIDs[i]);
+                        _db->setDocRemoteAncestor(docID, revID);
+                       replicator()->docRemoteAncestorChanged(docID, revID);
                     } else if (anc != kC4AncestorExists) {
                         // Don't have revision -- request it:
                         ++requested;
@@ -219,25 +221,5 @@ namespace litecore { namespace repl {
         return status;
     }
 
-
-    // Updates the doc to have the currently-selected rev marked as the remote
-    void RevFinder::updateRemoteRev(slice docID, slice revID) {
-        logInfo("Updating remote #%u's rev of '%.*s' to %.*s",
-                   _db->remoteDBID(), SPLAT(docID), SPLAT(revID));
-        C4Error error;
-        bool ok = _db->use<bool>([&](C4Database *db) {
-            c4::Transaction t(db);
-            if (!t.begin(&error))
-                return false;
-            c4::ref<C4Document> doc = c4doc_get(db, docID, true, &error);
-            return doc != nullptr
-                   && c4doc_setRemoteAncestor(doc, _db->remoteDBID(), &error)
-                   && c4doc_save(doc, 0, &error)
-                   && t.commit(&error);
-        });
-        if (!ok)
-            warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d",
-                 _db->remoteDBID(), SPLAT(docID), SPLAT(revID), error.domain, error.code);
-    }
 
 } }

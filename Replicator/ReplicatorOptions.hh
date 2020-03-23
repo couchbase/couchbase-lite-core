@@ -67,6 +67,7 @@ namespace litecore { namespace repl {
 
         static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
         static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
+        static Options pushpull(Mode mode =kC4OneShot) {return Options(mode, mode);}
         static Options passive()                       {return Options(kC4Passive,kC4Passive);}
 
         //---- Property accessors:

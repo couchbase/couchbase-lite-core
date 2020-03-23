@@ -118,6 +118,30 @@ namespace litecore { namespace repl {
             return {};
     }
     
+    void DBAccess::setDocRemoteAncestor(slice docID, slice revID) {
+        if (!_remoteDBID)
+            return;
+        logInfo("Updating remote #%u's rev of '%.*s' to %.*s",
+                _remoteDBID, SPLAT(docID), SPLAT(revID));
+        C4Error error;
+        bool ok = use<bool>([&](C4Database *db) {
+            c4::Transaction t(db);
+            c4::ref<C4Document> doc = c4doc_get(db, docID, true, &error);
+            if(!doc || !c4doc_selectRevision(doc, revID, false, &error))
+                return false;
+            
+            
+            return t.begin(&error)
+                   && c4doc_setRemoteAncestor(doc, _remoteDBID, &error)
+                   && c4doc_save(doc, 0, &error)
+                   && t.commit(&error);
+        });
+
+        if (!ok) {
+            warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d",
+                 _remoteDBID, SPLAT(docID), SPLAT(revID), error.domain, error.code);
+        }
+    }
     
     C4DocEnumerator* DBAccess::unresolvedDocsEnumerator(bool orderByID, C4Error *outError) {
         C4DocEnumerator* e;

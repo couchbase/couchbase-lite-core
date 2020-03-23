@@ -46,7 +46,6 @@ namespace litecore { namespace repl {
                                 std::function<void(std::vector<bool>)> completion);
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
-        void updateRemoteRev(slice docID, slice revID);
 
         bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?
     };

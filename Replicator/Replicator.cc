@@ -194,6 +194,12 @@ namespace litecore { namespace repl {
             _puller->start(_checkpointer.remoteMinSequence());
     }
 
+    void Replicator::docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID) {
+        Retained<Pusher> pusher = _pusher;
+        if (pusher)
+            pusher->docRemoteAncestorChanged(docID, revID);
+    }
+
 
 #pragma mark - STATUS:
 
