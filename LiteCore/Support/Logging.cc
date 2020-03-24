@@ -25,6 +25,7 @@
 #include <string>
 #include <fstream>
 #include <mutex>
+#include <csignal>
 #include <ctime>
 
 #if __APPLE__
@@ -65,11 +66,45 @@ namespace litecore {
     static int sMaxCount = 0;       // For rotation
     static int64_t sMaxSize = 1024; // For rotation
     static string sInitialMessage;  // For rotation, goes at top of each log
-    static mutex sLogMutex;
 
     static const char* const kLevelNames[] = {"debug", "verbose", "info",
                 "warning", "error", nullptr};
     static const char *kLevels[] = {"***", "", "", "WARNING", "ERROR"};
+
+
+    // A paranoid mutex lock that tries to detect misuse by client logging callbacks.
+    // If such a callback calls into LiteCore and ends up logging, we detect the re-entrant call.
+    // If it takes an inordinately long time to acquire the lock, something is probably
+    // deadlocked. Either way, throw an exception. (We obviously can't log anything...)
+    class logging_lock {
+    public:
+        logging_lock()
+        :_lock(sMutex, defer_lock)
+        {
+            if (sThreadIsLogging)
+                throw std::logic_error("Illegal re-entrant call to LiteCore logging");
+            if (!_lock.try_lock_for(chrono::seconds(10)))
+                throw std::logic_error("Unable to acquire LiteCore logging mutex for 10 seconds; probably deadlocked");
+            sThreadIsLogging = true;
+        }
+
+        ~logging_lock() {
+            sThreadIsLogging = false;
+        }
+
+        static bool try_lock()      {return sMutex.try_lock();}
+        static void unlock()        {sMutex.unlock();}
+
+    private:
+        unique_lock<timed_mutex> _lock;
+
+        static timed_mutex sMutex;
+        static __thread bool sThreadIsLogging;
+    };
+
+    timed_mutex logging_lock::sMutex;
+    __thread bool logging_lock::sThreadIsLogging;
+
 
     static string createLogPath(LogLevel level)
     {
@@ -190,7 +225,7 @@ namespace litecore {
 
 
     void LogDomain::setCallback(Callback_t callback, bool preformatted) {
-        unique_lock<mutex> lock(sLogMutex);
+        logging_lock lock;
         if (!callback)
             sCallbackMinLevel = LogLevel::None;
         sCallback = callback;
@@ -202,7 +237,7 @@ namespace litecore {
     void LogDomain::writeEncodedLogsTo(const LogFileOptions& options,
                                        const string &initialMessage)
     {
-        unique_lock<mutex> lock(sLogMutex);
+        logging_lock lock;
         sMaxSize = max((int64_t)1024, options.maxSize);
         sMaxCount = max(0, options.maxCount);
         const bool teardown = needsTeardown(options);
@@ -244,7 +279,7 @@ namespace litecore {
             static once_flag f;
             call_once(f, []{
                 atexit([]{
-                    if (sLogMutex.try_lock()) {     // avoid deadlock on crash inside logging code
+                    if (logging_lock::try_lock()) {     // avoid deadlock on crash inside logging code
                         if (sLogEncoder[0]) {
                             for(auto& encoder : sLogEncoder) {
                                 encoder->log("", {}, LogEncoder::None,
@@ -254,7 +289,7 @@ namespace litecore {
                             
                         teardownEncoders();
                         teardownFileOut();
-                        sLogMutex.unlock();
+                        logging_lock::unlock();
                     }
                 });
             });
@@ -264,7 +299,7 @@ namespace litecore {
 
 
     void LogDomain::setCallbackLogLevel(LogLevel level) noexcept {
-        unique_lock<mutex> lock(sLogMutex);
+        logging_lock lock;
 
         // Setting "LiteCoreLog" env var forces a minimum level of logging:
         auto envLevel = kC4Cpp_DefaultLog.levelFromEnvironment();
@@ -278,7 +313,7 @@ namespace litecore {
     }
 
     void LogDomain::setFileLogLevel(LogLevel level) noexcept {
-        unique_lock<mutex> lock(sLogMutex);
+        logging_lock lock;
         if (level != sFileMinLevel) {
             sFileMinLevel = level;
             _invalidateEffectiveLevels();
@@ -294,7 +329,7 @@ namespace litecore {
 
 
     LogLevel LogDomain::callbackLogLevel() noexcept {
-        unique_lock<mutex> lock(sLogMutex);
+        logging_lock lock;
         return _callbackLogLevel();
     }
 
@@ -346,7 +381,7 @@ namespace litecore {
 
 
     void LogDomain::setLevel(litecore::LogLevel level) noexcept {
-        unique_lock<mutex> lock(sLogMutex);
+        logging_lock lock;
 
         // Setting "LiteCoreLog___" env var forces a minimum level:
         auto envLevel = levelFromEnvironment();
@@ -361,7 +396,7 @@ namespace litecore {
 
 
     LogDomain* LogDomain::named(const char *name) {
-        unique_lock<mutex> lock(sLogMutex);
+        logging_lock lock;
         if (!name)
             name = "";
         for (auto d = sFirstDomain; d; d = d->_next)
@@ -382,7 +417,7 @@ namespace litecore {
         if (!willLog(level))
             return;
 
-        unique_lock<mutex> lock(sLogMutex);
+        logging_lock lock;
 
         // Invoke the client callback:
         if (doCallback && sCallback && level >= _callbackLogLevel()) {
@@ -519,7 +554,7 @@ namespace litecore {
                                        const string &nickname,
                                        LogLevel level)
     {
-        unique_lock<mutex> lock(sLogMutex);
+        logging_lock lock;
         unsigned objRef = ++slastObjRef;
         sObjNames.insert({objRef, nickname});
         if (sCallback && level >= _callbackLogLevel())
@@ -530,7 +565,7 @@ namespace litecore {
     }
 
     void LogDomain::unregisterObject(unsigned objectRef) {
-        unique_lock<mutex> lock(sLogMutex);
+        logging_lock lock;
         sObjNames.erase(objectRef);
     }
 
