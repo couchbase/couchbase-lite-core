@@ -22,15 +22,6 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
 
 alloc_slice ReplicatorAPITest::sPinnedCert;
 
-static void waitForStatus(C4Replicator* repl, C4ReplicatorActivityLevel level, int sleepMs = 100, int attempts = 50) {
-    int attempt = 0;
-    while (c4repl_getStatus(repl).level != level && ++attempt < attempts) {
-        this_thread::sleep_for(chrono::milliseconds(sleepMs));
-    }
-    
-    CHECK(attempt < attempts);
-}
-
 
 TEST_CASE("URL Parsing") {
     C4Address address;
@@ -436,7 +427,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
     _mayGoOffline = true;
     C4Error err;
     REQUIRE(startReplicator(kC4Continuous, kC4Continuous, &err));
-    waitForStatus(_repl, kC4Busy, 50);
+    waitForStatus(kC4Busy, 50);
     
     C4ReplicatorActivityLevel expected = kC4Stopped;
     SECTION("Stop / Start") {
@@ -492,14 +483,14 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
     
     SECTION("Offline stop") {
         c4repl_setSuspended(_repl, true);
-        waitForStatus(_repl, kC4Offline);
+        waitForStatus(kC4Offline);
         c4repl_stop(_repl);
     }
     
-    waitForStatus(_repl, expected);
+    waitForStatus(expected);
     if(expected != kC4Stopped) {
         c4repl_stop(_repl);
-        waitForStatus(_repl, kC4Stopped);
+        waitForStatus(kC4Stopped);
     }
 }
 #endif

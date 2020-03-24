@@ -100,6 +100,15 @@ public:
         _address = { };
         _remoteDBName = nullslice;
     }
+    
+    void waitForStatus(C4ReplicatorActivityLevel level, int sleepMs = 100, int attempts = 50) {
+        int attempt = 0;
+        while (c4repl_getStatus(_repl).level != level && ++attempt < attempts) {
+            this_thread::sleep_for(chrono::milliseconds(sleepMs));
+        }
+        
+        CHECK(attempt < attempts);
+    }
 #endif
 
     AllocedDict options() {
