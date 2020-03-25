@@ -12,7 +12,9 @@ endfunction()
 
 function(setup_litecore_build_unix)
     FILE(GLOB C_SRC LIST_DIRECTORIES FALSE "C/*.cc")
-    set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
+    if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
+    endif()
 
     # Enable Link-Time Optimization, AKA Inter-Procedure Optimization
     if(NOT ANDROID AND NOT DISABLE_LTO_BUILD AND
@@ -43,26 +45,23 @@ function(setup_litecore_build_unix)
     endif()
 
     set(LITECORE_WARNINGS
-        -Wincompatible-pointer-types
+        -Werror=incompatible-pointer-types
         -Wnon-virtual-dtor
-        -Woverloaded-virtual
-        -Wmissing-braces
-        -Wparentheses
-        -Wswitch
-        -Wunused-function
-        -Wunused-label
-        -Wno-unused-parameter
-        -Wunused-variable
-        -Wunused-value
-        -Wuninitialized
-        -Wunknown-pragmas
+        -Werror=overloaded-virtual
+        -Werror=missing-braces
+        -Werror=parentheses
+        -Werror=switch
+        -Werror=unused-function
+        -Werror=unused-label
+        -Werror=no-unused-parameter
+        -Werror=unused-variable
+        -Werror=unused-value
+        -Werror=uninitialized
         -Wshadow
-        -Wint-conversion
-        -Wfloat-conversion
-        -Wstrict-prototypes
+        -Werror=int-conversion
+        -Werror=float-conversion
+        -Werror=strict-prototypes
         -Weffc++
-        -Wmemset-transposed-args
-        -Werror
     )
 
     target_compile_options(LiteCoreStatic PRIVATE ${LITECORE_WARNINGS})
