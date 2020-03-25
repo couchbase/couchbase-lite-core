@@ -12,7 +12,7 @@ endfunction()
 
 function(setup_litecore_build_unix)
     FILE(GLOB C_SRC LIST_DIRECTORIES FALSE "C/*.cc")
-    if(NOT (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
     endif()
 
@@ -45,7 +45,6 @@ function(setup_litecore_build_unix)
     endif()
 
     set(LITECORE_WARNINGS
-        -Werror=incompatible-pointer-types
         -Wnon-virtual-dtor
         -Werror=overloaded-virtual
         -Werror=missing-braces
@@ -53,20 +52,32 @@ function(setup_litecore_build_unix)
         -Werror=switch
         -Werror=unused-function
         -Werror=unused-label
-        -Werror=no-unused-parameter
         -Werror=unused-variable
         -Werror=unused-value
         -Werror=uninitialized
         -Wshadow
-        -Werror=int-conversion
         -Werror=float-conversion
-        -Werror=strict-prototypes
         -Weffc++
     )
 
-    target_compile_options(LiteCoreStatic PRIVATE ${LITECORE_WARNINGS})
-    target_compile_options(BLIPStatic PRIVATE ${LITECORE_WARNINGS})
-    target_compile_options(FleeceStatic PRIVATE ${LITECORE_WARNINGS})
+    set(LITECORE_C_WARNINGS
+	-Werror=incompatible-pointer-types
+	-Werror=int-conversion
+	-Werror=strict-prototypes
+    )
+
+    target_compile_options(LiteCoreStatic PRIVATE 
+	${LITECORE_WARNINGS} 
+	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+    )
+    target_compile_options(BLIPStatic PRIVATE 
+	${LITECORE_WARNINGS}
+	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+    )
+    target_compile_options(FleeceStatic PRIVATE 
+	${LITECORE_WARNINGS}
+	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+    )
 endfunction()
 
 function(setup_rest_build_unix)
