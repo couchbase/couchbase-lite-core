@@ -1486,6 +1486,25 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
 
     Retained<Query> q;
     vector<slice> expectedResults;
+    vector<string> expectedAliases;
+    SECTION("WHERE alias numeric literal") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', 1.375, 'answer']], \
+            WHERE: ['=', ['.dict.key1'], 1]}"));
+        expectedResults.emplace_back("uber_doc1"_sl);
+        expectedAliases.emplace_back("1.375");
+    }
+
+    SECTION("WHERE alias string literal") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', 'Cthulhu ftaghn', 'answer']], \
+            WHERE: ['=', ['.dict.key1'], 1]}"));
+        expectedResults.emplace_back("uber_doc1"_sl);
+        expectedAliases.emplace_back("\"Cthulhu ftaghn\"");
+    }
+
     SECTION("WHERE alias as-is") {
         q = store->compileQuery(json5(
             "{WHAT: ['._id', \
@@ -1547,9 +1566,13 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
 
     Retained<QueryEnumerator> e(q->createEnumerator());
     REQUIRE(e->getRowCount() == expectedResults.size());
+    size_t row = 0;
     for (const auto& expectedResult : expectedResults) {
         REQUIRE(e->next());
         CHECK(e->columns()[0]->asString() == expectedResult);
+        if (!expectedAliases.empty())
+            CHECK(e->columns()[1]->toJSONString() == expectedAliases[row]);
+        ++row;
     }
 }
 
