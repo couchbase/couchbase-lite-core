@@ -19,6 +19,9 @@
 // Compiles the appropriate version of SQLite, depending on whether we are building the
 // Consumer Edition or Enterprise Edition of LiteCore.
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 #ifdef COUCHBASE_ENTERPRISE
     // These source files are NOT in this repository, rather in a Couchbase-private
     // repository that needs to be checked out next to this one.
@@ -35,3 +38,5 @@
 #else
     #include "../../vendor/SQLiteCpp/sqlite3/sqlite3.c"
 #endif
+
+#pragma GCC diagnostic pop

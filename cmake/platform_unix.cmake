@@ -41,6 +41,33 @@ function(setup_litecore_build_unix)
             atomic
         )
     endif()
+
+    set(LITECORE_WARNINGS
+        -Wincompatible-pointer-types
+        -Wnon-virtual-dtor
+        -Woverloaded-virtual
+        -Wmissing-braces
+        -Wparentheses
+        -Wswitch
+        -Wunused-function
+        -Wunused-label
+        -Wno-unused-parameter
+        -Wunused-variable
+        -Wunused-value
+        -Wuninitialized
+        -Wunknown-pragmas
+        -Wshadow
+        -Wint-conversion
+        -Wfloat-conversion
+        -Wstrict-prototypes
+        -Weffc++
+        -Wmemset-transposed-args
+        -Werror
+    )
+
+    target_compile_options(LiteCoreStatic PRIVATE ${LITECORE_WARNINGS})
+    target_compile_options(BLIPStatic PRIVATE ${LITECORE_WARNINGS})
+    target_compile_options(FleeceStatic PRIVATE ${LITECORE_WARNINGS})
 endfunction()
 
 function(setup_rest_build_unix)
