@@ -61,7 +61,7 @@ namespace litecore { namespace repl {
             make_shared<DBAccess>(db, options.properties["disable_blob_support"_sl].asBool()),
             "Repl")
     ,_delegate(&delegate)
-    ,_connectionState(connection()->state())
+    ,_connectionState(connection().state())
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_docsEnded(this, &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
@@ -97,7 +97,7 @@ namespace litecore { namespace repl {
         Assert(_connectionState == Connection::kClosed);
         Signpost::begin(Signpost::replication, uintptr_t(this));
         _connectionState = Connection::kConnecting;
-        connection()->start();
+        connection().start();
         // Now wait for _onConnect or _onClose...
         
         _findExistingConflicts();
@@ -162,10 +162,9 @@ namespace litecore { namespace repl {
 
 
     void Replicator::terminate() {
-        auto conn = connection();
-        if (conn) {
+        if (connected()) {
             Assert(_connectionState == Connection::kClosed);
-            conn->terminate();
+            connection().terminate();
             _delegate = nullptr;
             _pusher = nullptr;
             _puller = nullptr;
@@ -176,9 +175,8 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_disconnect(websocket::CloseCode closeCode, slice message) {
-        auto conn = connection();
-        if (conn) {
-            conn->close(closeCode, message);
+        if (connected()) {
+            connection().close(closeCode, message);
             _connectionState = Connection::kClosing;
         }
     }
@@ -305,7 +303,7 @@ namespace litecore { namespace repl {
 
     void Replicator::changedStatus() {
         if (status().level == kC4Stopped) {
-            DebugAssert(!connection());  // must already have gotten _onClose() delegate callback
+            DebugAssert(!connected());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
             Signpost::end(Signpost::replication, uintptr_t(this));
@@ -549,7 +547,7 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_saveCheckpoint(alloc_slice json) {
-        if (!connection())
+        if (!connected())
             return;
         _checkpointJSONToSave = move(json);
         if (_remoteCheckpointReceived)

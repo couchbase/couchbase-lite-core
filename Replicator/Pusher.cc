@@ -152,7 +152,7 @@ namespace litecore { namespace repl {
             decrement(_changeListsInFlight);
         }
 
-        if (!connection())
+        if (!connected())
             return;
         if (err.code)
             return gotError(err);
@@ -207,7 +207,7 @@ namespace litecore { namespace repl {
 
     // Called when DBWorker was holding up a revision until an ancestor revision finished.
     void Pusher::gotOutOfOrderChange(RevToSend* change) {
-        if (!connection())
+        if (!connected())
             return;
         logInfo("Read delayed local change '%.*s' #%.*s (remote #%.*s): sending '%-s' with sequence #%" PRIu64,
                 SPLAT(change->docID), SPLAT(change->revID),
@@ -409,7 +409,7 @@ namespace litecore { namespace repl {
 
     // Notified (by the Puller) that the remote revision of a document has changed:
     void Pusher::_docRemoteAncestorChanged(alloc_slice docID, alloc_slice foreignAncestor) {
-        if (status().level == kC4Stopped || !connection())
+        if (status().level == kC4Stopped || !connected())
             return;
         auto i = _conflictsIMightRetry.find(docID);
         if (i != _conflictsIMightRetry.end()) {
@@ -671,7 +671,7 @@ namespace litecore { namespace repl {
         // Remove rev from _pushingDocs, and see if there's a newer revision to send next:
         auto i = _pushingDocs.find(rev->docID);
         if (i == _pushingDocs.end()) {
-            if (connection())
+            if (connected())
                 warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
             return;
         }
@@ -751,7 +751,7 @@ namespace litecore { namespace repl {
 
     void Pusher::afterEvent() {
         // If I would otherwise go idle or stop, but there are revs I want to retry, restart them:
-        if (!_revsToRetry.empty() && connection() && !isBusy()) {
+        if (!_revsToRetry.empty() && connected() && !isBusy()) {
             logInfo("%d documents failed to push and will be retried", int(_revsToRetry.size()));
             _caughtUp = false;
             auto revsToRetry = move(_revsToRetry);
@@ -769,7 +769,7 @@ namespace litecore { namespace repl {
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
         ActivityLevel level;
-        if (!connection()) {
+        if (!connected()) {
             // Does this need a similar guard to what Puller has?  It doesn't
             // seem so since the Puller has stuff that happens even after the
             // connection is closed, while the Pusher does not seem to.

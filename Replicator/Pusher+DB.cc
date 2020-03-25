@@ -40,7 +40,7 @@ namespace litecore { namespace repl {
     // Gets the next batch of changes from the DB. Will respond by calling gotChanges.
     void Pusher::getChanges(const GetChangesParams &p)
     {
-        if (!connection())
+        if (!connected())
             return;
         auto limit = p.limit;
         logVerbose("Reading up to %u local changes since #%" PRIu64, limit, p.since);
@@ -250,7 +250,7 @@ namespace litecore { namespace repl {
 
     // Sends a document revision in a "rev" request.
     void Pusher::sendRevision(RevToSend *request, MessageProgressCallback onProgress) {
-        if (!connection())
+        if (!connected())
             return;
         logVerbose("Reading document '%.*s' #%.*s",
                    SPLAT(request->docID), SPLAT(request->revID));

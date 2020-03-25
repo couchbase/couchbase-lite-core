@@ -71,7 +71,8 @@ namespace litecore { namespace repl {
 #if !DEBUG
     protected:
 #endif
-        blip::Connection* connection() const                {return _connection;}
+        bool connected() const                          {return _connection != nullptr;}
+        blip::Connection& connection() const            {Assert(_connection); return *_connection;}
 
     protected:
         Worker(blip::Connection *connection NONNULL,
@@ -80,7 +81,7 @@ namespace litecore { namespace repl {
                std::shared_ptr<DBAccess>,
                const char *namePrefix NONNULL);
 
-        Worker(Worker *parent, const char *namePrefix NONNULL);
+        Worker(Worker *parent NONNULL, const char *namePrefix NONNULL);
 
         ~Worker();
 

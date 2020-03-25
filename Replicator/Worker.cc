@@ -97,7 +97,7 @@ namespace litecore { namespace repl {
 
 
     Worker::Worker(Worker *parent, const char *namePrefix)
-    :Worker(parent->_connection, parent, parent->_options, parent->_db, namePrefix)
+    :Worker(&parent->connection(), parent, parent->_options, parent->_db, namePrefix)
     { }
 
 
@@ -128,8 +128,7 @@ namespace litecore { namespace repl {
             if (!builder.noreply)
                 warn("Ignoring the response to a BLIP message!");
         }
-        DebugAssert(_connection);
-        _connection->sendRequest(builder);
+        connection().sendRequest(builder);
     }
 
 
