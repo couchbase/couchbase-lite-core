@@ -59,7 +59,7 @@ matrix:
       osx_image: xcode11
       env:
         - CXX_COMPILER=clang++
-	- C_COMPILER=clang
+        - C_COMPILER=clang
 
 before_script:
   - uname -a
