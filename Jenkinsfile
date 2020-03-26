@@ -18,7 +18,8 @@ pipeline {
                 stage("iOS") {
                     agent { label 'mobile-mac-mini' }
                     environment {
-                       BRANCH = "${BRANCH_NAME}"
+                        BRANCH = "${BRANCH_NAME}"
+                        KEYCHAIN_PWD = credentials("mobile-mac-mini-keychain")
                     }
                     steps {
                         sh 'jenkins/jenkins_ios.sh'
@@ -30,7 +31,7 @@ pipeline {
                         BRANCH = "${BRANCH_NAME}"
                     }
                     steps {
-                        owershell 'jenkins\\jenkins_uwp.ps1'
+                        powershell 'jenkins\\jenkins_uwp.ps1'
                     }
                 }
             }
@@ -51,7 +52,6 @@ pipeline {
                     agent { label 'mobile-mac-mini'  }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
-                        KEYCHAIN_PWD = credentials("mobile-mac-mini-keychain")
                     }
                     steps {
                         sh 'jenkins/jenkins_unix.sh'
