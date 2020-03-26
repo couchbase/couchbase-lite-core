@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+shopt -s extglob dotglob
 
 script_dir=`dirname $0`
 
