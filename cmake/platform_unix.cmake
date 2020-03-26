@@ -45,19 +45,19 @@ function(setup_litecore_build_unix)
     endif()
 
     set(LITECORE_WARNINGS
-        -Wnon-virtual-dtor
-        -Werror=overloaded-virtual
-        -Werror=missing-braces
-        -Werror=parentheses
-        -Werror=switch
+        #-Wnon-virtual-dtor
+        #-Werror=overloaded-virtual
+        #-Werror=missing-braces
+        #-Werror=parentheses
+        #-Werror=switch
         -Werror=unused-function
         -Werror=unused-label
         -Werror=unused-variable
         -Werror=unused-value
         -Werror=uninitialized
-        -Wshadow
-        -Werror=float-conversion
-        -Weffc++
+        #-Wshadow
+        #-Werror=float-conversion
+        #-Weffc++
     )
 
     set(LITECORE_C_WARNINGS
