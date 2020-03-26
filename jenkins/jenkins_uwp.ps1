@@ -11,15 +11,15 @@ try {
         & 'C:\Program Files\Git\bin\git.exe' clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $env:CHANGE_TARGET --recursive --depth 1 couchbase-lite-core-EE
     }
 
-    New-Item -Type Directory -ErrorAction Ignore couchbase-lite-core\build_cmake\x64
-    Set-Location couchbase-lite-core\build_cmake\x64
+    New-Item -Type Directory -ErrorAction Ignore couchbase-lite-core\build_cmake\x86_store
+    Set-Location couchbase-lite-core\build_cmake\x86_store
     & 'C:\Program Files\CMake\bin\cmake.exe' -G "Visual Studio 15 2017" -DCMAKE_SYSTEM_NAME=WindowsStore -DCMAKE_SYSTEM_VERSION="10.0" -DCMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION="10.0.16299.0" -DBUILD_ENTERPRISE=ON ..\..
     if($LASTEXITCODE -ne 0) {
         Write-Host "Failed to run CMake!" -ForegroundColor Red
         exit 1
     }
 
-    & 'C:\Program Files\CMake\bin\cmake.exe' --build .
+    & 'C:\Program Files\CMake\bin\cmake.exe' --build . --target LiteCore --config MinSizeRel
     if($LASTEXITCODE -ne 0) {
         Write-Host "Failed to build!" -ForegroundColor Red
         exit 1
