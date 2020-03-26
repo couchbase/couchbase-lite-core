@@ -1,10 +1,10 @@
-dist: xenial
 sudo: false
 language: cpp
 
 matrix:
   include:
     - compiler: gcc
+      dist: xenial
       addons:
         apt:
           sources:
@@ -15,6 +15,7 @@ matrix:
         - CXX_COMPILER=g++-7
         - C_COMPILER=gcc-7
     - compiler: gcc
+      dist: xenial
       addons:
         apt:
           sources:
@@ -25,6 +26,7 @@ matrix:
         - CXX_COMPILER=g++-9
         - C_COMPILER=gcc-9
     - compiler: clang
+      dist: xenial
       addons:
         apt:
           sources:
@@ -39,6 +41,7 @@ matrix:
         - C_COMPILER=clang-5.0
         - PATH=/usr/lib/llvm-7/bin:/usr/lib/llvm-7/include/:$PATH
     - compiler: clang
+      dist: xenial
       addons:
         apt:
           sources:
@@ -52,6 +55,11 @@ matrix:
         - CXX_COMPILER=clang++-8
         - C_COMPILER=clang-8
         - PATH=/usr/lib/llvm-8/bin:/usr/lib/llvm-8/include/:$PATH
+    - os: osx
+      osx_image: xcode11
+      env:
+        - CXX_COMPILER=clang++
+        - C_COMPILER=clang
 
 before_script:
   - uname -a

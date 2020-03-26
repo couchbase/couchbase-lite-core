@@ -237,7 +237,7 @@ namespace litecore { namespace repl {
         if (currentLevel == kC4Stopped)
             return kC4Stopped;
 
-        ActivityLevel level;
+        ActivityLevel level = kC4Busy;
         switch (_connectionState) {
             case Connection::kConnecting:
                 level = kC4Connecting;

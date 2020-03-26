@@ -12,7 +12,9 @@ endfunction()
 
 function(setup_litecore_build_unix)
     FILE(GLOB C_SRC LIST_DIRECTORIES FALSE "C/*.cc")
-    set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
+    endif()
 
     # Enable Link-Time Optimization, AKA Inter-Procedure Optimization
     if(NOT ANDROID AND NOT DISABLE_LTO_BUILD AND
@@ -41,6 +43,41 @@ function(setup_litecore_build_unix)
             atomic
         )
     endif()
+
+    set(LITECORE_WARNINGS
+        #-Wnon-virtual-dtor
+        #-Werror=overloaded-virtual
+        #-Werror=missing-braces
+        #-Werror=parentheses
+        #-Werror=switch
+        -Werror=unused-function
+        -Werror=unused-label
+        -Werror=unused-variable
+        -Werror=unused-value
+        -Werror=uninitialized
+        #-Wshadow
+        #-Werror=float-conversion
+        #-Weffc++
+    )
+
+    set(LITECORE_C_WARNINGS
+	-Werror=incompatible-pointer-types
+	-Werror=int-conversion
+	-Werror=strict-prototypes
+    )
+
+    target_compile_options(LiteCoreStatic PRIVATE 
+	${LITECORE_WARNINGS} 
+	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+    )
+    target_compile_options(BLIPStatic PRIVATE 
+	${LITECORE_WARNINGS}
+	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+    )
+    target_compile_options(FleeceStatic PRIVATE 
+	${LITECORE_WARNINGS}
+	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
+    )
 endfunction()
 
 function(setup_rest_build_unix)
