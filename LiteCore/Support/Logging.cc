@@ -135,7 +135,6 @@ namespace litecore {
     {
         FilePath logDir(sLogDirectory, "");
         if(!logDir.existsAsDir()) {
-            logDir.mkdir();
             return;
         }
 
@@ -173,6 +172,8 @@ namespace litecore {
 
         delete sLogEncoder[(int)level];
         delete sFileOut[(int)level];
+        sLogEncoder[(int)level] = nullptr;
+        sFileOut[(int)level] = nullptr;
         purgeOldLogs(level);
         const auto path = createLogPath(level);
         sFileOut[(int)level] = new ofstream(path, ofstream::out|ofstream::trunc|ofstream::binary);
