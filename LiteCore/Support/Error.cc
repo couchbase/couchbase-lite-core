@@ -293,11 +293,14 @@ namespace litecore {
     static const char* websocket_errstr(int code) {
         static const struct {int code; const char* message;} kWebSocketMessages[] = {
             {400, "invalid request"},
+            {401, "unauthorized"},
+            {403, "forbidden"},
             {404, "not found"},
-            {404, "not found"},
+            {405, "HTTP method not allowed"},
             {409, "conflict"},
             {410, "gone"},
             {500, "server error"},
+            {501, "server error: not implemented"},
             {502, "remote error"},
             {1000, "normal close"},
             {1001, "peer going away"},
@@ -319,7 +322,7 @@ namespace litecore {
             if (kWebSocketMessages[i].code == code)
                 return kWebSocketMessages[i].message;
         }
-        return code >= 1000 ? "(unknown WebSocket status)" : "(unknown HTTP status)";
+        return code >= 1000 ? "WebSocket error" : "HTTP error";
     }
 #endif // LITECORE_IMPL
 
