@@ -351,7 +351,7 @@ namespace litecore { namespace websocket {
             ssize_t n = _socket->read((void*)_readBuffer.buf, min(_readBuffer.size,
                                                                   _curReadCapacity.load()));
             logDebug("Received %zu bytes from socket", n);
-            if (_usuallyFalse(n <= 0)) {
+            if (_usuallyFalse(n < 0)) {
                 closeWithError(_socket->error());
                 return;
             }
@@ -364,7 +364,8 @@ namespace litecore { namespace websocket {
                 logDebug("**** socket read THROTTLED");
 
             // Pass data to WebSocket parser:
-            onReceive(slice(_readBuffer.buf, n));
+            if (n > 0)
+                onReceive(slice(_readBuffer.buf, n));
         } catch (const exception &x) {
             closeWithException(x, "during I/O");
         }
