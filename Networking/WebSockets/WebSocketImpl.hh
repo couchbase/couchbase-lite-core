@@ -125,6 +125,7 @@ namespace litecore { namespace websocket {
         std::chrono::seconds _curTimeout;
         bool _timedOut {false};
         bool _protocolError {false};
+        bool _didConnect {false};
         int _opToSend;
         fleece::alloc_slice _msgToSend;
 

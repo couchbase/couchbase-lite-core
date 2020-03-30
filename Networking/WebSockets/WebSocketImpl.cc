@@ -105,6 +105,7 @@ namespace litecore { namespace websocket {
 
     void WebSocketImpl::onConnect() {
         logInfo("Connected!");
+        _didConnect = true;
         _responseTimer->stop();
         _timeConnected.start();
         delegate().onWebSocketConnect();
@@ -444,45 +445,50 @@ namespace litecore { namespace websocket {
                     status = {kWebSocketClose, kCodeProtocolError, nullslice};
             }
             
-            if (_framing) {
-                bool clean = (status.code == 0
-                              || (status.reason == kWebSocketClose && status.code == kCodeNormal));
-                bool expected = (_closeSent && _closeReceived);
-                if (expected && clean)
-                    logInfo("Socket disconnected cleanly");
-                else
-                    warn("Unexpected or unclean socket disconnect! (reason=%-s, code=%d)",
-                        status.reasonName(), status.code);
+            if (_didConnect) {
+                bool clean = status.code == 0 ||
+                            (status.reason == kWebSocketClose &&
+                                    (status.code == kCodeNormal || status.code == kCodeGoingAway));
+                if (_framing) {
+                    bool expected = (_closeSent && _closeReceived);
+                    if (expected && clean)
+                        logInfo("Socket disconnected cleanly");
+                    else
+                        logError("Unexpected or unclean socket disconnect! (reason=%-s %d)",
+                                 status.reasonName(), status.code);
 
-                if (clean) {
-                    status.reason = kWebSocketClose;
-                    if (!expected)
-                        status.code = kCodeAbnormal;
-                    else if (!_closeMessage)
-                        status.code = kCodeNormal;
-                    else {
-                        auto msg = ClientProtocol::parseClosePayload((char*)_closeMessage.buf,
-                                                                     _closeMessage.size);
-                        status.code = msg.code ? msg.code : kCodeStatusCodeExpected;
-                        status.message = slice(msg.message, msg.length);
+                    if (clean) {
+                        status.reason = kWebSocketClose;
+                        if (!expected)
+                            status.code = kCodeAbnormal;
+                        else if (!_closeMessage)
+                            status.code = kCodeNormal;
+                        else {
+                            auto msg = ClientProtocol::parseClosePayload((char*)_closeMessage.buf,
+                                                                         _closeMessage.size);
+                            status.code = msg.code ? msg.code : kCodeStatusCodeExpected;
+                            status.message = slice(msg.message, msg.length);
+                        }
                     }
+                    _closeMessage = nullslice;
+                } else {
+                    if (clean)
+                        logInfo("WebSocket closed normally");
+                    else
+                        logError("WebSocket closed abnormally (reason=%-s %d)",
+                                 status.reasonName(), status.code);
                 }
-                _closeMessage = nullslice;
+
+                _timeConnected.stop();
+                double t = _timeConnected.elapsed();
+                logInfo("sent %" PRIu64 " bytes, rcvd %" PRIu64 ", in %.3f sec (%.0f/sec, %.0f/sec)",
+                    _bytesSent, _bytesReceived, t,
+                    _bytesSent/t, _bytesReceived/t);
             } else {
-                if (status.reason == kWebSocketClose) {
-                    if (status.code != kCodeNormal && status.code != kCodeGoingAway)
-                        warn("WebSocket closed abnormally with status %d", status.code);
-                } else if (status.code != 0) {
-                    logInfo("Socket disconnected! (reason=%d, code=%d)", status.reason, status.code);
-                }
+                logError("WebSocket failed to connect! (reason=%-s %d)",
+                         status.reasonName(), status.code);
             }
 
-            _timeConnected.stop();
-            double t = _timeConnected.elapsed();
-            logInfo("sent %" PRIu64 " bytes, rcvd %" PRIu64 ", in %.3f sec (%.0f/sec, %.0f/sec)",
-                _bytesSent, _bytesReceived, t,
-                _bytesSent/t, _bytesReceived/t);
-            
             _closed = true;
         }
 
