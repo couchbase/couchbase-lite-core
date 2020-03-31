@@ -36,6 +36,7 @@ function(set_source_files_base)
         ${TOP}vendor/fleece/Experimental/KeyTree.cc
         ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
         ${TOP}Replicator/tests/ReplicatorAPITest.cc
+        ${TOP}Replicator/tests/ReplicatorSGTest.cc
         ${TOP}C/tests/c4Test.cc 
         ${TOP}Replicator/tests/CookieStoreTest.cc
         ${TOP}REST/Response.cc

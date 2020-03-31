@@ -80,7 +80,6 @@ target_include_directories(
     ${TOP}Networking
     ${TOP}LiteCore/Support
     ${TOP}vendor/SQLiteCpp/sqlite3
-    ${TOP}vendor/BLIP-Cpp/src/util
     ${TOP}vendor/mbedtls/include
 )
 

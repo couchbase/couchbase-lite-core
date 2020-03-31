@@ -69,8 +69,6 @@ target_compile_definitions(
 
 target_include_directories(
     CppTests PRIVATE
-    ${TOP}vendor/BLIP-Cpp/src/util
-    ${TOP}vendor/BLIP-Cpp/include/blip_cpp
     ${TOP}vendor/fleece/API
     ${TOP}vendor/fleece/Experimental
     ${TOP}vendor/fleece/Fleece/Core
@@ -98,6 +96,7 @@ target_include_directories(
     ${TOP}Replicator
     ${TOP}Replicator/tests
     ${TOP}REST
+    ${TOP}REST/tests
     ${TOP}vendor/sockpp/include
 )
 
