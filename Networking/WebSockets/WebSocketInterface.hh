@@ -69,8 +69,8 @@ namespace litecore { namespace websocket {
         kNetErrTLSHandshakeFailed,
         kNetErrTLSCertExpired,
         kNetErrTLSCertUntrusted,
-        kNetErrTLSClientCertRequired,
-        kNetErrTLSClientCertRejected, // 10
+        kNetErrTLSCertRequiredByPeer,
+        kNetErrTLSCertRejectedByPeer,// 10
         kNetErrTLSCertUnknownRoot,
         kNetErrInvalidRedirect,
         kNetErrUnknown,              // Unknown error

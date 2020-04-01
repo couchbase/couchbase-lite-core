@@ -18,6 +18,7 @@
 
 #include "ListenerHarness.hh"
 #include "ReplicatorAPITest.hh"
+#include <algorithm>
 
 using namespace litecore::REST;
 
@@ -32,6 +33,7 @@ public:
     ,ListenerHarness({0, nullslice,
                       kC4SyncAPI,
                        nullptr,
+                       nullptr, nullptr,
                        {}, false, false,    // REST-only stuff
                        true, true})
     {
@@ -81,6 +83,29 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", 
     run();
 }
 #endif
+
+
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]") {
+    ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
+    share(db2, "db2"_sl);
+    if (pinnedCert)
+        _address.scheme = kC4Replicator2TLSScheme;
+
+    CHECK(c4listener_connectionCount(listener()) == 0);
+
+    C4Error err;
+    REQUIRE(startReplicator(kC4OneShot, kC4Disabled, &err));
+
+    int maxConnections = INT_MIN;
+    C4ReplicatorStatus status;
+    while ((status = c4repl_getStatus(_repl)).level != kC4Stopped) {
+        auto connections = c4listener_connectionCount(listener());
+        maxConnections = std::max(maxConnections, connections);
+        this_thread::sleep_for(chrono::milliseconds(1));
+    }
+    CHECK(maxConnections == 1);
+    CHECK(c4listener_connectionCount(listener()) == 0);
+}
 
 
 #endif

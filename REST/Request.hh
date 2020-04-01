@@ -111,6 +111,8 @@ namespace litecore { namespace REST {
 
         void sendWebSocketResponse(const std::string &protocol);
 
+        void onClose(std::function<void()> &&callback);
+
         std::unique_ptr<net::ResponderSocket> extractSocket();
 
         std::string peerAddress();

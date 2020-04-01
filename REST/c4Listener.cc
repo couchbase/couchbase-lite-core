@@ -117,3 +117,8 @@ FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db) C4API {
     } catchExceptions()
     return nullptr;
 }
+
+
+int c4listener_connectionCount(C4Listener *listener C4NONNULL) C4API {
+    return internal(listener)->connectionCount();
+}

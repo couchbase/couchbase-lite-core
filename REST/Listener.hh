@@ -28,13 +28,14 @@
 namespace litecore { namespace REST {
 
     /** Abstract superclass of network listeners that can serve access to databases.
-        Subclassed by RESTListener and SyncListener. */
+        Subclassed by RESTListener. */
     class Listener {
     public:
         using Config = C4ListenerConfig;
 
         static constexpr uint16_t kDefaultPort = 4984;
 
+        Listener(const Config &config);
         virtual ~Listener() =default;
 
         /** Determines whether a database name is valid for use as a URI path component.
@@ -67,10 +68,12 @@ namespace litecore { namespace REST {
         /** Returns all registered database names. */
         std::vector<std::string> databaseNames() const;
 
-    protected:
-        Listener();
+        /** Returns the number of client connections. */
+        virtual int connectionCount() =0;
 
+    protected:
         mutable std::mutex _mutex;
+        Config _config;
         std::map<std::string, c4::ref<C4Database>> _databases;
     };
 

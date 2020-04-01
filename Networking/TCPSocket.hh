@@ -48,6 +48,8 @@ namespace litecore::net {
         bool connected() const;
         operator bool() const                   {return connected();}
 
+        void onClose(std::function<void()> &&callback)     {_onClose = move(callback);}
+
         /// Peer's address: IP address + ":" + port number
         std::string peerAddress();
 
@@ -136,6 +138,7 @@ namespace litecore::net {
         size_t _unreadLen {0};                              // Length of valid data in _unread
         bool _eofOnRead {false};                            // Has read stream reached EOF?
         bool _eofOnWrite {false};                           // Has write stream reached EOF?
+        std::function<void()> _onClose;
     };
 
 

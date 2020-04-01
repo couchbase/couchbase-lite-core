@@ -236,19 +236,19 @@ typedef C4_ENUM(int32_t, C4ErrorCode) {
 typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
     kC4NetErrDNSFailure = 1,            // DNS lookup failed
     kC4NetErrUnknownHost,               // DNS server doesn't know the hostname
-    kC4NetErrTimeout,
-    kC4NetErrInvalidURL,
-    kC4NetErrTooManyRedirects,
-    kC4NetErrTLSHandshakeFailed,
-    kC4NetErrTLSCertExpired,
-    kC4NetErrTLSCertUntrusted,          // Cert isn't trusted for other reason
-    kC4NetErrTLSClientCertRequired,
-    kC4NetErrTLSClientCertRejected, // 10
+    kC4NetErrTimeout,                   // Connection timeout
+    kC4NetErrInvalidURL,                // Invalid URL
+    kC4NetErrTooManyRedirects,          // HTTP redirect loop
+    kC4NetErrTLSHandshakeFailed,        // TLS handshake failed, for reasons other than below
+    kC4NetErrTLSCertExpired,            // Peer's cert has expired
+    kC4NetErrTLSCertUntrusted,          // Peer's cert isn't trusted for other reason
+    kC4NetErrTLSCertRequiredByPeer,     // Peer (server) requires me to provide a (client) cert
+    kC4NetErrTLSCertRejectedByPeer,     // Peer says my cert is invalid or unauthorized
     kC4NetErrTLSCertUnknownRoot,        // Self-signed cert, or unknown anchor cert
     kC4NetErrInvalidRedirect,           // Attempted redirect to invalid replication endpoint
     kC4NetErrUnknown,                   // Unknown error
-    kC4NetErrTLSCertRevoked,
-    kC4NetErrTLSCertNameMismatch,
+    kC4NetErrTLSCertRevoked,            // Peer's cert has been revoked
+    kC4NetErrTLSCertNameMismatch,       // Peer's cert's Common Name doesn't match hostname
     kC4NumNetErrorCodesPlus1
 };
 
