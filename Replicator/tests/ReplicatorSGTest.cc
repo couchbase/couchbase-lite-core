@@ -26,7 +26,10 @@
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
+
+#ifndef MSC_VER
 #include <unistd.h>
+#endif
 
 using namespace fleece;
 
