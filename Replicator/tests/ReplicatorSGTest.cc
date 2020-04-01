@@ -27,7 +27,7 @@
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 
-#ifndef MSC_VER
+#ifndef _MSC_VER
 #include <unistd.h>
 #endif
 
