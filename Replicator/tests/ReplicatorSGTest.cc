@@ -25,8 +25,13 @@
 #include "c4Query.h"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
+#include "SecureRandomize.hh"
 #include "fleece/Fleece.hh"
+#include <cstdlib>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 using namespace fleece;
 
@@ -455,7 +460,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
         TransactionHelper t(db);
-        srandom(123456); // start random() sequence at a known place
+        std::srand(123456); // start random() sequence at a known place
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
             char docID[20];
             sprintf(docID, "doc-%03d", docNo);
@@ -463,7 +468,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
             enc.beginDict();
             for (int p = 0; p < kNumProps; ++p) {
                 enc.writeKey(format("field%03d", p));
-                enc.writeInt(random());
+                enc.writeInt(std::rand());
             }
             enc.endDict();
             alloc_slice body = enc.finish();
@@ -498,8 +503,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
             for (Dict::iterator i(props); i; ++i) {
                 enc.writeKey(i.keyString());
                 auto value = i.value().asInt();
-                if (random() % 8 == 0)
-                    value = random();
+                if (RandomNumber() % 8 == 0)
+                    value = RandomNumber();
                 enc.writeInt(value);
             }
             enc.endDict();
