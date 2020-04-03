@@ -102,34 +102,6 @@ const C4CertIssuerParameters kDefaultCertIssuerParameters = {
 #pragma mark - C4CERT:
 
 
-static const pair<slice, SANTag> kAttributeNames[] = {
-    // These go in the DistinguishedName:
-    {"CN"_sl,           SANTag::kOtherName},
-    {"pseudonym"_sl,    SANTag::kOtherName},
-    {"GN"_sl,           SANTag::kOtherName},
-    {"SN"_sl,           SANTag::kOtherName},
-    {"O"_sl,            SANTag::kOtherName},
-    {"OU"_sl,           SANTag::kOtherName},
-    {"postalAddress"_sl,SANTag::kOtherName},
-    {"locality"_sl,     SANTag::kOtherName},
-    {"postalCode"_sl,   SANTag::kOtherName},
-    {"ST"_sl,           SANTag::kOtherName},
-    {"C"_sl,            SANTag::kOtherName},
-    // These go in the SubjectAlternativeName:
-    {"otherName"_sl,    SANTag::kOtherName},
-    {"rfc822Name"_sl,   SANTag::kRFC822Name},
-    {"dNSName"_sl,      SANTag::kDNSName},
-    {"x400Address"_sl,  SANTag::kX400AddressName},
-    {"directoryName"_sl,SANTag::kDirectoryName},
-    {"ediPartyName"_sl, SANTag::kEDIPartyName},
-    {"uniformResourceIdentifier"_sl, SANTag::kURIName},
-    {"iPAddress"_sl,    SANTag::kIPAddress},
-    {"registeredID"_sl, SANTag::kRegisteredID},
-};
-
-static constexpr size_t kNumAttributeNames = sizeof(kAttributeNames) / sizeof(kAttributeNames[0]);
-
-
 C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
                              size_t nameCount,
                              C4CertUsage certUsages,
@@ -141,15 +113,10 @@ C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
         SubjectAltNames altNames;
         for (size_t i = 0; i < nameCount; ++i) {
             auto attributeID = nameComponents[i].attributeID;
-            if (attributeID >= kNumAttributeNames) {
-                c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Attribute ID out of range"_sl, outError);
-                return nullptr;
-            }
-            auto &attr = kAttributeNames[attributeID];
-            if (attributeID < kC4Cert_OtherName)
-                name.push_back({attr.first, nameComponents[i].value});
+            if (auto tag = SubjectAltNames::tagNamed(attributeID); tag)
+                altNames.emplace_back(*tag, nameComponents[i].value);
             else
-                altNames.emplace_back(attr.second, nameComponents[i].value);
+                name.push_back({attributeID, nameComponents[i].value});
         }
         Cert::SubjectParameters params(name);
         params.subjectAltNames = move(altNames);
@@ -195,11 +162,10 @@ C4StringResult c4cert_subjectName(C4Cert* cert) C4API {
 
 C4StringResult c4cert_subjectNameComponent(C4Cert* cert, C4CertNameAttributeID attrID) C4API {
     return tryCatch<C4StringResult>(nullptr, [&]() {
-        auto &attr = kAttributeNames[attrID];
-        if (attr.first)
-            return C4StringResult(internal(cert)->subjectName()[attr.first]);
+        if (auto tag = SubjectAltNames::tagNamed(attrID); tag)
+            return C4StringResult(internal(cert)->subjectAltNames()[*tag]);
         else
-            return C4StringResult(internal(cert)->subjectAltNames()[attr.second]);
+            return C4StringResult(internal(cert)->subjectName()[attrID]);
     });
 }
 
@@ -208,20 +174,13 @@ bool c4cert_subjectNameAtIndex(C4Cert* cert,
                                unsigned index,
                                C4CertNameInfo *outInfo C4NONNULL) C4API
 {
-    outInfo->id = kC4Cert_NoAttributeID;
-    outInfo->nameString = nullslice;
+    outInfo->id = nullslice;
     outInfo->value = {};
 
     // First go through the DistinguishedNames:
     if (auto dn = internal(cert)->subjectName().asVector(); index < dn.size()) {
-        outInfo->nameString = dn[index].first;
+        outInfo->id = dn[index].first;
         outInfo->value = C4StringResult(dn[index].second);
-        for (size_t id = 0; id < kC4Cert_OtherName; ++id) {
-            if (kAttributeNames[id].first == outInfo->nameString) {
-                outInfo->id = C4CertNameAttributeID(id);
-                break;
-            }
-        }
         return true;
     } else {
         index -= dn.size();
@@ -229,8 +188,7 @@ bool c4cert_subjectNameAtIndex(C4Cert* cert,
 
     // Then look in SubjectAlternativeName:
     if (auto san = internal(cert)->subjectAltNames(); index < san.size()) {
-        outInfo->id = C4CertNameAttributeID(kC4Cert_OtherName + unsigned(san[index].first));
-        outInfo->nameString = kAttributeNames[outInfo->id].first;
+        outInfo->id = SubjectAltNames::nameOfTag(san[index].first);
         outInfo->value = C4StringResult(alloc_slice(san[index].second));
         return true;
     }

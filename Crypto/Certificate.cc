@@ -119,6 +119,32 @@ namespace litecore { namespace crypto {
 #pragma mark - SUBJECT ALT NAME
 
 
+    static const pair<slice, SANTag> kSANTagNames[] = {
+        {"otherName"_sl,                 SANTag::kOtherName},
+        {"rfc822Name"_sl,                SANTag::kRFC822Name},
+        {"dNSName"_sl,                   SANTag::kDNSName},
+        {"x400Address"_sl,               SANTag::kX400AddressName},
+        {"directoryName"_sl,             SANTag::kDirectoryName},
+        {"ediPartyName"_sl,              SANTag::kEDIPartyName},
+        {"uniformResourceIdentifier"_sl, SANTag::kURIName},
+        {"iPAddress"_sl,                 SANTag::kIPAddress},
+        {"registeredID"_sl,              SANTag::kRegisteredID},
+    };
+
+
+    std::optional<SANTag> SubjectAltNames::tagNamed(fleece::slice name) {
+        for( auto &item : kSANTagNames)
+            if (item.first == name)
+                return item.second;
+        return nullopt;
+    }
+
+
+    fleece::slice SubjectAltNames::nameOfTag(SANTag tag) {
+        return kSANTagNames[unsigned(tag)].first;
+    }
+
+
     SubjectAltNames::SubjectAltNames(mbedtls_x509_sequence *subject_alt_names) {
         const mbedtls_x509_sequence *cur;
         for (cur = subject_alt_names; cur; cur = cur->next) {
