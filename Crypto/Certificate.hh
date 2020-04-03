@@ -9,6 +9,7 @@
 #include "function_ref.hh"
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <time.h>
 #include <vector>
 
@@ -71,6 +72,9 @@ namespace litecore { namespace crypto {
     class SubjectAltNames : public std::vector<SubjectAltName> {
     public:
         using Tag = SANTag;
+
+        static std::optional<Tag> tagNamed(fleece::slice name);
+        static fleece::slice nameOfTag(Tag);
 
         SubjectAltNames() { }
         explicit SubjectAltNames(::mbedtls_asn1_sequence*);

@@ -46,31 +46,27 @@ extern "C" {
     /** Certificate subject name attributes, from RFC 4519 and RFC 5280 (sec. 4.2.1.6)
         Only the CommonName is required; it's used as the visible name of the certificate.
         If the cert is to be used for a TLS server, the CommonName must match its DNS name. */
-    typedef C4_ENUM(uint8_t, C4CertNameAttributeID) {
-        // Some common Distinguished Name attributes:
-        kC4Cert_CommonName,        // e.g. "Jane Doe", (or "jane.example.com")
-        kC4Cert_Pseudonym,         // e.g. "plainjane837"
-        kC4Cert_GivenName,         // e.g. "Jane"
-        kC4Cert_Surname,           // e.g. "Doe"
-        kC4Cert_Organization,      // e.g. "Example Corp."
-        kC4Cert_OrganizationUnit,  // e.g. "Marketing"
-        kC4Cert_PostalAddress,     // e.g. "123 Example Blvd #2A"
-        kC4Cert_Locality,          // e.g. "Boston"
-        kC4Cert_PostalCode,        // e.g. "02134"
-        kC4Cert_StateOrProvince,   // e.g. "Massachusetts" (or "Quebec", ...)
-        kC4Cert_Country,           // e.g. "us" (2-letter ISO country code)
-        // These are the Subject Alternative Name attributes:
-        kC4Cert_OtherName,         // Binary ASN.1 data containing a type and value
-        kC4Cert_EmailAddress,      // 'rfc822Name', e.g. "jane@example.com"
-        kC4Cert_Hostname,          // 'dnsName', e.g. "www.example.com"
-        kC4Cert_X400Name,          // Yeah, I don't know what this is either
-        kC4Cert_EDIPartyName,      // Ditto
-        kC4Cert_URL,               // "https://example.com/jane"
-        kC4Cert_IPAddress,         // *Binary* IP address, e.g. "\x0A\x00\x01\x01"
-        kC4Cert_RegisteredID,      // Some sort of domain-specific ID?
+    typedef C4Slice C4CertNameAttributeID;
 
-        kC4Cert_NoAttributeID
-    };
+    // Some common Distinguished Name attributes:
+    #define kC4Cert_CommonName        C4STR("CN")           // e.g. "Jane Doe", (or "jane.example.com")
+    #define kC4Cert_Pseudonym         C4STR("pseudonym")    // e.g. "plainjane837"
+    #define kC4Cert_GivenName         C4STR("GN")           // e.g. "Jane"
+    #define kC4Cert_Surname           C4STR("SN")           // e.g. "Doe"
+    #define kC4Cert_Organization      C4STR("O")            // e.g. "Example Corp."
+    #define kC4Cert_OrganizationUnit  C4STR("OU")           // e.g. "Marketing"
+    #define kC4Cert_PostalAddress     C4STR("postalAddress")// e.g. "123 Example Blvd #2A"
+    #define kC4Cert_Locality          C4STR("locality")     // e.g. "Boston"
+    #define kC4Cert_PostalCode        C4STR("postalCode")   // e.g. "02134"
+    #define kC4Cert_StateOrProvince   C4STR("ST")           // e.g. "Massachusetts" (or "Quebec", ...)
+    #define kC4Cert_Country           C4STR("C")            // e.g. "us" (2-letter ISO country code)
+
+    // These are the Subject Alternative Name attributes:
+    #define kC4Cert_EmailAddress      C4STR("rfc822Name")   // 'rfc822Name', e.g. "jane@example.com"
+    #define kC4Cert_Hostname          C4STR("dNSName")      // 'dnsName', e.g. "www.example.com"
+    #define kC4Cert_URL               C4STR("uniformResourceIdentifier") // "https://example.com/jane"
+    #define kC4Cert_IPAddress         C4STR("iPAddress")    // *Binary* IP address, e.g. "\x0A\x00\x01\x01"
+    #define kC4Cert_RegisteredID      C4STR("registeredID") // Some sort of domain-specific ID?
 
     /** \name Certificate and CSR Functions
      @{ */
@@ -108,8 +104,7 @@ extern "C" {
 
     /** Information about a single component of a certificate's subject name. */
     typedef struct C4CertNameInfo {
-        C4CertNameAttributeID id;    ///< Enum value for this name, or else `kC4Cert_NoAttributeID`
-        C4Slice        nameString;   ///< X.509 Distinguished Name string, if any (e.g. "CN", "O")
+        C4CertNameAttributeID id;    ///< X.509 attribute name (e.g. "CN" or "O")
         C4StringResult value;        ///< The value of the name component, i.e. the name.
     } C4CertNameInfo;
 
@@ -154,7 +149,7 @@ extern "C" {
 
     /** A component of an X.509 "Relative Distinguished Name" or "Subject Alternative Name". */
     typedef struct {
-        C4CertNameAttributeID attributeID;  ///< Attribute ID
+        C4CertNameAttributeID attributeID;  ///< Attribute name, e.g. "CN" or "O"
         C4String value;                     ///< Value of the attribute
     } C4CertNameComponent;
 
