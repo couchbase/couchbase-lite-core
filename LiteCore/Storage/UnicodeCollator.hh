@@ -73,8 +73,8 @@ namespace litecore {
 
     protected:
         CollationContext(const Collation &collation)
-        :caseSensitive(collation.caseSensitive)
-        ,canCompareASCII(true)
+        :canCompareASCII(true)
+        ,caseSensitive(collation.caseSensitive)
         {
             //TODO: Some locales have unusual rules for ASCII; for these, clear canCompareASCII.
         }

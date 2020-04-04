@@ -161,8 +161,8 @@ namespace litecore { namespace repl {
                              bool noConflicts_)
     :ReplicatedRev(docID_, revID_)
     ,historyBuf(historyBuf_)
-    ,owner(owner_)
     ,noConflicts(noConflicts_)
+    ,owner(owner_)
     {
         if (deleted_)
             flags |= kRevDeleted;

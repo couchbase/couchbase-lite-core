@@ -46,10 +46,10 @@ namespace litecore {
     :Logging(QueryLog)
     ,_database(db)
     ,_backgroundDB(db->backgroundDatabase())
+    ,_delegate(delegate)
     ,_expression(query->expression())
     ,_language(query->language())
     ,_continuous(continuous)
-    ,_delegate(delegate)
     {
         logInfo("Created on Query %s", query->loggingName().c_str());
         // Note that we don't keep a reference to `_query`, because it's tied to `db`, but we

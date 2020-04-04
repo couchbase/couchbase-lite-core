@@ -35,9 +35,9 @@ namespace litecore { namespace repl {
 
     Puller::Puller(Replicator *replicator)
     :Worker(replicator, "Pull")
+    ,_returningRevs(this, &Puller::_revsFinished)
     ,_inserter(new Inserter(replicator))
     ,_revFinder(new RevFinder(replicator))
-    ,_returningRevs(this, &Puller::_revsFinished)
 #if __APPLE__
     ,_revMailbox(nullptr, "Puller revisions")
 #endif

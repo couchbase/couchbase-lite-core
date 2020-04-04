@@ -20,7 +20,7 @@ extern "C" {
 }
 
 namespace litecore { namespace crypto {
-    class Identity;    
+    struct Identity;    
 } }
 
 namespace litecore { namespace websocket {

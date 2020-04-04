@@ -1,6 +1,8 @@
 include(${CMAKE_CURRENT_LIST_DIR}/platform_base.cmake)
 
 function(setup_globals_unix)
+    setup_globals_base()
+    
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(CMAKE_C_FLAGS_MINSIZEREL "-Os -DNDEBUG -g" CACHE INTERNAL "")
         set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -DNDEBUG -g" CACHE INTERNAL "")
@@ -8,6 +10,20 @@ function(setup_globals_unix)
         set(CMAKE_C_FLAGS_MINSIZEREL "-Oz -DNDEBUG -g" CACHE INTERNAL "")
         set(CMAKE_CXX_FLAGS_MINSIZEREL "-Oz -DNDEBUG -g" CACHE INTERNAL "")
     endif()
+
+    set(MBEDTLS_FLAGS "-Wno-pointer-sign" CACHE INTERNAL "")
+
+    list(APPEND BASE_FLAGS
+        -Wall
+        -Werror
+    )
+
+    set(LITECORESTATIC_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
+    set(BLIPSTATIC_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
+    set(FLEECESTATIC_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
+    set(SUPPORT_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
+    set(FLEECEBASE_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
+    set(LITECOREWEBSOCKET_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
 endfunction()
 
 function(setup_litecore_build_unix)
@@ -43,41 +59,6 @@ function(setup_litecore_build_unix)
             atomic
         )
     endif()
-
-    set(LITECORE_WARNINGS
-        #-Wnon-virtual-dtor
-        #-Werror=overloaded-virtual
-        #-Werror=missing-braces
-        #-Werror=parentheses
-        #-Werror=switch
-        -Werror=unused-function
-        -Werror=unused-label
-        -Werror=unused-variable
-        -Werror=unused-value
-        -Werror=uninitialized
-        #-Wshadow
-        #-Werror=float-conversion
-        #-Weffc++
-    )
-
-    set(LITECORE_C_WARNINGS
-	-Werror=incompatible-pointer-types
-	-Werror=int-conversion
-	-Werror=strict-prototypes
-    )
-
-    target_compile_options(LiteCoreStatic PRIVATE 
-	${LITECORE_WARNINGS} 
-	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
-    )
-    target_compile_options(BLIPStatic PRIVATE 
-	${LITECORE_WARNINGS}
-	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
-    )
-    target_compile_options(FleeceStatic PRIVATE 
-	${LITECORE_WARNINGS}
-	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
-    )
 endfunction()
 
 function(setup_rest_build_unix)

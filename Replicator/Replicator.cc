@@ -64,12 +64,12 @@ namespace litecore { namespace repl {
             options,
             make_shared<DBAccess>(db, options.properties["disable_blob_support"_sl].asBool()),
             "Repl")
+    ,_remoteURL(webSocket->url())
     ,_delegate(&delegate)
     ,_connectionState(connection().state())
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_docsEnded(this, &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
-    ,_remoteURL(webSocket->url())
     ,_checkpointer(_options, _remoteURL)
     {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;

@@ -79,7 +79,7 @@ namespace litecore {
             DatabaseChangeNotifier* const   databaseObserver {nullptr};
 
             Entry(const alloc_slice &d, alloc_slice r, sequence_t s, uint32_t bs)
-            :docID(d), revID(r), sequence(s), bodySize(bs), idle(false), external(false) {
+            :docID(d), sequence(s), revID(r), bodySize(bs), idle(false), external(false) {
                 DebugAssert(docID != nullslice);
             }
             Entry(DatabaseChangeNotifier *o)

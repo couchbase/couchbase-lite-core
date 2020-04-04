@@ -43,8 +43,8 @@ namespace litecore { namespace net {
                          bool handleRedirects)
     :_address(address)
     ,_handleRedirects(handleRedirects)
-    ,_isWebSocket(address.scheme == "ws"_sl || address.scheme == "wss"_sl)
     ,_proxy(sDefaultProxy)
+    ,_isWebSocket(address.scheme == "ws"_sl || address.scheme == "wss"_sl)
     { }
 
 

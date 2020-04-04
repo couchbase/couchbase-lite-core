@@ -41,10 +41,10 @@ namespace litecore {
     }
 
     RevTree::RevTree(const RevTree &other)
-    :_insertedData(other._insertedData)
-    ,_sorted(other._sorted)
-    ,_changed(other._changed)
+    :_changed(other._changed)
     ,_unknown(other._unknown)
+    ,_sorted(other._sorted)
+    ,_insertedData(other._insertedData)
     {
         // It's important to have _revs in the same order as other._revs.
         // That means we can't just copy other._revsStorage to _revsStorage;

@@ -86,13 +86,13 @@ namespace litecore { namespace repl {
     :Actor(string(namePrefix) + connection->name(),
            (parent ? parent->mailboxForChildren() : nullptr))
     ,Logging(SyncLog)
-    ,_connection(connection)
-    ,_parent(parent)
     ,_options(options)
+    ,_parent(parent)
     ,_db(dbAccess)
+    ,_loggingID(connection->name())
+    ,_connection(connection)
     ,_progressNotificationLevel(options.progressLevel())
     ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
-    ,_loggingID(connection->name())
     { }
 
 

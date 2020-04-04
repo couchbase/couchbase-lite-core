@@ -50,7 +50,6 @@ project (LiteCore)
 
 ### BUILD SETTINGS:
 
-set(COMPILE_FLAGS   "${COMPILE_FLAGS}   -Wall -Werror")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -77,6 +76,7 @@ if(BUILD_ENTERPRISE)
     )
 endif()
 
+include("${PROJECT_SOURCE_DIR}/cmake/common.cmake")
 if(MSVC)
     add_definitions(-DWIN32_LEAN_AND_MEAN -D_WIN32_WINNT=0x0A00)
     if(WINDOWS_STORE)
@@ -123,6 +123,11 @@ add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 
+register_litecore_target(mbedtls)
+register_litecore_target(BLIPStatic)
+register_litecore_target(FleeceStatic)
+register_litecore_target(FleeceBase)
+
 # Generate file repo_version.h containing Git repo information, and add it to #include path:
 set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
 file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
@@ -144,11 +149,7 @@ add_library(
     Support STATIC
     ${SUPPORT_SRC}
 )
-
-target_compile_definitions(
-    Support PRIVATE
-    -DNOMINMAX
-)
+register_litecore_target(Support)
 
 target_include_directories(
     Support PRIVATE
@@ -198,6 +199,7 @@ set(
 )
 
 add_library(LiteCoreWebSocket STATIC ${LC_WEBSOCKET_SRC})
+register_litecore_target(LiteCoreWebSocket)
 target_include_directories(
     LiteCoreWebSocket PRIVATE
     C
@@ -221,6 +223,7 @@ target_include_directories(
 
 set_litecore_source(RESULT ALL_SRC_FILES)
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
+register_litecore_target(LiteCoreStatic)
 target_compile_definitions(
     LiteCoreStatic PRIVATE
     -DLITECORE_IMPL

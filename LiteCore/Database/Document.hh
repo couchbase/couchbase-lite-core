@@ -51,8 +51,8 @@ namespace c4Internal {
         alloc_slice _selectedRevIDBuf;
 
         Document(Database *database, slice docID_)
-        :_db(database)
-        ,_docIDBuf(docID_)
+        :_docIDBuf(docID_)
+        ,_db(database)
         {
             docID = _docIDBuf;
             extraInfo = { };

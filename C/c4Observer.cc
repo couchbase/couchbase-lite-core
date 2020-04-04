@@ -30,12 +30,12 @@ struct c4DatabaseObserver : public fleece::InstanceCounted {
                         SequenceTracker &sequenceTracker,
                         C4SequenceNumber since,
                         C4DatabaseObserverCallback callback, void *context)
-    :_db(db),
-     _callback(callback),
-     _context(context),
-     _notifier(sequenceTracker,
+    :_db(db)
+    ,_notifier(sequenceTracker,
                bind(&c4DatabaseObserver::dispatchCallback, this, _1),
                since)
+    ,_callback(callback)
+    ,_context(context)
     { }
 
 

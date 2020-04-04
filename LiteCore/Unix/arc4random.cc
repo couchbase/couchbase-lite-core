@@ -93,7 +93,6 @@ arc4_stir(void)
 		struct timeval tv;
 		u_int rnd[128 / sizeof(u_int)];
 	}       rdat;
-	int	n;
         if (!rs_initialized) {
                 arc4_init();
                 rs_initialized = 1;

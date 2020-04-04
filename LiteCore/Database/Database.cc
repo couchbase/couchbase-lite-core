@@ -103,10 +103,10 @@ namespace c4Internal {
 
     Database::Database(const string &bundlePath,
                        C4DatabaseConfig inConfig)
-    :_dataFilePath(findOrCreateBundle(bundlePath,
+    :config(inConfig)
+    ,_dataFilePath(findOrCreateBundle(bundlePath,
                                       (inConfig.flags & kC4DB_Create) != 0,
                                       inConfig.storageEngine))
-    ,config(inConfig)
     {
         // Set up DataFile options:
         DataFile::Options options { };

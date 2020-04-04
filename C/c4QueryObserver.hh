@@ -22,8 +22,7 @@ using namespace litecore;
 
 // This is the definition of the C4Query type in the public C API,
 // hence it must be in the global namespace.
-class c4QueryObserver : public fleece::InstanceCounted {
-public:
+struct c4QueryObserver : public fleece::InstanceCounted {
     c4QueryObserver(C4Query *query, C4QueryObserverCallback callback, void* context)
     :_query(c4query_retain(query))
     ,_callback(callback)
