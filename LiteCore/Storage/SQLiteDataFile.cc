@@ -187,9 +187,7 @@ namespace litecore {
         withFileLock([this]{
             // http://www.sqlite.org/pragma.html
             _schemaVersion = SchemaVersion((int)_sqlDb->execAndGet("PRAGMA user_version"));
-            bool isNew = false;
             if (_schemaVersion == SchemaVersion::None) {
-                isNew = true;
                 // Configure persistent db settings, and create the schema.
                 // `auto_vacuum` has to be enabled ASAP, before anything's written to the db!
                 // (even setting `auto_vacuum` writes to the db, it turns out! See CBSE-7971.)

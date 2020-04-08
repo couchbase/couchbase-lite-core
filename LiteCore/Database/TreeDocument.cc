@@ -235,7 +235,9 @@ namespace c4Internal {
                 _versionedDoc.prune(maxRevTreeDepth);
             else
                 _versionedDoc.prune();
-            switch (_versionedDoc.save(_db->transaction())) {
+
+	    auto saveResult = _versionedDoc.save(_db->transaction());
+            switch (saveResult) {
                 case litecore::VersionedDocument::kConflict:
                     return false;
                 case litecore::VersionedDocument::kNoNewSequence:
@@ -250,6 +252,9 @@ namespace c4Internal {
                     }
                     return true;
             }
+
+	    error::_throw(error::LiteCoreError::UnexpectedError, 
+		"Unexpected return value '%d' from document save in save()", (int)saveResult);
         }
 
         int32_t purgeRevision(C4Slice revID) override {

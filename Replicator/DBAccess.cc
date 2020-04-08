@@ -397,7 +397,7 @@ namespace litecore { namespace repl {
             c4::Transaction transaction(idb);
             if (transaction.begin(&error)) {
                 for (ReplicatedRev *rev : *revs) {
-                    logDebug("Marking rev '%.*s' %.*s (#%llu) as synced to remote db %u",
+                    logDebug("Marking rev '%.*s' %.*s (#%" PRIu64 ") as synced to remote db %u",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, remoteDBID());
                     if (!c4db_markSynced(idb, rev->docID, rev->sequence, remoteDBID(), &error))
                         warn("Unable to mark '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",

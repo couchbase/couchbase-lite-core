@@ -20,6 +20,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "mbedUtils.hh"
+#include "Error.hh"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
@@ -67,6 +68,8 @@ namespace litecore { namespace crypto {
             case KeyFormat::Raw:
                 return publicKeyRawData();
         }
+
+	error::_throw(error::LiteCoreError::UnexpectedError, "Invalid KeyFormat in publicKeyData(), %d", (int)format);
     }
 
 
@@ -120,6 +123,7 @@ namespace litecore { namespace crypto {
                 return publicKeyRawData();
         }
 
+	error::_throw(error::LiteCoreError::UnexpectedError, "Invalid KeyFormat in privateKeyData(), %d", (int)format);
     }
 
 

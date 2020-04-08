@@ -166,7 +166,7 @@ namespace litecore { namespace repl {
 #if DEBUG
             if (willLog(LogLevel::Debug)) {
                 for (auto &change : *changes)
-                    logDebug("    - %.4llu: '%.*s' #%.*s (remote #%.*s)",
+                    logDebug("    - %.4" PRIu64 ": '%.*s' #%.*s (remote #%.*s)",
                              change->sequence, SPLAT(change->docID), SPLAT(change->revID),
                              SPLAT(change->remoteAncestorRevID));
             }
@@ -385,7 +385,7 @@ namespace litecore { namespace repl {
                 return;
             }
             if (progress.state == MessageProgress::kAwaitingReply) {
-                logDebug("Transmitted 'rev' %.*s #%.*s (seq #%llu)",
+                logDebug("Transmitted 'rev' %.*s #%.*s (seq #%" PRIu64 ")",
                          SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                 decrement(_revisionsInFlight);
                 increment(_revisionBytesAwaitingReply, progress.bytesSent);

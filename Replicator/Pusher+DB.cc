@@ -111,7 +111,7 @@ namespace litecore { namespace repl {
 
         while (0 != (nChanges = c4dbobs_getChanges(_changeObserver, c4changes, kMaxChanges, &ext))){
             if (!ext) {
-                logDebug("Notified of %u of my own db changes #%llu ... #%llu (ignoring)",
+                logDebug("Notified of %u of my own db changes #%" PRIu64 " ... #%" PRIu64 " (ignoring)",
                          nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
                 _maxPushedSequence = c4changes[nChanges-1].sequence;
                 continue;     // ignore changes I made myself

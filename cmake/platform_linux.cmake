@@ -5,6 +5,23 @@ function(setup_globals_linux)
 
     set(WHOLE_LIBRARY_FLAG "-Wl,--whole-archive" CACHE INTERNAL "")
     set(NO_WHOLE_LIBRARY_FLAG "-Wl,--no-whole-archive" CACHE INTERNAL "")
+    
+    if(NOT -Wno-unknown-pragmas IN_LIST LITECORESTATIC_FLAGS)
+	message(WARNING "Disabling -Wunknown-pragma and -Wsign-compare")
+	list(
+	    APPEND LINUX_FLAGS
+	    ${LITECORESTATIC_FLAGS}
+	    -Wno-unknown-pragmas
+	    -Wno-sign-compare
+	)
+
+	set(LITECORESTATIC_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+    	set(BLIPSTATIC_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+    	set(FLEECESTATIC_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+    	set(SUPPORT_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+    	set(FLEECEBASE_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+    	set(LITECOREWEBSOCKET_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+    endif()
 endfunction()
 
 function(set_litecore_source_linux)
