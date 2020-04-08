@@ -102,6 +102,19 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
         return false;
     str.moveStart(3);
 
+    if (str.size > 0 && str[0] == '[') {
+        // IPv6 address in URL is bracketed (RFC 2732):
+        auto endBr = str.findByte(']');
+        if (!endBr)
+            return false;
+        address->hostname = slice(&str[1], endBr);
+        if (address->hostname.size == 0)
+            return false;
+        str.setStart(endBr + 1);
+    } else {
+        address->hostname = nullslice;
+    }
+
     colon = str.findByteOrEnd(':');
     auto pathStart = str.findByteOrEnd('/');
     if (str.findByteOrEnd('@') < pathStart)
@@ -119,14 +132,16 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
     } else {
         colon = pathStart;
     }
-    address->hostname = slice(str.buf, colon);
-    if (address->hostname.size == 0)
-        address->port = 0;
+    if (!address->hostname.buf) {
+        address->hostname = slice(str.buf, colon);
+        if (address->hostname.size == 0)
+            address->port = 0;
+    }
 
     if (dbName) {
         if (pathStart >= str.end())
             return false;
-        
+
         str.setStart(pathStart + 1);
 
         if (str.hasSuffix("/"_sl))
@@ -147,9 +162,15 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
 
 C4StringResult c4address_toURL(C4Address address) C4API {
     stringstream s;
-    s << address.scheme << "://" << address.hostname;
+    s << address.scheme << "://";
+    if (slice(address.hostname).findByte(':'))
+        s << '[' << address.hostname << ']';
+    else
+        s << address.hostname;
     if (address.port)
         s << ':' << address.port;
+    if (address.path.size == 0 || slice(address.path)[0] != '/')
+        s << '/';
     s << address.path;
     auto str = s.str();
     return c4slice_createResult({str.data(), str.size()});
