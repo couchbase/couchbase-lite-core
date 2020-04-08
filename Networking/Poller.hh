@@ -15,7 +15,6 @@
 #include "sockpp/socket.h"
 
 namespace litecore { namespace net {
-    using namespace sockpp;
 
     /** Enables async I/O by running `poll` on a background thread. */
     class Poller {
@@ -53,12 +52,12 @@ namespace litecore { namespace net {
         void callAndRemoveListener(int fd, Event);
         
         std::mutex _mutex;
-        std::unordered_map<socket_t, std::array<Listener,2>> _listeners;
+        std::unordered_map<sockpp::socket_t, std::array<Listener,2>> _listeners;
         std::thread _thread;
         std::atomic_bool _waiting {false};
 
-        socket_t _interruptReadFD {INVALID_SOCKET};          // File descriptor of pipe used to interrupt poll()
-        socket_t _interruptWriteFD {INVALID_SOCKET};         // Other end of the pipe used to interrupt poll()
+        sockpp::socket_t _interruptReadFD  {sockpp::INVALID_SOCKET}; // Pipe used to interrupt poll()
+        sockpp::socket_t _interruptWriteFD {sockpp::INVALID_SOCKET}; // Other end of the pipe
     };
 
 } }
