@@ -183,7 +183,7 @@ namespace litecore { namespace net {
 
         // Wait in poll():
 #ifdef WIN32
-        while (WSAPoll(pollfds.data(), pollfds.size(), -1) == SOCKET_ERROR) {
+        while (WSAPoll(pollfds.data(), ULONG(pollfds.size()), -1) == SOCKET_ERROR) {
 #else
         while (::poll(pollfds.data(), nfds_t(pollfds.size()), -1) < 0) {
             if (errno != EINTR)
