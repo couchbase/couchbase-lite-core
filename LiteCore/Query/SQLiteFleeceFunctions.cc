@@ -91,11 +91,11 @@ namespace litecore {
             alloc_slice data;
             try {
                 data = delegate->blobAccessor(blobDict);
-            } catch (const std::exception &x) {
+            } catch (const std::exception &) {
                 // ignore exception; just return 'missing'
             }
             setResultBlobFromData(ctx, data);
-        } catch (const std::exception &x) {
+        } catch (const std::exception &) {
             sqlite3_result_error(ctx, "unexpected error reading blob", -1);
         }
     }

@@ -224,7 +224,7 @@ bool c4cert_subjectNameAtIndex(C4Cert* cert,
         }
         return true;
     } else {
-        index -= dn.size();
+        index -= unsigned(dn.size());
     }
 
     // Then look in SubjectAlternativeName:

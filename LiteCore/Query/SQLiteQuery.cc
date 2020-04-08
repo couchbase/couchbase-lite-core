@@ -479,7 +479,7 @@ namespace litecore {
                     enc.beginArray(nCols);
                     for (int i = 0; i < nCols; ++i) {
                         if (!encodeColumn(enc, i) && i < 64)
-                            missingCols |= (1 << i);
+                            missingCols |= (1llu << i);
                     }
                     enc.endArray();
                     // Add an integer containing a bit-map of which columns are missing/undefined:

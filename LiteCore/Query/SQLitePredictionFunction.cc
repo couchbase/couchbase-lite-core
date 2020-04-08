@@ -87,7 +87,7 @@ namespace litecore {
                 val = evaluatePathFromArg(ctx, argv, 2, val);
                 setResultFromValue(ctx, val);
             }
-        } catch (const std::exception &x) {
+        } catch (const std::exception &) {
             sqlite3_result_error(ctx, "predictionFunc: exception!", -1);
         }
     }

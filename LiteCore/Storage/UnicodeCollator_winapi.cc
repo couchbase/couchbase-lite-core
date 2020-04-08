@@ -61,7 +61,7 @@ namespace litecore {
             else {
                 string tmp((const char*)localeSlice.buf, localeSlice.size);
                 replace(tmp, '_', '-');
-                MultiByteToWideChar(CP_UTF8, 0, tmp.c_str(), tmp.size(), localeName, LOCALE_NAME_MAX_LENGTH);
+                MultiByteToWideChar(CP_UTF8, 0, tmp.c_str(), int(tmp.size()), localeName, LOCALE_NAME_MAX_LENGTH);
                 if (LocaleNameToLCID(localeName, 0) == 0) {
                     Warn("Unknown locale name '%.*s', using default", SPLAT(coll.localeName));
                     LCID lcid = MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT);

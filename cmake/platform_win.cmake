@@ -48,6 +48,19 @@ function(setup_globals)
     set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
     set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
     set(CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL "/LTCG:incremental" CACHE INTERNAL "")
+
+    list(
+        APPEND BASE_FLAGS
+        /WX
+        /W3
+    )
+
+    set(LITECORESTATIC_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
+    set(BLIPSTATIC_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
+    set(FLEECESTATIC_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
+    set(SUPPORT_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
+    set(FLEECEBASE_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
+    set(LITECOREWEBSOCKET_FLAGS ${BASE_FLAGS} CACHE INTERNAL "")
     
     # Compile string literals as UTF-8,
     # Enable exception handling for C++ but disable for extern C

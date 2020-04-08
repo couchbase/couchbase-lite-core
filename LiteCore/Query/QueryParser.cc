@@ -300,7 +300,7 @@ namespace litecore {
             str.insert((string::size_type)startPosOfWhat, extra.str());
             _sql.str(str);
             _sql.seekp(0, stringstream::end);
-            _1stCustomResultCol += 1 + _ftsTables.size();
+            _1stCustomResultCol += 1 + unsigned(_ftsTables.size());
         }
 
         // ORDER_BY clause:
