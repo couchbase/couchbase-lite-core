@@ -24,18 +24,18 @@
 #include <array>
 #include <vector>
 
-#include "sockpp/platform.h"
+#include "sockpp/platform.h"        // Includes the system headers for sockaddr, etc.
 
 #ifdef _WIN32
-    #error Windows includes go here
+    //TODO: Windows includes go here
 #else
     #include <ifaddrs.h>
     #include <net/if.h>
 #endif
 
 #ifdef __APPLE__
-#include <CoreFoundation/CFString.h>
-#include <SystemConfiguration/SystemConfiguration.h>
+    #include <CoreFoundation/CFString.h>
+    #include <SystemConfiguration/SystemConfiguration.h>
 #endif
 
 namespace litecore::net {
@@ -87,6 +87,11 @@ namespace litecore::net {
 #pragma mark - INTERFACE:
 
 
+    // Platform-specific code to read the enabled network interfaces.
+    // Results are unsorted/unfiltered.
+    static void _getInterfaces(vector<Interface> &interfaces);
+
+
     bool Interface::isLoopback() const     {return (flags & IFF_LOOPBACK) != 0;}
     bool Interface::isRoutable() const     {return primaryAddress().isRoutable();}
 
@@ -103,44 +108,6 @@ namespace litecore::net {
         fprintf(stderr, "\n");
     }
 
-
-    // Platform-specific code to read the enabled network interfaces.
-    // Results are unsorted/unfiltered.
-    static void _getInterfaces(vector<Interface> &interfaces) {
-#ifdef _WIN32
-        #error Windows implementation goes here
-#else
-        struct ifaddrs *addrs;
-        if (getifaddrs(&addrs) < 0)
-            error::_throwErrno();
-        const char *lastName = nullptr;
-        Interface *intf = nullptr;
-        for (auto a = addrs; a; a = a->ifa_next) {
-            if (a->ifa_flags & IFF_UP) {
-                if (!lastName || strcmp(lastName, a->ifa_name) != 0) {
-                    lastName = a->ifa_name;
-                    intf = &interfaces.emplace_back();
-                    intf->name = a->ifa_name;
-                    intf->flags = a->ifa_flags;
-                }
-                switch (a->ifa_addr->sa_family) {
-                    case AF_LINK:
-                        intf->type = ((const if_data *)a->ifa_data)->ifi_type;
-                        break;
-                    case AF_INET:
-                    case AF_INET6:
-                        intf->addresses.push_back(*a->ifa_addr);
-                        break;
-                }
-            }
-        }
-        freeifaddrs(addrs);
-#endif
-    }
-
-
-    // Platform-independent code to read the network interfaces.
-    // Interfaces are sorted by (descending) priority, and their addresses are sorted by priority.
     vector<Interface> Interface::all() {
         vector<Interface> interfaces;
         _getInterfaces(interfaces);
@@ -165,7 +132,6 @@ namespace litecore::net {
         return interfaces;
     }
 
-
     std::vector<IPAddress> Interface::allAddresses() {
         vector<IPAddress> addresses;
         for (auto &intf : Interface::all())
@@ -174,7 +140,7 @@ namespace litecore::net {
     }
 
 
-#pragma mark - HOSTNAME:
+#pragma mark - PLATFORM SPECIFIC CODE:
 
 
     string GetMyHostName() {
@@ -205,6 +171,42 @@ namespace litecore::net {
         // Fallback: just return the (numeric) primary IP address.
         auto addresses = Interface::allAddresses();
         return addresses.empty() ? "" : string(addresses[0]);
+    }
+
+
+    // Platform-specific code to read the enabled network interfaces.
+    // Results are unsorted/unfiltered.
+    static void _getInterfaces(vector<Interface> &interfaces) {
+#ifdef _WIN32
+        //TODO: Implement _getInterfaces on Windows
+        error::_throw(error::Unimplemented, "net::Interface not implemented yet on Windows");
+#else
+        struct ifaddrs *addrs;
+        if (getifaddrs(&addrs) < 0)
+            error::_throwErrno();
+        const char *lastName = nullptr;
+        Interface *intf = nullptr;
+        for (auto a = addrs; a; a = a->ifa_next) {
+            if (a->ifa_flags & IFF_UP) {
+                if (!lastName || strcmp(lastName, a->ifa_name) != 0) {
+                    lastName = a->ifa_name;
+                    intf = &interfaces.emplace_back();
+                    intf->name = a->ifa_name;
+                    intf->flags = a->ifa_flags;
+                }
+                switch (a->ifa_addr->sa_family) {
+                    case AF_LINK:
+                        intf->type = ((const if_data *)a->ifa_data)->ifi_type;
+                        break;
+                    case AF_INET:
+                    case AF_INET6:
+                        intf->addresses.push_back(*a->ifa_addr);
+                        break;
+                }
+            }
+        }
+        freeifaddrs(addrs);
+#endif
     }
 
 }
