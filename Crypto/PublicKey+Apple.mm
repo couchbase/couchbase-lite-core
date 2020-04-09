@@ -99,6 +99,25 @@ namespace litecore { namespace crypto {
         return result;
     }
 
+    static SecKeyRef getPublicKey(SecCertificateRef certRef) {
+        SecKeyRef publicKeyRef;
+        if (__builtin_available(iOS 12.0, macOS 10.14, tvos 12.0, watchos 5.0, *)) {
+            publicKeyRef = SecCertificateCopyKey(certRef);
+            if(!publicKeyRef) {
+                WarnError("get public key from keychain (SecCertificateCopyKey returned null)");
+                error::_throw(error::CryptoError, "get public key from keychain (SecCertificateCopyKey returned null)");
+            }
+        } else {
+            #pragma clang diagnostic push
+            #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+            checkOSStatus(SecCertificateCopyPublicKey(certRef, &publicKeyRef),
+                          "SecCertificateCopyPublicKey", "get public key from keychain");
+            #pragma clang diagnostic pop
+        }
+        
+        return publicKeyRef;
+    }
+
 
 #pragma mark - KEYPAIR:
 
@@ -267,10 +286,8 @@ namespace litecore { namespace crypto {
         if (!certRef)
             throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // impossible?
         CFAutorelease(certRef);
-        SecKeyRef publicKeyRef;
-        checkOSStatus(SecCertificateCopyPublicKey(certRef, &publicKeyRef),
-                      "SecCertificateCopyPublicKey", "get private key from keychain");
-
+        SecKeyRef publicKeyRef = getPublicKey(certRef);
+ 
         SecIdentityRef identityRef;
         checkOSStatus(SecIdentityCreateWithCertificate(nullptr, certRef, &identityRef),
                       "SecIdentityCreateWithCertificate", "get private key from keychain");
@@ -311,9 +328,7 @@ namespace litecore { namespace crypto {
             // SecKeyCopyPublicKey results in a key ref that doesn't allow its data to be read,
             // for some reason (bug?)
 
-            SecKeyRef publicKeyRef;
-            checkOSStatus(SecCertificateCopyPublicKey(certRef, &publicKeyRef),
-                          "SecCertificateCopyPublicKey", "get private key from keychain");
+            SecKeyRef publicKeyRef = getPublicKey(certRef);
             auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
             return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
         }

@@ -7,12 +7,13 @@ function(setup_globals_linux)
     set(NO_WHOLE_LIBRARY_FLAG "-Wl,--no-whole-archive" CACHE INTERNAL "")
     
     if(NOT -Wno-unknown-pragmas IN_LIST LITECORESTATIC_FLAGS)
-        message(WARNING "Disabling -Wunknown-pragma and -Wsign-compare")
+        message(WARNING "Disabling -Wunknown-pragma, -Wsign-compare, and -Wstrict-aliasing")
         list(
             APPEND LINUX_FLAGS
             ${LITECORESTATIC_FLAGS}
             -Wno-unknown-pragmas
             -Wno-sign-compare
+            -Wno-strict-aliasing
         )
 
         set(LITECORESTATIC_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")

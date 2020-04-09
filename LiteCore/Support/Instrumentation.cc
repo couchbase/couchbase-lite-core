@@ -25,6 +25,9 @@
 namespace litecore {
 
 #if defined(__APPLE__) && LITECORE_SIGNPOSTS
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
     enum Color {
         blue, green, purple, orange, red    // used for last argument
     };
@@ -43,6 +46,8 @@ namespace litecore {
         if (__builtin_available(macOS 10.12, iOS 10, tvOS 10, *))
             kdebug_signpost_end(t, param, param2, 0, (t % 5));
     }
+
+#pragma clang diagnostic pop
 #endif
 
 }
