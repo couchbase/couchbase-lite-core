@@ -30,6 +30,7 @@
 
 namespace sockpp {
     class acceptor;
+    class inet_address;
     class stream_socket;
 }
 namespace litecore { namespace crypto {
@@ -47,12 +48,13 @@ namespace litecore { namespace REST {
         Server();
         
         void start(uint16_t port,
-                   const char *hostname =nullptr,
+                   slice networkInterface =nullslice,
                    net::TLSContext* =nullptr);
 
         virtual void stop();
 
-        C4Address address() const;
+        /** Returns the IP address and port the Server is listening on, e.g. {"10.0.0.1",80}. */
+        std::pair<std::string,uint16_t> addressAndPort() const;
 
         /** Extra HTTP headers to add to every response. */
         void setExtraHeaders(const std::map<std::string, std::string> &headers);
@@ -90,7 +92,6 @@ namespace litecore { namespace REST {
         std::mutex _mutex;
         std::vector<URIRule> _rules;
         std::map<std::string, std::string> _extraHeaders;
-        uint16_t _port;
     };
 
 } }

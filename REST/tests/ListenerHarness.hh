@@ -110,9 +110,9 @@ public:
     Identity serverIdentity, clientIdentity;
 #endif
 
-private:
     c4::ref<C4Listener> listener;
 
+private:
     C4TLSConfig tlsConfig = { };
     alloc_slice configCertData, configKeyData, configClientRootCertData;
 };

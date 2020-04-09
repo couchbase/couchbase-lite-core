@@ -134,7 +134,7 @@ namespace litecore { namespace REST {
             return rq.respondWithStatus(HTTPStatus::NotFound);
         C4Error err;
         if (!c4db_delete(db, &err)) {
-            registerDatabase(name, db);
+            registerDatabase(db, name);
             return rq.respondWithError(err);
         }
     }

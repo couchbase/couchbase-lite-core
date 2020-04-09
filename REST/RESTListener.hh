@@ -44,6 +44,9 @@ namespace litecore { namespace REST {
         explicit RESTListener(const Config&);
         ~RESTListener();
 
+        /** My root URL, or the URL of a database. */
+        net::Address address(C4Database *dbOrNull =nullptr) const;
+
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string &name, FilePath &outPath);
 

@@ -21,6 +21,7 @@
 #include "TCPSocket.hh"
 #include "TLSContext.hh"
 #include "Poller.hh"
+#include "NetworkInterfaces.hh"
 #include "Certificate.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -52,23 +53,59 @@ namespace litecore { namespace REST {
     }
 
 
+    pair<string,uint16_t> Server::addressAndPort() const {
+        Assert(_acceptor);
+        inet_address ifAddr = _acceptor->address();
+        if (ifAddr.address() != 0) {
+            char buf[INET_ADDRSTRLEN];
+            auto str = inet_ntop(AF_INET, &ifAddr.sockaddr_in_ptr()->sin_addr, buf, INET_ADDRSTRLEN);
+            return {str, ifAddr.port()};
+        } else {
+            // Not bound to any address, so it's listening on all interfaces.
+            return {GetMyHostName(), ifAddr.port()};
+        }
+    }
+
+
+    static inet_address interfaceToAddress(slice networkInterface, uint16_t port) {
+        if (!networkInterface)
+            return inet_address(port);
+        // Is it a numeric IPv4 address?
+        string addrStr(networkInterface);
+        in_addr ia = {};
+        if (::inet_pton(AF_INET, addrStr.c_str(), &ia) != 1) {
+            // Or is it an interface name?
+            for (auto &intf : Interface::all()) {
+                if (slice(intf.name) == networkInterface) {
+                    ia = intf.primaryAddress().addr4();
+                    break;
+                }
+            }
+            if (ia.s_addr == 0)
+                throw error(error::Network, kC4NetErrUnknownHost,
+                            "Unknown network interface name or address");
+        }
+        return inet_address(ntohl(ia.s_addr), port);
+    }
+
+
     void Server::start(uint16_t port,
-                       const char *hostname,
+                       slice networkInterface,
                        TLSContext *tlsContext)
     {
-        TCPSocket::initialize();
+        TCPSocket::initialize(); // make sure sockpp lib is initialized
 
-        _port = port;
+        inet_address ifAddr = interfaceToAddress(networkInterface, port);
         _tlsContext = tlsContext;
-        _acceptor.reset(new tcp_acceptor (port));
+        _acceptor.reset(new tcp_acceptor(ifAddr));
         if (!*_acceptor)
             error::_throw(error::POSIX, _acceptor->last_error());
         _acceptor->set_non_blocking();
-        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", _port);
+        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", ifAddr.port());
         awaitConnection();
     }
 
-    
+
     void Server::stop() {
         lock_guard<mutex> lock(_mutex);
         if (!_acceptor)

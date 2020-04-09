@@ -66,9 +66,7 @@ C4StringResult c4db_URINameFromPath(C4String pathSlice) noexcept {
         string name = Listener::databaseNameFromPath(FilePath(pathStr, ""));
         if (name.empty())
             return {};
-        alloc_slice result(name);
-        result.retain();
-        return {(char*)result.buf, result.size};
+        return FLSliceResult(alloc_slice(name));
     } catchExceptions()
     return {};
 }
@@ -76,15 +74,26 @@ C4StringResult c4db_URINameFromPath(C4String pathSlice) noexcept {
 
 bool c4listener_shareDB(C4Listener *listener, C4String name, C4Database *db) noexcept {
     try {
-        return internal(listener)->registerDatabase(slice(name).asString(), db);
+        optional<string> nameStr;
+        if (name.buf)
+            nameStr = slice(name);
+        return internal(listener)->registerDatabase(db, nameStr);
     } catchExceptions()
     return false;
 }
 
 
-bool c4listener_unshareDB(C4Listener *listener, C4String name) noexcept {
+bool c4listener_unshareDB(C4Listener *listener, C4Database *db) noexcept {
     try {
-        return internal(listener)->unregisterDatabase(slice(name).asString());
+        return internal(listener)->unregisterDatabase(db);
     } catchExceptions()
     return false;
+}
+
+
+C4StringResult c4listener_getURL(C4Listener *listener, C4Database *db) C4API {
+    try {
+        return C4StringResult( ((RESTListener*)internal(listener))->address(db).url() );
+    } catchExceptions()
+    return {};
 }

@@ -90,10 +90,8 @@ namespace litecore { namespace REST {
             addDBHandler(Method::UPGRADE, "/[^_][^/]*/_blipsync", &RESTListener::handleSync);
         }
 
-        const char *hostname = nullptr;
-
         _server->start(config.port ? config.port : kDefaultPort,
-                       hostname,
+                       config.networkInterface,
                        createTLSContext(config.tlsConfig));
     }
 
@@ -101,6 +99,22 @@ namespace litecore { namespace REST {
     RESTListener::~RESTListener() {
         if (_server)
             _server->stop();
+    }
+
+
+    Address RESTListener::address(C4Database *dbOrNull) const {
+        optional<string> dbNameStr;
+        slice dbName;
+        if (dbOrNull) {
+            dbNameStr = nameOfDatabase(dbOrNull);
+            if (dbNameStr)
+                dbName = *dbNameStr;
+        }
+
+        auto [addr, port] = _server->addressAndPort();
+        if (addr.empty())
+            error::_throw(error::Network, kC4NetErrUnknown);
+        return Address((_identity ? "https" : "http"), addr, port, dbName);
     }
 
 
@@ -179,9 +193,9 @@ namespace litecore { namespace REST {
 
 
     bool RESTListener::openDatabase(std::string name,
-                                const FilePath &path,
-                                const C4DatabaseConfig *config,
-                                C4Error *outError)
+                                    const FilePath &path,
+                                    const C4DatabaseConfig *config,
+                                    C4Error *outError)
     {
         if (name.empty()) {
             name = databaseNameFromPath(path);
@@ -194,7 +208,7 @@ namespace litecore { namespace REST {
         c4::ref<C4Database> db = c4db_open(slice(path.path()), config, outError);
         if (!db)
             return false;
-        if (!registerDatabase(name, db)) {
+        if (!registerDatabase(db, name)) {
             //FIX: If db didn't exist before the c4db_open call, should delete it
             return returnError(outError, LiteCoreDomain, kC4ErrorConflict, "Database exists");
         }
