@@ -2,6 +2,22 @@ include("${CMAKE_CURRENT_LIST_DIR}/platform_unix.cmake")
 
 function(setup_globals)
     setup_globals_unix()
+
+    if(NOT -Wno-unknown-pragmas IN_LIST LITECORESTATIC_FLAGS)
+        message(WARNING "Disabling -Wunknown-pragma and -Wsign-compare")
+        list(
+            APPEND LINUX_FLAGS
+            ${LITECORESTATIC_FLAGS}
+            -Wnewline-eof
+        )
+
+        set(LITECORESTATIC_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+        set(BLIPSTATIC_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+        set(FLEECESTATIC_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+        set(SUPPORT_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+        set(FLEECEBASE_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+        set(LITECOREWEBSOCKET_FLAGS ${LINUX_FLAGS} CACHE INTERNAL "")
+    endif()
 endfunction()
 
 function(set_litecore_source)
