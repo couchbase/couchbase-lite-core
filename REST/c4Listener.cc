@@ -108,16 +108,12 @@ uint16_t c4listener_getPort(C4Listener *listener) C4API {
 }
 
 
-C4StringResult c4listener_getURLs(C4Listener *listener, C4Database *db) C4API {
+FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db) C4API {
     try {
-        stringstream out;
-        int n = 0;
-        for (net::Address &address : internal(listener)->addresses(db)) {
-            if (n++ > 0) out << "\n";
-            out << address.url();
-        }
-        alloc_slice result(out.str());
-        return C4StringResult(result);
+        FLMutableArray urls = FLMutableArray_New();
+        for (net::Address &address : internal(listener)->addresses(db))
+            FLSlot_SetString(FLMutableArray_Append(urls), address.url());
+        return urls;
     } catchExceptions()
-    return {};
+    return nullptr;
 }

@@ -18,6 +18,7 @@
 
 #pragma once
 #include "c4Base.h"
+#include "fleece/Fleece.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -101,9 +102,9 @@ extern "C" {
         hostname of the computer, or of the network interface.
         @param listener  The active listener.
         @param db  A database being shared, or NULL to get the listener's root URL(s).
-        @return  One or more URLs separated by "\n", or a null slice on error (unlikely).
+        @return  Fleece array of or more URL strings.
                 Caller is responsible for releasing the result. */
-    C4StringResult c4listener_getURLs(C4Listener *listener C4NONNULL,
+    FLMutableArray c4listener_getURLs(C4Listener *listener C4NONNULL,
                                       C4Database *db) C4API;
 
     /** Returns the port number the listener is accepting connections on.

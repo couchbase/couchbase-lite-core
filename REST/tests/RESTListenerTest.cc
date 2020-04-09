@@ -23,6 +23,7 @@
 #include "Response.hh"
 #include "NetworkInterfaces.hh"
 #include "c4Internal.hh"
+#include "fleece/Mutable.hh"
 
 using namespace litecore::net;
 using namespace litecore::REST;
@@ -62,9 +63,11 @@ public:
 
 
     void forEachURL(C4Database *db, function_ref<void(string_view)> callback) {
-        alloc_slice urls(c4listener_getURLs(listener, db));
+        MutableArray urls(c4listener_getURLs(listener, db));
+        FLMutableArray_Release(urls);
         REQUIRE(urls);
-        split(string(urls), "\n", callback);
+        for (Array::iterator i(urls); i; ++i)
+            callback(i->asString());
     }
 
 
