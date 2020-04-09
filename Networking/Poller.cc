@@ -204,7 +204,7 @@ namespace litecore { namespace net {
 #ifdef WIN32
                     ::recv(_interruptReadFD, (char *)&message, sizeof(message), 0);
 #else
-                    ::read(_interruptReadFD, &message, sizeof(message));
+                    LITECORE_UNUSED ssize_t numRead = ::read(_interruptReadFD, &message, sizeof(message));
 #endif
                     LOG(Debug, "Poller: interruption %d", message);
                     if (message < 0) {

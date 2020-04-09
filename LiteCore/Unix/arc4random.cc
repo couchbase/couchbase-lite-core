@@ -44,6 +44,10 @@
 static pthread_mutex_t  _arc4_lock = PTHREAD_MUTEX_INITIALIZER;
 #define  _ARC4_LOCK()      pthread_mutex_lock(&_arc4_lock)
 #define  _ARC4_UNLOCK()    pthread_mutex_unlock(&_arc4_lock)
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+
 /* BIONIC-END */
 #ifdef __GNUC__
 #define inline __inline
@@ -268,3 +272,5 @@ main(int argc, char **argv)
         printf("%qd cycles\n", v);
 }
 #endif
+#pragma GCC diagnostic pop
+
