@@ -25,6 +25,8 @@
 #include <vector>
 
 #include "sockpp/platform.h"        // Includes the system headers for sockaddr, etc.
+#include "sockpp/inet_address.h"
+#include "sockpp/inet6_address.h"
 
 #ifdef _WIN32
     //TODO: Windows includes go here
@@ -46,13 +48,49 @@ namespace litecore::net {
 #pragma mark - IPADDRESS:
 
 
-    IPAddress::IPAddress(const sockaddr &data) noexcept   {memcpy(&_data, &data, data.sa_len);}
+    IPAddress::IPAddress(const sockaddr &addr) noexcept
+    :_family(addr.sa_family)
+    {
+        static_assert(sizeof(_data) >= sizeof(in_addr));
+        static_assert(sizeof(_data) >= sizeof(in6_addr));
+        Assert(_family == AF_INET || _family == AF_INET6);
+        if (_family == AF_INET)
+            _addr4() = ((const sockaddr_in&)addr).sin_addr;
+        else
+            _addr6() = ((const sockaddr_in6&)addr).sin6_addr;
+            
+    }
 
-    int IPAddress::family() const               {return ((const sockaddr*)&_data)->sa_family;}
-    bool IPAddress::isIPv4() const              {return family() == AF_INET;}
-    bool IPAddress::isIPv6() const              {return family() == AF_INET6;}
-    const in_addr& IPAddress::addr4() const     {return ((const sockaddr_in*)&_data)->sin_addr;};
-    const in6_addr& IPAddress::addr6() const    {return ((const sockaddr_in6*)&_data)->sin6_addr;};
+    IPAddress::IPAddress(const in_addr &addr) noexcept
+    :_family(AF_INET)
+    {
+        _addr4() = addr;
+    }
+
+    IPAddress::IPAddress(const in6_addr &addr) noexcept
+    :_family(AF_INET6)
+    {
+        _addr6() = addr;
+    }
+
+    optional<IPAddress> IPAddress::parse(const string &str) {
+        IPAddress addr;
+        if (::inet_pton(AF_INET, str.c_str(), &addr._data) == 1) {
+            addr._family = AF_INET;
+        } else if (::inet_pton(AF_INET6, str.c_str(), &addr._data) == 1) {
+            addr._family = AF_INET6;
+        } else {
+            return nullopt;
+        }
+        return addr;
+    }
+
+    bool IPAddress::isIPv4() const              {return _family == AF_INET;}
+    bool IPAddress::isIPv6() const              {return _family == AF_INET6;}
+    in_addr& IPAddress::_addr4()                {return *(in_addr*)&_data;}
+    in6_addr& IPAddress::_addr6()               {return *(in6_addr*)&_data;};
+    const in_addr& IPAddress::addr4() const     {return *(const in_addr*)&_data;}
+    const in6_addr& IPAddress::addr6() const    {return *(const in6_addr*)&_data;};
 
     bool IPAddress::isLoopback() const {
         if (isIPv4())
@@ -75,7 +113,26 @@ namespace litecore::net {
     IPAddress::operator string() const {
         char buf[INET6_ADDRSTRLEN];
         const void *addr = (isIPv4()) ? (void*)&addr4() : (void*)&addr6();
-        return inet_ntop(family(), addr, buf, sizeof(buf));
+        return inet_ntop(_family, addr, buf, sizeof(buf));
+    }
+
+    unique_ptr<sockpp::sock_address> IPAddress::sockppAddress(uint16_t port) const {
+        if (isIPv4()) {
+            return make_unique<sockpp::inet_address>(ntohl(addr4().s_addr), port);
+        } else {
+            auto addr = make_unique<sockpp::inet6_address>();
+            addr->create(addr6(), port);
+            return addr;
+        }
+    }
+
+    bool IPAddress::operator== (const IPAddress &b) const {
+        if (_family != b._family)
+            return false;
+        else if (isIPv4())
+            return addr4().s_addr == b.addr4().s_addr;
+        else
+            return memcmp(&addr6(), &b.addr6(), sizeof(in6_addr)) == 0;
     }
 
     static bool operator< (const IPAddress &a, const IPAddress &b) {
@@ -132,7 +189,28 @@ namespace litecore::net {
         return interfaces;
     }
 
-    std::vector<IPAddress> Interface::allAddresses() {
+    optional<Interface> Interface::withAddress(const IPAddress &addr) {
+        for (auto &intf : Interface::all()) {
+            for (auto &ifAddr : intf.addresses) {
+                if (ifAddr == addr)
+                    return intf;
+            }
+        }
+        return nullopt;
+    }
+
+    std::vector<IPAddress> Interface::allAddresses(IPAddress::Scope scope) {
+        vector<IPAddress> allAddrs;
+        for (auto &intf : Interface::all()) {
+            for (auto &addr : intf.addresses) {
+                if (addr.scope() >= scope)
+                    allAddrs.push_back(addr);
+            }
+        }
+        return allAddrs;
+    }
+
+    std::vector<IPAddress> Interface::primaryAddresses() {
         vector<IPAddress> addresses;
         for (auto &intf : Interface::all())
             addresses.push_back(intf.addresses[0]);
@@ -143,34 +221,33 @@ namespace litecore::net {
 #pragma mark - PLATFORM SPECIFIC CODE:
 
 
-    string GetMyHostName() {
+    optional<string> GetMyHostName() {
 #ifdef __APPLE__
+        // Apple platforms always have an mDNS/Bonjour hostname.
         string hostName;
     #if TARGET_OS_OSX
-        // Quinn says this is the correct call to use (on Mac; it's not available on iOS)
-        CFStringRef cfName = SCDynamicStoreCopyLocalHostName(NULL);
-        if (cfName) {
+        // On macOS, we can get it from SystemConfiguration (not available on iOS)
+        if (CFStringRef cfName = SCDynamicStoreCopyLocalHostName(NULL); cfName) {
             nsstring_slice strsl(cfName);
             hostName = string(strsl);
         }
     #else
-        // From <http://stackoverflow.com/a/16902907/98077>
+        // From <http://stackoverflow.com/a/16902907/98077>.
+        // On iOS, gethostname() returns the mDNS/Bonjour hostname (without the ".local")
         char baseHostName[256];
         if (gethostname(baseHostName, 255) == 0) {
             baseHostName[255] = '\0';
             hostName = baseHostName;
         }
     #endif
-        // On Apple platforms the hostname is the mDNS/Bonjour hostname:
         if (!hostName.empty()) {
             if (!hasSuffix(hostName, ".local"))
                 hostName += ".local";
             return hostName;
         }
 #endif
-        // Fallback: just return the (numeric) primary IP address.
-        auto addresses = Interface::allAddresses();
-        return addresses.empty() ? "" : string(addresses[0]);
+        //TODO: Android supports mDNS; is there an API to get the hostname?
+        return nullopt;
     }
 
 

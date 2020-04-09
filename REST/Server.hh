@@ -53,8 +53,13 @@ namespace litecore { namespace REST {
 
         virtual void stop();
 
-        /** Returns the IP address and port the Server is listening on, e.g. {"10.0.0.1",80}. */
-        std::pair<std::string,uint16_t> addressAndPort() const;
+        /** The port the Server is listening on. */
+        uint16_t port() const;
+
+        /** The IP address(es) of the Server. Generally these are numeric strings like "10.0.0.5",
+            but they may also be hostnames if known. A hostname may be an mDNS/Bonjour hostname like
+            "norbert.local". */
+        std::vector<std::string> addresses() const;
 
         /** Extra HTTP headers to add to every response. */
         void setExtraHeaders(const std::map<std::string, std::string> &headers);

@@ -35,6 +35,7 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
 #include "sockpp/tcp_acceptor.h"
+#include "sockpp/inet6_address.h"
 #pragma clang diagnostic pop
 
 
@@ -53,39 +54,52 @@ namespace litecore { namespace REST {
     }
 
 
-    pair<string,uint16_t> Server::addressAndPort() const {
+    uint16_t Server::port() const {
         Assert(_acceptor);
         inet_address ifAddr = _acceptor->address();
-        if (ifAddr.address() != 0) {
-            char buf[INET_ADDRSTRLEN];
-            auto str = inet_ntop(AF_INET, &ifAddr.sockaddr_in_ptr()->sin_addr, buf, INET_ADDRSTRLEN);
-            return {str, ifAddr.port()};
-        } else {
-            // Not bound to any address, so it's listening on all interfaces.
-            return {GetMyHostName(), ifAddr.port()};
-        }
+        return ifAddr.port();
     }
 
 
-    static inet_address interfaceToAddress(slice networkInterface, uint16_t port) {
+    vector<string> Server::addresses() const {
+        vector<string> addresses;
+        Assert(_acceptor);
+        inet_address ifAddr = _acceptor->address();
+        if (ifAddr.address() != 0) {
+            // Listening on a single address:
+            IPAddress listeningAddr(*ifAddr.sockaddr_ptr());
+            addresses.push_back(string(listeningAddr));
+        } else {
+            // Not bound to any address, so it's listening on all interfaces.
+            // Add the hostname if known:
+            if (auto hostname = GetMyHostName(); hostname)
+                addresses.push_back(*hostname);
+            for (auto &addr : Interface::allAddresses()) {
+                addresses.push_back(string(addr));
+            }
+        }
+        return addresses;
+    }
+
+
+    static unique_ptr<sock_address> interfaceToAddress(slice networkInterface, uint16_t port) {
         if (!networkInterface)
-            return inet_address(port);
-        // Is it a numeric IPv4 address?
-        string addrStr(networkInterface);
-        in_addr ia = {};
-        if (::inet_pton(AF_INET, addrStr.c_str(), &ia) != 1) {
+            return make_unique<inet_address>(port);
+        // Is it an IP address?
+        optional<IPAddress> addr = IPAddress::parse(string(networkInterface));
+        if (!addr) {
             // Or is it an interface name?
             for (auto &intf : Interface::all()) {
                 if (slice(intf.name) == networkInterface) {
-                    ia = intf.primaryAddress().addr4();
+                    addr = intf.primaryAddress();
                     break;
                 }
             }
-            if (ia.s_addr == 0)
+            if (!addr)
                 throw error(error::Network, kC4NetErrUnknownHost,
                             "Unknown network interface name or address");
         }
-        return inet_address(ntohl(ia.s_addr), port);
+        return addr->sockppAddress(port);
     }
 
 
@@ -95,13 +109,13 @@ namespace litecore { namespace REST {
     {
         TCPSocket::initialize(); // make sure sockpp lib is initialized
 
-        inet_address ifAddr = interfaceToAddress(networkInterface, port);
+        auto ifAddr = interfaceToAddress(networkInterface, port);
         _tlsContext = tlsContext;
-        _acceptor.reset(new tcp_acceptor(ifAddr));
+        _acceptor.reset(new acceptor(*ifAddr));
         if (!*_acceptor)
             error::_throw(error::POSIX, _acceptor->last_error());
         _acceptor->set_non_blocking();
-        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", ifAddr.port());
+        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", this->port());
         awaitConnection();
     }
 
@@ -189,8 +203,11 @@ namespace litecore { namespace REST {
 
     void Server::addHandler(Methods methods, const string &patterns, const Handler &handler) {
         lock_guard<mutex> lock(_mutex);
-        split(patterns, "|", [&](const string &pattern) {
-            _rules.push_back({methods, pattern, regex(pattern.c_str()), handler});
+        split(patterns, "|", [&](string_view pattern) {
+            _rules.push_back({methods,
+                              string(pattern),
+                              regex(pattern.data(), pattern.size()),
+                              handler});
         });
     }
 

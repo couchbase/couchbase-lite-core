@@ -19,6 +19,7 @@
 #include "Listener.hh"
 #include "c4Database.h"
 #include "c4ListenerInternal.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include <vector>
 
@@ -38,7 +39,7 @@ namespace litecore { namespace REST {
         string name = path.fileOrDirName();
         auto split = FilePath::splitExtension(name);
         if (split.second != kC4DatabaseFilenameExtension)
-            return string();
+            error::_throw(error::InvalidParameter, "Not a database path");
         name = split.first;
 
         // Make the name legal as a URI component in the REST API.
@@ -70,7 +71,7 @@ namespace litecore { namespace REST {
             alloc_slice path(c4db_getPath(db));
             name = databaseNameFromPath(FilePath(string(path)));
         } else if (!isValidDatabaseName(*name)) {
-            return false;
+            error::_throw(error::InvalidParameter, "Invalid name for sharing a database");
         }
         lock_guard<mutex> lock(_mutex);
         if (_databases.find(*name) != _databases.end())

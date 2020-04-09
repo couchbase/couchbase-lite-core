@@ -102,7 +102,7 @@ namespace litecore { namespace REST {
     }
 
 
-    Address RESTListener::address(C4Database *dbOrNull) const {
+    vector<Address> RESTListener::addresses(C4Database *dbOrNull) const {
         optional<string> dbNameStr;
         slice dbName;
         if (dbOrNull) {
@@ -111,10 +111,11 @@ namespace litecore { namespace REST {
                 dbName = *dbNameStr;
         }
 
-        auto [addr, port] = _server->addressAndPort();
-        if (addr.empty())
-            error::_throw(error::Network, kC4NetErrUnknown);
-        return Address((_identity ? "https" : "http"), addr, port, dbName);
+        uint16_t port = _server->port();
+        vector<Address> addresses;
+        for (auto &host : _server->addresses())
+            addresses.emplace_back((_identity ? "https" : "http"), host, port, dbName);
+        return addresses;
     }
 
 

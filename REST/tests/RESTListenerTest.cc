@@ -39,13 +39,15 @@ static string to_str(Value v) {
     return to_str(v.asString());
 }
 
+#define TEST_PORT      59849
+#define TEST_PORT_STR "59849"
 
 class C4RESTTest : public C4Test, public ListenerHarness {
 public:
 
     C4RESTTest()
     :C4Test(0)
-    ,ListenerHarness({59849, nullslice, kC4RESTAPI})
+    ,ListenerHarness({TEST_PORT, nullslice, kC4RESTAPI})
     { }
 
 
@@ -56,6 +58,13 @@ public:
         directory = alloc_slice(tempDir.path().c_str());
         config.directory = directory;
         config.allowCreateDBs = true;
+    }
+
+
+    void forEachURL(C4Database *db, function_ref<void(string_view)> callback) {
+        alloc_slice urls(c4listener_getURLs(listener, db));
+        REQUIRE(urls);
+        split(string(urls), "\n", callback);
     }
 
 
@@ -123,49 +132,80 @@ TEST_CASE_METHOD(C4RESTTest, "Network interfaces", "[Listener][C]") {
     vector<string> addresses;
     for (auto &addr : Interface::allAddresses())
         addresses.push_back(string(addr));
+    vector<string> primaryAddresses;
+    for (auto &addr : Interface::primaryAddresses())
+        primaryAddresses.push_back(string(addr));
+    auto hostname = GetMyHostName();
     C4Log("Interface names = {%s}", join(interfaces, ", ").c_str());
     C4Log("IP addresses =    {%s}", join(addresses, ", ").c_str());
-    C4Log("Hostname =        %s", GetMyHostName().c_str());
+    C4Log("Primary addrs =   {%s}", join(primaryAddresses, ", ").c_str());
+    C4Log("Hostname =        %s", (hostname ? hostname->c_str() : "(unknown)"));
     CHECK(!interfaces.empty());
+    CHECK(!primaryAddresses.empty());
     CHECK(!addresses.empty());
 }
 
 TEST_CASE_METHOD(C4RESTTest, "Listener URLs", "[Listener][C]") {
     share(db, "db"_sl);
-    string url( alloc_slice(c4listener_getURL(listener, nullptr)) );
-    C4Log("Listener URL = <%s>", url.c_str());
-    CHECK(hasPrefix(url, "http://"));
-    CHECK(hasSuffix(url, ":59849/"));
-    url = string( alloc_slice(c4listener_getURL(listener, db)) );
-    C4Log("Database URL = <%s>", url.c_str());
-    CHECK(hasPrefix(url, "http://"));
-    CHECK(hasSuffix(url, ":59849/db"));
+    forEachURL(nullptr, [](string_view url) {
+        C4Log("Listener URL = <%.*s>", SPLAT(slice(url)));
+        CHECK(hasPrefix(url, "http://"));
+        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/"));
+    });
+    forEachURL(db, [](string_view url) {
+        C4Log("Database URL = <%.*s>", SPLAT(slice(url)));
+        CHECK(hasPrefix(url, "http://"));
+        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/db"));
+    });
 }
 
 
 TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
-    auto intf = Interface::all()[0];
-    string intfAddress = string(intf.addresses[0]);
-    C4Log("Will listen on interface %s with address %s", intf.name.c_str(), intfAddress.c_str());
-    SECTION("Use interface name") {
-        config.networkInterface = slice(intf.name);
+    optional<Interface> intf;
+    string intfAddress;
+    SECTION("All interfaces") {
     }
-    SECTION("Use interface address") {
-        config.networkInterface = slice(intfAddress);
+    SECTION("Specific interface") {
+        intf = Interface::all()[0];
+        intfAddress = string(intf->addresses[0]);
+        SECTION("Use interface name") {
+            C4Log("Will listen on interface %s", intf->name.c_str());
+            config.networkInterface = slice(intf->name);
+        }
+        SECTION("Use interface address") {
+            C4Log("Will listen on address %s", intfAddress.c_str());
+            config.networkInterface = slice(intfAddress);
+        }
     }
 
     share(db, "db"_sl);
-    
-    alloc_slice url(c4listener_getURL(listener, db));
-    C4Log("URL is <%.*s>", SPLAT(url));
-    C4Address address;
-    C4String dbName;
-    CHECK(c4address_fromURL(url, &address, &dbName));
-    CHECK(address.port == 59849);
-    CHECK(slice(address.hostname) == intfAddress);
 
-    requestHostname = string(slice(address.hostname));
-    testRootLevel();
+    // Check that the listener's reported URLs contain the interface address:
+    forEachURL(db, [&](string_view url) {
+        C4Log("Checking URL <%.*s>", SPLAT(slice(url)));
+        C4Address address;
+        C4String dbName;
+        INFO("URL is <" << url << ">");
+        CHECK(c4address_fromURL(slice(url), &address, &dbName));
+        CHECK(address.port == TEST_PORT);
+        CHECK(dbName == "db"_sl);
+
+        if (intf) {
+            requestHostname = string(slice(address.hostname));
+            bool foundAddrInInterface = false;
+            bool addrIsIPv6 = false;
+            for (auto &addr : intf->addresses) {
+                if (string(addr) == requestHostname) {
+                    foundAddrInInterface = true;
+                    addrIsIPv6 = addr.isIPv6();
+                    break;
+                }
+            }
+            CHECK(foundAddrInInterface);
+        }
+
+        testRootLevel();
+    });
 }
 
 
@@ -397,14 +437,16 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][Listener][C]") {
 TEST_CASE_METHOD(C4RESTTest, "TLS REST URLs", "[REST][Listener][C]") {
     useServerTLSWithTemporaryKey();
     share(db, "db"_sl);
-    string url( alloc_slice(c4listener_getURL(listener, nullptr)) );
-    C4Log("Listener URL = <%s>", url.c_str());
-    CHECK(hasPrefix(url, "https://"));
-    CHECK(hasSuffix(url, ":59849/"));
-    url = string( alloc_slice(c4listener_getURL(listener, db)) );
-    C4Log("Database URL = <%s>", url.c_str());
-    CHECK(hasPrefix(url, "https://"));
-    CHECK(hasSuffix(url, ":59849/db"));
+    forEachURL(nullptr, [](string_view url) {
+        C4Log("Listener URL = <%.*s>", SPLAT(slice(url)));
+        CHECK(hasPrefix(url, "https://"));
+        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/"));
+    });
+    forEachURL(db, [](string_view url) {
+        C4Log("Database URL = <%.*s>", SPLAT(slice(url)));
+        CHECK(hasPrefix(url, "https://"));
+        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/db"));
+    });
 }
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C]") {

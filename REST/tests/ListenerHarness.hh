@@ -102,7 +102,7 @@ public:
         listener = c4listener_start(&config, &err);
         REQUIRE(listener);
 
-        REQUIRE(c4listener_shareDB(listener, name, dbToShare));
+        REQUIRE(c4listener_shareDB(listener, name, dbToShare, &err));
     }
 
     C4ListenerConfig config;

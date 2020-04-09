@@ -82,23 +82,34 @@ extern "C" {
     /** Makes a database available from the network.
         @param listener  The listener that should share the database.
         @param name  The URI name to share it under, i.e. the path component in the URL.
-                    If this is left null, a name will be chosen based on the database's filename.
+                      If this is left null, a name will be chosen based as though you had called
+                      \ref c4db_URINameFromPath.
         @param db  The database to share.
         @return  True on success, false if the name is invalid as a URI component. */
     bool c4listener_shareDB(C4Listener *listener C4NONNULL,
                             C4String name,
-                            C4Database *db C4NONNULL) C4API;
+                            C4Database *db C4NONNULL,
+                            C4Error *outError) C4API;
 
     /** Makes a previously-shared database unavailable. */
     bool c4listener_unshareDB(C4Listener *listener C4NONNULL,
-                              C4Database *db C4NONNULL) C4API;
+                              C4Database *db C4NONNULL,
+                              C4Error *outError) C4API;
 
-    /** Returns the URL of a database being shared, or of the root.
-        @param listener  The listener that should share the database.
-        @param db  A database being shared, or NULL to get the listener's root URL.
-        @return  A URL string. Caller is responsible for releasing it. */
-    C4StringResult c4listener_getURL(C4Listener *listener C4NONNULL,
-                                     C4Database *db) C4API;
+    /** Returns the URL(s) of a database being shared, or of the root, separated by "\n" bytes.
+        The URLs will differ only in their hostname -- there will be one for each IP address or known
+        hostname of the computer, or of the network interface.
+        @param listener  The active listener.
+        @param db  A database being shared, or NULL to get the listener's root URL(s).
+        @return  One or more URLs separated by "\n", or a null slice on error (unlikely).
+                Caller is responsible for releasing the result. */
+    C4StringResult c4listener_getURLs(C4Listener *listener C4NONNULL,
+                                      C4Database *db) C4API;
+
+    /** Returns the port number the listener is accepting connections on.
+        This is useful if you didn't specify a port in the config (`port`=0), so you can find out which
+        port the kernel picked. */
+    uint16_t c4listener_getPort(C4Listener *listener C4NONNULL) C4API;
 
     /** A convenience that, given a filesystem path to a database, returns the database name
         for use in an HTTP URI path.

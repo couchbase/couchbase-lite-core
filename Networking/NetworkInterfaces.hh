@@ -7,6 +7,7 @@
 #pragma once
 #include "fleece/slice.hh"
 #include <array>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -14,14 +15,22 @@ struct sockaddr;
 struct in_addr;
 struct in6_addr;
 
+namespace sockpp {
+    class sock_address;
+}
+
 namespace litecore::net {
 
     /// Represents an IP address of a network interface.
     class IPAddress {
     public:
-        IPAddress(const sockaddr &data) noexcept;
+        IPAddress(const sockaddr&) noexcept;
+        IPAddress(const in_addr&) noexcept;
+        IPAddress(const in6_addr&) noexcept;
 
-        int family() const;                 ///< AF_INET or AF_INET6
+        static std::optional<IPAddress> parse(const std::string&);
+
+        int family() const                  {return _family;}  ///< AF_INET or AF_INET6
         bool isIPv4() const;
         bool isIPv6() const;
         bool isLoopback() const;
@@ -40,11 +49,16 @@ namespace litecore::net {
 
         operator std::string() const;
 
+        std::unique_ptr<sockpp::sock_address> sockppAddress(uint16_t port) const;
+        bool operator== (const IPAddress&) const;
+
     private:
-        union {
-            std::array<uint8_t,256> _data;
-            int x; //HACK: forces proper alignment
-        };
+        IPAddress() { }
+        in_addr&  _addr4();
+        in6_addr& _addr6();
+
+        std::array<int64_t,2> _data;
+        uint8_t               _family;
     };
 
 
@@ -53,8 +67,15 @@ namespace litecore::net {
     public:
         /// Returns all active network interfaces, in descending order of priority.
         static std::vector<Interface> all();
+
+        /// Returns the Interface with the given address, if any.
+        static std::optional<Interface> withAddress(const IPAddress&);
+
+        /// Returns each address of each active network interface.
+        static std::vector<IPAddress> allAddresses(IPAddress::Scope scope =IPAddress::kLinkLocal);
+
         /// Returns the primary IP address of each active network interface.
-        static std::vector<IPAddress> allAddresses();
+        static std::vector<IPAddress> primaryAddresses();
 
         std::string             name;
         int                     flags = 0;  ///< IFF_UP, etc; see <net/if.h>
@@ -71,6 +92,6 @@ namespace litecore::net {
 
 
     /// Returns the computer's DNS or mDNS hostname if known, otherwise its primary IP address.
-    std::string GetMyHostName();
+    std::optional<std::string> GetMyHostName();
 
 }
