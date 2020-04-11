@@ -72,13 +72,10 @@ namespace litecore {
             return strerror(err);
         }
 
-        if(err >= 10000 && err < 12000) {
-            return win32_message(err);
-        }
-
         // Hope the POSIX definitions don't change...
         if(err < 100 || err > 140) {
-            return "Unknown Error";
+        	// Save 100-140 for the below logic
+            return win32_message(err);
         }
 
         static long wsaEquivalent[] = {

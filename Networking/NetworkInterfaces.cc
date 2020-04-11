@@ -29,7 +29,10 @@
 #include "sockpp/inet6_address.h"
 
 #ifdef _WIN32
-    //TODO: Windows includes go here
+	#include <IPHlpApi.h>
+	#include <atlconv.h>
+
+	#pragma comment(lib, "iphlpapi")
 #else
     #include <ifaddrs.h>
     #include <net/if.h>
@@ -102,8 +105,14 @@ namespace litecore::net {
     bool IPAddress::isLinkLocal() const {
         if (isIPv4())
             return (ntohl(addr4().s_addr) >> 16) == 0xA9FE;  // 169.254.*.*
-        else
-            return (ntohs(addr6().__u6_addr.__u6_addr16[0]) & 0xFFC0) == 0xFE80; // fe80::
+        else {
+#ifdef WIN32
+	        const auto firstBytePair = addr6().u.Word[0];
+#else
+        	const auto firstBytePair = addr6().__u6_addr.__u6_addr16[0];
+#endif
+            return (ntohs(firstBytePair) & 0xFFC0) == 0xFE80; // fe80::
+		}
     }
 
     IPAddress::Scope IPAddress::scope() const {
@@ -255,8 +264,49 @@ namespace litecore::net {
     // Results are unsorted/unfiltered.
     static void _getInterfaces(vector<Interface> &interfaces) {
 #ifdef _WIN32
-        //TODO: Implement _getInterfaces on Windows
-        error::_throw(error::Unimplemented, "net::Interface not implemented yet on Windows");
+	    auto info = static_cast<IP_ADAPTER_ADDRESSES*>(HeapAlloc(GetProcessHeap(), 0, sizeof(IP_ADAPTER_ADDRESSES)));
+	    ULONG bufferSize = sizeof(IP_ADAPTER_ADDRESSES);
+    	const DWORD flags = GAA_FLAG_SKIP_ANYCAST|GAA_FLAG_SKIP_MULTICAST|GAA_FLAG_SKIP_DNS_SERVER;
+	    auto result = GetAdaptersAddresses(AF_UNSPEC, flags, nullptr, info, &bufferSize);
+		if(result == ERROR_BUFFER_OVERFLOW) {
+			HeapFree(GetProcessHeap(), 0, info);
+			info = static_cast<IP_ADAPTER_ADDRESSES*>(HeapAlloc(GetProcessHeap(), 0, bufferSize));
+			result = GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, info, &bufferSize);
+		} 
+
+    	if(result == ERROR_NO_DATA) {
+			return;
+		}
+
+    	if(result == ERROR_OUTOFMEMORY) {
+    		throw std::bad_alloc();
+    	}
+
+		if(result != ERROR_SUCCESS) {
+			// If any of these are between 100 and 140 they will be reported
+			// incorrectly
+			error(error::Domain::POSIX, result)._throw();
+		}
+    	
+		PIP_ADAPTER_ADDRESSES current = info;
+	    while(current) {		
+			if(current->OperStatus == IfOperStatusUp && current->IfType == IF_TYPE_ETHERNET_CSMACD || current->IfType == IF_TYPE_IEEE80211) {
+				auto intf = &interfaces.emplace_back();
+				const ATL::CW2AEX<256> convertedPath(current->FriendlyName, CP_UTF8);
+				intf->name = convertedPath.m_psz;
+				intf->type = current->IfType;
+				intf->flags = 0;
+				auto address = current->FirstUnicastAddress;
+				while(address) {
+					intf->addresses.emplace_back(*address->Address.lpSockaddr);
+					address = address->Next;
+				}
+			}
+
+			current = current->Next;
+		}
+
+		HeapFree(GetProcessHeap(), 0, info);
 #else
         struct ifaddrs *addrs;
         if (getifaddrs(&addrs) < 0)
