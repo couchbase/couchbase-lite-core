@@ -108,8 +108,10 @@ namespace litecore::net {
         else {
 #ifdef WIN32
 	        const auto firstBytePair = addr6().u.Word[0];
-#else
+#elif defined(__APPLE__)
         	const auto firstBytePair = addr6().__u6_addr.__u6_addr16[0];
+#else
+		const auto firstBytePair = addr6().__in6_u.__u6_addr16[0];
 #endif
             return (ntohs(firstBytePair) & 0xFFC0) == 0xFE80; // fe80::
 		}
@@ -322,9 +324,11 @@ namespace litecore::net {
                     intf->flags = a->ifa_flags;
                 }
                 switch (a->ifa_addr->sa_family) {
+#ifdef __APPLE__
                     case AF_LINK:
                         intf->type = ((const if_data *)a->ifa_data)->ifi_type;
                         break;
+#endif
                     case AF_INET:
                     case AF_INET6:
                         intf->addresses.push_back(*a->ifa_addr);
