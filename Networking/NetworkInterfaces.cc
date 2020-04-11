@@ -29,10 +29,10 @@
 #include "sockpp/inet6_address.h"
 
 #ifdef _WIN32
-	#include <IPHlpApi.h>
-	#include <atlconv.h>
+    #include <IPHlpApi.h>
+    #include <atlconv.h>
 
-	#pragma comment(lib, "iphlpapi")
+    #pragma comment(lib, "iphlpapi")
 #else
     #include <ifaddrs.h>
     #include <net/if.h>
@@ -107,14 +107,16 @@ namespace litecore::net {
             return (ntohl(addr4().s_addr) >> 16) == 0xA9FE;  // 169.254.*.*
         else {
 #ifdef WIN32
-	        const auto firstBytePair = addr6().u.Word[0];
+            const auto firstBytePair = addr6().u.Word[0];
 #elif defined(__APPLE__)
-        	const auto firstBytePair = addr6().__u6_addr.__u6_addr16[0];
+            const auto firstBytePair = addr6().__u6_addr.__u6_addr16[0];
+#elif defined(__ANDROID__)
+            const auto firstBytePair = addr6().in6_u.u6_addr16[0];
 #else
-		const auto firstBytePair = addr6().__in6_u.__u6_addr16[0];
+            const auto firstBytePair = addr6().__in6_u.__u6_addr16[0];
 #endif
             return (ntohs(firstBytePair) & 0xFFC0) == 0xFE80; // fe80::
-		}
+        }
     }
 
     IPAddress::Scope IPAddress::scope() const {
@@ -266,49 +268,51 @@ namespace litecore::net {
     // Results are unsorted/unfiltered.
     static void _getInterfaces(vector<Interface> &interfaces) {
 #ifdef _WIN32
-	    auto info = static_cast<IP_ADAPTER_ADDRESSES*>(HeapAlloc(GetProcessHeap(), 0, sizeof(IP_ADAPTER_ADDRESSES)));
-	    ULONG bufferSize = sizeof(IP_ADAPTER_ADDRESSES);
-    	const DWORD flags = GAA_FLAG_SKIP_ANYCAST|GAA_FLAG_SKIP_MULTICAST|GAA_FLAG_SKIP_DNS_SERVER;
-	    auto result = GetAdaptersAddresses(AF_UNSPEC, flags, nullptr, info, &bufferSize);
-		if(result == ERROR_BUFFER_OVERFLOW) {
-			HeapFree(GetProcessHeap(), 0, info);
-			info = static_cast<IP_ADAPTER_ADDRESSES*>(HeapAlloc(GetProcessHeap(), 0, bufferSize));
-			result = GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, info, &bufferSize);
-		} 
+        auto info = static_cast<IP_ADAPTER_ADDRESSES*>(HeapAlloc(GetProcessHeap(), 0, sizeof(IP_ADAPTER_ADDRESSES)));
+        ULONG bufferSize = sizeof(IP_ADAPTER_ADDRESSES);
+        const DWORD flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
+        auto result = GetAdaptersAddresses(AF_UNSPEC, flags, nullptr, info, &bufferSize);
+        if (result == ERROR_BUFFER_OVERFLOW) {
+            HeapFree(GetProcessHeap(), 0, info);
+            info = static_cast<IP_ADAPTER_ADDRESSES*>(HeapAlloc(GetProcessHeap(), 0, bufferSize));
+            result = GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, info, &bufferSize);
+        }
 
-    	if(result == ERROR_NO_DATA) {
-			return;
-		}
+        if (result == ERROR_NO_DATA) {
+            return;
+        }
 
-    	if(result == ERROR_OUTOFMEMORY) {
-    		throw std::bad_alloc();
-    	}
+        if (result == ERROR_OUTOFMEMORY) {
+            throw std::bad_alloc();
+        }
 
-		if(result != ERROR_SUCCESS) {
-			// If any of these are between 100 and 140 they will be reported
-			// incorrectly
-			error(error::Domain::POSIX, result)._throw();
-		}
-    	
-		PIP_ADAPTER_ADDRESSES current = info;
-	    while(current) {		
-			if(current->OperStatus == IfOperStatusUp && current->IfType == IF_TYPE_ETHERNET_CSMACD || current->IfType == IF_TYPE_IEEE80211) {
-				auto intf = &interfaces.emplace_back();
-				const ATL::CW2AEX<256> convertedPath(current->FriendlyName, CP_UTF8);
-				intf->name = convertedPath.m_psz;
-				intf->type = current->IfType;
-				intf->flags = 0;
-				auto address = current->FirstUnicastAddress;
-				while(address) {
-					intf->addresses.emplace_back(*address->Address.lpSockaddr);
-					address = address->Next;
-				}
-			}
+        if (result != ERROR_SUCCESS) {
+            // If any of these are between 100 and 140 they will be reported
+            // incorrectly
+            error(error::Domain::POSIX, result)._throw();
+        }
 
-			current = current->Next;
-		}
+        PIP_ADAPTER_ADDRESSES current = info;
+        while (current) {
+            if (current->OperStatus == IfOperStatusUp && current->IfType == IF_TYPE_ETHERNET_CSMACD || current->IfType == IF_TYPE_IEEE80211) {
+                auto intf = &interfaces.emplace_back();
+                const ATL::CW2AEX<256> convertedPath(current->FriendlyName, CP_UTF8);
+                intf->name = convertedPath.m_psz;
+                intf->type = current->IfType;
+                intf->flags = 0;
+                auto address = current->FirstUnicastAddress;
+                while (address) {
+                    intf->addresses.emplace_back(*address->Address.lpSockaddr);
+                    address = address->Next;
+                }
+            }
 
-		HeapFree(GetProcessHeap(), 0, info);
+            current = current->Next;
+        }
+
+        HeapFree(GetProcessHeap(), 0, info);
+#elif defined(__ANDROID__)
+    #warning Android implementation needs to be defined (getifaddrs not available until API 24)
 #else
         struct ifaddrs *addrs;
         if (getifaddrs(&addrs) < 0)
