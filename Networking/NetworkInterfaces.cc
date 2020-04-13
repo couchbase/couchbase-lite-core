@@ -275,7 +275,7 @@ namespace litecore::net {
         if (result == ERROR_BUFFER_OVERFLOW) {
             HeapFree(GetProcessHeap(), 0, info);
             info = static_cast<IP_ADAPTER_ADDRESSES*>(HeapAlloc(GetProcessHeap(), 0, bufferSize));
-            result = GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, info, &bufferSize);
+            result = GetAdaptersAddresses(AF_UNSPEC, flags, nullptr, info, &bufferSize);
         }
 
         if (result == ERROR_NO_DATA) {

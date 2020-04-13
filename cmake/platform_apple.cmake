@@ -46,6 +46,7 @@ function(setup_litecore_build)
         LiteCore PUBLIC
         "-framework CoreFoundation"
         "-framework Foundation"
+        "-framework SystemConfiguration"
         z
     )
 
