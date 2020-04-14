@@ -71,13 +71,6 @@ namespace litecore { namespace actor {
     }
 
 
-    // Waits for a Timer to exit the triggered state (i.e. waits for its callback to complete.)
-    void Timer::waitForFire() {
-        while (_triggered)
-            this_thread::sleep_for(chrono::microseconds(100));
-    }
-
-
     // Removes a Timer from _scheduled. Returns true if the next fire time is affected.
     // Precondition: _mutex must be locked.
     // Postconditions: timer is not in _scheduled. timer->_state != kScheduled.
@@ -97,10 +90,18 @@ namespace litecore { namespace actor {
     // (Called by Timer::stop())
     // Precondition: _mutex must NOT be locked.
     // Postcondition: timer is not in _scheduled. timer->_state != kScheduled.
-    void Timer::Manager::unschedule(Timer *timer) {
+    void Timer::Manager::unschedule(Timer *timer, bool deleting) {
         unique_lock<mutex> lock(_mutex);
         if (_unschedule(timer))
             _condition.notify_one();        // wakes up run() so it can recalculate its wait time
+
+        if (deleting) {
+            timer->_state = kDeleted;
+            lock.unlock();
+            // Wait for timer to exit the triggered state (i.e. wait for its callback to complete):
+            while (timer->_triggered)
+                this_thread::sleep_for(chrono::microseconds(100));
+        }
     }
 
 
@@ -110,6 +111,9 @@ namespace litecore { namespace actor {
     // Postcondition: timer is in _scheduled. timer->_state == kScheduled.
     bool Timer::Manager::setFireTime(Timer *timer, clock::time_point when, bool earlier) {
         unique_lock<mutex> lock(_mutex);
+        // Don't allow timer's callback to reschedule itself when deletion is pending:
+        if (timer->_state == kDeleted)
+            return false;
         if (earlier && timer->scheduled() && when >= timer->_fireTime)
             return false;
         bool notify = _unschedule(timer);

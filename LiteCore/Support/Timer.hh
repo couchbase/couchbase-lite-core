@@ -46,11 +46,9 @@ namespace litecore { namespace actor {
             it fires, it is possible for the callback to be running (on another thread) while this
             thread is in the destructor; but in that case the destructor will not return until 
             after the callback completes. */
-        ~Timer() {
-            stop();
-            waitForFire();
-        }
+        ~Timer()                        {manager().unschedule(this, true);}
 
+        /** Calling this causes the Timer to be deleted after it's fired. */
         void autoDelete()               {_autoDelete = true;}
 
         /** Schedules the timer to fire at the given time (or slightly later.)
@@ -83,13 +81,14 @@ namespace litecore { namespace actor {
         void stop()                     {if (scheduled()) manager().unschedule(this);}
 
         /** Is the timer active: waiting to fire or in the act of firing? */
-        bool scheduled() const          {return _state != kUnscheduled || _triggered;}
+        bool scheduled() const          {return _state == kScheduled || _triggered;}
 
     private:
 
         enum state : uint8_t {
             kUnscheduled,               // Idle
             kScheduled,                 // In _scheduled queue, waiting to fire
+            kDeleted,                   // Destructor called, waiting for fire to complete
         };
 
         /** Internal singleton that tracks all scheduled Timers and runs a background thread. */
@@ -99,7 +98,7 @@ namespace litecore { namespace actor {
             
             Manager();
             bool setFireTime(Timer*, time, bool ifEarlier =false);
-            void unschedule(Timer*);
+            void unschedule(Timer*, bool deleting =false);
             
         private:
             bool _unschedule(Timer*);
@@ -113,8 +112,6 @@ namespace litecore { namespace actor {
 
         friend class Manager;
         static Manager& manager();
-
-        void waitForFire();
 
         callback _callback;                     // The function to call when I fire
         time _fireTime;                         // Absolute time that I fire
