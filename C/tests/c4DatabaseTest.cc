@@ -24,16 +24,9 @@
 #include <cmath>
 #include <errno.h>
 #include <iostream>
+#include <thread>
 
 #include "sqlite3.h"
-
-#ifdef _MSC_VER
-#include <ctime>
-#include "Windows.h"
-#define sleep(sec) Sleep((sec)*1000)
-#else
-#include "unistd.h"
-#endif
 
 using namespace std;
 
@@ -394,7 +387,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
-    sleep(2u);
+    this_thread::sleep_for(2000ms);
     REQUIRE(c4_now() >= expire);
 
     C4Log("---- Purge expired docs");
@@ -421,7 +414,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
-    sleep(2u);
+    this_thread::sleep_for(2000ms);
     REQUIRE(c4_now() >= expire);
 
     CHECK(c4doc_get(db, "expire_me_first"_sl, true, &err) == nullptr);
@@ -443,7 +436,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration After Reopen", 
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
-    sleep(2u);
+    this_thread::sleep_for(2000ms);
     REQUIRE(c4_now() >= expire);
 
     CHECK(c4doc_get(db, "expire_me_first"_sl, true, &err) == nullptr);
