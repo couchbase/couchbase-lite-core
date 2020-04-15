@@ -10,21 +10,21 @@ core_count=`getconf _NPROCESSORS_ONLN`
 make -j `expr $core_count + 1`
 
 pushd LiteCore/tests
-./CppTests -r list
+LiteCoreTestsQuiet=1 ./CppTests -r list
 popd
 
-lcov -d CMakeFiles/LiteCoreStatic.dir/ -d vendor/fleece -d vendor/BLIP-Cpp -c -o CppTests.info
+lcov -d CMakeFiles/LiteCoreStatic.dir/ -d vendor/fleece -c -o CppTests.info
 find . -type f -name '*.gcda' -delete
 
 pushd C/tests
-./C4Tests -r list
+LiteCoreTestsQuiet=1 ./C4Tests -r list
 popd
 
-lcov -d CMakeFiles/LiteCoreStatic.dir/ -d vendor/fleece -d vendor/BLIP-Cpp -c -o C4Tests.info
+lcov -d CMakeFiles/LiteCoreStatic.dir/ -d vendor/fleece -c -o C4Tests.info
 find . -type f -name '*.gcda' -delete
 
 lcov -a CppTests.info -a C4Tests.info -o AllTests.info
-lcov --remove AllTests.info '/usr/include/*' '/System/*' '/Applications/*' '*/vendor/SQLiteCpp/*' '*/vendor/BLIP-Cpp/tests/*' '*/vendor/fleece/ObjC/*' '*/vendor/fleece/vendor/*' '*/vendor/BLIP-Cpp/vendor/*' '*/C/c4DocEnumerator.cc' -o AllTests_Filtered.info
+lcov --remove AllTests.info '/usr/include/*' '/System/*' '/Applications/*' '*/vendor/SQLiteCpp/*' '*/vendor/sockpp/*' '*/vendor/fleece/ObjC/*' '*/vendor/fleece/vendor/*' '*/Networking/WebSockets/*' '*/C/c4DocEnumerator.cc' '*/LiteCore/Query/N1QL_Parser/*' -o AllTests_Filtered.info
 
 mkdir -p coverage_reports
 genhtml AllTests_Filtered.info -o coverage_reports
