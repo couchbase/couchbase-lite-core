@@ -60,6 +60,11 @@ function(setup_litecore_build)
         LiteCore/Android
     )
 
+    target_include_directories(
+        LiteCoreWebSocket PRIVATE
+        LiteCore/Android
+    )
+
     target_link_libraries(
         LiteCore PRIVATE 
         zlibstatic

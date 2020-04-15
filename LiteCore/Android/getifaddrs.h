@@ -35,7 +35,7 @@
 
 __BEGIN_DECLS
 
-struct ifaddrs {
+/*struct ifaddrs {
   struct ifaddrs* ifa_next;
   char* ifa_name;
   unsigned int ifa_flags;
@@ -49,7 +49,7 @@ struct ifaddrs {
 };
 
 #define ifa_broadaddr ifa_ifu.ifu_broadaddr
-#define ifa_dstaddr ifa_ifu.ifu_dstaddr
+#define ifa_dstaddr ifa_ifu.ifu_dstaddr*/
 
 void freeifaddrs(struct ifaddrs* __ptr) __INTRODUCED_IN(24);
 int getifaddrs(struct ifaddrs** __list_ptr) __INTRODUCED_IN(24);

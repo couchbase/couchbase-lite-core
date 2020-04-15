@@ -28,6 +28,7 @@
 
 #include "getifaddrs.h"
 
+#include <ifaddrs.h>
 #include <errno.h>
 #include <linux/if_packet.h>
 #include <net/if.h>
