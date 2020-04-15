@@ -43,6 +43,10 @@
     #include <SystemConfiguration/SystemConfiguration.h>
 #endif
 
+#ifdef __ANDROID__
+    #include "getifaddrs.h"
+#endif
+
 namespace litecore::net {
     using namespace std;
     using namespace fleece;
@@ -311,8 +315,6 @@ namespace litecore::net {
         }
 
         HeapFree(GetProcessHeap(), 0, info);
-#elif defined(__ANDROID__)
-    #warning Android implementation needs to be defined (getifaddrs not available until API 24)
 #else
         struct ifaddrs *addrs;
         if (getifaddrs(&addrs) < 0)

@@ -24,6 +24,8 @@ function(set_litecore_source)
         ${ANDROID_SSS_RESULT}
         ${BASE_LITECORE_FILES}
         LiteCore/Android/unicode/ndk_icu.c
+        LiteCore/Android/getifaddrs.cc
+        LiteCore/Android/bionic_netlink.cc
         PARENT_SCOPE
     )
 endfunction()
