@@ -265,6 +265,13 @@ namespace litecore {
 
 
     void SQLiteDataFile::reopenSQLiteHandle() {
+        // We are about to replace the sqlite3 handle, so the compiled statements
+        // need to be cleared
+        _getLastSeqStmt.reset();
+        _setLastSeqStmt.reset();
+        _getPurgeCntStmt.reset();
+        _setPurgeCntStmt.reset();
+        
         int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
         if (options().create)
             sqlFlags |= SQLite::OPEN_CREATE;
@@ -433,12 +440,7 @@ namespace litecore {
         opts.encryptionKey = newKey;
         setOptions(opts);
 
-        // Finally reopen and reset previously compiled statements:
-        _getLastSeqStmt.reset();
-        _setLastSeqStmt.reset();
-        _getPurgeCntStmt.reset();
-        _setPurgeCntStmt.reset();
-        
+        // Finally reopen:
         reopen();
 #else
         error::_throw(litecore::error::UnsupportedEncryption);
