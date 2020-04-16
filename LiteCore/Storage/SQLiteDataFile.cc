@@ -433,7 +433,12 @@ namespace litecore {
         opts.encryptionKey = newKey;
         setOptions(opts);
 
-        // Finally reopen:
+        // Finally reopen and reset previously compiled statements:
+        _getLastSeqStmt.reset();
+        _setLastSeqStmt.reset();
+        _getPurgeCntStmt.reset();
+        _setPurgeCntStmt.reset();
+        
         reopen();
 #else
         error::_throw(litecore::error::UnsupportedEncryption);
