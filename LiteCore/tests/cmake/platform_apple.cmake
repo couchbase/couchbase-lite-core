@@ -22,6 +22,7 @@ function(setup_build)
         "-framework Foundation"
         "-framework CFNetwork"
         "-framework Security"
+        "-framework SystemConfiguration"
         z
     )
 endfunction()

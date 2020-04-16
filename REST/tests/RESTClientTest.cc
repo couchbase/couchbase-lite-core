@@ -63,47 +63,47 @@ public:
 };
 
 
-N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Request", "[.SyncServer][REST]") {
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Request", "[.SyncServer]") {
     alloc_slice result = sendRemoteRequest("GET", "");
     C4Log("Response: %.*s", SPLAT(result));
 }
 
 
-N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Redirect", "[.SyncServer][REST]") {
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Redirect", "[.SyncServer]") {
     // Lack of trailing "/" in path triggers a redirect from SG.
     alloc_slice result = sendRemoteRequest("GET", "/scratch");
     C4Log("Response: %.*s", SPLAT(result));
 }
 
 
-N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Unauthorized", "[.SyncServer][REST]") {
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Unauthorized", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
     alloc_slice result = sendRemoteRequest("GET", "", nullslice, false, HTTPStatus::Unauthorized);
 }
 
 
-N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Wrong Auth", "[.SyncServer][REST]") {
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Wrong Auth", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
     _authHeader = HTTPLogic::basicAuth("pupshaw"_sl, "123456"_sl);
     alloc_slice result = sendRemoteRequest("GET", "", nullslice, false, HTTPStatus::Unauthorized);
 }
 
 
-N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Authorized", "[.SyncServer][REST]") {
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Authorized", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
     _authHeader = HTTPLogic::basicAuth("pupshaw"_sl, "frank"_sl);
     alloc_slice result = sendRemoteRequest("GET", "", nullslice);
 }
 
 
-N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Redirect Authorized", "[.SyncServer][REST]") {
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Redirect Authorized", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
     _authHeader = HTTPLogic::basicAuth("pupshaw"_sl, "frank"_sl);
     alloc_slice result = sendRemoteRequest("GET", "/seekrit", nullslice);
 }
 
 
-N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Connection Refused", "[.SyncServer][REST]") {
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Connection Refused", "[.SyncServer]") {
     //ExpectingExceptions x;
     _address.hostname = C4STR("localhost");
     _address.port = 1;  // wrong port!
@@ -114,7 +114,7 @@ N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Connection Refused", "[.SyncServer]
 }
 
 
-N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Unknown Host", "[.SyncServer][REST]") {
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Unknown Host", "[.SyncServer]") {
     ExpectingExceptions x;
     _address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
     HTTPStatus status;
@@ -124,7 +124,7 @@ N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Unknown Host", "[.SyncServer][REST]
 }
 
 
-N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Timeout", "[.SyncServer][REST]") {
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Timeout", "[.SyncServer]") {
     ExpectingExceptions x;
     _address.hostname = C4STR("10.1.99.99");
     HTTPStatus status;

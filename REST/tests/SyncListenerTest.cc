@@ -29,7 +29,8 @@ public:
 
     C4SyncListenerTest()
     :ReplicatorAPITest()
-    ,ListenerHarness({49849, kC4SyncAPI,
+    ,ListenerHarness({49849, nullslice,
+                      kC4SyncAPI,
                        nullptr,
                        {}, false, false,    // REST-only stuff
                        true, true})

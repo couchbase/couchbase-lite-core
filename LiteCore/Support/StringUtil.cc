@@ -75,9 +75,7 @@ namespace litecore {
     }
 
 
-    void split(const std::string &str, const std::string &separator,
-               function_ref<void(const std::string&)> callback)
-    {
+    void split(string_view str, string_view separator, function_ref<void(string_view)> callback) {
         auto end = str.size();
         string::size_type pos, next;
         for (pos = 0; pos < end; pos = next + separator.size()) {

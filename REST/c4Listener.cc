@@ -18,6 +18,7 @@
 
 #include "c4.hh"
 #include "c4Listener.h"
+#include "c4Internal.hh"
 #include "c4ListenerInternal.hh"
 #include "c4ExceptionUtils.hh"
 #include "Listener.hh"
@@ -34,16 +35,16 @@ namespace litecore { namespace REST {
 } }
 
 
-static inline Listener* internal(C4Listener* r) {return (Listener*)r;}
+static inline RESTListener* internal(C4Listener* r) {return (RESTListener*)r;}
 static inline C4Listener* external(Listener* r) {return (C4Listener*)r;}
 
 
-C4ListenerAPIs c4listener_availableAPIs(void) noexcept {
+C4ListenerAPIs c4listener_availableAPIs(void) C4API {
     return kListenerAPIs;
 }
 
 
-C4Listener* c4listener_start(const C4ListenerConfig *config, C4Error *outError) noexcept {
+C4Listener* c4listener_start(const C4ListenerConfig *config, C4Error *outError) C4API {
     C4Listener* listener = nullptr;
     try {
         listener = external(NewListener(config));
@@ -55,36 +56,64 @@ C4Listener* c4listener_start(const C4ListenerConfig *config, C4Error *outError) 
 }
 
 
-void c4listener_free(C4Listener *listener) noexcept {
+void c4listener_free(C4Listener *listener) C4API {
     delete internal(listener);
 }
 
 
-C4StringResult c4db_URINameFromPath(C4String pathSlice) noexcept {
+C4StringResult c4db_URINameFromPath(C4String pathSlice) C4API {
     try {
         auto pathStr = slice(pathSlice).asString();
         string name = Listener::databaseNameFromPath(FilePath(pathStr, ""));
         if (name.empty())
             return {};
-        alloc_slice result(name);
-        result.retain();
-        return {(char*)result.buf, result.size};
+        return FLSliceResult(alloc_slice(name));
     } catchExceptions()
     return {};
 }
 
 
-bool c4listener_shareDB(C4Listener *listener, C4String name, C4Database *db) noexcept {
+bool c4listener_shareDB(C4Listener *listener, C4String name, C4Database *db,
+                        C4Error *outError) C4API
+{
     try {
-        return internal(listener)->registerDatabase(slice(name).asString(), db);
-    } catchExceptions()
+        optional<string> nameStr;
+        if (name.buf)
+            nameStr = slice(name);
+        if (internal(listener)->registerDatabase(db, nameStr))
+            return true;
+        recordError(LiteCoreDomain, kC4ErrorConflict, "Database already shared", outError);
+    } catchError(outError);
     return false;
 }
 
 
-bool c4listener_unshareDB(C4Listener *listener, C4String name) noexcept {
+bool c4listener_unshareDB(C4Listener *listener, C4Database *db,
+                          C4Error *outError) C4API
+{
     try {
-        return internal(listener)->unregisterDatabase(slice(name).asString());
-    } catchExceptions()
+        if (internal(listener)->unregisterDatabase(db))
+            return true;
+        recordError(LiteCoreDomain, kC4ErrorNotOpen, "Database not shared", outError);
+    } catchError(outError);
     return false;
+}
+
+
+uint16_t c4listener_getPort(C4Listener *listener) C4API {
+    try {
+        return internal(listener)->port();
+    } catchExceptions()
+    return 0;
+}
+
+
+FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db) C4API {
+    try {
+        FLMutableArray urls = FLMutableArray_New();
+        for (net::Address &address : internal(listener)->addresses(db))
+            FLSlot_SetString(FLMutableArray_Append(urls), address.url());
+        return urls;
+    } catchExceptions()
+    return nullptr;
 }

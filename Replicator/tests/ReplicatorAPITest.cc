@@ -46,6 +46,18 @@ TEST_CASE("URL Parsing") {
     CHECK(address.port == 80);
     CHECK(address.path == "/"_sl);
 
+    REQUIRE(c4address_fromURL("http://192.168.7.20:59849/"_sl, &address, NULL));
+    CHECK(address.scheme == "http"_sl);
+    CHECK(address.hostname == "192.168.7.20"_sl);
+    CHECK(address.port == 59849);
+    CHECK(address.path == "/"_sl);
+
+    REQUIRE(c4address_fromURL("http://[fe80:2f::3c]:59849/"_sl, &address, NULL));
+    CHECK(address.scheme == "http"_sl);
+    CHECK(address.hostname == "fe80:2f::3c"_sl);
+    CHECK(address.port == 59849);
+    CHECK(address.path == "/"_sl);
+
     REQUIRE(c4address_fromURL("wss://localhost/dbname"_sl, &address, &dbName));
     CHECK(address.scheme == "wss"_sl);
     CHECK(address.hostname == "localhost"_sl);

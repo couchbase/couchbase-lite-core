@@ -22,6 +22,7 @@
 #include "FilePath.hh"
 #include <map>
 #include <mutex>
+#include <optional>
 #include <vector>
 
 namespace litecore { namespace REST {
@@ -49,22 +50,27 @@ namespace litecore { namespace REST {
 
         /** Makes a database visible via the REST API.
             Retains the C4Database; the caller does not need to keep a reference to it. */
-        bool registerDatabase(std::string name, C4Database*);
+        bool registerDatabase(C4Database* NONNULL, std::optional<std::string> name =std::nullopt);
 
         /** Unregisters a database by name.
             The C4Database will be closed if there are no other references to it. */
         bool unregisterDatabase(std::string name);
 
+        bool unregisterDatabase(C4Database *db);
+
         /** Returns the database registered under the given name. */
-        c4::ref<C4Database> databaseNamed(const std::string &name);
+        c4::ref<C4Database> databaseNamed(const std::string &name) const;
+
+        /** Returns the name a database is registered under. */
+        std::optional<std::string> nameOfDatabase(C4Database* NONNULL) const;
 
         /** Returns all registered database names. */
-        std::vector<std::string> databaseNames();
+        std::vector<std::string> databaseNames() const;
 
     protected:
         Listener();
 
-        std::mutex _mutex;
+        mutable std::mutex _mutex;
         std::map<std::string, c4::ref<C4Database>> _databases;
     };
 

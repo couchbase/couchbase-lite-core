@@ -19,6 +19,7 @@
 #include "Listener.hh"
 #include "c4Database.h"
 #include "c4ListenerInternal.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include <vector>
 
@@ -38,17 +39,25 @@ namespace litecore { namespace REST {
         string name = path.fileOrDirName();
         auto split = FilePath::splitExtension(name);
         if (split.second != kC4DatabaseFilenameExtension)
-            return string();
+            error::_throw(error::InvalidParameter, "Not a database path");
         name = split.first;
-        replace(name, ':', '/');
-        if (!isValidDatabaseName(name))
-            return string();
+
+        // Make the name legal as a URI component in the REST API.
+        // It shouldn't be empty, nor start with an underscore, nor contain control characters.
+        if (name.size() == 0)
+            name = "db";
+        else if (name[0] == '_')
+            name[0] = '-';
+        for (char &c : name) {
+            if (iscntrl(c) || c == '/')
+                c = '-';
+        }
         return name;
     }
 
 
     bool Listener::isValidDatabaseName(const string &name) {
-        if (name.size() == 0 || name.size() > 240 || name[0] == '_')
+        if (name.empty() || name.size() > 240 || name[0] == '_')
             return false;
         for (uint8_t c : name)
             if (iscntrl(c))
@@ -57,13 +66,17 @@ namespace litecore { namespace REST {
     }
 
 
-    bool Listener::registerDatabase(string name, C4Database *db) {
-        if (!isValidDatabaseName(name))
-            return false;
+    bool Listener::registerDatabase(C4Database* db, optional<string> name) {
+        if (!name) {
+            alloc_slice path(c4db_getPath(db));
+            name = databaseNameFromPath(FilePath(string(path)));
+        } else if (!isValidDatabaseName(*name)) {
+            error::_throw(error::InvalidParameter, "Invalid name for sharing a database");
+        }
         lock_guard<mutex> lock(_mutex);
-        if (_databases.find(name) != _databases.end())
+        if (_databases.find(*name) != _databases.end())
             return false;
-        _databases.emplace(name, c4db_retain(db));
+        _databases.emplace(*name, c4db_retain(db));
         return true;
     }
 
@@ -78,7 +91,19 @@ namespace litecore { namespace REST {
     }
 
 
-    c4::ref<C4Database> Listener::databaseNamed(const string &name) {
+    bool Listener::unregisterDatabase(c4Database *db) {
+        lock_guard<mutex> lock(_mutex);
+        for (auto i = _databases.begin(); i != _databases.end(); ++i) {
+            if (i->second == db) {
+                _databases.erase(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    c4::ref<C4Database> Listener::databaseNamed(const string &name) const {
         lock_guard<mutex> lock(_mutex);
         auto i = _databases.find(name);
         if (i == _databases.end())
@@ -89,7 +114,16 @@ namespace litecore { namespace REST {
     }
 
 
-    vector<string> Listener::databaseNames() {
+    optional<string> Listener::nameOfDatabase(C4Database *db) const {
+        lock_guard<mutex> lock(_mutex);
+        for (auto &[aName, aDB] : _databases)
+            if (aDB == db)
+                return aName;
+        return nullopt;
+    }
+
+
+    vector<string> Listener::databaseNames() const {
         lock_guard<mutex> lock(_mutex);
         vector<string> names;
         for (auto &d : _databases)

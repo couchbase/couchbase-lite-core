@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <string.h>
+#include <string_view>
 #include <vector>
 #include <sstream>
 
@@ -72,9 +73,9 @@ namespace litecore {
     /** Like vsprintf(), but returns a std::string */
     std::string vformat(const char *fmt NONNULL, va_list);
 
-    void split(const std::string &str,
-               const std::string &separator,
-               fleece::function_ref<void(const std::string&)> callback);
+    void split(std::string_view str,
+               std::string_view separator,
+               fleece::function_ref<void(std::string_view)> callback);
 
     /** Returns the strings in the vector concatenated together,
         with the separator (if non-null) between them. */

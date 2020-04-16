@@ -15,8 +15,11 @@
 #include "sockpp/socket.h"
 
 namespace litecore { namespace net {
-    using namespace sockpp;
-
+	// This needs to stay here because of the platform variations of
+	// socket_t and INVALID_SOCKET (Windows has them globally and
+	// Unix has them in this namespace)
+	using namespace sockpp; 
+	
     /** Enables async I/O by running `poll` on a background thread. */
     class Poller {
     public:
@@ -57,8 +60,8 @@ namespace litecore { namespace net {
         std::thread _thread;
         std::atomic_bool _waiting {false};
 
-        socket_t _interruptReadFD {INVALID_SOCKET};          // File descriptor of pipe used to interrupt poll()
-        socket_t _interruptWriteFD {INVALID_SOCKET};         // Other end of the pipe used to interrupt poll()
+        socket_t _interruptReadFD  {INVALID_SOCKET}; // Pipe used to interrupt poll()
+        socket_t _interruptWriteFD {INVALID_SOCKET}; // Other end of the pipe
     };
 
 } }

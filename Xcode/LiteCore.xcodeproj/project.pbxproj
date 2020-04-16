@@ -85,6 +85,8 @@
 		2719253823970ECC0053DDA6 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		2719253923970EEA0053DDA6 /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
 		2719253A23970EEF0053DDA6 /* ReplicatorLoopbackTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */; };
+		271A98AA243D2204008C032D /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
+		271A98AE243D250A008C032D /* NetworkInterfaces.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271A98AC243D24FD008C032D /* NetworkInterfaces.cc */; };
 		271AB0162374AD09007B0319 /* IndexSpec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271AB0152374AD09007B0319 /* IndexSpec.cc */; };
 		271BA454227B691500D49D13 /* c4DatabaseEncryptionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */; };
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
@@ -779,6 +781,9 @@
 		271507F1212259DE005FE6E8 /* c4Compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Compat.h; sourceTree = "<group>"; };
 		2719253323970C7F0053DDA6 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = data; sourceTree = "<group>"; };
 		2719253B23970F4E0053DDA6 /* replacedb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = replacedb; path = data/replacedb; sourceTree = "<group>"; };
+		271A98A6243D2204008C032D /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		271A98AB243D24FD008C032D /* NetworkInterfaces.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = NetworkInterfaces.hh; sourceTree = "<group>"; };
+		271A98AC243D24FD008C032D /* NetworkInterfaces.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = NetworkInterfaces.cc; sourceTree = "<group>"; };
 		271AB00F2374A41E007B0319 /* c4Index.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Index.h; sourceTree = "<group>"; };
 		271AB0142374AD09007B0319 /* IndexSpec.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IndexSpec.hh; sourceTree = "<group>"; };
 		271AB0152374AD09007B0319 /* IndexSpec.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IndexSpec.cc; sourceTree = "<group>"; };
@@ -1488,6 +1493,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				275067E2230B6C5400FA23B2 /* libLiteCoreREST-static.a in Frameworks */,
+				271A98AA243D2204008C032D /* SystemConfiguration.framework in Frameworks */,
 				2708FE561CF4CD170022F721 /* libLiteCore-static.a in Frameworks */,
 				2762A01622EB826B00F9AB18 /* libLiteCoreWebSocket.a in Frameworks */,
 				27E3DD511DB7CCF600F2872D /* libc++.tbd in Frameworks */,
@@ -1690,6 +1696,8 @@
 				270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */,
 				27469CFC233C35EB00A1EE1A /* TLSContext.cc */,
 				27469CFB233C35EB00A1EE1A /* TLSContext.hh */,
+				271A98AB243D24FD008C032D /* NetworkInterfaces.hh */,
+				271A98AC243D24FD008C032D /* NetworkInterfaces.cc */,
 			);
 			name = Networking;
 			path = ../Networking;
@@ -1986,6 +1994,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				271A98A6243D2204008C032D /* SystemConfiguration.framework */,
 				27098AB721714AB0002751DA /* Vision.framework */,
 				2700BB4D216FF2DA00797537 /* CoreML.framework */,
 				277C1B231F58794100031200 /* libreadline.tbd */,
@@ -3693,6 +3702,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27AFF3AB23036B2500B4D6C4 /* acceptor.cpp in Sources */,
+				271A98AE243D250A008C032D /* NetworkInterfaces.cc in Sources */,
 				27AFF3AF23036B2500B4D6C4 /* datagram_socket.cpp in Sources */,
 				27AFF3AD23036B2500B4D6C4 /* connector.cpp in Sources */,
 				27D95BAA239F217A0090CE46 /* Poller.cc in Sources */,

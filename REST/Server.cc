@@ -21,6 +21,7 @@
 #include "TCPSocket.hh"
 #include "TLSContext.hh"
 #include "Poller.hh"
+#include "NetworkInterfaces.hh"
 #include "Certificate.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -34,6 +35,7 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
 #include "sockpp/tcp_acceptor.h"
+#include "sockpp/inet6_address.h"
 #pragma clang diagnostic pop
 
 
@@ -52,23 +54,72 @@ namespace litecore { namespace REST {
     }
 
 
+    uint16_t Server::port() const {
+        Assert(_acceptor);
+        inet_address ifAddr = _acceptor->address();
+        return ifAddr.port();
+    }
+
+
+    vector<string> Server::addresses() const {
+        vector<string> addresses;
+        Assert(_acceptor);
+        inet_address ifAddr = _acceptor->address();
+        if (ifAddr.address() != 0) {
+            // Listening on a single address:
+            IPAddress listeningAddr(*ifAddr.sockaddr_ptr());
+            addresses.push_back(string(listeningAddr));
+        } else {
+            // Not bound to any address, so it's listening on all interfaces.
+            // Add the hostname if known:
+            if (auto hostname = GetMyHostName(); hostname)
+                addresses.push_back(*hostname);
+            for (auto &addr : Interface::allAddresses()) {
+                addresses.push_back(string(addr));
+            }
+        }
+        return addresses;
+    }
+
+
+    static unique_ptr<sock_address> interfaceToAddress(slice networkInterface, uint16_t port) {
+        if (!networkInterface)
+            return make_unique<inet_address>(port);
+        // Is it an IP address?
+        optional<IPAddress> addr = IPAddress::parse(string(networkInterface));
+        if (!addr) {
+            // Or is it an interface name?
+            for (auto &intf : Interface::all()) {
+                if (slice(intf.name) == networkInterface) {
+                    addr = intf.primaryAddress();
+                    break;
+                }
+            }
+            if (!addr)
+                throw error(error::Network, kC4NetErrUnknownHost,
+                            "Unknown network interface name or address");
+        }
+        return addr->sockppAddress(port);
+    }
+
+
     void Server::start(uint16_t port,
-                       const char *hostname,
+                       slice networkInterface,
                        TLSContext *tlsContext)
     {
-        TCPSocket::initialize();
+        TCPSocket::initialize(); // make sure sockpp lib is initialized
 
-        _port = port;
+        auto ifAddr = interfaceToAddress(networkInterface, port);
         _tlsContext = tlsContext;
-        _acceptor.reset(new tcp_acceptor (port));
+        _acceptor.reset(new acceptor(*ifAddr));
         if (!*_acceptor)
             error::_throw(error::POSIX, _acceptor->last_error());
         _acceptor->set_non_blocking();
-        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", _port);
+        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", this->port());
         awaitConnection();
     }
 
-    
+
     void Server::stop() {
         lock_guard<mutex> lock(_mutex);
         if (!_acceptor)
@@ -152,8 +203,11 @@ namespace litecore { namespace REST {
 
     void Server::addHandler(Methods methods, const string &patterns, const Handler &handler) {
         lock_guard<mutex> lock(_mutex);
-        split(patterns, "|", [&](const string &pattern) {
-            _rules.push_back({methods, pattern, regex(pattern.c_str()), handler});
+        split(patterns, "|", [&](string_view pattern) {
+            _rules.push_back({methods,
+                              string(pattern),
+                              regex(pattern.data(), pattern.size()),
+                              handler});
         });
     }
 

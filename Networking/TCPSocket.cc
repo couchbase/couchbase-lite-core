@@ -22,6 +22,7 @@
 #include "Headers.hh"
 #include "HTTPLogic.hh"
 #include "Certificate.hh"
+#include "NetworkInterfaces.hh"
 #include "WebSocketInterface.hh"
 #include "SecureRandomize.hh"
 #include "Error.hh"
@@ -29,7 +30,7 @@
 #include "sockpp/exception.h"
 #include "sockpp/inet6_address.h"
 #include "sockpp/tcp_acceptor.h"
-#include "sockpp/tcp_connector.h"
+#include "sockpp/connector.h"
 #include "sockpp/mbedtls_context.h"
 #include "sockpp/tls_socket.h"
 #include "PlatformIO.hh"
@@ -124,7 +125,7 @@ namespace litecore { namespace net {
         sock_address_any addr = baseSocket->peer_address();
         switch (addr.family()) {
             case AF_INET:   return ((inet_address&)addr).to_string();
-            case AF_INET6:  return ((inet_address&)addr).to_string();
+            case AF_INET6:  return ((inet6_address&)addr).to_string();
             default:        return "???";
         }
     }
@@ -153,8 +154,19 @@ namespace litecore { namespace net {
         // sockpp constructors can throw exceptions.
         try {
             string hostname(slice(addr.hostname));
-            auto socket = make_unique<tcp_connector>();
-            socket->connect(inet_address{hostname, addr.port}, secsToMicrosecs(timeout()));
+
+            unique_ptr<sock_address> sockAddr;
+            optional<IPAddress> ipAddr = IPAddress::parse(hostname);
+            if (ipAddr) {
+                // hostname is numeric, either IPv4 or IPv6:
+                sockAddr = ipAddr->sockppAddress(addr.port);
+            } else {
+                // Otherwise it's a DNS name; let sockpp resolve it:
+                sockAddr = make_unique<inet_address>(hostname, addr.port);
+            }
+
+            auto socket = make_unique<connector>();
+            socket->connect(*sockAddr, secsToMicrosecs(timeout()));
             return setSocket(move(socket))
                 && (!addr.isSecure() || wrapTLS(addr.hostname));
 

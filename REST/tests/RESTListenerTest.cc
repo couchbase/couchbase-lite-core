@@ -21,7 +21,9 @@
 #include "ListenerHarness.hh"
 #include "FilePath.hh"
 #include "Response.hh"
+#include "NetworkInterfaces.hh"
 #include "c4Internal.hh"
+#include "fleece/Mutable.hh"
 
 using namespace litecore::net;
 using namespace litecore::REST;
@@ -38,13 +40,15 @@ static string to_str(Value v) {
     return to_str(v.asString());
 }
 
+#define TEST_PORT      59849
+#define TEST_PORT_STR "59849"
 
 class C4RESTTest : public C4Test, public ListenerHarness {
 public:
 
     C4RESTTest()
     :C4Test(0)
-    ,ListenerHarness({59849, kC4RESTAPI})
+    ,ListenerHarness({TEST_PORT, nullslice, kC4RESTAPI})
     { }
 
 
@@ -55,6 +59,15 @@ public:
         directory = alloc_slice(tempDir.path().c_str());
         config.directory = directory;
         config.allowCreateDBs = true;
+    }
+
+
+    void forEachURL(C4Database *db, function_ref<void(string_view)> callback) {
+        MutableArray urls(c4listener_getURLs(listener, db));
+        FLMutableArray_Release(urls);
+        REQUIRE(urls);
+        for (Array::iterator i(urls); i; ++i)
+            callback(i->asString());
     }
 
 
@@ -72,7 +85,7 @@ public:
 
         C4Log("---- %s %s", method.c_str(), uri.c_str());
         string scheme = config.tlsConfig ? "https" : "http";
-        unique_ptr<Response> r(new Response(scheme, method, "localhost", config.port, uri));
+        unique_ptr<Response> r(new Response(scheme, method, requestHostname, config.port, uri));
         r->setHeaders(headers).setBody(body);
         if (pinnedCert)
             r->allowOnlyCert(pinnedCert);
@@ -104,6 +117,7 @@ public:
     }
 
     alloc_slice directory;
+    string requestHostname {"localhost"};
     alloc_slice pinnedCert;
 #ifdef COUCHBASE_ENTERPRISE
     c4::ref<C4Cert> rootCerts;
@@ -112,6 +126,90 @@ public:
 
 
 #pragma mark - ROOT LEVEL:
+
+
+TEST_CASE_METHOD(C4RESTTest, "Network interfaces", "[Listener][C]") {
+    vector<string> interfaces;
+    for (auto &i : Interface::all())
+        interfaces.push_back(i.name);
+    vector<string> addresses;
+    for (auto &addr : Interface::allAddresses())
+        addresses.push_back(string(addr));
+    vector<string> primaryAddresses;
+    for (auto &addr : Interface::primaryAddresses())
+        primaryAddresses.push_back(string(addr));
+    auto hostname = GetMyHostName();
+    C4Log("Interface names = {%s}", join(interfaces, ", ").c_str());
+    C4Log("IP addresses =    {%s}", join(addresses, ", ").c_str());
+    C4Log("Primary addrs =   {%s}", join(primaryAddresses, ", ").c_str());
+    C4Log("Hostname =        %s", (hostname ? hostname->c_str() : "(unknown)"));
+    CHECK(!interfaces.empty());
+    CHECK(!primaryAddresses.empty());
+    CHECK(!addresses.empty());
+}
+
+TEST_CASE_METHOD(C4RESTTest, "Listener URLs", "[Listener][C]") {
+    share(db, "db"_sl);
+    forEachURL(nullptr, [](string_view url) {
+        C4Log("Listener URL = <%.*s>", SPLAT(slice(url)));
+        CHECK(hasPrefix(url, "http://"));
+        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/"));
+    });
+    forEachURL(db, [](string_view url) {
+        C4Log("Database URL = <%.*s>", SPLAT(slice(url)));
+        CHECK(hasPrefix(url, "http://"));
+        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/db"));
+    });
+}
+
+
+TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
+    optional<Interface> intf;
+    string intfAddress;
+    SECTION("All interfaces") {
+    }
+    SECTION("Specific interface") {
+        intf = Interface::all()[0];
+        intfAddress = string(intf->addresses[0]);
+        SECTION("Use interface name") {
+            C4Log("Will listen on interface %s", intf->name.c_str());
+            config.networkInterface = slice(intf->name);
+        }
+        SECTION("Use interface address") {
+            C4Log("Will listen on address %s", intfAddress.c_str());
+            config.networkInterface = slice(intfAddress);
+        }
+    }
+
+    share(db, "db"_sl);
+
+    // Check that the listener's reported URLs contain the interface address:
+    forEachURL(db, [&](string_view url) {
+        C4Log("Checking URL <%.*s>", SPLAT(slice(url)));
+        C4Address address;
+        C4String dbName;
+        INFO("URL is <" << url << ">");
+        CHECK(c4address_fromURL(slice(url), &address, &dbName));
+        CHECK(address.port == TEST_PORT);
+        CHECK(dbName == "db"_sl);
+
+        if (intf) {
+            requestHostname = string(slice(address.hostname));
+            bool foundAddrInInterface = false;
+            bool addrIsIPv6 = false;
+            for (auto &addr : intf->addresses) {
+                if (string(addr) == requestHostname) {
+                    foundAddrInInterface = true;
+                    addrIsIPv6 = addr.isIPv6();
+                    break;
+                }
+            }
+            CHECK(foundAddrInInterface);
+        }
+
+        testRootLevel();
+    });
+}
 
 
 TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][Listener][C]") {
@@ -338,6 +436,21 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][Listener][C]") {
 
 
 #ifdef COUCHBASE_ENTERPRISE
+
+TEST_CASE_METHOD(C4RESTTest, "TLS REST URLs", "[REST][Listener][C]") {
+    useServerTLSWithTemporaryKey();
+    share(db, "db"_sl);
+    forEachURL(nullptr, [](string_view url) {
+        C4Log("Listener URL = <%.*s>", SPLAT(slice(url)));
+        CHECK(hasPrefix(url, "https://"));
+        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/"));
+    });
+    forEachURL(db, [](string_view url) {
+        C4Log("Database URL = <%.*s>", SPLAT(slice(url)));
+        CHECK(hasPrefix(url, "https://"));
+        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/db"));
+    });
+}
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C]") {
     useServerTLSWithTemporaryKey();

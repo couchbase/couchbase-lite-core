@@ -181,6 +181,7 @@ set(
     LC_WEBSOCKET_SRC
     Networking/HTTP/HTTPTypes.cc
     Networking/HTTP/HTTPLogic.cc
+    Networking/NetworkInterfaces.cc
     Networking/Poller.cc
     Networking/TCPSocket.cc
     Networking/TLSContext.cc
