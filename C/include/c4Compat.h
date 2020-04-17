@@ -1,32 +1,20 @@
 //
-// c4Compat.hh
+// c4Compat.h
 //
 // Copyright © 2018 Couchbase. All rights reserved.
 //
 
 #pragma once
+#include "fleece/Base.h"
 
-
-#ifndef __has_feature
-#define __has_feature(x) 0
-#endif
-#ifndef __has_attribute
-#define __has_attribute(x) 0
-#endif
-#ifndef __has_extension
-#define __has_extension(x) 0
-#endif
+#define C4NONNULL NONNULL   // Base.h defines NONNULL
 
 #ifdef _MSC_VER
-#define C4INLINE __forceinline
-#define C4NONNULL
-#elif defined(__GNUC__) && !defined(__clang__)
-#define C4INLINE inline
-//gcc supports only __attribute((nonnull)) for whole function, so
-#define C4NONNULL /**/
+    #define C4INLINE __forceinline
+#elif defined(__clang__)
+    #define C4INLINE inline
 #else
-#define C4INLINE inline
-#define C4NONNULL __attribute((nonnull))
+    #define C4INLINE inline
 #endif
 
 // Macros for defining typed enumerations and option flags.
@@ -57,29 +45,31 @@
 #endif
 
 
+// C4API should go at the end of all C function prototypes:
 #ifdef __cplusplus
-#define C4API noexcept
+    #define C4API noexcept
 #else
-#define C4API
+    #define C4API
 #endif
 
 
 // Export/import stuff:
 #ifdef _MSC_VER
-#ifdef LITECORE_EXPORTS
-#define CBL_CORE_API __declspec(dllexport)
+    #ifdef LITECORE_EXPORTS
+        #define CBL_CORE_API __declspec(dllexport)
+    #else
+        #define CBL_CORE_API __declspec(dllimport)
+    #endif
 #else
-#define CBL_CORE_API __declspec(dllimport)
+    #define CBL_CORE_API
 #endif
-#else // _MSC_VER
-#define CBL_CORE_API
-#endif
+
 
 // Type-checking for printf-style vararg functions:
 #ifdef _MSC_VER
-#define __printflike(A, B)
+    #define __printflike(A, B)
 #else
-#ifndef __printflike
-#define __printflike(fmtarg, firstvararg) __attribute__((__format__ (__printf__, fmtarg, firstvararg)))
-#endif
+    #ifndef __printflike
+        #define __printflike(fmtarg, firstvararg) __attribute__((__format__ (__printf__, fmtarg, firstvararg)))
+    #endif
 #endif

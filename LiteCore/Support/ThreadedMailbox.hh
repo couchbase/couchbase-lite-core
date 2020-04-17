@@ -16,12 +16,8 @@
 // limitations under the License.
 //
 
-#if __APPLE__
-// Use GCD if available, as it's more efficient and has better integration with OS & debugger.
-#define ACTORS_USE_GCD
-#endif
-
 #pragma once
+#include "PlatformCompat.hh"
 #include "Channel.hh"
 #include "RefCounted.hh"
 #include "Stopwatch.hh"
@@ -29,6 +25,12 @@
 #include <string>
 #include <thread>
 #include <functional>
+
+#if __APPLE__ && __has_extension(blocks)
+// Use GCD if available, as it's more efficient and has better integration with OS & debugger.
+#define ACTORS_USE_GCD
+#endif
+
 
 // Set to 1 to have Actor object report performance statistics in their destructors
 #define ACTORS_TRACK_STATS  0
