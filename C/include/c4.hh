@@ -41,29 +41,29 @@ static inline bool operator!= (C4Error a, C4Error b) {
 namespace c4 {
 
     // The functions the ref<> template calls to free a reference.
-    static inline void releaseRef(C4Cert* c)              {c4cert_release(c);}
-    static inline void releaseRef(C4Database* c)          {c4db_release(c);}
-    static inline void releaseRef(C4DatabaseObserver* c)  {c4dbobs_free(c);}
-    static inline void releaseRef(C4DocEnumerator* c)     {c4enum_free(c);}
-    static inline void releaseRef(C4Document* c)          {c4doc_release(c);}
-    static inline void releaseRef(C4DocumentObserver* c)  {c4docobs_free(c);}
-    static inline void releaseRef(C4KeyPair* c)           {c4keypair_release(c);}
-    static inline void releaseRef(C4Listener* c)          {c4listener_free(c);}
-    static inline void releaseRef(C4Query* c)             {c4query_release(c);}
-    static inline void releaseRef(C4QueryEnumerator* c)   {c4queryenum_release(c);}
-    static inline void releaseRef(C4QueryObserver* c)     {c4queryobs_free(c);}
-    static inline void releaseRef(C4RawDocument* c)       {c4raw_free(c);}
-    static inline void releaseRef(C4ReadStream* c)        {c4stream_close(c);}
-    static inline void releaseRef(C4Replicator* c)        {c4repl_free(c);}
-    static inline void releaseRef(C4WriteStream* c)       {c4stream_closeWriter(c);}
+    static inline void releaseRef(C4Cert* c)              noexcept {c4cert_release(c);}
+    static inline void releaseRef(C4Database* c)          noexcept {c4db_release(c);}
+    static inline void releaseRef(C4DatabaseObserver* c)  noexcept {c4dbobs_free(c);}
+    static inline void releaseRef(C4DocEnumerator* c)     noexcept {c4enum_free(c);}
+    static inline void releaseRef(C4Document* c)          noexcept {c4doc_release(c);}
+    static inline void releaseRef(C4DocumentObserver* c)  noexcept {c4docobs_free(c);}
+    static inline void releaseRef(C4KeyPair* c)           noexcept {c4keypair_release(c);}
+    static inline void releaseRef(C4Listener* c)          noexcept {c4listener_free(c);}
+    static inline void releaseRef(C4Query* c)             noexcept {c4query_release(c);}
+    static inline void releaseRef(C4QueryEnumerator* c)   noexcept {c4queryenum_release(c);}
+    static inline void releaseRef(C4QueryObserver* c)     noexcept {c4queryobs_free(c);}
+    static inline void releaseRef(C4RawDocument* c)       noexcept {c4raw_free(c);}
+    static inline void releaseRef(C4ReadStream* c)        noexcept {c4stream_close(c);}
+    static inline void releaseRef(C4Replicator* c)        noexcept {c4repl_free(c);}
+    static inline void releaseRef(C4WriteStream* c)       noexcept {c4stream_closeWriter(c);}
 
     // The functions the ref<> template calls to retain a reference. (Not all types can be retained)
-    static inline C4Cert*     retainRef(C4Cert* c)     {return c4cert_retain(c);}
-    static inline C4Database* retainRef(C4Database* c) {return c4db_retain(c);}
-    static inline C4Document* retainRef(C4Document* c) {return c4doc_retain(c);}
-    static inline C4KeyPair*  retainRef(C4KeyPair* c)  {return c4keypair_retain(c);}
-    static inline C4Query*    retainRef(C4Query* c)    {return c4query_retain(c);}
-    static inline C4QueryEnumerator* retainRef(C4QueryEnumerator* c) {return c4queryenum_retain(c);}
+    static inline C4Cert*     retainRef(C4Cert* c)     noexcept {return c4cert_retain(c);}
+    static inline C4Database* retainRef(C4Database* c) noexcept {return c4db_retain(c);}
+    static inline C4Document* retainRef(C4Document* c) noexcept {return c4doc_retain(c);}
+    static inline C4KeyPair*  retainRef(C4KeyPair* c)  noexcept {return c4keypair_retain(c);}
+    static inline C4Query*    retainRef(C4Query* c)    noexcept {return c4query_retain(c);}
+    static inline C4QueryEnumerator* retainRef(C4QueryEnumerator* c) noexcept {return c4queryenum_retain(c);}
 
 
     /** A simple little smart pointer that frees the C4 object when it leaves scope.
@@ -76,18 +76,21 @@ namespace c4 {
     template <class T>
     class ref {
     public:
-        ref()                       :_obj(nullptr) { }
-        ref(T *t)                   :_obj(t) { }
-        ref(ref &&r) noexcept       :_obj(r._obj) {r._obj = nullptr;}
-        ref(const ref &r)           :_obj(retainRef(r._obj)) { }
-        ~ref()                      {releaseRef(_obj);}
+        ref() noexcept                          :_obj(nullptr) { }
+        ref(T *t) noexcept                      :_obj(t) { }
+        ref(ref &&r) noexcept                   :_obj(r._obj) {r._obj = nullptr;}
+        ref(const ref &r) noexcept              :_obj(retainRef(r._obj)) { }
+        ~ref() noexcept                         {releaseRef(_obj);}
 
-        operator T* () const        {return _obj;}
-        T* operator -> () const     {return _obj;}
+        static ref retaining(T *t)               {return ref(retainRef(t));}
 
-        ref& operator=(T *t)        {if (_obj) releaseRef(_obj); _obj = t; return *this;}
-        ref& operator=(ref &&r) noexcept {_obj = r._obj; r._obj = nullptr; return *this;}
-        ref& operator=(const ref &r){*this = retainRef(r._obj); return *this;}
+        operator T* () const noexcept FLPURE    {return _obj;}
+        T* operator -> () const noexcept FLPURE {return _obj;}
+        T* get() const noexcept FLPURE          {return _obj;}
+
+        ref& operator=(T *t) noexcept           {if (_obj) releaseRef(_obj); _obj = t; return *this;}
+        ref& operator=(ref &&r) noexcept        {_obj = r._obj; r._obj = nullptr; return *this;}
+        ref& operator=(const ref &r) noexcept   {*this = retainRef(r._obj); return *this;}
 
     private:
         T* _obj;
