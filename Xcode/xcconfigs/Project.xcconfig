@@ -24,18 +24,18 @@ CLANG_STATIC_ANALYZER_MODE = shallow
 LITECORE_VERSION_STRING                            = 2.8.0
 LITECORE_BUILD_NUMBER                              = 0
 
-IPHONEOS_DEPLOYMENT_TARGET                         = 10.0
+IPHONEOS_DEPLOYMENT_TARGET                         =  9.0
 MACOSX_DEPLOYMENT_TARGET                           = 10.12
-TVOS_DEPLOYMENT_TARGET                             = 10.0
+TVOS_DEPLOYMENT_TARGET                             =  9.0
 ONLY_ACTIVE_ARCH                                   = NO
 SKIP_INSTALL                                       = YES
 SUPPORTED_PLATFORMS                                = macosx iphoneos iphonesimulator appletvos appletvsimulator
 
-VALID_ARCHS                                        = x86_64 arm64 armv7a
+VALID_ARCHS                                        = x86_64 arm64 armv7 armv7s
 VALID_ARCHS[sdk=macosx*]                           = x86_64
 VALID_ARCHS[sdk=iphonesimulator*]                  = x86_64
 VALID_ARCHS[sdk=appletvsimulator*]                 = x86_64
-VALID_ARCHS[sdk=iphoneos*]                         =        arm64 armv7a
+VALID_ARCHS[sdk=iphoneos*]                         =        arm64 armv7 armv7s
 VALID_ARCHS[sdk=appletvos*]                        =        arm64
 
 CODE_SIGN_IDENTITY                                 =
@@ -69,3 +69,9 @@ HEADER_SEARCH_PATHS                                = $(SRCROOT)/../vendor/SQLite
 SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/   $(inherited)
 
 COMBINE_HIDPI_IMAGES                               = YES    // Stop Xcode from complaining
+
+// Disable C++17 aligned-allocation feature in 32-bit builds, to avoid compile errors about lack
+// of support pre-iOS 11. Remove these lines when we stop supporting either 32-bit or iOS 9/10.
+// (CBL-734)
+OTHER_CFLAGS[arch=armv7]  = $(inherited) -fno-aligned-allocation
+OTHER_CFLAGS[arch=armv7s] = $(inherited) -fno-aligned-allocation
