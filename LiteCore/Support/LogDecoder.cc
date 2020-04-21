@@ -222,8 +222,8 @@ namespace litecore {
             }
 
             // Read the format string, then the parameters:
-            const char *format = readStringToken().c_str();
-            for (const char *c = format; *c != '\0'; ++c) {
+            string format = readStringToken().c_str();
+            for (const char *c = format.c_str(); *c != '\0'; ++c) {
                 if (*c != '%') {
                     out << *c;
                 } else {
