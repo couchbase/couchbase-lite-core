@@ -18,6 +18,7 @@
 
 #include "RESTListener.hh"
 #include "c4.hh"
+#include "c4Certificate.h"
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
@@ -124,15 +125,16 @@ namespace litecore { namespace REST {
             return nullptr;
         Retained<Cert> cert;
         try {
-            cert = new Cert(config->certificate);
+            cert = (Cert*)config->certificate;
         } catch (const error &x) {
             error::_throw(error::InvalidParameter, "Can't parse certificate data");
         }
 
         Retained<PrivateKey> privateKey;
         switch (config->privateKeyRepresentation) {
-            case kC4PrivateKeyData:
-                privateKey = new PrivateKey(config->privateKey, config->privateKeyPassword);
+            case kC4PrivateKeyFromKey:
+                Assert(c4keypair_hasPrivateKey(config->key));
+                privateKey = (PrivateKey*)config->key;
                 break;
             case kC4PrivateKeyFromCert:
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
@@ -158,8 +160,8 @@ namespace litecore { namespace REST {
         tlsContext->setIdentity(_identity);
         if (tlsConfig->requireClientCerts)
             tlsContext->requirePeerCert(true);
-        if (tlsConfig->rootClientCerts.buf)
-            tlsContext->setRootCerts(tlsConfig->rootClientCerts);
+        if (tlsConfig->rootClientCerts)
+            tlsContext->setRootCerts((Cert*)tlsConfig->rootClientCerts);
         return tlsContext;
     }
 
