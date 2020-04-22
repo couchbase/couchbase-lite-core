@@ -34,14 +34,11 @@ public:
         C4Log("Using %s server TLS cert %.*s for this test",
               (c4keypair_isPersistent(id.key) ? "persistent" : "temporary"), SPLAT(digest));
         serverIdentity = id;
+        tlsConfig.certificate = id.cert;
 
-        configCertData = alloc_slice(c4cert_copyChainData(id.cert));
-        tlsConfig.certificate = configCertData;
-
-        configKeyData = alloc_slice(c4keypair_privateKeyData(id.key));
-        if (configKeyData) {
-            tlsConfig.privateKey = configKeyData;
-            tlsConfig.privateKeyRepresentation = kC4PrivateKeyData;
+        if (id.key) {
+            tlsConfig.key = id.key;
+            tlsConfig.privateKeyRepresentation = kC4PrivateKeyFromKey;
         } else {
             tlsConfig.privateKeyRepresentation = kC4PrivateKeyFromCert;
         }
@@ -61,9 +58,7 @@ public:
 
 
     void setListenerRootClientCerts(C4Cert *certs) {
-        configClientRootCertData = alloc_slice(c4cert_copyChainData(certs));
-        tlsConfig.requireClientCerts = true;
-        tlsConfig.rootClientCerts = configClientRootCertData;
+        tlsConfig.rootClientCerts = certs;
     }
 
 
@@ -114,6 +109,5 @@ public:
 
 private:
     C4TLSConfig tlsConfig = { };
-    alloc_slice configCertData, configKeyData, configClientRootCertData;
 };
 
