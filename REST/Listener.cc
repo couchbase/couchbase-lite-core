@@ -31,8 +31,8 @@ namespace litecore { namespace REST {
 
 
     Listener::Listener() {
-        if (!RESTLog)
-            RESTLog = c4log_getDomain("REST", true);
+        if (!ListenerLog)
+            ListenerLog = c4log_getDomain("Listener", true);
     }
 
     string Listener::databaseNameFromPath(const FilePath &path) {

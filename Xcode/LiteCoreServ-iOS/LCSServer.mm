@@ -43,8 +43,8 @@ using namespace litecore::REST;
 - /* private */(instancetype) init {
     self = [super init];
     if (self) {
-        auto restLog = c4log_getDomain("REST", true);
-        c4log_setLevel(restLog, kC4LogInfo);
+        auto listenerLog = c4log_getDomain("Listener", true);
+        c4log_setLevel(listenerLog, kC4LogInfo);
         
         _config = [[LCSServerConfig alloc] init];
     }

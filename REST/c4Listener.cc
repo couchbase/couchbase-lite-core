@@ -31,7 +31,7 @@ using namespace litecore::REST;
 
 
 namespace litecore { namespace REST {
-    C4LogDomain RESTLog;
+    C4LogDomain ListenerLog;
 } }
 
 
