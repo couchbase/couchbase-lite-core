@@ -42,7 +42,7 @@ extern "C" {
 //      kC4DB_Bundled       = 8,    // OBSOLETE; all dbs are now bundled
         kC4DB_SharedKeys    = 0x10, // OBSOLETE; shared keys are always used
         kC4DB_NoUpgrade     = 0x20, ///< Disable upgrading an older-version database
-        kC4DB_NonObservable = 0x40, ///< Disable c4DatabaseObserver
+        kC4DB_NonObservable = 0x40, ///< Disable C4DatabaseObserver
     };
 
     /** Document versioning system (also determines database storage schema) */

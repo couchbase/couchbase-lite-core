@@ -22,14 +22,14 @@
 
 
 // This is the struct that's forward-declared in the public c4Database.h
-struct c4Database : public c4Internal::Database {
-    c4Database(const FilePath &path, C4DatabaseConfig config)
+struct C4Database : public c4Internal::Database {
+    C4Database(const FilePath &path, C4DatabaseConfig config)
     :Database(path, config) { }
 
     C4ExtraInfo extraInfo { };
 
 private:
-    ~c4Database();
+    ~C4Database();
 };
 
 

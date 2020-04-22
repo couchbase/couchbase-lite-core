@@ -22,7 +22,7 @@
 #include <mutex>
 #include <unordered_map>
 
-struct c4Database;
+struct C4Database;
 
 namespace litecore { namespace net {
     class CookieStore;
@@ -34,7 +34,7 @@ namespace litecore { namespace repl {
     /** Persists a CookieStore to/from a Database. */
     class DatabaseCookies {
     public:
-        DatabaseCookies(c4Database*);
+        DatabaseCookies(C4Database*);
 
         std::string cookiesForRequest(const C4Address &addr) {
             return _store->cookiesForRequest(addr);
@@ -55,7 +55,7 @@ namespace litecore { namespace repl {
         void saveChanges();
 
     private:
-        c4Database* _db;
+        C4Database* _db;
         Retained<net::CookieStore> _store;
     };
 

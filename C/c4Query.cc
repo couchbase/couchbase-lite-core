@@ -50,7 +50,7 @@ C4Query* c4query_new2(C4Database *database,
         *outErrorPos = -1;
     return tryCatch<C4Query*>(outError, [&]{
         try {
-            return retain(new c4Query(database, language, expression));
+            return retain(new C4Query(database, language, expression));
         } catch (Query::parseError &x) {
             if (outErrorPos)
                 *outErrorPos = x.errorPosition;

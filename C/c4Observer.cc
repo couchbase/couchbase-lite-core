@@ -25,8 +25,8 @@
 using namespace std::placeholders;
 
 
-struct c4DatabaseObserver : public fleece::InstanceCounted {
-    c4DatabaseObserver(C4Database *db,
+struct C4DatabaseObserver : public fleece::InstanceCounted {
+    C4DatabaseObserver(C4Database *db,
                         SequenceTracker &sequenceTracker,
                         C4SequenceNumber since,
                         C4DatabaseObserverCallback callback, void *context)
@@ -34,7 +34,7 @@ struct c4DatabaseObserver : public fleece::InstanceCounted {
      _callback(callback),
      _context(context),
      _notifier(sequenceTracker,
-               bind(&c4DatabaseObserver::dispatchCallback, this, _1),
+               bind(&C4DatabaseObserver::dispatchCallback, this, _1),
                since)
     { }
 
@@ -62,7 +62,7 @@ C4DatabaseObserver* c4dbobs_create(C4Database *db,
 {
     return tryCatch<C4DatabaseObserver*>(nullptr, [&]{
         return db->sequenceTracker().use<C4DatabaseObserver*>([&](SequenceTracker &st) {
-            return new c4DatabaseObserver(db, st, UINT64_MAX, callback, context);
+            return new C4DatabaseObserver(db, st, UINT64_MAX, callback, context);
         });
     });
 }
@@ -113,8 +113,8 @@ void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
 #pragma mark - DOCUMENT OBSERVER:
 
 
-struct c4DocumentObserver : public fleece::InstanceCounted {
-    c4DocumentObserver(C4Database *db,
+struct C4DocumentObserver : public fleece::InstanceCounted {
+    C4DocumentObserver(C4Database *db,
                         SequenceTracker &sequenceTracker,
                         C4Slice docID,
                         C4DocumentObserverCallback callback,
@@ -124,7 +124,7 @@ struct c4DocumentObserver : public fleece::InstanceCounted {
      _context(context),
      _notifier(sequenceTracker,
                docID,
-               bind(&c4DocumentObserver::dispatchCallback, this, _1, _2, _3))
+               bind(&C4DocumentObserver::dispatchCallback, this, _1, _2, _3))
     { }
 
 
@@ -147,7 +147,7 @@ C4DocumentObserver* c4docobs_create(C4Database *db,
 {
     return tryCatch<C4DocumentObserver*>(nullptr, [&]{
         return db->sequenceTracker().use<C4DocumentObserver*>([&](SequenceTracker &st) {
-            return new c4DocumentObserver(db, st, docID, callback, context);
+            return new C4DocumentObserver(db, st, docID, callback, context);
         });
     });
 }

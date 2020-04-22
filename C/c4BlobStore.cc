@@ -1,5 +1,5 @@
 //
-// c4BlobStore.cc
+// C4BlobStore.cc
 //
 // Copyright (c) 2016 Couchbase, Inc All rights reserved.
 //
@@ -22,10 +22,10 @@
 #include "BlobStore.hh"
 
 
-// This is a no-op class that just serves to make c4BlobStore type-compatible with BlobStore.
-struct c4BlobStore : public BlobStore {
+// This is a no-op class that just serves to make C4BlobStore type-compatible with BlobStore.
+struct C4BlobStore : public BlobStore {
 public:
-    c4BlobStore(const FilePath &dirPath, const Options *options)
+    C4BlobStore(const FilePath &dirPath, const Options *options)
     :BlobStore(dirPath, options)
     { }
 };
@@ -71,7 +71,7 @@ C4BlobStore* c4blob_openStore(C4Slice dirPath,
             options.encryptionAlgorithm = (EncryptionAlgorithm)key->algorithm;
             options.encryptionKey = alloc_slice(key->bytes, sizeof(key->bytes));
         }
-        return new c4BlobStore(FilePath(toString(dirPath)), &options);
+        return new C4BlobStore(FilePath(toString(dirPath)), &options);
     } catchError(outError)
     return nullptr;
 }

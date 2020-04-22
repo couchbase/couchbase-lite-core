@@ -27,8 +27,8 @@ using namespace c4Internal;
 
 // This is the definition of the C4Query type in the public C API,
 // hence it must be in the global namespace.
-struct c4Query : public RefCounted, public fleece::InstanceCountedIn<c4Query>, LiveQuerier::Delegate {
-    c4Query(Database *db, C4QueryLanguage language, C4Slice queryExpression)
+struct C4Query : public RefCounted, public fleece::InstanceCountedIn<C4Query>, LiveQuerier::Delegate {
+    C4Query(Database *db, C4QueryLanguage language, C4Slice queryExpression)
     :_database(db)
     ,_query(db->defaultKeyStore().compileQuery(queryExpression, (QueryLanguage)language))
     { }
@@ -47,7 +47,7 @@ struct c4Query : public RefCounted, public fleece::InstanceCountedIn<c4Query>, L
         return e ? new C4QueryEnumeratorImpl(_database, _query, e) : nullptr;
     }
 
-    void enableObserver(c4QueryObserver *obs, bool enable) {
+    void enableObserver(C4QueryObserver *obs, bool enable) {
         LOCK(_mutex);
         if (enable) {
             _observers.insert(obs);
@@ -81,6 +81,6 @@ private:
 
     mutable mutex _mutex;
     Retained<LiveQuerier> _bgQuerier;
-    set<c4QueryObserver*> _observers;
+    set<C4QueryObserver*> _observers;
 };
 

@@ -47,7 +47,7 @@ CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 #pragma mark - C4DATABASE METHODS:
 
 
-c4Database::~c4Database() {
+C4Database::~C4Database() {
     destructExtraInfo(extraInfo);
 }
 

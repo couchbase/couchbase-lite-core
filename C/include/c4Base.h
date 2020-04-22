@@ -80,22 +80,22 @@ typedef struct C4BlobKey {
 typedef struct C4Address C4Address;
 
 /** Opaque handle for an object that manages storage of blobs. */
-typedef struct c4BlobStore C4BlobStore;
+typedef struct C4BlobStore C4BlobStore;
 
 /** An X.509 certificate, or certificate signing request (CSR). */
 typedef struct C4Cert C4Cert;
 
 /** Opaque handle to an opened database. */
-typedef struct c4Database C4Database;
+typedef struct C4Database C4Database;
 
 /** A database-observer reference. */
-typedef struct c4DatabaseObserver C4DatabaseObserver;
+typedef struct C4DatabaseObserver C4DatabaseObserver;
 
 /** Describes a version-controlled document. */
 typedef struct C4Document C4Document;
 
 /** A document-observer reference. */
-typedef struct c4DocumentObserver C4DocumentObserver;
+typedef struct C4DocumentObserver C4DocumentObserver;
 
 /** Opaque handle to a document enumerator. */
 typedef struct C4DocEnumerator C4DocEnumerator;
@@ -107,19 +107,19 @@ typedef struct C4KeyPair C4KeyPair;
 typedef struct C4Listener C4Listener;
 
 /** Opaque handle to a compiled query. */
-typedef struct c4Query C4Query;
+typedef struct C4Query C4Query;
 
 /** A query result enumerator. */
 typedef struct C4QueryEnumerator C4QueryEnumerator;
 
 /** A query-observer reference. */
-typedef struct c4QueryObserver C4QueryObserver;
+typedef struct C4QueryObserver C4QueryObserver;
 
 /** Contents of a raw document. */
 typedef struct C4RawDocument C4RawDocument;
 
 /** An open stream for reading data from a blob. */
-typedef struct c4ReadStream C4ReadStream;
+typedef struct C4ReadStream C4ReadStream;
 
 /** Opaque reference to a replicator. */
 typedef struct C4Replicator C4Replicator;
@@ -131,7 +131,7 @@ typedef struct C4Socket C4Socket;
 typedef struct C4SocketFactory C4SocketFactory;
 
 /** An open stream for writing data to a blob. */
-typedef struct c4WriteStream C4WriteStream;
+typedef struct C4WriteStream C4WriteStream;
 
 
 //////// REFERENCE COUNTING
