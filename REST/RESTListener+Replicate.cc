@@ -63,7 +63,7 @@ namespace litecore { namespace REST {
             Lock lock(_mutex);
             _push = (pushMode >= kC4OneShot);
             registerTask();
-            c4log(RESTLog, kC4LogInfo,
+            c4log(ListenerLog, kC4LogInfo,
                   "Replicator task #%d starting: local=%.*s, mode=%s, scheme=%.*s, host=%.*s,"
                   " port=%u, db=%.*s, bidi=%d, continuous=%d",
                   taskID(), SPLAT(localDbName), (pushMode > kC4Disabled ? "push" : "pull"),
@@ -80,7 +80,7 @@ namespace litecore { namespace REST {
             params.callbackContext = this;
             _repl = c4repl_new(localDB, remoteAddress, remoteDbName, params, outError);
             if (!_repl) {
-                c4log(RESTLog, kC4LogInfo,
+                c4log(ListenerLog, kC4LogInfo,
                       "Replicator task #%d failed to start!", taskID());
                 unregisterTask();
                 return false;
@@ -202,7 +202,7 @@ namespace litecore { namespace REST {
         void stop() override {
             Lock lock(_mutex);
             if (_repl) {
-                c4log(RESTLog, kC4LogInfo, "Replicator task #%u stopping...", taskID());
+                c4log(ListenerLog, kC4LogInfo, "Replicator task #%u stopping...", taskID());
                 c4repl_stop(_repl);
             }
         }
@@ -221,7 +221,7 @@ namespace litecore { namespace REST {
                 time(&_timeUpdated);
             }
             if (finished()) {
-                c4log(RESTLog, kC4LogInfo, "Replicator task #%u finished", taskID());
+                c4log(ListenerLog, kC4LogInfo, "Replicator task #%u finished", taskID());
                 _cv.notify_all();
             }
             //unregisterTask();  --no, leave it so a later call to _active_tasks can get its state

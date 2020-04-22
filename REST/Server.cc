@@ -115,7 +115,7 @@ namespace litecore { namespace REST {
         if (!*_acceptor)
             error::_throw(error::POSIX, _acceptor->last_error());
         _acceptor->set_non_blocking();
-        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", this->port());
+        c4log(ListenerLog, kC4LogInfo,"Server listening on port %d", this->port());
         awaitConnection();
     }
 
@@ -125,7 +125,7 @@ namespace litecore { namespace REST {
         if (!_acceptor)
             return;
 
-        c4log(RESTLog, kC4LogInfo,"Stopping server");
+        c4log(ListenerLog, kC4LogInfo,"Stopping server");
         Poller::instance().removeListeners(_acceptor->handle());
         _acceptor->close();
         _acceptor.reset();
@@ -155,7 +155,7 @@ namespace litecore { namespace REST {
                     return;
                 sock = _acceptor->accept();
                 if (!sock) {
-                    c4log(RESTLog, kC4LogError, "Error accepting incoming connection: %d %s",
+                    c4log(ListenerLog, kC4LogError, "Error accepting incoming connection: %d %s",
                           _acceptor->last_error(), _acceptor->last_error_str().c_str());
                 }
             }
@@ -164,7 +164,7 @@ namespace litecore { namespace REST {
                 handleConnection(move(sock));
             }
         } catch (const std::exception &x) {
-            c4log(RESTLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());
+            c4log(ListenerLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());
         }
         // Start another async accept:
         awaitConnection();
@@ -174,17 +174,17 @@ namespace litecore { namespace REST {
     void Server::handleConnection(sockpp::stream_socket &&sock) {
         auto responder = make_unique<ResponderSocket>(_tlsContext);
         if (!responder->acceptSocket(move(sock)) || (_tlsContext && !responder->wrapTLS())) {
-            c4log(RESTLog, kC4LogError, "Error accepting incoming connection: %s",
+            c4log(ListenerLog, kC4LogError, "Error accepting incoming connection: %s",
                   c4error_descriptionStr(responder->error()));
             return;
         }
-        if (c4log_willLog(RESTLog, kC4LogVerbose)) {
+        if (c4log_willLog(ListenerLog, kC4LogVerbose)) {
             auto cert = responder->peerTLSCertificate();
             if (cert)
-                c4log(RESTLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s",
+                c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s with TLS cert %s",
                       responder->peerAddress().c_str(), cert->subjectPublicKey()->digestString().c_str());
             else
-                c4log(RESTLog, kC4LogVerbose, "Accepted connection from %s",
+                c4log(ListenerLog, kC4LogVerbose, "Accepted connection from %s",
                       responder->peerAddress().c_str());
         }
         RequestResponse rq(this, move(responder));
@@ -228,26 +228,26 @@ namespace litecore { namespace REST {
         if (method == Method::GET && rq->header("Connection") == "Upgrade"_sl)
             method = Method::UPGRADE;
 
-        c4log(RESTLog, kC4LogInfo, "%s %s", MethodName(method), rq->path().c_str());
+        c4log(ListenerLog, kC4LogInfo, "%s %s", MethodName(method), rq->path().c_str());
         lock_guard<mutex> lock(_mutex);
         try{
             string pathStr(rq->path());
             auto rule = findRule(method, pathStr);
             if (rule) {
-                c4log(RESTLog, kC4LogInfo, "Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
+                c4log(ListenerLog, kC4LogInfo, "Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
                 rule->handler(*rq);
             } else if (nullptr == (rule = findRule(Methods::ALL, pathStr))) {
-                c4log(RESTLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
+                c4log(ListenerLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
                 rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
             } else {
-                c4log(RESTLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
+                c4log(ListenerLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
                 if (method == Method::UPGRADE)
                     rq->respondWithStatus(HTTPStatus::Forbidden, "No upgrade available");
                 else
                     rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
             }
         } catch (const std::exception &x) {
-            c4log(RESTLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());
+            c4log(ListenerLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());
             rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
         }
     }
