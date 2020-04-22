@@ -212,6 +212,15 @@ TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
 }
 
 
+TEST_CASE_METHOD(C4RESTTest, "Listener Auto-Select Port", "[Listener][C]") {
+    config.port = 0;
+    share(db, "db"_sl);
+    const auto port = c4listener_getPort(listener);
+    C4Log("System selected port %u", port);
+    CHECK(port != 0);
+}
+
+
 TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][Listener][C]") {
     testRootLevel();
 }
