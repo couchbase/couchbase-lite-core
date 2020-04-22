@@ -38,16 +38,15 @@ extern "C" {
     /** Different ways to provide TLS private keys. */
     typedef C4_ENUM(unsigned, C4PrivateKeyRepresentation) {
         kC4PrivateKeyFromCert,          ///< Key in secure storage, associated with certificate
-        kC4PrivateKeyData,              ///< PEM or DER data (may be PKCS12-encrypted)
+        kC4PrivateKeyFromKey,           ///< Key from the provided key pair
     };
 
 
     /** TLS configuration for C4Listener. */
     typedef struct C4TLSConfig {
         C4PrivateKeyRepresentation privateKeyRepresentation; ///< Interpretation of `privateKey`
-        C4Slice privateKey;             ///< Private key data
-        C4String privateKeyPassword;    ///< Password to decrypt private key data
-        C4Slice certificate;            ///< X.509 certificate data
+        C4KeyPair* key;                 ///< A key pair that contains the private key
+        C4Cert* certificate;            ///< X.509 certificate data
         bool requireClientCerts;        ///< True to require clients to authenticate with a cert
         C4Slice rootClientCerts;        ///< Root CA certs to trust when verifying client cert
     } C4TLSConfig;
