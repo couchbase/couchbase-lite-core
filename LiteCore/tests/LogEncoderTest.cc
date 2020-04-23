@@ -255,6 +255,8 @@ TEST_CASE("Logging rollover", "[Log]") {
     ifstream fin2(infoFiles[1], ios::binary);
     LogDecoder d2(fin2);
     d2.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
+
+    LogDomain::setFileLogLevel(LogLevel::None); // undo writeEncodedLogsTo() call above
 }
 
 TEST_CASE("Logging plaintext", "[Log]") {
@@ -290,5 +292,7 @@ TEST_CASE("Logging plaintext", "[Log]") {
     CHECK(lines[1].find("[DB]") != string::npos);
     CHECK(lines[1].find("{dummy#") != string::npos);
     CHECK(lines[1].find("This will be in plaintext") != string::npos);
+
+    LogDomain::setFileLogLevel(LogLevel::None); // undo writeEncodedLogsTo() call above
 }
 
