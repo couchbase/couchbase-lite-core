@@ -120,6 +120,7 @@ namespace litecore { namespace REST {
     }
 
 
+#ifdef COUCHBASE_ENTERPRISE
     Retained<Identity> RESTListener::loadTLSIdentity(const C4TLSConfig *config) {
         if (!config)
             return nullptr;
@@ -149,11 +150,13 @@ namespace litecore { namespace REST {
         }
         return new Identity(cert, privateKey);
     }
+#endif // COUCHBASE_ENTERPRISE
 
 
     Retained<TLSContext> RESTListener::createTLSContext(const C4TLSConfig *tlsConfig) {
         if (!tlsConfig)
             return nullptr;
+#ifdef COUCHBASE_ENTERPRISE
         _identity = loadTLSIdentity(tlsConfig);
 
         auto tlsContext = retained(new TLSContext(TLSContext::Server));
@@ -163,6 +166,9 @@ namespace litecore { namespace REST {
         if (tlsConfig->rootClientCerts)
             tlsContext->setRootCerts((Cert*)tlsConfig->rootClientCerts);
         return tlsContext;
+#else
+        error::_throw(error::Unimplemented, "TLS server is an Enterprise Edition feature");
+#endif
     }
 
 
