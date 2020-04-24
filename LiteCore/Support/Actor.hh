@@ -18,7 +18,6 @@
 
 #pragma once
 #include "ThreadedMailbox.hh"
-#include "Async.hh"
 #include <assert.h>
 #include <chrono>
 #include <functional>
@@ -31,6 +30,10 @@
 
 #ifdef ACTORS_TRACK_STATS
 #include "Stopwatch.hh"
+#endif
+
+#ifdef ACTORS_SUPPORT_ASYNC
+#include "Async.hh"
 #endif
 
 
@@ -141,7 +144,8 @@ namespace litecore { namespace actor {
         }
 
 
-        /** Body of an async method: Creates an AsyncProvider from the lambda given,
+#ifdef ACTORS_SUPPORT_ASYNC
+        /** Body of an async method: Creates an Provider from the lambda given,
             then returns an Async that refers to that provider. */
         template <class T, class LAMBDA>
         Async<T> _asyncBody(const LAMBDA &bodyFn) {
@@ -151,6 +155,7 @@ namespace litecore { namespace actor {
         void wakeAsyncContext(AsyncContext *context) {
             _mailbox.enqueue(ACTOR_BIND_METHOD0(context, &AsyncContext::next));
         }
+#endif
 
     private:
         friend class ThreadedMailbox;
