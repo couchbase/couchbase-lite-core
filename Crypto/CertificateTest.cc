@@ -170,14 +170,21 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     Cert::IssuerParameters issuerParams;
     issuerParams.validity_secs = 3600*24;
     Retained<Cert> cert = new Cert(DistinguishedName(kSubjectName), issuerParams, key);
-
+    
+    // Try to get private key with public key:
+    key = PersistentPrivateKey::withPublicKey(pubKey);
+    REQUIRE(key);
+    CHECK(pubKey->data(KeyFormat::Raw) == key->publicKeyData(KeyFormat::Raw));
+    CHECK(pubKey->data(KeyFormat::DER) == key->publicKeyData(KeyFormat::DER));
+    CHECK(pubKey->data(KeyFormat::PEM) == key->publicKeyData(KeyFormat::PEM));
+    
     // Try reloading from cert:
     key = cert->loadPrivateKey();
     REQUIRE(key);
     CHECK(pubKey->data(KeyFormat::Raw) == key->publicKeyData(KeyFormat::Raw));
     CHECK(pubKey->data(KeyFormat::DER) == key->publicKeyData(KeyFormat::DER));
     CHECK(pubKey->data(KeyFormat::PEM) == key->publicKeyData(KeyFormat::PEM));
-
+    
     // Try a CSR:
     Retained<CertSigningRequest> csr = new CertSigningRequest(DistinguishedName(kSubjectName), key);
     CHECK(csr->subjectName() == kSubjectName);
