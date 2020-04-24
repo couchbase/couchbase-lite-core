@@ -279,6 +279,24 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser CASE", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(QueryParserTest, "QueryParser LIKE", "[Query]") {
+    CHECK(parseWhere("['LIKE', ['.color'], 'b%']")
+          == "fl_value(body, 'color') LIKE 'b%' ESCAPE '\\'");
+    CHECK(parseWhere("['LIKE', ['.color'], ['$pattern']]")
+          == "fl_value(body, 'color') LIKE $_pattern ESCAPE '\\'");
+    CHECK(parseWhere("['LIKE', ['.color'], ['.pattern']]")
+          == "fl_value(body, 'color') LIKE fl_value(body, 'pattern') ESCAPE '\\'");
+    // Explicit binary collation:
+    CHECK(parseWhere("['COLLATE', {case: true, unicode: false}, ['LIKE', ['.color'], 'b%']]")
+          == "fl_value(body, 'color') COLLATE \"BINARY\" LIKE 'b%' ESCAPE '\\'");
+    // Use fl_like when the collation is non-binary:
+    CHECK(parseWhere("['COLLATE', {case: false}, ['LIKE', ['.color'], 'b%']]")
+          == "fl_like(fl_value(body, 'color'), 'b%', 'NOCASE')");
+    CHECK(parseWhere("['COLLATE', {unicode: true}, ['LIKE', ['.color'], 'b%']]")
+          == "fl_like(fl_value(body, 'color'), 'b%', 'LCUnicode____')");
+}
+
+
 TEST_CASE_METHOD(QueryParserTest, "QueryParser Join", "[Query]") {
     CHECK(parse("{WHAT: ['.book.title', '.library.name', '.library'], \
                   FROM: [{as: 'book'}, \

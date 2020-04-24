@@ -878,7 +878,20 @@ namespace litecore {
     }
 
     void QueryParser::likeOp(slice op, Array::iterator& operands) {
-        functionOp("fl_like()"_sl, operands);
+        // Optimization: use SQLite's built-in LIKE function when possible, i.e. when the collation
+        // in effect matches SQLite's BINARY collation. This allows the query optimizer to use the
+        // "LIKE optimization", allowing an indexed prefix search, when the pattern is a literal or
+        // parameter and doesn't begin with a wildcard. (CBL-890)
+        // <https://sqlite.org/optoverview.html#like_opt>
+        if (_collation.caseSensitive && _collation.diacriticSensitive && !_collation.unicodeAware) {
+            parseCollatableNode(operands[0]);
+            _sql << " LIKE ";
+            parseCollatableNode(operands[1]);
+            _sql << " ESCAPE '\\'";
+        } else {
+            // Otherwise invoke our custom `fl_like` function, which supports other collations:
+            functionOp("fl_like()"_sl, operands);
+        }
     }
 
     // Handles "fts_index MATCH pattern" expressions (FTS)
