@@ -122,7 +122,10 @@ namespace litecore { namespace REST {
 
     void Server::stop() {
         lock_guard<mutex> lock(_mutex);
-        if (!_acceptor)
+        
+        // Either we never had an acceptor, or the one we tried to create
+        // failed to become valid, either way don't continue
+        if (!_acceptor || !*_acceptor)
             return;
 
         c4log(ListenerLog, kC4LogInfo,"Stopping server");

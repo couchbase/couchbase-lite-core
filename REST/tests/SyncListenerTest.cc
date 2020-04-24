@@ -29,7 +29,7 @@ public:
 
     C4SyncListenerTest()
     :ReplicatorAPITest()
-    ,ListenerHarness({49849, nullslice,
+    ,ListenerHarness({0, nullslice,
                       kC4SyncAPI,
                        nullptr,
                        {}, false, false,    // REST-only stuff
@@ -39,13 +39,13 @@ public:
 
         _address.scheme = kC4Replicator2Scheme;
         _address.hostname = C4STR("localhost");
-        _address.port = config.port;
         _remoteDBName = C4STR("db2");
     }
 
     void run() {
         ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
         share(db2, "db2"_sl);
+        _address.port = c4listener_getPort(listener);
         if (pinnedCert)
             _address.scheme = kC4Replicator2TLSScheme;
         replicate(kC4OneShot, kC4Disabled);
