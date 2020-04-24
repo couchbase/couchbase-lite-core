@@ -262,58 +262,75 @@ namespace litecore { namespace crypto {
 
 
     Retained<PersistentPrivateKey> PersistentPrivateKey::withCertificate(Cert *cert) {
-        SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
-                                                        (CFDataRef)cert->data().copiedNSData());
-        if (!certRef)
-            throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // impossible?
-        CFAutorelease(certRef);
-        SecKeyRef publicKeyRef;
-        checkOSStatus(SecCertificateCopyPublicKey(certRef, &publicKeyRef),
-                      "SecCertificateCopyPublicKey", "get private key from keychain");
-
-        SecIdentityRef identityRef;
-        checkOSStatus(SecIdentityCreateWithCertificate(nullptr, certRef, &identityRef),
-                      "SecIdentityCreateWithCertificate", "get private key from keychain");
-        CFAutorelease(identityRef);
-        SecKeyRef privateKeyRef;
-        checkOSStatus(SecIdentityCopyPrivateKey(identityRef, &privateKeyRef),
-                          "SecIdentityCopyPrivateKey", "get private key from keychain");
-        auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
-        return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
+        @autoreleasepool {
+            SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
+                                                                     (CFDataRef)cert->data().copiedNSData());
+            if (!certRef)
+                throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // impossible?
+            CFAutorelease(certRef);
+            
+            // Get public key from the certificate:
+            SecKeyRef publicKeyRef;
+            if (@available(iOS 12, macOS 10.14, *)) {
+                publicKeyRef = SecCertificateCopyKey(certRef);
+            } else {
+#if TARGET_OS_IOS
+                if (@available(iOS 10.3, *))
+                    publicKeyRef = SecCertificateCopyPublicKey(certRef);
+                else
+                    throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
+#else
+                checkOSStatus(SecCertificateCopyPublicKey(certRef, &publicKeyRef),
+                              "SecCertificateCopyPublicKey", "get private key from keychain");
+#endif
+            }
+            
+            if (!publicKeyRef)
+                return nullptr;
+            
+            // Get public key hash from kSecAttrApplicationLabel attribute:
+            // See: https://developer.apple.com/documentation/security/ksecattrapplicationlabel
+            NSDictionary* attrs = CFBridgingRelease(SecKeyCopyAttributes(publicKeyRef));
+            NSData* publicKeyHash = [attrs objectForKey: (id)kSecAttrApplicationLabel];
+            if (!publicKeyHash)
+                throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
+            
+            // Lookup private key by using the public key hash:
+            auto privateKeyRef = (SecKeyRef)findInKeychain(@{
+                (id)kSecClass:                  (id)kSecClassKey,
+                (id)kSecAttrKeyType:            (id)kSecAttrKeyTypeRSA,
+                (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
+                (id)kSecAttrApplicationLabel:   publicKeyHash,
+                (id)kSecReturnRef:              @YES
+            });
+            if (!privateKeyRef) {
+                CFAutorelease(publicKeyRef);
+                return nullptr;
+            }
+            
+            auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
+            return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
+        }
     }
 
 
     Retained<PersistentPrivateKey> PersistentPrivateKey::withPublicKey(PublicKey* publicKey) {
         @autoreleasepool {
-            // First look up a SecCertificateRef from the public-key digest. (We ought to be able
-            // to look up a SecIdentityRef directly, but using kSecClassIdentity doesn't work;
-            // the search matches all the identities in the Keychain...)
-            auto certRef = (SecCertificateRef)findInKeychain(@{
-                (id)kSecClass:              (id)kSecClassCertificate,
-                (id)kSecAttrPublicKeyHash:  publicKeyHash(publicKey),
-                (id)kSecReturnRef:          @YES,
+            // Lookup private key by using the public key hash:
+            auto privateKeyRef = (SecKeyRef)findInKeychain(@{
+                (id)kSecClass:                  (id)kSecClassKey,
+                (id)kSecAttrKeyType:            (id)kSecAttrKeyTypeRSA,
+                (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
+                (id)kSecAttrApplicationLabel:   publicKeyHash(publicKey),
+                (id)kSecReturnRef:              @YES
             });
-            if (!certRef)
+            if (!privateKeyRef)
                 return nullptr;
-            CFAutorelease(certRef);
-
-            // Get the identity and then the private key:
-            SecIdentityRef identityRef;
-            checkOSStatus(SecIdentityCreateWithCertificate(nullptr, certRef, &identityRef),
-                          "SecIdentityCreateWithCertificate", "get private key from keychain");
-            CFAutorelease(identityRef);
-
-            SecKeyRef privateKeyRef;
-            checkOSStatus(SecIdentityCopyPrivateKey(identityRef, &privateKeyRef),
-                          "SecIdentityCopyPrivateKey", "get private key from keychain");
-
-            // Get the public key from the cert, not from the private key, because calling
-            // SecKeyCopyPublicKey results in a key ref that doesn't allow its data to be read,
-            // for some reason (bug?)
-
-            SecKeyRef publicKeyRef;
-            checkOSStatus(SecCertificateCopyPublicKey(certRef, &publicKeyRef),
-                          "SecCertificateCopyPublicKey", "get private key from keychain");
+            
+            auto publicKeyRef = SecKeyCopyPublicKey(privateKeyRef);
+            if (!publicKeyRef)
+                throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // Impossible?
+            
             auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
             return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
         }
