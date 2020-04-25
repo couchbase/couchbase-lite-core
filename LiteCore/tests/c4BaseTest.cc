@@ -19,6 +19,10 @@
 #include "c4Internal.hh"
 #include "InstanceCounted.hh"
 #include "catch.hpp"
+#ifdef WIN32
+#include <winerror.h>
+#endif
+
 
 using namespace fleece;
 
@@ -54,6 +58,22 @@ TEST_CASE("C4Error messages") {
             CHECK(messageStr == "(unknown LiteCoreError)");
         }
     }
+
+#ifdef WIN32
+    const long errs[] = { WSAEADDRINUSE, WSAEADDRNOTAVAIL, WSAEAFNOSUPPORT, WSAEALREADY,
+                          WSAECANCELLED, WSAECONNABORTED, WSAECONNREFUSED, WSAECONNRESET,
+                          WSAEDESTADDRREQ, WSAEHOSTUNREACH, WSAEINPROGRESS, WSAEISCONN,
+                          WSAELOOP, WSAEMSGSIZE, WSAENETDOWN, WSAENETRESET,
+                          WSAENETUNREACH, WSAENOBUFS, WSAENOPROTOOPT, WSAENOTCONN,
+                          WSAENOTSOCK, WSAEOPNOTSUPP, WSAEPROTONOSUPPORT, WSAEPROTOTYPE,
+                          WSAETIMEDOUT, WSAEWOULDBLOCK };
+    for(const auto err: errs) {
+        error errObj(error::Domain::POSIX, int(err));
+        string msg = errObj.what();
+        CHECK(msg.find("Unknown error") == -1); // Should have a valid error message
+        CHECK(errObj.code != err); // Should be remapped to standard POSIX code
+    }
+#endif
 }
 
 TEST_CASE("C4Error exceptions") {

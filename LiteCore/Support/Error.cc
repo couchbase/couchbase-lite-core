@@ -140,6 +140,41 @@ namespace litecore {
 
     struct codeMapping { int err; error::Domain domain; int code; };
 
+#ifdef WIN32
+#define MAPWSA(code) { WSA##code,error::POSIX,code }
+#define MAPWSATO(from, to) { from,error::POSIX,to }
+
+    static const codeMapping kPrimaryCodeMapping[] = {
+        MAPWSA(EADDRINUSE),
+        MAPWSA(EADDRNOTAVAIL),
+        MAPWSA(EAFNOSUPPORT),
+        MAPWSA(EALREADY),
+        MAPWSATO(WSAECANCELLED, ECANCELED),
+        MAPWSA(ECONNABORTED),
+        MAPWSA(ECONNREFUSED),
+        MAPWSA(ECONNRESET),
+        MAPWSA(EDESTADDRREQ),
+        MAPWSA(EHOSTUNREACH),
+        MAPWSA(EINPROGRESS),
+        MAPWSA(EISCONN),
+        MAPWSA(ELOOP),
+        MAPWSA(EMSGSIZE),
+        MAPWSA(ENETDOWN),
+        MAPWSA(ENETRESET),
+        MAPWSA(ENETUNREACH),
+        MAPWSA(ENOBUFS),
+        MAPWSA(ENOPROTOOPT),
+        MAPWSA(ENOTCONN),
+        MAPWSA(ENOTSOCK),
+        MAPWSA(EOPNOTSUPP),
+        MAPWSA(EPROTONOSUPPORT),
+        MAPWSA(EPROTOTYPE),
+        MAPWSA(ETIMEDOUT),
+        MAPWSA(EWOULDBLOCK),
+    };
+#endif
+
+
     static const codeMapping kPOSIXMapping[] = {
         {ENOENT,                        error::LiteCore,    error::NotFound},
         {0, /*must end with err=0*/     error::LiteCore,    0},
@@ -181,6 +216,16 @@ namespace litecore {
 
     static int getPrimaryCode(const error::Domain &domain, const int& code)
     {
+#ifdef WIN32
+        if(domain == error::Domain::POSIX) {
+            for (const codeMapping *row = &kPrimaryCodeMapping[0]; row->err != 0; ++row) {
+                if (row->err == code) {
+                    return row->code;
+                }
+            }
+        }
+#endif
+
         if(domain != error::Domain::SQLite) {
             return code;
         }
