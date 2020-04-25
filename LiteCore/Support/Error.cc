@@ -171,6 +171,7 @@ namespace litecore {
         MAPWSA(EPROTOTYPE),
         MAPWSA(ETIMEDOUT),
         MAPWSA(EWOULDBLOCK),
+        {0, /*must end with err=0*/     error::LiteCore,    0}
     };
 #endif
 
