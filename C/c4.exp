@@ -149,6 +149,8 @@ _c4repl_getStatus
 _c4repl_retry
 _c4repl_getPendingDocIDs
 _c4repl_isDocumentPending
+_c4repl_setHostReachable
+_c4repl_setOptions
 
 _c4socket_registerFactory
 _c4socket_fromNative
@@ -272,6 +274,9 @@ _FLSlot_SetString
 _FLSlot_SetData
 _FLSlot_SetValue
 
+__FLBuf_Retain
+__FLBuf_Release
+
 # C4Tests
 
 _kC4SQLiteStorageEngine
@@ -344,8 +349,6 @@ _c4stream_bytesWritten
 _c4repl_isValidDatabaseName
 _c4repl_isValidRemote
 _c4repl_getResponseHeaders
-_c4repl_setOptions
-_c4repl_setHostReachable
 _c4repl_setSuspended
 
 _kC4ReplicatorActivityLevelNames
@@ -358,9 +361,6 @@ _c4db_markSynced
 _c4_dumpInstances
 _gC4ExpectExceptions
 _c4log_enableFatalExceptionBacktrace
-
-__FLBuf_Retain
-__FLBuf_Release
 
 _FLDoc_FromJSON
 _FLDoc_Retain
