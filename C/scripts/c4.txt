@@ -154,6 +154,8 @@ c4repl_getStatus
 c4repl_retry
 c4repl_getPendingDocIDs
 c4repl_isDocumentPending
+c4repl_setOptions
+c4repl_setHostReachable
 
 c4socket_registerFactory
 c4socket_fromNative
@@ -279,6 +281,9 @@ FLSlot_SetString
 FLSlot_SetData
 FLSlot_SetValue
 
+_FLBuf_Retain
+_FLBuf_Release
+
 ##################################################################################################
 # Add new declarations below, so they will not produce (unused) C# bindings
 # C4Tests
@@ -353,8 +358,6 @@ c4stream_bytesWritten
 c4repl_isValidDatabaseName
 c4repl_isValidRemote
 c4repl_getResponseHeaders
-c4repl_setOptions
-c4repl_setHostReachable
 c4repl_setSuspended
 
 kC4ReplicatorActivityLevelNames
@@ -367,9 +370,6 @@ c4db_markSynced
 c4_dumpInstances
 gC4ExpectExceptions
 c4log_enableFatalExceptionBacktrace
-
-_FLBuf_Retain
-_FLBuf_Release
 
 FLDoc_FromJSON
 FLDoc_Retain
