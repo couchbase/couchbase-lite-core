@@ -136,8 +136,8 @@ namespace litecore { namespace crypto {
                 CFRelease(data);
                 return result;
             } else {
-                WarnError("Couldn't get the data of a public key: Not supported by iOS < 10.0");
-                error::_throw(error::UnsupportedOperation, "Not supported by iOS < 10.0");
+                WarnError("Couldn't get the data of a public key: Not supported by macOS < 10.12 and iOS < 10.0");
+                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.12 and iOS < 10.0");
             }
         }
 
@@ -189,7 +189,7 @@ namespace litecore { namespace crypto {
                     return 0;
                 }
             } else {
-                WarnError("Couldn't decrypt using Keychain private key: Not supported by iOS < 10.0");
+                WarnError("Couldn't decrypt using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
                 return MBEDTLS_ERR_RSA_UNSUPPORTED_OPERATION;
             }
         }
@@ -239,7 +239,7 @@ namespace litecore { namespace crypto {
                     return 0;
                 }
             } else {
-                WarnError("Couldn't sign using Keychain private key: Not supported by iOS < 10.0");
+                WarnError("Couldn't sign using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
                 return MBEDTLS_ERR_RSA_UNSUPPORTED_OPERATION;
             }
         }
@@ -321,7 +321,7 @@ namespace litecore { namespace crypto {
                 return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
             }
         } else {
-            WarnError("Couldn't get private key using certificate: Not supported by iOS < 10.0");
+            WarnError("Couldn't get private key using certificate: Not supported by macOS < 10.12 and iOS < 10.0");
             throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
         }
     }
@@ -349,7 +349,7 @@ namespace litecore { namespace crypto {
                 auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
                 return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
             } else {
-                WarnError("Couldn't get private key using public key: Not supported by iOS < 10.0");
+                WarnError("Couldn't get private key using public key: Not supported by macOS < 10.12 and iOS < 10.0");
                 throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
             }
         }
