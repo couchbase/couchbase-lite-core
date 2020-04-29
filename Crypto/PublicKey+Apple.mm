@@ -123,7 +123,7 @@ namespace litecore { namespace crypto {
 
 
         virtual alloc_slice publicKeyRawData() override {
-            if (@available(iOS 10.0, *)) {
+            if (@available(macOS 10.12, iOS 10.0, *)) {
                 CFErrorRef error;
                 ++gC4ExpectExceptions;  // ignore internal C++ exceptions in Apple Security framework
                 CFDataRef data = SecKeyCopyExternalRepresentation(_publicKeyRef, &error);
@@ -170,7 +170,7 @@ namespace litecore { namespace crypto {
                              size_t *output_len) noexcept override
         {
             // No exceptions may be thrown from this function!
-            if (@available(iOS 10.0, *)) {
+            if (@available(macOS 10.12, iOS 10.0, *)) {
                 @autoreleasepool {
                     Log("Decrypting using Keychain private key");
                     NSData* data = slice(input, _keyLength).uncopiedNSData();
@@ -200,7 +200,7 @@ namespace litecore { namespace crypto {
                           void *outSignature) noexcept override
         {
             // No exceptions may be thrown from this function!
-            if (@available(iOS 10.0, *)) {
+            if (@available(macOS 10.12, iOS 10.0, *)) {
                 Log("Signing using Keychain private key");
                 @autoreleasepool {
                     // Map mbedTLS digest algorithm ID to SecKey algorithm ID:
@@ -276,7 +276,7 @@ namespace litecore { namespace crypto {
     }
 
     Retained<PersistentPrivateKey> PersistentPrivateKey::withCertificate(Cert *cert) {
-        if (@available(iOS 10, *)) {
+        if (@available(macOS 10.12, iOS 10, *)) {
             @autoreleasepool {
                 SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
                                                                          (CFDataRef)cert->data().copiedNSData());
@@ -329,7 +329,7 @@ namespace litecore { namespace crypto {
 
     Retained<PersistentPrivateKey> PersistentPrivateKey::withPublicKey(PublicKey* publicKey) {
         @autoreleasepool {
-            if (@available(iOS 10.0, *)) {
+            if (@available(macOS 10.12, iOS 10.0, *)) {
                 // Lookup private key by using the public key hash:
                 auto privateKeyRef = (SecKeyRef)findInKeychain(@{
                     (id)kSecClass:                  (id)kSecClassKey,
