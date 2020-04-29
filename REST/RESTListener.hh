@@ -50,6 +50,7 @@ namespace litecore { namespace REST {
         std::vector<net::Address> addresses(C4Database *dbOrNull =nullptr) const;
 
         virtual int connectionCount() override;
+        virtual int activeConnectionCount() override    {return (int)tasks().size();}
 
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string &name, FilePath &outPath);

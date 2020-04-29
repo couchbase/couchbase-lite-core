@@ -71,6 +71,9 @@ namespace litecore { namespace REST {
         /** Returns the number of client connections. */
         virtual int connectionCount() =0;
 
+        /** Returns the number of active client connections (for some definition of "active"). */
+        virtual int activeConnectionCount() =0;
+
     protected:
         mutable std::mutex _mutex;
         Config _config;

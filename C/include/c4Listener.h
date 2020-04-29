@@ -135,8 +135,11 @@ extern "C" {
         port the kernel picked. */
     uint16_t c4listener_getPort(C4Listener *listener C4NONNULL) C4API;
 
-    /** Returns the number of client connections. */
-    int c4listener_connectionCount(C4Listener *listener C4NONNULL) C4API;
+    /** Returns the number of client connections, and how many of those are currently active.
+        Either parameter can be NULL if you don't care about it. */
+    void c4listener_getConnectionStatus(C4Listener *listener C4NONNULL,
+                                        unsigned *connectionCount,
+                                        unsigned *activeConnectionCount) C4API;
 
     /** A convenience that, given a filesystem path to a database, returns the database name
         for use in an HTTP URI path.

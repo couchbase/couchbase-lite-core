@@ -91,20 +91,29 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
     if (pinnedCert)
         _address.scheme = kC4Replicator2TLSScheme;
 
-    CHECK(c4listener_connectionCount(listener()) == 0);
+    unsigned connections, activeConns;
+    c4listener_getConnectionStatus(listener(), &connections, &activeConns);
+    CHECK(connections == 0);
+    CHECK(activeConns == 0);
 
     C4Error err;
     REQUIRE(startReplicator(kC4OneShot, kC4Disabled, &err));
 
-    int maxConnections = INT_MIN;
+    unsigned maxConnections = 0, maxActiveConns = 0;
     C4ReplicatorStatus status;
     while ((status = c4repl_getStatus(_repl)).level != kC4Stopped) {
-        auto connections = c4listener_connectionCount(listener());
+        c4listener_getConnectionStatus(listener(), &connections, &activeConns);
+        CHECK(activeConns <= connections);
         maxConnections = std::max(maxConnections, connections);
+        maxActiveConns = std::max(maxActiveConns, activeConns);
         this_thread::sleep_for(chrono::milliseconds(1));
     }
     CHECK(maxConnections == 1);
-    CHECK(c4listener_connectionCount(listener()) == 0);
+    CHECK(maxActiveConns == 1);
+
+    c4listener_getConnectionStatus(listener(), &connections, &activeConns);
+    CHECK(connections == 0);
+    CHECK(activeConns == 0);
 }
 
 
