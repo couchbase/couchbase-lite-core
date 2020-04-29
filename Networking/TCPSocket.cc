@@ -103,7 +103,6 @@ namespace litecore { namespace net {
         if (!_tlsContext)
             _tlsContext = new TLSContext(_isClient ? TLSContext::Client : TLSContext::Server);
         string hostnameStr(hostname);
-        _wrappedSocket = _socket.get();
         auto oldSocket = move(_socket);
         return setSocket(_tlsContext->_context->wrap_socket(move(oldSocket),
                                             (_isClient ? tls_context::CLIENT : tls_context::SERVER),
@@ -122,14 +121,24 @@ namespace litecore { namespace net {
     }
 
 
+    sockpp::stream_socket* TCPSocket::actualSocket() const {
+        if (auto socket = _socket.get(); !socket->is_open())
+            return nullptr;
+        else if (auto tlsSock = dynamic_cast<tls_socket*>(socket); tlsSock)
+            return &tlsSock->stream();
+        else
+            return socket;
+    }
+
+
     string TCPSocket::peerAddress() {
-        auto baseSocket = _wrappedSocket ? _wrappedSocket : _socket.get();
-        sock_address_any addr = baseSocket->peer_address();
-        switch (addr.family()) {
-            case AF_INET:   return ((inet_address&)addr).to_string();
-            case AF_INET6:  return ((inet6_address&)addr).to_string();
-            default:        return "???";
+        if (auto socket = actualSocket(); socket) {
+            switch (auto addr = socket->peer_address(); addr.family()) {
+                case AF_INET:   return ((inet_address&)addr).to_string();
+                case AF_INET6:  return ((inet6_address&)addr).to_string();
+            }
         }
+        return "";
     }
 
 
@@ -436,7 +445,10 @@ namespace litecore { namespace net {
 
 
     int TCPSocket::fileDescriptor() {
-        return _wrappedSocket ? _wrappedSocket->handle() : _socket->handle();
+        if (auto socket = actualSocket(); socket)
+            return socket->handle();
+        else
+            return -1;
     }
 
 

@@ -126,11 +126,11 @@ namespace litecore::net {
 
     private:
         bool _setTimeout(double secs);
-        
+        sockpp::stream_socket* actualSocket() const;
+
         std::unique_ptr<sockpp::stream_socket> _socket;     // The TCP (or TLS) socket
-        sockpp::stream_socket* _wrappedSocket {nullptr};    // Underlying TLS socket, when using TCP
         fleece::Retained<TLSContext> _tlsContext;           // Custom TLS context if any
-        bool _isClient;                                     // Am I a client (not server) socket?
+        bool const _isClient;                               // Am I a client (not server) socket?
         bool _nonBlocking {false};                          // Is socket in non-blocking mode?
         double _timeout {0};                                // read/write/connect timeout in seconds
         C4Error _error {};                                  // last error
