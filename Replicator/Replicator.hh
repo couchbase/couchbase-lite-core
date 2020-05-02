@@ -87,7 +87,7 @@ namespace litecore { namespace repl {
 
         Status status() const                   {return Worker::status();}   //FIX: Needs to be thread-safe
 
-        void start(bool synchronous =false); 
+        void start(bool reset = false, bool synchronous =false); 
         void stop()                             {enqueue(&Replicator::_stop);}
 
         /** Tears down a Replicator state including any reference cycles.
@@ -137,11 +137,11 @@ namespace litecore { namespace repl {
         void _onClose(Connection::CloseStatus, Connection::State);
         void _onRequestReceived(Retained<blip::MessageIn> msg);
 
-        void _start();
+        void _start(bool reset);
         void _stop();
         void _disconnect(websocket::CloseCode closeCode, slice message);
         void _findExistingConflicts();        
-        bool getLocalCheckpoint();
+        bool getLocalCheckpoint(bool reset);
         void getRemoteCheckpoint(bool refresh);
         void startReplicating();
         virtual ActivityLevel computeActivityLevel() const override;

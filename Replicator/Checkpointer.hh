@@ -82,10 +82,10 @@ namespace litecore { namespace repl {
             If the checkpoint has already been read, this is a no-op.
             Returns false if the checkpoint wasn't read; if this was due to an error, not just
             because it's missing, `outError` will be set. */
-        bool read(C4Database *db NONNULL, C4Error *outError);
-
-        /** Updates the checkpoint from the database if it's changed. */
-        bool reread(C4Database *db NONNULL, C4Error *outError);
+        bool read(C4Database *db NONNULL, bool reset, C4Error *outError);
+        
+        /** Resets the checkpoint to the beginning */
+        void reset();
 
         /** Writes serialized checkpoint state to the local database.
             Does not write the current checkpoint state, because it may have changed since the
@@ -143,7 +143,6 @@ namespace litecore { namespace repl {
         const Options&                  _options;
         alloc_slice const               _remoteURL;
         std::unordered_set<std::string> _docIDs;
-        bool                            _resetCheckpoint;
 
         // Checkpoint state:
         mutable std::mutex              _mutex;

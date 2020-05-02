@@ -41,7 +41,6 @@ namespace litecore { namespace repl {
     Checkpointer::Checkpointer(const Options &opt, fleece::slice remoteURL)
     :_options(opt)
     ,_remoteURL(remoteURL)
-    ,_resetCheckpoint(_options.properties[kC4ReplicatorResetCheckpoint].asBool())
     { }
 
 
@@ -250,7 +249,7 @@ namespace litecore { namespace repl {
 
 
     // Reads the local checkpoint
-    bool Checkpointer::read(C4Database *db, C4Error *outError) {
+    bool Checkpointer::read(C4Database *db, bool reset, C4Error *outError) {
         if (_checkpoint)
             return true;
 
@@ -286,7 +285,7 @@ namespace litecore { namespace repl {
         // Checkpoint doc is either read, or nonexistent:
         LOCK();
         _checkpoint.reset(new Checkpoint);
-        if (body && !_resetCheckpoint) {
+        if (body && !reset) {
             _checkpoint->readJSON(body);
             _checkpointJSON = body;
             return true;
@@ -294,6 +293,11 @@ namespace litecore { namespace repl {
             *outError = {};
             return false;
         }
+    }
+
+
+    void Checkpointer::reset() {
+        _checkpoint.reset(new Checkpoint);
     }
 
 
@@ -312,7 +316,6 @@ namespace litecore { namespace repl {
             return false;
         // Now that we've saved, use the real checkpoint ID for any future reads:
         _initialDocID = checkpointID;
-        _resetCheckpoint = false;
         _checkpointJSON = nullslice;
         return true;
     }
@@ -367,7 +370,7 @@ namespace litecore { namespace repl {
             return false;
         }
 
-        if(!read(db, outErr) && outErr->code != 0)
+        if(!read(db, false, outErr) && outErr->code != 0)
             return false;
 
         const auto dbLastSequence = c4db_getLastSequence(db);
@@ -437,7 +440,7 @@ namespace litecore { namespace repl {
             return false;
         }
 
-        if(!read(db, outErr) && outErr->code != 0)
+        if(!read(db, false, outErr) && outErr->code != 0)
             return false;
 
         c4::ref<C4Document> doc = c4doc_get(db, docId, false, outErr);
