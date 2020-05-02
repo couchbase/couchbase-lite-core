@@ -154,7 +154,7 @@ namespace litecore { namespace REST {
             tcp_socket sock;
             {
                 lock_guard<mutex> lock(_mutex);
-                if (!_acceptor || !_acceptor->is_open())
+                if (!_acceptor || _acceptor->is_shutdown())
                     return;
                 sock = _acceptor->accept();
                 if (!sock) {
