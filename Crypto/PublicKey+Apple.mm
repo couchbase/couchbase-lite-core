@@ -90,12 +90,13 @@ namespace litecore { namespace crypto {
 
     static CFTypeRef CF_RETURNS_RETAINED findInKeychain(NSDictionary *params NONNULL) {
         CFTypeRef result = NULL;
+        ++gC4ExpectExceptions;  // ignore internal C++ exceptions in Apple Security framework
         OSStatus err = SecItemCopyMatching((__bridge CFDictionaryRef)params, &result);
+        --gC4ExpectExceptions;
         if (err == errSecItemNotFound)
             return nullptr;
         else
             checkOSStatus(err, "SecItemCopyMatching", "Couldn't get an item from the Keychain");
-        Assert(result != nullptr);
         return result;
     }
 
@@ -150,14 +151,43 @@ namespace litecore { namespace crypto {
 
 
         virtual void remove() override {
-            @autoreleasepool {
-                NSDictionary* params = @ {
-                    (id)kSecClass:              (id)kSecClassKey,
-                    (id)kSecAttrKeyClass:       (id)kSecAttrKeyClassPrivate,
-                    (id)kSecValueRef:           (__bridge id)_privateKeyRef,
-                };
-                checkOSStatus(SecItemDelete((CFDictionaryRef)params),
-                              "SecItemDelete", "remove a key-pair from the Keychain");
+            if (@available(macOS 10.12, iOS 10.0, *)) {
+                @autoreleasepool {
+                    // Try to get public key. If public key is not stored in the KeyChain, calling
+                    // SecKeyCopyPublicKey on macOS will return null with internal C++ exceptions
+                    // thrown in Apple Security framework:
+                    ++gC4ExpectExceptions;
+                    SecKeyRef publicKeyRef = SecKeyCopyPublicKey(_privateKeyRef);
+                    --gC4ExpectExceptions;
+                    
+                    // Delete Public Key:
+                    // Delete public key before private key, otherwise on macOS,
+                    // errSecMissingEntitlement (-34018) will be returned:
+                    if (publicKeyRef) {
+                        CFAutorelease(publicKeyRef);
+                        NSDictionary* params = @ {
+                            (id)kSecClass:              (id)kSecClassKey,
+                            (id)kSecAttrKeyClass:       (id)kSecAttrKeyClassPublic,
+                            (id)kSecValueRef:           (__bridge id)publicKeyRef,
+                        };
+                        OSStatus status = SecItemDelete((CFDictionaryRef)params);
+                        if (status != errSecSuccess && status != errSecItemNotFound)
+                            checkOSStatus(status, "SecItemDelete", "Couldn't remove a public key from the Keychain");
+                    }
+                    
+                    // Delete Private Key:
+                    NSDictionary* params = @ {
+                        (id)kSecClass:              (id)kSecClassKey,
+                        (id)kSecAttrKeyClass:       (id)kSecAttrKeyClassPrivate,
+                        (id)kSecValueRef:           (__bridge id)_privateKeyRef,
+                    };
+                    OSStatus status = SecItemDelete((CFDictionaryRef)params);
+                    if (status != errSecSuccess && status != errSecItemNotFound)
+                        checkOSStatus(status, "SecItemDelete", "Couldn't remove a private key from the Keychain");
+                }
+            } else {
+                WarnError("Couldn't remove keys: Not supported by macOS < 10.12 and iOS < 10.0");
+                throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
             }
         }
 
@@ -287,7 +317,8 @@ namespace litecore { namespace crypto {
                 // Get public key from the certificate using trust:
                 SecTrustRef trustRef;
                 SecPolicyRef policyRef = SecPolicyCreateBasicX509();
-                SecTrustCreateWithCertificates(certRef, policyRef, &trustRef);
+                checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
+                              "SecTrustCreateWithCertificates", "Couldn't create trust to get public key");
                 SecKeyRef publicKeyRef = SecTrustCopyPublicKey(trustRef);
                 CFRelease(policyRef);
                 CFRelease(trustRef);
@@ -311,7 +342,7 @@ namespace litecore { namespace crypto {
                     (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
                     (id)kSecAttrApplicationLabel:   publicKeyHash,
                     (id)kSecReturnRef:              @YES
-                                                               });
+                });
                 if (!privateKeyRef) {
                     CFRelease(publicKeyRef);
                     return nullptr;
@@ -341,11 +372,34 @@ namespace litecore { namespace crypto {
                 if (!privateKeyRef)
                     return nullptr;
                 
-                auto publicKeyRef = SecKeyCopyPublicKey(privateKeyRef);
+                // Get the certificate for getting the public key as SecKeyCopyPublicKey doesn't work
+                // if the public key is not stored in the Keychain (e.g. when using SecPKCS12Import to
+                // import an identity data into the KeyChain on macOS).
+                auto certRef = (SecCertificateRef)findInKeychain(@{
+                    (id)kSecClass:              (id)kSecClassCertificate,
+                    (id)kSecAttrPublicKeyHash:  publicKeyHash(publicKey),
+                    (id)kSecReturnRef:          @YES,
+                });
+                if (!certRef) {
+                    CFRelease(privateKeyRef);
+                    return nullptr;
+                }
+                CFAutorelease(certRef);
+                
+                // Gettting public key from the certificate using trust:
+                SecTrustRef trustRef;
+                SecPolicyRef policyRef = SecPolicyCreateBasicX509();
+                checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
+                              "SecTrustCreateWithCertificates", "Couldn't create trust to get public key");
+                SecKeyRef publicKeyRef = SecTrustCopyPublicKey(trustRef);
+                CFRelease(policyRef);
+                CFRelease(trustRef);
+                
                 if (!publicKeyRef) {
                     CFRelease(privateKeyRef);
                     throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // Impossible?
                 }
+                
                 auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
                 return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
             } else {
