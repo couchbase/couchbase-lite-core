@@ -261,28 +261,24 @@ extern "C" {
     /** \name Certificate Persistence
      @{ */
 
-    /** Saves a certificate to a database for easy lookup by name, or deletes a saved cert.
-        \note The certificate is saved as a "raw document", and will _not_ be replicated.
+    /** Saves a certificate to a persistent storage for easy lookup by name, or deletes a saved cert.
+        \note The certificate needs to be signed to save into the storage.
         @param cert  The certificate to store, or NULL to delete any saved cert with that name.
         @param entireChain  True if the entire cert chain should be saved.
-        @param db  The database in which to store the certificate.
         @param name  The name to save as.
         @param outError  On failure, the error info will be stored here.
         @return  True on success, false on failure. */
     bool c4cert_save(C4Cert *cert,
                      bool entireChain,
-                     C4Database *db C4NONNULL,
                      C4String name,
                      C4Error *outError);
 
-    /** Loads a certificate from a database given the name it was saved under.
+    /** Loads a certificate from a persistent storage given the name it was saved under.
         \note You are responsible for releasing the returned key reference.
-        @param db  The database the certificate was saved in.
         @param name  The name the certificate was saved with.
         @param outError  On failure, the error info will be stored here.
         @return  The certificate, or NULL if missing or if it failed to parse. */
-    C4Cert* c4cert_load(C4Database *db C4NONNULL,
-                        C4String name,
+    C4Cert* c4cert_load(C4String name,
                         C4Error *outError);
 
     /** @} */

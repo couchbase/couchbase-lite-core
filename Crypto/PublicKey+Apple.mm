@@ -100,6 +100,26 @@ namespace litecore { namespace crypto {
     }
 
 
+    static unsigned long getChildCertCount(SecCertificateRef parentCertRef) {
+        NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
+            (id)kSecClass:              (id)kSecClassCertificate,
+            (id)kSecValueRef:           (__bridge id)parentCertRef,
+            (id)kSecReturnAttributes:   @YES
+        }));
+        if (!attrs)
+            return 0;
+        
+        NSString* subject = attrs[(id)kSecAttrSubject];
+        Assert(subject);
+        NSArray* children = CFBridgingRelease(findInKeychain(@{
+            (id)kSecClass:              (id)kSecClassCertificate,
+            (id)kSecAttrIssuer:         subject,
+            (id)kSecMatchLimit:         (id)kSecMatchLimitAll
+        }));
+        return children.count;
+    }
+
+
 #pragma mark - KEYPAIR:
 
 
@@ -359,69 +379,197 @@ namespace litecore { namespace crypto {
 #pragma mark - CERT:
 
 
-    void Cert::makePersistent() {
-#if TARGET_OS_IPHONE
-        error::_throw(error::Unimplemented, "Persistent certs/keys not working on iOS yet");
-#else
+    // Save the certificate chain into the Keychain.
+    // 1. The persistentID will be assigned as a label to the leaf cert.
+    // 2. Do not allow to save the cert chain with duplicate persistentID.
+    // 3. [Apple Specific] Do not allow to save the duplicate leaf cert (even using a different persistentID)
+    //    as the Keychain doesn't allow the duplicate certs (same serial and issuer).
+    // 4. [Apple Specific] Ignore the Keychain's duplicate error for non-leaf certs to allow to save
+    //    the cert chains that share some intermediate certs.
+    void Cert::save(const std::string &persistentID, bool entireChain) {
         @autoreleasepool {
             auto name = subjectName();
-            Log("Adding certificate to Keychain for %.*s", SPLAT(name));
-            SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
-                                                                     (CFDataRef)data().copiedNSData());
-            if (!certRef)
-                throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // impossible?
-            DEFER {CFRelease(certRef);};
-
-            NSDictionary* params = @ {
+            Log("Adding a certificate chain with the id '%s' to the Keychain for '%.*s'",
+                persistentID.c_str(), SPLAT(name));
+            
+            NSString* label = [NSString stringWithCString: persistentID.c_str() encoding: NSUTF8StringEncoding];
+            CFTypeRef ref = findInKeychain(@{
                 (id)kSecClass:              (id)kSecClassCertificate,
-                (id)kSecValueRef:           (__bridge id)certRef,
-                (id)kSecReturnRef:          @YES,
-            };
-            CFTypeRef result;
-            ++gC4ExpectExceptions;
-            OSStatus err = SecItemAdd((CFDictionaryRef)params, &result);
-            --gC4ExpectExceptions;
-
-            if (err == errSecDuplicateItem) {
-                // Keychain can only have one cert with the same label (common name).
-                // Delete the existing one, then retry:
-                CFStringRef commonName;
-                checkOSStatus( SecCertificateCopyCommonName(certRef, &commonName),
-                              "SecCertificateCopyCommonName",
-                              "Couldn't replace a certificate in the Keychain");
-                Log("...first removing existing certificate with label '%s'",
-                    ((__bridge NSString*)commonName).UTF8String);
-                NSDictionary* delParams = @ {
-                    (id)kSecClass:              (id)kSecClassCertificate,
-                    (id)kSecAttrLabel:          (__bridge id)commonName,
-                };
-                checkOSStatus( SecItemDelete((CFDictionaryRef)delParams),
-                              "SecItemDelete",
-                              "Couldn't replace a certificate in the Keychain");
-                // Now retry:
-                ++gC4ExpectExceptions;
-                err = SecItemAdd((CFDictionaryRef)params, &result);
-                --gC4ExpectExceptions;
+                (id)kSecAttrLabel:          label,
+                (id)kSecReturnRef:          @YES
+            });
+            if (ref) {
+                CFRelease(ref);
+                checkOSStatus(errSecDuplicateItem,
+                              "Cert::save",
+                              "A certificate already exists with the same persistentID");
             }
+            
+            for (Retained<Cert> cert = this; cert; cert = cert->next()) {
+                SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
+                                                                         (CFDataRef)cert->data().copiedNSData());
+                if (!certRef)
+                    throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
+                CFAutorelease(certRef);
 
-            checkOSStatus(err, "SecItemAdd", "Couldn't add a certificate to the Keychain");
-            if (result)
-                CFRelease(result);
-
-#if 0
-            // Dump the cert's Keychain attributes, for debugging:
-            NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
-                (id)kSecClass:              (id)kSecClassCertificate,
-                (id)kSecValueRef:           (__bridge id)certRef,
-                (id)kSecReturnAttributes:   @YES
-            }));
-            NSLog(@"Cert attributes: %@", attrs);
-#endif
+                NSMutableDictionary* params = [NSMutableDictionary dictionaryWithDictionary: @{
+                    (id)kSecClass:              (id)kSecClassCertificate,
+                    (id)kSecValueRef:           (__bridge id)certRef,
+                    (id)kSecReturnRef:          @YES
+                }];
+                
+                if (cert == this) {
+                    // Set the label to the leaf cert:
+                    params[id(kSecAttrLabel)] = label;
+                }
+                
+                CFTypeRef result;
+                ++gC4ExpectExceptions;
+                OSStatus status = SecItemAdd((CFDictionaryRef)params, &result);
+                --gC4ExpectExceptions;
+                
+                if (result)
+                    CFAutorelease(result);
+                
+                if (status == errSecDuplicateItem && cert != this) {
+                    // Ignore duplicates as it might be referenced by the other certificates
+                    Log("Ignore adding the certificate to the Keychain for '%.*s' as duplicated",
+                        SPLAT(cert->subjectName()));
+                    continue;
+                } else
+                    checkOSStatus(status, "SecItemAdd", "Coulding add a certificate to the Keychain");
+                
+            #if TARGET_OS_OSX
+                // Workaround for macOS that the label is not set as specified
+                // when adding the certificate to the Keychain.
+                NSArray* items = (__bridge NSArray*)result;
+                Assert(items.count > 0);
+                if (cert == this) {
+                    NSDictionary* certQuery = @{
+                        (id)kSecClass:              (id)kSecClassCertificate,
+                        (id)kSecValueRef:           items[0]
+                    };
+                    
+                    NSDictionary* updatedAttrs = @{
+                        (id)kSecClass:              (id)kSecClassCertificate,
+                        (id)kSecValueRef:           items[0],
+                        (id)kSecAttrLabel:          label
+                    };
+                    
+                    ++gC4ExpectExceptions;
+                    checkOSStatus(SecItemUpdate((CFDictionaryRef)certQuery, (CFDictionaryRef)updatedAttrs),
+                                  "SecItemUpdate",
+                                  "Coulding update the label to a certificate in Keychain");
+                    --gC4ExpectExceptions;
+                }
+            #endif
+                
+                if (!entireChain)
+                    break;
+            }
         }
-#endif
     }
 
 
+    fleece::Retained<Cert> Cert::loadCert(const std::string &persistentID) {
+        @autoreleasepool {
+            Log("Loading a certificate chain with the id '%s' from the Keychain", persistentID.c_str());
+            
+            NSString* label = [NSString stringWithCString: persistentID.c_str()
+                                                 encoding: NSUTF8StringEncoding];
+            NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
+                (id)kSecClass:              (id)kSecClassCertificate,
+                (id)kSecAttrLabel:          label,
+                (id)kSecReturnRef:          @YES,
+                (id)kSecReturnData:         @YES
+            }));
+            if (!attrs)
+                return nullptr;
+            
+            NSData* certData = attrs[(id)kSecValueData];
+            Assert(certData);
+            Retained<Cert> cert = new Cert(slice(certData));
+            
+            // Create and evaluate trust to get certificate chain:
+            SecCertificateRef certRef = (__bridge SecCertificateRef)attrs[(id)kSecValueRef];
+            Assert(certRef);
+            
+            SecPolicyRef policyRef = SecPolicyCreateBasicX509();
+            CFAutorelease(policyRef);
+            
+            SecTrustRef trustRef;
+            checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
+                          "SecTrustCreateWithCertificates",
+                          "Couldn't create a trust to get certificate chain");
+            CFAutorelease(trustRef);
+            
+            SecTrustResultType result; // Result will be ignored.
+            checkOSStatus(SecTrustEvaluate(trustRef, &result),
+                          "SecTrustEvaluate",
+                          "Couldn't evaluate the trust to get certificate chain" );
+            
+            CFIndex count = SecTrustGetCertificateCount(trustRef);
+            Assert(count > 0);
+            for (CFIndex i = 1; i < count; i++) {
+                SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
+                NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
+                cert->append(new Cert(slice(data)));
+            }
+            
+            return cert;
+        }
+    }
+
+
+    void Cert::deleteCert(const std::string &persistentID) {
+        @autoreleasepool {
+            Log("Deleting a certificate chain with the id '%s' from the Keychain",
+                persistentID.c_str());
+            
+            NSString* label = [NSString stringWithCString: persistentID.c_str()
+                                                 encoding: NSUTF8StringEncoding];
+            SecCertificateRef certRef = (SecCertificateRef)findInKeychain(@{
+                (id)kSecClass:              (id)kSecClassCertificate,
+                (id)kSecAttrLabel:          label,
+                (id)kSecReturnRef:          @YES
+            });
+            if (!certRef)
+                return;
+            CFAutorelease(certRef);
+            
+            // Create and evaluate trust to get certificate chain:
+            SecPolicyRef policyRef = SecPolicyCreateBasicX509();
+            CFAutorelease(policyRef);
+            
+            SecTrustRef trustRef;
+            checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
+                          "SecTrustCreateWithCertificates",
+                          "Couldn't create a trust to get certificate chain");
+            CFAutorelease(trustRef);
+            
+            SecTrustResultType result; // Result will be ignored.
+            checkOSStatus(SecTrustEvaluate(trustRef, &result),
+                          "SecTrustEvaluate",
+                          "Couldn't evaluate the trust to get certificate chain");
+            
+            CFIndex count = SecTrustGetCertificateCount(trustRef);
+            Assert(count > 0);
+            for (CFIndex i = count - 1; i >= 0; i--) {
+                SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
+                if (getChildCertCount(ref) < 2) {
+                    NSDictionary* params = @{
+                        (id)kSecClass:              (id)kSecClassCertificate,
+                        (id)kSecValueRef:           (__bridge id)ref
+                    };
+                    checkOSStatus(SecItemDelete((CFDictionaryRef)params),
+                                  "SecItemDelete",
+                                  "Couldn't delete a certficaite from the Keychain");
+                }
+            }
+        }
+    }
+
+    
     Retained<Cert> Cert::load(PublicKey *subjectKey) {
         // The Keychain can look up a cert by the SHA1 digest of the raw form of its public key.
         @autoreleasepool {
