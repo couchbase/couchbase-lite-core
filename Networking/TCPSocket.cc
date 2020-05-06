@@ -110,7 +110,7 @@ namespace litecore { namespace net {
 
 
     bool TCPSocket::connected() const {
-        return _socket && _socket->is_open();
+        return _socket && !_socket->is_shutdown();
     }
 
 

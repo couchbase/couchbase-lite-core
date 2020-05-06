@@ -40,8 +40,7 @@ static string to_str(Value v) {
     return to_str(v.asString());
 }
 
-#define TEST_PORT      59849
-#define TEST_PORT_STR "59849"
+#define TEST_PORT      0
 
 class C4RESTTest : public C4Test, public ListenerHarness {
 public:
@@ -85,7 +84,8 @@ public:
 
         C4Log("---- %s %s", method.c_str(), uri.c_str());
         string scheme = config.tlsConfig ? "https" : "http";
-        unique_ptr<Response> r(new Response(scheme, method, requestHostname, config.port, uri));
+        auto port = c4listener_getPort(listener);
+        unique_ptr<Response> r(new Response(scheme, method, requestHostname, port, uri));
         r->setHeaders(headers).setBody(body);
         if (pinnedCert)
             r->allowOnlyCert(pinnedCert);
@@ -150,15 +150,17 @@ TEST_CASE_METHOD(C4RESTTest, "Network interfaces", "[Listener][C]") {
 
 TEST_CASE_METHOD(C4RESTTest, "Listener URLs", "[Listener][C]") {
     share(db, "db"_sl);
-    forEachURL(nullptr, [](string_view url) {
+    auto configPortStr = to_string(c4listener_getPort(listener));
+    string expectedSuffix = string(":") + configPortStr + "/";
+    forEachURL(nullptr, [&expectedSuffix](string_view url) {
         C4Log("Listener URL = <%.*s>", SPLAT(slice(url)));
         CHECK(hasPrefix(url, "http://"));
-        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/"));
+        CHECK(hasSuffix(url, expectedSuffix));
     });
-    forEachURL(db, [](string_view url) {
+    forEachURL(db, [&expectedSuffix](string_view url) {
         C4Log("Database URL = <%.*s>", SPLAT(slice(url)));
         CHECK(hasPrefix(url, "http://"));
-        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/db"));
+        CHECK(hasSuffix(url, expectedSuffix + "db"));
     });
 }
 
@@ -190,7 +192,7 @@ TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
         C4String dbName;
         INFO("URL is <" << url << ">");
         CHECK(c4address_fromURL(slice(url), &address, &dbName));
-        CHECK(address.port == TEST_PORT);
+        CHECK(address.port == c4listener_getPort(listener));
         CHECK(dbName == "db"_sl);
 
         if (intf) {
@@ -213,11 +215,21 @@ TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
 
 
 TEST_CASE_METHOD(C4RESTTest, "Listener Auto-Select Port", "[Listener][C]") {
-    config.port = 0;
     share(db, "db"_sl);
     const auto port = c4listener_getPort(listener);
     C4Log("System selected port %u", port);
     CHECK(port != 0);
+}
+
+
+TEST_CASE_METHOD(C4RESTTest, "No Listeners on Same Port", "[Listener][C]") {
+    share(db, "db"_sl);
+    config.port = c4listener_getPort(listener);
+    C4Error err;
+    auto listener2 = c4listener_start(&config, &err);
+    CHECK(!listener2);
+    CHECK(err.domain == POSIXDomain);
+    CHECK(err.code == EADDRINUSE);
 }
 
 
@@ -449,15 +461,17 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][Listener][C]") {
 TEST_CASE_METHOD(C4RESTTest, "TLS REST URLs", "[REST][Listener][C]") {
     useServerTLSWithTemporaryKey();
     share(db, "db"_sl);
-    forEachURL(nullptr, [](string_view url) {
+    auto configPortStr = to_string(c4listener_getPort(listener));
+    string expectedSuffix = string(":") + configPortStr + "/";
+    forEachURL(nullptr, [&expectedSuffix](string_view url) {
         C4Log("Listener URL = <%.*s>", SPLAT(slice(url)));
         CHECK(hasPrefix(url, "https://"));
-        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/"));
+        CHECK(hasSuffix(url, expectedSuffix));
     });
-    forEachURL(db, [](string_view url) {
+    forEachURL(db, [&expectedSuffix](string_view url) {
         C4Log("Database URL = <%.*s>", SPLAT(slice(url)));
         CHECK(hasPrefix(url, "https://"));
-        CHECK(hasSuffix(url, ":" TEST_PORT_STR "/db"));
+        CHECK(hasSuffix(url, expectedSuffix + "db"));
     });
 }
 
