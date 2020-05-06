@@ -217,6 +217,16 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     // Delete the cert:
     Cert::deleteCert("cert1");
     CHECK(Cert::loadCert("cert1") == nullptr);
+    
+    // Save and load again after delete:
+    cert->save("cert1", true);
+    Retained<Cert> certC = Cert::loadCert("cert1");
+    REQUIRE(certA);
+    CHECK(certA->data() == cert->data());
+    
+    // Delete the cert
+    Cert::deleteCert("cert1");
+    CHECK(Cert::loadCert("cert1") == nullptr);
 }
 
 
