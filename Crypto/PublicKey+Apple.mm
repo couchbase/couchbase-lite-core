@@ -437,7 +437,7 @@ namespace litecore { namespace crypto {
                         SPLAT(cert->subjectName()));
                     continue;
                 } else
-                    checkOSStatus(status, "SecItemAdd", "Coulding add a certificate to the Keychain");
+                    checkOSStatus(status, "SecItemAdd", "Couldn't add a certificate to the Keychain");
                 
             #if TARGET_OS_OSX
                 // Workaround for macOS that the label is not set as specified
@@ -459,7 +459,7 @@ namespace litecore { namespace crypto {
                     ++gC4ExpectExceptions;
                     checkOSStatus(SecItemUpdate((CFDictionaryRef)certQuery, (CFDictionaryRef)updatedAttrs),
                                   "SecItemUpdate",
-                                  "Coulding update the label to a certificate in Keychain");
+                                  "Couldn't update the label to a certificate in Keychain");
                     --gC4ExpectExceptions;
                 }
             #endif
@@ -563,7 +563,7 @@ namespace litecore { namespace crypto {
                     };
                     checkOSStatus(SecItemDelete((CFDictionaryRef)params),
                                   "SecItemDelete",
-                                  "Couldn't delete a certficaite from the Keychain");
+                                  "Couldn't delete a certificate from the Keychain");
                 }
             }
         }
