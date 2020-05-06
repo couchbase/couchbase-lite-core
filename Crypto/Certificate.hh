@@ -180,13 +180,13 @@ namespace litecore { namespace crypto {
         std::pair<time_t,time_t> validTimespan();
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-        /** Save the certificate chain to a persistent key store with the persisent ID */
+        /** Save the certificate chain to a persistent key store with the persistent ID */
         void save(const std::string &persistentID, bool entireChain);
         
         /** Load the certificate chain from a persistent key store with the persistent ID */
         static fleece::Retained<Cert> loadCert(const std::string &persistentID);
         
-        /** Delete the certificate chain with the persisent ID */
+        /** Delete the certificate chain with the persistent ID */
         static void deleteCert(const std::string &persistentID);
         
         /** Loads the private key from persistent storage, if available. */
