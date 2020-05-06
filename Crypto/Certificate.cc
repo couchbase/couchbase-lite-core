@@ -496,7 +496,15 @@ namespace litecore { namespace crypto {
         // NOTE: These factory functions are implemented in a per-platform source file such as
         // PublicKey+Apple.mm, because they need to call platform-specific APIs.
 
-        void Cert::makePersistent() {
+        void Cert::save(const std::string &persistentID, bool entireChain) {
+            ... platform specific code...
+        }
+        
+        fleece::Retained<Cert> Cert::loadCert(const std::string &persistentID) {
+            ... platform specific code...
+        }
+        
+        void Cert::deleteCert(const std::string &persistentID) {
             ... platform specific code...
         }
 

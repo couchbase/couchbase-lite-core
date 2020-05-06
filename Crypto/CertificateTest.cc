@@ -16,13 +16,16 @@
 // limitations under the License.
 //
 
-#include "c4Test.hh"
 #include "c4.hh"
 #include "PublicKey.hh"
 #include "Certificate.hh"
 #include "CertRequest.hh"
+#include "Error.hh"
+#include "LiteCoreTest.hh"
 #include <iostream>
 
+
+using namespace litecore;
 using namespace litecore::crypto;
 using namespace std;
 using namespace fleece;
@@ -194,12 +197,178 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     CHECK(csr2->subjectName() == kSubjectName);
     CHECK(csr2->subjectPublicKey()->data(KeyFormat::Raw) == key->publicKey()->data(KeyFormat::Raw));
 
-    // Make the cert persistent:
-    cert->makePersistent();
-    Retained<Cert> cert2 = Cert::load(pubKey);
-    REQUIRE(cert2);
-    CHECK(cert2->data() == cert->data());
+    // Delete the cert to cleanup:
+    Cert::deleteCert("cert1");
+    CHECK(Cert::loadCert("cert1") == nullptr);
+    
+    // Save the cert:
+    cert->save("cert1", true);
+    
+    // Load the cert with the persistent ID:
+    Retained<Cert> certA = Cert::loadCert("cert1");
+    REQUIRE(certA);
+    CHECK(certA->data() == cert->data());
+    
+    // Load the cert with public key:
+    Retained<Cert> certB= Cert::load(pubKey);
+    REQUIRE(certB);
+    CHECK(certB->data() == cert->data());
+    
+    // Delete the cert:
+    Cert::deleteCert("cert1");
+    CHECK(Cert::loadCert("cert1") == nullptr);
+    
+    // Save and load again after delete:
+    cert->save("cert1", true);
+    Retained<Cert> certC = Cert::loadCert("cert1");
+    REQUIRE(certA);
+    CHECK(certA->data() == cert->data());
+    
+    // Delete the cert
+    Cert::deleteCert("cert1");
+    CHECK(Cert::loadCert("cert1") == nullptr);
 }
+
+
+TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
+    // Create a keypair and a cert1:
+    Retained<PersistentPrivateKey> key1 = PersistentPrivateKey::generateRSA(2048);
+    Retained<PublicKey> pubKey = key1->publicKey();
+    CHECK(pubKey != nullptr);
+
+    Cert::IssuerParameters issuerParams1;
+    issuerParams1.serial = "1"_sl;
+    issuerParams1.validity_secs = 3600*24;
+    Retained<Cert> cert1 = new Cert(DistinguishedName(kSubjectName), issuerParams1, key1);
+
+    // Delete cert1 to cleanup:
+    Cert::deleteCert("cert1");
+    
+    // Save cert1:
+    cert1->save("cert1", true);
+    Retained<Cert> cert1a = Cert::loadCert("cert1");
+    REQUIRE(cert1a);
+    CHECK(cert1a->data() == cert1->data());
+    
+    // Save cert1 again with the same id:
+    ExpectException(error::LiteCore, error::CryptoError, [&]{
+        cert1->save("cert1", true);
+    });
+        
+#ifdef __APPLE__
+    // Save cert1 again with a different id:
+    ExpectException(error::LiteCore, error::CryptoError, [&]{
+        cert1->save("cert2", true);
+    });
+#endif
+    
+    // Create another keypair and cert2:
+    Retained<PersistentPrivateKey> key2 = PersistentPrivateKey::generateRSA(2048);
+    Retained<PublicKey> pubKey2 = key2->publicKey();
+    CHECK(pubKey2 != nullptr);
+
+    Cert::IssuerParameters issuerParams2;
+    issuerParams2.serial = "2"_sl;
+    issuerParams2.validity_secs = 3600*24;
+    Retained<Cert> cert2 = new Cert(DistinguishedName(kSubject2Name), issuerParams2, key1);
+    
+    // Delete cert2 to cleanup:
+    Cert::deleteCert("cert2");
+    
+    // Save cert2 to an existing ID:
+    ExpectException(error::LiteCore, error::CryptoError, [&]{
+        cert2->save("cert1", true);
+    });
+    
+    // Save cert2:
+    cert2->save("cert2", true);
+    Retained<Cert> cert2a = Cert::loadCert("cert2");
+    REQUIRE(cert2a);
+    CHECK(cert2a->data() == cert2->data());
+    
+    // Delete cert1:
+    Cert::deleteCert("cert1");
+    CHECK(Cert::loadCert("cert1") == nullptr);
+    
+    // Delete cert2:
+    Cert::deleteCert("cert2");
+    CHECK(Cert::loadCert("cert2") == nullptr);
+}
+
+
+TEST_CASE("Persistent cert chain", "[Certs]") {
+    // Create a CA Cert:
+    Retained<PrivateKey> caKey = PrivateKey::generateTemporaryRSA(2048);
+    Cert::IssuerParameters caIssuerParams;
+    caIssuerParams.is_ca = true;
+    Retained<Cert> caCert = new Cert(DistinguishedName(kCAName), caIssuerParams, caKey);
+    cerr << "CA cert info:\n" << string(caCert->summary("\t"));
+    
+    // Create CSR1:
+    Retained<PrivateKey> key1 = PrivateKey::generateTemporaryRSA(2048);
+    Retained<CertSigningRequest> csr1 = new CertSigningRequest(DistinguishedName(kSubjectName), key1);
+    CHECK(csr1->subjectName() == kSubjectName);
+    CHECK(csr1->subjectPublicKey()->data(KeyFormat::Raw) == key1->publicKey()->data(KeyFormat::Raw));
+    
+    // Sign and create cert1 with the CA Cert:
+    Cert::IssuerParameters caClientParams1;
+    caClientParams1.serial = "1"_sl;
+    caClientParams1.validity_secs = 3600*24;
+    Retained<Cert> cert1 = csr1->sign(caClientParams1, caKey, caCert);
+    cerr << "Cert1 info:\n" << string(cert1->summary("\t"));
+    
+    // Delete cert1 to cleanup:
+    Cert::deleteCert("cert1");
+    CHECK(Cert::loadCert("cert1") == nullptr);
+    
+    // Save cert1:
+    cert1->save("cert1", true);
+    Retained<Cert> cert1a = Cert::loadCert("cert1");
+    REQUIRE(cert1a);
+    CHECK(cert1a->data() == cert1->data());
+    
+    // Create CSR2:
+    Retained<PrivateKey> key2 = PrivateKey::generateTemporaryRSA(2048);
+    Retained<CertSigningRequest> csr2 = new CertSigningRequest(DistinguishedName(kSubject2Name), key2);
+    CHECK(csr2->subjectName() == kSubject2Name);
+    CHECK(csr2->subjectPublicKey()->data(KeyFormat::Raw) == key2->publicKey()->data(KeyFormat::Raw));
+    
+    // Sign and create cert2 with the same CA Cert as the cert1:
+    Cert::IssuerParameters caClientParams2;
+    caClientParams2.serial = "2"_sl;
+    caClientParams2.validity_secs = 3600*24;
+    Retained<Cert> cert2 = csr2->sign(caClientParams2, caKey, caCert);
+    cerr << "Cert2 info:\n" << string(cert2->summary("\t"));
+    
+    // Delete cert2 to cleanup:
+    Cert::deleteCert("cert2");
+    CHECK(Cert::loadCert("cert2") == nullptr);
+    
+    // Save cert2:
+    cert2->save("cert2", true);
+    Retained<Cert> cert2a = Cert::loadCert("cert2");
+    REQUIRE(cert2a);
+    CHECK(cert2a->data() == cert2->data());
+    
+    // Load cert1 again to make sure that it's still loaded:
+    Retained<Cert> cert1b = Cert::loadCert("cert1");
+    REQUIRE(cert1b);
+    CHECK(cert1b->data() == cert1->data());
+    
+    // Delete cert1:
+    Cert::deleteCert("cert1");
+    CHECK(Cert::loadCert("cert1") == nullptr);
+    
+    // Load cert2 again to make sure that it's still loaded:
+    Retained<Cert> cert2b = Cert::loadCert("cert2");
+    REQUIRE(cert2b);
+    CHECK(cert2b->data() == cert2->data());
+    
+    // Delete cert2:
+    Cert::deleteCert("cert2");
+    CHECK(Cert::loadCert("cert2") == nullptr);
+}
+
 #endif
 
 

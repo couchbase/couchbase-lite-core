@@ -346,36 +346,42 @@ C4SliceResult c4cert_copyChainData(C4Cert* cert) C4API {
 }
 
 
-
-static constexpr slice kCertStoreName = "certs"_sl;
-
-
 bool c4cert_save(C4Cert *cert,
                  bool entireChain,
-                 C4Database *db C4NONNULL,
                  C4String name,
                  C4Error *outError)
 {
-    C4SliceResult data = {};
-    if (cert) {
-        if (entireChain)
-            data = c4cert_copyChainData(cert);
-        else
-            data = c4cert_copyData(cert, false);
-    }
-    return c4raw_put(db, kCertStoreName, name, nullslice, alloc_slice(data), outError);
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    return tryCatch<bool>(outError, [&]() {
+        if (cert) {
+            if (auto signedCert = asSignedCert(cert, outError); signedCert) {
+                signedCert->save(toString(name), entireChain);
+                return true;
+            }
+            return false;
+        } else {
+            Cert::deleteCert(toString(name));
+            return true;
+        }
+    });
+#else
+    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
+    return false;
+#endif
 }
 
 
-/** Loads a certificate from a database given the name it was saved under. */
-C4Cert* c4cert_load(C4Database *db C4NONNULL,
-                    C4String name,
+C4Cert* c4cert_load(C4String name,
                     C4Error *outError)
 {
-    c4::ref<C4RawDocument> doc = c4raw_get(db, kCertStoreName, name, outError);
-    if (!doc)
-        return nullptr;
-    return c4cert_fromData(doc->body, outError);
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    return tryCatch<C4Cert*>(outError, [&]() {
+        return retainedExternal(Cert::loadCert(toString(name)).get());
+    });
+#else
+    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
+    return nullptr;
+#endif
 }
 
 
