@@ -299,6 +299,12 @@ namespace c4Internal {
     }
 
 
+    void Database::maintenance(DataFile::MaintenanceType what) {
+        mustNotBeInTransaction();
+        dataFile()->maintenance(what);
+    }
+
+
     void Database::rekey(const C4EncryptionKey *newKey) {
         _dataFile->_logInfo("Rekeying database...");
         C4EncryptionKey keyBuf {kC4EncryptionNone, {}};
