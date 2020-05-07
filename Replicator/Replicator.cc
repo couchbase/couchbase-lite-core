@@ -470,7 +470,6 @@ namespace litecore { namespace repl {
                 stop();
                 return false;
             } else if (reset) {
-                _checkpointer.reset();
                 logInfo("Ignoring local checkpoint ('reset' option is set)");
             } else {
                 logInfo("No local checkpoint '%.*s'", SPLAT(_checkpointer.initialCheckpointID()));

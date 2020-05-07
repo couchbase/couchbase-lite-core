@@ -296,11 +296,6 @@ namespace litecore { namespace repl {
     }
 
 
-    void Checkpointer::reset() {
-        _checkpoint.reset(new Checkpoint);
-    }
-
-
     // subroutine that actually reads the checkpoint doc from the db
     alloc_slice Checkpointer::_read(C4Database *db, slice checkpointID, C4Error* err) {
         const c4::ref<C4RawDocument> doc( c4raw_get(db, constants::kLocalCheckpointStore,
