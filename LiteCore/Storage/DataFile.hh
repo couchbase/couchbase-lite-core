@@ -93,6 +93,15 @@ namespace litecore {
 
         virtual void compact() =0;
 
+        /** Types of things \ref maintenance() can do.
+            NOTE: If you update this, you must update C4MaintenanceType in c4Database.h too! */
+        enum MaintenanceType {
+            kReindex
+        };
+
+        /** Perform database maintenance of some type. Returns false if not supported. */
+        virtual void maintenance(MaintenanceType) =0;
+
         virtual void rekey(EncryptionAlgorithm, slice newKey);
 
         Delegate* delegate() const                          {return _delegate;}

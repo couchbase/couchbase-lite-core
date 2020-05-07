@@ -252,13 +252,27 @@ extern "C" {
     C4ExtraInfo c4db_getExtraInfo(C4Database *database C4NONNULL) C4API;
     void c4db_setExtraInfo(C4Database *database C4NONNULL, C4ExtraInfo) C4API;
 
+
     /** @} */
-    /** \name Compaction
+    /** \name Database Maintenance
         @{ */
+
+
+    /** Types of maintenance that \ref c4db_maintenance can perform.
+        NOTE: Enum values must match the ones in DataFile::MaintenanceType */
+    typedef C4_ENUM(uint32_t, C4MaintenanceType) {
+        kC4Reindex,     ///< Rebuild indexes
+    };
 
 
     /** Manually compacts the database. */
     bool c4db_compact(C4Database* database C4NONNULL, C4Error *outError) C4API;
+
+
+    /** Performs database maintenance. */
+    bool c4db_maintenance(C4Database* database C4NONNULL,
+                          C4MaintenanceType type,
+                          C4Error *outError) C4API;
 
 
     /** @} */
