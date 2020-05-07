@@ -106,7 +106,7 @@ public:
 
         C4Log("---- %s %s", method.c_str(), uri.c_str());
         string scheme = config.tlsConfig ? "https" : "http";
-        auto port = c4listener_getPort(listener);
+        auto port = c4listener_getPort(listener());
         unique_ptr<Response> r(new Response(scheme, method, requestHostname, port, uri));
         r->setHeaders(headers).setBody(body);
         if (pinnedCert)
@@ -181,7 +181,7 @@ TEST_CASE_METHOD(C4RESTTest, "Network interfaces", "[Listener][C]") {
 
 TEST_CASE_METHOD(C4RESTTest, "Listener URLs", "[Listener][C]") {
     share(db, "db"_sl);
-    auto configPortStr = to_string(c4listener_getPort(listener));
+    auto configPortStr = to_string(c4listener_getPort(listener()));
     string expectedSuffix = string(":") + configPortStr + "/";
     forEachURL(nullptr, [&expectedSuffix](string_view url) {
         C4Log("Listener URL = <%.*s>", SPLAT(slice(url)));
@@ -223,7 +223,7 @@ TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
         C4String dbName;
         INFO("URL is <" << url << ">");
         CHECK(c4address_fromURL(slice(url), &address, &dbName));
-        CHECK(address.port == c4listener_getPort(listener));
+        CHECK(address.port == c4listener_getPort(listener()));
         CHECK(dbName == "db"_sl);
 
         if (intf) {
@@ -255,7 +255,7 @@ TEST_CASE_METHOD(C4RESTTest, "Listener Auto-Select Port", "[Listener][C]") {
 
 TEST_CASE_METHOD(C4RESTTest, "No Listeners on Same Port", "[Listener][C]") {
     share(db, "db"_sl);
-    config.port = c4listener_getPort(listener);
+    config.port = c4listener_getPort(listener());
     C4Error err;
     auto listener2 = c4listener_start(&config, &err);
     CHECK(!listener2);
@@ -530,7 +530,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP auth correct", "[REST][Listener][C]") {
 TEST_CASE_METHOD(C4RESTTest, "TLS REST URLs", "[REST][Listener][C]") {
     useServerTLSWithTemporaryKey();
     share(db, "db"_sl);
-    auto configPortStr = to_string(c4listener_getPort(listener));
+    auto configPortStr = to_string(c4listener_getPort(listener()));
     string expectedSuffix = string(":") + configPortStr + "/";
     forEachURL(nullptr, [&expectedSuffix](string_view url) {
         C4Log("Listener URL = <%.*s>", SPLAT(slice(url)));

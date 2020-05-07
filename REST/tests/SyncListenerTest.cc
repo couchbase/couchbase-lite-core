@@ -47,7 +47,7 @@ public:
     void run() {
         ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
         share(db2, "db2"_sl);
-        _address.port = c4listener_getPort(listener);
+        _address.port = c4listener_getPort(listener());
         if (pinnedCert)
             _address.scheme = kC4Replicator2TLSScheme;
         replicate(kC4OneShot, kC4Disabled);
