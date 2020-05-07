@@ -73,6 +73,8 @@ namespace c4Internal {
         void resetUUIDs();
 
         void rekey(const C4EncryptionKey *newKey);
+        
+        void maintenance(DataFile::MaintenanceType what);
 
         void compact();
 

@@ -28,6 +28,7 @@ _c4db_copy
 _c4db_delete
 _c4db_deleteAtPath
 _c4db_compact
+_c4db_maintenance
 _c4db_rekey
 _c4db_getPath
 _c4db_getConfig

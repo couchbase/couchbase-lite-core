@@ -213,6 +213,11 @@ bool c4db_compact(C4Database* database, C4Error *outError) noexcept {
 }
 
 
+bool c4db_maintenance(C4Database* database, C4MaintenanceType type, C4Error *outError) C4API {
+    return tryCatch(outError, bind(&Database::maintenance, database, DataFile::MaintenanceType(type)));
+}
+
+
 bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *outError) noexcept {
     return tryCatch(outError, bind(&Database::rekey, database, newKey));
 }

@@ -253,6 +253,34 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query expression index", "[Query][C]") {
 }
 
 
+static bool lookForIndex(C4Database *db, slice name) {
+    bool found = false;
+    Doc info(alloc_slice(c4db_getIndexesInfo(db, nullptr)));
+    for (Array::iterator i(info.asArray()); i; ++i) {
+        Dict index = i.value().asDict();
+        C4Log("-- index: %s", index.toJSONString().c_str());
+        if (index["name"].asString() == name)
+            found = true;
+    }
+    return found;
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Reindex", "[Query][C]") {
+    C4Error err;
+    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
+    CHECK(lookForIndex(db, "length"_sl));
+    compile(json5("['=', ['length()', ['.name.first']], 9]"));
+    CHECK(run() == (vector<string>{ "0000015", "0000099" }));
+
+    C4Log("Reindexing");
+    REQUIRE(c4db_maintenance(db, kC4Reindex, &err));
+
+    CHECK(lookForIndex(db, "length"_sl));
+    CHECK(run() == (vector<string>{ "0000015", "0000099" }));
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
     // Create the same index as the above test:
     C4Error err;
