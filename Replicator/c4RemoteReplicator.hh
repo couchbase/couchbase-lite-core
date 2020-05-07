@@ -55,12 +55,12 @@ namespace c4Internal {
         }
 
 
-        void start() override {
+        void start(bool reset) override {
             LOCK(_mutex);
             if (_replicator)
                 return;
             _retryCount = 0;
-            if(!_restart()) {
+            if(!_restart(reset)) {
                 UNLOCK();
                 notifyStateChanged();
             }
@@ -79,7 +79,7 @@ namespace c4Internal {
                 return false;
             }
             logInfo("Retrying connection to %.*s (attempt #%u)...", SPLAT(_url), _retryCount+1);
-            if(!_restart()) {
+            if(!_restart(false)) {
                 UNLOCK();
                 notifyStateChanged();
                 return false;
@@ -144,9 +144,9 @@ namespace c4Internal {
 
 
         // Both `start` and `retry` end up calling this.
-        bool _restart() {
+        bool _restart(bool reset) {
             cancelScheduledRetry();
-            return _start();
+            return _start(reset);
         }
 
 

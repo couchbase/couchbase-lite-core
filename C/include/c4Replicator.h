@@ -223,8 +223,10 @@ extern "C" {
     void c4repl_free(C4Replicator* repl) C4API;
 
     /** Tells a replicator to start. Ignored if it's not in the Stopped state.
-        \note This function is thread-safe.  */
-    void c4repl_start(C4Replicator* repl C4NONNULL) C4API;
+        \note This function is thread-safe.
+        @param reset If true, the replicator will reset its checkpoint and start replication from the beginning
+     */
+    void c4repl_start(C4Replicator* repl C4NONNULL, bool reset) C4API;
 
     /** Tells a replicator to stop. Ignored if in the Stopped state.
         This function is thread-safe.  */
@@ -326,7 +328,6 @@ extern "C" {
     #define kC4ReplicatorOptionOutgoingConflicts   "outgoingConflicts" ///< Allow creating conflicts on remote (bool)
     #define kC4ReplicatorCheckpointInterval     "checkpointInterval" ///< How often to checkpoint, in seconds (number)
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" ///< Stable ID for remote db with unstable URL (string)
-    #define kC4ReplicatorResetCheckpoint        "reset"     ///< Start over w/o checkpoint (bool)
     #define kC4ReplicatorOptionProgressLevel    "progress"  ///< If >=1, notify on every doc; if >=2, on every attachment (int)
     #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
     #define kC4ReplicatorOptionMaxRetries       "maxRetries" ///< Max number of retry attempts (int)

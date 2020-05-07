@@ -49,7 +49,7 @@ struct C4Replicator : public RefCounted,
     // submodule relationship to this one, so it's possible for it to get out of sync.
     static constexpr int API_VERSION = 2;
 
-    virtual void start() {
+    virtual void start(bool reset = false) {
         LOCK(_mutex);
         if(_status.level == kC4Stopping) {
             logInfo("Rapid call to start() (stop() is not finished yet), scheduling a restart after stop() is done...");
@@ -58,7 +58,7 @@ struct C4Replicator : public RefCounted,
         }
 
         if (!_replicator) {
-            if(!_start()) {
+            if(!_start(reset)) {
                 UNLOCK();
                 // error set as part of _start,
                 // but we cannot notify until outside of the lock
@@ -270,7 +270,7 @@ protected:
 
     // Base implementation of starting the replicator.
     // Subclass implementation of `start` must call this (with the mutex locked).
-    virtual bool _start() {
+    virtual bool _start(bool reset) {
         if (!_replicator) {
             if(!createReplicator()) {
                 return false;
@@ -282,7 +282,7 @@ protected:
         _selfRetain = this; // keep myself alive till Replicator stops
         updateStatusFromReplicator(_replicator->status());
         _responseHeaders = nullptr;
-        _replicator->start();
+        _replicator->start(reset);
         return true;
     }
 
@@ -296,7 +296,7 @@ protected:
 
     virtual bool _unsuspend() {
         // called with _mutex locked
-        return _start();
+        return _start(false);
     }
     
     // ---- ReplicatorDelegate API:

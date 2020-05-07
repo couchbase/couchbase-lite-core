@@ -185,10 +185,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") 
     _expectedDocumentCount = 0;  // normal replication will not re-pull purged doc
     runPullReplication();
 
-    auto pullOpts = Replicator::Options::pulling();
-    pullOpts.setProperty(slice(kC4ReplicatorResetCheckpoint), true);
     _expectedDocumentCount = 1; // resetting checkpoint does re-pull purged doc
-    runReplicators(Replicator::Options::passive(), pullOpts);
+    runReplicators(Replicator::Options::passive(), Replicator::Options::pulling(), true);
 
     c4::ref<C4Document> doc = c4doc_get(db2, "meenie"_sl, true, nullptr);
     CHECK(doc != nullptr);

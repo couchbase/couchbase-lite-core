@@ -283,7 +283,7 @@ public:
         }
         if (!_repl)
             return false;
-        c4repl_start(_repl);
+        c4repl_start(_repl, false);
         return true;
     }
 

@@ -90,14 +90,14 @@ namespace litecore { namespace repl {
     }
 
 
-    void Replicator::start(bool synchronous) {
+    void Replicator::start(bool reset, bool synchronous) {
         if (synchronous)
-            _start();
+            _start(reset);
         else
-            enqueue(&Replicator::_start);
+            enqueue(&Replicator::_start, reset);
     }
 
-    void Replicator::_start() {
+    void Replicator::_start(bool reset) {
         Assert(_connectionState == Connection::kClosed);
         Signpost::begin(Signpost::replication, uintptr_t(this));
         _connectionState = Connection::kConnecting;
@@ -121,7 +121,7 @@ namespace litecore { namespace repl {
             }
 
             // Get the checkpoints:
-            if(getLocalCheckpoint()) {
+            if(getLocalCheckpoint(reset)) {
                 getRemoteCheckpoint(false);
             }
         }
@@ -455,10 +455,10 @@ namespace litecore { namespace repl {
 
 
     // Start off by getting the local checkpoint, if this is an active replicator:
-    bool Replicator::getLocalCheckpoint() {
+    bool Replicator::getLocalCheckpoint(bool reset) {
         return _db->use<bool>([&](C4Database *db) {
             C4Error error;
-            if (_checkpointer.read(db, &error)) {
+            if (_checkpointer.read(db, reset, &error)) {
                 auto remote = _checkpointer.remoteMinSequence();
                 logInfo("Read local checkpoint '%.*s': %.*s",
                         SPLAT(_checkpointer.initialCheckpointID()),
@@ -469,7 +469,7 @@ namespace litecore { namespace repl {
                 gotError(error);
                 stop();
                 return false;
-            } else if (_options.properties[kC4ReplicatorResetCheckpoint].asBool()) {
+            } else if (reset) {
                 logInfo("Ignoring local checkpoint ('reset' option is set)");
             } else {
                 logInfo("No local checkpoint '%.*s'", SPLAT(_checkpointer.initialCheckpointID()));

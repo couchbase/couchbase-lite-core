@@ -58,7 +58,7 @@ public:
     }
 
     // opts1 is the options for _db; opts2 is the options for _db2
-    void runReplicators(Replicator::Options opts1, Replicator::Options opts2) {
+    void runReplicators(Replicator::Options opts1, Replicator::Options opts2, bool reset = false) {
         _gotResponse = false;
         _statusChangedCalls = 0;
         _statusReceived = {};
@@ -89,7 +89,7 @@ public:
         // Bind the replicators' WebSockets and start them:
         LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
         Stopwatch st;
-        _replClient->start();
+        _replClient->start(reset);
         _replServer->start();
 
         {

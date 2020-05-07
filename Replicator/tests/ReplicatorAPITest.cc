@@ -365,7 +365,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     CHECK(FLArray_Count(docIDs) == expectedPending);
     c4slice_free(encodedDocIDs);
 
-    c4repl_start(_repl);
+    c4repl_start(_repl, false);
     while (c4repl_getStatus(_repl).level != kC4Stopped)
            this_thread::sleep_for(chrono::milliseconds(100));
 
@@ -421,7 +421,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     CHECK(isPending == expectedIsPending);
     CHECK(err.code == 0);
 
-    c4repl_start(_repl);
+    c4repl_start(_repl, false);
     while (c4repl_getStatus(_repl).level != kC4Stopped)
            this_thread::sleep_for(chrono::milliseconds(100));
 
@@ -444,13 +444,13 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
     C4ReplicatorActivityLevel expected = kC4Stopped;
     SECTION("Stop / Start") {
         c4repl_stop(_repl);
-        c4repl_start(_repl);
+        c4repl_start(_repl, false);
         expected = kC4Idle;
     }
 
     SECTION("Stop / Start / Stop") {
         c4repl_stop(_repl);
-        c4repl_start(_repl);
+        c4repl_start(_repl, false);
         c4repl_stop(_repl);
     }
 
