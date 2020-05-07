@@ -49,6 +49,7 @@ namespace litecore {
         void compact() override;
         void optimize();
         void vacuum(bool always);
+        void maintenance(MaintenanceType) override;
 
         static void shutdown() { }
 

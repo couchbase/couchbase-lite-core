@@ -695,6 +695,17 @@ namespace litecore {
     }
 
 
+    void SQLiteDataFile::maintenance(MaintenanceType what) {
+        switch (what) {
+            case kReindex:
+                execWithLock("REINDEX");
+                return;
+            default:
+                error::_throw(error::UnsupportedOperation);
+        }
+    }
+
+
     alloc_slice SQLiteDataFile::rawQuery(const string &query) {
         SQLite::Statement stmt(*_sqlDb, query);
         int nCols = stmt.getColumnCount();
