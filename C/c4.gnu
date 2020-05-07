@@ -29,6 +29,7 @@
 		c4db_delete;
 		c4db_deleteAtPath;
 		c4db_compact;
+		c4db_maintenance;
 		c4db_rekey;
 		c4db_getPath;
 		c4db_getConfig;
