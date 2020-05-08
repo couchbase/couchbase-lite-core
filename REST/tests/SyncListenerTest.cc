@@ -18,6 +18,7 @@
 
 #include "ListenerHarness.hh"
 #include "ReplicatorAPITest.hh"
+#include "Stopwatch.hh"
 #include <algorithm>
 
 using namespace litecore::REST;
@@ -88,6 +89,8 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", 
 TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]") {
     ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
     share(db2, "db2"_sl);
+    _address.port = c4listener_getPort(listener());
+    REQUIRE(_address.port != 0);
     if (pinnedCert)
         _address.scheme = kC4Replicator2TLSScheme;
 
@@ -111,8 +114,16 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
     CHECK(maxConnections == 1);
     CHECK(maxActiveConns == 1);
 
-    c4listener_getConnectionStatus(listener(), &connections, &activeConns);
-    CHECK(connections == 0);
+    // It might take an instant for the counts to update:
+    Stopwatch st;
+    do {
+        c4listener_getConnectionStatus(listener(), &connections, &activeConns);
+        if (connections > 0) {
+            C4Log("Waiting for connection count to reset to 0...");
+            REQUIRE(st.elapsed() < 2.0);
+            this_thread::sleep_for(10ms);
+        }
+    } while (connections > 0);
     CHECK(activeConns == 0);
 }
 

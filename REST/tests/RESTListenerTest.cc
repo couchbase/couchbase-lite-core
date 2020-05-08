@@ -62,6 +62,7 @@ public:
     }
 
 
+#ifdef COUCHBASE_ENTERPRISE
     void setupCertAuth() {
         auto callback = [](C4Listener *listener, C4Slice clientCertData, void *context)->bool {
             auto self = (C4RESTTest*)context;
@@ -70,6 +71,7 @@ public:
         };
         setCertAuthCallback(callback, this);
     }
+#endif
 
 
     void setupHTTPAuth() {
@@ -257,6 +259,8 @@ TEST_CASE_METHOD(C4RESTTest, "No Listeners on Same Port", "[Listener][C]") {
     share(db, "db"_sl);
     config.port = c4listener_getPort(listener());
     C4Error err;
+
+    ExpectingExceptions x;
     auto listener2 = c4listener_start(&config, &err);
     CHECK(!listener2);
     CHECK(err.domain == POSIXDomain);
