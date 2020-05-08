@@ -117,7 +117,7 @@ namespace litecore { namespace net {
 
     void TCPSocket::close() {
         if (_socket)
-            _socket->close();
+            _socket->shutdown();
     }
 
 
