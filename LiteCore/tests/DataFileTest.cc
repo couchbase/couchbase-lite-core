@@ -434,7 +434,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
         reopenDatabase();
     }
     SECTION("Compact database (vacuum)") {
-        db->compact();
+        db->maintenance(DataFile::kCompact);
     }
 
     int64_t newSize = db->fileSize();

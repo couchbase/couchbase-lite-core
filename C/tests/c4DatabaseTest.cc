@@ -521,7 +521,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
     
     C4BlobStore* store = c4db_getBlobStore(db, &err);
     REQUIRE(store);
-    REQUIRE(c4db_compact(db, &err));
+    REQUIRE(c4db_maintenance(db, kC4Compact, &err));
     REQUIRE(c4blob_getSize(store, key1) > 0);
     REQUIRE(c4blob_getSize(store, key2) > 0);
     REQUIRE(c4blob_getSize(store, key3) > 0);
@@ -551,6 +551,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
     createRev(doc3ID, kRev2ID, kC4SliceNull, kRevDeleted);
     REQUIRE(c4db_compact(db, &err));
     REQUIRE(c4blob_getSize(store, key3) == -1);
+
+    // Try an integrity check too
+    REQUIRE(c4db_maintenance(db, kC4IntegrityCheck, &err));
 }
 
 

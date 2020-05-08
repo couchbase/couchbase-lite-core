@@ -407,7 +407,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     
     // Compact the database:
     c4err = {};
-    REQUIRE(c4db_compact(db, &c4err));
+    REQUIRE(c4db_maintenance(db, kC4Compact, &c4err));
     
     // Make sure old rev is missing:
     c4err = {};

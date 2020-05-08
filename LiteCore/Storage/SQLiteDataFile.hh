@@ -46,9 +46,9 @@ namespace litecore {
         bool isOpen() const noexcept override;
 
         uint64_t fileSize() override;
-        void compact() override;
         void optimize();
         void vacuum(bool always);
+        void integrityCheck();
         void maintenance(MaintenanceType) override;
 
         static void shutdown() { }

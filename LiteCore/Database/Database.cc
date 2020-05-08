@@ -291,17 +291,15 @@ namespace c4Internal {
         return usedDigests;
     }
 
-    void Database::compact() {
-        mustNotBeInTransaction();
-        dataFile()->compact();
-        unordered_set<string> digestsInUse = collectBlobs();
-        blobStore()->deleteAllExcept(digestsInUse);
-    }
-
-
     void Database::maintenance(DataFile::MaintenanceType what) {
         mustNotBeInTransaction();
         dataFile()->maintenance(what);
+
+        if (what == DataFile::kCompact) {
+            // After DB compaction, garbage-collect blobs:
+            unordered_set<string> digestsInUse = collectBlobs();
+            blobStore()->deleteAllExcept(digestsInUse);
+        }
     }
 
 

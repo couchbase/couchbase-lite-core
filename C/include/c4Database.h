@@ -250,12 +250,10 @@ extern "C" {
     /** Types of maintenance that \ref c4db_maintenance can perform.
         NOTE: Enum values must match the ones in DataFile::MaintenanceType */
     typedef C4_ENUM(uint32_t, C4MaintenanceType) {
-        kC4Reindex,     ///< Rebuild indexes
+        kC4Compact,         ///< Compact the database file and garbage-collect attachments
+        kC4Reindex,         ///< Rebuild indexes (not normally needed)
+        kC4IntegrityCheck,  ///< Check for database corruption, returning an error if it finds any
     };
-
-
-    /** Manually compacts the database. */
-    bool c4db_compact(C4Database* database C4NONNULL, C4Error *outError) C4API;
 
 
     /** Performs database maintenance. */
@@ -264,7 +262,11 @@ extern "C" {
                           C4Error *outError) C4API;
 
 
-    /** @} */
+    // DEPRECATED -- call c4db_maintenance instead
+    bool c4db_compact(C4Database* database C4NONNULL, C4Error *outError) C4API;
+    
+
+   /** @} */
     /** \name Transactions
         @{ */
 
