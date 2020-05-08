@@ -988,6 +988,7 @@
 		2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LegacyAttachments.hh; sourceTree = "<group>"; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
+		277B77E92465E04E00B222D3 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		277BE1C8204F4D45008047C9 /* RevTreeTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RevTreeTest.cc; sourceTree = "<group>"; };
 		277C14701EA8102B0075348F /* Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Document.cc; sourceTree = "<group>"; };
 		277C1B231F58794100031200 /* libreadline.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libreadline.tbd; path = usr/lib/libreadline.tbd; sourceTree = SDKROOT; };
@@ -1559,6 +1560,7 @@
 			isa = PBXGroup;
 			children = (
 				2747664520190841007B39D1 /* CMakeLists.txt */,
+				277B77E92465E04E00B222D3 /* README.md */,
 				2747664720190841007B39D1 /* sqlite3.c */,
 				2747664820190841007B39D1 /* sqlite3.h */,
 			);
