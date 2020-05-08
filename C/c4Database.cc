@@ -163,7 +163,7 @@ bool c4db_deleteNamed(C4String dbName,
 
 
 bool c4db_compact(C4Database* database, C4Error *outError) noexcept {
-    return tryCatch(outError, bind(&Database::compact, database));
+    return c4db_maintenance(database, kC4Compact, outError);
 }
 
 

@@ -78,8 +78,6 @@ namespace c4Internal {
         
         void maintenance(DataFile::MaintenanceType what);
 
-        void compact();
-
         const C4DatabaseConfig config;
 
         Transaction& transaction() const;

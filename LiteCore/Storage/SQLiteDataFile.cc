@@ -688,18 +688,39 @@ namespace litecore {
     }
 
 
-    void SQLiteDataFile::compact() {
-        checkOpen();
-        optimize();
-        vacuum(true);
+    void SQLiteDataFile::integrityCheck() {
+        fleece::Stopwatch st;
+        _exec("PRAGMA integrity_check");
+        SQLite::Statement stmt(*_sqlDb, "PRAGMA integrity_check");
+        stringstream errors;
+        while (stmt.executeStep()) {
+            if (string row = stmt.getColumn(0).getString(); row != "ok") {
+                errors << "\n" << row;
+                warn("Integrity check: %s", row.c_str());
+            }
+        }
+        auto elapsed = st.elapsed();
+        logInfo("Integrity check took %.3f sec", elapsed);
+
+        if (string error = errors.str(); !error.empty())
+            error::_throw(error::CorruptData, "Database integrity check failed (details below)%s",
+                          error.c_str());
     }
 
 
     void SQLiteDataFile::maintenance(MaintenanceType what) {
         switch (what) {
+            case kCompact:
+                checkOpen();
+                optimize();
+                vacuum(true);
+                break;
             case kReindex:
                 execWithLock("REINDEX");
-                return;
+                break;
+            case kIntegrityCheck:
+                integrityCheck();
+                break;
             default:
                 error::_throw(error::UnsupportedOperation);
         }
