@@ -217,12 +217,18 @@ void c4cert_getValidTimespan(C4Cert* cert C4NONNULL,
         if (Cert *signedCert = asSignedCert(cert); signedCert) {
             time_t tCreated, tExpires;
             tie(tCreated, tExpires) = signedCert->validTimespan();
-            *outCreated = C4Timestamp(difftime(tCreated, 0) * 1000.0);
-            *outExpires = C4Timestamp(difftime(tExpires, 0) * 1000.0);
+            if (outCreated)
+                *outCreated = C4Timestamp(difftime(tCreated, 0) * 1000.0);
+            if (outExpires)
+                *outExpires = C4Timestamp(difftime(tExpires, 0) * 1000.0);
             return;
         }
     } catch (...) { }
-    *outCreated = *outExpires = 0;
+    
+    if (outCreated)
+        *outCreated = 0;
+    if (outExpires)
+        *outExpires = 0;
 }
 
 
