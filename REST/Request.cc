@@ -387,6 +387,11 @@ namespace litecore { namespace REST {
     }
 
 
+    void RequestResponse::onClose(std::function<void()> &&callback) {
+        _socket->onClose(move(callback));
+    }
+
+
     unique_ptr<ResponderSocket> RequestResponse::extractSocket() {
         finish();
         return move(_socket);

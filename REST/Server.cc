@@ -232,8 +232,23 @@ namespace litecore { namespace REST {
             method = Method::UPGRADE;
 
         c4log(ListenerLog, kC4LogInfo, "%s %s", MethodName(method), rq->path().c_str());
+
+        if (_authenticator) {
+            if (!_authenticator(rq->header("Authorization"))) {
+                c4log(ListenerLog, kC4LogInfo, "Authentication failed");
+                rq->setStatus(HTTPStatus::Unauthorized, "Unauthorized");
+                rq->setHeader("WWW-Authenticate", "Basic charset=\"UTF-8\"");
+                return;
+            }
+        }
+
         lock_guard<mutex> lock(_mutex);
-        try{
+
+        ++_connectionCount;
+        Retained<Server> retainedSelf = this;
+        rq->onClose([=] { --retainedSelf->_connectionCount; });
+
+        try {
             string pathStr(rq->path());
             auto rule = findRule(method, pathStr);
             if (rule) {

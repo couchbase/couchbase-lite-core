@@ -23,6 +23,7 @@
 #include "c4ExceptionUtils.hh"
 #include "Listener.hh"
 #include "RESTListener.hh"
+#include <algorithm>
 
 using namespace std;
 using namespace fleece;
@@ -116,4 +117,19 @@ FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db) C4API {
         return urls;
     } catchExceptions()
     return nullptr;
+}
+
+
+void c4listener_getConnectionStatus(C4Listener *listener C4NONNULL,
+                                    unsigned *connectionCount,
+                                    unsigned *activeConnectionCount) C4API
+{
+    auto active = internal(listener)->activeConnectionCount();
+    if (connectionCount)
+        *connectionCount = std::max(internal(listener)->connectionCount(), active);
+    if (activeConnectionCount)
+        *activeConnectionCount = active;
+    // Ensure activeConnectionCount ≤ connectionCount because logically it should be;
+    // sometimes it isn't, because the TCP connection has closed but the Replicator instance
+    // is still finishing up. In that case, bump the connectionCount accordingly.
 }

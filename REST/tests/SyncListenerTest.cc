@@ -18,6 +18,8 @@
 
 #include "ListenerHarness.hh"
 #include "ReplicatorAPITest.hh"
+#include "Stopwatch.hh"
+#include <algorithm>
 
 using namespace litecore::REST;
 
@@ -32,6 +34,7 @@ public:
     ,ListenerHarness({0, nullslice,
                       kC4SyncAPI,
                        nullptr,
+                       nullptr, nullptr,
                        {}, false, false,    // REST-only stuff
                        true, true})
     {
@@ -45,7 +48,7 @@ public:
     void run() {
         ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
         share(db2, "db2"_sl);
-        _address.port = c4listener_getPort(listener);
+        _address.port = c4listener_getPort(listener());
         if (pinnedCert)
             _address.scheme = kC4Replicator2TLSScheme;
         replicate(kC4OneShot, kC4Disabled);
@@ -81,6 +84,48 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync pinned cert persistent key", 
     run();
 }
 #endif
+
+
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]") {
+    ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
+    share(db2, "db2"_sl);
+    _address.port = c4listener_getPort(listener());
+    REQUIRE(_address.port != 0);
+    if (pinnedCert)
+        _address.scheme = kC4Replicator2TLSScheme;
+
+    unsigned connections, activeConns;
+    c4listener_getConnectionStatus(listener(), &connections, &activeConns);
+    CHECK(connections == 0);
+    CHECK(activeConns == 0);
+
+    C4Error err;
+    REQUIRE(startReplicator(kC4OneShot, kC4Disabled, &err));
+
+    unsigned maxConnections = 0, maxActiveConns = 0;
+    C4ReplicatorStatus status;
+    while ((status = c4repl_getStatus(_repl)).level != kC4Stopped) {
+        c4listener_getConnectionStatus(listener(), &connections, &activeConns);
+        CHECK(activeConns <= connections);
+        maxConnections = std::max(maxConnections, connections);
+        maxActiveConns = std::max(maxActiveConns, activeConns);
+        this_thread::sleep_for(chrono::milliseconds(1));
+    }
+    CHECK(maxConnections == 1);
+    CHECK(maxActiveConns == 1);
+
+    // It might take an instant for the counts to update:
+    Stopwatch st;
+    do {
+        c4listener_getConnectionStatus(listener(), &connections, &activeConns);
+        if (connections > 0) {
+            C4Log("Waiting for connection count to reset to 0...");
+            REQUIRE(st.elapsed() < 2.0);
+            this_thread::sleep_for(10ms);
+        }
+    } while (connections > 0);
+    CHECK(activeConns == 0);
+}
 
 
 #endif

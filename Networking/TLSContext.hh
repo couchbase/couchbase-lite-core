@@ -7,6 +7,7 @@
 #pragma once
 #include "RefCounted.hh"
 #include "fleece/slice.hh"
+#include <functional>
 #include <memory>
 
 namespace sockpp {
@@ -37,6 +38,8 @@ namespace litecore { namespace net {
 
         void allowOnlyCert(crypto::Cert* NONNULL);
         void allowOnlyCert(fleece::slice certData);
+
+        void setCertAuthCallback(std::function<bool(fleece::slice)>);
 
         void setIdentity(crypto::Identity* NONNULL);
         void setIdentity(fleece::slice certData, fleece::slice privateKeyData);

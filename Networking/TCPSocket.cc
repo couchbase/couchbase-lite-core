@@ -80,6 +80,8 @@ namespace litecore { namespace net {
 
     TCPSocket::~TCPSocket() {
         _socket.reset(); // Make sure socket closes before _tlsContext does
+        if (_onClose)
+            _onClose();
     }
 
 
@@ -101,7 +103,6 @@ namespace litecore { namespace net {
         if (!_tlsContext)
             _tlsContext = new TLSContext(_isClient ? TLSContext::Client : TLSContext::Server);
         string hostnameStr(hostname);
-        _wrappedSocket = _socket.get();
         auto oldSocket = move(_socket);
         return setSocket(_tlsContext->_context->wrap_socket(move(oldSocket),
                                             (_isClient ? tls_context::CLIENT : tls_context::SERVER),
@@ -120,14 +121,24 @@ namespace litecore { namespace net {
     }
 
 
+    sockpp::stream_socket* TCPSocket::actualSocket() const {
+        if (auto socket = _socket.get(); !socket->is_open())
+            return nullptr;
+        else if (auto tlsSock = dynamic_cast<tls_socket*>(socket); tlsSock)
+            return &tlsSock->stream();
+        else
+            return socket;
+    }
+
+
     string TCPSocket::peerAddress() {
-        auto baseSocket = _wrappedSocket ? _wrappedSocket : _socket.get();
-        sock_address_any addr = baseSocket->peer_address();
-        switch (addr.family()) {
-            case AF_INET:   return ((inet_address&)addr).to_string();
-            case AF_INET6:  return ((inet6_address&)addr).to_string();
-            default:        return "???";
+        if (auto socket = actualSocket(); socket) {
+            switch (auto addr = socket->peer_address(); addr.family()) {
+                case AF_INET:   return ((inet_address&)addr).to_string();
+                case AF_INET6:  return ((inet6_address&)addr).to_string();
+            }
         }
+        return "";
     }
 
 
@@ -434,7 +445,10 @@ namespace litecore { namespace net {
 
 
     int TCPSocket::fileDescriptor() {
-        return _wrappedSocket ? _wrappedSocket->handle() : _socket->handle();
+        if (auto socket = actualSocket(); socket)
+            return socket->handle();
+        else
+            return -1;
     }
 
 
@@ -471,14 +485,15 @@ namespace litecore { namespace net {
             return true;
 
         // TLS handshake failed:
-        if (_socket->last_error() == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
+        int err = _socket->last_error();
+        if (err == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
             // Some more specific errors for certificate validation failures, based on flags:
             auto tlsSocket = (tls_socket*)_socket.get();
             uint32_t flags = tlsSocket->peer_certificate_status();
             LOG(Error, "TCPSocket TLS handshake failed; cert verify status 0x%02x", flags);
             if (flags != 0 && flags != UINT32_MAX) {
                 string message = tlsSocket->peer_certificate_status_message();
-                int code = kNetErrTLSCertUntrusted;
+                int code;
                 if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED)
                     code = kNetErrTLSCertUnknownRoot;
                 else if (flags & MBEDTLS_X509_BADCERT_REVOKED)
@@ -487,8 +502,27 @@ namespace litecore { namespace net {
                     code = kNetErrTLSCertExpired;
                 else if (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH)
                     code = kNetErrTLSCertNameMismatch;
+                else if (flags & MBEDTLS_X509_BADCERT_OTHER)
+                    code = kNetErrTLSCertUntrusted;
+                else
+                    code = kNetErrTLSHandshakeFailed;
                 setError(NetworkDomain, code, slice(message));
             }
+        } else if (err <= mbedtls_context::FATAL_ERROR_ALERT_BASE
+                                && err >= mbedtls_context::FATAL_ERROR_ALERT_BASE - 0xFF) {
+            // Handle TLS 'fatal alert' when peer rejects our cert:
+            auto alert = mbedtls_context::FATAL_ERROR_ALERT_BASE - err;
+            LOG(Error, "TCPSocket TLS handshake failed with fatal alert %d", alert);
+            int code;
+            if (alert == MBEDTLS_SSL_ALERT_MSG_NO_CERT) {
+                code = kNetErrTLSCertRequiredByPeer;
+            } else if (alert >= MBEDTLS_SSL_ALERT_MSG_BAD_CERT
+                            && alert <= MBEDTLS_SSL_ALERT_MSG_ACCESS_DENIED) {
+                code = kNetErrTLSCertRejectedByPeer;
+            } else {
+                code = kNetErrTLSHandshakeFailed;
+            }
+            setError(NetworkDomain, code, nullslice);
         } else {
             checkStreamError();
         }

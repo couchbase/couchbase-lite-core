@@ -49,6 +49,9 @@ namespace litecore { namespace REST {
         /** My root URL, or the URL of a database. */
         std::vector<net::Address> addresses(C4Database *dbOrNull =nullptr) const;
 
+        virtual int connectionCount() override;
+        virtual int activeConnectionCount() override    {return (int)tasks().size();}
+
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string &name, FilePath &outPath);
 
@@ -140,7 +143,6 @@ namespace litecore { namespace REST {
         const bool _allowCreateDB, _allowDeleteDB;
         Retained<crypto::Identity> _identity;
         Retained<Server> _server;
-        std::mutex _mutex;
         std::set<Retained<Task>> _tasks;
         unsigned _nextTaskID {1};
     };

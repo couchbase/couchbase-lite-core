@@ -48,6 +48,8 @@ namespace litecore::net {
         bool connected() const;
         operator bool() const                   {return connected();}
 
+        void onClose(std::function<void()> &&callback)     {_onClose = move(callback);}
+
         /// Peer's address: IP address + ":" + port number
         std::string peerAddress();
 
@@ -124,11 +126,11 @@ namespace litecore::net {
 
     private:
         bool _setTimeout(double secs);
-        
+        sockpp::stream_socket* actualSocket() const;
+
         std::unique_ptr<sockpp::stream_socket> _socket;     // The TCP (or TLS) socket
-        sockpp::stream_socket* _wrappedSocket {nullptr};    // Underlying TLS socket, when using TCP
         fleece::Retained<TLSContext> _tlsContext;           // Custom TLS context if any
-        bool _isClient;                                     // Am I a client (not server) socket?
+        bool const _isClient;                               // Am I a client (not server) socket?
         bool _nonBlocking {false};                          // Is socket in non-blocking mode?
         double _timeout {0};                                // read/write/connect timeout in seconds
         C4Error _error {};                                  // last error
@@ -136,6 +138,7 @@ namespace litecore::net {
         size_t _unreadLen {0};                              // Length of valid data in _unread
         bool _eofOnRead {false};                            // Has read stream reached EOF?
         bool _eofOnWrite {false};                           // Has write stream reached EOF?
+        std::function<void()> _onClose;
     };
 
 

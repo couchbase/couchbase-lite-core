@@ -22,8 +22,13 @@ public:
 
 
     ~ListenerHarness() {
-        listener = nullptr; // stop listener
+        _listener = nullptr; // stop listener
         gC4ExpectExceptions = false;
+    }
+
+
+    C4Listener* listener() const {
+        return _listener;
     }
 
 
@@ -34,15 +39,15 @@ public:
         C4Log("Using %s server TLS cert %.*s for this test",
               (c4keypair_isPersistent(id.key) ? "persistent" : "temporary"), SPLAT(digest));
         serverIdentity = id;
-        tlsConfig.certificate = id.cert;
+        _tlsConfig.certificate = id.cert;
 
         if (id.key) {
-            tlsConfig.key = id.key;
-            tlsConfig.privateKeyRepresentation = kC4PrivateKeyFromKey;
+            _tlsConfig.key = id.key;
+            _tlsConfig.privateKeyRepresentation = kC4PrivateKeyFromKey;
         } else {
-            tlsConfig.privateKeyRepresentation = kC4PrivateKeyFromCert;
+            _tlsConfig.privateKeyRepresentation = kC4PrivateKeyFromCert;
         }
-        config.tlsConfig = &tlsConfig;
+        config.tlsConfig = &_tlsConfig;
         return id.cert;
     }
 
@@ -58,7 +63,7 @@ public:
 
 
     void setListenerRootClientCerts(C4Cert *certs) {
-        tlsConfig.rootClientCerts = certs;
+        _tlsConfig.rootClientCerts = certs;
     }
 
 
@@ -84,30 +89,39 @@ public:
     C4Cert* useClientTLSWithPersistentKey() {
         return useClientIdentity(CertHelper::instance().persistentClientIdentity());
     }
+
+
 #endif
+
+
+    void setCertAuthCallback(C4ListenerCertAuthCallback callback, void *context) {
+        _tlsConfig.certAuthCallback = callback;
+        _tlsConfig.tlsCallbackContext = context;
+    }
+    
 #endif // COUCHBASE_ENTERPRISE
 
     void share(C4Database *dbToShare, slice name) {
-        if (listener)
+        if (_listener)
             return;
         auto missing = config.apis & ~c4listener_availableAPIs();
         if (missing)
             FAIL("Listener API " << missing << " is unavailable in this build");
         C4Error err;
-        listener = c4listener_start(&config, &err);
-        REQUIRE(listener);
+        _listener = c4listener_start(&config, &err);
+        REQUIRE(_listener);
 
-        REQUIRE(c4listener_shareDB(listener, name, dbToShare, &err));
+        REQUIRE(c4listener_shareDB(_listener, name, dbToShare, &err));
     }
 
+public:
     C4ListenerConfig config;
 #ifdef COUCHBASE_ENTERPRISE
     Identity serverIdentity, clientIdentity;
 #endif
 
-    c4::ref<C4Listener> listener;
-
 private:
-    C4TLSConfig tlsConfig = { };
+    c4::ref<C4Listener> _listener;
+    C4TLSConfig _tlsConfig = { };
 };
 

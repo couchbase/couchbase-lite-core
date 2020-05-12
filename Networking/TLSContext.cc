@@ -68,6 +68,12 @@ namespace litecore { namespace net {
         allowOnlyCert(cert->data());
     }
 
+    void TLSContext::setCertAuthCallback(std::function<bool(fleece::slice)> callback) {
+        _context->set_auth_callback([=](const string &certData) {
+            return callback(slice(certData));
+        });
+    }
+
     void TLSContext::setIdentity(crypto::Identity *id) {
         _context->set_identity(id->cert->context(), id->privateKey->context());
         _identity = id;
