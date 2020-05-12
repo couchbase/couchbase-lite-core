@@ -150,6 +150,8 @@ CBL {
 		c4repl_retry;
 		c4repl_getPendingDocIDs;
 		c4repl_isDocumentPending;
+		c4repl_setOptions;
+		c4repl_setHostReachable;
 
 		c4socket_registerFactory;
 		c4socket_fromNative;
@@ -273,6 +275,9 @@ CBL {
 		FLSlot_SetData;
 		FLSlot_SetValue;
 
+		_FLBuf_Retain;
+		_FLBuf_Release;
+
 
 		kC4SQLiteStorageEngine;
 		kC4DatabaseFilenameExtension;
@@ -344,8 +349,6 @@ CBL {
 		c4repl_isValidDatabaseName;
 		c4repl_isValidRemote;
 		c4repl_getResponseHeaders;
-		c4repl_setOptions;
-		c4repl_setHostReachable;
 		c4repl_setSuspended;
 
 		kC4ReplicatorActivityLevelNames;
@@ -358,9 +361,6 @@ CBL {
 		c4_dumpInstances;
 		gC4ExpectExceptions;
 		c4log_enableFatalExceptionBacktrace;
-
-		_FLBuf_Retain;
-		_FLBuf_Release;
 
 		FLDoc_FromJSON;
 		FLDoc_Retain;

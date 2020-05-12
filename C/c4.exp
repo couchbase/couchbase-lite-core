@@ -149,8 +149,8 @@ _c4repl_getStatus
 _c4repl_retry
 _c4repl_getPendingDocIDs
 _c4repl_isDocumentPending
-_c4repl_setHostReachable
 _c4repl_setOptions
+_c4repl_setHostReachable
 
 _c4socket_registerFactory
 _c4socket_fromNative
