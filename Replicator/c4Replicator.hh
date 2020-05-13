@@ -263,6 +263,14 @@ protected:
     }
 
 
+    unsigned getIntProperty(slice key, unsigned defaultValue) const {
+        if (auto val = _options.properties[key]; val.type() == kFLNumber)
+            return unsigned( max(int64_t(0), min(int64_t(UINT_MAX), val.asInt())) );
+        else
+            return defaultValue;
+    }
+
+
     virtual bool createReplicator() =0;
 
     virtual alloc_slice URL() const =0;

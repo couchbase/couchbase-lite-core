@@ -331,6 +331,7 @@ extern "C" {
     #define kC4ReplicatorOptionProgressLevel    "progress"  ///< If >=1, notify on every doc; if >=2, on every attachment (int)
     #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
     #define kC4ReplicatorOptionMaxRetries       "maxRetries" ///< Max number of retry attempts (int)
+    #define kC4ReplicatorOptionMaxRetryInterval "maxRetryInterval" ///< Max delay betw retries (secs)
 
     // TLS options:
     #define kC4ReplicatorOptionRootCerts        "rootCerts"  ///< Trusted root certs (data)

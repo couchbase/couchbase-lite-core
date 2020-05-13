@@ -182,7 +182,18 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     _address.hostname = C4STR("localhost");
     _address.port = 1;  // wrong port!
     _mayGoOffline = true;
+
+    {
+        Encoder enc;
+        enc.beginDict();
+        enc[kC4ReplicatorOptionMaxRetries] = 3;
+        enc[kC4ReplicatorOptionMaxRetryInterval] = 2;
+        enc.endDict();
+        _options = AllocedDict(enc.finish());
+    }
+
     replicate(kC4Disabled, kC4OneShot, false);
+
     CHECK(_callbackStatus.error.domain == POSIXDomain);
     CHECK((_callbackStatus.error.code == ECONNREFUSED || _callbackStatus.error.code == ETIMEDOUT));
     CHECK(_callbackStatus.progress.unitsCompleted == 0);
@@ -190,6 +201,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     CHECK(_wentOffline);
     CHECK(_numCallbacksWithLevel[kC4Busy] == 0);
     CHECK(_numCallbacksWithLevel[kC4Idle] == 0);
+    CHECK(_numCallbacksWithLevel[kC4Offline] == 3);
 }
 
 
