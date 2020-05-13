@@ -25,19 +25,15 @@ namespace c4Internal {
     class C4RemoteReplicator : public C4Replicator {
     public:
 
-        // Maximum number of retries before a one-shot replication gives up
+        // Default maximum number of retry attempts before replications give up.
+        // These can be overridden by setting the option `kC4ReplicatorOptionMaxRetries`.
         static constexpr unsigned kMaxOneShotRetryCount = 2;
+        static constexpr unsigned kMaxContinuousRetryCount = UINT_MAX;
 
-        // Longest possible retry delay, in seconds (only a continuous replication will reach this.)
-        // But a call to c4repl_retry() will also trigger a retry.
-        static constexpr unsigned kMaxRetryDelay = 10 * 60;
-
-        // The function governing the exponential backoff of retries
-        static unsigned retryDelay(unsigned retryCount) {
-            unsigned delay = 1 << std::min(retryCount, 30u);
-            return std::min(delay, kMaxRetryDelay);
-        }
-
+        // Longest possible retry delay, in seconds. The delay doubles on each failed retry
+        // attempt, but pins to this value.
+        // This can be overridden by setting the option `kC4ReplicatorOptionMaxRetryInterval`.
+        static constexpr unsigned kDefaultMaxRetryDelay = 10 * 60;
 
         C4RemoteReplicator(C4Database* db NONNULL,
                            const C4ReplicatorParameters &params,
@@ -213,15 +209,19 @@ namespace c4Internal {
         }
 
 
+        // The function governing the exponential backoff of retries
+        unsigned retryDelay(unsigned retryCount) const {
+            unsigned delay = 1 << std::min(retryCount, 30u);
+            unsigned maxDelay = getIntProperty(kC4ReplicatorOptionMaxRetryInterval,
+                                               kDefaultMaxRetryDelay);
+            return std::min(delay, maxDelay);
+        }
+
+
         // Returns the maximum number of (failed) retry attempts.
         unsigned maxRetryCount() const {
-            auto maxRetries = _options.properties[kC4ReplicatorOptionMaxRetries];
-            if (maxRetries.type() == kFLNumber)
-                return unsigned(maxRetries.asUnsigned());
-            else if (continuous())
-                return UINT_MAX;
-            else
-                return kMaxOneShotRetryCount;
+            unsigned defaultCount = continuous() ? kMaxContinuousRetryCount : kMaxOneShotRetryCount;
+            return getIntProperty(kC4ReplicatorOptionMaxRetries, defaultCount);
         }
 
 

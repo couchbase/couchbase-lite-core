@@ -157,16 +157,22 @@ public:
     }
 
     void logState(C4ReplicatorStatus status) {
+        string flags = "";
+        if (status.flags & kC4WillRetry)     flags += "retry,";
+        if (status.flags & kC4HostReachable) flags += "reachable,";
+        if (status.flags & kC4Suspended)     flags += "suspended,";
         if (status.error.code) {
             char message[200];
             c4error_getDescriptionC(status.error, message, sizeof(message));
-            C4Log("*** C4Replicator state: %-s, progress=%llu/%llu, error=%s",
+            C4Log("*** C4Replicator state: %-s (%s), progress=%llu/%llu, error=%s",
                   kC4ReplicatorActivityLevelNames[status.level],
+                  flags.c_str(),
                   status.progress.unitsCompleted, status.progress.unitsTotal,
                   message);
         } else {
-            C4Log("*** C4Replicator state: %-s, progress=%llu/%llu",
+            C4Log("*** C4Replicator state: %-s (%s), progress=%llu/%llu",
                   kC4ReplicatorActivityLevelNames[status.level],
+                  flags.c_str(),
                   status.progress.unitsCompleted, status.progress.unitsTotal);
         }
     }
