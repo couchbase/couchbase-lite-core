@@ -392,29 +392,7 @@ namespace litecore { namespace crypto {
                 if (!privateKeyRef)
                     return nullptr;
                 
-                // Get the certificate for getting the public key as SecKeyCopyPublicKey doesn't work
-                // if the public key is not stored in the Keychain (e.g. when using SecPKCS12Import to
-                // import an identity data into the KeyChain on macOS).
-                auto certRef = (SecCertificateRef)findInKeychain(@{
-                    (id)kSecClass:              (id)kSecClassCertificate,
-                    (id)kSecAttrPublicKeyHash:  publicKeyHash(publicKey),
-                    (id)kSecReturnRef:          @YES,
-                });
-                if (!certRef) {
-                    CFRelease(privateKeyRef);
-                    return nullptr;
-                }
-                CFAutorelease(certRef);
-                
-                // Gettting public key from the certificate using trust:
-                SecTrustRef trustRef;
-                SecPolicyRef policyRef = SecPolicyCreateBasicX509();
-                checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
-                              "SecTrustCreateWithCertificates", "Couldn't create trust to get public key");
-                SecKeyRef publicKeyRef = SecTrustCopyPublicKey(trustRef);
-                CFRelease(policyRef);
-                CFRelease(trustRef);
-                
+                auto publicKeyRef = SecKeyCopyPublicKey(privateKeyRef);
                 if (!publicKeyRef) {
                     CFRelease(privateKeyRef);
                     throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // Impossible?
