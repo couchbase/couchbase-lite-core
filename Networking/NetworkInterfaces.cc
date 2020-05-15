@@ -322,7 +322,7 @@ namespace litecore::net {
         const char *lastName = nullptr;
         Interface *intf = nullptr;
         for (auto a = addrs; a; a = a->ifa_next) {
-            if (a->ifa_flags & IFF_UP) {
+            if ((a->ifa_flags & IFF_UP) != 0 && a->ifa_addr != nullptr) {
                 if (!lastName || strcmp(lastName, a->ifa_name) != 0) {
                     lastName = a->ifa_name;
                     intf = &interfaces.emplace_back();
