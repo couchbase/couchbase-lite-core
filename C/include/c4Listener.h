@@ -91,6 +91,7 @@ extern "C" {
         // For sync listeners only:
         bool allowPush;
         bool allowPull;
+        bool enableDeltaSync;
     } C4ListenerConfig;
 
 
