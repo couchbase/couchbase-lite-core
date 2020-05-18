@@ -298,17 +298,6 @@ public:
         REQUIRE(startReplicator(push, pull, &err));
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
         logState(status);
-        // Sometimes Windows goes so fast that by the time
-        // it is here, it's already past the connecting stage.
-        // Furthermore, sometimes in failure cases the failure happens
-        // so fast that the replicator has already stopped by now with an
-        // error
-        if(expectSuccess) {
-            CHECK((status.level == kC4Connecting || status.level == kC4Busy)); 
-            CHECK(status.error.code == 0);
-        } else if(status.level == kC4Connecting || status.level == kC4Busy) {
-            CHECK(status.error.code == 0);
-        }
 
         while ((status = c4repl_getStatus(_repl)).level != kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));
