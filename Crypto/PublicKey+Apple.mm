@@ -392,12 +392,26 @@ namespace litecore { namespace crypto {
                 if (!privateKeyRef)
                     return nullptr;
                 
+                ++gC4ExpectExceptions;
                 auto publicKeyRef = SecKeyCopyPublicKey(privateKeyRef);
+                --gC4ExpectExceptions;
                 if (!publicKeyRef) {
-                    CFRelease(privateKeyRef);
-                    throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // Impossible?
+                    // If the public key is not in the KeyChain, SecKeyCopyPublicKey() will return null.
+                    // Create a SecKeyRef directly from the publicKey data instead:
+                    NSDictionary* attrs = @{
+                        (id)kSecAttrKeyType:            (id)kSecAttrKeyTypeRSA,
+                        (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPublic,
+                        (id)kSecAttrKeySizeInBits:      @2048
+                    };
+                    CFErrorRef error;
+                    publicKeyRef = SecKeyCreateWithData((CFDataRef)publicKey->data().copiedNSData(),
+                                                        (CFDictionaryRef)attrs, &error);
+                    if (!publicKeyRef) {
+                        CFRelease(privateKeyRef);
+                        warnCFError(error, "SecKeyCreateWithData");
+                        throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
+                    }
                 }
-                
                 auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
                 return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
             } else {
