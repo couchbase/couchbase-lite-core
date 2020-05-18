@@ -400,8 +400,7 @@ namespace litecore { namespace crypto {
                     // Create a SecKeyRef directly from the publicKey data instead:
                     NSDictionary* attrs = @{
                         (id)kSecAttrKeyType:            (id)kSecAttrKeyTypeRSA,
-                        (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPublic,
-                        (id)kSecAttrKeySizeInBits:      @2048
+                        (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPublic
                     };
                     CFErrorRef error;
                     publicKeyRef = SecKeyCreateWithData((CFDataRef)publicKey->data().copiedNSData(),
