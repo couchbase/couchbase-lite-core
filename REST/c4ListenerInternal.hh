@@ -18,6 +18,7 @@
 
 #pragma once
 #include "c4Listener.h"
+#include "RefCounted.hh"
 
 namespace litecore { namespace REST {
     class Listener;
@@ -27,7 +28,7 @@ namespace litecore { namespace REST {
 
 
     extern const C4ListenerAPIs kListenerAPIs;
-    Listener* NewListener(const C4ListenerConfig *config);
+    fleece::Retained<Listener> NewListener(const C4ListenerConfig *config);
     
     
 } }
