@@ -17,6 +17,8 @@
 //
 
 #pragma once
+#include "RefCounted.hh"
+#include "InstanceCounted.hh"
 #include "c4.hh"
 #include "c4Listener.h"
 #include "FilePath.hh"
@@ -29,7 +31,7 @@ namespace litecore { namespace REST {
 
     /** Abstract superclass of network listeners that can serve access to databases.
         Subclassed by RESTListener. */
-    class Listener {
+    class Listener : public fleece::RefCounted, public fleece::InstanceCountedIn<Listener> {
     public:
         using Config = C4ListenerConfig;
 

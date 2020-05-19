@@ -106,6 +106,11 @@ namespace litecore { namespace REST {
 
 
     RESTListener::~RESTListener() {
+        stop();
+    }
+
+
+    void RESTListener::stop() {
         if (_server)
             _server->stop();
     }

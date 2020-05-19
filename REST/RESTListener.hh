@@ -44,6 +44,8 @@ namespace litecore { namespace REST {
         explicit RESTListener(const Config&);
         ~RESTListener();
 
+        void stop();
+
         uint16_t port() const                       {return _server->port();}
 
         /** My root URL, or the URL of a database. */
