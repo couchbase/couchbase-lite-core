@@ -70,10 +70,7 @@ extern "C" {
     /** A group of callbacks that define the implementation of sockets; the client must fill this
         out and pass it to c4socket_registerFactory() before using any socket-based API.
         These callbacks will be invoked on arbitrary background threads owned by LiteCore.
-        They should return quickly, and perform the operation asynchronously without blocking.
-     
-        The `providesWebSockets` flag indicates whether this factory provides a WebSocket
-        implementation or just a raw TCP socket. */
+        They should return quickly, and perform the operation asynchronously without blocking. */
     struct C4SocketFactory {
         /** This should be set to `kC4NoFraming` if the socket factory acts as a stream of messages,
             `kC4WebSocketClientFraming` or `kC4WebSocketServerFraming` if it's a byte stream. */
@@ -92,9 +89,9 @@ extern "C" {
                      C4Slice options,
                      void *context);
 
-        /** Called to write to the socket. If `providesWebSockets` is true, the data is a complete
+        /** Called to write to the socket. If `framing` equals to `kC4NoFraming`, the data is a complete
             message, and the socket implementation is responsible for framing it;
-            if `false`, it's just raw bytes to write to the stream, including the necessary framing.
+            in other case, it's just raw bytes to write to the stream, including the necessary framing.
             @param socket  The socket to write to.
             @param allocatedData  The data/message to send. As this is a `C4SliceResult`, the
                 implementation of this function is responsible for freeing it when done. */
@@ -107,14 +104,14 @@ extern "C" {
                 slice passed to a `c4socket_received()` call.) */
         void (*completedReceive)(C4Socket* socket C4NONNULL, size_t byteCount);
 
-        /** Called to close the socket.  This is only called if `providesWebSockets` is false, i.e.
+        /** Called to close the socket.  This is only called if `framing` doesn't equal `kC4NoFraming`, i.e.
             the socket operates at the byte level. Otherwise it may be left NULL.
             No more write calls will be made; the socket should process any remaining incoming bytes
             by calling `c4socket_received()`, then call `c4socket_closed()` when the socket closes.
             @param socket  The socket to close. */
         void (*close)(C4Socket* socket C4NONNULL);
 
-        /** Called to close the socket.  This is only called if `providesWebSockets` is true, i.e.
+        /** Called to close the socket.  This is only called if `framing` equals to `kC4NoFraming`, i.e.
             the socket operates at the message level.  Otherwise it may be left NULL.
             The implementation should send a message that tells the remote peer that it's closing
             the connection, then wait for acknowledgement before closing.
@@ -159,14 +156,14 @@ extern "C" {
         - If this is a normal close in response to a C4SocketFactory.close request, the error
           parameter should have a code of 0.
         - If it's a socket-level error, set the C4Error appropriately.
-        - If it's a WebSocket-level close (when the factory's providesWebSockets is true),
+        - If it's a WebSocket-level close (when the factory's `framing` equals to `kC4NoFraming`),
           set the error domain to WebSocketDomain and the code to the WebSocket status code.
         @param socket  The socket.
         @param errorIfAny  the status of the close; see description above. */
     void c4socket_closed(C4Socket *socket C4NONNULL, C4Error errorIfAny) C4API;
 
     /** Notifies LiteCore that the peer has requested to close the socket using the WebSocket protocol.
-        (Should only be called by sockets whose factory's `providesWebSockets` is true.)
+        (Should only be called by sockets whose factory's `framing` equals to `kC4NoFraming`.)
         LiteCore will call the factory's requestClose callback in response when it's ready to
         acknowledge the close.
         @param socket  The socket.
@@ -181,7 +178,7 @@ extern "C" {
     void c4socket_completedWrite(C4Socket *socket C4NONNULL, size_t byteCount) C4API;
 
     /** Notifies LiteCore that data was received from the socket. If the factory's
-        `providesWebSockets' is true, the data must be a single complete message; otherwise it's
+        `framing` equals to `kC4NoFraming`, the data must be a single complete message; otherwise it's
         raw bytes that will be un-framed by LiteCore.
         LiteCore will acknowledge when it's received and processed the data, by calling
         C4SocketFactory.completedReceive. For flow-control purposes, the client should keep track
