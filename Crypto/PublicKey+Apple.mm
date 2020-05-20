@@ -201,7 +201,9 @@ namespace litecore { namespace crypto {
                         (id)kSecAttrKeyClass:       (id)kSecAttrKeyClassPrivate,
                         (id)kSecValueRef:           (__bridge id)_privateKeyRef,
                     };
+                    ++gC4ExpectExceptions;
                     OSStatus status = SecItemDelete((CFDictionaryRef)params);
+                    --gC4ExpectExceptions;
                     if (status != errSecSuccess && status != errSecItemNotFound)
                         checkOSStatus(status, "SecItemDelete", "Couldn't remove a private key from the Keychain");
                 }
