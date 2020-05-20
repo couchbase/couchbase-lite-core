@@ -52,8 +52,6 @@ pipeline {
                     agent { label 'mobile-mac-mini'  }
                     environment {
                         BRANCH = "${BRANCH_NAME}"
-                        MallocScribble = "1"
-                        MallocDebugReport = "stderr"
                     }
                     steps {
                         sh 'jenkins/jenkins_unix.sh'
