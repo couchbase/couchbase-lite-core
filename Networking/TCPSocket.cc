@@ -134,8 +134,8 @@ namespace litecore { namespace net {
     string TCPSocket::peerAddress() {
         if (auto socket = actualSocket(); socket) {
             switch (auto addr = socket->peer_address(); addr.family()) {
-                case AF_INET:   return ((inet_address&)addr).to_string();
-                case AF_INET6:  return ((inet6_address&)addr).to_string();
+                case AF_INET:   return inet_address(addr).to_string();
+                case AF_INET6:  return inet6_address(addr).to_string();
             }
         }
         return "";
