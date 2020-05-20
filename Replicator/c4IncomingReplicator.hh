@@ -40,6 +40,12 @@ namespace c4Internal {
             }
             
             _replicator = new Replicator(dbCopy, _openSocket, *this, _options);
+            
+            // Yes this line is disgusting, but the memory addresses that the logger logs
+            // are not the _actual_ addresses of the object, but rather the pointer to
+            // its Logging virtual table since inside of _logVerbose this is all that
+            // is known.
+            _logVerbose("C4IncomingRepl %p created Repl %p", (Logging *)this, (Logging *)_replicator.get());
             _openSocket = nullptr;
             return true;
         }
