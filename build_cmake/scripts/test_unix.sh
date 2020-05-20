@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+SCRIPT_DIR=`dirname $0`
+cd $SCRIPT_DIR/../unix
+
 if [ ! -f LiteCore/tests/CppTests ]; then
   echo "CppTests not found!"
   exit 1
