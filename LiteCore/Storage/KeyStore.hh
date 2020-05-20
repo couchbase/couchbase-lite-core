@@ -125,6 +125,9 @@ namespace litecore {
         /** The current time represented in milliseconds since the unix epoch. */
         static expiration_t now() noexcept;
 
+        /** Does this KeyStore potentially have records that expire? (May return false positives.) */
+        virtual bool mayHaveExpiration() =0;
+
         /** Sets a record's expiration time. Zero means 'never'.
             @return  true if the time was set, false if no record with that key exists. */
         virtual bool setExpiration(slice key, expiration_t) =0;

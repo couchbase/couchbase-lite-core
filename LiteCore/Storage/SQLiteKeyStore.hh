@@ -102,6 +102,7 @@ namespace litecore {
         static void setRecordMetaAndBody(Record &rec,
                                          SQLite::Statement &stmt,
                                          ContentOption);
+        virtual bool mayHaveExpiration() override;
 
     private:
         friend class SQLiteDataFile;
@@ -127,7 +128,6 @@ namespace litecore {
         bool createFTSIndex(const IndexSpec&);
         bool createArrayIndex(const IndexSpec&);
         std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexSpec::Options*);
-        bool hasExpiration();
         void addExpiration();
 
 #ifdef COUCHBASE_ENTERPRISE

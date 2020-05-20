@@ -211,6 +211,11 @@ extern "C" {
     /** Returns the latest sequence number allocated to a revision. */
     C4SequenceNumber c4db_getLastSequence(C4Database* database C4NONNULL) C4API;
 
+    /** A fast check that returns true if this database _may_ have expiring documents.
+        (The implementation actually checks whether any document in this database has ever had an
+        expiration set.) */
+    bool c4db_mayHaveExpiration(C4Database *db C4NONNULL) C4API;
+
     /** Returns the timestamp at which the next document expiration should take place,
         or 0 if there are no documents with expiration times. */
     C4Timestamp c4db_nextDocExpiration(C4Database *database C4NONNULL) C4API;
