@@ -22,9 +22,16 @@ mkdir -p "couchbase-lite-core/build_cmake/x64"
 pushd "couchbase-lite-core/build_cmake/x64"
 cmake -DBUILD_ENTERPRISE=ON ../..
 make -j8
+
+# Note only for macOS
+export MallocScribble=1
+export MallocDebugReport=stderr
+
+export LiteCoreTestsQuiet=1
+
 pushd LiteCore/tests
-LiteCoreTestsQuiet=1 ./CppTests -r list
+./CppTests -r list
 popd
 
 pushd C/tests
-LiteCoreTestsQuiet=1 ./C4Tests -r list
+./C4Tests -r list
