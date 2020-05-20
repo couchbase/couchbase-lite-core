@@ -145,7 +145,7 @@ namespace litecore {
         :Logging(DBLog)
         ,path(p)
         {
-            logInfo("instantiated on %s", p.c_str());
+            logDebug("instantiated on %s", p.c_str());
         }
 
         ~Shared() {

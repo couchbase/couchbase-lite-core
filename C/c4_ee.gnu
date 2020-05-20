@@ -354,6 +354,7 @@ CBL {
 		c4db_startHousekeeping;
 		c4db_findDocAncestors;
 		c4db_maintenance;
+		c4db_mayHaveExpiration;
 
 		c4doc_removeRevisionBody;
 		c4doc_getForPut;

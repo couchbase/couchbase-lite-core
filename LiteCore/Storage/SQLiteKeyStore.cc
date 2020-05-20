@@ -493,7 +493,7 @@ namespace litecore {
 
 
     // Returns true if the KeyStore's table has had the 'expiration' column added to it.
-    bool SQLiteKeyStore::hasExpiration() {
+    bool SQLiteKeyStore::mayHaveExpiration() {
         if (!_hasExpirationColumn) {
             string sql;
             string tableName = "kv_" + name();
@@ -507,7 +507,7 @@ namespace litecore {
 
     // Adds the 'expiration' column to the table.
     void SQLiteKeyStore::addExpiration() {
-        if (hasExpiration())
+        if (mayHaveExpiration())
             return;
         db()._logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
         db().execWithLock(subst(
@@ -537,7 +537,7 @@ namespace litecore {
 
 
     expiration_t SQLiteKeyStore::getExpiration(slice key) {
-        if (!hasExpiration())
+        if (!mayHaveExpiration())
             return 0;
         compile(_getExpStmt, "SELECT expiration FROM kv_@ WHERE key=?");
         UsingStatement u(*_getExpStmt);
@@ -550,7 +550,7 @@ namespace litecore {
 
     expiration_t SQLiteKeyStore::nextExpiration() {
         expiration_t next = 0;
-        if (hasExpiration()) {
+        if (mayHaveExpiration()) {
             compile(_nextExpStmt, "SELECT min(expiration) FROM kv_@");
             UsingStatement u(*_nextExpStmt);
             if (!_nextExpStmt->executeStep())
@@ -563,7 +563,7 @@ namespace litecore {
 
 
     unsigned SQLiteKeyStore::expireRecords(ExpirationCallback callback) {
-        if (!hasExpiration())
+        if (!mayHaveExpiration())
             return 0;
         expiration_t t = now();
         unsigned expired = 0;

@@ -78,7 +78,7 @@ namespace litecore {
         stringstream sql;
         const char* kBodyItem[3] = {"body", "fl_root(body)", "length(body)"};
         sql << "SELECT sequence, flags, key, version, " << kBodyItem[options.contentOption];
-        if (hasExpiration())
+        if (mayHaveExpiration())
             sql << ", expiration";
         else
             sql << ", 0";

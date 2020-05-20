@@ -315,6 +315,7 @@ _c4db_exists
 _c4db_startHousekeeping
 _c4db_findDocAncestors
 _c4db_maintenance
+_c4db_mayHaveExpiration
 
 _c4doc_removeRevisionBody
 _c4doc_getForPut
