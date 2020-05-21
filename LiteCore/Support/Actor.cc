@@ -40,10 +40,11 @@ namespace litecore { namespace actor {
     }
 
     void Actor::_waitTillCaughtUp(std::mutex *mut, std::condition_variable *cond, bool *finished) {
-        {
-            std::lock_guard<std::mutex> lock(*mut);
-            *finished = true;
-        }
+        std::lock_guard<std::mutex> lock(*mut);
+        *finished = true;
+        // It's important to keep the mutex locked while calling notify_one. This ensures that
+        // `waitTillCaughtUp` won't wake up and return, invalidating `*cond`, before I have a
+        // chance to `notify_one` on it. (CBL-984)
         cond->notify_one();
     }
 
