@@ -93,29 +93,23 @@ namespace litecore {
 
 
     void BackgroundDB::addTransactionObserver(TransactionObserver *obs) {
-        use([=](DataFile*) {
-            _transactionObservers.push_back(obs);
-        });
+        LOCK(_transactionObserversMutex);
+        _transactionObservers.push_back(obs);
     }
 
 
     void BackgroundDB::removeTransactionObserver(TransactionObserver* obs) {
-        use([=](DataFile*) {
-            auto i = std::find(_transactionObservers.begin(), _transactionObservers.end(), obs);
-            if (i != _transactionObservers.end())
-                _transactionObservers.erase(i);
-        });
+        LOCK(_transactionObserversMutex);
+        auto i = std::find(_transactionObservers.begin(), _transactionObservers.end(), obs);
+        if (i != _transactionObservers.end())
+            _transactionObservers.erase(i);
     }
 
 
     void BackgroundDB::notifyTransactionObservers() {
-        use([=](DataFile*) {
-            if (!_transactionObservers.empty()) {
-                auto obsCopy = _transactionObservers;
-                for (auto obs : obsCopy)
-                    obs->transactionCommitted();
-            }
-        });
+        LOCK(_transactionObserversMutex);
+        for (auto obs : _transactionObservers)
+            obs->transactionCommitted();
     }
 
 }
