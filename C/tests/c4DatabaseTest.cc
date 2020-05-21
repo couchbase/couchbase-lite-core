@@ -21,6 +21,7 @@
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
 #include "FilePath.hh"
+#include "SecureRandomize.hh"
 #include <cmath>
 #include <errno.h>
 #include <iostream>
@@ -347,7 +348,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
 static constexpr int secs = 1000;
 static constexpr int ms = 1;
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C][Expiration]") {
     C4Error err;
     CHECK(c4db_nextDocExpiration(db) == 0);
     CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
@@ -399,7 +400,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C]")
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C][Expiration]")
 {
     c4db_startHousekeeping(db);
 
@@ -423,7 +424,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C
     C4Log("---- Done...");
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration After Reopen", "[Database][C]")
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration After Reopen", "[Database][C][Expiration]")
 {
     createRev("expire_me_first"_sl, kRevID, kFleeceBody);
     auto expire = c4_now() + 1500*ms;
@@ -445,7 +446,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration After Reopen", 
     C4Log("---- Done...");
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C][Expiration]")
 {
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kFleeceBody);
@@ -461,7 +462,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
     CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[Database][C][Expiration]") {
     // Checks that after one instance creates the 'expiration' column, other instances recognize it
     // and don't try to create it themselves.
     C4Error error;
@@ -480,6 +481,35 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[
     CHECK(c4db_nextDocExpiration(db2) == expire);
 
     c4db_release(db2);
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BackgroundDB torture test", "[Database][C][Expiration]")
+{
+    // Test for random crashers/race conditions closing a database with a BackgroundDB+Housekeeper.
+    // See CBL-980, CBL-984.
+
+    // Suppress logging so test can run faster:
+    auto oldLevel = c4log_getLevel(kC4DatabaseLog);
+    c4log_setLevel(kC4DatabaseLog, kC4LogWarning);
+
+    auto stopAt = c4_now() + 5*secs;
+    do {
+        C4LogToAt(kC4DatabaseLog, kC4LogInfo, "---- start housekeeping ---");
+        c4db_startHousekeeping(db);
+
+        char docID[50];
+        c4doc_generateID(docID, sizeof(docID));
+        createRev(slice(docID), kRevID, kFleeceBody);
+        C4Timestamp expire = c4_now() + 2*secs;
+        REQUIRE(c4doc_setExpiration(db, slice(docID), expire, nullptr));
+
+        int n = litecore::RandomNumber(1000);
+        this_thread::sleep_for(chrono::microseconds(n));
+        C4LogToAt(kC4DatabaseLog, kC4LogInfo, "---- close & reopen db ---");
+        reopenDB();
+    } while (c4_now() < stopAt);
+
+    c4log_setLevel(kC4DatabaseLog, oldLevel);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C]")
