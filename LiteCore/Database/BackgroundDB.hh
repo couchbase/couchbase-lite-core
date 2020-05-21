@@ -33,6 +33,9 @@ namespace litecore {
         class TransactionObserver {
         public:
             virtual ~TransactionObserver() =default;
+            /// This method is called on some random thread, and while a BackgroundDB lock is held.
+            /// The implementation must not do anything that might acquire a mutex,
+            /// nor call back into BackgroundDB.
             virtual void transactionCommitted() =0;
         };
 
@@ -47,6 +50,7 @@ namespace litecore {
 
         c4Internal::Database* _database;
         std::vector<TransactionObserver*> _transactionObservers;
+        std::mutex _transactionObserversMutex;
     };
 
 }
