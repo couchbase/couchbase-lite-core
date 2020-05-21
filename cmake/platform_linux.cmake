@@ -69,6 +69,11 @@ function(setup_support_build_linux)
             Support PRIVATE
             -DLITECORE_USES_ICU=1
         )
+
+        target_link_libraries(
+            Support INTERFACE
+            ${ICU_LIBS}
+        )
     endif()
 
     target_include_directories(

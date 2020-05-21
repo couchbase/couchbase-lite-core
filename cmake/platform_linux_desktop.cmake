@@ -138,4 +138,6 @@ endfunction()
 
 function(setup_rest_build)
     setup_rest_build_unix()
+
+    target_link_libraries(LiteCoreREST_Static INTERFACE mbedtls)
 endfunction()
