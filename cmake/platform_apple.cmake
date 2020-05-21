@@ -66,6 +66,7 @@ function(setup_litecore_build)
         "-framework CoreFoundation"
         "-framework Foundation"
         "-framework SystemConfiguration"
+        "-framework Security"
         z
     )
 

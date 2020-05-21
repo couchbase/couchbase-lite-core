@@ -162,6 +162,15 @@ CBL {
 		c4socket_received;
 		c4socket_gotHTTPResponse;
 
+		c4listener_availableAPIs;
+		c4listener_start;
+		c4listener_free;
+		c4listener_shareDB;
+		c4listener_unshareDB;
+		c4listener_getPort;
+		c4listener_getURLs;
+		c4listener_getConnectionStatus;
+
 		c4pred_registerModel;
 		c4pred_unregisterModel;
 
@@ -315,6 +324,7 @@ CBL {
 		c4db_startHousekeeping;
 		c4db_findDocAncestors;
 		c4db_maintenance;
+		c4db_URINameFromPath;
 
 		c4doc_removeRevisionBody;
 		c4doc_getForPut;

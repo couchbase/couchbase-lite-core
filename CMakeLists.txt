@@ -267,7 +267,7 @@ target_include_directories(
     LiteCore/Storage
     LiteCore/Support
     C
-    C/include 
+    C/include
     Crypto
     Networking
     Networking/BLIP/
@@ -301,8 +301,10 @@ set(
     LITECORE_LIBRARIES_PRIVATE
     ${WHOLE_LIBRARY_FLAG}
     LiteCoreStatic
+    LiteCoreREST_Static
     FleeceStatic
     ${NO_WHOLE_LIBRARY_FLAG}
+    LiteCoreWebSocket
     Support
     SQLite3_UnicodeSN
     BLIPStatic

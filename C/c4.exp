@@ -161,6 +161,15 @@ _c4socket_completedWrite
 _c4socket_received
 _c4socket_gotHTTPResponse
 
+_c4listener_availableAPIs
+_c4listener_start
+_c4listener_free
+_c4listener_shareDB
+_c4listener_unshareDB
+_c4listener_getPort
+_c4listener_getURLs
+_c4listener_getConnectionStatus
+
 _c4pred_registerModel
 _c4pred_unregisterModel
 
@@ -315,6 +324,7 @@ _c4db_exists
 _c4db_startHousekeeping
 _c4db_findDocAncestors
 _c4db_maintenance
+_c4db_URINameFromPath
 
 _c4doc_removeRevisionBody
 _c4doc_getForPut
