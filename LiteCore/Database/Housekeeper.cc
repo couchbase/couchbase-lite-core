@@ -54,7 +54,7 @@ namespace litecore {
 
     void Housekeeper::_scheduleExpiration() {
         expiration_t nextExp = _bgdb->use<expiration_t>([&](DataFile *df) {
-            return df->defaultKeyStore().nextExpiration();
+            return df ? df->defaultKeyStore().nextExpiration() : 0;
         });
         if (nextExp == 0) {
             LogToAt(DBLog, Verbose, "Housekeeper: no scheduled document expiration");
