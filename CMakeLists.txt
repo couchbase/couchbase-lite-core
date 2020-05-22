@@ -65,6 +65,7 @@ option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
+option(SANITIZE_FOR_DEBUG_ENABLED "Enable -fsanitize for Debug Build" ON)
 
 add_definitions(
     -DCMAKE                  # Let the source know this is a CMAKE build
