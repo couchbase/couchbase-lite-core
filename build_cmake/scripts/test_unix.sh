@@ -1,8 +1,8 @@
 #!/bin/bash -e
 
-SCRIPT_DIR=`dirname $0`
-cd $SCRIPT_DIR/../unix
-
+# Note this script is used by the build server so this script cannot rely
+# on any sort of directory structure. It must be run from the root directory
+# of the LiteCore CMake output
 if [ ! -f LiteCore/tests/CppTests ]; then
   echo "CppTests not found!"
   exit 1
