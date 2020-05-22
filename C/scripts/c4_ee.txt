@@ -10,6 +10,8 @@ c4listener_getPort
 c4listener_getURLs
 c4listener_getConnectionStatus
 
+c4repl_newLocal
+
 ##################################################################################################
 # Add new declarations below, so they will not produce (unused) C# bindings
 # C4Tests

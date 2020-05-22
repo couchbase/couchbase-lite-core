@@ -200,22 +200,12 @@ C4Replicator* c4repl_new(C4Database* db,
 }
 
 
-#ifndef COUCHBASE_ENTERPRISE
-    // Not declared in the header for non-EE builds, so declare it now
-    extern "C" {
-        C4Replicator* c4repl_newLocal(C4Database* db,
-                                      C4Database* otherLocalDB C4NONNULL,
-                                      C4ReplicatorParameters params,
-                                      C4Error *outError) C4API;
-    }
-#endif
-
+#ifdef COUCHBASE_ENTERPRISE
 C4Replicator* c4repl_newLocal(C4Database* db,
                               C4Database* otherLocalDB C4NONNULL,
                               C4ReplicatorParameters params,
                               C4Error *outError) C4API
 {
-#ifdef COUCHBASE_ENTERPRISE
     try {
         if (!checkParam(params.push != kC4Disabled || params.pull != kC4Disabled,
                         "Either push or pull must be enabled", outError))
@@ -226,13 +216,8 @@ C4Replicator* c4repl_newLocal(C4Database* db,
         return retain(new C4LocalReplicator(db, params, otherLocalDB));
     } catchError(outError);
     return nullptr;
-#else
-    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented,
-                   "Only available in Enterprise Edition"_sl, outError);
-    return nullptr;
-#endif
 }
-
+#endif
 
 C4Replicator* c4repl_newWithWebSocket(C4Database* db,
                                       WebSocket *openSocket,

@@ -141,7 +141,6 @@ CBL {
 		c4docobs_free;
 
 		c4repl_new;
-		c4repl_newLocal;
 		c4repl_newWithSocket;
 		c4repl_free;
 		c4repl_start;
@@ -288,6 +287,8 @@ CBL {
 		c4listener_getPort;
 		c4listener_getURLs;
 		c4listener_getConnectionStatus;
+
+		c4repl_newLocal;
 
 
 		kC4SQLiteStorageEngine;

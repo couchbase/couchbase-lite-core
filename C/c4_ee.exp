@@ -140,7 +140,6 @@ _c4docobs_create
 _c4docobs_free
 
 _c4repl_new
-_c4repl_newLocal
 _c4repl_newWithSocket
 _c4repl_free
 _c4repl_start
@@ -287,6 +286,8 @@ _c4listener_unshareDB
 _c4listener_getPort
 _c4listener_getURLs
 _c4listener_getConnectionStatus
+
+_c4repl_newLocal
 
 # C4Tests
 

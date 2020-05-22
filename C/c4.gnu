@@ -141,7 +141,6 @@ CBL {
 		c4docobs_free;
 
 		c4repl_new;
-		c4repl_newLocal;
 		c4repl_newWithSocket;
 		c4repl_free;
 		c4repl_start;

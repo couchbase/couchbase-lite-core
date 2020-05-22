@@ -140,7 +140,6 @@ _c4docobs_create
 _c4docobs_free
 
 _c4repl_new
-_c4repl_newLocal
 _c4repl_newWithSocket
 _c4repl_free
 _c4repl_start
