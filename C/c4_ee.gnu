@@ -279,6 +279,17 @@ CBL {
 		_FLBuf_Release;
 
 
+
+		c4listener_availableAPIs;
+		c4listener_start;
+		c4listener_free;
+		c4listener_shareDB;
+		c4listener_unshareDB;
+		c4listener_getPort;
+		c4listener_getURLs;
+		c4listener_getConnectionStatus;
+
+
 		kC4SQLiteStorageEngine;
 		kC4DatabaseFilenameExtension;
 
@@ -382,6 +393,9 @@ CBL {
 		FLDictIterator_End;
 
 		FLValue_ToJSON5;
+
+
+		c4db_URINameFromPath;
 	local:
 		*;
 };

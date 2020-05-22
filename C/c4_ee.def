@@ -1,5 +1,6 @@
-# Couchbase Lite (used for bindings generation)
-# New API should go below the 'C4Tests' comment line below first
+EXPORTS
+
+; Couchbase Lite .NET
 c4_getVersion
 c4_now
 c4_getObjectCount
@@ -28,8 +29,6 @@ c4error_mayBeNetworkDependent
 
 c4db_open
 c4db_openNamed
-#c4db_retain  INLINE
-#c4db_release  INLINE
 c4db_close
 c4db_copy
 c4db_delete
@@ -106,8 +105,6 @@ c4queryenum_release
 
 c4query_new
 c4query_new2
-#c4query_retain  INLINE
-#c4query_release  INLINE
 c4query_setParameters
 c4query_columnCount
 c4query_columnTitle
@@ -171,8 +168,6 @@ c4pred_unregisterModel
 
 FLSlice_Equal
 FLSlice_Compare
-#FLSliceResult_Retain  INLINE
-#FLSliceResult_Release  INLINE
 FLSlice_Copy
 
 FLDoc_FromResultData
@@ -284,9 +279,18 @@ FLSlot_SetValue
 _FLBuf_Retain
 _FLBuf_Release
 
-##################################################################################################
-# Add new declarations below, so they will not produce (unused) C# bindings
-# C4Tests
+
+
+c4listener_availableAPIs
+c4listener_start
+c4listener_free
+c4listener_shareDB
+c4listener_unshareDB
+c4listener_getPort
+c4listener_getURLs
+c4listener_getConnectionStatus
+
+; C4Tests
 
 kC4SQLiteStorageEngine
 kC4DatabaseFilenameExtension
@@ -391,3 +395,7 @@ FLDictIterator_GetCount
 FLDictIterator_End
 
 FLValue_ToJSON5
+
+
+c4db_URINameFromPath
+

@@ -112,10 +112,17 @@ function(setup_litecore_build_win)
     target_include_directories(LiteCoreStatic PRIVATE vendor/fleece/MSVC)
 
     # Set the exported symbols for LiteCore
-    set_target_properties(
-        LiteCore PROPERTIES LINK_FLAGS
-        "/def:${PROJECT_SOURCE_DIR}/C/c4.def"
-    )
+    if(BUILD_ENTERPRISE)
+        set_target_properties(
+            LiteCore PROPERTIES LINK_FLAGS
+            "/def:${PROJECT_SOURCE_DIR}/C/c4_ee.def"
+        )
+    else()
+        set_target_properties(
+            LiteCore PROPERTIES LINK_FLAGS
+            "/def:${PROJECT_SOURCE_DIR}/C/c4.def"
+        )
+    endif()
 
     target_include_directories(
         LiteCore PRIVATE

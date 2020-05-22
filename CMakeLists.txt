@@ -297,21 +297,37 @@ else()
 endif()
 
 # Library flags defined in platform_linux
-set(
-    LITECORE_LIBRARIES_PRIVATE
-    ${WHOLE_LIBRARY_FLAG}
-    LiteCoreStatic
-    LiteCoreREST_Static
-    FleeceStatic
-    ${NO_WHOLE_LIBRARY_FLAG}
-    LiteCoreWebSocket
-    Support
-    SQLite3_UnicodeSN
-    BLIPStatic
-    mbedcrypto
-    mbedtls
-    mbedx509
-)
+if(BUILD_ENTERPRISE)
+    set(
+        LITECORE_LIBRARIES_PRIVATE
+        ${WHOLE_LIBRARY_FLAG}
+        LiteCoreStatic
+        LiteCoreREST_Static
+        FleeceStatic
+        ${NO_WHOLE_LIBRARY_FLAG}
+        LiteCoreWebSocket
+        Support
+        SQLite3_UnicodeSN
+        BLIPStatic
+        mbedcrypto
+        mbedtls
+        mbedx509
+    )
+else()
+    set(
+        LITECORE_LIBRARIES_PRIVATE
+        ${WHOLE_LIBRARY_FLAG}
+        LiteCoreStatic
+        FleeceStatic
+        ${NO_WHOLE_LIBRARY_FLAG}
+        Support
+        SQLite3_UnicodeSN
+        BLIPStatic
+        mbedcrypto
+        mbedtls
+        mbedx509
+    )
+endif()
 
 target_include_directories(
     LiteCore INTERFACE

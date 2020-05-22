@@ -71,10 +71,17 @@ function(setup_litecore_build)
     )
 
     # Specify list of symbols to export
-    set_target_properties(
-        LiteCore PROPERTIES LINK_FLAGS
-        "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp"
-    )
+    if(BUILD_ENTERPRISE)
+        set_target_properties(
+            LiteCore PROPERTIES LINK_FLAGS
+            "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4_ee.exp"
+        )
+    else()
+        set_target_properties(
+            LiteCore PROPERTIES LINK_FLAGS
+            "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp"
+        )
+    endif()
 endfunction()
 
 function(setup_support_build)
