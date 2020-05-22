@@ -3,7 +3,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/platform_unix.cmake")
 function(setup_globals)
     setup_globals_unix()
 
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if((CMAKE_BUILD_TYPE STREQUAL "Debug") AND ${SANITIZE_FOR_DEBUG_ENABLED})
         add_compile_options(
             -fsanitize=address 
             -fsanitize=undefined 
