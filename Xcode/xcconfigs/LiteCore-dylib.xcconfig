@@ -8,9 +8,17 @@
 #include "LiteCore.xcconfig"
 #include "dylib.xcconfig"
 
-EXPORTED_SYMBOLS_FILE       = $(SRCROOT)/../C/c4.exp
-PRODUCT_NAME                = LiteCore
+// Weird hackery to get per-configuration export files.
+// See <https://pewpewthespells.com/blog/xcconfig_guide.html#VariableSubstitution>
+C4_EXPORT_FILENAME_Debug        = $(SRCROOT)/../C/c4.exp
+C4_EXPORT_FILENAME_Release      = $(SRCROOT)/../C/c4.exp
+C4_EXPORT_FILENAME_Debug_EE     = $(SRCROOT)/../C/c4_ee.exp
+C4_EXPORT_FILENAME_Release_EE   = $(SRCROOT)/../C/c4_ee.exp
+EXPORTED_SYMBOLS_FILE           = $(C4_EXPORT_FILENAME_$(CONFIGURATION))
 
-GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_IMPL SQLITE_OMIT_LOAD_EXTENSION   // For SQLiteCpp
 
-OTHER_LDFLAGS                = -ObjC -lmbedtls -lmbedcrypto -lmbedx509
+PRODUCT_NAME                    = LiteCore
+
+GCC_PREPROCESSOR_DEFINITIONS    = $(inherited) LITECORE_IMPL SQLITE_OMIT_LOAD_EXTENSION   // For SQLiteCpp
+
+OTHER_LDFLAGS                   = -ObjC -lmbedtls -lmbedcrypto -lmbedx509

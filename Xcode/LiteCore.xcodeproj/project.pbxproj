@@ -223,6 +223,11 @@
 		279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
 		279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */; };
 		279D40F91EA533D900D8DD9D /* netUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D40F61EA533D900D8DD9D /* netUtils.hh */; };
+		279DE3DC247888490059AE4E /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
+		279DE3DE24788D1B0059AE4E /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
+		279DE3DF24788D1B0059AE4E /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
+		279DE3E824788DCF0059AE4E /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
+		279DE3E924788DCF0059AE4E /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		27A924981D9B316D00086206 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A924971D9B316D00086206 /* main.m */; };
 		27A9249B1D9B316D00086206 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249A1D9B316D00086206 /* AppDelegate.m */; };
 		27A9249E1D9B316D00086206 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249D1D9B316D00086206 /* ViewController.m */; };
@@ -621,6 +626,34 @@
 			proxyType = 1;
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "CBForest-Interop";
+		};
+		279DE3E024788D280059AE4E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FC81E71EAAB0D90028E38E;
+			remoteInfo = "LiteCoreREST static";
+		};
+		279DE3E224788D2C0059AE4E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2771A097228624C000B18E0A;
+			remoteInfo = LiteCoreWebSocket;
+		};
+		279DE3E424788DC30059AE4E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FC81E71EAAB0D90028E38E;
+			remoteInfo = "LiteCoreREST static";
+		};
+		279DE3E624788DC30059AE4E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2771A097228624C000B18E0A;
+			remoteInfo = LiteCoreWebSocket;
 		};
 		27B649482069722500FC12F7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1070,6 +1103,7 @@
 		279D41191EA555E900D8DD9D /* dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = dylib.xcconfig; sourceTree = "<group>"; };
 		279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib.xcconfig"; sourceTree = "<group>"; };
 		279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib_Release.xcconfig"; sourceTree = "<group>"; };
+		279DE3DD24788A030059AE4E /* c4_ee.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = c4_ee.txt; path = scripts/c4_ee.txt; sourceTree = "<group>"; };
 		27A16314201FC2A500C18D9C /* DataFile+Shared.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "DataFile+Shared.hh"; sourceTree = "<group>"; };
 		27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
 		27A924941D9B316D00086206 /* LiteCore-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LiteCore-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1571,6 +1605,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				27B649472069721F00FC12F7 /* libLiteCore-static.a in Frameworks */,
+				279DE3E924788DCF0059AE4E /* libLiteCoreWebSocket.a in Frameworks */,
+				279DE3E824788DCF0059AE4E /* libLiteCoreREST-static.a in Frameworks */,
 				27B64960206975F900FC12F7 /* libc++.tbd in Frameworks */,
 				27B6495D2069758F00FC12F7 /* libz.tbd in Frameworks */,
 				27B6495A2069757D00FC12F7 /* CoreFoundation.framework in Frameworks */,
@@ -1615,11 +1651,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				2700BB75217905FE00797537 /* libLiteCore-static.a in Frameworks */,
+				279DE3DF24788D1B0059AE4E /* libLiteCoreWebSocket.a in Frameworks */,
+				279DE3DE24788D1B0059AE4E /* libLiteCoreREST-static.a in Frameworks */,
 				2700BB772179070900797537 /* libc++.tbd in Frameworks */,
 				72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */,
 				270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */,
 				2753B00D1EC39E5D00C12E98 /* Foundation.framework in Frameworks */,
 				2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */,
+				279DE3DC247888490059AE4E /* SystemConfiguration.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2124,6 +2163,7 @@
 				272BA50923F61506000EB6E8 /* c4QueryObserver.hh */,
 				27ECCB011D89DCDB00FA8C4A /* Doxyfile */,
 				2764ED3723873B9E007F020F /* c4.txt */,
+				279DE3DD24788A030059AE4E /* c4_ee.txt */,
 				2764ED3823873B9E007F020F /* c4_exp.txt */,
 				27B64937206971FC00FC12F7 /* Info.plist */,
 				274D03FF1BA7554700FF7C35 /* tests */,
@@ -3249,6 +3289,8 @@
 			);
 			dependencies = (
 				27B649492069722500FC12F7 /* PBXTargetDependency */,
+				279DE3E724788DC30059AE4E /* PBXTargetDependency */,
+				279DE3E524788DC30059AE4E /* PBXTargetDependency */,
 			);
 			name = "LiteCore framework";
 			productName = LiteCore;
@@ -3343,6 +3385,8 @@
 			);
 			dependencies = (
 				2700BB74217905F000797537 /* PBXTargetDependency */,
+				279DE3E324788D2C0059AE4E /* PBXTargetDependency */,
+				279DE3E124788D280059AE4E /* PBXTargetDependency */,
 			);
 			name = "LiteCore dylib";
 			productName = CBForestJNI;
@@ -3577,10 +3621,11 @@
 			);
 			outputPaths = (
 				"$(SRCROOT)/../C/c4.exp",
+				"$(SRCROOT)/../C/c4_ee.exp",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/bin/sh -e";
-			shellScript = "python \"$SCRIPT_INPUT_FILE_0\"\n";
+			shellScript = "\"$SCRIPT_INPUT_FILE_0\" \n";
 			showEnvVarsInLog = 0;
 		};
 		27E6739E1EC8D958008F50C4 /* ShellScript */ = {
@@ -4079,6 +4124,26 @@
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */;
 		};
+		279DE3E124788D280059AE4E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FC81E71EAAB0D90028E38E /* LiteCoreREST static */;
+			targetProxy = 279DE3E024788D280059AE4E /* PBXContainerItemProxy */;
+		};
+		279DE3E324788D2C0059AE4E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2771A097228624C000B18E0A /* LiteCoreWebSocket */;
+			targetProxy = 279DE3E224788D2C0059AE4E /* PBXContainerItemProxy */;
+		};
+		279DE3E524788DC30059AE4E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FC81E71EAAB0D90028E38E /* LiteCoreREST static */;
+			targetProxy = 279DE3E424788DC30059AE4E /* PBXContainerItemProxy */;
+		};
+		279DE3E724788DC30059AE4E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2771A097228624C000B18E0A /* LiteCoreWebSocket */;
+			targetProxy = 279DE3E624788DC30059AE4E /* PBXContainerItemProxy */;
+		};
 		27B649492069722500FC12F7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 27EF80F91917EEC600A327B9 /* LiteCore-static */;
@@ -4286,7 +4351,7 @@
 			};
 			name = Debug;
 		};
-		2752B26C233D76010014AD9D /* Debug-EE */ = {
+		2752B26C233D76010014AD9D /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -4347,7 +4412,7 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
 		2752B26D233D76010014AD9D /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -4403,7 +4468,7 @@
 			};
 			name = Release;
 		};
-		2752B26E233D76010014AD9D /* Release-EE */ = {
+		2752B26E233D76010014AD9D /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -4455,7 +4520,7 @@
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
 		2771A0A1228624C100B18E0A /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -4464,12 +4529,12 @@
 			};
 			name = Debug;
 		};
-		2771A0A2228624C100B18E0A /* Debug-EE */ = {
+		2771A0A2228624C100B18E0A /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
 		2771A0A3228624C100B18E0A /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -4478,85 +4543,85 @@
 			};
 			name = Release;
 		};
-		2771A0A4228624C100B18E0A /* Release-EE */ = {
+		2771A0A4228624C100B18E0A /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA1B2032745700BD813C /* Debug-EE */ = {
+		2791EA1B2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2791EA192032732500BD813C /* Project_Debug_EE.xcconfig */;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA1C2032745700BD813C /* Debug-EE */ = {
+		2791EA1C2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA1D2032745700BD813C /* Debug-EE */ = {
+		2791EA1D2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA1E2032745700BD813C /* Debug-EE */ = {
+		2791EA1E2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA202032745700BD813C /* Debug-EE */ = {
+		2791EA202032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA212032745700BD813C /* Debug-EE */ = {
+		2791EA212032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
 				PRODUCT_NAME = LiteCoreCppTests;
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA222032745700BD813C /* Debug-EE */ = {
+		2791EA222032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA272032745700BD813C /* Debug-EE */ = {
+		2791EA272032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27DF7D6C1F42399E0022F3DF /* SQLite_Debug.xcconfig */;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA282032745700BD813C /* Debug-EE */ = {
+		2791EA282032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA2A2032745700BD813C /* Debug-EE */ = {
+		2791EA2A2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA2B2032745700BD813C /* Debug-EE */ = {
+		2791EA2B2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -4574,9 +4639,9 @@
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA2D2032745700BD813C /* Debug-EE */ = {
+		2791EA2D2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
 			buildSettings = {
@@ -4626,86 +4691,86 @@
 				SDKROOT = iphoneos;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiteCore-iOS.app/LiteCore-iOS";
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA2E2032745700BD813C /* Debug-EE */ = {
+		2791EA2E2032745700BD813C /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
-		2791EA2F2032746700BD813C /* Release-EE */ = {
+		2791EA2F2032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2791EA1A203273BF00BD813C /* Project_Release_EE.xcconfig */;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA302032746700BD813C /* Release-EE */ = {
+		2791EA302032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA312032746700BD813C /* Release-EE */ = {
+		2791EA312032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA322032746700BD813C /* Release-EE */ = {
+		2791EA322032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F31EAAB1000028E38E /* REST-static.xcconfig */;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA342032746700BD813C /* Release-EE */ = {
+		2791EA342032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA352032746700BD813C /* Release-EE */ = {
+		2791EA352032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
 				PRODUCT_NAME = LiteCoreCppTests;
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA362032746700BD813C /* Release-EE */ = {
+		2791EA362032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA3B2032746700BD813C /* Release-EE */ = {
+		2791EA3B2032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27DF7D6D1F4239A80022F3DF /* SQLite_Release.xcconfig */;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA3C2032746700BD813C /* Release-EE */ = {
+		2791EA3C2032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA3E2032746700BD813C /* Release-EE */ = {
+		2791EA3E2032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA3F2032746700BD813C /* Release-EE */ = {
+		2791EA3F2032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -4723,9 +4788,9 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA412032746700BD813C /* Release-EE */ = {
+		2791EA412032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */;
 			buildSettings = {
@@ -4769,13 +4834,13 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LiteCore-iOS.app/LiteCore-iOS";
 				VALIDATE_PRODUCT = YES;
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
-		2791EA422032746700BD813C /* Release-EE */ = {
+		2791EA422032746700BD813C /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
 		2796916C1ED4B29E0086565D /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -4939,7 +5004,7 @@
 			};
 			name = Debug;
 		};
-		27B6493E206971FC00FC12F7 /* Debug-EE */ = {
+		27B6493E206971FC00FC12F7 /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */;
 			buildSettings = {
@@ -4947,7 +5012,7 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
-			name = "Debug-EE";
+			name = Debug_EE;
 		};
 		27B6493F206971FC00FC12F7 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -4959,7 +5024,7 @@
 			};
 			name = Release;
 		};
-		27B64940206971FC00FC12F7 /* Release-EE */ = {
+		27B64940206971FC00FC12F7 /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */;
 			buildSettings = {
@@ -4967,7 +5032,7 @@
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
 			};
-			name = "Release-EE";
+			name = Release_EE;
 		};
 		27B7E0F318F8FB4800044EBA /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -5058,9 +5123,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2708FE501CF4CC880022F721 /* Debug */,
-				2791EA212032745700BD813C /* Debug-EE */,
+				2791EA212032745700BD813C /* Debug_EE */,
 				2708FE511CF4CC880022F721 /* Release */,
-				2791EA352032746700BD813C /* Release-EE */,
+				2791EA352032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5069,9 +5134,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27139B4218F8E9750021A9A3 /* Debug */,
-				2791EA2A2032745700BD813C /* Debug-EE */,
+				2791EA2A2032745700BD813C /* Debug_EE */,
 				27139B4318F8E9750021A9A3 /* Release */,
-				2791EA3E2032746700BD813C /* Release-EE */,
+				2791EA3E2032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5080,9 +5145,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				274D040D1BA75E1C00FF7C35 /* Debug */,
-				2791EA222032745700BD813C /* Debug-EE */,
+				2791EA222032745700BD813C /* Debug_EE */,
 				274D040E1BA75E1C00FF7C35 /* Release */,
-				2791EA362032746700BD813C /* Release-EE */,
+				2791EA362032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5091,9 +5156,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2750724718E3E52800A80C5A /* Debug */,
-				2791EA1B2032745700BD813C /* Debug-EE */,
+				2791EA1B2032745700BD813C /* Debug_EE */,
 				2750724818E3E52800A80C5A /* Release */,
-				2791EA2F2032746700BD813C /* Release-EE */,
+				2791EA2F2032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5102,9 +5167,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2752B26B233D76010014AD9D /* Debug */,
-				2752B26C233D76010014AD9D /* Debug-EE */,
+				2752B26C233D76010014AD9D /* Debug_EE */,
 				2752B26D233D76010014AD9D /* Release */,
-				2752B26E233D76010014AD9D /* Release-EE */,
+				2752B26E233D76010014AD9D /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5113,9 +5178,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2771A0A1228624C100B18E0A /* Debug */,
-				2771A0A2228624C100B18E0A /* Debug-EE */,
+				2771A0A2228624C100B18E0A /* Debug_EE */,
 				2771A0A3228624C100B18E0A /* Release */,
-				2771A0A4228624C100B18E0A /* Release-EE */,
+				2771A0A4228624C100B18E0A /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5124,9 +5189,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2796916C1ED4B29E0086565D /* Debug */,
-				2791EA202032745700BD813C /* Debug-EE */,
+				2791EA202032745700BD813C /* Debug_EE */,
 				2796916D1ED4B29E0086565D /* Release */,
-				2791EA342032746700BD813C /* Release-EE */,
+				2791EA342032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5135,9 +5200,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27A924B41D9B316D00086206 /* Debug */,
-				2791EA2B2032745700BD813C /* Debug-EE */,
+				2791EA2B2032745700BD813C /* Debug_EE */,
 				27A924B51D9B316D00086206 /* Release */,
-				2791EA3F2032746700BD813C /* Release-EE */,
+				2791EA3F2032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5146,9 +5211,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27A924B71D9B316D00086206 /* Debug */,
-				2791EA2D2032745700BD813C /* Debug-EE */,
+				2791EA2D2032745700BD813C /* Debug_EE */,
 				27A924B81D9B316D00086206 /* Release */,
-				2791EA412032746700BD813C /* Release-EE */,
+				2791EA412032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5157,9 +5222,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27B6493D206971FC00FC12F7 /* Debug */,
-				27B6493E206971FC00FC12F7 /* Debug-EE */,
+				27B6493E206971FC00FC12F7 /* Debug_EE */,
 				27B6493F206971FC00FC12F7 /* Release */,
-				27B64940206971FC00FC12F7 /* Release-EE */,
+				27B64940206971FC00FC12F7 /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5168,9 +5233,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27B7E0F318F8FB4800044EBA /* Debug */,
-				2791EA2E2032745700BD813C /* Debug-EE */,
+				2791EA2E2032745700BD813C /* Debug_EE */,
 				27B7E0F418F8FB4800044EBA /* Release */,
-				2791EA422032746700BD813C /* Release-EE */,
+				2791EA422032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5179,9 +5244,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27DF7D651F4236500022F3DF /* Debug */,
-				2791EA272032745700BD813C /* Debug-EE */,
+				2791EA272032745700BD813C /* Debug_EE */,
 				27DF7D661F4236500022F3DF /* Release */,
-				2791EA3B2032746700BD813C /* Release-EE */,
+				2791EA3B2032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5190,9 +5255,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27EF807619142C2500A327B9 /* Debug */,
-				2791EA282032745700BD813C /* Debug-EE */,
+				2791EA282032745700BD813C /* Debug_EE */,
 				27EF807719142C2500A327B9 /* Release */,
-				2791EA3C2032746700BD813C /* Release-EE */,
+				2791EA3C2032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5201,9 +5266,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27EF81101917EEC600A327B9 /* Debug */,
-				2791EA1C2032745700BD813C /* Debug-EE */,
+				2791EA1C2032745700BD813C /* Debug_EE */,
 				27EF81111917EEC600A327B9 /* Release */,
-				2791EA302032746700BD813C /* Release-EE */,
+				2791EA302032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5212,9 +5277,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27FC81F11EAAB0D90028E38E /* Debug */,
-				2791EA1E2032745700BD813C /* Debug-EE */,
+				2791EA1E2032745700BD813C /* Debug_EE */,
 				27FC81F21EAAB0D90028E38E /* Release */,
-				2791EA322032746700BD813C /* Release-EE */,
+				2791EA322032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -5223,9 +5288,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				720EA3F31BA7EAD9002B8416 /* Debug */,
-				2791EA1D2032745700BD813C /* Debug-EE */,
+				2791EA1D2032745700BD813C /* Debug_EE */,
 				720EA3F41BA7EAD9002B8416 /* Release */,
-				2791EA312032746700BD813C /* Release-EE */,
+				2791EA312032746700BD813C /* Release_EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
