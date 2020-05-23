@@ -27,5 +27,5 @@ git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH
     git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $CHANGE_TARGET --recursive --depth 1 couchbase-lite-core-EE 
 
 pushd "couchbase-lite-core/Xcode"
-xcodebuild -project LiteCore.xcodeproj -configuration Debug-EE -derivedDataPath ios-sim -scheme "LiteCore framework" -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO
-xcodebuild -project LiteCore.xcodeproj -configuration Debug-EE -derivedDataPath ios -scheme "LiteCore framework" -sdk iphoneos BITCODE_GENERATION_MODE=bitcode CODE_SIGNING_ALLOWED=NO
+xcodebuild -project LiteCore.xcodeproj -configuration Debug_EE -derivedDataPath ios-sim -scheme "LiteCore framework" -sdk iphonesimulator CODE_SIGNING_ALLOWED=NO
+xcodebuild -project LiteCore.xcodeproj -configuration Debug_EE -derivedDataPath ios -scheme "LiteCore framework" -sdk iphoneos BITCODE_GENERATION_MODE=bitcode CODE_SIGNING_ALLOWED=NO

@@ -57,8 +57,6 @@ target_compile_definitions(
 target_link_libraries(
     C4Tests PRIVATE
     LiteCore
-    LiteCoreREST_Static
-    LiteCoreWebSocket
     Support
     BLIPStatic
     FleeceBase

@@ -57,10 +57,17 @@ function(setup_litecore_build_linux)
     )
 
     # Specify list of symbols to export
-    set_target_properties(
-        LiteCore PROPERTIES LINK_FLAGS
-        "-Wl,--version-script=${PROJECT_SOURCE_DIR}/C/c4.gnu"
-    )
+    if(BUILD_ENTERPRISE)
+        set_target_properties(
+            LiteCore PROPERTIES LINK_FLAGS
+            "-Wl,--version-script=${PROJECT_SOURCE_DIR}/C/c4_ee.gnu"
+        )
+    else()
+        set_target_properties(
+            LiteCore PROPERTIES LINK_FLAGS
+            "-Wl,--version-script=${PROJECT_SOURCE_DIR}/C/c4.gnu"
+        )
+    endif()
 endfunction()
 
 function(setup_support_build_linux)
