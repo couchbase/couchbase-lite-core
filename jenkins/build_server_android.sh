@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/bin/bash -ex
+
+# This is the script for the official Couchbase build server.  Do not try to use it, it will only confuse you.
+# You have been warned.
 
 set -e
 

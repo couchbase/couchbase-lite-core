@@ -3,7 +3,8 @@
     A script for the Couchbase official build servers to use to build LiteCore for Windows Desktop and UWP
 .DESCRIPTION
     This tool will build various flavors of LiteCore and package them according to the format the the Couchbase build server
-    is used to dealing with.  It is the responsibility of the build job to then take the artifacts and put them somewhere
+    is used to dealing with.  It is the responsibility of the build job to then take the artifacts and put them somewhere.  It
+    is meant for the official Couchbase build servers.  Do not try to use it, it will only confuse you.  You have been warned.
 .PARAMETER Version
     The version number to give to the build (e.g. 2.0.0)
 .PARAMETER ShaVersion
