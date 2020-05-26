@@ -153,7 +153,7 @@ namespace litecore { namespace repl {
                 for (size_t i = 0; i < nChanges; ++i) {
                     alloc_slice docID(docIDs[i]);
                     alloc_slice revID(revIDs[i]);
-                    alloc_slice anc(ancestors[i]);
+                    alloc_slice anc(std::move(ancestors[i]));
                     if (anc == kC4AncestorExistsButNotCurrent) {
                         // This means the rev exists but is not marked as the latest from the
                         // remote server, so I better make it so:
