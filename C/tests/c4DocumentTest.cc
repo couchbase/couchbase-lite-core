@@ -131,7 +131,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
     bool bodies = false;
     C4RemoteID remote = 1;
 
-    auto toString = [](C4SliceResult sr) {return std::string(alloc_slice(sr));};
+    auto toString = [](C4SliceResult sr) {return std::string(alloc_slice(std::move(sr)));};
 
     // Doc I don't have yet:
     C4String newDocID = "new"_sl;
@@ -141,36 +141,36 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
 
     // Revision I already have:
     REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &doc1, &kRev3ID, ancestors, &error));
-    CHECK(alloc_slice(ancestors[0]) == kC4AncestorExists);       // null slice
+    CHECK(alloc_slice(std::move(ancestors[0])) == kC4AncestorExists);       // null slice
 
     // Newer revision:
     C4String newRevID = "4-deadbeef"_sl;
     REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &doc1, &newRevID, ancestors, &error));
-    CHECK(toString(ancestors[0]) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
+    CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
 
     // Conflict:
     newRevID = "3-00000000"_sl;
     REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &doc1, &newRevID, ancestors, &error));
-    CHECK(toString(ancestors[0]) == R"(["2-c001d00d","1-abcd"])");
+    CHECK(toString(std::move(ancestors[0])) == R"(["2-c001d00d","1-abcd"])");
 
     // Require bodies:
     newRevID = "4-deadbeef"_sl;
     REQUIRE(c4db_findDocAncestors(db, 1, maxResults, true, remote, &doc1, &newRevID, ancestors, &error));
-    CHECK(toString(ancestors[0]) == R"(["3-deadbeef"])");
+    CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef"])");
 
     // Limit number of results:
     newRevID = "4-deadbeef"_sl;
     REQUIRE(c4db_findDocAncestors(db, 1, 1, bodies, remote, &doc1, &newRevID, ancestors, &error));
-    CHECK(toString(ancestors[0]) == R"(["3-deadbeef"])");
+    CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef"])");
 
     // Multiple docs:
     C4String docIDs[4] = {doc2,            doc1,    C4STR("doc4"),    doc3};
     C4String revIDs[4] = {"4-deadbeef"_sl, kRev3ID, C4STR("17-eeee"), "2-f000"_sl};
     REQUIRE(c4db_findDocAncestors(db, 4, maxResults, bodies, remote, docIDs, revIDs, ancestors, &error));
-    CHECK(toString(ancestors[0]) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
-    CHECK(alloc_slice(ancestors[1]) == kC4AncestorExists);
+    CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
+    CHECK(alloc_slice(std::move(ancestors[1])) == kC4AncestorExists);
     CHECK(!slice(ancestors[2]));
-    CHECK(toString(ancestors[3]) == R"(["1-abcd"])");
+    CHECK(toString(std::move(ancestors[3])) == R"(["1-abcd"])");
 }
 
 
@@ -964,7 +964,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {
     FLEncoder_EndDict(enc);
     result = FLEncoder_FinishDoc(enc, nullptr);
     REQUIRE(result);
-    val = val = FLDoc_GetRoot(result);
+    val = FLDoc_GetRoot(result);
     d = FLValue_AsDict(val);
     REQUIRE(d);
     
