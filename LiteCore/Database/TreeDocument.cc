@@ -340,7 +340,7 @@ namespace c4Internal {
                                 "Unknown source revision ID for delta", outError);
                 } else if (!selectedRev.body.buf) {
                     recordError(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                "Unknown source revision body for delta", outError);
+                                "Missing source revision body for delta", outError);
                 } else {
                     slice delta = (rq.allocedBody.buf)? slice(rq.allocedBody) : slice(rq.body);
                     body = rq.deltaCB(rq.deltaCBContext, &selectedRev, delta, outError);
@@ -363,23 +363,38 @@ namespace c4Internal {
                 revIDBuffers[i].parse(rq.history[i]);
 
             alloc_slice body = requestBody(rq, outError);
-            if (!body)
+            if (!body) {
+                if (outError && outError->code == kC4ErrorDeltaBaseUnknown
+                             && outError->domain == LiteCoreDomain) {
+                    alloc_slice cur = _versionedDoc.currentRevision()->revID.expanded();
+                    Warn("Missing base rev for delta! Inserting rev %.*s, delta base is %.*s, "
+                         "doc current rev is %.*s",
+                         SPLAT(rq.history[0]), SPLAT(rq.deltaSourceRevID), SPLAT(cur));
+                    if (!rq.allowConflict) {
+                        // A missing delta base might just be a side effect of a conflict:
+                        if (_versionedDoc.findCommonAncestor(revIDBuffers, rq.allowConflict).second
+                                == -409) {
+                            *outError = c4error_make(LiteCoreDomain, kC4ErrorConflict, nullslice);
+                        }
+                    } else {
+                        Warn("Hmmm!");
+                    }
+                }
                 return -1;
+            }
 
             if (rq.maxRevTreeDepth > 0)
                 _versionedDoc.setPruneDepth(rq.maxRevTreeDepth);
 
             auto priorCurrentRev = _versionedDoc.currentRevision();
-            int httpStatus;
             commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
                                                          body,
                                                          (Rev::Flags)rq.revFlags,
                                                          rq.allowConflict,
-                                                         (rq.remoteDBID != 0),
-                                                         httpStatus);
+                                                         (rq.remoteDBID != 0));
             if (commonAncestor < 0) {
                 if (outError) {
-                    if (httpStatus == 409)
+                    if (commonAncestor == -409)
                         *outError = {LiteCoreDomain, kC4ErrorConflict};
                     else
                         *outError = c4error_make(LiteCoreDomain, kC4ErrorBadRevisionID,

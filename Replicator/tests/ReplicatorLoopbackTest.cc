@@ -633,6 +633,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][C
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Push][Continuous]") {
+    // NOTE: Despite the name, both sides are not active. Client pushes & pulls, server is passive.
     alloc_slice docID("doc");
     auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous)
                         .setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);

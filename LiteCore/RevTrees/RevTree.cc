@@ -222,6 +222,43 @@ namespace litecore {
         testRev->addFlag(Rev::kLeaf);
         return true;
     }
+
+    std::pair<Rev*,int> RevTree::findCommonAncestor(const std::vector<revidBuffer> history,
+                                                    bool allowConflict)
+    {
+        Assert(history.size() > 0);
+        unsigned lastGen = 0;
+        Rev* parent = nullptr;
+        size_t historyCount = history.size();
+        int i = 0;
+        for (i = 0; i < historyCount; i++) {
+            unsigned gen = history[i].generation();
+            if (lastGen > 0 && gen != lastGen - 1) {
+                // Generation numbers not in sequence:
+                if (gen < lastGen && i >= _pruneDepth - 1) {
+                    // As a special case, allow this gap in the history as long as it's at a depth
+                    // that's going to be pruned away anyway. This allows very long histories to
+                    // be represented in short form by skipping revs in the middle.
+                    ;
+                } else {
+                    // Otherwise this is an error.
+                    return {nullptr, -400};
+                }
+            }
+            lastGen = gen;
+
+            parent = (Rev*)get(history[i]);
+            if (parent)
+                break;
+        }
+
+        if (!allowConflict) {
+            if ((parent && !parent->isLeaf()) || (!parent && !_revs.empty()))
+                return {nullptr, -409};
+        }
+
+        return {parent, i};
+    }
     
 
 #pragma mark - INSERTION:
@@ -348,47 +385,12 @@ namespace litecore {
                                alloc_slice body,
                                Rev::Flags revFlags,
                                bool allowConflict,
-                               bool markConflict,
-                               int &httpStatus) {
-        Assert(history.size() > 0);
-        // Find the common ancestor, if any. Along the way, preflight revision IDs:
-        int i;
-        unsigned lastGen = 0;
-        Rev* parent = nullptr;
-        size_t historyCount = history.size();
-        for (i = 0; i < historyCount; i++) {
-            unsigned gen = history[i].generation();
-            if (lastGen > 0 && gen != lastGen - 1) {
-                // Generation numbers not in sequence:
-                if (gen < lastGen && i >= _pruneDepth - 1) {
-                    // As a special case, allow this gap in the history as long as it's at a depth
-                    // that's going to be pruned away anyway. This allows very long histories to
-                    // be represented in short form by skipping revs in the middle.
-                    ;
-                } else {
-                    // Otherwise this is an error.
-                    httpStatus = 400;
-                    return -1;
-                }
-            }
-            lastGen = gen;
-
-            parent = (Rev*)get(history[i]);
-            if (parent)
-                break;
-        }
-        int commonAncestorIndex = i;
-
-        if (!allowConflict) {
-            if ((parent && !parent->isLeaf()) || (!parent && !_revs.empty())) {
-                httpStatus = 409;  // would create a conflict
-                return -1;
-            }
-        }
-
-        if (i > 0) {
+                               bool markConflict)
+    {
+        auto [parent, commonAncestorIndex] = findCommonAncestor(history, allowConflict);
+        if (commonAncestorIndex > 0 && body) {
             // Insert all the new revisions in chronological order:
-            while (--i > 0)
+            for (int i = commonAncestorIndex - 1; i > 0; --i)
                 parent = _insert(history[i], {}, parent, Rev::kNoFlags, markConflict);
             _insert(history[0], body, parent, revFlags, markConflict);
         }

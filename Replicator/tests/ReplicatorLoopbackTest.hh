@@ -81,6 +81,7 @@ public:
         _replServer = new Replicator(dbServer,
                                      new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Server, kLatency),
                                      *this, opts2);
+        Log("Client replicator is %s", _replClient->loggingName().c_str());
 
         // Response headers:
         Headers headers;

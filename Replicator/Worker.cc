@@ -92,7 +92,7 @@ namespace litecore { namespace repl {
     ,_db(dbAccess)
     ,_progressNotificationLevel(options.progressLevel())
     ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
-    ,_loggingID(connection->name())
+    ,_loggingID(parent ? parent->replicator()->loggingName() : connection->name())
     { }
 
 

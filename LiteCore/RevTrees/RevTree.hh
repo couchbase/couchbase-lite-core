@@ -112,6 +112,15 @@ namespace litecore {
         bool hasConflict() const;
         bool hasNewRevisions() const;
 
+        /// Given an array of revision IDs in consecutive descending-generation order,
+        /// finds the first one that exists in this tree. Returns:
+        /// * {rev, index} if a common ancestor was found;
+        /// * {nullptr, n} , where n=history.size(), if there are no common revisions;
+        /// * {nullptr, -400} if the history array is invalid
+        /// * {nullptr, -409} if `allowConflict` is false and inserting would cause a conflict
+        std::pair<Rev*,int> findCommonAncestor(const std::vector<revidBuffer> history,
+                                               bool allowConflict);
+
         // Adds a new leaf revision, given the parent's revID
         const Rev* insert(revid,
                           alloc_slice body,
@@ -132,12 +141,13 @@ namespace litecore {
 
         // Adds a new leaf revision along with any new ancestor revs in its history.
         // (history[0] is the new rev's ID, history[1] is its parent's, etc.)
+        // Returns the index in `history` of the common ancestor,
+        // or -400 if the history vector is invalid, or -409 if there would be a conflict.
         int insertHistory(const std::vector<revidBuffer> history,
                           alloc_slice body,
                           Rev::Flags,
                           bool allowConflict,
-                          bool markConflict,
-                          int &httpStatus);
+                          bool markConflict);
 
         // Clears the kIsConflict flag for a Rev and its ancestors.
         void markBranchAsNotConflict(const Rev*, bool keepBodies);
