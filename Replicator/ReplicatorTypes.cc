@@ -71,8 +71,8 @@ namespace litecore { namespace repl {
         if (!revID)
             return;
         if (!ancestorRevIDs)
-            ancestorRevIDs = make_unique<set<alloc_slice>>();
-        ancestorRevIDs->emplace(revID);
+            ancestorRevIDs = make_unique<vector<alloc_slice>>();
+        ancestorRevIDs->emplace_back(revID);
     }
 
 
@@ -80,9 +80,9 @@ namespace litecore { namespace repl {
         if (revID == remoteAncestorRevID)
             return true;
         if (ancestorRevIDs) {
-            alloc_slice& fakeRevID = *(alloc_slice*)&revID; // work around type issues in std::set
-            if (ancestorRevIDs->find(fakeRevID) != ancestorRevIDs->end())
-                return true;
+            for (const alloc_slice &anc : *ancestorRevIDs)
+                if (anc == revID)
+                    return true;
         }
         return false;
     }

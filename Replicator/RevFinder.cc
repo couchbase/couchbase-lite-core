@@ -157,6 +157,8 @@ namespace litecore { namespace repl {
                     if (anc == kC4AncestorExistsButNotCurrent) {
                         // This means the rev exists but is not marked as the latest from the
                         // remote server, so I better make it so:
+                        logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
+                                 SPLAT(docID), SPLAT(revID));
                         _db->setDocRemoteAncestor(docID, revID);
                        replicator()->docRemoteAncestorChanged(docID, revID);
                     } else if (anc != kC4AncestorExists) {
@@ -171,6 +173,8 @@ namespace litecore { namespace repl {
                         if (i > 0)
                             encoder.writeRaw(","_sl);
                         encoder.writeRaw(anc ? slice(anc) : "[]"_sl);
+                        logDebug("    - Requesting '%.*s' %.*s, ancestors %.*s",
+                                 SPLAT(docID), SPLAT(revID), SPLAT(anc));
                     }
                 }
             }
