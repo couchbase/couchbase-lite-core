@@ -23,6 +23,7 @@
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
 #include "BLIP.hh"
+#include "HTTPTypes.hh"
 #include <algorithm>
 
 using namespace std;
@@ -492,7 +493,8 @@ namespace litecore { namespace repl {
                                 retry = kRetryLater;
                         }
                     } else if (c4err == C4Error{LiteCoreDomain, kC4ErrorDeltaBaseUnknown}
-                            || c4err == C4Error{LiteCoreDomain, kC4ErrorCorruptDelta}) {
+                            || c4err == C4Error{LiteCoreDomain, kC4ErrorCorruptDelta}
+                            || c4err == C4Error{WebSocketDomain, int(net::HTTPStatus::UnprocessableEntity)}) {
                         // CBL-986: On delta error, retry without using delta
                         if (rev->deltaOK) {
                             rev->deltaOK = false;

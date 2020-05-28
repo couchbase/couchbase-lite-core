@@ -44,6 +44,7 @@ namespace litecore { namespace net {
         Conflict = 409,
         Gone = 410,
         PreconditionFailed = 412,
+        UnprocessableEntity = 422,
         Locked = 423,
         
         ServerError = 500,
