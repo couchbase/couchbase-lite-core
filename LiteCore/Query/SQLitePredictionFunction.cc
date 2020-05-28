@@ -108,14 +108,6 @@ namespace litecore {
         return (i1.count() == i2.count());
     }
 
-    static void writeResultNumeric(sqlite3_context* ctx, double num){
-        if(num <= INT64_MAX && num >= INT64_MIN && num == floor(num)) {
-            sqlite3_result_int64(ctx, (sqlite3_int64)num);
-        } else {
-            sqlite3_result_double(ctx, num);
-        }
-    }
-
 
     // https://en.wikipedia.org/wiki/Euclidean_distance
     static void euclidean_distance(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
@@ -138,7 +130,7 @@ namespace litecore {
                 dist = pow(sqrt(dist), power);
         }
         
-        writeResultNumeric(ctx, dist);
+        sqlite3_result_double(ctx, dist);
     }
 
 
@@ -156,7 +148,7 @@ namespace litecore {
             bb += b * b;
         }
         double dist =  1.0 - ab / sqrt(aa * bb);
-        writeResultNumeric(ctx, dist);
+        sqlite3_result_double(ctx, dist);
     }
 
 
