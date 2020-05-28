@@ -959,15 +959,15 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
 #ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
     testExpressions( {
-        {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14]]",    "5"},
-        {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14], 2]", "25"},
-        {"['euclidean_distance()', ['[]', 1,2,3,4,5], ['[]', 1,2,3,4,5]]","0"},
-        {"['euclidean_distance()', ['[]'], ['[]']]",                    "0"},
+        {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14]]",    "5.0"},
+        {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14], 2]", "25.0"},
+        {"['euclidean_distance()', ['[]', 1,2,3,4,5], ['[]', 1,2,3,4,5]]","0.0"},
+        {"['euclidean_distance()', ['[]'], ['[]']]",                    "0.0"},
         {"['euclidean_distance()', 18, 'foo']",                         "null"},
         {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13]]",        "null"},
 
-        {"['cosine_distance()', ['[]', 10, 0], ['[]', 0, 99]]",         "1"},
-        {"['cosine_distance()', ['[]', 1,2,3,4,5], ['[]', 1,2,3,4,5]]", "0"},
+        {"['cosine_distance()', ['[]', 10, 0], ['[]', 0, 99]]",         "1.0"},
+        {"['cosine_distance()', ['[]', 1,2,3,4,5], ['[]', 1,2,3,4,5]]", "0.0"},
         {"['cosine_distance()', ['[]'], ['[]']]",                       "null"},
         {"['cosine_distance()', 18, 'foo']",                            "null"},
         {"['cosine_distance()', ['[]', 10, 10], ['[]', 13]]",           "null"},
