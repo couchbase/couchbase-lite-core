@@ -62,6 +62,7 @@ namespace litecore { namespace repl {
         void maybeGetMoreChanges();
         void sendChangeList(RevToSendList);
         void maybeSendMoreRevs();
+        void retryRevs(RevToSendList);
         void sendRevision(Retained<RevToSend>);
         void couldntSendRevision(RevToSend* NONNULL);
         void doneWithRev(RevToSend*, bool successful, bool pushed);

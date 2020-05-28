@@ -661,6 +661,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
     
     _expectedDocumentCount = -1;
     _expectedDocPushErrors = {"doc"};
+    _ignoreTransientErrors = true;      // (retries will show up as transient errors)
     _checkDocsFinished = false;
 
     runReplicators(clientOpts, serverOpts);

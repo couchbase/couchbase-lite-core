@@ -80,6 +80,9 @@ namespace litecore { namespace repl {
                     warn("Failed to insert '%.*s' #%.*s : %.*s",
                          SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(desc));
                     rev->error = docErr;
+                    if (docErr == C4Error{LiteCoreDomain, kC4ErrorDeltaBaseUnknown}
+                            || docErr == C4Error{LiteCoreDomain, kC4ErrorCorruptDelta})
+                        rev->errorIsTransient = true;
                     rev->owner->revisionInserted();
                 }
             }

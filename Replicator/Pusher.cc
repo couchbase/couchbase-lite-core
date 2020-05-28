@@ -470,33 +470,51 @@ namespace litecore { namespace repl {
             }
             if (progress.state == MessageProgress::kComplete) {
                 decrement(_revisionBytesAwaitingReply, progress.bytesSent);
-                bool synced = !progress.reply->isError(), completed;
+                bool synced = !progress.reply->isError();
+                bool completed = true;
+                enum {kNoRetry, kRetryLater, kRetryNow} retry = kNoRetry;
                 if (synced) {
                     logVerbose("Completed rev %.*s #%.*s (seq #%" PRIu64 ")",
                                SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                     finishedDocument(rev);
-                    completed = true;
                 } else {
+                    // Handle an error received from the peer:
                     auto err = progress.reply->getError();
                     auto c4err = blipToC4Error(err);
+
+                    if (c4error_mayBeTransient(c4err)) {
+                        completed = false;
+                    } else if (c4err == C4Error{WebSocketDomain, 403}) {
+                        // CBL-123: Retry HTTP forbidden once
+                        if (rev->retryCount++ == 0) {
+                            completed = false;
+                            if (!passive())
+                                retry = kRetryLater;
+                        }
+                    } else if (c4err == C4Error{LiteCoreDomain, kC4ErrorDeltaBaseUnknown}
+                            || c4err == C4Error{LiteCoreDomain, kC4ErrorCorruptDelta}) {
+                        // CBL-986: On delta error, retry without using delta
+                        if (rev->deltaOK) {
+                            rev->deltaOK = false;
+                            completed = false;
+                            retry = kRetryNow;
+                        }
+                    }
                     
-                    // CBL-123: Retry HTTP forbidden once
-                    bool transient = c4error_mayBeTransient(c4err) ||
-                        (c4err.code == 403 && rev->retryCount++ == 0);
-                    
-                    logError("Got error response to rev '%.*s' #%.*s (seq #%" PRIu64 "): %.*s %d '%.*s'",
+                    logError("Got %-serror response to rev '%.*s' #%.*s (seq #%" PRIu64 "): %.*s %d '%.*s'",
+                             (completed ? "" : "transient "),
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
-                    finishedDocumentWithError(rev, c4err, transient);
+                    finishedDocumentWithError(rev, c4err, !completed);
                     // If this is a permanent failure, like a validation error or conflict,
                     // then I've completed my duty to push it.
-                    completed = !transient;
                 }
                 doneWithRev(rev, completed, synced);
-                if(!passive() && !completed) {
-                    _revsToRetry.push_back(rev);
+                switch (retry) {
+                    case kRetryNow:   retryRevs({rev}); break;
+                    case kRetryLater: _revsToRetry.push_back(rev); break;
+                    case kNoRetry:    break;
                 }
-                
                 maybeSendMoreRevs();
             }
         });
@@ -750,19 +768,18 @@ namespace litecore { namespace repl {
 
     void Pusher::afterEvent() {
         // If I would otherwise go idle or stop, but there are revs I want to retry, restart them:
-        if (!_revsToRetry.empty() && connected() && !isBusy()) {
-            logInfo("%d documents failed to push and will be retried", int(_revsToRetry.size()));
-            _caughtUp = false;
-            auto revsToRetry = move(_revsToRetry);
-            _revsToRetry.clear();
-            for(const auto& revToRetry : revsToRetry) {
-                _pushingDocs.insert({revToRetry->docID, nullptr});
-            }
-            
-            gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
-        }
-        
+        if (!_revsToRetry.empty() && connected() && !isBusy())
+            retryRevs(move(_revsToRetry));
         Worker::afterEvent();
+    }
+
+
+    void Pusher::retryRevs(RevToSendList revsToRetry) {
+        logInfo("%d documents failed to push and will be retried now", int(revsToRetry.size()));
+        _caughtUp = false;
+        for(const auto& revToRetry : revsToRetry)
+            _pushingDocs.insert({revToRetry->docID, nullptr});
+        gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
     }
 
 } }
