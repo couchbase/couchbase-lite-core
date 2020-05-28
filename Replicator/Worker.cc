@@ -24,6 +24,7 @@
 #include "StringUtil.hh"
 #include "PlatformCompat.hh"
 #include "BLIP.hh"
+#include "HTTPTypes.hh"
 #include <sstream>
 
 #if defined(__clang__) && !defined(__ANDROID__)
@@ -136,15 +137,28 @@ namespace litecore { namespace repl {
 
 
     blip::ErrorBuf Worker::c4ToBLIPError(C4Error err) {
-        //FIX: Map common errors to more standard domains
         if (!err.code)
             return { };
-        slice blipDomain;
-        if (err.domain == WebSocketDomain && err.code < 1000)
-            blipDomain = "HTTP"_sl;
-        else
-            blipDomain = slice(error::nameOfDomain((error::Domain)err.domain));
-        return {blipDomain, err.code, alloc_slice(c4error_getMessage(err))};
+        slice blipDomain = slice(error::nameOfDomain((error::Domain)err.domain));
+        auto code = err.code;
+        alloc_slice message(c4error_getMessage(err));
+
+        //FIX: Map more common errors to standard domains/codes (via table lookup)
+        switch (err.domain) {
+            case LiteCoreDomain:
+                if (err.code == kC4ErrorCorruptDelta || err.code == kC4ErrorDeltaBaseUnknown) {
+                    blipDomain = "HTTP";
+                    code = int(net::HTTPStatus::UnprocessableEntity);
+                }
+                break;
+            case WebSocketDomain:
+                if (err.code < 1000)
+                    blipDomain = "HTTP";
+                break;
+            default:
+                break;
+        }
+        return {blipDomain, code, message};
     }
 
 
