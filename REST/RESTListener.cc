@@ -115,8 +115,7 @@ namespace litecore { namespace REST {
             _server->stop();
     }
 
-
-    vector<Address> RESTListener::addresses(C4Database *dbOrNull) const {
+    vector<Address> RESTListener::_addresses(C4Database *dbOrNull, C4ListenerAPIs api) const {
         optional<string> dbNameStr;
         slice dbName;
         if (dbOrNull) {
@@ -124,12 +123,29 @@ namespace litecore { namespace REST {
             if (dbNameStr)
                 dbName = *dbNameStr;
         }
+        
+        slice scheme;
+        Assert((api == kC4RESTAPI || api == kC4SyncAPI));
+        if(api == kC4RESTAPI) {
+            scheme = _identity ? "https" : "http";
+        } else if(api == kC4SyncAPI) {
+            scheme = _identity ? "wss" : "ws";
+        }
 
         uint16_t port = _server->port();
         vector<Address> addresses;
         for (auto &host : _server->addresses())
-            addresses.emplace_back((_identity ? "https" : "http"), host, port, dbName);
+            addresses.emplace_back(scheme, host, port, dbName);
         return addresses;
+    }
+
+    vector<Address> RESTListener::addresses(C4Database *dbOrNull, C4ListenerAPIs api) const {
+        if(api != kC4RESTAPI) {
+            error::_throw(error::LiteCoreError::InvalidParameter,
+                          "The listener is not running in the specified API mode.");
+        }
+        
+        return _addresses(dbOrNull, api);
     }
 
 
