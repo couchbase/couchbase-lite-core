@@ -111,6 +111,7 @@ function(setup_litecore_build_win)
     target_include_directories(LiteCoreStatic PRIVATE MSVC)
     target_include_directories(LiteCoreStatic PRIVATE vendor/fleece/MSVC)
     target_include_directories(LiteCoreWebSocket PRIVATE MSVC)
+    target_include_directories(SupportShared PRIVATE MSVC)
 
     # Set the exported symbols for LiteCore
     if(BUILD_ENTERPRISE)

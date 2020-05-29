@@ -110,11 +110,9 @@ function(set_support_source_base)
         ${BASE_SSS_RESULT}
         LiteCore/Support/c4ExceptionUtils.cc
         LiteCore/Support/EncryptedStream.cc
-        LiteCore/Support/Error.cc
         LiteCore/Support/FilePath.cc
         LiteCore/Support/LogDecoder.cc
         LiteCore/Support/LogEncoder.cc
-        LiteCore/Support/Logging_Stub.cc
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/StringUtil.cc
         Crypto/SecureRandomize.cc
@@ -123,7 +121,6 @@ function(set_support_source_base)
         Crypto/PublicKey.cc
         Crypto/SecureDigest.cc
         Crypto/SecureSymmetricCrypto.cc
-        Networking/Address.cc
         PARENT_SCOPE
     )
 endfunction()

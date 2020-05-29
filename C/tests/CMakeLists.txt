@@ -57,6 +57,7 @@ target_compile_definitions(
 target_link_libraries(
     C4Tests PRIVATE
     LiteCore
+    SupportShared
     Support
     BLIPStatic
     FleeceBase

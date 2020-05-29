@@ -140,6 +140,22 @@ include_directories(${GENERATED_HEADERS_DIR})
 
 ### SUPPORT LIBRARY:
 
+add_library(SupportShared STATIC
+  LiteCore/Support/Error.cc
+  LiteCore/Support/Logging_Stub.cc
+  Networking/Address.cc
+  )
+target_include_directories(SupportShared PRIVATE
+  LiteCore/Support
+  C/include
+  C
+  vendor/fleece/API
+  vendor/fleece/Fleece/Support
+  vendor/SQLiteCpp/sqlite3
+  vendor/SQLiteCpp/include
+  Networking/WebSockets
+  )
+
 set_support_source(RESULT SUPPORT_SRC)
 add_library(
     Support STATIC
