@@ -125,8 +125,8 @@ TEST_CASE("URL Parsing") {
 
 
 TEST_CASE("URL Generation") {
-    CHECK(c4address_toURL({"ws"_sl, "foo.com"_sl, 8888, "/bar"_sl}) == "ws://foo.com:8888/bar"_sl);
-    CHECK(c4address_toURL({"ws"_sl, "foo.com"_sl, 0,    "/"_sl})    == "ws://foo.com/"_sl);
+    CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 8888, "/bar"_sl})) == "ws://foo.com:8888/bar"_sl);
+    CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 0,    "/"_sl}))    == "ws://foo.com/"_sl);
 }
 
 

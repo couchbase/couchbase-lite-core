@@ -624,7 +624,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
     C4Log("Reading %s ...  ", path.c_str());
     fleece::Stopwatch st;
     FLError error;
-    FLSliceResult fleeceData = FLData_ConvertJSON(readFile(path), &error);
+    alloc_slice fleeceData = FLData_ConvertJSON(readFile(path), &error);
     REQUIRE(fleeceData.buf != nullptr);
     Array root = FLValue_AsArray(FLValue_FromData((C4Slice)fleeceData, kFLTrusted));
     REQUIRE(root);

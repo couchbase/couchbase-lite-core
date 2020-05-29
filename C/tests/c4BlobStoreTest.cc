@@ -66,7 +66,7 @@ public:
 TEST_CASE("parse blob keys", "[blob][C]") {
     C4BlobKey key1;
     memset(key1.bytes, 0x55, sizeof(key1.bytes));
-    C4SliceResult str = c4blob_keyToString(key1);
+    alloc_slice str = c4blob_keyToString(key1);
     CHECK(string((char*)str.buf, str.size) == "sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=");
 
     C4BlobKey key2;
@@ -111,7 +111,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][Encryption][C]") {
     C4Error error;
     REQUIRE(c4blob_create(store, blobToStore, nullptr, &key, &error));
 
-    auto str = c4blob_keyToString(key);
+    alloc_slice str = c4blob_keyToString(key);
     CHECK(string((char*)str.buf, str.size) == "sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
     CHECK(memcmp(c4blob_computeKey(blobToStore).bytes, key.bytes, 20) == 0);
 
@@ -123,12 +123,12 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][Encryption][C]") {
     else
         CHECK(blobSize == blobToStore.size);
     
-    auto gotBlob = c4blob_getContents(store, key, &error);
+    alloc_slice gotBlob = c4blob_getContents(store, key, &error);
     REQUIRE(gotBlob.buf != nullptr);
     REQUIRE(gotBlob.size == blobToStore.size);
     CHECK(memcmp(gotBlob.buf, blobToStore.buf, gotBlob.size) == 0);
 
-    C4SliceResult p = c4blob_getFilePath(store, key, &error);
+    alloc_slice p = c4blob_getFilePath(store, key, &error);
     if (encrypted) {
         CHECK(p.buf == nullptr);
         CHECK(p.size == 0);
@@ -154,7 +154,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "delete blobs", "[blob][Encryption][C]") {
     C4Error error;
     REQUIRE(c4blob_create(store, blobToStore, nullptr, &key, &error));
     
-    auto str = c4blob_keyToString(key);
+    alloc_slice str = c4blob_keyToString(key);
     CHECK(string((char*)str.buf, str.size) == "sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
     
     // Delete it
@@ -366,7 +366,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write identical blob", "[blob][C]") {
         CHECK(c4stream_bytesWritten(stream) == 18*1000);
         C4BlobKey key = c4stream_computeBlobKey(stream);
         if(iter > 0) {
-            auto path = c4blob_getFilePath(store, key, &error);
+            alloc_slice path = c4blob_getFilePath(store, key, &error);
             REQUIRE(path.buf != nullptr);
             auto pathStr = string((char *)path.buf, path.size);
 

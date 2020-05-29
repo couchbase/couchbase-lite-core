@@ -687,7 +687,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     // The conflicting rev will now never be the default, even with rev-trees.
     CHECK(doc->revID == kExpectedRev2ID);
     
-    auto latestBody = c4doc_detachRevisionBody(doc);
+    alloc_slice latestBody = c4doc_detachRevisionBody(doc);
     CHECK(latestBody == rq.body);
     CHECK(latestBody.buf != doc->selectedRev.body.buf);
     c4doc_release(doc);
@@ -1056,7 +1056,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Database][C]") {
     REQUIRE(curDocAfterMarkSync != nullptr);
 
     // Get the remote ancesor rev, and make sure it matches up with the latest rev of the doc
-    FLSliceResult remoteRevID = c4doc_getRemoteAncestor(curDocAfterMarkSync, testRemoteId);
+    alloc_slice remoteRevID = c4doc_getRemoteAncestor(curDocAfterMarkSync, testRemoteId);
     REQUIRE(remoteRevID == curDocAfterMarkSync->revID);
 
     // Update doc -- before the bugfix, this was clobbering the remote ancestor rev
@@ -1068,7 +1068,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Database][C]") {
 
     // Check the remote ancestor rev of the updated doc and make sure it has not been clobbered.
     // Before the bug fix for LiteCore #478, this was returning an empty value.
-    FLSliceResult remoteRevIDAfterupdate = c4doc_getRemoteAncestor(updatedDocRefreshed, testRemoteId);
+    alloc_slice remoteRevIDAfterupdate = c4doc_getRemoteAncestor(updatedDocRefreshed, testRemoteId);
     REQUIRE(remoteRevIDAfterupdate == curDocAfterMarkSync->revID);
 
     // Cleanup
