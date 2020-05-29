@@ -342,7 +342,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
     // Get one of the pushed docs from db2 and look up "gender":
     c4::ref<C4Document> doc = c4doc_get(db2, "0000001"_sl, true, nullptr);
     REQUIRE(doc);
-    Doc rev = c4doc_createFleeceDoc(doc);
+    Doc rev = getFleeceDoc(doc);
     Value gender = rev["gender"_sl];
     REQUIRE(gender != nullptr);
     REQUIRE(gender.asstring() == "female");

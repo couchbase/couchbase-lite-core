@@ -95,6 +95,7 @@ public:
     }
 
 
+#if 0 // unused
     void enumDocsTask() {
         C4Database* database = db;// openDB();
 
@@ -124,6 +125,7 @@ public:
             if (kLog) fprintf(stderr, "-- %d docs", n);
         } while (n < kNumDocs);
     }
+#endif
 
 
     static void obsCallback(C4DatabaseObserver* observer, void *context) {
@@ -161,8 +163,8 @@ public:
                     REQUIRE(memcmp(changes[i].docID.buf, "doc-", 4) == 0);
                     lastSequence = changes[i].sequence;
                 }
+                c4dbobs_releaseChanges(changes, nDocs);
             }
-            c4dbobs_releaseChanges(changes, nDocs);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } while (lastSequence < kNumDocs);

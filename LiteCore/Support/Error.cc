@@ -601,7 +601,7 @@ namespace litecore {
         if (n <= 0)
             return "";
         char** lines = backtrace_symbols(&addrs[skip], n);
-        char* unmangled = nullptr;
+        char* demangleBuffer = nullptr;
         size_t unmangledLen = 0;
 
         stringstream out;
@@ -617,9 +617,12 @@ namespace litecore {
                        library, functionBuf, &offset, &pc) == 4) {
                 const char *function = functionBuf;
                 int status;
-                unmangled = abi::__cxa_demangle(function, unmangled, &unmangledLen, &status);
-                if (unmangled && status == 0)
-                    function = unmangled;
+                char *unmangled = abi::__cxa_demangle(function, demangleBuffer, &unmangledLen, &status);
+                if (unmangled) {
+                    demangleBuffer = unmangled;
+                    if (status == 0)
+                        function = unmangled;
+                }
                 char *cstr = nullptr;
                 if (asprintf(&cstr, "%2d  %-25s %s + %d", i, library, function, offset) < 0)
                     return "(error printing backtrace)";
@@ -629,7 +632,7 @@ namespace litecore {
                 out << lines[i];
             }
         }
-        free(unmangled);
+        free(demangleBuffer);
         free(lines);
         return out.str();
 #else

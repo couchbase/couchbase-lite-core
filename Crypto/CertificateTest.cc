@@ -139,7 +139,7 @@ TEST_CASE("Self-signed cert with Subject Alternative Name", "[Certs]") {
     subjectParams.nsCertType = NSCertType(SSL_CLIENT | EMAIL);
     Cert::IssuerParameters issuerParams;
     issuerParams.validity_secs = 3600*24;
-    Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);;
+    Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
     Retained<Cert> cert;
 
     SECTION("Self-signed") {

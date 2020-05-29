@@ -182,41 +182,24 @@ public:
         REQUIRE(error.code == expected.code);
     };
     
-    C4String copy(C4String str){
-        void *copied = ::malloc(str.size);
-        if(copied)
-            ::memcpy(copied, str.buf, str.size);
-        return {copied, str.size};
-    }
-    
-    void free(C4String str){
-        if(str.buf)
-            ::free((void*)str.buf);
-    }
-    
-    std::vector<C4String> getAllParentRevisions(C4Document* doc){
-        std::vector<C4String> history;
-        do{
-            history.push_back(copy(doc->selectedRev.revID));
-        }while(c4doc_selectParentRevision(doc));
+    std::vector<alloc_slice> getAllParentRevisions(C4Document* doc){
+        std::vector<alloc_slice> history;
+        do {
+            history.emplace_back(doc->selectedRev.revID);
+        } while(c4doc_selectParentRevision(doc));
         return history;
     }
     
-    std::vector<C4String> getRevisionHistory(C4Document* doc, bool onlyCurrent, bool includeDeleted){
-        std::vector<C4String> history;
+    std::vector<alloc_slice> getRevisionHistory(C4Document* doc, bool onlyCurrent, bool includeDeleted){
+        std::vector<alloc_slice> history;
         do{
             if(onlyCurrent && !(doc->selectedRev.flags & kRevLeaf))
                 continue;
             if(!includeDeleted && (doc->selectedRev.flags & kRevDeleted))
                 continue;
-            history.push_back(copy(doc->selectedRev.revID));
+            history.push_back(doc->selectedRev.revID);
         }while(c4doc_selectNextRevision(doc));
         return history;
-    }
-    
-    void free(std::vector<C4String> revs){
-        for(int i = 0; i < revs.size(); i++)
-            free(revs.at(i));
     }
     
     void verifyRev(C4Document* doc, const C4String* history, int historyCount, C4String body){
@@ -224,11 +207,10 @@ public:
         REQUIRE(doc->selectedRev.revID == history[0]);
         REQUIRE(doc->selectedRev.body == body);
         
-        std::vector<C4String> revs = getAllParentRevisions(doc);
+        std::vector<alloc_slice> revs = getAllParentRevisions(doc);
         REQUIRE(revs.size() == historyCount);
         for(int i = 0; i < historyCount; i++)
             REQUIRE(history[i] == revs[i]);
-        free(revs);
     }
 };
 
@@ -253,8 +235,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     C4Document* doc = putDoc(kC4SliceNull, kC4SliceNull, body, kRevKeepBody);
     REQUIRE(doc->docID.size >= 10);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "1-") == 0);
-    C4String docID = copy(doc->docID);
-    C4String revID1 = copy(doc->revID);
+    alloc_slice docID = doc->docID;
+    alloc_slice revID1 = doc->revID;
     c4doc_release(doc);
     
     // Read it back:
@@ -270,7 +252,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc->docID == docID);
     REQUIRE(doc->selectedRev.body == updatedBody);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "2-") == 0);
-    C4String revID2 = copy(doc->revID);
+    alloc_slice revID2 = doc->revID;
     c4doc_release(doc);
     
     // Read it back:
@@ -316,7 +298,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->docID == docID);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "3-") == 0);
-    C4String revID3 = copy(doc->revID);
+    alloc_slice revID3 = doc->revID;
     c4doc_release(doc);
     
     // Read the deletion revision:
@@ -444,12 +426,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     }while(c4doc_selectParentRevision(doc));
     REQUIRE(latest == 0);
     c4doc_release(doc);
-    
-    // release allocated memories
-    free(docID);
-    free(revID1);
-    free(revID2);
-    free(revID3);
 }
 
 
@@ -461,7 +437,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "EmptyDoc", "[Database][C]") {
     
     // Create a document:
     C4Document* doc = putDoc(kC4SliceNull, kC4SliceNull, kEmptyFleeceBody);
-    C4String docID = copy(doc->docID);
+    alloc_slice docID = doc->docID;
     c4doc_release(doc);
     
     C4Error error = {};
@@ -477,9 +453,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "EmptyDoc", "[Database][C]") {
     }
     REQUIRE(seq == 2); // size check 1 + 1 => 2
     c4enum_free(e);
-    
-    // free copied C4String instances
-    free(docID);
 }
 
 // test02_ExpectedRevIDs
@@ -492,15 +465,15 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]"
     C4Document* doc = putDoc(C4STR("doc"), kC4SliceNull, C4STR("{'property':'value'}"));
     C4Slice revID = C4STR("1-d65a07abdb5c012a1bd37e11eef1d0aca3fa2a90");
     REQUIRE(doc->revID == revID);
-    C4String docID = copy(doc->docID);
-    C4String revID1 = copy(doc->revID);
+    alloc_slice docID = doc->docID;
+    alloc_slice revID1 = doc->revID;
     c4doc_release(doc);
     
     // Update a document
     doc = putDoc(docID, revID1, C4STR("{'property':'newvalue'}"));
     revID = C4STR("2-eaaa643f551df08eb0c60f87f3f011ac4355f834");
     REQUIRE(doc->revID == revID);
-    C4String revID2 = copy(doc->revID);
+    alloc_slice revID2 = doc->revID;
     c4doc_release(doc);
 
     // Delete a document
@@ -508,11 +481,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]"
     revID = C4STR("3-3ae8fab29af3a5bfbfa5a4c5fd91c58214cb0c5a");
     REQUIRE(doc->revID == revID);
     c4doc_release(doc);
-    
-    // free copied C4String instances
-    free(docID);
-    free(revID1);
-    free(revID2);
 }
 
 // test03_DeleteWithProperties
@@ -526,14 +494,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
     // Create a document:
     C4String body1 = C4STR("{'property':'newvalue'}");
     C4Document* doc = putDoc(kC4SliceNull, kC4SliceNull, body1);
-    C4String docID = copy(doc->docID);
-    C4String revID1 = copy(doc->revID);
+    alloc_slice docID = doc->docID;
+    alloc_slice revID1 = doc->revID;
     c4doc_release(doc);
     
     // Delete a document
     alloc_slice body2 = json2fleece("{'property':'newvalue'}");
     doc = putDoc(docID, revID1, body2, kRevDeleted);
-    C4String revID2 = copy(doc->revID);
+    alloc_slice revID2 = doc->revID;
     c4doc_release(doc);
     
     // NOTE: LiteCore level c4doc_get() return non-null document, but
@@ -550,19 +518,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
     // Make sure it's possible to create the doc from scratch again:
     doc = putDoc(docID, kC4SliceNull, body2);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "3-") == 0); // new rev is child of tombstone rev
-    C4String revID3 = copy(doc->revID);
+    alloc_slice revID3 = doc->revID;
     c4doc_release(doc);
     
     doc = c4doc_get(db, docID, true, &error);
     REQUIRE(doc);
     REQUIRE(doc->revID == revID3);
     c4doc_release(doc);
-    
-    // free copied C4String instances
-    free(docID);
-    free(revID1);
-    free(revID2);
-    free(revID3);
 }
 
 // test04_DeleteAndRecreate
@@ -575,7 +537,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     C4Document* doc = putDoc(C4STR("dock"), kC4SliceNull, C4STR("{'property':'value'}"));
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "1-") == 0);
     alloc_slice body(doc->selectedRev.body);
-    C4String revID1 = copy(doc->revID);
+    alloc_slice revID1 = doc->revID;
     c4doc_release(doc);
     
     // Delete a document
@@ -584,7 +546,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
     REQUIRE(doc->selectedRev.body != kC4SliceNull);  // valid revision should not have null body
-    C4String revID2 = copy(doc->revID);
+    alloc_slice revID2 = doc->revID;
     c4doc_release(doc);
     
     // Recreate a document with same content with revision 1
@@ -674,7 +636,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     
     // Check that the list of conflicts is accurate:
     doc = getDoc(docID);
-    std::vector<C4String> conflictingRevs = getRevisionHistory(doc, true, true);
+    std::vector<alloc_slice> conflictingRevs = getRevisionHistory(doc, true, true);
     REQUIRE(conflictingRevs.size() == 2);
     REQUIRE(conflictingRevs[0] == history[0]);
     REQUIRE(conflictingRevs[1] == conflictHistory[0]);
@@ -785,7 +747,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeterministicRevIDs", "[Database
     C4String docID = C4STR("mydoc");
     C4String body = C4STR("{'key':'value'}");
     C4Document* doc = putDoc(docID, kC4SliceNull, body);
-    C4String revID = copy(doc->revID);
+    alloc_slice revID = doc->revID;
     c4doc_release(doc);
     
     deleteAndRecreateDB();
@@ -794,8 +756,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeterministicRevIDs", "[Database
     REQUIRE(doc->revID == revID);
     REQUIRE(doc->selectedRev.revID == revID);
     c4doc_release(doc);
-    
-    free(revID);
 }
 
 // test09_DuplicateRev
@@ -806,13 +766,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DuplicateRev", "[Database][C]") 
     C4String docID = C4STR("mydoc");
     alloc_slice body = json2fleece("{'key':'value'}");
     C4Document* doc = putDoc(docID, kC4SliceNull, body);
-    C4String revID = copy(doc->revID);
+    alloc_slice revID = doc->revID;
     c4doc_release(doc);
     
     // rev2a
     body = json2fleece("{'key':'new-value'}");
     doc = putDoc(docID, revID, body);
-    C4String revID2a = copy(doc->revID);
+    alloc_slice revID2a = doc->revID;
     c4doc_release(doc);
     
     // rev2b
@@ -833,14 +793,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DuplicateRev", "[Database][C]") 
         REQUIRE(error.domain == 0);
         REQUIRE(error.code == 0);
     }
-    C4String revID2b = copy(doc->revID);
+    alloc_slice revID2b = doc->revID;
     c4doc_release(doc);
 
     REQUIRE(revID2a == revID2b);
-    
-    free(revID);
-    free(revID2a);
-    free(revID2b);
 }
 
 #pragma mark - MISC.:

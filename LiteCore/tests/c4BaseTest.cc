@@ -31,11 +31,6 @@ using namespace fleece;
 // LiteCore symbols that aren't exported by the dynamic library.
 
 
-static string result2string(C4StringResult result) {
-    return string((char*)result.buf, result.size);
-}
-
-
 TEST_CASE("C4Error messages") {
     C4Error errors[100];
     for (int i = 0; i < 100; i++) {
@@ -46,8 +41,8 @@ TEST_CASE("C4Error messages") {
     for (int i = 0; i < 100; i++) {
         CHECK(errors[i].domain == LiteCoreDomain);
         CHECK(errors[i].code == 1000+i);
-        C4StringResult message = c4error_getMessage(errors[i]);
-        string messageStr = result2string(message);
+        alloc_slice message = c4error_getMessage(errors[i]);
+        string messageStr = string(message);
         if (i >= (100 - kMaxErrorMessagesToSave)) {
             // The last 10 C4Errors generated will have their custom messages:
             char expected[100];
@@ -88,8 +83,8 @@ TEST_CASE("C4Error exceptions") {
     --gC4ExpectExceptions;
     CHECK(error.domain == LiteCoreDomain);
     CHECK(error.code == kC4ErrorInvalidParameter);
-    C4StringResult message = c4error_getMessage(error);
-    string messageStr = result2string(message);
+    alloc_slice message = c4error_getMessage(error);
+    string messageStr = string(message);
     CHECK(messageStr == "Oops");
 }
 
