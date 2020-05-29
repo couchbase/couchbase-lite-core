@@ -126,10 +126,15 @@ extern "C" {
         hostname of the computer, or of the network interface.
         @param listener  The active listener.
         @param db  A database being shared, or NULL to get the listener's root URL(s).
-        @return  Fleece array of or more URL strings.
+        @param api The API variant for which the URLs should be retrieved.  If the listener is not running in the given mode,
+                   or more than one mode is given, an error is returned
+        @param err The error information, if any
+        @return  Fleece array of or more URL strings, or null if an error occurred.
                 Caller is responsible for releasing the result. */
     FLMutableArray c4listener_getURLs(C4Listener *listener C4NONNULL,
-                                      C4Database *db) C4API;
+                                      C4Database *db,
+                                      C4ListenerAPIs api,
+                                      C4Error* err) C4API;
 
     /** Returns the port number the listener is accepting connections on.
         This is useful if you didn't specify a port in the config (`port`=0), so you can find out which

@@ -85,8 +85,8 @@ public:
     }
 
 
-    void forEachURL(C4Database *db, function_ref<void(string_view)> callback) {
-        MutableArray urls(c4listener_getURLs(listener(), db));
+    void forEachURL(C4Database *db, C4ListenerAPIs api, function_ref<void(string_view)> callback) {
+        MutableArray urls(c4listener_getURLs(listener(), db, api, nullptr));
         FLMutableArray_Release(urls);
         REQUIRE(urls);
         for (Array::iterator i(urls); i; ++i)
@@ -185,16 +185,22 @@ TEST_CASE_METHOD(C4RESTTest, "Listener URLs", "[Listener][C]") {
     share(db, "db"_sl);
     auto configPortStr = to_string(c4listener_getPort(listener()));
     string expectedSuffix = string(":") + configPortStr + "/";
-    forEachURL(nullptr, [&expectedSuffix](string_view url) {
+    forEachURL(nullptr, kC4RESTAPI, [&expectedSuffix](string_view url) {
         C4Log("Listener URL = <%.*s>", SPLAT(slice(url)));
         CHECK(hasPrefix(url, "http://"));
         CHECK(hasSuffix(url, expectedSuffix));
     });
-    forEachURL(db, [&expectedSuffix](string_view url) {
+    forEachURL(db, kC4RESTAPI, [&expectedSuffix](string_view url) {
         C4Log("Database URL = <%.*s>", SPLAT(slice(url)));
         CHECK(hasPrefix(url, "http://"));
         CHECK(hasSuffix(url, expectedSuffix + "db"));
     });
+    
+    C4Error err;
+    FLMutableArray invalid = c4listener_getURLs(listener(), db, kC4SyncAPI, &err);
+    CHECK(!invalid);
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorInvalidParameter);
 }
 
 
@@ -219,7 +225,7 @@ TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
     share(db, "db"_sl);
 
     // Check that the listener's reported URLs contain the interface address:
-    forEachURL(db, [&](string_view url) {
+    forEachURL(db, kC4RESTAPI, [&](string_view url) {
         C4Log("Checking URL <%.*s>", SPLAT(slice(url)));
         C4Address address;
         C4String dbName;
@@ -536,16 +542,22 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST URLs", "[REST][Listener][C]") {
     share(db, "db"_sl);
     auto configPortStr = to_string(c4listener_getPort(listener()));
     string expectedSuffix = string(":") + configPortStr + "/";
-    forEachURL(nullptr, [&expectedSuffix](string_view url) {
+    forEachURL(nullptr, kC4RESTAPI, [&expectedSuffix](string_view url) {
         C4Log("Listener URL = <%.*s>", SPLAT(slice(url)));
         CHECK(hasPrefix(url, "https://"));
         CHECK(hasSuffix(url, expectedSuffix));
     });
-    forEachURL(db, [&expectedSuffix](string_view url) {
+    forEachURL(db, kC4RESTAPI, [&expectedSuffix](string_view url) {
         C4Log("Database URL = <%.*s>", SPLAT(slice(url)));
         CHECK(hasPrefix(url, "https://"));
         CHECK(hasSuffix(url, expectedSuffix + "db"));
     });
+    
+    C4Error err;
+    FLMutableArray invalid = c4listener_getURLs(listener(), db, kC4SyncAPI, &err);
+    CHECK(!invalid);
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorInvalidParameter);
 }
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C]") {
@@ -599,6 +611,63 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST cert chain", "[REST][Listener][TLS][C]") 
     setListenerRootClientCerts(ca.cert);
     rootCerts = c4cert_retain(ca.cert);
     testRootLevel();
+}
+
+TEST_CASE_METHOD(C4RESTTest, "Sync Listener URLs", "[REST][Listener][TLS][C]") {
+    bool expectErrorForREST = false;
+    string restScheme = "http";
+    string syncScheme = "ws";
+    
+    config.allowPull = true;
+    config.allowPush = true;
+    SECTION("Plain") {
+        SECTION("With REST") {
+            config.apis = kC4RESTAPI|kC4SyncAPI;
+        }
+        
+        SECTION("Without REST") {
+            expectErrorForREST = true;
+            config.apis = kC4SyncAPI;
+        }
+    }
+    
+    SECTION("TLS") {
+        useServerTLSWithTemporaryKey();
+        syncScheme = "wss";
+        SECTION("With REST") {
+            restScheme = "https";
+            config.apis = kC4RESTAPI|kC4SyncAPI;
+        }
+        
+        SECTION("Without REST") {
+            expectErrorForREST = true;
+            config.apis = kC4SyncAPI;
+        }
+    }
+    
+    share(db, "db");
+    auto configPortStr = to_string(c4listener_getPort(listener()));
+    string expectedSuffix = string(":") + configPortStr + "/";
+    if(expectErrorForREST) {
+        C4Error err;
+        ExpectingExceptions e;
+        FLMutableArray invalid = c4listener_getURLs(listener(), db, kC4RESTAPI, &err);
+        CHECK(!invalid);
+        CHECK(err.domain == LiteCoreDomain);
+        CHECK(err.code == kC4ErrorInvalidParameter);
+    } else {
+        forEachURL(db, kC4RESTAPI, [&expectedSuffix, &restScheme](string_view url) {
+            C4Log("Database URL = <%.*s>", SPLAT(slice(url)));
+            CHECK(hasPrefix(url, restScheme));
+            CHECK(hasSuffix(url, expectedSuffix + "db"));
+        });
+    }
+    
+    forEachURL(db, kC4SyncAPI, [&expectedSuffix, &syncScheme](string_view url) {
+        C4Log("Database URL = <%.*s>", SPLAT(slice(url)));
+        CHECK(hasPrefix(url, syncScheme));
+        CHECK(hasSuffix(url, expectedSuffix + "db"));
+    });
 }
 
 #endif // COUCHBASE_ENTERPRISE

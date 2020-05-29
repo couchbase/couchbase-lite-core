@@ -49,7 +49,8 @@ namespace litecore { namespace REST {
         uint16_t port() const                       {return _server->port();}
 
         /** My root URL, or the URL of a database. */
-        std::vector<net::Address> addresses(C4Database *dbOrNull =nullptr) const;
+        virtual std::vector<net::Address> addresses(C4Database *dbOrNull =nullptr,
+                                                    C4ListenerAPIs api = kC4RESTAPI) const;
 
         virtual int connectionCount() override;
         virtual int activeConnectionCount() override    {return (int)tasks().size();}
@@ -111,6 +112,9 @@ namespace litecore { namespace REST {
 
         void addHandler(net::Method, const char *uri, HandlerMethod);
         void addDBHandler(net::Method, const char *uri, DBHandlerMethod);
+        
+        std::vector<net::Address> _addresses(C4Database *dbOrNull =nullptr,
+                                            C4ListenerAPIs api = kC4RESTAPI) const;
 
         virtual void handleSync(RequestResponse&, C4Database*);
 

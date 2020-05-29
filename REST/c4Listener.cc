@@ -114,13 +114,27 @@ uint16_t c4listener_getPort(C4Listener *listener) C4API {
 }
 
 
-FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db) C4API {
+FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db,
+                                  C4ListenerAPIs api, C4Error* err) C4API {
     try {
+        switch(api) {
+            case kC4RESTAPI:
+            case kC4SyncAPI:
+                break;
+            default:
+                if(err != nullptr) {
+                    *err = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
+                                        C4STR("The provided API must be one of the following:  REST, Sync."));
+                }
+                
+                return nullptr;
+        }
+        
         FLMutableArray urls = FLMutableArray_New();
-        for (net::Address &address : internal(listener)->addresses(db))
+        for (net::Address &address : internal(listener)->addresses(db, api))
             FLSlot_SetString(FLMutableArray_Append(urls), address.url());
         return urls;
-    } catchExceptions()
+    } catchError(err);
     return nullptr;
 }
 
