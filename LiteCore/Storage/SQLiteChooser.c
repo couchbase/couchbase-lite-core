@@ -28,12 +28,11 @@
     #ifndef SQLITE_HAS_CODEC
         #error SQLITE_HAS_CODEC was not defined in EE build
     #endif
-    #include "../../../couchbase-lite-core-EE/Encryption/see-sqlite.c"
     #if __APPLE__
         #define CCCRYPT256
-        #include "../../../couchbase-lite-core-EE/Encryption/see-cccrypt.c"
+        #include "../../../couchbase-lite-core-EE/Encryption/sqlite3-see-cccrypt.c"
     #else
-        #include "../../../couchbase-lite-core-EE/Encryption/see-aes256-ofb.c"
+        #include "../../../couchbase-lite-core-EE/Encryption/sqlite3-see-aes256-ofb.c"
     #endif
 #else
     #include "../../vendor/SQLiteCpp/sqlite3/sqlite3.c"

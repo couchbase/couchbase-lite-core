@@ -45,6 +45,23 @@
 
 extern "C" {
     #include "sqlite3_unicodesn_tokenizer.h"
+    
+#ifdef COUCHBASE_ENTERPRISE
+    // These definitions were removed from the public SQLite header
+    // in 3.32.0, and Xcode doesn't like to alter header search paths
+    // between configurations, so as a compromise just lay them out here:
+    SQLITE_API int sqlite3_key_v2(
+      sqlite3 *db,                   /* Database to be rekeyed */
+      const char *zDbName,           /* Name of the database */
+      const void *pKey, int nKey     /* The key */
+    );
+
+    SQLITE_API int sqlite3_rekey_v2(
+      sqlite3 *db,                   /* Database to be rekeyed */
+      const char *zDbName,           /* Name of the database */
+      const void *pKey, int nKey     /* The new key */
+    );
+#endif
 }
 
 #if __APPLE__
