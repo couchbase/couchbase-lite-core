@@ -50,9 +50,10 @@ namespace c4Internal {
         alloc_slice _revIDBuf;
         alloc_slice _selectedRevIDBuf;
 
-        Document(Database *database, slice docID_)
+        template <class SLICE>
+        Document(Database *database, SLICE docID_)
         :_db(database)
-        ,_docIDBuf(docID_)
+        ,_docIDBuf(move(docID_))
         {
             docID = _docIDBuf;
             extraInfo = { };
