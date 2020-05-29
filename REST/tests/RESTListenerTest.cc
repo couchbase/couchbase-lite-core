@@ -650,6 +650,7 @@ TEST_CASE_METHOD(C4RESTTest, "Sync Listener URLs", "[REST][Listener][TLS][C]") {
     string expectedSuffix = string(":") + configPortStr + "/";
     if(expectErrorForREST) {
         C4Error err;
+        ExpectingExceptions e;
         FLMutableArray invalid = c4listener_getURLs(listener(), db, kC4RESTAPI, &err);
         CHECK(!invalid);
         CHECK(err.domain == LiteCoreDomain);
