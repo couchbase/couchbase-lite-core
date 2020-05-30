@@ -13,6 +13,7 @@ function(set_source_files_base)
         FTSTest.cc
         LiteCoreTest.cc
         LogEncoderTest.cc
+        N1QLParserTest.cc
         PredictiveQueryTest.cc
         QueryParserTest.cc
         QueryTest.cc

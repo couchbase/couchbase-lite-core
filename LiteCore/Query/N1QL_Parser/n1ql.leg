@@ -400,7 +400,7 @@ BOOLEAN_LITERAL =
   | FALSE                               { $$ = false;}
 
 FLOAT_LITERAL =
-    <'-'? (('.' DIGIT+) | (DIGIT+ ('.' DIGIT*)?)) ( [Ee] [-+]? DIGIT+ )?> WB
+    <'-'? (('.' DIGIT+) | (DIGIT+ (('.' DIGIT*)) ( [Ee] [-+]? DIGIT+ )? | (DIGIT+ ( [Ee] [-+]? DIGIT+ ))))> WB
                                         { double d;
                                           sscanf(yytext, "%lf", &d);
                                           $$ = d; }
