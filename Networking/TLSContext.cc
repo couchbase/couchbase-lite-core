@@ -28,11 +28,19 @@ using namespace sockpp;
 using namespace fleece;
 
 namespace litecore { namespace net {
+    using namespace crypto;
+
 
     TLSContext::TLSContext(role_t role)
     :_context(new mbedtls_context(role == Client ? tls_context::CLIENT : tls_context::SERVER))
     ,_role(role)
     {
+#ifdef ROOT_CERT_LOOKUP_AVAILABLE
+        _context->set_root_cert_locator([this](string certStr, string &rootStr) {
+            return findSigningRootCert(certStr, rootStr);
+        });
+#endif
+
         _context->set_logger(4, [=](int level, const char *filename, int line, const char *message) {
             static const LogLevel kLogLevels[] = {LogLevel::Error, LogLevel::Error,
                 LogLevel::Verbose, LogLevel::Verbose, LogLevel::Debug};
@@ -55,6 +63,21 @@ namespace litecore { namespace net {
     void TLSContext::setRootCerts(crypto::Cert *cert) {
         setRootCerts(cert->data());
     }
+
+#ifdef ROOT_CERT_LOOKUP_AVAILABLE
+    bool TLSContext::findSigningRootCert(const string &certStr, string &rootStr) {
+        try {
+            Retained<Cert> cert = new Cert(certStr);
+            Retained<Cert> root = cert->findSigningRootCert();
+            if (root)
+                rootStr = string(root->dataOfChain());
+            return true;
+        } catch (const std::exception &x) {
+            Warn("Unable to find a root cert: %s", x.what());
+            return false;
+        }
+    }
+#endif
 
     void TLSContext::requirePeerCert(bool require) {
         _context->require_peer_cert(tls_context::role_t(_role), require);

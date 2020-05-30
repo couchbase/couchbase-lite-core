@@ -210,6 +210,17 @@ namespace litecore { namespace crypto {
         /** Converts the entire chain into a series of certs in PEM format. */
         fleece::alloc_slice dataOfChain();
 
+        //---- Root certificates
+
+#ifdef __APPLE__
+#define ROOT_CERT_LOOKUP_AVAILABLE
+#endif
+
+#ifdef ROOT_CERT_LOOKUP_AVAILABLE
+        /** Returns the trusted root certificate that signed this cert, if any. */
+        fleece::Retained<Cert> findSigningRootCert();
+#endif
+
     protected:
         virtual fleece::slice derData() override;
         virtual int writeInfo(char *buf, size_t bufSize, const char *indent) override;
