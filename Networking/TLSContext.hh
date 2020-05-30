@@ -46,6 +46,7 @@ namespace litecore { namespace net {
 
     protected:
         ~TLSContext();
+        bool findSigningRootCert(const std::string &certStr, std::string &rootStr);
 
     private:
         std::unique_ptr<sockpp::mbedtls_context> _context;

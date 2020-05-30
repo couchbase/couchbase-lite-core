@@ -23,19 +23,6 @@ using namespace fleece;
 using namespace litecore::net;
 
 
-/* REAL REST CLIENT TESTS
-
- The tests below are tagged [.SyncServer] to keep them from running during normal testing.
- Instead, they have to be invoked manually via the Catch command-line option `[.SyncServer]`.
- This is because they require that an external Sync Gateway process is running.
-
- The default URL the tests connect to is blip://localhost:4984/scratch/, but this can be
- overridden by setting environment vars REMOTE_HOST, REMOTE_PORT, REMOTE_DB.
-
- These tests require running an HTTP proxy on localhost. You can install tinyproxy and use
- the tinyproxy config script located in Replicator/tests/data.
- */
-
 #define TEST_PROXIES 0
 
 
@@ -62,6 +49,26 @@ public:
 
 };
 
+
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTPS Request to public host") {
+    c4address_fromURL("https://www.couchbase.com/"_sl, &_address, nullptr);
+    _remoteDBName = ""_sl;
+    alloc_slice result = sendRemoteRequest("GET", "");
+}
+
+
+/* REAL REST CLIENT TESTS
+
+ The tests below are tagged [.SyncServer] to keep them from running during normal testing.
+ Instead, they have to be invoked manually via the Catch command-line option `[.SyncServer]`.
+ This is because they require that an external Sync Gateway process is running.
+
+ The default URL the tests connect to is blip://localhost:4984/scratch/, but this can be
+ overridden by setting environment vars REMOTE_HOST, REMOTE_PORT, REMOTE_DB.
+
+ These tests require running an HTTP proxy on localhost. You can install tinyproxy and use
+ the tinyproxy config script located in Replicator/tests/data.
+ */
 
 N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Request", "[.SyncServer]") {
     alloc_slice result = sendRemoteRequest("GET", "");

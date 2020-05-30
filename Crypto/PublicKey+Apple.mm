@@ -19,6 +19,7 @@
 #import <Foundation/Foundation.h>
 #include "Certificate.hh"
 #include "PublicKey.hh"
+#include "TLSContext.hh"
 #include "c4Private.h"
 #include "Error.hh"
 #include "Logging.hh"
@@ -37,7 +38,9 @@
 #include "fleece/slice.hh"
 #include <Security/Security.h>
 
-#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE     // Currently not defined for iOS
+namespace litecore { namespace crypto {
+    using namespace std;
+    using namespace net;
 
 /*  A WARNING to those working on this code: Apple's Keychain and security APIs are ☠️NASTY☠️.
     They vary a lot by platform, with many functions unavailable on iOS, or only available in
@@ -62,33 +65,31 @@
 
     --Jens */
 
-namespace litecore { namespace crypto {
-    using namespace std;
-
-    [[noreturn]] static void throwOSStatus(OSStatus err, const char *fnName, const char *what) {
-        WarnError("%s (%s returned %d)", what, fnName, int(err));
+    [[noreturn]] __unused
+    static void throwOSStatus(OSStatus err, const char *fnName, const char *what) {
+        LogToAt(TLSLogDomain, Error, "%s (%s returned %d)", what, fnName, int(err));
         error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, int(err));
     }
 
-    static inline void checkOSStatus(OSStatus err, const char *fnName, const char *what) {
+    __unused static inline void checkOSStatus(OSStatus err, const char *fnName, const char *what) {
         if (_usuallyFalse(err != noErr))
             throwOSStatus(err, fnName, what);
     }
 
-    static inline void warnCFError(CFErrorRef cfError, const char *fnName) {
+    __unused static inline void warnCFError(CFErrorRef cfError, const char *fnName) {
         auto error = (__bridge NSError*)cfError;
         auto message = error.description;
-        WarnError("%s failed: %s", fnName, message.UTF8String);
+        LogToAt(TLSLogDomain, Error, "%s failed: %s", fnName, message.UTF8String);
     }
 
 
-    static NSData* publicKeyHash(PublicKey *key NONNULL) {
+    __unused static NSData* publicKeyHash(PublicKey *key NONNULL) {
         SHA1 digest(key->data(KeyFormat::Raw));
         return [NSData dataWithBytes: &digest length: sizeof(digest)];
     }
 
 
-    static CFTypeRef CF_RETURNS_RETAINED findInKeychain(NSDictionary *params NONNULL) {
+    __unused static CFTypeRef CF_RETURNS_RETAINED findInKeychain(NSDictionary *params NONNULL) {
         CFTypeRef result = NULL;
         ++gC4ExpectExceptions;  // ignore internal C++ exceptions in Apple Security framework
         OSStatus err = SecItemCopyMatching((__bridge CFDictionaryRef)params, &result);
@@ -101,7 +102,7 @@ namespace litecore { namespace crypto {
     }
 
 
-    static unsigned long getChildCertCount(SecCertificateRef parentCertRef) {
+    __unused static unsigned long getChildCertCount(SecCertificateRef parentCertRef) {
         NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
             (id)kSecClass:              (id)kSecClassCertificate,
             (id)kSecValueRef:           (__bridge id)parentCertRef,
@@ -121,8 +122,29 @@ namespace litecore { namespace crypto {
     }
 
 
+    // Creates an autoreleased SecCertificateRef from a Cert object
+    __unused static SecCertificateRef toSecCert(Cert *cert) {
+        SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
+                                                            (CFDataRef)cert->data().copiedNSData());
+        if (!certRef)
+            throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // impossible?
+        CFAutorelease(certRef);
+        return certRef;
+    }
+
+
+    // Returns description of a CF object, same as "%@" formatting
+    __unused static string describe(CFTypeRef ref) {
+        CFStringRef desc = CFCopyDescription(ref);
+        fleece::nsstring_slice s(desc);
+        return string(s);
+    }
+
+
 #pragma mark - KEYPAIR:
 
+
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE     // Currently not defined for iOS
 
     // Concrete subclass of KeyPair that uses Apple's Keychain and SecKey APIs.
     class KeychainKeyPair : public PersistentPrivateKey {
@@ -157,7 +179,7 @@ namespace litecore { namespace crypto {
                 CFRelease(data);
                 return result;
             } else {
-                WarnError("Couldn't get the data of a public key: Not supported by macOS < 10.12 and iOS < 10.0");
+               LogToAt(TLSLogDomain, Error, "Couldn't get the data of a public key: Not supported by macOS < 10.12 and iOS < 10.0");
                 error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.12 and iOS < 10.0");
             }
         }
@@ -208,7 +230,7 @@ namespace litecore { namespace crypto {
                         checkOSStatus(status, "SecItemDelete", "Couldn't remove a private key from the Keychain");
                 }
             } else {
-                WarnError("Couldn't remove keys: Not supported by macOS < 10.12 and iOS < 10.0");
+                LogToAt(TLSLogDomain, Error, "Couldn't remove keys: Not supported by macOS < 10.12 and iOS < 10.0");
                 throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
             }
         }
@@ -224,7 +246,7 @@ namespace litecore { namespace crypto {
             // No exceptions may be thrown from this function!
             if (@available(macOS 10.12, iOS 10.0, *)) {
                 @autoreleasepool {
-                    Log("Decrypting using Keychain private key");
+                    LogTo(TLSLogDomain, "Decrypting using Keychain private key");
                     NSData* data = slice(input, _keyLength).uncopiedNSData();
                     CFErrorRef error;
                     NSData* cleartext = CFBridgingRelease( SecKeyCreateDecryptedData(_privateKeyRef,
@@ -241,7 +263,7 @@ namespace litecore { namespace crypto {
                     return 0;
                 }
             } else {
-                WarnError("Couldn't decrypt using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
+                LogToAt(TLSLogDomain, Error, "Couldn't decrypt using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
                 return MBEDTLS_ERR_RSA_UNSUPPORTED_OPERATION;
             }
         }
@@ -253,7 +275,7 @@ namespace litecore { namespace crypto {
         {
             // No exceptions may be thrown from this function!
             if (@available(macOS 10.12, iOS 10.0, *)) {
-                Log("Signing using Keychain private key");
+                LogTo(TLSLogDomain, "Signing using Keychain private key");
                 @autoreleasepool {
                     // Map mbedTLS digest algorithm ID to SecKey algorithm ID:
                     static const SecKeyAlgorithm kDigestAlgorithmMap[9] = {
@@ -271,7 +293,7 @@ namespace litecore { namespace crypto {
                     if (mbedDigestAlgorithm >= 0 && mbedDigestAlgorithm < 9)
                         digestAlgorithm = kDigestAlgorithmMap[mbedDigestAlgorithm];
                     if (!digestAlgorithm) {
-                        Warn("Keychain private key: unsupported mbedTLS digest algorithm %d",
+                        LogToAt(TLSLogDomain, Warning, "Keychain private key: unsupported mbedTLS digest algorithm %d",
                              mbedDigestAlgorithm);
                         return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
                     }
@@ -291,7 +313,7 @@ namespace litecore { namespace crypto {
                     return 0;
                 }
             } else {
-                WarnError("Couldn't sign using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
+                LogToAt(TLSLogDomain, Error, "Couldn't sign using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
                 return MBEDTLS_ERR_RSA_UNSUPPORTED_OPERATION;
             }
         }
@@ -308,7 +330,7 @@ namespace litecore { namespace crypto {
     // Public function to generate a new key-pair
     Retained<PersistentPrivateKey> PersistentPrivateKey::generateRSA(unsigned keySizeInBits) {
         @autoreleasepool {
-            Log("Generating %d-bit RSA key-pair in Keychain", keySizeInBits);
+            LogTo(TLSLogDomain, "Generating %d-bit RSA key-pair in Keychain", keySizeInBits);
             char timestr[100] = "LiteCore ";
             fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false);
             NSDictionary* params = @ {
@@ -330,12 +352,7 @@ namespace litecore { namespace crypto {
     Retained<PersistentPrivateKey> PersistentPrivateKey::withCertificate(Cert *cert) {
         if (@available(macOS 10.12, iOS 10, *)) {
             @autoreleasepool {
-                SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
-                                                                         (CFDataRef)cert->data().copiedNSData());
-                if (!certRef)
-                    throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT); // impossible?
-                CFAutorelease(certRef);
-                
+                SecCertificateRef certRef = toSecCert(cert);
                 // Get public key from the certificate using trust:
                 SecTrustRef trustRef;
                 SecPolicyRef policyRef = SecPolicyCreateBasicX509();
@@ -374,7 +391,7 @@ namespace litecore { namespace crypto {
                 return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
             }
         } else {
-            WarnError("Couldn't get private key using certificate: Not supported by macOS < 10.12 and iOS < 10.0");
+            LogToAt(TLSLogDomain, Error, "Couldn't get private key using certificate: Not supported by macOS < 10.12 and iOS < 10.0");
             throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
         }
     }
@@ -416,7 +433,7 @@ namespace litecore { namespace crypto {
                 auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
                 return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
             } else {
-                WarnError("Couldn't get private key using public key: Not supported by macOS < 10.12 and iOS < 10.0");
+                LogToAt(TLSLogDomain, Error, "Couldn't get private key using public key: Not supported by macOS < 10.12 and iOS < 10.0");
                 throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
             }
         }
@@ -436,7 +453,7 @@ namespace litecore { namespace crypto {
     void Cert::save(const std::string &persistentID, bool entireChain) {
         @autoreleasepool {
             auto name = subjectName();
-            Log("Adding a certificate chain with the id '%s' to the Keychain for '%.*s'",
+            LogTo(TLSLogDomain, "Adding a certificate chain with the id '%s' to the Keychain for '%.*s'",
                 persistentID.c_str(), SPLAT(name));
             
             NSString* label = [NSString stringWithCString: persistentID.c_str() encoding: NSUTF8StringEncoding];
@@ -453,12 +470,7 @@ namespace litecore { namespace crypto {
             }
             
             for (Retained<Cert> cert = this; cert; cert = cert->next()) {
-                SecCertificateRef certRef = SecCertificateCreateWithData(kCFAllocatorDefault,
-                                                                         (CFDataRef)cert->data().copiedNSData());
-                if (!certRef)
-                    throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
-                CFAutorelease(certRef);
-
+                SecCertificateRef certRef = toSecCert(cert);
                 NSMutableDictionary* params = [NSMutableDictionary dictionaryWithDictionary: @{
                     (id)kSecClass:              (id)kSecClassCertificate,
                     (id)kSecValueRef:           (__bridge id)certRef,
@@ -480,7 +492,7 @@ namespace litecore { namespace crypto {
                 
                 if (status == errSecDuplicateItem && cert != this) {
                     // Ignore duplicates as it might be referenced by the other certificates
-                    Log("Ignore adding the certificate to the Keychain for '%.*s' as duplicated",
+                    LogTo(TLSLogDomain, "Ignore adding the certificate to the Keychain for '%.*s' as duplicated",
                         SPLAT(cert->subjectName()));
                     continue;
                 } else
@@ -520,7 +532,7 @@ namespace litecore { namespace crypto {
 
     fleece::Retained<Cert> Cert::loadCert(const std::string &persistentID) {
         @autoreleasepool {
-            Log("Loading a certificate chain with the id '%s' from the Keychain", persistentID.c_str());
+            LogTo(TLSLogDomain, "Loading a certificate chain with the id '%s' from the Keychain", persistentID.c_str());
             
             NSString* label = [NSString stringWithCString: persistentID.c_str()
                                                  encoding: NSUTF8StringEncoding];
@@ -570,7 +582,7 @@ namespace litecore { namespace crypto {
 
     void Cert::deleteCert(const std::string &persistentID) {
         @autoreleasepool {
-            Log("Deleting a certificate chain with the id '%s' from the Keychain",
+            LogTo(TLSLogDomain, "Deleting a certificate chain with the id '%s' from the Keychain",
                 persistentID.c_str());
             
             NSString* label = [NSString stringWithCString: persistentID.c_str()
@@ -634,6 +646,46 @@ namespace litecore { namespace crypto {
         return PersistentPrivateKey::withCertificate(this);
     }
 
-} }
-
 #endif // PERSISTENT_PRIVATE_KEY_AVAILABLE
+
+
+#ifdef ROOT_CERT_LOOKUP_AVAILABLE
+
+    fleece::Retained<Cert> Cert::findSigningRootCert() {
+        @autoreleasepool {
+            auto policy = SecPolicyCreateBasicX509();
+            SecCertificateRef thisCert = toSecCert(this);
+            LogTo(TLSLogDomain, "findSigningRootCert: Evaluating %s ...", describe(thisCert).c_str());
+            CFAutorelease(policy);
+            SecTrustRef trust;
+            checkOSStatus(SecTrustCreateWithCertificates(thisCert, policy, &trust),
+                          "SecTrustCreateWithCertificates", "Couldn't validate certificate");
+            CFAutorelease(trust);
+            SecTrustResultType result;
+            checkOSStatus(SecTrustEvaluate(trust, &result),
+                          "SecTrustEvaluate", "Couldn't validate certificate");
+            LogTo(TLSLogDomain, "    ...SecTrustEvaluate returned %d", result);
+            if (result != kSecTrustResultUnspecified && result != kSecTrustResultProceed)
+                return nullptr;
+
+            Retained<Cert> root;
+            CFIndex certCount = SecTrustGetCertificateCount(trust);
+            for (CFIndex i = 1; i < certCount; ++i) {
+                auto certRef = SecTrustGetCertificateAtIndex(trust, i);
+                LogTo(TLSLogDomain, "    ... root %s", describe(certRef).c_str());
+                CFDataRef dataRef = SecCertificateCopyData(certRef);
+                CFAutorelease(dataRef);
+                Retained<Cert> cert = new Cert(slice(dataRef));
+                if (root == nil)
+                    root = cert;
+                else
+                    root->append(cert);
+            }
+            return root;
+        }
+    }
+
+#endif // ROOT_CERT_LOOKUP_AVAILABLE
+
+
+} }
