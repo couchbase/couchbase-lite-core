@@ -67,9 +67,9 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL literals", "[Query][N1QL][C]") {
     CHECK(translate("SELECT -17") == "{'WHAT':[-17]}");
     CHECK(translate("SELECT 17.25") == "{'WHAT':[17.25]}");
     CHECK(translate("SELECT -17.25") == "{'WHAT':[-17.25]}");
-    CHECK(translate("SELECT 17.25e2") == "{'WHAT':[1725]}");
-    CHECK(translate("SELECT 17.25E+02") == "{'WHAT':[1725]}");
-    CHECK(translate("SELECT 17.25e02") == "{'WHAT':[1725]}");
+    CHECK(translate("SELECT 17.25e2") == "{'WHAT':[1725.0]}");
+    CHECK(translate("SELECT 17.25E+02") == "{'WHAT':[1725.0]}");
+    CHECK(translate("SELECT 17.25e02") == "{'WHAT':[1725.0]}");
     CHECK(translate("SELECT 1625e-02") == "{'WHAT':[16.25]}");
     CHECK(translate("SELECT .25") == "{'WHAT':[0.25]}");
 

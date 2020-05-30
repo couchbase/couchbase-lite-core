@@ -93,6 +93,7 @@ target_include_directories(
     ${TOP}LiteCore/Storage
     ${TOP}LiteCore/Support
     ${TOP}LiteCore/Query
+    ${TOP}LiteCore/Query/N1QL_Parser
     ${TOP}Replicator
     ${TOP}Replicator/tests
     ${TOP}REST
