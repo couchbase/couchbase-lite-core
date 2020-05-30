@@ -23,6 +23,7 @@
 #include "c4ExceptionUtils.hh"
 #include "Listener.hh"
 #include "RESTListener.hh"
+#include "fleece/Mutable.hh"
 #include <algorithm>
 
 using namespace std;
@@ -130,10 +131,10 @@ FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db,
                 return nullptr;
         }
         
-        FLMutableArray urls = FLMutableArray_New();
+        MutableArray urls = MutableArray::newArray();
         for (net::Address &address : internal(listener)->addresses(db, api))
-            FLSlot_SetString(FLMutableArray_Append(urls), address.url());
-        return urls;
+            urls.append(address.url());
+        return (FLMutableArray)FLValue_Retain(urls);
     } catchError(err);
     return nullptr;
 }

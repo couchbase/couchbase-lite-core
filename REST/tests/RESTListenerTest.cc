@@ -195,12 +195,15 @@ TEST_CASE_METHOD(C4RESTTest, "Listener URLs", "[Listener][C]") {
         CHECK(hasPrefix(url, "http://"));
         CHECK(hasSuffix(url, expectedSuffix + "db"));
     });
-    
-    C4Error err;
-    FLMutableArray invalid = c4listener_getURLs(listener(), db, kC4SyncAPI, &err);
-    CHECK(!invalid);
-    CHECK(err.domain == LiteCoreDomain);
-    CHECK(err.code == kC4ErrorInvalidParameter);
+
+    {
+        ExpectingExceptions x;
+        C4Error err;
+        FLMutableArray invalid = c4listener_getURLs(listener(), db, kC4SyncAPI, &err);
+        CHECK(!invalid);
+        CHECK(err.domain == LiteCoreDomain);
+        CHECK(err.code == kC4ErrorInvalidParameter);
+    }
 }
 
 
@@ -552,12 +555,15 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST URLs", "[REST][Listener][C]") {
         CHECK(hasPrefix(url, "https://"));
         CHECK(hasSuffix(url, expectedSuffix + "db"));
     });
-    
-    C4Error err;
-    FLMutableArray invalid = c4listener_getURLs(listener(), db, kC4SyncAPI, &err);
-    CHECK(!invalid);
-    CHECK(err.domain == LiteCoreDomain);
-    CHECK(err.code == kC4ErrorInvalidParameter);
+
+    {
+        ExpectingExceptions x;
+        C4Error err;
+        FLMutableArray invalid = c4listener_getURLs(listener(), db, kC4SyncAPI, &err);
+        CHECK(!invalid);
+        CHECK(err.domain == LiteCoreDomain);
+        CHECK(err.code == kC4ErrorInvalidParameter);
+    }
 }
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][Listener][TLS][C]") {
