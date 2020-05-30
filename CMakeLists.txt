@@ -66,6 +66,7 @@ option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
 option(SANITIZE_FOR_DEBUG_ENABLED "Enable -fsanitize for Debug Build" ON)
+option(SQLITE_ENABLE_RTREE "Enable r-tree extension in sqlite3 module" OFF)
 
 add_definitions(
     -DCMAKE                  # Let the source know this is a CMAKE build
@@ -252,6 +253,10 @@ if(BUILD_ENTERPRISE)
         LiteCoreStatic PRIVATE
         -DSQLITE_HAS_CODEC              # Enables SQLite encryption extension (SEE)
     )
+endif()
+
+if(SQLITE_ENABLE_RTREE)
+  target_compile_definitions(LiteCoreStatic PRIVATE -DSQLITE_ENABLE_RTREE)
 endif()
 
 target_include_directories(
