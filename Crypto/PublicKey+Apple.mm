@@ -202,38 +202,38 @@ namespace litecore { namespace crypto {
         virtual void remove() override {
             if (@available(macOS 10.12, iOS 10.0, *)) {
                 @autoreleasepool {
-                    // Try to get public key. If public key is not stored in the KeyChain, calling
-                    // SecKeyCopyPublicKey on macOS will return null with internal C++ exceptions
-                    // thrown in Apple Security framework:
+                    // Get public key hash from kSecAttrApplicationLabel attribute:
+                    // See: https://developer.apple.com/documentation/security/ksecattrapplicationlabel
                     ++gC4ExpectExceptions;
-                    SecKeyRef publicKeyRef = SecKeyCopyPublicKey(_privateKeyRef);
+                    NSDictionary* attrs = CFBridgingRelease(SecKeyCopyAttributes(_privateKeyRef));
                     --gC4ExpectExceptions;
-                    
-                    // Delete Public Key:
-                    // Delete public key before private key, otherwise on macOS,
-                    // errSecMissingEntitlement (-34018) will be returned:
-                    if (publicKeyRef) {
-                        CFAutorelease(publicKeyRef);
-                        NSDictionary* params = @ {
-                            (id)kSecClass:              (id)kSecClassKey,
-                            (id)kSecAttrKeyClass:       (id)kSecAttrKeyClassPublic,
-                            (id)kSecValueRef:           (__bridge id)publicKeyRef,
-                        };
-                        OSStatus status = SecItemDelete((CFDictionaryRef)params);
-                        if (status != errSecSuccess && status != errSecItemNotFound)
-                            checkOSStatus(status, "SecItemDelete", "Couldn't remove a public key from the Keychain");
+                    NSData* publicKeyHash = [attrs objectForKey: (id)kSecAttrApplicationLabel];
+                    if (!publicKeyHash) {
+                        throwMbedTLSError(MBEDTLS_ERR_X509_INVALID_FORMAT);
                     }
                     
-                    // Delete Private Key:
+                    // Delete Public Key:
                     NSDictionary* params = @ {
-                        (id)kSecClass:              (id)kSecClassKey,
-                        (id)kSecAttrKeyClass:       (id)kSecAttrKeyClassPrivate,
-                        (id)kSecValueRef:           (__bridge id)_privateKeyRef,
+                        (id)kSecClass:                  (id)kSecClassKey,
+                        (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPublic,
+                        (id)kSecAttrApplicationLabel:   publicKeyHash
                     };
                     ++gC4ExpectExceptions;
                     OSStatus status = SecItemDelete((CFDictionaryRef)params);
                     --gC4ExpectExceptions;
-                    if (status != errSecSuccess && status != errSecItemNotFound)
+                    if (status != errSecSuccess && status != errSecInvalidItemRef && status != errSecItemNotFound)
+                        checkOSStatus(status, "SecItemDelete", "Couldn't remove a public key from the Keychain");
+                    
+                    // Delete Private Key:
+                    params = @ {
+                        (id)kSecClass:                  (id)kSecClassKey,
+                        (id)kSecAttrKeyClass:           (id)kSecAttrKeyClassPrivate,
+                        (id)kSecAttrApplicationLabel:   publicKeyHash
+                    };
+                    ++gC4ExpectExceptions;
+                    status = SecItemDelete((CFDictionaryRef)params);
+                    --gC4ExpectExceptions;
+                    if (status != errSecSuccess && status != errSecInvalidItemRef && status != errSecItemNotFound)
                         checkOSStatus(status, "SecItemDelete", "Couldn't remove a private key from the Keychain");
                 }
             } else {
