@@ -17,6 +17,7 @@
 //
 
 #include "Certificate.hh"
+#include "TLSContext.hh"
 #include "Defer.hh"
 #include "Logging.hh"
 #include "Error.hh"
@@ -46,6 +47,7 @@
 namespace litecore { namespace crypto {
     using namespace std;
     using namespace fleece;
+    using namespace net;
 
 
 #pragma mark - DISTINGUISHED NAME
@@ -302,7 +304,7 @@ namespace litecore { namespace crypto {
         string subjectName(subjectParams.subjectName);
         string issuerName = issuerCert ? string(issuerCert->subjectName())
                                        : string(subjectParams.subjectName);
-        Log("Signing X.509 cert for '%s', as issuer '%s'", subjectName.c_str(), issuerName.c_str());
+        LogTo(TLSLogDomain, "Signing X.509 cert for '%s', as issuer '%s'", subjectName.c_str(), issuerName.c_str());
         // Format the dates:
         time_t now = time(nullptr) - 60;
         time_t exp = now + issuerParams.validity_secs;
@@ -556,7 +558,7 @@ namespace litecore { namespace crypto {
         DEFER { mbedtls_x509write_csr_free(&csr); };
 
         string subjectName(params.subjectName);
-        Log("Creating X.509 cert request for '%s'", subjectName.c_str());
+        LogTo(TLSLogDomain, "Creating X.509 cert request for '%s'", subjectName.c_str());
 
         // Set certificate attributes:
         mbedtls_x509write_csr_set_key(&csr, subjectKey->context());

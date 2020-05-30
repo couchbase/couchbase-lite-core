@@ -21,6 +21,7 @@
 #include "Logging.hh"
 #include "WebSocketInterface.hh"
 #include "sockpp/mbedtls_context.h"
+#include "mbedtls/debug.h"
 #include <string>
 
 using namespace std;
@@ -29,6 +30,8 @@ using namespace fleece;
 
 namespace litecore { namespace net {
     using namespace crypto;
+
+    LogDomain TLSLogDomain("TLS", LogLevel::Warning);
 
 
     TLSContext::TLSContext(role_t role)
@@ -41,14 +44,26 @@ namespace litecore { namespace net {
         });
 #endif
 
-        _context->set_logger(4, [=](int level, const char *filename, int line, const char *message) {
+        // Set up mbedTLS logging. mbedTLS log levels are numbered:
+        //   0 No debug
+        //   1 Error
+        //   2 State change
+        //   3 Informational
+        //   4 Verbose
+        int mbedLogLevel = 1;
+        if (auto logLevel = TLSLogDomain.effectiveLevel(); logLevel == LogLevel::Verbose)
+            mbedLogLevel = 2;
+        else if (logLevel == LogLevel::Debug)
+            mbedLogLevel = 4;
+        _context->set_logger(mbedLogLevel, [=](int level, const char *filename, int line,
+                                               const char *message) {
             static const LogLevel kLogLevels[] = {LogLevel::Error, LogLevel::Error,
                 LogLevel::Verbose, LogLevel::Verbose, LogLevel::Debug};
             size_t len = strlen(message);
             if (message[len-1] == '\n')
                 --len;
-            websocket::WSLogDomain.log(kLogLevels[level], "mbedTLS(%s): %.*s",
-                                       (role == Client ? "C" : "S"), int(len), message);
+            TLSLogDomain.log(kLogLevels[level], "mbedTLS(%s): %.*s",
+                             (role == Client ? "C" : "S"), int(len), message);
         });
     }
 

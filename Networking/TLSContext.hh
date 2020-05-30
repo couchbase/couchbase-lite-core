@@ -13,12 +13,17 @@
 namespace sockpp {
     class mbedtls_context;
 }
+namespace litecore {
+    class LogDomain;
+}
 namespace litecore::crypto {
     class Cert;
     class Identity;
 }
 
 namespace litecore { namespace net {
+
+    extern LogDomain TLSLogDomain;
 
     /** TLS configuration for sockets and listeners.
         A thin veneer around sockpp::tls_context. */
