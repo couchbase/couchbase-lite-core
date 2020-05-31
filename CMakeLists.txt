@@ -66,6 +66,11 @@ option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
 option(SANITIZE_FOR_DEBUG_ENABLED "Enable -fsanitize for Debug Build" ON)
+option(MAINTAINER_MODE "The configuration pre-choosen by maintainers" ON)
+
+if (NOT MAINTAINER_MODE)
+  set(SANITIZE_FOR_DEBUG_ENABLED OFF CACHE BOOL "" FORCE)
+endif ()
 
 if(CODE_COVERAGE_ENABLED)
    message("Code coverage enabled, forcing sanitizers off")

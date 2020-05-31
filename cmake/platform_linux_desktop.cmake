@@ -6,7 +6,7 @@ function(setup_globals)
     # Enable relative RPATHs for installed bits
     set (CMAKE_INSTALL_RPATH "\$ORIGIN" PARENT_SCOPE)
 
-    if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND ${MAINTAINER_MODE})
         if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
             message(FATAL_ERROR "${CMAKE_CXX_COMPILER_ID} is not supported for building!")
         endif()
