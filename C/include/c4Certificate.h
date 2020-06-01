@@ -130,6 +130,10 @@ extern "C" {
     /** Returns the usage flags of a cert. */
     C4CertUsage c4cert_usages(C4Cert* C4NONNULL) C4API;
 
+    /** Returns true if the issuer is the same as the subject.
+        \note This will be true of root CA certs, as well as self-signed peer certs. */
+    bool c4cert_isSelfSigned(C4Cert* C4NONNULL) C4API;
+
     /** Returns a certificate's public key.
         \note You are responsible for releasing the returned key reference. */
     C4KeyPair* c4cert_getPublicKey(C4Cert* C4NONNULL) C4API;

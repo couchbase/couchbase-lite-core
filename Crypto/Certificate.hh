@@ -170,6 +170,7 @@ namespace litecore { namespace crypto {
         static fleece::Retained<Cert> load(PublicKey*);
 
         virtual bool isSigned() override                        {return true;}
+        bool isSelfSigned();
         DistinguishedName subjectName() override;
         unsigned keyUsage() override;
         NSCertType nsCertType() override;

@@ -237,6 +237,12 @@ bool c4cert_isSigned(C4Cert* cert) C4API {
 }
 
 
+bool c4cert_isSelfSigned(C4Cert* cert) C4API {
+    Cert *signedCert = asSignedCert(cert);
+    return signedCert && signedCert->isSelfSigned();
+}
+
+
 C4Cert* c4cert_signRequest(C4Cert *c4Cert,
                            const C4CertIssuerParameters *c4Params,
                            C4KeyPair *issuerPrivateKey,

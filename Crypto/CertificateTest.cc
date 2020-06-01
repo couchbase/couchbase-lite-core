@@ -113,6 +113,8 @@ TEST_CASE("Self-signed cert generation", "[Certs]") {
     cerr << "Raw data: " << cert->data() << '\n';
     cerr << "PEM data:\n" << string(cert->data(KeyFormat::PEM)) << '\n';
 
+    CHECK(cert->isSigned());
+    CHECK(cert->isSelfSigned());
     CHECK(cert->subjectName() == kSubjectName);
 
     time_t created, expires;
@@ -403,6 +405,9 @@ TEST_CASE("Cert request", "[Certs]") {
     Retained<Cert> clientCert = csr2->sign(caClientParams, caKey, caCert);
 
     cerr << "Client cert info:\n" << clientCert->summary("\t");
+
+    CHECK(clientCert->isSigned());
+    CHECK(!clientCert->isSelfSigned());
 }
 
 
