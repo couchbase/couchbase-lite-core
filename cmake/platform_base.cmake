@@ -13,7 +13,7 @@ function(set_litecore_source_base)
     # That goes through the C API of LiteCore.  If the stub were compiled into LiteCore
     # itself, that's an infinite recursive call
     set(
-        ${BASE_SSS_RESULT} 
+        ${BASE_SSS_RESULT}
         C/c4Base.cc
         C/c4BlobStore.cc
         C/c4Certificate.cc
@@ -36,7 +36,7 @@ function(set_litecore_source_base)
         LiteCore/Database/PrebuiltCopier.cc
         LiteCore/Database/SequenceTracker.cc
         LiteCore/Database/TreeDocument.cc
-        LiteCore/Database/Upgrader.cc 
+        LiteCore/Database/Upgrader.cc
         LiteCore/Query/IndexSpec.cc
         LiteCore/Query/PredictiveModel.cc
         LiteCore/Query/Query.cc
@@ -85,7 +85,7 @@ function(set_litecore_source_base)
         Replicator/IncomingBlob.cc
         Replicator/IncomingRev.cc
         Replicator/Inserter.cc
-        Replicator/Puller.cc 
+        Replicator/Puller.cc
         Replicator/Pusher.cc
         Replicator/Pusher+DB.cc
         Replicator/Replicator.cc
@@ -118,6 +118,7 @@ function(set_support_source_base)
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/StringUtil.cc
         Crypto/SecureRandomize.cc
+        Crypto/mbedSnippets.cc
         Crypto/mbedUtils.cc
         Crypto/Certificate.cc
         Crypto/PublicKey.cc

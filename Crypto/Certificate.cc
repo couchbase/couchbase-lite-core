@@ -24,6 +24,7 @@
 #include "TempArray.hh"
 #include "Writer.hh"
 
+#include "mbedSnippets.hh"
 #include "mbedUtils.hh"
 
 #pragma clang diagnostic push
@@ -435,6 +436,12 @@ namespace litecore { namespace crypto {
 
     pair<time_t,time_t> Cert::validTimespan() {
         return {x509_to_time_t(_cert->valid_from), x509_to_time_t(_cert->valid_to)};
+    }
+
+
+    bool Cert::isSelfSigned() {
+        return x509_name_cmp(&_cert->issuer, &_cert->subject ) == 0
+            && x509_crt_check_signature(_cert, _cert, nullptr) == 0;
     }
 
 
