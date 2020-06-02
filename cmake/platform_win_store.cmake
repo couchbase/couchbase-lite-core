@@ -4,7 +4,7 @@ function(setup_litecore_build)
     setup_litecore_build_win()
     
     target_compile_definitions(
-        LiteCoreStatic PRIVATE
+        CouchbaseSqlite3 PUBLIC
         -DSQLITE_OS_WINRT               # Signal SQLite to use WinRT system calls instead of Win32
     )
 
