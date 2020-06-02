@@ -91,6 +91,7 @@ function(setup_litecore_build_win)
         -D_USE_MATH_DEFINES     # Define math constants like PI
         -DLITECORE_EXPORTS      # Export functions marked CBL_CORE_API, etc
         -DWIN32                 # Identify as WIN32
+        -DNOMINMAX              # Disable min/max macros (they interfere with std::min and max)
     )
 
     target_include_directories(LiteCoreStatic PRIVATE MSVC)
@@ -118,7 +119,7 @@ function(setup_litecore_build_win)
 
     # Link with subproject libz and Windows sockets lib
     target_link_libraries(
-        LiteCore PRIVATE 
+        LiteCoreStatic INTERFACE 
         zlibstatic 
         Ws2_32
     )

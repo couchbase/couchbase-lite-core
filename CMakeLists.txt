@@ -15,7 +15,6 @@ LiteCoreWebSocket - WebSocket implementation with C4Socket API to plug into Lite
 LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
 mbedcrypto - The cryptography suite from mbedTLS (https://tls.mbed.org/)
 SQLite3_UnicodeSN - The snowball tokenizer library for SQLite
-Support - A library of shared functionality that is used in some or all of the other targets
 
 This project is built for the following platforms at Couchbase:
 - Windows 10

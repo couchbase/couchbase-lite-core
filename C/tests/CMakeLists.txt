@@ -11,9 +11,7 @@ as follows:
 The test runner depends on multiple other libraries from multiple git repositories:
 
 - LiteCore shared library (../..)
-- LiteCore REST shared library (../../REST)
-- FleeceBase static library (../../vendor/fleece)
-- BLIP static library (../../vendor/BLIP-Cpp)
+- BLIP static library (../../Networking/BLIP)
 
 In addition, there are also some system dependencies that are not listed here
 ]]#
@@ -43,8 +41,28 @@ else()
     message(FATAL_ERROR "Unsupported platform ${CMAKE_SYSTEM_NAME}")
 endif()
 
-set_source_files(RESULT TEST_SRC)
-add_executable(C4Tests ${TEST_SRC})
+add_executable(
+    C4Tests
+    c4AllDocsPerformanceTest.cc
+    c4BlobStoreTest.cc
+    c4DatabaseInternalTest.cc
+    c4DatabaseTest.cc
+    c4DocumentTest.cc
+    c4ObserverTest.cc
+    c4PerfTest.cc
+    c4QueryTest.cc
+    c4Test.cc
+    c4ThreadingTest.cc
+    ${TOP}LiteCore/tests/main.cpp
+    ${TOP}Crypto/SecureRandomize.cc
+    ${TOP}LiteCore/Support/FilePath.cc
+    ${TOP}LiteCore/Support/Logging_stub.cc
+    ${TOP}LiteCore/Support/StringUtil.cc
+    ${TOP}LiteCore/Support/Error.cc
+    ${TOP}vendor/fleece/Fleece/Support/betterassert.cc
+    ${TOP}vendor/fleece/vendor/libb64/cencode.c
+    ${TOP}vendor/fleece/vendor/libb64/cdecode.c
+)
 setup_build()
 
 target_compile_definitions(
@@ -57,7 +75,6 @@ target_link_libraries(
     C4Tests PRIVATE
     LiteCore
     BLIPStatic
-    FleeceBase
 )
 
 target_include_directories(
@@ -77,7 +94,8 @@ target_include_directories(
     ${TOP}LiteCore/Support
     ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}vendor/SQLiteCpp/include
-    ${TOP}vendor/mbedtls/include
+    ${TOP}vendor/mbedtls/crypto/include
+    ${TOP}vendor/fleece/vendor/libb64
 )
 
 # Copy data files to output directory
