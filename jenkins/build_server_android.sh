@@ -6,7 +6,7 @@
 set -e
 
 CMAKE_VER="3.10.2.4988404"
-NDK_VER="20.1.5948944"
+NDK_VER="21.2.6472646"
 PKG_TYPE="zip"
 PKG_CMD="zip -r"
 
