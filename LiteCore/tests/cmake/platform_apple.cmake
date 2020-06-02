@@ -17,12 +17,5 @@ function(set_source_files)
 endfunction()
 
 function(setup_build)
-    target_link_libraries(
-        CppTests PRIVATE
-        "-framework Foundation"
-        "-framework CFNetwork"
-        "-framework Security"
-        "-framework SystemConfiguration"
-        z
-    )
+    
 endfunction()

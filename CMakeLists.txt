@@ -169,45 +169,6 @@ target_compile_definitions(
     -DSQLITE_DQS=0                      # Disallow double-quoted strings (only identifiers)
 )
 
-### SUPPORT LIBRARY:
-
-set_support_source(RESULT SUPPORT_SRC)
-add_library(
-    Support STATIC
-    ${SUPPORT_SRC}
-)
-
-target_link_libraries(Support PRIVATE CouchbaseSqlite3)
-
-target_compile_definitions(
-    Support PRIVATE
-    -DNOMINMAX
-)
-
-target_include_directories(
-    Support PRIVATE
-    vendor/fleece/API
-    vendor/fleece/Fleece/Support
-    LiteCore/BlobStore
-    LiteCore/Database
-    LiteCore/Support
-    LiteCore/Storage
-    LiteCore/Query
-    LiteCore/RevID
-    Crypto
-    Networking
-    Networking/WebSockets/
-    Networking/BLIP/include/blip_cpp
-    Networking/BLIP/src/util
-    Networking/BLIP/src/websocket
-    vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
-    C
-    C/include
-    vendor/SQLiteCpp/include
-)
-setup_support_build()
-
 ### WebSocket LIBRARY:
 
 set(
@@ -320,7 +281,6 @@ if(BUILD_ENTERPRISE)
         FleeceStatic
         ${NO_WHOLE_LIBRARY_FLAG}
         LiteCoreWebSocket
-        Support
         SQLite3_UnicodeSN
         BLIPStatic
         mbedcrypto
@@ -334,7 +294,6 @@ else()
         LiteCoreStatic
         FleeceStatic
         ${NO_WHOLE_LIBRARY_FLAG}
-        Support
         SQLite3_UnicodeSN
         BLIPStatic
         mbedcrypto
@@ -348,6 +307,16 @@ target_include_directories(
     C/include
 )
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
+target_link_libraries(
+    LiteCoreStatic INTERFACE
+    FleeceStatic
+    SQLite3_UnicodeSN
+    BLIPStatic
+    mbedcrypto
+    mbedtls
+    mbedx509
+)
+
 setup_litecore_build()
 
 install (

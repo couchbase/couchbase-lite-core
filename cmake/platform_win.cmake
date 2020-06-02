@@ -12,21 +12,6 @@ function(set_litecore_source)
         ${WIN_SSS_RESULT}
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_winapi.cc
-        PARENT_SCOPE
-    )
-endfunction()
-
-function(set_support_source)
-    set(oneValueArgs RESULT)
-    cmake_parse_arguments(WIN_SSS "" ${oneValueArgs} "" ${ARGN})
-    if(NOT DEFINED WIN_SSS_RESULT)
-        message(FATAL_ERROR set_source_files_base needs to be called with RESULT)
-    endif()
-
-    set_support_source_base(RESULT BASE_SUPPORT_FILES)
-    set(
-        ${WIN_SSS_RESULT}
-        ${BASE_SUPPORT_FILES}
         MSVC/asprintf.c
         vendor/fleece/MSVC/memmem.cc
         MSVC/mkstemp.cc

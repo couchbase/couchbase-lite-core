@@ -107,21 +107,6 @@ function(set_litecore_source)
      )
  endfunction()
 
-function(set_support_source)
-    set(oneValueArgs RESULT)
-    cmake_parse_arguments(LINUX_SSS "" ${oneValueArgs} "" ${ARGN})
-    if(NOT DEFINED LINUX_SSS_RESULT)
-        message(FATAL_ERROR set_source_files_base needs to be called with RESULT)
-    endif()
-
-    set_support_source_linux(RESULT LINUX_LITECORE_FILES)
-    set(
-        ${LINUX_SSS_RESULT}
-        ${LINUX_LITECORE_FILES}
-        PARENT_SCOPE
-    )
-endfunction()
-
 function(setup_litecore_build)
     setup_litecore_build_linux()
 

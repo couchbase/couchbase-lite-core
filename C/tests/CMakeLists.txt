@@ -13,7 +13,6 @@ The test runner depends on multiple other libraries from multiple git repositori
 - LiteCore shared library (../..)
 - LiteCore REST shared library (../../REST)
 - FleeceBase static library (../../vendor/fleece)
-- Support static library (../../Support [partial])
 - BLIP static library (../../vendor/BLIP-Cpp)
 
 In addition, there are also some system dependencies that are not listed here
@@ -57,12 +56,8 @@ target_compile_definitions(
 target_link_libraries(
     C4Tests PRIVATE
     LiteCore
-    Support
     BLIPStatic
     FleeceBase
-    mbedcrypto
-    mbedtls
-    CouchbaseSqlite3
 )
 
 target_include_directories(
@@ -78,7 +73,10 @@ target_include_directories(
     ${TOP}REST
     ${TOP}REST/tests
     ${TOP}Networking
+    ${TOP}Networking/WebSockets
     ${TOP}LiteCore/Support
+    ${TOP}vendor/SQLiteCpp/sqlite3
+    ${TOP}vendor/SQLiteCpp/include
     ${TOP}vendor/mbedtls/include
 )
 

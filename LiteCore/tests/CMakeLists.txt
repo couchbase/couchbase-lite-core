@@ -106,11 +106,4 @@ target_link_libraries(
     LiteCoreStatic
     LiteCoreREST_Static
     LiteCoreWebSocket
-    FleeceStatic
-    SQLite3_UnicodeSN
-    BLIPStatic
-    Support
-    mbedcrypto
-    mbedtls
-    ${LITECORE_CRYPTO_LIB}
 )

@@ -21,6 +21,12 @@ function(set_source_files_base)
         c4DatabaseEncryptionTest.cc
         c4CertificateTest.cc
         ${TOP}LiteCore/tests/main.cpp
+        ${TOP}Crypto/SecureRandomize.cc
+        ${TOP}LiteCore/Support/FilePath.cc
+        ${TOP}LiteCore/Support/Logging_stub.cc
+        ${TOP}LiteCore/Support/StringUtil.cc
+        ${TOP}LiteCore/Support/Error.cc
+        
         PARENT_SCOPE
     )
 endfunction()

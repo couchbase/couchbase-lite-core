@@ -35,21 +35,6 @@ function(set_litecore_source)
         ${APPLE_SSS_RESULT}
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_Apple.cc
-        PARENT_SCOPE
-    )
-endfunction()
-
-function(set_support_source)
-    set(oneValueArgs RESULT)
-    cmake_parse_arguments(APPLE_SSS "" ${oneValueArgs} "" ${ARGN})
-    if(NOT DEFINED APPLE_SSS_RESULT)
-        message(FATAL_ERROR set_source_files_base needs to be called with RESULT)
-    endif()
-
-    set_support_source_base(RESULT BASE_SUPPORT_FILES)
-    set(
-        ${APPLE_SSS_RESULT}
-        ${BASE_SUPPORT_FILES}
         LiteCore/Support/StringUtil_Apple.mm
         LiteCore/Support/LibC++Debug.cc
         LiteCore/Support/Instrumentation.cc
@@ -62,12 +47,13 @@ function(setup_litecore_build)
     setup_litecore_build_unix()
 
     target_link_libraries(
-        LiteCore PUBLIC
-        "-framework CoreFoundation"
-        "-framework Foundation"
-        "-framework SystemConfiguration"
+        LiteCoreStatic INTERFACE
         "-framework Security"
-        z
+    )
+
+    target_link_libraries(
+        LiteCoreWebSocket INTERFACE
+        "-framework SystemConfiguration"
     )
 
     # Specify list of symbols to export
@@ -82,10 +68,6 @@ function(setup_litecore_build)
             "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp"
         )
     endif()
-endfunction()
-
-function(setup_support_build)
-    # No-op
 endfunction()
 
 function(setup_rest_build)

@@ -24,6 +24,12 @@ function(set_litecore_source_base)
         C/c4Observer.cc
         C/c4PredictiveQuery.cc
         C/c4Query.cc
+        Crypto/SecureRandomize.cc
+        Crypto/mbedUtils.cc
+        Crypto/Certificate.cc
+        Crypto/PublicKey.cc
+        Crypto/SecureDigest.cc
+        Crypto/SecureSymmetricCrypto.cc
         LiteCore/BlobStore/BlobStore.cc
         LiteCore/BlobStore/Stream.cc
         LiteCore/Database/BackgroundDB.cc
@@ -91,39 +97,16 @@ function(set_litecore_source_base)
         Replicator/ReplicatorTypes.cc
         Replicator/RevFinder.cc
         Replicator/Worker.cc
+        LiteCore/Support/c4ExceptionUtils.cc
         LiteCore/Support/Logging.cc
         LiteCore/Support/DefaultLogger.cc
         LiteCore/Support/Error.cc
-        PARENT_SCOPE
-    )
-endfunction()
-
-function(set_support_source_base)
-    set(oneValueArgs RESULT)
-    cmake_parse_arguments(BASE_SSS "" ${oneValueArgs} "" ${ARGN})
-    if(NOT DEFINED BASE_SSS_RESULT)
-        message(FATAL_ERROR set_source_files_base needs to be called with RESULT)
-    endif()
-
-    set(
-        ${BASE_SSS_RESULT}
-        LiteCore/Support/c4ExceptionUtils.cc
         LiteCore/Support/EncryptedStream.cc
-        LiteCore/Support/Error.cc
         LiteCore/Support/FilePath.cc
         LiteCore/Support/LogDecoder.cc
         LiteCore/Support/LogEncoder.cc
-        LiteCore/Support/Logging_Stub.cc
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/StringUtil.cc
-        Crypto/SecureRandomize.cc
-        Crypto/mbedSnippets.cc
-        Crypto/mbedUtils.cc
-        Crypto/Certificate.cc
-        Crypto/PublicKey.cc
-        Crypto/SecureDigest.cc
-        Crypto/SecureSymmetricCrypto.cc
-        Networking/Address.cc
         PARENT_SCOPE
     )
 endfunction()

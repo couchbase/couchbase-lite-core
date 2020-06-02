@@ -19,21 +19,6 @@ function(set_litecore_source_linux)
         ${LINUX_SSS_RESULT}
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_ICU.cc
-        PARENT_SCOPE
-    )
-endfunction()
-
-function(set_support_source_linux)
-    set(oneValueArgs RESULT)
-    cmake_parse_arguments(LINUX_SSS "" ${oneValueArgs} "" ${ARGN})
-    if(NOT DEFINED LINUX_SSS_RESULT)
-        message(FATAL_ERROR set_source_files_base needs to be called with RESULT)
-    endif()
-
-    set_support_source_base(RESULT BASE_SUPPORT_FILES)
-    set(
-        ${LINUX_SSS_RESULT}
-        ${BASE_SUPPORT_FILES}
         LiteCore/Unix/strlcat.c
         LiteCore/Unix/arc4random.cc
         LiteCore/Support/StringUtil_icu.cc

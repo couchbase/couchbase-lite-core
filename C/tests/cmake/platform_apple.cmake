@@ -18,17 +18,10 @@ function(set_source_files)
 endfunction()
 
 function(setup_build)
-    target_link_libraries(
-        C4Tests PRIVATE
-        FleeceBase
-        Support
-        BLIPStatic
-        "-framework Security"
-    )
-    
     if(BUILD_ENTERPRISE)
         target_link_libraries(
             C4Tests PRIVATE
+            "-framework Foundation"
             "-framework CoreML"
             "-framework Vision"
         )
