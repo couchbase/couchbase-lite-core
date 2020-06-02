@@ -63,7 +63,6 @@ function(set_litecore_source_base)
         LiteCore/Storage/KeyStore.cc
         LiteCore/Storage/Record.cc
         LiteCore/Storage/RecordEnumerator.cc
-        LiteCore/Storage/SQLiteChooser.c
         LiteCore/Storage/SQLiteDataFile.cc
         LiteCore/Storage/SQLiteEnumerator.cc
         LiteCore/Storage/SQLiteKeyStore.cc

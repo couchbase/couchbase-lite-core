@@ -62,6 +62,7 @@ target_link_libraries(
     FleeceBase
     mbedcrypto
     mbedtls
+    CouchbaseSqlite3
 )
 
 target_include_directories(
@@ -77,7 +78,6 @@ target_include_directories(
     ${TOP}REST
     ${TOP}Networking
     ${TOP}LiteCore/Support
-    ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}vendor/mbedtls/include
 )
 

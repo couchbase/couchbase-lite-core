@@ -138,6 +138,35 @@ else()
 endif()
 include_directories(${GENERATED_HEADERS_DIR})
 
+### sqlite3 LIBRARY:
+
+# Separate library to make possible replace or not use
+# during static linking
+add_library(CouchbaseSqlite3 STATIC LiteCore/Storage/SQLiteChooser.c)
+target_include_directories(CouchbaseSqlite3 PUBLIC vendor/SQLiteCpp/sqlite3)
+target_compile_definitions(
+  CouchbaseSqlite3
+  PUBLIC
+    -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1  # Default to NORMAL sync mode on SQLite (safe with WAL mode)
+    -DSQLITE_LIKE_DOESNT_MATCH_BLOBS    # Optimize SQLite "like" queries
+    -DSQLITE_OMIT_SHARED_CACHE          # Allows SQLite to discard shared cache, eliminating some branches
+    -DSQLITE_OMIT_DECLTYPE              # Disable returning the declared column type from query (reduces memory usage)
+    -DSQLITE_OMIT_DATETIME_FUNCS        # Don't compile SQLite date functions
+    -DSQLITE_ENABLE_EXPLAIN_COMMENTS    # Add comment text to the result of sqlite3_explain
+    -DSQLITE_DISABLE_FTS3_UNICODE       # Disable FTS3 unicode61 tokenizer (not used in LiteCore)
+    -DSQLITE_ENABLE_MEMORY_MANAGEMENT   # Enable sqlite3_release_memory to release unused memory faster
+    -DSQLITE_ENABLE_STAT4               # Enable enhanced query planning
+    -DSQLITE_HAVE_ISNAN                 # Use system provided isnan()
+    -DHAVE_LOCALTIME_R                  # Use localtime_r instead of localtime
+    -DHAVE_USLEEP                       # Allow millisecond precision sleep
+    -DHAVE_UTIME                        # Use utime() instead of utimes()
+    -DSQLITE_OMIT_LOAD_EXTENSION        # Disable extensions (not needed for LiteCore)
+    -DSQLITE_ENABLE_FTS4                # Build FTS versions 3 and 4
+    -DSQLITE_ENABLE_FTS3_PARENTHESIS    # Allow AND and NOT support in FTS parser
+    -DSQLITE_ENABLE_FTS3_TOKENIZER      # Allow LiteCore to define a tokenizer
+    -DSQLITE_DQS=0                      # Disallow double-quoted strings (only identifiers)
+)
+
 ### SUPPORT LIBRARY:
 
 set_support_source(RESULT SUPPORT_SRC)
@@ -145,6 +174,8 @@ add_library(
     Support STATIC
     ${SUPPORT_SRC}
 )
+
+target_link_libraries(Support PRIVATE CouchbaseSqlite3)
 
 target_compile_definitions(
     Support PRIVATE
@@ -171,7 +202,6 @@ target_include_directories(
     vendor/mbedtls/crypto/include
     C
     C/include
-    vendor/SQLiteCpp/sqlite3
     vendor/SQLiteCpp/include
 )
 setup_support_build()
@@ -226,30 +256,12 @@ add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 target_compile_definitions(
     LiteCoreStatic PRIVATE
     -DLITECORE_IMPL
-    -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1  # Default to NORMAL sync mode on SQLite (safe with WAL mode)
-    -DSQLITE_LIKE_DOESNT_MATCH_BLOBS    # Optimize SQLite "like" queries
-    -DSQLITE_OMIT_SHARED_CACHE          # Allows SQLite to discard shared cache, eliminating some branches
-    -DSQLITE_OMIT_DECLTYPE              # Disable returning the declared column type from query (reduces memory usage)
-    -DSQLITE_OMIT_DATETIME_FUNCS        # Don't compile SQLite date functions
-    -DSQLITE_ENABLE_EXPLAIN_COMMENTS    # Add comment text to the result of sqlite3_explain
-    -DSQLITE_DISABLE_FTS3_UNICODE       # Disable FTS3 unicode61 tokenizer (not used in LiteCore)
-    -DSQLITE_ENABLE_MEMORY_MANAGEMENT   # Enable sqlite3_release_memory to release unused memory faster
-    -DSQLITE_ENABLE_STAT4               # Enable enhanced query planning
-    -DSQLITE_HAVE_ISNAN                 # Use system provided isnan()
-    -DHAVE_LOCALTIME_R                  # Use localtime_r instead of localtime
-    -DHAVE_USLEEP                       # Allow millisecond precision sleep
-    -DHAVE_UTIME                        # Use utime() instead of utimes()
-    -DSQLITE_OMIT_LOAD_EXTENSION        # Disable extensions (not needed for LiteCore)
-    -DSQLITE_ENABLE_FTS4                # Build FTS versions 3 and 4
-    -DSQLITE_ENABLE_FTS3_PARENTHESIS    # Allow AND and NOT support in FTS parser
-    -DSQLITE_ENABLE_FTS3_TOKENIZER      # Allow LiteCore to define a tokenizer
-    -DSQLITE_DQS=0                      # Disallow double-quoted strings (only identifiers)
-    
 )
+target_link_libraries(LiteCoreStatic PRIVATE CouchbaseSqlite3)
 
 if(BUILD_ENTERPRISE)
-    target_compile_definitions(
-        LiteCoreStatic PRIVATE
+    target_compile_definitions(CouchbaseSqlite3
+         PRIVATE
         -DSQLITE_HAS_CODEC              # Enables SQLite encryption extension (SEE)
     )
 endif()
@@ -276,7 +288,6 @@ target_include_directories(
     Networking/WebSockets
     Replicator
     REST
-    vendor/SQLiteCpp/sqlite3
     vendor/SQLiteCpp/include
     vendor/sqlite3-unicodesn
     vendor/mbedtls/include
