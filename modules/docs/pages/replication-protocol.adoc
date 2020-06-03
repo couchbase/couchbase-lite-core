@@ -148,6 +148,8 @@ to be sent indefinitely _(optional)_ +
 _(optional)_ +
 `batch`: Maximum number of changes to send in a single `change` message
 _(optional)_ +
+`activeOnly`: Set to `true` if the requestor doesn't want to be sent tombstones.
+_(optional)_ +
 _other properties_: Named parameters for the filter function
 _(optional)_ +
 Body: JSON dictionary _(optional)_
