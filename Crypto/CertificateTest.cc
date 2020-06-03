@@ -198,7 +198,11 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     Retained<CertSigningRequest> csr2 = new CertSigningRequest(data);
     CHECK(csr2->subjectName() == kSubjectName);
     CHECK(csr2->subjectPublicKey()->data(KeyFormat::Raw) == key->publicKey()->data(KeyFormat::Raw));
-
+    
+    // CBL-1036: Remove a left over cert that causes test failures on some machines.
+    Cert::deleteCert("Jane Doe");
+    CHECK(Cert::loadCert("Jane Doe") == nullptr);
+    
     // Delete the cert to cleanup:
     Cert::deleteCert("cert1");
     CHECK(Cert::loadCert("cert1") == nullptr);
@@ -243,8 +247,13 @@ TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
     issuerParams1.validity_secs = 3600*24;
     Retained<Cert> cert1 = new Cert(DistinguishedName(kSubjectName), issuerParams1, key1);
 
+    // CBL-1036: Remove a left over cert that causes test failures on some machines.
+    Cert::deleteCert("Jane Doe");
+    CHECK(Cert::loadCert("Jane Doe") == nullptr);
+    
     // Delete cert1 to cleanup:
     Cert::deleteCert("cert1");
+    CHECK(Cert::loadCert("cert1") == nullptr);
     
     // Save cert1:
     cert1->save("cert1", true);
