@@ -76,6 +76,13 @@ namespace litecore { namespace crypto {
             throwOSStatus(err, fnName, what);
     }
 
+    __unused
+    static inline void warnOSStatusError(OSStatus err, const char *fnName, const char *what) {
+        if (_usuallyFalse(err != noErr)) {
+            LogToAt(TLSLogDomain, Error, "%s (%s returned %d)", what, fnName, int(err));
+        }
+    }
+
     __unused static inline void warnCFError(CFErrorRef cfError, const char *fnName) {
         auto error = (__bridge NSError*)cfError;
         auto message = error.description;
@@ -516,10 +523,20 @@ namespace litecore { namespace crypto {
                     };
                     
                     ++gC4ExpectExceptions;
-                    checkOSStatus(SecItemUpdate((CFDictionaryRef)certQuery, (CFDictionaryRef)updatedAttrs),
-                                  "SecItemUpdate",
-                                  "Couldn't update the label to a certificate in Keychain");
+                    status = SecItemUpdate((CFDictionaryRef)certQuery, (CFDictionaryRef)updatedAttrs);
                     --gC4ExpectExceptions;
+                    if (status != errSecSuccess) {
+                        // Rollback by deleteing the added certificate:
+                        ++gC4ExpectExceptions;
+                        OSStatus deleteStatus = SecItemDelete((CFDictionaryRef)certQuery);
+                        --gC4ExpectExceptions;
+                        if (deleteStatus != errSecSuccess) {
+                            warnOSStatusError(deleteStatus, "SecItemDelete",
+                                              "Couldn't delete certificate that was failed to update the label.");
+                        }
+                    }
+                    checkOSStatus(status, "SecItemUpdate",
+                                  "Couldn't update the label to a certificate in Keychain");
                 }
             #endif
                 
