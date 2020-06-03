@@ -385,7 +385,7 @@ namespace litecore { namespace websocket {
 
     void BuiltInWebSocket::awaitWriteable() {
         logDebug("**** Waiting to write to socket");
-        DebugAssert(!_outbox.empty());
+        //DebugAssert(!_outbox.empty());            // can't do this safely (data race)
         _socket->onWriteable([=] { writeToSocket(); });
     }
 
