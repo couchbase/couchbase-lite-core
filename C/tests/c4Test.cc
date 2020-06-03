@@ -656,7 +656,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
         c4doc_release(doc);
         FLSliceResult_Release(body);
         ++numDocs;
-        if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
+        if (numDocs % 1000 == 0 && timeout > 0.0 && st.elapsed() >= timeout) {
             C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());
             return false;
         }
@@ -697,7 +697,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             REQUIRE(doc != nullptr);
             c4doc_release(doc);
             ++numDocs;
-            if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
+            if (numDocs % 1000 == 0 && timeout > 0.0 && st.elapsed() >= timeout) {
                 C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());
                 return false;
             }

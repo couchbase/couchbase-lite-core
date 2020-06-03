@@ -217,10 +217,10 @@ public:
     static fleece::alloc_slice readFile(std::string path);
     unsigned importJSONFile(std::string path,
                             std::string idPrefix ="",
-                            double timeout =15.0,
+                            double timeout =0.0,
                             bool verbose =false);
     bool readFileByLines(std::string path, std::function<bool(FLSlice)>);
-    unsigned importJSONLines(std::string path, double timeout =15.0, bool verbose =false,
+    unsigned importJSONLines(std::string path, double timeout =0.0, bool verbose =false,
                              C4Database* database = nullptr);
 
     
