@@ -886,7 +886,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     struct State {
         C4Query *query;
         c4::ref<C4QueryObserver> obs;
-        int count = 0;
+        atomic<int> count = 0;
     };
 
     auto callback = [](C4QueryObserver *obs, C4Query *query, void *context) {

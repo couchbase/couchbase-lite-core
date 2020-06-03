@@ -233,6 +233,7 @@ public:
     {
         auto test = (ReplicatorAPITest*)context;
         char message[256];
+        lock_guard<mutex> lock(test->_mutex);
         test->_docsEnded += nDocs;
         for (size_t i = 0; i < nDocs; ++i) {
             auto doc = docs[i];
@@ -243,7 +244,6 @@ public:
                       (pushing ? "pushing" : "pulling"),
                       SPLAT(doc->docID), message);
 
-                lock_guard<mutex> lock(test->_mutex);
                 if (pushing)
                     test->_docPushErrors.emplace(slice(doc->docID));
                 else
@@ -254,6 +254,7 @@ public:
 
 
     bool startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
+        lock_guard<mutex> lock(_mutex);
         _callbackStatus = { };
         _numCallbacks = 0;
         memset(_numCallbacksWithLevel, 0, sizeof(_numCallbacksWithLevel));
@@ -293,6 +294,11 @@ public:
         return true;
     }
 
+    bool finished() {
+        lock_guard<mutex> lock(_mutex);
+        return _numCallbacksWithLevel[kC4Stopped] == 0;
+    }
+
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
         C4Error err;
         REQUIRE(startReplicator(push, pull, &err));
@@ -303,7 +309,7 @@ public:
             this_thread::sleep_for(chrono::milliseconds(100));
 
         int attempts = 0;
-        while(_numCallbacksWithLevel[kC4Stopped] != 1 && attempts++ < 5) {
+        while(!finished() && attempts++ < 5) {
             this_thread::sleep_for(chrono::milliseconds(100));
         }
         

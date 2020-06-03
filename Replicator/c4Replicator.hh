@@ -156,6 +156,7 @@ struct C4Replicator : public RefCounted,
         } else if (_status.level != kC4Stopped) {
             _status.level = kC4Stopped;
             _status.progress = {};
+            UNLOCK();
             notifyStateChanged();
             _selfRetain = nullptr; // balances retain in `_start`
         }
@@ -422,24 +423,26 @@ protected:
     // The mutex MUST NOT be locked, else if the `onStatusChanged` function calls back into me
     // I will deadlock!
     void notifyStateChanged() {
+        C4ReplicatorStatus status = this->status();
+
         if (willLog()) {
             double progress = 0.0;
-            if (_status.progress.unitsTotal > 0)
-                progress = 100.0 * double(_status.progress.unitsCompleted)
-                                 / _status.progress.unitsTotal;
-            if (_status.error.code) {
+            if (status.progress.unitsTotal > 0)
+                progress = 100.0 * double(status.progress.unitsCompleted)
+                                 / status.progress.unitsTotal;
+            if (status.error.code) {
                 logError("State: %-s, progress=%.2f%%, error=%s",
-                        kC4ReplicatorActivityLevelNames[_status.level], progress,
-                        c4error_descriptionStr(_status.error));
+                        kC4ReplicatorActivityLevelNames[status.level], progress,
+                        c4error_descriptionStr(status.error));
             } else {
                 logInfo("State: %-s, progress=%.2f%%",
-                      kC4ReplicatorActivityLevelNames[_status.level], progress);
+                      kC4ReplicatorActivityLevelNames[status.level], progress);
             }
         }
 
         auto onStatusChanged = _onStatusChanged.load();
-        if (onStatusChanged && _status.level != kC4Stopping /* Don't notify about internal state */)
-            onStatusChanged(this, _status, _options.callbackContext);
+        if (onStatusChanged && status.level != kC4Stopping /* Don't notify about internal state */)
+            onStatusChanged(this, status, _options.callbackContext);
     }
 
 
