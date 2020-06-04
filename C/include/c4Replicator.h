@@ -55,7 +55,7 @@ extern "C" {
     typedef C4_ENUM(int32_t, C4ReplicatorServerCertVerificationMode) {
         kC4ServerCertCACert = 0, ///< Verify by using trusted anchor CA certs or by using the configured pinned server certs (Default Mode).
         kC4ServerCertSelfSigned  ///< Verify by accepting any and only self-signed certs. Any non-self-signed certs will be rejected.
-    }
+    };
 
     /** For convenience, an array of C strings naming the C4ReplicatorActivityLevel values. */
     CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[6];
