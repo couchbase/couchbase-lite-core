@@ -107,6 +107,7 @@ namespace c4Internal {
                                       (inConfig.flags & kC4DB_Create) != 0,
                                       inConfig.storageEngine))
     ,config(inConfig)
+    ,_encoder(new fleece::impl::Encoder())
     {
         // Set up DataFile options:
         DataFile::Options options { };
@@ -131,6 +132,20 @@ namespace c4Internal {
         if (!storageFactory)
             error::_throw(error::Unimplemented);
 
+        // Initialize important objects:
+        if (!(config.flags & kC4DB_NonObservable))
+            _sequenceTracker.reset(new access_lock<SequenceTracker>());
+
+        DocumentFactory* factory;
+        switch (config.versioning) {
+#if ENABLE_VERSION_VECTORS
+            case kC4VersionVectors: factory = new VectorDocumentFactory(this); break;
+#endif
+            case kC4RevisionTrees:  factory = new TreeDocumentFactory(this); break;
+            default:                error::_throw(error::InvalidParameter);
+        }
+        _documentFactory.reset(factory);
+
         // Open the DataFile:
         try {
             _dataFile.reset( storageFactory->openFile(_dataFilePath, this, &options) );
@@ -144,12 +159,8 @@ namespace c4Internal {
             }
         }
 
-        _encoder.reset(new fleece::impl::Encoder());
         if (options.useDocumentKeys)
             _encoder->setSharedKeys(documentKeys());
-        
-        if (!(config.flags & kC4DB_NonObservable))
-            _sequenceTracker.reset(new access_lock<SequenceTracker>());
 
         // Validate that the versioning matches what's used in the database:
         auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
@@ -168,17 +179,6 @@ namespace c4Internal {
         } else if (config.versioning != kC4RevisionTrees) {
             error::_throw(error::WrongFormat);
         }
-
-        // Set up the DocumentFactory:
-        DocumentFactory* factory;
-        switch (config.versioning) {
-#if ENABLE_VERSION_VECTORS
-            case kC4VersionVectors: factory = new VectorDocumentFactory(this); break;
-#endif
-            case kC4RevisionTrees:  factory = new TreeDocumentFactory(this); break;
-            default:                error::_throw(error::InvalidParameter);
-        }
-        _documentFactory.reset(factory);
     }
 
 
