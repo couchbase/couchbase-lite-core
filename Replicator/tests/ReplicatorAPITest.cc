@@ -451,7 +451,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
     _mayGoOffline = true;
     C4Error err;
     REQUIRE(startReplicator(kC4Continuous, kC4Continuous, &err));
-    waitForStatus(kC4Busy, 50);
+    waitForStatus(kC4Busy, 5s);
     
     C4ReplicatorActivityLevel expected = kC4Stopped;
     SECTION("Stop / Start") {

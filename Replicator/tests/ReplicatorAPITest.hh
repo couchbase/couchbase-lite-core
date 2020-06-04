@@ -17,6 +17,7 @@
 #include "StringUtil.hh"
 #include <algorithm>
 #include <chrono>
+#include <condition_variable>
 #include <iostream>
 #include <thread>
 #include <mutex>
@@ -100,15 +101,6 @@ public:
         _address = { };
         _remoteDBName = nullslice;
     }
-    
-    void waitForStatus(C4ReplicatorActivityLevel level, int sleepMs = 100, int attempts = 50) {
-        int attempt = 0;
-        while (c4repl_getStatus(_repl).level != level && ++attempt < attempts) {
-            this_thread::sleep_for(chrono::milliseconds(sleepMs));
-        }
-        
-        CHECK(attempt < attempts);
-    }
 #endif
 
     AllocedDict options() {
@@ -178,8 +170,8 @@ public:
     }
 
     void stateChanged(C4Replicator *r, C4ReplicatorStatus s) {
-        lock_guard<mutex> lock(_mutex);
-        
+        unique_lock<mutex> lock(_mutex);
+
         logState(s);
         if(r != _repl) {
             WARN("Stray stateChange received, check C4Log for details!");
@@ -216,6 +208,8 @@ public:
             C4Log("*** Replicator idle; stopping...");
             c4repl_stop(r);
         }
+
+        _stateChangedCondition.notify_all();
     }
 
     static void onStateChanged(C4Replicator *replicator,
@@ -232,8 +226,9 @@ public:
                             void *context)
     {
         auto test = (ReplicatorAPITest*)context;
+        unique_lock<mutex> lock(test->_mutex);
+
         char message[256];
-        lock_guard<mutex> lock(test->_mutex);
         test->_docsEnded += nDocs;
         for (size_t i = 0; i < nDocs; ++i) {
             auto doc = docs[i];
@@ -254,7 +249,11 @@ public:
 
 
     bool startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
-        lock_guard<mutex> lock(_mutex);
+        unique_lock<mutex> lock(_mutex);
+        return _startReplicator(push, pull, err);
+    }
+
+    bool _startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
         _callbackStatus = { };
         _numCallbacks = 0;
         memset(_numCallbacksWithLevel, 0, sizeof(_numCallbacksWithLevel));
@@ -294,28 +293,28 @@ public:
         return true;
     }
 
-    bool finished() {
-        lock_guard<mutex> lock(_mutex);
-        return _numCallbacksWithLevel[kC4Stopped] == 0;
+    void waitForStatus(C4ReplicatorActivityLevel level, chrono::milliseconds timeout =5s) {
+        unique_lock<mutex> lock(_mutex);
+        _waitForStatus(lock, level, timeout);
+    }
+
+    void _waitForStatus(unique_lock<mutex> &lock,
+                        C4ReplicatorActivityLevel level, chrono::milliseconds timeout =5s)
+    {
+        _stateChangedCondition.wait_for(lock, timeout,
+                                        [&]{return _numCallbacksWithLevel[level] > 0;});
+        if (_numCallbacksWithLevel[level] == 0)
+            FAIL("Timed out waiting for a status callback of level %d", level);
     }
 
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
+        unique_lock<mutex> lock(_mutex);
+
         C4Error err;
-        REQUIRE(startReplicator(push, pull, &err));
+        REQUIRE(_startReplicator(push, pull, &err));
+        _waitForStatus(lock, kC4Stopped, 5min);
+
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
-        logState(status);
-
-        while ((status = c4repl_getStatus(_repl)).level != kC4Stopped)
-            this_thread::sleep_for(chrono::milliseconds(100));
-
-        int attempts = 0;
-        while(!finished() && attempts++ < 5) {
-            this_thread::sleep_for(chrono::milliseconds(100));
-        }
-        
-        lock_guard<mutex> lock(_mutex);
-
-        CHECK(_numCallbacks > 0);
         if (expectSuccess) {
             CHECK(status.error.code == 0);
             CHECK(_numCallbacksWithLevel[kC4Busy] > 0);
@@ -441,6 +440,7 @@ public:
     c4::ref<C4Replicator> _repl;
 
     mutex _mutex;
+    condition_variable _stateChangedCondition;
     C4ReplicatorStatus _callbackStatus {};
     int _numCallbacks {0};
     int _numCallbacksWithLevel[5] {0};

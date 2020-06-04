@@ -59,6 +59,8 @@ public:
 
     // opts1 is the options for _db; opts2 is the options for _db2
     void runReplicators(Replicator::Options opts1, Replicator::Options opts2, bool reset = false) {
+        unique_lock<mutex> lock(_mutex);
+
         _gotResponse = false;
         _statusChangedCalls = 0;
         _statusReceived = {};
@@ -93,13 +95,9 @@ public:
         _replClient->start(reset);
         _replServer->start();
 
-        {
-            Log("Waiting for replication to complete...");
-            unique_lock<mutex> lock(_mutex);
-            while (!_replicatorClientFinished || !_replicatorServerFinished)
-                _cond.wait(lock);
-        }
-        
+        Log("Waiting for replication to complete...");
+        _cond.wait(lock, [&]{return _replicatorClientFinished && _replicatorServerFinished;});
+
         Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
         _checkpointID = _replClient->checkpointer().checkpointID();
         _replClient = _replServer = nullptr;
@@ -165,6 +163,8 @@ public:
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
                                            const websocket::Headers &headers) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+        unique_lock<mutex> lock(_mutex);
+
         if (repl == _replClient) {
             Assert(!_gotResponse);
             _gotResponse = true;
@@ -213,9 +213,10 @@ public:
     virtual void replicatorDocumentsEnded(Replicator *repl,
                                           const vector<Retained<ReplicatedRev>> &revs) override
     {
+        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+        unique_lock<mutex> lock(_mutex);
+
         if (repl == _replClient) {
-            // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-            unique_lock<mutex> lock(_mutex);
             Assert(!_replicatorClientFinished);
             for (auto &rev : revs) {
                 auto dir = rev->dir();
@@ -251,7 +252,9 @@ public:
     virtual void replicatorBlobProgress(Replicator *repl,
                                         const Replicator::BlobProgress &p) override
     {
+        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         unique_lock<mutex> lock(_mutex);
+
         if (p.dir == Dir::kPushing) {
             ++_blobPushProgressCallbacks;
             _lastBlobPushProgress = p;
@@ -269,6 +272,7 @@ public:
     virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         unique_lock<mutex> lock(_mutex);
+
         if (repl == _replClient) {
             Log(">> Replicator closed with code=%d/%d, message=%.*s",
                 status.reason, status.code, SPLAT(status.message));
