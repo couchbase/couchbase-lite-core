@@ -212,12 +212,17 @@ namespace litecore { namespace repl {
     }
 
 
-    Replicator* Worker::replicator() const {
-        Worker *root = const_cast<Worker*>(this);
-        while (root->_parent)
-            root = root->_parent;
-        auto replicator = dynamic_cast<Replicator*>(root);
-        Assert(replicator);
+    Retained<Replicator> Worker::replicatorIfAny() {
+        Retained<Worker> parent = _parent;
+        if (!parent)
+            return nullptr;
+        return parent->replicatorIfAny();
+    }
+
+
+    Retained<Replicator> Worker::replicator() {
+        auto replicator = replicatorIfAny();
+        Assert(replicator != nullptr);
         return replicator;
     }
 

@@ -112,6 +112,8 @@ namespace litecore { namespace repl {
         
         void docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID);
 
+        Retained<Replicator> replicatorIfAny() override         {return this;}
+
     protected:
         virtual std::string loggingClassName() const override  {
             return _options.pull >= kC4OneShot || _options.push >= kC4OneShot ? "Repl" : "repl";
