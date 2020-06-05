@@ -175,34 +175,12 @@ struct C4Replicator : public RefCounted,
         _onBlobProgress   = nullptr;
     }
 
-    C4SliceResult pendingDocumentIDs(C4Error* outErr) const {
-        LOCK(_mutex);
-        Encoder enc;
-        enc.beginArray();
-
-        bool any = false;
-        auto callback = [&](const C4DocumentInfo &info) {
-            enc.writeString(info.docID);
-            any = true;
-        };
-        bool ok;
-        if (_replicator)
-            ok = _replicator->pendingDocumentIDs(callback, outErr);
-        else
-            ok = Checkpointer(_options, URL()).pendingDocumentIDs(_database, callback, outErr);
-        if (!ok)
-            return {};
-
-        enc.endArray();
-        return any ? C4SliceResult(enc.finish()) : C4SliceResult{};
+    bool isDocumentPending(C4Slice docID, C4Error* outErr) const {
+        return PendingDocuments(this).isDocumentPending(docID, outErr);
     }
 
-    bool isDocumentPending(C4Slice docID, C4Error* outErr) const {
-        LOCK(_mutex);
-        if (_replicator)
-            return _replicator->isDocumentPending(docID, outErr);
-        else
-            return Checkpointer(_options, URL()).isDocumentPending(_database, docID, outErr);
+    C4SliceResult pendingDocumentIDs(C4Error* outErr) const {
+        return PendingDocuments(this).pendingDocumentIDs(outErr);
     }
 
 protected:
@@ -444,6 +422,54 @@ protected:
         if (onStatusChanged && status.level != kC4Stopping /* Don't notify about internal state */)
             onStatusChanged(this, status, _options.callbackContext);
     }
+
+
+    class PendingDocuments {
+    public:
+        PendingDocuments(const C4Replicator *repl) {
+            // Lock the replicator and copy the necessary state now, so I don't have to lock while
+            // calling pendingDocumentIDs (which might call into the app's validation function.)
+            LOCK(repl->_mutex);
+            replicator = repl->_replicator;
+            if (!replicator) {
+                checkpointer.emplace(repl->_options, repl->URL());
+                database = repl->_database;
+            }
+        }
+
+        C4SliceResult pendingDocumentIDs(C4Error* outErr) {
+            Encoder enc;
+            enc.beginArray();
+
+            bool any = false;
+            auto callback = [&](const C4DocumentInfo &info) {
+                enc.writeString(info.docID);
+                any = true;
+            };
+            bool ok;
+            if (replicator)
+                ok = replicator->pendingDocumentIDs(callback, outErr);
+            else
+                ok = checkpointer->pendingDocumentIDs(database, callback, outErr);
+            if (!ok)
+                return {};
+
+            enc.endArray();
+            return any ? C4SliceResult(enc.finish()) : C4SliceResult{};
+        }
+
+        bool isDocumentPending(C4Slice docID, C4Error* outErr) {
+            if (replicator)
+                return replicator->isDocumentPending(docID, outErr);
+            else
+                return checkpointer->isDocumentPending(database, docID, outErr);
+        }
+
+    private:
+        Retained<Replicator> replicator;
+        optional<Checkpointer> checkpointer;
+        Retained<C4Database> database;
+    };
 
 
     mutable mutex               _mutex;
