@@ -10,6 +10,7 @@
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
 #include "c4Socket.h"
+#include "c4Socket+Internal.hh"
 #include "fleece/Fleece.hh"
 
 using namespace fleece;
@@ -516,5 +517,28 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
         c4repl_stop(_repl);
         waitForStatus(kC4Stopped);
     }
+}
+#endif
+
+#ifdef COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pull]") {
+    C4SocketFactory factory = {};
+    factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+                      C4Slice options, void *context) {
+        // Do nothing, just let things time out....
+    };
+    _socketFactory = &factory;
+    
+    C4Error err;
+    importJSONLines(sFixturesDir + "names_100.json");
+    REQUIRE(startReplicator(kC4Passive, kC4Continuous, &err));
+    this_thread::sleep_for(100ms);
+    CHECK(c4repl_getStatus(_repl).level == kC4Connecting);
+    
+    c4repl_stop(_repl);
+    
+    // This should not take more than 5 seconds, and certainly not more than 8!
+    waitForStatus(kC4Stopped, 8s);
+    _socketFactory = nullptr;
 }
 #endif
