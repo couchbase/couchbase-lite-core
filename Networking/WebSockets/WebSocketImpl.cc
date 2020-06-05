@@ -372,8 +372,8 @@ namespace litecore { namespace websocket {
         if(!_didConnect) {
             // The web socket is being requested to close before it's even connected, so just
             // shortcut to the callback and make sure that onConnect does nothing now
+            closeSocket();
             _closed = true;
-            delegate().onWebSocketClose(CloseStatus(kWebSocketClose, status, message));
             return;
         }
         

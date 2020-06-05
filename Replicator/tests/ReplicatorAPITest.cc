@@ -527,6 +527,13 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pul
                       C4Slice options, void *context) {
         // Do nothing, just let things time out....
     };
+    
+    factory.close = [](C4Socket* socket) {
+        // This is a requirement for this test to pass, or the socket will
+        // never actually finish "closing"
+        c4socket_closed(socket, {});
+    };
+    
     _socketFactory = &factory;
     
     C4Error err;
