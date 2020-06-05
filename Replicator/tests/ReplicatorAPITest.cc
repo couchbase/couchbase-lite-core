@@ -407,7 +407,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
 
     SECTION("Filtered") {
         expectedIsPending = false;
+        params.callbackContext = this;
         params.pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
+            auto test = (ReplicatorAPITest*)context;
+            c4repl_getStatus(test->_repl);  // If _repl were locked during this callback, this would deadlock
             return FLSlice_Compare(docID, "0000005"_sl) != 0;
         };
     }
