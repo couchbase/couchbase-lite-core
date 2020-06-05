@@ -160,7 +160,7 @@ namespace litecore { namespace repl {
                         logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
                                  SPLAT(docID), SPLAT(revID));
                         _db->setDocRemoteAncestor(docID, revID);
-                       replicator()->docRemoteAncestorChanged(docID, revID);
+                        replicator()->docRemoteAncestorChanged(docID, revID);
                     } else if (anc != kC4AncestorExists) {
                         // Don't have revision -- request it:
                         ++requested;

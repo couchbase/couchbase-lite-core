@@ -54,7 +54,8 @@ namespace litecore { namespace repl {
             C4Progress progressDelta;
         };
 
-        Replicator* replicator() const;
+        virtual Retained<Replicator> replicatorIfAny();     // may return null
+        Retained<Replicator> replicator();                  // throws rather than return null
 
         bool passive() const                                {return _passive;}
 

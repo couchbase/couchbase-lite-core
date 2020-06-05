@@ -341,8 +341,8 @@ namespace litecore { namespace repl {
         if (since != _lastSequence) {
             _lastSequence = since;
             logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
-            if (replicator())
-                replicator()->checkpointer().setRemoteMinSequence(_lastSequence);
+            if (auto replicator = replicatorIfAny(); replicator)
+                replicator->checkpointer().setRemoteMinSequence(_lastSequence);
         }
     }
 
