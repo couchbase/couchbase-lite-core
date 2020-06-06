@@ -21,4 +21,9 @@ function(setup_build)
         BLIPStatic PRIVATE
         ${LITECORE_LOCATION}/LiteCore/Unix
     )
+
+    target_link_libraries(
+        BLIPStatic INTERFACE
+	${ZLIB_LIB}
+    )
 endfunction()

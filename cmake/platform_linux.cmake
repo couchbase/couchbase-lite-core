@@ -29,11 +29,26 @@ endfunction()
 function(setup_litecore_build_linux)
     setup_litecore_build_unix()
 
+    target_link_libraries(
+        LiteCoreStatic INTERFACE
+	pthread
+    )
+
+    target_link_libraries(
+        LiteCore PUBLIC
+	pthread
+    )
+
     if(NOT LITECORE_DISABLE_ICU)
         target_compile_definitions(
             LiteCoreStatic PRIVATE
             -DLITECORE_USES_ICU=1
         )
+
+        target_link_libraries(
+	    LiteCoreStatic INTERFACE
+	    ${ICU_LIBS}
+	)
     endif()
 
     target_include_directories(
@@ -55,21 +70,3 @@ function(setup_litecore_build_linux)
     endif()
 endfunction()
 
-function(setup_support_build_linux)
-    if(NOT LITECORE_DISABLE_ICU)
-        target_compile_definitions(
-            Support PRIVATE
-            -DLITECORE_USES_ICU=1
-        )
-
-        target_link_libraries(
-            Support INTERFACE
-            ${ICU_LIBS}
-        )
-    endif()
-
-    target_include_directories(
-        Support PRIVATE
-        LiteCore/Unix
-    )
-endfunction()

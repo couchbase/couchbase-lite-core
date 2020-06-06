@@ -53,10 +53,14 @@ add_executable(
     c4QueryTest.cc
     c4Test.cc
     c4ThreadingTest.cc
+    # EE tests:
+    c4DatabaseEncryptionTest.cc
+    c4CertificateTest.cc
+    
     ${TOP}LiteCore/tests/main.cpp
     ${TOP}Crypto/SecureRandomize.cc
     ${TOP}LiteCore/Support/FilePath.cc
-    ${TOP}LiteCore/Support/Logging_stub.cc
+    ${TOP}LiteCore/Support/Logging_Stub.cc
     ${TOP}LiteCore/Support/StringUtil.cc
     ${TOP}LiteCore/Support/Error.cc
     ${TOP}vendor/fleece/Fleece/Support/betterassert.cc
