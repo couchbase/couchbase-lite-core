@@ -104,6 +104,13 @@ namespace litecore { namespace websocket {
     }
 
     void WebSocketImpl::onConnect() {
+        if(_closed) {
+            // If the WebSocket has already been closed, which only happens in rare cases
+            // such as stopping a Replicator during the connecting phase, then don't continue...
+            warn("WebSocket already closed, ignoring onConnect...");
+            return;
+        }
+        
         logInfo("Connected!");
         _didConnect = true;
         _responseTimer->stop();
@@ -362,6 +369,14 @@ namespace litecore { namespace websocket {
 
     // Initiates a request to close the connection cleanly.
     void WebSocketImpl::close(int status, fleece::slice message) {
+        if(!_didConnect) {
+            // The web socket is being requested to close before it's even connected, so just
+            // shortcut to the callback and make sure that onConnect does nothing now
+            closeSocket();
+            _closed = true;
+            return;
+        }
+        
         logInfo("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
         if (_framing) {
             alloc_slice closeMsg;
