@@ -61,6 +61,7 @@ namespace litecore { namespace repl {
         void handleRev(Retained<MessageIn>);
         void handleNoRev(Retained<MessageIn>);
         void startIncomingRev(MessageIn* NONNULL);
+        void startWaitingRevMessages();
         void _revWasProvisionallyHandled();
         void _revsFinished(int gen);
         void completedSequence(alloc_slice sequence,

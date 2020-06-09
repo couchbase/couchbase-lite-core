@@ -278,17 +278,26 @@ namespace litecore { namespace repl {
         logVerbose("_revWasProvisionallyHandled getting called----->>>%zu waiting revs messages; %u revs active;",
                    _waitingRevMessages.size(), _activeIncomingRevs);
         decrement(_activeIncomingRevs);
-        if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-                    && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs
-                    && !_waitingRevMessages.empty()) {
+        startWaitingRevMessages();
+    }
+
+
+    void Puller::startWaitingRevMessages() {
+        bool any = false;
+        while (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs
+                && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs
+                && !_waitingRevMessages.empty()) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
             if (_waitingRevMessages.empty())
                 Signpost::end(Signpost::revsBackPressure);
             startIncomingRev(msg);
-            handleMoreChanges();
+            any = true;
         }
+        if (any)
+            handleMoreChanges();
     }
+
 
     // Called from an IncomingRev when it's finished (either added to db, or failed.)
     // The IncomingRev will be processed later by _revsFinished().
@@ -305,14 +314,18 @@ namespace litecore { namespace repl {
         decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
         for (IncomingRev *inc : *revs) {
             // If it was provisionally inserted, it'll have called _revWasProvisionallyHandled
-            // already. If not, call that method now:
+            // already, which decrements _activeIncomingRevs. If not, decrement it now:
             if (!inc->wasProvisionallyInserted())
-                _revWasProvisionallyHandled();
+                decrement(_activeIncomingRevs);
             auto rev = inc->rev();
             if (nonPassive())
                 completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
         }
+
+        // We have changed _unfinishedIncomingRevs and _activeIncomingRevs, which means we
+        // can pop some messages from _waitingRevMessages:
+        startWaitingRevMessages();
 
         if (nonPassive())
             updateLastSequence();
