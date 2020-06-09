@@ -302,6 +302,7 @@ namespace litecore { namespace repl {
 
     void Puller::_revsFinished(int gen) {
         auto revs = _returningRevs.pop(gen);
+        decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
         for (IncomingRev *inc : *revs) {
             // If it was provisionally inserted, it'll have called _revWasProvisionallyHandled
             // already. If not, call that method now:
@@ -312,7 +313,6 @@ namespace litecore { namespace repl {
                 completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
         }
-        decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
 
         if (nonPassive())
             updateLastSequence();
