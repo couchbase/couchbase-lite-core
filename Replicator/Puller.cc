@@ -131,6 +131,8 @@ namespace litecore { namespace repl {
 
     // Process waiting "changes" messages if not throttled:
     void Puller::handleMoreChanges() {
+        logVerbose("handleMoreChanges getting called----->>> %zu queued; %u revs pending",
+        _waitingChangesMessages.size(), _pendingRevMessages);
         while (!_waitingChangesMessages.empty()
                && _pendingRevMessages < tuning::kMaxPendingRevs) {
             auto req = _waitingChangesMessages.front();
@@ -231,6 +233,8 @@ namespace litecore { namespace repl {
 
 
     void Puller::handleNoRev(Retained<MessageIn> msg) {
+        logVerbose("handleNoRev getting called----->>> %zu queued; %u revs pending",
+        _waitingChangesMessages.size(), _pendingRevMessages);
         _incomingDocIDs.remove(alloc_slice(msg->property("id"_sl)));
         decrement(_pendingRevMessages);
         slice sequence(msg->property("sequence"_sl));
@@ -246,6 +250,8 @@ namespace litecore { namespace repl {
 
     // Actually process an incoming "rev" now:
     void Puller::startIncomingRev(MessageIn *msg) {
+        logVerbose("startIncomingRev getting called----->>> %zu queued; %u revs pending; %u revs active;",
+        _waitingChangesMessages.size(), _pendingRevMessages, _activeIncomingRevs);
         decrement(_pendingRevMessages);
         increment(_activeIncomingRevs);
         increment(_unfinishedIncomingRevs);
@@ -269,6 +275,8 @@ namespace litecore { namespace repl {
 
     // Callback from an IncomingRev when it's been written to the db but before the commit
     void Puller::_revWasProvisionallyHandled() {
+        logVerbose("_revWasProvisionallyHandled getting called----->>>%zu waiting revs messages; %u revs active;",
+                   _waitingRevMessages.size(), _activeIncomingRevs);
         decrement(_activeIncomingRevs);
         if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs
                     && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs
