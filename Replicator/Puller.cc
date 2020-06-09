@@ -386,12 +386,13 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u, _waitingChangesMessages=%zu, _waitingRevMessages=%zu",
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u, _waitingChangesMessages=%zu, _waitingRevMessages=%zu, _unfinishedIncomingRevs=%u",
                 kC4ReplicatorActivityLevelNames[level],
                 pendingResponseCount(), _caughtUp,
                     _pendingRevMessages, _activeIncomingRevs,
                     _waitingChangesMessages.size(),
-                    _waitingRevMessages.size());
+                    _waitingRevMessages.size(),
+                    _unfinishedIncomingRevs);
         }
         return level;
     }
