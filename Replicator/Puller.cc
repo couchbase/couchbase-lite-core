@@ -131,8 +131,6 @@ namespace litecore { namespace repl {
 
     // Process waiting "changes" messages if not throttled:
     void Puller::handleMoreChanges() {
-        logVerbose("handleMoreChanges getting called----->>> %zu queued; %u revs pending",
-        _waitingChangesMessages.size(), _pendingRevMessages);
         while (!_waitingChangesMessages.empty()
                && _pendingRevMessages < tuning::kMaxPendingRevs) {
             auto req = _waitingChangesMessages.front();
@@ -140,16 +138,17 @@ namespace litecore { namespace repl {
             handleChangesNow(req);
         }
 
-#ifdef LITECORE_SIGNPOSTS
-        bool backPressure = !_waitingRevMessages.empty();
+        bool backPressure = !_waitingChangesMessages.empty();
         if (_changesBackPressure != backPressure) {
             _changesBackPressure = backPressure;
-            if (backPressure)
+            if (backPressure) {
                 Signpost::begin(Signpost::changesBackPressure);
-            else
+                logVerbose("Back pressure started for changes messages");
+            } else {
                 Signpost::end(Signpost::changesBackPressure);
+                logVerbose("Back pressure ended for changes messages");
+            }
         }
-#endif
     }
 
 
@@ -225,16 +224,16 @@ namespace litecore { namespace repl {
         } else {
             logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
                      SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);
-            if (_waitingRevMessages.empty())
+            if (_waitingRevMessages.empty()) {
                 Signpost::begin(Signpost::revsBackPressure);
+                logVerbose("Back pressure started for rev messages");
+            }
             _waitingRevMessages.push_back(move(msg));
         }
     }
 
 
     void Puller::handleNoRev(Retained<MessageIn> msg) {
-        logVerbose("handleNoRev getting called----->>> %zu queued; %u revs pending",
-        _waitingChangesMessages.size(), _pendingRevMessages);
         _incomingDocIDs.remove(alloc_slice(msg->property("id"_sl)));
         decrement(_pendingRevMessages);
         slice sequence(msg->property("sequence"_sl));
@@ -275,8 +274,6 @@ namespace litecore { namespace repl {
 
     // Callback from an IncomingRev when it's been written to the db but before the commit
     void Puller::_revWasProvisionallyHandled() {
-        logVerbose("_revWasProvisionallyHandled getting called----->>>%zu waiting revs messages; %u revs active;",
-                   _waitingRevMessages.size(), _activeIncomingRevs);
         decrement(_activeIncomingRevs);
         startWaitingRevMessages();
     }
@@ -289,13 +286,18 @@ namespace litecore { namespace repl {
                 && !_waitingRevMessages.empty()) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
-            if (_waitingRevMessages.empty())
+            if (_waitingRevMessages.empty()) {
                 Signpost::end(Signpost::revsBackPressure);
+                logVerbose("Back pressure ended for rev messages");
+            }
             startIncomingRev(msg);
             any = true;
         }
+        
         if (any)
             handleMoreChanges();
+        
+        
     }
 
 
