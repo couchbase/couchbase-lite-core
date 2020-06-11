@@ -165,5 +165,4 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Listener][C]")
 }
 
 
-
 #endif
