@@ -89,7 +89,7 @@ namespace litecore { namespace REST {
         };
 
         URIRule* findRule(net::Method method, const std::string &path);
-        ~Server();
+        virtual ~Server() override;
 
         void dispatchRequest(RequestResponse*);
 
