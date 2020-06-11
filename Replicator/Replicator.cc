@@ -52,6 +52,7 @@ namespace litecore { namespace repl {
 
     static C4StoppingErrorEntry StoppingErrors[] = {
         {{ LiteCoreDomain, kC4ErrorUnexpectedError,0 }, true, "An exception was thrown"_sl},
+        {{ WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
         {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl}
     };
 
@@ -78,10 +79,23 @@ namespace litecore { namespace repl {
 
         logInfo("%s", string(options).c_str());
 
-        if (options.push != kC4Disabled)
+        if (options.push != kC4Disabled) {
             _pusher = new Pusher(this, _checkpointer);
-        if (options.pull != kC4Disabled)
+        } else {
+            registerHandler("subChanges",      &Replicator::returnForbidden);
+            registerHandler("getAttachment",   &Replicator::returnForbidden);
+            registerHandler("proveAttachment", &Replicator::returnForbidden);
+        }
+        
+        if (options.pull != kC4Disabled) {
             _puller = new Puller(this);
+        } else {
+            registerHandler("changes", &Replicator::returnForbidden);
+            registerHandler("proposeChanges", &Replicator::returnForbidden);
+            registerHandler("rev", &Replicator::returnForbidden);
+            registerHandler("norev", &Replicator::returnForbidden);
+        }
+        
         _checkpointer.enableAutosave(options.checkpointSaveDelay(),
                                      bind(&Replicator::saveCheckpoint, this, _1));
 
@@ -295,10 +309,11 @@ namespace litecore { namespace repl {
                 alloc_slice message( c4error_getDescription(error) );
                 if(stoppingErr.isFatal) {
                     logError("Stopping due to fatal error: %.*s", SPLAT(message));
+                    _disconnect(websocket::kCloseAppPermanent, stoppingErr.msg);
                 } else {
                     logError("Stopping due to error: %.*s", SPLAT(message));
+                    _disconnect(websocket::kCloseAppTransient, stoppingErr.msg);
                 }
-                _disconnect(websocket::kCodeUnexpectedCondition, stoppingErr.msg);
                 return;
             }
         }
@@ -733,6 +748,14 @@ namespace litecore { namespace repl {
         MessageBuilder response(request);
         response["rev"_sl] = rev;
         request->respond(response);
+    }
+
+    void Replicator::returnForbidden(Retained<blip::MessageIn> request) {
+        if (_options.push != kC4Disabled) {
+            request->respondWithError(Error("HTTP"_sl, 403, "Attempting to push to a pull-only replicator"_sl));
+        } else {
+            request->respondWithError(Error("HTTP"_sl, 403, "Attempting to pull from a push-only replicator"_sl));
+        }
     }
 
 } }

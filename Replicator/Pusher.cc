@@ -283,8 +283,13 @@ namespace litecore { namespace repl {
             // Request another batch of changes from the db:
             maybeGetMoreChanges();
 
-            if (reply->isError())
+            if (reply->isError()) {
+                for(RevToSend* change : *changes) {
+                    doneWithRev(change, false, false);
+                }
+                
                 return gotError(reply);
+            }
 
             int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl, kDefaultMaxHistory));
             bool legacyAttachments = !reply->boolProperty("blobs"_sl);

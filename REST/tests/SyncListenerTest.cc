@@ -128,4 +128,41 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
 }
 
 
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Listener][C]") {
+    C4ReplicatorMode pushMode = kC4Disabled;
+    C4ReplicatorMode pullMode = kC4Disabled;
+    SECTION("Push") {
+        config.allowPull = false;
+        SECTION("Continuous") {
+            pushMode = kC4Continuous;
+        }
+        
+        SECTION("One-shot") {
+            pushMode = kC4OneShot;
+        }
+    }
+    
+    SECTION("Pull") {
+        config.allowPush = false;
+        SECTION("Continuous") {
+            pullMode = kC4Continuous;
+        }
+        
+        SECTION("One-shot") {
+            pullMode = kC4OneShot;
+        }
+    }
+    
+    ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
+    share(db2, "db2"_sl);
+    _address.port = c4listener_getPort(listener());
+    if (pinnedCert)
+        _address.scheme = kC4Replicator2TLSScheme;
+    
+    _callbackStatus.error = {WebSocketDomain, 10403};
+    replicate(pushMode, pullMode, false);
+    CHECK(c4db_getDocumentCount(db2) == 0);
+}
+
+
 #endif
