@@ -184,7 +184,7 @@ public:
         Assert(s.level != kC4Stopping);   // No internal state allowed
         _numCallbacksWithLevel[(int)s.level]++;
         if (s.level == kC4Busy)
-            Assert(s.error.code == 0);                          // Busy state shouldn't have error
+            Assert(s.error.code == _callbackStatus.error.code);     // Busy state usually shouldn't have error
         if (s.level == kC4Offline) {
             Assert(_mayGoOffline);
             _wentOffline = true;
