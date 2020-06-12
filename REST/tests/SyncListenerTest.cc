@@ -19,6 +19,8 @@
 #include "ListenerHarness.hh"
 #include "ReplicatorAPITest.hh"
 #include "Stopwatch.hh"
+#include "Server.hh"
+#include "NetworkInterfaces.hh"
 #include <algorithm>
 
 using namespace litecore::REST;
@@ -128,7 +130,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
 }
 
 
-TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Listener][C]") {
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Pull][Listener][C]") {
     C4ReplicatorMode pushMode = kC4Disabled;
     C4ReplicatorMode pullMode = kC4Disabled;
     SECTION("Push") {
@@ -162,6 +164,47 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P ReadOnly Sync", "[Push][Listener][C]")
     _callbackStatus.error = {WebSocketDomain, 10403};
     replicate(pushMode, pullMode, false);
     CHECK(c4db_getDocumentCount(db2) == 0);
+}
+
+
+TEST_CASE_METHOD(C4SyncListenerTest, "P2P Server Addresses", "[Listener]") {
+    fleece::Retained<Server> s(new Server());
+    s->start(0);
+    auto addresses = s->addresses();
+    s->stop();
+    
+    for (const auto& addr : addresses) {
+        auto parsed = litecore::net::IPAddress::parse(addr);
+        if(!parsed) {
+            // Probably the machine hostname
+            continue;
+        }
+        
+        if(parsed->isLinkLocal()) {
+            // These addresses cannot be assigned via network interface
+            // because they don't map to any given interface.  The fact
+            // that an interface has them all is purely consequential.
+            // The same address could just as easily be on another
+            // interface.
+            continue;
+        }
+        
+        s->start(0, addr);
+        auto innerAddresses = s->addresses();
+        REQUIRE(innerAddresses.size() == 1);
+        CHECK(innerAddresses[0] == addr);
+        CHECK(s->port() != 0);
+        s->stop();
+    }
+    
+    for(const auto& interface : litecore::net::Interface::all()) {
+        s->start(0, interface.name);
+        auto innerAddresses = s->addresses();
+        REQUIRE(innerAddresses.size() == 1);
+        CHECK(innerAddresses[0] == (string)interface.primaryAddress());
+        CHECK(s->port() != 0);
+        s->stop();
+    }
 }
 
 

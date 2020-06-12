@@ -124,6 +124,12 @@ extern "C" {
     /** Returns the URL(s) of a database being shared, or of the root, separated by "\n" bytes.
         The URLs will differ only in their hostname -- there will be one for each IP address or known
         hostname of the computer, or of the network interface.
+     
+        WARNING: Link-local IPv6 addresses are included in this list.  However, due to IPv6 specification
+        rules, a scope ID is also required to connect to these addresses.  So if the address starts with fe80::
+        you will need to take care on the other side to also incorporate the scope of of the client network interface
+        into the URL when connecting (in short, it's probably best to avoid these but they are there if
+        you would like to try)
         @param listener  The active listener.
         @param db  A database being shared, or NULL to get the listener's root URL(s).
         @param api The API variant for which the URLs should be retrieved.  If the listener is not running in the given mode,
