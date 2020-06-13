@@ -34,7 +34,7 @@ matrix:
             - llvm-toolchain-xenial-7
           packages:
             - clang-5.0
-            - g++-7
+            - libstdc++-7-dev
       env: 
         - CXX_COMPILER=clang++-5.0
         - C_COMPILER=clang-5.0
@@ -47,7 +47,7 @@ matrix:
             - llvm-toolchain-xenial-8
           packages:
             - clang-8
-            - g++-9
+            - libstdc++-9-dev
       env: 
         - CXX_COMPILER=clang++-8
         - C_COMPILER=clang-8
