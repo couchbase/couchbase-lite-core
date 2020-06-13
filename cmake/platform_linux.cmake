@@ -29,16 +29,6 @@ endfunction()
 function(setup_litecore_build_linux)
     setup_litecore_build_unix()
 
-    target_link_libraries(
-        LiteCoreStatic INTERFACE
-	    pthread
-    )
-
-    target_link_libraries(
-        LiteCore PUBLIC
-	    pthread
-    )
-
     if(NOT LITECORE_DISABLE_ICU)
         target_compile_definitions(
             LiteCoreStatic PRIVATE

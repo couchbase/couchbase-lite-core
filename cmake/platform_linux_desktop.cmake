@@ -76,6 +76,16 @@ function(set_litecore_source)
 
 function(setup_litecore_build)
     setup_litecore_build_linux()
+
+    target_link_libraries(
+        LiteCoreStatic INTERFACE
+	    pthread
+    )
+
+    target_link_libraries(
+        LiteCore PUBLIC
+	    pthread
+    )
 endfunction()
 
 function(setup_rest_build)

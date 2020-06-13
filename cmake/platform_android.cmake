@@ -26,6 +26,7 @@ function(set_litecore_source)
         LiteCore/Android/unicode/ndk_icu.c
         LiteCore/Android/getifaddrs.cc
         LiteCore/Android/bionic_netlink.cc
+        LiteCore/Support/Error_Android.cc
         PARENT_SCOPE
     )
 endfunction()
@@ -66,7 +67,7 @@ function(setup_litecore_build)
     )
 
     target_link_libraries(
-        LiteCore PRIVATE 
+        LiteCoreStatic INTERFACE
         zlibstatic
     )
 
