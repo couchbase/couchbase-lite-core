@@ -1,6 +1,6 @@
 function(setup_build)
     target_sources(
-        C4Test PRIVATE
+        C4Tests PRIVATE
         c4PredictiveQueryTest+CoreML.mm
         CoreMLPredictiveModel.mm
     )

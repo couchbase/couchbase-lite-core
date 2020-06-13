@@ -26,6 +26,7 @@ function(set_litecore_source_base)
         C/c4Query.cc
         Crypto/SecureRandomize.cc
         Crypto/mbedUtils.cc
+        Crypto/mbedSnippets.cc
         Crypto/Certificate.cc
         Crypto/PublicKey.cc
         Crypto/SecureDigest.cc

@@ -46,6 +46,7 @@ if(NOT DEFINED CMAKE_OSX_SYSROOT)
 endif()
 
 project (LiteCore)
+include(CMakeDependentOption)
 
 ### BUILD SETTINGS:
 
@@ -64,7 +65,16 @@ option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
-option(SANITIZE_FOR_DEBUG_ENABLED "Enable -fsanitize for Debug Build" ON)
+
+option(LITECORE_MAINTAINER_MODE "Build the library with official options, disable this to reveal additional options" ON)
+
+# The following will only show up if LITECORE_MAINTAINER_MODE is disabled, in other words if LITECORE_MAINTAINER_MODE is on
+# the following options will be ON, but if LITECORE_MAINTAINER_MODE is off, the the following two options can be
+# selected on or off.  Standard warning about dragons!
+cmake_dependent_option(SANITIZE_FOR_DEBUG_ENABLED "Enable -fsanitize for Debug Build" OFF
+                       "NOT LITECORE_MAINTAINER_MODE" ON)
+cmake_dependent_option(USE_COUCHBASE_SQLITE "If enabled, the Couchbase provided SQLite will be built" OFF
+                       "NOT LITECORE_MAINTAINER_MODE" ON)
 
 if(CODE_COVERAGE_ENABLED)
    message("Code coverage enabled, forcing sanitizers off")
@@ -219,7 +229,6 @@ target_compile_definitions(
     LiteCoreStatic PRIVATE
     -DLITECORE_IMPL
 )
-target_link_libraries(LiteCoreStatic PRIVATE CouchbaseSqlite3)
 
 if(BUILD_ENTERPRISE)
     target_compile_definitions(CouchbaseSqlite3
@@ -315,6 +324,13 @@ target_link_libraries(
     mbedtls
     mbedx509
 )
+
+if(USE_COUCHBASE_SQLITE)
+    target_link_libraries(
+        LiteCoreStatic PUBLIC
+        CouchbaseSqlite3
+    )
+endif()
 
 setup_litecore_build()
 
