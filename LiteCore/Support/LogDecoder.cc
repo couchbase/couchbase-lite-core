@@ -431,7 +431,7 @@ namespace litecore {
                 throw runtime_error("Unexpected EOF in log data");
             buf[i] = uint8_t(byte);
             if (byte < 0x80) {
-                uint64_t n;
+                uint64_t n = 0;
                 GetUVarInt(slice{&buf, size_t(i+1)}, &n);
                 return n;
             }

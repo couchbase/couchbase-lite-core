@@ -31,12 +31,12 @@ function(setup_litecore_build_linux)
 
     target_link_libraries(
         LiteCoreStatic INTERFACE
-	pthread
+	    pthread
     )
 
     target_link_libraries(
         LiteCore PUBLIC
-	pthread
+	    pthread
     )
 
     if(NOT LITECORE_DISABLE_ICU)
@@ -46,9 +46,9 @@ function(setup_litecore_build_linux)
         )
 
         target_link_libraries(
-	    LiteCoreStatic INTERFACE
-	    ${ICU_LIBS}
-	)
+            LiteCoreStatic INTERFACE
+            ${ICU_LIBS}
+        )
     endif()
 
     target_include_directories(

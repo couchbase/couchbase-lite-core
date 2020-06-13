@@ -5,10 +5,14 @@ function(setup_build)
         CoreMLPredictiveModel.mm
     )
 
+    target_link_libraries(
+        C4Tests PRIVATE
+        "-framework Foundation"
+    )
+
     if(BUILD_ENTERPRISE)
         target_link_libraries(
             C4Tests PRIVATE
-            "-framework Foundation"
             "-framework CoreML"
             "-framework Vision"
         )

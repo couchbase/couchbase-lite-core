@@ -289,11 +289,6 @@ if(BUILD_ENTERPRISE)
         FleeceStatic
         ${NO_WHOLE_LIBRARY_FLAG}
         LiteCoreWebSocket
-        SQLite3_UnicodeSN
-        BLIPStatic
-        mbedcrypto
-        mbedtls
-        mbedx509
     )
 else()
     set(
@@ -302,11 +297,6 @@ else()
         LiteCoreStatic
         FleeceStatic
         ${NO_WHOLE_LIBRARY_FLAG}
-        SQLite3_UnicodeSN
-        BLIPStatic
-        mbedcrypto
-        mbedtls
-        mbedx509
     )
 endif()
 

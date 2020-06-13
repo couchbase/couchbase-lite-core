@@ -31,8 +31,6 @@ using namespace fleece;
 namespace litecore { namespace net {
     using namespace crypto;
 
-    LogDomain TLSLogDomain("TLS", LogLevel::Warning);
-
 
     TLSContext::TLSContext(role_t role)
     :_context(new mbedtls_context(role == Client ? tls_context::CLIENT : tls_context::SERVER))

@@ -8,12 +8,15 @@
 #include "RefCounted.hh"
 #include "fleece/slice.hh"
 #include "SecureDigest.hh"
+#include "Logging.hh"
 #include <string>
 
 struct mbedtls_pk_context;
 
 namespace litecore { namespace crypto {
     class Cert;
+
+    extern LogDomain TLSLogDomain;
 
 
     class KeyOwner : public fleece::RefCounted {
