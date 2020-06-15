@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <array>
 #include <vector>
+#include <map>
 
 #include "sockpp/platform.h"        // Includes the system headers for sockaddr, etc.
 #include "sockpp/inet_address.h"
@@ -316,19 +317,30 @@ namespace litecore::net {
 
         HeapFree(GetProcessHeap(), 0, info);
 #else
+        // These interfaces don't show up in consistent order.  On macOS they show up as
+        // interface1 / addr1, interface1 / addr2, interface1 / addrX, interface2 / addr1, ...
+        // but on Linux (at least Ubuntu) they show up as
+        // interface 1 / addr1, interface 2 / addr1, interfaceX / addr1, interface1 / addr2, ...
+        // so this map will keep track of the ones we've seen so far so we can add on the
+        // addresses to them instead of erroneously creating duplicate interfaces
+        map<string, size_t> results;
         struct ifaddrs *addrs;
         if (getifaddrs(&addrs) < 0)
             error::_throwErrno();
-        const char *lastName = nullptr;
+        
         Interface *intf = nullptr;
         for (auto a = addrs; a; a = a->ifa_next) {
+            auto nextIterator = results.find(a->ifa_name);
+            if(nextIterator == results.end()) {
+                results.emplace(a->ifa_name, interfaces.size());
+                intf = &interfaces.emplace_back();
+            } else {
+                intf = &interfaces[nextIterator->second];
+            }
+            
             if ((a->ifa_flags & IFF_UP) != 0 && a->ifa_addr != nullptr) {
-                if (!lastName || strcmp(lastName, a->ifa_name) != 0) {
-                    lastName = a->ifa_name;
-                    intf = &interfaces.emplace_back();
-                    intf->name = a->ifa_name;
-                    intf->flags = a->ifa_flags;
-                }
+                intf->name = a->ifa_name;
+                intf->flags = a->ifa_flags;
                 switch (a->ifa_addr->sa_family) {
 #ifdef __APPLE__
                     case AF_LINK:
@@ -342,6 +354,7 @@ namespace litecore::net {
                 }
             }
         }
+        
         freeifaddrs(addrs);
 #endif
     }

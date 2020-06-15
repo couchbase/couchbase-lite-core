@@ -45,8 +45,28 @@ namespace litecore { namespace REST {
     using namespace litecore::net;
     using namespace sockpp;
 
+    static bool isAnyAddress(const sock_address_any& addr) {
+        if(addr.family() == AF_INET) {
+            return ((const inet_address&)addr).address() == 0;
+        }
+        
+        if(addr.family() == AF_INET6) {
+            auto rawAddr = ((const inet6_address&)addr).address();
+            
+            // The differences in naming for each platform are annoying for this struct
+            // It's 128-bits, for crying out loud so let's just see if they are all zero...
+            uint64_t* ptr = (uint64_t*)&rawAddr;
+            return ptr[0] == 0 && ptr[1] == 0;
+        }
+        
+        error::_throw(error::LiteCoreError::Unimplemented);
+    }
+
     Server::Server()
-    { }
+    {
+        if (!ListenerLog)
+            ListenerLog = c4log_getDomain("Listener", true);
+    }
 
     
     Server::~Server() {
@@ -56,6 +76,9 @@ namespace litecore { namespace REST {
 
     uint16_t Server::port() const {
         Assert(_acceptor);
+        
+        // Checked that this is safe to do even for inet6_address
+        // (the returned port is correct)
         inet_address ifAddr = _acceptor->address();
         return ifAddr.port();
     }
@@ -64,8 +87,8 @@ namespace litecore { namespace REST {
     vector<string> Server::addresses() const {
         vector<string> addresses;
         Assert(_acceptor);
-        inet_address ifAddr = _acceptor->address();
-        if (ifAddr.address() != 0) {
+        sock_address_any ifAddr = _acceptor->address();
+        if (!isAnyAddress(ifAddr)) {
             // Listening on a single address:
             IPAddress listeningAddr(*ifAddr.sockaddr_ptr());
             addresses.push_back(string(listeningAddr));
@@ -84,7 +107,7 @@ namespace litecore { namespace REST {
 
     static unique_ptr<sock_address> interfaceToAddress(slice networkInterface, uint16_t port) {
         if (!networkInterface)
-            return make_unique<inet_address>(port);
+            return make_unique<inet6_address>(port);
         // Is it an IP address?
         optional<IPAddress> addr = IPAddress::parse(string(networkInterface));
         if (!addr) {
