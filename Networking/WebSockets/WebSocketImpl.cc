@@ -369,7 +369,7 @@ namespace litecore { namespace websocket {
 
     // Initiates a request to close the connection cleanly.
     void WebSocketImpl::close(int status, fleece::slice message) {
-        if(!_didConnect) {
+        if(!_didConnect && _framing) {
             // The web socket is being requested to close before it's even connected, so just
             // shortcut to the callback and make sure that onConnect does nothing now
             closeSocket();
