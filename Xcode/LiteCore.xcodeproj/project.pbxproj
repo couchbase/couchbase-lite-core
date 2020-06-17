@@ -57,6 +57,7 @@
 		270F2BD52301E8AE00D8DB21 /* TCPSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F91E248578D000BE21D9 /* mbedSnippets.cc */; };
+		2716F9BF249AD3CB00BE21D9 /* c4CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */; };
 		271925132396FE160053DDA6 /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
 		271925142396FE1E0053DDA6 /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
 		271925152396FE260053DDA6 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
@@ -815,6 +816,7 @@
 		271507F1212259DE005FE6E8 /* c4Compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Compat.h; sourceTree = "<group>"; };
 		2716F91D248578D000BE21D9 /* mbedSnippets.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = mbedSnippets.hh; sourceTree = "<group>"; };
 		2716F91E248578D000BE21D9 /* mbedSnippets.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mbedSnippets.cc; sourceTree = "<group>"; };
+		2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4CertificateTest.cc; sourceTree = "<group>"; };
 		2719253323970C7F0053DDA6 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = data; sourceTree = "<group>"; };
 		2719253B23970F4E0053DDA6 /* replacedb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = replacedb; path = data/replacedb; sourceTree = "<group>"; };
 		271A98A6243D2204008C032D /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
@@ -1672,6 +1674,7 @@
 			isa = PBXGroup;
 			children = (
 				271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */,
+				2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */,
 				27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */,
 				2700BB59217005A900797537 /* CoreMLPredictiveModel.hh */,
 				2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */,
@@ -3620,6 +3623,7 @@
 				"$(SRCROOT)/../C/scripts/generate_export_list.py",
 				"$(SRCROOT)/../C/scripts/c4.txt",
 				"$(SRCROOT)/../C/scripts/c4_exp.txt",
+				"$(SRCROOT)/../C/scripts/c4_ee.txt",
 			);
 			name = "Generate .exp file";
 			outputFileListPaths = (
@@ -3743,6 +3747,7 @@
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
 				27C77302216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm in Sources */,
+				2716F9BF249AD3CB00BE21D9 /* c4CertificateTest.cc in Sources */,
 				2700BB5B217005A900797537 /* CoreMLPredictiveModel.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
