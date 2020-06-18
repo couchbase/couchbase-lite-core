@@ -17,6 +17,8 @@ function(set_source_files_base)
         c4QueryTest.cc
         c4Test.cc
         c4ThreadingTest.cc
+        # EE tests:
+        c4CertificateTest.cc
         ${TOP}LiteCore/tests/main.cpp
         PARENT_SCOPE
     )

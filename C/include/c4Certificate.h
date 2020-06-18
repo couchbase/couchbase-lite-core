@@ -104,8 +104,8 @@ extern "C" {
 
     /** Information about a single component of a certificate's subject name. */
     typedef struct C4CertNameInfo {
-        C4CertNameAttributeID id;    ///< X.509 attribute name (e.g. "CN" or "O")
-        C4StringResult value;        ///< The value of the name component, i.e. the name.
+        C4StringResult id;      ///< X.509 attribute name (e.g. "CN" or "O"), like a C4CertNameAttributeID
+        C4StringResult value;   ///< The value of the name component, i.e. the name.
     } C4CertNameInfo;
 
     /** Returns one component of a cert's subject name, given a zero-based index into the list.
