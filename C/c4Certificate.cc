@@ -174,12 +174,13 @@ bool c4cert_subjectNameAtIndex(C4Cert* cert,
                                unsigned index,
                                C4CertNameInfo *outInfo C4NONNULL) C4API
 {
-    outInfo->id = nullslice;
+    outInfo->id = {};
     outInfo->value = {};
 
     // First go through the DistinguishedNames:
-    if (auto dn = internal(cert)->subjectName().asVector(); index < dn.size()) {
-        outInfo->id = dn[index].first;
+    auto subjectName = internal(cert)->subjectName();
+    if (auto dn = subjectName.asVector(); index < dn.size()) {
+        outInfo->id = FLSlice_Copy(dn[index].first);
         outInfo->value = C4StringResult(dn[index].second);
         return true;
     } else {
@@ -188,7 +189,7 @@ bool c4cert_subjectNameAtIndex(C4Cert* cert,
 
     // Then look in SubjectAlternativeName:
     if (auto san = internal(cert)->subjectAltNames(); index < san.size()) {
-        outInfo->id = SubjectAltNames::nameOfTag(san[index].first);
+        outInfo->id = FLSlice_Copy(SubjectAltNames::nameOfTag(san[index].first));
         outInfo->value = C4StringResult(alloc_slice(san[index].second));
         return true;
     }

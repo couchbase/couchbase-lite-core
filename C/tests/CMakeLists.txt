@@ -76,6 +76,7 @@ target_include_directories(
     ${TOP}Replicator
     ${TOP}Replicator/tests
     ${TOP}REST
+    ${TOP}REST/tests
     ${TOP}Networking
     ${TOP}LiteCore/Support
     ${TOP}vendor/mbedtls/include
