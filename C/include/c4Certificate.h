@@ -170,7 +170,7 @@ extern "C" {
     } C4CertIssuerParameters;
 
     /** Default issuer parameters. Every C4CertIssuerParameters should be initialized from this. */
-    extern const C4CertIssuerParameters kDefaultCertIssuerParameters;
+    CBL_CORE_API extern const C4CertIssuerParameters kDefaultCertIssuerParameters;
 
 
     /** Creates a Certificate Signing Request, i.e. an unsigned certificate.

@@ -88,7 +88,7 @@ static PersistentPrivateKey* persistentPrivateKey(C4KeyPair *c4key NONNULL) {
 #endif
 
 
-const C4CertIssuerParameters kDefaultCertIssuerParameters = {
+CBL_CORE_API const C4CertIssuerParameters kDefaultCertIssuerParameters = {
     CertSigningRequest::kOneYear,
     C4STR("1"),
     -1,
