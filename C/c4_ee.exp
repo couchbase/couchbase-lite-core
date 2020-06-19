@@ -48,6 +48,7 @@ _c4db_isInTransaction
 _c4db_getSharedFleeceEncoder
 _c4db_getFLSharedKeys
 _c4db_encodeJSON
+_c4db_maintenance
 
 _c4raw_free
 _c4raw_get
@@ -286,6 +287,31 @@ _c4listener_unshareDB
 _c4listener_getPort
 _c4listener_getURLs
 _c4listener_getConnectionStatus
+
+_c4cert_copyChainData
+_c4cert_copyData
+_c4cert_createRequest
+_c4cert_fromData
+_c4cert_getPublicKey
+_c4cert_getValidTimespan
+_c4cert_isSelfSigned
+_c4cert_isSigned
+_c4cert_load
+_c4cert_loadPersistentPrivateKey
+_c4cert_nextInChain
+_c4cert_requestFromData
+_c4cert_save
+_c4cert_sendSigningRequest
+_c4cert_signRequest
+_c4cert_subjectName
+_c4cert_subjectNameAtIndex
+_c4cert_subjectNameComponent
+_c4cert_summary
+_c4cert_usages
+
+_c4keypair_generate
+_c4keypair_removePersistent
+_c4keypair_persistentWithPublicKey
 
 _c4repl_newLocal
 

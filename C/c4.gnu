@@ -49,6 +49,7 @@ CBL {
 		c4db_getSharedFleeceEncoder;
 		c4db_getFLSharedKeys;
 		c4db_encodeJSON;
+		c4db_maintenance;
 
 		c4raw_free;
 		c4raw_get;

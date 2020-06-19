@@ -48,6 +48,7 @@ _c4db_isInTransaction
 _c4db_getSharedFleeceEncoder
 _c4db_getFLSharedKeys
 _c4db_encodeJSON
+_c4db_maintenance
 
 _c4raw_free
 _c4raw_get
