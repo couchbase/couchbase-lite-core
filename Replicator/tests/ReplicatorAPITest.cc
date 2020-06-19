@@ -526,16 +526,32 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
 #ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pull]") {
     C4SocketFactory factory = {};
-    factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
-                      C4Slice options, void *context) {
-        // Do nothing, just let things time out....
-    };
+    SECTION("Using framing") {
+        factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+                          C4Slice options, void *context) {
+            // Do nothing, just let things time out....
+        };
+        
+        factory.close = [](C4Socket* socket) {
+            // This is a requirement for this test to pass, or the socket will
+            // never actually finish "closing"
+            c4socket_closed(socket, {});
+        };
+    }
     
-    factory.close = [](C4Socket* socket) {
-        // This is a requirement for this test to pass, or the socket will
-        // never actually finish "closing"
-        c4socket_closed(socket, {});
-    };
+    SECTION("Not using framing") {
+        factory.framing = kC4NoFraming;
+        factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+                          C4Slice options, void *context) {
+            // Do nothing, just let things time out....
+        };
+        
+        factory.requestClose = [](C4Socket* socket, int code, C4Slice message) {
+            // This is a requirement for this test to pass, or the socket will
+            // never actually finish "closing"
+            c4socket_closed(socket, {});
+        };
+    }
     
     _socketFactory = &factory;
     
