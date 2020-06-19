@@ -446,6 +446,7 @@ _c4cert_summary
 _c4cert_usages
 _kDefaultCertIssuerParameters
 
+_c4keypair_fromExternal
 _c4keypair_fromPrivateKeyData
 _c4keypair_fromPublicKeyData
 _c4keypair_generate

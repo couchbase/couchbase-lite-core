@@ -125,9 +125,7 @@ namespace litecore { namespace crypto {
     }
 
 
-#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    
-    PersistentPrivateKey::PersistentPrivateKey(unsigned keySizeInBits)
+    ExternalPrivateKey::ExternalPrivateKey(unsigned keySizeInBits)
     :_keyLength( (keySizeInBits + 7) / 8)
     {
         // mbedTLS's "RSA-alt" feature lets you create a public key (mbedtls_pk_context) whose
@@ -138,23 +136,23 @@ namespace litecore { namespace crypto {
         auto decryptFunc = [](void *ctx, int mode, size_t *olen,
                               const unsigned char *input, unsigned char *output,
                               size_t output_max_len ) -> int {
-            return ((PersistentPrivateKey*)ctx)->_decrypt(input, output, output_max_len, olen);
+            return ((ExternalPrivateKey*)ctx)->_decrypt(input, output, output_max_len, olen);
         };
 
         auto signFunc = [](void *ctx,
                            int (*f_rng)(void *, unsigned char *, size_t), void *p_rng,
                            int mode, mbedtls_md_type_t md_alg, unsigned int hashlen,
                            const unsigned char *hash, unsigned char *sig ) -> int {
-            return ((PersistentPrivateKey*)ctx)->_sign(md_alg, slice(hash, hashlen), sig);
+            return ((ExternalPrivateKey*)ctx)->_sign(md_alg, slice(hash, hashlen), sig);
         };
 
         auto keyLengthFunc = []( void *ctx ) -> size_t {
-            return ((PersistentPrivateKey*)ctx)->_keyLength;
+            return ((ExternalPrivateKey*)ctx)->_keyLength;
         };
 
         auto writeKeyFunc = [](void *ctx, uint8_t **p, uint8_t *start) -> int {
             try {
-                alloc_slice keyData = ((PersistentPrivateKey*)ctx)->publicKeyRawData();
+                alloc_slice keyData = ((ExternalPrivateKey*)ctx)->publicKeyRawData();
                 if (keyData.size > *p - start)
                     return MBEDTLS_ERR_ASN1_BUF_TOO_SMALL;
                 memcpy(*p - keyData.size, keyData.buf, keyData.size);
@@ -171,6 +169,7 @@ namespace litecore { namespace crypto {
     }
 
 
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 #if 0
     // NOTE: These factory functions are implemented in a per-platform source file such as
     // PublicKey+Apple.mm, because they need to call platform-specific APIs.
@@ -188,5 +187,5 @@ namespace litecore { namespace crypto {
     }
 #endif
 #endif // PERSISTENT_PRIVATE_KEY_AVAILABLE
-    
+
 } }

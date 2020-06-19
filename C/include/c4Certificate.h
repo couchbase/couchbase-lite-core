@@ -359,6 +359,85 @@ extern "C" {
 
     /** @} */
 
+
+
+    /** \name Externally-Implemented Key-Pairs
+     @{ */
+
+    struct C4ExternalKeyCallbacks;
+
+    /** Creates a C4KeyPair object that wraps an external key-pair managed by client code.
+        Signatures and decryption will be performed by calling client-defined callbacks.
+        @param algorithm  The type of key (currently only RSA.)
+        @param keySizeInBits  The key size, measured in bits, e.g. 2048.
+        @param externalKey  An abitrary token that will be passed to the callbacks; most likely a
+                            pointer to your own key structure.
+        @param callbacks  A struct containing callback functions to do the work.
+        @param outError  On failure, the error info will be stored here.
+        @return  The key object, or NULL on failure. */
+    C4KeyPair* c4keypair_fromExternal(C4KeyPairAlgorithm algorithm,
+                                      size_t keySizeInBits,
+                                      void *externalKey,
+                                      struct C4ExternalKeyCallbacks callbacks,
+                                      C4Error *outError);
+
+
+    /** Digest algorithms to be used when generating signatures.
+        (Note: These enum values match mbedTLS's `mbedtls_md_type_t`.) */
+    typedef C4_ENUM(int, C4SignatureDigestAlgorithm) {
+        kC4SignatureDigestNone = 0,  ///< No digest, just direct signature of input data.
+        kC4SignatureDigestSHA1 = 4,  ///< SHA-1 message digest.
+        kC4SignatureDigestSHA224,    ///< SHA-224 message digest.
+        kC4SignatureDigestSHA256,    ///< SHA-256 message digest.
+        kC4SignatureDigestSHA384,    ///< SHA-384 message digest.
+        kC4SignatureDigestSHA512,    ///< SHA-512 message digest.
+        kC4SignatureDigestRIPEMD160, ///< RIPEMD-160 message digest.
+    };
+
+
+    /** Callbacks that must be provided to create an external key; these perform the crypto operations. */
+    typedef struct C4ExternalKeyCallbacks {
+        /** Provides the _public_ key's raw data, as an ASN.1 DER sequence of [modulus, exponent].
+            @param externalKey  The client-provided key token given to c4keypair_fromExternal.
+            @param output  Where to copy the key data.
+            @param outputMaxLen  Maximum length of output that can be written.
+            @param outputLen  Store the length of the output here before returning.
+            @return  True on success, false on failure. */
+        bool (*publicKeyData)(void *externalKey,
+                              void *output,
+                              size_t outputMaxLen,
+                              size_t *outputLen);
+        /** Decrypts data using the private key.
+            @param externalKey  The client-provided key token given to c4keypair_fromExternal.
+            @param input  The encrypted data (size is always equal to the key size.)
+            @param output  Where to write the decrypted data.
+            @param outputMaxLen  Maximum length of output that can be written.
+            @param outputLen  Store the length of the output here before returning.
+            @return  True on success, false on failure. */
+        bool (*decrypt)(void *externalKey,
+                        C4Slice input,
+                        void *output,
+                        size_t outputMaxLen,
+                        size_t *outputLen);
+        /** Uses the private key to generate a signature of input data.
+            @param externalKey  The client-provided key value given to c4keypair_fromExternal.
+            @param digestAlgorithm  Indicates what type of digest to create the signature from.
+            @param inputData  The data to be signed.
+            @param outputSignature  Write the signature here; length must be equal to the key size.
+            @return  True on success, false on failure. */
+        bool (*sign)(void *externalKey,
+                     C4SignatureDigestAlgorithm digestAlgorithm,
+                     C4Slice inputData,
+                     void *outSignature);
+        /** Called when the C4KeyPair is released and the externalKey is no longer needed, so that
+            your code can free any associated resources. (This callback is optionaly and may be NULL.)
+            @param externalKey  The client-provided key value given when the C4KeyPair was created. */
+        void (*free)(void *externalKey);
+    } C4ExternalKeyCallbacks;
+
+
+    /** @} */
+
 #ifdef __cplusplus
 }
 #endif

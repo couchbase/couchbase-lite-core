@@ -22,6 +22,7 @@
 #include "c4Certificate.h"
 #include "Certificate.hh"
 #include "PublicKey.hh"
+#include "Logging.hh"
 #include "c4.hh"
 #include <vector>
 
@@ -29,6 +30,11 @@
 #ifdef ENABLE_SENDING_CERT_REQUESTS
 #include "CertRequest.hh"
 #endif
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
+#include "mbedtls/pk.h"
+#pragma clang diagnostic pop
 
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -398,7 +404,7 @@ C4Cert* c4cert_load(C4String name,
 }
 
 
-#pragma mark - C4KEY:
+#pragma mark - C4KEYPAIR:
 
 
 C4KeyPair* c4keypair_generate(C4KeyPairAlgorithm algorithm,
@@ -510,6 +516,89 @@ bool c4keypair_removePersistent(C4KeyPair* key, C4Error *outError) C4API {
     return true;
 #endif
 }
+
+
+#pragma mark - EXTERNAL KEYPAIR:
+
+
+namespace c4Internal {
+
+    class ExternalKeyPair : public ExternalPrivateKey {
+    public:
+        ExternalKeyPair(size_t keySizeInBits,
+                        void *externalKey,
+                        struct C4ExternalKeyCallbacks callbacks)
+        :ExternalPrivateKey(unsigned(keySizeInBits))
+        ,_externalKey(externalKey)
+        ,_callbacks(callbacks)
+        { }
+
+    protected:
+        virtual ~ExternalKeyPair() override {
+            if (_callbacks.free)
+                _callbacks.free(_externalKey);
+        }
+
+        virtual fleece::alloc_slice publicKeyDERData() override {
+            alloc_slice data(_keyLength + 20);  // DER data is ~14 bytes longer than keyLength
+            size_t len = data.size;
+            if (!_callbacks.publicKeyData(_externalKey, (void*)data.buf, data.size, &len)) {
+                WarnError("C4ExternalKey publicKeyData callback failed!");
+                error::_throw(error::CryptoError, "C4ExternalKey publicKeyData callback failed");
+            }
+            Assert(len < data.size);
+            data.resize(len);
+            return data;
+        }
+
+        virtual int _decrypt(const void *input,
+                             void *output,
+                             size_t output_max_len,
+                             size_t *output_len) noexcept override
+        {
+            if (!_callbacks.decrypt(_externalKey, C4Slice{input, _keyLength},
+                                    output, output_max_len, output_len)) {
+                WarnError("C4ExternalKey decrypt callback failed!");
+                return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
+            }
+            return 0;
+        }
+
+        virtual int _sign(int/*mbedtls_md_type_t*/ digestAlgorithm,
+                          fleece::slice inputData,
+                          void *outSignature) noexcept override
+        {
+            if (!_callbacks.sign(_externalKey, C4SignatureDigestAlgorithm(digestAlgorithm),
+                                 inputData, outSignature)) {
+                WarnError("C4ExternalKey sign callback failed!");
+                return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
+            }
+            return 0;
+        }
+
+    private:
+        void* const                  _externalKey;
+        C4ExternalKeyCallbacks const _callbacks;
+    };
+
+}
+
+
+C4KeyPair* c4keypair_fromExternal(C4KeyPairAlgorithm algorithm,
+                                  size_t keySizeInBits,
+                                  void *externalKey,
+                                  C4ExternalKeyCallbacks callbacks,
+                                  C4Error *outError)
+{
+    return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
+        if (algorithm != kC4RSA) {
+            c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Invalid algorithm"_sl, outError);
+            return nullptr;
+        }
+        return retainedExternal(new ExternalKeyPair(keySizeInBits, externalKey, callbacks));
+    });
+}
+
 
 
 #endif // COUCHBASE_ENTERPRISE
