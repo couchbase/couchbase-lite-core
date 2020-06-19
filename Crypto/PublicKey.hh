@@ -110,6 +110,40 @@ namespace litecore { namespace crypto {
     };
 
 
+    /** A key-pair stored externally; subclasses must implement the crypto operations. */
+    class ExternalPrivateKey : public PrivateKey {
+    protected:
+        ExternalPrivateKey(unsigned keySizeInBits);
+
+        /** Subclass must provide the public key data on request. */
+        virtual fleece::alloc_slice publicKeyDERData() override =0;
+
+        /** Subclass-specific decryption implementation, using PKCS1 padding.
+            @param input  The encrypted data; length is equal to _keyLength.
+            @param output  Where to write the decrypted data.
+            @param output_max_len  Maximum length of output to write; if there's not enough room,
+                        return MBEDTLS_ERR_RSA_OUTPUT_TOO_LARGE.
+            @param output_len  Store the actual decrypted data length here.
+            @return  0 on success, or an mbedTLS error code on failure. */
+        virtual int _decrypt(const void *input,
+                             void *output,
+                             size_t output_max_len,
+                             size_t *output_len) noexcept =0;
+
+        /** Subclass-specific signature implementation.
+            @param digestAlgorithm  What type of digest to perform before signing.
+            @param inputData  The data to be signed.
+            @param outSignature  Write the signature here; length must be _keyLength.
+            @return  0 on success, or an mbedTLS error code on failure. */
+        virtual int _sign(int/*mbedtls_md_type_t*/ digestAlgorithm,
+                          fleece::slice inputData,
+                          void *outSignature) noexcept =0;
+
+        /** Key length, in _bytes_ not bits. */
+        unsigned const _keyLength;
+    };
+
+
 #ifdef __APPLE__                // TODO: Implement subclasses for other platforms
     #define PERSISTENT_PRIVATE_KEY_AVAILABLE
 #endif
@@ -119,7 +153,7 @@ namespace litecore { namespace crypto {
     /** An asymmetric key-pair, with persistent storage in a secure container. The type of
         container is platform-specific; for example, on iOS and macOS it is the Keychain.
         This class is abstract, with platform-specific subclasses managing the actual storage. */
-    class PersistentPrivateKey : public PrivateKey {
+    class PersistentPrivateKey : public ExternalPrivateKey {
     public:
         /** Generates a new RSA key-pair. The key-pair is stored persistently (e.g. in the
             iOS / macOS Keychain) associated with the given label. */
@@ -137,35 +171,8 @@ namespace litecore { namespace crypto {
 
         virtual PersistentPrivateKey* asPersistent() override   {return this;}
 
-        virtual bool isPrivateKeyDataAvailable() override       {return false;}
-
     protected:
-        PersistentPrivateKey(unsigned keySizeInBits);
-
-        /** Platform-specific decryption implementation, using PKCS1 padding.
-            @param input  The encrypted data; length is equal to _keyLength.
-            @param output  Where to write the decrypted data.
-            @param output_max_len  Maximum length of output to write; if there's not enough room,
-                        return MBEDTLS_ERR_RSA_OUTPUT_TOO_LARGE.
-            @param output_len  Store the actual decrypted data length here.
-            @return  0 on success, or an mbedTLS error code on failure. */
-        virtual int _decrypt(const void *input,
-                             void *output,
-                             size_t output_max_len,
-                             size_t *output_len) noexcept =0;
-
-        /** Platform-specific signature implementation.
-            @param digestAlgorithm  What type of digest to perform before signing.
-            @param inputData  The data to be signed.
-            @param outSignature  Write the signature here; length must be _keyLength.
-            @return  0 on success, or an mbedTLS error code on failure. */
-        virtual int _sign(int/*mbedtls_md_type_t*/ digestAlgorithm,
-                          fleece::slice inputData,
-                          void *outSignature) noexcept =0;
-
-        virtual fleece::alloc_slice publicKeyDERData() override =0;
-
-        unsigned const _keyLength;              // In bytes, not bits!
+        PersistentPrivateKey(unsigned keySizeInBits)    :ExternalPrivateKey(keySizeInBits) { }
     };
 
 #endif // PERSISTENT_PRIVATE_KEY_AVAILABLE

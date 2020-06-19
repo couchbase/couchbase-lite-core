@@ -420,6 +420,7 @@ CBL {
 		c4cert_usages;
 		kDefaultCertIssuerParameters;
 
+		c4keypair_fromExternal;
 		c4keypair_fromPrivateKeyData;
 		c4keypair_fromPublicKeyData;
 		c4keypair_generate;
