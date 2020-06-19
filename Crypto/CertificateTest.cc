@@ -233,6 +233,9 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     // Delete the cert
     Cert::deleteCert("cert1");
     CHECK(Cert::loadCert("cert1") == nullptr);
+
+    // Delete the key
+    key->remove();
 }
 
 
@@ -304,6 +307,10 @@ TEST_CASE("Persistent save duplicate cert or id", "[Certs]") {
     // Delete cert2:
     Cert::deleteCert("cert2");
     CHECK(Cert::loadCert("cert2") == nullptr);
+
+    // Delete keys
+    key1->remove();
+    key2->remove();
 }
 
 

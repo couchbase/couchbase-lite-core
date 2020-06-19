@@ -27,6 +27,11 @@ endfunction()
 function(setup_litecore_build)
     setup_litecore_build_unix()
 
+    target_compile_definitions(
+        LiteCoreStatic PUBLIC
+        -DPERSISTENT_PRIVATE_KEY_AVAILABLE
+    )
+
     target_link_libraries(
         LiteCoreStatic INTERFACE
         "-framework Security"

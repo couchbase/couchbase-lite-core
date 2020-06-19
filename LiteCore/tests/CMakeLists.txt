@@ -85,6 +85,7 @@ add_executable(
     ${TOP}C/tests/c4Test.cc 
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}REST/Response.cc
+    ${TOP}Crypto/CertificateTest.cc
     main.cpp
 )
 setup_build()
@@ -124,6 +125,7 @@ target_include_directories(
     ${TOP}LiteCore/Support
     ${TOP}LiteCore/Query
     ${TOP}LiteCore/Query/N1QL_Parser
+    ${TOP}LiteCore/tests
     ${TOP}Replicator
     ${TOP}Replicator/tests
     ${TOP}REST

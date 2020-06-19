@@ -22,6 +22,7 @@ function(set_litecore_source)
         MSVC/strptime.cc
         LiteCore/Support/StringUtil_winapi.cc
         LiteCore/Support/Error_windows.cc
+        Crypto/PublicKey+Windows.cc
         PARENT_SCOPE
     )
 endfunction()
@@ -92,6 +93,11 @@ function(setup_litecore_build_win)
         -DLITECORE_EXPORTS      # Export functions marked CBL_CORE_API, etc
         -DWIN32                 # Identify as WIN32
         -DNOMINMAX              # Disable min/max macros (they interfere with std::min and max)
+    )
+
+    target_compile_definitions(
+        LiteCoreStatic PUBLIC
+        -DPERSISTENT_PRIVATE_KEY_AVAILABLE
     )
 
     target_include_directories(LiteCoreStatic PRIVATE MSVC)
