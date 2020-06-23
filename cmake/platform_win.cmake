@@ -12,21 +12,6 @@ function(set_litecore_source)
         ${WIN_SSS_RESULT}
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_winapi.cc
-        PARENT_SCOPE
-    )
-endfunction()
-
-function(set_support_source)
-    set(oneValueArgs RESULT)
-    cmake_parse_arguments(WIN_SSS "" ${oneValueArgs} "" ${ARGN})
-    if(NOT DEFINED WIN_SSS_RESULT)
-        message(FATAL_ERROR set_source_files_base needs to be called with RESULT)
-    endif()
-
-    set_support_source_base(RESULT BASE_SUPPORT_FILES)
-    set(
-        ${WIN_SSS_RESULT}
-        ${BASE_SUPPORT_FILES}
         MSVC/asprintf.c
         vendor/fleece/MSVC/memmem.cc
         MSVC/mkstemp.cc
@@ -106,6 +91,7 @@ function(setup_litecore_build_win)
         -D_USE_MATH_DEFINES     # Define math constants like PI
         -DLITECORE_EXPORTS      # Export functions marked CBL_CORE_API, etc
         -DWIN32                 # Identify as WIN32
+        -DNOMINMAX              # Disable min/max macros (they interfere with std::min and max)
     )
 
     target_include_directories(LiteCoreStatic PRIVATE MSVC)
@@ -133,7 +119,7 @@ function(setup_litecore_build_win)
 
     # Link with subproject libz and Windows sockets lib
     target_link_libraries(
-        LiteCore PRIVATE 
+        LiteCoreStatic INTERFACE 
         zlibstatic 
         Ws2_32
     )

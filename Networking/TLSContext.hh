@@ -23,8 +23,6 @@ namespace litecore::crypto {
 
 namespace litecore { namespace net {
 
-    extern LogDomain TLSLogDomain;
-
     /** TLS configuration for sockets and listeners.
         A thin veneer around sockpp::tls_context. */
     class TLSContext : public fleece::RefCounted {

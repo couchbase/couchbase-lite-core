@@ -25,12 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
-
-#if __has_include(<string_view>)
-    #include <string_view>
-#else
-    #include <experimental/string_view>
-#endif
+#include <string_view>
 
 
 namespace litecore {
@@ -42,12 +37,7 @@ namespace litecore {
     using fleece::Retained;
 
     using std::string;
-
-#if __has_include(<string_view>)
     using std::string_view;
-#else
-    using std::experimental::string_view;
-#endif
 
     // Database sequence number
     typedef uint64_t sequence_t;

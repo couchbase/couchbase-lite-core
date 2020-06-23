@@ -15,7 +15,6 @@ LiteCoreWebSocket - WebSocket implementation with C4Socket API to plug into Lite
 LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
 mbedcrypto - The cryptography suite from mbedTLS (https://tls.mbed.org/)
 SQLite3_UnicodeSN - The snowball tokenizer library for SQLite
-Support - A library of shared functionality that is used in some or all of the other targets
 
 This project is built for the following platforms at Couchbase:
 - Windows 10
@@ -47,6 +46,7 @@ if(NOT DEFINED CMAKE_OSX_SYSROOT)
 endif()
 
 project (LiteCore)
+include(CMakeDependentOption)
 
 ### BUILD SETTINGS:
 
@@ -65,7 +65,16 @@ option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
-option(SANITIZE_FOR_DEBUG_ENABLED "Enable -fsanitize for Debug Build" ON)
+
+option(LITECORE_MAINTAINER_MODE "Build the library with official options, disable this to reveal additional options" ON)
+
+# The following will only show up if LITECORE_MAINTAINER_MODE is disabled, in other words if LITECORE_MAINTAINER_MODE is on
+# the following options will be ON, but if LITECORE_MAINTAINER_MODE is off, the the following two options can be
+# selected on or off.  Standard warning about dragons!
+cmake_dependent_option(SANITIZE_FOR_DEBUG_ENABLED "Enable -fsanitize for Debug Build" OFF
+                       "NOT LITECORE_MAINTAINER_MODE" ON)
+cmake_dependent_option(USE_COUCHBASE_SQLITE "If enabled, the Couchbase provided SQLite will be built" OFF
+                       "NOT LITECORE_MAINTAINER_MODE" ON)
 
 if(CODE_COVERAGE_ENABLED)
    message("Code coverage enabled, forcing sanitizers off")
@@ -169,45 +178,6 @@ target_compile_definitions(
     -DSQLITE_DQS=0                      # Disallow double-quoted strings (only identifiers)
 )
 
-### SUPPORT LIBRARY:
-
-set_support_source(RESULT SUPPORT_SRC)
-add_library(
-    Support STATIC
-    ${SUPPORT_SRC}
-)
-
-target_link_libraries(Support PRIVATE CouchbaseSqlite3)
-
-target_compile_definitions(
-    Support PRIVATE
-    -DNOMINMAX
-)
-
-target_include_directories(
-    Support PRIVATE
-    vendor/fleece/API
-    vendor/fleece/Fleece/Support
-    LiteCore/BlobStore
-    LiteCore/Database
-    LiteCore/Support
-    LiteCore/Storage
-    LiteCore/Query
-    LiteCore/RevID
-    Crypto
-    Networking
-    Networking/WebSockets/
-    Networking/BLIP/include/blip_cpp
-    Networking/BLIP/src/util
-    Networking/BLIP/src/websocket
-    vendor/mbedtls/include
-    vendor/mbedtls/crypto/include
-    C
-    C/include
-    vendor/SQLiteCpp/include
-)
-setup_support_build()
-
 ### WebSocket LIBRARY:
 
 set(
@@ -259,7 +229,6 @@ target_compile_definitions(
     LiteCoreStatic PRIVATE
     -DLITECORE_IMPL
 )
-target_link_libraries(LiteCoreStatic PRIVATE CouchbaseSqlite3)
 
 if(BUILD_ENTERPRISE)
     target_compile_definitions(CouchbaseSqlite3
@@ -320,12 +289,6 @@ if(BUILD_ENTERPRISE)
         FleeceStatic
         ${NO_WHOLE_LIBRARY_FLAG}
         LiteCoreWebSocket
-        Support
-        SQLite3_UnicodeSN
-        BLIPStatic
-        mbedcrypto
-        mbedtls
-        mbedx509
     )
 else()
     set(
@@ -334,12 +297,6 @@ else()
         LiteCoreStatic
         FleeceStatic
         ${NO_WHOLE_LIBRARY_FLAG}
-        Support
-        SQLite3_UnicodeSN
-        BLIPStatic
-        mbedcrypto
-        mbedtls
-        mbedx509
     )
 endif()
 
@@ -348,6 +305,23 @@ target_include_directories(
     C/include
 )
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
+target_link_libraries(
+    LiteCoreStatic INTERFACE
+    FleeceStatic
+    SQLite3_UnicodeSN
+    BLIPStatic
+    mbedcrypto
+    mbedtls
+    mbedx509
+)
+
+if(USE_COUCHBASE_SQLITE)
+    target_link_libraries(
+        LiteCoreStatic PUBLIC
+        CouchbaseSqlite3
+    )
+endif()
+
 setup_litecore_build()
 
 install (

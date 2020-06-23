@@ -1,40 +1,43 @@
-include("${CMAKE_CURRENT_LIST_DIR}/platform_base.cmake")
-
-function(set_source_files)
-    set(oneValueArgs RESULT)
-    cmake_parse_arguments(WIN_SSS "" "${oneValueArgs}" "" ${ARGN})
-    if(NOT DEFINED WIN_SSS_RESULT)
-        message(FATAL_ERROR "set_source_files_base needs to be called with RESULT")
-    endif()
-
-    set_source_files_base(RESULT BASE_SRC_FILES)
-    set(
-        ${WIN_SSS_RESULT}
-        ${BASE_SRC_FILES}
-        PARENT_SCOPE
-    )
-endfunction()
-
 function(setup_build)
     set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
     set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore)
 
-    target_include_directories(
+    target_sources(
         C4Tests PRIVATE
-        ${TOP}MSVC
+        ${TOP}Crypto/mbedUtils.cc
+        ${TOP}LiteCore/Support/Error_windows.cc
+        ${TOP}LiteCore/Support/PlatformIO.cc
+        ${TOP}MSVC/vasprintf-msvc.c
+        ${TOP}MSVC/asprintf.c
+        ${TOP}MSVC/arc4random.cc
+        ${TOP}MSVC/mkdtemp.cc
+        ${TOP}MSVC/mkstemp.cc
+        ${TOP}MSVC/strlcat.c
+        ${TOP}MSVC/asprintf.c
+        ${TOP}vendor/fleece/Fleece/Support/slice.cc
+        ${TOP}vendor/fleece/MSVC/memmem.cc
+    )
+
+    target_compile_definitions(
+        C4Tests PRIVATE
+        -DNOMINMAX   # Disable min/max macros (they interfere with std::min and max)
     )
 
     target_include_directories(
-        LiteCoreWebSocket PRIVATE
+        C4Tests PRIVATE
         ${TOP}MSVC
+        ${TOP}vendor/fleece/MSVC
     )
 
     target_link_libraries(
         C4Tests PRIVATE
         mbedcrypto
-        FleeceBase
-        Support
-        BLIPStatic
+        mbedx509
+    )
+
+    target_include_directories(
+        LiteCoreWebSocket PRIVATE
+        ${TOP}MSVC
     )
     
     add_custom_command(

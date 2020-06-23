@@ -17,5 +17,8 @@ function(set_source_files)
 endfunction()
 
 function(setup_build)
-    # No-op
+    target_link_libraries(
+        BLIPStatic INTERFACE
+        z
+    )
 endfunction()

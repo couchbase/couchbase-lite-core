@@ -49,19 +49,19 @@ All platform implementations of Couchbase Lite (from 2.0 onward) are built atop 
 
 # Platform Support
 
-LiteCore runs on Mac OS, iOS, tvOS, Android, various other flavors of Unix, and Windows.
+LiteCore runs on Mac OS, iOS, Android, various other flavors of Unix, and Windows.
 
-It is written in C++ (using C++11 features) and compiles with Clang and MSVC.
+It is written in C++ (using C++17 features) and compiles with Clang, G++ and MSVC.
 
-It does not currently support Raspberry Pi or other similar devices, due to build issues. (But this could be remedied with some work; most of the problems involve setting up recent-enough Clang and libc++ versions on Raspbian. Pull requests welcome!)
+It has been experimentally built and run on the Raspberry Pi but this is not an actively maintained use.
 
 # Status
 
-**As of September 2019:** LiteCore is in active use as the engine of Couchbase Lite 2! Development continues...
+**As of June 2020:** LiteCore is in active use as the engine of Couchbase Lite 2! Development continues...
 
 * Active development usually happens on the `master` branch, which may therefore be temporarily broken. We don't currently have a "stable" branch.
 * Most development is done on macOS using Xcode, so the Xcode project should always build, and the code should pass its unit tests on Mac. iOS is pretty likely to work too, since it's so similar to Mac at this level.
-* The CMake build is generally up to date but may fall behind.  CMake can be used to build every variant except for iOS and tvOS.
+* The CMake build is generally up to date but may fall behind.  CMake can be used to build every variant except for iOS.
 
 # Building It
 
@@ -91,8 +91,14 @@ The following instructions are to build just LiteCore on its own:
     
 - libz
 - libicu
+- libpthread
 
-You'll need **Clang 3.9.1 or higher**. Unfortunately a lot of distros only have 3.5; run `clang --version` to check, and upgrade manually if necessary. You also need a corresponding version of libc++. On Debian-like systems, the apt-get packages you need are `clang`, `libc++1`, `libc++-dev`, `libc++abi-dev`.
+You can use either g++ or clang++ for compilation but you will need to honor the minimum versions of each, and only g++ is officially supported.
+
+- clang: 5.0+
+    - libstdc++: 7.0+ **or**
+    - libc++: Version from LLVM 5 or higher (unclear)
+- g++: 7.0+
 
 ### Actually Building
 
@@ -103,7 +109,7 @@ mkdir build_cmake/unix
 cd build_cmake/unix
 
 # Use whatever clang you have installed
-CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=MinSizeRel ..
+cmake -DCMAKE_BUILD_TYPE=MinSizeRel ..
 
 # And a reasonable number (# of cores?) for the j flag
 make -j8 LiteCore
@@ -113,36 +119,45 @@ If CMake's initial configuration checks fail, the setup may be left in a broken 
 
 ## Android
 
-Android has a bit longer of a command line invocation but it is the same idea as the Linux build above.  There are some key properties that you need to be aware of though.  Be sure to have the environment variable `ANDROID_NDK_ROOT` defined to where the NDK lives on your system.
+Android has a bit longer of a command line invocation but it is the same idea as the Linux build above.  Since Android now ships CMake and a toolchain file, the best course of action is to make use of it
 
 - Architecture:  The architecture of the device being built for (x86, x86_64, armeabi-v7a [in example], arm64-v8a)
 - Version: The minimum Android API level that the library will support (22 in the following)
 
 ```sh
+# Set these appropriately for your system
+export SDK_HOME=<path/to/android/sdk/root>
+export NDK_VER="20.1.5948944" # Or whatever version you want
+export CMAKE_VER="3.10.2.4988404" # Must be this or higher
+export CMAKE_PATH="${SDK_HOME}/cmake/${CMAKE_VER}/bin" 
+
 # Use the same name as the architecture being built for (e.g. armeabi-v7a)
 mkdir -p build_cmake/android/lib/armeabi-v7a
 cd build_cmake/android/lib/armeabi-v7a
-cmake -DCMAKE_BUILD_TYPE=MinSizeRel \
-    -DCMAKE_SYSTEM_NAME=Android \
-    -DCMAKE_SYSTEM_VERSION=22 \
-    -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang \
-    -DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a \
-    -DCMAKE_ANDROID_STL_TYPE=c++_static \
+${CMAKE_PATH}/cmake \
+    -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE="${SDK_HOME}/ndk/${NDK_VER}/build/cmake/android.toolchain.cmake" \
+    -DCMAKE_MAKE_PROGRAM="${CMAKE_PATH}/ninja" \
+    -DANDROID_NATIVE_API_LEVEL=19 \
+    -DANDROID_ABI=armeabi-v7a \
+    -DBUILD_ENTERPRISE=ON \
+    -DCMAKE_BUILD_TYPE=MinSizeRel \
     ../../../..
-make -j8 LiteCore
+
+${CMAKE_PATH}/cmake --build . --target LiteCore
 ```
 
 ## Windows Desktop
 
-Open the Visual Studio 2015 Developer Command Prompt and navigate to the repo root.  Then execute:
+Open the Visual Studio 2017 Developer Command Prompt and navigate to the repo root.  Then execute:
     
     * 64-bit build *
     cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 14 2015 Win64" ..
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 15 2017 Win64" ..
     
     * 32-bit build *
     cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 14 2015" ..
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 15 2017" ..
     
 This will create `LiteCore.sln` in the directory that you can open with Visual Studio.
 
@@ -152,18 +167,18 @@ Open the Visual Studio 2015 Developer Command Prompt and navigate to the repo ro
     
     * x64 build *
     cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 14 2015 Win64" -DCMAKE_SYSTEM_NAME=WindowsStore
-    -D CMAKE_SYSTEM_VERSION="10.0.14393.0" ..
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 15 2017 Win64" -DCMAKE_SYSTEM_NAME=WindowsStore
+    -D CMAKE_SYSTEM_VERSION="10.0.16299.0" ..
     
     * x86 build *
     cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 14 2015" -DCMAKE_SYSTEM_NAME=WindowsStore
-    -D CMAKE_SYSTEM_VERSION="10.0.14393.0" ..
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 15 2017" -DCMAKE_SYSTEM_NAME=WindowsStore
+    -D CMAKE_SYSTEM_VERSION="10.0.16299.0" ..
     
     * ARM build *
     cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 14 2015 ARM" -DCMAKE_SYSTEM_NAME=WindowsStore
-    -D CMAKE_SYSTEM_VERSION="10.0.14393.0" ..
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 15 2017 ARM" -DCMAKE_SYSTEM_NAME=WindowsStore
+    -D CMAKE_SYSTEM_VERSION="10.0.16299.0" ..
     
 This will create `LiteCore.sln` in the directory that you can open with Visual Studio.
 
@@ -190,9 +205,9 @@ The main page is then located at `../docs/C/html/modules.html`.
 
 For those interested in diving into the implementation, there is [an overview of the major classes](https://github.com/couchbase/couchbase-lite-core/blob/master/docs/overview/index.md).
 
-# Authors
+# Current Authors
 
-Jens Alfke ([@snej](https://github.com/snej)), Jim Borden ([@borrrden](https://github.com/borrrden)), Hideki Itakura ([@hideki](https://github.com/hideki))
+Jens Alfke ([@snej](https://github.com/snej)), Jim Borden ([@borrrden](https://github.com/borrrden))
 
 # License
 

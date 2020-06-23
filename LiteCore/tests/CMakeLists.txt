@@ -12,12 +12,8 @@ It uses some predefined data as follows:
 The test runner depends on multiple other libraries from multiple git repositories:
 
 - LiteCore static library (../..)
-- Fleece static library (../../vendor/fleece)
-- mbedcrypto static library (../../vendor/mbedtls)
-- SQLite Unicode snowball static library (../../vendor/sqlite3_unicodesn)
-- BLIP static library (../../vendor/BLIP-Cpp)
+- BLIP static library (../../Networking/BLIP)
 - CivetWeb static library (../../vendor/civetweb)
-- Support static library (../../Support [partial])
 
 In addition, there are also some system dependencies that are not listed here
 ]]#
@@ -47,16 +43,50 @@ else()
     message(FATAL_ERROR "Unsupported platform ${CMAKE_SYSTEM_NAME}")
 endif()
 
-set_source_files(RESULT TEST_SRC)
-
 # Copy data files to output directory
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
 file(COPY ../../Replicator/tests/data/cert.pem DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Replicator/tests/data/)
 file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 file(GLOB FLEECE_FILES "../../vendor/fleece/Tests/*.json" "../../vendor/fleece/Tests/*.json5" "../../vendor/fleece/Tests/*.fleece" "../../vendor/fleece/Tests/*.txt")
 file(COPY ${FLEECE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/vendor/fleece/Tests)
-add_executable(CppTests ${TEST_SRC})
-
+add_executable(
+    CppTests
+    c4BaseTest.cc
+    DataFileTest.cc
+    DocumentKeysTest.cc
+    FTSTest.cc
+    LiteCoreTest.cc
+    LogEncoderTest.cc
+    N1QLParserTest.cc
+    PredictiveQueryTest.cc
+    QueryParserTest.cc
+    QueryTest.cc
+    RevTreeTest.cc
+    SequenceTrackerTest.cc
+    SQLiteFunctionsTest.cc
+    UpgraderTest.cc
+    ${TOP}REST/tests/RESTListenerTest.cc
+    ${TOP}REST/tests/SyncListenerTest.cc
+    ${TOP}vendor/fleece/Tests/API_ValueTests.cc
+    ${TOP}vendor/fleece/Tests/DeltaTests.cc
+    ${TOP}vendor/fleece/Tests/EncoderTests.cc
+    ${TOP}vendor/fleece/Tests/FleeceTests.cc
+    ${TOP}vendor/fleece/Tests/HashTreeTests.cc
+    ${TOP}vendor/fleece/Tests/JSON5Tests.cc
+    ${TOP}vendor/fleece/Tests/MutableTests.cc
+    ${TOP}vendor/fleece/Tests/PerfTests.cc
+    ${TOP}vendor/fleece/Tests/SharedKeysTests.cc
+    ${TOP}vendor/fleece/Tests/SupportTests.cc
+    ${TOP}vendor/fleece/Tests/ValueTests.cc
+    ${TOP}vendor/fleece/Experimental/KeyTree.cc
+    ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
+    ${TOP}Replicator/tests/ReplicatorAPITest.cc
+    ${TOP}Replicator/tests/ReplicatorSGTest.cc
+    ${TOP}C/tests/c4Test.cc 
+    ${TOP}Replicator/tests/CookieStoreTest.cc
+    ${TOP}REST/Response.cc
+    main.cpp
+)
 setup_build()
 
 target_compile_definitions(
@@ -106,11 +136,4 @@ target_link_libraries(
     LiteCoreStatic
     LiteCoreREST_Static
     LiteCoreWebSocket
-    FleeceStatic
-    SQLite3_UnicodeSN
-    BLIPStatic
-    Support
-    mbedcrypto
-    mbedtls
-    ${LITECORE_CRYPTO_LIB}
 )
