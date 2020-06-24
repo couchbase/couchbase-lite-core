@@ -567,4 +567,30 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pul
     waitForStatus(kC4Stopped, 8s);
     _socketFactory = nullptr;
 }
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C][Push][Pull]") {
+    _mayGoOffline = true;
+    C4SocketFactory factory = {};
+    factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+                      C4Slice options, void *context) {
+        c4socket_closed(socket, {NetworkDomain, kC4NetErrUnknownHost});
+    };
+    
+    factory.close = [](C4Socket* socket) {
+        c4socket_closed(socket, {});
+    };
+    
+    _socketFactory = &factory;
+    C4Error err;
+    importJSONLines(sFixturesDir + "names_100.json");
+    REQUIRE(startReplicator(kC4Passive, kC4Continuous, &err));
+    
+    waitForStatus(kC4Offline);
+    
+    _numCallbacksWithLevel[kC4Connecting] = 0;
+    waitForStatus(kC4Connecting);
+    c4repl_stop(_repl);
+    
+    waitForStatus(kC4Stopped);
+}
 #endif

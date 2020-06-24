@@ -320,7 +320,9 @@ protected:
                 if (statusFlag(kC4Suspended)) {
                     // If suspended, go to Offline state when Replicator stops
                     _status.level = kC4Offline;
-                } else {
+                } else if(oldLevel != kC4Stopping) {
+                    // CBL-1054, only do this if a request to stop is not present, as it should
+                    // override the offline handling
                     handleStopped();     // NOTE: handleStopped may change _status
                 }
                 
