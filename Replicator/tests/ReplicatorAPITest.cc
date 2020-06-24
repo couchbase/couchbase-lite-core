@@ -569,8 +569,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pul
 }
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C][Push][Pull]") {
-    c4log_setLevel(c4log_getDomain("Sync", false), kC4LogDebug);
-    c4log_setCallbackLevel(kC4LogDebug);
     _mayGoOffline = true;
     C4SocketFactory factory = {};
     factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
