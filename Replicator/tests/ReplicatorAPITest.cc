@@ -587,12 +587,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     importJSONLines(sFixturesDir + "names_100.json");
     REQUIRE(startReplicator(kC4Passive, kC4Continuous, &err));
     
-    waitForStatus(kC4Offline, 50s);
+    waitForStatus(kC4Offline);
     
     _numCallbacksWithLevel[kC4Connecting] = 0;
-    waitForStatus(kC4Connecting, 50s);
+    waitForStatus(kC4Connecting);
     c4repl_stop(_repl);
     
-    waitForStatus(kC4Stopped, 50s);
+    waitForStatus(kC4Stopped);
 }
 #endif
