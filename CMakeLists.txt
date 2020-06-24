@@ -69,16 +69,16 @@ option(LITECORE_BUILD_TESTS "Builds C4Tests and CppTests" ON)
 option(LITECORE_MAINTAINER_MODE "Build the library with official options, disable this to reveal additional options" ON)
 
 # The following will only show up if LITECORE_MAINTAINER_MODE is disabled, in other words if LITECORE_MAINTAINER_MODE is on
-# the following options will be ON, but if LITECORE_MAINTAINER_MODE is off, the the following two options can be
+# the following options will be ON, but if LITECORE_MAINTAINER_MODE is off, the the following options can be
 # selected on or off.  Standard warning about dragons!
-cmake_dependent_option(SANITIZE_FOR_DEBUG_ENABLED "Enable -fsanitize for Debug Build" OFF
-                       "NOT LITECORE_MAINTAINER_MODE" ON)
-cmake_dependent_option(USE_COUCHBASE_SQLITE "If enabled, the Couchbase provided SQLite will be built" OFF
-                       "NOT LITECORE_MAINTAINER_MODE" ON)
+cmake_dependent_option(
+    USE_COUCHBASE_SQLITE
+    "If enabled, the Couchbase provided SQLite will be built"
+    OFF "NOT LITECORE_MAINTAINER_MODE" ON
+)
 
 if(CODE_COVERAGE_ENABLED)
    message("Code coverage enabled, forcing sanitizers off")
-   set(SANITIZE_FOR_DEBUG_ENABLED OFF CACHE BOOL "Enable -fsanitize for Debug Build" FORCE)
    if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
