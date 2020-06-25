@@ -133,7 +133,9 @@ target_include_directories(
 
 target_link_libraries(
     CppTests PRIVATE
+    ${START_GROUP_FLAG}
     LiteCoreStatic
     LiteCoreREST_Static
     LiteCoreWebSocket
+    ${END_GROUP_FLAG}
 )
