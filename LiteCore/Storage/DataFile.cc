@@ -99,7 +99,7 @@ namespace litecore {
 #pragma mark - DATAFILE:
 
 
-    const DataFile::Options DataFile::Options::defaults = DataFile::Options {
+    const DataFile::Options DataFile::Options::defaults = {
         {true},                 // sequences
         true, true, true, true  // create, writeable, useDocumentKeys, upgradeable
     };
