@@ -365,10 +365,14 @@ namespace litecore::crypto {
                 BCRYPT_SHA512_ALGORITHM,
             };
 
+            // 0 here is a special case (MBED_MD_NONE) which means "no digest algorithm"
+            // This is not in the Windows documentation, but passing in a null digest algo
+            // seems to do the trick.  Otherwise, null is considered an unsupported algorithm
+            // for one of the other choices.
             LPCWSTR digestAlgorithm = nullptr;
-            if (mbedDigestAlgorithm >= 0 && mbedDigestAlgorithm < 9)
+            if (mbedDigestAlgorithm >= 1 && mbedDigestAlgorithm < 9)
                 digestAlgorithm = kDigestAlgorithmMap[mbedDigestAlgorithm];
-            if (!digestAlgorithm) {
+            if (mbedDigestAlgorithm != 0 && !digestAlgorithm) {
                 LogToAt(TLSLogDomain, Warning, "Keychain private key: unsupported mbedTLS digest algorithm %d",
                      mbedDigestAlgorithm);
                 return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
