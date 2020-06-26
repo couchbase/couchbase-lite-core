@@ -155,15 +155,6 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync no CA bits", "[Push][Listener
     CHECK(_callbackStatus.error.code == kC4NetErrTLSCertUnknownRoot);
 }
 
-TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync Invalid Self-Signed", "[Push][Listener][TLS][C]") {
-    Identity endIdentity = CertHelper::createIdentity(false, kC4CertUsage_NotSpecified, kSubjectName, nullptr, nullptr, false);
-    _onlySelfSigned = true;
-    _address.scheme = kC4Replicator2TLSScheme;
-    useServerIdentity(endIdentity);
-    run(false);
-    CHECK(_callbackStatus.error.code == kC4NetErrTLSCertUntrusted);
-}
-
 
 TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync client cert", "[Push][Listener][TLS][C]") {
     pinnedCert = useServerTLSWithTemporaryKey();
