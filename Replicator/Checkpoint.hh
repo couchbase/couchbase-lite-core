@@ -9,6 +9,7 @@
 #include "c4Base.h"
 #include "fleece/slice.hh"
 #include <algorithm>
+#include <vector>
 
 namespace litecore { namespace repl {
 
@@ -69,7 +70,7 @@ namespace litecore { namespace repl {
             All sequences in the range [first...last] are marked completed,
             then the sequences in the collection `revs` are marked uncompleted/pending.*/
         template <class REV_LIST>
-        void addPendingSequences(REV_LIST& revs,
+        void addPendingSequences(const REV_LIST& revs,
                                  C4SequenceNumber firstSequenceChecked,
                                  C4SequenceNumber lastSequenceChecked)
         {
@@ -100,5 +101,18 @@ namespace litecore { namespace repl {
         C4SequenceNumber    _lastChecked;       // Last local sequence checked in the db
         fleece::alloc_slice _remote;            // Last completed remote sequence
     };
+
+
+    // specialization where REV_LIST is std::vector<C4SequenceNumber>
+    template <>
+    inline void Checkpoint::addPendingSequences(const std::vector<C4SequenceNumber>& revs,
+                                                C4SequenceNumber firstSequenceChecked,
+                                                C4SequenceNumber lastSequenceChecked)
+    {
+        _lastChecked = lastSequenceChecked;
+        _completed.add(firstSequenceChecked, lastSequenceChecked + 1);
+        for (auto rev : revs)
+            _completed.remove(rev);
+    }
 
 } }

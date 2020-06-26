@@ -17,6 +17,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_set>
+#include <vector>
 
 struct C4UUID;
 
@@ -48,6 +49,9 @@ namespace litecore { namespace repl {
         C4SequenceNumber localMinSequence() const;
 
         void addPendingSequence(C4SequenceNumber);
+        void addPendingSequences(const std::vector<C4SequenceNumber> &sequences,
+                                 C4SequenceNumber firstInRange,
+                                 C4SequenceNumber lastInRange);
         void addPendingSequences(RevToSendList &sequences,
                                  C4SequenceNumber firstInRange,
                                  C4SequenceNumber lastInRange);
@@ -127,6 +131,21 @@ namespace litecore { namespace repl {
 
         bool isDocumentAllowed(C4Document* doc NONNULL);
         bool isDocumentIDAllowed(slice docID);
+
+        // Peer checkpoint access (for passive replicator):
+
+        static bool getPeerCheckpoint(C4Database* NONNULL,
+                                      slice checkpointID,
+                                      alloc_slice &outBody,
+                                      alloc_slice &outRevID,
+                                      C4Error *outError);
+
+        static bool savePeerCheckpoint(C4Database* NONNULL,
+                                       slice checkpointID,
+                                       slice body,
+                                       slice revID,
+                                       alloc_slice &newRevID,
+                                       C4Error* outError);
 
     private:
         void checkpointIsInvalid();
