@@ -658,111 +658,68 @@ namespace litecore { namespace repl {
 #pragma mark - PEER CHECKPOINT ACCESS:
 
 
-    // Reads the doc in which a peer's remote checkpoint is saved.
-    bool Replicator::getPeerCheckpointDoc(MessageIn* request, bool getting,
-                                          slice &checkpointID, c4::ref<C4RawDocument> &doc) const
-    {
-        checkpointID = request->property("client"_sl);
-        if (!checkpointID) {
+    // Gets the ID from a checkpoint request
+    slice Replicator::getPeerCheckpointDocID(MessageIn* request, const char *whatFor) const {
+        slice checkpointID = request->property("client"_sl);
+        if (checkpointID)
+            logInfo("Request to %s peer checkpoint '%.*s'", whatFor, SPLAT(checkpointID));
+        else
             request->respondWithError({"BLIP"_sl, 400, "missing checkpoint ID"_sl});
-            return false;
-        }
-        logInfo("Request to %s peer checkpoint '%.*s'",
-            (getting ? "get" : "set"), SPLAT(checkpointID));
-
-        C4Error err;
-        doc = _db->getRawDoc(constants::kPeerCheckpointStore, checkpointID, &err);
-        if (!doc) {
-            const int status = isNotFoundError(err) ? 404 : 502;
-            if (getting || (status != 404)) {
-                request->respondWithError({"HTTP"_sl, status});
-                return false;
-            }
-        }
-        return true;
+        return checkpointID;
     }
 
 
     // Handles a "getCheckpoint" request by looking up a peer checkpoint.
     void Replicator::handleGetCheckpoint(Retained<MessageIn> request) {
-        c4::ref<C4RawDocument> doc;
-        slice checkpointID;
-        if (!getPeerCheckpointDoc(request, true, checkpointID, doc))
+        slice checkpointID = getPeerCheckpointDocID(request, "get");
+        if (!checkpointID)
             return;
+        
+        alloc_slice body, revID;
+        C4Error err;
+        bool ok = _db->use<bool>([&](C4Database *db) {
+            return Checkpointer::getPeerCheckpoint(db, checkpointID, body, revID, &err);
+        });
+        if (!ok) {
+            const int status = isNotFoundError(err) ? 404 : 502;
+            request->respondWithError({"HTTP"_sl, status});
+            return;
+        }
+
         MessageBuilder response(request);
-        response["rev"_sl] = doc->meta;
-        response << doc->body;
+        response["rev"_sl] = revID;
+        response << body;
         request->respond(response);
     }
 
 
     // Handles a "setCheckpoint" request by storing a peer checkpoint.
     void Replicator::handleSetCheckpoint(Retained<MessageIn> request) {
-        char newRevBuf[30];
-        alloc_slice rev;
-        bool needsResponse = false;
-        _db->use([&](C4Database *db) {
-            C4Error err;
-            c4::Transaction t(db);
-            if (!t.begin(&err)) {
-                request->respondWithError(c4ToBLIPError(err));
-                return;
-            }
+        slice checkpointID = getPeerCheckpointDocID(request, "set");
+        if (!checkpointID)
+            return;
 
-            // Get the existing raw doc so we can check its revID:
-            slice checkpointID;
-            c4::ref<C4RawDocument> doc;
-            if (!getPeerCheckpointDoc(request, false, checkpointID, doc))
-                return;
-
-            slice actualRev;
-            unsigned long generation = 0;
-            if (doc) {
-                actualRev = (slice)doc->meta;
-                try {
-                    revid parsedRev(actualRev);
-                    generation = parsedRev.generation();
-                } catch(error &e) {
-                    if(e.domain == error::Domain::LiteCore
-                            && e.code == error::LiteCoreError::CorruptRevisionData) {
-                        actualRev = nullslice;
-                    } else {
-                        throw;
-                    }
-                }
-            }
-
-            // Check for conflict:
-            if (request->property("rev"_sl) != actualRev) {
-                request->respondWithError({"HTTP"_sl, 409, "revision ID mismatch"_sl});
-                return;
-            }
-
-            // Generate new revID:
-            rev = slice(newRevBuf, sprintf(newRevBuf, "%lu-cc", ++generation));
-
-            // Save:
-            if (!c4raw_put(db, constants::kPeerCheckpointStore,
-                           checkpointID, rev, request->body(), &err)
-                    || !t.commit(&err)) {
-                request->respondWithError(c4ToBLIPError(err));
-                return;
-            }
-
-            needsResponse = true;
+        alloc_slice newRevID;
+        C4Error err;
+        bool ok = _db->use<bool>([&](C4Database *db) {
+            return Checkpointer::savePeerCheckpoint(db, checkpointID,
+                                                    request->body(),
+                                                    request->property("rev"_sl),
+                                                    newRevID, &err);
         });
-
-        // In other words, an error response was generated above if this
-        // is false
-        if(!needsResponse) {
+        if (!ok) {
+            if (err.domain == LiteCoreDomain && err.code == kC4ErrorConflict)
+                request->respondWithError({"HTTP"_sl, 409, alloc_slice("revision ID mismatch"_sl)});
+            else
+                request->respondWithError(c4ToBLIPError(err));
             return;
         }
 
-        // Success!
         MessageBuilder response(request);
-        response["rev"_sl] = rev;
+        response["rev"_sl] = newRevID;
         request->respond(response);
     }
+
 
     void Replicator::returnForbidden(Retained<blip::MessageIn> request) {
         if (_options.push != kC4Disabled) {

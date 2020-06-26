@@ -167,8 +167,7 @@ namespace litecore { namespace repl {
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
         void returnForbidden(Retained<blip::MessageIn>);
-        bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
-                                  fleece::slice &checkpointID, c4::ref<C4RawDocument> &doc) const;
+        slice getPeerCheckpointDocID(blip::MessageIn* request, const char *whatFor) const;
 
         // Member variables:
         
