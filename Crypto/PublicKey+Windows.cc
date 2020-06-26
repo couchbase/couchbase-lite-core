@@ -222,6 +222,20 @@ namespace litecore::crypto {
         return certCount;
     }
 
+    static NCRYPT_PROV_HANDLE openStorageProvider() {
+        NCRYPT_PROV_HANDLE hProvider;
+        SECURITY_STATUS result = NCryptOpenStorageProvider(&hProvider, MS_PLATFORM_CRYPTO_PROVIDER, 
+            0);
+        if(result == ERROR_SUCCESS) {
+            return hProvider;
+        }
+
+        // Fallback to default provider
+        result = NCryptOpenStorageProvider(&hProvider, nullptr, 0);
+        checkSecurityStatus(result, "NCryptOpenStorageProvider", "Couldn't open storage provider");
+        return hProvider;
+    }
+
     class NCryptPrivateKey : public PersistentPrivateKey
     {
     public:
@@ -396,14 +410,10 @@ namespace litecore::crypto {
         const auto len = MultiByteToWideChar(CP_UTF8, 0, timestr, -1, wtimestr, 100);
         wtimestr[len] = 0;
 
-        NCRYPT_PROV_HANDLE hProvider;
-        SECURITY_STATUS result = NCryptOpenStorageProvider(&hProvider, MS_PLATFORM_CRYPTO_PROVIDER, 
-            0);
-        checkSecurityStatus(result, "NCryptOpenStorageProvider", "Couldn't open storage provider");
-
+        NCRYPT_PROV_HANDLE hProvider = openStorageProvider();
         NCRYPT_KEY_HANDLE hKey;
-        result = NCryptCreatePersistedKey(hProvider, &hKey, NCRYPT_RSA_ALGORITHM, wtimestr, 
-            0, 0);
+        SECURITY_STATUS result = NCryptCreatePersistedKey(hProvider, &hKey, NCRYPT_RSA_ALGORITHM, 
+            wtimestr, 0, 0);
 
         NCryptFreeObject(hProvider);
         checkSecurityStatus(result, "NCryptCreatePersistedKey", "Couldn't create a private key");
@@ -426,15 +436,12 @@ namespace litecore::crypto {
     }
 
     Retained<PersistentPrivateKey> PersistentPrivateKey::withPublicKey(PublicKey* publicKey) {
-        NCRYPT_PROV_HANDLE hProvider;
-        SECURITY_STATUS result = NCryptOpenStorageProvider(&hProvider, MS_PLATFORM_CRYPTO_PROVIDER, 
-            0);
-        checkSecurityStatus(result, "NCryptOpenStorageProvider", "Couldn't open storage provider");
-
+        NCRYPT_PROV_HANDLE hProvider = openStorageProvider();
         NCryptKeyName* next;
         NCRYPT_KEY_HANDLE hKey;
         void* enumState = nullptr;
         Retained<PersistentPrivateKey> retVal = nullptr;
+        SECURITY_STATUS result;
 
         do {
             // Windows is terrible for this...it seems this is the only way to do this.
