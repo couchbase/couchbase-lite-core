@@ -37,6 +37,7 @@
 #include <functional>
 #include <atomic>
 #include <codecvt>
+#include <chrono>
 
 namespace litecore::crypto {
     using namespace std;
@@ -406,7 +407,8 @@ namespace litecore::crypto {
         LogTo(TLSLogDomain, "Generating %u-bit RSA key-pair in Keychain", keySizeInBits);
         char timestr[100] = "LiteCore ";
         wchar_t wtimestr[100];
-        FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false);
+        const time_t now = chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count();
+        FormatISO8601Date(timestr + strlen(timestr), now, false);
         const auto len = MultiByteToWideChar(CP_UTF8, 0, timestr, -1, wtimestr, 100);
         wtimestr[len] = 0;
 
