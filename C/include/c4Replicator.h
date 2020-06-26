@@ -51,12 +51,6 @@ extern "C" {
         kC4Stopping,    ///< Stopping or going offline
     };
 
-    /** Possible values for the kC4ReplicatorOptionServerCertVerifyMode option*/
-    typedef C4_ENUM(int32_t, C4ReplicatorServerCertVerificationMode) {
-        kC4ServerCertCACert = 0, ///< Verify by using trusted anchor CA certs or by using the configured pinned server certs (Default Mode).
-        kC4ServerCertSelfSigned  ///< Verify by accepting any and only self-signed certs. Any non-self-signed certs will be rejected.
-    };
-
     /** For convenience, an array of C strings naming the C4ReplicatorActivityLevel values. */
     CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[6];
 
@@ -342,7 +336,7 @@ extern "C" {
     // TLS options:
     #define kC4ReplicatorOptionRootCerts        "rootCerts"  ///< Trusted root certs (data)
     #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
-    #define kC4ReplicatorOptionServerCertVerifyMode "serverVerifyMode" ///< How to verify the server TLS cert (C4ReplicatorServerCertVerificationMode)
+    #define kC4ReplicatorOptionOnlySelfSignedServer "onlySelfSignedServer" ///< Only accept self signed server certs (for P2P, bool)
 
     // HTTP options:
     #define kC4ReplicatorOptionExtraHeaders     "headers"  ///< Extra HTTP headers (string[])
