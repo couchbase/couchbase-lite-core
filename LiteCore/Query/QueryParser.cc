@@ -146,6 +146,14 @@ namespace litecore {
             return string("\"") + name + "\"";
     }
 
+    static alloc_slice escapedPath(slice inputPath) {
+        Assert(inputPath.peekByte() == '$');
+        alloc_slice escaped(inputPath.size + 1);
+        memcpy((void *)escaped.buf, "\\", 1);
+        inputPath.readInto(escaped.from(1));
+        return escaped;
+    }
+
 
 #pragma mark - QUERY PARSER TOP LEVEL:
 
@@ -1101,7 +1109,13 @@ namespace litecore {
         _context.back() = &operation;
 
         if (op.hasPrefix('.')) {
-            writePropertyGetter(kValueFnName, Path(op));
+            op.moveStart(1); // Skip initial .
+            if(op.peekByte() == '$') {
+                alloc_slice escaped = escapedPath(op);
+                writePropertyGetter(kValueFnName, Path(escaped));
+            } else {
+                writePropertyGetter(kValueFnName, Path(op));
+            }
         } else if (op.hasPrefix("_."_sl)) {
             objectPropertyOp(op, operands);
         } else if (op.hasPrefix('$')) {
@@ -1218,7 +1232,12 @@ namespace litecore {
                     require(name, "Invalid JSON value in property path");
                     if (firstIsEncoded) {
                         name.moveStart(1);              // skip '.', '?', '$'
-                        path.addComponents(name);
+                        if(name.peekByte() == '$') {
+                            alloc_slice escaped = escapedPath(name);
+                            path.addComponents(escaped);
+                        } else {
+                            path.addComponents(name);
+                        }
                     } else {
                         path.addProperty(name);
                     }

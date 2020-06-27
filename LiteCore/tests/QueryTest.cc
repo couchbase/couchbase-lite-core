@@ -1719,3 +1719,31 @@ TEST_CASE_METHOD(QueryTest, "Query Math Precision", "[Query]") {
         REQUIRE(cols[3]->asDouble() == 5/15);
     }
 }
+
+TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
+    vector<string> keys { "$Type", "Ty$pe", "Type$" };
+    Transaction t(store->dataFile());
+    writeDoc("doc"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        for (const string& key : keys) {
+            enc.writeKey(key);
+            enc.writeString("special");
+        }
+    });
+    t.commit();
+    
+    for (const string& key : keys) {
+        string queryStr = stringWithFormat("{WHAT: [['.%s']]}", key.c_str());
+        Retained<Query> query = store->compileQuery(json5(queryStr));
+        Retained<QueryEnumerator> e(query->createEnumerator());
+        INFO("Attempted with array syntax " << key);
+        REQUIRE(e->next());
+        CHECK(e->columns()[0]->asString() == "special"_sl);
+        
+        queryStr = stringWithFormat("{WHAT: ['.%s']}", key.c_str());
+        query = store->compileQuery(json5(queryStr));
+        e = query->createEnumerator();
+        INFO("Attempted with string syntax " << key);
+        REQUIRE(e->next());
+        CHECK(e->columns()[0]->asString() == "special"_sl);
+    }
+}
