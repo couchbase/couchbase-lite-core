@@ -96,6 +96,7 @@ namespace litecore {
         void transactionWillEnd(bool commit);
 
         void close() override;
+        void reopen() override;
 
         static slice columnAsSlice(const SQLite::Column &col);
         static void setRecordMetaAndBody(Record &rec,
@@ -108,6 +109,7 @@ namespace litecore {
         friend class SQLiteQuery;
         
         SQLiteKeyStore(SQLiteDataFile&, const std::string &name, KeyStore::Capabilities options);
+        void createTable();
         SQLiteDataFile& db() const                    {return (SQLiteDataFile&)dataFile();}
         std::string subst(const char *sqlTemplate) const;
         void setLastSequence(sequence_t seq);
@@ -143,6 +145,8 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement> _setFlagStmt, _withDocBodiesStmt;
         std::unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
 
+        enum Existence : uint8_t { kNonexistent, kUncommitted, kCommitted };
+
         bool _createdSeqIndex {false}, _createdConflictsIndex {false}, _createdBlobsIndex {false};
         bool _lastSequenceChanged {false};
         bool _purgeCountChanged {false};
@@ -152,6 +156,7 @@ namespace litecore {
         bool _hasExpirationColumn {false};
         bool _uncommittedExpirationColumn {false};
         mutable std::mutex _stmtMutex;
+        Existence _existence;
     };
 
 }
