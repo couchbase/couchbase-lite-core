@@ -311,6 +311,24 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreInfo", "[DataFile
 }
 
 
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStore Create-Then-Abort", "[DataFile]") {
+    {
+        Transaction t(db);
+        KeyStore &s = db->getKeyStore("store");
+        s.set("key"_sl, "value"_sl, t);
+        t.abort();
+    }
+    // KeyStore's table `kv_store` doesn't exist on disk because the transaction was aborted.
+    // Now try to write to it again -- the KeyStore should repeat the CREATE TABLE command.
+    {
+        Transaction t(db);
+        KeyStore &s = db->getKeyStore("store");
+        s.set("key"_sl, "value"_sl, t);
+        t.commit();
+    }
+}
+
+
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");

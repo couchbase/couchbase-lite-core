@@ -57,18 +57,25 @@ namespace litecore {
     SQLiteKeyStore::SQLiteKeyStore(SQLiteDataFile &db, const string &name, KeyStore::Capabilities capabilities)
     :KeyStore(db, name, capabilities)
     {
-        if (!db.keyStoreExists(name)) {
-            // Here's the table schema. The body comes last because it may be very large, and it's
-            // more efficient in SQLite to keep large columns at the end of a row.
-            // Create the sequence and flags columns regardless of options, otherwise it's too
-            // complicated to customize all the SQL queries to conditionally use them...
-            db.execWithLock(subst("CREATE TABLE IF NOT EXISTS kv_@ ("
-                                  "  key TEXT PRIMARY KEY,"
-                                  "  sequence INTEGER,"
-                                  "  flags INTEGER DEFAULT 0,"
-                                  "  version BLOB,"
-                                  "  body BLOB)"));
-        }
+        if (db.keyStoreExists(name))
+            _existence = kCommitted;
+        else
+            createTable();
+    }
+
+
+    void SQLiteKeyStore::createTable() {
+        // Here's the table schema. The body comes last because it may be very large, and it's
+        // more efficient in SQLite to keep large columns at the end of a row.
+        // Create the sequence and flags columns regardless of options, otherwise it's too
+        // complicated to customize all the SQL queries to conditionally use them...
+        db().execWithLock(subst("CREATE TABLE IF NOT EXISTS kv_@ ("
+                                "  key TEXT PRIMARY KEY,"
+                                "  sequence INTEGER,"
+                                "  flags INTEGER DEFAULT 0,"
+                                "  version BLOB,"
+                                "  body BLOB)"));
+        _existence = db().inTransaction() ? kUncommitted : kCommitted;
     }
 
 
@@ -94,6 +101,12 @@ namespace litecore {
         _findExpStmt.reset();
         _withDocBodiesStmt.reset();
         KeyStore::close();
+    }
+
+
+    void SQLiteKeyStore::reopen() {
+        if (_existence == kNonexistent)
+            createTable();
     }
 
 
@@ -198,6 +211,16 @@ namespace litecore {
         if (!commit && _uncommittedExpirationColumn)
             _hasExpirationColumn = false;
         _uncommittedExpirationColumn = false;
+
+        if (_existence == kUncommitted) {
+            if (commit) {
+                _existence = kCommitted;
+            } else {
+                _existence = kNonexistent;
+                close();
+                return;
+            }
+        }
     }
 
 
