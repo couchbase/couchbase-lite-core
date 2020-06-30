@@ -497,7 +497,7 @@ namespace litecore { namespace net {
                 if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED) {
                     if(_tlsContext && _tlsContext->onlySelfSignedAllowed()) {
                         code = kNetErrTLSCertUntrusted;
-                        message = "Self-signed only mode is active for P2P, and a non self-signed certificate was received";
+                        message = "Self-signed only mode is active, and a non self-signed certificate was received";
                     } else {
                         code = kNetErrTLSCertUnknownRoot;
                     }

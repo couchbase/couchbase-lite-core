@@ -127,7 +127,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync non self-signed cert", "[Push
         _onlySelfSigned = true;
         useServerIdentity(endIdentity);
         expectedError = kC4NetErrTLSCertUntrusted;
-        expectedMessage = "Self-signed only mode is active for P2P, and a non self-signed certificate was received"_sl;
+        expectedMessage = "Self-signed only mode is active, and a non self-signed certificate was received"_sl;
     }
     
     SECTION("Non-pinned, normal mode") {

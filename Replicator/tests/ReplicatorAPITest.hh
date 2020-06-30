@@ -138,7 +138,7 @@ public:
         }
         
         if(_onlySelfSigned) {
-            enc.writeKey(C4STR(kC4ReplicatorOptionOnlySelfSignedServer));
+            enc.writeKey(C4STR(kC4ReplicatorOptionOnlySelfSignedServerCert));
             enc.writeBool(true);
         }
         

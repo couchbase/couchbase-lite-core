@@ -336,7 +336,7 @@ extern "C" {
     // TLS options:
     #define kC4ReplicatorOptionRootCerts        "rootCerts"  ///< Trusted root certs (data)
     #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
-    #define kC4ReplicatorOptionOnlySelfSignedServer "onlySelfSignedServer" ///< Only accept self signed server certs (for P2P, bool)
+    #define kC4ReplicatorOptionOnlySelfSignedServerCert "onlySelfSignedServer" ///< Only accept self signed server certs (for P2P, bool)
 
     // HTTP options:
     #define kC4ReplicatorOptionExtraHeaders     "headers"  ///< Extra HTTP headers (string[])

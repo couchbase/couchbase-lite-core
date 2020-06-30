@@ -164,7 +164,7 @@ namespace litecore { namespace websocket {
         // Custom TLS context:
         slice rootCerts = options()[kC4ReplicatorOptionRootCerts].asData();
         slice pinnedCert = options()[kC4ReplicatorOptionPinnedServerCert].asData();
-        bool selfSignedOnly = options()[kC4ReplicatorOptionOnlySelfSignedServer].asBool();
+        bool selfSignedOnly = options()[kC4ReplicatorOptionOnlySelfSignedServerCert].asBool();
         if (rootCerts || pinnedCert || selfSignedOnly || authType == slice(kC4AuthTypeClientCert)) {
             if(selfSignedOnly && rootCerts) {
                 closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
