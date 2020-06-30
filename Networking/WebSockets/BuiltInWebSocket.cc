@@ -164,8 +164,16 @@ namespace litecore { namespace websocket {
         // Custom TLS context:
         slice rootCerts = options()[kC4ReplicatorOptionRootCerts].asData();
         slice pinnedCert = options()[kC4ReplicatorOptionPinnedServerCert].asData();
-        if (rootCerts || pinnedCert || authType == slice(kC4AuthTypeClientCert)) {
+        bool selfSignedOnly = options()[kC4ReplicatorOptionOnlySelfSignedServerCert].asBool();
+        if (rootCerts || pinnedCert || selfSignedOnly || authType == slice(kC4AuthTypeClientCert)) {
+            if(selfSignedOnly && rootCerts) {
+                closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
+                "Cannot specify root certs in self signed mode"_sl));
+                return nullptr;
+            }
+            
             _tlsContext = new TLSContext(TLSContext::Client);
+            _tlsContext->allowOnlySelfSigned(selfSignedOnly);
             if (rootCerts)
                 _tlsContext->setRootCerts(rootCerts);
             if (pinnedCert)

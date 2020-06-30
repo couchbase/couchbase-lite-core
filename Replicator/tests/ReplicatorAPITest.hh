@@ -83,6 +83,7 @@ public:
         }
 
         _onDocsEnded = onDocsEnded;
+        _onlySelfSigned = false;
     }
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -125,10 +126,22 @@ public:
             enc.endDict();
         }
 #endif
+        
+        if(_customCaCert.buf) {
+            enc.writeKey(C4STR(kC4ReplicatorOptionRootCerts));
+            enc.writeData(_customCaCert);
+        }
+        
         if (_enableDocProgressNotifications) {
             enc.writeKey(C4STR(kC4ReplicatorOptionProgressLevel));
             enc.writeInt(1);
         }
+        
+        if(_onlySelfSigned) {
+            enc.writeKey(C4STR(kC4ReplicatorOptionOnlySelfSignedServerCert));
+            enc.writeBool(true);
+        }
+        
         // TODO: Set proxy settings from _proxy
         // Copy any preexisting options:
         for (Dict::iterator i(_options); i; ++i) {
@@ -183,8 +196,6 @@ public:
         ++_numCallbacks;
         Assert(s.level != kC4Stopping);   // No internal state allowed
         _numCallbacksWithLevel[(int)s.level]++;
-        if (s.level == kC4Busy)
-            Assert(s.error.code == _callbackStatus.error.code);     // Busy state usually shouldn't have error
         if (s.level == kC4Offline) {
             Assert(_mayGoOffline);
             _wentOffline = true;
@@ -453,5 +464,7 @@ public:
     bool _logRemoteRequests {true};
     bool _mayGoOffline {false};
     bool _wentOffline {false};
+    bool _onlySelfSigned {false};
+    alloc_slice _customCaCert {};
 };
 
