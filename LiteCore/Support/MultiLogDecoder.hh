@@ -38,13 +38,13 @@ namespace litecore {
 
         // Adds a LogDecoder on the log file at the given path.
         bool add(const string &logPath) {
-            std::ifstream in(logPath, ifstream::in | ifstream::binary);
+            std::ifstream in(logPath, std::ifstream::in | std::ifstream::binary);
             if (!in)
                 return false;
             in.exceptions(std::ifstream::badbit);
             _inputs.push_back(std::move(in));
             LogDecoder decoder(_inputs.back());
-            _decoders.push_back(move(decoder));
+            _decoders.push_back(std::move(decoder));
             add(&_decoders.back());
             return true;
         }
