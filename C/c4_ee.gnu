@@ -315,6 +315,7 @@ CBL {
 		c4keypair_persistentWithPublicKey;
 
 		c4repl_newLocal;
+		c4repl_getPeerTLSCertificate;
 
 
 		kC4SQLiteStorageEngine;

@@ -143,7 +143,9 @@ namespace litecore { namespace websocket {
         /** Closes the WebSocket. Callable from any thread. */
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) =0;
         
-        virtual fleece::Retained<crypto::Cert> peerTLSCertificate() const { error::_throw(error::LiteCoreError::Unimplemented); };
+        virtual fleece::Retained<crypto::Cert> peerTLSCertificate() const {
+            return nullptr;
+        };
 
     protected:
         WebSocket(const URL &url, Role role);

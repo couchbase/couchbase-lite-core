@@ -184,6 +184,8 @@ struct C4Replicator : public RefCounted,
         return PendingDocuments(this).pendingDocumentIDs(outErr);
     }
     
+#ifdef COUCHBASE_ENTERPRISE
+    
     C4Cert* getPeerTLSCertificate(C4Error* outErr) const {
         if(!_replicator) {
             return nullptr;
@@ -197,6 +199,8 @@ struct C4Replicator : public RefCounted,
         
         return c4cert_fromData((C4Slice)cert->data(), outErr);
     }
+    
+#endif
 
 protected:
     // base constructor
