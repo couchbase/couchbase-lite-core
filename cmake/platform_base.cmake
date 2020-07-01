@@ -93,7 +93,9 @@ function(set_litecore_source_base)
         Replicator/Inserter.cc
         Replicator/Puller.cc
         Replicator/Pusher.cc
-        Replicator/Pusher+DB.cc
+        Replicator/Pusher+Attachments.cc
+        Replicator/Pusher+GetChanges.cc
+        Replicator/Pusher+Revs.cc
         Replicator/Replicator.cc
         Replicator/ReplicatorTypes.cc
         Replicator/RevFinder.cc

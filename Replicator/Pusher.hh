@@ -64,6 +64,7 @@ namespace litecore { namespace repl {
         void maybeSendMoreRevs();
         void retryRevs(RevToSendList);
         void sendRevision(Retained<RevToSend>);
+        void onRevProgress(Retained<RevToSend> rev, const MessageProgress&);
         void couldntSendRevision(RevToSend* NONNULL);
         void doneWithRev(RevToSend*, bool successful, bool pushed);
         void handleGetAttachment(Retained<MessageIn>);
@@ -82,8 +83,6 @@ namespace litecore { namespace repl {
         void dbChanged();
         Retained<RevToSend> revToSend(C4DocumentInfo&, C4DocEnumerator*, C4Database* NONNULL);
         bool shouldPushRev(Retained<RevToSend>, C4DocEnumerator*, C4Database* NONNULL);
-        void sendRevision(RevToSend *request NONNULL,
-                          blip::MessageProgressCallback onProgress);
         alloc_slice createRevisionDelta(C4Document *doc NONNULL, RevToSend *request NONNULL,
                                         fleece::Dict root, size_t revSize,
                                         bool sendLegacyAttachments);

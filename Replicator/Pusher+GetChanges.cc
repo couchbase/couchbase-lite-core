@@ -1,5 +1,5 @@
 //
-// Pusher+DB.cc
+// Pusher+GetChanges.cc
 //
 // Copyright © 2019 Couchbase. All rights reserved.
 //
@@ -18,7 +18,6 @@
 
 #include "Pusher.hh"
 #include "ReplicatorTuning.hh"
-#include "Pusher.hh"
 #include "fleece/Fleece.hh"
 #include "StringUtil.hh"
 #include "c4.hh"
@@ -27,22 +26,14 @@
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
 #include "c4Observer.h"
-#include "c4Replicator.h"
-#include "BLIP.hh"
-#include "SecureRandomize.hh"
 
 using namespace std;
 using namespace fleece;
-using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
-#pragma mark - CHANGES:
-
-
     // Gets the next batch of changes from the DB. Will respond by calling gotChanges.
-    void Pusher::getMoreChanges()
-    {
+    void Pusher::getMoreChanges() {
         if (!connected())
             return;
 
@@ -262,178 +253,6 @@ namespace litecore { namespace repl {
         }
         rev->remoteAncestorRevID = foreignAncestor;
         return true;
-    }
-
-
-#pragma mark - SENDING REVISIONS:
-
-
-    // Sends a document revision in a "rev" request.
-    void Pusher::sendRevision(RevToSend *request, MessageProgressCallback onProgress) {
-        if (!connected())
-            return;
-        logVerbose("Reading document '%.*s' #%.*s",
-                   SPLAT(request->docID), SPLAT(request->revID));
-
-        // Get the document & revision:
-        C4Error c4err;
-        slice revisionBody;
-        Dict root;
-        c4::ref<C4Document> doc = _db->getDoc(request->docID, &c4err);
-        if (doc) {
-            revisionBody = getRevToSend(doc, *request, &c4err);
-            if (revisionBody) {
-                root = Value::fromData(revisionBody, kFLTrusted).asDict();
-                if (!root)
-                    c4err = {LiteCoreDomain, kC4ErrorCorruptData};
-                request->flags = doc->selectedRev.flags;
-            }
-        }
-
-        // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
-        // "norev" and include the error code:
-        MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
-        msg.compressed = true;
-        msg["id"_sl] = request->docID;
-        msg["rev"_sl] = request->revID;
-        msg["sequence"_sl] = request->sequence;
-        if (root) {
-            msg.noreply = !onProgress;
-            if (request->noConflicts)
-                msg["noconflicts"_sl] = true;
-            auto revisionFlags = doc->selectedRev.flags;
-            if (revisionFlags & kRevDeleted)
-                msg["deleted"_sl] = "1"_sl;
-            string history = request->historyString(doc);
-            if (!history.empty())
-                msg["history"_sl] = history;
-
-            bool sendLegacyAttachments = (request->legacyAttachments
-                                          && (revisionFlags & kRevHasAttachments)
-                                          && !_db->disableBlobSupport());
-
-            // Delta compression:
-            alloc_slice delta = createRevisionDelta(doc, request, root, revisionBody.size,
-                                                    sendLegacyAttachments);
-            if (delta) {
-                msg["deltaSrc"_sl] = doc->selectedRev.revID;
-                msg.jsonBody().writeRaw(delta);
-            } else if (root.empty()) {
-                msg.write("{}"_sl);
-            } else {
-                auto &bodyEncoder = msg.jsonBody();
-                if (sendLegacyAttachments)
-                    _db->encodeRevWithLegacyAttachments(bodyEncoder, root,
-                                                       c4rev_getGeneration(request->revID));
-                else
-                    bodyEncoder.writeValue(root);
-            }
-            logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
-                       SPLAT(request->docID), SPLAT(request->revID));
-            sendRequest(msg, onProgress);
-
-        } else {
-            // Send an error if we couldn't get the revision:
-            int blipError;
-            if (c4err.domain == WebSocketDomain)
-                blipError = c4err.code;
-            else if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound)
-                blipError = 404;
-            else {
-                warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %d/%d",
-                     SPLAT(request->docID), SPLAT(request->revID), c4err.domain, c4err.code);
-                blipError = 500;
-            }
-            msg["error"_sl] = blipError;
-            msg.noreply = true;
-            sendRequest(msg);
-            // invoke the progress callback with a fake disconnect so the Pusher will know the
-            // rev failed to send:
-            if (onProgress)
-                couldntSendRevision(request);
-        }
-    }
-
-
-    slice Pusher::getRevToSend(C4Document* doc, const RevToSend &request, C4Error *c4err) {
-        if (!c4doc_selectRevision(doc, request.revID, true, c4err)) {
-            if (c4err->code == kC4ErrorNotFound && c4err->domain == LiteCoreDomain)
-                revToSendIsObsolete(request, c4err);
-            return nullslice;
-        }
-        slice revisionBody(doc->selectedRev.body);
-        if (!revisionBody)
-            revToSendIsObsolete(request, c4err);
-        return revisionBody;
-    }
-
-
-    void Pusher::revToSendIsObsolete(const RevToSend &request, C4Error *c4err) {
-        logInfo("Revision '%.*s' #%.*s is obsolete; not sending it",
-                SPLAT(request.docID), SPLAT(request.revID));
-        if (!passive())
-            _checkpointer.completedSequence(request.sequence);
-        *c4err = {WebSocketDomain, 410}; // Gone
-    }
-
-
-    alloc_slice Pusher::createRevisionDelta(C4Document *doc, RevToSend *request,
-                                              Dict root, size_t revisionSize,
-                                              bool sendLegacyAttachments)
-    {
-        alloc_slice delta;
-        if (!request->deltaOK || revisionSize < tuning::kMinBodySizeForDelta
-                              || _options.disableDeltaSupport())
-            return delta;
-
-        // Find an ancestor revision known to the server:
-        C4RevisionFlags ancestorFlags = 0;
-        Dict ancestor;
-        if (request->remoteAncestorRevID)
-            ancestor = DBAccess::getDocRoot(doc, request->remoteAncestorRevID, &ancestorFlags);
-
-        if(ancestorFlags & kRevDeleted)
-            return delta;
-
-        if (!ancestor && request->ancestorRevIDs) {
-            for (auto revID : *request->ancestorRevIDs) {
-                ancestor = DBAccess::getDocRoot(doc, revID, &ancestorFlags);
-                if (ancestor)
-                    break;
-            }
-        }
-        if (ancestor.empty())
-            return delta;
-
-        Doc legacyOld, legacyNew;
-        if (sendLegacyAttachments) {
-            // If server needs legacy attachment layout, transform the bodies:
-            Encoder enc;
-            auto revPos = c4rev_getGeneration(request->revID);
-            _db->encodeRevWithLegacyAttachments(enc, root, revPos);
-            legacyNew = enc.finishDoc();
-            root = legacyNew.root().asDict();
-
-            if (ancestorFlags & kRevHasAttachments) {
-                enc.reset();
-                _db->encodeRevWithLegacyAttachments(enc, ancestor, revPos);
-                legacyOld = enc.finishDoc();
-                ancestor = legacyOld.root().asDict();
-            }
-        }
-
-        delta = FLCreateJSONDelta(ancestor, root);
-        if (!delta || delta.size > revisionSize * 1.2)
-            return {};          // Delta failed, or is (probably) bigger than body; don't use
-
-        if (willLog(LogLevel::Verbose)) {
-            alloc_slice old (ancestor.toJSON());
-            alloc_slice nuu (root.toJSON());
-            logVerbose("Encoded revision as delta, saving %zd bytes:\n\told = %.*s\n\tnew = %.*s\n\tDelta = %.*s",
-                       nuu.size - delta.size,
-                       SPLAT(old), SPLAT(nuu), SPLAT(delta));
-        }
-        return delta;
     }
 
 } }
