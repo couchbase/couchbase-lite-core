@@ -6,6 +6,7 @@
 
 #pragma once
 #include "LogDecoder.hh"
+#include <climits>
 #include <queue>
 
 namespace litecore {
