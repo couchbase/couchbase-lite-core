@@ -72,12 +72,12 @@ function(setup_litecore_build)
     setup_litecore_build_linux()
 
     target_link_libraries(
-        LiteCoreStatic INTERFACE
+        BLIPStatic INTERFACE
 	    pthread
     )
 
     target_link_libraries(
-        LiteCore PUBLIC
+        LiteCore INTERFACE
 	    pthread
     )
 endfunction()
