@@ -318,11 +318,7 @@ namespace litecore::repl {
                 // Don't send; it'll conflict with what's on the server
             } else {
                 // Send newRev as though it had just arrived:
-                bool should = _db->use<bool>([&](C4Database *db) {
-                    return shouldPushRev(newRev, nullptr, db);
-                });
-                if (should) {
-                    _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
+                if (_changesFeed.shouldPushRev(newRev)) {
                     gotOutOfOrderChange(newRev);
                     ok = true;
                 }

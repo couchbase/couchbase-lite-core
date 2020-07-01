@@ -32,8 +32,8 @@ namespace litecore { namespace repl {
     Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer)
     :Worker(replicator, "Push")
     ,_continuous(_options.push == kC4Continuous)
-    ,_skipDeleted(_options.skipDeleted())
     ,_checkpointer(checkpointer)
+    ,_changesFeed(*this, _options, _db, checkpointer)
     {
         if (_options.push <= kC4Passive) {
             // Passive replicator always sends "changes"
@@ -49,26 +49,9 @@ namespace litecore { namespace repl {
             _proposeChanges = true;
             _proposeChangesKnown = true;
         }
-        filterByDocIDs(_options.docIDs());
         registerHandler("subChanges",      &Pusher::handleSubChanges);
         registerHandler("getAttachment",   &Pusher::handleGetAttachment);
         registerHandler("proveAttachment", &Pusher::handleProveAttachment);
-    }
-
-
-    // Filters the push to the docIDs in the given Fleece array.
-    // If a filter already exists, the two will be intersected.
-    void Pusher::filterByDocIDs(Array docIDs) {
-        if (!docIDs)
-            return;
-        DocIDSet combined(new unordered_set<string>);
-        combined->reserve(docIDs.count());
-        for (Array::iterator i(docIDs); i; ++i) {
-            string docID = i.value().asstring();
-            if (!docID.empty() && (!_docIDs || _docIDs->find(docID) != _docIDs->end()))
-                combined->insert(move(docID));
-        }
-        _docIDs = move(combined);
     }
 
 
@@ -91,7 +74,7 @@ namespace litecore { namespace repl {
         }
         C4SequenceNumber since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
-        _skipDeleted = req->boolProperty("activeOnly"_sl);
+        _changesFeed.skipDeletedDocs(req->boolProperty("activeOnly"_sl));
         logInfo("Peer is pulling %schanges from seq #%" PRIu64,
             (_continuous ? "continuous " : ""), since);
 
@@ -103,9 +86,7 @@ namespace litecore { namespace repl {
             return;
         }
 
-        filterByDocIDs(req->JSONBody().asDict()["docIDs"].asArray());
-        if (_docIDs)
-            logInfo("Peer requested filtering to %zu docIDs", _docIDs->size());
+        _changesFeed.filterByDocIDs(req->JSONBody().asDict()["docIDs"].asArray());
 
         req->respond();
         startSending(since);
@@ -115,6 +96,8 @@ namespace litecore { namespace repl {
     // Starts active or passive push from the given sequence number.
     void Pusher::startSending(C4SequenceNumber sinceSequence) {
         _lastSequenceRead = sinceSequence;
+        _changesFeed.setLastSequence(_lastSequenceRead);
+        _changesFeed.getForeignAncestors(getForeignAncestors());
         maybeGetMoreChanges();
     }
 
@@ -123,13 +106,16 @@ namespace litecore { namespace repl {
     void Pusher::maybeGetMoreChanges() {
         if (!_gettingChanges && (!_caughtUp || _continuous)
                          && _changeListsInFlight < (_caughtUp ? 1 : tuning::kMaxChangeListsInFlight)
-                         && _revsToSend.size() < tuning::kMaxRevsQueued) {
+                         && _revsToSend.size() < tuning::kMaxRevsQueued
+                         && connected()) {
             _gettingChanges = true;
-            logVerbose("Asking DB for %u changes since sequence #%" PRIu64 " ...",
-                       _changesBatchSize, _lastSequenceRead);
-            // Call getMoreChanges asynchronously. Response will be to call gotChanges
             enqueue(&Pusher::getMoreChanges);
         }
+    }
+
+
+    void Pusher::getMoreChanges() {
+        _changesFeed.getMoreChanges();  // will call gotChanges
     }
 
 
@@ -145,6 +131,28 @@ namespace litecore { namespace repl {
         if (err.code)
             return gotError(err);
         
+        // Filter out any changes already in _pushingDocs.
+        // _pushingDocs has an entry for each docID involved in the push process, from change
+        // detection all the way to confirmation of the upload. The value of the entry is usually
+        // null; if not, it holds a later revision of that document that should be processed
+        // after the current one is done.
+        for (auto i = changes->begin(); i != changes->end();) {
+            auto rev = *i;
+            auto active = _pushingDocs.find(rev->docID);
+            if (active != _pushingDocs.end()) {
+                // This doc already has a revision being sent; wait till that one is done
+                logVerbose("Holding off on change '%.*s' %.*s till earlier rev is done",
+                           SPLAT(rev->docID), SPLAT(rev->revID));
+                active->second = rev;
+                if (!_passive)
+                    _checkpointer.addPendingSequence(rev->sequence);
+                changes->erase(i);             // defer rev: already sending a previous revision
+            } else {
+                _pushingDocs.insert({rev->docID, nullptr});
+                ++i;
+            }
+        }
+
         if (!passive() && lastSequence > _lastSequenceRead)
             _checkpointer.addPendingSequences(*changes.get(),
                                               _lastSequenceRead + 1, lastSequence);
@@ -176,7 +184,7 @@ namespace litecore { namespace repl {
         auto changeCount = changes->size();
         sendChanges(move(changes));
 
-        if (changeCount < _changesBatchSize) {
+        if (changeCount < tuning::kDefaultChangeBatchSize) {
             if (!_caughtUp) {
                 logInfo("Caught up, at lastSequence #%" PRIu64, _lastSequenceRead);
                 _caughtUp = true;
@@ -192,6 +200,10 @@ namespace litecore { namespace repl {
     }
 
 
+    void Pusher::_dbChanged() {
+        _changesFeed.dbChanged();
+    }
+
     // Called when DBWorker was holding up a revision until an ancestor revision finished.
     void Pusher::gotOutOfOrderChange(RevToSend* change) {
         if (!connected())
@@ -202,7 +214,6 @@ namespace litecore { namespace repl {
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 change->sequence);
         _pushingDocs.insert({change->docID, nullptr});
-        _lastSequenceRead = max(_lastSequenceRead, change->sequence);
         if (!passive())
             _checkpointer.addPendingSequence(change->sequence);
         addProgress({0, change->bodySize});
@@ -266,6 +277,7 @@ namespace litecore { namespace repl {
             }
             decrement(_changeListsInFlight);
             _proposeChangesKnown = true;
+            _changesFeed.getForeignAncestors(getForeignAncestors());
             MessageIn *reply = progress.reply;
             if (!proposedChanges && reply->isError()) {
                 auto err = progress.reply->getError();
@@ -273,6 +285,7 @@ namespace litecore { namespace repl {
                     // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
                     logInfo("Server requires 'proposeChanges'; retrying...");
                     _proposeChanges = true;
+                    _changesFeed.getForeignAncestors(getForeignAncestors());
                     sendChanges(move(changes));
                     return;
                 }
@@ -289,7 +302,8 @@ namespace litecore { namespace repl {
                 return gotError(reply);
             }
 
-            int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl, kDefaultMaxHistory));
+            int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl,
+                                                             tuning::kDefaultMaxHistory));
             bool legacyAttachments = !reply->boolProperty("blobs"_sl);
             if (!_deltasOK && reply->boolProperty("deltas"_sl)
                            && !_options.properties[kC4ReplicatorOptionDisableDeltas].asBool())
@@ -499,9 +513,7 @@ namespace litecore { namespace repl {
     void Pusher::retryRevs(RevToSendList revsToRetry) {
         logInfo("%d documents failed to push and will be retried now", int(revsToRetry.size()));
         _caughtUp = false;
-        for(const auto& revToRetry : revsToRetry)
-            _pushingDocs.insert({revToRetry->docID, nullptr});
-        gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
+        gotChanges(make_shared<RevToSendList>(revsToRetry), _lastSequenceRead, {});
     }
 
 } }
