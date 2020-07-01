@@ -216,7 +216,7 @@ _versioning(kC4RevisionTrees)
             CFURLRef url = CFBundleCopyResourcesDirectoryURL(bundle);
             CFStringRef path = CFURLCopyPath(url);
             char resourcesDir[1024];
-            Assert(CFStringGetCString(path, resourcesDir, sizeof(resourcesDir), kCFStringEncodingUTF8));
+            C4Assert(CFStringGetCString(path, resourcesDir, sizeof(resourcesDir), kCFStringEncodingUTF8));
             sFixturesDir           = string(resourcesDir) + "TestData/C/tests/data/";
             sReplicatorFixturesDir = string(resourcesDir) + "TestData/Replicator/tests/data/";
             CFRelease(path);
@@ -316,7 +316,7 @@ C4Test::~C4Test() {
 C4Database* C4Test::createDatabase(const string &nameSuffix) {
     REQUIRE(!nameSuffix.empty());
     string dbPath = fleece::slice(databasePath()).asString();
-    Assert(litecore::hasSuffix(dbPath, kC4DatabaseFilenameExtension));
+    C4Assert(litecore::hasSuffix(dbPath, kC4DatabaseFilenameExtension));
     dbPath.replace(dbPath.size()-8, 8, "_" + nameSuffix + kC4DatabaseFilenameExtension);
     auto dbPathSlice = c4str(dbPath.c_str());
 
@@ -426,7 +426,7 @@ void C4Test::createConflictingRev(C4Database *db,
     char buf[256];
 //    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
 //    REQUIRE(doc != nullptr);        // can't use Catch on bg threads
-    Assert(doc != nullptr);
+    C4Assert(doc != nullptr);
     c4doc_release(doc);
 }
 
@@ -436,7 +436,7 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4Revis
     C4Error error;
     auto curDoc = c4doc_get(db, docID, false, &error);
 //    REQUIRE(curDoc != nullptr);        // can't use Catch on bg threads
-    Assert(curDoc != nullptr);
+    C4Assert(curDoc != nullptr);
     string revID = createNewRev(db, docID, curDoc->revID, body, flags);
     c4doc_release(curDoc);
     return revID;
@@ -459,7 +459,7 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4S
         //INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
     }
     //REQUIRE(doc != nullptr);        // can't use Catch on bg threads
-    Assert(doc != nullptr);
+    C4Assert(doc != nullptr);
     string revID((char*)doc->revID.buf, doc->revID.size);
     c4doc_release(doc);
     return revID;
@@ -475,7 +475,7 @@ string C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4S
     fleece::alloc_slice fleeceBody = enc.finish();
 //    INFO("Encoder error " << enc.error());        // can't use Catch on bg threads
 //    REQUIRE(fleeceBody);
-    Assert(fleeceBody);
+    C4Assert(fleeceBody);
     if (revID.buf) {
         createRev(db, docID, revID, fleeceBody, flags);
         return string(slice(revID));

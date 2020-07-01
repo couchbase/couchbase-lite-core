@@ -20,6 +20,7 @@
 #include "WebSocketInterface.hh"
 #include "Message.hh"
 #include "Logging.hh"
+#include "Certificate.hh"
 #include <atomic>
 
 namespace litecore { namespace blip {
@@ -83,6 +84,8 @@ namespace litecore { namespace blip {
         State state()                                           {return _state;}
 
         virtual std::string loggingIdentifier() const override  {return _name;}
+        
+        fleece::Retained<crypto::Cert> peerTLSCertificate();
 
         /** Exposed only for testing. */
         websocket::WebSocket* webSocket() const;
@@ -106,6 +109,7 @@ namespace litecore { namespace blip {
         int8_t _compressionLevel;
         std::atomic<State> _state {kClosed};
         CloseStatus _closeStatus;
+        Retained<crypto::Cert> _peerTLSCertificate; // Cached for offline retrieval
     };
 
 

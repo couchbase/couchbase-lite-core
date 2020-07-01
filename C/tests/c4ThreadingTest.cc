@@ -30,9 +30,9 @@ using namespace std;
 
 // The Catch library is not thread-safe, so we can't use it in this test.
 #undef REQUIRE
-#define REQUIRE(X) Assert(X)
+#define REQUIRE(X) C4Assert(X)
 #undef CHECK
-#define CHECK(X) Assert(X)
+#define CHECK(X) C4Assert(X)
 #undef INFO
 #define INFO(X)
 

@@ -17,10 +17,12 @@
 //
 
 #pragma once
+#include "Error.hh"
 #include "RefCounted.hh"
 #include "InstanceCounted.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
+#include "Certificate.hh"
 #include <atomic>
 #include <map>
 #include <string>
@@ -140,6 +142,8 @@ namespace litecore { namespace websocket {
 
         /** Closes the WebSocket. Callable from any thread. */
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) =0;
+        
+        virtual fleece::Retained<crypto::Cert> peerTLSCertificate() const { error::_throw(error::LiteCoreError::Unimplemented); };
 
     protected:
         WebSocket(const URL &url, Role role);

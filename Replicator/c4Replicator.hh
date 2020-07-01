@@ -24,6 +24,7 @@
 #include "c4Private.h"
 #include "c4Replicator.h"
 #include "c4Database.hh"
+#include "c4Certificate.h"
 #include "Replicator.hh"
 #include "Checkpointer.hh"
 #include "Headers.hh"
@@ -181,6 +182,20 @@ struct C4Replicator : public RefCounted,
 
     C4SliceResult pendingDocumentIDs(C4Error* outErr) const {
         return PendingDocuments(this).pendingDocumentIDs(outErr);
+    }
+    
+    C4Cert* getPeerTLSCertificate(C4Error* outErr) const {
+        if(!_replicator) {
+            return nullptr;
+        }
+        
+        auto cert = _replicator->peerTLSCertificate();
+        if(!cert) {
+            return nullptr;
+        }
+        
+        
+        return c4cert_fromData((C4Slice)cert->data(), outErr);
     }
 
 protected:

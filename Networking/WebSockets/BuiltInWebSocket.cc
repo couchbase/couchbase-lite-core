@@ -205,7 +205,11 @@ namespace litecore { namespace websocket {
                 socket = make_unique<ClientSocket>(_tlsContext);
                 socket->setTimeout(kConnectTimeoutSecs);
             }
-            switch (logic.sendNextRequest(*socket)) {
+            
+            auto nextResponse = logic.sendNextRequest(*socket);
+            _peerTLSCertificate = socket->peerTLSCertificate();
+            
+            switch (nextResponse) {
                 case HTTPLogic::kSuccess:
                     gotHTTPResponse(int(logic.status()), logic.responseHeaders());
                     socket->setTimeout(0);

@@ -304,6 +304,11 @@ bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr
 
     return false;
 }
+    
+C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) C4API {
+    outErr->code = 0;
+    return repl->getPeerTLSCertificate(outErr);
+}
 
 
 #pragma mark - COOKIES:
