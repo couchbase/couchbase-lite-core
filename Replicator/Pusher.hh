@@ -48,8 +48,7 @@ namespace litecore { namespace repl {
         }
 
         // called only by ChangesFeed
-        void gotChanges(std::shared_ptr<RevToSendList> changes, C4SequenceNumber lastSequence, C4Error err);
-        void dbChanged() {enqueue(&Pusher::_dbChanged);}
+        void dbHasNewChanges() {enqueue(&Pusher::_dbHasNewChanges);}
         void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) {
             finishedDocumentWithError(rev, error, transient);
         }
@@ -67,7 +66,10 @@ namespace litecore { namespace repl {
         void sendChanges(std::shared_ptr<RevToSendList>);
         void maybeGetMoreChanges();
         void getMoreChanges();
-        void _dbChanged();
+        void gotChanges(std::shared_ptr<RevToSendList> changes,
+                        C4SequenceNumber lastSequence,
+                        C4Error err);
+        void _dbHasNewChanges();
         void sendChangeList(RevToSendList);
         void maybeSendMoreRevs();
         void retryRevs(RevToSendList);
@@ -107,7 +109,8 @@ namespace litecore { namespace repl {
         bool _gettingChanges {false};             // Waiting for _gotChanges() call?
         Checkpointer& _checkpointer;              // Tracks checkpoints & pending sequences
         bool _started {false};
-        bool _caughtUp {false};                   // Received backlog of existing changes?
+        bool _caughtUp {false};                   // Received backlog of pre-existing changes?
+        bool _observerHasNewChanges {false};      // Are there more observed changes to read?
         bool _deltasOK {false};                   // OK to send revs in delta form?
         unsigned _changeListsInFlight {0};        // # change lists being requested from db or sent to peer
         unsigned _revisionsInFlight {0};          // # 'rev' messages being sent

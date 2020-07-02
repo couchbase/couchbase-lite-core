@@ -74,6 +74,7 @@ namespace litecore { namespace repl {
         }
         C4SequenceNumber since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
+        _changesFeed.setContinuous(_continuous);
         _changesFeed.skipDeletedDocs(req->boolProperty("activeOnly"_sl));
         logInfo("Peer is pulling %schanges from seq #%" PRIu64,
             (_continuous ? "continuous " : ""), since);
@@ -104,7 +105,8 @@ namespace litecore { namespace repl {
 
     // Request another batch of changes from the db, if there aren't too many in progress
     void Pusher::maybeGetMoreChanges() {
-        if (!_gettingChanges && (!_caughtUp || _continuous)
+        if (!_gettingChanges
+                         && (!_caughtUp || _observerHasNewChanges)
                          && _changeListsInFlight < (_caughtUp ? 1 : tuning::kMaxChangeListsInFlight)
                          && _revsToSend.size() < tuning::kMaxRevsQueued
                          && connected()) {
@@ -115,19 +117,21 @@ namespace litecore { namespace repl {
 
 
     void Pusher::getMoreChanges() {
-        _changesFeed.getMoreChanges();  // will call gotChanges
+        _gettingChanges = false;
+        _observerHasNewChanges = false;
+
+        if (!connected())
+            return;
+
+        auto changes = _changesFeed.getMoreChanges(tuning::kDefaultChangeBatchSize);
+        gotChanges(move(changes.revs), changes.lastSequence, changes.err);
     }
 
 
-    // Received a list of changes from the database [initiated in maybeGetMoreChanges]
     void Pusher::gotChanges(std::shared_ptr<RevToSendList> changes,
                             C4SequenceNumber lastSequence,
                             C4Error err)
     {
-        _gettingChanges = false;
-
-        if (!connected())
-            return;
         if (err.code)
             return gotError(err);
         
@@ -191,18 +195,23 @@ namespace litecore { namespace repl {
                 if (changeCount > 0 && passive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
                     // one if we didn't already:
-                    sendChanges(make_unique<RevToSendList>());
+                    sendChanges(make_shared<RevToSendList>());
                 }
             }
+        } else if (_continuous) {
+            // Got a full batch of changes, so assume there are more
+            _observerHasNewChanges = true;
         }
 
         maybeGetMoreChanges();
     }
 
 
-    void Pusher::_dbChanged() {
-        _changesFeed.dbChanged();
+    void Pusher::_dbHasNewChanges() {
+        _observerHasNewChanges = true;
+        maybeGetMoreChanges();
     }
+
 
     // Called when DBWorker was holding up a revision until an ancestor revision finished.
     void Pusher::gotOutOfOrderChange(RevToSend* change) {
@@ -265,7 +274,7 @@ namespace litecore { namespace repl {
         bool proposedChanges = _proposeChanges;
 
         increment(_changeListsInFlight);
-        sendRequest(req, [=](MessageProgress progress) {
+        sendRequest(req, [this,changes=move(changes),proposedChanges](MessageProgress progress) mutable {
             // Progress callback follows:
             if (progress.state != MessageProgress::kComplete)
                 return;
@@ -467,6 +476,7 @@ namespace litecore { namespace repl {
     bool Pusher::isBusy() const {
         return Worker::computeActivityLevel() == kC4Busy
             || (_started && !_caughtUp)
+            || _observerHasNewChanges
             || _changeListsInFlight > 0
             || _revisionsInFlight > 0
             || _blobsInFlight > 0

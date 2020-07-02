@@ -40,10 +40,19 @@ namespace litecore { namespace repl {
     ,_options(options)
     ,_db(db)
     ,_checkpointer(checkpointer)
-    ,_skipDeleted(_options.skipDeleted())
+    ,_continuous(_options.push == kC4Continuous)
     ,_passive(_options.push <= kC4Passive)
+    ,_skipDeleted(_options.skipDeleted())
     {
         filterByDocIDs(_options.docIDs());
+    }
+
+
+    string ChangesFeed::loggingClassName() const  {
+        string className = Logging::loggingClassName();
+        if (_passive)
+            toLowercase(className);
+        return className;
     }
 
 
@@ -64,18 +73,14 @@ namespace litecore { namespace repl {
 
 
     // Gets the next batch of changes from the DB. Will respond by calling gotChanges.
-    void ChangesFeed::getMoreChanges() {
-        logVerbose("Asking DB for %u changes since sequence #%" PRIu64 " ...",
-                   tuning::kDefaultChangeBatchSize, _maxPushedSequence);
+    ChangesFeed::Changes ChangesFeed::getMoreChanges(unsigned limit) {
+        Assert(limit > 0);
+        return _changeObserver ? getObservedChanges(limit) : getHistoricalChanges(limit);
+    }
 
-        if (_changeObserver) {
-            // We've caught up, so read from the observer:
-            getObservedChanges();
-            return;
-        }
 
-        logVerbose("Reading up to %u local changes since #%" PRIu64,
-                   tuning::kDefaultChangeBatchSize, _maxPushedSequence);
+    ChangesFeed::Changes ChangesFeed::getHistoricalChanges(unsigned limit) {
+        logVerbose("Reading up to %u local changes since #%" PRIu64, limit, _maxPushedSequence);
 
         if (_getForeignAncestors)
             _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
@@ -90,7 +95,6 @@ namespace litecore { namespace repl {
             options.flags |= kC4IncludeDeleted;
 
         _db->use([&](C4Database* db) {
-            auto limit = tuning::kDefaultChangeBatchSize;
             c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _maxPushedSequence, &options, &error);
             if (e) {
                 changes->reserve(limit);
@@ -105,41 +109,46 @@ namespace litecore { namespace repl {
                 }
             }
 
-            if (_options.push == kC4Continuous && limit > 0 && !_changeObserver) {
+            if (_continuous && limit > 0 && !_changeObserver) {
                 // Reached the end of history; now start observing for future changes.
-                // The callback runs on an arbitrary thread; for thread-safety, let the Pusher
-                // handle it, since it's an Actor. The Pusher will end up calling my own
-                // dbChanged() method.
+                logVerbose("Starting DB observer");
+                _notifyOnChanges = true;
                 _changeObserver = c4dbobs_create(db,
                                                  [](C4DatabaseObserver* observer, void *context) {
-                                                     auto pusher = (Pusher*)context;
-                                                     pusher->dbChanged();
+                                                     ((ChangesFeed*)context)->_dbChanged();
                                                  },
-                                                 &_pusher);
-                logDebug("Started DB observer");
+                                                 this);
             }
         });
 
-        _pusher.gotChanges(move(changes), _maxPushedSequence, error);
+        return {move(changes), _maxPushedSequence, error};
     }
 
 
-    void ChangesFeed::getObservedChanges() {
-        static const uint32_t kMaxChanges = 100;
+    ChangesFeed::Changes ChangesFeed::getObservedChanges(unsigned limit) {
+        logVerbose("Asking DB observer for %u new changes since sequence #%" PRIu64 " ...",
+                   limit, _maxPushedSequence);
+        static constexpr uint32_t kMaxChanges = 100;
         C4DatabaseChange c4changes[kMaxChanges];
         bool ext;
         uint32_t nChanges;
-        shared_ptr<RevToSendList> changes;
+        auto changes = make_shared<RevToSendList>();
         bool updateForeignAncestors = _getForeignAncestors;
 
-        while (0 != (nChanges = c4dbobs_getChanges(_changeObserver, c4changes, kMaxChanges, &ext))){
+        _notifyOnChanges = true;
+
+        while (limit > 0) {
+            nChanges = c4dbobs_getChanges(_changeObserver, c4changes, min(limit,kMaxChanges), &ext);
+            if (nChanges == 0)
+                break;
+
             if (!ext) {
-                logDebug("Notified of %u of my own db changes #%llu ... #%llu (ignoring)",
+                logDebug("Observed %u of my own db changes #%llu ... #%llu (ignoring)",
                          nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
                 _maxPushedSequence = c4changes[nChanges-1].sequence;
                 continue;     // ignore changes I made myself
             }
-            logVerbose("Notified of %u db changes #%" PRIu64 " ... #%" PRIu64,
+            logVerbose("Observed %u db changes #%" PRIu64 " ... #%" PRIu64,
                        nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
 
             // Copy the changes into a vector of RevToSend:
@@ -151,10 +160,6 @@ namespace litecore { namespace repl {
                 }
 
                 for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
-                    if (!changes) {
-                        changes = make_shared<RevToSendList>();
-                        changes->reserve(nChanges - i);
-                    }
                     C4DocumentInfo info {0, c4change->docID, c4change->revID,
                                          c4change->sequence, c4change->bodySize};
                     // Note: we send tombstones even if the original getChanges() call specified
@@ -163,10 +168,7 @@ namespace litecore { namespace repl {
                     auto rev = revToSend(info, nullptr, db);
                     if (rev) {
                         changes->push_back(rev);
-                        if (changes->size() >= kMaxChanges) {
-                            _pusher.gotChanges(move(changes), _maxPushedSequence, {});
-                            changes.reset();
-                        }
+                        --limit;
                     }
                 }
             });
@@ -174,23 +176,29 @@ namespace litecore { namespace repl {
             c4dbobs_releaseChanges(c4changes, nChanges);
         }
 
-        if (changes) {
-            _pusher.gotChanges(move(changes), _maxPushedSequence, {});
-        } else {
-            logVerbose("Waiting for db changes...");
-            _waitingForObservedChanges = true;
+        if (changes->empty())
+            logInfo("No new observed changes...");
+        else if (limit > 0)
+            logVerbose("Read all observed changes; awaiting more...");
+        else {
+            // I returned a full list of changes, so I know the caller will call me again when
+            // it's ready for more. Therefore, it's not necessary to notify it.
+            _notifyOnChanges = false;
         }
+
+        return {move(changes), _maxPushedSequence, {}};
     }
 
 
-    // (Async) callback from the C4DatabaseObserver when the database has changed
-    void ChangesFeed::dbChanged() {
+    // Callback from the C4DatabaseObserver when the database has changed
+    // **This is called on an arbitrary thread!**
+    void ChangesFeed::_dbChanged() {
         if (!_changeObserver)
             return; // if replication has stopped already by the time this async call occurs
         logVerbose("Database changed!");
-        if (_waitingForObservedChanges) {
-            _waitingForObservedChanges = false;
-            getObservedChanges();
+        if (_notifyOnChanges) {
+            _notifyOnChanges = false;
+            _pusher.dbHasNewChanges();
         }
     }
 
@@ -216,7 +224,7 @@ namespace litecore { namespace repl {
     }
 
 
-    bool ChangesFeed::shouldPushRev(RevToSend *rev) {
+    bool ChangesFeed::shouldPushRev(RevToSend *rev) const {
         return _db->use<bool>([&](C4Database *db) {
             return shouldPushRev(rev, nullptr, db);
         });
@@ -224,7 +232,7 @@ namespace litecore { namespace repl {
 
 
     // This is called both by revToSend, and by Pusher::doneWithRev.
-    bool ChangesFeed::shouldPushRev(RevToSend *rev, C4DocEnumerator *e, C4Database *db) {
+    bool ChangesFeed::shouldPushRev(RevToSend *rev, C4DocEnumerator *e, C4Database *db) const {
         bool needRemoteRevID = _getForeignAncestors && !rev->remoteAncestorRevID
                                                     && _pusher.isCheckpointValid();
         if (needRemoteRevID || _options.pushFilter) {
@@ -258,7 +266,7 @@ namespace litecore { namespace repl {
 
     // Assigns rev->remoteAncestorRevID based on the document.
     // Returns false to reject the document if the remote is equal to or newer than this rev.
-    bool ChangesFeed::getRemoteRevID(RevToSend *rev, C4Document *doc) {
+    bool ChangesFeed::getRemoteRevID(RevToSend *rev, C4Document *doc) const {
         // For proposeChanges, find the nearest foreign ancestor of the current rev:
         Assert(_db->remoteDBID());
         alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
