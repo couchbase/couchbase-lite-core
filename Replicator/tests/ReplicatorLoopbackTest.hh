@@ -293,21 +293,32 @@ public:
         REQUIRE(resolvDB);
         auto& conflictHandlerRunning = _conflictHandlerRunning;
         _conflictHandler = [resolvDB, &conflictHandlerRunning](ReplicatedRev *rev) {
+            // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+            Log("Resolving conflict in '%.*s' ...", SPLAT(rev->docID));
+
             conflictHandlerRunning = true;
-            // Careful: This is called on a background thread!
             TransactionHelper t(resolvDB);
             C4Error error;
             // Get the local rev:
             c4::ref<C4Document> doc = c4doc_get(resolvDB, rev->docID, true, &error);
-            REQUIRE(doc);
+            if (!doc) {
+                WarnError("conflictHandler: Couldn't read doc '%.*s'", SPLAT(rev->docID));
+                Assert(false, "conflictHandler: Couldn't read doc");
+            }
             alloc_slice localRevID = doc->selectedRev.revID;
             C4RevisionFlags localFlags = doc->selectedRev.flags;
             slice localBody = doc->selectedRev.body;
             // Get the remote rev:
-            REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, &error));
+            if (!c4doc_selectNextLeafRevision(doc, true, false, &error)) {
+                WarnError("conflictHandler: Couldn't get conflicting revision of '%.*s'", SPLAT(rev->docID));
+                Assert(false, "conflictHandler: Couldn't get conflicting revision");
+            }
             alloc_slice remoteRevID = doc->selectedRev.revID;
             C4RevisionFlags remoteFlags = doc->selectedRev.flags;
-            REQUIRE(!c4doc_selectNextLeafRevision(doc, true, false, &error));   // no 3rd branch!
+            if (c4doc_selectNextLeafRevision(doc, true, false, &error)) {   // no 3rd branch!
+                WarnError("conflictHandler: Unexpected 3rd leaf revision in '%.*s'", SPLAT(rev->docID));
+                Assert(false, "conflictHandler: Unexpected 3rd leaf revision");
+            }
 
             bool remoteWins = false;
 
@@ -329,9 +340,15 @@ public:
                 mergedBody = localBody;
                 mergedFlags = localFlags;
             }
-            CHECK(c4doc_resolveConflict(doc, remoteRevID, localRevID,
-                                        mergedBody, mergedFlags, &error));
-            CHECK(c4doc_save(doc, 0, &error));
+            if (!c4doc_resolveConflict(doc, remoteRevID, localRevID,
+                                        mergedBody, mergedFlags, &error)) {
+                WarnError("conflictHandler: c4doc_resolveConflict failed in '%.*s'", SPLAT(rev->docID));
+                Assert(false, "conflictHandler: c4doc_resolveConflict failed");
+            }
+            if (!c4doc_save(doc, 0, &error)) {
+                WarnError("conflictHandler: c4doc_save failed in '%.*s'", SPLAT(rev->docID));
+                Assert(false, "conflictHandler: c4doc_save failed");
+            }
             conflictHandlerRunning = false;
         };
     }

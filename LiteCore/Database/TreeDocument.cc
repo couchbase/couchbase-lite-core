@@ -376,18 +376,16 @@ namespace c4Internal {
             if (!body) {
                 if (outError && outError->code == kC4ErrorDeltaBaseUnknown
                              && outError->domain == LiteCoreDomain) {
-                    alloc_slice cur = _versionedDoc.currentRevision()->revID.expanded();
-                    Warn("Missing base rev for delta! Inserting rev %.*s, delta base is %.*s, "
-                         "doc current rev is %.*s",
-                         SPLAT(rq.history[0]), SPLAT(rq.deltaSourceRevID), SPLAT(cur));
-                    if (!rq.allowConflict) {
-                        // A missing delta base might just be a side effect of a conflict:
-                        if (_versionedDoc.findCommonAncestor(revIDBuffers, rq.allowConflict).second
+                    // A missing delta base might just be a side effect of a conflict:
+                    if (!rq.allowConflict
+                        && _versionedDoc.findCommonAncestor(revIDBuffers, rq.allowConflict).second
                                 == -409) {
-                            *outError = c4error_make(LiteCoreDomain, kC4ErrorConflict, nullslice);
-                        }
+                        *outError = c4error_make(LiteCoreDomain, kC4ErrorConflict, nullslice);
                     } else {
-                        Warn("Hmmm!");
+                        alloc_slice cur = _versionedDoc.currentRevision()->revID.expanded();
+                        Warn("Missing base rev for delta! Inserting rev %.*s, delta base is %.*s, "
+                             "doc current rev is %.*s",
+                             SPLAT(rq.history[0]), SPLAT(rq.deltaSourceRevID), SPLAT(cur));
                     }
                 }
                 return -1;
