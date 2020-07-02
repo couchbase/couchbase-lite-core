@@ -55,48 +55,49 @@ namespace litecore::repl {
         Replicator::BlobProgress progress;
         C4Error err;
         C4ReadStream* blob = readBlobFromRequest(req, digest, progress, &err);
-        if (blob) {
-            increment(_blobsInFlight);
-            MessageBuilder reply(req);
-            reply.compressed = req->boolProperty("compress"_sl);
-            logVerbose("Sending blob %.*s (length=%" PRId64 ", compress=%d)",
-                       SPLAT(digest), c4stream_getLength(blob, nullptr), reply.compressed);
-            Retained<Replicator> repl = replicator();
-            auto lastNotifyTime = actor::Timer::clock::now();
-            if (progressNotificationLevel() >= 2)
-                repl->onBlobProgress(progress);
-            reply.dataSource = [=](void *buf, size_t capacity) mutable {
-                // Callback to read bytes from the blob into the BLIP message:
-                // For performance reasons this is NOT run on my actor thread, so it can't access
-                // my state directly; instead it calls _attachmentSent() at the end.
-                C4Error err;
-                bool done = false;
-                ssize_t bytesRead = c4stream_read(blob, buf, capacity, &err);
-                progress.bytesCompleted += bytesRead;
-                if (bytesRead < capacity) {
-                    c4stream_close(blob);
-                    this->enqueue(&Pusher::_attachmentSent);
-                    done = true;
-                }
-                if (err.code) {
-                    this->warn("Error reading from blob: %d/%d", err.domain, err.code);
-                    progress.error = {err.domain, err.code};
-                    bytesRead = -1;
-                    done = true;
-                }
-                if (progressNotificationLevel() >= 2) {
-                    auto now = actor::Timer::clock::now();
-                    if (done || now - lastNotifyTime > std::chrono::milliseconds(250)) {
-                        lastNotifyTime = now;
-                        repl->onBlobProgress(progress);
-                    }
-                }
-                return (int)bytesRead;
-            };
-            req->respond(reply);
+        if (!blob) {
+            req->respondWithError(c4ToBLIPError(err));
             return;
         }
-        req->respondWithError(c4ToBLIPError(err));
+
+        increment(_blobsInFlight);
+        MessageBuilder reply(req);
+        reply.compressed = req->boolProperty("compress"_sl);
+        logVerbose("Sending blob %.*s (length=%" PRId64 ", compress=%d)",
+                   SPLAT(digest), c4stream_getLength(blob, nullptr), reply.compressed);
+        Retained<Replicator> repl = replicator();
+        auto lastNotifyTime = actor::Timer::clock::now();
+        if (progressNotificationLevel() >= 2)
+            repl->onBlobProgress(progress);
+        reply.dataSource = [=](void *buf, size_t capacity) mutable {
+            // Callback to read bytes from the blob into the BLIP message:
+            // For performance reasons this is NOT run on my actor thread, so it can't access
+            // my state directly; instead it calls _attachmentSent() at the end.
+            C4Error err;
+            bool done = false;
+            ssize_t bytesRead = c4stream_read(blob, buf, capacity, &err);
+            progress.bytesCompleted += bytesRead;
+            if (bytesRead < capacity) {
+                c4stream_close(blob);
+                this->enqueue(&Pusher::_attachmentSent);
+                done = true;
+            }
+            if (err.code) {
+                this->warn("Error reading from blob: %d/%d", err.domain, err.code);
+                progress.error = {err.domain, err.code};
+                bytesRead = -1;
+                done = true;
+            }
+            if (progressNotificationLevel() >= 2) {
+                auto now = actor::Timer::clock::now();
+                if (done || now - lastNotifyTime > std::chrono::milliseconds(250)) {
+                    lastNotifyTime = now;
+                    repl->onBlobProgress(progress);
+                }
+            }
+            return (int)bytesRead;
+        };
+        req->respond(reply);
     }
 
 

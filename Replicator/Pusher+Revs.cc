@@ -58,12 +58,19 @@ namespace litecore::repl {
         Dict root;
         c4::ref<C4Document> doc = _db->getDoc(request->docID, &c4err);
         if (doc) {
-            revisionBody = getRevToSend(doc, *request, &c4err);
+            if (c4doc_selectRevision(doc, request->revID, true, &c4err)) {
+                revisionBody = doc->selectedRev.body;
+                if (!revisionBody)
+                    c4err = {LiteCoreDomain, kC4ErrorNotFound};
+            }
             if (revisionBody) {
                 root = Value::fromData(revisionBody, kFLTrusted).asDict();
                 if (!root)
                     c4err = {LiteCoreDomain, kC4ErrorCorruptData};
                 request->flags = doc->selectedRev.flags;
+            } else {
+                if (c4err.code == kC4ErrorNotFound && c4err.domain == LiteCoreDomain)
+                    revToSendIsObsolete(*request, &c4err);
             }
         }
 
@@ -135,83 +142,76 @@ namespace litecore::repl {
 
     // "rev" message progress callback:
     void Pusher::onRevProgress(Retained<RevToSend> rev, const MessageProgress &progress) {
-        if (progress.state == MessageProgress::kDisconnected) {
-            doneWithRev(rev, false, false);
-            return;
-        }
-        if (progress.state == MessageProgress::kAwaitingReply) {
-            logDebug("Transmitted 'rev' %.*s #%.*s (seq #%llu)",
-                     SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
-            decrement(_revisionsInFlight);
-            increment(_revisionBytesAwaitingReply, progress.bytesSent);
-            maybeSendMoreRevs();
-        }
-        if (progress.state == MessageProgress::kComplete) {
-            decrement(_revisionBytesAwaitingReply, progress.bytesSent);
-            bool synced = !progress.reply->isError();
-            bool completed = true;
-            enum {kNoRetry, kRetryLater, kRetryNow} retry = kNoRetry;
-            if (synced) {
-                logVerbose("Completed rev %.*s #%.*s (seq #%" PRIu64 ")",
-                           SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
-                finishedDocument(rev);
-            } else {
-                // Handle an error received from the peer:
-                auto err = progress.reply->getError();
-                auto c4err = blipToC4Error(err);
+        switch (progress.state) {
+            case MessageProgress::kDisconnected:
+                doneWithRev(rev, false, false);
+                break;
+            case MessageProgress::kAwaitingReply:
+                logDebug("Transmitted 'rev' %.*s #%.*s (seq #%llu)",
+                         SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
+                decrement(_revisionsInFlight);
+                increment(_revisionBytesAwaitingReply, progress.bytesSent);
+                maybeSendMoreRevs();
+                break;
+            case MessageProgress::kComplete: {
+                decrement(_revisionBytesAwaitingReply, progress.bytesSent);
+                bool synced = !progress.reply->isError();
+                bool completed = true;
+                enum {kNoRetry, kRetryLater, kRetryNow} retry = kNoRetry;
+                if (synced) {
+                    logVerbose("Completed rev %.*s #%.*s (seq #%" PRIu64 ")",
+                               SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
+                    finishedDocument(rev);
+                } else {
+                    // Handle an error received from the peer:
+                    auto err = progress.reply->getError();
+                    auto c4err = blipToC4Error(err);
 
-                if (c4error_mayBeTransient(c4err)) {
-                    completed = false;
-                } else if (c4err == C4Error{WebSocketDomain, 403}) {
-                    // CBL-123: Retry HTTP forbidden once
-                    if (rev->retryCount++ == 0) {
+                    if (c4error_mayBeTransient(c4err)) {
                         completed = false;
-                        if (!passive())
-                            retry = kRetryLater;
+                    } else if (c4err == C4Error{WebSocketDomain, 403}) {
+                        // CBL-123: Retry HTTP forbidden once
+                        if (rev->retryCount++ == 0) {
+                            completed = false;
+                            if (!passive())
+                                retry = kRetryLater;
+                        }
+                    } else if (c4err == C4Error{LiteCoreDomain, kC4ErrorDeltaBaseUnknown}
+                            || c4err == C4Error{LiteCoreDomain, kC4ErrorCorruptDelta}
+                            || c4err == C4Error{WebSocketDomain, int(net::HTTPStatus::UnprocessableEntity)}) {
+                        // CBL-986: On delta error, retry without using delta
+                        if (rev->deltaOK) {
+                            rev->deltaOK = false;
+                            completed = false;
+                            retry = kRetryNow;
+                        }
                     }
-                } else if (c4err == C4Error{LiteCoreDomain, kC4ErrorDeltaBaseUnknown}
-                        || c4err == C4Error{LiteCoreDomain, kC4ErrorCorruptDelta}
-                        || c4err == C4Error{WebSocketDomain, int(net::HTTPStatus::UnprocessableEntity)}) {
-                    // CBL-986: On delta error, retry without using delta
-                    if (rev->deltaOK) {
-                        rev->deltaOK = false;
-                        completed = false;
-                        retry = kRetryNow;
-                    }
+
+                    logError("Got %-serror response to rev '%.*s' #%.*s (seq #%" PRIu64 "): %.*s %d '%.*s'",
+                             (completed ? "" : "transient "),
+                             SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
+                             SPLAT(err.domain), err.code, SPLAT(err.message));
+                    finishedDocumentWithError(rev, c4err, !completed);
+                    // If this is a permanent failure, like a validation error or conflict,
+                    // then I've completed my duty to push it.
                 }
-
-                logError("Got %-serror response to rev '%.*s' #%.*s (seq #%" PRIu64 "): %.*s %d '%.*s'",
-                         (completed ? "" : "transient "),
-                         SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
-                         SPLAT(err.domain), err.code, SPLAT(err.message));
-                finishedDocumentWithError(rev, c4err, !completed);
-                // If this is a permanent failure, like a validation error or conflict,
-                // then I've completed my duty to push it.
+                doneWithRev(rev, completed, synced);
+                switch (retry) {
+                    case kRetryNow:   retryRevs({rev}); break;
+                    case kRetryLater: _revsToRetry.push_back(rev); break;
+                    case kNoRetry:    break;
+                }
+                maybeSendMoreRevs();
+                break;
             }
-            doneWithRev(rev, completed, synced);
-            switch (retry) {
-                case kRetryNow:   retryRevs({rev}); break;
-                case kRetryLater: _revsToRetry.push_back(rev); break;
-                case kNoRetry:    break;
-            }
-            maybeSendMoreRevs();
+            default:
+                break;
         }
     }
 
 
-    slice Pusher::getRevToSend(C4Document* doc, const RevToSend &request, C4Error *c4err) {
-        if (!c4doc_selectRevision(doc, request.revID, true, c4err)) {
-            if (c4err->code == kC4ErrorNotFound && c4err->domain == LiteCoreDomain)
-                revToSendIsObsolete(request, c4err);
-            return nullslice;
-        }
-        slice revisionBody(doc->selectedRev.body);
-        if (!revisionBody)
-            revToSendIsObsolete(request, c4err);
-        return revisionBody;
-    }
-
-
+    // If sending a rev that's been obsoleted by a newer one, mark the sequence as complete and send
+    // a 410 Gone error. (Common subroutine of sendRevision & shouldRetryConflictWithNewerAncestor.)
     void Pusher::revToSendIsObsolete(const RevToSend &request, C4Error *c4err) {
         logInfo("Revision '%.*s' #%.*s is obsolete; not sending it",
                 SPLAT(request.docID), SPLAT(request.revID));
@@ -221,9 +221,10 @@ namespace litecore::repl {
     }
 
 
+    // Attempt to delta-compress the revision; returns JSON delta or a null slice.
     alloc_slice Pusher::createRevisionDelta(C4Document *doc, RevToSend *request,
-                                              Dict root, size_t revisionSize,
-                                              bool sendLegacyAttachments)
+                                            Dict root, size_t revisionSize,
+                                            bool sendLegacyAttachments)
     {
         alloc_slice delta;
         if (!request->deltaOK || revisionSize < tuning::kMinBodySizeForDelta
@@ -281,6 +282,9 @@ namespace litecore::repl {
     }
 
 
+    // Finished sending a revision (successfully or not.)
+    // `completed` - whether to mark the sequence as completed in the checkpointer
+    // `synced` - whether the revision was successfully stored on the peer
     void Pusher::doneWithRev(RevToSend *rev, bool completed, bool synced) {
         if (!passive()) {
             addProgress({rev->bodySize, 0});
@@ -292,10 +296,9 @@ namespace litecore::repl {
                     logInfo("Checkpoint now %s", _checkpointer.to_string().c_str());
                 _lastSequenceLogged = lastSeq;
             }
+            if (synced)
+                _db->markRevSynced(const_cast<RevToSend*>(rev));
         }
-
-        if (synced && _options.push > kC4Passive)
-            _db->markRevSynced(const_cast<RevToSend*>(rev));
 
         // Remove rev from _pushingDocs, and see if there's a newer revision to send next:
         auto i = _pushingDocs.find(rev->docID);

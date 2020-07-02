@@ -89,7 +89,6 @@ namespace litecore { namespace repl {
         alloc_slice createRevisionDelta(C4Document *doc NONNULL, RevToSend *request NONNULL,
                                         fleece::Dict root, size_t revSize,
                                         bool sendLegacyAttachments);
-        fleece::slice getRevToSend(C4Document* NONNULL, const RevToSend&, C4Error *outError);
         void revToSendIsObsolete(const RevToSend &request, C4Error *c4err);
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash>;
