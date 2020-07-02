@@ -17,9 +17,9 @@
 //
 
 #include "ChangesFeed.hh"
-#include "Pusher.hh"
+#include "Checkpointer.hh"
+#include "DBAccess.hh"
 #include "ReplicatorTuning.hh"
-#include "fleece/Fleece.hh"
 #include "StringUtil.hh"
 #include "c4.hh"
 #include "c4Private.h"
@@ -27,16 +27,18 @@
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
 #include "c4Observer.h"
+#include "fleece/Fleece.hh"
 
 using namespace std;
+using namespace fleece;
 
 namespace litecore { namespace repl {
 
 
-    ChangesFeed::ChangesFeed(Pusher& pusher, Options &options,
+    ChangesFeed::ChangesFeed(Delegate &delegate, Options &options,
                              std::shared_ptr<DBAccess> db, Checkpointer &checkpointer)
     :Logging(SyncLog)
-    ,_pusher(pusher)
+    ,_delegate(delegate)
     ,_options(options)
     ,_db(db)
     ,_checkpointer(checkpointer)
@@ -75,12 +77,26 @@ namespace litecore { namespace repl {
     // Gets the next batch of changes from the DB. Will respond by calling gotChanges.
     ChangesFeed::Changes ChangesFeed::getMoreChanges(unsigned limit) {
         Assert(limit > 0);
-        return _changeObserver ? getObservedChanges(limit) : getHistoricalChanges(limit);
+
+        if (_continuous && !_changeObserver) {
+            // Start the observer immediately, before querying historical changes, to avoid any
+            // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
+            logVerbose("Starting DB observer");
+            _db->use([&](C4Database* db) {
+                _changeObserver = c4dbobs_create(db,
+                                                 [](C4DatabaseObserver* observer, void *context) {
+                                                     ((ChangesFeed*)context)->_dbChanged();
+                                                 },
+                                                 this);
+            });
+        }
+
+        return _caughtUp ? getObservedChanges(limit) : getHistoricalChanges(limit);
     }
 
 
     ChangesFeed::Changes ChangesFeed::getHistoricalChanges(unsigned limit) {
-        logVerbose("Reading up to %u local changes since #%" PRIu64, limit, _maxPushedSequence);
+        logVerbose("Reading up to %u local changes since #%" PRIu64, limit, _maxSequence);
 
         if (_getForeignAncestors)
             _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
@@ -95,7 +111,7 @@ namespace litecore { namespace repl {
             options.flags |= kC4IncludeDeleted;
 
         _db->use([&](C4Database* db) {
-            c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _maxPushedSequence, &options, &error);
+            c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _maxSequence, &options, &error);
             if (e) {
                 changes->reserve(limit);
                 while (c4enum_next(e, &error) && limit > 0) {
@@ -109,31 +125,26 @@ namespace litecore { namespace repl {
                 }
             }
 
-            if (_continuous && limit > 0 && !_changeObserver) {
-                // Reached the end of history; now start observing for future changes.
-                logVerbose("Starting DB observer");
-                _notifyOnChanges = true;
-                _changeObserver = c4dbobs_create(db,
-                                                 [](C4DatabaseObserver* observer, void *context) {
-                                                     ((ChangesFeed*)context)->_dbChanged();
-                                                 },
-                                                 this);
+            if (limit > 0 && !_caughtUp) {
+                // Couldn't get as many changes as asked for, so I've caught up with the DB.
+                _caughtUp = true;
             }
         });
 
-        return {move(changes), _maxPushedSequence, error};
+        return {move(changes), _maxSequence, error};
     }
 
 
     ChangesFeed::Changes ChangesFeed::getObservedChanges(unsigned limit) {
         logVerbose("Asking DB observer for %u new changes since sequence #%" PRIu64 " ...",
-                   limit, _maxPushedSequence);
+                   limit, _maxSequence);
         static constexpr uint32_t kMaxChanges = 100;
         C4DatabaseChange c4changes[kMaxChanges];
         bool ext;
         uint32_t nChanges;
         auto changes = make_shared<RevToSendList>();
         bool updateForeignAncestors = _getForeignAncestors;
+        auto const startingMaxSequence = _maxSequence;
 
         _notifyOnChanges = true;
 
@@ -145,7 +156,7 @@ namespace litecore { namespace repl {
             if (!ext) {
                 logDebug("Observed %u of my own db changes #%llu ... #%llu (ignoring)",
                          nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
-                _maxPushedSequence = c4changes[nChanges-1].sequence;
+                _maxSequence = c4changes[nChanges-1].sequence;
                 continue;     // ignore changes I made myself
             }
             logVerbose("Observed %u db changes #%" PRIu64 " ... #%" PRIu64,
@@ -160,6 +171,8 @@ namespace litecore { namespace repl {
                 }
 
                 for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
+                    if (c4change->sequence <= startingMaxSequence)
+                        continue;
                     C4DocumentInfo info {0, c4change->docID, c4change->revID,
                                          c4change->sequence, c4change->bodySize};
                     // Note: we send tombstones even if the original getChanges() call specified
@@ -186,20 +199,16 @@ namespace litecore { namespace repl {
             _notifyOnChanges = false;
         }
 
-        return {move(changes), _maxPushedSequence, {}};
+        return {move(changes), _maxSequence, {}};
     }
 
 
     // Callback from the C4DatabaseObserver when the database has changed
     // **This is called on an arbitrary thread!**
     void ChangesFeed::_dbChanged() {
-        if (!_changeObserver)
-            return; // if replication has stopped already by the time this async call occurs
-        logVerbose("Database changed!");
-        if (_notifyOnChanges) {
-            _notifyOnChanges = false;
-            _pusher.dbHasNewChanges();
-        }
+        logVerbose("Database changed! [notify=%d]", _notifyOnChanges.load());
+        if (_notifyOnChanges.exchange(false))  // test-and-clear
+            _delegate.dbHasNewChanges();
     }
 
 
@@ -208,7 +217,7 @@ namespace litecore { namespace repl {
     // other shouldPushRev, which does more expensive checks.
     Retained<RevToSend> ChangesFeed::revToSend(C4DocumentInfo &info, C4DocEnumerator *e, C4Database *db)
     {
-        _maxPushedSequence = info.sequence;
+        _maxSequence = info.sequence;
         if (info.expiration > 0 && info.expiration < c4_now()) {
             logVerbose("'%.*s' is expired; not pushing it", SPLAT(info.docID));
             return nullptr;             // skip rev: expired
@@ -234,13 +243,13 @@ namespace litecore { namespace repl {
     // This is called both by revToSend, and by Pusher::doneWithRev.
     bool ChangesFeed::shouldPushRev(RevToSend *rev, C4DocEnumerator *e, C4Database *db) const {
         bool needRemoteRevID = _getForeignAncestors && !rev->remoteAncestorRevID
-                                                    && _pusher.isCheckpointValid();
+                                                    && _isCheckpointValid;
         if (needRemoteRevID || _options.pushFilter) {
             c4::ref<C4Document> doc;
             C4Error error;
             doc = e ? c4enum_getDocument(e, &error) : c4doc_get(db, rev->docID, true, &error);
             if (!doc) {
-                _pusher.failedToGetChange(rev, error, false);
+                _delegate.failedToGetChange(rev, error, false);
                 return false;         // fail the rev: error getting doc
             }
             if (slice(doc->revID) != slice(rev->revID))
@@ -278,7 +287,7 @@ namespace litecore { namespace repl {
             if (_options.pull <= kC4Passive) {
                 C4Error error = c4error_make(WebSocketDomain, 409,
                                      "conflicts with newer server revision"_sl);
-                _pusher.failedToGetChange(rev, error, false);
+                _delegate.failedToGetChange(rev, error, false);
             }
             return false;    // skip or fail rev: there's a newer one on the peer
         }

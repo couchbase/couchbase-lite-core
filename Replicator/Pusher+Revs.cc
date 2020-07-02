@@ -17,6 +17,7 @@
 //
 
 #include "Pusher.hh"
+#include "ReplicatorTuning.hh"
 #include "BLIP.hh"
 #include "HTTPTypes.hh"
 #include "StringUtil.hh"

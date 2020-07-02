@@ -18,6 +18,7 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Pusher.hh"
+#include "ReplicatorTuning.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "BLIP.hh"
@@ -75,7 +76,7 @@ namespace litecore { namespace repl {
         C4SequenceNumber since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
         _changesFeed.setContinuous(_continuous);
-        _changesFeed.skipDeletedDocs(req->boolProperty("activeOnly"_sl));
+        _changesFeed.setSkipDeletedDocs(req->boolProperty("activeOnly"_sl));
         logInfo("Peer is pulling %schanges from seq #%" PRIu64,
             (_continuous ? "continuous " : ""), since);
 
@@ -98,7 +99,7 @@ namespace litecore { namespace repl {
     void Pusher::startSending(C4SequenceNumber sinceSequence) {
         _lastSequenceRead = sinceSequence;
         _changesFeed.setLastSequence(_lastSequenceRead);
-        _changesFeed.getForeignAncestors(getForeignAncestors());
+        _changesFeed.setFindForeignAncestors(getForeignAncestors());
         maybeGetMoreChanges();
     }
 
@@ -106,7 +107,7 @@ namespace litecore { namespace repl {
     // Request another batch of changes from the db, if there aren't too many in progress
     void Pusher::maybeGetMoreChanges() {
         if (!_gettingChanges
-                         && (!_caughtUp || _observerHasNewChanges)
+                         && (!_caughtUp || !_continuousCaughtUp)
                          && _changeListsInFlight < (_caughtUp ? 1 : tuning::kMaxChangeListsInFlight)
                          && _revsToSend.size() < tuning::kMaxRevsQueued
                          && connected()) {
@@ -118,7 +119,7 @@ namespace litecore { namespace repl {
 
     void Pusher::getMoreChanges() {
         _gettingChanges = false;
-        _observerHasNewChanges = false;
+        _continuousCaughtUp = true;
 
         if (!connected())
             return;
@@ -192,6 +193,8 @@ namespace litecore { namespace repl {
             if (!_caughtUp) {
                 logInfo("Caught up, at lastSequence #%" PRIu64, _lastSequenceRead);
                 _caughtUp = true;
+                if (_continuous)
+                    _continuousCaughtUp = false;
                 if (changeCount > 0 && passive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
                     // one if we didn't already:
@@ -200,15 +203,18 @@ namespace litecore { namespace repl {
             }
         } else if (_continuous) {
             // Got a full batch of changes, so assume there are more
-            _observerHasNewChanges = true;
+            _continuousCaughtUp = false;
         }
 
         maybeGetMoreChanges();
     }
 
 
+    // Async call from the ChangesFeed when it observes new database changes in continuous mode
     void Pusher::_dbHasNewChanges() {
-        _observerHasNewChanges = true;
+        if (!connected())
+            return;
+        _continuousCaughtUp = false;
         maybeGetMoreChanges();
     }
 
@@ -286,7 +292,7 @@ namespace litecore { namespace repl {
             }
             decrement(_changeListsInFlight);
             _proposeChangesKnown = true;
-            _changesFeed.getForeignAncestors(getForeignAncestors());
+            _changesFeed.setFindForeignAncestors(getForeignAncestors());
             MessageIn *reply = progress.reply;
             if (!proposedChanges && reply->isError()) {
                 auto err = progress.reply->getError();
@@ -294,7 +300,7 @@ namespace litecore { namespace repl {
                     // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
                     logInfo("Server requires 'proposeChanges'; retrying...");
                     _proposeChanges = true;
-                    _changesFeed.getForeignAncestors(getForeignAncestors());
+                    _changesFeed.setFindForeignAncestors(getForeignAncestors());
                     sendChanges(move(changes));
                     return;
                 }
@@ -475,8 +481,7 @@ namespace litecore { namespace repl {
 
     bool Pusher::isBusy() const {
         return Worker::computeActivityLevel() == kC4Busy
-            || (_started && !_caughtUp)
-            || _observerHasNewChanges
+            || (_started && (!_caughtUp || !_continuousCaughtUp))
             || _changeListsInFlight > 0
             || _revisionsInFlight > 0
             || _blobsInFlight > 0
