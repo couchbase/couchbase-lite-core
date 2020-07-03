@@ -100,6 +100,7 @@ namespace litecore { namespace blip {
 
         Retained<Connection>    _connection;
         Retained<WebSocket>     _webSocket;
+        Retained<crypto::Cert>  _peerTLSCertificate; // Cached for offline use
         unique_ptr<error>       _closingWithError;
         actor::ActorBatcher<BLIPIO,websocket::Message> _incomingFrames;
         MessageQueue            _outbox;
@@ -157,6 +158,15 @@ namespace litecore { namespace blip {
 
         void close(CloseCode closeCode = kCodeNormal, slice message =nullslice) {
             enqueue(&BLIPIO::_close, closeCode, alloc_slice(message));
+        }
+        
+        Retained<crypto::Cert> peerTLSCertificate() const {
+            if(_webSocket) {
+                return _webSocket->peerTLSCertificate();
+            }
+            
+            // If we no longer have a web socket, return the last known cert
+            return _peerTLSCertificate;
         }
 
         WebSocket* webSocket() const {
@@ -225,6 +235,10 @@ namespace litecore { namespace blip {
 
         void _closed(websocket::CloseStatus status) {
             _onWebSocketMessages(); // process any pending incoming frames
+            
+            if(_webSocket) {
+                _peerTLSCertificate = _webSocket->peerTLSCertificate();
+            }
 
             _webSocket = nullptr;
             if (_connection) {
@@ -710,6 +724,16 @@ namespace litecore { namespace blip {
         Assert(_state == kClosed);
         _io->terminate();
         _io = nullptr;
+    }
+
+
+    
+    Retained<crypto::Cert> Connection::peerTLSCertificate() {
+        if(_io) {
+            _peerTLSCertificate = _io->peerTLSCertificate();
+        }
+        
+        return _peerTLSCertificate;
     }
 
 

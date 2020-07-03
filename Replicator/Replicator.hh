@@ -25,6 +25,7 @@
 #include "fleece/Fleece.hh"
 #include "InstanceCounted.hh"
 #include "Stopwatch.hh"
+#include "Certificate.hh"
 #include <unordered_set>
 
 using namespace litecore::blip;
@@ -113,6 +114,8 @@ namespace litecore { namespace repl {
         void docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID);
 
         Retained<Replicator> replicatorIfAny() override         {return this;}
+        
+        Retained<crypto::Cert> peerTLSCertificate() const { return connected() ? connection().peerTLSCertificate() : _peerTLSCertificate; }
 
     protected:
         virtual std::string loggingClassName() const override  {
@@ -188,6 +191,7 @@ namespace litecore { namespace repl {
         alloc_slice _checkpointJSONToSave;
         alloc_slice _remoteCheckpointDocID;
         alloc_slice _remoteCheckpointRevID;
+        Retained<crypto::Cert> _peerTLSCertificate; // Used when connection is not available
     };
 
 } }

@@ -420,6 +420,11 @@ namespace litecore { namespace repl {
         _connectionState = state;
 
         _checkpointer.stopAutosave();
+        
+        if(connected()) {
+            // The ability to get this goes away after the connection is closed, so cache it!
+            _peerTLSCertificate = connection().peerTLSCertificate();
+        }
 
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();

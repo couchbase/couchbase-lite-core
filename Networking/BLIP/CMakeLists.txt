@@ -54,4 +54,5 @@ target_include_directories(
     ${SUPPORT_LOCATION}
     ${FLEECE_LOCATION}/API
     ${FLEECE_LOCATION}/Fleece/Support
+    ${LITECORE_LOCATION}/Crypto
 )

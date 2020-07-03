@@ -291,6 +291,10 @@ extern "C" {
     bool c4repl_isDocumentPending(C4Replicator* repl C4NONNULL, C4String docID, C4Error* outErr) C4API;
 
 
+    /** Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket) */
+    C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl C4NONNULL, C4Error* outErr) C4API;
+
+
 #pragma mark - COOKIES:
 
 

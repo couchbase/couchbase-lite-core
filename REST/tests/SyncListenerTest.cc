@@ -100,6 +100,10 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync self-signed cert", "[Push][Li
     
     run((int)expectedError == 0);
     CHECK(_callbackStatus.error.code == expectedError);
+    REQUIRE(_remoteCert);
+    alloc_slice receivedCert = c4cert_copyData(_remoteCert, false);
+    alloc_slice expectedCert = c4cert_copyData(serverIdentity.cert, false);
+    CHECK(receivedCert == expectedCert);
 }
 
 
@@ -108,7 +112,6 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync non self-signed cert", "[Push
     ::Identity endIdentity = CertHelper::createIdentity(false, kC4CertUsage_TLSServer, kSubjectName, nullptr, &caIdentity, false);
     C4NetworkErrorCode expectedError = (C4NetworkErrorCode)0;
     slice expectedMessage {};
-    
     
     // Pinned shouldn't differ betwen modes
     SECTION("Pinned, self-signed mode") {
@@ -138,6 +141,10 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync non self-signed cert", "[Push
     
     run((int)expectedError == 0);
     CHECK(_callbackStatus.error.code == expectedError);
+    REQUIRE(_remoteCert);
+    alloc_slice receivedCert = c4cert_copyData(_remoteCert, false);
+    alloc_slice expectedCert = c4cert_copyData(endIdentity.cert, false);
+    CHECK(receivedCert == expectedCert);
     if(expectedMessage.buf) {
         alloc_slice gotMessage = c4error_getMessage(_callbackStatus.error);
         CHECK(gotMessage == expectedMessage);

@@ -314,6 +314,7 @@ _c4keypair_removePersistent
 _c4keypair_persistentWithPublicKey
 
 _c4repl_newLocal
+_c4repl_getPeerTLSCertificate
 
 # C4Tests
 

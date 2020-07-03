@@ -194,11 +194,20 @@ public:
 
         _callbackStatus = s;
         ++_numCallbacks;
-        Assert(s.level != kC4Stopping);   // No internal state allowed
+        C4Assert(s.level != kC4Stopping);   // No internal state allowed
         _numCallbacksWithLevel[(int)s.level]++;
         if (s.level == kC4Offline) {
-            Assert(_mayGoOffline);
+            C4Assert(_mayGoOffline);
             _wentOffline = true;
+        }
+        
+        if(!_remoteCert) {
+            C4Error err;
+            _remoteCert = c4repl_getPeerTLSCertificate(_repl, &err);
+            if(!_remoteCert) {
+                WARN("Failed to get remote TLS certificate");
+                REQUIRE(err.code == 0);
+            }
         }
         
         if (!_headers) {
@@ -212,7 +221,7 @@ public:
         if (!_socketFactory && !db2) {  // i.e. this is a real WebSocket connection
             if ((s.level > kC4Connecting && s.error.code == 0)
                     || (s.level == kC4Stopped && s.error.domain == WebSocketDomain))
-                Assert(_headers);
+                C4Assert(_headers);
         }
 
         if (s.level == kC4Idle && _stopWhenIdle) {
@@ -438,6 +447,7 @@ public:
     AllocedDict _options;
     alloc_slice _authHeader;
     alloc_slice pinnedCert;
+    C4Cert* _remoteCert {nullptr};
 #ifdef COUCHBASE_ENTERPRISE
     c4::ref<C4Cert> identityCert;
     c4::ref<C4KeyPair> identityKey;

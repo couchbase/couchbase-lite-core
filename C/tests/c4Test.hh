@@ -49,8 +49,7 @@ using namespace fleece;
 // REQUIRE, CHECK and other Catch macros can't be used on background threads because Check is not
 // thread-safe. Use this instead. Don't use regular assert() because if this is an optimized build
 // it'll be ignored.
-#undef Assert
-#define	Assert(e, ...) \
+#define	C4Assert(e, ...) \
     (_usuallyFalse(!(e)) ? AssertionFailed(__func__, __FILE__, __LINE__, #e, ##__VA_ARGS__) \
                          : (void)0)
 
@@ -118,14 +117,14 @@ class TransactionHelper {
     public:
     explicit TransactionHelper(C4Database* db) {
         C4Error error;
-        Assert(c4db_beginTransaction(db, &error));
+        C4Assert(c4db_beginTransaction(db, &error));
         _db = db;
     }
 
     ~TransactionHelper() {
         if (_db) {
             C4Error error;
-            Assert(c4db_endTransaction(_db, true, &error));
+            C4Assert(c4db_endTransaction(_db, true, &error));
         }
     }
 

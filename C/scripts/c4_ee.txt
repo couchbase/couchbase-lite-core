@@ -36,6 +36,7 @@ c4keypair_removePersistent
 c4keypair_persistentWithPublicKey
 
 c4repl_newLocal
+c4repl_getPeerTLSCertificate
 
 ##################################################################################################
 # Add new declarations below, so they will not produce (unused) C# bindings
