@@ -151,7 +151,7 @@ namespace litecore { namespace repl {
                 active->second = rev;
                 if (!_passive)
                     _checkpointer.addPendingSequence(rev->sequence);
-                changes->erase(i);             // defer rev: already sending a previous revision
+                i = changes->erase(i);             // defer rev: already sending a previous revision
             } else {
                 _pushingDocs.insert({rev->docID, nullptr});
                 ++i;
