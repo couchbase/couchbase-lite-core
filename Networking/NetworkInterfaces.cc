@@ -190,7 +190,7 @@ namespace litecore::net {
         for (auto i = interfaces.begin(); i != interfaces.end();) {
             auto &intf = *i;
             if (intf.addresses.empty()) {
-                interfaces.erase(i);
+                i = interfaces.erase(i);
                 continue;
             }
             sort(intf.addresses.begin(), intf.addresses.end());
@@ -198,7 +198,7 @@ namespace litecore::net {
                 // As a heuristic, ignore interfaces that have _only_ link-local IPv6 addresses,
                 // since IPv6 requires that _every_ interface have a link-local address.
                 // Such interfaces are likely to be inactive.
-                interfaces.erase(i);
+                i = interfaces.erase(i);
                 continue;
             }
             ++i;
