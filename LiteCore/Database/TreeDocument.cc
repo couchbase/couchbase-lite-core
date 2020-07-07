@@ -319,6 +319,16 @@ namespace c4Internal {
                 Assert(putNewRevision(rq));
                 LogTo(DBLog, "Resolved conflict, adding rev '%.*s' #%.*s",
                       SPLAT(docID), SPLAT(selectedRev.revID));
+            } else if(winningRev->sequence == sequence) {
+                // CBL-1089
+                // In this case the winning revision both had no body, meaning that it
+                // already existed in the database previous with the conflict flag,
+                // and its sequence matches the latest sequence of the document.
+                // This means that it has not been entered into the sequence tracker
+                // yet, because the documentSaved method will not consider conflicts,
+                // but it needs to be now that it is resolved.
+                selectRevision(winningRev);
+                _db->documentSaved(this);
             }
         }
 
