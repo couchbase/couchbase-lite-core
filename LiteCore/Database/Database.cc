@@ -670,7 +670,11 @@ namespace c4Internal {
 
 
     void Database::documentSaved(Document* doc) {
-        if (_sequenceTracker) {
+        // CBL-1089
+        // Conflicted documents are not eligible to be replicated,
+        // so ignore them.  Later when the conflict is resolved
+        // there will be logic to replicate them (see TreeDocument::resolveConflict)
+        if (_sequenceTracker && !(doc->selectedRev.flags & kRevIsConflict)) {
             _sequenceTracker->use([doc](SequenceTracker &st) {
                 Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
                 st.documentChanged(doc->_docIDBuf,
