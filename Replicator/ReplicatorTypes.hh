@@ -78,11 +78,12 @@ namespace litecore { namespace repl {
         unsigned        maxHistory {0};             // Max depth of rev history to send
         const uint64_t  bodySize {0};               // (Estimated) size of body
         int64_t         expiration {0};             // Time doc expires
+        std::unique_ptr<std::vector<alloc_slice>> ancestorRevIDs; // Known ancestor revIDs the peer already has
+        Retained<RevToSend> nextRev;                // Newer rev waiting for this one to finish
         bool            noConflicts {false};        // Server is in no-conflicts mode
         bool            legacyAttachments {false};  // Add _attachments property when sending
         bool            deltaOK {false};            // Can send a delta
         int8_t          retryCount {0};             // Number of times this revision has been retried
-        std::unique_ptr<std::vector<alloc_slice>> ancestorRevIDs; // Known ancestor revIDs the peer already has
 
         RevToSend(const C4DocumentInfo &info);
 

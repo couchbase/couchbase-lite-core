@@ -60,8 +60,11 @@ namespace litecore { namespace repl {
         void handleSubChanges(Retained<MessageIn> req);
         void gotOutOfOrderChange(RevToSend* NONNULL);
         void sendChanges(std::shared_ptr<RevToSendList>);
-        void maybeGetMoreChanges();
-        void getMoreChanges();
+        void handleChangesResponse(std::shared_ptr<RevToSendList>, MessageIn*, bool proposedChanges);
+        bool handleChangeResponse(RevToSend *change, Value response);
+        bool handleProposedChangeResponse(RevToSend *change, Value response);
+        void maybeGetMoreChanges()          {enqueue(&Pusher::_maybeGetMoreChanges);}
+        void _maybeGetMoreChanges();
         void gotChanges(std::shared_ptr<RevToSendList> changes,
                         C4SequenceNumber lastSequence,
                         C4Error err);
@@ -91,7 +94,7 @@ namespace litecore { namespace repl {
                                         bool sendLegacyAttachments);
         void revToSendIsObsolete(const RevToSend &request, C4Error *c4err);
 
-        using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash>;
+        using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>>;
 
         bool _continuous;
         bool _proposeChanges;
@@ -101,7 +104,6 @@ namespace litecore { namespace repl {
         DocIDToRevMap _conflictsIMightRetry;
         C4SequenceNumber _lastSequenceRead {0};   // Last sequence read from db
         C4SequenceNumber _lastSequenceLogged {0}; // Checkpointed last-sequence
-        bool _gettingChanges {false};             // Waiting for _gotChanges() call?
         Checkpointer& _checkpointer;              // Tracks checkpoints & pending sequences
         bool _started {false};
         bool _caughtUp {false};                   // Received backlog of pre-existing changes?
@@ -111,7 +113,7 @@ namespace litecore { namespace repl {
         unsigned _revisionsInFlight {0};          // # 'rev' messages being sent
         MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
         unsigned _blobsInFlight {0};              // # of blobs being sent
-        std::deque<Retained<RevToSend>> _revsToSend;  // Revs to send to peer but not sent yet
+        std::deque<Retained<RevToSend>> _revQueue;// Revs to send to peer but not sent yet
         RevToSendList _revsToRetry;               // Revs that failed with a transient error
     };
     

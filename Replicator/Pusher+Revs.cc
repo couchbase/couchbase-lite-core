@@ -29,14 +29,14 @@ namespace litecore::repl {
     void Pusher::maybeSendMoreRevs() {
         while (_revisionsInFlight < tuning::kMaxRevsInFlight
                    && _revisionBytesAwaitingReply <= tuning::kMaxRevBytesAwaitingReply
-                   && !_revsToSend.empty()) {
-            Retained<RevToSend> first = move(_revsToSend.front());
-            _revsToSend.pop_front();
+                   && !_revQueue.empty()) {
+            Retained<RevToSend> first = move(_revQueue.front());
+            _revQueue.pop_front();
             sendRevision(first);
-            if (_revsToSend.size() == tuning::kMaxRevsQueued - 1)
+            if (_revQueue.size() == tuning::kMaxRevsQueued - 1)
                 maybeGetMoreChanges();          // I may now be eligible to send more changes
         }
-//        if (!_revsToSend.empty())
+//        if (!_revQueue.empty())
 //            logVerbose("Throttling sending revs; _revisionsInFlight=%u/%u, _revisionBytesAwaitingReply=%llu/%u",
 //                       _revisionsInFlight, tuning::kMaxRevsInFlight,
 //                       _revisionBytesAwaitingReply, tuning::kMaxRevBytesAwaitingReply);
@@ -301,15 +301,8 @@ namespace litecore::repl {
         }
 
         // Remove rev from _pushingDocs, and see if there's a newer revision to send next:
-        auto i = _pushingDocs.find(rev->docID);
-        if (i == _pushingDocs.end()) {
-            if (connected())
-                warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
-            return;
-        }
-
-        Retained<RevToSend> newRev = i->second;
-        _pushingDocs.erase(i);
+        Retained<RevToSend> newRev = move(rev->nextRev);
+        _pushingDocs.erase(rev->docID);
         if (newRev) {
             if (synced && getForeignAncestors())
                 newRev->remoteAncestorRevID = rev->revID;
