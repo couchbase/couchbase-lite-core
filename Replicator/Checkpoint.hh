@@ -6,6 +6,7 @@
 
 #pragma once
 #include "SequenceSet.hh"
+#include "RemoteSequence.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
 #include <algorithm>
@@ -86,9 +87,9 @@ namespace litecore { namespace repl {
 
         /** The last fully-complete _remote_ sequence, such that it and all earlier sequences are
             complete. */
-        fleece::alloc_slice remoteMinSequence() const       {return _remote;}
+        RemoteSequence remoteMinSequence() const       {return _remote;}
 
-        bool setRemoteMinSequence(fleece::slice s);
+        bool setRemoteMinSequence(const RemoteSequence&);
 
         static bool gWriteTimestamps;   // for testing; set to false to disable timestamps in JSON
 
@@ -98,7 +99,7 @@ namespace litecore { namespace repl {
 
         SequenceSet         _completed;         // Set of completed local sequences
         C4SequenceNumber    _lastChecked;       // Last local sequence checked in the db
-        fleece::alloc_slice _remote;            // Last completed remote sequence
+        RemoteSequence      _remote;            // Last completed remote sequence
     };
 
 } }

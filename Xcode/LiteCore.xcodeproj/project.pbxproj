@@ -1413,6 +1413,7 @@
 		27FA568324AD0E9300B2F1F8 /* Pusher+Attachments.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Pusher+Attachments.cc"; sourceTree = "<group>"; };
 		27FA568824AD0F8E00B2F1F8 /* Pusher+Revs.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Pusher+Revs.cc"; sourceTree = "<group>"; };
 		27FA568F24AD4BBB00B2F1F8 /* ChangesFeed.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ChangesFeed.hh; sourceTree = "<group>"; };
+		27FA569524B640E700B2F1F8 /* RemoteSequence.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RemoteSequence.hh; sourceTree = "<group>"; };
 		27FB0C37205B177100987D9C /* Instrumentation.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Instrumentation.hh; sourceTree = "<group>"; };
 		27FB0C3C205B18A500987D9C /* Instrumentation.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Instrumentation.cc; sourceTree = "<group>"; };
 		27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libLiteCoreREST-static.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2083,7 +2084,6 @@
 				27BF033C1FB62A87003D5BB8 /* Logging */,
 				273407211DEE116600EA5532 /* PlatformIO.cc */,
 				273407221DEE116600EA5532 /* PlatformIO.hh */,
-				2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */,
 				2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */,
 				2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */,
 				2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */,
@@ -2417,6 +2417,8 @@
 				2726F630207ED137007F2D02 /* ReplicatorTuning.hh */,
 				2734F619206ABEB000C982FF /* ReplicatorTypes.cc */,
 				2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */,
+				27FA569524B640E700B2F1F8 /* RemoteSequence.hh */,
+				2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */,
 				275CE1131E5BAC180084E014 /* Worker.cc */,
 				275CE1141E5BAC180084E014 /* Worker.hh */,
 			);

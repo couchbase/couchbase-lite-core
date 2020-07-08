@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "fleece/slice.hh"
+#include "RemoteSequence.hh"
 #include <map>
 
 namespace litecore { namespace repl {
@@ -26,13 +26,10 @@ namespace litecore { namespace repl {
         This is used by the replicator to keep track of which revisions are being pulled. */
     class RemoteSequenceSet {
     public:
-        typedef fleece::alloc_slice sequence;
-        class reference;
-
         RemoteSequenceSet()                     { }
 
         /** Empties the set. */
-        void clear(sequence since) {
+        void clear(RemoteSequence since) {
             _sequences.clear();
             _nextOrder = 0;
             _lastAdded = since;
@@ -48,21 +45,21 @@ namespace litecore { namespace repl {
         }
 
         /** Returns the sequence before the earliest one still in the set. */
-        sequence since() {
+        RemoteSequence since() {
             return (_first != _sequences.end()) ? _first->second.prevSequence : _lastAdded;
         }
 
         /** Adds a sequence to the set. */
-        void add(sequence s, uint64_t bodySize) {
+        void add(RemoteSequence s, uint64_t bodySize) {
             bool wasEmpty = empty();
             auto p = _sequences.insert({s, {_nextOrder++, _lastAdded, bodySize}});
-            _lastAdded = s;
+            _lastAdded = std::move(s);
             if (wasEmpty)
                 _first = p.first;
         }
 
         /** Removes the sequence if it's in the set. Returns true if it was the earliest. */
-        void remove(sequence s, bool &wasEarliest, uint64_t &outBodySize) {
+        void remove(const RemoteSequence &s, bool &wasEarliest, uint64_t &outBodySize) {
             auto i = _sequences.find(s);
             if (i == _sequences.end()) {
                 outBodySize = 0;
@@ -80,7 +77,7 @@ namespace litecore { namespace repl {
             }
         }
 
-        uint64_t bodySizeOfSequence(sequence s) {
+        uint64_t bodySizeOfSequence(const RemoteSequence &s) {
             auto i = _sequences.find(s);
             return (i == _sequences.end()) ? 0 : i->second.bodySize;
         }
@@ -105,14 +102,14 @@ namespace litecore { namespace repl {
 
         struct value {
             size_t order;                   // Chronological order in which this sequence was added
-            sequence prevSequence;          // The previously-added sequence
+            RemoteSequence prevSequence;    // The previously-added sequence
             uint64_t bodySize;              // Approx doc size, for client's use
         };
-        using sequenceMap = std::map<sequence, value>;
+        using sequenceMap = std::map<RemoteSequence, value>;
 
         sequenceMap _sequences;             // Maps sequence to {order, previous seq}
         size_t _nextOrder {0};              // Order to assign to the next insertion
-        sequence _lastAdded;                // The last sequence added
+        RemoteSequence _lastAdded;          // The last sequence added
         sequenceMap::iterator _first {};    // Points to the earliest sequence still in _sequences
     };
 

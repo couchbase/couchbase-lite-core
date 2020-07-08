@@ -31,30 +31,6 @@ namespace litecore { namespace repl { namespace tuning {
 
 namespace litecore { namespace repl {
 
-#pragma mark DOCIDMULTISET:
-
-
-    bool DocIDMultiset::contains(const fleece::alloc_slice &docID) const {
-        return _set.use<bool>([&](const multiset &s) {
-            return s.count(docID) > 0;
-        });
-    }
-
-    void DocIDMultiset::add(const fleece::alloc_slice &docID) {
-        _set.use([&](multiset &s) {
-            s.insert(docID);
-        });
-    }
-
-    void DocIDMultiset::remove(const fleece::alloc_slice &docID) {
-        _set.use([&](multiset &s) {
-            auto i = s.find(docID);
-            if (i != s.end())
-                s.erase(i);
-        });
-    }
-
-
 #pragma mark - REVTOSEND:
 
 

@@ -1,0 +1,84 @@
+//
+// RemoteSequence.hh
+//
+// Copyright © 2020 Couchbase. All rights reserved.
+//
+
+#pragma once
+#include "StringUtil.hh"
+#include "fleece/Fleece.hh"
+#include <variant>
+
+namespace litecore::repl {
+
+    /** A sequence received from a remote peer. Can be any JSON value, but optimized for positive ints. */
+    class RemoteSequence {
+    public:
+        RemoteSequence() noexcept
+        :_value(fleece::nullslice)
+        { }
+
+        explicit RemoteSequence(fleece::Value val) {
+            if (val.isInteger())
+                _value = val.asUnsigned();
+            else
+                _value = val.toJSON();
+        }
+
+        explicit RemoteSequence(fleece::slice json) {
+            if (json.size == 0) {
+                _value = fleece::nullslice;
+            } else {
+                fleece::slice number = json;
+                auto n = number.readDecimal();
+                if (number.size == 0)
+                    _value = n;
+                else
+                    _value = fleece::alloc_slice(json);
+            }
+        }
+
+        explicit operator bool() const noexcept FLPURE {return isInt() || sliceValue();}
+        bool isInt() const noexcept FLPURE            {return std::holds_alternative<uint64_t>(_value);}
+        uint64_t intValue() const FLPURE              {return *std::get_if<uint64_t>(&_value);}
+        const fleece::alloc_slice& sliceValue() const FLPURE  {
+            return *std::get_if<fleece::alloc_slice>(&_value);
+        }
+
+        fleece::alloc_slice toJSON() const {
+            if (isInt()) {
+                char buf[30];
+                sprintf(buf, "%llu", intValue());
+                return fleece::alloc_slice(buf);
+            } else {
+                return sliceValue();
+            }
+        }
+
+        std::string toJSONString() const {
+            if (isInt())
+                return format("%llu", intValue());
+            else
+                return string(sliceValue());
+        }
+
+        bool operator== (const RemoteSequence &other) const noexcept FLPURE {
+            return _value == other._value;
+        }
+
+        bool operator!= (const RemoteSequence &other) const noexcept FLPURE {
+            return _value != other._value;
+        }
+
+        bool operator< (const RemoteSequence &other) const noexcept FLPURE {
+            if (isInt())
+                return !other.isInt() || intValue() < other.intValue();
+            else
+                return !other.isInt() && sliceValue() < other.sliceValue();
+        }
+
+    private:
+        std::variant<uint64_t, fleece::alloc_slice> _value;
+    };
+
+}

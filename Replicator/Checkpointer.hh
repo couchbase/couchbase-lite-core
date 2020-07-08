@@ -7,6 +7,7 @@
 #pragma once
 #include "ReplicatorOptions.hh"
 #include "ReplicatorTypes.hh"
+#include "RemoteSequence.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "Timer.hh"
@@ -57,10 +58,10 @@ namespace litecore { namespace repl {
         bool isSequenceCompleted(C4SequenceNumber) const;
 
         /** The checkpoint's remote sequence, the last one up to which all is pulled. */
-        fleece::alloc_slice remoteMinSequence() const;
+        RemoteSequence remoteMinSequence() const;
 
         /** Updates the checkpoint's remote sequence. */
-        void setRemoteMinSequence(fleece::slice s);
+        void setRemoteMinSequence(const RemoteSequence&);
 
         // Checkpoint IDs:
 

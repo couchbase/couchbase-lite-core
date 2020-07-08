@@ -117,7 +117,7 @@ namespace litecore { namespace repl {
                 while (c4enum_next(e, &error) && limit > 0) {
                     C4DocumentInfo info;
                     c4enum_getDocumentInfo(e, &info);
-                    auto rev = revToSend(info, e, db);
+                    auto rev = makeRevToSend(info, e, db);
                     if (rev) {
                         changes->push_back(rev);
                         --limit;
@@ -178,7 +178,7 @@ namespace litecore { namespace repl {
                     // Note: we send tombstones even if the original getChanges() call specified
                     // skipDeletions. This is intentional; skipDeletions applies only to the initial
                     // dump of existing docs, not to 'live' changes.
-                    auto rev = revToSend(info, nullptr, db);
+                    auto rev = makeRevToSend(info, nullptr, db);
                     if (rev) {
                         changes->push_back(rev);
                         --limit;
@@ -215,7 +215,7 @@ namespace litecore { namespace repl {
     // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
     // It does some quick tests, and if those pass creates a RevToSend and passes it on to the
     // other shouldPushRev, which does more expensive checks.
-    Retained<RevToSend> ChangesFeed::revToSend(C4DocumentInfo &info, C4DocEnumerator *e, C4Database *db)
+    Retained<RevToSend> ChangesFeed::makeRevToSend(C4DocumentInfo &info, C4DocEnumerator *e, C4Database *db)
     {
         _maxSequence = info.sequence;
         if (info.expiration > 0 && info.expiration < c4_now()) {

@@ -19,6 +19,7 @@
 #pragma once
 #include "Worker.hh"
 #include "ReplicatorTypes.hh"
+#include "RemoteSequence.hh"
 #include "function_ref.hh"
 #include <atomic>
 #include <vector>
@@ -39,7 +40,7 @@ namespace litecore { namespace repl {
             enqueue(&IncomingRev::_handleRev, retained(revMessage));
         }
         RevToInsert* rev() const                {return _rev;}
-        alloc_slice remoteSequence() const      {return _remoteSequence;}
+        RemoteSequence remoteSequence() const   {return _remoteSequence;}
         bool wasProvisionallyInserted() const   {return _provisionallyInserted;}
 
         // Called by the Inserter:
@@ -68,7 +69,7 @@ namespace litecore { namespace repl {
         std::vector<PendingBlob> _pendingBlobs;
         Retained<IncomingBlob> _currentBlob;
         int _peerError {0};
-        alloc_slice _remoteSequence;
+        RemoteSequence _remoteSequence;
         uint32_t _serialNumber {0};
         std::atomic<bool> _provisionallyInserted {false};
     };

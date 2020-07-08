@@ -74,7 +74,7 @@ namespace litecore::repl {
         Changes getObservedChanges(unsigned limit);
         void _dbChanged();
         bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const;
-        Retained<RevToSend> revToSend(C4DocumentInfo&, C4DocEnumerator*, C4Database* NONNULL);
+        Retained<RevToSend> makeRevToSend(C4DocumentInfo&, C4DocEnumerator*, C4Database* NONNULL);
         bool shouldPushRev(RevToSend*, C4DocEnumerator*, C4Database* NONNULL) const;
 
         Delegate& _delegate;

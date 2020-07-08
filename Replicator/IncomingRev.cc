@@ -66,7 +66,8 @@ namespace litecore { namespace repl {
                                _revMessage->boolProperty("noconflicts"_sl)
                                    || _options.noIncomingConflicts());
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
-        _remoteSequence = _revMessage->property(slice("sequence"));
+        slice sequenceStr = _revMessage->property(slice("sequence"));
+        _remoteSequence = RemoteSequence(sequenceStr);
 
         _peerError = (int)_revMessage->intProperty("error"_sl);
         if (_peerError) {
@@ -79,7 +80,7 @@ namespace litecore { namespace repl {
 
         // Validate the revID and sequence:
         logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')",
-                   SPLAT(_rev->docID), SPLAT(_rev->revID), SPLAT(_remoteSequence));
+                   SPLAT(_rev->docID), SPLAT(_rev->revID), SPLAT(sequenceStr));
         if (_rev->docID.size == 0 || _rev->revID.size == 0) {
             warn("Got invalid revision");
             _rev->error = c4error_make(WebSocketDomain, 400, "received invalid revision"_sl);
