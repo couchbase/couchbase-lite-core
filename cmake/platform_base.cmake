@@ -89,8 +89,8 @@ function(set_litecore_source_base)
         Replicator/Checkpointer.cc
         Replicator/DatabaseCookies.cc
         Replicator/DBAccess.cc
-        Replicator/IncomingBlob.cc
         Replicator/IncomingRev.cc
+        Replicator/IncomingRev+Blobs.cc
         Replicator/Inserter.cc
         Replicator/Puller.cc
         Replicator/Pusher.cc

@@ -17,7 +17,6 @@
 //
 
 #include "IncomingRev.hh"
-#include "IncomingBlob.hh"
 #include "Puller.hh"
 #include "StringUtil.hh"
 #include "c4BlobStore.h"
@@ -53,7 +52,7 @@ namespace litecore { namespace repl {
         // (Re)initialize state (I can be used multiple times by the Puller):
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
         _provisionallyInserted = false;
-        DebugAssert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
+        DebugAssert(_pendingCallbacks == 0 && !_writer && !_blob && _pendingBlobs.empty());
 
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
@@ -185,49 +184,18 @@ namespace litecore { namespace repl {
         }
 
         // Request the first blob, or if there are none, finish:
-        if (!fetchNextBlob())
+        if (!_pendingBlobs.empty()) {
+            _blob = &*_pendingBlobs.begin();
+            fetchNextBlob();
+        } else {
             insertRevision();
-    }
-
-
-    bool IncomingRev::fetchNextBlob() {
-        auto blobStore = _db->blobStore();
-        while (!_pendingBlobs.empty()) {
-            PendingBlob firstPending = _pendingBlobs.front();
-            _pendingBlobs.erase(_pendingBlobs.begin());
-            if (c4blob_getSize(blobStore, firstPending.key) < 0) {
-                if (!_currentBlob)
-                    _currentBlob = new IncomingBlob(this, blobStore);
-                _currentBlob->start(firstPending);
-                return true;
-            }
-        }
-        _currentBlob = nullptr;
-        return false;
-    }
-
-
-    void IncomingRev::_childChangedStatus(Worker *task, Status status) {
-        addProgress(status.progressDelta);
-        if (status.level == kC4Idle) {
-            if (status.error.code && !_rev->error.code)
-                _rev->error = status.error;
-            if (!fetchNextBlob()) {
-                // All blobs completed, now finish:
-                if (_rev->error.code == 0) {
-                    logVerbose("All blobs received, now inserting revision");
-                    insertRevision();
-                } else {
-                    finish();
-                }
-            }
         }
     }
 
 
     // Asks the DBAgent to insert the revision, then sends the reply and notifies the Puller.
     void IncomingRev::insertRevision() {
-        Assert(_pendingBlobs.empty() && !_currentBlob);
+        Assert(!_blob);
         Assert(_rev->error.code == 0);
         Assert(_rev->deltaSrc || _rev->doc);
         increment(_pendingCallbacks);
@@ -277,9 +245,10 @@ namespace litecore { namespace repl {
             _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
 
         // Free up memory now that I'm done:
-        Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
-        _currentBlob = nullptr;
+        Assert(_pendingCallbacks == 0);
+        closeBlobWriter();
         _pendingBlobs.clear();
+        _blob = nullptr;
         _rev->trim();
 
         _puller->revWasHandled(this);
@@ -287,7 +256,7 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel() const {
-        if (Worker::computeActivityLevel() == kC4Busy || _pendingCallbacks > 0 || _currentBlob) {
+        if (Worker::computeActivityLevel() == kC4Busy || _pendingCallbacks > 0 || _blob) {
             return kC4Busy;
         } else {
             return kC4Stopped;

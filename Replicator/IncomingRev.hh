@@ -20,12 +20,11 @@
 #include "Worker.hh"
 #include "ReplicatorTypes.hh"
 #include "RemoteSequence.hh"
-#include "function_ref.hh"
+#include "c4.hh"
 #include <atomic>
 #include <vector>
 
 namespace litecore { namespace repl {
-    class IncomingBlob;
     class Puller;
     class RevToInsert;
 
@@ -55,25 +54,35 @@ namespace litecore { namespace repl {
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);
         void processBody(fleece::Doc, C4Error);
-        bool fetchNextBlob();
         void insertRevision();
         void _revisionInserted();
         void failWithError(C4Error);
         void failWithError(C4ErrorDomain, int code, slice message);
         void finish();
-        virtual void _childChangedStatus(Worker *task NONNULL, Status status) override;
 
-        C4BlobStore *_blobStore;
-        Puller* _puller;
-        Retained<blip::MessageIn> _revMessage;
-        Retained<RevToInsert> _rev;
-        unsigned _pendingCallbacks {0};
-        std::vector<PendingBlob> _pendingBlobs;
-        Retained<IncomingBlob> _currentBlob;
-        int _peerError {0};
-        RemoteSequence _remoteSequence;
-        uint32_t _serialNumber {0};
-        std::atomic<bool> _provisionallyInserted {false};
+        // blob stuff:
+        void fetchNextBlob();
+        bool startBlob();
+        void writeToBlob(fleece::alloc_slice);
+        void finishBlob();
+        void blobGotError(C4Error);
+        void notifyBlobProgress(bool always);
+        void closeBlobWriter();
+
+        Puller*                     _puller;
+        Retained<blip::MessageIn>   _revMessage;
+        Retained<RevToInsert>       _rev;
+        unsigned                    _pendingCallbacks {0};
+        int                         _peerError {0};
+        RemoteSequence              _remoteSequence;
+        uint32_t                    _serialNumber {0};
+        std::atomic<bool>           _provisionallyInserted {false};
+        // blob stuff:
+        std::vector<PendingBlob>    _pendingBlobs;
+        const PendingBlob*          _blob {nullptr};
+        c4::ref<C4WriteStream>      _writer;
+        uint64_t                    _blobBytesWritten;
+        actor::Timer::time          _lastNotifyTime;
     };
 
 } }

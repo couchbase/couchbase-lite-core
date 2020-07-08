@@ -215,7 +215,7 @@
 		2796A28423072F7000774850 /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2728512C1EA46475009CA22F /* Server.cc */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
-		279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
+		279976331E94AAD000B27639 /* IncomingRev+Blobs.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingRev+Blobs.cc */; };
 		279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */; };
 		279D40F91EA533D900D8DD9D /* netUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D40F61EA533D900D8DD9D /* netUtils.hh */; };
 		279DE3DC247888490059AE4E /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 271A98A6243D2204008C032D /* SystemConfiguration.framework */; };
@@ -1106,8 +1106,7 @@
 		279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "c4Listener+RESTFactory.cc"; sourceTree = "<group>"; };
 		2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4AllDocsPerformanceTest.cc; sourceTree = "<group>"; };
 		27984E422249AEDD000FE777 /* dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = dylib_Release.xcconfig; sourceTree = "<group>"; };
-		279976311E94AAD000B27639 /* IncomingBlob.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IncomingBlob.cc; sourceTree = "<group>"; };
-		279976321E94AAD000B27639 /* IncomingBlob.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = IncomingBlob.hh; sourceTree = "<group>"; };
+		279976311E94AAD000B27639 /* IncomingRev+Blobs.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "IncomingRev+Blobs.cc"; sourceTree = "<group>"; };
 		279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFTSRankFunction.cc; sourceTree = "<group>"; };
 		279D40F51EA533D900D8DD9D /* netUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = netUtils.cc; sourceTree = "<group>"; };
 		279D40F61EA533D900D8DD9D /* netUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = netUtils.hh; sourceTree = "<group>"; };
@@ -2227,8 +2226,7 @@
 				275E4CD42241C763006C5B71 /* RevFinder.hh */,
 				27E35A9F1E8DD9AA00E103F9 /* IncomingRev.cc */,
 				27E35AA01E8DD9AA00E103F9 /* IncomingRev.hh */,
-				279976311E94AAD000B27639 /* IncomingBlob.cc */,
-				279976321E94AAD000B27639 /* IncomingBlob.hh */,
+				279976311E94AAD000B27639 /* IncomingRev+Blobs.cc */,
 				275E4CCA22417D13006C5B71 /* Inserter.hh */,
 				275E4CCB22417D13006C5B71 /* Inserter.cc */,
 			);
@@ -3979,7 +3977,7 @@
 				270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */,
 				27D9655F2335667A00F4A51C /* SecureRandomize.cc in Sources */,
 				27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */,
-				279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */,
+				279976331E94AAD000B27639 /* IncomingRev+Blobs.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */,
 				2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */,
