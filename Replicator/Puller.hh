@@ -36,13 +36,13 @@ namespace litecore { namespace repl {
     public:
         Puller(Replicator* NONNULL);
 
-        void setSkipDeleted()                   {_skipDeleted = true;}
+        void setSkipDeleted()                       {_skipDeleted = true;}
 
         // Starts an active pull
-        void start(RemoteSequence sinceSequence)   {enqueue(&Puller::_start, sinceSequence);}
+        void start(RemoteSequence sinceSequence)    {enqueue(&Puller::_start, sinceSequence);}
 
         // Called only by IncomingRev
-        void revWasProvisionallyHandled()       {enqueue(&Puller::_revWasProvisionallyHandled);}
+        void revWasProvisionallyHandled()           {_provisionallyHandledRevs.add(1);}
         void revWasHandled(IncomingRev *inc NONNULL);
 
         void insertRevision(RevToInsert *rev NONNULL);
@@ -62,7 +62,8 @@ namespace litecore { namespace repl {
         void handleRev(Retained<MessageIn>);
         void handleNoRev(Retained<MessageIn>);
         void startIncomingRev(MessageIn* NONNULL);
-        void _revWasProvisionallyHandled();
+        void maybeStartIncomingRevs();
+        void _revsWereProvisionallyHandled();
         void _revsFinished(int gen);
         void completedSequence(const RemoteSequence&,
                                bool withTransientError =false, bool updateCheckpoint =true);
@@ -80,6 +81,7 @@ namespace litecore { namespace repl {
         RemoteSequenceSet _missingSequences; // Known sequences I need to pull
         std::deque<Retained<MessageIn>> _waitingRevMessages;     // Queued 'rev' messages
         mutable std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRevs
+        actor::ActorCountBatcher<Puller> _provisionallyHandledRevs;
         actor::ActorBatcher<Puller,IncomingRev> _returningRevs;
         Retained<Inserter> _inserter;
         Retained<RevFinder> _revFinder;

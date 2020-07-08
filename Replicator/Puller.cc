@@ -37,6 +37,7 @@ namespace litecore { namespace repl {
     :Worker(replicator, "Pull")
     ,_inserter(new Inserter(replicator))
     ,_revFinder(new RevFinder(replicator, *this))
+    ,_provisionallyHandledRevs(this, &Puller::_revsWereProvisionallyHandled)
     ,_returningRevs(this, &Puller::_revsFinished)
 #if __APPLE__
     ,_revMailbox(nullptr, "Puller revisions")
@@ -120,16 +121,15 @@ namespace litecore { namespace repl {
     // Called by the RevFinder to tell the Puller what revs it's requested from the peer.
     void Puller::_expectSequences(vector<RevFinder::ChangeSequence> sequences) {
         for (auto &change : sequences) {
-            bool requested = change.bodySize > 0;
             if (!passive()) {
                 // Add sequence to _missingSequences:
                 _missingSequences.add(change.sequence, change.bodySize);
-                if (requested)
+                if (change.requested())
                     addProgress({0, change.bodySize});
                 else
                     completedSequence(change.sequence); // Not requesting, just update checkpoint
             }
-            if (requested) {
+            if (change.requested()) {
                 increment(_pendingRevMessages);
                 // now awaiting a handleRev call...
             }
@@ -156,8 +156,9 @@ namespace litecore { namespace repl {
     }
 
 
+    // Received an incoming "norev" message, which means the peer was unable to send a revision
     void Puller::handleNoRev(Retained<MessageIn> msg) {
-        _revFinder->revCompleted();
+        _revFinder->revReceived();
         decrement(_pendingRevMessages);
         slice sequence(msg->property("sequence"_sl));
         if (sequence)
@@ -171,16 +172,15 @@ namespace litecore { namespace repl {
 
     // Actually process an incoming "rev" now:
     void Puller::startIncomingRev(MessageIn *msg) {
-        Assert(connected());
-        _revFinder->revCompleted();
+        _revFinder->revReceived();
         decrement(_pendingRevMessages);
-        increment(_activeIncomingRevs);
-        increment(_unfinishedIncomingRevs);
         if(!connected()) {
             // Connection already closed, continuing would cause a crash
             logVerbose("startIncomingRev called after connection close, ignoring...");
             return;
         }
+        increment(_activeIncomingRevs);
+        increment(_unfinishedIncomingRevs);
 
         Retained<IncomingRev> inc;
         if (_spareIncomingRevs.empty()) {
@@ -193,12 +193,10 @@ namespace litecore { namespace repl {
     }
 
 
-    // Callback from an IncomingRev when it's been written to the db but before the commit
-    void Puller::_revWasProvisionallyHandled() {
-        decrement(_activeIncomingRevs);
-        if (connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-                        && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs
-                        && !_waitingRevMessages.empty()) {
+    void Puller::maybeStartIncomingRevs() {
+        while (connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
+               && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs
+               && !_waitingRevMessages.empty()) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
             if (_waitingRevMessages.empty())
@@ -206,6 +204,16 @@ namespace litecore { namespace repl {
             startIncomingRev(msg);
         }
     }
+
+
+    // Callback from an IncomingRev when it's been written to the db, but before the commit
+    void Puller::_revsWereProvisionallyHandled() {
+        auto count = _provisionallyHandledRevs.take();
+        decrement(_activeIncomingRevs, count);
+        _logVerbose("%u revs were provisionally handled; down to %u active", count, _activeIncomingRevs);
+        maybeStartIncomingRevs();
+    }
+
 
     // Called from an IncomingRev when it's finished (either added to db, or failed.)
     // The IncomingRev will be processed later by _revsFinished().
@@ -216,13 +224,14 @@ namespace litecore { namespace repl {
         _returningRevs.push(inc);                       // this is thread-safe
     }
 
+
     void Puller::_revsFinished(int gen) {
         auto revs = _returningRevs.pop(gen);
         for (IncomingRev *inc : *revs) {
-            // If it was provisionally inserted, it'll have called _revWasProvisionallyHandled
-            // already. If not, call that method now:
+            // If it was provisionally inserted, _activeIncomingRevs will have been decremented
+            // already (in _revsWereProvisionallyHandled.) If not, decrement now:
             if (!inc->wasProvisionallyInserted())
-                _revWasProvisionallyHandled();
+                decrement(_activeIncomingRevs);
             auto rev = inc->rev();
             if (!passive())
                 completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
@@ -238,6 +247,8 @@ namespace litecore { namespace repl {
             _spareIncomingRevs.insert(_spareIncomingRevs.end(),
                                       revs->begin(),
                                       revs->begin() + min(size_t(capacity), revs->size()));
+
+        maybeStartIncomingRevs();
     }
 
 

@@ -58,6 +58,8 @@ namespace litecore { namespace repl {
         bool fetchNextBlob();
         void insertRevision();
         void _revisionInserted();
+        void failWithError(C4Error);
+        void failWithError(C4ErrorDomain, int code, slice message);
         void finish();
         virtual void _childChangedStatus(Worker *task NONNULL, Status status) override;
 

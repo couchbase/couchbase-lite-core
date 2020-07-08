@@ -59,10 +59,10 @@ namespace litecore { namespace repl {
     }
 
 
-    // Process waiting "changes" messages if not throttled:
-    void RevFinder::_revCompleted() {
+    void RevFinder::_revReceived() {
         decrement(_pendingRevMessages);
 
+        // Process waiting "changes" messages if not throttled:
         while (!_waitingChangesMessages.empty() && pullerHasCapacity()) {
             auto req = _waitingChangesMessages.front();
             _waitingChangesMessages.pop_front();

@@ -20,6 +20,7 @@
 #include "Actor.hh"
 #include "Logging.hh"
 #include "Timer.hh"
+#include <atomic>
 #include <climits>
 #include <functional>
 #include <memory>
@@ -41,8 +42,8 @@ namespace litecore { namespace actor {
                 std::function<void(int gen)> processLater,
                 Timer::duration latency ={},
                 size_t capacity = 0)
-        :_processNow(processNow)
-        ,_processLater(processLater)
+        :_processNow(move(processNow))
+        ,_processLater(move(processLater))
         ,_latency(latency)
         ,_capacity(capacity)
         { }
@@ -116,5 +117,40 @@ namespace litecore { namespace actor {
                        capacity)
         { }
     };
+
+
+    class CountBatcher {
+    public:
+        CountBatcher(std::function<void()> process)
+        :_process(process)
+        { }
+
+        /** Adds to the count. If the count was zero, it calls the process function. */
+        void add(unsigned n =1) {
+            if (_count.fetch_add(n) == 0)
+                _process();
+        }
+
+        /** Returns the count and resets it to zero. */
+        unsigned take() {
+            return _count.exchange(0);
+        }
+
+    private:
+        std::function<void()> _process;
+        std::atomic<unsigned> _count {0};
+    };
+
+
+    template <class ACTOR>
+    class ActorCountBatcher : public CountBatcher {
+    public:
+        typedef void (ACTOR::*Processor)();
+
+        ActorCountBatcher(ACTOR *actor, Processor processor)
+        :CountBatcher([=]() {actor->enqueue(processor);})
+        { }
+    };
+
 
 } }

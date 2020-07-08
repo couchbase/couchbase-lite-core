@@ -82,16 +82,11 @@ namespace litecore { namespace repl {
         logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')",
                    SPLAT(_rev->docID), SPLAT(_rev->revID), SPLAT(sequenceStr));
         if (_rev->docID.size == 0 || _rev->revID.size == 0) {
-            warn("Got invalid revision");
-            _rev->error = c4error_make(WebSocketDomain, 400, "received invalid revision"_sl);
-            finish();
+            failWithError(WebSocketDomain, 400, "received invalid revision"_sl);
             return;
         }
         if (!_remoteSequence && nonPassive()) {
-            warn("Missing sequence in 'rev' message for active puller");
-            _rev->error = c4error_make(WebSocketDomain, 400,
-                                       "received revision with missing 'sequence'"_sl);
-            finish();
+            failWithError(WebSocketDomain, 400, "received 'rev' message with missing 'sequence'"_sl);
             return;
         }
 
@@ -103,50 +98,44 @@ namespace litecore { namespace repl {
         if (_revMessage->noReply())
             _revMessage = nullptr;
 
+        Doc fleeceDoc;
+        C4Error err = {};
         if (_rev->deltaSrcRevID == nullslice) {
             // It's not a delta. Convert body to Fleece and process:
-            FLError err;
-            Doc fleeceDoc = _db->tempEncodeJSON(jsonBody, &err);
-            if(!fleeceDoc) {
-                warn("Incoming rev failed to encode (Fleece error %d)", err);
-                _rev->error = c4error_make(FleeceDomain, (int)err, "Incoming rev failed to encode"_sl);
-                finish();
-                return;
-            }
+            FLError encodeErr;
+            fleeceDoc = _db->tempEncodeJSON(jsonBody, &encodeErr);
+            if (!fleeceDoc)
+                err = c4error_make(FleeceDomain, (int)encodeErr, "Incoming rev failed to encode"_sl);
 
-            processBody(fleeceDoc, {FleeceDomain, err});
         } else if (_options.pullValidator || jsonBody.containsBytes("\"digest\""_sl)) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, or it may contain new blobs to download.
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
                        SPLAT(_rev->docID), SPLAT(_rev->revID));
-            C4Error err;
-            Doc fleeceDoc = _db->applyDelta(_rev->docID, _rev->deltaSrcRevID, jsonBody, &err);
+            fleeceDoc = _db->applyDelta(_rev->docID, _rev->deltaSrcRevID, jsonBody, &err);
             if (!fleeceDoc && err.domain==LiteCoreDomain && err.code==kC4ErrorDeltaBaseUnknown) {
                 // Don't have the body of the source revision. This might be because I'm in
                 // no-conflict mode and the peer is trying to push me a now-obsolete revision.
                 if (_options.noIncomingConflicts())
                     err = {WebSocketDomain, 409};
-                else {
-                    alloc_slice errMsg = c4error_getMessage(err);
-                    warn("%.*s", SPLAT(errMsg));
-                }
             }
             _rev->deltaSrcRevID = nullslice;
-            processBody(fleeceDoc, err);
+
         } else {
             // It's a delta, but it can be applied later while inserting:
             _rev->deltaSrc = jsonBody;
             insertRevision();
+            return;
         }
+
+        processBody(fleeceDoc, err);
     }
 
 
     void IncomingRev::processBody(Doc fleeceDoc, C4Error error) {
         Assert(!_rev->deltaSrcRevID);   // This method does NOT work on deltas
         if (!fleeceDoc) {
-            _rev->error = error;
-            finish();
+            failWithError(error);
             return;
         }
 
@@ -167,9 +156,7 @@ namespace litecore { namespace repl {
             auto sk = fleeceDoc.sharedKeys();
             alloc_slice body = c4doc_encodeStrippingOldMetaProperties(root, sk, &err);
             if (!body) {
-                warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
-                _rev->error = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
-                finish();
+                failWithError(WebSocketDomain, 500, "invalid legacy attachments"_sl);
                 return;
             }
             _rev->doc = Doc(body, kFLTrusted, sk);
@@ -191,10 +178,8 @@ namespace litecore { namespace repl {
         // Call the custom validation function if any:
         if (_options.pullValidator) {
             if (!_options.pullValidator(_rev->docID, _rev->revID, _rev->flags, root, _options.callbackContext)) {
-                logInfo("Rejected by pull validator function");
-                _rev->error = c4error_make(WebSocketDomain, 403, "rejected by validation function"_sl);
+                failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
                 _pendingBlobs.clear();
-                finish();
                 return;
             }
         }
@@ -262,6 +247,18 @@ namespace litecore { namespace repl {
 
     void IncomingRev::_revisionInserted() {
         decrement(_pendingCallbacks);
+        finish();
+    }
+
+
+    void IncomingRev::failWithError(C4ErrorDomain domain, int code, slice message) {
+        failWithError(c4error_make(domain, code, message));
+    }
+
+    void IncomingRev::failWithError(C4Error err) {
+        warn("failed with error: %s", c4error_descriptionStr(err));
+        Assert(err.code != 0);
+        _rev->error = err;
         finish();
     }
 

@@ -31,6 +31,8 @@ namespace litecore { namespace repl {
         struct ChangeSequence {
             RemoteSequence  sequence;
             uint64_t        bodySize {0};
+
+            bool requested() const {return bodySize > 0;}
         };
 
         class Delegate {
@@ -45,7 +47,7 @@ namespace litecore { namespace repl {
         RevFinder(Replicator* NONNULL, Delegate&);
 
         /** Delegate must call this every time it receives a "rev" message. */
-        void revCompleted()     {enqueue(&RevFinder::_revCompleted);}
+        void revReceived()     {enqueue(&RevFinder::_revReceived);}
 
     private:
         static const size_t kMaxPossibleAncestors = 10;
@@ -60,7 +62,7 @@ namespace litecore { namespace repl {
         unsigned findProposedRevs(fleece::Array, fleece::Encoder&, std::vector<ChangeSequence>&);
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
-        void _revCompleted();
+        void _revReceived();
 
         Delegate& _delegate;
         std::deque<Retained<MessageIn>> _waitingChangesMessages; // Queued 'changes' messages
