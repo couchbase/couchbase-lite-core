@@ -551,6 +551,10 @@ namespace c4Internal {
             return data;
         }
 
+        virtual fleece::alloc_slice publicKeyRawData() override {
+            return publicKeyDERData();
+        }
+
         virtual int _decrypt(const void *input,
                              void *output,
                              size_t output_max_len,
