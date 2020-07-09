@@ -53,9 +53,9 @@ namespace litecore { namespace repl {
         static const size_t kMaxPossibleAncestors = 10;
 
         bool pullerHasCapacity() const   {return _pendingRevMessages <= tuning::kMaxPendingRevs;}
-        void handleChanges(Retained<MessageIn>);
+        void handleChanges(Retained<blip::MessageIn>);
         void handleMoreChanges();
-        void handleChangesNow(MessageIn *req);
+        void handleChangesNow(blip::MessageIn *req);
 
         void findOrRequestRevs(Retained<blip::MessageIn>);
         unsigned findRevs(fleece::Array, fleece::Encoder&, std::vector<ChangeSequence>&);
@@ -65,7 +65,7 @@ namespace litecore { namespace repl {
         void _revReceived();
 
         Delegate& _delegate;
-        std::deque<Retained<MessageIn>> _waitingChangesMessages; // Queued 'changes' messages
+        std::deque<Retained<blip::MessageIn>> _waitingChangesMessages; // Queued 'changes' messages
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?
 #ifdef LITECORE_SIGNPOSTS

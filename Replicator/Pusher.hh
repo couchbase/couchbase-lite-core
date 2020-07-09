@@ -57,10 +57,10 @@ namespace litecore { namespace repl {
         void _start();
         bool isBusy() const;
         void startSending(C4SequenceNumber sinceSequence);
-        void handleSubChanges(Retained<MessageIn> req);
+        void handleSubChanges(Retained<blip::MessageIn> req);
         void gotOutOfOrderChange(RevToSend* NONNULL);
         void sendChanges(std::shared_ptr<RevToSendList>);
-        void handleChangesResponse(std::shared_ptr<RevToSendList>, MessageIn*, bool proposedChanges);
+        void handleChangesResponse(std::shared_ptr<RevToSendList>, blip::MessageIn*, bool proposedChanges);
         bool handleChangeResponse(RevToSend *change, Value response);
         bool handleProposedChangeResponse(RevToSend *change, Value response);
         void maybeGetMoreChanges()          {enqueue(&Pusher::_maybeGetMoreChanges);}
@@ -75,10 +75,10 @@ namespace litecore { namespace repl {
         bool getForeignAncestors() const    {return _proposeChanges || !_proposeChangesKnown;}
 
         // Pusher+Attachments.cc:
-        void handleGetAttachment(Retained<MessageIn>);
-        void handleProveAttachment(Retained<MessageIn>);
+        void handleGetAttachment(Retained<blip::MessageIn>);
+        void handleProveAttachment(Retained<blip::MessageIn>);
         void _attachmentSent();
-        C4ReadStream* readBlobFromRequest(MessageIn *req NONNULL,
+        C4ReadStream* readBlobFromRequest(blip::MessageIn *req NONNULL,
                                           slice &outDigest,
                                           Replicator::BlobProgress &outProgress,
                                           C4Error *outError);
@@ -86,7 +86,7 @@ namespace litecore { namespace repl {
         void maybeSendMoreRevs();
         void retryRevs(RevToSendList);
         void sendRevision(Retained<RevToSend>);
-        void onRevProgress(Retained<RevToSend> rev, const MessageProgress&);
+        void onRevProgress(Retained<RevToSend> rev, const blip::MessageProgress&);
         void couldntSendRevision(RevToSend* NONNULL);
         void doneWithRev(RevToSend*, bool successful, bool pushed);
         alloc_slice createRevisionDelta(C4Document *doc NONNULL, RevToSend *request NONNULL,
@@ -111,7 +111,7 @@ namespace litecore { namespace repl {
         bool _deltasOK {false};                   // OK to send revs in delta form?
         unsigned _changeListsInFlight {0};        // # change lists being requested from db or sent to peer
         unsigned _revisionsInFlight {0};          // # 'rev' messages being sent
-        MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
+        blip::MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
         unsigned _blobsInFlight {0};              // # of blobs being sent
         std::deque<Retained<RevToSend>> _revQueue;// Revs to send to peer but not sent yet
         RevToSendList _revsToRetry;               // Revs that failed with a transient error

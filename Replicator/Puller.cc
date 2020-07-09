@@ -30,6 +30,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
@@ -314,7 +315,7 @@ namespace litecore { namespace repl {
         } else {
             level = kC4Stopped;
         }
-        if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
+        if (SyncBusyLog.willLog(LogLevel::Info)) {
             logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
                 kC4ReplicatorActivityLevelNames[level],
                 pendingResponseCount(), _caughtUp,

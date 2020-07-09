@@ -19,23 +19,17 @@
 #pragma once
 #include "Worker.hh"
 #include "Checkpointer.hh"
-#include "ReplicatedRev.hh"
 #include "BLIPConnection.hh"
 #include "Batcher.hh"
 #include "fleece/Fleece.hh"
 #include "InstanceCounted.hh"
 #include "Stopwatch.hh"
-#include "Certificate.hh"
-#include <unordered_set>
-
-using namespace litecore::blip;
-
-struct C4UUID;
 
 namespace litecore { namespace repl {
 
     class Pusher;
     class Puller;
+    class ReplicatedRev;
 
 
     static constexpr const char *kReplicatorProtocolName = "+CBMobile_2";
@@ -44,15 +38,16 @@ namespace litecore { namespace repl {
     /** The top-level replicator object, which runs the BLIP connection.
         Pull and push operations are run by subidiary Puller and Pusher objects.
         The database will only be accessed by the DBAgent object. */
-    class Replicator : public Worker, ConnectionDelegate, public InstanceCountedIn<Replicator> {
+    class Replicator : public Worker, private blip::ConnectionDelegate,
+                       public InstanceCountedIn<Replicator> {
     public:
 
         class Delegate;
         using CloseStatus = blip::Connection::CloseStatus;
         using Options = litecore::repl::Options;
 
-        Replicator(C4Database*,
-                   websocket::WebSocket*,
+        Replicator(C4Database* NONNULL,
+                   websocket::WebSocket* NONNULL,
                    Delegate&,
                    Options);
 
@@ -103,9 +98,6 @@ namespace litecore { namespace repl {
         /** Checks if the document with the given ID has any pending revisions to push */
         bool isDocumentPending(slice docId, C4Error* outErr);
 
-        // exposed for unit tests:
-        websocket::WebSocket* webSocket() const {return connection().webSocket();}
-        
         Checkpointer& checkpointer()            {return _checkpointer;}
 
         void endedDocument(ReplicatedRev *d NONNULL);
@@ -117,6 +109,9 @@ namespace litecore { namespace repl {
 
         Retained<Replicator> replicatorIfAny() override         {return this;}
 
+        // exposed for unit tests:
+        websocket::WebSocket* webSocket() const {return connection().webSocket();}
+
     protected:
         virtual std::string loggingClassName() const override  {
             return _options.pull >= kC4OneShot || _options.push >= kC4OneShot ? "Repl" : "repl";
@@ -127,19 +122,23 @@ namespace litecore { namespace repl {
         virtual void onTLSCertificate(slice certData) override;
         virtual void onConnect() override
                                                 {enqueue(&Replicator::_onConnect);}
-        virtual void onClose(Connection::CloseStatus status, Connection::State state) override
+        virtual void onClose(CloseStatus status, blip::Connection::State state) override
                                                 {enqueue(&Replicator::_onClose, status, state);}
-        virtual void onRequestReceived(blip::MessageIn *msg) override
+        virtual void onRequestReceived(blip::MessageIn *msg NONNULL) override
                                         {enqueue(&Replicator::_onRequestReceived, retained(msg));}
         virtual void changedStatus() override;
 
         virtual void onError(C4Error error) override;
 
+        // Worker method overrides:
+        virtual ActivityLevel computeActivityLevel() const override;
+        virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
+
     private:
         void _onHTTPResponse(int status, websocket::Headers headers);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);
-        void _onClose(Connection::CloseStatus, Connection::State);
+        void _onClose(CloseStatus, blip::Connection::State);
         void _onRequestReceived(Retained<blip::MessageIn> msg);
 
         void _start(bool reset);
@@ -149,7 +148,6 @@ namespace litecore { namespace repl {
         bool getLocalCheckpoint(bool reset);
         void getRemoteCheckpoint(bool refresh);
         void startReplicating();
-        virtual ActivityLevel computeActivityLevel() const override;
         void reportStatus();
 
         void updateCheckpoint();
@@ -157,7 +155,6 @@ namespace litecore { namespace repl {
         void _saveCheckpoint(alloc_slice json);
         void saveCheckpointNow();
 
-        virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
         void notifyEndedDocuments(int gen =actor::AnyGen);
         void _onBlobProgress(BlobProgress);
 
@@ -167,29 +164,32 @@ namespace litecore { namespace repl {
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
         void returnForbidden(Retained<blip::MessageIn>);
-        bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
+        bool getPeerCheckpointDoc(blip::MessageIn* request NONNULL, bool getting,
                                   fleece::slice &checkpointID, c4::ref<C4RawDocument> &doc) const;
 
         // Member variables:
-        
-        CloseStatus _closeStatus;
-        Delegate* _delegate;
-        Retained<Pusher> _pusher;
-        Retained<Puller> _puller;
-        Connection::State _connectionState;
-        Status _pushStatus {}, _pullStatus {};
-        fleece::Stopwatch _sinceDelegateCall;
-        ActivityLevel _lastDelegateCallLevel {};
-        bool _waitingToCallDelegate {false};
-        actor::ActorBatcher<Replicator, ReplicatedRev> _docsEnded;
 
-        Checkpointer _checkpointer;
-        bool _hadLocalCheckpoint {false};
-        bool _remoteCheckpointRequested {false};
-        bool _remoteCheckpointReceived {false};
-        alloc_slice _checkpointJSONToSave;
-        alloc_slice _remoteCheckpointDocID;
-        alloc_slice _remoteCheckpointRevID;
+        using ReplicatedRevBatcher = actor::ActorBatcher<Replicator, ReplicatedRev>;
+        
+        Delegate*         _delegate;                   // Delegate whom I report progress/errors to
+        Retained<Pusher>  _pusher;                     // Object that manages outgoing revs
+        Retained<Puller>  _puller;                     // Object that manages incoming revs
+        blip::Connection::State _connectionState;      // Current BLIP connection state
+
+        Status            _pushStatus {};              // Current status of Pusher
+        Status            _pullStatus {};              // Current status of Puller
+        fleece::Stopwatch _sinceDelegateCall;          // Time I last sent progress to the delegate
+        ActivityLevel     _lastDelegateCallLevel {};   // Activity level I last reported to delegate
+        bool              _waitingToCallDelegate {};   // Is an async call to reportStatus pending?
+        ReplicatedRevBatcher _docsEnded;               // Recently-completed revs
+
+        Checkpointer      _checkpointer;               // Object that manages checkpoints
+        bool              _hadLocalCheckpoint {};      // True if local checkpoint pre-existed
+        bool              _remoteCheckpointRequested{};// True while "getCheckpoint" request pending
+        bool              _remoteCheckpointReceived {};// True if I got a "getCheckpoint" response
+        alloc_slice       _checkpointJSONToSave;       // JSON waiting to be saved to the checkpts
+        alloc_slice       _remoteCheckpointDocID;      // Checkpoint docID to use with peer
+        alloc_slice       _remoteCheckpointRevID;      // Latest revID of remote checkpoint
     };
 
 } }

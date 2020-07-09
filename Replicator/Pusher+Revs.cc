@@ -23,6 +23,7 @@
 #include "StringUtil.hh"
 
 using namespace std;
+using namespace litecore::blip;
 
 namespace litecore::repl {
 

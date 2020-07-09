@@ -27,6 +27,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
@@ -518,7 +519,7 @@ namespace litecore { namespace repl {
         } else {
             level = kC4Stopped;
         }
-        if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
+        if (SyncBusyLog.willLog(LogLevel::Info)) {
             size_t pendingSequences = _parent ? _checkpointer.pendingSequenceCount() : 0;
             logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%" PRIu64 ", revsToSend=%zu, pushingDocs=%zu, pendingSequences=%zu",
                     kC4ReplicatorActivityLevelNames[level],

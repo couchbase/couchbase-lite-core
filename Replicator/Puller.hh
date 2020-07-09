@@ -59,9 +59,9 @@ namespace litecore { namespace repl {
     private:
         void _start(RemoteSequence sinceSequence);
         void _expectSequences(std::vector<RevFinder::ChangeSequence>);
-        void handleRev(Retained<MessageIn>);
-        void handleNoRev(Retained<MessageIn>);
-        void startIncomingRev(MessageIn* NONNULL);
+        void handleRev(Retained<blip::MessageIn>);
+        void handleNoRev(Retained<blip::MessageIn>);
+        void startIncomingRev(blip::MessageIn* NONNULL);
         void maybeStartIncomingRevs();
         void _revsWereProvisionallyHandled();
         void _revsFinished(int gen);
@@ -79,7 +79,7 @@ namespace litecore { namespace repl {
         bool _fatalError {false};           // Have I gotten a fatal error?
 
         RemoteSequenceSet _missingSequences; // Known sequences I need to pull
-        std::deque<Retained<MessageIn>> _waitingRevMessages;     // Queued 'rev' messages
+        std::deque<Retained<blip::MessageIn>> _waitingRevMessages;     // Queued 'rev' messages
         mutable std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRevs
         actor::ActorCountBatcher<Puller> _provisionallyHandledRevs;
         actor::ActorBatcher<Puller,IncomingRev> _returningRevs;
