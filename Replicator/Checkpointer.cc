@@ -201,6 +201,11 @@ namespace litecore { namespace repl {
     }
 
 
+    slice Checkpointer::remoteDBIDString() const {
+        return _options.remoteDBIDString(_remoteURL);
+    }
+
+
     // Writes a Value to an Encoder, substituting null if the value is an empty array.
     static void writeValueOrNull(fleece::Encoder &enc, Value val) {
         auto a = val.asArray();
@@ -224,7 +229,7 @@ namespace litecore { namespace repl {
         enc.beginArray();
         enc.writeString({&localUUID, sizeof(C4UUID)});
 
-        enc.writeString(_options.remoteDBIDString(_remoteURL));
+        enc.writeString(remoteDBIDString());
         if (!channels.empty() || !docIDs.empty() || filter) {
             // Optional stuff:
             writeValueOrNull(enc, channels);

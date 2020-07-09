@@ -70,8 +70,7 @@ namespace litecore { namespace repl {
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_docsEnded(this, &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
-    ,_remoteURL(webSocket->url())
-    ,_checkpointer(_options, _remoteURL)
+    ,_checkpointer(_options, webSocket->url())
     {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
         _passive = _options.pull <= kC4Passive && _options.push <= kC4Passive;
@@ -122,7 +121,7 @@ namespace litecore { namespace repl {
 
         if (_options.push > kC4Passive || _options.pull > kC4Passive) {
             // Get the remote DB ID:
-            slice key = _options.remoteDBIDString(_remoteURL);
+            slice key = _checkpointer.remoteDBIDString();
             C4Error err;
             C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key, &err);
             if (remoteDBID) {
