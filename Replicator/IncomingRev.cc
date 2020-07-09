@@ -93,10 +93,17 @@ namespace litecore { namespace repl {
             warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
 
         auto jsonBody = _revMessage->extractBody();
-
         if (_revMessage->noReply())
             _revMessage = nullptr;
 
+        auto fleeceDoc = parseBody(move(jsonBody));
+        if (fleeceDoc)
+            processFleeceBody(fleeceDoc);
+    }
+
+
+    // Parses the message's JSON body into Fleece.
+    fleece::Doc IncomingRev::parseBody(alloc_slice jsonBody) {
         Doc fleeceDoc;
         C4Error err = {};
         if (_rev->deltaSrcRevID == nullslice) {
@@ -121,23 +128,20 @@ namespace litecore { namespace repl {
             _rev->deltaSrcRevID = nullslice;
 
         } else {
-            // It's a delta, but it can be applied later while inserting:
+            // It's a delta, but it can be applied later while inserting. For now, return null
+            // to bypass processFleeceBody.
             _rev->deltaSrc = jsonBody;
             insertRevision();
-            return;
+            return nullptr;
         }
 
-        processBody(fleeceDoc, err);
+        if (!fleeceDoc)
+            failWithError(err);
+        return fleeceDoc;
     }
 
 
-    void IncomingRev::processBody(Doc fleeceDoc, C4Error error) {
-        Assert(!_rev->deltaSrcRevID);   // This method does NOT work on deltas
-        if (!fleeceDoc) {
-            failWithError(error);
-            return;
-        }
-
+    void IncomingRev::processFleeceBody(fleece::Doc fleeceDoc) {
         // Note: fleeceDoc is _not_ yet suitable for inserting into the
         // database because it doesn't use the same SharedKeys, but it lets us look at the doc
         // metadata and blobs.
@@ -151,9 +155,8 @@ namespace litecore { namespace repl {
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
         if (c4doc_hasOldMetaProperties(root) && !_db->disableBlobSupport()) {
-            C4Error err;
             auto sk = fleeceDoc.sharedKeys();
-            alloc_slice body = c4doc_encodeStrippingOldMetaProperties(root, sk, &err);
+            alloc_slice body = c4doc_encodeStrippingOldMetaProperties(root, sk, nullptr);
             if (!body) {
                 failWithError(WebSocketDomain, 500, "invalid legacy attachments"_sl);
                 return;
@@ -176,14 +179,15 @@ namespace litecore { namespace repl {
 
         // Call the custom validation function if any:
         if (_options.pullValidator) {
-            if (!_options.pullValidator(_rev->docID, _rev->revID, _rev->flags, root, _options.callbackContext)) {
+            if (!_options.pullValidator(_rev->docID, _rev->revID, _rev->flags, root,
+                                        _options.callbackContext)) {
                 failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
                 _pendingBlobs.clear();
                 return;
             }
         }
 
-        // Request the first blob, or if there are none, finish:
+        // Request the first blob, or if there are none, insert the revision into the DB:
         if (!_pendingBlobs.empty()) {
             _blob = &*_pendingBlobs.begin();
             fetchNextBlob();
@@ -193,7 +197,7 @@ namespace litecore { namespace repl {
     }
 
 
-    // Asks the DBAgent to insert the revision, then sends the reply and notifies the Puller.
+    // Asks the Inserter (via the Puller) to insert the revision into the database.
     void IncomingRev::insertRevision() {
         Assert(!_blob);
         Assert(_rev->error.code == 0);
@@ -204,6 +208,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // Called by the Inserter after inserting the revision, but before committing the transaction.
     void IncomingRev::revisionProvisionallyInserted() {
         // CAUTION: For performance reasons this method is called directly, without going through the
         // Actor event queue, so it runs on the Inserter's thread, NOT the IncomingRev's! Thus, it
@@ -213,6 +218,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // Called by the Inserter after the revision is safely committed to disk.
     void IncomingRev::_revisionInserted() {
         decrement(_pendingCallbacks);
         finish();
@@ -231,6 +237,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // Finish up, on success or failure.
     void IncomingRev::finish() {
         if (_revMessage) {
             MessageBuilder response(_revMessage);
@@ -264,4 +271,3 @@ namespace litecore { namespace repl {
     }
 
 } }
-

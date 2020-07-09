@@ -53,7 +53,8 @@ namespace litecore { namespace repl {
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);
-        void processBody(fleece::Doc, C4Error);
+        fleece::Doc parseBody(alloc_slice jsonBody);
+        void processFleeceBody(fleece::Doc);
         void insertRevision();
         void _revisionInserted();
         void failWithError(C4Error);
