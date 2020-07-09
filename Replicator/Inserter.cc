@@ -51,7 +51,7 @@ namespace litecore { namespace repl {
     }
 
 
-    // Insert all the revisions queued for insertion, and sync the ones queued for syncing.
+    // Inserts all the revisions queued for insertion.
     void Inserter::_insertRevisionsNow(int gen) {
         auto revs = _revsToInsert.pop(gen);
         if (!revs)
@@ -83,7 +83,7 @@ namespace litecore { namespace repl {
                     if (docErr == C4Error{LiteCoreDomain, kC4ErrorDeltaBaseUnknown}
                             || docErr == C4Error{LiteCoreDomain, kC4ErrorCorruptDelta})
                         rev->errorIsTransient = true;
-                    rev->owner->revisionInserted();
+                    rev->owner->revisionInserted();     // Tell the IncomingRev
                 }
             }
 
@@ -114,6 +114,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // Inserts one revision.
     bool Inserter::insertRevisionNow(RevToInsert *rev, C4Error *outError) {
         if (rev->flags & kRevPurged) {
             // Server says the document is no longer accessible, i.e. it's been

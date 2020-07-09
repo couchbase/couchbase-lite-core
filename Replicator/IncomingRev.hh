@@ -34,22 +34,24 @@ namespace litecore { namespace repl {
     public:
         IncomingRev(Puller* NONNULL);
 
+        ~IncomingRev() {logInfo("DELETED");}
+
         // Called by the Puller:
-        void handleRev(blip::MessageIn* revMessage NONNULL) {
-            enqueue(&IncomingRev::_handleRev, retained(revMessage));
-        }
+        void handleRev(blip::MessageIn* revMessage NONNULL);
         RevToInsert* rev() const                {return _rev;}
         RemoteSequence remoteSequence() const   {return _remoteSequence;}
         bool wasProvisionallyInserted() const   {return _provisionallyInserted;}
+        void reset();
 
         // Called by the Inserter:
         void revisionProvisionallyInserted();
-        void revisionInserted()                 {enqueue(&IncomingRev::_revisionInserted);}
+        void revisionInserted();
 
     protected:
         ActivityLevel computeActivityLevel() const override;
 
     private:
+        void parseAndInsert(alloc_slice jsonBody);
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);

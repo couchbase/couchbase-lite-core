@@ -236,17 +236,18 @@ namespace litecore { namespace repl {
             if (!passive())
                 completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
+            inc->reset();
         }
         decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
 
-        if (!passive())
-            updateLastSequence();
-
-        ssize_t capacity = tuning::kMaxActiveIncomingRevs - _spareIncomingRevs.size();
+        ssize_t capacity = tuning::kMaxUnfinishedIncomingRevs - _spareIncomingRevs.size();
         if (capacity > 0)
             _spareIncomingRevs.insert(_spareIncomingRevs.end(),
                                       revs->begin(),
                                       revs->begin() + min(size_t(capacity), revs->size()));
+
+        if (!passive())
+            updateLastSequence();
 
         maybeStartIncomingRevs();
     }

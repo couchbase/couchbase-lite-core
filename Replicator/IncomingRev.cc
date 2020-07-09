@@ -33,6 +33,12 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
+    // Docs with JSON bodies larger than this get parsed asynchronously (off the Puller thread)
+    static constexpr size_t kMaxImmediateParseSize = 32 * 1024;
+
+    static inline bool jsonMightContainBlobs(slice json) {
+        return json.containsBytes("\"digest\""_sl);
+    }
 
     IncomingRev::IncomingRev(Puller *puller)
     :Worker(puller, "inc")
@@ -45,8 +51,9 @@ namespace litecore { namespace repl {
     }
 
 
-    // Read the 'rev' message, on my actor thread:
-    void IncomingRev::_handleRev(Retained<blip::MessageIn> msg) {
+    // Read the 'rev' message, then parse either synchronously or asynchronously.
+    // This runs on the caller's (Puller's) thread.
+    void IncomingRev::handleRev(blip::MessageIn *msg) {
         Signpost::begin(Signpost::handlingRev, _serialNumber);
 
         // (Re)initialize state (I can be used multiple times by the Puller):
@@ -96,14 +103,17 @@ namespace litecore { namespace repl {
         if (_revMessage->noReply())
             _revMessage = nullptr;
 
-        auto fleeceDoc = parseBody(move(jsonBody));
-        if (fleeceDoc)
-            processFleeceBody(fleeceDoc);
+        // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
+        if (_options.pullValidator|| jsonBody.size > kMaxImmediateParseSize
+                                  || jsonMightContainBlobs(jsonBody))
+            enqueue(&IncomingRev::parseAndInsert, move(jsonBody));
+        else
+            parseAndInsert(move(jsonBody));
     }
 
 
-    // Parses the message's JSON body into Fleece.
-    fleece::Doc IncomingRev::parseBody(alloc_slice jsonBody) {
+    void IncomingRev::parseAndInsert(alloc_slice jsonBody) {
+        // First create a Fleece document:
         Doc fleeceDoc;
         C4Error err = {};
         if (_rev->deltaSrcRevID == nullslice) {
@@ -113,7 +123,7 @@ namespace litecore { namespace repl {
             if (!fleeceDoc)
                 err = c4error_make(FleeceDomain, (int)encodeErr, "Incoming rev failed to encode"_sl);
 
-        } else if (_options.pullValidator || jsonBody.containsBytes("\"digest\""_sl)) {
+        } else if (_options.pullValidator || jsonMightContainBlobs(jsonBody)) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, or it may contain new blobs to download.
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
@@ -128,20 +138,17 @@ namespace litecore { namespace repl {
             _rev->deltaSrcRevID = nullslice;
 
         } else {
-            // It's a delta, but it can be applied later while inserting. For now, return null
-            // to bypass processFleeceBody.
+            // It's a delta, but it can be applied later while inserting.
             _rev->deltaSrc = jsonBody;
             insertRevision();
-            return nullptr;
+            return;
         }
 
-        if (!fleeceDoc)
+        if (!fleeceDoc) {
             failWithError(err);
-        return fleeceDoc;
-    }
+            return;
+        }
 
-
-    void IncomingRev::processFleeceBody(fleece::Doc fleeceDoc) {
         // Note: fleeceDoc is _not_ yet suitable for inserting into the
         // database because it doesn't use the same SharedKeys, but it lets us look at the doc
         // metadata and blobs.
@@ -219,7 +226,8 @@ namespace litecore { namespace repl {
 
 
     // Called by the Inserter after the revision is safely committed to disk.
-    void IncomingRev::_revisionInserted() {
+    void IncomingRev::revisionInserted() {
+        Retained<IncomingRev> retainSelf = this;
         decrement(_pendingCallbacks);
         finish();
     }
@@ -259,6 +267,13 @@ namespace litecore { namespace repl {
         _rev->trim();
 
         _puller->revWasHandled(this);
+    }
+
+
+    void IncomingRev::reset() {
+        _rev = nullptr;
+        _parent = nullptr;
+        _remoteSequence = {};
     }
 
 
