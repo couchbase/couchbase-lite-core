@@ -76,6 +76,9 @@ namespace litecore { namespace repl {
             (Kept around for logging. Only available until the checkpoint changes.) */
         slice checkpointJSON() const            {return _checkpointJSON;}
 
+        /** The identifier to use for the remote database; either its URL or a client-provided UID. */
+        slice remoteDBIDString() const;
+
         // Database I/O:
 
         /** Reads the checkpoint state from the local database. This needs to happen first.

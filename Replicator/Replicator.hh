@@ -172,7 +172,6 @@ namespace litecore { namespace repl {
 
         // Member variables:
         
-        const websocket::URL _remoteURL;
         CloseStatus _closeStatus;
         Delegate* _delegate;
         Retained<Pusher> _pusher;
