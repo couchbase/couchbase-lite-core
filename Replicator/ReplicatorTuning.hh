@@ -17,7 +17,8 @@
 //
 
 #pragma once
-#include "Timer.hh"
+#include <chrono>
+#include <stdlib.h>
 
 namespace litecore { namespace repl {
 
@@ -29,6 +30,8 @@ namespace litecore { namespace repl {
         I'm not sure the current values are optimal, but they've been tweaked a lot. --Jens */
     namespace tuning {
 
+        using namespace std::chrono;
+
         //// DBWorker:
 
         /* Number of new revisions to accumulate in memory before inserting them into the DB.
@@ -38,7 +41,7 @@ namespace litecore { namespace repl {
 
         /* How long revisions can stay in the queue before triggering insertion into the DB,
            if the queue size hasn't reached kInsertionBatchSize yet. */
-        constexpr actor::Timer::duration kInsertionDelay = std::chrono::milliseconds(20);
+        constexpr auto kInsertionDelay = 20ms;
 
         /* Minimum document body size that will be considered for delta compression.
             (This is the size of the Fleece encoding, which is usually smaller than the JSON.)
@@ -56,13 +59,14 @@ namespace litecore { namespace repl {
             to attempt to stop getting more `revs`. */
         constexpr unsigned kMaxPendingRevs = 200;
 
-        /* Maximum number of incoming revisions to be reading/inserting at once.
-            Each one is assigned an IncomingRev actor, so larger values increase memory usage
-            and also parallelism (which can be bad: on Apple platforms, having too many active
-            GCD dispatch queues results in lots of threads being created.) */
-        constexpr unsigned kMaxActiveIncomingRevs = 100;
+        /* Maximum number of simultaneous incoming revisions.
+           Each one is assigned an IncomingRev actor, so larger values increase memory usage
+           and also parallelism. */
+        constexpr unsigned kMaxIncomingRevs = 200;
 
-        constexpr unsigned kMaxUnfinishedIncomingRevs = 200;
+        /* Maximum number of incoming revisions that haven't yet been inserted into the database
+           (and are thus holding onto the document bodies in memory.) */
+        constexpr unsigned kMaxActiveIncomingRevs = 100;
 
 
         //// Pusher:
@@ -88,11 +92,14 @@ namespace litecore { namespace repl {
 
         //// Replicator:
 
+        /* How often to save checkpoints. */
+        static constexpr auto kDefaultCheckpointSaveDelay = 5s;
+
         /* How long to wait between delegate calls notifying that that docs have finished. */
-        constexpr actor::Timer::duration kMinDocEndedInterval = std::chrono::milliseconds(200);
+        constexpr auto kMinDocEndedInterval = 200ms;
 
         /* How long to wait between delegate calls when only the progress % has changed. */
-        constexpr double kMinDelegateCallInterval = 0.2;
+        constexpr auto kMinDelegateCallInterval = 200ms;
     }
 
 } }

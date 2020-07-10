@@ -19,13 +19,8 @@
 #pragma once
 #include "c4Replicator.h"
 #include "fleece/Fleece.hh"
-#include <chrono>
 
 namespace litecore { namespace repl {
-
-    /** Time duration unit: seconds, stored as 64-bit floating point. */
-    using duration = std::chrono::nanoseconds;
-
 
     /** Replication configuration options */
     struct Options {
@@ -71,15 +66,6 @@ namespace litecore { namespace repl {
         static Options passive()                       {return Options(kC4Passive,kC4Passive);}
 
         //---- Property accessors:
-
-        static constexpr unsigned kDefaultCheckpointSaveDelaySecs = 5;
-
-        duration checkpointSaveDelay() const {
-            auto secs = properties[kC4ReplicatorCheckpointInterval].asInt();
-            if (secs <= 0)
-                secs = kDefaultCheckpointSaveDelaySecs;
-            return std::chrono::seconds(secs);
-        }
 
         fleece::Array channels() const {return arrayProperty(kC4ReplicatorOptionChannels);}
         fleece::Array docIDs() const   {return arrayProperty(kC4ReplicatorOptionDocIDs);}

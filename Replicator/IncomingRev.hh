@@ -32,7 +32,7 @@ namespace litecore { namespace repl {
     /** Manages pulling a single document. */
     class IncomingRev : public Worker {
     public:
-        IncomingRev(Puller*);
+        IncomingRev(Puller* NONNULL);
 
         // Called by the Puller:
         void handleRev(blip::MessageIn* revMessage NONNULL) {

@@ -94,9 +94,11 @@ namespace litecore { namespace repl {
             registerHandler("rev", &Replicator::returnForbidden);
             registerHandler("norev", &Replicator::returnForbidden);
         }
-        
-        _checkpointer.enableAutosave(options.checkpointSaveDelay(),
-                                     bind(&Replicator::saveCheckpoint, this, _1));
+
+        actor::Timer::duration saveDelay = tuning::kDefaultCheckpointSaveDelay;
+        if (auto i = options.properties[kC4ReplicatorCheckpointInterval].asInt(); i > 0)
+            saveDelay = chrono::seconds(i);
+        _checkpointer.enableAutosave(saveDelay, bind(&Replicator::saveCheckpoint, this, _1));
 
         registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
@@ -335,12 +337,12 @@ namespace litecore { namespace repl {
         }
         if (_delegate) {
             // Notify the delegate of the current status, but not too often:
-            auto waitFor = tuning::kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
-            if (waitFor <= 0 || status().level != _lastDelegateCallLevel) {
+            auto waitFor = tuning::kMinDelegateCallInterval - _sinceDelegateCall.elapsedDuration();
+            if (waitFor <= 0s || status().level != _lastDelegateCallLevel) {
                 reportStatus();
             } else if (!_waitingToCallDelegate) {
                 _waitingToCallDelegate = true;
-                enqueueAfter(actor::delay_t(waitFor), &Replicator::reportStatus);
+                enqueueAfter(waitFor, &Replicator::reportStatus);
             }
         }
     }
