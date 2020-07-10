@@ -33,9 +33,9 @@ namespace sockpp {
     class inet_address;
     class stream_socket;
 }
-namespace litecore { namespace crypto {
-    class Identity;
-} }
+namespace litecore::crypto {
+    struct Identity;
+}
 namespace litecore::net {
     class TLSContext;
 }

@@ -18,7 +18,7 @@ namespace litecore {
 }
 namespace litecore::crypto {
     class Cert;
-    class Identity;
+    struct Identity;
 }
 
 namespace litecore { namespace net {
