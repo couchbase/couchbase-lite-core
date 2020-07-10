@@ -18,6 +18,7 @@
 
 #include "Checkpointer.hh"
 #include "Checkpoint.hh"
+#include "ReplicatorOptions.hh"
 #include "DBAccess.hh"
 #include "Logging.hh"
 #include "SecureDigest.hh"

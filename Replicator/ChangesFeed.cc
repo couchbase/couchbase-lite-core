@@ -18,6 +18,7 @@
 
 #include "ChangesFeed.hh"
 #include "Checkpointer.hh"
+#include "ReplicatorOptions.hh"
 #include "DBAccess.hh"
 #include "ReplicatorTuning.hh"
 #include "StringUtil.hh"

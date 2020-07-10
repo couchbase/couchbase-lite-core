@@ -22,6 +22,7 @@
 #include "Pusher.hh"
 #include "Puller.hh"
 #include "Checkpoint.hh"
+#include "DBAccess.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "Logging.hh"

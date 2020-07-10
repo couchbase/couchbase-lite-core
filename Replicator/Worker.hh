@@ -17,22 +17,18 @@
 //
 
 #pragma once
-#include "ReplicatorOptions.hh"
-#include "DBAccess.hh"
 #include "Actor.hh"
+#include "ReplicatorOptions.hh"
 #include "BLIPConnection.hh"
 #include "Message.hh"
-#include "Increment.hh"
-#include "Timer.hh"
-#include "c4.hh"
-#include "c4Private.h"
-#include "fleece/Fleece.hh"
 #include "Error.hh"
+#include "fleece/Fleece.hh"
 #include <functional>
 #include <memory>
 
 
 namespace litecore { namespace repl {
+    class DBAccess;
     class Replicator;
     class ReplicatedRev;
 

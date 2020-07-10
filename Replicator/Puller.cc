@@ -18,11 +18,13 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Puller.hh"
+#include "Replicator.hh"
 #include "RevFinder.hh"
 #include "Inserter.hh"
 #include "IncomingRev.hh"
 #include "ReplicatorTuning.hh"
 #include "Error.hh"
+#include "Increment.hh"
 #include "StringUtil.hh"
 #include "BLIP.hh"
 #include "Instrumentation.hh"

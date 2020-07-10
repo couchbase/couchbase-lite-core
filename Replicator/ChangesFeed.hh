@@ -15,8 +15,7 @@ struct C4DocumentInfo;
 
 namespace litecore::repl {
     class DBAccess;
-    class Options;
-    class Pusher;
+    struct Options;
     class Checkpointer;
 
     using DocIDSet = std::shared_ptr<std::unordered_set<std::string>>;

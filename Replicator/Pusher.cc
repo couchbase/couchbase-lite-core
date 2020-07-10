@@ -18,8 +18,10 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Pusher.hh"
+#include "DBAccess.hh"
 #include "ReplicatorTuning.hh"
 #include "Error.hh"
+#include "Increment.hh"
 #include "StringUtil.hh"
 #include "BLIP.hh"
 #include "HTTPTypes.hh"

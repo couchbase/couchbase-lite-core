@@ -20,6 +20,7 @@
 #include "Worker.hh"
 #include "ReplicatorTypes.hh"
 #include "RemoteSequence.hh"
+#include "Timer.hh"
 #include "c4.hh"
 #include <atomic>
 #include <vector>

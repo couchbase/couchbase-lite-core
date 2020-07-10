@@ -17,7 +17,8 @@
 //
 
 #pragma once
-#include "Replicator.hh"
+#include "Worker.hh"
+#include "RemoteSequence.hh"
 #include "ReplicatorTuning.hh"
 #include "ReplicatorTypes.hh"
 #include <deque>
@@ -68,9 +69,6 @@ namespace litecore { namespace repl {
         std::deque<Retained<blip::MessageIn>> _waitingChangesMessages; // Queued 'changes' messages
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?
-#ifdef LITECORE_SIGNPOSTS
-        bool _changesBackPressure {false};
-#endif
     };
 
 } }

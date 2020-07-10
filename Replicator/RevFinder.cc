@@ -17,9 +17,11 @@
 //
 
 #include "RevFinder.hh"
+#include "Replicator.hh"
 #include "ReplicatorTuning.hh"
 #include "IncomingRev.hh"
-#include "fleece/Fleece.hh"
+#include "DBAccess.hh"
+#include "Increment.hh"
 #include "StringUtil.hh"
 #include "Instrumentation.hh"
 #include "c4.hh"
@@ -28,6 +30,7 @@
 #include "c4Document+Fleece.h"
 #include "c4Replicator.h"
 #include "BLIP.hh"
+#include "fleece/Fleece.hh"
 
 using namespace std;
 using namespace fleece;

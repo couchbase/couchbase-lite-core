@@ -17,13 +17,11 @@
 //
 
 #pragma once
-#include "ReplicatorTypes.hh"
-#include "Replicator.hh"
+#include "Worker.hh"
 #include "RevFinder.hh"
-#include "Actor.hh"
+#include "ReplicatorTypes.hh"
 #include "RemoteSequenceSet.hh"
 #include "Batcher.hh"
-#include "Instrumentation.hh"
 #include <deque>
 
 namespace litecore { namespace repl {

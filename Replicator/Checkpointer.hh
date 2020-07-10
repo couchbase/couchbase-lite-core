@@ -5,11 +5,8 @@
 //
 
 #pragma once
-#include "ReplicatorOptions.hh"
 #include "ReplicatorTypes.hh"
-#include "RemoteSequence.hh"
 #include "Error.hh"
-#include "Logging.hh"
 #include "Timer.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
@@ -21,10 +18,16 @@
 
 struct C4UUID;
 
+namespace litecore {
+    class Logging;
+}
+
 namespace litecore { namespace repl {
     using namespace fleece;
 
     class Checkpoint;
+    struct Options;
+    class RemoteSequence;
 
 
     /** Manages a Replicator's checkpoint, including local storage (but not remote).

@@ -20,6 +20,7 @@
 #include "Replicator.hh"
 #include "ReplicatorTypes.hh"
 #include "c4Private.h"
+#include "Increment.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "PlatformCompat.hh"

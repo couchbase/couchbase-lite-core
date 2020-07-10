@@ -17,7 +17,9 @@
 //
 
 #include "Pusher.hh"
+#include "DBAccess.hh"
 #include "BLIP.hh"
+#include "Increment.hh"
 #include "c4BlobStore.h"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"

@@ -20,6 +20,7 @@
 #include "Replicator.hh"
 #include "ReplicatorTuning.hh"
 #include "IncomingRev.hh"
+#include "DBAccess.hh"
 #include "fleece/Fleece.hh"
 #include "StringUtil.hh"
 #include "Instrumentation.hh"

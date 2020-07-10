@@ -24,7 +24,6 @@
 #include "fleece/slice.hh"
 #include <deque>
 #include <unordered_map>
-#include <string>
 
 namespace litecore { namespace repl {
 

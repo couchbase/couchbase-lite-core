@@ -18,6 +18,7 @@
 
 #include "IncomingRev.hh"
 #include "Replicator.hh"
+#include "DBAccess.hh"
 #include "StringUtil.hh"
 #include "MessageBuilder.hh"
 #include "c4BlobStore.h"
