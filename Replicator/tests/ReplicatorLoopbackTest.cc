@@ -18,7 +18,7 @@
 
 using namespace litecore::actor;
 
-constexpr duration ReplicatorLoopbackTest::kLatency;
+constexpr Timer::duration ReplicatorLoopbackTest::kLatency;
 
 TEST_CASE("Options password logging redaction") {
     string password("SEEKRIT");

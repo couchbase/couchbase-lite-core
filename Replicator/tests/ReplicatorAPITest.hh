@@ -13,6 +13,7 @@
 #include "c4Certificate.h"
 #include "Address.hh"
 #include "Response.hh"
+#include "ReplicatorTuning.hh"
 #include "c4Test.hh"
 #include "StringUtil.hh"
 #include <algorithm>
@@ -310,18 +311,20 @@ public:
         return true;
     }
 
-    void waitForStatus(C4ReplicatorActivityLevel level, chrono::milliseconds timeout =5s) {
+    static constexpr auto kDefaultWaitTimeout = repl::tuning::kDefaultCheckpointSaveDelay + 2s;
+
+    void waitForStatus(C4ReplicatorActivityLevel level, chrono::milliseconds timeout =kDefaultWaitTimeout) {
         unique_lock<mutex> lock(_mutex);
         _waitForStatus(lock, level, timeout);
     }
 
     void _waitForStatus(unique_lock<mutex> &lock,
-                        C4ReplicatorActivityLevel level, chrono::milliseconds timeout =5s)
+                        C4ReplicatorActivityLevel level, chrono::milliseconds timeout =kDefaultWaitTimeout)
     {
         _stateChangedCondition.wait_for(lock, timeout,
                                         [&]{return _numCallbacksWithLevel[level] > 0;});
         if (_numCallbacksWithLevel[level] == 0)
-            FAIL("Timed out waiting for a status callback of level %d", level);
+            FAIL("Timed out waiting for a status callback of level " << level);
     }
 
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {

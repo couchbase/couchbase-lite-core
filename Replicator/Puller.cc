@@ -219,7 +219,7 @@ namespace litecore { namespace repl {
     // Received an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
         if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-                && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs) {
+                && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs) {
             startIncomingRev(msg);
         } else {
             logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
@@ -273,7 +273,7 @@ namespace litecore { namespace repl {
     void Puller::_revWasProvisionallyHandled() {
         decrement(_activeIncomingRevs);
         if (connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-                        && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs
+                        && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs
                         && !_waitingRevMessages.empty()) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
