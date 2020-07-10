@@ -35,8 +35,6 @@ namespace litecore { namespace repl {
     public:
         IncomingRev(Puller* NONNULL);
 
-        ~IncomingRev() {logInfo("DELETED");}
-
         // Called by the Puller:
         void handleRev(blip::MessageIn* revMessage NONNULL);
         RevToInsert* rev() const                {return _rev;}

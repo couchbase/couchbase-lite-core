@@ -198,7 +198,7 @@ namespace litecore { namespace repl {
 
     void Puller::maybeStartIncomingRevs() {
         while (connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
-               && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs
+               && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs
                && !_waitingRevMessages.empty()) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
@@ -243,7 +243,7 @@ namespace litecore { namespace repl {
         }
         decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
 
-        ssize_t capacity = tuning::kMaxUnfinishedIncomingRevs - _spareIncomingRevs.size();
+        ssize_t capacity = tuning::kMaxIncomingRevs - _spareIncomingRevs.size();
         if (capacity > 0)
             _spareIncomingRevs.insert(_spareIncomingRevs.end(),
                                       revs->begin(),
