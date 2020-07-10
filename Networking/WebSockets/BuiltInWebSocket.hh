@@ -19,9 +19,9 @@ extern "C" {
     void C4RegisterBuiltInWebSocket();
 }
 
-namespace litecore { namespace crypto {
-    class Identity;    
-} }
+namespace litecore::crypto {
+    struct Identity;
+}
 
 namespace litecore { namespace websocket {
 
