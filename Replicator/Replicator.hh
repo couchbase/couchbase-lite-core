@@ -92,7 +92,8 @@ namespace litecore { namespace repl {
         void stop()                             {enqueue(&Replicator::_stop);}
 
         /** Tears down a Replicator state including any reference cycles.
-            The Replicator must have either already stopped, or never started. */
+            The Replicator must have either already stopped, or never started.
+            No further delegate callbacks will be made!  */
         void terminate();
 
         /** Invokes the callback for each document which has revisions pending push */

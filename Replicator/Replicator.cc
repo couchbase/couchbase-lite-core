@@ -180,15 +180,21 @@ namespace litecore { namespace repl {
 
 
     void Replicator::terminate() {
+        logDebug("terminate() called...");
         if (connected()) {
+            logDebug("...connected() was true, doing extra stuff...");
             Assert(_connectionState == Connection::kClosed);
             connection().terminate();
-            _delegate = nullptr;
             _pusher = nullptr;
             _puller = nullptr;
         }
 
+        // CBL-1061: This used to be inside the connected(), but static analysis shows
+        // terminate() is only called from the destructor of the _delegate itself, so it is
+        // dangerous to leave it around.  Set it to null here to avoid using it further.
+        _delegate = nullptr;
         _db.reset();
+        logDebug("...done with terminate()");
     }
 
 
