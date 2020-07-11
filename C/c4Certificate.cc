@@ -540,7 +540,7 @@ namespace c4Internal {
         }
 
         virtual fleece::alloc_slice publicKeyDERData() override {
-            alloc_slice data(_keyLength + 20);  // DER data is ~14 bytes longer than keyLength
+            alloc_slice data(_keyLength + 40);  // DER data is ~38 bytes longer than keyLength
             size_t len = data.size;
             if (!_callbacks.publicKeyData(_externalKey, (void*)data.buf, data.size, &len)) {
                 WarnError("C4ExternalKey publicKeyData callback failed!");
@@ -552,7 +552,8 @@ namespace c4Internal {
         }
 
         virtual fleece::alloc_slice publicKeyRawData() override {
-            return publicKeyDERData();
+            Retained<PublicKey> publicKey = new PublicKey(publicKeyDERData());
+            return publicKey->data(KeyFormat::Raw);
         }
 
         virtual int _decrypt(const void *input,
