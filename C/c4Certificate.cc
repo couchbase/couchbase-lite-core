@@ -552,7 +552,8 @@ namespace c4Internal {
         }
 
         virtual fleece::alloc_slice publicKeyRawData() override {
-            Retained<PublicKey> publicKey = new PublicKey(publicKeyDERData());
+            alloc_slice data( publicKeyDERData() );
+            Retained<PublicKey> publicKey = new PublicKey(data);
             return publicKey->data(KeyFormat::Raw);
         }
 
