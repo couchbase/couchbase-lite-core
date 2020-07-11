@@ -391,6 +391,12 @@ namespace litecore { namespace repl {
 #pragma mark - BLIP DELEGATE:
 
 
+    void Replicator::onTLSCertificate(slice certData) {
+        if (_delegate)
+            _delegate->replicatorGotTLSCertificate(certData);
+    }
+
+
     void Replicator::onHTTPResponse(int status, const websocket::Headers &headers) {
         enqueue(&Replicator::_onHTTPResponse, status, headers);
     }
@@ -427,11 +433,6 @@ namespace litecore { namespace repl {
 
         _checkpointer.stopAutosave();
         
-        if(connected()) {
-            // The ability to get this goes away after the connection is closed, so cache it!
-            _peerTLSCertificate = connection().peerTLSCertificate();
-        }
-
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
         if (_pusher)

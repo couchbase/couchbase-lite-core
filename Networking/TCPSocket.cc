@@ -142,14 +142,15 @@ namespace litecore { namespace net {
     }
 
 
-    Retained<crypto::Cert> TCPSocket::peerTLSCertificate() {
+    string TCPSocket::peerTLSCertificateData() {
         auto tlsSock = dynamic_cast<tls_socket*>(_socket.get());
-        if (!tlsSock)
-            return nullptr;
-        string certData = tlsSock->peer_certificate();
-        if (certData.empty())
-            return nullptr;
-        return new crypto::Cert(slice(certData));
+        return tlsSock ? tlsSock->peer_certificate() : "";
+    }
+
+
+    Retained<crypto::Cert> TCPSocket::peerTLSCertificate() {
+        string certData = peerTLSCertificateData();
+        return certData.empty() ? nullptr : new crypto::Cert(slice(certData));
     }
 
 

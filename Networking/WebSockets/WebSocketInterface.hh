@@ -22,7 +22,6 @@
 #include "InstanceCounted.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
-#include "Certificate.hh"
 #include <atomic>
 #include <map>
 #include <string>
@@ -143,10 +142,6 @@ namespace litecore { namespace websocket {
         /** Closes the WebSocket. Callable from any thread. */
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) =0;
         
-        virtual fleece::Retained<crypto::Cert> peerTLSCertificate() const {
-            return nullptr;
-        };
-
     protected:
         WebSocket(const URL &url, Role role);
         virtual ~WebSocket();
@@ -182,6 +177,7 @@ namespace litecore { namespace websocket {
         virtual ~Delegate() { }
 
         virtual void onWebSocketGotHTTPResponse(int status, const Headers &headers) { }
+        virtual void onWebSocketGotTLSCertificate(slice certData) =0;
         virtual void onWebSocketConnect() =0;
         virtual void onWebSocketClose(CloseStatus) =0;
 

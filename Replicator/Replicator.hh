@@ -76,6 +76,7 @@ namespace litecore { namespace repl {
             virtual void replicatorGotHTTPResponse(Replicator* NONNULL,
                                                    int status,
                                                    const websocket::Headers &headers) { }
+            virtual void replicatorGotTLSCertificate(slice certData) =0;
             virtual void replicatorStatusChanged(Replicator* NONNULL,
                                                  const Status&) =0;
             virtual void replicatorConnectionClosed(Replicator* NONNULL,
@@ -115,8 +116,6 @@ namespace litecore { namespace repl {
         void docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID);
 
         Retained<Replicator> replicatorIfAny() override         {return this;}
-        
-        Retained<crypto::Cert> peerTLSCertificate() const { return connected() ? connection().peerTLSCertificate() : _peerTLSCertificate; }
 
     protected:
         virtual std::string loggingClassName() const override  {
@@ -125,7 +124,7 @@ namespace litecore { namespace repl {
 
         // BLIP ConnectionDelegate API:
         virtual void onHTTPResponse(int status, const websocket::Headers &headers) override;
-
+        virtual void onTLSCertificate(slice certData) override;
         virtual void onConnect() override
                                                 {enqueue(&Replicator::_onConnect);}
         virtual void onClose(Connection::CloseStatus status, Connection::State state) override
@@ -192,7 +191,6 @@ namespace litecore { namespace repl {
         alloc_slice _checkpointJSONToSave;
         alloc_slice _remoteCheckpointDocID;
         alloc_slice _remoteCheckpointRevID;
-        Retained<crypto::Cert> _peerTLSCertificate; // Used when connection is not available
     };
 
 } }

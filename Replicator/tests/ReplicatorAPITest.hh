@@ -199,10 +199,10 @@ public:
 #ifdef COUCHBASE_ENTERPRISE
         if(!_remoteCert) {
             C4Error err;
-            _remoteCert = c4repl_getPeerTLSCertificate(_repl, &err);
-            if(!_remoteCert) {
-                WARN("Failed to get remote TLS certificate");
-                REQUIRE(err.code == 0);
+            _remoteCert = c4cert_retain( c4repl_getPeerTLSCertificate(_repl, &err) );
+            if(!_remoteCert && err.code != 0) {
+                WARN("Failed to get remote TLS certificate: error " << err.domain << "/" << err.code);
+                C4Assert(err.code == 0);
             }
         }
 #endif

@@ -20,7 +20,6 @@
 #include "WebSocketInterface.hh"
 #include "Message.hh"
 #include "Logging.hh"
-#include "Certificate.hh"
 #include <atomic>
 
 namespace litecore { namespace blip {
@@ -85,8 +84,6 @@ namespace litecore { namespace blip {
 
         virtual std::string loggingIdentifier() const override  {return _name;}
         
-        fleece::Retained<crypto::Cert> peerTLSCertificate();
-
         /** Exposed only for testing. */
         websocket::WebSocket* webSocket() const;
 
@@ -98,6 +95,7 @@ namespace litecore { namespace blip {
 
         void send(MessageOut*);
         void gotHTTPResponse(int status, const websocket::Headers &headers);
+        void gotTLSCertificate(slice certData);
         void connected();
         void closed(CloseStatus);
 
@@ -109,7 +107,6 @@ namespace litecore { namespace blip {
         int8_t _compressionLevel;
         std::atomic<State> _state {kClosed};
         CloseStatus _closeStatus;
-        Retained<crypto::Cert> _peerTLSCertificate; // Cached for offline retrieval
     };
 
 
@@ -122,6 +119,8 @@ namespace litecore { namespace blip {
 
         /** Called when the HTTP response arrives (just before onConnect or onClose). */
         virtual void onHTTPResponse(int status, const websocket::Headers &headers) { }
+
+        virtual void onTLSCertificate(slice certData) =0;
 
         /** Called when the connection opens. */
         virtual void onConnect()                                { }

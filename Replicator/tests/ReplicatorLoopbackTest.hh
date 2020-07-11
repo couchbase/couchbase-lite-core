@@ -173,6 +173,9 @@ public:
         }
     }
 
+    virtual void replicatorGotTLSCertificate(slice certData) override {
+    }
+
     virtual void replicatorStatusChanged(Replicator* repl,
                                          const Replicator::Status &status) override
     {

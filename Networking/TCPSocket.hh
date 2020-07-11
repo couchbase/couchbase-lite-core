@@ -53,6 +53,9 @@ namespace litecore::net {
         /// Peer's address: IP address + ":" + port number
         std::string peerAddress();
 
+        /// Raw X.509 data of peer's TLS certificate (if it has one)
+        std::string peerTLSCertificateData();
+
         /// Peer's TLS certificate (if it has one)
         fleece::Retained<crypto::Cert> peerTLSCertificate();
 
