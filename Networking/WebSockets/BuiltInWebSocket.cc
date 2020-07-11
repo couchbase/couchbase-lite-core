@@ -200,20 +200,23 @@ namespace litecore { namespace websocket {
         bool usedAuth = false;
         unique_ptr<ClientSocket> socket;
         HTTPLogic::Disposition lastDisposition = HTTPLogic::kFailure;
-        while (true) {
+        string certData;
+        C4Error error = {};
+        bool done = false;
+        do {
             if (lastDisposition != HTTPLogic::kContinue) {
                 socket = make_unique<ClientSocket>(_tlsContext);
                 socket->setTimeout(kConnectTimeoutSecs);
             }
             
-            auto nextResponse = logic.sendNextRequest(*socket);
-            _peerTLSCertificate = socket->peerTLSCertificate();
-            
-            switch (nextResponse) {
+            lastDisposition = logic.sendNextRequest(*socket);
+            certData = socket->peerTLSCertificateData();
+
+            switch (lastDisposition) {
                 case HTTPLogic::kSuccess:
-                    gotHTTPResponse(int(logic.status()), logic.responseHeaders());
                     socket->setTimeout(0);
-                    return socket;
+                    done = true;
+                    break;
                 case HTTPLogic::kRetry:
                     break; // redirected; go around again
                 case HTTPLogic::kContinue:
@@ -231,16 +234,27 @@ namespace litecore { namespace websocket {
                         }
                     }
                     // give up:
-                    gotHTTPResponse(int(logic.status()), logic.responseHeaders());
-                    closeWithError(c4error_make(WebSocketDomain, int(logic.status()), nullslice));
-                    return nullptr;
+                    error = c4error_make(WebSocketDomain, int(logic.status()), nullslice);
+                    done = true;
+                    break;
                 }
                 case HTTPLogic::kFailure:
-                    if (logic.status() != HTTPStatus::undefined)
-                        gotHTTPResponse(int(logic.status()), logic.responseHeaders());
-                    closeWithError(logic.error());
-                    return nullptr;
+                    error = logic.error();
+                    done = true;
+                    break;
             }
+        } while (!done);
+
+        // Tell the delegate what happened:
+        if (!certData.empty())
+            delegate().onWebSocketGotTLSCertificate(slice(certData));
+        if (logic.status() != HTTPStatus::undefined)
+            gotHTTPResponse(int(logic.status()), logic.responseHeaders());
+        if (lastDisposition == HTTPLogic::kSuccess) {
+            return socket;
+        } else {
+            closeWithError(error);
+            return nullptr;
         }
     }
 

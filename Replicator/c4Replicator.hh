@@ -187,17 +187,12 @@ struct C4Replicator : public RefCounted,
 #ifdef COUCHBASE_ENTERPRISE
     
     C4Cert* getPeerTLSCertificate(C4Error* outErr) const {
-        if(!_replicator) {
-            return nullptr;
+        LOCK(_mutex);
+        if (!_peerTLSCertificate && _peerTLSCertificateData) {
+            _peerTLSCertificate = c4cert_fromData(_peerTLSCertificateData, nullptr);
+            _peerTLSCertificateData = nullptr;
         }
-        
-        auto cert = _replicator->peerTLSCertificate();
-        if(!cert) {
-            return nullptr;
-        }
-        
-        
-        return c4cert_fromData((C4Slice)cert->data(), outErr);
+        return _peerTLSCertificate;
     }
     
 #endif
@@ -319,6 +314,12 @@ protected:
         }
     }
 
+
+    virtual void replicatorGotTLSCertificate(slice certData) override {
+        LOCK(_mutex);
+        _peerTLSCertificateData = certData;
+        _peerTLSCertificate = nullptr;
+    }
 
     // Replicator::Delegate method, notifying that the status level or progress have changed.
     virtual void replicatorStatusChanged(Replicator *repl,
@@ -505,6 +506,8 @@ protected:
 
 private:
     alloc_slice                 _responseHeaders;
+    mutable alloc_slice         _peerTLSCertificateData;
+    mutable c4::ref<C4Cert>     _peerTLSCertificate;
     Retained<C4Replicator>      _selfRetain;            // Keeps me from being deleted
     atomic<C4ReplicatorStatusChangedCallback>   _onStatusChanged;
     atomic<C4ReplicatorDocumentsEndedCallback>  _onDocumentsEnded;

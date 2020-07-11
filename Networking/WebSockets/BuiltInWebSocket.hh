@@ -44,10 +44,6 @@ namespace litecore { namespace websocket {
         /** Starts the TCP connection for a client socket. */
         virtual void connect() override;
         
-        /** Gets the remote TLS certificate, if applicable */
-        virtual fleece::Retained<crypto::Cert> peerTLSCertificate() const override
-            { return _socket ? _socket->peerTLSCertificate() : _peerTLSCertificate; }
-
     protected:
         ~BuiltInWebSocket();
 
@@ -86,7 +82,6 @@ namespace litecore { namespace websocket {
 
         c4::ref<C4Database> _database;                      // The database (used only for cookies)
         std::unique_ptr<net::TCPSocket> _socket;            // The TCP socket
-        Retained<crypto::Cert> _peerTLSCertificate;         // Cached certificate for offline retrieval
         Retained<BuiltInWebSocket> _selfRetain;             // Keeps me alive while connected
         Retained<net::TLSContext> _tlsContext;              // TLS settings
         std::thread _connectThread;                         // Thread that opens the connection
