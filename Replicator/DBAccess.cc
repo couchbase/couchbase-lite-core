@@ -258,21 +258,22 @@ namespace litecore { namespace repl {
 
 
     SharedKeys DBAccess::tempSharedKeys() {
-        if (!_tempSharedKeys)
-            updateTempSharedKeys();
         SharedKeys sk;
         {
             lock_guard<mutex> lock(_tempSharedKeysMutex);
             sk = _tempSharedKeys;
         }
+        if (!sk)
+            sk = updateTempSharedKeys();
         return sk;
     }
 
 
-    bool DBAccess::updateTempSharedKeys() {
+    SharedKeys DBAccess::updateTempSharedKeys() {
         auto db = _insertionDB.get();
         if (!db) db = this;
-        db->use([&](C4Database *idb) {
+        SharedKeys result;
+        return db->use<SharedKeys>([&](C4Database *idb) {
             SharedKeys dbsk = c4db_getFLSharedKeys(idb);
             lock_guard<mutex> lock(_tempSharedKeysMutex);
             if (!_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count()) {
@@ -280,8 +281,8 @@ namespace litecore { namespace repl {
                 _tempSharedKeys = SharedKeys::create(dbsk.stateData());
                 _tempSharedKeysInitialCount = dbsk.count();
             }
+            return _tempSharedKeys;
         });
-        return true;
     }
 
 

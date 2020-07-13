@@ -194,7 +194,7 @@ namespace litecore { namespace repl {
         
         void markRevsSyncedLater();
         fleece::SharedKeys tempSharedKeys();
-        bool updateTempSharedKeys();
+        fleece::SharedKeys updateTempSharedKeys();
         bool beginTransaction(C4Error*);
         bool endTransaction(bool commit, C4Error*);
         access_lock<C4Database*>& insertionDB();
