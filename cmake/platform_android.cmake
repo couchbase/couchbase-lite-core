@@ -56,6 +56,11 @@ function(setup_litecore_build)
         -DLITECORE_USES_ICU=1
     )
 
+    target_compile_options(
+        CouchbaseSqlite3 PRIVATE
+        -DSQLITE_UNLINK_AFTER_CLOSE
+    )
+
     target_include_directories(
         LiteCoreStatic PRIVATE
         LiteCore/Android
