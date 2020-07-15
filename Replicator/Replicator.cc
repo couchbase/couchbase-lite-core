@@ -309,8 +309,8 @@ namespace litecore { namespace repl {
                 break;
         }
         if (SyncBusyLog.willLog(LogLevel::Info)) {
-            logInfo("activityLevel=%-s: connectionState=%d",
-                    kC4ReplicatorActivityLevelNames[level], _connectionState);
+            logInfo("activityLevel=%-s: connectionState=%d, savingChkpt=%d",
+                    kC4ReplicatorActivityLevelNames[level], _connectionState, _checkpointer.isUnsaved());
         }
         return level;
     }
