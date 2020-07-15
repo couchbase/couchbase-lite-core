@@ -46,8 +46,6 @@ public:
     constexpr static const C4String kProtectedDBName = C4STR("seekrit");
     constexpr static const C4String kImagesDBName = C4STR("images");
 
-    static alloc_slice sPinnedCert;
-
     ReplicatorAPITest()
     :C4Test(0)
     {
@@ -55,9 +53,6 @@ public:
         call_once(once, [&]() {
             // Register the BuiltInWebSocket class as the C4Replicator's WebSocketImpl.
             C4RegisterBuiltInWebSocket();
-
-            // Pin the server certificate:
-            sPinnedCert = readFile(sReplicatorFixturesDir + "cert.pem");
         });
 
         // Environment variables can also override the default address above:
@@ -79,7 +74,7 @@ public:
         }
 
         if (Address::isSecure(_address)) {
-            pinnedCert = sPinnedCert;
+            pinnedCert = readFile(sReplicatorFixturesDir + "cert.pem");
         }
 
         _onDocsEnded = onDocsEnded;

@@ -21,8 +21,6 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
                          ReplicatorAPITest::kProtectedDBName,
                          ReplicatorAPITest::kImagesDBName;
 
-alloc_slice ReplicatorAPITest::sPinnedCert;
-
 
 TEST_CASE("URL Parsing") {
     C4Address address;
