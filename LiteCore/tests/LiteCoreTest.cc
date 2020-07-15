@@ -179,11 +179,11 @@ TestFixture::TestFixture()
         // iOS tests copy the fixture files into the test bundle.
         CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("org.couchbase.LiteCoreTests"));
         CFURLRef url = CFBundleCopyResourcesDirectoryURL(bundle);
-        CFStringRef path = CFURLCopyPath(url);
+        CFStringRef path = CFURLCopyFileSystemPath(url, kCFURLPOSIXPathStyle);
         CFRelease(url);
         char buf[1024];
         Assert(CFStringGetCString(path, buf, sizeof(buf), kCFStringEncodingUTF8));
-        sFixturesDir = string(buf) + "TestData/LiteCore/tests/data/";
+        sFixturesDir = string(buf) + "/TestData/LiteCore/tests/data/";
         CFRelease(path);
 #endif
 

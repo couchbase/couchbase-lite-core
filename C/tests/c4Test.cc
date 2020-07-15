@@ -213,12 +213,14 @@ _versioning(kC4RevisionTrees)
         call_once(once, [] {
             // iOS tests copy the fixture files into the test bundle.
             CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("org.couchbase.LiteCoreTests"));
+            REQUIRE(bundle);
             CFURLRef url = CFBundleCopyResourcesDirectoryURL(bundle);
-            CFStringRef path = CFURLCopyPath(url);
+            CFStringRef path = CFURLCopyFileSystemPath(url, kCFURLPOSIXPathStyle);
             char resourcesDir[1024];
             C4Assert(CFStringGetCString(path, resourcesDir, sizeof(resourcesDir), kCFStringEncodingUTF8));
-            sFixturesDir           = string(resourcesDir) + "TestData/C/tests/data/";
-            sReplicatorFixturesDir = string(resourcesDir) + "TestData/Replicator/tests/data/";
+            sFixturesDir           = string(resourcesDir) + "/TestData/C/tests/data/";
+            sReplicatorFixturesDir = string(resourcesDir) + "/TestData/Replicator/tests/data/";
+            C4Log("Fixtures dir: %s", sFixturesDir.c_str());
             CFRelease(path);
             CFRelease(url);
         });
