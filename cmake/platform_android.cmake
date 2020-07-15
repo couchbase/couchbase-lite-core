@@ -51,6 +51,7 @@ function(setup_litecore_build)
     target_compile_definitions(
         LiteCoreStatic PRIVATE
         -DLITECORE_USES_ICU=1
+        -DSQLITE_UNLINK_AFTER_CLOSE
     )
 
     target_include_directories(
