@@ -211,6 +211,12 @@ TEST_CASE_METHOD(C4RESTTest, "Listen on interface", "[Listener][C]") {
     optional<Interface> intf;
     string intfAddress;
     SECTION("All interfaces") {
+        C4Log("Here are all the IP interfaces and their addresses:");
+        for (auto &i : Interface::all()) {
+            C4Log("  - %s (%.02x, routable=%d) :", i.name.c_str(), i.flags, i.isRoutable());
+            for (auto &addr : i.addresses)
+                C4Log("    - %s", string(addr).c_str());
+        }
     }
     SECTION("Specific interface") {
         intf = Interface::all()[0];
