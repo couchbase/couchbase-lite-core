@@ -27,6 +27,6 @@ cmake "$SRCROOT/../vendor/mbedtls" $CMAKE_OPTS
 make
 
 # Copy the resulting static libraries to the Xcode build dir where the linker will find them:
-mkdir -p "$TARGET_BUILD_DIR"
-cp -pv library/libmbed*.a "$TARGET_BUILD_DIR/"
-cp -pv crypto/library/libmbed*.a "$TARGET_BUILD_DIR/"
+mkdir -p "$BUILT_PRODUCTS_DIR"
+cp -pv library/libmbed*.a "$BUILT_PRODUCTS_DIR/"
+cp -pv crypto/library/libmbed*.a "$BUILT_PRODUCTS_DIR/"
