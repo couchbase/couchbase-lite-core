@@ -201,6 +201,7 @@ public:
             _wentOffline = true;
         }
         
+#ifdef COUCHBASE_ENTERPRISE
         if(!_remoteCert) {
             C4Error err;
             _remoteCert = c4repl_getPeerTLSCertificate(_repl, &err);
@@ -209,6 +210,7 @@ public:
                 REQUIRE(err.code == 0);
             }
         }
+#endif
         
         if (!_headers) {
             _headers = AllocedDict(alloc_slice(c4repl_getResponseHeaders(_repl)));
@@ -447,8 +449,8 @@ public:
     AllocedDict _options;
     alloc_slice _authHeader;
     alloc_slice pinnedCert;
-    C4Cert* _remoteCert {nullptr};
 #ifdef COUCHBASE_ENTERPRISE
+    c4::ref<C4Cert> _remoteCert;
     c4::ref<C4Cert> identityCert;
     c4::ref<C4KeyPair> identityKey;
 #endif
