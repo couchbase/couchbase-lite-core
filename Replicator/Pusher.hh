@@ -98,7 +98,7 @@ namespace litecore { namespace repl {
         bool _continuous;
         bool _proposeChanges;
         bool _proposeChangesKnown;
-        ChangesFeed _changesFeed;
+        ReplicatorChangesFeed _changesFeed;
         DocIDToRevMap _pushingDocs;               // Revs being processed by push
         DocIDToRevMap _conflictsIMightRetry;
         C4SequenceNumber _lastSequenceRead {0};   // Last sequence read from db

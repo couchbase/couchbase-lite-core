@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
 
 
     ChangesFeed::ChangesFeed(Delegate &delegate, Options &options,
-                             std::shared_ptr<DBAccess> db, Checkpointer &checkpointer)
+                             access_lock<C4Database*> &db, Checkpointer *checkpointer)
     :Logging(SyncLog)
     ,_delegate(delegate)
     ,_options(options)
@@ -83,7 +83,7 @@ namespace litecore { namespace repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
-            _db->use([&](C4Database* db) {
+            _db.use([&](C4Database* db) {
                 _changeObserver = c4dbobs_create(db,
                                                  [](C4DatabaseObserver* observer, void *context) {
                                                      ((ChangesFeed*)context)->_dbChanged();
@@ -92,15 +92,12 @@ namespace litecore { namespace repl {
             });
         }
 
-        return _caughtUp ? getObservedChanges(limit) : getHistoricalChanges(limit);
+        return (_caughtUp && _continuous) ? getObservedChanges(limit) : getHistoricalChanges(limit);
     }
 
 
     ChangesFeed::Changes ChangesFeed::getHistoricalChanges(unsigned limit) {
         logVerbose("Reading up to %u local changes since #%" PRIu64, limit, _maxSequence);
-
-        if (_getForeignAncestors)
-            _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
 
         // Run a by-sequence enumerator to find the changed docs:
         auto changes = make_shared<RevToSendList>();
@@ -111,7 +108,7 @@ namespace litecore { namespace repl {
         if (!_skipDeleted)
             options.flags |= kC4IncludeDeleted;
 
-        _db->use([&](C4Database* db) {
+        _db.use([&](C4Database* db) {
             c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _maxSequence, &options, &error);
             if (e) {
                 changes->reserve(limit);
@@ -144,7 +141,6 @@ namespace litecore { namespace repl {
         bool ext;
         uint32_t nChanges;
         auto changes = make_shared<RevToSendList>();
-        bool updateForeignAncestors = _getForeignAncestors;
         auto const startingMaxSequence = _maxSequence;
 
         _notifyOnChanges = true;
@@ -165,12 +161,7 @@ namespace litecore { namespace repl {
 
             // Copy the changes into a vector of RevToSend:
             C4DatabaseChange *c4change = c4changes;
-            _db->use([&](C4Database *db) {
-                if (updateForeignAncestors) {
-                    _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
-                    updateForeignAncestors = false;
-                }
-
+            _db.use([&](C4Database *db) {
                 for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
                     if (c4change->sequence <= startingMaxSequence)
                         continue;
@@ -222,7 +213,7 @@ namespace litecore { namespace repl {
         if (info.expiration > 0 && info.expiration < c4_now()) {
             logVerbose("'%.*s' is expired; not pushing it", SPLAT(info.docID));
             return nullptr;             // skip rev: expired
-        } else if (!_passive && _checkpointer.isSequenceCompleted(info.sequence)) {
+        } else if (!_passive && _checkpointer && _checkpointer->isSequenceCompleted(info.sequence)) {
             return nullptr;             // skip rev: checkpoint says we already pushed it before
         } else if (_docIDs != nullptr
                     && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) {
@@ -235,7 +226,7 @@ namespace litecore { namespace repl {
 
 
     bool ChangesFeed::shouldPushRev(RevToSend *rev) const {
-        return _db->use<bool>([&](C4Database *db) {
+        return _db.use<bool>([&](C4Database *db) {
             return shouldPushRev(rev, nullptr, db);
         });
     }
@@ -274,14 +265,29 @@ namespace litecore { namespace repl {
     }
 
 
+    // Overridden by ReplicatorChangesFeed
+    bool ChangesFeed::getRemoteRevID(RevToSend *rev, C4Document *doc) const {
+        return true;
+    }
+
+
+#pragma mark - REPLICATOR CHANGES FEED:
+
+
+    ReplicatorChangesFeed::ReplicatorChangesFeed(Delegate &delegate, Options &options, DBAccess &db, Checkpointer *cp)
+    :ChangesFeed(delegate, options, db, cp)     // DBAccess is a subclass of access_lock<C4Database*>
+    { }
+
+
     // Assigns rev->remoteAncestorRevID based on the document.
     // Returns false to reject the document if the remote is equal to or newer than this rev.
-    bool ChangesFeed::getRemoteRevID(RevToSend *rev, C4Document *doc) const {
+    bool ReplicatorChangesFeed::getRemoteRevID(RevToSend *rev, C4Document *doc) const {
         // For proposeChanges, find the nearest foreign ancestor of the current rev:
-        Assert(_db->remoteDBID());
-        alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
+        auto &dbAccess = (DBAccess&)_db;
+        Assert(dbAccess.remoteDBID());
+        alloc_slice foreignAncestor = dbAccess.getDocRemoteAncestor(doc);
         logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
-        if (_getForeignAncestors && foreignAncestor == slice(doc->revID))
+        if (foreignAncestor == slice(doc->revID))
             return false;   // skip this rev: it's already on the peer
         if (foreignAncestor
                     && c4rev_getGeneration(foreignAncestor) >= c4rev_getGeneration(doc->revID)) {
@@ -294,6 +300,13 @@ namespace litecore { namespace repl {
         }
         rev->remoteAncestorRevID = foreignAncestor;
         return true;
+    }
+
+
+    ChangesFeed::Changes ReplicatorChangesFeed::getMoreChanges(unsigned limit) {
+        if (_getForeignAncestors)
+            ((DBAccess&)_db).markRevsSyncedNow();  // make sure foreign ancestors are up to date
+        return ChangesFeed::getMoreChanges(limit);
     }
 
 } }

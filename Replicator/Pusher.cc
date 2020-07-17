@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
     :Worker(replicator, "Push")
     ,_continuous(_options.push == kC4Continuous)
     ,_checkpointer(checkpointer)
-    ,_changesFeed(*this, _options, _db, checkpointer)
+    ,_changesFeed(*this, _options, *_db, &checkpointer)
     {
         if (_options.push <= kC4Passive) {
             // Passive replicator always sends "changes"
