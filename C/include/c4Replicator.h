@@ -352,6 +352,9 @@ extern "C" {
     #define kC4ReplicatorHeartbeatInterval      "heartbeat" ///< Interval in secs to send a keepalive ping
     #define kC4SocketOptionWSProtocols          "WS-Protocols" ///< Sec-WebSocket-Protocol header value
 
+    // BLIP options:
+    #define kC4ReplicatorCompressionLevel       "BLIPCompressionLevel" ///< Data compression level, 0..9
+
     // [1]: Auth dictionary keys:
     #define kC4ReplicatorAuthType       "type"           ///< Auth type; see [2] (string)
     #define kC4ReplicatorAuthUserName   "username"       ///< User name for basic auth (string)
