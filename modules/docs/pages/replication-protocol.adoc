@@ -289,10 +289,11 @@ Body: JSON array
 The response message indicates which of the proposed changes are allowed
 and which are out of date. It consists of an array of numbers, generally
 with the same meanings as HTTP status codes, with the following specific
-meanings: * 0: The change is allowed and the peer should send the
-revision * 304: The server already has this revision, so the peer
-doesn't need to send it * 409: This change would cause a conflict, so
-the server needs to resolve it and retry later
+meanings: 
+
+* 0: The change is allowed and the peer should send the revision 
+* 304: The server already has this revision, so the peer doesn't need to send it 
+* 409: This change would cause a conflict, so the server needs to resolve it and retry later
 
 As with `changes`, trailing zeros can be omitted, but the interpretation
 is different since a zero means "send it" instead of "don’t send it". So
