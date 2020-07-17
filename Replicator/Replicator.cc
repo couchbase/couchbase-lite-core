@@ -285,6 +285,7 @@ namespace litecore { namespace repl {
             }
             case Connection::kClosing:
                 // Remain active while I wait for the connection to finish closing:
+                logDebug("Connection closing... (activityLevel=busy)waiting to finish");
                 level = kC4Busy;
                 break;
             case Connection::kDisconnected:
