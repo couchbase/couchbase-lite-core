@@ -100,8 +100,7 @@ namespace litecore { namespace repl {
         logVerbose("Reading up to %u local changes since #%" PRIu64, limit, _maxSequence);
 
         // Run a by-sequence enumerator to find the changed docs:
-        auto changes = make_shared<RevToSendList>();
-        C4Error error = {};
+        Changes changes = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         if (!_getForeignAncestors && !_options.pushFilter)
             options.flags &= ~kC4IncludeBodies;
@@ -109,15 +108,15 @@ namespace litecore { namespace repl {
             options.flags |= kC4IncludeDeleted;
 
         _db.use([&](C4Database* db) {
-            c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _maxSequence, &options, &error);
+            c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _maxSequence, &options, &changes.err);
             if (e) {
-                changes->reserve(limit);
-                while (c4enum_next(e, &error) && limit > 0) {
+                changes.revs.reserve(limit);
+                while (c4enum_next(e, &changes.err) && limit > 0) {
                     C4DocumentInfo info;
                     c4enum_getDocumentInfo(e, &info);
                     auto rev = makeRevToSend(info, e, db);
                     if (rev) {
-                        changes->push_back(rev);
+                        changes.revs.push_back(rev);
                         --limit;
                     }
                 }
@@ -129,7 +128,8 @@ namespace litecore { namespace repl {
             }
         });
 
-        return {move(changes), _maxSequence, error};
+        changes.lastSequence = _maxSequence;
+        return changes;
     }
 
 
@@ -140,7 +140,7 @@ namespace litecore { namespace repl {
         C4DatabaseChange c4changes[kMaxChanges];
         bool ext;
         uint32_t nChanges;
-        auto changes = make_shared<RevToSendList>();
+        Changes changes = {};
         auto const startingMaxSequence = _maxSequence;
 
         _notifyOnChanges = true;
@@ -172,7 +172,7 @@ namespace litecore { namespace repl {
                     // dump of existing docs, not to 'live' changes.
                     auto rev = makeRevToSend(info, nullptr, db);
                     if (rev) {
-                        changes->push_back(rev);
+                        changes.revs.push_back(rev);
                         --limit;
                     }
                 }
@@ -181,7 +181,7 @@ namespace litecore { namespace repl {
             c4dbobs_releaseChanges(c4changes, nChanges);
         }
 
-        if (changes->empty())
+        if (changes.revs.empty())
             logInfo("No new observed changes...");
         else if (limit > 0)
             logVerbose("Read all observed changes; awaiting more...");
@@ -191,7 +191,8 @@ namespace litecore { namespace repl {
             _notifyOnChanges = false;
         }
 
-        return {move(changes), _maxSequence, {}};
+        changes.lastSequence = _maxSequence;
+        return changes;
     }
 
 

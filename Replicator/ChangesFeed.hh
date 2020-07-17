@@ -49,7 +49,7 @@ namespace litecore::repl {
         void filterByDocIDs(fleece::Array docIDs);
 
         struct Changes {
-            std::shared_ptr<RevToSendList> revs;    // Ordered list of new revisions
+            RevToSendList revs;    // Ordered list of new revisions
             C4SequenceNumber lastSequence;          // The last sequence that was checked
             C4Error err;                            // On failure, error goes here
         };

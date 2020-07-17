@@ -58,15 +58,13 @@ namespace litecore { namespace repl {
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
         void gotOutOfOrderChange(RevToSend* NONNULL);
-        void sendChanges(std::shared_ptr<RevToSendList>);
-        void handleChangesResponse(std::shared_ptr<RevToSendList>, blip::MessageIn*, bool proposedChanges);
+        void sendChanges(RevToSendList&);
+        void handleChangesResponse(RevToSendList&, blip::MessageIn*, bool proposedChanges);
         bool handleChangeResponse(RevToSend *change, Value response);
         bool handleProposedChangeResponse(RevToSend *change, Value response);
         void maybeGetMoreChanges()          {enqueue(&Pusher::_maybeGetMoreChanges);}
         void _maybeGetMoreChanges();
-        void gotChanges(std::shared_ptr<RevToSendList> changes,
-                        C4SequenceNumber lastSequence,
-                        C4Error err);
+        void gotChanges(RevToSendList&, C4SequenceNumber lastSequence, C4Error err);
         void _dbHasNewChanges();
         void sendChangeList(RevToSendList);
         bool shouldRetryConflictWithNewerAncestor(RevToSend* NONNULL);

@@ -119,12 +119,12 @@ namespace litecore { namespace repl {
             _continuousCaughtUp = true;
 
             auto changes = _changesFeed.getMoreChanges(tuning::kDefaultChangeBatchSize);
-            gotChanges(move(changes.revs), changes.lastSequence, changes.err);
+            gotChanges(changes.revs, changes.lastSequence, changes.err);
         }
     }
 
 
-    void Pusher::gotChanges(std::shared_ptr<RevToSendList> changes,
+    void Pusher::gotChanges(RevToSendList &changes,
                             C4SequenceNumber lastSequence,
                             C4Error err)
     {
@@ -134,7 +134,7 @@ namespace litecore { namespace repl {
         // Add the revs in `changes` to `_pushingDocs`. If there's a collision that means we're
         // already sending an earlier revision of that document; in that case, put the newer
         // rev in the earlier one's `nextRev` field so it'll be processed later.
-        for (auto iChange = changes->begin(); iChange != changes->end();) {
+        for (auto iChange = changes.begin(); iChange != changes.end();) {
             auto rev = *iChange;
             auto [iDoc, isNew] = _pushingDocs.insert({rev->docID, rev});
             if (isNew) {
@@ -146,30 +146,30 @@ namespace litecore { namespace repl {
                 iDoc->second->nextRev = rev;
                 if (!_passive)
                     _checkpointer.addPendingSequence(rev->sequence);
-                iChange = changes->erase(iChange);  // remove from `changes`
+                iChange = changes.erase(iChange);  // remove from `changes`
             }
         }
 
         if (!passive() && lastSequence > _lastSequenceRead)
-            _checkpointer.addPendingSequences(*changes.get(),
+            _checkpointer.addPendingSequences(changes,
                                               _lastSequenceRead + 1, lastSequence);
         _lastSequenceRead = lastSequence;
 
-        if (changes->empty()) {
+        if (changes.empty()) {
             logInfo("Found 0 changes up to #%" PRIu64, lastSequence);
         } else {
             uint64_t bodySize = 0;
-            for (auto &change : *changes)
+            for (auto &change : changes)
                 bodySize += change->bodySize;
             addProgress({0, bodySize});
 
             logInfo("Read %zu local changes up to #%" PRIu64 ": sending '%-s' with sequences #%" PRIu64 " - #%" PRIu64,
-                    changes->size(), lastSequence,
+                    changes.size(), lastSequence,
                     (_proposeChanges ? "proposeChanges" : "changes"),
-                    changes->at(0)->sequence, _lastSequenceRead);
+                    changes.at(0)->sequence, _lastSequenceRead);
 #if DEBUG
             if (willLog(LogLevel::Debug)) {
-                for (auto &change : *changes)
+                for (auto &change : changes)
                     logDebug("    - %.4llu: '%.*s' #%.*s (remote #%.*s)",
                              change->sequence, SPLAT(change->docID), SPLAT(change->revID),
                              SPLAT(change->remoteAncestorRevID));
@@ -178,8 +178,8 @@ namespace litecore { namespace repl {
         }
 
         // Send the "changes" request:
-        auto changeCount = changes->size();
-        sendChanges(move(changes));
+        auto changeCount = changes.size();
+        sendChanges(changes);
 
         if (changeCount < tuning::kDefaultChangeBatchSize) {
             if (!_caughtUp) {
@@ -190,7 +190,8 @@ namespace litecore { namespace repl {
                 if (changeCount > 0 && passive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
                     // one if we didn't already:
-                    sendChanges(make_shared<RevToSendList>());
+                    RevToSendList empty;
+                    sendChanges(empty);
                 }
             }
         } else if (_continuous) {
@@ -215,15 +216,15 @@ namespace litecore { namespace repl {
 
 
     // Sends a "changes" or "proposeChanges" message.
-    void Pusher::sendChanges(std::shared_ptr<RevToSendList> changes) {
+    void Pusher::sendChanges(RevToSendList &changes) {
         MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
         req.urgent = tuning::kChangeMessagesAreUrgent;
-        req.compressed = !changes->empty();
+        req.compressed = !changes.empty();
 
         // Generate the JSON array of changes:
         auto &enc = req.jsonBody();
         enc.beginArray();
-        for (RevToSend *change : *changes) {
+        for (RevToSend *change : changes) {
             // Write the info array for this change:
             enc.beginArray();
             if (_proposeChanges) {
@@ -248,7 +249,7 @@ namespace litecore { namespace repl {
         }
         enc.endArray();
 
-        if (changes->empty()) {
+        if (changes.empty()) {
             // Empty == just announcing 'caught up', so no need to get a reply
             req.noreply = true;
             sendRequest(req);
@@ -260,20 +261,20 @@ namespace litecore { namespace repl {
         increment(_changeListsInFlight);
         sendRequest(req, [this,changes=move(changes),proposedChanges](MessageProgress progress) mutable {
             if (progress.state == MessageProgress::kComplete)
-                handleChangesResponse(move(changes), progress.reply, proposedChanges);
+                handleChangesResponse(changes, progress.reply, proposedChanges);
         });
     }
 
 
     // Handles the peer's response to a "changes" or "proposeChanges" message:
-    void Pusher::handleChangesResponse(std::shared_ptr<RevToSendList> changes,
+    void Pusher::handleChangesResponse(RevToSendList &changes,
                                         MessageIn *reply,
                                         bool proposedChanges)
     {
         // Got reply to the "changes" or "proposeChanges":
-        if (!changes->empty()) {
+        if (!changes.empty()) {
             logInfo("Got response for %zu local changes (sequences from %" PRIu64 ")",
-                changes->size(), changes->front()->sequence);
+                changes.size(), changes.front()->sequence);
         }
         decrement(_changeListsInFlight);
         _proposeChangesKnown = true;
@@ -285,7 +286,7 @@ namespace litecore { namespace repl {
                 logInfo("Server requires 'proposeChanges'; retrying...");
                 _proposeChanges = true;
                 _changesFeed.setFindForeignAncestors(getForeignAncestors());
-                sendChanges(move(changes));
+                sendChanges(changes);
                 return;
             }
         }
@@ -294,7 +295,7 @@ namespace litecore { namespace repl {
         maybeGetMoreChanges();
 
         if (reply->isError()) {
-            for(RevToSend* change : *changes) {
+            for(RevToSend* change : changes) {
                 doneWithRev(change, false, false);
             }
             gotError(reply);
@@ -311,7 +312,7 @@ namespace litecore { namespace repl {
 
         // The response body consists of an array that parallels the `changes` array I sent:
         Array::iterator iResponse(reply->JSONBody().asArray());
-        for (RevToSend *change : *changes) {
+        for (RevToSend *change : changes) {
             change->maxHistory = maxHistory;
             change->legacyAttachments = legacyAttachments;
             change->deltaOK = _deltasOK;
@@ -369,7 +370,8 @@ namespace litecore { namespace repl {
                 finishedDocumentWithError(change, error, false);
             } else if (shouldRetryConflictWithNewerAncestor(change)) {
                 // I have a newer revision to send in its place:
-                sendChanges(make_shared<RevToSendList>(1, change));
+                RevToSendList changes = {change};
+                sendChanges(changes);
                 return true;
             } else {
                 completed = false;
@@ -474,7 +476,8 @@ namespace litecore { namespace repl {
         if (!passive())
             _checkpointer.addPendingSequence(change->sequence);
         addProgress({0, change->bodySize});
-        sendChanges(make_shared<RevToSendList>(1, change));
+        RevToSendList changes = {change};
+        sendChanges(changes);
     }
 
 
@@ -544,7 +547,7 @@ namespace litecore { namespace repl {
     void Pusher::retryRevs(RevToSendList revsToRetry) {
         logInfo("%d documents failed to push and will be retried now", int(revsToRetry.size()));
         _caughtUp = false;
-        gotChanges(make_shared<RevToSendList>(revsToRetry), _lastSequenceRead, {});
+        gotChanges(revsToRetry, _lastSequenceRead, {});
     }
 
 } }
