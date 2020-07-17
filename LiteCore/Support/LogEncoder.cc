@@ -65,6 +65,11 @@ namespace litecore {
         _flush();
     }
 
+    uint64_t LogEncoder::tellp() {
+        lock_guard<mutex> lock(_mutex);
+        return _out.tellp();
+    }
+
 
 #pragma mark - LOGGING:
 
