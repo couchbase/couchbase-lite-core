@@ -97,7 +97,7 @@ namespace litecore { namespace net {
 #endif
 
     void TLSContext::requirePeerCert(bool require) {
-        _context->require_peer_cert(tls_context::role_t(_role), require);
+        _context->require_peer_cert(tls_context::role_t(_role), require, false);
     }
 
     void TLSContext::allowOnlyCert(slice certData) {
