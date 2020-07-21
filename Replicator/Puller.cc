@@ -284,12 +284,14 @@ namespace litecore { namespace repl {
         while(connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
                         && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs
                         && !_waitingRevMessages.empty()) {
-            auto msg = _waitingRevMessages.front(); _waitingRevMessages.pop_front();
+            auto msg = _waitingRevMessages.front();
+            _waitingRevMessages.pop_front();
             if (_waitingRevMessages.empty()) {
                 Signpost::end(Signpost::revsBackPressure);
                 logVerbose("Back pressure ended for rev messages");
             }
 
+            startIncomingRev(msg);
             any = true;
         }
 
