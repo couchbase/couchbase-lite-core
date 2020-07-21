@@ -139,16 +139,17 @@ namespace litecore { namespace repl {
             handleChangesNow(req);
         }
 
-#ifdef LITECORE_SIGNPOSTS
         bool backPressure = !_waitingRevMessages.empty();
         if (_changesBackPressure != backPressure) {
             _changesBackPressure = backPressure;
-            if (backPressure)
+            if (backPressure) {
                 Signpost::begin(Signpost::changesBackPressure);
-            else
+                logVerbose("Back pressure started for changes messages");
+            } else {
                 Signpost::end(Signpost::changesBackPressure);
+                logVerbose("Back pressure ended for changes messages");
+            }
         }
-#endif
     }
 
 
@@ -224,8 +225,10 @@ namespace litecore { namespace repl {
         } else {
             logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
                      SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);
-            if (_waitingRevMessages.empty())
+            if (_waitingRevMessages.empty()) {
                 Signpost::begin(Signpost::revsBackPressure);
+                logVerbose("Back pressure started for rev messages");
+            }
             _waitingRevMessages.push_back(move(msg));
         }
     }
@@ -272,17 +275,29 @@ namespace litecore { namespace repl {
     // Callback from an IncomingRev when it's been written to the db but before the commit
     void Puller::_revWasProvisionallyHandled() {
         decrement(_activeIncomingRevs);
-        if (connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
+        startWaitingRevMessages();
+    }
+
+
+    void Puller::startWaitingRevMessages() {
+        bool any = false;
+        while(connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs
                         && _unfinishedIncomingRevs < tuning::kMaxIncomingRevs
                         && !_waitingRevMessages.empty()) {
-            auto msg = _waitingRevMessages.front();
-            _waitingRevMessages.pop_front();
-            if (_waitingRevMessages.empty())
+            auto msg = _waitingRevMessages.front(); _waitingRevMessages.pop_front();
+            if (_waitingRevMessages.empty()) {
                 Signpost::end(Signpost::revsBackPressure);
-            startIncomingRev(msg);
+                logVerbose("Back pressure ended for rev messages");
+            }
+
+            any = true;
+        }
+
+        if(connected() && any) {
             handleMoreChanges();
         }
     }
+
 
     // Called from an IncomingRev when it's finished (either added to db, or failed.)
     // The IncomingRev will be processed later by _revsFinished().
@@ -298,15 +313,19 @@ namespace litecore { namespace repl {
         auto revs = _returningRevs.pop(gen);
         for (IncomingRev *inc : *revs) {
             // If it was provisionally inserted, it'll have called _revWasProvisionallyHandled
-            // already. If not, call that method now:
+            // already, which decrements _activeIncomingRevs. If not, decrement it now:
             if (!inc->wasProvisionallyInserted())
-                _revWasProvisionallyHandled();
+                decrement(_activeIncomingRevs);
             auto rev = inc->rev();
             if (!passive())
                 completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
         }
         decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
+
+        // We have changed _unfinishedIncomingRevs and _activeIncomingRevs, which means we
+        // can pop some messages from _waitingRevMessages:
+        startWaitingRevMessages();
 
         if (!passive())
             updateLastSequence();
@@ -380,10 +399,14 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u"
+                ", _waitingChangesMessages=%zu, _waitingRevMessages=%zu, _unfinishedIncomingRevs=%u",
                 kC4ReplicatorActivityLevelNames[level],
                 pendingResponseCount(), _caughtUp,
-                _pendingRevMessages, _activeIncomingRevs);
+                _pendingRevMessages, _activeIncomingRevs,
+                _waitingChangesMessages.size(),
+                _waitingRevMessages.size(),
+                _unfinishedIncomingRevs);
         }
         return level;
     }
