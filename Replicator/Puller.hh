@@ -88,10 +88,7 @@ namespace litecore { namespace repl {
         unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
         unsigned _unfinishedIncomingRevs {0};
         unsigned _pendingRevFinderCalls {0};
-
-#ifdef LITECORE_SIGNPOSTS
         bool _changesBackPressure {false};
-#endif
 
 #if __APPLE__
         // This helps limit the number of threads used by GCD:
