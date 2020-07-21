@@ -133,9 +133,7 @@ namespace litecore { namespace blip {
         }
 
         void start() {
-            Assert(!_connectedWebSocket.test_and_set());
-            retain(this); // keep myself from being freed while I'm the webSocket's delegate
-            _webSocket->connect(this);
+            enqueue(&BLIPIO::_start);
         }
 
         void terminate() {
@@ -212,6 +210,11 @@ namespace litecore { namespace blip {
         }
 
     private:
+        void _start() {
+            Assert(!_connectedWebSocket.test_and_set());
+            retain(this); // keep myself from being freed while I'm the webSocket's delegate
+            _webSocket->connect(this);
+        }
 
         /** Implementation of public close() method. Closes the WebSocket. */
         void _close(CloseCode closeCode, alloc_slice message) {
