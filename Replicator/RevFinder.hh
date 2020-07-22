@@ -36,8 +36,9 @@ namespace litecore { namespace repl {
             bool requested() const {return bodySize > 0;}
         };
 
-        class Delegate {
+        class Delegate : public Worker {
         public:
+            Delegate(Worker *parent, const char *namePrefix) :Worker(parent, namePrefix) { }
             virtual ~Delegate() { }
             /** Tells the Delegate the peer has finished sending historical changes. */
             virtual void caughtUp() =0;
@@ -45,7 +46,7 @@ namespace litecore { namespace repl {
             virtual void expectSequences(std::vector<ChangeSequence>) =0;
         };
 
-        RevFinder(Replicator* NONNULL, Delegate&);
+        RevFinder(Replicator* NONNULL, Delegate* NONNULL);
 
         /** Delegate must call this every time it receives a "rev" message. */
         void revReceived()     {enqueue(&RevFinder::_revReceived);}
@@ -65,7 +66,7 @@ namespace litecore { namespace repl {
                                alloc_slice &outCurrentRevID);
         void _revReceived();
 
-        Delegate& _delegate;
+        Retained<Delegate> _delegate;
         std::deque<Retained<blip::MessageIn>> _waitingChangesMessages; // Queued 'changes' messages
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?

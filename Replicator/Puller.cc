@@ -37,9 +37,9 @@ using namespace litecore::blip;
 namespace litecore { namespace repl {
 
     Puller::Puller(Replicator *replicator)
-    :Worker(replicator, "Pull")
+    :Delegate(replicator, "Pull")
     ,_inserter(new Inserter(replicator))
-    ,_revFinder(new RevFinder(replicator, *this))
+    ,_revFinder(new RevFinder(replicator, this))
     ,_provisionallyHandledRevs(this, &Puller::_revsWereProvisionallyHandled)
     ,_returningRevs(this, &Puller::_revsFinished)
 #if __APPLE__
@@ -323,6 +323,10 @@ namespace litecore { namespace repl {
                 pendingResponseCount(), _caughtUp,
                 _pendingRevMessages, _activeIncomingRevs);
         }
+
+        if (level == kC4Stopped)
+            _revFinder = nullptr;       // break cycle
+        
         return level;
     }
 

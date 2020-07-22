@@ -38,7 +38,7 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
-    RevFinder::RevFinder(Replicator *replicator, Delegate &delegate)
+    RevFinder::RevFinder(Replicator *replicator, Delegate *delegate)
     :Worker(replicator, "RevFinder")
     ,_delegate(delegate)
     {
@@ -88,7 +88,7 @@ namespace litecore { namespace repl {
         } else if (nChanges == 0) {
             // Empty array indicates we've caught up.
             logInfo("Caught up with remote changes");
-            _delegate.caughtUp();
+            _delegate->caughtUp();
             req->respond();
         } else if (req->noReply()) {
             warn("Got pointless noreply 'changes' message");
@@ -137,7 +137,7 @@ namespace litecore { namespace repl {
                     SPLAT(req->property("Profile"_sl)), req->number(), requested, st.elapsed());
 
             _pendingRevMessages += requested;
-            _delegate.expectSequences(move(sequences));
+            _delegate->expectSequences(move(sequences));
         }
 
         Signpost::end(Signpost::handlingChanges, (uintptr_t)req->number());

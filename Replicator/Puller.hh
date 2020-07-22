@@ -30,7 +30,7 @@ namespace litecore { namespace repl {
     class Inserter;
 
     /** Top-level object managing the pull side of replication (receiving revisions.) */
-    class Puller : public Worker, public RevFinder::Delegate {
+    class Puller : public RevFinder::Delegate {
     public:
         Puller(Replicator* NONNULL);
 
@@ -82,7 +82,7 @@ namespace litecore { namespace repl {
         actor::ActorCountBatcher<Puller> _provisionallyHandledRevs;
         actor::ActorBatcher<Puller,IncomingRev> _returningRevs;
         Retained<Inserter> _inserter;
-        Retained<RevFinder> _revFinder;
+        mutable Retained<RevFinder> _revFinder;
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
         unsigned _unfinishedIncomingRevs {0};
