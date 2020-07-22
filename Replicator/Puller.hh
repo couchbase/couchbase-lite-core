@@ -60,6 +60,7 @@ namespace litecore { namespace repl {
         void handleRev(Retained<MessageIn>);
         void handleNoRev(Retained<MessageIn>);
         void startIncomingRev(MessageIn* NONNULL);
+        void startWaitingRevMessages();
         void _revWasProvisionallyHandled();
         void _revsFinished(int gen);
         void completedSequence(alloc_slice sequence,
@@ -87,10 +88,7 @@ namespace litecore { namespace repl {
         unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
         unsigned _unfinishedIncomingRevs {0};
         unsigned _pendingRevFinderCalls {0};
-
-#ifdef LITECORE_SIGNPOSTS
         bool _changesBackPressure {false};
-#endif
 
 #if __APPLE__
         // This helps limit the number of threads used by GCD:
