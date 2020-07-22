@@ -443,13 +443,20 @@ namespace litecore {
         va_end(args);
     }
 
+    // Must have sLogMutex held
     void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list args)
     {
         auto obj = getObject(objRef);
+        uint64_t pos = 0;
 
-        if(sLogEncoder[(int)level]) {
-            sLogEncoder[(int)level]->vlog(domain, sObjNames, (LogEncoder::ObjectRef)objRef, fmt, args);
-        } else if(sFileOut[(int)level]) {
+        // Safe to store these in variables, since they only change in the rotateLog method
+        // and the rotateLog method is only called here (and this method holds a mutex)
+        const auto encoder = sLogEncoder[(int)level];
+        const auto file = sFileOut[(int)level];
+        if(encoder) {
+            encoder->vlog(domain, sObjNames, (LogEncoder::ObjectRef)objRef, fmt, args);
+            pos = encoder->tellp();
+        } else if(file) {
             static char formatBuffer[2048];
             size_t n = 0;
             LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut[(int)level]);
@@ -457,13 +464,13 @@ namespace litecore {
             if (objRef)
                 n = snprintf(formatBuffer, sizeof(formatBuffer), "{%s#%u} ", obj.c_str(), objRef);
             vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
-            *sFileOut[(int)level] << formatBuffer << endl;
+            *file << formatBuffer << endl;
+            pos = file->tellp();
         } else {
             // No rotation if neither encoder nor file is present
             return;
         }
 
-        const auto pos = sFileOut[(int)level]->tellp();
         if(pos >= sMaxSize) {
             Logging::rotateLog(level);
         }

@@ -27,6 +27,7 @@
 #include "c4DocEnumerator.h"
 #include "c4Private.h"
 #include "c4.hh"
+#include "c4Transaction.hh"
 #include <inttypes.h>
 
 #define LOCK()  lock_guard<mutex> lock(_mutex)
@@ -85,6 +86,15 @@ namespace litecore { namespace repl {
     void Checkpointer::addPendingSequence(C4SequenceNumber s) {
         LOCK();
         _checkpoint->addPendingSequence(s);
+        saveSoon();
+    }
+
+    void Checkpointer::addPendingSequences(const std::vector<C4SequenceNumber> &sequences,
+                                           C4SequenceNumber firstInRange,
+                                           C4SequenceNumber lastInRange)
+    {
+        LOCK();
+        _checkpoint->addPendingSequences(sequences, firstInRange, lastInRange);
         saveSoon();
     }
 
@@ -450,6 +460,70 @@ namespace litecore { namespace repl {
 
         outErr->code = 0;
         return !_checkpoint->isSequenceCompleted(doc->sequence) && isDocumentAllowed(doc);
+    }
+
+
+#pragma mark - STORING PEER CHECKPOINTS:
+
+
+    bool Checkpointer::getPeerCheckpoint(C4Database* db,
+                                         slice checkpointID,
+                                         alloc_slice &outBody,
+                                         alloc_slice &outRevID,
+                                         C4Error *outError)
+    {
+        c4::ref<C4RawDocument> doc = c4raw_get(db, litecore::constants::kPeerCheckpointStore,
+                                               checkpointID, outError);
+        if (!doc)
+            return false;
+        outBody = alloc_slice(doc->body);
+        outRevID = alloc_slice(doc->meta);
+        return true;
+    }
+
+
+    bool Checkpointer::savePeerCheckpoint(C4Database* db,
+                                          slice checkpointID,
+                                          slice body,
+                                          slice revID,
+                                          alloc_slice &newRevID,
+                                          C4Error* outError)
+    {
+        c4::Transaction t(db);
+        if (!t.begin(outError))
+            return false;
+
+        // Get the existing raw doc so we can check its revID:
+        C4Error tempErr;
+        c4::ref<C4RawDocument> doc = c4raw_get(db, litecore::constants::kPeerCheckpointStore,
+                                               checkpointID, &tempErr);
+        if (!doc && !isNotFoundError(tempErr)) {
+            if (outError) *outError = tempErr;
+            return false;
+        }
+
+        slice actualRev;
+        unsigned long generation = 0;
+        if (doc) {
+            generation = c4rev_getGeneration(doc->meta);
+            if (generation > 0)
+                actualRev = doc->meta;
+        }
+
+        // Check for conflict:
+        if (revID != actualRev) {
+            c4error_return(LiteCoreDomain, kC4ErrorConflict, "RevID does not match"_sl, outError);
+            return false;
+        }
+
+        // Generate new revID:
+        char newRevBuf[20];
+        newRevID = alloc_slice(newRevBuf, sprintf(newRevBuf, "%lu-cc", ++generation));
+
+        // Save:
+        return c4raw_put(db, constants::kPeerCheckpointStore,
+                         checkpointID, newRevID, body, outError)
+            && t.commit(outError);
     }
 
 

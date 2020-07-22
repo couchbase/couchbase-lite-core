@@ -60,9 +60,19 @@ namespace litecore {
     }
 
     LogEncoder::~LogEncoder() {
-        lock_guard<mutex> lock(_mutex);
+        // If this is guarded, then a deadlock can happen since the timer
+        // callback also acquires the same mutex.  It's safe to delete the
+        // timer here since it won't hurt other operations, but the actual
+        // flush itself still needs to be guarded
         _flushTimer.reset();
+        
+        lock_guard<mutex> lock(_mutex);
         _flush();
+    }
+
+    uint64_t LogEncoder::tellp() {
+        lock_guard<mutex> lock(_mutex);
+        return _out.tellp();
     }
 
 

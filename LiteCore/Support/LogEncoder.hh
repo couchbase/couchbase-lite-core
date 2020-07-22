@@ -48,6 +48,8 @@ namespace litecore {
         void log(const char *domain, const std::map<unsigned, std::string>&, ObjectRef, const char *format, ...) __printflike(5, 6);
 
         void flush();
+        
+        uint64_t tellp();
 
         /** A timestamp, given as a standard time_t (seconds since 1/1/1970) plus microseconds. */
         struct Timestamp {
