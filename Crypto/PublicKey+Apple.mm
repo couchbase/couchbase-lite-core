@@ -494,9 +494,6 @@ namespace litecore { namespace crypto {
                 OSStatus status = SecItemAdd((CFDictionaryRef)params, &result);
                 --gC4ExpectExceptions;
                 
-                if (result)
-                    CFAutorelease(result);
-                
                 if (status == errSecDuplicateItem && cert != this) {
                     // Ignore duplicates as it might be referenced by the other certificates
                     LogTo(TLSLogDomain, "Ignore adding the certificate to the Keychain for '%.*s' as duplicated",
@@ -505,6 +502,8 @@ namespace litecore { namespace crypto {
                 } else
                     checkOSStatus(status, "SecItemAdd", "Couldn't add a certificate to the Keychain");
                 
+                CFAutorelease(result);
+
             #if TARGET_OS_OSX
                 // Workaround for macOS that the label is not set as specified
                 // when adding the certificate to the Keychain.
