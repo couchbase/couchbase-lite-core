@@ -81,7 +81,7 @@ namespace litecore { namespace repl {
         std::atomic<bool>           _provisionallyInserted {false};
         // blob stuff:
         std::vector<PendingBlob>    _pendingBlobs;
-        const PendingBlob*          _blob {nullptr};
+        std::vector<PendingBlob>::const_iterator _blob;
         c4::ref<C4WriteStream>      _writer;
         uint64_t                    _blobBytesWritten;
         actor::Timer::time          _lastNotifyTime;

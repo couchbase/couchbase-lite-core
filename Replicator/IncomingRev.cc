@@ -61,7 +61,8 @@ namespace litecore { namespace repl {
         // (Re)initialize state (I can be used multiple times by the Puller):
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
         _provisionallyInserted = false;
-        DebugAssert(_pendingCallbacks == 0 && !_writer && !_blob && _pendingBlobs.empty());
+        DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
+        _blob = _pendingBlobs.end();
 
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
@@ -198,7 +199,7 @@ namespace litecore { namespace repl {
 
         // Request the first blob, or if there are none, insert the revision into the DB:
         if (!_pendingBlobs.empty()) {
-            _blob = &*_pendingBlobs.begin();
+            _blob = _pendingBlobs.begin();
             fetchNextBlob();
         } else {
             insertRevision();
@@ -208,7 +209,7 @@ namespace litecore { namespace repl {
 
     // Asks the Inserter (via the Puller) to insert the revision into the database.
     void IncomingRev::insertRevision() {
-        Assert(!_blob);
+        Assert(_blob == _pendingBlobs.end());
         Assert(_rev->error.code == 0);
         Assert(_rev->deltaSrc || _rev->doc);
         increment(_pendingCallbacks);
@@ -265,7 +266,7 @@ namespace litecore { namespace repl {
         Assert(_pendingCallbacks == 0);
         closeBlobWriter();
         _pendingBlobs.clear();
-        _blob = nullptr;
+        _blob = _pendingBlobs.end();
         _rev->trim();
 
         _puller->revWasHandled(this);
@@ -280,7 +281,8 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel() const {
-        if (Worker::computeActivityLevel() == kC4Busy || _pendingCallbacks > 0 || _blob) {
+        if (Worker::computeActivityLevel() == kC4Busy || _pendingCallbacks > 0
+                                                      || (_blob != _pendingBlobs.end())) {
             return kC4Busy;
         } else {
             return kC4Stopped;
@@ -288,3 +290,4 @@ namespace litecore { namespace repl {
     }
 
 } }
+

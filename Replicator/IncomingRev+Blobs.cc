@@ -36,15 +36,13 @@ namespace litecore { namespace repl {
 
     // Looks for another blob to download; when they're all done, finishes up the revision.
     void IncomingRev::fetchNextBlob() {
-        DebugAssert(_blob != nullptr);
-        while (_blob != &*_pendingBlobs.end()) {
+        while (_blob != _pendingBlobs.end()) {
             if (startBlob())
                 return;
             ++_blob;
         }
 
         // All blobs completed, now finish:
-        _blob = nullptr;
         if (_rev->error.code == 0) {
             logVerbose("All blobs received, now inserting revision");
             insertRevision();
@@ -73,7 +71,7 @@ namespace litecore { namespace repl {
             req["compress"_sl] = "true"_sl;
         sendRequest(req, [=](blip::MessageProgress progress) {
             //... After request is sent:
-            if (_blob) {
+            if (_blob != _pendingBlobs.end()) {
                 if (progress.state == MessageProgress::kDisconnected) {
                     // Set some error, so my IncomingRev will know I didn't complete [CBL-608]
                     blobGotError({POSIXDomain, ECONNRESET});
