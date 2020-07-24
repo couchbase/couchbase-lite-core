@@ -23,15 +23,15 @@
 namespace litecore {
 
     template <class T>
-    static T increment(T &value, T by =1) {
-        Assert(value + by >= value, "overflow incrementing a counter");
+    static T _increment(T &value, const char *name NONNULL, T by =1) {
+        Assert(value + by >= value, "overflow incrementing %s", name);
         value += by;
         return value;
     }
 
     template <class T>
-    static T decrement(T &value, T by =1) {
-        Assert(value >= by, "underflow decrementing a counter");
+    static T _decrement(T &value, const char *name NONNULL, T by =1) {
+        Assert(value >= by, "underflow decrementing %s", name);
         value -= by;
         return value;
     }
@@ -43,7 +43,7 @@ namespace litecore {
         :_value(value)
         ,_by(by)
         {
-            increment(value, by);
+            _increment(value, by);
         }
 
         temporary_increment(const temporary_increment &&other)
@@ -53,12 +53,12 @@ namespace litecore {
         }
 
         void end() {
-            decrement(_value, _by);
+            _decrement(_value, _by);
             _by = 0;
         }
 
         ~temporary_increment() {
-            decrement(_value, _by);
+            _decrement(_value, _by);
         }
 
     private:
@@ -68,5 +68,8 @@ namespace litecore {
         T &_value;
         T _by;
     };
+
+    #define increment(VAL, ...)      litecore::_increment(VAL, #VAL, ##__VA_ARGS__)
+    #define decrement(VAL, ...)      litecore::_decrement(VAL, #VAL, ##__VA_ARGS__)
 
 }
