@@ -722,11 +722,11 @@ namespace litecore { namespace repl {
 
 
     void Replicator::returnForbidden(Retained<blip::MessageIn> request) {
-        if (_options.push != kC4Disabled) {
-            request->respondWithError(Error("HTTP"_sl, 403, "Attempting to push to a pull-only replicator"_sl));
-        } else {
-            request->respondWithError(Error("HTTP"_sl, 403, "Attempting to pull from a push-only replicator"_sl));
-        }
+        bool push = _options.push != kC4Disabled;
+        auto message = format("Attempting to %s a %s-only replicator",
+                              push ? "push to" : "pull from", push ? "pull" : "push");
+        request->respondWithError(Error("HTTP"_sl, 403, slice(message)));
+        Warn("%s", message.c_str());
     }
 
 } }
