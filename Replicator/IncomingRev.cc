@@ -185,6 +185,7 @@ namespace litecore { namespace repl {
                                      key,
                                      blob["length"_sl].asUnsigned(),
                                      c4doc_blobIsCompressible(blob)});
+            _blob = _pendingBlobs.begin();
         });
 
         // Call the custom validation function if any:
@@ -193,13 +194,13 @@ namespace litecore { namespace repl {
                                         _options.callbackContext)) {
                 failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
                 _pendingBlobs.clear();
+                _blob = _pendingBlobs.end();
                 return;
             }
         }
 
         // Request the first blob, or if there are none, insert the revision into the DB:
         if (!_pendingBlobs.empty()) {
-            _blob = _pendingBlobs.begin();
             fetchNextBlob();
         } else {
             insertRevision();
