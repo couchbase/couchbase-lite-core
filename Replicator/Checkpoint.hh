@@ -62,7 +62,7 @@ namespace litecore { namespace repl {
         bool isSequenceCompleted(C4SequenceNumber s) const  {return _completed.contains(s);}
 
         /** Removes a sequence from the set of completed sequences. */
-        void addPendingSequence(C4SequenceNumber s)         {_completed.remove(s);}
+        void addPendingSequence(C4SequenceNumber s);
 
         /** Adds a sequence to the set of completed sequences. */
         void completedSequence(C4SequenceNumber s)          {_completed.add(s);}
@@ -75,6 +75,7 @@ namespace litecore { namespace repl {
                                  C4SequenceNumber firstSequenceChecked,
                                  C4SequenceNumber lastSequenceChecked)
         {
+            assert(lastSequenceChecked >= _lastChecked);
             _lastChecked = lastSequenceChecked;
             _completed.add(firstSequenceChecked, lastSequenceChecked + 1);
             for (auto rev : revs)

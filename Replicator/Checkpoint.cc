@@ -134,6 +134,13 @@ namespace litecore { namespace repl {
     }
 
 
+    void Checkpoint::addPendingSequence(C4SequenceNumber s) {
+        _lastChecked = max(_lastChecked, s);
+        _completed.remove(s);
+    }
+
+
+
     size_t Checkpoint::pendingSequenceCount() const {
         // Count the gaps between the ranges:
         size_t count = 0;
