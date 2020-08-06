@@ -238,6 +238,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
     CHECK(translate("SELECT 0 FROM db") == "{'FROM':[{'AS':'db'}],'WHAT':[0]}");
+    CHECK(translate("SELECT * FROM db") == "{'FROM':[{'AS':'db'}],'WHAT':[['.']]}");
     CHECK(translate("SELECT file.name FROM db AS file") == "{'FROM':[{'AS':'file'}],'WHAT':[['.file.name']]}");
     CHECK(translate("SELECT file.name FROM db file") ==                    // omit 'AS'
           "{'FROM':[{'AS':'file'}],'WHAT':[['.file.name']]}");
