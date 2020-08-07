@@ -340,6 +340,15 @@ namespace litecore { namespace repl {
     }
 
 
+    void Puller::_revReRequested(IncomingRev * inc) {
+        // Regression from CBL-963 / CBG-881:  Because after a delta failure the full revision is
+        // requested without another changes message, this needs to be bumped back up because it
+        // won't get another changes message to bump it.
+        increment(_pendingRevMessages);
+        addProgress({0, _missingSequences.bodySizeOfSequence(inc->remoteSequence())});
+    }
+
+
     // Records that a sequence has been successfully pulled.
     void Puller::completedSequence(alloc_slice sequence, bool withTransientError, bool shouldUpdateLastSequence) {
         uint64_t bodySize;
