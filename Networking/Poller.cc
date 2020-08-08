@@ -160,6 +160,23 @@ namespace litecore { namespace net {
         _thread.join();
     }
 
+#ifdef WIN32
+    static bool win_dumb_poll(vector<pollfd>& fds) {
+        __try {
+            if (WSAPoll(fds.data(), fds.size(), -1) == SOCKET_ERROR) {
+                auto err = WSAGetLastError();
+                Warn("Got error %d from WSAPoll, returning...", err);
+                return false;
+            }
+        } __except(EXCEPTION_EXECUTE_HANDLER) {
+            auto err = GetExceptionCode();
+            Warn("Got exception from WSAPoll (%lu), returning...", err);
+            return false;
+        }
+
+        return true;
+    }
+#endif
 
     bool Poller::poll() {
         // Create the pollfd vector:
@@ -183,13 +200,16 @@ namespace litecore { namespace net {
 
         // Wait in poll():
 #ifdef WIN32
-        while (WSAPoll(pollfds.data(), pollfds.size(), -1) == SOCKET_ERROR) {
+        pollfds.erase(remove_if(pollfds.begin(), pollfds.end(), [](const pollfd& p) { return p.fd == 0; }), pollfds.end());
+        while(!win_dumb_poll(pollfds)) {
+            // No-op
+        }
 #else
         while (::poll(pollfds.data(), nfds_t(pollfds.size()), -1) < 0) {
             if (errno != EINTR)
                 return false;
-#endif
         }
+#endif
 
         _waiting = false;
 
