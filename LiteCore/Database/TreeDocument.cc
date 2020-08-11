@@ -326,9 +326,13 @@ namespace c4Internal {
                 // and its sequence matches the latest sequence of the document.
                 // This means that it has not been entered into the sequence tracker
                 // yet, because the documentSaved method will not consider conflicts,
-                // but it needs to be now that it is resolved.
+                // but it needs to be now that it is resolved.  It can't go in here
+                // because the sequence may be invalid by this point so instead reset
+                // the sequence to 0 so that the required follow-up call to save() will
+                // generate a new one for it and then _that_ will go into the sequence
+                // tracker.
+                _versionedDoc.resetConflictSequence(winningRev);
                 selectRevision(winningRev);
-                _db->documentSaved(this);
             }
         }
 

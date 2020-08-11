@@ -1762,7 +1762,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch",
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revision", "[Pull][Conflict]") {
     // CBL-1174
-    c4log_setCallbackLevel(kC4LogDebug);
     createFleeceRev(db,  C4STR("doc1"), C4STR("1-11111111"), C4STR("{}"));
     createFleeceRev(db,  C4STR("doc2"), C4STR("1-22222222"), C4STR("{}"));
     _expectedDocumentCount = 2;
@@ -1828,4 +1827,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     doc = c4doc_get(db, C4STR("doc2"), true, nullptr);
     revID = C4STR("2-2222222b");
     CHECK(doc->revID == revID);
+    CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
+    CHECK(c4db_getLastSequence(db) == 8);
 }
