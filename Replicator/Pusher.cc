@@ -117,24 +117,20 @@ namespace litecore { namespace repl {
                      && _revQueue.size() < tuning::kMaxRevsQueued
                      && connected()) {
             _continuousCaughtUp = true;
-
-            auto changes = _changesFeed.getMoreChanges(tuning::kDefaultChangeBatchSize);
-            gotChanges(changes.revs, changes.lastSequence, changes.err);
+            gotChanges(_changesFeed.getMoreChanges(tuning::kDefaultChangeBatchSize));
         }
     }
 
 
-    void Pusher::gotChanges(RevToSendList &changes,
-                            C4SequenceNumber lastSequence,
-                            C4Error err)
+    void Pusher::gotChanges(ChangesFeed::Changes changes)
     {
-        if (err.code)
-            return gotError(err);
+        if (changes.err.code)
+            return gotError(changes.err);
 
         // Add the revs in `changes` to `_pushingDocs`. If there's a collision that means we're
         // already sending an earlier revision of that document; in that case, put the newer
         // rev in the earlier one's `nextRev` field so it'll be processed later.
-        for (auto iChange = changes.begin(); iChange != changes.end();) {
+        for (auto iChange = changes.revs.begin(); iChange != changes.revs.end();) {
             auto rev = *iChange;
             auto [iDoc, isNew] = _pushingDocs.insert({rev->docID, rev});
             if (isNew) {
@@ -146,30 +142,27 @@ namespace litecore { namespace repl {
                 iDoc->second->nextRev = rev;
                 if (!_passive)
                     _checkpointer.addPendingSequence(rev->sequence);
-                iChange = changes.erase(iChange);  // remove from `changes`
+                iChange = changes.revs.erase(iChange);  // remove from `changes`
             }
         }
 
-        if (!passive() && lastSequence > _lastSequenceRead)
-            _checkpointer.addPendingSequences(changes,
-                                              _lastSequenceRead + 1, lastSequence);
-        _lastSequenceRead = lastSequence;
+        _lastSequenceRead = max(_lastSequenceRead, changes.lastSequence);
 
-        if (changes.empty()) {
-            logInfo("Found 0 changes up to #%" PRIu64, lastSequence);
+        if (changes.revs.empty()) {
+            logInfo("Found 0 changes up to #%" PRIu64, changes.lastSequence);
         } else {
             uint64_t bodySize = 0;
-            for (auto &change : changes)
+            for (auto &change : changes.revs)
                 bodySize += change->bodySize;
             addProgress({0, bodySize});
 
             logInfo("Read %zu local changes up to #%" PRIu64 ": sending '%-s' with sequences #%" PRIu64 " - #%" PRIu64,
-                    changes.size(), lastSequence,
+                    changes.revs.size(), changes.lastSequence,
                     (_proposeChanges ? "proposeChanges" : "changes"),
-                    changes.at(0)->sequence, _lastSequenceRead);
+                    changes.revs.front()->sequence, changes.revs.back()->sequence);
 #if DEBUG
             if (willLog(LogLevel::Debug)) {
-                for (auto &change : changes)
+                for (auto &change : changes.revs)
                     logDebug("    - %.4llu: '%.*s' #%.*s (remote #%.*s)",
                              change->sequence, SPLAT(change->docID), SPLAT(change->revID),
                              SPLAT(change->remoteAncestorRevID));
@@ -178,12 +171,12 @@ namespace litecore { namespace repl {
         }
 
         // Send the "changes" request:
-        auto changeCount = changes.size();
-        sendChanges(changes);
+        auto changeCount = changes.revs.size();
+        sendChanges(changes.revs);
 
         if (changeCount < tuning::kDefaultChangeBatchSize) {
             if (!_caughtUp) {
-                logInfo("Caught up, at lastSequence #%" PRIu64, _lastSequenceRead);
+                logInfo("Caught up, at lastSequence #%" PRIu64, changes.lastSequence);
                 _caughtUp = true;
                 if (_continuous)
                     _continuousCaughtUp = false;
@@ -547,7 +540,10 @@ namespace litecore { namespace repl {
     void Pusher::retryRevs(RevToSendList revsToRetry) {
         logInfo("%d documents failed to push and will be retried now", int(revsToRetry.size()));
         _caughtUp = false;
-        gotChanges(revsToRetry, _lastSequenceRead, {});
+        ChangesFeed::Changes changes = {};
+        changes.revs = move(revsToRetry);
+        changes.lastSequence = _lastSequenceRead;
+        gotChanges(move(changes));
     }
 
 } }

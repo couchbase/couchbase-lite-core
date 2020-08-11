@@ -92,15 +92,26 @@ namespace litecore { namespace repl {
             });
         }
 
-        return (_caughtUp && _continuous) ? getObservedChanges(limit) : getHistoricalChanges(limit);
+        Changes changes = {};
+        changes.firstSequence = _maxSequence + 1;
+        if (_caughtUp && _continuous)
+            getObservedChanges(changes, limit);
+        else
+            getHistoricalChanges(changes, limit);
+        changes.lastSequence = _maxSequence;
+
+        if (!_passive && _checkpointer && changes.lastSequence >= changes.firstSequence) {
+            _checkpointer->addPendingSequences(changes.revs,
+                                               changes.firstSequence, changes.lastSequence);
+        }
+        return changes;
     }
 
 
-    ChangesFeed::Changes ChangesFeed::getHistoricalChanges(unsigned limit) {
+    void ChangesFeed::getHistoricalChanges(Changes &changes, unsigned limit) {
         logVerbose("Reading up to %u local changes since #%" PRIu64, limit, _maxSequence);
 
         // Run a by-sequence enumerator to find the changed docs:
-        Changes changes = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         if (!_getForeignAncestors && !_options.pushFilter)
             options.flags &= ~kC4IncludeBodies;
@@ -127,20 +138,16 @@ namespace litecore { namespace repl {
                 _caughtUp = true;
             }
         });
-
-        changes.lastSequence = _maxSequence;
-        return changes;
     }
 
 
-    ChangesFeed::Changes ChangesFeed::getObservedChanges(unsigned limit) {
+    void ChangesFeed::getObservedChanges(Changes &changes, unsigned limit) {
         logVerbose("Asking DB observer for %u new changes since sequence #%" PRIu64 " ...",
                    limit, _maxSequence);
         static constexpr uint32_t kMaxChanges = 100;
         C4DatabaseChange c4changes[kMaxChanges];
         bool ext;
         uint32_t nChanges;
-        Changes changes = {};
         auto const startingMaxSequence = _maxSequence;
 
         _notifyOnChanges = true;
@@ -190,9 +197,6 @@ namespace litecore { namespace repl {
             // it's ready for more. Therefore, it's not necessary to notify it.
             _notifyOnChanges = false;
         }
-
-        changes.lastSequence = _maxSequence;
-        return changes;
     }
 
 

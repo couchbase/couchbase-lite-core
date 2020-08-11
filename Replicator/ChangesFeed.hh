@@ -49,7 +49,8 @@ namespace litecore::repl {
         void filterByDocIDs(fleece::Array docIDs);
 
         struct Changes {
-            RevToSendList revs;    // Ordered list of new revisions
+            RevToSendList revs;                     // Ordered list of new revisions
+            C4SequenceNumber firstSequence;         // The first sequence that was checked
             C4SequenceNumber lastSequence;          // The last sequence that was checked
             C4Error err;                            // On failure, error goes here
         };
@@ -71,8 +72,8 @@ namespace litecore::repl {
         virtual bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const;
 
     private:
-        Changes getHistoricalChanges(unsigned limit);
-        Changes getObservedChanges(unsigned limit);
+        void getHistoricalChanges(Changes&, unsigned limit);
+        void getObservedChanges(Changes&, unsigned limit);
         void _dbChanged();
         Retained<RevToSend> makeRevToSend(C4DocumentInfo&, C4DocEnumerator*, C4Database* NONNULL);
         bool shouldPushRev(RevToSend*, C4DocEnumerator*, C4Database* NONNULL) const;

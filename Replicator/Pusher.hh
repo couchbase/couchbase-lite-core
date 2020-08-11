@@ -64,7 +64,7 @@ namespace litecore { namespace repl {
         bool handleProposedChangeResponse(RevToSend *change, Value response);
         void maybeGetMoreChanges()          {enqueue(&Pusher::_maybeGetMoreChanges);}
         void _maybeGetMoreChanges();
-        void gotChanges(RevToSendList&, C4SequenceNumber lastSequence, C4Error err);
+        void gotChanges(ChangesFeed::Changes);
         void _dbHasNewChanges();
         void sendChangeList(RevToSendList);
         bool shouldRetryConflictWithNewerAncestor(RevToSend* NONNULL);
