@@ -340,7 +340,7 @@ namespace litecore { namespace repl {
     }
 
 
-    void Puller::_revReRequested(IncomingRev * inc) {
+    void Puller::_revReRequested(Retained<IncomingRev> inc) {
         // Regression from CBL-936 / CBG-881:  Because after a delta failure the full revision is
         // requested without another changes message, this needs to be bumped back up because it
         // won't get another changes message to bump it.
