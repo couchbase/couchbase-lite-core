@@ -109,9 +109,9 @@ namespace litecore {
                                           sequence_t sequence,
                                           uint64_t bodySize)
     {
-        Assert(docID && revID && sequence > _lastSequence);
+        Assert(docID && revID);
         Assert(inTransaction());
-        _lastSequence = sequence;
+        _lastSequence = ::max(sequence, _lastSequence);
         _documentChanged(docID, revID, sequence, bodySize);
     }
 
