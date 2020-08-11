@@ -1759,3 +1759,74 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch",
     // This line causes a null deference SIGSEGV before the fix
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
 }
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revision", "[Pull][Conflict]") {
+    // CBL-1174
+    createFleeceRev(db,  C4STR("doc1"), C4STR("1-11111111"), C4STR("{}"));
+    createFleeceRev(db,  C4STR("doc2"), C4STR("1-22222222"), C4STR("{}"));
+    _expectedDocumentCount = 2;
+    runPushReplication();
+    validateCheckpoints(db, db2, "{\"local\":2}");
+    REQUIRE(c4db_getLastSequence(db) == 2);
+    REQUIRE(c4db_getLastSequence(db2) == 2);
+    
+    createFleeceRev(db,  C4STR("doc1"), C4STR("2-1111111a"), C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("doc1"), C4STR("2-1111111b"), C4STR("{\"db\":2}"));
+    createFleeceRev(db,  C4STR("doc2"), C4STR("2-2222222a"), C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("doc2"), C4STR("2-2222222b"), C4STR("{\"db\":2}"), kRevDeleted);
+    REQUIRE(c4db_getLastSequence(db) == 4);
+    REQUIRE(c4db_getLastSequence(db2) == 4);
+    
+    _expectedDocPullErrors = set<string> { "doc1", "doc2" };
+    runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
+    validateCheckpoints(db, db2, "{\"local\":2,\"remote\":4}");
+    REQUIRE(c4db_getLastSequence(db) == 6); // #5(doc1) and #6(doc2) seq, received from other side
+    REQUIRE(c4db_getLastSequence(db2) == 4);
+    
+    // resolve doc1 and create a new revision(#7) which should bring the `_lastSequence` greater than the doc2's sequence
+    c4::ref<C4Document> doc = c4doc_get(db, C4STR("doc1"), true, nullptr);
+    REQUIRE(doc);
+    CHECK(doc->selectedRev.revID == C4STR("2-1111111a"));
+    REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
+    CHECK(doc->selectedRev.revID == C4STR("2-1111111b"));
+    CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
+    {
+        c4::Transaction t(db);
+        REQUIRE(t.begin(nullptr));
+        C4Error error;
+        CHECK(c4doc_resolveConflict(doc, C4STR("2-1111111b"), C4STR("2-1111111a"),
+                                    json2fleece("{\"merged\":true}"), 0, &error));
+        CHECK(c4doc_save(doc, 0, &error));
+        REQUIRE(t.commit(nullptr));
+    }
+    doc = c4doc_get(db, C4STR("doc1"), true, nullptr);
+    C4Slice revID = C4STR("2-1111111b");
+    REQUIRE(c4db_getLastSequence(db) == 7); // db-sequence is greater than #6(doc2)
+    
+    // resolve doc2; choose remote revision, so no need to create a new revision
+    doc = c4doc_get(db, C4STR("doc2"), true, nullptr);
+    REQUIRE(doc);
+    revID = C4STR("2-2222222a");
+    CHECK(doc->selectedRev.revID == revID);
+    CHECK(doc->selectedRev.body.size > 0);
+    REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
+    revID = C4STR("2-2222222b");
+    CHECK(doc->selectedRev.revID == revID);
+    CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
+    CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
+    {
+        c4::Transaction t(db);
+        REQUIRE(t.begin(nullptr));
+        C4Error error;
+        CHECK(c4doc_resolveConflict(doc, C4STR("2-2222222b"), C4STR("2-2222222a"),
+                                    kC4SliceNull, kRevDeleted, &error));
+        CHECK(c4doc_save(doc, 0, &error));
+        REQUIRE(t.commit(nullptr));
+    }
+    
+    doc = c4doc_get(db, C4STR("doc2"), true, nullptr);
+    revID = C4STR("2-2222222b");
+    CHECK(doc->revID == revID);
+    CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
+    CHECK(c4db_getLastSequence(db) == 8);
+}

@@ -151,6 +151,10 @@ namespace litecore {
 
         // Clears the kIsConflict flag for a Rev and its ancestors.
         void markBranchAsNotConflict(const Rev*, bool keepBodies);
+        
+        // CBL-1089 / CBL-1174: Reset the sequence so that it can be the latest
+        // when saved
+        void resetConflictSequence(const Rev*);
 
         void setPruneDepth(unsigned depth)              {_pruneDepth = depth;}
         unsigned prune(unsigned maxDepth);
