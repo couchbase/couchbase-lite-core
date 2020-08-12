@@ -518,7 +518,7 @@ namespace litecore { namespace repl {
                 }
                 doneWithRev(rev, completed, synced);
                 switch (retry) {
-                    case kRetryNow:   retryRevs({rev}); break;
+                    case kRetryNow:   retryRevs({rev}, true); break;
                     case kRetryLater: _revsToRetry.push_back(rev); break;
                     case kNoRetry:    break;
                 }
@@ -776,17 +776,26 @@ namespace litecore { namespace repl {
     void Pusher::afterEvent() {
         // If I would otherwise go idle or stop, but there are revs I want to retry, restart them:
         if (!_revsToRetry.empty() && connected() && !isBusy())
-            retryRevs(move(_revsToRetry));
+            retryRevs(move(_revsToRetry), false);
         Worker::afterEvent();
     }
 
 
-    void Pusher::retryRevs(RevToSendList revsToRetry) {
+    void Pusher::retryRevs(RevToSendList revsToRetry, bool immediate) {
+        // immediate means I want to resend as soon as possible, bypassing another changes feed entry
+        // (for example in the case of a failed delta merge)
         logInfo("%d documents failed to push and will be retried now", int(revsToRetry.size()));
         _caughtUp = false;
         for(const auto& revToRetry : revsToRetry)
             _pushingDocs.insert({revToRetry->docID, nullptr});
-        gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
+        
+        if(immediate) {
+            for (int i = (int)revsToRetry.size() - 1; i >= 0; i--) {
+                _revsToSend.push_front(revsToRetry[i]);
+            }
+        } else {
+            gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
+        }
     }
 
 } }

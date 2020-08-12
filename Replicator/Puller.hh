@@ -23,6 +23,7 @@
 #include "RemoteSequenceSet.hh"
 #include "Batcher.hh"
 #include "Instrumentation.hh"
+#include "IncomingRev.hh"
 #include <deque>
 
 namespace litecore { namespace repl {
@@ -36,14 +37,15 @@ namespace litecore { namespace repl {
     public:
         Puller(Replicator* NONNULL);
 
-        void setSkipDeleted()                   {enqueue(&Puller::_setSkipDeleted);}
+        void setSkipDeleted()                                    {enqueue(&Puller::_setSkipDeleted);}
 
         // Starts an active pull
-        void start(alloc_slice sinceSequence)   {enqueue(&Puller::_start, sinceSequence);}
+        void start(alloc_slice sinceSequence)                    {enqueue(&Puller::_start, sinceSequence);}
 
         // Called only by IncomingRev
-        void revWasProvisionallyHandled()       {enqueue(&Puller::_revWasProvisionallyHandled);}
+        void revWasProvisionallyHandled()                        {enqueue(&Puller::_revWasProvisionallyHandled);}
         void revWasHandled(IncomingRev *inc NONNULL);
+        void revReRequested(fleece::Retained<IncomingRev> inc)   {enqueue(&Puller::_revReRequested, inc);}
 
         void insertRevision(RevToInsert *rev NONNULL);
 
@@ -63,6 +65,7 @@ namespace litecore { namespace repl {
         void startWaitingRevMessages();
         void _revWasProvisionallyHandled();
         void _revsFinished(int gen);
+        void _revReRequested(fleece::Retained<IncomingRev>);
         void completedSequence(alloc_slice sequence,
                                bool withTransientError =false, bool updateCheckpoint =true);
         void updateLastSequence();
