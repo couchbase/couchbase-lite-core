@@ -355,6 +355,8 @@ _c4db_startHousekeeping
 _c4db_findDocAncestors
 _c4db_maintenance
 _c4db_mayHaveExpiration
+_c4db_getCookies
+_c4db_setCookie
 
 _c4doc_removeRevisionBody
 _c4doc_getForPut
