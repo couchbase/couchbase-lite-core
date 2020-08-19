@@ -166,12 +166,22 @@ namespace litecore { namespace repl {
                         ++requested;
                         whichRequested[i] = true;
                         incomingDocs->add(docID);
+                        
+                        if (itemsWritten > 0)
+                            // Sanity Check: This means we've hit this loop at least once so the current
+                            // data is both non empty, and does not end in a comma
+                            encoder.writeRaw(","_sl);
+                        
                         // Append zeros for any items I skipped:
                         while (itemsWritten++ < i)
-                            encoder.writeInt(0);
+                            // CBL-1208: Comma logic is not always reliable, so write the comma first (see above)
+                            // and then write a literal 0 character (skipping the comma logic in the encoder)
+                            // and a comma because we are assured that we then write another entry a few lines down
+                            encoder.writeRaw("0,");
+                        
                         // Append array of ancestor revs I do have (it's already a JSON array):
-                        if (i > 0)
-                            encoder.writeRaw(","_sl);
+                        // Note this does not end in a comma, so the next time around we will write the
+                        // comma in the above writeRaw(",")
                         encoder.writeRaw(anc ? slice(anc) : "[]"_sl);
                         logDebug("    - Requesting '%.*s' %.*s, ancestors %.*s",
                                  SPLAT(docID), SPLAT(revID), SPLAT(anc));
