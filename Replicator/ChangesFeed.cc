@@ -132,12 +132,13 @@ namespace litecore { namespace repl {
                     }
                 }
             }
-
-            if (limit > 0 && !_caughtUp) {
-                // Couldn't get as many changes as asked for, so I've caught up with the DB.
-                _caughtUp = true;
-            }
         });
+
+        if (limit > 0 && !_caughtUp) {
+            // Couldn't get as many changes as asked for, so I've caught up with the DB.
+            _caughtUp = true;
+        }
+        changes.askAgain = !_caughtUp || _continuous;
     }
 
 
@@ -196,6 +197,7 @@ namespace litecore { namespace repl {
             // I returned a full list of changes, so I know the caller will call me again when
             // it's ready for more. Therefore, it's not necessary to notify it.
             _notifyOnChanges = false;
+            changes.askAgain = true;
         }
     }
 

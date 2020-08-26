@@ -53,6 +53,7 @@ namespace litecore::repl {
             C4SequenceNumber firstSequence;         // The first sequence that was checked
             C4SequenceNumber lastSequence;          // The last sequence that was checked
             C4Error err;                            // On failure, error goes here
+            bool askAgain;                          // Should client call getMoreChanges again?
         };
 
         /** Returns up to `limit` more changes.
