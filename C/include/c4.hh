@@ -90,7 +90,7 @@ namespace c4 {
 
         ref& operator=(T *t) noexcept           {if (_obj) releaseRef(_obj); _obj = t; return *this;}
         ref& operator=(ref &&r) noexcept        {if (_obj) releaseRef(_obj); _obj = r._obj; r._obj = nullptr; return *this;}
-        ref& operator=(const ref &r) noexcept   {*this = retainRef(r._obj); return *this;}
+        ref& operator=(const ref &r) noexcept   {if (_obj) releaseRef(_obj); *this = retainRef(r._obj); return *this;}
 
     private:
         T* _obj;
