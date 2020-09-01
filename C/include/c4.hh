@@ -96,7 +96,7 @@ namespace c4 {
 
         ref& operator=(std::nullptr_t) noexcept { replaceRef(nullptr); return *this; }
         ref& operator=(ref &&r) noexcept        { replaceRef(r._obj); r._obj = nullptr; return *this;}
-        ref& operator=(const ref &r) noexcept   { replaceRef(r._obj); *this = retainRef(r._obj); return *this;}
+        ref& operator=(const ref &r) noexcept   { replaceRef(retainRef(r._obj)); return *this;}
 
     private:
         T* _obj;
