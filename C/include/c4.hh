@@ -82,7 +82,7 @@ namespace c4 {
         
     public:
         ref() noexcept                          :_obj(nullptr) { }
-        ref(nullptr_t) noexcept                 :ref() { }
+        ref(std::nullptr_t) noexcept            :ref() { }
         ref(T *t) noexcept                      :_obj(t) { }
         ref(ref &&r) noexcept                   :_obj(r._obj) {r._obj = nullptr;}
         ref(const ref &r) noexcept              :_obj(retainRef(r._obj)) { }
@@ -94,7 +94,7 @@ namespace c4 {
         T* operator -> () const noexcept FLPURE {return _obj;}
         T* get() const noexcept FLPURE          {return _obj;}
 
-        ref& operator=(nullptr_t n) noexcept    { replaceRef(nullptr); return *this; }
+        ref& operator=(std::nullptr_t) noexcept { replaceRef(nullptr); return *this; }
         ref& operator=(ref &&r) noexcept        { replaceRef(r._obj); r._obj = nullptr; return *this;}
         ref& operator=(const ref &r) noexcept   { replaceRef(r._obj); *this = retainRef(r._obj); return *this;}
 
