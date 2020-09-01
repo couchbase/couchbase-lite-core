@@ -113,6 +113,11 @@ public:
 
         REQUIRE(c4listener_shareDB(_listener, name, dbToShare, &err));
     }
+    
+    void stop() {
+        c4listener_free(_listener);
+        _listener = nullptr;
+    }
 
 public:
     C4ListenerConfig config;
