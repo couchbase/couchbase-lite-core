@@ -75,11 +75,6 @@ namespace c4 {
         first so the retains and releases balance! */
     template <class T>
     class ref {
-        inline void replaceRef(T* newRef) {
-            if (_obj) releaseRef(_obj);
-            _obj = newRef;
-        }
-        
     public:
         ref() noexcept                          :_obj(nullptr) { }
         ref(std::nullptr_t) noexcept            :ref() { }
@@ -99,6 +94,11 @@ namespace c4 {
         ref& operator=(const ref &r) noexcept   { replaceRef(retainRef(r._obj)); return *this;}
 
     private:
+        inline void replaceRef(T* newRef) {
+            if (_obj) releaseRef(_obj);
+            _obj = newRef;
+        }
+        
         T* _obj;
     };
 
