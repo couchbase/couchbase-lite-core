@@ -44,7 +44,7 @@ namespace litecore { namespace REST {
         explicit RESTListener(const Config&);
         ~RESTListener();
 
-        void stop();
+        virtual void stop();
 
         uint16_t port() const                       {return _server->port();}
 

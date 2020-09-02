@@ -243,7 +243,6 @@ bool c4error_mayBeTransient(C4Error err) C4API {
         502, /* Bad Gateway */
         503, /* Service Unavailable */
         504, /* Gateway Timeout */
-        websocket::kCodeGoingAway,
         websocket::kCodeAbnormal,
         websocket::kCloseAppTransient,
         0};
