@@ -41,6 +41,7 @@ namespace litecore::repl {
         // Setup:
         void setContinuous(bool continuous)         {_continuous = continuous;}
         void setLastSequence(C4SequenceNumber s)    {_maxSequence = s;}
+        void setEchoLocalChanges(bool echo)         {_echoLocalChanges = echo;}
         void setSkipDeletedDocs(bool skip)          {_skipDeleted = skip;}
         void setCheckpointValid(bool valid)         {_isCheckpointValid = valid;}
 
@@ -91,6 +92,7 @@ namespace litecore::repl {
         C4SequenceNumber _maxSequence {0};                  // Latest sequence I've read
         bool _continuous;                                   // Continuous mode
         bool _passive;                                      // True if replicator is passive
+        bool _echoLocalChanges {false};                     // True if including changes made by _db
         bool _skipDeleted {false};                          // True if skipping tombstones
         bool _isCheckpointValid {true};
         bool _caughtUp {false};                             // Delivered all historical changes

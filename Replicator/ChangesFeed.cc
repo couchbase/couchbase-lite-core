@@ -158,7 +158,7 @@ namespace litecore { namespace repl {
             if (nChanges == 0)
                 break;
 
-            if (!ext) {
+            if (!ext && !_echoLocalChanges) {
                 logDebug("Observed %u of my own db changes #%llu ... #%llu (ignoring)",
                          nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
                 _maxSequence = c4changes[nChanges-1].sequence;
