@@ -386,21 +386,22 @@ static bool isNewDocPutRequest(C4Database *database, const C4DocPutRequest *rq) 
 
 
 // Tries to fulfil a PutRequest by creating a new Record. Returns null if one already exists.
-static Document* putNewDoc(C4Database *database, const C4DocPutRequest *rq)
+static pair<Document*,int> putNewDoc(C4Database *database,
+                                     const C4DocPutRequest *rq)
 {
     DebugAssert(rq->save, "putNewDoc optimization works only if rq->save is true");
     Record record(rq->docID);
     if (!rq->docID.buf)
         record.setKey(createDocUUID());
     Retained<Document> idoc = database->documentFactory().newDocumentInstance(record);
-    bool ok;
+    int commonAncestorIndex;
     if (rq->existingRevision)
-        ok = (idoc->putExistingRevision(*rq, nullptr) >= 0);
+        commonAncestorIndex = idoc->putExistingRevision(*rq, nullptr);
     else
-        ok = idoc->putNewRevision(*rq);
-    if (!ok)
+        commonAncestorIndex = idoc->putNewRevision(*rq) ? 0 : -1;
+    if (commonAncestorIndex < 0)
         idoc = nullptr;
-    return retain(idoc.get());
+    return {retain(idoc.get()), commonAncestorIndex};
 }
 
 
@@ -484,7 +485,7 @@ C4Document* c4doc_put(C4Database *database,
     try {
         if (rq->save && isNewDocPutRequest(database, rq)) {
             // As an optimization, write the doc assuming there is no prior record in the db:
-            doc = putNewDoc(database, rq);
+            tie(doc, commonAncestorIndex) = putNewDoc(database, rq);
             // If there's already a record, doc will be null, so we'll continue down regular path.
         }
         if (!doc) {

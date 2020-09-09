@@ -694,6 +694,29 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4Test, "Document create from existing rev", "[Database][C]") {
+    C4Error error;
+    TransactionHelper t(db);
+
+    // Creating doc given ID:
+    C4DocPutRequest rq = {};
+    rq.docID = kDocID;
+    rq.body = kFleeceBody;
+    rq.existingRevision = true;
+    C4String history[1] = {"1-31415926"_sl};
+    rq.history = history;
+    rq.historyCount = 1;
+    rq.save = true;
+    size_t commonAncestor = 9999;
+    auto doc = c4doc_put(db, &rq, &commonAncestor, &error);
+    REQUIRE(doc != nullptr);
+    CHECK(commonAncestor == 1);
+    CHECK(doc->docID == kDocID);
+    CHECK(doc->revID == "1-31415926"_sl);
+    c4doc_release(doc);
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
     C4Log("Begin test");
     C4Error error;
