@@ -137,8 +137,8 @@ namespace litecore { namespace repl {
                 ++iChange;
             } else {
                 // This doc already has a revision being sent; wait till that one is done
-                logVerbose("Holding off on change '%.*s' %.*s till earlier rev is done",
-                           SPLAT(rev->docID), SPLAT(rev->revID));
+                logVerbose("Holding off on change '%.*s' %.*s till earlier rev %.*s is done",
+                           SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(iDoc->second->revID));
                 iDoc->second->nextRev = rev;
                 if (!_passive)
                     _checkpointer.addPendingSequence(rev->sequence);

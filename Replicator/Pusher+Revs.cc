@@ -326,6 +326,7 @@ namespace litecore::repl {
             if (!ok) {
                 logVerbose("   ... nope, decided not to propose '%.*s' %.*s",
                            SPLAT(newRev->docID), SPLAT(newRev->revID));
+                _checkpointer.completedSequence(newRev->sequence);
             }
         } else {
             logDebug("Done pushing '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
