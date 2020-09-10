@@ -311,10 +311,11 @@ namespace litecore { namespace net {
         if (!_isWebSocket)
             return failure(WebSocketDomain, kCodeProtocolError);
 
-        if (_responseHeaders["Connection"_sl] != "Upgrade"_sl
-                || _responseHeaders["Upgrade"_sl] != "websocket"_sl) {
-            return failure(WebSocketDomain, kCodeProtocolError,
-                           "Server failed to upgrade connection"_sl);
+        if (_responseHeaders["Connection"_sl].caseEquivalentCompare(
+                "upgrade"_sl) != 0 ||
+            _responseHeaders["Upgrade"_sl] != "websocket"_sl) {
+          return failure(WebSocketDomain, kCodeProtocolError,
+                         "Server failed to upgrade connection"_sl);
         }
 
         if (_webSocketProtocol && _responseHeaders["Sec-Websocket-Protocol"_sl] != _webSocketProtocol) {

@@ -98,9 +98,9 @@ namespace litecore { namespace net {
 
     bool Address::pathContains(slice basePath, slice path) noexcept {
         if (basePath.size == 0)
-            return true;
+            basePath = "/"_sl;
         if (path.size == 0)
-            return false;
+            path = "/"_sl;
         return path.hasPrefix(basePath)
             && (path.size == basePath.size
                 || path[basePath.size] == '/'

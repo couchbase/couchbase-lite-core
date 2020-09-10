@@ -374,6 +374,11 @@ namespace litecore { namespace websocket {
             // shortcut to the callback and make sure that onConnect does nothing now
             closeSocket();
             _closed = true;
+            
+            // CBL-1088: If this is not called here, it never will be since the above _closed = true
+            // prevents it from happening later.  This means that the Replicator using this connection
+            // will never be informed of the connection close and will never reach the stopped state
+            delegate().onWebSocketClose({kWebSocketClose, status, message});
             return;
         }
         

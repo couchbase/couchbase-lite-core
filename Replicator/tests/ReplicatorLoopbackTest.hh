@@ -361,7 +361,7 @@ public:
 
     // Pause the current thread for an interval. If the interval is negative, it will randomize.
     static void sleepFor(duration interval) {
-        long ticks = interval.count();
+        auto ticks = interval.count();
         if (ticks < 0) {
             ticks = RandomNumber(uint32_t(-ticks)) + RandomNumber(uint32_t(-ticks));
             interval = duration(ticks);

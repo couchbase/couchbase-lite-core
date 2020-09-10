@@ -418,6 +418,11 @@ namespace litecore {
         }
     }
 
+void RevTree::resetConflictSequence(const Rev* winningRev) {
+    auto rev = const_cast<Rev*>(winningRev);
+    rev->sequence = 0;
+}
+
 #pragma mark - REMOVAL (prune / purge / compact):
 
     void RevTree::keepBody(const Rev *rev_in) {

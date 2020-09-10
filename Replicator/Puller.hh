@@ -42,6 +42,7 @@ namespace litecore { namespace repl {
         // Called only by IncomingRev
         void revWasProvisionallyHandled()           {_provisionallyHandledRevs.add(1);}
         void revWasHandled(IncomingRev *inc NONNULL);
+        void revReRequested(fleece::Retained<IncomingRev> inc);
 
         void insertRevision(RevToInsert *rev NONNULL);
 
@@ -63,6 +64,7 @@ namespace litecore { namespace repl {
         void maybeStartIncomingRevs();
         void _revsWereProvisionallyHandled();
         void _revsFinished(int gen);
+        void _revReRequested(fleece::Retained<IncomingRev>);
         void completedSequence(const RemoteSequence&,
                                bool withTransientError =false, bool updateCheckpoint =true);
         void updateLastSequence();

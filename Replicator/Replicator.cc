@@ -317,6 +317,14 @@ namespace litecore { namespace repl {
 
 
     void Replicator::onError(C4Error error) {
+        if(status().error.code != 0 && error.domain == WebSocketDomain &&
+           (error.code == kWebSocketCloseAppPermanent || error.code == kWebSocketCloseAppTransient)) {
+            // CBL-1178: If we already have an error code, it is more relevant than the web socket close code, so keep it
+            // intact so that the consumer can know what went wrong
+            logVerbose("kWebSocketCloseAppPermanent or kWebSocketCloseAppTransient received, ignoring (only relevant for underlying connection...)");
+            return;
+        }
+        
         Worker::onError(error);
         for (const StoppingErrorEntry& stoppingErr : StoppingErrors) {
             if (stoppingErr.err == error) {

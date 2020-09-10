@@ -160,14 +160,98 @@ namespace litecore { namespace net {
         _thread.join();
     }
 
+#ifdef WIN32
+    // WSAPoll has proven to be weirdly unreliable, so fall back
+    // to a select based implementation
+    bool Poller::poll() {
+        fd_set fds_read, fds_write, fds_err;
+        SOCKET maxfd = -1;
+        vector<SOCKET> all_fds;
+        {
+            FD_ZERO(&fds_err);
+            FD_ZERO(&fds_read);
+            FD_ZERO(&fds_write);
+
+            lock_guard<mutex> lock(_mutex);
+            for (auto &src : _listeners) {
+                bool included = false;
+                if (src.second[kReadable]) {
+                    FD_SET(src.first, &fds_read);
+                    FD_SET(src.first, &fds_err);
+                    if(src.first > maxfd) {
+                        maxfd = src.first;
+                    }
+
+                    all_fds.push_back(src.first);
+                    included = true;
+                }
+
+                if (src.second[kWriteable]) {
+                    FD_SET(src.first, &fds_write);
+                    if(!included) {
+                        FD_SET(src.first, &fds_err);
+                        if(src.first > maxfd) {
+                            maxfd = src.first;
+                        }
+
+                        all_fds.push_back(src.first);
+                    }
+                }
+            }
+
+            FD_SET(_interruptReadFD, &fds_read);
+            FD_SET(_interruptReadFD, &fds_err);
+            if(_interruptReadFD > maxfd) {
+                maxfd = _interruptReadFD;
+            }
+            _waiting = true;
+        }
+
+        while(select(maxfd, &fds_read, &fds_write, &fds_err, nullptr) == SOCKET_ERROR) {
+            if(WSAGetLastError() != WSAEINTR)
+                return false;
+        }
+
+        _waiting = false;
+        bool result = true;
+        if(FD_ISSET(_interruptReadFD, &fds_read)) {
+            int message;
+            ::recv(_interruptReadFD, (char *)&message, sizeof(message), 0);
+            LOG(Debug, "Poller: interruption %d", message);
+            if (message < 0) {
+                // Receiving a negative message aborts the loop
+                result = false;
+            } else if (message > 0) {
+                // A positive message is a file descriptor to call:
+                callAndRemoveListener(message, kReadable);
+                callAndRemoveListener(message, kWriteable);
+            }
+        }
+
+        for (SOCKET s : all_fds) {
+            if(FD_ISSET(s, &fds_read)) {
+                 callAndRemoveListener(s, kReadable);
+            }
+
+            if(FD_ISSET(s, &fds_write)) {
+                callAndRemoveListener(s, kWriteable);
+            }
+
+            if(FD_ISSET(s, &fds_err)) {
+                removeListeners(s);
+            }
+        }
+
+        return result;
+    }
+
+#else
 
     bool Poller::poll() {
         // Create the pollfd vector:
         vector<pollfd> pollfds;
         {
             lock_guard<mutex> lock(_mutex);
-            pollfds.resize(_listeners.size() + 1);
-            auto dst = pollfds.begin();
             for (auto &src : _listeners) {
                 short events = 0;
                 if (src.second[kReadable])
@@ -175,20 +259,16 @@ namespace litecore { namespace net {
                 if (src.second[kWriteable])
                     events |= POLLOUT;
                 if (events)
-                    *dst++ = {src.first, events, 0};
+                    pollfds.push_back({src.first, events, 0});
             }
-            *dst++ = {_interruptReadFD, POLLIN, 0};
+            pollfds.push_back({_interruptReadFD, POLLIN, 0});
             _waiting = true;
         }
 
         // Wait in poll():
-#ifdef WIN32
-        while (WSAPoll(pollfds.data(), pollfds.size(), -1) == SOCKET_ERROR) {
-#else
         while (::poll(pollfds.data(), nfds_t(pollfds.size()), -1) < 0) {
             if (errno != EINTR)
                 return false;
-#endif
         }
 
         _waiting = false;
@@ -201,11 +281,7 @@ namespace litecore { namespace net {
                 if (fd == _interruptReadFD) {
                     // This is an interrupt -- read the byte from the pipe:
                     int message;
-#ifdef WIN32
-                    ::recv(_interruptReadFD, (char *)&message, sizeof(message), 0);
-#else
                     ::read(_interruptReadFD, &message, sizeof(message));
-#endif
                     LOG(Debug, "Poller: interruption %d", message);
                     if (message < 0) {
                         // Receiving a negative message aborts the loop
@@ -221,12 +297,15 @@ namespace litecore { namespace net {
                         callAndRemoveListener(fd, kReadable);
                     if (entry.revents & (POLLOUT | POLLERR | POLLHUP | POLLNVAL))
                         callAndRemoveListener(fd, kWriteable);
-                    if (entry.revents & POLLNVAL)
+                    if (entry.revents & POLLNVAL) {
                         removeListeners(fd);
+                    }
                 }
             }
         }
         return result;
     }
+
+#endif
 
 } }

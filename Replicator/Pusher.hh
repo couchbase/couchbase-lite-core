@@ -81,7 +81,7 @@ namespace litecore { namespace repl {
                                           C4Error *outError);
         // Pusher+Revs.cc:
         void maybeSendMoreRevs();
-        void retryRevs(RevToSendList);
+        void retryRevs(RevToSendList, bool immediate);
         void sendRevision(Retained<RevToSend>);
         void onRevProgress(Retained<RevToSend> rev, const blip::MessageProgress&);
         void couldntSendRevision(RevToSend* NONNULL);

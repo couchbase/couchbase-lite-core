@@ -198,12 +198,13 @@ namespace litecore { namespace repl {
                 } else {
                     // Don't have revision -- request it:
                     ++requested;
-                    // Append zeros for any items I skipped:
+                    // Append zeros for any items I skipped, using only writeRaw to avoid confusing
+                    // the JSONEncoder's comma mechanism (CBL-1208).
+                    if (itemsWritten > 0)
+                        encoder.writeRaw(",");      // comma after previous array item
                     while (itemsWritten++ < i)
-                        encoder.writeInt(0);
+                        encoder.writeRaw("0,");
                     // Append array of ancestor revs I do have (it's already a JSON array):
-                    if (i > 0)
-                        encoder.writeRaw(","_sl);
                     encoder.writeRaw(anc ? slice(anc) : "[]"_sl);
                     logDebug("    - Requesting '%.*s' %.*s, ancestors %.*s",
                              SPLAT(docID), SPLAT(revID), SPLAT(anc));

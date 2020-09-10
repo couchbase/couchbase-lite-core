@@ -256,6 +256,20 @@ namespace litecore { namespace repl {
     }
 
 
+    void Puller::revReRequested(fleece::Retained<IncomingRev> inc) {
+        enqueue(&Puller::_revReRequested, inc);
+    }
+
+
+    void Puller::_revReRequested(Retained<IncomingRev> inc) {
+        // Regression from CBL-936 / CBG-881:  Because after a delta failure the full revision is
+        // requested without another changes message, this needs to be bumped back up because it
+        // won't get another changes message to bump it.
+        increment(_pendingRevMessages);
+        addProgress({0, _missingSequences.bodySizeOfSequence(inc->remoteSequence())});
+    }
+
+
     // Records that a sequence has been successfully pulled.
     void Puller::completedSequence(const RemoteSequence &sequence,
                                    bool withTransientError, bool shouldUpdateLastSequence)

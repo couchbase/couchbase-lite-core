@@ -233,6 +233,13 @@ namespace litecore { namespace repl {
     void IncomingRev::revisionInserted() {
         Retained<IncomingRev> retainSelf = this;
         decrement(_pendingCallbacks);
+        if(_rev->error.domain == LiteCoreDomain &&
+           (_rev->error.code == kC4ErrorDeltaBaseUnknown ||
+            _rev->error.code == kC4ErrorCorruptDelta)) {
+            // CBL-936: Make sure that the puller knows this revision is coming again
+            _puller->revReRequested(this);
+        }
+        
         finish();
     }
 

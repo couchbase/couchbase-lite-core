@@ -304,3 +304,18 @@ N_WAY_TEST_CASE_METHOD(C4Test, "c4 Cookie API", "[Cookies]") {
         CHECK(c4db_getCookies(db, request, &error) == nullslice);
     }
 }
+
+TEST_CASE("RootPathMatch", "[Cookies]") {
+    static const C4Address kRootPathRequest   {kC4Replicator2Scheme, "example.com"_sl, 4984, "/"_sl};
+    static const C4Address kEmptyPathRequest  {kC4Replicator2Scheme, "example.com"_sl, 4984, ""_sl};
+    
+    Retained<CookieStore> store = new CookieStore;
+    CHECK(store->setCookie("a1=b1; Domain=example.com; Path=/", "example.com", "/"));
+    CHECK(store->setCookie("a2=b2; Domain=example.com; Path=/", "example.com", ""));
+    CHECK(store->setCookie("a3=b3; Domain=example.com", "example.com", "/"));
+    CHECK(store->setCookie("a4=b4; Domain=example.com", "example.com", ""));
+    CHECK(store->cookiesForRequest(kRootPathRequest) == "a1=b1; a2=b2; a3=b3; a4=b4");
+    CHECK(store->cookiesForRequest(kEmptyPathRequest) == "a1=b1; a2=b2; a3=b3; a4=b4");
+
+}
+

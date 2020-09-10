@@ -258,12 +258,15 @@ namespace litecore { namespace crypto {
     // of those type(s) to be valid.
     static uint8_t defaultKeyUsage(NSCertType certTypes, bool usingRSA) {
         // https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/nss_tech_notes/nss_tech_note3
+        // NOTE: Modified for the more modern Diffie Hellman Ephemeral algorithms, which exercises
+        // the digital signature usage on the server side
         uint8_t keyUsage = 0;
         if (certTypes & (MBEDTLS_X509_NS_CERT_TYPE_SSL_CLIENT | MBEDTLS_X509_NS_CERT_TYPE_EMAIL
                          | MBEDTLS_X509_NS_CERT_TYPE_OBJECT_SIGNING))
             keyUsage |= MBEDTLS_X509_KU_DIGITAL_SIGNATURE;
         if (certTypes & (MBEDTLS_X509_NS_CERT_TYPE_SSL_SERVER | MBEDTLS_X509_NS_CERT_TYPE_EMAIL))
-            keyUsage |= (usingRSA ? MBEDTLS_X509_KU_KEY_ENCIPHERMENT : MBEDTLS_X509_KU_KEY_AGREEMENT);
+            keyUsage |= ((usingRSA ? MBEDTLS_X509_KU_KEY_ENCIPHERMENT : MBEDTLS_X509_KU_KEY_AGREEMENT) |
+                         MBEDTLS_X509_KU_DIGITAL_SIGNATURE);
         if (certTypes & (MBEDTLS_X509_NS_CERT_TYPE_SSL_CA | MBEDTLS_X509_NS_CERT_TYPE_EMAIL_CA
                          | MBEDTLS_X509_NS_CERT_TYPE_OBJECT_SIGNING_CA))
             keyUsage |= MBEDTLS_X509_KU_KEY_CERT_SIGN;

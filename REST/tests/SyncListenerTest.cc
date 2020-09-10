@@ -328,5 +328,16 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Server Addresses", "[Listener]") {
     }
 }
 
+TEST_CASE_METHOD(C4SyncListenerTest, "Listener stops replicators", "[Listener]") {
+    ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
+    share(db2, "db2"_sl);
+    _address.port = c4listener_getPort(listener());
+    C4Error err;
+    REQUIRE(_startReplicator(kC4Continuous, kC4Continuous, &err));
+    waitForStatus(kC4Idle);
+    stop();
+    waitForStatus(kC4Stopped);
+}
+
 
 #endif
