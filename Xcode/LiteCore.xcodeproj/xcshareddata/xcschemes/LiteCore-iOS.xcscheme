@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "27A924931D9B316D00086206"
-               BuildableName = "LiteCore-iOS shell.app"
+               BuildableName = "LiteCore-iOS.app"
                BlueprintName = "LiteCore-iOS shell"
                ReferencedContainer = "container:LiteCore.xcodeproj">
             </BuildableReference>
@@ -37,7 +37,7 @@
       </BuildActionEntries>
    </BuildAction>
    <TestAction
-      buildConfiguration = "Release"
+      buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "NO"
@@ -88,7 +88,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "27A924931D9B316D00086206"
-            BuildableName = "LiteCore-iOS shell.app"
+            BuildableName = "LiteCore-iOS.app"
             BlueprintName = "LiteCore-iOS shell"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
@@ -118,7 +118,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "27A924931D9B316D00086206"
-            BuildableName = "LiteCore-iOS shell.app"
+            BuildableName = "LiteCore-iOS.app"
             BlueprintName = "LiteCore-iOS shell"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
