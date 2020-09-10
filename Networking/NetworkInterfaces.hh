@@ -91,7 +91,9 @@ namespace litecore::net {
     };
 
 
+#if 0
     /// Returns the computer's DNS or mDNS hostname if known, otherwise its primary IP address.
     std::optional<std::string> GetMyHostName();
+#endif
 
 }

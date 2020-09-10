@@ -94,9 +94,11 @@ namespace litecore { namespace REST {
             addresses.push_back(string(listeningAddr));
         } else {
             // Not bound to any address, so it's listening on all interfaces.
+#if 0
             // Add the hostname if known:
             if (auto hostname = GetMyHostName(); hostname)
                 addresses.push_back(*hostname);
+#endif
             for (auto &addr : Interface::allAddresses()) {
                 addresses.push_back(string(addr));
             }

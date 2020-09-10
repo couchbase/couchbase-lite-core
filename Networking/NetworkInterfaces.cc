@@ -239,6 +239,7 @@ namespace litecore::net {
 #pragma mark - PLATFORM SPECIFIC CODE:
 
 
+#if 0 // Doesn't appear to function outside the same machine by default
     optional<string> GetMyHostName() {
 #ifdef __APPLE__
         // Apple platforms always have an mDNS/Bonjour hostname.
@@ -267,6 +268,7 @@ namespace litecore::net {
         //TODO: Android supports mDNS; is there an API to get the hostname?
         return nullopt;
     }
+#endif
 
 
     // Platform-specific code to read the enabled network interfaces.
