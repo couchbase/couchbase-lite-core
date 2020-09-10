@@ -170,6 +170,7 @@ namespace litecore { namespace repl {
             // Copy the changes into a vector of RevToSend:
             C4DatabaseChange *c4change = c4changes;
             _db.use([&](C4Database *db) {
+                auto oldChangesCount = changes.revs.size();
                 for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
                     if (c4change->sequence <= startingMaxSequence)
                         continue;
@@ -178,8 +179,16 @@ namespace litecore { namespace repl {
                     // Note: we send tombstones even if the original getChanges() call specified
                     // skipDeletions. This is intentional; skipDeletions applies only to the initial
                     // dump of existing docs, not to 'live' changes.
-                    auto rev = makeRevToSend(info, nullptr, db);
-                    if (rev) {
+                    if (auto rev = makeRevToSend(info, nullptr, db); rev) {
+                        // It's possible but unlikely to get the same docID in successive calls to
+                        // c4dbobs_getChanges, if it changes in between calls. Remove the older:
+                        for (size_t j = 0; j < oldChangesCount; ++j) {
+                            if(changes.revs[j]->docID == c4change->docID) {
+                                changes.revs.erase(changes.revs.begin() + j);
+                                ++limit;
+                                break;
+                            }
+                        }
                         changes.revs.push_back(rev);
                         --limit;
                     }
