@@ -15,14 +15,16 @@
 #include "CaseListReporter.hh"
 
 int main(int argc, char * argv[]) {
+#if 0
     Catch::Session session;
     session.configData().reporterNames.push_back("list");
     session.configData().useColour = Catch::UseColour::No; // otherwise it tries to use ANSI escapes in Xcode console
 
-    session.applyCommandLine(argc, argv);
+    session.applyCommandLine(1, argv);
     session.run();
-
-//    @autoreleasepool {
-//        return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
-//    }
+#else
+    @autoreleasepool {
+        return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
+    }
+#endif
 }
