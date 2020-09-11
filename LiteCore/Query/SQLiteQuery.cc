@@ -479,8 +479,9 @@ namespace litecore {
                      uint64_t missingCols = 0;
                      enc.beginArray(nCols);
                      for (int i = 0; i < nCols; ++i) {
-                         if (!encodeColumn(enc, i) && i >= firstCustomCol && i < 64) {
-                             missingCols |= (1ULL << (i - firstCustomCol));
+                         int offsetColumn = i - firstCustomCol;
+                         if (!encodeColumn(enc, i) && offsetColumn >= 0 && offsetColumn < 64) {
+                             missingCols |= (1ULL << offsetColumn);
                          }
                     }
                     enc.endArray();
