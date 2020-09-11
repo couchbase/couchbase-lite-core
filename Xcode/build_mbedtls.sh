@@ -1,6 +1,6 @@
 #! /bin/bash -e
 # This script builds the mbedTLS submodule.
-# It's run by Xcode when building the target LiteCoreWebSocket.
+# It's run by Xcode when building the "mbedTLS" target.
 
 source "$SRCROOT/build_setup.sh" mbedtls
 

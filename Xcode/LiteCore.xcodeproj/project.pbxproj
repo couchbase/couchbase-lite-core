@@ -304,6 +304,7 @@
 		27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
 		27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
 		27CCD4B22315DBD3003DEB99 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
+		27D3886D250AA4330000249E /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */; };
 		27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */; };
 		27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A741D4D3F2300D806E0 /* Backup.cpp */; };
@@ -1147,7 +1148,7 @@
 		279DE3DD24788A030059AE4E /* c4_ee.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = c4_ee.txt; path = scripts/c4_ee.txt; sourceTree = "<group>"; };
 		27A16314201FC2A500C18D9C /* DataFile+Shared.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "DataFile+Shared.hh"; sourceTree = "<group>"; };
 		27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
-		27A924941D9B316D00086206 /* LiteCore-iOS shell.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LiteCore-iOS shell.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		27A924941D9B316D00086206 /* LiteCore-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LiteCore-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A924971D9B316D00086206 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 		27A924991D9B316D00086206 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		27A9249A1D9B316D00086206 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -2073,7 +2074,7 @@
 				274D04081BA75E1C00FF7C35 /* C4Tests */,
 				720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */,
 				2708FE521CF4CC880022F721 /* LiteCoreCppTests */,
-				27A924941D9B316D00086206 /* LiteCore-iOS shell.app */,
+				27A924941D9B316D00086206 /* LiteCore-iOS.app */,
 				27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */,
 				27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */,
 				27DF7D631F4236500022F3DF /* libSQLite.a */,
@@ -3309,7 +3310,7 @@
 			);
 			name = "LiteCore-iOS shell";
 			productName = "LiteCore Shell";
-			productReference = 27A924941D9B316D00086206 /* LiteCore-iOS shell.app */;
+			productReference = 27A924941D9B316D00086206 /* LiteCore-iOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 		27A924AB1D9B316D00086206 /* LiteCore-iOS Tests */ = {
@@ -3887,6 +3888,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27A9249E1D9B316D00086206 /* ViewController.m in Sources */,
+				27D3886D250AA4330000249E /* LibC++Debug.cc in Sources */,
 				27A9249B1D9B316D00086206 /* AppDelegate.m in Sources */,
 				27A924981D9B316D00086206 /* main.mm in Sources */,
 			);
@@ -4384,6 +4386,16 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/API",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Core",
+					"$(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp",
+					"$(SRCROOT)/../vendor/BLIP-Cpp/src/util/",
+					"$(SRCROOT)/../vendor/SQLiteCpp/include/",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+				);
 			};
 			name = Debug;
 		};
@@ -4391,6 +4403,16 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/API",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Core",
+					"$(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp",
+					"$(SRCROOT)/../vendor/BLIP-Cpp/src/util/",
+					"$(SRCROOT)/../vendor/SQLiteCpp/include/",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+				);
 			};
 			name = Release;
 		};
@@ -4398,6 +4420,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+				);
 			};
 			name = Debug;
 		};
@@ -4405,13 +4434,20 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+				);
 			};
 			name = Release;
 		};
 		2752B26B233D76010014AD9D /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -4464,7 +4500,6 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4474,7 +4509,6 @@
 		2752B26C233D76010014AD9D /* Debug_EE */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -4527,7 +4561,6 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4537,7 +4570,6 @@
 		2752B26D233D76010014AD9D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -4591,7 +4623,6 @@
 		2752B26E233D76010014AD9D /* Release_EE */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -4758,6 +4789,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2791EA192032732500BD813C /* Project_Debug_EE.xcconfig */;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+				);
 			};
 			name = Debug_EE;
 		};
@@ -4796,6 +4834,16 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/API",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Core",
+					"$(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp",
+					"$(SRCROOT)/../vendor/BLIP-Cpp/src/util/",
+					"$(SRCROOT)/../vendor/SQLiteCpp/include/",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+				);
 			};
 			name = Debug_EE;
 		};
@@ -4829,11 +4877,20 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "LiteCore-iOS";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -4902,6 +4959,13 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2791EA1A203273BF00BD813C /* Project_Release_EE.xcconfig */;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+				);
 			};
 			name = Release_EE;
 		};
@@ -4940,6 +5004,16 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/API",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Core",
+					"$(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp",
+					"$(SRCROOT)/../vendor/BLIP-Cpp/src/util/",
+					"$(SRCROOT)/../vendor/SQLiteCpp/include/",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+				);
 			};
 			name = Release_EE;
 		};
@@ -4973,10 +5047,19 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "LiteCore-iOS";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -5045,11 +5128,20 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "LiteCore-iOS";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -5065,10 +5157,19 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../vendor/SQLiteCpp/sqlite3/",
+					"$(SOCKPP)/include",
+					"$(MBEDTLS)/include",
+					"$(MBEDCRYPTO)/include",
+					"$(inherited)",
+					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
+					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
+				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "LiteCore-iOS";
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphonesimulator iphoneos";
 				TARGETED_DEVICE_FAMILY = "1,2";
