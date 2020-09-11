@@ -18,6 +18,7 @@
 
 #include "Checkpointer.hh"
 #include "Checkpoint.hh"
+#include "ReplicatorOptions.hh"
 #include "DBAccess.hh"
 #include "Logging.hh"
 #include "SecureDigest.hh"
@@ -60,13 +61,13 @@ namespace litecore { namespace repl {
         return _checkpoint->localMinSequence();
     }
 
-    fleece::alloc_slice Checkpointer::remoteMinSequence() const {
+    RemoteSequence Checkpointer::remoteMinSequence() const {
         LOCK();
         return _checkpoint->remoteMinSequence();
     }
 
 
-    void Checkpointer::setRemoteMinSequence(fleece::slice s) {
+    void Checkpointer::setRemoteMinSequence(const RemoteSequence &s) {
         LOCK();
         if (_checkpoint->setRemoteMinSequence(s))
             saveSoon();

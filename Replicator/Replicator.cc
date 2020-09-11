@@ -22,39 +22,39 @@
 #include "Pusher.hh"
 #include "Puller.hh"
 #include "Checkpoint.hh"
+#include "DBAccess.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "Logging.hh"
-#include "SecureDigest.hh"
 #include "Headers.hh"
 #include "BLIP.hh"
 #include "Address.hh"
 #include "Instrumentation.hh"
-#include "Array.hh"
-#include "RevID.hh"
 #include "c4DocEnumerator.h"
-#include "c4Socket.h"
+#include "c4Socket.h"           // for error codes
 #include "c4Transaction.hh"
 
 using namespace std;
 using namespace std::placeholders;
 using namespace fleece;
+using namespace litecore::blip;
 
 
 namespace litecore { namespace repl {
 
-    struct C4StoppingErrorEntry
-    {
+    struct StoppingErrorEntry {
         C4Error err;
         bool isFatal;
         slice msg;
     };
 
-    static C4StoppingErrorEntry StoppingErrors[] = {
+    // Errors treated specially by onError()
+    static constexpr StoppingErrorEntry StoppingErrors[] = {
         {{ LiteCoreDomain, kC4ErrorUnexpectedError,0 }, true, "An exception was thrown"_sl},
         {{ WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
         {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl}
     };
+
 
     Replicator::Replicator(C4Database* db,
                            websocket::WebSocket *webSocket,
@@ -81,18 +81,15 @@ namespace litecore { namespace repl {
         if (options.push != kC4Disabled) {
             _pusher = new Pusher(this, _checkpointer);
         } else {
-            registerHandler("subChanges",      &Replicator::returnForbidden);
-            registerHandler("getAttachment",   &Replicator::returnForbidden);
-            registerHandler("proveAttachment", &Replicator::returnForbidden);
+            for (auto profile : {"subChanges", "getAttachment", "proveAttachment"})
+                registerHandler(profile,  &Replicator::returnForbidden);
         }
         
         if (options.pull != kC4Disabled) {
             _puller = new Puller(this);
         } else {
-            registerHandler("changes", &Replicator::returnForbidden);
-            registerHandler("proposeChanges", &Replicator::returnForbidden);
-            registerHandler("rev", &Replicator::returnForbidden);
-            registerHandler("norev", &Replicator::returnForbidden);
+            for (auto profile : {"changes", "proposeChanges", "rev", "norev"})
+                registerHandler(profile,  &Replicator::returnForbidden);
         }
 
         actor::Timer::duration saveDelay = tuning::kDefaultCheckpointSaveDelay;
@@ -111,6 +108,7 @@ namespace litecore { namespace repl {
         else
             enqueue(&Replicator::_start, reset);
     }
+
 
     void Replicator::_start(bool reset) {
         Assert(_connectionState == Connection::kClosed);
@@ -136,23 +134,24 @@ namespace litecore { namespace repl {
             }
 
             // Get the checkpoints:
-            if(getLocalCheckpoint(reset)) {
+            if (getLocalCheckpoint(reset)) {
                 getRemoteCheckpoint(false);
             }
         }
     }
-    
+
+
     void Replicator::_findExistingConflicts() {
         if (_options.pull <= kC4Passive) // only check in pull mode
             return;
 
         Stopwatch st;
         C4Error err;
-        C4DocEnumerator* e = _db->unresolvedDocsEnumerator(false, &err);
+        c4::ref<C4DocEnumerator> e = _db->unresolvedDocsEnumerator(false, &err);
         if (e) {
             logInfo("Scanning for pre-existing conflicts...");
             unsigned nConflicts = 0;
-            while(c4enum_next(e, &err)) {
+            while (c4enum_next(e, &err)) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
                 auto rev = retained(new RevToInsert(nullptr,        /* incoming rev */
@@ -165,7 +164,6 @@ namespace litecore { namespace repl {
                 _docsEnded.push(rev);
                 ++nConflicts;
             }
-            c4enum_free(e);
             logInfo("Found %u conflicted docs in %.3f sec", nConflicts, st.elapsed());
         } else {
             warn("Couldn't get unresolved docs enumerator: error %d/%d", err.domain, err.code);
@@ -215,6 +213,7 @@ namespace litecore { namespace repl {
             _puller->start(_checkpointer.remoteMinSequence());
     }
 
+
     void Replicator::docRemoteAncestorChanged(alloc_slice docID, alloc_slice revID) {
         Retained<Pusher> pusher = _pusher;
         if (pusher)
@@ -222,12 +221,20 @@ namespace litecore { namespace repl {
     }
 
 
+    void Replicator::returnForbidden(Retained<blip::MessageIn> request) {
+        if (_options.push != kC4Disabled) {
+            request->respondWithError(Error("HTTP"_sl, 403, "Attempting to push to a pull-only replicator"_sl));
+        } else {
+            request->respondWithError(Error("HTTP"_sl, 403, "Attempting to pull from a push-only replicator"_sl));
+        }
+    }
+
+
 #pragma mark - STATUS:
 
 
     // The status of one of the actors has changed; update mine
-    void Replicator::_childChangedStatus(Worker *task, Status taskStatus)
-    {
+    void Replicator::_childChangedStatus(Worker *task, Status taskStatus) {
         if (status().level == kC4Stopped)       // I've already stopped & cleared refs; ignore this
             return;
 
@@ -239,11 +246,11 @@ namespace litecore { namespace repl {
 
         setProgress(_pushStatus.progress + _pullStatus.progress);
 
-        if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
+        if (SyncBusyLog.willLog(LogLevel::Info)) {
             logInfo("pushStatus=%-s, pullStatus=%-s, progress=%" PRIu64 "/%" PRIu64 "",
-                kC4ReplicatorActivityLevelNames[_pushStatus.level],
-                kC4ReplicatorActivityLevelNames[_pullStatus.level],
-                status().progress.unitsCompleted, status().progress.unitsTotal);
+                    kC4ReplicatorActivityLevelNames[_pushStatus.level],
+                    kC4ReplicatorActivityLevelNames[_pullStatus.level],
+                    status().progress.unitsCompleted, status().progress.unitsTotal);
         }
 
         if (_pullStatus.error.code)
@@ -301,9 +308,9 @@ namespace litecore { namespace repl {
                     level = kC4Connecting;
                 break;
         }
-        if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            logInfo("activityLevel=%-s: connectionState=%d",
-                kC4ReplicatorActivityLevelNames[level], _connectionState);
+        if (SyncBusyLog.willLog(LogLevel::Info)) {
+            logInfo("activityLevel=%-s: connectionState=%d, savingChkpt=%d",
+                    kC4ReplicatorActivityLevelNames[level], _connectionState, _checkpointer.isUnsaved());
         }
         return level;
     }
@@ -319,11 +326,10 @@ namespace litecore { namespace repl {
         }
         
         Worker::onError(error);
-        for(const C4StoppingErrorEntry& stoppingErr : StoppingErrors) {
-            if(stoppingErr.err.domain == error.domain && stoppingErr.err.code == error.code) {
-                // Treat an exception as a fatal error for replication:
+        for (const StoppingErrorEntry& stoppingErr : StoppingErrors) {
+            if (stoppingErr.err == error) {
                 alloc_slice message( c4error_getDescription(error) );
-                if(stoppingErr.isFatal) {
+                if (stoppingErr.isFatal) {
                     logError("Stopping due to fatal error: %.*s", SPLAT(message));
                     _disconnect(websocket::kCloseAppPermanent, stoppingErr.msg);
                 } else {
@@ -375,8 +381,8 @@ namespace litecore { namespace repl {
         d->trim(); // free up unneeded stuff
         if (_delegate) {
             if (d->isWarning && (d->flags & kRevIsConflict)) {
-                // DBWorker::_insertRevision set this flag to indicate that the rev caused a conflict
-                // (though it did get inserted), so notify the delegate of the conflict:
+                // Inserter::insertRevisionNow set this flag to indicate that the rev caused a
+                // conflict (though it did get inserted), so notify the delegate of the conflict:
                 d->error = c4error_make(LiteCoreDomain, kC4ErrorConflict, nullslice);
                 d->errorIsTransient = true;
             }
@@ -410,6 +416,7 @@ namespace litecore { namespace repl {
     void Replicator::onHTTPResponse(int status, const websocket::Headers &headers) {
         enqueue(&Replicator::_onHTTPResponse, status, headers);
     }
+
 
     void Replicator::_onHTTPResponse(int status, websocket::Headers headers) {
         if (status == 101 && !headers["Sec-WebSocket-Protocol"_sl]) {
@@ -455,7 +462,6 @@ namespace litecore { namespace repl {
             status.code = websocket::kCodeGoingAway;
             status.message = alloc_slice("WebSocket connection closed by peer");
         }
-        _closeStatus = status;
 
         static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain,
                                                          NetworkDomain, LiteCoreDomain};
@@ -464,9 +470,9 @@ namespace litecore { namespace repl {
         if (status.reason != websocket::kWebSocketClose || status.code != websocket::kCodeNormal) {
             int code = status.code;
             C4ErrorDomain domain;
-            if (status.reason < sizeof(kDomainForReason)/sizeof(C4ErrorDomain))
+            if (status.reason < sizeof(kDomainForReason)/sizeof(C4ErrorDomain)) {
                 domain = kDomainForReason[status.reason];
-            else {
+            } else {
                 domain = LiteCoreDomain;
                 code = kC4ErrorRemoteError;
             }
@@ -615,7 +621,7 @@ namespace litecore { namespace repl {
             MessageIn *response = progress.reply;
             if (response->isError()) {
                 Error responseErr = response->getError();
-                if(responseErr.domain == "HTTP"_sl && responseErr.code == 409) {
+                if (responseErr.domain == "HTTP"_sl && responseErr.code == 409) {
                     // On conflict, read the remote checkpoint to get the real revID:
                     _checkpointJSONToSave = json; // move() has no effect here
                     _remoteCheckpointRequested = _remoteCheckpointReceived = false;
@@ -726,15 +732,6 @@ namespace litecore { namespace repl {
         MessageBuilder response(request);
         response["rev"_sl] = newRevID;
         request->respond(response);
-    }
-
-
-    void Replicator::returnForbidden(Retained<blip::MessageIn> request) {
-        if (_options.push != kC4Disabled) {
-            request->respondWithError(Error("HTTP"_sl, 403, "Attempting to push to a pull-only replicator"_sl));
-        } else {
-            request->respondWithError(Error("HTTP"_sl, 403, "Attempting to pull from a push-only replicator"_sl));
-        }
     }
 
 } }

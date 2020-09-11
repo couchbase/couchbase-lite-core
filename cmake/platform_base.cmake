@@ -84,16 +84,18 @@ function(set_litecore_source_base)
         vendor/SQLiteCpp/src/Transaction.cpp
         Replicator/c4Replicator.cc
         Replicator/c4Socket.cc
+        Replicator/ChangesFeed.cc
         Replicator/Checkpoint.cc
         Replicator/Checkpointer.cc
         Replicator/DatabaseCookies.cc
         Replicator/DBAccess.cc
-        Replicator/IncomingBlob.cc
         Replicator/IncomingRev.cc
+        Replicator/IncomingRev+Blobs.cc
         Replicator/Inserter.cc
         Replicator/Puller.cc
         Replicator/Pusher.cc
-        Replicator/Pusher+DB.cc
+        Replicator/Pusher+Attachments.cc
+        Replicator/Pusher+Revs.cc
         Replicator/Replicator.cc
         Replicator/ReplicatorTypes.cc
         Replicator/RevFinder.cc

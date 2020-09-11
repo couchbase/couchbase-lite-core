@@ -189,8 +189,12 @@ struct C4Replicator : public RefCounted,
     C4Cert* getPeerTLSCertificate(C4Error* outErr) const {
         LOCK(_mutex);
         if (!_peerTLSCertificate && _peerTLSCertificateData) {
-            _peerTLSCertificate = c4cert_fromData(_peerTLSCertificateData, nullptr);
-            _peerTLSCertificateData = nullptr;
+            _peerTLSCertificate = c4cert_fromData(_peerTLSCertificateData, outErr);
+            if (_peerTLSCertificate)
+                _peerTLSCertificateData = nullptr;
+        } else {
+            if (outErr)
+                *outErr = {};
         }
         return _peerTLSCertificate;
     }

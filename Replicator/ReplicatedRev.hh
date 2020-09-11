@@ -7,7 +7,6 @@
 #pragma once
 #include "RefCounted.hh"
 #include "fleece/slice.hh"
-#include "c4Base.h"
 #include "c4Document.h"
 #include "c4Replicator.h"
 

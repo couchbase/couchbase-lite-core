@@ -162,8 +162,8 @@ namespace litecore { namespace actor {
         friend class GCDMailbox;
         friend class AsyncContext;
 
-        template <class ACTOR, class ITEM>
-        friend class ActorBatcher;
+        template <class ACTOR, class ITEM> friend class ActorBatcher;
+        template <class ACTOR>             friend class ActorCountBatcher;
 
         void _waitTillCaughtUp(std::mutex*, std::condition_variable*, bool*);
 

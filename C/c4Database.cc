@@ -62,6 +62,19 @@ static FilePath dbPath(C4String name, C4String parentDir) {
 }
 
 
+static bool ensureConfigDirExists(const C4DatabaseConfig2 *config, C4Error *outError) {
+    if (config->flags & kC4DB_ReadOnly)
+        return true;
+    try {
+        (void)FilePath(string(slice(config->parentDirectory)), "").mkdir();
+        return true;
+    } catch (const exception &x) {
+        recordException(x, outError);
+        return false;
+    }
+}
+
+
 static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 *config2) {
     return C4DatabaseConfig {
         config2->flags | kC4DB_AutoCompact | kC4DB_SharedKeys,
@@ -99,6 +112,8 @@ C4Database* c4db_openNamed(C4String name,
                            const C4DatabaseConfig2 *config C4NONNULL,
                            C4Error *outError) C4API
 {
+    if (!ensureConfigDirExists(config, outError))
+        return nullptr;
     FilePath path = dbPath(name, config->parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
     return c4db_open(slice(path), &oldConfig, outError);
@@ -128,6 +143,8 @@ bool c4db_copyNamed(C4String sourcePath,
                     const C4DatabaseConfig2* config C4NONNULL,
                     C4Error* error) C4API
 {
+    if (!ensureConfigDirExists(config, error))
+        return false;
     FilePath destinationPath = dbPath(destinationName, config->parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
     return c4db_copy(sourcePath, slice(destinationPath), &oldConfig, error);

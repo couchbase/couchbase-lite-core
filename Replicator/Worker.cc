@@ -20,6 +20,7 @@
 #include "Replicator.hh"
 #include "ReplicatorTypes.hh"
 #include "c4Private.h"
+#include "Increment.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "PlatformCompat.hh"
@@ -270,6 +271,8 @@ namespace litecore { namespace repl {
     
     // Called after every event; updates busy status & detects when I'm done
     void Worker::afterEvent() {
+        (void)SyncBusyLog.level(); // initialize its level
+
         bool changed = _statusChanged;
         _statusChanged = false;
         if (changed && _important) {

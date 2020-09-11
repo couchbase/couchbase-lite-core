@@ -19,12 +19,13 @@
 #pragma once
 #include "Worker.hh"
 #include "ReplicatorTypes.hh"
-#include "function_ref.hh"
+#include "RemoteSequence.hh"
+#include "Timer.hh"
+#include "c4.hh"
 #include <atomic>
 #include <vector>
 
 namespace litecore { namespace repl {
-    class IncomingBlob;
     class Puller;
     class RevToInsert;
 
@@ -35,42 +36,55 @@ namespace litecore { namespace repl {
         IncomingRev(Puller* NONNULL);
 
         // Called by the Puller:
-        void handleRev(blip::MessageIn* revMessage NONNULL) {
-            enqueue(&IncomingRev::_handleRev, retained(revMessage));
-        }
+        void handleRev(blip::MessageIn* revMessage NONNULL);
         RevToInsert* rev() const                {return _rev;}
-        alloc_slice remoteSequence() const      {return _remoteSequence;}
+        RemoteSequence remoteSequence() const   {return _remoteSequence;}
         bool wasProvisionallyInserted() const   {return _provisionallyInserted;}
+        void reset();
 
         // Called by the Inserter:
         void revisionProvisionallyInserted();
-        void revisionInserted()                 {enqueue(&IncomingRev::_revisionInserted);}
+        void revisionInserted();
 
     protected:
         ActivityLevel computeActivityLevel() const override;
 
     private:
+        void parseAndInsert(alloc_slice jsonBody);
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);
-        void processBody(fleece::Doc, C4Error);
-        bool fetchNextBlob();
+        fleece::Doc parseBody(alloc_slice jsonBody);
+        void processFleeceBody(fleece::Doc);
         void insertRevision();
         void _revisionInserted();
+        void failWithError(C4Error);
+        void failWithError(C4ErrorDomain, int code, slice message);
         void finish();
-        virtual void _childChangedStatus(Worker *task NONNULL, Status status) override;
 
-        C4BlobStore *_blobStore;
-        Puller* _puller;
-        Retained<blip::MessageIn> _revMessage;
-        Retained<RevToInsert> _rev;
-        unsigned _pendingCallbacks {0};
-        std::vector<PendingBlob> _pendingBlobs;
-        Retained<IncomingBlob> _currentBlob;
-        int _peerError {0};
-        alloc_slice _remoteSequence;
-        uint32_t _serialNumber {0};
-        std::atomic<bool> _provisionallyInserted {false};
+        // blob stuff:
+        void fetchNextBlob();
+        bool startBlob();
+        void writeToBlob(fleece::alloc_slice);
+        void finishBlob();
+        void blobGotError(C4Error);
+        void notifyBlobProgress(bool always);
+        void closeBlobWriter();
+
+        Puller*                     _puller;
+        Retained<blip::MessageIn>   _revMessage;
+        Retained<RevToInsert>       _rev;
+        unsigned                    _pendingCallbacks {0};
+        int                         _peerError {0};
+        RemoteSequence              _remoteSequence;
+        uint32_t                    _serialNumber {0};
+        std::atomic<bool>           _provisionallyInserted {false};
+        // blob stuff:
+        std::vector<PendingBlob>    _pendingBlobs;
+        std::vector<PendingBlob>::const_iterator _blob;
+        c4::ref<C4WriteStream>      _writer;
+        uint64_t                    _blobBytesWritten;
+        actor::Timer::time          _lastNotifyTime;
     };
 
 } }

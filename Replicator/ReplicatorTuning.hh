@@ -90,6 +90,13 @@ namespace litecore { namespace repl {
             yet. This is limited to avoid flooding the peer with too much JSON data. */
         constexpr unsigned kMaxRevBytesAwaitingReply = 2*1024*1024;
 
+        /* Number of changes to send in one "changes" msg */
+        constexpr unsigned kDefaultChangeBatchSize = 200;
+
+        /* Max history length to use, if "changes" response doesn't have one */
+        constexpr unsigned kDefaultMaxHistory = 20;
+
+
         //// Replicator:
 
         /* How often to save checkpoints. */

@@ -581,15 +581,22 @@ namespace litecore {
 
 
     void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr,
-                                const char *message)
+                                const char *message, ...)
     {
-        if (!message)
-            message = expr;
+        string messageStr = "Assertion failed: ";
+        if (message) {
+            va_list args;
+            va_start(args, message);
+            messageStr += vformat(message, args);
+            va_end(args);
+        } else {
+            messageStr += expr;
+        }
         if (!WillLog(LogLevel::Error))
-            fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", message, file, line, fn);
-        WarnError("Assertion failed: %s (%s:%u, in %s)%s",
-                  message, file, line, fn, backtrace(1).c_str());
-        throw error(error::AssertionFailed);
+            fprintf(stderr, "%s (%s:%u, in %s)", messageStr.c_str(), file, line, fn);
+        WarnError("%s (%s:%u, in %s)%s",
+                  messageStr.c_str(), file, line, fn, backtrace(1).c_str());
+        throw error(LiteCore, AssertionFailed, messageStr);
     }
 
 #if !defined(__ANDROID__) && !defined(_MSC_VER)

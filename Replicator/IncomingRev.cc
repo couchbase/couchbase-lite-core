@@ -17,8 +17,9 @@
 //
 
 #include "IncomingRev.hh"
-#include "IncomingBlob.hh"
 #include "Puller.hh"
+#include "DBAccess.hh"
+#include "Increment.hh"
 #include "StringUtil.hh"
 #include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
@@ -34,6 +35,12 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
+    // Docs with JSON bodies larger than this get parsed asynchronously (off the Puller thread)
+    static constexpr size_t kMaxImmediateParseSize = 32 * 1024;
+
+    static inline bool jsonMightContainBlobs(slice json) {
+        return json.containsBytes("\"digest\""_sl);
+    }
 
     IncomingRev::IncomingRev(Puller *puller)
     :Worker(puller, "inc")
@@ -46,14 +53,16 @@ namespace litecore { namespace repl {
     }
 
 
-    // Read the 'rev' message, on my actor thread:
-    void IncomingRev::_handleRev(Retained<blip::MessageIn> msg) {
+    // Read the 'rev' message, then parse either synchronously or asynchronously.
+    // This runs on the caller's (Puller's) thread.
+    void IncomingRev::handleRev(blip::MessageIn *msg) {
         Signpost::begin(Signpost::handlingRev, _serialNumber);
 
         // (Re)initialize state (I can be used multiple times by the Puller):
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
         _provisionallyInserted = false;
-        DebugAssert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
+        DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
+        _blob = _pendingBlobs.end();
 
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
@@ -66,7 +75,8 @@ namespace litecore { namespace repl {
                                _revMessage->boolProperty("noconflicts"_sl)
                                    || _options.noIncomingConflicts());
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
-        _remoteSequence = _revMessage->property(slice("sequence"));
+        slice sequenceStr = _revMessage->property(slice("sequence"));
+        _remoteSequence = RemoteSequence(sequenceStr);
 
         _peerError = (int)_revMessage->intProperty("error"_sl);
         if (_peerError) {
@@ -79,18 +89,13 @@ namespace litecore { namespace repl {
 
         // Validate the revID and sequence:
         logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')",
-                   SPLAT(_rev->docID), SPLAT(_rev->revID), SPLAT(_remoteSequence));
+                   SPLAT(_rev->docID), SPLAT(_rev->revID), SPLAT(sequenceStr));
         if (_rev->docID.size == 0 || _rev->revID.size == 0) {
-            warn("Got invalid revision");
-            _rev->error = c4error_make(WebSocketDomain, 400, "received invalid revision"_sl);
-            finish();
+            failWithError(WebSocketDomain, 400, "received invalid revision"_sl);
             return;
         }
         if (!_remoteSequence && nonPassive()) {
-            warn("Missing sequence in 'rev' message for active puller");
-            _rev->error = c4error_make(WebSocketDomain, 400,
-                                       "received revision with missing 'sequence'"_sl);
-            finish();
+            failWithError(WebSocketDomain, 400, "received 'rev' message with missing 'sequence'"_sl);
             return;
         }
 
@@ -98,54 +103,52 @@ namespace litecore { namespace repl {
             warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
 
         auto jsonBody = _revMessage->extractBody();
-
         if (_revMessage->noReply())
             _revMessage = nullptr;
 
+        // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
+        if (_options.pullValidator|| jsonBody.size > kMaxImmediateParseSize
+                                  || jsonMightContainBlobs(jsonBody))
+            enqueue(&IncomingRev::parseAndInsert, move(jsonBody));
+        else
+            parseAndInsert(move(jsonBody));
+    }
+
+
+    void IncomingRev::parseAndInsert(alloc_slice jsonBody) {
+        // First create a Fleece document:
+        Doc fleeceDoc;
+        C4Error err = {};
         if (_rev->deltaSrcRevID == nullslice) {
             // It's not a delta. Convert body to Fleece and process:
-            FLError err;
-            Doc fleeceDoc = _db->tempEncodeJSON(jsonBody, &err);
-            if(!fleeceDoc) {
-                warn("Incoming rev failed to encode (Fleece error %d)", err);
-                _rev->error = c4error_make(FleeceDomain, (int)err, "Incoming rev failed to encode"_sl);
-                finish();
-                return;
-            }
+            FLError encodeErr;
+            fleeceDoc = _db->tempEncodeJSON(jsonBody, &encodeErr);
+            if (!fleeceDoc)
+                err = c4error_make(FleeceDomain, (int)encodeErr, "Incoming rev failed to encode"_sl);
 
-            processBody(fleeceDoc, {FleeceDomain, err});
-        } else if (_options.pullValidator || jsonBody.containsBytes("\"digest\""_sl)) {
+        } else if (_options.pullValidator || jsonMightContainBlobs(jsonBody)) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, or it may contain new blobs to download.
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
                        SPLAT(_rev->docID), SPLAT(_rev->revID));
-            C4Error err;
-            Doc fleeceDoc = _db->applyDelta(_rev->docID, _rev->deltaSrcRevID, jsonBody, &err);
+            fleeceDoc = _db->applyDelta(_rev->docID, _rev->deltaSrcRevID, jsonBody, &err);
             if (!fleeceDoc && err.domain==LiteCoreDomain && err.code==kC4ErrorDeltaBaseUnknown) {
                 // Don't have the body of the source revision. This might be because I'm in
                 // no-conflict mode and the peer is trying to push me a now-obsolete revision.
                 if (_options.noIncomingConflicts())
                     err = {WebSocketDomain, 409};
-                else {
-                    alloc_slice errMsg = c4error_getMessage(err);
-                    warn("%.*s", SPLAT(errMsg));
-                }
             }
             _rev->deltaSrcRevID = nullslice;
-            processBody(fleeceDoc, err);
+
         } else {
-            // It's a delta, but it can be applied later while inserting:
+            // It's a delta, but it can be applied later while inserting.
             _rev->deltaSrc = jsonBody;
             insertRevision();
+            return;
         }
-    }
 
-
-    void IncomingRev::processBody(Doc fleeceDoc, C4Error error) {
-        Assert(!_rev->deltaSrcRevID);   // This method does NOT work on deltas
         if (!fleeceDoc) {
-            _rev->error = error;
-            finish();
+            failWithError(err);
             return;
         }
 
@@ -162,13 +165,10 @@ namespace litecore { namespace repl {
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
         if (c4doc_hasOldMetaProperties(root) && !_db->disableBlobSupport()) {
-            C4Error err;
             auto sk = fleeceDoc.sharedKeys();
-            alloc_slice body = c4doc_encodeStrippingOldMetaProperties(root, sk, &err);
+            alloc_slice body = c4doc_encodeStrippingOldMetaProperties(root, sk, nullptr);
             if (!body) {
-                warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
-                _rev->error = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
-                finish();
+                failWithError(WebSocketDomain, 500, "invalid legacy attachments"_sl);
                 return;
             }
             _rev->doc = Doc(body, kFLTrusted, sk);
@@ -185,63 +185,32 @@ namespace litecore { namespace repl {
                                      key,
                                      blob["length"_sl].asUnsigned(),
                                      c4doc_blobIsCompressible(blob)});
+            _blob = _pendingBlobs.begin();
         });
 
         // Call the custom validation function if any:
         if (_options.pullValidator) {
-            if (!_options.pullValidator(_rev->docID, _rev->revID, _rev->flags, root, _options.callbackContext)) {
-                logInfo("Rejected by pull validator function");
-                _rev->error = c4error_make(WebSocketDomain, 403, "rejected by validation function"_sl);
+            if (!_options.pullValidator(_rev->docID, _rev->revID, _rev->flags, root,
+                                        _options.callbackContext)) {
+                failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
                 _pendingBlobs.clear();
-                finish();
+                _blob = _pendingBlobs.end();
                 return;
             }
         }
 
-        // Request the first blob, or if there are none, finish:
-        if (!fetchNextBlob())
+        // Request the first blob, or if there are none, insert the revision into the DB:
+        if (!_pendingBlobs.empty()) {
+            fetchNextBlob();
+        } else {
             insertRevision();
-    }
-
-
-    bool IncomingRev::fetchNextBlob() {
-        auto blobStore = _db->blobStore();
-        while (!_pendingBlobs.empty()) {
-            PendingBlob firstPending = _pendingBlobs.front();
-            _pendingBlobs.erase(_pendingBlobs.begin());
-            if (c4blob_getSize(blobStore, firstPending.key) < 0) {
-                if (!_currentBlob)
-                    _currentBlob = new IncomingBlob(this, blobStore);
-                _currentBlob->start(firstPending);
-                return true;
-            }
-        }
-        _currentBlob = nullptr;
-        return false;
-    }
-
-
-    void IncomingRev::_childChangedStatus(Worker *task, Status status) {
-        addProgress(status.progressDelta);
-        if (status.level == kC4Idle) {
-            if (status.error.code && !_rev->error.code)
-                _rev->error = status.error;
-            if (!fetchNextBlob()) {
-                // All blobs completed, now finish:
-                if (_rev->error.code == 0) {
-                    logVerbose("All blobs received, now inserting revision");
-                    insertRevision();
-                } else {
-                    finish();
-                }
-            }
         }
     }
 
 
-    // Asks the DBAgent to insert the revision, then sends the reply and notifies the Puller.
+    // Asks the Inserter (via the Puller) to insert the revision into the database.
     void IncomingRev::insertRevision() {
-        Assert(_pendingBlobs.empty() && !_currentBlob);
+        Assert(_blob == _pendingBlobs.end());
         Assert(_rev->error.code == 0);
         Assert(_rev->deltaSrc || _rev->doc);
         increment(_pendingCallbacks);
@@ -250,6 +219,7 @@ namespace litecore { namespace repl {
     }
 
 
+    // Called by the Inserter after inserting the revision, but before committing the transaction.
     void IncomingRev::revisionProvisionallyInserted() {
         // CAUTION: For performance reasons this method is called directly, without going through the
         // Actor event queue, so it runs on the Inserter's thread, NOT the IncomingRev's! Thus, it
@@ -259,7 +229,9 @@ namespace litecore { namespace repl {
     }
 
 
-    void IncomingRev::_revisionInserted() {
+    // Called by the Inserter after the revision is safely committed to disk.
+    void IncomingRev::revisionInserted() {
+        Retained<IncomingRev> retainSelf = this;
         decrement(_pendingCallbacks);
         if(_rev->error.domain == LiteCoreDomain &&
            (_rev->error.code == kC4ErrorDeltaBaseUnknown ||
@@ -272,6 +244,19 @@ namespace litecore { namespace repl {
     }
 
 
+    void IncomingRev::failWithError(C4ErrorDomain domain, int code, slice message) {
+        failWithError(c4error_make(domain, code, message));
+    }
+
+    void IncomingRev::failWithError(C4Error err) {
+        warn("failed with error: %s", c4error_descriptionStr(err));
+        Assert(err.code != 0);
+        _rev->error = err;
+        finish();
+    }
+
+
+    // Finish up, on success or failure.
     void IncomingRev::finish() {
         if (_revMessage) {
             MessageBuilder response(_revMessage);
@@ -286,17 +271,26 @@ namespace litecore { namespace repl {
             _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
 
         // Free up memory now that I'm done:
-        Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
-        _currentBlob = nullptr;
+        Assert(_pendingCallbacks == 0);
+        closeBlobWriter();
         _pendingBlobs.clear();
+        _blob = _pendingBlobs.end();
         _rev->trim();
 
         _puller->revWasHandled(this);
     }
 
 
+    void IncomingRev::reset() {
+        _rev = nullptr;
+        _parent = nullptr;
+        _remoteSequence = {};
+    }
+
+
     Worker::ActivityLevel IncomingRev::computeActivityLevel() const {
-        if (Worker::computeActivityLevel() == kC4Busy || _pendingCallbacks > 0 || _currentBlob) {
+        if (Worker::computeActivityLevel() == kC4Busy || _pendingCallbacks > 0
+                                                      || (_blob != _pendingBlobs.end())) {
             return kC4Busy;
         } else {
             return kC4Stopped;

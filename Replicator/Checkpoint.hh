@@ -6,6 +6,7 @@
 
 #pragma once
 #include "SequenceSet.hh"
+#include "RemoteSequence.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
 #include <algorithm>
@@ -61,7 +62,7 @@ namespace litecore { namespace repl {
         bool isSequenceCompleted(C4SequenceNumber s) const  {return _completed.contains(s);}
 
         /** Removes a sequence from the set of completed sequences. */
-        void addPendingSequence(C4SequenceNumber s)         {_completed.remove(s);}
+        void addPendingSequence(C4SequenceNumber s);
 
         /** Adds a sequence to the set of completed sequences. */
         void completedSequence(C4SequenceNumber s)          {_completed.add(s);}
@@ -74,6 +75,7 @@ namespace litecore { namespace repl {
                                  C4SequenceNumber firstSequenceChecked,
                                  C4SequenceNumber lastSequenceChecked)
         {
+            assert(lastSequenceChecked >= _lastChecked);
             _lastChecked = lastSequenceChecked;
             _completed.add(firstSequenceChecked, lastSequenceChecked + 1);
             for (auto rev : revs)
@@ -87,9 +89,9 @@ namespace litecore { namespace repl {
 
         /** The last fully-complete _remote_ sequence, such that it and all earlier sequences are
             complete. */
-        fleece::alloc_slice remoteMinSequence() const       {return _remote;}
+        RemoteSequence remoteMinSequence() const       {return _remote;}
 
-        bool setRemoteMinSequence(fleece::slice s);
+        bool setRemoteMinSequence(const RemoteSequence&);
 
         static bool gWriteTimestamps;   // for testing; set to false to disable timestamps in JSON
 
@@ -99,7 +101,7 @@ namespace litecore { namespace repl {
 
         SequenceSet         _completed;         // Set of completed local sequences
         C4SequenceNumber    _lastChecked;       // Last local sequence checked in the db
-        fleece::alloc_slice _remote;            // Last completed remote sequence
+        RemoteSequence      _remote;            // Last completed remote sequence
     };
 
 

@@ -70,7 +70,7 @@ namespace litecore { namespace repl {
 
         if (_remote) {
             enc.writeKey("remote"_sl);
-            enc.writeRaw(_remote);   // remote is already JSON
+            enc.writeRaw(_remote.toJSON());
         }
         
         enc.endDict();
@@ -80,9 +80,14 @@ namespace litecore { namespace repl {
 
     void Checkpoint::readJSON(slice json) {
         resetLocal();
+        _remote = {};
         if (json) {
             Doc root = Doc::fromJSON(json, nullptr);
-            _remote = root["remote"_sl].toJSON();
+            if (!root) {
+                LogToAt(SyncLog, Error, "Unparseable checkpoint: %.*s", SPLAT(json));
+                return;
+            }
+            _remote = RemoteSequence(root["remote"_sl]);
 
 #ifdef SPARSE_CHECKPOINTS
             // New properties for sparse checkpoint:
@@ -100,10 +105,7 @@ namespace litecore { namespace repl {
                 auto minSequence = (C4SequenceNumber) root["local"_sl].asInt();
                 _completed.add(0, minSequence + 1);
             }
-        } else {
-            _remote = nullslice;
         }
-
     }
 
 
@@ -117,9 +119,9 @@ namespace litecore { namespace repl {
             match = false;
         }
         if (_remote && _remote != remoteSequences._remote) {
-            LogTo(SyncLog, "Remote sequence mismatch: I had '%.*s', remote had '%.*s'",
-                  SPLAT(_remote), SPLAT(remoteSequences._remote));
-            _remote = nullslice;
+            LogTo(SyncLog, "Remote sequence mismatch: I had '%s', remote had '%s'",
+                  _remote.toJSONString().c_str(), remoteSequences._remote.toJSONString().c_str());
+            _remote = {};
             match = false;
         }
         return match;
@@ -130,6 +132,13 @@ namespace litecore { namespace repl {
         assert(!_completed.empty());
         return _completed.begin()->second - 1;
     }
+
+
+    void Checkpoint::addPendingSequence(C4SequenceNumber s) {
+        _lastChecked = max(_lastChecked, s);
+        _completed.remove(s);
+    }
+
 
 
     size_t Checkpoint::pendingSequenceCount() const {
@@ -146,7 +155,7 @@ namespace litecore { namespace repl {
     }
 
 
-    bool Checkpoint::setRemoteMinSequence(fleece::slice s) {
+    bool Checkpoint::setRemoteMinSequence(const RemoteSequence &s) {
         if (s == _remote)
             return false;
         _remote = s;

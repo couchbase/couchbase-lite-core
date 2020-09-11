@@ -18,24 +18,26 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Pusher.hh"
-#include "c4BlobStore.h"
+#include "DBAccess.hh"
+#include "ReplicatorTuning.hh"
 #include "Error.hh"
+#include "Increment.hh"
 #include "StringUtil.hh"
-#include "SecureDigest.hh"
 #include "BLIP.hh"
 #include "HTTPTypes.hh"
 #include <algorithm>
 
 using namespace std;
 using namespace fleece;
+using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
     Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer)
     :Worker(replicator, "Push")
     ,_continuous(_options.push == kC4Continuous)
-    ,_skipDeleted(_options.skipDeleted())
     ,_checkpointer(checkpointer)
+    ,_changesFeed(*this, _options, *_db, &checkpointer)
     {
         if (_options.push <= kC4Passive) {
             // Passive replicator always sends "changes"
@@ -51,26 +53,9 @@ namespace litecore { namespace repl {
             _proposeChanges = true;
             _proposeChangesKnown = true;
         }
-        filterByDocIDs(_options.docIDs());
         registerHandler("subChanges",      &Pusher::handleSubChanges);
         registerHandler("getAttachment",   &Pusher::handleGetAttachment);
         registerHandler("proveAttachment", &Pusher::handleProveAttachment);
-    }
-
-
-    // Filters the push to the docIDs in the given Fleece array.
-    // If a filter already exists, the two will be intersected.
-    void Pusher::filterByDocIDs(Array docIDs) {
-        if (!docIDs)
-            return;
-        DocIDSet combined(new unordered_set<string>);
-        combined->reserve(docIDs.count());
-        for (Array::iterator i(docIDs); i; ++i) {
-            string docID = i.value().asstring();
-            if (!docID.empty() && (!_docIDs || _docIDs->find(docID) != _docIDs->end()))
-                combined->insert(move(docID));
-        }
-        _docIDs = move(combined);
     }
 
 
@@ -93,7 +78,8 @@ namespace litecore { namespace repl {
         }
         C4SequenceNumber since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
-        _skipDeleted = req->boolProperty("activeOnly"_sl);
+        _changesFeed.setContinuous(_continuous);
+        _changesFeed.setSkipDeletedDocs(req->boolProperty("activeOnly"_sl));
         logInfo("Peer is pulling %schanges from seq #%" PRIu64,
             (_continuous ? "continuous " : ""), since);
 
@@ -105,68 +91,78 @@ namespace litecore { namespace repl {
             return;
         }
 
-        filterByDocIDs(req->JSONBody().asDict()["docIDs"].asArray());
-        if (_docIDs)
-            logInfo("Peer requested filtering to %zu docIDs", _docIDs->size());
+        _changesFeed.filterByDocIDs(req->JSONBody().asDict()["docIDs"].asArray());
 
         req->respond();
         startSending(since);
     }
 
 
+#pragma mark - GETTING CHANGES FROM THE DB:
+
+
     // Starts active or passive push from the given sequence number.
     void Pusher::startSending(C4SequenceNumber sinceSequence) {
         _lastSequenceRead = sinceSequence;
-        maybeGetMoreChanges();
+        _changesFeed.setLastSequence(_lastSequenceRead);
+        _changesFeed.setFindForeignAncestors(getForeignAncestors());
+        _maybeGetMoreChanges();
     }
 
 
     // Request another batch of changes from the db, if there aren't too many in progress
-    void Pusher::maybeGetMoreChanges() {
-        if (!_gettingChanges && (!_caughtUp || _continuous)
-                         && _changeListsInFlight < (_caughtUp ? 1 : tuning::kMaxChangeListsInFlight)
-                         && _revsToSend.size() < tuning::kMaxRevsQueued) {
-            _gettingChanges = true;
-            logVerbose("Asking DB for %u changes since sequence #%" PRIu64 " ...",
-                       _changesBatchSize, _lastSequenceRead);
-            // Call getMoreChanges asynchronously. Response will be to call gotChanges
-            enqueue(&Pusher::getMoreChanges);
+    void Pusher::_maybeGetMoreChanges() {
+        if ((!_caughtUp || !_continuousCaughtUp)
+                     && _changeListsInFlight < (_caughtUp ? 1 : tuning::kMaxChangeListsInFlight)
+                     && _revQueue.size() < tuning::kMaxRevsQueued
+                     && connected()) {
+            _continuousCaughtUp = true;
+            gotChanges(_changesFeed.getMoreChanges(tuning::kDefaultChangeBatchSize));
         }
     }
 
 
-    // Received a list of changes from the database [initiated in maybeGetMoreChanges]
-    void Pusher::gotChanges(std::shared_ptr<RevToSendList> changes,
-                            C4SequenceNumber lastSequence,
-                            C4Error err)
+    void Pusher::gotChanges(ChangesFeed::Changes changes)
     {
-        _gettingChanges = false;
+        if (changes.err.code)
+            return gotError(changes.err);
 
-        if (!connected())
-            return;
-        if (err.code)
-            return gotError(err);
-        
-        if (!passive() && lastSequence > _lastSequenceRead)
-            _checkpointer.addPendingSequences(*changes.get(),
-                                              _lastSequenceRead + 1, lastSequence);
-        _lastSequenceRead = lastSequence;
+        // Add the revs in `changes` to `_pushingDocs`. If there's a collision that means we're
+        // already sending an earlier revision of that document; in that case, put the newer
+        // rev in the earlier one's `nextRev` field so it'll be processed later.
+        for (auto iChange = changes.revs.begin(); iChange != changes.revs.end();) {
+            auto rev = *iChange;
+            auto [iDoc, isNew] = _pushingDocs.insert({rev->docID, rev});
+            if (isNew) {
+                ++iChange;
+            } else {
+                // This doc already has a revision being sent; wait till that one is done
+                logVerbose("Holding off on change '%.*s' %.*s till earlier rev %.*s is done",
+                           SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(iDoc->second->revID));
+                iDoc->second->nextRev = rev;
+                if (!_passive)
+                    _checkpointer.addPendingSequence(rev->sequence);
+                iChange = changes.revs.erase(iChange);  // remove from `changes`
+            }
+        }
 
-        if (changes->empty()) {
-            logInfo("Found 0 changes up to #%" PRIu64, lastSequence);
+        _lastSequenceRead = max(_lastSequenceRead, changes.lastSequence);
+
+        if (changes.revs.empty()) {
+            logInfo("Found 0 changes up to #%" PRIu64, changes.lastSequence);
         } else {
             uint64_t bodySize = 0;
-            for (auto &change : *changes)
+            for (auto &change : changes.revs)
                 bodySize += change->bodySize;
             addProgress({0, bodySize});
 
             logInfo("Read %zu local changes up to #%" PRIu64 ": sending '%-s' with sequences #%" PRIu64 " - #%" PRIu64,
-                    changes->size(), lastSequence,
+                    changes.revs.size(), changes.lastSequence,
                     (_proposeChanges ? "proposeChanges" : "changes"),
-                    changes->at(0)->sequence, _lastSequenceRead);
+                    changes.revs.front()->sequence, changes.revs.back()->sequence);
 #if DEBUG
             if (willLog(LogLevel::Debug)) {
-                for (auto &change : *changes)
+                for (auto &change : changes.revs)
                     logDebug("    - %.4llu: '%.*s' #%.*s (remote #%.*s)",
                              change->sequence, SPLAT(change->docID), SPLAT(change->revID),
                              SPLAT(change->remoteAncestorRevID));
@@ -175,53 +171,53 @@ namespace litecore { namespace repl {
         }
 
         // Send the "changes" request:
-        auto changeCount = changes->size();
-        sendChanges(move(changes));
+        auto changeCount = changes.revs.size();
+        sendChanges(changes.revs);
 
-        if (changeCount < _changesBatchSize) {
+        if (changeCount < tuning::kDefaultChangeBatchSize) {
             if (!_caughtUp) {
-                logInfo("Caught up, at lastSequence #%" PRIu64, _lastSequenceRead);
+                logInfo("Caught up, at lastSequence #%" PRIu64, changes.lastSequence);
                 _caughtUp = true;
+                if (_continuous)
+                    _continuousCaughtUp = false;
                 if (changeCount > 0 && passive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
                     // one if we didn't already:
-                    sendChanges(make_unique<RevToSendList>());
+                    RevToSendList empty;
+                    sendChanges(empty);
                 }
             }
+        } else if (_continuous) {
+            // Got a full batch of changes, so assume there are more
+            _continuousCaughtUp = false;
         }
 
         maybeGetMoreChanges();
     }
 
 
-    // Called when DBWorker was holding up a revision until an ancestor revision finished.
-    void Pusher::gotOutOfOrderChange(RevToSend* change) {
+    // Async call from the ChangesFeed when it observes new database changes in continuous mode
+    void Pusher::_dbHasNewChanges() {
         if (!connected())
             return;
-        logInfo("Read delayed local change '%.*s' #%.*s (remote #%.*s): sending '%-s' with sequence #%" PRIu64,
-                SPLAT(change->docID), SPLAT(change->revID),
-                SPLAT(change->remoteAncestorRevID),
-                (_proposeChanges ? "proposeChanges" : "changes"),
-                change->sequence);
-        _pushingDocs.insert({change->docID, nullptr});
-        _lastSequenceRead = max(_lastSequenceRead, change->sequence);
-        if (!passive())
-            _checkpointer.addPendingSequence(change->sequence);
-        addProgress({0, change->bodySize});
-        sendChanges(make_shared<RevToSendList>(1, change));
+        _continuousCaughtUp = false;
+        _maybeGetMoreChanges();
     }
 
 
-    // Subroutine of _gotChanges that actually sends a "changes" or "proposeChanges" message:
-    void Pusher::sendChanges(std::shared_ptr<RevToSendList> changes) {
+#pragma mark - SENDING A "CHANGES" MESSAGE & HANDLING RESPONSE:
+
+
+    // Sends a "changes" or "proposeChanges" message.
+    void Pusher::sendChanges(RevToSendList &changes) {
         MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
         req.urgent = tuning::kChangeMessagesAreUrgent;
-        req.compressed = !changes->empty();
+        req.compressed = !changes.empty();
 
         // Generate the JSON array of changes:
         auto &enc = req.jsonBody();
         enc.beginArray();
-        for (RevToSend *change : *changes) {
+        for (RevToSend *change : changes) {
             // Write the info array for this change:
             enc.beginArray();
             if (_proposeChanges) {
@@ -246,7 +242,7 @@ namespace litecore { namespace repl {
         }
         enc.endArray();
 
-        if (changes->empty()) {
+        if (changes.empty()) {
             // Empty == just announcing 'caught up', so no need to get a reply
             req.noreply = true;
             sendRequest(req);
@@ -256,114 +252,139 @@ namespace litecore { namespace repl {
         bool proposedChanges = _proposeChanges;
 
         increment(_changeListsInFlight);
-        sendRequest(req, [=](MessageProgress progress) {
-            // Progress callback follows:
-            if (progress.state != MessageProgress::kComplete)
-                return;
-
-            // Got reply to the "changes" or "proposeChanges":
-            if (!changes->empty()) {
-                logInfo("Got response for %zu local changes (sequences from %" PRIu64 ")",
-                    changes->size(), changes->front()->sequence);
-            }
-            decrement(_changeListsInFlight);
-            _proposeChangesKnown = true;
-            MessageIn *reply = progress.reply;
-            if (!proposedChanges && reply->isError()) {
-                auto err = progress.reply->getError();
-                if (err.code == 409 && (err.domain == "BLIP"_sl || err.domain == "HTTP"_sl)) {
-                    // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
-                    logInfo("Server requires 'proposeChanges'; retrying...");
-                    _proposeChanges = true;
-                    sendChanges(move(changes));
-                    return;
-                }
-            }
-
-            // Request another batch of changes from the db:
-            maybeGetMoreChanges();
-
-            if (reply->isError()) {
-                for(RevToSend* change : *changes) {
-                    doneWithRev(change, false, false);
-                }
-                
-                return gotError(reply);
-            }
-
-            int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl, kDefaultMaxHistory));
-            bool legacyAttachments = !reply->boolProperty("blobs"_sl);
-            if (!_deltasOK && reply->boolProperty("deltas"_sl)
-                           && !_options.properties[kC4ReplicatorOptionDisableDeltas].asBool())
-                _deltasOK = true;
-
-            // The response body consists of an array that parallels the `changes` array I sent:
-            auto requests = reply->JSONBody().asArray();
-            unsigned index = 0;
-            for (RevToSend *change : *changes) {
-                bool queued = false, completed = true, synced = false;
-                change->deltaOK = _deltasOK;
-                if (proposedChanges) {
-                    // Entry in "proposeChanges" response is a status code, with 0 for OK:
-                    int status = (int)requests[index].asInt();
-                    if (status == 0) {
-                        change->maxHistory = maxHistory;
-                        change->legacyAttachments = legacyAttachments;
-                        change->noConflicts = true;
-                        _revsToSend.push_back(change);
-                        queued = true;
-                    } else if (status == 304) {
-                        // 304 means server has my rev already
-                        synced = true;
-                    } else if (status == 409) {
-                        // 409 means a push conflict
-                        logInfo("Proposed rev '%.*s' #%.*s (ancestor %.*s) conflicts with newer server revision",
-                                 SPLAT(change->docID), SPLAT(change->revID),
-                                 SPLAT(change->remoteAncestorRevID));
-                        
-                        if (_options.pull <= kC4Passive) {
-                            C4Error error = c4error_make(WebSocketDomain, 409,
-                                                         "conflicts with newer server revision"_sl);
-                            finishedDocumentWithError(change, error, false);
-                        } else if (shouldRetryConflictWithNewerAncestor(change)) {
-                            sendChanges(make_shared<RevToSendList>(1, change));
-                            queued = true;
-                        } else {
-                            completed = false;
-                        }
-                    } else {
-                        // Other error:
-                        logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
-                                 SPLAT(change->docID), SPLAT(change->revID),
-                                 SPLAT(change->remoteAncestorRevID), status);
-                        auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
-                        finishedDocumentWithError(change, err, !completed);
-                    }
-                } else {
-                    // Entry in "changes" response is an array of known ancestors, or null to skip:
-                    Array ancestorArray = requests[index].asArray();
-                    if (ancestorArray) {
-                        change->maxHistory = maxHistory;
-                        change->legacyAttachments = legacyAttachments;
-                        for (Value a : ancestorArray)
-                            change->addRemoteAncestor(a.asString());
-                        _revsToSend.push_back(change);
-                        queued = true;
-                    }
-                }
-
-                if (queued) {
-                    logVerbose("Queueing rev '%.*s' #%.*s (seq #%" PRIu64 ") [%zu queued]",
-                               SPLAT(change->docID), SPLAT(change->revID), change->sequence,
-                               _revsToSend.size());
-                } else {
-                    doneWithRev(change, completed, synced);  // not queued, so we're done with it
-                }
-                ++index;
-            }
-            maybeSendMoreRevs();
+        sendRequest(req, [this,changes=move(changes),proposedChanges](MessageProgress progress) mutable {
+            if (progress.state == MessageProgress::kComplete)
+                handleChangesResponse(changes, progress.reply, proposedChanges);
         });
     }
+
+
+    // Handles the peer's response to a "changes" or "proposeChanges" message:
+    void Pusher::handleChangesResponse(RevToSendList &changes,
+                                        MessageIn *reply,
+                                        bool proposedChanges)
+    {
+        // Got reply to the "changes" or "proposeChanges":
+        if (!changes.empty()) {
+            logInfo("Got response for %zu local changes (sequences from %" PRIu64 ")",
+                changes.size(), changes.front()->sequence);
+        }
+        decrement(_changeListsInFlight);
+        _proposeChangesKnown = true;
+        _changesFeed.setFindForeignAncestors(getForeignAncestors());
+        if (!proposedChanges && reply->isError()) {
+            auto err = reply->getError();
+            if (err.code == 409 && (err.domain == "BLIP"_sl || err.domain == "HTTP"_sl)) {
+                // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
+                logInfo("Server requires 'proposeChanges'; retrying...");
+                _proposeChanges = true;
+                _changesFeed.setFindForeignAncestors(getForeignAncestors());
+                sendChanges(changes);
+                return;
+            }
+        }
+
+        // Request another batch of changes from the db:
+        maybeGetMoreChanges();
+
+        if (reply->isError()) {
+            for(RevToSend* change : changes) {
+                doneWithRev(change, false, false);
+            }
+            gotError(reply);
+            return;
+        }
+
+        // OK, now look at the successful response:
+        int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl,
+                                                         tuning::kDefaultMaxHistory));
+        bool legacyAttachments = !reply->boolProperty("blobs"_sl);
+        if (!_deltasOK && reply->boolProperty("deltas"_sl)
+                       && !_options.properties[kC4ReplicatorOptionDisableDeltas].asBool())
+            _deltasOK = true;
+
+        // The response body consists of an array that parallels the `changes` array I sent:
+        Array::iterator iResponse(reply->JSONBody().asArray());
+        for (RevToSend *change : changes) {
+            change->maxHistory = maxHistory;
+            change->legacyAttachments = legacyAttachments;
+            change->deltaOK = _deltasOK;
+            bool queued = proposedChanges ? handleProposedChangeResponse(change, *iResponse)
+                                          : handleChangeResponse(change, *iResponse);
+            if (queued) {
+                logVerbose("Queueing rev '%.*s' #%.*s (seq #%" PRIu64 ") [%zu queued]",
+                           SPLAT(change->docID), SPLAT(change->revID), change->sequence,
+                           _revQueue.size());
+            }
+            if (iResponse)
+                ++iResponse;
+        }
+        maybeSendMoreRevs();
+    }
+
+
+    // Handles peer's response to a single rev in a "changes" message.
+    bool Pusher::handleChangeResponse(RevToSend *change, Value response)
+    {
+        // Entry in "changes" response is an array of known ancestors, or null to skip:
+        if (Array ancestorArray = response.asArray(); ancestorArray) {
+            for (Value a : ancestorArray)
+                change->addRemoteAncestor(a.asString());
+            _revQueue.push_back(change);
+            return true;
+        } else {
+            doneWithRev(change, true, false);  // not queued, so we're done with it
+            return false;
+        }
+    }
+
+
+    // Handles peer's response to a single rev in a "proposeChanges" message.
+    bool Pusher::handleProposedChangeResponse(RevToSend *change, Value response)
+    {
+        bool completed = true, synced = false;
+        // Entry in "proposeChanges" response is a status code, with 0 for OK:
+        int status = (int)response.asInt();
+        if (status == 0) {
+            change->noConflicts = true;
+            _revQueue.push_back(change);
+            return true;
+        } else if (status == 304) {
+            // 304 means server has my rev already
+            synced = true;
+        } else if (status == 409) {
+            // 409 means a push conflict
+            logInfo("Proposed rev '%.*s' #%.*s (ancestor %.*s) conflicts with newer server revision",
+                    SPLAT(change->docID), SPLAT(change->revID),
+                    SPLAT(change->remoteAncestorRevID));
+            if (_options.pull <= kC4Passive) {
+                C4Error error = c4error_make(WebSocketDomain, 409,
+                                             "conflicts with newer server revision"_sl);
+                finishedDocumentWithError(change, error, false);
+            } else if (shouldRetryConflictWithNewerAncestor(change)) {
+                // I have a newer revision to send in its place:
+                RevToSendList changes = {change};
+                sendChanges(changes);
+                return true;
+            } else {
+                completed = false;
+            }
+        } else {
+            // Other error:
+            logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
+                     SPLAT(change->docID), SPLAT(change->revID),
+                     SPLAT(change->remoteAncestorRevID), status);
+            auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
+            finishedDocumentWithError(change, err, !completed);
+        }
+
+        doneWithRev(change, completed, synced);  // not queued, so we're done with it
+        return false;
+    }
+
+
+#pragma mark - CONFLICTS & OUT-OF-ORDER CHANGES:
+
 
     // Called after a proposed revision gets a 409 Conflict response from the server.
     // Check the document's current remote rev, and retry if it's different now.
@@ -435,290 +456,25 @@ namespace litecore { namespace repl {
     }
 
 
-#pragma mark - SENDING REVISIONS:
-
-
-    void Pusher::maybeSendMoreRevs() {
-        while (_revisionsInFlight < tuning::kMaxRevsInFlight
-                   && _revisionBytesAwaitingReply <= tuning::kMaxRevBytesAwaitingReply
-                   && !_revsToSend.empty()) {
-            Retained<RevToSend> first = move(_revsToSend.front());
-            _revsToSend.pop_front();
-            sendRevision(first);
-            if (_revsToSend.size() == tuning::kMaxRevsQueued - 1)
-                maybeGetMoreChanges();          // I may now be eligible to send more changes
-        }
-//        if (!_revsToSend.empty())
-//            logVerbose("Throttling sending revs; _revisionsInFlight=%u/%u, _revisionBytesAwaitingReply=%llu/%u",
-//                       _revisionsInFlight, tuning::kMaxRevsInFlight,
-//                       _revisionBytesAwaitingReply, tuning::kMaxRevBytesAwaitingReply);
-    }
-
-    
-    // Send a "rev" message containing a revision body.
-    void Pusher::sendRevision(Retained<RevToSend> rev) {
-        increment(_revisionsInFlight);
-        logVerbose("Sending rev %.*s %.*s (seq #%" PRIu64 ") [%d/%d]",
-                   SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
-                   _revisionsInFlight, tuning::kMaxRevsInFlight);
-        sendRevision(rev, [=](MessageProgress progress) {
-            // message progress callback:
-            if (progress.state == MessageProgress::kDisconnected) {
-                doneWithRev(rev, false, false);
-                return;
-            }
-            if (progress.state == MessageProgress::kAwaitingReply) {
-                logDebug("Transmitted 'rev' %.*s #%.*s (seq #%llu)",
-                         SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
-                decrement(_revisionsInFlight);
-                increment(_revisionBytesAwaitingReply, progress.bytesSent);
-                maybeSendMoreRevs();
-            }
-            if (progress.state == MessageProgress::kComplete) {
-                decrement(_revisionBytesAwaitingReply, progress.bytesSent);
-                bool synced = !progress.reply->isError();
-                bool completed = true;
-                enum {kNoRetry, kRetryLater, kRetryNow} retry = kNoRetry;
-                if (synced) {
-                    logVerbose("Completed rev %.*s #%.*s (seq #%" PRIu64 ")",
-                               SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
-                    finishedDocument(rev);
-                } else {
-                    // Handle an error received from the peer:
-                    auto err = progress.reply->getError();
-                    auto c4err = blipToC4Error(err);
-
-                    if (c4error_mayBeTransient(c4err)) {
-                        completed = false;
-                    } else if (c4err == C4Error{WebSocketDomain, 403}) {
-                        // CBL-123: Retry HTTP forbidden once
-                        if (rev->retryCount++ == 0) {
-                            completed = false;
-                            if (!passive())
-                                retry = kRetryLater;
-                        }
-                    } else if (c4err == C4Error{LiteCoreDomain, kC4ErrorDeltaBaseUnknown}
-                            || c4err == C4Error{LiteCoreDomain, kC4ErrorCorruptDelta}
-                            || c4err == C4Error{WebSocketDomain, int(net::HTTPStatus::UnprocessableEntity)}) {
-                        // CBL-986: On delta error, retry without using delta
-                        if (rev->deltaOK) {
-                            rev->deltaOK = false;
-                            completed = false;
-                            retry = kRetryNow;
-                        }
-                    }
-                    
-                    logError("Got %-serror response to rev '%.*s' #%.*s (seq #%" PRIu64 "): %.*s %d '%.*s'",
-                             (completed ? "" : "transient "),
-                             SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
-                             SPLAT(err.domain), err.code, SPLAT(err.message));
-                    finishedDocumentWithError(rev, c4err, !completed);
-                    // If this is a permanent failure, like a validation error or conflict,
-                    // then I've completed my duty to push it.
-                }
-                doneWithRev(rev, completed, synced);
-                switch (retry) {
-                    case kRetryNow:   retryRevs({rev}, true); break;
-                    case kRetryLater: _revsToRetry.push_back(rev); break;
-                    case kNoRetry:    break;
-                }
-                maybeSendMoreRevs();
-            }
-        });
-    }
-
-
-    void Pusher::couldntSendRevision(RevToSend* rev) {
-        decrement(_revisionsInFlight);
-        doneWithRev(rev, false, false);
-        enqueue(&Pusher::maybeSendMoreRevs);  // async call to avoid recursion
-    }
-
-
-#pragma mark - SENDING ATTACHMENTS:
-
-
-    C4ReadStream* Pusher::readBlobFromRequest(MessageIn *req,
-                                              slice &digestStr,
-                                              Replicator::BlobProgress &progress,
-                                              C4Error *outError)
-    {
-        auto blobStore = _db->blobStore();
-        digestStr = req->property("digest"_sl);
-        progress = {Dir::kPushing};
-        if (!c4blob_keyFromString(digestStr, &progress.key)) {
-            c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Missing or invalid 'digest'"_sl, outError);
-            return nullptr;
-        }
-        int64_t size = c4blob_getSize(blobStore, progress.key);
-        if (size < 0) {
-            c4error_return(LiteCoreDomain, kC4ErrorNotFound, "No such blob"_sl, outError);
-            return nullptr;
-        }
-        progress.bytesTotal = size;
-        return c4blob_openReadStream(blobStore, progress.key, outError);
-    }
-
-
-    // Incoming request to send an attachment/blob
-    void Pusher::handleGetAttachment(Retained<MessageIn> req) {
-        slice digest;
-        Replicator::BlobProgress progress;
-        C4Error err;
-        C4ReadStream* blob = readBlobFromRequest(req, digest, progress, &err);
-        if (blob) {
-            increment(_blobsInFlight);
-            MessageBuilder reply(req);
-            reply.compressed = req->boolProperty("compress"_sl);
-            logVerbose("Sending blob %.*s (length=%" PRId64 ", compress=%d)",
-                       SPLAT(digest), c4stream_getLength(blob, nullptr), reply.compressed);
-            Retained<Replicator> repl = replicator();
-            auto lastNotifyTime = actor::Timer::clock::now();
-            if (progressNotificationLevel() >= 2)
-                repl->onBlobProgress(progress);
-            reply.dataSource = [=](void *buf, size_t capacity) mutable {
-                // Callback to read bytes from the blob into the BLIP message:
-                // For performance reasons this is NOT run on my actor thread, so it can't access
-                // my state directly; instead it calls _attachmentSent() at the end.
-                C4Error err;
-                bool done = false;
-                ssize_t bytesRead = c4stream_read(blob, buf, capacity, &err);
-                progress.bytesCompleted += bytesRead;
-                if (bytesRead < capacity) {
-                    c4stream_close(blob);
-                    this->enqueue(&Pusher::_attachmentSent);
-                    done = true;
-                }
-                if (err.code) {
-                    this->warn("Error reading from blob: %d/%d", err.domain, err.code);
-                    progress.error = {err.domain, err.code};
-                    bytesRead = -1;
-                    done = true;
-                }
-                if (progressNotificationLevel() >= 2) {
-                    auto now = actor::Timer::clock::now();
-                    if (done || now - lastNotifyTime > std::chrono::milliseconds(250)) {
-                        lastNotifyTime = now;
-                        repl->onBlobProgress(progress);
-                    }
-                }
-                return (int)bytesRead;
-            };
-            req->respond(reply);
+    // Called when DBWorker was holding up a revision until an ancestor revision finished.
+    void Pusher::gotOutOfOrderChange(RevToSend* change) {
+        if (!connected())
             return;
-        }
-        req->respondWithError(c4ToBLIPError(err));
-    }
-
-
-    void Pusher::_attachmentSent() {
-        decrement(_blobsInFlight);
-    }
-
-
-    // Incoming request to prove I have an attachment that I'm pushing, without sending it:
-    void Pusher::handleProveAttachment(Retained<MessageIn> request) {
-        slice digest;
-        Replicator::BlobProgress progress;
-        C4Error err;
-        c4::ref<C4ReadStream> blob = readBlobFromRequest(request, digest, progress, &err);
-        if (blob) {
-            logVerbose("Sending proof of attachment %.*s", SPLAT(digest));
-            SHA1Builder sha;
-
-            // First digest the length-prefixed nonce:
-            slice nonce = request->body();
-            if (nonce.size == 0 || nonce.size > 255) {
-                request->respondWithError({"BLIP"_sl, 400, "Missing nonce"_sl});
-                return;
-            }
-            sha << (nonce.size & 0xFF) << nonce;
-
-            // Now digest the attachment itself:
-            static constexpr size_t kBufSize = 8192;
-            auto buf = make_unique<uint8_t[]>(kBufSize);
-            size_t bytesRead;
-            while ((bytesRead = c4stream_read(blob, buf.get(), kBufSize, &err)) > 0)
-                sha << slice(buf.get(), bytesRead);
-            buf.reset();
-            blob = nullptr;
-            
-            if (err.code == 0) {
-                // Respond with the base64-encoded digest:
-                C4BlobKey proofDigest;
-                sha.finish(proofDigest.bytes, sizeof(proofDigest.bytes));
-                alloc_slice proofStr = c4blob_keyToString(proofDigest);
-
-                MessageBuilder reply(request);
-                reply.write(proofStr);
-                request->respond(reply);
-                return;
-            }
-        }
-
-        // If we got here, we failed:
-        request->respondWithError(c4ToBLIPError(err));
+        logInfo("Read delayed local change '%.*s' #%.*s (remote #%.*s): sending '%-s' with sequence #%" PRIu64,
+                SPLAT(change->docID), SPLAT(change->revID),
+                SPLAT(change->remoteAncestorRevID),
+                (_proposeChanges ? "proposeChanges" : "changes"),
+                change->sequence);
+        _pushingDocs.insert({change->docID, change});
+        if (!passive())
+            _checkpointer.addPendingSequence(change->sequence);
+        addProgress({0, change->bodySize});
+        RevToSendList changes = {change};
+        sendChanges(changes);
     }
 
 
 #pragma mark - PROGRESS:
-
-
-    void Pusher::doneWithRev(RevToSend *rev, bool completed, bool synced) {
-        if (!passive()) {
-            addProgress({rev->bodySize, 0});
-            if (completed) {
-                _checkpointer.completedSequence(rev->sequence);
-
-                auto lastSeq = _checkpointer.localMinSequence();
-                if (lastSeq / 1000 > _lastSequenceLogged / 1000 || willLog(LogLevel::Verbose))
-                    logInfo("Checkpoint now %s", _checkpointer.to_string().c_str());
-                _lastSequenceLogged = lastSeq;
-            }
-        }
-
-        if (synced && _options.push > kC4Passive)
-            _db->markRevSynced(const_cast<RevToSend*>(rev));
-
-        // Remove rev from _pushingDocs, and see if there's a newer revision to send next:
-        auto i = _pushingDocs.find(rev->docID);
-        if (i == _pushingDocs.end()) {
-            if (connected())
-                warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
-            return;
-        }
-
-        Retained<RevToSend> newRev = i->second;
-        _pushingDocs.erase(i);
-        if (newRev) {
-            if (synced && getForeignAncestors())
-                newRev->remoteAncestorRevID = rev->revID;
-            logVerbose("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
-                       SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
-                       SPLAT(newRev->remoteAncestorRevID));
-            bool ok = false;
-            if (synced && getForeignAncestors()
-                && c4rev_getGeneration(newRev->revID) <= c4rev_getGeneration(rev->revID)) {
-                // Don't send; it'll conflict with what's on the server
-            } else {
-                // Send newRev as though it had just arrived:
-                bool should = _db->use<bool>([&](C4Database *db) {
-                    return shouldPushRev(newRev, nullptr, db);
-                });
-                if (should) {
-                    _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
-                    gotOutOfOrderChange(newRev);
-                    ok = true;
-                }
-            }
-            if (!ok) {
-                logVerbose("   ... nope, decided not to propose '%.*s' %.*s",
-                           SPLAT(newRev->docID), SPLAT(newRev->revID));
-            }
-        } else {
-            logDebug("Done pushing '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
-        }
-    }
 
 
     void Pusher::_connectionClosed() {
@@ -737,11 +493,11 @@ namespace litecore { namespace repl {
 
     bool Pusher::isBusy() const {
         return Worker::computeActivityLevel() == kC4Busy
-            || (_started && !_caughtUp)
+            || (_started && (!_caughtUp || !_continuousCaughtUp))
             || _changeListsInFlight > 0
             || _revisionsInFlight > 0
             || _blobsInFlight > 0
-            || !_revsToSend.empty()
+            || !_revQueue.empty()
             || !_pushingDocs.empty()
             || _revisionBytesAwaitingReply > 0;
     }
@@ -761,13 +517,13 @@ namespace litecore { namespace repl {
         } else {
             level = kC4Stopped;
         }
-        if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
+        if (SyncBusyLog.willLog(LogLevel::Info)) {
             size_t pendingSequences = _parent ? _checkpointer.pendingSequenceCount() : 0;
             logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%" PRIu64 ", revsToSend=%zu, pushingDocs=%zu, pendingSequences=%zu",
                     kC4ReplicatorActivityLevelNames[level],
                     pendingResponseCount(),
                     _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
-                    _revisionBytesAwaitingReply, _revsToSend.size(), _pushingDocs.size(),
+                    _revisionBytesAwaitingReply, _revQueue.size(), _pushingDocs.size(),
                     pendingSequences);
         }
         return level;
@@ -786,15 +542,15 @@ namespace litecore { namespace repl {
         // (for example in the case of a failed delta merge)
         logInfo("%d documents failed to push and will be retried now", int(revsToRetry.size()));
         _caughtUp = false;
-        for(const auto& revToRetry : revsToRetry)
-            _pushingDocs.insert({revToRetry->docID, nullptr});
-        
-        if(immediate) {
-            for (int i = (int)revsToRetry.size() - 1; i >= 0; i--) {
-                _revsToSend.push_front(revsToRetry[i]);
-            }
+        if (immediate) {
+            for (const auto& revToRetry : revsToRetry)
+                _pushingDocs.insert({revToRetry->docID, nullptr});
+            _revQueue.insert(_revQueue.begin(), revsToRetry.begin(), revsToRetry.end());
         } else {
-            gotChanges(make_shared<RevToSendList>(revsToRetry), _maxPushedSequence, {});
+            ChangesFeed::Changes changes = {};
+            changes.revs = move(revsToRetry);
+            changes.lastSequence = _lastSequenceRead;
+            gotChanges(move(changes));
         }
     }
 

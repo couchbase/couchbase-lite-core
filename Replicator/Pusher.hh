@@ -17,117 +17,101 @@
 //
 
 #pragma once
-#include "Replicator.hh"
-#include "ReplicatorTuning.hh"
+#include "Worker.hh"
+#include "ChangesFeed.hh"
+#include "Replicator.hh" // for BlobProgress
 #include "ReplicatorTypes.hh"
-#include "access_lock.hh"
-#include "Actor.hh"
-#include "SequenceSet.hh"
 #include "fleece/slice.hh"
 #include <deque>
 #include <unordered_map>
-#include <unordered_set>
-#include <string>
 
 namespace litecore { namespace repl {
 
     /** Top-level object managing the push side of replication (sending revisions.) */
-    class Pusher : public Worker {
+    class Pusher : public Worker, public ChangesFeed::Delegate {
     public:
         Pusher(Replicator *replicator NONNULL, Checkpointer&);
 
         // Starts an active push
         void start()  {enqueue(&Pusher::_start);}
 
-        void checkpointIsInvalid() {
-            _checkpointValid = false;
-        }
-        
+        // Called by Replicator when remote checkpoint doesn't match
+        void checkpointIsInvalid()              {_changesFeed.setCheckpointValid(false);}
+
+        // Called by the puller's RevFinder, via the Replicator
         void docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID) {
             enqueue(&Pusher::_docRemoteAncestorChanged, docID, remoteAncestorRevID);
         }
 
     protected:
+        virtual void dbHasNewChanges() override {enqueue(&Pusher::_dbHasNewChanges);}
+        virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) override {
+            finishedDocumentWithError(rev, error, transient);
+        }
         virtual void afterEvent() override;
         virtual void _connectionClosed() override;
+        virtual ActivityLevel computeActivityLevel() const override;
 
     private:
         void _start();
-        virtual ActivityLevel computeActivityLevel() const override;
+        bool isBusy() const;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
-        void gotChanges(std::shared_ptr<RevToSendList> changes, C4SequenceNumber lastSequence, C4Error err);
         void gotOutOfOrderChange(RevToSend* NONNULL);
-        void sendChanges(std::shared_ptr<RevToSendList>);
-        void maybeGetMoreChanges();
+        void sendChanges(RevToSendList&);
+        void handleChangesResponse(RevToSendList&, blip::MessageIn*, bool proposedChanges);
+        bool handleChangeResponse(RevToSend *change, Value response);
+        bool handleProposedChangeResponse(RevToSend *change, Value response);
+        void maybeGetMoreChanges()          {enqueue(&Pusher::_maybeGetMoreChanges);}
+        void _maybeGetMoreChanges();
+        void gotChanges(ChangesFeed::Changes);
+        void _dbHasNewChanges();
         void sendChangeList(RevToSendList);
-        void maybeSendMoreRevs();
-        void retryRevs(RevToSendList, bool immediate);
-        void sendRevision(Retained<RevToSend>);
-        void couldntSendRevision(RevToSend* NONNULL);
-        void doneWithRev(RevToSend*, bool successful, bool pushed);
-        void handleGetAttachment(Retained<MessageIn>);
-        void handleProveAttachment(Retained<MessageIn>);
+        bool shouldRetryConflictWithNewerAncestor(RevToSend* NONNULL);
+        void _docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID);
+        bool getForeignAncestors() const    {return _proposeChanges || !_proposeChangesKnown;}
+
+        // Pusher+Attachments.cc:
+        void handleGetAttachment(Retained<blip::MessageIn>);
+        void handleProveAttachment(Retained<blip::MessageIn>);
         void _attachmentSent();
-        C4ReadStream* readBlobFromRequest(MessageIn *req NONNULL,
+        C4ReadStream* readBlobFromRequest(blip::MessageIn *req NONNULL,
                                           slice &outDigest,
                                           Replicator::BlobProgress &outProgress,
                                           C4Error *outError);
-        void filterByDocIDs(fleece::Array docIDs);
-
-        using DocIDSet = std::shared_ptr<std::unordered_set<std::string>>;
-
-        void getMoreChanges();
-        void getObservedChanges();
-        void dbChanged();
-        Retained<RevToSend> revToSend(C4DocumentInfo&, C4DocEnumerator*, C4Database* NONNULL);
-        bool shouldPushRev(Retained<RevToSend>, C4DocEnumerator*, C4Database* NONNULL);
-        void sendRevision(RevToSend *request NONNULL,
-                          blip::MessageProgressCallback onProgress);
+        // Pusher+Revs.cc:
+        void maybeSendMoreRevs();
+        void retryRevs(RevToSendList, bool immediate);
+        void sendRevision(Retained<RevToSend>);
+        void onRevProgress(Retained<RevToSend> rev, const blip::MessageProgress&);
+        void couldntSendRevision(RevToSend* NONNULL);
+        void doneWithRev(RevToSend*, bool successful, bool pushed);
         alloc_slice createRevisionDelta(C4Document *doc NONNULL, RevToSend *request NONNULL,
                                         fleece::Dict root, size_t revSize,
                                         bool sendLegacyAttachments);
-        fleece::slice getRevToSend(C4Document* NONNULL, const RevToSend&, C4Error *outError);
-        bool getRemoteRevID(RevToSend *rev, C4Document *doc);
         void revToSendIsObsolete(const RevToSend &request, C4Error *c4err);
-        bool shouldRetryConflictWithNewerAncestor(RevToSend* NONNULL);
-        void _docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID);
-        bool isBusy() const;
 
-        bool getForeignAncestors() const    {return _proposeChanges || !_proposeChangesKnown;}
+        using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>>;
 
-        static constexpr unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
-        static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one
-
-        unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
-        DocIDSet _docIDs;
         bool _continuous;
-        bool _skipDeleted;
         bool _proposeChanges;
         bool _proposeChangesKnown;
-        std::atomic<bool> _checkpointValid {true};
-
-        C4SequenceNumber _lastSequenceLogged {0}; // Checkpointed last-sequence
-        bool _gettingChanges {false};             // Waiting for _gotChanges() call?
-        Checkpointer& _checkpointer;              // Tracks checkpoints & pending sequences
+        ReplicatorChangesFeed _changesFeed;
+        DocIDToRevMap _pushingDocs;               // Revs being processed by push
+        DocIDToRevMap _conflictsIMightRetry;
         C4SequenceNumber _lastSequenceRead {0};   // Last sequence read from db
+        C4SequenceNumber _lastSequenceLogged {0}; // Checkpointed last-sequence
+        Checkpointer& _checkpointer;              // Tracks checkpoints & pending sequences
         bool _started {false};
-        bool _caughtUp {false};                   // Received backlog of existing changes?
+        bool _caughtUp {false};                   // Received backlog of pre-existing changes?
+        bool _continuousCaughtUp {true};          // Caught up with change notifications?
         bool _deltasOK {false};                   // OK to send revs in delta form?
         unsigned _changeListsInFlight {0};        // # change lists being requested from db or sent to peer
         unsigned _revisionsInFlight {0};          // # 'rev' messages being sent
-        MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
+        blip::MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
         unsigned _blobsInFlight {0};              // # of blobs being sent
-        std::deque<Retained<RevToSend>> _revsToSend;  // Revs to send to peer but not sent yet
-        RevToSendList _revsToRetry;                     // Revs that failed with a transient error
-
-        using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash>;
-
-        c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
-        C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
-        DocIDToRevMap _pushingDocs;                         // Revs being processed by push
-        DocIDToRevMap _conflictsIMightRetry;
-        bool _waitingForObservedChanges {false};
+        std::deque<Retained<RevToSend>> _revQueue;// Revs to send to peer but not sent yet
+        RevToSendList _revsToRetry;               // Revs that failed with a transient error
     };
     
     
