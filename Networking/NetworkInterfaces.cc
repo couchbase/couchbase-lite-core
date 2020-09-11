@@ -240,7 +240,7 @@ namespace litecore::net {
 
 
     optional<string> GetMyHostName() {
-#ifdef __APPLE__
+        /*#ifdef __APPLE__*/ #if 0 // TODO: Figure out the story with iOS mDNS
         // Apple platforms always have an mDNS/Bonjour hostname.
         string hostName;
     #if TARGET_OS_OSX

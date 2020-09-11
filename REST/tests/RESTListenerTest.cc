@@ -171,11 +171,11 @@ TEST_CASE_METHOD(C4RESTTest, "Network interfaces", "[Listener][C]") {
     vector<string> primaryAddresses;
     for (auto &addr : Interface::primaryAddresses())
         primaryAddresses.push_back(string(addr));
-    auto hostname = GetMyHostName();
+    //auto hostname = GetMyHostName();
     C4Log("Interface names = {%s}", join(interfaces, ", ").c_str());
     C4Log("IP addresses =    {%s}", join(addresses, ", ").c_str());
     C4Log("Primary addrs =   {%s}", join(primaryAddresses, ", ").c_str());
-    C4Log("Hostname =        %s", (hostname ? hostname->c_str() : "(unknown)"));
+    //C4Log("Hostname =        %s", (hostname ? hostname->c_str() : "(unknown)"));
     CHECK(!interfaces.empty());
     CHECK(!primaryAddresses.empty());
     CHECK(!addresses.empty());
