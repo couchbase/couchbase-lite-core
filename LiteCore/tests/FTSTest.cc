@@ -449,3 +449,51 @@ TEST_CASE_METHOD(FTSTest, "Test with non-string values", "[FTS][Query]") {
     Retained<QueryEnumerator> results(query->createEnumerator(&queryOptions));        
     CHECK(results->getRowCount() == 1);
 }
+
+TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
+    // CBL-977: FTS rows have special meta columns in front, and
+    // so the missing columns need to ignore those
+    
+    IndexSpec::Options options { "", false, false };
+    CHECK(store->createIndex("ftsIndex"_sl, "[[\".key-fts\"]]"_sl, IndexSpec::kFullText, &options));
+    
+    {
+        Transaction t(store->dataFile());
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("key-fts");
+            enc.writeString("some terms to search against");
+            enc.writeKey("key-2");
+            enc.writeString("foo");
+            enc.writeKey("key-used-once");
+            enc.writeString("bar");
+        });
+
+        writeDoc("sample2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("key-fts");
+            enc.writeString("other terms to search against");
+            enc.writeKey("key-2");
+            enc.writeString("bar");
+        });
+        
+        t.commit();
+    }
+        
+    string queries[] = {
+        json5("{WHAT: [['.key-2'],['.key-used-once'],['.key-unused']], WHERE: ['MATCH', 'ftsIndex', 'against']}"),
+        json5("{WHAT: [['.key-unused'],['.key-used-once'],['.key-2']], WHERE: ['MATCH', 'ftsIndex', 'against']}")
+    };
+    
+    int expectedMissing = 2;
+    for(auto q : queries) {
+        Retained<Query> query = store->compileQuery(q);
+        Retained<QueryEnumerator> results(query->createEnumerator(nullptr));
+        CHECK(results->getRowCount() == 2);
+        
+        CHECK(results->next());
+        CHECK(results->missingColumns() == (1 << expectedMissing));
+        
+        CHECK(results->next());
+        CHECK(results->missingColumns() == ((1 << expectedMissing) | 1 << 1));
+        expectedMissing = 0;
+    }
+}
