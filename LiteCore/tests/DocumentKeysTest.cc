@@ -59,11 +59,11 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
     {
         Transaction t(db);
         createDoc("doc3", "{\"zog\": 17}", t);
-        CHECK(db->documentKeys()->byKey() == (vector<alloc_slice>{alloc_slice("foo"), alloc_slice("bar"), alloc_slice("zog")}));
+        CHECK(db->documentKeys()->byKey() == (vector<slice>{slice("foo"), slice("bar"), slice("zog")}));
         t.abort();
     }
 
-    CHECK(db->documentKeys()->byKey() == (vector<alloc_slice>{alloc_slice("foo"), alloc_slice("bar")}));
+    CHECK(db->documentKeys()->byKey() == (vector<slice>{slice("foo"), slice("bar")}));
 
     Dict::key foo("foo"_sl);
     Dict::key bar("bar"_sl);
@@ -102,7 +102,7 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
         createDoc("doc3", "{\"zog\": 17}", t);
         t.commit();
     }
-    CHECK(db->documentKeys()->byKey() == (vector<alloc_slice>{alloc_slice("foo"), alloc_slice("bar"), alloc_slice("zog")}));
+    CHECK(db->documentKeys()->byKey() == (vector<slice>{slice("foo"), slice("bar"), slice("zog")}));
 
     // Check that the pre-existing Dict::key for zog works now:
     {
