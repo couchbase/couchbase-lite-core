@@ -510,8 +510,7 @@ C4Document* c4doc_put(C4Database *database,
                                       outError);
                 if (!doc)
                     return nullptr;
-                if (!asInternal(doc)->putNewRevision(*rq))
-                    commonAncestorIndex = -1;
+                commonAncestorIndex = asInternal(doc)->putNewRevision(*rq) ? 0 : -1;
             }
         }
 
