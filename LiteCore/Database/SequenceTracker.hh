@@ -104,10 +104,10 @@ namespace litecore {
         }
 
         /** Returns the oldest Entry. */
-        const_iterator begin() const            {return _changes.begin();}
+        const_iterator begin() const;
 
         /** Returns the end of the Entry list. */
-        const_iterator end() const              {return _changes.end();}
+        const_iterator end() const;
 
         const_iterator addPlaceholderAfter(DatabaseChangeNotifier *obs NONNULL, sequence_t);
         void removePlaceholder(const_iterator);

@@ -264,6 +264,10 @@ namespace litecore {
     }
 
 
+    SequenceTracker::const_iterator SequenceTracker::begin() const     {return _changes.begin();}
+    SequenceTracker::const_iterator SequenceTracker::end() const       {return _changes.end();}
+
+
     SequenceTracker::const_iterator
     SequenceTracker::_since(sequence_t sinceSeq) const {
         if (sinceSeq >= _lastSequence) {
