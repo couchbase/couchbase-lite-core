@@ -27,7 +27,7 @@ LITECORE_BUILD_NUMBER                              = 0
 IPHONEOS_DEPLOYMENT_TARGET                         =  9.0
 MACOSX_DEPLOYMENT_TARGET                           = 10.12
 TVOS_DEPLOYMENT_TARGET                             =  9.0
-ONLY_ACTIVE_ARCH                                   = NO
+ONLY_ACTIVE_ARCH                                   = YES
 SKIP_INSTALL                                       = YES
 SUPPORTED_PLATFORMS                                = macosx iphoneos iphonesimulator appletvos appletvsimulator
 
