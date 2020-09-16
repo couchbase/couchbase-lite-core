@@ -280,6 +280,7 @@ namespace litecore { namespace repl {
                 // Copy database's sharedKeys:
                 _tempSharedKeys = SharedKeys::create(dbsk.stateData());
                 _tempSharedKeysInitialCount = dbsk.count();
+                assert(_tempSharedKeys);
             }
             return _tempSharedKeys;
         });
