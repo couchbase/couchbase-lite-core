@@ -159,7 +159,7 @@ struct C4Replicator : public RefCounted,
             _status.progress = {};
             UNLOCK();
             notifyStateChanged();
-            _selfRetain = nullptr; // balances retain in `_start`
+            _selfRetain = nullptr; // balances retain in `_start` -- may destruct me!
         }
     }
 
@@ -329,6 +329,8 @@ protected:
     virtual void replicatorStatusChanged(Replicator *repl,
                                          const Replicator::Status &newStatus) override
     {
+        Retained<C4Replicator> selfRetain = this;   // Keep myself alive till this method returns
+
         bool stopped, resume = false;
         {
             LOCK(_mutex);
@@ -364,6 +366,8 @@ protected:
         if(resume) {
             start();
         }
+
+        // On return from this method, if I stopped I may be deleted (due to clearing _selfRetain)
     }
 
 
