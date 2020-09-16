@@ -266,6 +266,7 @@ namespace litecore { namespace repl {
         // requested without another changes message, this needs to be bumped back up because it
         // won't get another changes message to bump it.
         increment(_pendingRevMessages);
+        _revFinder->reRequestingRev();
         addProgress({0, _missingSequences.bodySizeOfSequence(inc->remoteSequence())});
     }
 
