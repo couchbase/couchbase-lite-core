@@ -16,7 +16,7 @@ mkdir -p "$CMAKE_BUILD_DIR"
 cd "$CMAKE_BUILD_DIR"
 
 # What architectures to build for Mac?
-if [[ "$XCODE_VERSION_MAJOR" -ge "1200" ]]
+if [[ "$ARCHS" =~ "arm64" ]]
 then
     MAC_ARCHS="x86_64;arm64"
 else
