@@ -62,8 +62,13 @@ namespace litecore { namespace repl {
     }
 
 
+    void RevFinder::_reRequestingRev() {
+        increment(_numRevsBeingRequested);
+    }
+
+
     void RevFinder::_revReceived() {
-        decrement(_pendingRevMessages);
+        decrement(_numRevsBeingRequested);
 
         // Process waiting "changes" messages if not throttled:
         while (!_waitingChangesMessages.empty() && pullerHasCapacity()) {
@@ -136,7 +141,7 @@ namespace litecore { namespace repl {
             logInfo("Responded to '%.*s' REQ#%" PRIu64 " w/request for %u revs in %.6f sec",
                     SPLAT(req->property("Profile"_sl)), req->number(), requested, st.elapsed());
 
-            _pendingRevMessages += requested;
+            _numRevsBeingRequested += requested;
             _delegate->expectSequences(move(sequences));
         }
 
@@ -246,6 +251,7 @@ namespace litecore { namespace repl {
                 ++requested;
                 Assert(sequences[i].bodySize == 0);
                 sequences[i].bodySize = max(change[3].asUnsigned(), (uint64_t)1);
+                // sequences[i].sequence remains null: proposeChanges entries have no sequence ID
             } else {
                 // Reject rev by appending status code:
                 logInfo("Rejecting proposed change '%.*s' #%.*s with parent %.*s (status %d; current rev is %.*s)",

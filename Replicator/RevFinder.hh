@@ -51,10 +51,14 @@ namespace litecore { namespace repl {
         /** Delegate must call this every time it receives a "rev" message. */
         void revReceived()     {enqueue(&RevFinder::_revReceived);}
 
+        /** Delegate calls this if it has to re-request a "rev" message, meaning that another call to
+            revReceived() will be made in the future. */
+        void reRequestingRev() {enqueue(&RevFinder::_reRequestingRev);}
+
     private:
         static const size_t kMaxPossibleAncestors = 10;
 
-        bool pullerHasCapacity() const   {return _pendingRevMessages <= tuning::kMaxPendingRevs;}
+        bool pullerHasCapacity() const   {return _numRevsBeingRequested <= tuning::kMaxPendingRevs;}
         void handleChanges(Retained<blip::MessageIn>);
         void handleMoreChanges();
         void handleChangesNow(blip::MessageIn *req);
@@ -65,10 +69,11 @@ namespace litecore { namespace repl {
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
         void _revReceived();
+        void _reRequestingRev();
 
         Retained<Delegate> _delegate;
         std::deque<Retained<blip::MessageIn>> _waitingChangesMessages; // Queued 'changes' messages
-        unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
+        unsigned _numRevsBeingRequested {0};   // # of 'rev' msgs requested but not yet received
         bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?
     };
 

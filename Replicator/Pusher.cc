@@ -544,7 +544,7 @@ namespace litecore { namespace repl {
         _caughtUp = false;
         if (immediate) {
             for (const auto& revToRetry : revsToRetry)
-                _pushingDocs.insert({revToRetry->docID, nullptr});
+                _pushingDocs.insert({revToRetry->docID, revToRetry});
             _revQueue.insert(_revQueue.begin(), revsToRetry.begin(), revsToRetry.end());
         } else {
             ChangesFeed::Changes changes = {};
