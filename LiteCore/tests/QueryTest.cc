@@ -598,7 +598,7 @@ TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
     CHECK(queryWhat("['concat()', 99, ' ', 123.45, ' ', true, ' ', false]") == "\"99 123.45 true false\"");
 
     CHECK(queryWhat("['concat()', 'goodbye ', null, ' world']") == "\"goodbye null world\"");
-    CHECK(queryWhat("['concat()', 'goodbye', ['.bogus'], 'world']") == "null");
+    CHECK(queryWhat("['concat()', 'goodbye', ['.bogus'], 'world']") == "undefined");
 }
 
 
@@ -963,14 +963,14 @@ TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
         {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14], 2]", "25.0"},
         {"['euclidean_distance()', ['[]', 1,2,3,4,5], ['[]', 1,2,3,4,5]]","0.0"},
         {"['euclidean_distance()', ['[]'], ['[]']]",                    "0.0"},
-        {"['euclidean_distance()', 18, 'foo']",                         "null"},
-        {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13]]",        "null"},
+        {"['euclidean_distance()', 18, 'foo']",                         "undefined"},
+        {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13]]",        "undefined"},
 
         {"['cosine_distance()', ['[]', 10, 0], ['[]', 0, 99]]",         "1.0"},
         {"['cosine_distance()', ['[]', 1,2,3,4,5], ['[]', 1,2,3,4,5]]", "0.0"},
-        {"['cosine_distance()', ['[]'], ['[]']]",                       "null"},
-        {"['cosine_distance()', 18, 'foo']",                            "null"},
-        {"['cosine_distance()', ['[]', 10, 10], ['[]', 13]]",           "null"},
+        {"['cosine_distance()', ['[]'], ['[]']]",                       "undefined"},
+        {"['cosine_distance()', 18, 'foo']",                            "undefined"},
+        {"['cosine_distance()', ['[]', 10, 10], ['[]', 13]]",           "undefined"},
     } );
 }
 #endif
@@ -1000,10 +1000,10 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
     auto expected3 = local_to_utc("2018-10-%02dT%02d:%02d:01Z", 23, 18, 33, diffHour, diffMinute);
     
     testExpressions( {
-        {"['str_to_utc()', null]",                            "null"},
-        {"['str_to_utc()', 99]",                              "null"},
-        {"['str_to_utc()', '']",                              "null"},
-        {"['str_to_utc()', 'x']",                             "null"},
+        {"['str_to_utc()', null]",                            "undefined"},
+        {"['str_to_utc()', 99]",                              "undefined"},
+        {"['str_to_utc()', '']",                              "undefined"},
+        {"['str_to_utc()', 'x']",                             "undefined"},
         {"['str_to_utc()', '2018-10-23']",                    expected1},
         {"['str_to_utc()', '2018-10-23T18:33']",              expected2},
         {"['str_to_utc()', '2018-10-23T18:33:01']",           expected3},
@@ -1013,42 +1013,42 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
         {"['str_to_utc()', '2018-10-23T18:33:01.123Z']",      "2018-10-23T18:33:01.123Z"},
         {"['str_to_utc()', '2018-10-23T11:33:01.123-0700']",  "2018-10-23T18:33:01.123Z"},
 
-        {"['str_to_millis()', '']",                           "null"},
+        {"['str_to_millis()', '']",                           "undefined"},
         {"['str_to_millis()', '1970-01-01T00:00:00Z']",       "0"},
         {"['str_to_millis()', '2018-10-23T11:33:01-0700']",   "1540319581000"},
         {"['str_to_millis()', '2018-10-23T18:33:01Z']",       "1540319581000"},
         {"['str_to_millis()', '2018-10-23T18:33:01.123Z']",   "1540319581123"},
 
         // Range check the month and day number
-        {"['str_to_millis()', '2000-00-01T00:00:00Z']",       "null"},
-        {"['str_to_millis()', '2000-13-01T00:00:00Z']",       "null"},
-        {"['str_to_millis()', '2000-01-00T00:00:00Z']",       "null"},
-        {"['str_to_millis()', '2000-01-32T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2000-00-01T00:00:00Z']",       "undefined"},
+        {"['str_to_millis()', '2000-13-01T00:00:00Z']",       "undefined"},
+        {"['str_to_millis()', '2000-01-00T00:00:00Z']",       "undefined"},
+        {"['str_to_millis()', '2000-01-32T00:00:00Z']",       "undefined"},
 
         // 30 days hath September...
         {"['str_to_millis()', '2018-01-31T00:00:00Z']",       "1517356800000"},
-        {"['str_to_millis()', '2018-02-31T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-02-31T00:00:00Z']",       "undefined"},
         {"['str_to_millis()', '2018-03-31T00:00:00Z']",       "1522454400000"},
-        {"['str_to_millis()', '2018-04-31T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-04-31T00:00:00Z']",       "undefined"},
         {"['str_to_millis()', '2018-05-31T00:00:00Z']",       "1527724800000"},
-        {"['str_to_millis()', '2018-06-31T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-06-31T00:00:00Z']",       "undefined"},
         {"['str_to_millis()', '2018-07-31T00:00:00Z']",       "1532995200000"},
         {"['str_to_millis()', '2018-08-31T00:00:00Z']",       "1535673600000"},
-        {"['str_to_millis()', '2018-09-31T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-09-31T00:00:00Z']",       "undefined"},
         {"['str_to_millis()', '2018-10-31T00:00:00Z']",       "1540944000000"},
-        {"['str_to_millis()', '2018-11-31T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-11-31T00:00:00Z']",       "undefined"},
         {"['str_to_millis()', '2018-12-31T00:00:00Z']",       "1546214400000"},
 
         // February is complicated
         {"['str_to_millis()', '2000-02-29T00:00:00Z']",       "951782400000"},
         {"['str_to_millis()', '2016-02-29T00:00:00Z']",       "1456704000000"},
-        {"['str_to_millis()', '2018-02-29T00:00:00Z']",       "null"},
-        {"['str_to_millis()', '2100-02-29T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-02-29T00:00:00Z']",       "undefined"},
+        {"['str_to_millis()', '2100-02-29T00:00:00Z']",       "undefined"},
         {"['str_to_millis()', '2400-02-29T00:00:00Z']",       "13574563200000"},
-        {"['str_to_millis()', '2400-02-30T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2400-02-30T00:00:00Z']",       "undefined"},
 
-        {"['millis_to_utc()', 'x']",                          "null"},
-        {"['millis_to_utc()', '0']",                          "null"},
+        {"['millis_to_utc()', 'x']",                          "undefined"},
+        {"['millis_to_utc()', '0']",                          "undefined"},
         {"['millis_to_utc()', 0]",                            "1970-01-01T00:00:00Z"},
         {"['millis_to_utc()', 1540319581000]",                "2018-10-23T18:33:01Z"},
         {"['millis_to_utc()', 1540319581123]",                "2018-10-23T18:33:01.123Z"},
@@ -1058,8 +1058,8 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
         // local time zone...
         //{"['millis_to_str()', 1540319581000]", "2018-10-23T11:33:01-0700"},
         {"['str_to_utc()', ['millis_to_str()', 1540319581000]]", "2018-10-23T18:33:01Z"},
-        {"['millis_to_str()', 'x']",                          "null"},
-        {"['millis_to_str()', '0']",                          "null"},
+        {"['millis_to_str()', 'x']",                          "undefined"},
+        {"['millis_to_str()', '0']",                          "undefined"},
     } );
 }
 
@@ -1128,7 +1128,6 @@ TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
         "{'WHAT': ['.num', '.string']}"));
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
-    CHECK(e->missingColumns() == 0);
     CHECK(e->columns()[0]->toJSONString() == "1234");
     CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
 
@@ -1136,9 +1135,11 @@ TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
         "{'WHAT': ['.bogus', '.num', '.nope', '.string', '.gone']}"));
     e = (query->createEnumerator());
     REQUIRE(e->next());
-    CHECK(e->missingColumns() == 0x15);       // binary 10101, i.e. cols 0, 2, 4 are missing
+    CHECK(e->columns()[0]->isUndefined());
     CHECK(e->columns()[1]->toJSONString() == "1234");
+    CHECK(e->columns()[2]->isUndefined());
     CHECK(e->columns()[3]->toJSONString() == "\"FOO\"");
+    CHECK(e->columns()[4]->isUndefined());
 }
 
 
@@ -1461,8 +1462,7 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
         CHECK(e->next());
         CHECK(e->columns()[0]->asInt() == now - 10000);
         CHECK(e->next());
-        CHECK(e->columns()[0]->type() == kNull);
-        CHECK(e->missingColumns() == 1);
+        CHECK(e->columns()[0]->isUndefined());
         CHECK(e->next());
         CHECK(e->columns()[0]->asInt() == now + 10000);
         CHECK(!e->next());
