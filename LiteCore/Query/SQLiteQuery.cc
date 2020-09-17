@@ -522,6 +522,9 @@ namespace litecore {
     // The factory method that creates a SQLite QueryEnumerator, but only if the database has
     // changed since lastSeq.
     QueryEnumerator* SQLiteQuery::createEnumerator(const Options *options) {
+        if (options && options->oneShot)
+            error::_throw(error::Unimplemented);    //TODO
+
         // Start a read-only transaction, to ensure that the result of lastSequence() and purgeCount() will be
         // consistent with the query results.
         ReadOnlyTransaction t(keyStore().dataFile());

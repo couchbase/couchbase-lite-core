@@ -188,7 +188,6 @@
 		276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */; };
 		276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
 		276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */; };
-		276D15411DFF541000543B1B /* SQLiteQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D15401DFF541000543B1B /* SQLiteQuery.cc */; };
 		277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */; };
 		277071D6230B696E00F7EB95 /* HTTPTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271C069723078176000EC09B /* HTTPTypes.cc */; };
 		2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE68D2267A02500B681AC /* N1QLParserTest.cc */; };
@@ -274,6 +273,7 @@
 		27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
+		27B3FFFC2513E94C00D8D22A /* SQLiteQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D15401DFF541000543B1B /* SQLiteQuery.cc */; };
 		27B64938206971FC00FC12F7 /* LiteCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B64936206971FC00FC12F7 /* LiteCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27B649472069721F00FC12F7 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		27B6494A2069723900FC12F7 /* c4.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9F7D1C518793003115A6 /* c4.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -4028,6 +4028,7 @@
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */,
 				27469D08233D719800A1EE1A /* PublicKey+Apple.mm in Sources */,
+				27B3FFFC2513E94C00D8D22A /* SQLiteQuery.cc in Sources */,
 				27FC8E77221399AC0083B033 /* LeafDocument.cc in Sources */,
 				2744B351241854F2005A194D /* WebSocketImpl.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
@@ -4051,7 +4052,6 @@
 				27F2BEA0221DF1A0006C13EE /* DBAccess.cc in Sources */,
 				273407231DEE116600EA5532 /* PlatformIO.cc in Sources */,
 				27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */,
-				276D15411DFF541000543B1B /* SQLiteQuery.cc in Sources */,
 				27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */,
 				93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
