@@ -235,12 +235,11 @@ namespace litecore {
         }
 
         virtual int64_t getRowCount() const override {
-            return _recording->asArray()->count() / 2;  // (every other row is a column bitmap)
+            return _recording->asArray()->count();
         }
 
         virtual void seek(int64_t rowIndex) override {
            auto rows = _recording->asArray();
-           rowIndex *= 2;
             if (rowIndex < 0) {
                 rowIndex = 0;
                 _first = true;
@@ -257,7 +256,7 @@ namespace litecore {
             if (_first)
                 _first = false;
             else
-                _iter += 2;
+                _iter += 1;
             if (!_iter) {
                 logVerbose("END");
                 return false;
@@ -274,11 +273,6 @@ namespace litecore {
             i += _1stCustomResultColumn;
             return i;
         }
-
-        uint64_t missingColumns() const noexcept override {
-            return _iter[1u]->asUnsigned();
-        }
-
 
         virtual bool obsoletedBy(const QueryEnumerator *otherE) override {
             if (!otherE)
@@ -430,12 +424,12 @@ namespace litecore {
             }
         }
 
-        bool encodeColumn(Encoder &enc, int i) {
+        void encodeColumn(Encoder &enc, int i) {
             SQLite::Column col = _statement->getColumn(i);
             switch (col.getType()) {
                 case SQLITE_NULL:
-                    enc.writeNull();
-                    return false;   // this column value is missing
+                    enc.writeUndefined();
+                    break;
                 case SQLITE_INTEGER:
                     enc.writeInt(col.getInt64());
                     break;
@@ -458,7 +452,6 @@ namespace litecore {
                     break;
                 }
             }
-            return true;
         }
 
         // Collects all the (remaining) rows into a Fleece array of arrays,
@@ -477,19 +470,11 @@ namespace litecore {
 
             unicodesn_tokenizerRunningQuery(true);
             try {
-                 auto firstCustomCol = _query->_1stCustomResultColumn;
-                 while (_statement->executeStep()) {
-                     uint64_t missingCols = 0;
-                     enc.beginArray(nCols);
-                     for (int i = 0; i < nCols; ++i) {
-                         int offsetColumn = i - firstCustomCol;
-                         if (!encodeColumn(enc, i) && offsetColumn >= 0 && offsetColumn < 64) {
-                             missingCols |= (1ULL << offsetColumn);
-                         }
-                    }
+                while (_statement->executeStep()) {
+                    enc.beginArray(nCols);
+                    for (int i = 0; i < nCols; ++i)
+                        encodeColumn(enc, i);
                     enc.endArray();
-                    // Add an integer containing a bit-map of which columns are missing/undefined:
-                    enc.writeUInt(missingCols);
                     ++rowCount;
                 }
             } catch (...) {

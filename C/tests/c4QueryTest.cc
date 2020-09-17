@@ -370,7 +370,13 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Missing columns", "[Query][C]") {
     if (query) {
         compileSelect(json5(query));
         auto results = runCollecting<uint64_t>(nullptr, [=](C4QueryEnumerator *e) {
-            return e->missingColumns;
+            uint64_t missing = 0;
+            for (int i = FLArrayIterator_GetCount(&e->columns) - 1; i >= 0; --i) {
+                FLValue col = FLArrayIterator_GetValueAt(&e->columns, i);
+                if (FLValue_GetType(col) == kFLUndefined)
+                    missing |= (1 << i);
+            }
+            return missing;
         });
         CHECK(results == vector<uint64_t>{expectedMissing});
     }
