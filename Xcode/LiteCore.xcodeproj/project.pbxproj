@@ -1176,7 +1176,6 @@
 		27AFF3A623036B2500B4D6C4 /* datagram_socket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = datagram_socket.cpp; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
-		27B3FFF72513DE0600D8D22A /* SQLiteQuery_ONESHOT.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteQuery_ONESHOT.cc; sourceTree = "<group>"; };
 		27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListenerTest.cc; sourceTree = "<group>"; };
 		27B64934206971FB00FC12F7 /* LiteCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = LiteCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		27B64936206971FC00FC12F7 /* LiteCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LiteCore.h; path = ../../Xcode/LiteCore/LiteCore.h; sourceTree = "<group>"; };
@@ -2365,7 +2364,6 @@
 				27E6DFEE1DA5AFF3008EB681 /* Query.cc */,
 				27E6DFEF1DA5AFF3008EB681 /* Query.hh */,
 				276D15401DFF541000543B1B /* SQLiteQuery.cc */,
-				27B3FFF72513DE0600D8D22A /* SQLiteQuery_ONESHOT.cc */,
 				274EDDF41DA30B43003AD158 /* QueryParser.cc */,
 				274EDDF51DA30B43003AD158 /* QueryParser.hh */,
 				274D17842177F212007FD01A /* QueryParser+Private.hh */,

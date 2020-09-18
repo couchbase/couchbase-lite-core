@@ -60,10 +60,10 @@ namespace litecore {
             virtual void externalTransactionCommitted(const SequenceTracker &sourceTracker) { }
         };
 
-        class PreTransactionObserver {
+        class PreChangeObserver {
         public:
-            virtual void preTransaction() =0;
-            virtual ~PreTransactionObserver() {}
+            virtual void preChange() =0;
+            virtual ~PreChangeObserver() {}
         };
 
         struct Options {
@@ -120,8 +120,12 @@ namespace litecore {
 
         void forOtherDataFiles(function_ref<void(DataFile*)> fn);
 
-        void addPreTransactionObserver(PreTransactionObserver*);
-        void removePreTransactionObserver(PreTransactionObserver*);
+        /** Registers a callback that will be invoked the next time any Record in any KeyStore changes.
+            It will only be invoked once. */
+        void addPreChangeObserver(PreChangeObserver* NONNULL);
+
+        /** Removes a registered PreChangeObserver. */
+        void removePreChangeObserver(PreChangeObserver* NONNULL);
 
         /** Private API to run a raw (e.g. SQL) query, for diagnostic purposes only */
         virtual fleece::alloc_slice rawQuery(const std::string &query) =0;
@@ -229,6 +233,15 @@ namespace litecore {
         /** Override to end a read-only transaction. */
         virtual void endReadOnlyTransaction() =0;
 
+        /** Override to be told when PreChangeObservers exist, so you can register a callback with the
+            underlying database implementation. */
+        virtual void enablePreChangeObservers(bool enable) = 0;
+
+        /** Calls all registered preChangeObservers, then clears the list.
+            It is the subclass's responsibility to call this before making a change, when there are any
+            observers registered. */
+        void callPreChangeObservers();
+
         /** Runs the function/lambda while holding the file lock. This doesn't create a real
             transaction (at the ForestDB/SQLite/etc level), but it does ensure that no other thread
             is in a transaction, nor starts a transaction while the function is running. */
@@ -268,7 +281,7 @@ namespace litecore {
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         mutable Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         std::unordered_set<Query*> _queries;                    // Query objects
-        std::vector<PreTransactionObserver*> _preTransactionObservers;
+        std::vector<PreChangeObserver*> _preChangeObservers;
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic_bool        _closeSignaled {false};         // Have I been asked to close?
     };

@@ -116,7 +116,7 @@ namespace litecore {
         /** Random access to rows. May not be supported by all implementations, but does work with
             the current SQLite query implementation. */
         virtual int64_t getRowCount() const         {return -1;}
-        virtual void seek(int64_t rowIndex)         {error::_throw(error::UnsupportedOperation);}
+        virtual void seek(int64_t rowIndex)         {error::_throw(error::Unimplemented);}
 
         virtual bool hasFullText() const                        {return false;}
         virtual const FullTextTerms& fullTextTerms()            {return _fullTextTerms;}
