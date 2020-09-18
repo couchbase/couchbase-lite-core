@@ -203,6 +203,23 @@ namespace litecore {
     }
 
 
+    void DataFile::addPreChangeObserver(PreChangeObserver *obs) {
+        _preChangeObservers.push_back(obs);
+    }
+
+    void DataFile::removePreChangeObserver(PreChangeObserver *obs) {
+        auto i = find(_preChangeObservers.begin(), _preChangeObservers.end(), obs);
+        if (i != _preChangeObservers.end())
+            _preChangeObservers.erase(i);
+    }
+
+    void DataFile::callPreChangeObservers() {
+        auto observers = move(_preChangeObservers);
+        for (auto &obs : observers)
+            obs->preChange();
+    }
+
+
 #pragma mark - DELETION:
 
 
@@ -321,18 +338,6 @@ namespace litecore {
 
 #pragma mark - TRANSACTION:
 
-    
-    void DataFile::addPreTransactionObserver(PreTransactionObserver *obs) {
-        _preTransactionObservers.push_back(obs);
-    }
-
-    void DataFile::removePreTransactionObserver(PreTransactionObserver *obs) {
-        auto i = find(_preTransactionObservers.begin(), _preTransactionObservers.end(), obs);
-        if (i != _preTransactionObservers.end())
-            _preTransactionObservers.erase(i);
-    }
-
-
     void DataFile::beginTransactionScope(Transaction* t) {
         Assert(!_inTransaction);
         checkOpen();
@@ -341,9 +346,6 @@ namespace litecore {
     }
 
     void DataFile::transactionBegan(Transaction*) {
-        auto observers = move(_preTransactionObservers);
-        for (auto &obs : observers)
-            obs->preTransaction();
         if (documentKeys())
             _documentKeys->transactionBegan();
     }

@@ -22,7 +22,7 @@ using namespace fleece;
 
 class C4QueryTest : public C4Test {
 public:
-    static const int numberOfOptions = 1/*TEMP*/;       // seekable, one-shot
+    static const int numberOfOptions = 2;       // seekable, one-shot
 
     C4QueryTest(int which, string filename)
     :C4Test(0)
@@ -177,6 +177,8 @@ public:
         c4doc_release(doc);
         FLSliceResult_Release(body);
     }
+
+    void queryWhileChangingDatabase(int changeDBBeforeRow);
 
 protected:
     C4Query *query {nullptr};

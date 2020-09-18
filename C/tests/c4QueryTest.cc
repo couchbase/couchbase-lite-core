@@ -596,7 +596,12 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with accents", "[Query][C][FTS]
     query = c4query_new(db, queryStr, &err);
     auto e = c4query_run(query, &_options, nullslice, &err);
     REQUIRE(e);
-    CHECK(c4queryenum_getRowCount(e, &err) == 1);
+    if (_options.oneShot) {
+        CHECK(c4queryenum_next(e, nullptr));
+        CHECK(!c4queryenum_next(e, nullptr));
+    } else {
+        CHECK(c4queryenum_getRowCount(e, &err) == 1);
+    }
     c4queryenum_release(e);
 }
 
@@ -706,7 +711,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Grouped", "[Query][C]") {
     }
     CHECK(error.code == 0);
     CHECK(i == expectedRowCount);
-    CHECK(c4queryenum_getRowCount(e, &error) == 42);
+    if (!_options.oneShot)
+        CHECK(c4queryenum_getRowCount(e, &error) == 42);
     c4queryenum_release(e);
 }
 
@@ -812,6 +818,9 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
+    if (_options.oneShot)
+        return;
+
     compile(json5("true"));
     for (int numNexts = 0; numNexts < 10; numNexts += 4) {
         for (int seekTo = -1; seekTo <= 101; ++seekTo) {
@@ -847,17 +856,19 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4QueryTest, "DB Query while changing database", "[Query][C]") {
-    int changeDBBeforeRow = 25;
+void C4QueryTest::queryWhileChangingDatabase(int changeDBBeforeRow) {
     compile(json5("true"));
     C4Error error;
+
+    TransactionHelper t(db); //???
+
     auto e = c4query_run(query, &_options, kC4SliceNull, &error);
     REQUIRE(e);
     int row = 0;
 
     while (true) {
         if (row == changeDBBeforeRow) {
-            C4Log("Now modifying the database");
+            C4Log("Now modifying the database, before getting query row #%d", row);
             createRev("0000999"_sl, kRevID, kEmptyFleeceBody);
             createNewRev(db, "0000014"_sl, nullslice, kRevDeleted);
         }
@@ -868,6 +879,24 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "DB Query while changing database", "[Query]
     REQUIRE(row == 100);
     createRev("0000444"_sl, kRevID, kEmptyFleeceBody);
     c4queryenum_release(e);
+    createRev("0000445"_sl, kRevID, kEmptyFleeceBody);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "DB Query while changing database row 0", "[Query][C]") {
+    queryWhileChangingDatabase(0);
+}
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "DB Query while changing database row 25", "[Query][C]") {
+    queryWhileChangingDatabase(25);
+}
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "DB Query while changing database row 99", "[Query][C]") {
+    queryWhileChangingDatabase(99);
+}
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "DB Query while changing database row 100", "[Query][C]") {
+    queryWhileChangingDatabase(100);
 }
 
 
@@ -928,6 +957,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Query refresh", "[Query][C][!throws]") {
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
+    if (_options.oneShot)
+        return;
+
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
 

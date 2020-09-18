@@ -767,4 +767,18 @@ namespace litecore {
         return enc.finish();
     }
 
+
+#pragma mark - CHANGE OBSERVERS:
+
+
+    void SQLiteDataFile::enablePreChangeObservers(bool enable) {
+        if (enable) {
+
+        } else {
+            sqlite3_preupdate_hook();
+        }
+    }
+
+
+
 }
