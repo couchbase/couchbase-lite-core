@@ -26,6 +26,7 @@
 #include "Query.hh"
 #include "QueryParser.hh"
 #include "n1ql_parser.hh"
+#include "Defer.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "FleeceImpl.hh"
@@ -54,6 +55,16 @@ namespace litecore {
         kFTSRowidCol,
         kFTSOffsetsCol
     };
+
+
+    // Wrapper around Statement::executeStep.
+    // (The tokenizer can be called while running a FTS query, to parse the MATCH expression,
+    // and we have to tell it this is happening so it can treat stop-words differently.)
+    static bool executeStep(shared_ptr<SQLite::Statement> statement) {
+        unicodesn_tokenizerRunningQuery(true);
+        DEFER {unicodesn_tokenizerRunningQuery(false);};
+        return statement->executeStep();
+    }
 
 
     class SQLiteQuery : public Query {
@@ -179,7 +190,9 @@ namespace litecore {
             return result.str();
         }
 
+
         QueryEnumerator* createEnumerator(const Options *options) override;
+
 
         shared_ptr<SQLite::Statement> statement() const {
             if (!_statement)
@@ -187,61 +200,120 @@ namespace litecore {
             return _statement;
         }
 
-        void bindParameters(const Options *options);
 
-        // Records the query rows from my statement into a Fleece Doc.
-        Retained<Doc> fastForward() {
-            fleece::Stopwatch st;
-            int nCols = _statement->getColumnCount();
-            auto sk = keyStore().dataFile().documentKeys();
-            Encoder enc;
-            enc.beginArray();
+        // Updates the statement's bindings from the given Options
+        void bindParameters(const Options *options) {
+            _statement->clearBindings();
 
-            unicodesn_tokenizerRunningQuery(true);
-            try {
-                while (_statement->executeStep()) {
-                    enc.beginArray(nCols);
-                    for (int i = 0; i < nCols; ++i) {
-                        // Encode a column value:
-                        auto col = _statement->getColumn(i);
-                        switch (col.getType()) {
-                            case SQLITE_NULL:
-                                enc.writeUndefined();
+            set<string> unboundParameters = _parameters;
+
+            if (options && options->paramBindings.size > 0) {
+                slice bindings = options->paramBindings;
+                alloc_slice fleeceData;
+                if (bindings[0] == '{' && bindings[bindings.size-1] == '}')
+                    fleeceData = JSONConverter::convertJSON(bindings);
+                else
+                    fleeceData = bindings;
+                const Dict *root = Value::fromData(fleeceData)->asDict();
+                if (!root)
+                    error::_throw(error::InvalidParameter);
+
+                for (Dict::iterator it(root); it; ++it) {
+                    auto key = (string)it.keyString();
+                    unboundParameters.erase(key);
+                    auto sqlKey = string("$_") + key;
+                    const Value *val = it.value();
+                    try {
+                        switch (val->type()) {
+                            case kNull:
                                 break;
-                            case SQLITE_INTEGER:
-                                enc.writeInt(col.getInt64());
+                            case kBoolean:
+                            case kNumber:
+                                if (val->isInteger() && !val->isUnsigned())
+                                    _statement->bind(sqlKey, (long long)val->asInt());
+                                else
+                                    _statement->bind(sqlKey, val->asDouble());
                                 break;
-                            case SQLITE_FLOAT:
-                                enc.writeDouble(col.getDouble());
+                            case kString:
+                                _statement->bind(sqlKey, (string)val->asString());
                                 break;
-                            case SQLITE_BLOB: {
-                                if (i >= _1stCustomResultColumn) {
-                                    slice fleeceData {col.getBlob(), (size_t)col.getBytes()};
-                                    Scope fleeceScope(fleeceData, sk);
-                                    const Value *value = Value::fromTrustedData(fleeceData);
-                                    if (!value)
-                                        error::_throw(error::CorruptRevisionData);
-                                    enc.writeValue(value);
-                                    break;
-                                }
-                                // else fall through:
-                            case SQLITE_TEXT:
-                                enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
+                            default: {
+                                // Encode other types as a Fleece blob:
+                                Encoder enc;
+                                enc.writeValue(val);
+                                alloc_slice asFleece = enc.finish();
+                                _statement->bind(sqlKey, asFleece.buf, (int)asFleece.size);
                                 break;
                             }
                         }
+                    } catch (const SQLite::Exception &x) {
+                        if (x.getErrorCode() == SQLITE_RANGE)
+                            error::_throw(error::InvalidQueryParam,
+                                          "Unknown query property '%s'", key.c_str());
+                        else
+                            throw;
                     }
-                    enc.endArray();
                 }
-                _statement->reset();
-            } catch (...) {
-                unicodesn_tokenizerRunningQuery(false);
-                throw;
             }
-            unicodesn_tokenizerRunningQuery(false);
 
+            if (!unboundParameters.empty()) {
+                stringstream msg;
+                for (const string &param : unboundParameters)
+                    msg << " $" << param;
+                Warn("Some query parameters were left unbound and will have value `MISSING`:%s",
+                     msg.str().c_str());
+            }
+        }
+
+
+        // Records all the (remaining) query rows from my statement into a Fleece Doc.
+        Retained<Doc> fastForward() {
+            fleece::Stopwatch st;
+            Encoder enc;
+            enc.beginArray();
+            while (executeStep(_statement))
+                encodeRow(enc);
             enc.endArray();
+            _statement->reset();
             return enc.finishDoc();
+        }
+
+        // Records the statement's current row into a Fleece Encoder as an array of column values
+        void encodeRow(Encoder &enc) {
+            int nCols = _statement->getColumnCount();
+            enc.beginArray(nCols);
+            for (int i = 0; i < nCols; ++i) {
+                // Encode a column value:
+                auto col = _statement->getColumn(i);
+                switch (col.getType()) {
+                    case SQLITE_NULL:
+                        enc.writeUndefined();
+                        break;
+                    case SQLITE_INTEGER:
+                        enc.writeInt(col.getInt64());
+                        break;
+                    case SQLITE_FLOAT:
+                        enc.writeDouble(col.getDouble());
+                        break;
+                    case SQLITE_BLOB: {
+                        if (i >= _1stCustomResultColumn) {
+                            slice fleeceData {col.getBlob(), (size_t)col.getBytes()};
+                            auto sk = keyStore().dataFile().documentKeys();
+                            Scope fleeceScope(fleeceData, sk);
+                            const Value *value = Value::fromTrustedData(fleeceData);
+                            if (!value)
+                                error::_throw(error::CorruptRevisionData);
+                            enc.writeValue(value);
+                            break;
+                        }
+                        // else fall through:
+                    case SQLITE_TEXT:
+                        enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
+                        break;
+                    }
+                }
+            }
+            enc.endArray();
         }
 
         unsigned objectRef() const                  {return getObjectRef();}   // (for logging)
@@ -432,30 +504,32 @@ namespace litecore {
 
 
     class SQLiteQueryOneShotEnum : public SQLiteQueryEnumerator,
-                                   public DataFile::PreTransactionObserver
+                                   public DataFile::PreChangeObserver
     {
     public:
         SQLiteQueryOneShotEnum(SQLiteQuery *query,
                                const Query::Options *options,
                                sequence_t lastSequence,
                                uint64_t purgeCount,
-                               shared_ptr<SQLite::Statement> statement)
+                               shared_ptr<SQLite::Statement> statement,
+                               double elapsedTime)
         :SQLiteQueryEnumerator(query, options, lastSequence, purgeCount)
         ,_query(query)
         ,_statement(statement)
         ,_sk(query->keyStore().dataFile().documentKeys())
         {
-            logInfo("Created one-shot enum on {Query#%u}", query->objectRef());
+            logInfo("Created one-shot enum on {Query#%u} in %.3fms",
+                    query->objectRef(), elapsedTime*1000.0);
 
             // Observe a transaction starting, so I can finish reading the rest of the result
             // rows before the database changes out from under me.
-            query->keyStore().dataFile().addPreTransactionObserver(this);
-            _observingTransaction = true;
+            query->keyStore().dataFile().addPreChangeObserver(this);
+            _observingDBChanges = true;
         }
 
         ~SQLiteQueryOneShotEnum() {
             try {
-                endObservingTransaction();
+                endObservingDBChanges();
                 if (_statement)
                     _statement->reset();
             } catch (...) { }
@@ -471,13 +545,13 @@ namespace litecore {
             } else {
                 if (_statement) {
                     ++_rowNumber;
-                    if (_statement->executeStep())
+                    if (executeStep(_statement))
                         _hasRow = true;
                     else {
                         // Reached end of result set:
                         _statement->reset();
                         _statement = nullptr;
-                        endObservingTransaction();
+                        endObservingDBChanges();
                     }
                 }
                 return _hasRow;
@@ -487,27 +561,32 @@ namespace litecore {
         virtual bool obsoletedBy(const QueryEnumerator *otherE) override {
             if (_recording)
                 return _recording->obsoletedBy(otherE);
-
-            return true; //FIX
+            else
+                return true;
         }
 
-        void preTransaction() override {
-            // My SQLite connection is beginning a transaction, so it's probably going to make
-            // changes to the database. I have to finish running the query right now, otherwise
-            // I may get rows altered by the current changes. So I create a recording.
-            _observingTransaction = false;
+        void preDataFileChange(Change change) override {
+            // My SQLite connection is about to change the database.
+            // I have to finish running the statement right now, otherwise
+            // I may get rows altered by the coming changes. So I create a recording.
+            _observingDBChanges = false;
             if (_statement) {
-                logInfo("Recording rest of query rows before DB changes...");
-                _recording = fastForward();
+                if (change == Change::kClosingDB) {
+                    logInfo("Closing statement before DB closes");
+                } else {
+                    logInfo("Recording rest of query rows before DB changes...");
+                    _recording = fastForward();
+                }
                 _statement->reset();
                 _statement = nullptr;
             }
         }
 
-        void endObservingTransaction() {
-            if (_observingTransaction) {
-                _observingTransaction = false;
-                _query->keyStore().dataFile().removePreTransactionObserver(this);
+        void endObservingDBChanges() {
+            if (_observingDBChanges) {
+                _observingDBChanges = false;
+                if (_query->isOpen())
+                    _query->keyStore().dataFile().removePreChangeObserver(this);
             }
         }
 
@@ -526,53 +605,11 @@ namespace litecore {
     private:
         const Array* readRow() {
             Assert(_statement);
-            unicodesn_tokenizerRunningQuery(true);
-            try {
-                auto nCols = _statement->getColumnCount();
-                _enc.beginArray(nCols);
-                for (int i = 0; i < nCols; ++i)
-                encodeColumn(_enc, i);
-                _enc.endArray();
-            } catch (...) {
-                _enc.reset();
-                unicodesn_tokenizerRunningQuery(false);
-                throw;
-            }
-            unicodesn_tokenizerRunningQuery(false);
-
+            _enc.reset();
+            _query->encodeRow(_enc);
             _encodedRow = _enc.finish();
             _rawColumns = Value::fromTrustedData(_encodedRow)->asArray();
             return _rawColumns;
-        }
-
-        void encodeColumn(Encoder &enc, int i) {
-            SQLite::Column col = _statement->getColumn(i);
-            switch (col.getType()) {
-                case SQLITE_NULL:
-                    enc.writeUndefined();
-                    break;
-                case SQLITE_INTEGER:
-                    enc.writeInt(col.getInt64());
-                    break;
-                case SQLITE_FLOAT:
-                    enc.writeDouble(col.getDouble());
-                    break;
-                case SQLITE_BLOB: {
-                    if (i >= _1stCustomResultColumn) {
-                        slice fleeceData {col.getBlob(), (size_t)col.getBytes()};
-                        Scope fleeceScope(fleeceData, _sk);
-                        const Value *value = Value::fromTrustedData(fleeceData);
-                        if (!value)
-                            error::_throw(error::CorruptRevisionData);
-                        enc.writeValue(value);
-                        break;
-                    }
-                    // else fall through:
-                case SQLITE_TEXT:
-                    enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
-                    break;
-                }
-            }
         }
 
         // Collects all the (remaining) rows into a Fleece array of arrays,
@@ -593,7 +630,7 @@ namespace litecore {
         Retained<SQLiteQueryPlaybackEnum> _recording;
         int64_t _rowNumber {0};
         bool _hasRow {false};
-        bool _observingTransaction {false};
+        bool _observingDBChanges {false};
     };
 
 
@@ -606,76 +643,11 @@ namespace litecore {
     }
 
 
-    void SQLiteQuery::bindParameters(const Options *options) {
-        _statement->clearBindings();
-
-        set<string> unboundParameters = _parameters;
-
-        if (options && options->paramBindings.size > 0) {
-            slice bindings = options->paramBindings;
-            alloc_slice fleeceData;
-            if (bindings[0] == '{' && bindings[bindings.size-1] == '}')
-                fleeceData = JSONConverter::convertJSON(bindings);
-            else
-                fleeceData = bindings;
-            const Dict *root = Value::fromData(fleeceData)->asDict();
-            if (!root)
-                error::_throw(error::InvalidParameter);
-
-            for (Dict::iterator it(root); it; ++it) {
-                auto key = (string)it.keyString();
-                unboundParameters.erase(key);
-                auto sqlKey = string("$_") + key;
-                const Value *val = it.value();
-                try {
-                    switch (val->type()) {
-                        case kNull:
-                            break;
-                        case kBoolean:
-                        case kNumber:
-                            if (val->isInteger() && !val->isUnsigned())
-                                _statement->bind(sqlKey, (long long)val->asInt());
-                            else
-                                _statement->bind(sqlKey, val->asDouble());
-                            break;
-                        case kString:
-                            _statement->bind(sqlKey, (string)val->asString());
-                            break;
-                        default: {
-                            // Encode other types as a Fleece blob:
-                            Encoder enc;
-                            enc.writeValue(val);
-                            alloc_slice asFleece = enc.finish();
-                            _statement->bind(sqlKey, asFleece.buf, (int)asFleece.size);
-                            break;
-                        }
-                    }
-                } catch (const SQLite::Exception &x) {
-                    if (x.getErrorCode() == SQLITE_RANGE)
-                        error::_throw(error::InvalidQueryParam,
-                                      "Unknown query property '%s'", key.c_str());
-                    else
-                        throw;
-                }
-            }
-        }
-
-        if (!unboundParameters.empty()) {
-            stringstream msg;
-            for (const string &param : unboundParameters)
-                msg << " $" << param;
-            Warn("Some query parameters were left unbound and will have value `MISSING`:%s",
-                 msg.str().c_str());
-        }
-    }
-
-
-
     // The factory method that creates a SQLite QueryEnumerator, but only if the database has
     // changed since lastSeq.
     QueryEnumerator* SQLiteQuery::createEnumerator(const Options *options) {
-        // Start a read-only transaction, to ensure that the result of lastSequence() and purgeCount() will be
-        // consistent with the query results.
+        // Start a read-only transaction, to ensure that the result of lastSequence()
+        // and purgeCount() will be consistent with the query results.
         ReadOnlyTransaction t(keyStore().dataFile());
 
         sequence_t curSeq = lastSequence();
@@ -683,15 +655,15 @@ namespace litecore {
         if(options && options->notOlderThan(curSeq, purgeCnt))
             return nullptr;
 
-        Assert(_statement.use_count() == 1, "Multiple enumerators on a query");
+        Assert(_statement.use_count() == 1, "Multiple enumerators on a query"); // FIX
         _statement->reset();
-
         bindParameters(options);
+
+        fleece::Stopwatch st;
         if (options && options->oneShot) {
             return new SQLiteQueryOneShotEnum(this, options, curSeq, purgeCnt,
-                                              _statement);
+                                              _statement, st.elapsed());
         } else {
-            fleece::Stopwatch st;
             Retained<Doc> recording = fastForward();
             return new SQLiteQueryPlaybackEnum(this, options, curSeq, purgeCnt,
                                                recording, 0, st.elapsed());

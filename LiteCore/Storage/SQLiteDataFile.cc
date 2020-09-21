@@ -23,6 +23,10 @@
  * 302: Add purgeCnt entry to kvmeta
  */
 
+#ifndef SQLITE_ENABLE_PREUPDATE_HOOK
+#define SQLITE_ENABLE_PREUPDATE_HOOK    // for sqlite3.h
+#endif
+
 #include "SQLiteDataFile.hh"
 #include "SQLiteKeyStore.hh"
 #include "SQLite_Internal.hh"
@@ -772,10 +776,26 @@ namespace litecore {
 
 
     void SQLiteDataFile::enablePreChangeObservers(bool enable) {
+        if (!_sqlDb)
+            return;
         if (enable) {
-
+            auto hook = [](void *ctx,
+                           sqlite3 *sqlDB,
+                           int op,
+                           const char *dbName,
+                           const char *tableName,
+                           sqlite3_int64 rowid,
+                           sqlite3_int64 newRowid)
+            {
+                // (For now we ignore changes to non-default key stores (checkpoints etc) because
+                // the only thing using observers is SQLiteQueryEnumerator, and false alarms
+                // make one-shot queries waste memory caching results.)
+                if (0 == strcmp(tableName, SQLiteKeyStore::kDefaultTableName))
+                    ((SQLiteDataFile*)ctx)->callPreChangeObservers(PreChangeObserver::Change(op));
+            };
+            sqlite3_preupdate_hook(_sqlDb->getHandle(), hook, this);
         } else {
-            sqlite3_preupdate_hook();
+            sqlite3_preupdate_hook(_sqlDb->getHandle(), nullptr, nullptr);
         }
     }
 

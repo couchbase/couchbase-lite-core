@@ -62,7 +62,13 @@ namespace litecore {
 
         class PreChangeObserver {
         public:
-            virtual void preChange() =0;
+            enum Change {
+                kClosingDB = -1,
+                kInserting = 18,    // SQLITE_INSERT
+                kUpdating  = 23,    // SQLITE_UPDATE
+                kDeleting  =  9,    // SQLITE_DELETE
+            };
+            virtual void preDataFileChange(Change) =0;
             virtual ~PreChangeObserver() {}
         };
 
@@ -240,7 +246,7 @@ namespace litecore {
         /** Calls all registered preChangeObservers, then clears the list.
             It is the subclass's responsibility to call this before making a change, when there are any
             observers registered. */
-        void callPreChangeObservers();
+        void callPreChangeObservers(PreChangeObserver::Change);
 
         /** Runs the function/lambda while holding the file lock. This doesn't create a real
             transaction (at the ForestDB/SQLite/etc level), but it does ensure that no other thread

@@ -860,7 +860,7 @@ void C4QueryTest::queryWhileChangingDatabase(int changeDBBeforeRow) {
     compile(json5("true"));
     C4Error error;
 
-    TransactionHelper t(db); //???
+    TransactionHelper t(db);
 
     auto e = c4query_run(query, &_options, kC4SliceNull, &error);
     REQUIRE(e);
@@ -897,6 +897,19 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "DB Query while changing database row 99", "
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "DB Query while changing database row 100", "[Query][C]") {
     queryWhileChangingDatabase(100);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "Close DB with unfinished query enum", "[Query][C]") {
+    compile(json5("true"));
+    C4Error error;
+
+    auto e = c4query_run(query, &_options, kC4SliceNull, &error);
+    CHECK(c4queryenum_next(e, &error));
+
+    closeDB();
+
+    c4queryenum_release(e);
 }
 
 

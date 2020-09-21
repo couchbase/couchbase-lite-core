@@ -62,6 +62,7 @@ namespace litecore {
         virtual std::string explain() =0;
 
         virtual void close()                                            {_keyStore = nullptr;}
+        bool isOpen() const                                             {return _keyStore != nullptr;}
 
         struct Options {
             Options() { }
