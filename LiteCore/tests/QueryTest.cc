@@ -1747,3 +1747,43 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
         CHECK(e->columns()[0]->asString() == "special"_sl);
     }
 }
+
+TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {
+    Transaction t(store->dataFile());
+    
+    for(int i = 0; i < 2; i++) {
+        string docID = stringWithFormat("rec-%03d", i + 1);
+        writeDoc(docID, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("variants");
+            enc.beginArray(1);
+                enc.beginDictionary(1);
+                    enc.writeKey("items");
+                    enc.beginArray(1);
+                        enc.beginDictionary(1);
+                            enc.writeKey("id");
+                            enc.writeInt(i + 1);
+                        enc.endDictionary();
+                    enc.endArray();
+                enc.endDictionary();
+            enc.endArray();
+        });
+    }
+
+    Retained<Query> q;
+    vector<slice> expectedResults;
+    SECTION("WHERE key from dict in sub-array") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id'], \
+            WHERE: ['ANY', 'V', ['.variants'], ['ANY', 'I', ['?V.items'], ['=', ['?I.id'], 2]]]}"));
+        expectedResults.emplace_back("rec-002"_sl);
+    }
+
+    Retained<QueryEnumerator> e(q->createEnumerator());
+    REQUIRE(e->getRowCount() == expectedResults.size());
+    size_t row = 0;
+    for (const auto& expectedResult : expectedResults) {
+        REQUIRE(e->next());
+        CHECK(e->columns()[0]->asString() == expectedResult);
+        ++row;
+    }
+}

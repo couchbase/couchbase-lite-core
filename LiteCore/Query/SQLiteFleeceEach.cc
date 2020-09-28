@@ -214,14 +214,19 @@ private:
             return SQLITE_OK;
 
         // Parse the Fleece data:
-        slice data = valueAsSlice(argv[0]);
-        if (!data) {
+        slice body = valueAsSlice(argv[0]);
+        if (!body) {
             // Weird not to get a document; have to return early to avoid a crash.
             // Treat this as an empty doc. (See issue #379)
             Warn("fleece_each filter called with null document! Query is likely to fail. (#379)");
             return SQLITE_OK;
         }
-        data = _vtab->context.delegate->fleeceAccessor(data);
+        slice data = _vtab->context.delegate->fleeceAccessor(body);
+        
+        // CBL-1248: if the original data is not document body, getting data
+        // from db's fleece accessor will return nullslice; fallback to use the original data.
+        if (!data.buf)
+            data = body;
 
         if (size_t(data.buf) & 1) {
             // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
