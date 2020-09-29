@@ -252,6 +252,26 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query ANY of dict", "[Query][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Nested ANY of dict", "[Query][C]") {     // CBL-1248
+    C4Error error;
+    TransactionHelper t(db);
+
+    // New Doc:
+    auto doc1 = c4doc_create(db, C4STR("doc1"),
+                             json2fleece("{'variants': [{'items': [{'id':1, 'value': 1}]}]}"), 0, &error);
+
+    auto doc2 = c4doc_create(db, C4STR("doc2"),
+                             json2fleece("{'variants': [{'items': [{'id':2, 'value': 2}]}]}"), 0, &error);
+
+    compile(json5("['ANY', 'V', ['.variants'], ['ANY', 'I', ['?V.items'], ['=', ['?I.id'], 2]]]"));
+
+    CHECK(run() == (vector<string>{ "doc2" }));
+
+    c4doc_release(doc1);
+    c4doc_release(doc2);
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query expression index", "[Query][C]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));

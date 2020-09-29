@@ -153,6 +153,9 @@ private:
            hidden columns are unconstrained." */
         /* From json1.c: "The query strategy is to look for an equality constraint on the
            [`root_data`] column.  Without such a constraint, the table cannot operate." */
+        /* In other words: If fl_each() is called with an argument, that manifests here as a
+           constraint on the `root_data` column. A second argument results in a constraint on
+           the `root_path` column. */
         int rootDataIdx = -1, rootPathIdx = -1;
         auto constraint = info->aConstraint;
         for (int i = 0; i < info->nConstraint; i++, constraint++){
@@ -221,8 +224,11 @@ private:
             Warn("fleece_each filter called with null document! Query is likely to fail. (#379)");
             return SQLITE_OK;
         }
-        data = _vtab->context.delegate->fleeceAccessor(data);
-
+        if (idxNum == kPathIndex) {
+            // If fl_each is called with a 2nd (property path) argument, then the first arg is the
+            // doc body, which we need to extract Fleece from:
+            data = _vtab->context.delegate->fleeceAccessor(data);
+        }
         if (size_t(data.buf) & 1) {
             // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
             // revision data, so it could occur. Now that it's not allowed, we have to work around
