@@ -1448,7 +1448,6 @@ namespace litecore {
     // Writes an 'fl_each()' call representing a virtual table for the array at the given property
     void QueryParser::writeEachExpression(const Value *propertyExpr) {
         writeFunctionGetter(kEachFnName, propertyExpr);
-//        writeEachExpression(propertyFromNode(propertyExpr));
     }
 
 
