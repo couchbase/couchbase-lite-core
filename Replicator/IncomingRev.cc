@@ -232,14 +232,7 @@ namespace litecore { namespace repl {
     // Called by the Inserter after the revision is safely committed to disk.
     void IncomingRev::revisionInserted() {
         Retained<IncomingRev> retainSelf = this;
-        decrement(_pendingCallbacks);
-        if(_rev->error.domain == LiteCoreDomain &&
-           (_rev->error.code == kC4ErrorDeltaBaseUnknown ||
-            _rev->error.code == kC4ErrorCorruptDelta)) {
-            // CBL-936: Make sure that the puller knows this revision is coming again
-            _puller->revReRequested(this);
-        }
-        
+        decrement(_pendingCallbacks);        
         finish();
     }
 
@@ -258,6 +251,15 @@ namespace litecore { namespace repl {
 
     // Finish up, on success or failure.
     void IncomingRev::finish() {
+        if(_rev->error.domain == LiteCoreDomain &&
+           (_rev->error.code == kC4ErrorDeltaBaseUnknown ||
+            _rev->error.code == kC4ErrorCorruptDelta)) {
+            // CBL-936: Make sure that the puller knows this revision is coming again
+            // NOTE: Important that this be done before _revMessage->respond to avoid
+            // racing with the newly requested rev
+            _puller->revReRequested(this);
+        }
+
         if (_revMessage) {
             MessageBuilder response(_revMessage);
             if (_rev->error.code != 0)
