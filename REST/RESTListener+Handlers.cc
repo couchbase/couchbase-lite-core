@@ -114,9 +114,8 @@ namespace litecore { namespace REST {
         if (!pathFromDatabaseName(dbName, path))
             return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database name");
 
-        C4DatabaseConfig config = { kC4DB_Create };
         C4Error err;
-        if (!openDatabase(dbName, path, &config, &err)) {
+        if (!openDatabase(dbName, path, kC4DB_Create, &err)) {
             if (err.domain == LiteCoreDomain && err.code == kC4ErrorConflict)
                 return rq.respondWithStatus(HTTPStatus::PreconditionFailed);
             else

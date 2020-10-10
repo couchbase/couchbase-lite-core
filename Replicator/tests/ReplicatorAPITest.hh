@@ -36,11 +36,13 @@ extern "C" {
 
 class ReplicatorAPITest : public C4Test {
 public:
+    constexpr static slice kDB2Name = "cbl_core_test2.cblite2";
+
     // Default address to replicate with (individual tests can override this):
     constexpr static const C4Address kDefaultAddress {kC4Replicator2Scheme,
                                                       C4STR("localhost"),
                                                       4984};
-    // Common database names:
+    // Common remote (SG) database names:
     constexpr static const C4String kScratchDBName = C4STR("scratch");
     constexpr static const C4String kITunesDBName = C4STR("itunes");
     constexpr static const C4String kWikipedia1kDBName = C4STR("wikipedia1k");
@@ -85,14 +87,11 @@ public:
 #ifdef COUCHBASE_ENTERPRISE
     // Create an empty database db2 and make it the target of the replication
     void createDB2() {
-        auto db2Path = TempDir() + "cbl_core_test2.cblite2";
-        auto db2PathSlice = c4str(db2Path.c_str());
-
-        auto config = c4db_getConfig(db);
+        auto config = c4db_getConfig2(db);
         C4Error error;
-        if (!c4db_deleteAtPath(db2PathSlice, &error))
+        if (!c4db_deleteNamed(kDB2Name, config->parentDirectory, &error))
             REQUIRE(error.code == 0);
-        db2 = c4db_open(db2PathSlice, config, &error);
+        db2 = c4db_openNamed(kDB2Name, config, &error);
         REQUIRE(db2 != nullptr);
 
         _address = { };

@@ -179,8 +179,6 @@ string C4Test::sFixturesDir = "C/tests/data/";
 string C4Test::sReplicatorFixturesDir = "Replicator/tests/data/";
 #endif
 
-const string C4Test::kDatabaseName = "cbl_core_test";
-
 
 C4Test::C4Test(int testOption)
 :_storage(kC4SQLiteStorageEngine),
@@ -208,6 +206,22 @@ _versioning(kC4RevisionTrees)
         if (getenv("LiteCoreTestsQuiet"))
             c4log_setCallbackLevel(kC4LogWarning);
 
+        auto enc = FLEncoder_New();
+        FLEncoder_BeginDict(enc, 1);
+        FLEncoder_WriteKey(enc, FLSTR("ans*wer"));
+        FLEncoder_WriteInt(enc, 42);
+        FLEncoder_EndDict(enc);
+        auto result = FLEncoder_Finish(enc, nullptr);
+        kFleeceBody = {result.buf, result.size};
+        FLEncoder_Free(enc);
+
+        enc = FLEncoder_New();
+        FLEncoder_BeginDict(enc, 1);
+        FLEncoder_EndDict(enc);
+        result = FLEncoder_Finish(enc, nullptr);
+        kEmptyFleeceBody = {result.buf, result.size};
+        FLEncoder_Free(enc);
+
 #if TARGET_OS_IPHONE
         static once_flag once;
         call_once(once, [] {
@@ -232,62 +246,29 @@ _versioning(kC4RevisionTrees)
 
     objectCount = c4_getObjectCount();
 
-    C4DatabaseConfig config = { };
-    config.flags = kC4DB_Create;
-    config.storageEngine = _storage;
-    config.versioning = _versioning;
+    _dbConfig = {slice(TempDir()), kC4DB_Create};
 
-    if (config.versioning == kC4RevisionTrees) {
-        kRevID = C4STR("1-abcd");
-        kRev2ID = C4STR("2-c001d00d");
-        kRev3ID = C4STR("3-deadbeef");
-    } else {
-        kRevID = C4STR("1@*");
-        kRev2ID = C4STR("2@*");
-        kRev3ID = C4STR("3@*");
-    }
-
-    if (!kFleeceBody.buf) {
-        auto enc = FLEncoder_New();
-        FLEncoder_BeginDict(enc, 1);
-        FLEncoder_WriteKey(enc, FLSTR("ans*wer"));
-        FLEncoder_WriteInt(enc, 42);
-        FLEncoder_EndDict(enc);
-        auto result = FLEncoder_Finish(enc, nullptr);
-        kFleeceBody = {result.buf, result.size};
-        FLEncoder_Free(enc);
-    }
-
-    if (!kEmptyFleeceBody.buf) {
-        auto enc = FLEncoder_New();
-        FLEncoder_BeginDict(enc, 1);
-        FLEncoder_EndDict(enc);
-        auto result = FLEncoder_Finish(enc, nullptr);
-        kEmptyFleeceBody = {result.buf, result.size};
-        FLEncoder_Free(enc);
-    }
+    kRevID = C4STR("1-abcd");
+    kRev2ID = C4STR("2-c001d00d");
+    kRev3ID = C4STR("3-deadbeef");
 
     if (testOption & 1) {
-        config.encryptionKey.algorithm = kC4EncryptionAES256;
-        memcpy(config.encryptionKey.bytes, "this is not a random key at all.", kC4EncryptionKeySizeAES256);
+        _dbConfig.encryptionKey.algorithm = kC4EncryptionAES256;
+        memcpy(_dbConfig.encryptionKey.bytes, "this is not a random key at all.", kC4EncryptionKeySizeAES256);
     }
 
-    static C4DatabaseConfig sLastConfig = { };
-    if (config.flags != sLastConfig.flags || config.versioning != sLastConfig.versioning
-                    || config.encryptionKey.algorithm != sLastConfig.encryptionKey.algorithm) {
-        fprintf(stderr, "        --- %s, %s%s\n",
-                config.storageEngine,
-                (config.versioning==kC4RevisionTrees ? "rev-trees" : "?unknown versioning?"),
-                (config.encryptionKey.algorithm ? ", encrypted" : ""));
-        sLastConfig = config;
+    static C4DatabaseConfig2 sLastConfig = { };
+    if (_dbConfig.flags != sLastConfig.flags
+                    || _dbConfig.encryptionKey.algorithm != sLastConfig.encryptionKey.algorithm) {
+        fprintf(stderr, "        --- %s\n",
+                (_dbConfig.encryptionKey.algorithm ? ", encrypted" : ""));
+        sLastConfig = _dbConfig;
     }
-
-    _dbPath = TempDir() + kDatabaseName + kC4DatabaseFilenameExtension;
 
     C4Error error;
-    if (!c4db_deleteAtPath(databasePath(), &error))
+    if (!c4db_deleteNamed(kDatabaseName, _dbConfig.parentDirectory, &error))
         REQUIRE(error.code == 0);
-    db = c4db_open(databasePath(), &config, &error);
+    db = c4db_openNamed(kDatabaseName, &_dbConfig, &error);
     INFO("Error " << error.domain << "/" << error.code);
     REQUIRE(db != nullptr);
 }
@@ -317,16 +298,11 @@ C4Test::~C4Test() {
 
 C4Database* C4Test::createDatabase(const string &nameSuffix) {
     REQUIRE(!nameSuffix.empty());
-    string dbPath = fleece::slice(databasePath()).asString();
-    C4Assert(litecore::hasSuffix(dbPath, kC4DatabaseFilenameExtension));
-    dbPath.replace(dbPath.size()-8, 8, "_" + nameSuffix + kC4DatabaseFilenameExtension);
-    auto dbPathSlice = c4str(dbPath.c_str());
-
-    auto config = c4db_getConfig(db);
+    string name = string(kDatabaseName) + "_" + nameSuffix;
     C4Error error;
-    if (!c4db_deleteAtPath(dbPathSlice, &error))
+    if (!c4db_deleteNamed(slice(name), _dbConfig.parentDirectory, &error))
         REQUIRE(error.code == 0);
-    auto newDB = c4db_open(dbPathSlice, config, &error);
+    auto newDB = c4db_openNamed(slice(name), &_dbConfig, &error);
     REQUIRE(newDB != nullptr);
     return newDB;
 }
@@ -341,22 +317,24 @@ void C4Test::closeDB() {
 
 
 void C4Test::reopenDB() {
-    auto config = *c4db_getConfig(db);
+    // Update _dbConfig in case db was reopened with different flags or encryption:
+    _dbConfig.flags = c4db_getConfig2(db)->flags;
+    _dbConfig.encryptionKey = c4db_getConfig2(db)->encryptionKey;
+
     closeDB();
     C4Error error;
-    db = c4db_open(databasePath(), &config, &error);
+    db = c4db_openNamed(kDatabaseName, &_dbConfig, &error);
     REQUIRE(db);
 }
 
 
 void C4Test::reopenDBReadOnly() {
-    auto config = *c4db_getConfig(db);
     C4Error error;
     REQUIRE(c4db_close(db, &error));
     c4db_release(db);
     db = nullptr;
-    config.flags = (config.flags & ~kC4DB_Create) | kC4DB_ReadOnly;
-    db = c4db_open(databasePath(), &config, &error);
+    _dbConfig.flags = (_dbConfig.flags & ~kC4DB_Create) | kC4DB_ReadOnly;
+    db = c4db_openNamed(kDatabaseName, &_dbConfig, &error);
     REQUIRE(db);
 }
 
@@ -372,24 +350,29 @@ void C4Test::deleteDatabase(){
 
 
 void C4Test::deleteAndRecreateDB(C4Database* &db) {
-    C4SliceResult path = c4db_getPath(db);
-    auto config = *c4db_getConfig(db);
+    // Have to copy the name and parentDir -- their slices are invalidated when db is released.
+    alloc_slice name(c4db_getName(db));
+    C4DatabaseConfig2 config = *c4db_getConfig2(db);
+    alloc_slice parentDir(config.parentDirectory);
+    config.parentDirectory = parentDir;
+
     C4Error error;
     REQUIRE(c4db_delete(db, &error));
     c4db_release(db);
     db = nullptr;
-    db = c4db_open({path.buf, path.size}, &config, &error);
+
+    db = c4db_openNamed(name, &config, &error);
     REQUIRE(db);
-    c4slice_free(path);
 }
 
 
 /*static*/ alloc_slice C4Test::copyFixtureDB(const string &name) {
     auto srcPath = litecore::FilePath(sFixturesDir + name, "");
-    auto dbPath = litecore::FilePath::tempDirectory()[srcPath.fileOrDirName() + "/"];
+    litecore::FilePath parentDir(TempDir(), "");
+    auto dbPath = parentDir[srcPath.fileOrDirName() + "/"];
     dbPath.delRecursive();
     srcPath.copyTo(dbPath);
-    return alloc_slice(string(dbPath));
+    return alloc_slice(dbPath.unextendedName());
 }
 
 

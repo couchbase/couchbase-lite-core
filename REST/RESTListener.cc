@@ -243,7 +243,7 @@ namespace litecore { namespace REST {
 
     bool RESTListener::openDatabase(std::string name,
                                     const FilePath &path,
-                                    const C4DatabaseConfig *config,
+                                    C4DatabaseFlags flags,
                                     C4Error *outError)
     {
         if (name.empty()) {
@@ -254,7 +254,8 @@ namespace litecore { namespace REST {
         }
         if (databaseNamed(name) != nullptr)
             return returnError(outError, LiteCoreDomain, kC4ErrorConflict, "Database exists");
-        c4::ref<C4Database> db = c4db_open(slice(path.path()), config, outError);
+        C4DatabaseConfig2 config = {slice(path.dirName()), flags};
+        c4::ref<C4Database> db = c4db_openNamed(slice(name), &config, outError);
         if (!db)
             return false;
         if (!registerDatabase(db, name)) {

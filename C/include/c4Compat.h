@@ -18,15 +18,15 @@
 #endif
 
 #ifdef _MSC_VER
-#define C4INLINE __forceinline
-#define C4NONNULL
+#  define C4INLINE __forceinline
+#  define C4NONNULL
 #elif defined(__GNUC__) && !defined(__clang__)
-#define C4INLINE inline
-//gcc supports only __attribute((nonnull)) for whole function, so
-#define C4NONNULL /**/
+#  define C4INLINE inline
+  //gcc supports only __attribute((nonnull)) for whole function, so
+#  define C4NONNULL /**/
 #else
-#define C4INLINE inline
-#define C4NONNULL __attribute((nonnull))
+#  define C4INLINE inline
+#  define C4NONNULL __attribute((nonnull))
 #endif
 
 // Macros for defining typed enumerations and option flags.
@@ -57,12 +57,19 @@
 #endif
 
 
+// Declaration for API functions; should be just before the ending ";".
 #ifdef __cplusplus
 #define C4API noexcept
 #else
 #define C4API
 #endif
 
+// Deprecating functions & types  (Note: In C++only code, can use standard `[[deprecated]]`)
+#ifdef _MSC_VER
+#  define C4_DEPRECATED(MSG) __declspec(deprecated(MSG))
+#else
+#  define C4_DEPRECATED(MSG) __attribute((deprecated(MSG)))
+#endif
 
 // Export/import stuff:
 #ifdef _MSC_VER

@@ -43,23 +43,25 @@ TEST_CASE("Options password logging redaction") {
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt database", "[Push]") {
+    // Push a doc:
     createRev("doc"_sl, kRevID, kEmptyFleeceBody);
     _expectedDocumentCount = 1;
     runPushReplication();
 
-    // No more progress should be made with the imported DB
+    // Use c4db_copyNamed to copy the db to a new file (with new UUIDs):
+    C4Error error;
+    alloc_slice path(c4db_getPath(db));
+    string scratchDBName = format("scratch%lld", chrono::milliseconds(time(nullptr)).count());
+    REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), &error));
+
+    // Open the copied db:
+    c4db_release(db);
+    db = c4db_openNamed(slice(scratchDBName), &dbConfig(), &error);
+    REQUIRE(db);
+
+    // Push from the copied db; this should reuse the checkpoint and not need to push any docs:
     _expectedUnitsComplete = 0;
     _expectedDocumentCount = 0;
-
-    FilePath original = db->path();
-    char folderName[64];
-    sprintf(folderName, "scratch%lld.cblite2/", chrono::milliseconds(time(nullptr)).count());
-    FilePath newPath = litecore::FilePath::tempDirectory()[folderName];
-    string newPathStr = newPath.path();
-    CopyPrebuiltDB(original, newPath, &db->config);
-    C4DatabaseConfig config = db->config;
-    c4db_release(db);
-    db = c4db_open(c4str(newPathStr.c_str()), &config, nullptr);
     runPushReplication();
 }
 

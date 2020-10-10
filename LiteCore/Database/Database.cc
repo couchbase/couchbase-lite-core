@@ -59,7 +59,7 @@ namespace c4Internal {
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
     /*static*/ FilePath Database::findOrCreateBundle(const string &path,
                                                      bool canCreate,
-                                                     C4StorageEngine &storageEngine)
+                                 C4StorageEngine &storageEngine)
     {
         FilePath bundle(path, "");
         bool createdDir = (canCreate && bundle.mkdir());
@@ -103,23 +103,34 @@ namespace c4Internal {
 
     Database::Database(const string &bundlePath,
                        C4DatabaseConfig inConfig)
-    :_dataFilePath(findOrCreateBundle(bundlePath,
-                                      (inConfig.flags & kC4DB_Create) != 0,
-                                      inConfig.storageEngine))
-    ,config(inConfig)
+    :Database(bundlePath,
+              inConfig,
+              findOrCreateBundle(bundlePath,
+                                 (inConfig.flags & kC4DB_Create) != 0,
+                                 inConfig.storageEngine))
+    { }
+
+    
+    Database::Database(const string &bundlePath,
+                       const C4DatabaseConfig &inConfig,
+                       FilePath &&dataFilePath)
+    :_name(dataFilePath.dir().unextendedName())
+    ,_parentDirectory(dataFilePath.dir().parentDir())
+    ,_config{slice(_parentDirectory), inConfig.flags, inConfig.encryptionKey}
+    ,_configV1(inConfig)
     ,_encoder(new fleece::impl::Encoder())
     {
         // Set up DataFile options:
         DataFile::Options options { };
         options.keyStores.sequences = true;
-        options.create = (config.flags & kC4DB_Create) != 0;
-        options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
-        options.upgradeable = (config.flags & kC4DB_NoUpgrade) == 0;
+        options.create = (_config.flags & kC4DB_Create) != 0;
+        options.writeable = (_config.flags & kC4DB_ReadOnly) == 0;
+        options.upgradeable = (_config.flags & kC4DB_NoUpgrade) == 0;
         options.useDocumentKeys = true;
-        options.encryptionAlgorithm = (EncryptionAlgorithm)config.encryptionKey.algorithm;
+        options.encryptionAlgorithm = (EncryptionAlgorithm)_config.encryptionKey.algorithm;
         if (options.encryptionAlgorithm != kNoEncryption) {
 #ifdef COUCHBASE_ENTERPRISE
-            options.encryptionKey = alloc_slice(config.encryptionKey.bytes,
+            options.encryptionKey = alloc_slice(_config.encryptionKey.bytes,
                                                 kEncryptionKeySize[options.encryptionAlgorithm]);
 #else
             error::_throw(error::UnsupportedEncryption);
@@ -127,17 +138,17 @@ namespace c4Internal {
         }
 
         // Determine the storage type and its Factory object:
-        const char *storageEngine = config.storageEngine ? config.storageEngine : "";
+        const char *storageEngine = inConfig.storageEngine ? inConfig.storageEngine : "";
         DataFile::Factory *storageFactory = DataFile::factoryNamed((string)(storageEngine));
         if (!storageFactory)
             error::_throw(error::Unimplemented);
 
         // Initialize important objects:
-        if (!(config.flags & kC4DB_NonObservable))
+        if (!(_config.flags & kC4DB_NonObservable))
             _sequenceTracker.reset(new access_lock<SequenceTracker>());
 
         DocumentFactory* factory;
-        switch (config.versioning) {
+        switch (inConfig.versioning) {
 #if ENABLE_VERSION_VECTORS
             case kC4VersionVectors: factory = new VectorDocumentFactory(this); break;
 #endif
@@ -148,12 +159,12 @@ namespace c4Internal {
 
         // Open the DataFile:
         try {
-            _dataFile.reset( storageFactory->openFile(_dataFilePath, this, &options) );
+            _dataFile.reset( storageFactory->openFile(dataFilePath, this, &options) );
         } catch (const error &x) {
             if (x.domain == error::LiteCore && x.code == error::DatabaseTooOld
-                    && UpgradeDatabaseInPlace(_dataFilePath.dir(), config)) {
+                    && UpgradeDatabaseInPlace(dataFilePath.dir(), inConfig)) {
                 // This is an old 1.x database; upgrade it in place, then open:
-                _dataFile.reset( storageFactory->openFile(_dataFilePath, this, &options) );
+                _dataFile.reset( storageFactory->openFile(dataFilePath, this, &options) );
             } else {
                 throw;
             }
@@ -166,17 +177,17 @@ namespace c4Internal {
         auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
         Record doc = info.get(slice("versioning"));
         if (doc.exists()) {
-            if (doc.bodyAsUInt() != (uint64_t)config.versioning)
+            if (doc.bodyAsUInt() != (uint64_t)inConfig.versioning)
                 error::_throw(error::WrongFormat);
-        } else if (config.flags & kC4DB_Create) {
+        } else if (_config.flags & kC4DB_Create) {
             // First-time initialization:
-            doc.setBodyAsUInt((uint64_t)config.versioning);
+            doc.setBodyAsUInt((uint64_t)inConfig.versioning);
             Transaction t(*_dataFile);
             info.write(doc, t);
             (void)generateUUID(kPublicUUIDKey, t);
             (void)generateUUID(kPrivateUUIDKey, t);
             t.commit();
-        } else if (config.versioning != kC4RevisionTrees) {
+        } else if (inConfig.versioning != kC4RevisionTrees) {
             error::_throw(error::WrongFormat);
         }
     }
@@ -328,7 +339,7 @@ namespace c4Internal {
             throw;
         }
 
-        const_cast<C4DatabaseConfig&>(config).encryptionKey = *newKey;
+        const_cast<C4DatabaseConfig2&>(_config).encryptionKey = *newKey;
 
         // Finally replace the old BlobStore with the new one:
         newStore->moveTo(*realBlobStore);
@@ -388,12 +399,12 @@ namespace c4Internal {
 
 
     KeyStore& Database::defaultKeyStore()                         {return _dataFile->defaultKeyStore();}
-    KeyStore& Database::getKeyStore(const string &name) const     {return _dataFile->getKeyStore(name);}
+    KeyStore& Database::getKeyStore(const string &nm) const       {return _dataFile->getKeyStore(nm);}
 
 
     BlobStore* Database::blobStore() const {
         if (!_blobStore)
-            _blobStore = createBlobStore("Attachments", config.encryptionKey);
+            _blobStore = createBlobStore("Attachments", _config.encryptionKey);
         return _blobStore.get();
     }
 
@@ -403,7 +414,7 @@ namespace c4Internal {
     {
         FilePath blobStorePath = path().subdirectoryNamed(dirname);
         auto options = BlobStore::Options::defaults;
-        options.create = options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
+        options.create = options.writeable = (_config.flags & kC4DB_ReadOnly) == 0;
         options.encryptionAlgorithm =(EncryptionAlgorithm)encryptionKey.algorithm;
         if (options.encryptionAlgorithm != kNoEncryption) {
             options.encryptionKey = alloc_slice(encryptionKey.bytes, sizeof(encryptionKey.bytes));
@@ -438,7 +449,7 @@ namespace c4Internal {
 
     bool Database::startHousekeeping() {
         if (!_housekeeper) {
-            if (config.flags & kC4DB_ReadOnly)
+            if (_config.flags & kC4DB_ReadOnly)
                 return false;
             _housekeeper = new Housekeeper(this);
             _housekeeper->start();
