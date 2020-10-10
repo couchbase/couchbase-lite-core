@@ -57,8 +57,10 @@ namespace c4Internal {
         void deleteDatabase();
         static bool deleteDatabaseAtPath(const string &dbPath);
 
-        DataFile* dataFile()                                {return _dataFile.get();}
+        DataFile* dataFile()                            {return _dataFile.get();}
+        const string& name() const                      {return _name;}
         FilePath path() const;
+
         uint64_t countDocuments();
         sequence_t lastSequence()                       {return defaultKeyStore().lastSequence();}
 
@@ -78,7 +80,8 @@ namespace c4Internal {
         
         void maintenance(DataFile::MaintenanceType what);
 
-        const C4DatabaseConfig config;
+        const C4DatabaseConfig2* config() const         {return &_config;}
+        const C4DatabaseConfig* configV1() const        {return &_configV1;};   // TODO: DEPRECATED
 
         Transaction& transaction() const;
 
@@ -168,6 +171,7 @@ namespace c4Internal {
         void mustNotBeInTransaction();
 
     private:
+        Database(const string &bundlePath, const C4DatabaseConfig&, FilePath &&dataFilePath);
         static FilePath findOrCreateBundle(const string &path, bool canCreate,
                                            C4StorageEngine &outStorageEngine);
         static bool deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine);
@@ -179,7 +183,10 @@ namespace c4Internal {
         std::unordered_set<std::string> collectBlobs();
         void removeUnusedBlobs(const std::unordered_set<std::string> &used);
 
-        FilePath                    _dataFilePath;          // Path of the DataFile
+        const string                _name;
+        const string                _parentDirectory;
+        const C4DatabaseConfig2     _config;
+        const C4DatabaseConfig      _configV1;              // TODO: DEPRECATED
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
         Transaction*                _transaction {nullptr}; // Current Transaction, or null
         int                         _transactionLevel {0};  // Nesting level of transaction

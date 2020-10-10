@@ -38,7 +38,7 @@ namespace litecore { namespace net {
 
 
     Address::Address(const C4Address &addr)
-    :Address(c4address_toURL(addr))
+    :Address(alloc_slice(c4address_toURL(addr)))
     { }
 
 

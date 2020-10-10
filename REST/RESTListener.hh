@@ -18,6 +18,7 @@
 
 #pragma once
 #include "c4.hh"
+#include "c4Database.h"
 #include "c4Listener.h"
 #include "Listener.hh"
 #include "Server.hh"
@@ -28,8 +29,6 @@
 #include <mutex>
 #include <set>
 #include <vector>
-
-struct C4DatabaseConfig;
 
 namespace litecore { namespace REST {
     using fleece::RefCounted;
@@ -62,7 +61,7 @@ namespace litecore { namespace REST {
             If the name is an empty string, a default name will be used based on the filename. */
         bool openDatabase(std::string name,
                           const FilePath&,
-                          const C4DatabaseConfig*,
+                          C4DatabaseFlags,
                           C4Error*);
 
         /** An asynchronous task (like a replication). */

@@ -36,10 +36,10 @@ class C4EncryptionTest : public C4Test {
 public:
     C4EncryptionTest(int testOption) :C4Test(testOption) { }
 
-    void checkBadKey(const C4DatabaseConfig &config) {
+    void checkBadKey(const C4DatabaseConfig2 &config) {
         assert(!db);
         C4Error error;
-        db = c4db_open(databasePath(), &config, &error);
+        db = c4db_openNamed(kDatabaseName, &config, &error);
         CHECK(!db);
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorNotADatabaseFile);
@@ -61,7 +61,7 @@ TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
 N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encryption][C]") {
     createNumberedDocs(99);
 
-    C4DatabaseConfig config = *c4db_getConfig(db), badConfig = config;
+    C4DatabaseConfig2 config = dbConfig(), badConfig = config;
     closeDB();
 
     C4Error error;
@@ -82,7 +82,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encry
     }
 
     // Reopen with correct key:
-    db = c4db_open(databasePath(), &config, &error);
+    db = c4db_openNamed(kDatabaseName, &config, &error);
     REQUIRE(db);
     CHECK(c4db_getDocumentCount(db) == 99);
 }
@@ -105,7 +105,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
 
     // If we're on the unencrypted pass, encrypt the db. Otherwise decrypt it:
     C4EncryptionKey newKey = {kC4EncryptionNone, {}};
-    if (c4db_getConfig(db)->encryptionKey.algorithm == kC4EncryptionNone) {
+    if (c4db_getConfig2(db)->encryptionKey.algorithm == kC4EncryptionNone) {
         newKey.algorithm = kC4EncryptionAES256;
         memcpy(newKey.bytes, "a different key than default....", kC4EncryptionKeySizeAES256);
         REQUIRE(c4db_rekey(db, &newKey, &error));
@@ -121,8 +121,8 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
     c4slice_free(blobResult);
 
     // Check that db can be reopened with the new key:
-    REQUIRE(c4db_getConfig(db)->encryptionKey.algorithm == newKey.algorithm);
-    REQUIRE(memcmp(c4db_getConfig(db)->encryptionKey.bytes, newKey.bytes, 32) == 0);
+    REQUIRE(c4db_getConfig2(db)->encryptionKey.algorithm == newKey.algorithm);
+    REQUIRE(memcmp(c4db_getConfig2(db)->encryptionKey.bytes, newKey.bytes, 32) == 0);
     reopenDB();
 }
 
@@ -132,13 +132,14 @@ static void testOpeningEncryptedDBFixture(const char *dbPath, const void *key) {
     // Skipping NoUpgrade because schema version 302 is mandatory for writeable dbs in CBL 2.7.
 
     for (C4DatabaseFlags flag : kFlagsToTry) {
-        C4DatabaseConfig config = { };
+        C4DatabaseConfig2 config = { };
+        config.parentDirectory = slice(TempDir());
         config.flags = flag;
         config.encryptionKey.algorithm = kC4EncryptionAES256;
         memcpy(config.encryptionKey.bytes, key, kC4EncryptionKeySizeAES256);
         C4Error error;
         C4Log("---- Opening db %s with flags 0x%x", dbPath, config.flags);
-        auto db = c4db_open(C4Test::copyFixtureDB(dbPath), &config, &error);
+        auto db = c4db_openNamed(C4Test::copyFixtureDB(dbPath), &config, &error);
         CHECK(db);
         c4db_release(db);
     }

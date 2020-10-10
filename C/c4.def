@@ -312,6 +312,8 @@ c4db_openNamed
 c4db_createFleeceEncoder
 c4db_lock
 c4db_unlock
+c4db_getConfig2
+c4db_getName
 c4db_getRemoteDBID
 c4db_exists
 c4db_startHousekeeping

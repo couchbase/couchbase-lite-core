@@ -337,8 +337,9 @@ TEST_CASE_METHOD(C4RESTTest, "REST DELETE database", "[REST][Listener][C]") {
         config.allowDeleteDBs = true;
         r = request("DELETE", "/db", HTTPStatus::OK);
         r = request("GET", "/db", HTTPStatus::NotFound);
+        REQUIRE(!FilePath(string(databasePath())).exists());
         // This is the easiest cross-platform way to check that the db was deleted:
-        REQUIRE(remove(databasePathString().c_str()) != 0);
+        //REQUIRE(remove(string(databasePath()).c_str()) != 0);
         REQUIRE(errno == ENOENT);
     }
 }

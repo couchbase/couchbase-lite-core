@@ -63,8 +63,8 @@ namespace litecore {
 
         FilePath dir() const                {return FilePath(_dir, "");}
 
-        std::string dirName() const         {return _dir;}
-        std::string fileName() const        {return _file;}
+        const std::string& dirName() const  {return _dir;}
+        const std::string& fileName() const {return _file;}
         std::string fileOrDirName() const;
         std::string path() const            {return _dir + _file;}
 

@@ -406,7 +406,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query dict literal", "[Query][C]") {
 
     auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
         FLValue result = FLArrayIterator_GetValueAt(&e->columns, 0);
-        return string(slice(FLValue_ToJSON5(result)));
+        return string(alloc_slice(FLValue_ToJSON5(result)));
     });
     CHECK(results[0] == "{d:1234.5,f:false,i:12345,id:\"0000001\",n:null,s:\"howdy\",t:true}");
 }

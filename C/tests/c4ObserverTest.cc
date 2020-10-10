@@ -130,7 +130,7 @@ TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     checkChanges({"A", "B"}, {"1-aa", "1-bb"});
 
     // Open another database on the same file:
-    C4Database* otherdb = c4db_open(databasePath(), c4db_getConfig(db), nullptr);
+    C4Database* otherdb = c4db_openAgain(db, nullptr);
     REQUIRE(otherdb);
     {
         TransactionHelper t(otherdb);

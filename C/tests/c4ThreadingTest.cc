@@ -68,7 +68,7 @@ public:
 
 
     C4Database* openDB() {
-        C4Database* database = c4db_open(databasePath(), c4db_getConfig(db), nullptr);
+        C4Database* database = c4db_openNamed(kDatabaseName, &dbConfig(), nullptr);
         REQUIRE(database);
         return database;
     }

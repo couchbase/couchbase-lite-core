@@ -58,7 +58,7 @@ c4Database::~c4Database() {
 static FilePath dbPath(C4String name, C4String parentDir) {
     Assert(name.buf != nullptr && parentDir.buf != nullptr);
     return FilePath(string(slice(parentDir)), string(slice(name)))
-                .withExtension(kC4DatabaseFilenameExtension);
+                .addingExtension(kC4DatabaseFilenameExtension);
 }
 
 
@@ -98,6 +98,7 @@ bool c4key_setPassword(C4EncryptionKey *key, C4String password, C4EncryptionAlgo
 }
 
 
+// TODO - Remove deprecated function
 C4Database* c4db_open(C4Slice path,
                       const C4DatabaseConfig *configP,
                       C4Error *outError) noexcept
@@ -116,18 +117,20 @@ C4Database* c4db_openNamed(C4String name,
         return nullptr;
     FilePath path = dbPath(name, config->parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
-    return c4db_open(slice(path), &oldConfig, outError);
+    return tryCatch<C4Database*>(outError, [=] {
+        return retain(new C4Database(path, oldConfig));
+    });
 }
 
 
 C4Database* c4db_openAgain(C4Database* db,
                            C4Error *outError) noexcept
 {
-    string path = db->path();
-    return c4db_open({path.data(), path.size()}, c4db_getConfig(db), outError);
+    return c4db_openNamed(c4db_getName(db), c4db_getConfig2(db), outError);
 }
 
 
+// TODO - Remove deprecated function
 bool c4db_copy(C4String sourcePath, C4String destinationPath, const C4DatabaseConfig* config,
                C4Error *error) noexcept {
     return tryCatch(error, [=] {
@@ -145,9 +148,12 @@ bool c4db_copyNamed(C4String sourcePath,
 {
     if (!ensureConfigDirExists(config, error))
         return false;
-    FilePath destinationPath = dbPath(destinationName, config->parentDirectory);
-    C4DatabaseConfig oldConfig = newToOldConfig(config);
-    return c4db_copy(sourcePath, slice(destinationPath), &oldConfig, error);
+    return tryCatch(error, [=] {
+        FilePath from(slice(sourcePath).asString());
+        FilePath to = dbPath(destinationName, config->parentDirectory);
+        C4DatabaseConfig oldConfig = newToOldConfig(config);
+        CopyPrebuiltDB(from, to, &oldConfig);
+    });
 }
 
 
@@ -163,6 +169,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) noexcept {
 }
 
 
+// TODO - Remove deprecated function
 bool c4db_deleteAtPath(C4Slice dbPath, C4Error *outError) noexcept {
     if (outError)
         *outError = {};     // deleteDatabaseAtPath may return false w/o throwing an exception
@@ -174,8 +181,10 @@ bool c4db_deleteNamed(C4String dbName,
                       C4String inDirectory,
                       C4Error *outError) C4API
 {
+    if (outError)
+        *outError = {};     // deleteDatabaseAtPath may return false w/o throwing an exception
     FilePath path = dbPath(dbName, inDirectory);
-    return c4db_deleteAtPath(slice(path), outError);
+    return tryCatch<bool>(outError, bind(&Database::deleteDatabaseAtPath, path));
 }
 
 
@@ -194,13 +203,22 @@ bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *ou
 }
 
 
+C4String c4db_getName(C4Database *database) C4API {
+    return slice(database->name());
+}
+
 C4SliceResult c4db_getPath(C4Database *database) noexcept {
     return sliceResult(database->path().path());
 }
 
 
 const C4DatabaseConfig* c4db_getConfig(C4Database *database) noexcept {
-    return &database->config;
+    return database->configV1();
+}
+
+
+const C4DatabaseConfig2* c4db_getConfig2(C4Database *database) noexcept {
+    return database->config();
 }
 
 

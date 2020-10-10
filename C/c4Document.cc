@@ -166,7 +166,7 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
 
 bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept {
     // LCOV_EXCL_START
-    if (asInternal(doc)->database()->config.versioning != kC4RevisionTrees) {
+    if (asInternal(doc)->database()->configV1()->versioning != kC4RevisionTrees) {
         Warn("c4doc_selectFirstPossibleAncestorOf only works with revision trees");
         return false;
     }
