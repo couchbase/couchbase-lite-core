@@ -143,15 +143,18 @@ extern "C" {
         @param database  The database to check
         @param outError  On failure, will be set to the error status.
         @return  A Fleece-encoded array of strings, or NULL on failure. */
+    C4_DEPRECATED("Use c4db_getIndexesInfo")
     C4SliceResult c4db_getIndexes(C4Database* database C4NONNULL,
                                   C4Error* outError) C4API;
 
     /** Returns information about all indexes in the database.
+        The result is a Fleece-encoded array of dictionaries, one per index.
+        Each dictionary has keys `"name"`, `"type"` (a `C4IndexType`), and `"expr"` (the source expression).
         @param database  The database to check
         @param outError  On failure, will be set to the error status.
         @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
     C4SliceResult c4db_getIndexesInfo(C4Database* database C4NONNULL,
-                                    C4Error* outError) C4API;
+                                      C4Error* outError) C4API;
 
     /** @} */
 

@@ -32,9 +32,7 @@ using namespace std;
 using namespace litecore;
 using namespace fleece::impl;
 
-CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
-    true    // rankFullText
-};
+CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = { };
 
 
 #pragma mark - QUERY API:

@@ -991,25 +991,19 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
     
     for(int i = 0; i < 2; i++) {
         REQUIRE(c4db_createIndex(db, names[i], desc[i], types[i], nullptr, &err));
-        C4SliceResult indexes = c4db_getIndexes(db, &err);
-        FLValue val = FLValue_FromData((FLSlice)indexes, kFLTrusted);
-        REQUIRE(FLValue_GetType(val) == kFLArray);
-        FLArray indexArray = FLValue_AsArray(val);
-        FLArrayIterator iter;
-        FLArrayIterator_Begin(indexArray, &iter);
-        REQUIRE(FLArrayIterator_GetCount(&iter) == 1);
-        FLString indexName = FLValue_AsString(FLArrayIterator_GetValueAt(&iter, 0));
+
+        alloc_slice indexes = c4db_getIndexesInfo(db, &err);
+        FLArray indexArray = FLValue_AsArray(FLValue_FromData(indexes, kFLTrusted));
+        REQUIRE(FLArray_Count(indexArray) == 1);
+        FLDict indexInfo = FLValue_AsDict(FLArray_Get(indexArray, 0));
+        FLSlice indexName = FLValue_AsString(FLDict_Get(indexInfo, "name"_sl));
         CHECK(indexName == names[i]);
-        c4slice_free(indexes);
-        
+
         REQUIRE(c4db_deleteIndex(db, names[i], &err));
+
         indexes = c4db_getIndexesInfo(db, &err);
-        val = FLValue_FromData((FLSlice)indexes, kFLTrusted);
-        REQUIRE(FLValue_GetType(val) == kFLArray);
-        indexArray = FLValue_AsArray(val);
-        FLArrayIterator_Begin(indexArray, &iter);
-        REQUIRE(FLArrayIterator_GetCount(&iter) == 0);
-        c4slice_free(indexes);
+        indexArray = FLValue_AsArray(FLValue_FromData(indexes, kFLTrusted));
+        REQUIRE(FLArray_Count(indexArray) == 0);
     }
 }
 
