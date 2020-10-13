@@ -29,12 +29,16 @@ namespace litecore { namespace repl {
 
         using Mode = C4ReplicatorMode;
         using Validator = bool(*)(C4String docID, C4String revID, C4RevisionFlags, FLDict body, void *context);
+        using BeforePushHook = FLSlice(*)(C4String docID, C4String revID, C4RevisionFlags, FLValue body, void *context);
+        using AfterPullHook = FLSlice(*)(C4String docID, C4String revID, C4RevisionFlags, FLValue body, void *context);
 
         Mode                    push                    {kC4Disabled};
         Mode                    pull                    {kC4Disabled};
         fleece::AllocedDict     properties;
         Validator               pushFilter              {nullptr};
         Validator               pullValidator           {nullptr};
+        BeforePushHook          beforePush              {nullptr};
+        AfterPullHook           afterPull               {nullptr};
         void*                   callbackContext         {nullptr};
 
         //---- Constructors/factories:

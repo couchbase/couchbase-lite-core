@@ -108,11 +108,34 @@ namespace litecore::repl {
                 msg.write("{}"_sl);
             } else {
                 auto &bodyEncoder = msg.jsonBody();
+                FLDoc newDoc = nullptr;
+                if (_options.beforePush) {
+                    auto newBody = _options.beforePush(request->docID, doc->revID, doc->flags, root, _options.callbackContext);
+
+                    FLError error = kFLNoError;
+                    newDoc = FLDoc_FromJSON(newBody, &error);
+
+                    if (error != kFLNoError) {
+                        logError("Pusher+DB sendRevision beforePush error=%i\n", error);
+                        c4err = {LiteCoreDomain, kC4ErrorCorruptData};
+                    } else {
+                        auto fldoc_root = FLDoc_GetRoot(newDoc);
+                        root = FLValue_AsDict(fldoc_root);
+                        if (!root) {
+                            logError("Pusher+DB hook: root is null");
+                            c4err = {LiteCoreDomain, kC4ErrorCorruptData};
+                        }
+                    }
+                }
                 if (sendLegacyAttachments)
                     _db->encodeRevWithLegacyAttachments(bodyEncoder, root,
-                                                       c4rev_getGeneration(request->revID));
+                                                        c4rev_getGeneration(request->revID));
                 else
                     bodyEncoder.writeValue(root);
+
+                if (newDoc) {
+                    FLDoc_Release(newDoc);
+                }
             }
             logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
                        SPLAT(request->docID), SPLAT(request->revID));

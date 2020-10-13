@@ -214,6 +214,24 @@ namespace litecore { namespace repl {
         Assert(_rev->error.code == 0);
         Assert(_rev->deltaSrc || _rev->doc);
         increment(_pendingCallbacks);
+
+        // call the afterPull hook if any
+        if (_options.afterPull) {
+            auto doc = _rev->doc;
+            Value preRoot = doc.root();
+            FLSlice newBody = _options.afterPull(_rev->docID, _rev->revID, _rev->flags, preRoot, _options.callbackContext);
+
+            FLError error = kFLNoError;
+            auto newDoc = FLDoc_FromJSON(newBody, &error);
+
+            if (error != kFLNoError) {
+                logError("Pusher+DB sendRevision beforePush error=%i\n", error);
+                return;
+            }
+            _rev->doc = Doc(newDoc, true);
+            FLDoc_Release(newDoc); // FIXME retained by _rev_->doc? is it free after ?
+        }
+
         //Signpost::mark(Signpost::gotRev, _serialNumber);
         _puller->insertRevision(_rev);
     }

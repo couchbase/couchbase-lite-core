@@ -126,6 +126,20 @@ extern "C" {
                                                      C4Error error,
                                                      void *context);
 
+    /** Callback that can process a document body before it's pushed to the remote */
+    typedef FLSlice (*C4ReplicatorBeforePushFunction)(C4String docID,
+                                                      C4String revID,
+                                                      C4RevisionFlags,
+                                                      FLValue body,
+                                                      void *context);
+
+    /** Callback that can process a document after it's pull from the remote and before it's save locally */
+    typedef FLSlice (*C4ReplicatorAfterPullFunction)(C4String docID,
+                                                     C4String revID,
+                                                     C4RevisionFlags,
+                                                     FLValue body,
+                                                     void *context);
+
     /** Callback that can choose to reject an incoming pulled revision, or stop a local
         revision from being pushed, by returning false.
         (Note: In the case of an incoming revision, no flags other than 'deletion' and
@@ -172,6 +186,8 @@ extern "C" {
         C4ReplicatorStatusChangedCallback   onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
         C4ReplicatorDocumentsEndedCallback  onDocumentsEnded;  ///< Callback notifying status of individual documents
         C4ReplicatorBlobProgressCallback    onBlobProgress;    ///< Callback notifying blob progress
+        C4ReplicatorBeforePushFunction      beforePush;        ///< Callback that can modify a document body before it's pushed
+        C4ReplicatorAfterPullFunction       afterPull;         ///< Callback that can modify a document body after it's pulled
         void*                               callbackContext;   ///< Value to be passed to the callbacks.
         const C4SocketFactory*              socketFactory;     ///< Custom C4SocketFactory, if not NULL
     } C4ReplicatorParameters;
