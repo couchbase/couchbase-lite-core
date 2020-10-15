@@ -45,11 +45,6 @@ extern "C" {
         kC4DB_NonObservable = 0x40, ///< Disable C4DatabaseObserver
     };
 
-    /** Document versioning system (also determines database storage schema) */
-    typedef C4_ENUM(uint32_t, C4DocumentVersioning) {
-        kC4RevisionTrees,           ///< Revision trees
-    };
-
     /** Encryption algorithms. */
     typedef C4_ENUM(uint32_t, C4EncryptionAlgorithm) {
         kC4EncryptionNone = 0,      ///< No encryption (default)
@@ -66,18 +61,6 @@ extern "C" {
         C4EncryptionAlgorithm algorithm;
         uint8_t bytes[32];
     } C4EncryptionKey;
-
-    /** Underlying storage engines that can be used. */
-    typedef const char* C4StorageEngine;
-    CBL_CORE_API extern C4StorageEngine const kC4SQLiteStorageEngine;
-
-    /** Main database configuration struct. */
-    typedef struct C4DatabaseConfig {
-        C4DatabaseFlags flags;          ///< Create, ReadOnly, AutoCompact, Bundled...
-        C4StorageEngine storageEngine;  ///< Which storage to use, or NULL for no preference
-        C4DocumentVersioning versioning;///< Type of document versioning
-        C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
-    } C4DatabaseConfig;
 
     /** Main database configuration struct (version 2) for use with c4db_openNamed etc.. */
     typedef struct C4DatabaseConfig2 {
@@ -125,11 +108,6 @@ extern "C" {
     bool c4db_exists(C4String name, C4String inDirectory) C4API;
 
 
-    /** Opens a database given its full path. */
-    C4Database* c4db_open(C4String path,
-                          const C4DatabaseConfig *config C4NONNULL,
-                          C4Error *outError) C4API;
-
     /** Opens a database given its name (without the ".cblite2" extension) and directory. */
     C4Database* c4db_openNamed(C4String name,
                                const C4DatabaseConfig2 *config C4NONNULL,
@@ -139,15 +117,6 @@ extern "C" {
         The new connection is completely independent and can be used on another thread. */
     C4Database* c4db_openAgain(C4Database* db C4NONNULL,
                                C4Error *outError) C4API;
-    
-    /** Copies a prebuilt database from the given source path and places it in the destination
-        path.  If a database already exists at that directory then it will be overwritten.  
-        However if there is a failure, the original database will be restored as if nothing
-        happened */
-    bool c4db_copy(C4String sourcePath,
-                   C4String destinationPath,
-                   const C4DatabaseConfig* config C4NONNULL,
-                   C4Error* error) C4API;
 
     /** Copies a prebuilt database from the given source path and places it in the destination
         directory, with the given name. If a database already exists there, it will be overwritten.
@@ -170,11 +139,6 @@ extern "C" {
     /** Closes the database and deletes the file/bundle. Does not free the handle, although any
         operation other than c4db_release() will fail with an error. */
     bool c4db_delete(C4Database* database C4NONNULL, C4Error *outError) C4API;
-
-    /** Deletes the file(s) for the database at the given path.
-        All C4Databases at that path must be closed first or an error will result.
-        Returns false, with no error, if the database doesn't exist. */
-    bool c4db_deleteAtPath(C4String dbPath, C4Error *outError) C4API;
 
     /** Deletes the file(s) for the database with the given name in the given directory.
         All C4Databases at that path must be closed first or an error will result.
@@ -199,11 +163,15 @@ extern "C" {
         @{ */
 
 
+    /** Returns the name of the database, as given to `c4db_openNamed`.
+        This is the filename _without_ the ".cblite2" extension. */
+    C4String c4db_getName(C4Database* C4NONNULL) C4API;
+
     /** Returns the path of the database. */
     C4StringResult c4db_getPath(C4Database* C4NONNULL) C4API;
 
     /** Returns the configuration the database was opened with. */
-    const C4DatabaseConfig* c4db_getConfig(C4Database* C4NONNULL) C4API;
+    const C4DatabaseConfig2* c4db_getConfig2(C4Database *database C4NONNULL) C4API;
 
     /** Returns the number of (undeleted) documents in the database. */
     uint64_t c4db_getDocumentCount(C4Database* database C4NONNULL) C4API;
@@ -243,8 +211,15 @@ extern "C" {
                        C4UUID *publicUUID, C4UUID *privateUUID,
                        C4Error *outError) C4API;
 
-    C4ExtraInfo c4db_getExtraInfo(C4Database *database C4NONNULL) C4API;
+    /** Associates an arbitrary pointer with this database instance, for client use.
+        For example, this could be a reference to the higher-level object wrapping the database.
+
+        The `destructor` field of the `C4ExtraInfo` can be used to provide a function that will be
+        called when the C4Database is freed, so it can free any resources associated with the pointer. */
     void c4db_setExtraInfo(C4Database *database C4NONNULL, C4ExtraInfo) C4API;
+
+    /** Returns the C4ExtraInfo associated with this db reference */
+    C4ExtraInfo c4db_getExtraInfo(C4Database *database C4NONNULL) C4API;
 
 
     /** @} */
@@ -335,6 +310,41 @@ extern "C" {
     #define kC4LocalDocStore C4STR("_local")
 
     /** @} */
+
+
+    //-------- DEPRECATED API --------
+
+    typedef C4_ENUM(uint32_t, C4DocumentVersioning) {
+        kC4RevisionTrees,           ///< Revision trees
+    };
+
+    typedef const char* C4StorageEngine;
+    CBL_CORE_API extern C4StorageEngine const kC4SQLiteStorageEngine;
+
+    typedef struct C4DatabaseConfig {
+        C4DatabaseFlags flags;          ///< Create, ReadOnly, AutoCompact, Bundled...
+        C4StorageEngine storageEngine;  ///< Which storage to use, or NULL for no preference
+        C4DocumentVersioning versioning;///< Type of document versioning
+        C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
+    } C4DatabaseConfig;
+
+    C4_DEPRECATED("Use c4db_openNamed")
+    C4Database* c4db_open(C4String path,
+                          const C4DatabaseConfig *config C4NONNULL,
+                          C4Error *outError) C4API;
+
+    C4_DEPRECATED("Use c4db_copyNamed")
+    bool c4db_copy(C4String sourcePath,
+                   C4String destinationPath,
+                   const C4DatabaseConfig* config C4NONNULL,
+                   C4Error* error) C4API;
+
+    C4_DEPRECATED("Use c4db_deleteNamed")
+    bool c4db_deleteAtPath(C4String dbPath, C4Error *outError) C4API;
+
+    C4_DEPRECATED("Use c4db_getConfig2")
+    const C4DatabaseConfig* c4db_getConfig(C4Database* C4NONNULL) C4API;
+
 #ifdef __cplusplus
 }
 #endif

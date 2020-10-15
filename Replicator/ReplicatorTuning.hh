@@ -57,7 +57,7 @@ namespace litecore { namespace repl {
         /* Maximum desirable number of incoming `rev` messages that aren't being handled yet.
             Past this number, the puller will stop handling or responding to `changes` messages,
             to attempt to stop getting more `revs`. */
-        constexpr unsigned kMaxPendingRevs = 200;
+        constexpr unsigned kMaxRevsBeingRequested = 200;
 
         /* Maximum number of simultaneous incoming revisions.
            Each one is assigned an IncomingRev actor, so larger values increase memory usage

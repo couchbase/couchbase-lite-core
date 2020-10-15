@@ -58,7 +58,7 @@ namespace litecore { namespace repl {
     private:
         static const size_t kMaxPossibleAncestors = 10;
 
-        bool pullerHasCapacity() const   {return _numRevsBeingRequested <= tuning::kMaxPendingRevs;}
+        bool pullerHasCapacity() const   {return _numRevsBeingRequested <= tuning::kMaxRevsBeingRequested;}
         void handleChanges(Retained<blip::MessageIn>);
         void handleMoreChanges();
         void handleChangesNow(blip::MessageIn *req);

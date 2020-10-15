@@ -10,11 +10,11 @@
 #define C4NONNULL NONNULL   // Base.h defines NONNULL
 
 #ifdef _MSC_VER
-    #define C4INLINE __forceinline
-#elif defined(__clang__)
-    #define C4INLINE inline
+#  define C4INLINE __forceinline
+#elif defined(__GNUC__) && !defined(__clang__)
+#  define C4INLINE inline
 #else
-    #define C4INLINE inline
+#  define C4INLINE inline
 #endif
 
 // Macros for defining typed enumerations and option flags.
@@ -45,13 +45,19 @@
 #endif
 
 
-// C4API should go at the end of all C function prototypes:
+// Declaration for API functions; should be just before the ending ";".
 #ifdef __cplusplus
     #define C4API noexcept
 #else
     #define C4API
 #endif
 
+// Deprecating functions & types  (Note: In C++only code, can use standard `[[deprecated]]`)
+#ifdef _MSC_VER
+#  define C4_DEPRECATED(MSG) __declspec(deprecated(MSG))
+#else
+#  define C4_DEPRECATED(MSG) __attribute((deprecated(MSG)))
+#endif
 
 // Export/import stuff:
 #ifdef _MSC_VER

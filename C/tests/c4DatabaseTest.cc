@@ -111,12 +111,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Info", "[Database][C]") {
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database deletion lock", "[Database][C]") {
     ExpectingExceptions x;
     C4Error err;
-    REQUIRE(!c4db_deleteAtPath(databasePath(), &err));
+    REQUIRE(!c4db_deleteNamed(kDatabaseName, dbConfig().parentDirectory, &err));
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorBusy);
 
-    auto equivalentPath = databasePathString() + kPathSeparator;
-    REQUIRE(!c4db_deleteAtPath(fleece::slice(equivalentPath), &err));
+    string equivalentPath = string(slice(dbConfig().parentDirectory)) + "/";
+    REQUIRE(!c4db_deleteNamed(kDatabaseName, slice(equivalentPath), &err));
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorBusy);
 }
@@ -132,24 +132,24 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Read-Only UUIDs", "[Database][C
 
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!throws]") {
-    auto config = *c4db_getConfig(db);
+    auto config = *c4db_getConfig2(db);
 
-    std::string bundlePathStr = TempDir() + "cbl_core_test_bundle";
-    C4Slice bundlePath = c4str(bundlePathStr.c_str());
+    static constexpr slice kTestBundleName = "cbl_core_test_bundle";
     C4Error error;
-    if (!c4db_deleteAtPath(bundlePath, &error))
+    if (!c4db_deleteNamed(kTestBundleName, config.parentDirectory, &error))
         REQUIRE(error.code == 0);
-    auto bundle = c4db_open(bundlePath, &config, &error);
+    auto bundle = c4db_openNamed(kTestBundleName, &config, &error);
     REQUIRE(bundle);
+    CHECK(c4db_getName(bundle) == kTestBundleName);
     C4SliceResult path = c4db_getPath(bundle);
-    REQUIRE(path == TEMPDIR("cbl_core_test_bundle" kPathSeparator)); // note trailing '/'
+    CHECK(path == TEMPDIR("cbl_core_test_bundle.cblite2" kPathSeparator)); // note trailing '/'
     c4slice_free(path);
     REQUIRE(c4db_close(bundle, &error));
     c4db_release(bundle);
 
     // Reopen without 'create' flag:
     config.flags &= ~kC4DB_Create;
-    bundle = c4db_open(bundlePath, &config, &error);
+    bundle = c4db_openNamed(kTestBundleName, &config, &error);
     REQUIRE(bundle);
     REQUIRE(c4db_close(bundle, &error));
     c4db_release(bundle);
@@ -157,13 +157,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     // Reopen with wrong storage type:
     {
         ExpectingExceptions x;
-        auto engine = config.storageEngine;
-        config.storageEngine = "b0gus";
-        REQUIRE(!c4db_open(bundlePath, &config, &error));
-        config.storageEngine = engine;
-
         // Open nonexistent bundle:
-        REQUIRE(!c4db_open(TEMPDIR("no_such_bundle"), &config, &error));
+        REQUIRE(!c4db_openNamed("no_such_bundle"_sl, &config, &error));
     }
 }
 
@@ -493,7 +488,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[
     // Checks that after one instance creates the 'expiration' column, other instances recognize it
     // and don't try to create it themselves.
     C4Error error;
-    auto db2 = c4db_open(databasePath(), c4db_getConfig(db), &error);
+    auto db2 = c4db_openAgain(db, &error);
     REQUIRE(db2);
 
     CHECK(c4db_nextDocExpiration(db) == 0);
@@ -615,6 +610,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
 
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
+    static constexpr slice kNuName = "nudb";
+
     C4Slice doc1ID = C4STR("doc001");
     C4Slice doc2ID = C4STR("doc002");
 
@@ -623,65 +620,63 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     C4SliceResult srcPath = c4db_getPath(db);
     string srcPathStr = toString((C4Slice)srcPath);
     c4slice_free(srcPath);
-    string nuPath = TempDir() + "nudb.cblite2" + kPathSeparator;
-    
-    C4DatabaseConfig config = *c4db_getConfig(db);
+
+    C4DatabaseConfig2 config = *c4db_getConfig2(db);
+    string nuPath = string(slice(config.parentDirectory)) + string(kNuName) + ".cblite2" + kPathSeparator;
     C4Error error;
-    if(!c4db_deleteAtPath(c4str(nuPath.c_str()), &error)) {
+    if(!c4db_deleteNamed(kNuName, config.parentDirectory, &error)) {
         REQUIRE(error.code == 0);
     }
     
-    REQUIRE(c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
-    auto nudb = c4db_open(c4str(nuPath.c_str()), &config, &error);
+    REQUIRE(c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, &error));
+    auto nudb = c4db_openNamed(kNuName, &config, &error);
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 2);
     REQUIRE(c4db_delete(nudb, &error));
     c4db_release(nudb);
     
-    nudb = c4db_open(c4str(nuPath.c_str()), &config, &error);
+    nudb = c4db_openNamed(kNuName, &config, &error);
     REQUIRE(nudb);
     createRev(nudb, doc1ID, kRevID, kFleeceBody);
     CHECK(c4db_getDocumentCount(nudb) == 1);
     c4db_release(nudb);
     
-    string originalDest = nuPath;
-    nuPath = TempDir() + "bogus" + kPathSeparator + "nunudb.cblite2" + kPathSeparator;
     {
+        string bogusPath = TempDir() + "bogus" + kPathSeparator + "bogus";
+        C4DatabaseConfig2 bogusConfig = config;
+        bogusConfig.parentDirectory = slice(bogusPath);
         ExpectingExceptions x; // call to c4db_copy will internally throw an exception
-        REQUIRE(!c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
+        REQUIRE(!c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &bogusConfig, &error));
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorNotFound);
     }
 
-    nudb = c4db_open(c4str(originalDest.c_str()), &config, &error);
+    nudb = c4db_openNamed(kNuName, &config, &error);
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 1);
     c4db_release(nudb);
     
-    string originalSrc = srcPathStr;
-    srcPathStr += string("bogus") + kPathSeparator;
-    nuPath = originalDest;
     {
+        string bogusSrcPathStr = srcPathStr + "bogus" + kPathSeparator;
         ExpectingExceptions x; // call to c4db_copy will internally throw an exception
-        REQUIRE(!c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
+        REQUIRE(!c4db_copyNamed(c4str(bogusSrcPathStr.c_str()), kNuName, &config, &error));
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorNotFound);
     }
     
-    nudb = c4db_open(c4str(originalDest.c_str()), &config, &error);
+    nudb = c4db_openNamed(kNuName, &config, &error);
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 1);
     c4db_release(nudb);
 
-    srcPathStr = originalSrc;
     {
         ExpectingExceptions x;
-        REQUIRE(!c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
+        REQUIRE(!c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, &error));
         CHECK(error.domain == POSIXDomain);
         CHECK(error.code == EEXIST);
     }
 
-    nudb = c4db_open(c4str(nuPath.c_str()), &config, &error);
+    nudb = c4db_openNamed(kNuName, &config, &error);
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 1);
     REQUIRE(c4db_delete(nudb, &error));
@@ -693,7 +688,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
     C4DatabaseConfig2 config = {};
     config.parentDirectory = slice(TempDir());
     config.flags = kC4DB_Create;
-    const string db2Name = kDatabaseName + "_2";
+    const string db2Name = string(kDatabaseName) + "_2";
     C4Error error;
 
     c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error);
@@ -723,7 +718,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
     c4db_release(db2);
     CHECK(sXtraDestructed);
 
-    const string copiedDBName = kDatabaseName + "_copy";
+    const string copiedDBName = string(kDatabaseName) + "_copy";
     c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, &error);
     REQUIRE(error.code == 0);
     REQUIRE(c4db_copyNamed(db2Path, slice(copiedDBName), &config, &error));
@@ -754,7 +749,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Upgrade Fixture", "[.Mai
     }
     alloc_slice path = c4db_getPath(db);
     string filename = "NEW_UPGRADE_FIXTURE.cblite2";
-    if (c4db_getConfig(db)->encryptionKey.algorithm != kC4EncryptionNone)
+    if (c4db_getConfig2(db)->encryptionKey.algorithm != kC4EncryptionNone)
         filename = "NEW_ENCRYPTED_UPGRADE_FIXTURE.cblite2";
 
     closeDB();
@@ -770,18 +765,17 @@ static void testOpeningOlderDBFixture(const string & dbPath,
                                       int expectedErrorCode =0)
 {
     C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
-    C4DatabaseConfig config = { };
-    config.flags = withFlags;
+    C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
     C4Error error;
     C4Database *db;
-    auto path = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
+    auto name = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
 
     if (expectedErrorCode == 0) {
-        db = c4db_open(path, &config, &error);
+        db = c4db_openNamed(name, &config, &error);
         REQUIRE(db);
     } else {
         ExpectingExceptions x;
-        db = c4db_open(path, &config, &error);
+        db = c4db_openNamed(name, &config, &error);
         REQUIRE(!db);
         REQUIRE(error.domain == LiteCoreDomain);
         REQUIRE(error.code == expectedErrorCode);

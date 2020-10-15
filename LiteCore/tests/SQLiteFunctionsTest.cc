@@ -220,13 +220,13 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[Query][fl_
     insert("two",   "[2, 4, 6, 8]");
     insert("three", "[3, 6, 9, \"dozen\"]");
 
-    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
+    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body, '.') WHERE kv.key = 'three'")
             == (vector<string>{"3", "6", "9", "dozen"}));
-    CHECK(query("SELECT fl_each.key FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
+    CHECK(query("SELECT fl_each.key FROM kv, fl_each(kv.body, '.') WHERE kv.key = 'three'")
             == (vector<string>{"MISSING", "MISSING", "MISSING", "MISSING"}));
-    CHECK(query("SELECT fl_each.type FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
+    CHECK(query("SELECT fl_each.type FROM kv, fl_each(kv.body, '.') WHERE kv.key = 'three'")
             == (vector<string>{"2", "2", "2", "3"}));
-    CHECK(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body) WHERE fl_each.value = 4")
+    CHECK(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body, '.') WHERE fl_each.value = 4")
             == (vector<string>{"one", "two"}));
 }
 
@@ -236,13 +236,13 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each dict", "[Query][fl_e
     insert("b",   "{\"one\": 2, \"two\": 4, \"three\": 6}");
     insert("c",   "{\"one\": 3, \"two\": 6, \"three\": 9}");
 
-    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body) WHERE kv.key = 'c' ORDER BY fl_each.value")
+    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body, '.') WHERE kv.key = 'c' ORDER BY fl_each.value")
             == (vector<string>{"3", "6", "9"}));
-    CHECK(query("SELECT fl_each.key FROM kv, fl_each(kv.body) WHERE kv.key = 'c' ORDER BY fl_each.key")
+    CHECK(query("SELECT fl_each.key FROM kv, fl_each(kv.body, '.') WHERE kv.key = 'c' ORDER BY fl_each.key")
             == (vector<string>{"one", "three", "two"}));
-    CHECK(query("SELECT fl_each.type FROM kv, fl_each(kv.body) WHERE kv.key = 'c'")
+    CHECK(query("SELECT fl_each.type FROM kv, fl_each(kv.body, '.') WHERE kv.key = 'c'")
             == (vector<string>{"2", "2", "2"}));
-    CHECK(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body) WHERE fl_each.value = 2")
+    CHECK(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body, '.') WHERE fl_each.value = 2")
             == (vector<string>{"a", "b"}));
 }
 

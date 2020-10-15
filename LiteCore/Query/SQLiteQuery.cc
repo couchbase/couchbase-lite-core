@@ -474,12 +474,15 @@ namespace litecore {
 
             unicodesn_tokenizerRunningQuery(true);
             try {
-                while (_statement->executeStep()) {
-                    uint64_t missingCols = 0;
-                    enc.beginArray(nCols);
-                    for (int i = 0; i < nCols; ++i) {
-                        if (!encodeColumn(enc, i) && i < 64)
-                            missingCols |= (1ULL << i);
+                 auto firstCustomCol = _query->_1stCustomResultColumn;
+                 while (_statement->executeStep()) {
+                     uint64_t missingCols = 0;
+                     enc.beginArray(nCols);
+                     for (int i = 0; i < nCols; ++i) {
+                         int offsetColumn = i - firstCustomCol;
+                         if (!encodeColumn(enc, i) && offsetColumn >= 0 && offsetColumn < 64) {
+                             missingCols |= (1ULL << offsetColumn);
+                         }
                     }
                     enc.endArray();
                     // Add an integer containing a bit-map of which columns are missing/undefined:

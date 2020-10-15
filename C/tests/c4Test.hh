@@ -153,21 +153,23 @@ public:
 
     static std::string sFixturesDir;            // directory where test files live
     static std::string sReplicatorFixturesDir;  // directory where replicator test files live
-    static const std::string kDatabaseName;
+
+    static constexpr slice kDatabaseName = "cbl_core_test";
 
     C4Test(int testOption =1);
     ~C4Test();
 
-    C4Slice databasePath() const                {return c4str(_dbPath.c_str());}
-    const std::string& databasePathString() const  {return _dbPath;}
+    alloc_slice databasePath() const            {return alloc_slice(c4db_getPath(db));}
 
+    /// The database handle.
     C4Database *db;
 
+    const C4DatabaseConfig2& dbConfig() const   {return _dbConfig;}
     const C4StorageEngine storageType() const   {return _storage;}
     bool isSQLite() const                       {return storageType() == kC4SQLiteStorageEngine;}
     C4DocumentVersioning versioning() const     {return _versioning;}
     bool isRevTrees() const                     {return _versioning == kC4RevisionTrees;}
-    bool isEncrypted() const                    {return (c4db_getConfig(db)->encryptionKey.algorithm != kC4EncryptionNone);}
+    bool isEncrypted() const                    {return (_dbConfig.encryptionKey.algorithm != kC4EncryptionNone);}
 
     // Creates an extra database, with the same path as db plus the suffix.
     // Caller is responsible for closing & deleting this database when the test finishes.
@@ -254,6 +256,6 @@ public:
 private:
     const C4StorageEngine _storage;
     const C4DocumentVersioning _versioning;
-    std::string _dbPath;
+    C4DatabaseConfig2 _dbConfig;
     int objectCount;
 };

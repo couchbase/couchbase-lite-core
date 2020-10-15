@@ -78,7 +78,7 @@ extern "C" {
 
     /** Options for running queries. */
     typedef struct {
-        bool rankFullText;      ///< Should full-text results be ranked by relevance?
+        bool rankFullText_DEPRECATED;      ///< Ignored; use the `rank()` query function instead.
     } C4QueryOptions;
 
 
@@ -131,7 +131,7 @@ extern "C" {
         NOTE: Queries will run much faster if the appropriate properties are indexed.
         Indexes must be created explicitly by calling `c4db_createIndex`.
         @param query  The compiled query to run.
-        @param options  Query options; only `skip` and `limit` are currently recognized.
+        @param options  Query options; currently unused, just pass NULL.
         @param encodedParameters  Options parameter values; if this parameter is not NULL,
                         it overrides the parameters assigned by \ref c4query_setParameters.
         @param outError  On failure, will be set to the error status.

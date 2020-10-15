@@ -252,6 +252,26 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query ANY of dict", "[Query][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Nested ANY of dict", "[Query][C]") {     // CBL-1248
+    C4Error error;
+    TransactionHelper t(db);
+
+    // New Doc:
+    auto doc1 = c4doc_create(db, C4STR("doc1"),
+                             json2fleece("{'variants': [{'items': [{'id':1, 'value': 1}]}]}"), 0, &error);
+
+    auto doc2 = c4doc_create(db, C4STR("doc2"),
+                             json2fleece("{'variants': [{'items': [{'id':2, 'value': 2}]}]}"), 0, &error);
+
+    compile(json5("['ANY', 'V', ['.variants'], ['ANY', 'I', ['?V.items'], ['=', ['?I.id'], 2]]]"));
+
+    CHECK(run() == (vector<string>{ "doc2" }));
+
+    c4doc_release(doc1);
+    c4doc_release(doc2);
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query expression index", "[Query][C]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
@@ -386,7 +406,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query dict literal", "[Query][C]") {
 
     auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
         FLValue result = FLArrayIterator_GetValueAt(&e->columns, 0);
-        return string(slice(FLValue_ToJSON5(result)));
+        return string(alloc_slice(FLValue_ToJSON5(result)));
     });
     CHECK(results[0] == "{d:1234.5,f:false,i:12345,id:\"0000001\",n:null,s:\"howdy\",t:true}");
 }
@@ -971,25 +991,19 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
     
     for(int i = 0; i < 2; i++) {
         REQUIRE(c4db_createIndex(db, names[i], desc[i], types[i], nullptr, &err));
-        C4SliceResult indexes = c4db_getIndexes(db, &err);
-        FLValue val = FLValue_FromData((FLSlice)indexes, kFLTrusted);
-        REQUIRE(FLValue_GetType(val) == kFLArray);
-        FLArray indexArray = FLValue_AsArray(val);
-        FLArrayIterator iter;
-        FLArrayIterator_Begin(indexArray, &iter);
-        REQUIRE(FLArrayIterator_GetCount(&iter) == 1);
-        FLString indexName = FLValue_AsString(FLArrayIterator_GetValueAt(&iter, 0));
+
+        alloc_slice indexes = c4db_getIndexesInfo(db, &err);
+        FLArray indexArray = FLValue_AsArray(FLValue_FromData(indexes, kFLTrusted));
+        REQUIRE(FLArray_Count(indexArray) == 1);
+        FLDict indexInfo = FLValue_AsDict(FLArray_Get(indexArray, 0));
+        FLSlice indexName = FLValue_AsString(FLDict_Get(indexInfo, "name"_sl));
         CHECK(indexName == names[i]);
-        c4slice_free(indexes);
-        
+
         REQUIRE(c4db_deleteIndex(db, names[i], &err));
+
         indexes = c4db_getIndexesInfo(db, &err);
-        val = FLValue_FromData((FLSlice)indexes, kFLTrusted);
-        REQUIRE(FLValue_GetType(val) == kFLArray);
-        indexArray = FLValue_AsArray(val);
-        FLArrayIterator_Begin(indexArray, &iter);
-        REQUIRE(FLArrayIterator_GetCount(&iter) == 0);
-        c4slice_free(indexes);
+        indexArray = FLValue_AsArray(FLValue_FromData(indexes, kFLTrusted));
+        REQUIRE(FLArray_Count(indexArray) == 0);
     }
 }
 
