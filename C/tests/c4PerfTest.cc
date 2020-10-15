@@ -26,21 +26,33 @@
 #include "Benchmark.hh"
 #include "FilePath.hh"
 #include "SecureRandomize.hh"
+#include "repo_version.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <fstream>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
 
 using namespace fleece;
+using namespace std;
 
 
 class PerfTest : public C4Test {
 public:
-    PerfTest(int variation) :C4Test(variation) { }
+    PerfTest(int variation) :C4Test(variation)
+    {
+        const char* showFastDir = getenv("CBL_SHOWFAST_DIR");
+        if(showFastDir) {
+            litecore::FilePath showFastPath(showFastDir, "");
+            if(showFastPath.exists() && showFastPath.isDir()) {
+                _showFastDir = showFastDir;
+            }
+        }
+    }
 
     // Copies a Fleece dictionary key/value to an encoder
     static bool copyValue(Dict srcDict, Dict::Key &key, Encoder &enc) {
@@ -51,7 +63,7 @@ public:
         enc.writeValue(value);
         return true;
     }
-
+    
 
     unsigned insertDocs(Array docs) {
         Dict::Key typeKey   (FLSTR("Track Type"));
@@ -136,7 +148,7 @@ public:
     }
 
 
-    void readRandomDocs(size_t numDocs, size_t numDocsToRead) {
+    void readRandomDocs(size_t numDocs, size_t numDocsToRead, const char* sf_title = nullptr) {
         std::cerr << "Reading " <<numDocsToRead<< " random docs...\n";
         Benchmark b;
         for (size_t readNo = 0; readNo < numDocsToRead; ++readNo) {
@@ -152,7 +164,97 @@ public:
             b.stop();
         }
         b.printReport(1, "doc");
+        if(sf_title) {
+            string sf = generateShowfast(b, 1000.0*1000.0, sf_title);
+            writeShowFastToFile(sf_title, sf);
+        }
     }
+    
+    
+    string generateShowfast(Benchmark &mark, double scale, string title, const char* items = nullptr) {
+        if(isEncrypted()) {
+            title += "_encrypted";
+        }
+        
+        FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeJSON, 0, false);
+        FLEncoder_BeginArray(enc, 4);
+        auto r = mark.range();
+        string prefixes[] = { "median_", "mean_", "fast_", "slow_" };
+        int p = 0;
+        for(auto m : {mark.median(), mark.average(), r.first, r.second}) {
+            string fullTitle = prefixes[p++] + title;
+            
+            FLEncoder_BeginDict(enc, 3);
+            FLEncoder_WriteKey(enc, FLSTR("metric"));
+            FLEncoder_WriteString(enc, FLStr(fullTitle.c_str()));
+            FLEncoder_WriteKey(enc, FLSTR("hidden"));
+            FLEncoder_WriteBool(enc, false);
+            FLEncoder_WriteKey(enc, FLSTR("value"));
+            FLEncoder_WriteDouble(enc, round(m * scale * 1000.0) / 1000.0);
+            FLEncoder_EndDict(enc);
+        }
+        
+        FLEncoder_EndArray(enc);
+        auto result = FLEncoder_Finish(enc, nullptr);
+        auto retVal = string((char *)result.buf, result.size);
+        FLSliceResult_Release(result);
+        return retVal;
+    }
+    
+    string generateShowfast(double value, string title) {
+        if(!_showFastDir) {
+            return "";
+        }
+        
+        if(isEncrypted()) {
+            title += "_encrypted";
+        }
+        
+        int64_t int_value = (int64_t)value;
+        
+        FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeJSON, 0, false);
+        FLEncoder_BeginArray(enc, 1);
+        FLEncoder_BeginDict(enc, 3);
+        FLEncoder_WriteKey(enc, FLSTR("metric"));
+        FLEncoder_WriteString(enc, FLStr(title.c_str()));
+        FLEncoder_WriteKey(enc, FLSTR("hidden"));
+        FLEncoder_WriteBool(enc, false);
+        FLEncoder_WriteKey(enc, FLSTR("value"));
+        if(int_value == value) {
+            FLEncoder_WriteInt(enc, int_value);
+        } else {
+            FLEncoder_WriteDouble(enc, round(value * 1000.0) / 1000.0);
+        }
+        
+        FLEncoder_EndDict(enc);
+        FLEncoder_EndArray(enc);
+        
+        auto result = FLEncoder_Finish(enc, nullptr);
+        auto retVal = string((char *)result.buf, result.size);
+        FLSliceResult_Release(result);
+        return retVal;
+    }
+    
+    void writeShowFastToFile(string filename, const string& contents) {
+        if(!_showFastDir) {
+            return;
+        }
+        
+        if(isEncrypted()) {
+            filename += "_encrypted";
+        }
+        
+        filename += ".json";
+        litecore::FilePath sfPath(_showFastDir, filename);
+        
+        ofstream fout(sfPath.path(), ios::trunc|ios::out);
+        fout.exceptions(ostream::failbit|ostream::badbit);
+        fout << contents;
+        fout.close();
+    }
+    
+private:
+    const char* _showFastDir {nullptr};
 };
 
 
@@ -160,11 +262,15 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import iTunesMusicLibrary", "[Perf][C][.slow]"
     Stopwatch st;
     auto numDocs = importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     CHECK(numDocs == 12189);
+    st.stop();
     st.printReport("******** Importing JSON w/spaces", numDocs, "doc");
+    
     litecore::FilePath path(alloc_slice(c4db_getPath(db)).asString(), "db.sqlite3");
     fprintf(stderr, "******** DB size is %llu\n", path.dataSize());
     reopenDB();
-    readRandomDocs(numDocs, 100000);
+    string sf = generateShowfast((double)numDocs / st.elapsed(), "tunes_import_json");
+    writeShowFastToFile("tunes_import_json", sf);
+    readRandomDocs(numDocs, 100000, "tunes_read_random_docs");
 }
 
 
@@ -184,14 +290,23 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
     for (int pass = 0; pass < 2; ++pass) {
         Stopwatch st;
         auto n = queryWhere("[\"=\", [\".contact.address.state\"], \"WA\"]");
+        st.stop();
         st.printReport("SQL query of state", n, "doc");
+        const char* sf_title = pass == 0 ?
+            "names_sql_query_state" :
+            "names_sql_query_state_indexed";
+        string sf = generateShowfast(round(double(n) / st.elapsed()), sf_title);
+        writeShowFastToFile(sf_title, sf);
         if (complete) CHECK(n == 5053);
         if (pass == 0) {
             Stopwatch st2;
             C4Error error;
 			C4Slice property = C4STR("[[\".contact.address.state\"]]");
             REQUIRE(c4db_createIndex(db, C4STR("byState"), property, kC4ValueIndex, nullptr, &error));
+            st2.stop();
             st2.printReport("Creating SQL index of state", 1, "index");
+            sf = generateShowfast(round(st2.elapsedMS()), "names_sql_index_creation");
+            writeShowFastToFile("names_sql_index_creation", sf);
         }
     }
 }
@@ -206,7 +321,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import geoblocks", "[Perf][C][.slow]") {
 
     auto numDocs = importJSONLines(sFixturesDir + "geoblocks.json", 15.0, true);
     reopenDB();
-    readRandomDocs(numDocs, 100000);
+    readRandomDocs(numDocs, 100000, "geoblocks_import_json");
 }
 
 
