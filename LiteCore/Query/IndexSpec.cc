@@ -19,10 +19,23 @@
 #include "IndexSpec.hh"
 #include "QueryParser+Private.hh"
 #include "Error.hh"
+#include "FleeceImpl.hh"
 
 namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
+
+
+    IndexSpec::IndexSpec(std::string name_,
+                         Type type_,
+                         alloc_slice expressionJSON_,
+                         const Options* opt)
+    :name(move(name_)), type(type_), expressionJSON(expressionJSON_)
+    ,options(opt ? std::make_optional(*opt) : std::optional<Options>())
+    { }
+
+    IndexSpec::IndexSpec(IndexSpec&&) =default;
+    IndexSpec::~IndexSpec() =default;
 
 
     void IndexSpec::validateName() const {

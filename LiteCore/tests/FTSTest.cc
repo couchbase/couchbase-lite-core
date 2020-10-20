@@ -20,6 +20,7 @@
 #include "Query.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
+#include "FleeceImpl.hh"
 
 #include "LiteCoreTest.hh"
 

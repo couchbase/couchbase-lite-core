@@ -26,6 +26,7 @@
 #include "c4QueryObserver.hh"
 
 #include "SQLiteDataFile.hh"
+#include "FleeceImpl.hh"
 
 
 using namespace std;

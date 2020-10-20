@@ -26,6 +26,7 @@
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "Stopwatch.hh"
+#include "Array.hh"
 
 using namespace std;
 using namespace fleece;

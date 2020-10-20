@@ -22,6 +22,7 @@
 #include "SQLiteDataFile.hh"
 #include "QueryParser.hh"
 #include "StringUtil.hh"
+#include "Array.hh"
 #include <sstream>
 
 extern "C" {

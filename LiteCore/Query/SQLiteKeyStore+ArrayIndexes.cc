@@ -21,6 +21,7 @@
 #include "QueryParser.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include "Array.hh"
 
 using namespace std;
 using namespace fleece;

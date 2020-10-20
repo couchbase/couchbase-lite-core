@@ -21,6 +21,7 @@
 #include "LegacyAttachments.hh"
 #include "BlobStore.hh"
 #include "StringUtil.hh"
+#include "Doc.hh"
 #include "DeepIterator.hh"
 
 using namespace fleece;

@@ -19,10 +19,13 @@
 #pragma once
 #include "KeyStore.hh"
 #include "QueryParser.hh"
-#include "FleeceImpl.hh"
 #include <mutex>
 #include <atomic>
 
+namespace fleece::impl {
+    class ArrayIterator;
+    class Value;
+}
 namespace SQLite {
     class Column;
     class Statement;
@@ -123,7 +126,7 @@ namespace litecore {
         bool createValueIndex(const IndexSpec&);
         bool createIndex(const IndexSpec&,
                               const std::string &sourceTableName,
-                              fleece::impl::Array::iterator &expressions);
+                              fleece::impl::ArrayIterator &expressions);
         void _createFlagsIndex(const char *indexName NONNULL, DocumentFlags flag, bool &created);
         bool createFTSIndex(const IndexSpec&);
         bool createArrayIndex(const IndexSpec&);

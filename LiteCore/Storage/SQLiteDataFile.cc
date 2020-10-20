@@ -747,7 +747,7 @@ namespace litecore {
     alloc_slice SQLiteDataFile::rawQuery(const string &query) {
         SQLite::Statement stmt(*_sqlDb, query);
         int nCols = stmt.getColumnCount();
-        fleece::impl::Encoder enc;
+        fleece::Encoder enc;
         enc.beginArray();
         while (stmt.executeStep()) {
             enc.beginArray();

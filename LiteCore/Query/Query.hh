@@ -19,10 +19,13 @@
 #pragma once
 #include "RefCounted.hh"
 #include "KeyStore.hh"
-#include "FleeceImpl.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include <atomic>
+
+namespace fleece::impl {
+    class ArrayIterator;
+}
 
 namespace litecore {
     class QueryEnumerator;
@@ -110,7 +113,7 @@ namespace litecore {
 
         virtual bool next() =0;
 
-        virtual fleece::impl::Array::iterator columns() const noexcept =0;
+        virtual fleece::impl::ArrayIterator columns() const noexcept =0;
         virtual uint64_t missingColumns() const noexcept =0;
         
         /** Random access to rows. May not be supported by all implementations, but does work with
