@@ -322,12 +322,12 @@ namespace litecore {
 
     sequence_t SQLiteKeyStore::set(slice key, slice vers, slice body, DocumentFlags flags,
                                    Transaction&,
-                                   const sequence_t *replacingSequence,
+                                   optional<sequence_t> replacingSequence,
                                    bool newSequence)
     {
         const char *opName;
         SQLite::Statement *stmt;
-        if (replacingSequence == nullptr) {
+        if (!replacingSequence) {
             // Default:
             compile(_setStmt,
                     "INSERT OR REPLACE INTO kv_@ (version, body, flags, sequence, key)"

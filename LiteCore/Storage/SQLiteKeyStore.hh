@@ -49,7 +49,7 @@ namespace litecore {
 
         sequence_t set(slice key, slice meta, slice value, DocumentFlags,
                        Transaction&,
-                       const sequence_t *replacingSequence =nullptr,
+                       std::optional<sequence_t> replacingSequence =std::nullopt,
                        bool newSequence =true) override;
 
         bool del(slice key, Transaction&, sequence_t s) override;

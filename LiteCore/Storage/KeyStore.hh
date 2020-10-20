@@ -22,6 +22,7 @@
 #include "RecordEnumerator.hh"
 #include "function_ref.hh"
 #include <functional>
+#include <optional>
 #include <vector>
 
 namespace litecore {
@@ -103,15 +104,19 @@ namespace litecore {
         virtual sequence_t set(slice key, slice version, slice value,
                                DocumentFlags,
                                Transaction&,
-                               const sequence_t *replacingSequence =nullptr,
+                               std::optional<sequence_t> replacingSequence =std::nullopt,
                                bool newSequence =true) =0;
 
         sequence_t set(slice key, slice value, Transaction &t,
-                       const sequence_t *replacingSequence =nullptr) {
-            return set(key, nullslice, value, DocumentFlags::kNone, t, replacingSequence);
+                       std::optional<sequence_t> replacingSequence =std::nullopt,
+                       bool newSequence =true) {
+            return set(key, nullslice, value, DocumentFlags::kNone, t, replacingSequence, newSequence);
         }
 
-        void write(Record&, Transaction&, const sequence_t *replacingSequence =nullptr);
+        sequence_t write(Record&,
+                         Transaction&,
+                         std::optional<sequence_t> replacingSequence =std::nullopt,
+                         bool newSequence =true);
 
         virtual bool del(slice key, Transaction&, sequence_t replacingSequence =0) =0;
         bool del(const Record &rec, Transaction &t)                 {return del(rec.key(), t);}

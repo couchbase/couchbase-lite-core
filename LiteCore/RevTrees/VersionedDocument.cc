@@ -176,7 +176,7 @@ namespace litecore {
             // (Don't call _rec.setBody(), because it'd invalidate all the inner pointers from
             // Revs into the existing body buffer.)
             seq = _store.set(_rec.key(), _rec.version(), newBody, _rec.flags(),
-                          transaction, &seq, createSequence);
+                          transaction, seq, createSequence);
             if (!seq)
                 return kConflict;               // Conflict
             _rec.updateSequence(seq);

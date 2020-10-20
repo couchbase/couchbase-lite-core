@@ -63,10 +63,17 @@ namespace litecore {
     }
 #endif
     
-    void KeyStore::write(Record &rec, Transaction &t, const sequence_t *replacingSequence) {
-        auto seq = set(rec.key(), rec.version(), rec.body(), rec.flags(), t, replacingSequence);
-        rec.setExists();
-        rec.updateSequence(seq);
+    sequence_t KeyStore::write(Record &rec,
+                               Transaction &t,
+                               optional<sequence_t> replacingSequence,
+                               bool newSequence)
+    {
+        auto seq = set(rec.key(), rec.version(), rec.body(), rec.flags(), t, replacingSequence, newSequence);
+        if (seq > 0) {
+            rec.setExists();
+            rec.updateSequence(seq);
+        }
+        return seq;
     }
 
     bool KeyStore::createIndex(slice name,

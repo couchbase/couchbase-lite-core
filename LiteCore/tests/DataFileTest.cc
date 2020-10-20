@@ -354,10 +354,10 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Conditional Write", "[Dat
     sequence_t newSeq;
     {
         Transaction t(db);
-        newSeq = s.set(key, "initialvalue"_sl, t, &oldSeq);
+        newSeq = s.set(key, "initialvalue"_sl, t, oldSeq);
         CHECK(newSeq == 1);
 
-        auto badSeq = s.set(key, "wronginitialvalue"_sl, t, &oldSeq);
+        auto badSeq = s.set(key, "wronginitialvalue"_sl, t, oldSeq);
         CHECK(badSeq == 0);
         t.commit();
     }
@@ -368,7 +368,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Conditional Write", "[Dat
 
     {
         Transaction t(db);
-        newSeq = s.set(key, "updatedvalue"_sl, t, &newSeq);
+        newSeq = s.set(key, "updatedvalue"_sl, t, newSeq);
         CHECK(newSeq == 2);
         t.commit();
     }
