@@ -729,6 +729,35 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Reject invalid top-level keys", "[Database][C]") {
+    C4Slice badKeys[] = { C4STR("_id"), C4STR("_rev"), C4STR("_deleted") };
+    ExpectingExceptions ee;
+    for(const auto key : badKeys) {
+        TransactionHelper t(db);
+        SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
+        enc.beginDict();
+        enc.writeKey(key);
+        enc.writeInt(1234);
+        enc.endDict();
+        fleece::alloc_slice fleeceBody = enc.finish();
+
+        C4Slice history[1] = { C4STR("1-abcd") };
+        C4DocPutRequest rq = {};
+        rq.existingRevision = true;
+        rq.docID = C4STR("test");
+        rq.history = history;
+        rq.historyCount = 1;
+        rq.body = fleeceBody;
+        rq.save = true;
+        C4Error error;
+        auto doc = c4doc_put(db, &rq, nullptr, &error);
+        CHECK(doc == nullptr);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorCorruptRevisionData);
+    }
+}
+
+
 #pragma mark - SCHEMA UPGRADES
 
 
