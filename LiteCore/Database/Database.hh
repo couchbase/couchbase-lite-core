@@ -127,11 +127,7 @@ namespace c4Internal {
         bool setExpiration(slice docID, expiration_t);
         bool startHousekeeping();
 
-#if DEBUG
         void validateRevisionBody(slice body);
-#else
-        void validateRevisionBody(slice body)   { }
-#endif
 
         Record getRawDocument(const std::string &storeName, slice key);
         void putRawDocument(const string &storeName, slice key, slice meta, slice body);
