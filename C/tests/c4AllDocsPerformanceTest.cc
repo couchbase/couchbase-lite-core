@@ -51,6 +51,8 @@ public:
             sprintf(revID, "1-deadbeefcafebabe80081e50");
             char json[kSizeOfDocument+100];
             sprintf(json, "{\"content\":\"%s\"}", content);
+            C4SliceResult body = c4db_encodeJSON(db, c4str(json), &error);
+            REQUIRE(body.buf);
 
             C4Slice history[1] = {isRevTrees() ? c4str("1-deadbeefcafebabe80081e50")
                                                : c4str("1@deadbeefcafebabe80081e50")};
@@ -64,6 +66,7 @@ public:
             auto doc = c4doc_put(db, &rq, nullptr, &error);
             REQUIRE(doc);
             c4doc_release(doc);
+            c4slice_free(body);
         }
 
         REQUIRE(c4db_endTransaction(db, true, &error));
