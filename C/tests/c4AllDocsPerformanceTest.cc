@@ -61,7 +61,7 @@ public:
             rq.docID = c4str(docID);
             rq.history = history;
             rq.historyCount = 1;
-            rq.body = c4str(json);
+            rq.body = (C4Slice)body;
             rq.save = true;
             auto doc = c4doc_put(db, &rq, nullptr, &error);
             REQUIRE(doc);
