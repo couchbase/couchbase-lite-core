@@ -33,6 +33,17 @@ namespace fleece {
 }
 
 
+namespace litecore {
+    static inline std::ostream& operator<< (std::ostream &out, const litecore::Revision &rev) {
+        return out << "Revision{" << rev.revID.str() << ", " << int(rev.flags)
+                   << ", " << rev.properties.toJSONString() << "}";
+    }
+
+    static inline bool operator== (const litecore::Revision &a, const litecore::Revision &b) {
+        return a.revID == b.revID && a.flags == b.flags && a.properties.isEqual(b.properties);
+    }
+}
+
 #include "LiteCoreTest.hh"
 
 using namespace litecore;
@@ -72,18 +83,20 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
 
         doc.mutableProperties()["year"] = 2525;
         CHECK(doc.mutableProperties() == doc.properties());
+        doc.setFlags(DocumentFlags::kHasAttachments);
+        CHECK(doc.flags() == DocumentFlags::kHasAttachments);
         CHECK(doc.changed());
 
         {
             Transaction t(db);
-            CHECK(doc.save(t, revidBuffer("1-f000"), DocumentFlags::kHasAttachments) == NuDocument::kNewSequence);
+            CHECK(doc.save(t) == NuDocument::kNewSequence);
             t.commit();
         }
 
         cerr << "Doc is: " << doc << "\n";
         cerr << "Revisions: " << doc.revisionStorage() << "\n";
         CHECK(doc.sequence() == 1);
-        CHECK(doc.revID().str() == "1-f000");
+        CHECK(doc.revID().str() == "1-f2e52c9d6f0f40b6303eb0fb58d4ba6dd4521adc");
         CHECK(doc.flags() == DocumentFlags::kHasAttachments);
         CHECK(doc.properties().toJSON(true, true) == "{year:2525}");
         CHECK(!doc.changed());
@@ -92,17 +105,17 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
 
         {
             Transaction t(db);
-            CHECK(doc.save(t, doc.revID(), doc.flags()) == NuDocument::kNoSave);
+            CHECK(doc.save(t) == NuDocument::kNoSave);
 
             doc.mutableProperties()["weekday"] = "Friday";
-            CHECK(doc.save(t, revidBuffer("2-5252"), DocumentFlags::kNone) == NuDocument::kNewSequence);
+            CHECK(doc.save(t, doc.revID(), DocumentFlags::kNone) == NuDocument::kNewSequence);
             t.commit();
         }
 
         cerr << "Doc is: " << doc << "\n";
         cerr << "Revisions: " << doc.revisionStorage() << "\n";
         CHECK(doc.sequence() == 2);
-        CHECK(doc.revID().str() == "2-5252");
+        CHECK(doc.revID().str() == "2-c8eeae1245a44de160c2ca96e448f1650dd901da");
         CHECK(doc.flags() == DocumentFlags::kNone);
         CHECK(doc.properties().toJSON(true, true) == "{weekday:\"Friday\",year:2525}");
         CHECK(!doc.changed());
@@ -115,7 +128,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
         NuDocument readDoc(*store, store->get("Nuu"));
         CHECK(readDoc.docID() == "Nuu");
         CHECK(readDoc.sequence() == 2);
-        CHECK(readDoc.revID().str() == "2-5252");
+        CHECK(readDoc.revID().str() == "2-c8eeae1245a44de160c2ca96e448f1650dd901da");
         CHECK(readDoc.flags() == DocumentFlags::kNone);
         CHECK(readDoc.properties().toJSON(true, true) == "{weekday:\"Friday\",year:2525}");
         CHECK(!readDoc.changed());
@@ -166,20 +179,37 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remote Update", "[NuDoc
     NuDocument doc(*store, "Nuu");
 
     // Create doc, as if pulled from a remote:
-    revidBuffer rev1("1-1111");
+    revidBuffer revid1("1-1111");
     doc.mutableProperties()["rodent"] = "mouse";
     doc.mutableProperties()["age"] = 1;
-    doc.setRemoteRevision(1, Revision{doc.properties(), rev1, DocumentFlags::kNone});
-    CHECK(doc.save(t, rev1, DocumentFlags::kNone) == NuDocument::kNewSequence);
-    cerr << "Storage after pull:\n" << doc.dumpStorage();
-    CHECK(doc.properties() == doc.remoteRevision(1)->properties);
+    MutableArray loc = MutableArray::newArray();
+    loc.append(-108.3);
+    loc.append(37.234);
+    doc.mutableProperties()["loc"] = loc;
+    doc.setRevID(revid1);
+
+    // Make remote 1 the same as local:
+    {
+        auto local = doc.currentRevision();
+        CHECK(local == (Revision{doc.properties(), revid1}));
+        doc.setRemoteRevision(1, local);
+        CHECK(doc.save(t) == NuDocument::kNewSequence);
+    }
+    cerr << "\nStorage after pull:\n" << doc.dumpStorage();
+
+    CHECK(doc.currentRevision() == *doc.remoteRevision(1));
+    CHECK(doc.properties() == doc.remoteRevision(1)->properties); // rev body only stored once
 
     // Update doc locally:
     doc.mutableProperties()["age"] = 2;
-    revidBuffer rev2("2-2222");
-    CHECK(doc.save(t, rev2, DocumentFlags::kNone) == NuDocument::kNewSequence);
-    CHECK(doc.properties().toJSON(true, true) == "{age:2,rodent:\"mouse\"}"_sl);
-    CHECK(doc.remoteRevision(1)->properties.toJSON(true, true) == "{age:1,rodent:\"mouse\"}"_sl);
+    revidBuffer revid2("2-2222");
+    CHECK(doc.save(t, revid2, DocumentFlags::kNone) == NuDocument::kNewSequence);
+    cerr << "\nStorage after save:\n" << doc.dumpStorage();
 
-    cerr << "Storage after save:\n" << doc.dumpStorage();
+    auto props1 = doc.properties(), props2 = doc.remoteRevision(1)->properties;
+    CHECK(props1.toJSON(true, true) == "{age:2,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
+    CHECK(props2.toJSON(true, true) == "{age:1,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
+    CHECK(props1["rodent"] == props2["rodent"]);    // string should only be stored once
+    CHECK(props1["loc"] == props2["loc"]);          // array should only be stored once
+    CHECK(props1["age"] != props2["age"]);
 }

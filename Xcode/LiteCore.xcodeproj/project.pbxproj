@@ -1098,6 +1098,7 @@
 		276CE67F2267991500B681AC /* n1ql_parser_internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = n1ql_parser_internal.hh; sourceTree = "<group>"; };
 		276CE6822267991500B681AC /* n1ql_parser.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = n1ql_parser.hh; sourceTree = "<group>"; };
 		276CE68D2267A02500B681AC /* N1QLParserTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = N1QLParserTest.cc; sourceTree = "<group>"; };
+		276CF337254C893200C493B5 /* DeDuplicateEncoder.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DeDuplicateEncoder.hh; sourceTree = "<group>"; };
 		276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteEnumerator.cc; sourceTree = "<group>"; };
 		276D15401DFF541000543B1B /* SQLiteQuery.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteQuery.cc; sourceTree = "<group>"; };
 		276E02101EA9717200FEFE8A /* RESTListenerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTListenerTest.cc; sourceTree = "<group>"; };
@@ -2131,6 +2132,7 @@
 				729272F22238DB8500E7208E /* c4ExceptionUtils.hh */,
 				2744B334241854F2005A194D /* Codec.cc */,
 				2744B33E241854F2005A194D /* Codec.hh */,
+				276CF337254C893200C493B5 /* DeDuplicateEncoder.hh */,
 				2762A01F22EF641900F9AB18 /* Defer.hh */,
 				27393A861C8A353A00829C9B /* Error.cc */,
 				277D19C9194E295B008E91EB /* Error.hh */,

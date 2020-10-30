@@ -33,9 +33,9 @@ namespace litecore {
 
     /// Metadata and properties of a document revision.
     struct Revision {
-        fleece::Dict  const properties;
-        revid         const revID;
-        DocumentFlags const flags;
+        fleece::Dict  properties;
+        revid         revID;
+        DocumentFlags flags;
 
         bool isDeleted() const FLPURE      {return (flags & DocumentFlags::kDeleted) != 0;}
         bool isConflicted() const FLPURE   {return (flags & DocumentFlags::kConflicted) != 0;}
@@ -47,9 +47,7 @@ namespace litecore {
     class NuDocument {
     public:
         using RemoteID = unsigned;
-        static constexpr RemoteID kNoRemoteID = 0;
         static constexpr RemoteID kLocal = 0;
-        static constexpr RemoteID kDefaultRemoteID = 1;     // 1st (& usually only) remote server
 
         using Dict = fleece::Dict;
         using MutableDict = fleece::MutableDict;
@@ -61,23 +59,19 @@ namespace litecore {
         /// Given a Fleece Value, finds the NuDocument it belongs to.
         static NuDocument* containing(fleece::Value);
 
-        void setSharedFLEncoder(FLEncoder enc)  {_encoder = enc;}
-
-        bool exists() const FLPURE              {return _rec.exists();}
-
-        sequence_t sequence() const FLPURE      {return _rec.sequence();}
-
-        const Record& record() const FLPURE     {return _rec;}
+        bool exists() const noexcept FLPURE                 {return _fleeceDoc != nullptr;}
 
         //---- Metadata:
 
-        const alloc_slice& docID() const FLPURE {return _rec.key();}
+        sequence_t sequence() const noexcept FLPURE         {return _sequence;}
 
-        Dict properties() const                 {return _properties;}
-        revid revID() const FLPURE              {return revid(_rec.version());}
-        DocumentFlags flags() const FLPURE      {return _rec.flags();}
+        const alloc_slice& docID() const noexcept FLPURE    {return _docID;}
 
-        Revision currentRevision() const FLPURE {return {properties(), revID(), flags()};}
+        Dict properties() const noexcept FLPURE             {return _properties;}
+        revid revID() const FLPURE;
+        DocumentFlags flags() const FLPURE;
+
+        Revision currentRevision() const FLPURE;
 
         //---- Modifying the document:
 
@@ -87,6 +81,11 @@ namespace litecore {
         /// Replaces the current properties with a new Dict.
         /// This is more expensive than modifying mutableProperties().
         void setProperties(Dict);
+        
+        void setRevID(revid);
+        void setFlags(DocumentFlags);
+
+        void setCurrentRevision(const Revision &rev);
 
         /// Returns true if the proprties or remote revisions have been changed. Resets to false on save.
         bool changed() const FLPURE;
@@ -94,20 +93,18 @@ namespace litecore {
         enum SaveResult {kConflict, kNoSave, kNoNewSequence, kNewSequence};
 
         /// Saves changes, if any, back to the KeyStore.
-        /// @param t  The current Transaction
-        /// @param revID  The new revision ID. This is allowed to be the same as the current revID;
-        ///               in that case no new sequence will be allocated.
-        /// @param flags  The new document flags.
-        SaveResult save(Transaction &t, revid revID, DocumentFlags flags);
+        /// @return  kNewSequence if a new sequence was allocated; kNoNewSequence if sequence is unchanged;
+        ///         kNoSave if there were no changes to be saved.
+        SaveResult save(Transaction &t);
 
-        /// Saves changes without creating a new revision or sequence.
-        SaveResult save(Transaction &t)         {return save(t, revID(), flags());}
+        /// Updates the revID and flags, then saves changes.
+        SaveResult save(Transaction &t, revid revID, DocumentFlags flags);
 
         //---- Revisions of different remotes:
 
-        std::optional<Revision> remoteRevision(RemoteID) const;
+        std::optional<Revision> remoteRevision(RemoteID) const FLPURE;
 
-        void setRemoteRevision(RemoteID, const std::optional<Revision>&);   // not for local rev
+        void setRemoteRevision(RemoteID, const std::optional<Revision>&);
 
 
         //---- For testing:
@@ -116,27 +113,29 @@ namespace litecore {
         std::string dump() const;
         void dump(std::ostream&) const;
         std::string dumpStorage() const;
+        static revidBuffer generateRevID(Dict, revid parentRevID, DocumentFlags);
 
     private:
         class LinkedFleeceDoc;
 
-        void decode();
-        bool initFleeceDoc();
+        void decode(const alloc_slice &body);
+        bool initFleeceDoc(const alloc_slice &body);
+        alloc_slice docBody() const;
         void mutateRevisions();
         MutableDict mutableRevisionDict(RemoteID remoteID);
         alloc_slice encodeBody();
         alloc_slice encodeBody(FLEncoder);
-        bool shouldIncrementallyEncode() const;
+        void generateNewRevID();
 
         KeyStore&                    _store;
-        Record                       _rec;
-        Retained<LinkedFleeceDoc>    _fleeceDoc;
         fleece::SharedKeys           _sharedKeys;
         FLEncoder                    _encoder {nullptr};
+        alloc_slice                  _docID;
+        sequence_t                   _sequence;
+        Retained<LinkedFleeceDoc>    _fleeceDoc;
         fleece::Array                _revisions;
         mutable fleece::MutableArray _mutatedRevisions;
         Dict                         _properties;
-        mutable MutableDict          _mutatedProperties;
         bool                         _changed {false};
         bool                         _revIDChanged {false};
     };

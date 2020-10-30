@@ -20,8 +20,11 @@
 #include "Record.hh"
 #include "KeyStore.hh"
 #include "DataFile.hh"
+#include "DeDuplicateEncoder.hh"
 #include "Error.hh"
 #include "Defer.hh"
+#include "SecureDigest.hh"
+#include "StringUtil.hh"
 #include <ostream>
 #include <sstream>
 
@@ -29,34 +32,50 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
+    /*
+     RECORD BODY FORMAT:
+
+     A record body (i.e. the `body` column of the `kv_default` table) is a Fleece-encoded array.
+     Each item of the array describes a revision.
+     The first item is the local current revision.
+     Other revisions are the known versions at remote peers, indexed by RemoteID values.
+     Each revision is a Dict with keys:
+        - `body` (document body, itself a Dict),
+        - `revID` (revision ID, binary data),
+        - `flags` (DocumentFlags, int, omitted if 0)
+     It's very common for two or more revisions to be the same, or at least have a lot of property
+     values in common. Thus, when encoding the record body we use a DeDuplicatingEncoder to save
+     space, writing repeated values only once.
+     */
+
+    // Properties in revision dicts:
     static constexpr slice kMetaBody  = "body";
     static constexpr slice kMetaRevID = "revID";
     static constexpr slice kMetaFlags = "flags";
 
 
     NuDocument::NuDocument(KeyStore& store, slice docID)
-    :_store(store), _rec(docID)
-    {
-        _store.read(_rec);
-        decode();
-    }
+    :NuDocument(store, store.get(docID))
+    { }
 
 
     NuDocument::NuDocument(KeyStore& store, const Record& rec)
-    :_store(store), _rec(rec)
+    :_store(store)
+    ,_docID(rec.key())
+    ,_sequence(rec.sequence())
     {
-        decode();
+        decode(rec.body());
     }
 
 
-    NuDocument::~NuDocument() { }
+    NuDocument::~NuDocument() = default;
 
 
-    void NuDocument::decode() {
-        if (initFleeceDoc()) {
+    void NuDocument::decode(const alloc_slice &body) {
+        if (initFleeceDoc(body)) {
             if (!_revisions)
                 error::_throw(error::CorruptRevisionData);
-            _properties = _revisions[kLocal].asDict();
+            _properties = _revisions[kLocal].asDict()[kMetaBody].asDict();
             if (!_properties)
                 error::_throw(error::CorruptRevisionData);
         } else {
@@ -70,15 +89,18 @@ namespace litecore {
 
 
     optional<Revision> NuDocument::remoteRevision(RemoteID remote) const {
-        if (remote == kLocal) {
-            return currentRevision();
-        } else if (Dict revDict = _revisions[remote].asDict(); revDict) {
-            // Non-local revisions have a top-level dict with the revID, flags, properties.
+        if (Dict revDict = _revisions[remote].asDict(); revDict) {
+            // revisions have a top-level dict with the revID, flags, properties.
             Dict properties = revDict[kMetaBody].asDict();
             revid revID(revDict[kMetaRevID].asData());
             auto flags = DocumentFlags(revDict[kMetaFlags].asInt());
-            if (!properties || !revID)
-                error::_throw(error::CorruptRevisionData);
+            if (remote == kLocal) {
+                if (!properties)
+                    properties = Dict::emptyDict();
+            } else {
+                if (!properties || !revID)
+                    error::_throw(error::CorruptRevisionData);
+            }
             return Revision{properties, revID, flags};
         } else {
             return nullopt;
@@ -104,19 +126,27 @@ namespace litecore {
     }
 
 
-    void NuDocument::setRemoteRevision(RemoteID remoteID, const optional<Revision> &newRev) {
-        Assert(remoteID != kLocal);
-        if (!newRev && !_revisions[remoteID])
+    void NuDocument::setRemoteRevision(RemoteID remoteID, const optional<Revision> &optRev) {
+        if (!optRev && !_revisions[remoteID]) {
             return;
-        if (newRev) {
-            // Creating/updating a remote revision:
+        } else if (auto &newRev = *optRev; optRev) {
+            // Creating/updating a revision:
+            Assert(newRev.properties);
+            Assert(newRev.revID || remoteID == kLocal);
             MutableDict revDict = mutableRevisionDict(remoteID);
-            revDict[kMetaBody] = newRev->properties;
-            revDict[kMetaRevID].setData(newRev->revID);
-            revDict[kMetaFlags] = int(newRev->flags);
-
+            revDict[kMetaBody] = newRev.properties;
+            if (newRev.revID != revDict[kMetaRevID].asData()) {
+                revDict[kMetaRevID].setData(newRev.revID);
+                if (remoteID == kLocal)
+                    _revIDChanged = true;
+            }
+            if (newRev.flags != DocumentFlags::kNone)
+                revDict[kMetaFlags] = int(newRev.flags);
+            else
+                revDict.remove(kMetaFlags);
         } else {
             // Removing a remote revision:
+            Assert(remoteID != kLocal);
             mutateRevisions();
             _mutatedRevisions[remoteID] = Value::null();
             auto n = _mutatedRevisions.count();
@@ -124,8 +154,44 @@ namespace litecore {
                 --n;
             _mutatedRevisions.resize(n);
         }
-
         _changed = true;
+    }
+
+
+#pragma mark - CURRENT REVISION:
+
+
+    Revision NuDocument::currentRevision() const {
+        return *remoteRevision(kLocal);
+    }
+
+
+    void NuDocument::setCurrentRevision(const Revision &newRev) {
+        setRemoteRevision(kLocal, newRev);
+    }
+
+
+    revid NuDocument::revID() const {
+        return currentRevision().revID;
+    }
+
+
+    DocumentFlags NuDocument::flags() const {
+        return currentRevision().flags;
+    }
+
+
+    void NuDocument::setRevID(revid newRevID) {
+        Revision rev = currentRevision();
+        if (newRevID != rev.revID)
+            setCurrentRevision({rev.properties, newRevID, rev.flags});
+    }
+
+
+    void NuDocument::setFlags(DocumentFlags newFlags) {
+        Revision rev = currentRevision();
+        if (newFlags != rev.flags)
+            setCurrentRevision({rev.properties, rev.revID, newFlags});
     }
 
 
@@ -133,98 +199,113 @@ namespace litecore {
 
 
     MutableDict NuDocument::mutableProperties() {
-       if (!_mutatedProperties)
-           _properties = _mutatedProperties = mutableRevisionDict(kLocal);
-        return _mutatedProperties;
+        MutableDict mutProperties = _properties.asMutable();
+        if (!mutProperties) {
+            MutableDict rev = mutableRevisionDict(kLocal);
+            mutProperties = rev.getMutableDict(kMetaBody);
+            if (!mutProperties) {
+                mutProperties = MutableDict::newDict();
+                rev[kMetaBody] = mutProperties;
+            }
+            _properties = mutProperties;
+        }
+        return mutProperties;
     }
 
 
     void NuDocument::setProperties(Dict properties) {
         if (properties == _properties)
             return;
-        if (properties) {
-            auto mutProperties = properties.asMutable();
-            if (!mutProperties)
-                mutProperties = properties.mutableCopy();
-            _properties = _mutatedProperties = mutProperties;
-        } else {
-            // Clearing properties (presumably deleting):
-            _properties = nullptr;
-            _mutatedProperties = nullptr;
-        }
+        MutableDict rev = mutableRevisionDict(kLocal);
+        rev[kMetaBody] = properties;
+        _properties = properties;
         _changed = true;
     }
 
 
     bool NuDocument::changed() const {
-        return _changed || (_mutatedProperties && _mutatedProperties.isChanged());
+        return _changed || _properties.asMutable().isChanged();
     }
 
 
 #pragma mark - SAVING:
 
 
-    bool NuDocument::shouldIncrementallyEncode() const {
-        // Check if the current properties dict is a mutated version of the stored one:
-        auto source = _mutatedProperties.source();
-        return source && NuDocument::containing(source) == this;
+    NuDocument::SaveResult NuDocument::save(Transaction &t, revid revID, DocumentFlags flags) {
+        Assert(revID);
+        auto cur = currentRevision();
+        if (revID != cur.revID || flags != cur.flags)
+            setCurrentRevision({cur.properties, revID, flags});
+        return save(t);
+    }
+
+
+    NuDocument::SaveResult NuDocument::save(Transaction& transaction) {
+        if (!changed())
+            return kNoSave;
+
+        auto [_, revID, flags] = currentRevision();
+
+        // If the revID hasn't been changed but the local properties have, generate a new revID:
+        revidBuffer generatedRev;
+        if (!_revIDChanged && (!revID || _properties.asMutable().isChanged())) {
+            generatedRev = generateRevID(_properties, revID, flags);
+            setRevID(generatedRev);
+            revID = generatedRev;
+            Log("Generated revID '%s'", generatedRev.str().c_str());
+        }
+
+        alloc_slice body = encodeBody();
+
+        auto seq = _sequence;
+        bool newSequence = (seq == 0 || _revIDChanged);
+        seq = _store.set(_docID, revID, body, flags, transaction, seq, newSequence);
+        if (seq == 0)
+            return kConflict;
+
+        _sequence = seq;
+
+        // Go back to unchanged state, by reloading from the Record:
+        _changed = _revIDChanged = false;
+        _fleeceDoc = nullptr;
+        _revisions = nullptr;
+        _mutatedRevisions = nullptr;
+        _properties = nullptr;
+        decode(body);
+        return newSequence ? kNewSequence : kNoNewSequence;
     }
 
 
     alloc_slice NuDocument::encodeBody(FLEncoder flEnc) {
         SharedEncoder enc(flEnc);
-        bool incremental = shouldIncrementallyEncode();
-        if (incremental)
-            enc.amend(_rec.body());  // we will be writing a patch to be appended to the body
-
-        if (_revisions.count() == 1) {
+        unsigned nRevs = _revisions.count();
+        if (nRevs == 1) {
             enc.writeValue(_revisions);
         } else {
-            map<FLValue,ssize_t> writtenRevs;
-
-            // Subroutine that encodes a revision body, using a pointer if that exact Dict has
-            // already been encoded. This saves space when multiple revisions are identical.
-            auto writeBody = [&](Value body) {
-                if (auto e = writtenRevs.find(body); e != writtenRevs.end() && e->second != 0) {
-                    FLEncoder_WriteValueAgain(enc, e->second);
-                } else {
-                    enc.writeValue(body);
-                    writtenRevs[body] = FLEncoder_LastValueWritten(enc);
-                }
-            };
-
+            // If there are multiple revisions, de-duplicate as much as possible, including entire
+            // revision dicts, or top-level property values in each revision.
+            // Revision dicts will not be pointer-equal if revisions have been added, so we have
+            // to compare them by revid. (This is O(n^2), but the number of revs is small.)
             enc.beginArray();
-            RemoteID remote = 0;
-            for (Array::iterator iRev(_revisions); iRev; ++iRev, ++remote) {
-                if (remote == 0) {
-                    // _revisions[0] is just the local body
-                    writeBody(iRev.value());
-                } else {
-                    // other items are metadata dicts:
-                    Dict meta = iRev.value().asDict();
-                    enc.beginDict();
-                    for (Dict::iterator i(meta); i; ++i) {
-                        slice key = i.keyString();
-                        Value value = i.value();
-                        enc.writeKey(key);
-                        if (key == kMetaBody)
-                            writeBody(value);
-                        else
-                            enc.writeValue(value);
+            DeDuplicateEncoder ddenc(enc);
+            for (unsigned i = 0; i < nRevs; i++) {
+                Value rev = _revisions[i];
+                slice revid = rev.asDict()[kMetaRevID].asData();
+                DebugAssert(revid);
+                for (unsigned j = 0; j < i; j++) {
+                    auto revj = _revisions[j];
+                    if (revj == rev || revj.asDict()[kMetaRevID].asData() == revid) {
+                        DebugAssert(revj.isEqual(rev), "RevIDs match but revisions don't");
+                        rev = revj;
+                        break;
                     }
-                    enc.endDict();
                 }
+                // De-duplicate the revision dict itself, and the properties dict in it (depth 2)
+                ddenc.writeValue(rev, 2);
             }
             enc.endArray();
         }
-
-        alloc_slice encoded = enc.finish();
-        if (incremental) {
-            auto body = _rec.body();
-            body.append(encoded);
-            encoded = body;
-        }
-        return encoded;
+        return enc.finish();
     }
 
 
@@ -238,37 +319,15 @@ namespace litecore {
     }
 
 
-    NuDocument::SaveResult NuDocument::save(Transaction& transaction,
-                                            revid newRevID,
-                                            DocumentFlags newFlags)
-    {
-        bool revIDChanged = (newRevID != revID());
-        if (!revIDChanged && newFlags == flags() && !changed())
-            return kNoSave;
-        if (revIDChanged)
-            _rec.setVersion(newRevID);
-        _rec.setFlags(newFlags);
-        _rec.setBody(encodeBody());
-        _changed = true;
-        SaveResult result = (revIDChanged || sequence() == 0) ? kNewSequence : kNoNewSequence;
-
-        if (result == kNoSave)
-            return result;
-
-        sequence_t seq = sequence();
-        seq = _store.write(_rec, transaction, seq, (result == kNewSequence));
-        if (seq == 0)
-            return kConflict;
-
-        // Go back to unchanged state, by reloading from the Record:
-        _changed = _revIDChanged = false;
-        _fleeceDoc = nullptr;
-        _revisions = nullptr;
-        _mutatedRevisions = nullptr;
-        _properties = nullptr;
-        _mutatedProperties = nullptr;
-        decode();
-        return result;
+    revidBuffer NuDocument::generateRevID(Dict body, revid parentRevID, DocumentFlags flags) {
+        // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and JSON:
+        alloc_slice json = FLValue_ToJSONX(body, false, true);
+        parentRevID.setSize(min(parentRevID.size, size_t(255)));
+        uint8_t revLen = (uint8_t)parentRevID.size;
+        uint8_t delByte = (flags & DocumentFlags::kDeleted) != 0;
+        SHA1 digest = (SHA1Builder() << revLen << parentRevID << delByte << json).finish();
+        unsigned generation = parentRevID ? parentRevID.generation() + 1 : 1;
+        return revidBuffer(generation, slice(digest), kDigestType);
     }
 
 
@@ -331,16 +390,21 @@ namespace litecore {
     };
 
 
-    bool NuDocument::initFleeceDoc() {
+    bool NuDocument::initFleeceDoc(const alloc_slice &body) {
         auto sk = _store.dataFile().documentKeys();
         _sharedKeys = FLSharedKeys(sk);
-        if (auto body = _rec.body(); body) {
+        if (body) {
             _fleeceDoc = new LinkedFleeceDoc(body, sk, this);
             _revisions = (FLArray)_fleeceDoc->asArray();
             return true;
         } else {
             return false;
         }
+    }
+
+
+    alloc_slice NuDocument::docBody() const {
+        return _fleeceDoc->allocedData();
     }
 
 
@@ -367,7 +431,7 @@ namespace litecore {
 
 
     string NuDocument::dumpStorage() const {
-        return fleece::impl::Value::dump(_rec.body());
+        return fleece::impl::Value::dump(docBody());
     }
 
 }
