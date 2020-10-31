@@ -3121,7 +3121,7 @@ if (!(YY_BEGIN)) goto l91;
   l93:;	
   {  int yypos94= yy->__pos, yythunkpos94= yy->__thunkpos;  if (!yymatchIString(yy, "unicode")) goto l95;  goto l94;
   l95:;	  yy->__pos= yypos94; yy->__thunkpos= yythunkpos94;  if (!yymatchIString(yy, "case")) goto l96;  goto l94;
-  l96:;	  yy->__pos= yypos94; yy->__thunkpos= yythunkpos94;  if (!yymatchIString(yy, "diacritics")) goto l91;
+  l96:;	  yy->__pos= yypos94; yy->__thunkpos= yythunkpos94;  if (!yymatchIString(yy, "diac")) goto l91;
   }
   l94:;	  yyText(yy, yy->__begin, yy->__end);  {
 #define yytext yy->__text
