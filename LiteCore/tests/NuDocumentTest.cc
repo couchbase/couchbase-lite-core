@@ -50,6 +50,9 @@ using namespace litecore;
 using namespace fleece;
 
 
+static constexpr auto kRemote1 = RemoteID(1), kRemote2 = RemoteID(2);
+
+
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Untitled NuDocument", "[NuDocument]") {
     NuDocument doc(*store, "Nuu");
     cerr << "Doc is: " << doc << "\n";
@@ -68,9 +71,9 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Untitled NuDocument", "[NuDocument
     CHECK(doc.currentRevision().properties == properties);
     CHECK(doc.currentRevision().revID == doc.revID());
     CHECK(doc.currentRevision().flags == doc.flags());
-    CHECK(doc.remoteRevision(NuDocument::kLocal)->properties == properties);
-    CHECK(doc.remoteRevision(1) == nullopt);
-    CHECK(doc.remoteRevision(2) == nullopt);
+    CHECK(doc.remoteRevision(RemoteID::Local)->properties == properties);
+    CHECK(doc.remoteRevision(kRemote1) == nullopt);
+    CHECK(doc.remoteRevision(kRemote2) == nullopt);
 
     MutableDict mutableProps = doc.mutableProperties();
     CHECK(mutableProps == properties);
@@ -101,14 +104,15 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
         CHECK(doc.properties().toJSON(true, true) == "{year:2525}");
         CHECK(!doc.changed());
         CHECK(doc.mutableProperties() == doc.properties());
-        CHECK(doc.remoteRevision(NuDocument::kLocal)->properties == doc.properties());
+        CHECK(doc.remoteRevision(RemoteID::Local)->properties == doc.properties());
 
         {
             Transaction t(db);
             CHECK(doc.save(t) == NuDocument::kNoSave);
 
             doc.mutableProperties()["weekday"] = "Friday";
-            CHECK(doc.save(t, doc.revID(), DocumentFlags::kNone) == NuDocument::kNewSequence);
+            doc.setFlags(DocumentFlags::kNone);
+            CHECK(doc.save(t) == NuDocument::kNewSequence);
             t.commit();
         }
 
@@ -120,7 +124,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
         CHECK(doc.properties().toJSON(true, true) == "{weekday:\"Friday\",year:2525}");
         CHECK(!doc.changed());
         CHECK(doc.mutableProperties() == doc.properties());
-        CHECK(doc.remoteRevision(NuDocument::kLocal)->properties == doc.properties());
+        CHECK(doc.remoteRevision(RemoteID::Local)->properties == doc.properties());
 
         cerr << "Storage:\n" << doc.dumpStorage();
     }
@@ -133,7 +137,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
         CHECK(readDoc.properties().toJSON(true, true) == "{weekday:\"Friday\",year:2525}");
         CHECK(!readDoc.changed());
         CHECK(readDoc.mutableProperties() == readDoc.properties());
-        CHECK(readDoc.remoteRevision(NuDocument::kLocal)->properties == readDoc.properties());
+        CHECK(readDoc.remoteRevision(RemoteID::Local)->properties == readDoc.properties());
     }
 }
 
@@ -143,17 +147,18 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remotes", "[NuDocument]
     NuDocument doc(*store, "Nuu");
 
     doc.mutableProperties()["rodent"] = "mouse";
-    CHECK(doc.save(t, revidBuffer("1-f000"), DocumentFlags::kNone) == NuDocument::kNewSequence);
+    doc.setRevID(revidBuffer("1-f000"));
+    CHECK(doc.save(t) == NuDocument::kNewSequence);
 
     // Add a remote revision:
     MutableDict remoteProps = MutableDict::newDict();
     remoteProps["rodent"] = "capybara";
     revidBuffer remoteRev("2-eeee");
-    doc.setRemoteRevision(1, Revision{remoteProps, remoteRev, DocumentFlags::kHasAttachments});
+    doc.setRemoteRevision(kRemote1, Revision{remoteProps, remoteRev, DocumentFlags::kHasAttachments});
     CHECK(doc.changed());
-    CHECK(doc.remoteRevision(1)->properties == remoteProps);
-    CHECK(doc.remoteRevision(1)->revID == remoteRev);
-    CHECK(doc.remoteRevision(1)->flags == DocumentFlags::kHasAttachments);
+    CHECK(doc.remoteRevision(kRemote1)->properties == remoteProps);
+    CHECK(doc.remoteRevision(kRemote1)->revID == remoteRev);
+    CHECK(doc.remoteRevision(kRemote1)->flags == DocumentFlags::kHasAttachments);
 
     CHECK(doc.save(t) == NuDocument::kNoNewSequence);
     cerr << "Doc is: " << doc << "\n";
@@ -165,7 +170,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remotes", "[NuDocument]
     CHECK(doc.properties().toJSON(true, true) == "{rodent:\"mouse\"}");
     CHECK(!doc.changed());
 
-    auto remote1 = doc.remoteRevision(1);
+    auto remote1 = doc.remoteRevision(kRemote1);
     CHECK(remote1->revID.str() == "2-eeee");
     CHECK(remote1->flags == DocumentFlags::kHasAttachments);
     CHECK(remote1->properties.toJSON(true, true) == "{rodent:\"capybara\"}");
@@ -192,21 +197,23 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remote Update", "[NuDoc
     {
         auto local = doc.currentRevision();
         CHECK(local == (Revision{doc.properties(), revid1}));
-        doc.setRemoteRevision(1, local);
+        doc.setRemoteRevision(kRemote1, local);
         CHECK(doc.save(t) == NuDocument::kNewSequence);
     }
     cerr << "\nStorage after pull:\n" << doc.dumpStorage();
 
-    CHECK(doc.currentRevision() == *doc.remoteRevision(1));
-    CHECK(doc.properties() == doc.remoteRevision(1)->properties); // rev body only stored once
+    CHECK(doc.currentRevision() == *doc.remoteRevision(kRemote1));
+    CHECK(doc.properties() == doc.remoteRevision(kRemote1)->properties); // rev body only stored once
 
     // Update doc locally:
     doc.mutableProperties()["age"] = 2;
     revidBuffer revid2("2-2222");
-    CHECK(doc.save(t, revid2, DocumentFlags::kNone) == NuDocument::kNewSequence);
+    doc.setRevID(revid2);
+    doc.setFlags(DocumentFlags::kNone);
+    CHECK(doc.save(t));
     cerr << "\nStorage after save:\n" << doc.dumpStorage();
 
-    auto props1 = doc.properties(), props2 = doc.remoteRevision(1)->properties;
+    auto props1 = doc.properties(), props2 = doc.remoteRevision(kRemote1)->properties;
     CHECK(props1.toJSON(true, true) == "{age:2,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
     CHECK(props2.toJSON(true, true) == "{age:1,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
     CHECK(props1["rodent"] == props2["rodent"]);    // string should only be stored once

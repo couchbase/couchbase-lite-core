@@ -54,11 +54,6 @@ namespace litecore {
     static constexpr slice kMetaFlags = "flags";
 
 
-    NuDocument::NuDocument(KeyStore& store, slice docID)
-    :NuDocument(store, store.get(docID))
-    { }
-
-
     NuDocument::NuDocument(KeyStore& store, const Record& rec)
     :_store(store)
     ,_docID(rec.key())
@@ -68,6 +63,11 @@ namespace litecore {
     }
 
 
+    NuDocument::NuDocument(KeyStore& store, slice docID)
+    :NuDocument(store, store.get(docID))
+    { }
+
+
     NuDocument::~NuDocument() = default;
 
 
@@ -75,7 +75,7 @@ namespace litecore {
         if (initFleeceDoc(body)) {
             if (!_revisions)
                 error::_throw(error::CorruptRevisionData);
-            _properties = _revisions[kLocal].asDict()[kMetaBody].asDict();
+            _properties = _revisions[int(RemoteID::Local)].asDict()[kMetaBody].asDict();
             if (!_properties)
                 error::_throw(error::CorruptRevisionData);
         } else {
@@ -89,18 +89,15 @@ namespace litecore {
 
 
     optional<Revision> NuDocument::remoteRevision(RemoteID remote) const {
-        if (Dict revDict = _revisions[remote].asDict(); revDict) {
+        if (Dict revDict = _revisions[int(remote)].asDict(); revDict) {
             // revisions have a top-level dict with the revID, flags, properties.
             Dict properties = revDict[kMetaBody].asDict();
             revid revID(revDict[kMetaRevID].asData());
             auto flags = DocumentFlags(revDict[kMetaFlags].asInt());
-            if (remote == kLocal) {
-                if (!properties)
-                    properties = Dict::emptyDict();
-            } else {
-                if (!properties || !revID)
-                    error::_throw(error::CorruptRevisionData);
-            }
+            if (!properties)
+                properties = Dict::emptyDict();
+            if (!revID && remote != RemoteID::Local)
+                error::_throw(error::CorruptRevisionData);
             return Revision{properties, revID, flags};
         } else {
             return nullopt;
@@ -108,6 +105,7 @@ namespace litecore {
     }
 
 
+    // If _revisions is not mutable, makes a mutable copy and assigns it to _mutatedRevisions.
     void NuDocument::mutateRevisions() {
         if (!_mutatedRevisions) {
             _mutatedRevisions = _revisions ? _revisions.mutableCopy() : MutableArray::newArray();
@@ -115,82 +113,69 @@ namespace litecore {
         }
     }
 
-    MutableDict NuDocument::mutableRevisionDict(RemoteID remoteID) {
+    // Returns the MutableDict for a revision.
+    // If it's not mutable yet, replaces it with a mutable copy.
+    MutableDict NuDocument::mutableRevisionDict(RemoteID remote) {
         mutateRevisions();
-        if (_mutatedRevisions.count() <= remoteID)
-            _mutatedRevisions.resize(remoteID + 1);
-        MutableDict revDict = _mutatedRevisions.getMutableDict(remoteID);
+        if (_mutatedRevisions.count() <= int(remote))
+            _mutatedRevisions.resize(int(remote) + 1);
+        MutableDict revDict = _mutatedRevisions.getMutableDict(int(remote));
         if (!revDict)
-            _mutatedRevisions[remoteID] = revDict = MutableDict::newDict();
+            _mutatedRevisions[int(remote)] = revDict = MutableDict::newDict();
         return revDict;
     }
 
 
-    void NuDocument::setRemoteRevision(RemoteID remoteID, const optional<Revision> &optRev) {
-        if (!optRev && !_revisions[remoteID]) {
-            return;
-        } else if (auto &newRev = *optRev; optRev) {
-            // Creating/updating a revision:
-            Assert(newRev.properties);
-            Assert(newRev.revID || remoteID == kLocal);
-            MutableDict revDict = mutableRevisionDict(remoteID);
-            revDict[kMetaBody] = newRev.properties;
-            if (newRev.revID != revDict[kMetaRevID].asData()) {
+    // Updates a revision. (Local changes, e.g. setRevID and setFlags, go through this too.)
+    void NuDocument::setRemoteRevision(RemoteID remote, const optional<Revision> &optRev) {
+        if (auto &newRev = *optRev; optRev) {
+            // Creating/updating a revision (possibly the local one):
+            MutableDict revDict = mutableRevisionDict(remote);
+            if (auto oldRevID = revDict[kMetaRevID].asData(); newRev.revID != oldRevID) {
+                if (!newRev.revID)
+                    error::_throw(error::CorruptRevisionData);
                 revDict[kMetaRevID].setData(newRev.revID);
-                if (remoteID == kLocal)
+                _changed = true;
+                if (remote == RemoteID::Local)
                     _revIDChanged = true;
             }
-            if (newRev.flags != DocumentFlags::kNone)
-                revDict[kMetaFlags] = int(newRev.flags);
-            else
-                revDict.remove(kMetaFlags);
-        } else {
-            // Removing a remote revision:
-            Assert(remoteID != kLocal);
+            if (newRev.properties != revDict[kMetaBody]) {
+                revDict[kMetaBody] = newRev.properties;
+                _changed = true;
+            }
+            if (int(newRev.flags) != revDict[kMetaFlags].asInt()) {
+                if (newRev.flags != DocumentFlags::kNone)
+                    revDict[kMetaFlags] = int(newRev.flags);
+                else
+                    revDict.remove(kMetaFlags);
+                _changed = true;
+            }
+        } else if (_revisions[int(remote)]) {
+            // Removing a remote revision.
+            // First replace its Dict with null, then remove trailing nulls from the revision array.
+            Assert(remote != RemoteID::Local);
             mutateRevisions();
-            _mutatedRevisions[remoteID] = Value::null();
+            _mutatedRevisions[int(remote)] = Value::null();
             auto n = _mutatedRevisions.count();
             while (n > 0 && !_mutatedRevisions[n-1].asDict())
                 --n;
             _mutatedRevisions.resize(n);
+            _changed = true;
         }
-        _changed = true;
     }
 
 
 #pragma mark - CURRENT REVISION:
 
 
-    Revision NuDocument::currentRevision() const {
-        return *remoteRevision(kLocal);
-    }
-
-
-    void NuDocument::setCurrentRevision(const Revision &newRev) {
-        setRemoteRevision(kLocal, newRev);
-    }
-
-
-    revid NuDocument::revID() const {
-        return currentRevision().revID;
-    }
-
-
-    DocumentFlags NuDocument::flags() const {
-        return currentRevision().flags;
-    }
-
-
     void NuDocument::setRevID(revid newRevID) {
-        Revision rev = currentRevision();
-        if (newRevID != rev.revID)
+        if (Revision rev = currentRevision(); newRevID != rev.revID)
             setCurrentRevision({rev.properties, newRevID, rev.flags});
     }
 
 
     void NuDocument::setFlags(DocumentFlags newFlags) {
-        Revision rev = currentRevision();
-        if (newFlags != rev.flags)
+        if (Revision rev = currentRevision(); newFlags != rev.flags)
             setCurrentRevision({rev.properties, rev.revID, newFlags});
     }
 
@@ -201,7 +186,7 @@ namespace litecore {
     MutableDict NuDocument::mutableProperties() {
         MutableDict mutProperties = _properties.asMutable();
         if (!mutProperties) {
-            MutableDict rev = mutableRevisionDict(kLocal);
+            MutableDict rev = mutableRevisionDict(RemoteID::Local);
             mutProperties = rev.getMutableDict(kMetaBody);
             if (!mutProperties) {
                 mutProperties = MutableDict::newDict();
@@ -216,7 +201,7 @@ namespace litecore {
     void NuDocument::setProperties(Dict properties) {
         if (properties == _properties)
             return;
-        MutableDict rev = mutableRevisionDict(kLocal);
+        MutableDict rev = mutableRevisionDict(RemoteID::Local);
         rev[kMetaBody] = properties;
         _properties = properties;
         _changed = true;
@@ -229,15 +214,6 @@ namespace litecore {
 
 
 #pragma mark - SAVING:
-
-
-    NuDocument::SaveResult NuDocument::save(Transaction &t, revid revID, DocumentFlags flags) {
-        Assert(revID);
-        auto cur = currentRevision();
-        if (revID != cur.revID || flags != cur.flags)
-            setCurrentRevision({cur.properties, revID, flags});
-        return save(t);
-    }
 
 
     NuDocument::SaveResult NuDocument::save(Transaction& transaction) {
@@ -338,7 +314,7 @@ namespace litecore {
         out << "\"" << (string)docID() << "\" #" << sequence() << " ";
         int nRevs = _revisions.count();
         for (int i = 0; i < nRevs; ++i) {
-            optional<Revision> rev = remoteRevision(i);
+            optional<Revision> rev = remoteRevision(RemoteID(i));
             if (rev) {
                 if (i > 0)
                     out << "; R" << i << '@';
