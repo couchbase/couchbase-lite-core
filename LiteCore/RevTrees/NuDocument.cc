@@ -59,20 +59,7 @@ namespace litecore {
     ,_docID(rec.key())
     ,_sequence(rec.sequence())
     {
-        decode(rec.body());
-    }
-
-
-    NuDocument::NuDocument(KeyStore& store, slice docID)
-    :NuDocument(store, store.get(docID))
-    { }
-
-
-    NuDocument::~NuDocument() = default;
-
-
-    void NuDocument::decode(const alloc_slice &body) {
-        if (initFleeceDoc(body)) {
+        if (initFleeceDoc(rec.body())) {
             if (!_revisions)
                 error::_throw(error::CorruptRevisionData);
             _properties = _revisions[int(RemoteID::Local)].asDict()[kMetaBody].asDict();
@@ -85,7 +72,29 @@ namespace litecore {
     }
 
 
+    NuDocument::NuDocument(KeyStore& store, slice docID)
+    :NuDocument(store, store.get(docID))
+    { }
+
+
+    NuDocument::~NuDocument() = default;
+
+
 #pragma mark - REVISIONS:
+
+
+//    void NuDocument::readRevisions(alloc_slice &body) {
+//        if (initFleeceDoc(body)) {
+//            if (!_revisions)
+//                error::_throw(error::CorruptRevisionData);
+//            _properties = _revisions[int(RemoteID::Local)].asDict()[kMetaBody].asDict();
+//            if (!_properties)
+//                error::_throw(error::CorruptRevisionData);
+//        } else {
+//            // "Untitled" empty state:
+//            (void)mutableProperties();
+//        }
+//    }
 
 
     optional<Revision> NuDocument::remoteRevision(RemoteID remote) const {
@@ -165,22 +174,10 @@ namespace litecore {
     }
 
 
-#pragma mark - CURRENT REVISION:
-
-
-    void NuDocument::setRevID(revid newRevID) {
-        if (Revision rev = currentRevision(); newRevID != rev.revID)
-            setCurrentRevision({rev.properties, newRevID, rev.flags});
+    Dict NuDocument::originalProperties() const {
+        Dict rev = savedRevisions()[int(RemoteID::Local)].asDict();
+        return rev[kMetaBody].asDict();
     }
-
-
-    void NuDocument::setFlags(DocumentFlags newFlags) {
-        if (Revision rev = currentRevision(); newFlags != rev.flags)
-            setCurrentRevision({rev.properties, rev.revID, newFlags});
-    }
-
-
-#pragma mark - DOCUMENT ROOT/PROPERTIES:
 
 
     MutableDict NuDocument::mutableProperties() {
@@ -188,28 +185,68 @@ namespace litecore {
         if (!mutProperties) {
             MutableDict rev = mutableRevisionDict(RemoteID::Local);
             mutProperties = rev.getMutableDict(kMetaBody);
-            if (!mutProperties) {
-                mutProperties = MutableDict::newDict();
-                rev[kMetaBody] = mutProperties;
-            }
+            if (!mutProperties)
+                rev[kMetaBody] = mutProperties = MutableDict::newDict();
             _properties = mutProperties;
         }
         return mutProperties;
     }
 
 
-    void NuDocument::setProperties(Dict properties) {
-        if (properties == _properties)
-            return;
-        MutableDict rev = mutableRevisionDict(RemoteID::Local);
-        rev[kMetaBody] = properties;
-        _properties = properties;
-        _changed = true;
+    template <class LAMBDA>
+    static void mutateCurrentRevision(NuDocument *doc, LAMBDA callback) {
+        Revision rev = doc->currentRevision();
+        callback(rev);
+        doc->setCurrentRevision(rev);
+    }
+
+    void NuDocument::setProperties(Dict newProperties) {
+        mutateCurrentRevision(this, [=](Revision &rev) {rev.properties = newProperties;});
+    }
+
+    void NuDocument::setRevID(revid newRevID) {
+        mutateCurrentRevision(this, [=](Revision &rev) {rev.revID = newRevID;});
+    }
+
+    void NuDocument::setFlags(DocumentFlags newFlags) {
+        mutateCurrentRevision(this, [=](Revision &rev) {rev.flags = newFlags;});
     }
 
 
     bool NuDocument::changed() const {
-        return _changed || _properties.asMutable().isChanged();
+        return _changed || propertiesChanged();
+    }
+
+
+    bool NuDocument::propertiesChanged() const {
+        for (DeepIterator i(_properties); i; ++i) {
+            if (Value val = i.value(); val.isMutable()) {
+                if (auto dict = val.asDict(); dict) {
+                    if (dict.asMutable().isChanged())
+                        return true;
+                } else if (auto array = val.asArray(); array) {
+                    if (array.asMutable().isChanged())
+                        return true;
+                }
+            } else {
+                i.skipChildren();
+            }
+        }
+        return false;
+    }
+
+
+    void NuDocument::clearPropertiesChanged() {
+        for (DeepIterator i(_properties); i; ++i) {
+            if (Value val = i.value(); val.isMutable()) {
+                if (auto dict = val.asDict(); dict)
+                    FLMutableDict_SetChanged(dict.asMutable(), false);
+                else if (auto array = val.asArray(); array)
+                    FLMutableArray_SetChanged(array.asMutable(), false);
+            } else {
+                i.skipChildren();
+            }
+        }
     }
 
 
@@ -217,21 +254,21 @@ namespace litecore {
 
 
     NuDocument::SaveResult NuDocument::save(Transaction& transaction) {
-        if (!changed())
-            return kNoSave;
-
         auto [_, revID, flags] = currentRevision();
+        bool newRevision = !revID || propertiesChanged();
+        if (!newRevision && !_changed)
+            return kNoSave;
 
         // If the revID hasn't been changed but the local properties have, generate a new revID:
         revidBuffer generatedRev;
-        if (!_revIDChanged && (!revID || _properties.asMutable().isChanged())) {
+        if (newRevision && !_revIDChanged) {
             generatedRev = generateRevID(_properties, revID, flags);
             setRevID(generatedRev);
             revID = generatedRev;
             Log("Generated revID '%s'", generatedRev.str().c_str());
         }
 
-        alloc_slice body = encodeBody();
+        alloc_slice body = _encoder ? encodeBody(_encoder) : encodeBody(Encoder(_sharedKeys));
 
         auto seq = _sequence;
         bool newSequence = (seq == 0 || _revIDChanged);
@@ -240,14 +277,22 @@ namespace litecore {
             return kConflict;
 
         _sequence = seq;
-
-        // Go back to unchanged state, by reloading from the Record:
         _changed = _revIDChanged = false;
-        _fleeceDoc = nullptr;
-        _revisions = nullptr;
-        _mutatedRevisions = nullptr;
-        _properties = nullptr;
-        decode(body);
+
+        // Update Fleece Doc to newly saved data:
+        MutableDict mutableProperties = _properties.asMutable();
+        initFleeceDoc(body);
+        if (mutableProperties) {
+            // The client might still have references to mutable objects under _properties,
+            // so keep that mutable Dict as the current _properties:
+            auto rev = mutableRevisionDict(RemoteID::Local);
+            rev[kMetaBody] = mutableProperties;
+            _properties = mutableProperties;
+            clearPropertiesChanged();
+        } else {
+            _properties = _revisions[int(RemoteID::Local)].asDict()[kMetaBody].asDict();
+        }
+
         return newSequence ? kNewSequence : kNoNewSequence;
     }
 
@@ -282,16 +327,6 @@ namespace litecore {
             enc.endArray();
         }
         return enc.finish();
-    }
-
-
-    alloc_slice NuDocument::encodeBody() {
-        if (!_properties)
-            return nullslice;
-        else if (_encoder)
-            return encodeBody(_encoder);
-        else
-            return encodeBody(Encoder(_sharedKeys));
     }
 
 
@@ -342,6 +377,8 @@ namespace litecore {
 }
 
 
+#pragma mark - INTERNALS:
+
 
 // This stuff is kept below because the rest because it uses the Fleece "impl" API,
 // and having both APIs in scope gets confusing and leads to weird compiler errors.
@@ -372,6 +409,7 @@ namespace litecore {
         if (body) {
             _fleeceDoc = new LinkedFleeceDoc(body, sk, this);
             _revisions = (FLArray)_fleeceDoc->asArray();
+            _mutatedRevisions = nullptr;
             return true;
         } else {
             return false;
@@ -379,8 +417,8 @@ namespace litecore {
     }
 
 
-    alloc_slice NuDocument::docBody() const {
-        return _fleeceDoc->allocedData();
+    Array NuDocument::savedRevisions() const {
+        return _fleeceDoc ? (FLArray)_fleeceDoc->asArray() : nullptr;
     }
 
 
@@ -407,7 +445,7 @@ namespace litecore {
 
 
     string NuDocument::dumpStorage() const {
-        return fleece::impl::Value::dump(docBody());
+        return _fleeceDoc ? fleece::impl::Value::dump(_fleeceDoc->allocedData()) : "";
     }
 
 }

@@ -77,8 +77,11 @@ namespace litecore {
         /// Given a Fleece Value, finds the NuDocument it belongs to.
         static NuDocument* containing(fleece::Value);
 
+        /// Sets a custom Fleece Encoder to use when saving.
+        void setEncoder(FLEncoder enc)                      {_encoder = enc;}
+
         /// Returns true if the document exists in the database.
-        bool exists() const noexcept FLPURE                 {return _fleeceDoc != nullptr;}
+        bool exists() const noexcept FLPURE                 {return _sequence > 0;}
 
         
         //---- Metadata:
@@ -176,14 +179,14 @@ namespace litecore {
     private:
         class LinkedFleeceDoc;
 
-        void decode(const alloc_slice &body);
         bool initFleeceDoc(const alloc_slice &body);
-        alloc_slice docBody() const;
+        fleece::Array savedRevisions() const;
         void mutateRevisions();
         MutableDict mutableRevisionDict(RemoteID remoteID);
-        alloc_slice encodeBody();
+        Dict originalProperties() const;
         alloc_slice encodeBody(FLEncoder);
-        void generateNewRevID();
+        bool propertiesChanged() const;
+        void clearPropertiesChanged();
 
         KeyStore&                    _store;                // The database KeyStore
         fleece::SharedKeys           _sharedKeys;           // Fleece shared keys (global to DB)
