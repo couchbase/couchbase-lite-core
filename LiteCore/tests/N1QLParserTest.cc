@@ -198,7 +198,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL collation", "[Query][N1QL][C]") {
     CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE") == "{'WHAT':[['COLLATE',{'CASE':false},['=',['.name'],'fred']]]}");
-    CHECK(translate("SELECT (name = 'fred') COLLATE UNICODE CASE NODIACRITICS") == "{'WHAT':[['COLLATE',{'CASE':true,'DIACRITICS':false,'UNICODE':true},['=',['.name'],'fred']]]}");
+    CHECK(translate("SELECT (name = 'fred') COLLATE UNICODE CASE NODIAC") == "{'WHAT':[['COLLATE',{'CASE':true,'DIAC':false,'UNICODE':true},['=',['.name'],'fred']]]}");
     CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE FRED") == "");
 }
 
