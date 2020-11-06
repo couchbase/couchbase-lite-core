@@ -136,13 +136,18 @@ namespace litecore { namespace repl {
             unsigned requested = proposed ? findProposedRevs(changes, encoder, sequences)
                                           : findRevs(changes, encoder, sequences);
             encoder.endArray();
+            
+            // CBL-1399: Important that the order be call expectSequences and *then* respond
+            // to avoid rev messages comes in before the Puller knows about them (mostly 
+            // applies to local to local replication where things can come back over the wire
+            // very quickly)
+            _numRevsBeingRequested += requested;
+            _delegate->expectSequences(move(sequences));
             req->respond(response);
 
             logInfo("Responded to '%.*s' REQ#%" PRIu64 " w/request for %u revs in %.6f sec",
                     SPLAT(req->property("Profile"_sl)), req->number(), requested, st.elapsed());
 
-            _numRevsBeingRequested += requested;
-            _delegate->expectSequences(move(sequences));
         }
 
         Signpost::end(Signpost::handlingChanges, (uintptr_t)req->number());
