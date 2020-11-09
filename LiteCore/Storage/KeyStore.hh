@@ -65,6 +65,7 @@ namespace litecore {
 
         virtual void erase() =0;
 
+#define ENABLE_DELETE_KEY_STORES 1
 #if ENABLE_DELETE_KEY_STORES
         void deleteKeyStore(Transaction&);
 #endif

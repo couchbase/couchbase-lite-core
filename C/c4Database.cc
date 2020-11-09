@@ -374,3 +374,17 @@ bool c4raw_put(C4Database* database,
     c4db_endTransaction(database, commit, outError);
     return commit;
 }
+
+
+bool c4raw_deleteStore(C4Database* database,
+                       C4Slice storeName,
+                       C4Error *outError) noexcept
+{
+    if (!c4db_beginTransaction(database, outError))
+        return false;
+    bool ok = tryCatch(outError, [&]{
+        database->dataFile()->deleteKeyStore(string(slice(storeName)));
+    });
+    c4db_endTransaction(database, ok, outError);
+    return ok;
+}

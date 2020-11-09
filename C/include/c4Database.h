@@ -328,6 +328,11 @@ extern "C" {
                    C4String body,
                    C4Error *outError) C4API;
 
+    /** Deletes all raw docs in the given store. */
+    bool c4raw_deleteStore(C4Database* database,
+                           C4Slice storeName,
+                           C4Error *outError) C4API;
+
     // Store used for database metadata.
     #define kC4InfoStore C4STR("info")
 
