@@ -7,6 +7,7 @@
 #pragma once
 #include "ReplicatorTypes.hh"
 #include "Error.hh"
+#include "Logging.hh"
 #include "Timer.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
@@ -34,7 +35,7 @@ namespace litecore { namespace repl {
     /** Manages a Replicator's checkpoint, including local storage (but not remote).
         \note The checkpoint-access methods are thread-safe since they are called by the
               Replicator, Pusher and Puller. */
-    class Checkpointer {
+    class Checkpointer : public Logging {
     public:
         Checkpointer(const Options&, fleece::slice remoteURL);
 

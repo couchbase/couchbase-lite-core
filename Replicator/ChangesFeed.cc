@@ -48,6 +48,8 @@ namespace litecore { namespace repl {
     ,_skipDeleted(_options.skipDeleted())
     {
         filterByDocIDs(_options.docIDs());
+        if (_checkpointer)
+            _maxSequence = _checkpointer->localMinSequence();
     }
 
 

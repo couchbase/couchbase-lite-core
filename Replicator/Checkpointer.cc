@@ -41,7 +41,8 @@ namespace litecore { namespace repl {
 
 
     Checkpointer::Checkpointer(const Options &opt, fleece::slice remoteURL)
-    :_options(opt)
+    :Logging(SyncLog)
+    ,_options(opt)
     ,_remoteURL(remoteURL)
     { }
 
@@ -84,6 +85,7 @@ namespace litecore { namespace repl {
 
 
     void Checkpointer::addPendingSequence(C4SequenceNumber s) {
+        logDebug("addPendingSequence(%llu)", s);
         LOCK();
         _checkpoint->addPendingSequence(s);
         saveSoon();
@@ -93,6 +95,8 @@ namespace litecore { namespace repl {
                                            C4SequenceNumber firstInRange,
                                            C4SequenceNumber lastInRange)
     {
+        logDebug("addPendingSequences(%zu in [%llu...%llu])",
+                 sequences.size(), firstInRange, lastInRange);
         LOCK();
         _checkpoint->addPendingSequences(sequences, firstInRange, lastInRange);
         saveSoon();
@@ -101,12 +105,15 @@ namespace litecore { namespace repl {
     void Checkpointer::addPendingSequences(RevToSendList &sequences,
                                            C4SequenceNumber firstInRange,
                                            C4SequenceNumber lastInRange) {
+        logDebug("addPendingSequences(%zu in [%llu...%llu])",
+                 sequences.size(), firstInRange, lastInRange);
         LOCK();
         _checkpoint->addPendingSequences(sequences, firstInRange, lastInRange);
         saveSoon();
     }
 
     void Checkpointer::completedSequence(C4SequenceNumber s) {
+        logDebug("completedSequence(%llu)", s);
         LOCK();
         _checkpoint->completedSequence(s);
         saveSoon();
@@ -169,12 +176,14 @@ namespace litecore { namespace repl {
             _saving = true;
             json = _checkpoint->toJSON();
         }
+        logInfo("Save checkpoint %.*s", SPLAT(json));
         _saveCallback(json);
         return true;
     }
 
 
     void Checkpointer::saveCompleted() {
+        logDebug("saveCompleted");
         bool saveAgain = false;
         {
             LOCK();
@@ -302,10 +311,12 @@ namespace litecore { namespace repl {
         LOCK();
         _checkpoint.reset(new Checkpoint);
         if (body && !reset) {
+            logInfo("Read local checkpoint: %.*s", SPLAT(body));
             _checkpoint->readJSON(body);
             _checkpointJSON = body;
             return true;
         } else {
+            logInfo("Local checkpoint missing or reset");
             *outError = {};
             return false;
         }
