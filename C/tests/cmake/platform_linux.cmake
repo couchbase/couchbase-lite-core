@@ -33,5 +33,6 @@ function(setup_build)
         ${LIBCXXABI_LIB}
         ${ZLIB_LIB}
         dl
+        rt
     )
 endfunction()
