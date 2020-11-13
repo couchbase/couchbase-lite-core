@@ -35,6 +35,7 @@ function(setup_build)
         ${ZLIB_LIB}
         pthread
         dl
+        rt
     )
 
     if(NOT DISABLE_LTO_BUILD AND
