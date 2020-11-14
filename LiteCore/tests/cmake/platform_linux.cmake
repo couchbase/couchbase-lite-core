@@ -16,6 +16,11 @@ function(set_source_files)
 endfunction()
 
 function(setup_build)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # Optimizer bug...causes infinite loops on basic for loops
+        add_definitions(-fno-aggressive-loop-optimizations)
+    endif()
+    
     target_compile_definitions(
         CppTests PRIVATE
         -DLITECORE_USES_ICU=1
@@ -45,7 +50,9 @@ function(setup_build)
         # the linker will fail because it thinks bitcode is bad machine code.  Furthermore, 
         # there is a bug in the LLVM plugin for LTO in 3.9.1 that causes invalid linker flags
         # when combined with -Oz optimization
-        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_VERSION GREATER "3.9.1")
+        #
+        # Furthermore, who knows what goes on in the mind of GNU...so just forget about it
+        if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION GREATER "3.9.1")
             set_property(TARGET CppTests PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         else()
             message("Disabling LTO for CppTests to work around LLVM 3.9.1 issue")
