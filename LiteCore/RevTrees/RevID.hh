@@ -22,9 +22,13 @@
 namespace litecore {
 
     enum revidType {
-        kDigestType,
-        kClockType
+        kDigestType,    // Old type, generation + digest: "7-deadbeef"
+        kClockType      // New type, generation + source ID: "7@1234"
     };
+
+
+    using SourceID = uint64_t;
+
 
     /** A compressed revision ID. 
         Since this is based on slice, it doesn't own the memory it points to.
@@ -40,9 +44,13 @@ namespace litecore {
         bool expandInto(slice &dst) const;
 
         bool isClock() const                        {return (*this)[0] == 0;}
-        unsigned generation() const;
-        slice digest() const;
-        uint64_t getGenAndDigest(slice &digest) const;
+
+        std::pair<unsigned,slice> generationAndDigest() const;
+        unsigned generation() const                 {return generationAndRest().first;}
+        slice digest() const                        {return generationAndDigest().second;}
+
+        std::pair<unsigned,SourceID> generationAndSource() const;
+        SourceID source() const                     {return generationAndSource().second;}
 
         bool operator< (const revid&) const;
         bool operator> (const revid &r) const       {return r < *this;}
@@ -51,6 +59,7 @@ namespace litecore {
 
     private:
         slice skipFlag() const;
+        std::pair<unsigned,slice> generationAndRest() const;
         void _expandInto(slice &dst) const;
     };
 

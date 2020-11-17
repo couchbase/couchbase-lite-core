@@ -28,18 +28,6 @@ namespace litecore {
 
     using namespace fleece;
 
-    // Parses bytes from str to end as a decimal ASCII number. Returns 0 if non-digit found.
-    static inline uint64_t parseDigits(const char *str, const char *end)
-    {
-        uint64_t result = 0;
-        for (; str < end; ++str) {
-            if (!isdigit(*str))
-                return 0;
-            result = 10*result + (*str - '0');
-        }
-        return result;
-    }
-
     // Writes the decimal representation of n to str, returning the number of digits written (1-20).
     static inline size_t writeDigits(char *str, uint64_t n) {
         size_t len;
@@ -85,18 +73,34 @@ namespace litecore {
     }
 
 
-    uint64_t revid::getGenAndDigest(slice &digest) const {
-        digest = skipFlag();
+    std::pair<unsigned,slice> revid::generationAndRest() const {
+        slice digest = skipFlag();
         uint64_t gen;
-        if (!ReadUVarInt(&digest, &gen))
+        if (!ReadUVarInt(&digest, &gen) || gen == 0 || gen > UINT_MAX)
             error::_throw(error::CorruptRevisionData); // buffer too short!
-        return gen;
+        return {unsigned(gen), digest};
     }
 
 
+    std::pair<unsigned,slice> revid::generationAndDigest() const {
+        if (isClock())
+            error::_throw(error::InvalidParameter);
+        return generationAndRest();
+    }
+
+
+    std::pair<unsigned,SourceID> revid::generationAndSource() const {
+        if (!isClock())
+            error::_throw(error::InvalidParameter);
+        auto [gen, buf] = generationAndDigest();
+        SourceID source;
+        if (!ReadUVarInt(&buf, &source) || buf.size > 0)
+            error::_throw(error::CorruptRevisionData);
+        return {gen, source};
+    }
+
     size_t revid::expandedSize() const {
-        slice digest;
-        uint64_t gen = getGenAndDigest(digest);
+        auto [gen, digest] = generationAndDigest();
         size_t size = 2 + size_t(::floor(::log10(gen)));    // digits and separator
         if (isClock())
             size += digest.size;
@@ -106,8 +110,7 @@ namespace litecore {
     }
 
     void revid::_expandInto(slice &expanded_rev) const {
-        slice digest;
-        uint64_t gen = getGenAndDigest(digest);
+        auto [gen, digest] = generationAndDigest();
 
         char* dst = (char*)expanded_rev.buf;
         dst += writeDigits(dst, gen);
@@ -140,21 +143,6 @@ namespace litecore {
         _expandInto(result);
         resultBuf.shorten(result.size);
         return resultBuf;
-    }
-
-    unsigned revid::generation() const {
-        uint64_t gen;
-        if (GetUVarInt(skipFlag(), &gen) == 0)
-            error::_throw(error::CorruptRevisionData); // buffer too short!
-        return (unsigned) gen;
-    }
-
-    slice revid::digest() const {
-        uint64_t gen;
-        slice digest = skipFlag();
-        if (!ReadUVarInt(&digest, &gen))
-            error::_throw(error::CorruptRevisionData); // buffer too short!
-        return digest;
     }
 
     bool revid::operator< (const revid& other) const {
@@ -216,50 +204,44 @@ namespace litecore {
     }
 
     bool revidBuffer::tryParse(slice ascii, bool allowClock) {
-        uint8_t* start = _buffer, *dst = start;
+        uint8_t* start = _buffer, *end = start + sizeof(_buffer), *dst = start;
         set(start, 0);
 
-        // Find the separator; if it's '-' this is a digest type, if it's '@' it's a clock:
-        const char *sep = (const char*)ascii.findByte('@');
-        bool isClock = (sep != nullptr);
+        uint64_t gen = ascii.readDecimal();
+        if (gen == 0 || gen > UINT_MAX || ascii.size == 0)
+            return false;
+
+        bool isClock = (ascii[0] == '@');
         if (isClock) {
             if (!allowClock)
                 return false;
             *dst++ = 0; // leading zero byte denotes clock-style revid
-        } else {
-            sep = (const char*)ascii.findByte('-');
-            if (sep == nullptr)
-                return false; // separator is missing
+        } else if (ascii[0] != '-') {
+            return false;
         }
+        ascii.moveStart(1);
 
-        ssize_t sepPos = sep - (const char*)ascii.buf;
-        if (sepPos == 0 || sepPos > 20 || sepPos >= ascii.size-1)
-            return false; // generation too large, or separator at end
-
-        uint64_t gen = parseDigits((const char*)ascii.buf, sep);
-        if (gen == 0)
-            return false; // unparseable generation
-        size_t genSize = PutUVarInt(dst, gen);
-        dst += genSize;
-
-        slice suffix = ascii;
-        suffix.moveStart(sepPos + 1);
+        dst += PutUVarInt(dst, gen);
 
         if (isClock) {
-            if (1 + genSize + suffix.size > sizeof(_buffer))
-                return false; // rev ID is too long to fit in my buffer
-            memcpy(dst, suffix.buf, suffix.size);
-            dst += suffix.size;
+            // Read source ID as hex number:
+            if (ascii.size > 2 * sizeof(SourceID))
+                return false;
+            SourceID source = ascii.readHex();
+            if (ascii.size > 0)
+                return false;
+            dst += PutUVarInt(dst, source);
         } else {
-            if (genSize + suffix.size/2 > sizeof(_buffer) || (suffix.size & 1))
+            // Copy hex digest into dst as binary:
+            if (dst + ascii.size / 2 > end || (ascii.size & 1))
                 return false; // rev ID is too long to fit in my buffer
-            for (unsigned i=0; i<suffix.size; i+=2) {
-                if (!islowerxdigit(suffix[i]) || !islowerxdigit(suffix[i+1]))
+            for (unsigned i = 0; i < ascii.size; i += 2) {
+                if (!islowerxdigit(ascii[i]) || !islowerxdigit(ascii[i+1]))
                     return false; // digest is not hex
-                *dst++ = (uint8_t)(16*digittoint(suffix[i]) + digittoint(suffix[i+1]));
+                *dst++ = (uint8_t)(16*digittoint(ascii[i]) + digittoint(ascii[i+1]));
             }
         }
-        setSize(dst - start);
+        setEnd(dst);
         return true;
     }
 
