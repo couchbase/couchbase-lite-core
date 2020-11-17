@@ -26,8 +26,8 @@ strip_dir=${project_dir}
 ios_xcode_proj="couchbase-lite-core/Xcode/LiteCore.xcodeproj"
 
 if [[ ${EDITION} == 'enterprise' ]]; then
-    release_config="Release_EE"
-    debug_config="Debug_EE"
+    release_config="Release-EE"
+    debug_config="Debug-EE"
 else
     release_config="Release"
     debug_config="Debug"
