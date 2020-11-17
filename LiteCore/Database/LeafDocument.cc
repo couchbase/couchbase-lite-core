@@ -68,10 +68,6 @@ namespace c4Internal {
         }
 
 
-        virtual Document* copy() override {
-            return new LeafDocument(*this);
-        }
-
         virtual bool exists() override  {
             return flags & kDocExists;
         }

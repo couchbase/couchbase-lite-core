@@ -113,6 +113,7 @@
 		273407251DEE116600EA5532 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
 		2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2734F619206ABEB000C982FF /* ReplicatorTypes.cc */; };
 		27393A871C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
+		273D25F62564666A008643D2 /* NuDocumentFactory.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273D25F52564666A008643D2 /* NuDocumentFactory.cc */; };
 		273E55641F79B4BA000182F1 /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
 		273E55661F79B535000182F1 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
@@ -927,6 +928,8 @@
 		273B542C23037A8400E4FC19 /* platform.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = platform.h; sourceTree = "<group>"; };
 		273B542D23037A8400E4FC19 /* socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = socket.h; sourceTree = "<group>"; };
 		273B542E23037A8400E4FC19 /* datagram_socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = datagram_socket.h; sourceTree = "<group>"; };
+		273D25F42564666A008643D2 /* NuDocumentFactory.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = NuDocumentFactory.hh; sourceTree = "<group>"; };
+		273D25F52564666A008643D2 /* NuDocumentFactory.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = NuDocumentFactory.cc; sourceTree = "<group>"; };
 		273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocEnumerator.cc; sourceTree = "<group>"; };
 		273E9EC11C506C60003115A6 /* c4DocEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4DocEnumerator.h; sourceTree = "<group>"; };
 		273E9ED31C506DB4003115A6 /* SecureDigest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SecureDigest.hh; sourceTree = "<group>"; };
@@ -2334,6 +2337,8 @@
 				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
 				2764ED3123870A72007F020F /* TreeDocument.hh */,
 				27FC8E76221399AC0083B033 /* LeafDocument.cc */,
+				273D25F42564666A008643D2 /* NuDocumentFactory.hh */,
+				273D25F52564666A008643D2 /* NuDocumentFactory.cc */,
 				2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */,
 				2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */,
 				276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */,
@@ -4110,6 +4115,7 @@
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */,
 				27D9655F2335667A00F4A51C /* SecureRandomize.cc in Sources */,
+				273D25F62564666A008643D2 /* NuDocumentFactory.cc in Sources */,
 				27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */,
 				279976331E94AAD000B27639 /* IncomingRev+Blobs.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,

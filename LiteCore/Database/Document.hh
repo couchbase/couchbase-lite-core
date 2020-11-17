@@ -61,14 +61,6 @@ namespace c4Internal {
 
         Document(const Document&) =default;
 
-        // Returns a new Document object identical to this one (doesn't copy the doc in the db!)
-        virtual Document* copy() =0;
-
-#if 0 // unused
-        bool mustUseVersioning(C4DocumentVersioning requiredVersioning, C4Error *outError) {
-            return _db->mustUseVersioning(requiredVersioning, outError);
-        }
-#endif
         bool mustBeInTransaction(C4Error *outError) {
             return _db->mustBeInTransaction(outError);
         }
@@ -76,8 +68,8 @@ namespace c4Internal {
         Database* database()    {return _db;}
 
         virtual bool exists() =0;
-        virtual void loadRevisions() =0;
-        virtual bool revisionsLoaded() const noexcept =0;
+        virtual void loadRevisions()                                    { }
+        virtual bool revisionsLoaded() const noexcept                   {return true;}
         virtual bool selectRevision(C4Slice revID, bool withBody) =0;   // returns false if not found
 
         static C4RevisionFlags currentRevFlagsFromDocFlags(C4DocumentFlags docFlags) {
@@ -229,11 +221,22 @@ namespace c4Internal {
         Database* database() const          {return _db;}
 
         virtual ~DocumentFactory() { }
+        
         virtual Retained<Document> newDocumentInstance(C4Slice docID) =0;
+
         virtual Retained<Document> newDocumentInstance(const Record&) =0;
-        virtual Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID, bool withBody) =0;
+
+        virtual Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID,
+                                                           bool withBody)
+        {
+            Retained<Document> doc = newDocumentInstance(docID);
+            if (doc)
+                doc->selectRevision(revID, withBody);
+            return doc;
+        }
 
         virtual alloc_slice revIDFromVersion(slice version) =0;
+
         virtual bool isFirstGenRevID(slice revID)               {return false;}
 
         virtual vector<alloc_slice> findAncestors(const vector<slice> &docIDs,

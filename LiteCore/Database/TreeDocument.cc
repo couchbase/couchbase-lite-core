@@ -67,11 +67,6 @@ namespace c4Internal {
         }
 
 
-        Document* copy() override {
-            return new TreeDocument(*this);
-        }
-
-
         void init() {
             _versionedDoc.owner = this;
             _versionedDoc.setPruneDepth(_db->maxRevTreeDepth());

@@ -338,7 +338,7 @@ namespace litecore {
         uint8_t delByte = (flags & DocumentFlags::kDeleted) != 0;
         SHA1 digest = (SHA1Builder() << revLen << parentRevID << delByte << json).finish();
         unsigned generation = parentRevID ? parentRevID.generation() + 1 : 1;
-        return revidBuffer(generation, slice(digest), kDigestType);
+        return revidBuffer(generation, slice(digest));
     }
 
 
