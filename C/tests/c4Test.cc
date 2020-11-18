@@ -508,7 +508,7 @@ string C4Test::getDocJSON(C4Database* inDB, C4Slice docID) {
 
 
 bool C4Test::docBodyEquals(C4Document *doc, slice fleece) {
-    Dict root = c4doc_getRoot(doc);
+    Dict root = c4doc_getProperties(doc);
     if (!root)
         return false;
 

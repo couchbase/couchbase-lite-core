@@ -147,7 +147,7 @@ public:
             C4Error error;
             auto doc = c4doc_get(db, c4str(docID), true, &error);
             REQUIRE(doc);
-            CHECK(c4doc_getRoot(doc) != nullptr);
+            CHECK(c4doc_getProperties(doc) != nullptr);
             c4doc_release(doc);
             b.stop();
         }

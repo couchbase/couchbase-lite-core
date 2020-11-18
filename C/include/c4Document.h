@@ -151,11 +151,6 @@ extern "C" {
     bool c4doc_loadRevisionBody(C4Document* doc C4NONNULL,
                                 C4Error *outError) C4API;
 
-    /** Transfers ownership of the document's `selectedRev.body` to the caller, without copying.
-        The C4Document's field is cleared, and the value returned from this function. As with
-        all C4SliceResult values, the caller is responsible for freeing it when finished. */
-    C4StringResult c4doc_detachRevisionBody(C4Document* doc C4NONNULL) C4API;
-
     /** Returns true if the body of the selected revision is available,
         i.e. if c4doc_loadRevisionBody() would succeed. */
     bool c4doc_hasRevisionBody(C4Document* doc C4NONNULL) C4API;
@@ -177,6 +172,7 @@ extern "C" {
                                       bool withBody,
                                       C4Error *outError) C4API;
 
+#if 0
     /** Selects the first revision that could be an ancestor of the given revID, or returns false
         if there is none. */
     bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc C4NONNULL,
@@ -186,6 +182,7 @@ extern "C" {
         revID, or returns false if there are no more. */
     bool c4doc_selectNextPossibleAncestorOf(C4Document* doc C4NONNULL,
                                             C4String revID) C4API;
+#endif
 
     /** Selects the common ancestor of two revisions. Returns false if none is found. */
     bool c4doc_selectCommonAncestorRevision(C4Document* doc C4NONNULL,

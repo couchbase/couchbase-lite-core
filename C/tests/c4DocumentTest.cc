@@ -80,6 +80,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "FleeceDocs", "[Document][Fleece][C]") {
 }
 
 
+#if 0
 N_WAY_TEST_CASE_METHOD(C4Test, "Document PossibleAncestors", "[Document][C]") {
     if (!isRevTrees()) return;
 
@@ -106,6 +107,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document PossibleAncestors", "[Document][C]") {
     REQUIRE(!c4doc_selectFirstPossibleAncestorOf(doc, newRevID));
     c4doc_release(doc);
 }
+#endif
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
@@ -254,7 +256,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
         REQUIRE(c4doc_selectCurrentRevision(doc));
     }
     
-    REQUIRE(c4doc_getRoot(doc) == nullptr);
+    REQUIRE(c4doc_getProperties(doc) == nullptr);
     c4doc_release(doc);
 
     // Get a bogus sequence
@@ -272,7 +274,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
     REQUIRE(doc->revID == kRevID);
     REQUIRE(doc->selectedRev.revID == kRevID);
     REQUIRE(doc->selectedRev.sequence == 1);
-    REQUIRE(c4doc_getRoot(doc) == nullptr);
+    REQUIRE(c4doc_getProperties(doc) == nullptr);
     c4doc_release(doc);
 
     // Test c4doc_getSingleRevision (with body):
@@ -324,7 +326,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
         REQUIRE(c4doc_selectParentRevision(doc));
         REQUIRE(doc->selectedRev.revID == kRevID);
         REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)1);
-        REQUIRE(c4doc_getRoot(doc) == nullptr);
+        REQUIRE(c4doc_getProperties(doc) == nullptr);
         REQUIRE(!c4doc_hasRevisionBody(doc));
         REQUIRE(!c4doc_selectParentRevision(doc));
         c4doc_release(doc);
@@ -405,7 +407,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Get Single Revision", "[Document][C]") 
         if (withBody)
             CHECK(docBodyEquals(doc, kFleeceBody));
         else
-            CHECK(c4doc_getRoot(doc) == nullptr);
+            CHECK(c4doc_getProperties(doc) == nullptr);
         c4doc_release(doc);
     }
 
@@ -685,9 +687,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     CHECK(doc->flags == (kDocExists | kDocConflicted));
     // The conflicting rev will now never be the default, even with rev-trees.
     CHECK(doc->revID == kExpectedRev2ID);
-    
-    alloc_slice latestBody = c4doc_detachRevisionBody(doc);
-    CHECK(latestBody == rq.body);
+
     c4doc_release(doc);
 }
 
@@ -915,7 +915,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document from Fleece", "[Database][C]") {
 
     C4Document* doc = c4doc_get(db, kDocID, true, nullptr);
     REQUIRE(doc);
-    FLValue root = FLValue(c4doc_getRoot(doc));
+    FLValue root = FLValue(c4doc_getProperties(doc));
     REQUIRE(root);
     CHECK(c4doc_containingValue(root) == doc);
     FLValue ubu = FLDict_Get(FLValue_AsDict(root), "ubu"_sl);
@@ -937,7 +937,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Leaf Document from Fleece", "[Database][C]") {
     C4Document* doc = c4doc_getSingleRevision(db, kDocID, nullslice, true, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kRevID);
-    FLValue root = FLValue(c4doc_getRoot(doc));
+    FLValue root = FLValue(c4doc_getProperties(doc));
     REQUIRE(root);
     CHECK(c4doc_containingValue(root) == doc);
     FLValue ubu = FLDict_Get(FLValue_AsDict(root), "ubu"_sl);

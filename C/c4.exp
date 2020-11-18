@@ -67,8 +67,6 @@ _c4doc_selectParentRevision
 _c4doc_selectNextRevision
 _c4doc_selectNextLeafRevision
 _c4doc_selectCommonAncestorRevision
-_c4doc_selectFirstPossibleAncestorOf
-_c4doc_selectNextPossibleAncestorOf
 _c4doc_put
 _c4doc_create
 _c4doc_update
@@ -327,12 +325,11 @@ _c4doc_bodyAsJSON
 _c4doc_hasOldMetaProperties
 _c4doc_containingValue
 _c4doc_encodeStrippingOldMetaProperties
-_c4doc_detachRevisionBody
 _c4doc_getRemoteAncestor
 _c4doc_getBlobData
 _c4doc_getSingleRevision
 _c4doc_generateID
-_c4doc_getRoot
+_c4doc_getProperties
 
 _c4db_getIndexesInfo
 

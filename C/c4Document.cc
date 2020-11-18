@@ -117,11 +117,6 @@ bool c4doc_selectCurrentRevision(C4Document* doc) noexcept
 }
 
 
-C4SliceResult c4doc_detachRevisionBody(C4Document* doc) noexcept {
-    return C4SliceResult(asInternal(doc)->detachSelectedRevBody());
-}
-
-
 bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) noexcept {
     return tryCatch<bool>(outError, [&]{
         if (asInternal(doc)->loadSelectedRevBody())
@@ -169,6 +164,7 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
 }
 
 
+#if 0
 bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept {
     // LCOV_EXCL_START
     if (asInternal(doc)->database()->configV1()->versioning != kC4RevisionTrees) {
@@ -196,6 +192,7 @@ bool c4doc_selectNextPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept
     }
     return false;
 }
+#endif
 
 
 bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1, C4String rev2) noexcept {
@@ -619,6 +616,29 @@ int32_t c4doc_purgeRevision(C4Document *doc,
 }
 
 
+bool c4doc_resolveConflict2(C4Document *doc,
+                            C4String winningRevID,
+                            C4String losingRevID,
+                            FLDict mergedProperties,
+                            C4RevisionFlags mergedFlags,
+                            C4Error *outError) noexcept
+{
+    alloc_slice mergedBody;
+    if (mergedProperties) {
+        auto db = asInternal(doc)->database();
+        auto enc = db->sharedFLEncoder();
+        FLEncoder_WriteValue(enc, (FLValue)mergedProperties);
+        FLError flErr;
+        mergedBody = FLEncoder_Finish(enc, &flErr);
+        if (!mergedBody) {
+            recordError(FleeceDomain, flErr, "", outError);
+            return false;
+        }
+    }
+    return c4doc_resolveConflict(doc, winningRevID, losingRevID, mergedBody, mergedFlags, outError);
+}
+
+
 bool c4doc_resolveConflict(C4Document *doc,
                            C4String winningRevID,
                            C4String losingRevID,
@@ -641,7 +661,7 @@ bool c4doc_resolveConflict(C4Document *doc,
 using namespace fleece;
 
 
-FLDict c4doc_getRoot(C4Document* doc) C4API {
+FLDict c4doc_getProperties(C4Document* doc) C4API {
     return asInternal(doc)->getSelectedRevRoot();
 }
 

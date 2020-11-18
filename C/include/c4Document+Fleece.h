@@ -50,8 +50,18 @@ extern "C" {
     #define kC4LegacyAttachmentsProperty "_attachments"
 
 
-    /** Returns the root Dict of the selected revision. */
-    FLDict c4doc_getRoot(C4Document* C4NONNULL) C4API;
+    /** Resolves a conflict between two leaf revisions.
+        Identical to `c4doc_resolveConflict` except that it takes the merged body as a Fleece Dict,
+        instead of pre-encoded Fleece data. */
+    bool c4doc_resolveConflict2(C4Document *doc C4NONNULL,
+                                C4String winningRevID,
+                                C4String losingRevID,
+                                FLDict mergedProperties,
+                                C4RevisionFlags mergedFlags,
+                                C4Error *error) C4API;
+
+    /** Returns the properties of the selected revision, i.e. the root Fleece Dict. */
+    FLDict c4doc_getProperties(C4Document* C4NONNULL) C4API;
 
     /** Returns a Fleece document reference created from the selected revision.
         Caller must release the reference! */

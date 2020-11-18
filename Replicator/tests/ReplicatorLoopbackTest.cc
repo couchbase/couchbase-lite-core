@@ -945,11 +945,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     REQUIRE(doc);
 	C4Slice revID = C4STR("2-2a2a2a2a");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getRoot(doc) != nullptr);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = C4STR("1-11111111");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getRoot(doc) != nullptr);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
 
     // Now pull to db from db2, creating a conflict:
@@ -963,18 +963,18 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     CHECK((doc->flags & kDocConflicted) != 0);
 	revID = C4STR("2-2a2a2a2a");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getRoot(doc) != nullptr);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = C4STR("1-11111111");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getRoot(doc) != nullptr);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
     REQUIRE(c4doc_selectCurrentRevision(doc));
     REQUIRE(c4doc_selectNextRevision(doc));
 	revID = C4STR("2-2b2b2b2b");
     CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
-    CHECK(c4doc_getRoot(doc) != nullptr);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = C4STR("1-11111111");
     CHECK(doc->selectedRev.revID == revID);
@@ -1181,7 +1181,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
     REQUIRE(doc);
 	C4Slice revID = C4STR("2-88888888");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getRoot(doc) != nullptr);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
 	revID = C4STR("2-dddddddd");
     CHECK(doc->selectedRev.revID == revID);
@@ -1238,7 +1238,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
 	revID = C4STR("2-88888888");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getRoot(doc) != nullptr);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
 
     // Resolve the conflict in favor of the remote revision:
@@ -1431,7 +1431,7 @@ static void mutateDoc(C4Database *db, slice docID, function<void(Dict,Encoder&)>
     C4Error error;
     c4::ref<C4Document> doc = c4doc_get(db, docID, false, &error);
     REQUIRE(doc);
-    Dict props = c4doc_getRoot(doc);
+    Dict props = c4doc_getProperties(doc);
 
     Encoder enc(c4db_createFleeceEncoder(db));
     mutator(props, enc);
@@ -1818,7 +1818,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     REQUIRE(doc);
     revID = C4STR("2-2222222a");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getRoot(doc) != nullptr);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
     revID = C4STR("2-2222222b");
     CHECK(doc->selectedRev.revID == revID);

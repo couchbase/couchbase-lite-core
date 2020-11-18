@@ -309,7 +309,7 @@ public:
             }
             alloc_slice localRevID = doc->selectedRev.revID;
             C4RevisionFlags localFlags = doc->selectedRev.flags;
-            slice localBody = c4doc_getRevisionBody(doc);
+            FLDict localBody = c4doc_getProperties(doc);
             // Get the remote rev:
             if (!c4doc_selectNextLeafRevision(doc, true, false, &error)) {
                 WarnError("conflictHandler: Couldn't get conflicting revision of '%.*s'", SPLAT(rev->docID));
@@ -336,13 +336,13 @@ public:
 
             // Resolve. The remote rev has to win, in that it has to stay on the main branch, to avoid
             // conflicts with the server. But if we want the local copy to really win, we use its body:
-            slice mergedBody;
+            FLDict mergedBody = nullptr;
             C4RevisionFlags mergedFlags = remoteFlags;
             if (remoteWins) {
                 mergedBody = localBody;
                 mergedFlags = localFlags;
             }
-            if (!c4doc_resolveConflict(doc, remoteRevID, localRevID,
+            if (!c4doc_resolveConflict2(doc, remoteRevID, localRevID,
                                         mergedBody, mergedFlags, &error)) {
                 WarnError("conflictHandler: c4doc_resolveConflict failed in '%.*s'", SPLAT(rev->docID));
                 Assert(false, "conflictHandler: c4doc_resolveConflict failed");

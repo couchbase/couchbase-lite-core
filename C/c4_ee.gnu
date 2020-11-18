@@ -68,8 +68,6 @@ CBL {
 		c4doc_selectNextRevision;
 		c4doc_selectNextLeafRevision;
 		c4doc_selectCommonAncestorRevision;
-		c4doc_selectFirstPossibleAncestorOf;
-		c4doc_selectNextPossibleAncestorOf;
 		c4doc_put;
 		c4doc_create;
 		c4doc_update;
@@ -366,12 +364,11 @@ CBL {
 		c4doc_hasOldMetaProperties;
 		c4doc_containingValue;
 		c4doc_encodeStrippingOldMetaProperties;
-		c4doc_detachRevisionBody;
 		c4doc_getRemoteAncestor;
 		c4doc_getBlobData;
 		c4doc_getSingleRevision;
 		c4doc_generateID;
-		c4doc_getRoot;
+		c4doc_getProperties;
 
 		c4db_getIndexesInfo;
 

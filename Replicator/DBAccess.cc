@@ -97,12 +97,12 @@ namespace litecore { namespace repl {
     Dict DBAccess::getDocRoot(C4Document *doc, C4RevisionFlags *outFlags) {
         if (outFlags)
             *outFlags = doc->selectedRev.flags;
-        return c4doc_getRoot(doc);
+        return c4doc_getProperties(doc);
     }
 
 
     Dict DBAccess::getDocRoot(C4Document *doc, slice revID, C4RevisionFlags *outFlags) {
-        if (c4doc_selectRevision(doc, revID, true, nullptr) && c4doc_loadRevisionBody(doc, nullptr))
+        if (c4doc_selectRevision(doc, revID, true, nullptr))
             return getDocRoot(doc, outFlags);
         return nullptr;
     }
@@ -333,7 +333,7 @@ namespace litecore { namespace repl {
                              bool useDBSharedKeys,
                              C4Error *outError)
     {
-        Dict srcRoot = c4doc_getRoot(doc);
+        Dict srcRoot = c4doc_getProperties(doc);
         if (!srcRoot) {
             if (outError) *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptRevisionData, nullslice);
             return {};

@@ -308,7 +308,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     CHECK(doc->revID == revID3);
     CHECK(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     CHECK(doc->selectedRev.revID == revID3);
-    CHECK(c4doc_getRoot(doc) != nullptr);  // valid revision should not have null body
+    CHECK(c4doc_getProperties(doc) != nullptr);  // valid revision should not have null body
     CHECK(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
     c4doc_release(doc);
     
@@ -545,7 +545,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "2-") == 0);
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
-    REQUIRE(c4doc_getRoot(doc) != nullptr);  // valid revision should not have null body
+    REQUIRE(c4doc_getProperties(doc) != nullptr);  // valid revision should not have null body
     alloc_slice revID2 = doc->revID;
     c4doc_release(doc);
     
@@ -615,7 +615,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     C4Error error = {};
     REQUIRE(c4doc_selectRevision(doc, C4STR("2-2222"), false, &error));
     REQUIRE((doc->selectedRev.flags & (C4RevisionFlags)(kRevKeepBody)) == false);
-    REQUIRE(c4doc_getRoot(doc) == nullptr);
+    REQUIRE(c4doc_getProperties(doc) == nullptr);
     c4doc_release(doc);
 
     doc = getDoc(otherDocID);

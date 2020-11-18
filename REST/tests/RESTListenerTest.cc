@@ -415,7 +415,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
         c4::ref<C4Document> doc = c4doc_get(db, docID, true, &err);
         REQUIRE(doc);
         CHECK(doc->revID == revID);
-        body = c4doc_getRoot(doc);
+        body = c4doc_getProperties(doc);
         CHECK(body["year"].asInt() == 1964);
         CHECK(body.count() == 1);       // i.e. no _id or _rev properties
     }
@@ -437,7 +437,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
         REQUIRE(doc);
         CHECK((doc->flags & kDocDeleted) != 0);
         CHECK(doc->revID == revID);
-        body = c4doc_getRoot(doc);
+        body = c4doc_getProperties(doc);
         CHECK(body.count() == 0);
     }
 
