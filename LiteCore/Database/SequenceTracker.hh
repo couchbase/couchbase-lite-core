@@ -41,6 +41,8 @@ namespace litecore {
         It's intended that this be a singleton per database _file_. */
     class SequenceTracker : public Logging {
     public:
+        enum class RevisionFlags : uint8_t { None = 0 };
+
         SequenceTracker();
         ~SequenceTracker();
 
@@ -57,7 +59,7 @@ namespace litecore {
         void documentChanged(const alloc_slice &docID,
                              const alloc_slice &revID,
                              sequence_t sequence,
-                             uint64_t bodySize);
+                             RevisionFlags flags);
 
         /** Registers that the document has been purged. Must be called within a transaction.
             This may call change notifier callbacks. */
@@ -78,7 +80,7 @@ namespace litecore {
             alloc_slice docID;      ///< Document ID
             alloc_slice revID;      ///< Revision ID (ASCII form)
             sequence_t sequence;    ///< Sequence number, or 0 for a purge
-            uint32_t bodySize;      ///< Size in bytes of the document body
+            RevisionFlags flags;
         };
 
 #if DEBUG
@@ -127,7 +129,7 @@ namespace litecore {
         void _documentChanged(const alloc_slice &docID,
                               const alloc_slice &revID,
                               sequence_t sequence,
-                              uint64_t bodySize);
+                              RevisionFlags flags);
         const_iterator _since(sequence_t s) const;
         slice _docIDAt(sequence_t) const; // for tests only
 

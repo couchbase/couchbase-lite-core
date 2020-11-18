@@ -691,7 +691,7 @@ namespace c4Internal {
                 st.documentChanged(doc->_docIDBuf,
                                    doc->_selectedRevIDBuf,
                                    doc->selectedRev.sequence,
-                                   doc->selectedRev.body.size);
+                                   SequenceTracker::RevisionFlags(doc->selectedRev.flags));
             });
         }
     }

@@ -174,8 +174,8 @@ namespace litecore { namespace repl {
                 for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
                     if (c4change->sequence <= startingMaxSequence)
                         continue;
-                    C4DocumentInfo info {0, c4change->docID, c4change->revID,
-                                         c4change->sequence, c4change->bodySize};
+                    C4DocumentInfo info {c4change->flags, c4change->docID, c4change->revID,
+                                         c4change->sequence};
                     // Note: we send tombstones even if the original getChanges() call specified
                     // skipDeletions. This is intentional; skipDeletions applies only to the initial
                     // dump of existing docs, not to 'live' changes.
