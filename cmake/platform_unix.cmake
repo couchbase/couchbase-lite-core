@@ -1,5 +1,10 @@
 include(${CMAKE_CURRENT_LIST_DIR}/platform_base.cmake)
 
+macro(check_threading_unix)
+    set(THREADS_PREFER_PTHREAD_FLAG ON) 
+    find_package(Threads)
+endmacro()
+
 function(setup_globals_unix)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(CMAKE_C_FLAGS_MINSIZEREL "-Os -DNDEBUG -g" CACHE INTERNAL "")

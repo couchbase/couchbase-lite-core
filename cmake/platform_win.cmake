@@ -1,5 +1,9 @@
 include(${CMAKE_CURRENT_LIST_DIR}/platform_base.cmake)
 
+macro(check_threading)
+    message(STATUS "No threading checks needed for Windows")
+endmacro()
+
 function(set_litecore_source)
     set(oneValueArgs RESULT)
     cmake_parse_arguments(WIN_SSS "" ${oneValueArgs} "" ${ARGN})

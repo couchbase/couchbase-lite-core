@@ -20,6 +20,7 @@
 #include "Actor.hh"
 #include "Logging.hh"
 #include <algorithm>
+#include <sstream>
 #include "betterassert.hh"
 
 using namespace std;
@@ -43,6 +44,10 @@ namespace litecore { namespace actor {
     static char kQueueMailboxSpecificKey;
 
     static const qos_class_t kQOS = QOS_CLASS_UTILITY;
+
+#if ACTORS_USE_MANIFESTS
+    thread_local shared_ptr<ChannelManifest> GCDMailbox::sQueueManifest = nullptr;
+#endif
 
     GCDMailbox::GCDMailbox(Actor *a, const std::string &name, GCDMailbox *parentMailbox)
     :_actor(a)
@@ -87,33 +92,72 @@ namespace litecore { namespace actor {
             block();
         } catch (const std::exception &x) {
             _actor->caughtException(x);
+#if ACTORS_USE_MANIFESTS
+            stringstream manifest;
+            manifest << "Queue Manifest History:" << endl;
+            sQueueManifest->dump(manifest);
+            manifest << endl << "Actor Manifest History:" << endl;
+            _localManifest.dump(manifest);
+            const auto dumped = manifest.str();
+            Warn("%s", dumped.c_str());
+#endif
         }
     }
 
     
-    void GCDMailbox::enqueue(void (^block)()) {
+    void GCDMailbox::enqueue(const char* name, void (^block)()) {
         beginLatency();
         ++_eventCount;
         retain(_actor);
+
+#if ACTORS_USE_MANIFESTS
+        auto queueManifest = sQueueManifest ? sQueueManifest : make_shared<ChannelManifest>();
+        queueManifest->addEnqueueCall(_actor, name);
+        _localManifest.addEnqueueCall(_actor, name);
+#endif
+        
         auto wrappedBlock = ^{
+#if ACTORS_USE_MANIFESTS
+            queueManifest->addExecution(_actor, name);
+            sQueueManifest = queueManifest;
+            _localManifest.addExecution(_actor, name);
+#endif
             endLatency();
             beginBusy();
             safelyCall(block);
             afterEvent();
+#if ACTORS_USE_MANIFESTS
+            sQueueManifest.reset();
+#endif
         };
         dispatch_async(_queue, wrappedBlock);
     }
 
 
-    void GCDMailbox::enqueueAfter(delay_t delay, void (^block)()) {
+    void GCDMailbox::enqueueAfter(delay_t delay, const char* name, void (^block)()) {
         beginLatency();
         ++_eventCount;
         retain(_actor);
+
+#if ACTORS_USE_MANIFESTS
+        auto queueManifest = sQueueManifest ? sQueueManifest : make_shared<ChannelManifest>();
+        queueManifest->addEnqueueCall(_actor, name, delay.count());
+        _localManifest.addEnqueueCall(_actor, name, delay.count());
+#endif
+        
         auto wrappedBlock = ^{
+#if ACTORS_USE_MANIFESTS
+            queueManifest->addExecution(_actor, name);
+            sQueueManifest = queueManifest;
+            _localManifest.addExecution(_actor, name);
+#endif
             endLatency();
             beginBusy();
             safelyCall(block);
             afterEvent();
+#if ACTORS_USE_MANIFESTS
+            sQueueManifest.reset();
+#endif
         };
         int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
         if (ns > 0)

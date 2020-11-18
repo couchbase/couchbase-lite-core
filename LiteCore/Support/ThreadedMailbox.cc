@@ -23,10 +23,10 @@
 #include "Error.hh"
 #include "Timer.hh"
 #include "Logging.hh"
-#include "Channel.cc"       // Brings in the definitions of the template methods
 #include <future>
 #include <random>
 #include <map>
+#include <sstream>
 
 using namespace std;
 
@@ -51,11 +51,11 @@ namespace litecore { namespace actor {
     struct RunAsyncActor : Actor
     {
         RunAsyncActor()
-            : Actor("runAsync") {
+            : Actor(kC4Cpp_DefaultLog, "runAsync") {
         }
 
         void runAsync(void (*task)(void*), void *context) {
-            enqueue(&RunAsyncActor::_runAsync, task, context);
+            enqueue(FUNCTION_TO_QUEUE(RunAsyncActor::_runAsync), task, context);
         }
 
     private:
@@ -132,6 +132,9 @@ namespace litecore { namespace actor {
 
     thread_local Actor* ThreadedMailbox::sCurrentActor;
 
+#if ACTORS_USE_MANIFESTS
+    thread_local shared_ptr<ChannelManifest> ThreadedMailbox::sThreadManifest;
+#endif
 
     ThreadedMailbox::ThreadedMailbox(Actor *a, const std::string &name, ThreadedMailbox *parent)
     :_actor(a)
@@ -140,38 +143,70 @@ namespace litecore { namespace actor {
         Scheduler::sharedScheduler()->start();
     }
 
-    void ThreadedMailbox::enqueue(const std::function<void()> &f) {
+    void ThreadedMailbox::enqueue(const char* name, const std::function<void()> &f) {
         beginLatency();
         retain(_actor);
+
+#if ACTORS_USE_MANIFESTS
+        auto threadManifest = sThreadManifest ? sThreadManifest : make_shared<ChannelManifest>();
+        threadManifest->addEnqueueCall(_actor, name);
+        _localManifest.addEnqueueCall(_actor, name);
+        const auto wrappedBlock = [f, threadManifest, name, SELF]
+        {
+            threadManifest->addExecution(_actor, name);
+            sThreadManifest = threadManifest;
+            _localManifest.addExecution(_actor, name);
+#else
         const auto wrappedBlock = [f, SELF]
         {
+#endif
             endLatency();
             beginBusy();
             safelyCall(f);
             afterEvent();
+
+#if ACTORS_USE_MANIFESTS
+            sThreadManifest.reset();
+#endif
         };
 
         if (push(wrappedBlock))
             reschedule();
     }
 
-    void ThreadedMailbox::enqueueAfter(delay_t delay, const std::function<void()> &f) {
+    void ThreadedMailbox::enqueueAfter(delay_t delay, const char* name, const std::function<void()> &f) {
         if (delay <= delay_t::zero())
-            return enqueue(f);
+            return enqueue(name, f);
 
         beginLatency();
         _delayedEventCount++;
         retain(_actor);
 
-        auto timer = new Timer([f, this]
-        { 
-            const auto wrappedBlock = [f, SELF]
+#if ACTORS_USE_MANIFESTS
+        auto threadManifest = sThreadManifest ? sThreadManifest : make_shared<ChannelManifest>();
+        threadManifest->addEnqueueCall(_actor, name, delay.count());
+        _localManifest.addEnqueueCall(_actor, name, delay.count());
+        auto timer = new Timer([f, threadManifest, name, this]
+        {
+            const auto wrappedBlock = [f, threadManifest, name, SELF]
             {
+                threadManifest->addExecution(_actor, name);
+                sThreadManifest = threadManifest;
+                _localManifest.addExecution(_actor, name);
+#else
+        auto timer = new Timer([f, this]
+        {
+             const auto wrappedBlock = [f, SELF]
+             {
+#endif
                 endLatency();
                 beginBusy();
                 safelyCall(f);
                 --_delayedEventCount;
                 afterEvent();
+#if ACTORS_USE_MANIFESTS
+                sThreadManifest.reset();
+#endif
             };
             
             if (push(wrappedBlock))
@@ -188,6 +223,15 @@ namespace litecore { namespace actor {
             f();
         } catch(std::exception& x) {
             _actor->caughtException(x);
+#if ACTORS_USE_MANIFESTS
+            stringstream manifest;
+            manifest << "Thread Manifest History:" << endl;
+            sThreadManifest->dump(manifest);
+            manifest << endl << "Actor Manifest History:" << endl;
+            _localManifest.dump(manifest);
+            const auto dumped = manifest.str();
+            Warn("%s", dumped.c_str());
+#endif
         }
     }
 
