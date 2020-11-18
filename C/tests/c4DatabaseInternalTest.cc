@@ -205,8 +205,8 @@ public:
     void verifyRev(C4Document* doc, const C4String* history, int historyCount, C4String body){
         REQUIRE(doc->revID == history[0]);
         REQUIRE(doc->selectedRev.revID == history[0]);
-        REQUIRE(doc->selectedRev.body == body);
-        
+        REQUIRE(docBodyEquals(doc, body));
+
         std::vector<alloc_slice> revs = getAllParentRevisions(doc);
         REQUIRE(revs.size() == historyCount);
         for(int i = 0; i < historyCount; i++)
@@ -244,13 +244,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc);
     REQUIRE(doc->docID == docID);
     REQUIRE(doc->selectedRev.revID == revID1);
-    REQUIRE(doc->selectedRev.body == body);
+    REQUIRE(docBodyEquals(doc, body));
     c4doc_release(doc);
     
     // Now update it:
     doc = putDoc(docID, revID1, updatedBody, kRevKeepBody);
     REQUIRE(doc->docID == docID);
-    REQUIRE(doc->selectedRev.body == updatedBody);
+    REQUIRE(docBodyEquals(doc, updatedBody));
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "2-") == 0);
     alloc_slice revID2 = doc->revID;
     c4doc_release(doc);
@@ -260,7 +260,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc);
     REQUIRE(doc->docID == docID);
     REQUIRE(doc->selectedRev.revID == revID2);
-    REQUIRE(doc->selectedRev.body == updatedBody);
+    REQUIRE(docBodyEquals(doc, updatedBody));
     c4doc_release(doc);
     
     // Try to update the first rev, which should fail:
@@ -304,12 +304,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     // Read the deletion revision:
     doc = c4doc_get(db, docID, true, &c4err);
     REQUIRE(doc);
-    REQUIRE(doc->docID == docID);
-    REQUIRE(doc->revID == revID3);
-    REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
-    REQUIRE(doc->selectedRev.revID == revID3);
-    REQUIRE(doc->selectedRev.body != kC4SliceNull);  // valid revision should not have null body
-    REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
+    CHECK(doc->docID == docID);
+    CHECK(doc->revID == revID3);
+    CHECK(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    CHECK(doc->selectedRev.revID == revID3);
+    CHECK(c4doc_getRoot(doc) != nullptr);  // valid revision should not have null body
+    CHECK(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
     c4doc_release(doc);
     
     // Delete nonexistent doc:
@@ -384,7 +384,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4err = {};
     CHECK(c4doc_selectRevision(doc, revID2, true, &c4err));
     REQUIRE(doc->selectedRev.revID == revID2);
-    REQUIRE(doc->selectedRev.body == updatedBody);
+    REQUIRE(docBodyEquals(doc, updatedBody));
     c4doc_release(doc);
     
     // Compact the database:
@@ -512,7 +512,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
     REQUIRE(c4doc_selectRevision(doc, revID2, true, &error));
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
-    REQUIRE(doc->selectedRev.body == body2);
+    REQUIRE(docBodyEquals(doc, body2));
     c4doc_release(doc);
     
     // Make sure it's possible to create the doc from scratch again:
@@ -534,9 +534,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     if(!isRevTrees()) return;
     
     // Create a document:
-    C4Document* doc = putDoc(C4STR("dock"), kC4SliceNull, C4STR("{'property':'value'}"));
+    alloc_slice body = encodeBodyIfJSON("{'property':'value'}"_sl);
+    C4Document* doc = putDoc(C4STR("dock"), kC4SliceNull, body);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "1-") == 0);
-    alloc_slice body(doc->selectedRev.body);
     alloc_slice revID1 = doc->revID;
     c4doc_release(doc);
     
@@ -545,14 +545,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "2-") == 0);
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
-    REQUIRE(doc->selectedRev.body != kC4SliceNull);  // valid revision should not have null body
+    REQUIRE(c4doc_getRoot(doc) != nullptr);  // valid revision should not have null body
     alloc_slice revID2 = doc->revID;
     c4doc_release(doc);
     
     // Recreate a document with same content with revision 1
-    doc = putDoc(C4STR("dock"), revID2, body);
+    doc = putDoc(C4STR("dock"), revID2, "{'property':'value'}"_sl);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "3-") == 0);
-    REQUIRE(doc->selectedRev.body == body);
+    REQUIRE(docBodyEquals(doc, body));
     c4doc_release(doc);
 }
 
@@ -615,7 +615,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     C4Error error = {};
     REQUIRE(c4doc_selectRevision(doc, C4STR("2-2222"), false, &error));
     REQUIRE((doc->selectedRev.flags & (C4RevisionFlags)(kRevKeepBody)) == false);
-    REQUIRE(doc->selectedRev.body == kC4SliceNull);
+    REQUIRE(c4doc_getRoot(doc) == nullptr);
     c4doc_release(doc);
 
     doc = getDoc(otherDocID);
@@ -676,15 +676,15 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
             if(counter == 0){
                 REQUIRE(doc->docID == docID);
                 REQUIRE(doc->selectedRev.revID == history[0]);
-                REQUIRE(c4SliceEqual(doc->selectedRev.body, body));
+                REQUIRE(docBodyEquals(doc, body));
             }else if(counter == 1){
                 REQUIRE(doc->docID == docID);
                 REQUIRE(doc->selectedRev.revID == conflictHistory[0]);
-                REQUIRE(c4SliceEqual(doc->selectedRev.body, conflictBody));
+                REQUIRE(docBodyEquals(doc, conflictBody));
             }else if(counter == 2){
                 REQUIRE(doc->docID == otherDocID);
                 REQUIRE(doc->selectedRev.revID == otherHistory[0]);
-                REQUIRE(c4SliceEqual(doc->selectedRev.body, otherBody));
+                REQUIRE(docBodyEquals(doc, otherBody));
             }
             counter++;
         }while(c4doc_selectNextLeafRevision(doc, true, true, &error));

@@ -23,6 +23,7 @@
 #include "HTTPTypes.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
+#include "c4Document+Fleece.h"
 
 using namespace std;
 using namespace litecore::blip;
@@ -57,19 +58,15 @@ namespace litecore::repl {
 
         // Get the document & revision:
         C4Error c4err;
-        slice revisionBody;
         Dict root;
         c4::ref<C4Document> doc = _db->getDoc(request->docID, &c4err);
         if (doc) {
             if (c4doc_selectRevision(doc, request->revID, true, &c4err)) {
-                revisionBody = doc->selectedRev.body;
-                if (!revisionBody)
+                root = c4doc_getRoot(doc);
+                if (!root)
                     c4err = {LiteCoreDomain, kC4ErrorNotFound};
             }
-            if (revisionBody) {
-                root = Value::fromData(revisionBody, kFLTrusted).asDict();
-                if (!root)
-                    c4err = {LiteCoreDomain, kC4ErrorCorruptData};
+            if (root) {
                 request->flags = doc->selectedRev.flags;
             } else {
                 if (c4err.code == kC4ErrorNotFound && c4err.domain == LiteCoreDomain)
@@ -99,7 +96,8 @@ namespace litecore::repl {
                                           && !_db->disableBlobSupport());
 
             // Delta compression:
-            alloc_slice delta = createRevisionDelta(doc, request, root, revisionBody.size,
+            alloc_slice delta = createRevisionDelta(doc, request, root,
+                                                    c4doc_getRevisionBody(doc).size,
                                                     sendLegacyAttachments);
             if (delta) {
                 msg["deltaSrc"_sl] = doc->selectedRev.revID;

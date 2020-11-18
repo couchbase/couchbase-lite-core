@@ -95,7 +95,7 @@ namespace litecore { namespace repl {
         //////// DELTAS:
 
         /** Applies a delta to an existing revision. */
-        fleece::Doc applyDelta(const C4Revision *baseRevision NONNULL,
+        fleece::Doc applyDelta(C4Document *doc NONNULL,
                                slice deltaJSON,
                                bool useDBSharedKeys,
                                C4Error *outError);

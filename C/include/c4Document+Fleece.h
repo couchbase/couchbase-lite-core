@@ -50,6 +50,9 @@ extern "C" {
     #define kC4LegacyAttachmentsProperty "_attachments"
 
 
+    /** Returns the root Dict of the selected revision. */
+    FLDict c4doc_getRoot(C4Document* C4NONNULL) C4API;
+
     /** Returns a Fleece document reference created from the selected revision.
         Caller must release the reference! */
     FLDoc c4doc_createFleeceDoc(C4Document* C4NONNULL);

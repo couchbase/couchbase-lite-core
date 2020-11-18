@@ -236,10 +236,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
         REQUIRE(doc->revID == kRevID);
         REQUIRE(doc->selectedRev.revID == kRevID);
         REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)i);
-        REQUIRE(doc->selectedRev.body == kC4SliceNull);
+        REQUIRE(c4doc_getRoot(doc) == nullptr);
         // Doc was loaded without its body, but it should load on demand:
         REQUIRE(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
-        REQUIRE(doc->selectedRev.body == kFleeceBody);
+        REQUIRE(docBodyEquals(doc, kFleeceBody));
 
         C4DocumentInfo info;
         REQUIRE(c4enum_getDocumentInfo(e, &info));

@@ -101,7 +101,6 @@ namespace c4Internal {
                 selectedRev.revID = revID;
                 selectedRev.sequence = sequence;
                 selectedRev.flags = currentRevFlagsFromDocFlags(flags);
-                selectedRev.body = kC4SliceNull;
             } else {
                 clearSelectedRevision();
             }
@@ -119,9 +118,16 @@ namespace c4Internal {
 
         virtual bool hasRevisionBody() noexcept =0;
         virtual bool loadSelectedRevBody() =0; // can throw; returns false if compacted away
-
+        virtual slice getSelectedRevBody() noexcept =0;
         virtual alloc_slice detachSelectedRevBody() {
-            return alloc_slice(selectedRev.body); // will copy
+            return alloc_slice(getSelectedRevBody()); // will copy
+        }
+
+        virtual FLDict getSelectedRevRoot() noexcept {
+            if (slice body = getSelectedRevBody(); body)
+                return FLValue_AsDict(FLValue_FromData(body, kFLTrusted));
+            else
+                return nullptr;
         }
 
         virtual Retained<fleece::impl::Doc> fleeceDoc() =0;
@@ -201,7 +207,6 @@ namespace c4Internal {
             selectedRev.revID = {};
             selectedRev.flags = (C4RevisionFlags)0;
             selectedRev.sequence = 0;
-            selectedRev.body = kC4SliceNull;
         }
 
         [[noreturn]] void failUnsupported() {

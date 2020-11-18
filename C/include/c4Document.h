@@ -55,7 +55,6 @@ extern "C" {
         C4HeapString revID;         ///< Revision ID
         C4RevisionFlags flags;      ///< Flags (deleted?, leaf?, new? hasAttachments?)
         C4SequenceNumber sequence;  ///< Sequence number in database
-        C4String body;              ///< The raw body, or NULL if not loaded yet
     } C4Revision;
 
 
@@ -160,6 +159,8 @@ extern "C" {
     /** Returns true if the body of the selected revision is available,
         i.e. if c4doc_loadRevisionBody() would succeed. */
     bool c4doc_hasRevisionBody(C4Document* doc C4NONNULL) C4API;
+
+    C4Slice c4doc_getRevisionBody(C4Document* doc C4NONNULL) C4API;
 
     /** Selects the parent of the selected revision, if it's known, else returns NULL. */
     bool c4doc_selectParentRevision(C4Document* doc C4NONNULL) C4API;
@@ -315,12 +316,12 @@ extern "C" {
         revision body and the body of the `C4DocPutRequest`. It's intended for use when the new
         revision is specified as a delta.
         @param context  The same value given in the `C4DocPutRequest`'s `deltaCBContext` field.
-        @param baseRevision  The base revision requested in the `deltaSourceRevID`.
+        @param doc  The document; its selected revision is the one requested in the `deltaSourceRevID`.
         @param delta  The contents of the request's `body` or `allocedBody`.
         @param outError  If the callback fails, store an error here if it's non-NULL.
         @return  The body to store in the new revision, or a null slice on failure. */
     typedef C4SliceResult (*C4DocDeltaApplier)(void *context,
-                                               const C4Revision *baseRevision,
+                                               C4Document *doc,
                                                C4Slice delta,
                                                C4Error *outError);
 

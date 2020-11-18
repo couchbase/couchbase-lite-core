@@ -95,12 +95,9 @@ namespace litecore { namespace repl {
 
 
     Dict DBAccess::getDocRoot(C4Document *doc, C4RevisionFlags *outFlags) {
-        slice revisionBody(doc->selectedRev.body);
-        if (!revisionBody)
-            return nullptr;
         if (outFlags)
             *outFlags = doc->selectedRev.flags;
-        return Value::fromData(revisionBody, kFLTrusted).asDict();
+        return c4doc_getRoot(doc);
     }
 
 
@@ -331,12 +328,12 @@ namespace litecore { namespace repl {
     }
 
 
-    Doc DBAccess::applyDelta(const C4Revision *baseRevision,
+    Doc DBAccess::applyDelta(C4Document *doc,
                              slice deltaJSON,
                              bool useDBSharedKeys,
                              C4Error *outError)
     {
-        Dict srcRoot = Value::fromData(baseRevision->body, kFLTrusted).asDict();
+        Dict srcRoot = c4doc_getRoot(doc);
         if (!srcRoot) {
             if (outError) *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptRevisionData, nullslice);
             return {};
@@ -392,8 +389,8 @@ namespace litecore { namespace repl {
         return useForInsert<Doc>([&](C4Database *idb)->Doc {
             c4::ref<C4Document> doc = c4doc_get(idb, docID, true, outError);
             if (doc && c4doc_selectRevision(doc, baseRevID, true, outError)) {
-                if (doc->selectedRev.body.buf) {
-                    return applyDelta(&doc->selectedRev, deltaJSON, false, outError);
+                if (c4doc_loadRevisionBody(doc, nullptr)) {
+                    return applyDelta(doc, deltaJSON, false, outError);
                 } else {
                     string msg = format("Couldn't apply delta: Don't have body of '%.*s' #%.*s [current is %.*s]",
                                         SPLAT(docID), SPLAT(baseRevID), SPLAT(doc->revID));

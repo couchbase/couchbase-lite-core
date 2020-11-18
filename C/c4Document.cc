@@ -137,6 +137,11 @@ bool c4doc_hasRevisionBody(C4Document* doc) noexcept {
 }
 
 
+C4Slice c4doc_getRevisionBody(C4Document* doc C4NONNULL) C4API {
+    return asInternal(doc)->getSelectedRevBody();
+}
+
+
 bool c4doc_selectParentRevision(C4Document* doc) noexcept {
     return asInternal(doc)->selectParentRevision();
 }
@@ -634,6 +639,11 @@ bool c4doc_resolveConflict(C4Document *doc,
 
 
 using namespace fleece;
+
+
+FLDict c4doc_getRoot(C4Document* doc) C4API {
+    return asInternal(doc)->getSelectedRevRoot();
+}
 
 
 FLDoc c4doc_createFleeceDoc(C4Document *doc) {

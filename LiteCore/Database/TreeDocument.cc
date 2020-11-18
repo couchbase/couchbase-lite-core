@@ -111,7 +111,11 @@ namespace c4Internal {
 
         bool loadSelectedRevBody() override {
             loadRevisions();
-            return selectedRev.body.buf != nullptr;
+            return _selectedRev &&_selectedRev->body();
+        }
+
+        virtual slice getSelectedRevBody() noexcept override {
+            return _selectedRev ? _selectedRev->body() : slice();
         }
 
         bool selectRevision(const Rev *rev) noexcept {   // doesn't throw
@@ -121,7 +125,6 @@ namespace c4Internal {
                 selectedRev.revID = _selectedRevIDBuf;
                 selectedRev.flags = (C4RevisionFlags)rev->flags;
                 selectedRev.sequence = rev->sequence;
-                selectedRev.body = rev->body();
                 return true;
             } else {
                 clearSelectedRevision();
@@ -226,7 +229,7 @@ namespace c4Internal {
         }
 
         Retained<Doc> fleeceDoc() override {
-            return _versionedDoc.fleeceDocFor(selectedRev.body);
+            return _versionedDoc.fleeceDocFor(getSelectedRevBody());
         }
 
         bool save(unsigned maxRevTreeDepth =0) override {
@@ -352,12 +355,12 @@ namespace c4Internal {
                 if (!rq.deltaSourceRevID.buf || !selectRevision(rq.deltaSourceRevID, true)) {
                     recordError(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
                                 "Unknown source revision ID for delta", outError);
-                } else if (!selectedRev.body.buf) {
+                } else if (!getSelectedRevBody()) {
                     recordError(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
                                 "Missing source revision body for delta", outError);
                 } else {
                     slice delta = (rq.allocedBody.buf)? slice(rq.allocedBody) : slice(rq.body);
-                    body = rq.deltaCB(rq.deltaCBContext, &selectedRev, delta, outError);
+                    body = rq.deltaCB(rq.deltaCBContext, this, delta, outError);
                 }
             }
 

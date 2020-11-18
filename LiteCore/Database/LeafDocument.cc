@@ -82,7 +82,6 @@ namespace c4Internal {
 
         virtual bool selectCurrentRevision() noexcept override {
             Document::selectCurrentRevision();
-            selectedRev.body = _fleeceDoc ? _fleeceDoc->allocedData() : nullslice;
             return exists();
         }
 
@@ -100,6 +99,10 @@ namespace c4Internal {
             if (!_fleeceDoc)
                 failUnsupported();
             return true;
+        }
+
+        virtual slice getSelectedRevBody() noexcept override {
+            return _fleeceDoc ? _fleeceDoc->allocedData() : nullslice;
         }
 
         virtual Retained<fleece::impl::Doc> fleeceDoc() override {

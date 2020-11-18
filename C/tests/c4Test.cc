@@ -507,6 +507,17 @@ string C4Test::getDocJSON(C4Database* inDB, C4Slice docID) {
 }
 
 
+bool C4Test::docBodyEquals(C4Document *doc, slice fleece) {
+    Dict root = c4doc_getRoot(doc);
+    if (!root)
+        return false;
+
+    Doc fleeceDoc = Doc(alloc_slice(fleece), kFLUntrusted, c4db_getFLSharedKeys(db));
+    assert(fleeceDoc);
+    return root.isEqual(fleeceDoc.asDict());
+}
+
+
 #pragma mark - ATTACHMENTS / BLOBS:
 
 

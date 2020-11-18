@@ -310,7 +310,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Pull Big Attachments", "[.SyncServer]") 
     C4Error error;
     c4::ref<C4Document> doc = c4doc_get(db, "Abstract"_sl, true, &error);
     REQUIRE(doc);
-    auto root = Value::fromData(doc->selectedRev.body).asDict();
+    Dict root = c4doc_getRoot(doc);
     auto attach = root.get("_attachments"_sl).asDict().get("Abstract.jpg"_sl).asDict();
     REQUIRE(attach);
     CHECK(attach.get("content_type").asString() == "image/jpeg"_sl);
@@ -341,11 +341,11 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     REQUIRE(doc);
 	C4Slice revID = C4STR("2-f000");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(doc->selectedRev.body.size > 0);
+    CHECK(c4doc_getRoot(doc) != nullptr);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = slice(originalRevID);
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(doc->selectedRev.body.size > 0);
+    CHECK(c4doc_getRoot(doc) != nullptr);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
 
     C4Log("-------- Pushing Again (conflict) --------");
@@ -363,12 +363,12 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     CHECK((doc->flags & kDocConflicted) != 0);
 	revID = C4STR("2-f000");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(doc->selectedRev.body.size > 0);
+    CHECK(c4doc_getRoot(doc) != nullptr);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = slice(originalRevID);
     CHECK(doc->selectedRev.revID == revID);
 #if 0 // FIX: These checks fail due to issue #402; re-enable when fixing that bug
-    CHECK(doc->selectedRev.body.size > 0);
+    CHECK(c4doc_getRoot(doc) != nullptr);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
 #endif
     REQUIRE(c4doc_selectCurrentRevision(doc));
@@ -376,7 +376,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
 	revID = C4STR("2-883a2dacc15171a466f76b9d2c39669b");
     CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
-    CHECK(doc->selectedRev.body.size > 0);
+    CHECK(c4doc_getRoot(doc) != nullptr);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = slice(originalRevID);
     CHECK(doc->selectedRev.revID == revID);
@@ -493,7 +493,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
             C4Error error;
             c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, &error);
             REQUIRE(doc);
-            Dict props = Value::fromData(doc->selectedRev.body).asDict();
+            Dict props = c4doc_getRoot(doc);
 
             enc.beginDict();
             enc.writeKey("_id"_sl);
@@ -586,7 +586,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
             C4Error error;
             c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, &error);
             REQUIRE(doc);
-            Dict props = Value::fromData(doc->selectedRev.body).asDict();
+            Dict props = c4doc_getRoot(doc);
 
             enc.beginDict();
             enc.writeKey("_id"_sl);

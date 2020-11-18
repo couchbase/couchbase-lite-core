@@ -30,7 +30,7 @@ using namespace fleece::impl;
 namespace c4Internal {
 
     alloc_slice Document::bodyAsJSON(bool canonical) {
-        if (!selectedRev.body.buf)
+        if (!loadSelectedRevBody())
             error::_throw(error::NotFound);
         auto doc = fleeceDoc();
         if (!doc)

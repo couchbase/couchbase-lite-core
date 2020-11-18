@@ -309,7 +309,7 @@ public:
             }
             alloc_slice localRevID = doc->selectedRev.revID;
             C4RevisionFlags localFlags = doc->selectedRev.flags;
-            slice localBody = doc->selectedRev.body;
+            slice localBody = c4doc_getRevisionBody(doc);
             // Get the remote rev:
             if (!c4doc_selectNextLeafRevision(doc, true, false, &error)) {
                 WarnError("conflictHandler: Couldn't get conflicting revision of '%.*s'", SPLAT(rev->docID));

@@ -371,6 +371,7 @@ _c4doc_getRemoteAncestor
 _c4doc_getBlobData
 _c4doc_getSingleRevision
 _c4doc_generateID
+_c4doc_getRoot
 
 _c4db_getIndexesInfo
 
@@ -425,6 +426,7 @@ _FLSliceResult_New
 _FLDictIterator_GetCount
 _FLDictIterator_End
 
+_FLValue_IsEqual
 _FLValue_ToJSON5
 
 

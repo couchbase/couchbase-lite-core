@@ -219,8 +219,6 @@ namespace litecore { namespace REST {
         }
 
         // Get the revision
-        if (!doc->selectedRev.body.buf)
-            return rq.respondWithStatus(HTTPStatus::NotFound);
         alloc_slice json = c4doc_bodyAsJSON(doc, false, &err);
         if (!json)
             return rq.respondWithError(err);

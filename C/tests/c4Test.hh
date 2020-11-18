@@ -224,7 +224,9 @@ public:
     unsigned importJSONLines(std::string path, double timeout =0.0, bool verbose =false,
                              C4Database* database = nullptr);
 
-    
+
+    bool docBodyEquals(C4Document *doc NONNULL, slice fleece);
+
     static std::string fleece2json(slice fleece) {
         auto value = Value::fromData(fleece);
         REQUIRE(value);
@@ -250,8 +252,8 @@ public:
     C4Slice kRevID;    // "1-abcd"
     C4Slice kRev2ID;   // "2-c001d00d"
     C4Slice kRev3ID;   // "3-deadbeef"
-    static C4Slice kFleeceBody;
-    static C4Slice kEmptyFleeceBody;
+    static C4Slice kFleeceBody;             // {"ans*wer":42}, in Fleece
+    static C4Slice kEmptyFleeceBody;        // {}, in Fleece
 
 private:
     const C4StorageEngine _storage;

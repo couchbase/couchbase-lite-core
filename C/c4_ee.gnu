@@ -371,6 +371,7 @@ CBL {
 		c4doc_getBlobData;
 		c4doc_getSingleRevision;
 		c4doc_generateID;
+		c4doc_getRoot;
 
 		c4db_getIndexesInfo;
 
@@ -425,6 +426,7 @@ CBL {
 		FLDictIterator_GetCount;
 		FLDictIterator_End;
 
+		FLValue_IsEqual;
 		FLValue_ToJSON5;
 
 
