@@ -233,8 +233,8 @@ namespace litecore {
             dst += PutUVarInt(dst, source);
         } else {
             // Copy hex digest into dst as binary:
-            if (dst + ascii.size / 2 > end || (ascii.size & 1))
-                return false; // rev ID is too long to fit in my buffer
+            if (ascii.size == 0 || (ascii.size & 1) || dst + ascii.size / 2 > end)
+                return false;
             for (unsigned i = 0; i < ascii.size; i += 2) {
                 if (!islowerxdigit(ascii[i]) || !islowerxdigit(ascii[i+1]))
                     return false; // digest is not hex
