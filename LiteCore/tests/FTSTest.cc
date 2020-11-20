@@ -490,10 +490,11 @@ TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
         CHECK(results->getRowCount() == 2);
         
         CHECK(results->next());
-        CHECK(results->missingColumns() == (1 << expectedMissing));
+        CHECK(results->columns()[expectedMissing]->isUndefined());
         
         CHECK(results->next());
-        CHECK(results->missingColumns() == ((1 << expectedMissing) | 1 << 1));
+        CHECK(results->columns()[expectedMissing]->isUndefined());
+        CHECK(results->columns()[1]->isUndefined());
         expectedMissing = 0;
     }
 }

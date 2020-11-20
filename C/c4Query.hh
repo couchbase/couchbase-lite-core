@@ -40,6 +40,7 @@ struct c4Query : public RefCounted, public fleece::InstanceCountedIn<c4Query>, L
 
     Retained<C4QueryEnumeratorImpl> createEnumerator(const C4QueryOptions *c4options, slice encodedParameters) {
         Query::Options options(encodedParameters ? encodedParameters : _parameters);
+        options.oneShot = (c4options ? c4options : &kC4DefaultQueryOptions)->oneShot;
         return wrapEnumerator( _query->createEnumerator(&options) );
     }
 

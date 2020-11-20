@@ -22,9 +22,14 @@ using namespace fleece;
 
 class C4QueryTest : public C4Test {
 public:
+    static const int numberOfOptions = 2;       // seekable, one-shot
+
     C4QueryTest(int which, string filename)
-    :C4Test(which)
+    :C4Test(0)
+    ,_options(kC4DefaultQueryOptions)
     {
+        _options.oneShot = (which == 1);
+        fprintf(stderr, "        --- %s query mode\n", (_options.oneShot ? "one-shot" : "buffered"));
         if (!filename.empty())
             importJSONLines(sFixturesDir + filename);
     }
@@ -77,7 +82,7 @@ public:
         REQUIRE(query);
         C4QueryOptions options = kC4DefaultQueryOptions;
         C4Error error;
-        auto e = c4query_run(query, &options, c4str(bindings), &error);
+        auto e = c4query_run(query, &_options, c4str(bindings), &error);
         INFO("c4query_run got error " << error.domain << "/" << error.code);
         REQUIRE(e);
         vector<Collected> results;
@@ -92,9 +97,9 @@ public:
     vector<string> run(const char *bindings =nullptr) {
         return runCollecting<string>(bindings, [&](C4QueryEnumerator *e) {
             REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
-            if (e->missingColumns & 1)
-                return string("MISSING");
             FLValue val = FLArrayIterator_GetValueAt(&e->columns, 0);
+            if (FLValue_GetType(val) == kFLUndefined)
+                return string("MISSING");
             fleece::alloc_slice result;
             if (FLValue_GetType(val) == kFLString)
                 result = FLValue_ToString(val);
@@ -110,10 +115,6 @@ public:
             REQUIRE(FLArrayIterator_GetCount(&e->columns) >= 2);
             fleece::alloc_slice c1 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 0));
             fleece::alloc_slice c2 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 1));
-            if (e->missingColumns & 1)
-                c1 = "MISSING"_sl;
-            if (e->missingColumns & 2)
-                c2 = "MISSING"_sl;
             return c1.asString() + ", " + c2.asString();
         });
     }
@@ -177,8 +178,11 @@ public:
         FLSliceResult_Release(body);
     }
 
+    void queryWhileChangingDatabase(int changeDBBeforeRow);
+
 protected:
     C4Query *query {nullptr};
+    C4QueryOptions _options;
 };
 
 

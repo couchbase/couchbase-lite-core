@@ -73,6 +73,9 @@ namespace litecore {
         void createConflictsIndex();
         void createBlobsIndex();
 
+        // Equal to dataFile.defaultKeyStore().tableName()
+        static constexpr const char* kDefaultTableName = "kv_default";
+        
         // QueryParser::delegate:
         virtual std::string tableName() const override  {return std::string("kv_") + name();}
         virtual std::string FTSTableName(const std::string &property) const override;

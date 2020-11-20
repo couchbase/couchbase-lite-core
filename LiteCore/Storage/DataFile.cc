@@ -143,7 +143,11 @@ namespace litecore {
         // 2. The data file must indicate that it is no longer valid so that
         //    other classes with interest in the data file do not continue to
         //    operate on it
+        if (!isOpen())
+            return;
+        logInfo("Closing database...");
         _closeSignaled = true;
+        callPreChangeObservers(PreChangeObserver::kClosingDB);
         for (auto &query : _queries)
             query->close();
         _queries.clear();
@@ -153,7 +157,7 @@ namespace litecore {
         }
         _close(forDelete);
         if (_shared->removeDataFile(this))
-            logInfo("Closing database");
+            logInfo("Closed database");
     }
 
 
@@ -200,6 +204,29 @@ namespace litecore {
 
     Retained<RefCounted>  DataFile::addSharedObject(const string &key, Retained<RefCounted> object) {
         return _shared->addSharedObject(key, object);
+    }
+
+
+    void DataFile::addPreChangeObserver(PreChangeObserver *obs) {
+        if (_preChangeObservers.empty())
+            enablePreChangeObservers(true);
+        _preChangeObservers.push_back(obs);
+    }
+
+    void DataFile::removePreChangeObserver(PreChangeObserver *obs) {
+        auto i = find(_preChangeObservers.begin(), _preChangeObservers.end(), obs);
+        if (i != _preChangeObservers.end()) {
+            _preChangeObservers.erase(i);
+            if (_preChangeObservers.empty())
+                enablePreChangeObservers(false);
+        }
+    }
+
+    void DataFile::callPreChangeObservers(PreChangeObserver::Change change) {
+        enablePreChangeObservers(false);
+        auto observers = move(_preChangeObservers);
+        for (auto &obs : observers)
+            obs->preDataFileChange(change);
     }
 
 
@@ -321,7 +348,6 @@ namespace litecore {
 
 #pragma mark - TRANSACTION:
 
-    
     void DataFile::beginTransactionScope(Transaction* t) {
         Assert(!_inTransaction);
         checkOpen();

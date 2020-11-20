@@ -100,6 +100,7 @@ namespace litecore {
 #if ENABLE_DELETE_KEY_STORES
         void deleteKeyStore(const std::string &name) override;
 #endif
+        virtual void enablePreChangeObservers(bool enable) override;
 
         sequence_t lastSequence(const std::string& keyStoreName) const;
         void setLastSequence(SQLiteKeyStore&, sequence_t);

@@ -166,6 +166,7 @@ target_compile_definitions(
     -DSQLITE_ENABLE_EXPLAIN_COMMENTS    # Add comment text to the result of sqlite3_explain
     -DSQLITE_DISABLE_FTS3_UNICODE       # Disable FTS3 unicode61 tokenizer (not used in LiteCore)
     -DSQLITE_ENABLE_MEMORY_MANAGEMENT   # Enable sqlite3_release_memory to release unused memory faster
+    -DSQLITE_ENABLE_PREUPDATE_HOOK      # Enable sqlite3_preupdate_hook() API
     -DSQLITE_ENABLE_STAT4               # Enable enhanced query planning
     -DSQLITE_HAVE_ISNAN                 # Use system provided isnan()
     -DHAVE_LOCALTIME_R                  # Use localtime_r instead of localtime

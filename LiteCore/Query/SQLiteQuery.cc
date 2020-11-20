@@ -16,6 +16,9 @@
 // limitations under the License.
 //
 
+// THIS FILE HAS NOT MERGED THE CHANGES FROM feature/one-shot-query!
+// THE SOURCE FILE FROM THE BRANCH IS AT SQLiteQuery_ONESHOT.cc
+
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "SQLite_Internal.hh"
@@ -23,6 +26,7 @@
 #include "Query.hh"
 #include "QueryParser.hh"
 #include "n1ql_parser.hh"
+#include "Defer.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "FleeceImpl.hh"
@@ -51,6 +55,16 @@ namespace litecore {
         kFTSRowidCol,
         kFTSOffsetsCol
     };
+
+
+    // Wrapper around Statement::executeStep.
+    // (The tokenizer can be called while running a FTS query, to parse the MATCH expression,
+    // and we have to tell it this is happening so it can treat stop-words differently.)
+    static bool executeStep(shared_ptr<SQLite::Statement> statement) {
+        unicodesn_tokenizerRunningQuery(true);
+        DEFER {unicodesn_tokenizerRunningQuery(false);};
+        return statement->executeStep();
+    }
 
 
     class SQLiteQuery : public Query {
@@ -176,12 +190,130 @@ namespace litecore {
             return result.str();
         }
 
+
         QueryEnumerator* createEnumerator(const Options *options) override;
+
 
         shared_ptr<SQLite::Statement> statement() const {
             if (!_statement)
                 error::_throw(error::NotOpen);
             return _statement;
+        }
+
+
+        // Updates the statement's bindings from the given Options
+        void bindParameters(const Options *options) {
+            _statement->clearBindings();
+
+            set<string> unboundParameters = _parameters;
+
+            if (options && options->paramBindings.size > 0) {
+                slice bindings = options->paramBindings;
+                alloc_slice fleeceData;
+                if (bindings[0] == '{' && bindings[bindings.size-1] == '}')
+                    fleeceData = JSONConverter::convertJSON(bindings);
+                else
+                    fleeceData = bindings;
+                const Dict *root = Value::fromData(fleeceData)->asDict();
+                if (!root)
+                    error::_throw(error::InvalidParameter);
+
+                for (Dict::iterator it(root); it; ++it) {
+                    auto key = (string)it.keyString();
+                    unboundParameters.erase(key);
+                    auto sqlKey = string("$_") + key;
+                    const Value *val = it.value();
+                    try {
+                        switch (val->type()) {
+                            case kNull:
+                                break;
+                            case kBoolean:
+                            case kNumber:
+                                if (val->isInteger() && !val->isUnsigned())
+                                    _statement->bind(sqlKey, (long long)val->asInt());
+                                else
+                                    _statement->bind(sqlKey, val->asDouble());
+                                break;
+                            case kString:
+                                _statement->bind(sqlKey, (string)val->asString());
+                                break;
+                            default: {
+                                // Encode other types as a Fleece blob:
+                                Encoder enc;
+                                enc.writeValue(val);
+                                alloc_slice asFleece = enc.finish();
+                                _statement->bind(sqlKey, asFleece.buf, (int)asFleece.size);
+                                break;
+                            }
+                        }
+                    } catch (const SQLite::Exception &x) {
+                        if (x.getErrorCode() == SQLITE_RANGE)
+                            error::_throw(error::InvalidQueryParam,
+                                          "Unknown query property '%s'", key.c_str());
+                        else
+                            throw;
+                    }
+                }
+            }
+
+            if (!unboundParameters.empty()) {
+                stringstream msg;
+                for (const string &param : unboundParameters)
+                    msg << " $" << param;
+                Warn("Some query parameters were left unbound and will have value `MISSING`:%s",
+                     msg.str().c_str());
+            }
+        }
+
+
+        // Records all the (remaining) query rows from my statement into a Fleece Doc.
+        Retained<Doc> fastForward() {
+            fleece::Stopwatch st;
+            Encoder enc;
+            enc.beginArray();
+            while (executeStep(_statement))
+                encodeRow(enc);
+            enc.endArray();
+            _statement->reset();
+            return enc.finishDoc();
+        }
+
+        // Records the statement's current row into a Fleece Encoder as an array of column values
+        void encodeRow(Encoder &enc) {
+            int nCols = _statement->getColumnCount();
+            enc.beginArray(nCols);
+            for (int i = 0; i < nCols; ++i) {
+                // Encode a column value:
+                auto col = _statement->getColumn(i);
+                switch (col.getType()) {
+                    case SQLITE_NULL:
+                        enc.writeUndefined();
+                        break;
+                    case SQLITE_INTEGER:
+                        enc.writeInt(col.getInt64());
+                        break;
+                    case SQLITE_FLOAT:
+                        enc.writeDouble(col.getDouble());
+                        break;
+                    case SQLITE_BLOB: {
+                        if (i >= _1stCustomResultColumn) {
+                            slice fleeceData {col.getBlob(), (size_t)col.getBytes()};
+                            auto sk = keyStore().dataFile().documentKeys();
+                            Scope fleeceScope(fleeceData, sk);
+                            const Value *value = Value::fromTrustedData(fleeceData);
+                            if (!value)
+                                error::_throw(error::CorruptRevisionData);
+                            enc.writeValue(value);
+                            break;
+                        }
+                        // else fall through:
+                    case SQLITE_TEXT:
+                        enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
+                        break;
+                    }
+                }
+            }
+            enc.endArray();
         }
 
         unsigned objectRef() const                  {return getObjectRef();}   // (for logging)
@@ -207,96 +339,26 @@ namespace litecore {
 
     // Query enumerator that reads from prerecorded Fleece data (generated by fastForward(), below)
     // Each array item is a row, which is itself an array of column values.
-    class SQLiteQueryEnumerator : public QueryEnumerator, Logging {
+    class SQLiteQueryEnumerator : public QueryEnumerator, protected Logging {
     public:
         SQLiteQueryEnumerator(SQLiteQuery *query,
                               const Query::Options *options,
                               sequence_t lastSequence,
-                              uint64_t purgeCount,
-                              Doc *recording,
-                              unsigned long long rowCount,
-                              double elapsedTime)
+                              uint64_t purgeCount)
         :QueryEnumerator(options, lastSequence, purgeCount)
         ,Logging(QueryLog)
-        ,_recording(recording)
-        ,_iter(_recording->asArray())
         ,_1stCustomResultColumn(query->_1stCustomResultColumn)
         ,_hasFullText(!query->_ftsTables.empty())
-        {
-            logInfo("Created on {Query#%u} with %llu rows (%zu bytes) in %.3fms",
-                query->objectRef(), rowCount, recording->data().size, elapsedTime*1000);
-        }
+        { }
 
         ~SQLiteQueryEnumerator() {
             logInfo("Deleted");
         }
 
-        virtual int64_t getRowCount() const override {
-            return _recording->asArray()->count() / 2;  // (every other row is a column bitmap)
-        }
-
-        virtual void seek(int64_t rowIndex) override {
-           auto rows = _recording->asArray();
-           rowIndex *= 2;
-            if (rowIndex < 0) {
-                rowIndex = 0;
-                _first = true;
-            } else {
-                if (rowIndex >= rows->count())
-                    error::_throw(error::InvalidParameter);
-                _first = false;
-            }
-            _iter = Array::iterator(rows);
-            _iter += (uint32_t)rowIndex;
-        }
-
-        bool next() override {
-            if (_first)
-                _first = false;
-            else
-                _iter += 2;
-            if (!_iter) {
-                logVerbose("END");
-                return false;
-            }
-            if (willLog(LogLevel::Verbose)) {
-                alloc_slice json = _iter->asArray()->toJSON();
-                logVerbose("--> %.*s", SPLAT(json));
-            }
-            return true;
-        }
-
         Array::iterator columns() const noexcept override {
-            Array::iterator i(_iter[0u]->asArray());
+            Array::iterator i(rawColumns());
             i += _1stCustomResultColumn;
             return i;
-        }
-
-        uint64_t missingColumns() const noexcept override {
-            return _iter[1u]->asUnsigned();
-        }
-
-
-        virtual bool obsoletedBy(const QueryEnumerator *otherE) override {
-            if (!otherE)
-                return false;
-            auto other = dynamic_cast<const SQLiteQueryEnumerator*>(otherE);
-            if(!other || other->purgeCount() != _purgeCount) {
-                // If other is null for some weird reason all bets are off.  Otherwise
-                // a purge will make changes that are unrecognizable to either lastSequence
-                // or the data doc, so don't consult them
-                return true;
-            }
-
-            if (other->lastSequence() <= _lastSequence) {
-                return false;
-            } else if (_recording->data() == other->_recording->data()) {
-                _lastSequence = (sequence_t)other->_lastSequence;
-                _purgeCount = (uint64_t)other->_purgeCount;
-                return false;
-            } else {
-                return true;
-            }
         }
 
         QueryEnumerator* refresh(Query *query) override {
@@ -317,9 +379,10 @@ namespace litecore {
 
         const FullTextTerms& fullTextTerms() override {
             _fullTextTerms.clear();
-            uint64_t dataSource = _iter->asArray()->get(kFTSRowidCol)->asInt();
+            const Array *cols = rawColumns();
+            uint64_t dataSource = cols->get(kFTSRowidCol)->asInt();
             // The offsets() function returns a string of space-separated numbers in groups of 4.
-            string offsets = _iter->asArray()->get(kFTSOffsetsCol)->asString().asString();
+            string offsets = cols->get(kFTSOffsetsCol)->asString().asString();
             const char *termStr = offsets.c_str();
             while (*termStr) {
                 uint32_t n[4];
@@ -336,10 +399,8 @@ namespace litecore {
 
     protected:
         string loggingClassName() const override    {return "QueryEnum";}
+        virtual const Array* rawColumns() const = 0;
 
-    private:
-        Retained<Doc> _recording;
-        Array::iterator _iter;
         unsigned _1stCustomResultColumn;    // Column index of the 1st column declared in JSON
         bool _hasFullText;
         bool _first {true};
@@ -347,170 +408,233 @@ namespace litecore {
 
 
 
-    // Reads from 'live' SQLite statement and records the results into a Fleece array,
-    // which is then used as the data source of a SQLiteQueryEnum.
-    class SQLiteQueryRunner {
+#pragma mark - PLAYBACK ENUMERATOR:
+
+
+    class SQLiteQueryPlaybackEnum : public SQLiteQueryEnumerator {
     public:
-        SQLiteQueryRunner(SQLiteQuery *query, const Query::Options *options, sequence_t lastSequence, uint64_t purgeCount)
-        :_query(query)
-        ,_lastSequence(lastSequence)
-        ,_purgeCount(purgeCount)
-        ,_statement(query->statement())
-        ,_sk(query->keyStore().dataFile().documentKeys())
-        ,_options(options ? *options : Query::Options())
+        SQLiteQueryPlaybackEnum(SQLiteQuery *query,
+                                const Query::Options *options,
+                                sequence_t lastSequence,
+                                uint64_t purgeCount,
+                                Doc *recording,
+                                int64_t firstRow,
+                                double elapsedTime)
+        :SQLiteQueryEnumerator(query, options, lastSequence, purgeCount)
+        ,_recording(recording)
+        ,_firstRow(firstRow)
+        ,_iter(_recording->asArray())
         {
-            _statement->clearBindings();
-            _unboundParameters = query->_parameters;
-            if (options && options->paramBindings.buf)
-                bindParameters(options->paramBindings);
-            if (!_unboundParameters.empty()) {
-                stringstream msg;
-                for (const string &param : _unboundParameters)
-                    msg << " $" << param;
-                Warn("Some query parameters were left unbound and will have value `MISSING`:%s",
-                     msg.str().c_str());
-            }
-
-            LogStatement(*_statement);
+            logInfo("Created on {Query#%u} with %u rows from %lld (%zu bytes) in %.3fms",
+                    query->objectRef(), _iter.count(), firstRow,
+                    recording->data().size, elapsedTime*1000);
         }
 
-        ~SQLiteQueryRunner() {
-            try {
-                _statement->reset();
-            } catch (...) { }
+        virtual int64_t getRowCount() const override {
+            return _firstRow + _recording->asArray()->count();
         }
 
-        void bindParameters(slice json) {
-            alloc_slice fleeceData;
-            if (json[0] == '{' && json[json.size-1] == '}')
-                fleeceData = JSONConverter::convertJSON(json);
-            else
-                fleeceData = json;
-            const Dict *root = Value::fromData(fleeceData)->asDict();
-            if (!root)
+        virtual void seek(int64_t rowIndex) override {
+            rowIndex -= _firstRow;
+            auto rows = _recording->asArray();
+            if (rowIndex == -1) {
+                rowIndex = 0;
+                _first = true;
+            } else if (rowIndex >= 0 && rowIndex < rows->count()) {
+                _first = false;
+            } else {
                 error::_throw(error::InvalidParameter);
-            for (Dict::iterator it(root); it; ++it) {
-                auto key = (string)it.keyString();
-                _unboundParameters.erase(key);
-                auto sqlKey = string("$_") + key;
-                const Value *val = it.value();
-                try {
-                    switch (val->type()) {
-                        case kNull:
-                            break;
-                        case kBoolean:
-                        case kNumber:
-                            if (val->isInteger() && !val->isUnsigned())
-                                _statement->bind(sqlKey, (long long)val->asInt());
-                            else
-                                _statement->bind(sqlKey, val->asDouble());
-                            break;
-                        case kString:
-                            _statement->bind(sqlKey, (string)val->asString());
-                            break;
-                        default: {
-                            // Encode other types as a Fleece blob:
-                            Encoder enc;
-                            enc.writeValue(val);
-                            alloc_slice asFleece = enc.finish();
-                            _statement->bind(sqlKey, asFleece.buf, (int)asFleece.size);
-                            break;
-                        }
-                    }
-                } catch (const SQLite::Exception &x) {
-                    if (x.getErrorCode() == SQLITE_RANGE)
-                        error::_throw(error::InvalidQueryParam,
-                                      "Unknown query property '%s'", key.c_str());
-                    else
-                        throw;
-                }
             }
+            _iter = Array::iterator(rows);
+            _iter += (uint32_t)rowIndex;
         }
 
-        bool encodeColumn(Encoder &enc, int i) {
-            SQLite::Column col = _statement->getColumn(i);
-            switch (col.getType()) {
-                case SQLITE_NULL:
-                    enc.writeNull();
-                    return false;   // this column value is missing
-                case SQLITE_INTEGER:
-                    enc.writeInt(col.getInt64());
-                    break;
-                case SQLITE_FLOAT:
-                    enc.writeDouble(col.getDouble());
-                    break;
-                case SQLITE_BLOB: {
-                    if (i >= _query->_1stCustomResultColumn) {
-                        slice fleeceData {col.getBlob(), (size_t)col.getBytes()};
-                        Scope fleeceScope(fleeceData, _sk);
-                        const Value *value = Value::fromTrustedData(fleeceData);
-                        if (!value)
-                            error::_throw(error::CorruptRevisionData);
-                        enc.writeValue(value);
-                        break;
-                    }
-                    // else fall through:
-                case SQLITE_TEXT:
-                    enc.writeString(slice{col.getText(), (size_t)col.getBytes()});
-                    break;
-                }
+        bool next() override {
+            if (_first)
+                _first = false;
+            else
+                _iter += 1;
+            if (!_iter) {
+                logVerbose("END");
+                return false;
+            }
+            if (willLog(LogLevel::Verbose)) {
+                alloc_slice json = _iter->asArray()->toJSON();
+                logVerbose("--> %.*s", SPLAT(json));
             }
             return true;
         }
 
-        // Collects all the (remaining) rows into a Fleece array of arrays,
-        // and returns an enumerator impl that will replay them.
-        SQLiteQueryEnumerator* fastForward() {
-            fleece::Stopwatch st;
-            int nCols = _statement->getColumnCount();
-            uint64_t rowCount = 0;
-            // Give this encoder its own SharedKeys instead of using the database's DocumentKeys,
-            // because the query results might include dicts with new keys that aren't in the
-            // DocumentKeys.
-            Encoder enc;
-            auto sk = retained(new SharedKeys);
-            enc.setSharedKeys(sk);
-            enc.beginArray();
-
-            unicodesn_tokenizerRunningQuery(true);
-            try {
-                 auto firstCustomCol = _query->_1stCustomResultColumn;
-                 while (_statement->executeStep()) {
-                     uint64_t missingCols = 0;
-                     enc.beginArray(nCols);
-                     for (int i = 0; i < nCols; ++i) {
-                         int offsetColumn = i - firstCustomCol;
-                         if (!encodeColumn(enc, i) && offsetColumn >= 0 && offsetColumn < 64) {
-                             missingCols |= (1ULL << offsetColumn);
-                         }
-                    }
-                    enc.endArray();
-                    // Add an integer containing a bit-map of which columns are missing/undefined:
-                    enc.writeUInt(missingCols);
-                    ++rowCount;
-                }
-            } catch (...) {
-                unicodesn_tokenizerRunningQuery(false);
-                throw;
+        virtual bool obsoletedBy(const QueryEnumerator *otherE) override {
+            if (!otherE)
+                return false;
+            auto other = dynamic_cast<const SQLiteQueryPlaybackEnum*>(otherE);
+            if(!other || other->purgeCount() != _purgeCount) {
+                // If other is null for some weird reason all bets are off.  Otherwise
+                // a purge will make changes that are unrecognizable to either lastSequence
+                // or the data doc, so don't consult them
+                return true;
             }
-            unicodesn_tokenizerRunningQuery(false);
 
-            enc.endArray();
-            Retained<Doc> recording = enc.finishDoc();
-            return new SQLiteQueryEnumerator(_query, &_options, _lastSequence, _purgeCount,
-                                             recording, rowCount, st.elapsed());
+            if (other->lastSequence() <= _lastSequence) {
+                return false;
+            } else if (_recording->data() == other->_recording->data()) {
+                _lastSequence = (sequence_t)other->_lastSequence;
+                _purgeCount = (uint64_t)other->_purgeCount;
+                return false;
+            } else {
+                return true;
+            }
+        }
+
+    //protected:
+        virtual const Array* rawColumns() const override {
+            return _iter.value()->asArray();
         }
 
     private:
-        Retained<SQLiteQuery> _query;
-        Query::Options _options;
-        sequence_t _lastSequence;       // DB's lastSequence at the time the query ran
-        uint64_t _purgeCount;           // DB's purgeCount at the time the query ran
-        shared_ptr<SQLite::Statement> _statement;
-        set<string> _unboundParameters;
-        SharedKeys* _sk;
+        Retained<Doc> _recording;
+        Array::iterator _iter;
+        int64_t _firstRow;
     };
 
+
+
+#pragma mark - ONE-SHOT ENUMERATOR:
+
+
+    class SQLiteQueryOneShotEnum : public SQLiteQueryEnumerator,
+                                   public DataFile::PreChangeObserver
+    {
+    public:
+        SQLiteQueryOneShotEnum(SQLiteQuery *query,
+                               const Query::Options *options,
+                               sequence_t lastSequence,
+                               uint64_t purgeCount,
+                               shared_ptr<SQLite::Statement> statement,
+                               double elapsedTime)
+        :SQLiteQueryEnumerator(query, options, lastSequence, purgeCount)
+        ,_query(query)
+        ,_statement(statement)
+        ,_sk(query->keyStore().dataFile().documentKeys())
+        {
+            logInfo("Created one-shot enum on {Query#%u} in %.3fms",
+                    query->objectRef(), elapsedTime*1000.0);
+
+            // Observe a transaction starting, so I can finish reading the rest of the result
+            // rows before the database changes out from under me.
+            query->keyStore().dataFile().addPreChangeObserver(this);
+            _observingDBChanges = true;
+        }
+
+        ~SQLiteQueryOneShotEnum() {
+            try {
+                endObservingDBChanges();
+                if (_statement)
+                    _statement->reset();
+            } catch (...) { }
+        }
+
+        bool next() override {
+            _encodedRow = nullslice;
+            _rawColumns = nullptr;
+            _hasRow = false;
+
+            if (_recording) {
+                return _recording->next();
+            } else {
+                if (_statement) {
+                    ++_rowNumber;
+                    if (executeStep(_statement))
+                        _hasRow = true;
+                    else {
+                        // Reached end of result set:
+                        _statement->reset();
+                        _statement = nullptr;
+                        endObservingDBChanges();
+                    }
+                }
+                return _hasRow;
+            }
+        }
+
+        virtual bool obsoletedBy(const QueryEnumerator *otherE) override {
+            if (_recording)
+                return _recording->obsoletedBy(otherE);
+            else
+                return true;
+        }
+
+        void preDataFileChange(Change change) override {
+            // My SQLite connection is about to change the database.
+            // I have to finish running the statement right now, otherwise
+            // I may get rows altered by the coming changes. So I create a recording.
+            _observingDBChanges = false;
+            if (_statement) {
+                if (change == Change::kClosingDB) {
+                    logInfo("Closing statement before DB closes");
+                } else {
+                    logInfo("Recording rest of query rows before DB changes...");
+                    _recording = fastForward();
+                }
+                _statement->reset();
+                _statement = nullptr;
+            }
+        }
+
+        void endObservingDBChanges() {
+            if (_observingDBChanges) {
+                _observingDBChanges = false;
+                if (_query->isOpen())
+                    _query->keyStore().dataFile().removePreChangeObserver(this);
+            }
+        }
+
+    protected:
+        virtual const Array* rawColumns() const override {
+            if (_rawColumns)
+                return _rawColumns;                 // Already encoded this row
+            else if (_recording)
+                return _recording->rawColumns();    // I switched to using a recording
+            else if (_hasRow)
+                return const_cast<SQLiteQueryOneShotEnum*>(this)->readRow();
+            else
+                return nullptr;
+        }
+
+    private:
+        const Array* readRow() {
+            Assert(_statement);
+            _enc.reset();
+            _query->encodeRow(_enc);
+            _encodedRow = _enc.finish();
+            _rawColumns = Value::fromTrustedData(_encodedRow)->asArray();
+            return _rawColumns;
+        }
+
+        // Collects all the (remaining) rows into a Fleece array of arrays,
+        // and returns an enumerator impl that will replay them.
+        SQLiteQueryPlaybackEnum* fastForward() {
+            fleece::Stopwatch st;
+            Retained<Doc> recording = _query->fastForward();
+            return new SQLiteQueryPlaybackEnum(_query, &_options, _lastSequence, _purgeCount,
+                                               recording, _rowNumber + 1, st.elapsed());
+        }
+
+        Retained<SQLiteQuery> _query;
+        shared_ptr<SQLite::Statement> _statement;
+        SharedKeys* _sk;
+        Encoder _enc;
+        alloc_slice _encodedRow;
+        const Array* _rawColumns {nullptr};
+        Retained<SQLiteQueryPlaybackEnum> _recording;
+        int64_t _rowNumber {0};
+        bool _hasRow {false};
+        bool _observingDBChanges {false};
+    };
+
+
+#pragma mark - FACTORY METHODS:
 
 
     // The factory method that creates a SQLite Query.
@@ -522,16 +646,28 @@ namespace litecore {
     // The factory method that creates a SQLite QueryEnumerator, but only if the database has
     // changed since lastSeq.
     QueryEnumerator* SQLiteQuery::createEnumerator(const Options *options) {
-        // Start a read-only transaction, to ensure that the result of lastSequence() and purgeCount() will be
-        // consistent with the query results.
+        // Start a read-only transaction, to ensure that the result of lastSequence()
+        // and purgeCount() will be consistent with the query results.
         ReadOnlyTransaction t(keyStore().dataFile());
 
         sequence_t curSeq = lastSequence();
         uint64_t purgeCnt = purgeCount();
         if(options && options->notOlderThan(curSeq, purgeCnt))
             return nullptr;
-        SQLiteQueryRunner recorder(this, options, curSeq, purgeCnt);
-        return recorder.fastForward();
+
+        Assert(_statement.use_count() == 1, "Multiple enumerators on a query"); // FIX
+        _statement->reset();
+        bindParameters(options);
+
+        fleece::Stopwatch st;
+        if (options && options->oneShot) {
+            return new SQLiteQueryOneShotEnum(this, options, curSeq, purgeCnt,
+                                              _statement, st.elapsed());
+        } else {
+            Retained<Doc> recording = fastForward();
+            return new SQLiteQueryPlaybackEnum(this, options, curSeq, purgeCnt,
+                                               recording, 0, st.elapsed());
+        }
     }
 
 }

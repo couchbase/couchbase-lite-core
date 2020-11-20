@@ -79,10 +79,11 @@ extern "C" {
     /** Options for running queries. */
     typedef struct {
         bool rankFullText_DEPRECATED;      ///< Ignored; use the `rank()` query function instead.
+        bool oneShot;           ///< No buffering of query results; minimal memory use and lower latency, but disables seek and refresh.
     } C4QueryOptions;
 
 
-    /** Default query options. Has skip=0, limit=UINT_MAX, rankFullText=true. */
+    /** Default query options. Has oneShot=false. */
 	CBL_CORE_API extern const C4QueryOptions kC4DefaultQueryOptions;
 
 
@@ -101,13 +102,10 @@ extern "C" {
         The fields of this struct represent the current matched index row, and are valid until the
         next call to c4queryenum_next or c4queryenum_release. */
     struct C4QueryEnumerator {
-        /** The columns of this result, in the same order as in the query's `WHAT` clause. */
+        /** The columns of this result, in the same order as in the query's `WHAT` clause.
+            A column whose value is MISSING will have a Fleece 'undefined' value; this can be detected
+            by `FLValue_GetType(col) == kFLUndefined`. */
         FLArrayIterator columns;
-
-        /** A bitmap where a 1 bit represents a column whose value is MISSING.
-            This is how you tell a missing property value from a value that's JSON 'null',
-            since the value in the `columns` array will be a Fleece `null` either way. */
-        uint64_t missingColumns;
 
         /** The number of full-text matches (i.e. the number of items in `fullTextMatches`) */
         uint32_t fullTextMatchCount;
@@ -175,7 +173,7 @@ extern "C" {
                           C4Error *outError) C4API;
 
     /** Restarts the enumeration, as though it had just been created: the next call to
-        \ref c4queryenum_next will read the first row, and so on from there. */
+        \ref c4queryenum_next will read the first row, and so on. [Equivalent to seek(-1).] */
     static inline bool c4queryenum_restart(C4QueryEnumerator *e C4NONNULL,
                                            C4Error *outError) C4API
     { return c4queryenum_seek(e, -1, outError); }
