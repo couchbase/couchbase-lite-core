@@ -319,6 +319,10 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Server Addresses", "[Listener]") {
     }
     
     for(const auto& interface : litecore::net::Interface::all()) {
+        if(!interface.isRoutable()) {
+            continue;
+        }
+
         s->start(0, interface.name);
         auto innerAddresses = s->addresses();
         REQUIRE(innerAddresses.size() == 1);
