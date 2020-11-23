@@ -20,15 +20,8 @@
 #include "Base.hh"
 
 namespace litecore {
-
-    enum revidType {
-        kDigestType,    // Old type, generation + digest: "7-deadbeef"
-        kClockType      // New type, generation + source ID: "7@1234"
-    };
-
-
-    using SourceID = uint64_t;
-
+    class Version;
+    class VersionVector;
 
     /** A compressed revision ID. 
         Since this is based on slice, it doesn't own the memory it points to.
@@ -39,53 +32,44 @@ namespace litecore {
         revid(const void* b, size_t s)              :slice(b,s) {}
         explicit revid(slice s)                     :slice(s) {}
 
-        alloc_slice expanded() const;
-        size_t expandedSize() const;
-        bool expandInto(slice &dst) const;
-
-        bool isClock() const                        {return (*this)[0] == 0;}
-
         std::pair<unsigned,slice> generationAndDigest() const;
-        unsigned generation() const                 {return generationAndRest().first;}
+        unsigned generation() const                 {return generationAndDigest().first;}
         slice digest() const                        {return generationAndDigest().second;}
 
-        std::pair<unsigned,SourceID> generationAndSource() const;
-        SourceID source() const                     {return generationAndSource().second;}
+        bool isVersion() const                      {return (*this)[0] == 0;}
+        Version asVersion() const;
+        VersionVector asVersionVector() const;
 
         bool operator< (const revid&) const;
         bool operator> (const revid &r) const       {return r < *this;}
 
-        explicit operator std::string() const;
-
-    private:
-        slice skipFlag() const;
-        std::pair<unsigned,slice> generationAndRest() const;
-        void _expandInto(slice &dst) const;
+        //---- ASCII conversions:
+        alloc_slice expanded() const;
+        bool expandInto(slice &dst) const;
+        std::string str() const;
+        explicit operator std::string() const       {return str();}
     };
 
     /** A self-contained revid that includes its own data buffer. */
     class revidBuffer : public revid {
     public:
         revidBuffer()                               :revid(&_buffer, 0) {}
-        revidBuffer(revid rev)                      :revid(&_buffer, rev.size)
-        {memcpy(&_buffer, rev.buf, rev.size);}
+        revidBuffer(unsigned generation, slice digest);
+        explicit revidBuffer(revid rev)             {*this = rev;}
+        explicit revidBuffer(const Version &v)      {*this = v;}
+        revidBuffer(const revidBuffer &r)           {*this = r;}
 
-        explicit revidBuffer(slice s, bool allowClock =false)
-        :revid(&_buffer, 0)
-        {parse(s, allowClock);}
+        explicit revidBuffer(slice s)               :revid(&_buffer, 0) {parse(s);}
 
-        revidBuffer(unsigned generation, slice digest, revidType);
-        revidBuffer(const revidBuffer&);
         revidBuffer& operator= (const revidBuffer&);
         revidBuffer& operator= (const revid&);
+        revidBuffer& operator= (const Version &vers);
 
         /** Parses a regular (uncompressed) revID and compresses it.
             Throws BadRevisionID if the revID isn't in the proper format.*/
-        void parse(slice, bool allowClock =false);
+        void parse(slice);
 
-        void parseNew(slice s);
-
-        bool tryParse(slice ascii, bool allowClock =false);
+        bool tryParse(slice ascii);
 
     private:
         uint8_t _buffer[42];

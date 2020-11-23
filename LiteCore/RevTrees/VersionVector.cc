@@ -29,6 +29,16 @@ namespace litecore {
     using namespace fleece;
 
 
+    // Utility that allocates a buffer, lets the callback write into it, then trims the buffer.
+    static alloc_slice writeAlloced(size_t maxSize, function_ref<bool(slice*)> writer) {
+        alloc_slice buf(maxSize);
+        slice out = buf;
+        Assert( writer(&out) );
+        buf.shorten(buf.size - out.size);
+        return buf;
+    }
+
+
 #pragma mark - VERSION:
 
 
@@ -46,25 +56,36 @@ namespace litecore {
         validate();
     }
 
+    Version::Version(slice *dataP) {
+        if (!ReadUVarInt(dataP, &_gen) || !ReadUVarInt(dataP, &_author.id))
+            error::_throw(error::BadRevisionID);
+        validate();
+    }
+
     void Version::validate() const {
         if (_gen == 0)
             error::_throw(error::BadRevisionID);
     }
 
-    string Version::asString() const {
-        stringstream out;
-        out << *this;
-        return out.str();
+    bool Version::writeBinary(slice *out, peerID myID) const {
+        uint64_t id = (_author == kMePeerID) ? myID.id : _author.id;
+        return WriteUVarInt(out, _gen) && WriteUVarInt(out, id);
     }
 
-    ostream& operator << (ostream &out, const Version &v) {
-        out << hex << v.gen() << "@";
-        if (v.author() == kMePeerID)
-            out << '*';
+    bool Version::writeASCII(slice *out, peerID myID) const {
+        if (!out->writeHex(_gen) || !out->writeByte('@'))
+            return false;
+        auto author = (_author != kMePeerID) ? _author : myID;
+        if (author != kMePeerID)
+            return out->writeHex(author.id);
         else
-            out << v.author().id;
-        out << dec;
-        return out;
+            return out->writeByte('*');
+    }
+
+    alloc_slice Version::asASCII(peerID myID) const {
+        return writeAlloced(kMaxASCIILength, [&](slice *out) {
+            return writeASCII(out, myID);
+        });
     }
 
     versionOrder Version::compareGen(generation a, generation b) {
@@ -89,62 +110,61 @@ namespace litecore {
 #pragma mark - CONVERSION:
 
 
-    void VersionVector::readFrom(slice data) {
+    void VersionVector::readBinary(slice data) {
         reset();
-        while (data.size > 0) {
-            generation gen;
-            peerID peer;
-            if (!ReadUVarInt(&data, &gen) || !ReadUVarInt(&data, &peer.id))
-                error::_throw(error::BadRevisionID);
-            _vers.emplace_back(gen, peer);
-        }
-    }
-
-
-    alloc_slice VersionVector::asData(peerID myID) const {
-        alloc_slice result(_vers.size() * kMaxVarintLen64);
-        slice buf = result;
-        for (auto &v : _vers) {
-            auto author = (v.author() == kMePeerID) ? myID : v.author();
-            WriteUVarInt(&buf, v.gen());
-            WriteUVarInt(&buf, author.id);
-        }
-        result.resize(result.size - buf.size);
-        return result;
-    }
-
-
-#if 0
-    void VersionVector::readFrom(Value val) {
-        reset();
-        Array arr = val.asArray();
-        if (!arr)
+        if (data.size < 1 || data.readByte() != 0)
             error::_throw(error::BadRevisionID);
-        Array::iterator i(arr);
-        if (i.count() % 2 != 0)
-            error::_throw(error::BadRevisionID);
-        _vers.reserve(i.count() / 2);
-        for (; i; ++i,++i) {
-            auto g = i[0], p = i[1];
-            if (!g.isInteger() || !p.isInteger())
-                error::_throw(error::BadRevisionID);
-            _vers.emplace_back((generation)g.asUnsigned(), peerID{p.asUnsigned()});
-        }
+        while (data.size > 0)
+            _vers.emplace_back(&data);
     }
 
 
-    void VersionVector::writeTo(Encoder &encoder) const {
-        encoder.beginArray(2*_vers.size());
+    alloc_slice VersionVector::asBinary(peerID myID) const {
+        return writeAlloced(1 + _vers.size() * 2 * kMaxVarintLen64, [&](slice *out) {
+            if (!out->writeByte(0))           // leading 0 byte distinguishes it from a `revid`
+                return false;
+            for (auto &v : _vers)
+                if (!v.writeBinary(out, myID))
+                    return false;
+            return true;
+        });
+    }
+
+
+    size_t VersionVector::maxASCIILen() const {
+        return _vers.size() * (Version::kMaxASCIILength + 1);
+    }
+
+
+    bool VersionVector::writeASCII(slice *out, peerID myID) const {
+        int n = 0;
         for (auto &v : _vers) {
-            encoder << v.gen();
-            encoder << v.author().id;
+            if (n++ && !out->writeByte(','))
+                return false;
+            if (!v.writeASCII(out, myID))
+                return false;
         }
-        encoder.endArray();
+        return true;
     }
-#endif
 
 
-    void VersionVector::parse(const string &string) {
+    alloc_slice VersionVector::asASCII(peerID myID) const {
+        if (_vers.empty())
+            return nullslice;
+        return writeAlloced(maxASCIILen(), [&](slice *out) {
+            return writeASCII(out, myID);
+        });
+    }
+
+
+    Version VersionVector::readCurrentVersionFromBinary(slice data) {
+        if (data.size < 1 || data.readByte() != 0)
+            error::_throw(error::BadRevisionID);
+        return Version(&data);
+    }
+
+
+    void VersionVector::readASCII(const string &string) {
         slice s(string);
         if (s.size == 0)
             error::_throw(error::BadRevisionID);
@@ -158,39 +178,6 @@ namespace litecore {
         }
     }
 
-
-    string VersionVector::asString() const {
-        return exportAsString(kMePeerID);   // leaves "*" unchanged
-    }
-
-
-    string VersionVector::exportAsString(peerID myID) const {
-        stringstream out;
-        for (auto v = _vers.begin(); v != _vers.end(); ++v) {
-            if (v != _vers.begin())
-                out << ",";
-            DebugAssert(v->author() != myID || myID == kMePeerID);
-            if (v->author() == kMePeerID)
-                out << Version(v->gen(), myID);
-            else
-                out << *v;
-        }
-        return out.str();
-    }
-
-
-#if 0
-    string VersionVector::canonicalString(peerID myPeerID) const {
-        auto vec = *this; // copy before sorting
-        vec.expandMyPeerID(myPeerID);
-        sort(vec._vers.begin(), vec._vers.end(),
-                  [myPeerID](const Version &a, const Version &b) {
-                      return a.author().id < b.author().id;
-                  });
-        return vec.asString();
-    }
-#endif
-    
     
 #pragma mark - OPERATIONS:
 
@@ -334,5 +321,47 @@ namespace litecore {
         }
         return result;
     }
+
+
+
+#if 0
+    string VersionVector::canonicalString(peerID myPeerID) const {
+        auto vec = *this; // copy before sorting
+        vec.expandMyPeerID(myPeerID);
+        sort(vec._vers.begin(), vec._vers.end(),
+             [myPeerID](const Version &a, const Version &b) {
+            return a.author().id < b.author().id;
+        });
+        return vec.asString();
+    }
+
+
+    void VersionVector::readFrom(Value val) {
+        reset();
+        Array arr = val.asArray();
+        if (!arr)
+            error::_throw(error::BadRevisionID);
+        Array::iterator i(arr);
+        if (i.count() % 2 != 0)
+            error::_throw(error::BadRevisionID);
+        _vers.reserve(i.count() / 2);
+        for (; i; ++i,++i) {
+            auto g = i[0], p = i[1];
+            if (!g.isInteger() || !p.isInteger())
+                error::_throw(error::BadRevisionID);
+            _vers.emplace_back((generation)g.asUnsigned(), peerID{p.asUnsigned()});
+        }
+    }
+
+
+    void VersionVector::writeTo(Encoder &encoder) const {
+        encoder.beginArray(2*_vers.size());
+        for (auto &v : _vers) {
+            encoder << v.gen();
+            encoder << v.author().id;
+        }
+        encoder.endArray();
+    }
+#endif
 
 }

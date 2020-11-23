@@ -536,7 +536,7 @@ namespace c4Internal {
                 revidBuffer parentID(parentRevID);
                 generation = parentID.generation() + 1;
             }
-            return revidBuffer(generation, slice(digest), kDigestType);
+            return revidBuffer(generation, slice(digest));
         }
 
 

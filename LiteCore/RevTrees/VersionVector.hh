@@ -38,7 +38,7 @@ namespace litecore {
         This is needed since I won't have a real assigned peer ID until I talk to a server. */
     constexpr peerID kMePeerID  {0};
 
-    /** The possible orderings of two VersionVectors. */
+    /** The possible orderings of two VersionVectors. (Can be interpreted as two 1-bit flags.) */
     enum versionOrder {
         kSame        = 0,                   // Equal
         kOlder       = 1,                   // This one is older
@@ -57,16 +57,18 @@ namespace litecore {
     class Version {
     public:
         Version(generation g, peerID p)         :_author(p), _gen(g) {validate();}
-        explicit Version(slice string);
+        explicit Version(slice ascii);
+        explicit Version(slice *binaryP);
 
         const peerID author() const             {return _author;}
         generation gen() const                  {return _gen;}
 
-        bool operator== (const Version& v) const {
-            return _gen == v._gen && _author == v._author;
-        }
+        // Max length of a Version in ASCII form.
+        static constexpr size_t kMaxASCIILength = 2 * 16 + 1;
 
-        std::string asString() const;
+        bool writeBinary(slice *buf, peerID myID =kMePeerID) const;
+        bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
+        alloc_slice asASCII(peerID myID =kMePeerID) const;
 
         /** Convenience to compare two generations and return a versionOrder. */
         static versionOrder compareGen(generation a, generation b);
@@ -74,6 +76,14 @@ namespace litecore {
         /** Compares with a version vector, i.e. whether a vector with this as its current version
             is newer/older/same as the target vector. (Will never return kConflicting.) */
         versionOrder compareTo(const VersionVector&) const;
+
+        bool operator== (const Version& v) const {
+            return _gen == v._gen && _author == v._author;
+        }
+
+        bool operator < (const Version& v) const {
+            return _gen < v._gen && _author == v._author;
+        }
 
     private:
         void validate() const;
@@ -92,14 +102,16 @@ namespace litecore {
         /** Constructs an empty vector. */
         VersionVector() { }
 
-        explicit VersionVector(const string &str)           {parse(str);}
-        explicit VersionVector(slice data)                  {readFrom(data);}
-
-        /** Reads binary form. */
-        void readFrom(slice binaryData);
+        explicit VersionVector(const string &str)           {readASCII(str);}
 
         /** Parses textual form from ASCII data */
-        void parse(const string&);
+        void readASCII(const string&);
+
+        /** Reads binary form. */
+        void readBinary(slice binaryData);
+
+        /** Reads just the current (first) Version from the binary form. */
+        static Version readCurrentVersionFromBinary(slice binaryData);
 
         /** Sets the vector to empty. */
         void reset()                                        {_vers.clear();}
@@ -136,14 +148,14 @@ namespace litecore {
         //---- Conversions:
 
         /** Generates binary form. */
-        fleece::alloc_slice asData(peerID myID = kMePeerID) const;
-
-        /** Converts the vector to a human-readable string. */
-        std::string asString() const;
+        fleece::alloc_slice asBinary(peerID myID = kMePeerID) const;
 
         /** Converts the vector to a human-readable string, replacing kMePeerID ("*") with the
             given peerID in the output. Use this when sharing a vector with another peer. */
-        std::string exportAsString(peerID myID) const;
+        fleece::alloc_slice asASCII(peerID myID = kMePeerID) const;
+
+        bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
+        size_t maxASCIILen() const;
 
         //---- Comparisons:
 
@@ -186,18 +198,5 @@ namespace litecore {
 
         std::vector<Version> _vers;          // versions, in order
     };
-
-
-    // Some implementations of "<<" to write to ostreams:
-
-    /** Writes an ASCII representation of a Version to a stream.
-        Note: This does not replace "*" with the local author's ID! */
-    std::ostream& operator<< (std::ostream& o, const Version &v);
-
-    /** Writes an ASCII representation of a VersionVector to a stream.
-        Note: This does not replace "*" with the local author's ID! */
-    static inline std::ostream& operator<< (std::ostream& o, const VersionVector &vv) {
-        return o << (std::string)vv.asString();
-    }
 
 }
