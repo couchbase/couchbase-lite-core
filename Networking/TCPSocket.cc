@@ -214,20 +214,14 @@ namespace litecore { namespace net {
 
 #pragma mark - READ/WRITE:
 
-
-#ifdef _WIN32
-    static constexpr int kErrWouldBlock = WSAEWOULDBLOCK;
-#else
-    static constexpr int kErrWouldBlock = EWOULDBLOCK;
-#endif
-
+    static int socketToPosixErrCode(int err);
 
     ssize_t TCPSocket::write(slice data) {
         if (data.size == 0)
             return 0;
         ssize_t written = _socket->write(data.buf, data.size);
         if (written < 0) {
-            if (_nonBlocking && _socket->last_error() == kErrWouldBlock)
+            if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
                 return 0;
             checkStreamError();
         } else if (written == 0) {
@@ -242,7 +236,7 @@ namespace litecore { namespace net {
             return 0;
         ssize_t written = _socket->write_n(data.buf, data.size);
         if (written < 0) {
-            if (_nonBlocking && _socket->last_error() == kErrWouldBlock)
+            if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
                 return 0;
             checkStreamError();
         }
@@ -259,7 +253,7 @@ namespace litecore { namespace net {
                       "iovec and slice are incompatible");
         ssize_t written = _socket->write(reinterpret_cast<vector<iovec>&>(ioByteRanges));
         if (written < 0) {
-            if (_socket->last_error() == kErrWouldBlock)
+            if (socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
                 return 0;
             checkStreamError();
             return written;
@@ -288,7 +282,7 @@ namespace litecore { namespace net {
         Assert(byteCount > 0);
         ssize_t n = _socket->read(dst, byteCount);
         if (n < 0) {
-            if (_socket->last_error() == kErrWouldBlock)
+            if (socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
                 return 0;
             checkStreamError();
         } else if (n == 0) {
@@ -502,7 +496,6 @@ namespace litecore { namespace net {
                     } else {
                         code = kNetErrTLSCertUnknownRoot;
                     }
-                    
                 } else if (flags & MBEDTLS_X509_BADCERT_REVOKED)
                     code = kNetErrTLSCertRevoked;
                 else if (flags & MBEDTLS_X509_BADCERT_EXPIRED)
