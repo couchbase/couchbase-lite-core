@@ -26,7 +26,8 @@
 #include "c4.hh"
 #include "netUtils.hh"
 #include "TCPSocket.hh"
-#include <stdarg.h>
+#include <cstdarg>
+#include <cinttypes>
 
 using namespace std;
 using namespace fleece;
@@ -148,13 +149,13 @@ namespace litecore { namespace REST {
     void RequestResponse::sendStatus() {
         if (_sentStatus)
             return;
-        Log("Response status: %d", _status);
+        Log("Response status: %d", static_cast<int>(_status));
         if (_statusMessage.empty()) {
             const char *defaultMessage = StatusMessage(_status);
             if (defaultMessage)
                 _statusMessage = defaultMessage;
         }
-        string statusLine = format("HTTP/1.0 %d %s\r\n", _status, _statusMessage.c_str());
+        string statusLine = format("HTTP/1.0 %d %s\r\n", static_cast<int>(_status), _statusMessage.c_str());
         _responseHeaderWriter.write(statusLine);
         _sentStatus = true;
 
@@ -288,10 +289,10 @@ namespace litecore { namespace REST {
     void RequestResponse::setContentLength(uint64_t length) {
         sendStatus();
         Assert(_contentLength < 0, "Content-Length has already been set");
-        Log("Content-Length: %llu", length);
+        Log("Content-Length: %" PRIu64, length);
         _contentLength = (int64_t)length;
         char len[20];
-        sprintf(len, "%llu", length);
+        sprintf(len, "%" PRIu64, length);
         setHeader("Content-Length", len);
     }
 

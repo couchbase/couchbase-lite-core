@@ -18,8 +18,9 @@
 
 #include "QueryTest.hh"
 #include "SQLiteDataFile.hh"
-#include <time.h>
-#include <float.h>
+#include <ctime>
+#include <cfloat>
+#include <cinttypes>
 
 using namespace fleece::impl;
 using namespace std;
@@ -125,7 +126,7 @@ TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     alloc_slice rows;
     ((SQLiteDataFile&)store->dataFile()).inspectIndex("nums"_sl, rowCount, &rows);
     string rowsJSON = Value::fromTrustedData(rows)->toJSONString();
-    Log("Index has %lld rows", rowCount);
+    Log("Index has %" PRIi64 " rows", rowCount);
     Log("Index contents: %s", rowsJSON.c_str());
     CHECK(rowCount == 100);
 }

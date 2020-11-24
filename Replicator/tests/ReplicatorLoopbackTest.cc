@@ -15,6 +15,7 @@
 #include <chrono>
 #include "betterassert.hh"
 #include "fleece/Mutable.hh"
+#include "PlatformCompat.hh"
 
 using namespace litecore::actor;
 using namespace std;
@@ -52,7 +53,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt databas
     // Use c4db_copyNamed to copy the db to a new file (with new UUIDs):
     C4Error error;
     alloc_slice path(c4db_getPath(db));
-    string scratchDBName = format("scratch%lld", chrono::milliseconds(time(nullptr)).count());
+    string scratchDBName = format("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
     REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), &error));
 
     // Open the copied db:

@@ -22,12 +22,13 @@
 #include "Actor.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "NumConversion.hh"
 #include <atomic>
 #include <chrono>
 #include <iomanip>
 #include <memory>
 #include <sstream>
-
+#include <cinttypes>
 
 namespace litecore { namespace websocket {
     class LoopbackProvider;
@@ -265,7 +266,8 @@ namespace litecore { namespace websocket {
                 if (_state >= State::connecting) {
                     logInfo("CLOSED with %-s %d: %.*s",
                         status.reasonName(), status.code,
-                        (int)status.message.size, status.message.buf);
+                        fleece::narrow_cast<int>(status.message.size), 
+			(char *)status.message.buf);
                     _webSocket->delegate().onWebSocketClose(status);
                 } else {
                     logInfo("CLOSED");

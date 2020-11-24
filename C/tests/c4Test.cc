@@ -50,7 +50,7 @@ const std::string& TempDir() {
     static once_flag f;
     call_once(f, [=] {
         char folderName[64];
-        sprintf(folderName, "LiteCore_C_Tests%lld/", chrono::milliseconds(time(nullptr)).count());
+        sprintf(folderName, "LiteCore_C_Tests%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
         #ifdef _MSC_VER
             WCHAR pathBuffer[MAX_PATH + 1];
             GetTempPathW(MAX_PATH, pathBuffer);

@@ -266,7 +266,7 @@ public:
             _lastBlobPullProgress = p;
         }
         alloc_slice keyString(c4blob_keyToString(p.key));
-        Log(">> Replicator %s blob '%.*s'%.*s [%.*s] (%llu / %llu)",
+        Log(">> Replicator %s blob '%.*s'%.*s [%.*s] (%" PRIu64 " / %" PRIu64 ")",
             (p.dir == Dir::kPushing ? "pushing" : "pulling"), SPLAT(p.docID),
             SPLAT(p.docProperty), SPLAT(keyString),
             p.bytesCompleted, p.bytesTotal);
@@ -413,8 +413,8 @@ public:
         Log("-------- %s: Done creating revs --------", name);
     }
 
-    static thread* runInParallel(function<void()> callback) {
-        return new thread([=]() mutable {
+    static std::thread* runInParallel(std::function<void()> callback) {
+        return new std::thread([=]() mutable {
             callback();
         });
     }
