@@ -164,7 +164,9 @@ namespace litecore {
     }
 
     VersionedDocument::SaveResult VersionedDocument::save(Transaction& transaction) {
-        ensureConflictStateConsistent();
+        if (_usuallyFalse(ensureConflictStateConsistent())) {
+            Warn("Document '%.*s' recovered from inconsistent state", SPLAT(docID()));
+        }
         if (!_changed)
             return kNoNewSequence;
         updateMeta();
