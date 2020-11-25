@@ -77,7 +77,7 @@ TEST_CASE("Empty VersionVector", "[RevIDs]") {
 
 
 TEST_CASE("VersionVector <-> String", "[RevIDs]") {
-    VersionVector v("3@*"s);
+    auto v = VersionVector::fromASCII("3@*"s);
     CHECK(v.count() == 1);
     CHECK(v[0] == Version(3, kMePeerID));
     CHECK(v.asASCII() == "3@*");
@@ -115,7 +115,7 @@ TEST_CASE("VersionVector <-> Binary", "[RevIDs]") {
 
 
 TEST_CASE("VersionVector peers", "[RevIDs]") {
-    VersionVector v("3@*,2@100,1@103,2@102"s);
+    auto v = VersionVector::fromASCII("3@*,2@100,1@103,2@102"s);
     CHECK(v.current() == Version(3, kMePeerID));
     CHECK(v.genOfAuthor(Alice) == 2);
     CHECK(v[Alice] == 2);
@@ -137,19 +137,19 @@ TEST_CASE("VersionVector peers", "[RevIDs]") {
 
 
 TEST_CASE("VersionVector conflicts", "[RevIDs]") {
-    VersionVector v1("3@*,2@100,1@103,2@102"s);
+    auto v1 = VersionVector::fromASCII("3@*,2@100,1@103,2@102"s);
     CHECK(v1 == v1);
-    CHECK(v1 == VersionVector("3@*,2@100,1@103,2@102"s));
+    CHECK(v1 == VersionVector::fromASCII("3@*,2@100,1@103,2@102"s));
 
-    CHECK(v1 > VersionVector("2@*,2@100,1@103,2@102"s));
-    CHECK(v1 > VersionVector("2@100,1@103,2@102"s));
-    CHECK(v1 > VersionVector("1@102"s));
+    CHECK(v1 > VersionVector::fromASCII("2@*,2@100,1@103,2@102"s));
+    CHECK(v1 > VersionVector::fromASCII("2@100,1@103,2@102"s));
+    CHECK(v1 > VersionVector::fromASCII("1@102"s));
     CHECK(v1 > VersionVector());
 
-    CHECK(v1 < VersionVector("2@103,3@*,2@100,2@102"s));
-    CHECK(v1 < VersionVector("2@103,1@666,3@*,2@100,9@102"s));
+    CHECK(v1 < VersionVector::fromASCII("2@103,3@*,2@100,2@102"s));
+    CHECK(v1 < VersionVector::fromASCII("2@103,1@666,3@*,2@100,9@102"s));
 
-    VersionVector v3("4@100,1@103,2@102"s);
+    auto v3 = VersionVector::fromASCII("4@100,1@103,2@102"s);
     CHECK(v1.compareTo(v3) == kConflicting);
     CHECK(!(v1 == v3));
     CHECK(!(v1 < v3));
@@ -159,61 +159,138 @@ TEST_CASE("VersionVector conflicts", "[RevIDs]") {
 }
 
 
-#pragma mark - REVID
+#pragma mark - REVID:
+
+
+struct DigestTestCase {
+    const char *str;
+    uint64_t gen;
+    slice digest;
+    const char *hex;
+};
 
 
 TEST_CASE("RevID Parsing", "[RevIDs]") {
-    revidBuffer r;
+    static constexpr DigestTestCase kCases[] = {
+        // good:
+        {"1-aa",                    1,      "\xaa",                             "01aa"},
+        {"97-beef",                 97,     "\xbe\xef",                         "61beef"},
+        {"1-1234567890abcdef",      1,      "\x12\x34\x56\x78\x90\xab\xcd\xef", "011234567890abcdef"},
+        {"123456-1234567890abcdef", 123456, "\x12\x34\x56\x78\x90\xab\xcd\xef", "c0c4071234567890abcdef"},
 
-    REQUIRE(r.tryParse("1-aa"_sl));
-    CHECK(r.generation() == 1);
-    CHECK(r.digest().hexString() == "aa");
-    CHECK(r.hexString() == "01aa");
-    CHECK(r.expanded() == "1-aa"_sl);
+        // bad:
+        {""},
+        {"1"},
+        {"1-"},
+        {"1-0"},
+        {"1-a"},
+        {"1-AA"},
+        {"1-aF"},
+        {"1--aa"},
+        {"0-11"},
+        {"-1-11"},
+        {"-11"},
+        {"a-11"},
+        {"1-aa "},
+        {"z-aa"},
+        {"d-aa"},
+        {"7-ax"},
+        {" 1-aa"},
+        {"12345678123456789-aa"},    // gen too large; below is digest too large
+        {"1-deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"},
+    };
 
-    REQUIRE(r.tryParse("97-beef"_sl));
-    CHECK(r.generation() == 97);
-    CHECK(r.digest().hexString() == "beef");
-    CHECK(r.hexString() == "61beef");
-    CHECK(r.expanded() == "97-beef"_sl);
+    for (auto c4se : kCases) {
+        INFO("Testing '" << c4se.str << "'");
+        revidBuffer r;
+        if (c4se.gen) {
+            CHECK(r.tryParse(slice(c4se.str)));
+            CHECK(!r.isVersion());
+            CHECK(r.generation() == c4se.gen);
+            CHECK(r.digest() == c4se.digest);
+            CHECK(r.expanded() == slice(c4se.str));
+            CHECK(r.hexString() == c4se.hex);
+        } else {
+            CHECK(!r.tryParse(slice(c4se.str)));
+        }
+    }
 
-    REQUIRE(r.tryParse("1-1234567890abcdef"_sl));
-    CHECK(r.generation() == 1);
-    CHECK(r.digest().hexString() == "1234567890abcdef");
-    CHECK(r.hexString() == "011234567890abcdef");
-    CHECK(r.expanded() =="1-1234567890abcdef"_sl);
+}
 
-    REQUIRE(r.tryParse("123456-1234567890abcdef"_sl));
-    CHECK(r.generation() == 123456);
-    CHECK(r.digest().hexString() == "1234567890abcdef");
-    CHECK(r.hexString() == "c0c4071234567890abcdef");
-    CHECK(r.expanded() == "123456-1234567890abcdef"_sl);
 
-    CHECK(!r.tryParse("1"_sl));
-    CHECK(!r.tryParse("1-"_sl));
-    CHECK(!r.tryParse("1-0"_sl));
-    CHECK(!r.tryParse("1-a"_sl));
-    CHECK(!r.tryParse("1-AA"_sl));
-    CHECK(!r.tryParse("1-aF"_sl));
-    CHECK(!r.tryParse("1--aa"_sl));
-    CHECK(!r.tryParse("0-11"_sl));
-    CHECK(!r.tryParse("-1-11"_sl));
-    CHECK(!r.tryParse("-11"_sl));
-    CHECK(!r.tryParse("a-11"_sl));
-    CHECK(!r.tryParse("1-aa "_sl));
-    CHECK(!r.tryParse("z-aa"_sl));
-    CHECK(!r.tryParse("d-aa"_sl));
-    CHECK(!r.tryParse("7-ax"_sl));
-    CHECK(!r.tryParse(" 1-aa"_sl));
+struct VersionTestCase {
+    const char *str;
+    uint64_t gen;
+    uint64_t peer;
+    const char *hex;
+};
+
+
+TEST_CASE("RevID Version Parsing", "[RevIDs]") {
+    static constexpr VersionTestCase kCases[] = {
+        // good:
+        {"1@*",   0x1,   0x0, "000100"},
+        {"bff@3", 0xbff, 0x3, "00ff1703"},
+        {"c@c",   0xc,   0xc, "000c0c"},
+        {"d00d@*",0xd00d,0x0, "008da00300"},
+        {"d00d@*",0xd00d,0x0, "008da00300"},
+        {"ffffffffffffffff@1", 0xffffffffffffffff, 0x1, "00ffffffffffffffffff0101"},
+        {"1@ffffffffffffffff", 0x1, 0xffffffffffffffff, "0001ffffffffffffffffff01"},
+
+        // bad:
+        {"0@11"},                   // gen can't be 0
+        {"1@0"},                    // peerID can't be literal 0 (must be '*')
+        {"12345678123456789@*"},    // gen too large
+        {"1@12345678123456789"},    // peerID too large
+        {"@"},
+        {"*"},
+        {"*@*"},
+        {"1"},
+        {"1@"},
+        {"1-@"},
+        {"1"},
+        {"1@"},
+        {"1@*1"},
+        {"1@**"},
+        {"1@1-"},
+        {"1@-1"},
+        {"1@@aa"},
+        {"@1@11"},
+        {"@11"},
+        {"z@aa"},
+        {"7@ax"},
+        {" 1@aa"},
+        {"1 @aa"},
+        {"1@ aa"},
+        {"1@a a"},
+        {"1@aa "},
+    };
+
+    for (auto c4se : kCases) {
+        INFO("Testing '" << c4se.str << "'");
+        revidBuffer r;
+        if (c4se.gen) {
+            CHECK(r.tryParse(slice(c4se.str)));
+            CHECK(r.isVersion());
+            //CHECK(r.generation() == c4se.gen);
+            CHECK(r.asVersion().gen() == c4se.gen);
+            CHECK(r.asVersion().author().id == c4se.peer);
+            CHECK(r.expanded() == slice(c4se.str));
+            CHECK(r.hexString() == c4se.hex);
+        } else {
+            CHECK(!r.tryParse(slice(c4se.str)));
+        }
+    }
 }
 
 
 TEST_CASE("RevID <-> Version", "[RevIDs]") {
-    VersionVector vv("11@100,2@101,1@666"s);
+    auto vv = VersionVector::fromASCII("11@100,2@101,1@666"s);
     alloc_slice vvData = vv.asBinary();
     revid rev(vvData);
     CHECK(rev.isVersion());
     CHECK(rev.asVersion() == Version(17,Alice));
+    CHECK(rev.asVersionVector() == vv);
     CHECK(rev.expanded() == "11@100"_sl);           // revid only looks at the current Version
 
     revidBuffer r(Version(17, Alice));

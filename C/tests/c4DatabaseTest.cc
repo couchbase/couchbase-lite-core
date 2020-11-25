@@ -162,7 +162,28 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     }
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][C]") {
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Doc", "[Database][Document][C]") {
+    C4Error error;
+    REQUIRE(c4db_beginTransaction(db, &error));
+    createRev(kDocID, kRevID, kFleeceBody);
+    REQUIRE(c4db_endTransaction(db, true, &error));
+    CHECK(c4db_getDocumentCount(db) == 1);
+
+    C4Document *doc = c4doc_get(db, kDocID, true, &error);
+    REQUIRE(doc);
+    CHECK(doc->docID == kDocID);
+    CHECK(doc->revID == kRevID);
+    CHECK(doc->sequence == 1);
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->selectedRev.revID == kRevID);
+    CHECK(doc->selectedRev.flags == kRevLeaf);
+    CHECK(doc->selectedRev.sequence == 1);
+    c4doc_release(doc);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][Document][C]") {
     REQUIRE(c4db_getDocumentCount(db) == (C4SequenceNumber)0);
     REQUIRE(!c4db_isInTransaction(db));
     C4Error(error);
@@ -184,7 +205,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][C]") 
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][Document][C]") {
     const C4Slice key = c4str("key");
     const C4Slice meta = c4str("meta");
     C4Error error;
@@ -214,7 +235,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]")
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][Document][C]") {
     setupAllDocs();
     C4Error error;
     C4DocEnumerator* e;

@@ -32,10 +32,9 @@ namespace c4Internal {
     alloc_slice Document::bodyAsJSON(bool canonical) {
         if (!loadSelectedRevBody())
             error::_throw(error::NotFound);
-        auto doc = fleeceDoc();
-        if (!doc)
-            error::_throw(error::CorruptRevisionData);
-        return doc->asDict()->toJSON(canonical);
+        if (FLDict root = getSelectedRevRoot())
+            return ((const Dict*)root)->toJSON(canonical);
+        error::_throw(error::CorruptRevisionData);
     }
 
 

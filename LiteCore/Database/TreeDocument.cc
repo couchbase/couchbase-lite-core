@@ -113,6 +113,39 @@ namespace c4Internal {
             return _selectedRev ? _selectedRev->body() : slice();
         }
 
+
+        alloc_slice getSelectedRevHistory(unsigned maxRevs) override {
+            int revsWritten = 0;
+            stringstream historyStream;
+
+            auto append = [&](slice revID) {
+                if (revsWritten++ > 0)
+                    historyStream << ',';
+                historyStream.write((const char*)revID.buf, revID.size);
+            };
+
+            // Go back through history, starting with the desired rev's parent, until we either reach
+            // a rev known to the peer or we run out of history. Do not write more than `maxHistory`
+            // revisions, but always write the rev known to the peer if there is one.
+            // There may be gaps in the history (non-consecutive generations) if revs have been pruned.
+            // If sending these, make up random revIDs for them since they don't matter.
+            unsigned lastGen = c4rev_getGeneration(selectedRev.revID);
+            while (revsWritten < maxRevs && selectParentRevision()) {
+                slice revID = selectedRev.revID;
+                unsigned gen = c4rev_getGeneration(revID);
+                while (gen < --lastGen && revsWritten < maxRevs) {
+                    // We don't have this revision (the history got deeper than the local db's
+                    // maxRevTreeDepth), so make up a random revID. The server probably won't care.
+                    append(slice(format("%u-faded000%.08x%.08x",
+                                        lastGen, RandomNumber(), RandomNumber())));
+                }
+                lastGen = gen;
+                append(revID);
+            }
+            return alloc_slice(historyStream.str());
+        }
+
+
         bool selectRevision(const Rev *rev) noexcept {   // doesn't throw
             _selectedRev = rev;
             if (rev) {
@@ -221,10 +254,6 @@ namespace c4Internal {
                 return false;
             _versionedDoc.removeBody(_selectedRev);
             return true;
-        }
-
-        Retained<Doc> fleeceDoc() override {
-            return _versionedDoc.fleeceDocFor(getSelectedRevBody());
         }
 
         bool save(unsigned maxRevTreeDepth =0) override {
@@ -548,8 +577,8 @@ namespace c4Internal {
         return new TreeDocument(database(), docID);
     }
 
-    Retained<Document> TreeDocumentFactory::newDocumentInstance(const Record &doc) {
-        return new TreeDocument(database(), doc);
+    Retained<Document> TreeDocumentFactory::newDocumentInstance(const Record &rec) {
+        return new TreeDocument(database(), rec);
     }
 
     slice TreeDocumentFactory::fleeceAccessor(slice docBody) {
@@ -633,40 +662,3 @@ namespace c4Internal {
 
 
 } // end namespace c4Internal
-
-
-#pragma mark - REV-TREES-ONLY API:
-
-
-bool c4doc_save(C4Document *doc,
-                uint32_t maxRevTreeDepth,
-                C4Error *outError) noexcept
-{
-    auto idoc = asInternal(doc);
-#if 0 // unused
-    if (!idoc->mustUseVersioning(kC4RevisionTrees, outError))
-        return false;
-#endif
-    if (!idoc->mustBeInTransaction(outError))
-        return false;
-    try {
-        if (maxRevTreeDepth == 0)
-            maxRevTreeDepth = asInternal(doc)->database()->maxRevTreeDepth();
-        
-        if (!((TreeDocument*)idoc)->save(maxRevTreeDepth)) {
-            if (outError)
-                *outError = {LiteCoreDomain, kC4ErrorConflict};
-            return false;
-        }
-        return true;
-    } catchError(outError)
-    return false;
-}
-
-
-unsigned c4rev_getGeneration(C4Slice revID) noexcept {
-    try {
-        return revidBuffer(revID).generation();
-    }catchExceptions()
-    return 0;
-}

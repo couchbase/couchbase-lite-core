@@ -83,6 +83,13 @@ namespace litecore {
         /// Returns true if the document exists in the database.
         bool exists() const noexcept FLPURE                 {return _sequence > 0;}
 
+        /// Returns true if only the document-level metadata is available, not the remotes or revision bodies.
+        /// (This happens if the NuDocument was instantiated from a Record with no body.)
+        bool isStub() const noexcept FLPURE                 {return _bodiless;}
+
+        /// If the document is a stub, loads the body.
+        /// Returns true if the body data is available, false if the document doesn't exist.
+        bool loadData();
         
         //---- Metadata:
 
@@ -99,7 +106,7 @@ namespace litecore {
         revid revID() const FLPURE                          {return currentRevision().revID;}
 
         /// The current document flags (kDeleted, kHasAttachments, kConflicted.)
-        DocumentFlags flags() const FLPURE                  {return currentRevision().flags;}
+        DocumentFlags flags() const FLPURE                  {return _docFlags;}
 
         /// Returns the current properties, revID and flags in a single struct.
         /// \warning  The `properties` and `revID` fields point to the _current_ values. Calling
@@ -165,6 +172,8 @@ namespace litecore {
         /// Stores a revision for the given \ref RemoteID, or removes it if the revision is `nullopt`.
         void setRemoteRevision(RemoteID, const std::optional<Revision>&);
 
+        /// Returns the next RemoteID for which a revision is stored.
+        RemoteID nextRemoteID(RemoteID) const;
 
         //---- For testing:
 
@@ -180,6 +189,8 @@ namespace litecore {
         class LinkedFleeceDoc;
 
         bool initFleeceDoc(const alloc_slice &body);
+        bool readRecordBody(const alloc_slice &body);
+        void requireBody();
         fleece::Array savedRevisions() const;
         void mutateRevisions();
         MutableDict mutableRevisionDict(RemoteID remoteID);
@@ -197,8 +208,10 @@ namespace litecore {
         fleece::Array                _revisions;            // Top-level parsed body; stores revs
         mutable fleece::MutableArray _mutatedRevisions;     // Mutable version of `_revisions`
         Dict                         _properties;           // Current revision properties
+        DocumentFlags                _docFlags;             // Document-level flags
         bool                         _changed {false};      // Set to true on explicit change
         bool                         _revIDChanged {false}; // Has setRevID() been called?
+        bool                         _bodiless {false};     // Loaded from Record w/o a body
         // (Note: _changed doesn't reflect mutations to _properties; changed() checks for those.)
     };
 }

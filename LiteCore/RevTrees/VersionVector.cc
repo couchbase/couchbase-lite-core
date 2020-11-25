@@ -42,23 +42,35 @@ namespace litecore {
 #pragma mark - VERSION:
 
 
+    static void throwBadBinary() {
+        error::_throw(error::BadRevisionID, "Invalid binary version ID");
+    }
+
+    static void throwBadASCII(slice string = nullslice) {
+        if (string)
+            error::_throw(error::BadRevisionID, "Invalid version string '%.*s'", SPLAT(string));
+        else
+            error::_throw(error::BadRevisionID, "Invalid version string");
+    }
+
+
     Version::Version(slice string) {
-        _gen = string.readHex();
-        if (string.readByte() != '@')
-            error::_throw(error::BadRevisionID);
-        if (string == "*"_sl) {
+        slice in = string;
+        _gen = in.readHex();
+        if (in.readByte() != '@' || _gen == 0)
+            throwBadASCII(string);
+        if (in == "*"_sl) {
             _author = kMePeerID;
         } else {
-            _author.id = string.readHex();
-            if (string.size > 0 || _author == kMePeerID)
-                error::_throw(error::BadRevisionID);
+            _author.id = in.readHex();
+            if (in.size > 0 || _author == kMePeerID)
+                throwBadASCII(string);
         }
-        validate();
     }
 
     Version::Version(slice *dataP) {
         if (!ReadUVarInt(dataP, &_gen) || !ReadUVarInt(dataP, &_author.id))
-            error::_throw(error::BadRevisionID);
+            throwBadBinary();
         validate();
     }
 
@@ -113,7 +125,7 @@ namespace litecore {
     void VersionVector::readBinary(slice data) {
         reset();
         if (data.size < 1 || data.readByte() != 0)
-            error::_throw(error::BadRevisionID);
+            throwBadBinary();
         while (data.size > 0)
             _vers.emplace_back(&data);
     }
@@ -159,22 +171,21 @@ namespace litecore {
 
     Version VersionVector::readCurrentVersionFromBinary(slice data) {
         if (data.size < 1 || data.readByte() != 0)
-            error::_throw(error::BadRevisionID);
+            throwBadBinary();
         return Version(&data);
     }
 
 
-    void VersionVector::readASCII(const string &string) {
-        slice s(string);
-        if (s.size == 0)
-            error::_throw(error::BadRevisionID);
+    void VersionVector::readASCII(slice str) {
+        if (str.size == 0)
+            throwBadASCII(str);
         reset();
-        while (s.size > 0) {
-            const void *comma = s.findByteOrEnd(',');
-            _vers.emplace_back(s.upTo(comma));
-            s = s.from(comma);
-            if (s.size > 0)
-                s.moveStart(1); // skip comma
+        while (str.size > 0) {
+            const void *comma = str.findByteOrEnd(',');
+            _vers.emplace_back(str.upTo(comma));
+            str = str.from(comma);
+            if (str.size > 0)
+                str.moveStart(1); // skip comma
         }
     }
 
@@ -247,6 +258,12 @@ namespace litecore {
         }
         _vers.insert(_vers.begin(), Version(gen, author));
     }
+
+    void VersionVector::limitCount(size_t maxCount) {
+        if (_vers.size() > maxCount)
+            _vers.erase(_vers.begin() + maxCount, _vers.end());
+    }
+
     
 
 #pragma mark - MODIFICATION:

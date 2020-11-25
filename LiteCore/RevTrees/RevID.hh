@@ -25,7 +25,27 @@ namespace litecore {
 
     /** A compressed revision ID. 
         Since this is based on slice, it doesn't own the memory it points to.
-        The data format is the generation as a varint, followed by the digest as raw binary. */
+
+        There are two types of revision IDs: digests and versions.
+
+        **Digest form** is/was used by the revision-tree versioning system in Couchbase Mobile 1 and 2.
+        It consists of a generation count and an MD5 or SHA-1 digest.
+        - The ASCII form looks like "123-cafebabedeadbeefdeadfade".
+        - The binary form consists of the generation as a varint, followed by the digest as raw binary.
+
+        **Version form** is used by the version-vector system in [the upcoming] Couchbase Mobile 3.
+        It consists of a generation count and an integer "source ID" (or "peer ID".) The source ID zero is
+        reserved to mean "the local device/database".
+        - The ASCII form looks like "7b@cafebabe" -- note that the generation is hex, not decimal!
+          The source ID zero is represented as a '*' character, e.g. "7b-*".
+        - The binary form consists of a zero byte, the generation as a varint, and the source as a varint.
+          (The leading zero is to distinguish it from the digest form.)
+        The version form is also represented by the `Version` class.
+
+        A revid in version form can store an entire version vector, since that format just consists of
+        multiple binary versions concatenated. The `revid` API only gives information about the first
+        (current) version in the vector, except for the `asVersionVector` method.
+     */
     class revid : public slice {
     public:
         revid()                                     :slice() {}
@@ -33,10 +53,10 @@ namespace litecore {
         explicit revid(slice s)                     :slice(s) {}
 
         std::pair<unsigned,slice> generationAndDigest() const;
-        unsigned generation() const                 {return generationAndDigest().first;}
+        unsigned generation() const;
         slice digest() const                        {return generationAndDigest().second;}
 
-        bool isVersion() const                      {return (*this)[0] == 0;}
+        bool isVersion() const                      {return size > 0 && (*this)[0] == 0;}
         Version asVersion() const;
         VersionVector asVersionVector() const;
 
@@ -59,17 +79,21 @@ namespace litecore {
         explicit revidBuffer(const Version &v)      {*this = v;}
         revidBuffer(const revidBuffer &r)           {*this = r;}
 
-        explicit revidBuffer(slice s)               :revid(&_buffer, 0) {parse(s);}
+        /** Constructs a revidBuffer from an ASCII revision (digest or version style).
+            Throws BadRevisionID if the string isn't parseable.*/
+        explicit revidBuffer(slice asciiString)     :revid(&_buffer, 0) {parse(asciiString);}
 
         revidBuffer& operator= (const revidBuffer&);
         revidBuffer& operator= (const revid&);
         revidBuffer& operator= (const Version &vers);
 
-        /** Parses a regular (uncompressed) revID and compresses it.
-            Throws BadRevisionID if the revID isn't in the proper format.*/
-        void parse(slice);
+        /** Parses a regular ASCII revID (digest or version style) and compresses it.
+            Throws BadRevisionID if the string isn't parseable.*/
+        void parse(slice asciiString);
 
-        bool tryParse(slice ascii);
+        /** Parses a regular ASCII revID (digest or version style) and compresses it.
+            Returns false if the string isn't parseable. */
+        bool tryParse(slice asciiString) noexcept;
 
     private:
         uint8_t _buffer[42];

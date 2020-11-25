@@ -99,13 +99,25 @@ namespace litecore {
         The binary format is consecutive binary Versions (see above). */
     class VersionVector {
     public:
+        /** Returns a VersionVector parsed from ASCII. */
+        static VersionVector fromASCII(slice asciiString) {
+            VersionVector v;
+            v.readASCII(asciiString);
+            return v;
+        }
+
+        /** Returns a VersionVector parsed from binary data. */
+        static VersionVector fromBinary(slice binary) {
+            VersionVector v;
+            v.readBinary(binary);
+            return v;
+        }
+
         /** Constructs an empty vector. */
         VersionVector() { }
 
-        explicit VersionVector(const string &str)           {readASCII(str);}
-
         /** Parses textual form from ASCII data */
-        void readASCII(const string&);
+        void readASCII(slice asciiString);
 
         /** Reads binary form. */
         void readBinary(slice binaryData);
@@ -131,6 +143,9 @@ namespace litecore {
         /** Increments the generation count of the given author (or sets it to 1 if it didn't exist)
             and moves it to the start of the vector. */
         void incrementGen(peerID);
+
+        /** Truncates the vector to the maximum count `maxCount`. */
+        void limitCount(size_t maxCount);
 
         /** Returns a new vector representing a merge of this vector and the argument.
             All the authors in both are present, with the larger of the two generations. */

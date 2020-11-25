@@ -36,13 +36,12 @@ extern "C" {
 
     /** Boolean options for C4DatabaseConfig. */
     typedef C4_OPTIONS(uint32_t, C4DatabaseFlags) {
-        kC4DB_Create        = 1,    ///< Create the file if it doesn't exist
-        kC4DB_ReadOnly      = 2,    ///< Open file read-only
-        kC4DB_AutoCompact   = 4,    ///< Enable auto-compaction
-//      kC4DB_Bundled       = 8,    // OBSOLETE; all dbs are now bundled
-        kC4DB_SharedKeys    = 0x10, // OBSOLETE; shared keys are always used
+        kC4DB_Create        = 0x01, ///< Create the file if it doesn't exist
+        kC4DB_ReadOnly      = 0x02, ///< Open file read-only
+        kC4DB_AutoCompact   = 0x04, ///< Enable auto-compaction [UNIMPLEMENTED]
+        kC4DB_VersionVectors= 0x08, ///< Use version vectors instead of revision trees [EXPERIMENTAL]
         kC4DB_NoUpgrade     = 0x20, ///< Disable upgrading an older-version database
-        kC4DB_NonObservable = 0x40, ///< Disable C4DatabaseObserver
+        kC4DB_NonObservable = 0x40, ///< Disable C4DatabaseObserver, for slightly faster writes
     };
 
     /** Encryption algorithms. */

@@ -42,7 +42,7 @@ TEST_CASE("Generate docID", "[Database][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Document][C]") {
     c4log_warnOnErrors(false);
     TransactionHelper t(db);
 
@@ -176,7 +176,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     // Try reading doc with mustExist=true, which should fail:
     C4Error error;
     C4Document* doc;
@@ -221,42 +221,46 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
         rq.save = true;
         doc = c4doc_put(db, &rq, nullptr, &error);
         REQUIRE(doc != nullptr);
-        REQUIRE(doc->revID == kRevID);
-        REQUIRE(doc->selectedRev.revID == kRevID);
-        REQUIRE(doc->selectedRev.flags == (kRevKeepBody | kRevLeaf));
-        REQUIRE(docBodyEquals(doc, kFleeceBody));
+        CHECK(doc->revID == kRevID);
+        CHECK(doc->selectedRev.revID == kRevID);
+        if (isRevTrees())
+            CHECK(doc->selectedRev.flags == (kRevKeepBody | kRevLeaf));
+        else
+            CHECK(doc->selectedRev.flags == (kRevLeaf));
+        CHECK(docBodyEquals(doc, kFleeceBody));
         c4doc_release(doc);
     }
 
     // Reload the doc:
     doc = c4doc_get(db, kDocID, true, &error);
     REQUIRE(doc != nullptr);
-    REQUIRE(doc->sequence == 1);
-    REQUIRE(doc->flags == kDocExists);
-    REQUIRE(doc->docID == kDocID);
-    REQUIRE(doc->revID == kRevID);
-    REQUIRE(doc->selectedRev.revID == kRevID);
-    REQUIRE(doc->selectedRev.sequence == 1);
-    REQUIRE(docBodyEquals(doc, kFleeceBody));
+    CHECK(doc->sequence == 1);
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->docID == kDocID);
+    CHECK(doc->revID == kRevID);
+    CHECK(doc->selectedRev.revID == kRevID);
+    CHECK(doc->selectedRev.sequence == 1);
+    CHECK(docBodyEquals(doc, kFleeceBody));
     c4doc_release(doc);
 
     // Get the doc by its sequence:
     doc = c4doc_getBySequence(db, 1, &error);
     REQUIRE(doc != nullptr);
-    REQUIRE(doc->sequence == 1);
-    REQUIRE(doc->flags == kDocExists);
-    REQUIRE(doc->docID == kDocID);
-    REQUIRE(doc->revID == kRevID);
-    REQUIRE(doc->selectedRev.revID == kRevID);
-    REQUIRE(doc->selectedRev.sequence == 1);
-    REQUIRE(docBodyEquals(doc, kFleeceBody));
-    {
-        TransactionHelper t(db);
-        REQUIRE(c4doc_removeRevisionBody(doc));
-        REQUIRE(c4doc_selectCurrentRevision(doc));
+    CHECK(doc->sequence == 1);
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->docID == kDocID);
+    CHECK(doc->revID == kRevID);
+    CHECK(doc->selectedRev.revID == kRevID);
+    CHECK(doc->selectedRev.sequence == 1);
+    CHECK(docBodyEquals(doc, kFleeceBody));
+    if (isRevTrees()) {
+        {
+            TransactionHelper t(db);
+            CHECK(c4doc_removeRevisionBody(doc));
+            CHECK(c4doc_selectCurrentRevision(doc));
+        }
+        CHECK(c4doc_getProperties(doc) == nullptr);
     }
-    
-    REQUIRE(c4doc_getProperties(doc) == nullptr);
     c4doc_release(doc);
 
     // Get a bogus sequence
@@ -268,42 +272,42 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
     // Test c4doc_getSingleRevision (without body):
     doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, false, &error);
     REQUIRE(doc != nullptr);
-    REQUIRE(doc->sequence == 1);
-    REQUIRE(doc->flags == kDocExists);
-    REQUIRE(doc->docID == kDocID);
-    REQUIRE(doc->revID == kRevID);
-    REQUIRE(doc->selectedRev.revID == kRevID);
-    REQUIRE(doc->selectedRev.sequence == 1);
-    REQUIRE(c4doc_getProperties(doc) == nullptr);
+    CHECK(doc->sequence == 1);
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->docID == kDocID);
+    CHECK(doc->revID == kRevID);
+    CHECK(doc->selectedRev.revID == kRevID);
+    CHECK(doc->selectedRev.sequence == 1);
+    CHECK(c4doc_getProperties(doc) == nullptr);
     c4doc_release(doc);
 
     // Test c4doc_getSingleRevision (with body):
     doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, true, &error);
     REQUIRE(doc != nullptr);
-    REQUIRE(doc->sequence == 1);
-    REQUIRE(doc->flags == kDocExists);
-    REQUIRE(doc->docID == kDocID);
-    REQUIRE(doc->revID == kRevID);
-    REQUIRE(doc->selectedRev.revID == kRevID);
-    REQUIRE(doc->selectedRev.sequence == 1);
-    REQUIRE(docBodyEquals(doc, kFleeceBody));
+    CHECK(doc->sequence == 1);
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->docID == kDocID);
+    CHECK(doc->revID == kRevID);
+    CHECK(doc->selectedRev.revID == kRevID);
+    CHECK(doc->selectedRev.sequence == 1);
+    CHECK(docBodyEquals(doc, kFleeceBody));
     c4doc_release(doc);
 
     // Test c4doc_getSingleRevision (with specific rev):
     doc = c4doc_getSingleRevision(db, kDocID, kRevID, true, &error);
     REQUIRE(doc != nullptr);
-    REQUIRE(doc->sequence == 1);
-    REQUIRE(doc->flags == kDocExists);
-    REQUIRE(doc->docID == kDocID);
-    REQUIRE(doc->revID == kRevID);
-    REQUIRE(doc->selectedRev.revID == kRevID);
-    REQUIRE(doc->selectedRev.sequence == 1);
-    REQUIRE(docBodyEquals(doc, kFleeceBody));
+    CHECK(doc->sequence == 1);
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->docID == kDocID);
+    CHECK(doc->revID == kRevID);
+    CHECK(doc->selectedRev.revID == kRevID);
+    CHECK(doc->selectedRev.sequence == 1);
+    CHECK(docBodyEquals(doc, kFleeceBody));
     c4doc_release(doc);
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C]") {
     const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
     const auto kFleeceBody3 = json2fleece("{'ubu':'roi'}");
     createRev(kDocID, kRevID, kFleeceBody);
@@ -314,21 +318,21 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
     C4Error error;
     C4Document *doc = c4doc_get(db, kDocID, true, &error);
     REQUIRE(doc != nullptr);
-    REQUIRE(doc->flags == kDocExists);
-    REQUIRE(doc->docID == kDocID);
-    REQUIRE(doc->revID == kRev2ID);
-    REQUIRE(doc->selectedRev.revID == kRev2ID);
-    REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)2);
-    REQUIRE(docBodyEquals(doc, kFleeceBody2));
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->docID == kDocID);
+    CHECK(doc->revID == kRev2ID);
+    CHECK(doc->selectedRev.revID == kRev2ID);
+    CHECK(doc->selectedRev.sequence == (C4SequenceNumber)2);
+    CHECK(docBodyEquals(doc, kFleeceBody2));
 
-    if (versioning() == kC4RevisionTrees) {
+    if (isRevTrees()) {
         // Select 1st revision:
         REQUIRE(c4doc_selectParentRevision(doc));
-        REQUIRE(doc->selectedRev.revID == kRevID);
-        REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)1);
-        REQUIRE(c4doc_getProperties(doc) == nullptr);
-        REQUIRE(!c4doc_hasRevisionBody(doc));
-        REQUIRE(!c4doc_selectParentRevision(doc));
+        CHECK(doc->selectedRev.revID == kRevID);
+        CHECK(doc->selectedRev.sequence == (C4SequenceNumber)1);
+        CHECK(c4doc_getProperties(doc) == nullptr);
+        CHECK(!c4doc_hasRevisionBody(doc));
+        CHECK(!c4doc_selectParentRevision(doc));
         c4doc_release(doc);
 
         // Add a 3rd revision:
@@ -337,34 +341,34 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
         doc = c4doc_get(db, kDocID, true, &error);
         REQUIRE(doc != nullptr);
         REQUIRE(c4doc_selectParentRevision(doc));
-        REQUIRE(doc->selectedRev.revID == kRev2ID);
-        REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)2);
-        REQUIRE(doc->selectedRev.flags == kRevKeepBody);
-        REQUIRE(docBodyEquals(doc, kFleeceBody2));
+        CHECK(doc->selectedRev.revID == kRev2ID);
+        CHECK(doc->selectedRev.sequence == (C4SequenceNumber)2);
+        CHECK(doc->selectedRev.flags == kRevKeepBody);
+        CHECK(docBodyEquals(doc, kFleeceBody2));
         c4doc_release(doc);
 
         // Test c4doc_getSingleRevision (with body):
         doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, true, &error);
         REQUIRE(doc != nullptr);
-        REQUIRE(doc->sequence == 3);
-        REQUIRE(doc->flags == kDocExists);
-        REQUIRE(doc->docID == kDocID);
-        REQUIRE(doc->revID == kRev3ID);
-        REQUIRE(doc->selectedRev.revID == kRev3ID);
-        REQUIRE(doc->selectedRev.sequence == 3);
-        REQUIRE(docBodyEquals(doc, kFleeceBody3));
+        CHECK(doc->sequence == 3);
+        CHECK(doc->flags == kDocExists);
+        CHECK(doc->docID == kDocID);
+        CHECK(doc->revID == kRev3ID);
+        CHECK(doc->selectedRev.revID == kRev3ID);
+        CHECK(doc->selectedRev.sequence == 3);
+        CHECK(docBodyEquals(doc, kFleeceBody3));
         c4doc_release(doc);
 
         // Test c4doc_getSingleRevision (with specific revision):
         doc = c4doc_getSingleRevision(db, kDocID, kRev2ID, true, &error);
         REQUIRE(doc != nullptr);
-        REQUIRE(doc->sequence == 3);
-        REQUIRE(doc->flags == kDocExists);
-        REQUIRE(doc->docID == kDocID);
-        REQUIRE(doc->revID == kRev3ID);
-        REQUIRE(doc->selectedRev.revID == kRev2ID);
-        REQUIRE(doc->selectedRev.sequence == 2);
-        REQUIRE(docBodyEquals(doc, kFleeceBody2));
+        CHECK(doc->sequence == 3);
+        CHECK(doc->flags == kDocExists);
+        CHECK(doc->docID == kDocID);
+        CHECK(doc->revID == kRev3ID);
+        CHECK(doc->selectedRev.revID == kRev2ID);
+        CHECK(doc->selectedRev.sequence == 2);
+        CHECK(docBodyEquals(doc, kFleeceBody2));
         c4doc_release(doc);
 
         // Purge doc
@@ -372,7 +376,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
             TransactionHelper t(db);
             doc = c4doc_get(db, kDocID, true, &error);
             int nPurged = c4doc_purgeRevision(doc, {}, &error);
-            REQUIRE(nPurged == 3);
+            CHECK(nPurged == 3);
             REQUIRE(c4doc_save(doc, 20, &error));
             c4doc_release(doc);
         }
@@ -422,53 +426,62 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Get Single Revision", "[Document][C]") 
     CHECK(error.code == kC4ErrorNotFound);
 }
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][Document][C]") {
+    C4Error err;
     const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
     const auto kFleeceBody3 = json2fleece("{'ubu':'roi'}");
     createRev(kDocID, kRevID, kFleeceBody);
     createRev(kDocID, kRev2ID, kFleeceBody2);
     createRev(kDocID, kRev3ID, kFleeceBody3);
-    
-    C4Slice history[3] = {C4STR("3-ababab"), kRev2ID};
+
     C4DocPutRequest rq = {};
-    rq.existingRevision = true;
-    rq.docID = kDocID;
-    rq.history = history;
-    rq.historyCount = 2;
-    rq.allowConflict = true;
-    rq.body = kFleeceBody3;
-    rq.save = true;
-    C4Error err;
-    REQUIRE(c4db_beginTransaction(db, &err));
-    auto doc = c4doc_put(db, &rq, nullptr, &err);
-    REQUIRE(doc);
-    c4doc_release(doc);
-    REQUIRE(c4db_endTransaction(db, true, &err));
-    
+    C4Slice history[3] = {C4STR("3-ababab"), kRev2ID};
+    if (isRevTrees()) {
+        // Create a conflict
+        rq.existingRevision = true;
+        rq.docID = kDocID;
+        rq.history = history;
+        rq.historyCount = 2;
+        rq.allowConflict = true;
+        rq.body = kFleeceBody3;
+        rq.save = true;
+        REQUIRE(c4db_beginTransaction(db, &err));
+        auto doc = c4doc_put(db, &rq, nullptr, &err);
+        REQUIRE(doc);
+        c4doc_release(doc);
+        REQUIRE(c4db_endTransaction(db, true, &err));
+    }
+
     REQUIRE(c4db_beginTransaction(db, &err));
     REQUIRE(c4db_purgeDoc(db, kDocID, &err));
     REQUIRE(c4db_endTransaction(db, true, &err));
     
     REQUIRE(c4db_getDocumentCount(db) == 0);
     
-    createRev(kDocID, kRevID, kFleeceBody);
-    createRev(kDocID, kRev2ID, kFleeceBody2);
-    createRev(kDocID, kRev3ID, kFleeceBody3);
-    REQUIRE(c4db_beginTransaction(db, &err));
-    doc = c4doc_put(db, &rq, nullptr, &err);
-    REQUIRE(doc);
-    REQUIRE(c4db_endTransaction(db, true, &err));
-    
-    REQUIRE(c4db_beginTransaction(db, &err));
-    CHECK(c4doc_purgeRevision(doc, kRev2ID, &err) == 0);
-    REQUIRE(c4doc_purgeRevision(doc, kC4SliceNull, &err) == 4);
-    REQUIRE(c4doc_save(doc, 20, &err));
-    c4doc_release(doc);
-    REQUIRE(c4db_endTransaction(db, true, &err));
-    REQUIRE(c4db_getDocumentCount(db) == 0);
+    if (isRevTrees()) {
+        // c4doc_purgeRevision is not available with version vectors
+        createRev(kDocID, kRevID, kFleeceBody);
+        createRev(kDocID, kRev2ID, kFleeceBody2);
+        createRev(kDocID, kRev3ID, kFleeceBody3);
+        REQUIRE(c4db_beginTransaction(db, &err));
+        auto doc = c4doc_put(db, &rq, nullptr, &err);
+        REQUIRE(doc);
+        REQUIRE(c4db_endTransaction(db, true, &err));
+        c4doc_release(doc);
+
+        REQUIRE(c4db_beginTransaction(db, &err));
+        doc = c4doc_get(db, kDocID, true, &err);
+        REQUIRE(doc);
+        CHECK(c4doc_purgeRevision(doc, kRev2ID, &err) == 0);
+        REQUIRE(c4doc_purgeRevision(doc, kC4SliceNull, &err) == 4);
+        REQUIRE(c4doc_save(doc, 20, &err));
+        c4doc_release(doc);
+        REQUIRE(c4db_endTransaction(db, true, &err));
+        REQUIRE(c4db_getDocumentCount(db) == 0);
+    }
 }
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][Document][C]") {
     if (isRevTrees()) {
         CHECK(c4db_getMaxRevTreeDepth(db) == 20);
         c4db_setMaxRevTreeDepth(db, 30);
@@ -514,28 +527,26 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][C]") {
         }
         C4Log("Created %u revisions in %.3f sec", kNumRevs, st.elapsed());
 
-        // Check rev tree depth:
-        unsigned nRevs = 0;
-        c4doc_selectCurrentRevision(doc);
-        do {
-            if (isRevTrees()) {
+        if (isRevTrees()) {
+            // Check rev tree depth:
+            unsigned nRevs = 0;
+            c4doc_selectCurrentRevision(doc);
+            do {
                 unsigned expectedGen = kNumRevs - nRevs;
                 if (setRemoteOrigin && nRevs == 30)
                     expectedGen = 1; // the remote-origin rev is pinned
                 CHECK(c4rev_getGeneration(doc->selectedRev.revID) == expectedGen);
-            }
-            ++nRevs;
-        } while (c4doc_selectParentRevision(doc));
-        C4Log("Document rev tree depth is %u", nRevs);
-        if (isRevTrees())
+                ++nRevs;
+            } while (c4doc_selectParentRevision(doc));
+            C4Log("Document rev tree depth is %u", nRevs);
             REQUIRE(nRevs == (setRemoteOrigin ? 31 : 30));
-
+        }
         c4doc_release(doc);
     }
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document GetForPut", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document GetForPut", "[Document][C]") {
     C4Error error;
     TransactionHelper t(db);
 
@@ -619,7 +630,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document GetForPut", "[Database][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
     C4Error error;
     TransactionHelper t(db);
 
@@ -673,7 +684,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
 	if(isRevTrees()) {
 		kConflictRevID = C4STR("2-deadbeef");
 	} else {
-        kConflictRevID = C4STR("1@binky");
+        kConflictRevID = C4STR("1@cafebabe");
 	}
 
     C4Slice history[2] = {kConflictRevID, kExpectedRevID};
@@ -692,7 +703,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document create from existing rev", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document create from existing rev", "[Document][C]") {
     C4Error error;
     TransactionHelper t(db);
 
@@ -701,7 +712,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document create from existing rev", "[Database][
     rq.docID = kDocID;
     rq.body = kFleeceBody;
     rq.existingRevision = true;
-    C4String history[1] = {"1-31415926"_sl};
+    C4String history[1] = {kRevID};
     rq.history = history;
     rq.historyCount = 1;
     rq.save = true;
@@ -710,12 +721,12 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document create from existing rev", "[Database][
     REQUIRE(doc != nullptr);
     CHECK(commonAncestor == 1);
     CHECK(doc->docID == kDocID);
-    CHECK(doc->revID == "1-31415926"_sl);
+    CHECK(doc->revID == kRevID);
     c4doc_release(doc);
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
     C4Log("Begin test");
     C4Error error;
     C4Document *doc;
@@ -789,7 +800,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
     if (!isRevTrees())
         return;
 
@@ -904,7 +915,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     c4doc_release(doc);
 }
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document from Fleece", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document from Fleece", "[Document][C]") {
     if (!isRevTrees())
         return;
 
@@ -925,7 +936,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document from Fleece", "[Database][C]") {
     CHECK(c4doc_containingValue(root) == nullptr);
 }
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Leaf Document from Fleece", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Leaf Document from Fleece", "[Document][C]") {
     if (!isRevTrees())
         return;
 
@@ -947,7 +958,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Leaf Document from Fleece", "[Database][C]") {
     CHECK(c4doc_containingValue(root) == nullptr);
 }
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Document][C]") {
     CHECK(c4doc_isOldMetaProperty(C4STR("_attachments")));
     CHECK(!c4doc_isOldMetaProperty(C4STR("@type")));
     
@@ -994,7 +1005,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 2", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 2", "[Document][C]") {
     // Check that old meta properties get removed:
     TransactionHelper t(db);
     auto sk = c4db_getFLSharedKeys(db);
@@ -1006,7 +1017,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 2", "[Database][C]") 
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Document][C]") {
     // Check that _attachments isn't removed if there are non-translated attachments in it,
     // but that the translated-from-blob attachments are removed:
     TransactionHelper t(db);
@@ -1021,7 +1032,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Database][C]") 
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Document][C]") {
     // Check that a translated attachment whose digest is different than its blob (i.e. the
     // attachment was probably modified by a non-blob-aware system) has its digest transferred to
     // the blob before being deleted. See #507. (Also, the _attachments property should be deleted.)
@@ -1036,7 +1047,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Database][C]") 
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Document][C]") {
     // Check that the 2.0.0 blob_<number> gets removed:
     TransactionHelper t(db);
     auto sk = c4db_getFLSharedKeys(db);
@@ -1050,7 +1061,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Database][C]") 
 
 
 // Repro case for https://github.com/couchbase/couchbase-lite-core/issues/478
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Document][C]") {
 
     if (!isRevTrees())
         return;

@@ -45,15 +45,35 @@ namespace litecore {
         slice digest = *this;
         uint64_t gen;
         if (!ReadUVarInt(&digest, &gen) || gen == 0 || gen > UINT_MAX)
-            error::_throw(error::CorruptRevisionData); // buffer too short!
+            error::_throw(error::CorruptRevisionData);
         return {unsigned(gen), digest};
     }
 
 
+    unsigned revid::generation() const {
+        if (isVersion())
+            return unsigned(asVersion().gen());         //FIX: Should Version.gen change to uint32?
+        else
+            return generationAndDigest().first;
+    }
+
+
     Version revid::asVersion() const {
-        if (!isVersion())
-            error::_throw(error::InvalidParameter);
-        return VersionVector::readCurrentVersionFromBinary(*this);
+        if (isVersion())
+            return VersionVector::readCurrentVersionFromBinary(*this);
+        else if (size == 0)
+            error::_throw(error::CorruptRevisionData);  // buffer too short!
+        else
+            error::_throw(error::InvalidParameter);     // it's a digest, not a version
+    }
+
+    VersionVector revid::asVersionVector() const {
+        if (isVersion())
+            return VersionVector::fromBinary(*this);
+        else if (size == 0)
+            error::_throw(error::CorruptRevisionData);  // buffer too short!
+        else
+            error::_throw(error::InvalidParameter);     // it's a digest, not a version
     }
 
     bool revid::operator< (const revid& other) const {
@@ -159,28 +179,55 @@ namespace litecore {
             error::_throw(error::BadRevisionID);
     }
 
-    bool revidBuffer::tryParse(slice ascii) {
+    bool revidBuffer::tryParse(slice ascii) noexcept {
         uint8_t* start = _buffer, *end = start + sizeof(_buffer), *dst = start;
         set(start, 0);
 
-        uint64_t gen = ascii.readDecimal();
-        if (gen == 0 || gen > UINT_MAX || ascii.size == 0)
-            return false;
+        if (ascii.findByte('-') != nullptr) {
+            // Digest type:
+            uint64_t gen = ascii.readDecimal();
+            if (gen == 0 || gen > UINT_MAX)
+                return false;
+            dst += PutUVarInt(dst, gen);
 
-        if (ascii[0] != '-')
-            return false;
-        ascii.moveStart(1);
+            if (ascii.readByte() != '-')
+                return false;
 
-        dst += PutUVarInt(dst, gen);
+            // Copy hex digest into dst as binary:
+            if (ascii.size == 0 || (ascii.size & 1) || dst + ascii.size / 2 > end)
+                return false; // rev ID is too long to fit in my buffer
+            for (unsigned i = 0; i < ascii.size; i += 2) {
+                if (!islowerxdigit(ascii[i]) || !islowerxdigit(ascii[i+1]))
+                    return false; // digest is not hex
+                *dst++ = (uint8_t)(16*digittoint(ascii[i]) + digittoint(ascii[i+1]));
+            }
+        } else {
+            // Version type:
+            uint64_t gen = ascii.readHex();
+            if (gen == 0)
+                return false;
+            *dst++ = 0;
+            dst += PutUVarInt(dst, gen);
 
-        // Copy hex digest into dst as binary:
-        if (ascii.size == 0 || (ascii.size & 1) || dst + ascii.size / 2 > end)
-            return false; // rev ID is too long to fit in my buffer
-        for (unsigned i = 0; i < ascii.size; i += 2) {
-            if (!islowerxdigit(ascii[i]) || !islowerxdigit(ascii[i+1]))
-                return false; // digest is not hex
-            *dst++ = (uint8_t)(16*digittoint(ascii[i]) + digittoint(ascii[i+1]));
+            if (ascii.readByte() != '@')
+                return false;
+
+            uint64_t peerID;
+            if (ascii.peekByte() == '*') {
+                ascii.moveStart(1);
+                peerID = kMePeerID.id;
+            } else {
+                if (ascii.size == 0)
+                    return false;
+                peerID = ascii.readHex();
+                if (peerID == 0)
+                    return false;   // 0 must be expresed as '*'
+            }
+            if (ascii.size > 0)
+                return false;
+            dst += PutUVarInt(dst, peerID);
         }
+
         setEnd(dst);
         return true;
     }

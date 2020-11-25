@@ -77,7 +77,7 @@ static bool ensureConfigDirExists(const C4DatabaseConfig2 *config, C4Error *outE
 
 static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 *config2) {
     return C4DatabaseConfig {
-        config2->flags | kC4DB_AutoCompact | kC4DB_SharedKeys,
+        config2->flags | kC4DB_AutoCompact,
         NULL,
         kC4RevisionTrees,
         config2->encryptionKey

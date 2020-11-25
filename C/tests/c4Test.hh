@@ -143,12 +143,10 @@ struct ExpectingExceptions {
 // and closes & deletes it in tearDown.
 class C4Test {
 public:
-#if ENABLE_VERSION_VECTORS
-    static const int numberOfOptions = 3;       // rev-tree, rev-tree encrypted, version vector
-#elif defined(COUCHBASE_ENTERPRISE)
-    static const int numberOfOptions = 2;       // rev-tree, rev-tree encrypted
+#if defined(COUCHBASE_ENTERPRISE)
+    static const int numberOfOptions = 3;       // rev-tree, version vector, rev-tree encrypted
 #else
-    static const int numberOfOptions = 1;       // rev-tree
+    static const int numberOfOptions = 2;       // rev-tree, version vector
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
@@ -167,8 +165,7 @@ public:
     const C4DatabaseConfig2& dbConfig() const   {return _dbConfig;}
     const C4StorageEngine storageType() const   {return _storage;}
     bool isSQLite() const                       {return storageType() == kC4SQLiteStorageEngine;}
-    C4DocumentVersioning versioning() const     {return _versioning;}
-    bool isRevTrees() const                     {return _versioning == kC4RevisionTrees;}
+    bool isRevTrees() const                     {return (_dbConfig.flags & kC4DB_VersionVectors) == 0;}
     bool isEncrypted() const                    {return (_dbConfig.encryptionKey.algorithm != kC4EncryptionNone);}
 
     // Creates an extra database, with the same path as db plus the suffix.
@@ -257,7 +254,6 @@ public:
 
 private:
     const C4StorageEngine _storage;
-    const C4DocumentVersioning _versioning;
     C4DatabaseConfig2 _dbConfig;
     int objectCount;
 };

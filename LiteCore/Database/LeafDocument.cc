@@ -101,10 +101,6 @@ namespace c4Internal {
             return _fleeceDoc ? _fleeceDoc->allocedData() : nullslice;
         }
 
-        virtual Retained<fleece::impl::Doc> fleeceDoc() override {
-            return _fleeceDoc;
-        }
-
         // These always fail because I don't have the whole rev tree:
         virtual void loadRevisions() override                               {failUnsupported();}
         virtual bool selectParentRevision() noexcept override               {return false;}
@@ -115,6 +111,7 @@ namespace c4Internal {
         virtual bool save(unsigned maxRevTreeDepth =0) override             {failUnsupported();}
         virtual bool putNewRevision(const C4DocPutRequest&) override        {failUnsupported();}
         virtual int32_t putExistingRevision(const C4DocPutRequest&, C4Error*) override{failUnsupported();}
+        virtual alloc_slice getSelectedRevHistory(unsigned maxRevs) override{failUnsupported();}
     private:
         Retained<LeafFleeceDoc> _fleeceDoc;
     };

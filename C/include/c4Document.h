@@ -155,7 +155,12 @@ extern "C" {
         i.e. if c4doc_loadRevisionBody() would succeed. */
     bool c4doc_hasRevisionBody(C4Document* doc C4NONNULL) C4API;
 
+    /** Returns the body (encoded Fleece data) of the selected revision, if available. */
     C4Slice c4doc_getRevisionBody(C4Document* doc C4NONNULL) C4API;
+
+    /** Returns a string encoding the selected revision's history.
+        @param maxRevs  The maximum number of revisions to include in the result. */
+    C4SliceResult c4doc_getRevisionHistory(C4Document* doc C4NONNULL, unsigned maxRevs) C4API;
 
     /** Selects the parent of the selected revision, if it's known, else returns NULL. */
     bool c4doc_selectParentRevision(C4Document* doc C4NONNULL) C4API;

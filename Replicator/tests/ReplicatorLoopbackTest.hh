@@ -445,10 +445,6 @@ public:
 
 #define fastREQUIRE(EXPR)  if (EXPR) ; else REQUIRE(EXPR)       // REQUIRE() is kind of expensive
 
-    static inline fleece::Doc getFleeceDoc(C4Document *doc) {
-        return fleece::Doc(c4doc_createFleeceDoc(doc), false);
-    }
-
     void compareDocs(C4Document *doc1, C4Document *doc2) {
         const auto kPublicDocumentFlags = (kDocDeleted | kDocConflicted | kDocHasAttachments);
 
@@ -457,10 +453,10 @@ public:
         fastREQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
 
         // Compare canonical JSON forms of both docs:
-        Doc rev1 = getFleeceDoc(doc1), rev2 = getFleeceDoc(doc2);
-        if (!rev1.root().isEqual(rev2.root())) {        // fast check to avoid expensive toJSON
-            alloc_slice json1 = rev1.root().toJSON(true, true);
-            alloc_slice json2 = rev2.root().toJSON(true, true);
+        Dict rev1 = c4doc_getProperties(doc1), rev2 = c4doc_getProperties(doc2);
+        if (!rev1.isEqual(rev2)) {        // fast check to avoid expensive toJSON
+            alloc_slice json1 = rev1.toJSON(true, true);
+            alloc_slice json2 = rev2.toJSON(true, true);
             CHECK(json1 == json2);
         }
     }

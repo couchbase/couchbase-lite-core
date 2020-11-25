@@ -87,6 +87,14 @@ namespace c4Internal {
             return revFlags;
         }
 
+        static C4DocumentFlags docFlagsFromCurrentRevFlags(C4RevisionFlags revFlags) {
+            C4DocumentFlags docFlags = kDocExists;
+            if (revFlags & kRevDeleted)         docFlags |= kDocDeleted;
+            if (revFlags & kRevHasAttachments)  docFlags |= kDocHasAttachments;
+            if (revFlags & kRevIsConflict)      docFlags |= kDocConflicted;
+            return docFlags;
+        }
+
         virtual bool selectCurrentRevision() noexcept {
             // By default just fill in what we know about the current revision:
             if (exists()) {
@@ -122,7 +130,7 @@ namespace c4Internal {
                 return nullptr;
         }
 
-        virtual Retained<fleece::impl::Doc> fleeceDoc() =0;
+        virtual alloc_slice getSelectedRevHistory(unsigned maxHistory) =0;
 
         alloc_slice bodyAsJSON(bool canonical =false);
 
@@ -227,13 +235,7 @@ namespace c4Internal {
         virtual Retained<Document> newDocumentInstance(const Record&) =0;
 
         virtual Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID,
-                                                           bool withBody)
-        {
-            Retained<Document> doc = newDocumentInstance(docID);
-            if (doc)
-                doc->selectRevision(revID, withBody);
-            return doc;
-        }
+                                                           bool withBody) =0;
 
         virtual alloc_slice revIDFromVersion(slice version) =0;
 

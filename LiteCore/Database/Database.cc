@@ -18,6 +18,7 @@
 
 #include "Database.hh"
 #include "TreeDocument.hh"
+#include "NuDocumentFactory.hh"
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
@@ -148,13 +149,10 @@ namespace c4Internal {
             _sequenceTracker.reset(new access_lock<SequenceTracker>());
 
         DocumentFactory* factory;
-        switch (inConfig.versioning) {
-#if ENABLE_VERSION_VECTORS
-            case kC4VersionVectors: factory = new VectorDocumentFactory(this); break;
-#endif
-            case kC4RevisionTrees:  factory = new TreeDocumentFactory(this); break;
-            default:                error::_throw(error::InvalidParameter);
-        }
+        if (inConfig.flags & kC4DB_VersionVectors) 
+            factory = new NuDocumentFactory(this);
+        else
+            factory = new TreeDocumentFactory(this);
         _documentFactory.reset(factory);
 
         // Open the DataFile:
@@ -271,8 +269,7 @@ namespace c4Internal {
                     continue;
                 }
 
-                Retained<Doc> fleeceDoc = doc->fleeceDoc();
-                const Dict* body = fleeceDoc->asDict();
+                auto body = (const Dict*)doc->getSelectedRevRoot();
 
                 // Iterate over blobs:
                 Document::findBlobReferences(body, [&](const Dict *blob) {

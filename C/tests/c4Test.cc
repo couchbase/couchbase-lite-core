@@ -181,12 +181,7 @@ string C4Test::sReplicatorFixturesDir = "Replicator/tests/data/";
 
 
 C4Test::C4Test(int testOption)
-:_storage(kC4SQLiteStorageEngine),
-#if ENABLE_VERSION_VECTORS
- _versioning((testOption > 1) ? kC4VersionVectors : kC4RevisionTrees)
-#else
-_versioning(kC4RevisionTrees)
-#endif
+:_storage(kC4SQLiteStorageEngine)
 {
     static once_flag once;
     call_once(once, [] {
@@ -247,12 +242,18 @@ _versioning(kC4RevisionTrees)
     objectCount = c4_getObjectCount();
 
     _dbConfig = {slice(TempDir()), kC4DB_Create};
-
-    kRevID = C4STR("1-abcd");
-    kRev2ID = C4STR("2-c001d00d");
-    kRev3ID = C4STR("3-deadbeef");
-
     if (testOption & 1) {
+        _dbConfig.flags |= kC4DB_VersionVectors;
+        kRevID = C4STR("1@*");
+        kRev2ID = C4STR("2@*");
+        kRev3ID = C4STR("3@*");
+    } else {
+        kRevID = C4STR("1-abcd");
+        kRev2ID = C4STR("2-c001d00d");
+        kRev3ID = C4STR("3-deadbeef");
+    }
+
+    if (testOption & 2) {
         _dbConfig.encryptionKey.algorithm = kC4EncryptionAES256;
         memcpy(_dbConfig.encryptionKey.bytes, "this is not a random key at all.", kC4EncryptionKeySizeAES256);
     }
@@ -260,8 +261,9 @@ _versioning(kC4RevisionTrees)
     static C4DatabaseConfig2 sLastConfig = { };
     if (_dbConfig.flags != sLastConfig.flags
                     || _dbConfig.encryptionKey.algorithm != sLastConfig.encryptionKey.algorithm) {
-        fprintf(stderr, "        --- %s\n",
-                (_dbConfig.encryptionKey.algorithm ? ", encrypted" : ""));
+        fprintf(stderr, "        --- %s %s\n",
+                ((_dbConfig.flags & kC4DB_VersionVectors) ? "Version-vectors" : "Rev-trees"),
+                (_dbConfig.encryptionKey.algorithm ? ", Encrypted" : ""));
         sLastConfig = _dbConfig;
     }
 

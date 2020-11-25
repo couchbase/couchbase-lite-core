@@ -137,6 +137,11 @@ C4Slice c4doc_getRevisionBody(C4Document* doc C4NONNULL) C4API {
 }
 
 
+C4SliceResult c4doc_getRevisionHistory(C4Document* doc C4NONNULL, unsigned maxRevs) C4API {
+    return C4SliceResult(asInternal(doc)->getSelectedRevHistory(maxRevs));
+}
+
+
 bool c4doc_selectParentRevision(C4Document* doc) noexcept {
     return asInternal(doc)->selectParentRevision();
 }
@@ -655,6 +660,35 @@ bool c4doc_resolveConflict(C4Document *doc,
 }
 
 
+bool c4doc_save(C4Document *doc,
+                uint32_t maxRevTreeDepth,
+                C4Error *outError) noexcept
+{
+    auto idoc = asInternal(doc);
+    if (!idoc->mustBeInTransaction(outError))
+        return false;
+    try {
+        if (maxRevTreeDepth == 0)
+            maxRevTreeDepth = asInternal(doc)->database()->maxRevTreeDepth();
+        if (!idoc->save(maxRevTreeDepth)) {
+            if (outError)
+                *outError = {LiteCoreDomain, kC4ErrorConflict};
+            return false;
+        }
+        return true;
+    } catchError(outError)
+    return false;
+}
+
+
+unsigned c4rev_getGeneration(C4Slice revID) noexcept {
+    try {
+        return revidBuffer(revID).generation();
+    }catchExceptions()
+    return 0;
+}
+
+
 #pragma mark - FLEECE-SPECIFIC:
 
 
@@ -663,11 +697,6 @@ using namespace fleece;
 
 FLDict c4doc_getProperties(C4Document* doc) C4API {
     return asInternal(doc)->getSelectedRevRoot();
-}
-
-
-FLDoc c4doc_createFleeceDoc(C4Document *doc) {
-    return (FLDoc) retain(asInternal(doc)->fleeceDoc().get());
 }
 
 
