@@ -473,12 +473,17 @@ void c4_dumpInstances(void) C4API {
 #pragma mark - MISCELLANEOUS:
 
 
-void c4_setTempDir(C4String path) C4API {
-    auto pathStr = slice(path).asString();
-    FilePath::setTempDirectory(pathStr);
+bool c4_setTempDir(C4String path, C4Error* err) C4API {
+    if(sqlite3_temp_directory != nullptr) {
+        c4error_make(LiteCoreDomain, kC4ErrorUnsupported, C4STR("c4_setTempDir cannot be called more than once!"));
+        return false;
+    }
 
-    // Tell SQLite to use this temp directory. Note that the dup'd string will be leaked.
-    sqlite3_temp_directory = cbl_strdup(pathStr.c_str());
+    
+    sqlite3_temp_directory = (char *)sqlite3_malloc(path.size + 1);
+    memcpy(sqlite3_temp_directory, path.buf, path.size);
+    sqlite3_temp_directory[path.size] = 0;
+    return true;
 }
 // LCOV_EXCL_STOP
 
