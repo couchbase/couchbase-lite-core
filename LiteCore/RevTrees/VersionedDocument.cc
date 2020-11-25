@@ -164,6 +164,7 @@ namespace litecore {
     }
 
     VersionedDocument::SaveResult VersionedDocument::save(Transaction& transaction) {
+        ensureConflictStateConsistent();
         if (!_changed)
             return kNoNewSequence;
         updateMeta();
