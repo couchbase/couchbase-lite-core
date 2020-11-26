@@ -105,7 +105,7 @@ namespace litecore { namespace actor {
     void Scheduler::task(unsigned taskID) {
         LogToAt(ActorLog, Verbose, "   task %d starting", taskID);
         char name[100];
-        sprintf(name, "Scheduler #%u (Couchbase Lite Core)", taskID);
+        sprintf(name, "CBL Scheduler#%u", taskID);
         SetThreadName(name);
         ThreadedMailbox *mailbox;
         while ((mailbox = _queue.pop()) != nullptr) {

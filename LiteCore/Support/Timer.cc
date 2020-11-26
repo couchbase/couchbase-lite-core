@@ -37,7 +37,7 @@ namespace litecore { namespace actor {
 
     // Body of the manager's background thread. Waits for timers and calls their callbacks.
     void Timer::Manager::run() {
-        SetThreadName("Timer (Couchbase Lite Core)");
+        SetThreadName("Timer (CBL)");
         unique_lock<mutex> lock(_mutex);
         while(true) {
             auto earliest = _schedule.begin();
