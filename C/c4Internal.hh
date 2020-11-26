@@ -28,11 +28,9 @@
 #include "function_ref.hh"
 #include <functional>
 
-using namespace std;
 using namespace litecore;
 
-
-#define LOCK(MUTEX)     unique_lock<mutex> _lock(MUTEX)
+#define LOCK(MUTEX)     std::unique_lock<std::mutex> _lock(MUTEX)
 #define UNLOCK()        _lock.unlock();
 
 
@@ -48,9 +46,9 @@ namespace c4Internal {
     // SLICES:
 
     C4SliceResult sliceResult(const char *str);
-    C4SliceResult sliceResult(const string&);
+    C4SliceResult sliceResult(const std::string&);
 
-    string toString(C4Slice);
+    std::string toString(C4Slice);
 
     void destructExtraInfo(C4ExtraInfo&) noexcept;
 }

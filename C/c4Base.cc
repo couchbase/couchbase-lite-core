@@ -43,6 +43,7 @@
 
 
 using namespace litecore;
+using namespace std;
 
 extern "C" {
     CBL_CORE_API std::atomic_int gC4ExpectExceptions;
@@ -480,7 +481,7 @@ bool c4_setTempDir(C4String path, C4Error* err) C4API {
     }
 
     
-    sqlite3_temp_directory = (char *)sqlite3_malloc(path.size + 1);
+    sqlite3_temp_directory = (char *)sqlite3_malloc((int)path.size + 1);
     memcpy(sqlite3_temp_directory, path.buf, path.size);
     sqlite3_temp_directory[path.size] = 0;
     return true;

@@ -17,6 +17,7 @@
 #include "fleece/Mutable.hh"
 
 using namespace litecore::actor;
+using namespace std;
 
 constexpr Timer::duration ReplicatorLoopbackTest::kLatency;
 

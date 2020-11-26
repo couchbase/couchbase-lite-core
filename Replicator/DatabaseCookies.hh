@@ -29,7 +29,7 @@ namespace litecore { namespace net {
 } }
 
 namespace litecore { namespace repl {
-
+    using namespace fleece;
 
     /** Persists a CookieStore to/from a Database. */
     class DatabaseCookies {

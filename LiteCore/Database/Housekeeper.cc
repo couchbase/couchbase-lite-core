@@ -27,6 +27,7 @@
 namespace litecore {
     using namespace c4Internal;
     using namespace actor;
+    using namespace std;
 
     Housekeeper::Housekeeper(Database *db)
     :Actor("Housekeeper")

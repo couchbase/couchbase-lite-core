@@ -33,11 +33,9 @@
 #include "fleece/Fleece.hh"
 #include <atomic>
 
-using namespace std;
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::repl;
-
 
 /** Glue between C4 API and internal LiteCore replicator. Abstract class. */
 struct C4Replicator : public RefCounted,
@@ -262,7 +260,7 @@ protected:
 
     unsigned getIntProperty(slice key, unsigned defaultValue) const {
         if (auto val = _options.properties[key]; val.type() == kFLNumber)
-            return unsigned( max(int64_t(0), min(int64_t(UINT_MAX), val.asInt())) );
+            return unsigned(std::max(int64_t(0), std::min(int64_t(UINT_MAX), val.asInt())) );
         else
             return defaultValue;
     }
@@ -379,7 +377,7 @@ protected:
             return;
 
         auto nRevs = revs.size();
-        vector<const C4DocumentEnded*> docsEnded;
+        std::vector<const C4DocumentEnded*> docsEnded;
         docsEnded.reserve(nRevs);
         for (int pushing = 0; pushing <= 1; ++pushing) {
             docsEnded.clear();
@@ -497,12 +495,12 @@ protected:
 
     private:
         Retained<Replicator> replicator;
-        optional<Checkpointer> checkpointer;
+        std::optional<Checkpointer> checkpointer;
         Retained<C4Database> database;
     };
 
 
-    mutable mutex               _mutex;
+    mutable std::mutex          _mutex;
     Retained<C4Database> const  _database;
     Replicator::Options         _options;
 
@@ -517,7 +515,7 @@ private:
     mutable alloc_slice         _peerTLSCertificateData;
     mutable c4::ref<C4Cert>     _peerTLSCertificate;
     Retained<C4Replicator>      _selfRetain;            // Keeps me from being deleted
-    atomic<C4ReplicatorStatusChangedCallback>   _onStatusChanged;
-    atomic<C4ReplicatorDocumentsEndedCallback>  _onDocumentsEnded;
-    atomic<C4ReplicatorBlobProgressCallback>    _onBlobProgress;
+    std::atomic<C4ReplicatorStatusChangedCallback>   _onStatusChanged;
+    std::atomic<C4ReplicatorDocumentsEndedCallback>  _onDocumentsEnded;
+    std::atomic<C4ReplicatorBlobProgressCallback>    _onBlobProgress;
 };

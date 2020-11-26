@@ -29,6 +29,7 @@
 #include <errno.h>
 
 using namespace c4Internal;
+using namespace std;
 
 
 CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[6] = {

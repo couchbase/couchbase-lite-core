@@ -26,18 +26,16 @@
 #include "c4Test.hh"
 
 
-using namespace std;
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::repl;
 using namespace litecore::websocket;
 
-
 class ReplicatorLoopbackTest : public C4Test, Replicator::Delegate {
 public:
     using duration = std::chrono::nanoseconds;
 
-    static constexpr duration kLatency              = chrono::milliseconds(50);
+    static constexpr duration kLatency              = std::chrono::milliseconds(50);
 
 
     ReplicatorLoopbackTest()
@@ -61,7 +59,7 @@ public:
 
     // opts1 is the options for _db; opts2 is the options for _db2
     void runReplicators(Replicator::Options opts1, Replicator::Options opts2, bool reset = false) {
-        unique_lock<mutex> lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
 
         _gotResponse = false;
         _statusChangedCalls = 0;
@@ -74,8 +72,8 @@ public:
         REQUIRE(dbServer);
         if (opts2.push > kC4Passive || opts2.pull > kC4Passive) {
             // always make opts1 the active (client) side
-            swap(dbServer, dbClient);
-            swap(opts1, opts2);
+            std::swap(dbServer, dbClient);
+            std::swap(opts1, opts2);
         }
 
         // Create client (active) and server (passive) replicators:
@@ -135,7 +133,7 @@ public:
 
 
     void stopWhenIdle() {
-        lock_guard<mutex> lock(_mutex);
+        std::lock_guard<std::mutex> lock(_mutex);
         if (!_stopOnIdle) {
             _stopOnIdle = true;
             if (!_checkStopWhenIdle())
@@ -165,7 +163,7 @@ public:
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
                                            const websocket::Headers &headers) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-        unique_lock<mutex> lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
 
         if (repl == _replClient) {
             Assert(!_gotResponse);
@@ -182,7 +180,7 @@ public:
                                          const Replicator::Status &status) override
     {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-        unique_lock<mutex> lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
 
         if (repl == _replClient) {
             Assert(_gotResponse);
@@ -216,10 +214,10 @@ public:
     }
 
     virtual void replicatorDocumentsEnded(Replicator *repl,
-                                          const vector<Retained<ReplicatedRev>> &revs) override
+                                          const std::vector<Retained<ReplicatedRev>> &revs) override
     {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-        unique_lock<mutex> lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
 
         if (repl == _replClient) {
             Assert(!_replicatorClientFinished);
@@ -258,7 +256,7 @@ public:
                                         const Replicator::BlobProgress &p) override
     {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-        unique_lock<mutex> lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
 
         if (p.dir == Dir::kPushing) {
             ++_blobPushProgressCallbacks;
@@ -276,7 +274,7 @@ public:
 
     virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-        unique_lock<mutex> lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
 
         if (repl == _replClient) {
             Log(">> Replicator closed with code=%d/%d, message=%.*s",
@@ -366,7 +364,7 @@ public:
             ticks = RandomNumber(uint32_t(-ticks)) + RandomNumber(uint32_t(-ticks));
             interval = duration(ticks);
         }
-        this_thread::sleep_for(interval);
+        std::this_thread::sleep_for(interval);
     }
 
     static int addDocs(C4Database *db, duration interval, int total) {
@@ -415,9 +413,9 @@ public:
         Log("-------- %s: Done creating revs --------", name);
     }
 
-    static thread* runInParallel(function<void()> callback) {
+    static std::thread* runInParallel(std::function<void()> callback) {
         C4Error error;
-        return new thread([=]() mutable {
+        return new std::thread([=]() mutable {
             callback();
         });
     }
@@ -425,7 +423,7 @@ public:
     void addDocsInParallel(duration interval, int total) {
         _parallelThread.reset(runInParallel([=]() {
             _expectedDocumentCount = addDocs(db, interval, total);
-            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            sleepFor(std::chrono::seconds(1)); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }));
     }
@@ -434,7 +432,7 @@ public:
                            bool useFakeRevIDs = true) {
         _parallelThread.reset( runInParallel([=]() {
             addRevs(db, interval, docID, firstRev, totalRevs, useFakeRevIDs);
-            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            sleepFor(std::chrono::seconds(1)); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }));
     }
@@ -538,9 +536,9 @@ public:
     }
 
     template <class SET>
-    static vector<string> asVector(const SET &strings) {
-        vector<string> out;
-        for (const string &s : strings)
+    static std::vector<std::string> asVector(const SET &strings) {
+        std::vector<std::string> out;
+        for (const std::string &s : strings)
             out.push_back(s);
         return out;
     }
@@ -548,10 +546,10 @@ public:
     C4Database* db2 {nullptr};
     Retained<Replicator> _replClient, _replServer;
     alloc_slice _checkpointID;
-    unique_ptr<thread> _parallelThread;
+    std::unique_ptr<std::thread> _parallelThread;
     bool _stopOnIdle {0};
-    mutex _mutex;
-    condition_variable _cond;
+    std::mutex _mutex;
+    std::condition_variable _cond;
     bool _replicatorClientFinished {false}, _replicatorServerFinished {false};
     bool _gotResponse {false};
     Replicator::Status _statusReceived { };
@@ -559,14 +557,14 @@ public:
     int64_t _expectedDocumentCount {0};
     int64_t _expectedUnitsComplete {-1};
     C4Error _expectedError {};
-    set<string> _docPushErrors, _docPullErrors;
-    set<string> _expectedDocPushErrors, _expectedDocPullErrors;
+    std::set<std::string> _docPushErrors, _docPullErrors;
+    std::set<std::string> _expectedDocPushErrors, _expectedDocPullErrors;
     bool _ignoreTransientErrors = false;
     bool _checkDocsFinished {true};
-    multiset<string> _docsFinished, _expectedDocsFinished;
+    std::multiset<std::string> _docsFinished, _expectedDocsFinished;
     unsigned _blobPushProgressCallbacks {0}, _blobPullProgressCallbacks {0};
     Replicator::BlobProgress _lastBlobPushProgress {}, _lastBlobPullProgress {};
-    function<void(ReplicatedRev*)> _conflictHandler;
+    std::function<void(ReplicatedRev*)> _conflictHandler;
     bool _conflictHandlerRunning {false};
 };
 

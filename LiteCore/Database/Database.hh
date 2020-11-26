@@ -183,17 +183,17 @@ namespace c4Internal {
         const string                _parentDirectory;
         const C4DatabaseConfig2     _config;
         const C4DatabaseConfig      _configV1;              // TODO: DEPRECATED
-        unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
+        std::unique_ptr<DataFile>   _dataFile;              // Underlying DataFile
         Transaction*                _transaction {nullptr}; // Current Transaction, or null
         int                         _transactionLevel {0};  // Nesting level of transaction
-        unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
-        unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder
+        std::unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
+        std::unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder
         FLEncoder                   _flEncoder {nullptr};   // Ditto, for clients
-        unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
-        mutable unique_ptr<BlobStore> _blobStore;           // Blob storage
+        std::unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
+        mutable std::unique_ptr<BlobStore> _blobStore;           // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
-        recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
-        unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
+        std::recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
+        std::unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
         Retained<Housekeeper>       _housekeeper;           // for expiration/cleanup tasks
     };
 

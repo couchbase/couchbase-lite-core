@@ -14,6 +14,7 @@
 #include "fleece/Fleece.hh"
 
 using namespace fleece;
+using namespace std;
 
 constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
 constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,

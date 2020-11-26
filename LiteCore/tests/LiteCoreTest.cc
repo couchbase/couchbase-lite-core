@@ -24,6 +24,7 @@
 #include "c4Private.h"
 #include "Backtrace.hh"
 #include "Encoder.hh"
+#include "Logging.hh"
 #include <csignal>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -276,10 +277,10 @@ DataFile* DataFileTestFixture::newDatabase(const FilePath &path, const DataFile:
 void DataFileTestFixture::reopenDatabase(const DataFile::Options *newOptions) {
     auto dbPath = db->filePath();
     auto options = db->options();
-    Debug("//// Closing db");
+    WriteDebug("//// Closing db");
     db.reset();
     store = nullptr;
-    Debug("//// Reopening db");
+    WriteDebug("//// Reopening db");
     db.reset(newDatabase(dbPath, newOptions ? newOptions : &options));
     store = &db->defaultKeyStore();
 }

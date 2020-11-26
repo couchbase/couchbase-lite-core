@@ -25,6 +25,8 @@
 #include <sstream>
 #include <fstream>
 
+using namespace std;
+
 #define DATESTAMP "\\w+, \\d{2}/\\d{2}/\\d{2}"
 #define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}\\| "
 

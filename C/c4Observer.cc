@@ -23,6 +23,7 @@
 #include "InstanceCounted.hh"
 
 using namespace std::placeholders;
+using namespace std;
 
 
 struct c4DatabaseObserver : public fleece::InstanceCounted {
