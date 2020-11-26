@@ -67,17 +67,17 @@ namespace litecore { namespace websocket {
 
         virtual void connect() override {
             Assert(_driver && _driver->_peer);
-            _driver->enqueue(&Driver::_connect);
+            _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_connect));
         }
 
         virtual bool send(fleece::slice msg, bool binary) override {
             auto newValue = (_driver->_bufferedBytes += msg.size);
-            _driver->enqueue(&Driver::_send, fleece::alloc_slice(msg), binary);
+            _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_send), fleece::alloc_slice(msg), binary);
             return newValue <= kSendBufferSize;
         }
 
         virtual void close(int status =1000, fleece::slice message =fleece::nullslice) override {
-            _driver->enqueue(&Driver::_close, status, fleece::alloc_slice(message));
+            _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_close), status, fleece::alloc_slice(message));
         }
 
 
@@ -96,17 +96,17 @@ namespace litecore { namespace websocket {
         Driver* driver() const    {return _driver;}
 
         void peerIsConnecting(actor::delay_t latency = actor::delay_t::zero()) {
-            _driver->enqueueAfter(latency, &Driver::_peerIsConnecting);
+            _driver->enqueueAfter(latency, FUNCTION_TO_QUEUE(Driver::_peerIsConnecting));
         }
 
         virtual void ack(size_t msgSize) {
-            _driver->enqueue(&Driver::_ack, msgSize);
+            _driver->enqueue(FUNCTION_TO_QUEUE(Driver::_ack), msgSize);
         }
 
         void received(Message *message,
                       actor::delay_t latency = actor::delay_t::zero())
         {
-            _driver->enqueueAfter(latency, &Driver::_received, retained(message));
+            _driver->enqueueAfter(latency, FUNCTION_TO_QUEUE(Driver::_received), retained(message));
         }
 
         void closed(CloseReason reason =kWebSocketClose,
@@ -115,7 +115,7 @@ namespace litecore { namespace websocket {
                     actor::delay_t latency = actor::delay_t::zero())
         {
             _driver->enqueueAfter(latency,
-                                  &Driver::_closed,
+                                  FUNCTION_TO_QUEUE(Driver::_closed),
                                   {reason, status, fleece::alloc_slice(message)});
         }
 
@@ -140,11 +140,11 @@ namespace litecore { namespace websocket {
 
 
         // The internal Actor that does the real work
-        class Driver : public actor::Actor, protected Logging {
+        class Driver : public actor::Actor {
         public:
 
             Driver(LoopbackWebSocket *ws, actor::delay_t latency)
-            :Logging(WSLogDomain)
+            :Actor(WSLogDomain)
             ,_webSocket(ws)
             ,_latency(latency)
             { }

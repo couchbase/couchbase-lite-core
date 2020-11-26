@@ -139,5 +139,6 @@ target_link_libraries(
     LiteCoreStatic
     LiteCoreREST_Static
     LiteCoreWebSocket
+    BLIPStatic          # Explicitly needed in here because GCC is a dinosaur...
     ${END_GROUP_FLAG}
 )

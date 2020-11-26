@@ -49,11 +49,11 @@ namespace litecore { namespace repl {
         RevFinder(Replicator* NONNULL, Delegate* NONNULL);
 
         /** Delegate must call this every time it receives a "rev" message. */
-        void revReceived()     {enqueue(&RevFinder::_revReceived);}
+        void revReceived()     {enqueue(FUNCTION_TO_QUEUE(RevFinder::_revReceived));}
 
         /** Delegate calls this if it has to re-request a "rev" message, meaning that another call to
             revReceived() will be made in the future. */
-        void reRequestingRev() {enqueue(&RevFinder::_reRequestingRev);}
+        void reRequestingRev() {enqueue(FUNCTION_TO_QUEUE(RevFinder::_reRequestingRev));}
 
     private:
         static const size_t kMaxPossibleAncestors = 10;

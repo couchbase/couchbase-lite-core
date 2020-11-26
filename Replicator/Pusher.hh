@@ -33,18 +33,18 @@ namespace litecore { namespace repl {
         Pusher(Replicator *replicator NONNULL, Checkpointer&);
 
         // Starts an active push
-        void start()  {enqueue(&Pusher::_start);}
+        void start()  {enqueue(FUNCTION_TO_QUEUE(Pusher::_start));}
 
         // Called by Replicator when remote checkpoint doesn't match
         void checkpointIsInvalid()              {_changesFeed.setCheckpointValid(false);}
 
         // Called by the puller's RevFinder, via the Replicator
         void docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID) {
-            enqueue(&Pusher::_docRemoteAncestorChanged, docID, remoteAncestorRevID);
+            enqueue(FUNCTION_TO_QUEUE(Pusher::_docRemoteAncestorChanged), docID, remoteAncestorRevID);
         }
 
     protected:
-        virtual void dbHasNewChanges() override {enqueue(&Pusher::_dbHasNewChanges);}
+        virtual void dbHasNewChanges() override {enqueue(FUNCTION_TO_QUEUE(Pusher::_dbHasNewChanges));}
         virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) override {
             finishedDocumentWithError(rev, error, transient);
         }
@@ -62,7 +62,7 @@ namespace litecore { namespace repl {
         void handleChangesResponse(RevToSendList&, blip::MessageIn*, bool proposedChanges);
         bool handleChangeResponse(RevToSend *change, Value response);
         bool handleProposedChangeResponse(RevToSend *change, Value response);
-        void maybeGetMoreChanges()          {enqueue(&Pusher::_maybeGetMoreChanges);}
+        void maybeGetMoreChanges()          {enqueue(FUNCTION_TO_QUEUE(Pusher::_maybeGetMoreChanges));}
         void _maybeGetMoreChanges();
         void gotChanges(ChangesFeed::Changes);
         void _dbHasNewChanges();
