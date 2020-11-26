@@ -39,21 +39,11 @@ namespace litecore {
 
         /** Constructs a FilePath from a directory name and a filename in that directory. */
         FilePath(const std::string &dirName, const std::string &fileName);
-
-        /** Returns the system's temporary-files directory. */
-        static FilePath tempDirectory();
-
-        /** Explicitly specifies a temporary-files directory, overriding the default one. */
-        static void setTempDirectory(const std::string&);
         
-        /** Returns the system's temporary-files directory within the context
-         *  of the provided hint path.
-         *  @param neighbor A filesystem path that serves both as the source of
-         *         the device that the temp directory must exist on, as well as
-         *         a fallback for if the device is not the same, or the default
-         *         temp directory is not writable
+        /** Returns a folder with a predefined name that serves as a location for temporary
+            files.  
          */
-        static FilePath tempDirectory(const std::string& neighbor);
+        static FilePath sharedTempDirectory(const std::string& location);
 
         static const std::string kSeparator;
 

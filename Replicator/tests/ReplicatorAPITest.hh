@@ -23,11 +23,9 @@
 #include <thread>
 #include <mutex>
 
-using namespace std;
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::net;
-
 
 extern "C" {
     void C4RegisterBuiltInWebSocket();
@@ -50,8 +48,8 @@ public:
     ReplicatorAPITest()
     :C4Test(0)
     {
-        static once_flag once;
-        call_once(once, [&]() {
+        static std::once_flag once;
+        std::call_once(once, [&]() {
             // Register the BuiltInWebSocket class as the C4Replicator's WebSocketImpl.
             C4RegisterBuiltInWebSocket();
         });
@@ -71,7 +69,7 @@ public:
         const char *proxyURL = getenv("REMOTE_PROXY");
         if (proxyURL) {
             Address proxyAddr{slice(proxyURL)};
-            _proxy = make_unique<ProxySpec>(proxyAddr);
+            _proxy = std::make_unique<ProxySpec>(proxyAddr);
         }
 
         if (Address::isSecure(_address)) {
@@ -158,7 +156,7 @@ public:
     }
 
     void logState(C4ReplicatorStatus status) {
-        string flags = "";
+        std::string flags = "";
         if (status.flags & kC4WillRetry)     flags += "retry,";
         if (status.flags & kC4HostReachable) flags += "reachable,";
         if (status.flags & kC4Suspended)     flags += "suspended,";
@@ -179,7 +177,7 @@ public:
     }
 
     void stateChanged(C4Replicator *r, C4ReplicatorStatus s) {
-        unique_lock<mutex> lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
 
         logState(s);
         if(r != _repl) {
@@ -244,7 +242,7 @@ public:
                             void *context)
     {
         auto test = (ReplicatorAPITest*)context;
-        unique_lock<mutex> lock(test->_mutex);
+        std::unique_lock<std::mutex> lock(test->_mutex);
 
         char message[256];
         test->_docsEnded += nDocs;
@@ -267,7 +265,7 @@ public:
 
 
     bool startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
-        unique_lock<mutex> lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
         return _startReplicator(push, pull, err);
     }
 
@@ -311,15 +309,15 @@ public:
         return true;
     }
 
-    static constexpr auto kDefaultWaitTimeout = repl::tuning::kDefaultCheckpointSaveDelay + 2s;
+    static constexpr auto kDefaultWaitTimeout = repl::tuning::kDefaultCheckpointSaveDelay + std::chrono::seconds(2);
 
-    void waitForStatus(C4ReplicatorActivityLevel level, chrono::milliseconds timeout =kDefaultWaitTimeout) {
-        unique_lock<mutex> lock(_mutex);
+    void waitForStatus(C4ReplicatorActivityLevel level, std::chrono::milliseconds timeout =kDefaultWaitTimeout) {
+        std::unique_lock<std::mutex> lock(_mutex);
         _waitForStatus(lock, level, timeout);
     }
 
-    void _waitForStatus(unique_lock<mutex> &lock,
-                        C4ReplicatorActivityLevel level, chrono::milliseconds timeout =kDefaultWaitTimeout)
+    void _waitForStatus(std::unique_lock<std::mutex> &lock,
+                        C4ReplicatorActivityLevel level, std::chrono::milliseconds timeout =kDefaultWaitTimeout)
     {
         _stateChangedCondition.wait_for(lock, timeout,
                                         [&]{return _numCallbacksWithLevel[level] > 0;});
@@ -328,11 +326,11 @@ public:
     }
 
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
-        unique_lock<mutex> lock(_mutex);
+        std::unique_lock<std::mutex> lock(_mutex);
 
         C4Error err;
         REQUIRE(_startReplicator(push, pull, &err));
-        _waitForStatus(lock, kC4Stopped, 5min);
+        _waitForStatus(lock, kC4Stopped, std::chrono::minutes(5));
 
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
         if (expectSuccess) {
@@ -377,9 +375,9 @@ public:
         auto headers = enc.finishDoc();
 
         string scheme = Address::isSecure(_address) ? "https" : "http";
-        auto r = make_unique<REST::Response>(scheme,
+        auto r = std::make_unique<REST::Response>(scheme,
                                              method,
-                                             (string)(slice)_address.hostname,
+                                             (std::string)(slice)_address.hostname,
                                              port,
                                              path);
         r->setHeaders(headers).setBody(body).setTimeout(5);
@@ -408,8 +406,8 @@ public:
 
 
     /// Sends an HTTP request to the remote server.
-    alloc_slice sendRemoteRequest(const string &method,
-                                  string path,
+    alloc_slice sendRemoteRequest(const std::string &method,
+                                  std::string path,
                                   slice body =nullslice,
                                   bool admin =false,
                                   HTTPStatus expectedStatus = HTTPStatus::OK)
@@ -433,9 +431,9 @@ public:
     }
 
 
-    static vector<string> asVector(const set<string> strings) {
-        vector<string> out;
-        for (const string &s : strings)
+    static std::vector<std::string> asVector(const std::set<std::string> strings) {
+        std::vector<std::string> out;
+        for (const std::string &s : strings)
             out.push_back(s);
         return out;
     }
@@ -452,7 +450,7 @@ public:
     c4::ref<C4Cert> identityCert;
     c4::ref<C4KeyPair> identityKey;
 #endif
-    unique_ptr<ProxySpec> _proxy;
+    std::unique_ptr<ProxySpec> _proxy;
     bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};
     C4ReplicatorDocumentsEndedCallback _onDocsEnded {nullptr};
@@ -460,16 +458,16 @@ public:
     bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;
 
-    mutex _mutex;
-    condition_variable _stateChangedCondition;
+    std::mutex _mutex;
+    std::condition_variable _stateChangedCondition;
     C4ReplicatorStatus _callbackStatus {};
     int _numCallbacks {0};
     int _numCallbacksWithLevel[5] {0};
     AllocedDict _headers;
     bool _stopWhenIdle {false};
     int _docsEnded {0};
-    set<string> _docPushErrors, _docPullErrors;
-    set<string> _expectedDocPushErrors, _expectedDocPullErrors;
+    std::set<std::string> _docPushErrors, _docPullErrors;
+    std::set<std::string> _expectedDocPushErrors, _expectedDocPullErrors;
     int _counter {0};
     bool _logRemoteRequests {true};
     bool _mayGoOffline {false};

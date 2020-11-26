@@ -17,6 +17,7 @@
 #include "fleece/Mutable.hh"
 
 using namespace litecore::actor;
+using namespace std;
 
 constexpr Timer::duration ReplicatorLoopbackTest::kLatency;
 
@@ -54,7 +55,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt databas
     FilePath original = db->path();
     char folderName[64];
     sprintf(folderName, "scratch%lld.cblite2/", chrono::milliseconds(time(nullptr)).count());
-    FilePath newPath = litecore::FilePath::tempDirectory()[folderName];
+    FilePath newPath = FilePath(TempDir(), "")[folderName];
     string newPathStr = newPath.path();
     CopyPrebuiltDB(original, newPath, &db->config);
     C4DatabaseConfig config = db->config;

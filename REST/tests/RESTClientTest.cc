@@ -21,6 +21,7 @@
 
 using namespace fleece;
 using namespace litecore::net;
+using namespace std;
 
 
 #define TEST_PROXIES 0

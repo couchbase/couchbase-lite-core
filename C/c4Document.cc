@@ -34,6 +34,7 @@
 #include "FleeceImpl.hh"
 
 using namespace fleece::impl;
+using namespace std;
 
 
 C4Document* c4doc_retain(C4Document *doc) noexcept {

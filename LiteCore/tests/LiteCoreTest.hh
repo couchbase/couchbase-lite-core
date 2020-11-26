@@ -74,7 +74,6 @@ struct ExpectingExceptions {
 #include "DataFile.hh"
 
 using namespace litecore;
-using namespace std;
 
 
 class TestFixture {
@@ -86,6 +85,7 @@ public:
     litecore::FilePath GetPath(const std::string& name, const std::string& extension) noexcept;
     
     static std::string sFixturesDir;
+    static FilePath sTempDir;
 
 private:
     unsigned const _warningsAlreadyLogged;
@@ -114,7 +114,7 @@ public:
     void reopenDatabase(const DataFile::Options *newOptions =nullptr);
 
     sequence_t writeDoc(slice docID, DocumentFlags, Transaction&,
-                        function<void(fleece::impl::Encoder&)>);
+                        std::function<void(fleece::impl::Encoder&)>);
 
     virtual slice fleeceAccessor(slice recordBody) const override;
     virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;

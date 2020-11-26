@@ -27,6 +27,7 @@
 namespace litecore {
     using namespace actor;
     using namespace std::placeholders;
+    using namespace std;
 
 
     // Threshold for rapidity of database changes. If it's been this long since the last change,

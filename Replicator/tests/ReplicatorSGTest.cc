@@ -34,6 +34,7 @@
 #endif
 
 using namespace fleece;
+using namespace std;
 
 
 /* REAL-REPLICATOR (SYNC GATEWAY) TESTS

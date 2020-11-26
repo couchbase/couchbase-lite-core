@@ -25,6 +25,7 @@
 namespace litecore {
     using namespace actor;
     using namespace std::placeholders;
+    using namespace std;
 
 
     BackgroundDB::BackgroundDB(Database *db)

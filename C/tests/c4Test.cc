@@ -38,6 +38,10 @@
 #include <CoreFoundation/CFBundle.h>
 #endif
 
+#ifdef _MSC_VER
+#include <atlbase.h>
+#endif
+
 using namespace std;
 
 const std::string& TempDir() {
@@ -47,7 +51,16 @@ const std::string& TempDir() {
     call_once(f, [=] {
         char folderName[64];
         sprintf(folderName, "LiteCore_C_Tests%lld/", chrono::milliseconds(time(nullptr)).count());
-        auto temp = litecore::FilePath::tempDirectory()[folderName];
+        #ifdef _MSC_VER
+            WCHAR pathBuffer[MAX_PATH + 1];
+            GetTempPathW(MAX_PATH, pathBuffer);
+            GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
+            CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
+            auto sharedTemp = litecore::FilePath(convertedPath.m_psz, "");
+        #else // _MSC_VER
+            auto sharedTemp = litecore::FilePath("/tmp", "");
+        #endif // _MSC_VER
+        auto temp = sharedTemp[folderName];
         temp.mkdir();
         kTempDir = temp.path();
     });
@@ -386,7 +399,7 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
 
 /*static*/ alloc_slice C4Test::copyFixtureDB(const string &name) {
     auto srcPath = litecore::FilePath(sFixturesDir + name, "");
-    auto dbPath = litecore::FilePath::tempDirectory()[srcPath.fileOrDirName() + "/"];
+    auto dbPath = litecore::FilePath(TempDir(), "")[srcPath.fileOrDirName() + "/"];
     dbPath.delRecursive();
     srcPath.copyTo(dbPath);
     return alloc_slice(string(dbPath));

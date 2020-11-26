@@ -22,8 +22,6 @@
 #include <string>
 #include "LiteCoreTest.hh"
 
-using namespace std;
-
 
 class QueryParserTest : public TestFixture, protected QueryParser::delegate {
 public:

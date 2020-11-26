@@ -16,8 +16,6 @@
 
 using namespace litecore;
 using namespace fleece::impl;
-using namespace std;
-
 
 // NOTE: This test does not use RevTree or Database, so it stores plain Fleece in record bodies.
 
@@ -64,7 +62,7 @@ protected:
         return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder &enc) {
             enc.writeKey("numbers");
             enc.beginArray();
-            for (int j = max(i-5, 1); j <= i; j++)
+            for (int j = std::max(i-5, 1); j <= i; j++)
                 enc.writeString(numberString(j));
             enc.endArray();
             enc.writeKey("type");
@@ -152,11 +150,11 @@ protected:
         t.commit();
     }
 
-    vector<string> extractIndexes(vector<IndexSpec> indexes) {
-        set<string> retVal;
+    std::vector<std::string> extractIndexes(std::vector<IndexSpec> indexes) {
+        std::set<std::string> retVal;
         for (auto &i : indexes)
             retVal.insert(i.name);
-        return vector<string>(retVal.begin(), retVal.end());
+        return std::vector<std::string>(retVal.begin(), retVal.end());
     }
 
     int64_t rowsInQuery(string json) {
@@ -165,7 +163,7 @@ protected:
         return e->getRowCount();
     }
 
-    void testExpressions(const vector<pair<string,string>> &tests) {
+    void testExpressions(const std::vector<std::pair<std::string,std::string>> &tests) {
         {
             Transaction t(store->dataFile());
             writeNumberedDoc(1, nullslice, t);
