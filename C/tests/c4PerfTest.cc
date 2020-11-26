@@ -26,7 +26,6 @@
 #include "Benchmark.hh"
 #include "FilePath.hh"
 #include "SecureRandomize.hh"
-#include "repo_version.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <iostream>
