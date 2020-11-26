@@ -36,6 +36,7 @@ namespace c4Internal {
 
     using namespace fleece;
     using namespace fleece::impl;
+    using namespace std;
 
     class TreeDocument : public Document {
     public:

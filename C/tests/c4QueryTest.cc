@@ -21,6 +21,7 @@
 #include "c4Observer.h"
 #include "StringUtil.hh"
 #include <thread>
+using namespace std;
 
 
 static bool operator==(C4FullTextMatch a, C4FullTextMatch b) {

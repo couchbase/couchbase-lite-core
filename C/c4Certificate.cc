@@ -42,6 +42,7 @@
 using namespace fleece;
 using namespace litecore::crypto;
 using namespace c4Internal;
+using namespace std;
 
 
 static inline CertBase* internal(C4Cert *cert)    {return (CertBase*)cert;}

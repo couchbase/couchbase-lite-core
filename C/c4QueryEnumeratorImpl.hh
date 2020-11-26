@@ -15,10 +15,8 @@
 #include "InstanceCounted.hh"
 #include "RefCounted.hh"
 
-using namespace std;
 using namespace litecore;
 using namespace fleece::impl;
-
 namespace c4Internal {
 
     // Encapsulates C4QueryEnumerator struct. A C4QueryEnumerator* points inside this object.

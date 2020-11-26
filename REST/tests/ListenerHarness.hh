@@ -9,9 +9,7 @@
 #pragma once
 #include "CertHelper.hh"
 
-using namespace std;
 using namespace fleece;
-
 
 class ListenerHarness {
 public:

@@ -465,7 +465,7 @@ TEST_CASE("CanonicalPath") {
     const char* startPath = "C:\\folder\\..\\subfolder\\";
     string endPath = "C:\\subfolder\\";
 #else
-    auto tmpPath = FilePath::tempDirectory().path();
+    auto tmpPath = TestFixture::sTempDir.path();
     auto startPath = tmpPath + "folder/";
     ::mkdir(startPath.c_str(), 777);
     startPath += "../subfolder/";

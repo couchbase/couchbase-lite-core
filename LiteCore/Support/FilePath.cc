@@ -322,83 +322,14 @@ namespace litecore {
     }
 
 
-    static FilePath* sTempDirectory = nullptr;
-    static mutex sTempDirMutex;
-
-
-    FilePath FilePath::tempDirectory() {
-        lock_guard<mutex> lock(sTempDirMutex);
-        if (!sTempDirectory) {
-            // Default location of temp dir:
-#if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-            const char *tmpDir = getenv("TMPDIR");
-#else
-            const char *tmpDir = sqlite3_temp_directory;
-#endif
-
-            if(tmpDir == nullptr) {
-#ifdef _MSC_VER
-                WCHAR pathBuffer[MAX_PATH + 1];
-                GetTempPathW(MAX_PATH, pathBuffer);
-                GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
-                CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
-                return FilePath(convertedPath.m_psz, "");
-#elif defined(ANDROID)
-                tmpDir = "/data/local/tmp";
-#else
-                tmpDir = "/tmp";
-#endif
-            }
-            sTempDirectory = new FilePath(tmpDir, "");
-        }
-        return *sTempDirectory;
-    }
-
-
-    void FilePath::setTempDirectory(const string &path) {
-        lock_guard<mutex> lock(sTempDirMutex);
-        if (sTempDirectory) {
-            Warn("Changing temp dir to <%s> after the previous dir <%s> has already been used",
-                 path.c_str(), sTempDirectory->_dir.c_str());
-            free(sTempDirectory);
-            sTempDirectory = nullptr;
-        }
-        sTempDirectory = new FilePath(path, "");
-    }
-    
-    
-    FilePath FilePath::tempDirectory(const string& neighbor) {
-        // Default temp directory
-        bool valid = false;
-        auto tmpDir = tempDirectory();
-        if (tmpDir.exists()) {
-            // Get valid neighbor path to check stat
-            auto nPath = FilePath(neighbor);
-            while (!nPath.exists())
-                nPath = nPath.parentDir();
+    /* static */ FilePath FilePath::sharedTempDirectory(const string& location) {
+        FilePath alternate(location);
+        alternate = alternate.dir();
             
-            // Validate default temp dir with neightbor path
-            lc_stat_t tmp_info, alt_info;
-            stat_u8(tmpDir.path().c_str(), &tmp_info);
-            stat_u8(nPath.path().c_str(), &alt_info);
-            bool sameDeice = tmp_info.st_dev == alt_info.st_dev;
-            bool hasWriteAccess = access_u8(tmpDir.path().c_str(), W_OK) == 0;
-            valid = sameDeice && hasWriteAccess;
-        }
-        
-        if (!valid) {
-            // Hard disk device is different, or path is not writable
-            FilePath alternate(neighbor);
-            if(!alternate.isDir())
-                alternate = alternate.dir();
-            
-            // Hardcode tmp so that a new directory doesn't get created every time
-            alternate = alternate.subdirectoryNamed("tmp");
-            alternate.mkdir(0755);
-            return alternate;
-        }
-        
-        return tmpDir;
+        // Hardcode tmp name so that a new directory doesn't get created every time
+        alternate = alternate.subdirectoryNamed(".cblite");
+        alternate.mkdir(0755);
+        return alternate;
     }
 
 
@@ -707,7 +638,7 @@ namespace litecore {
 
         // Move the old item aside, to be deleted later:
         auto parent = to.parentDir().path();
-        FilePath trashDir(FilePath::tempDirectory(parent)["CBL_Obsolete-"].mkTempDir());
+        FilePath trashDir(FilePath::sharedTempDirectory(parent)["CBL_Obsolete-"].mkTempDir());
         FilePath trashPath(trashDir, to.fileOrDirName());
         to.moveTo(trashPath);
 

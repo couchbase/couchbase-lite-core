@@ -16,10 +16,7 @@
 #include "InstanceCounted.hh"
 
 
-using namespace std;
 using namespace litecore;
-
-
 // This is the definition of the C4Query type in the public C API,
 // hence it must be in the global namespace.
 struct c4QueryObserver : public fleece::InstanceCounted {
@@ -53,7 +50,7 @@ public:
         if (outError)
             *outError = _currentError;
         if (forget)
-            return move(_currentEnumerator);
+            return std::move(_currentEnumerator);
         else
             return _currentEnumerator;
     }
@@ -62,7 +59,7 @@ private:
     C4Query* const                  _query;
     C4QueryObserverCallback const   _callback;
     void* const                     _context;
-    mutable mutex                   _mutex;
+    mutable std::mutex              _mutex;
     Retained<C4QueryEnumeratorImpl> _currentEnumerator;
     C4Error                         _currentError {};
 };

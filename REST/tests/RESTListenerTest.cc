@@ -28,6 +28,7 @@
 
 using namespace litecore::net;
 using namespace litecore::REST;
+using namespace std;
 
 
 //#ifdef COUCHBASE_ENTERPRISE

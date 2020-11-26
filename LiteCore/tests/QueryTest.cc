@@ -22,6 +22,7 @@
 #include <float.h>
 
 using namespace fleece::impl;
+using namespace std;
 
 static string local_to_utc(const char* format, int days, int hours, int minutes,
                                int hourOffset, int minuteOffset) {

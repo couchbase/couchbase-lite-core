@@ -44,6 +44,7 @@ namespace c4Internal {
     using namespace litecore;
     using namespace fleece;
     using namespace fleece::impl;
+    using namespace std;
 
 
     static const slice kMaxRevTreeDepthKey = "maxRevTreeDepth"_sl;

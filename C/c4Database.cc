@@ -37,6 +37,7 @@
 #include <thread>
 
 using namespace fleece;
+using namespace std;
 
 
 CBL_CORE_API const char* const kC4DatabaseFilenameExtension = ".cblite2";

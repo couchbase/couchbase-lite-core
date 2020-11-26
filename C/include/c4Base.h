@@ -423,13 +423,15 @@ C4StringResult c4_getVersion(void) C4API;
 //////// MISCELLANEOUS:
 
 
-/** Specifies a directory to use for temporary files. You don't normally need to call this,
-    unless you're on a platform where it's impossible to reliably discover the location of the
-    system temporary directory (i.e. Android), or you have some other good reason to want temp
-    files stored elsewhere.
+/** Wiring call for platforms without discoverable temporary directories.  Simply sets the SQLite
+    temp directory so that it can write its temporary files without error.  Several platforms need
+    to do this, but not all need to use this API.  
+    @param path The path to a writable directory for temporary files for SQLite
+    @param err  If an error happens (e.g. it is an error to call this function twice), this parameter
+                records it.
     @note  If you do call this function, you should call it before opening any databases.
     @note  Needless to say, the directory must already exist. */
-void c4_setTempDir(C4String path) C4API;
+bool c4_setTempDir(C4String path, C4Error* err) C4API;
 
 /** Schedules a function to be called asynchronously on a background thread.
     @param task  A pointer to the function to run. It must take a single `void*` argument and
