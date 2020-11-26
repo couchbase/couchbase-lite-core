@@ -86,6 +86,7 @@ public:
     litecore::FilePath GetPath(const std::string& name, const std::string& extension) noexcept;
     
     static std::string sFixturesDir;
+    static FilePath sTempDir;
 
 private:
     unsigned const _warningsAlreadyLogged;

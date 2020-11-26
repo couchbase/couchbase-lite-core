@@ -38,7 +38,7 @@
 #endif
 
 #ifdef _MSC_VER
-    #undef min
+#include <atlbase.h>
 #endif
 
 
@@ -49,6 +49,20 @@ string TestFixture::sFixturesDir = "../LiteCore/tests/data/";
 #else
 string TestFixture::sFixturesDir = "LiteCore/tests/data/";
 #endif
+
+static FilePath GetTempDirectory() {
+#ifdef _MSC_VER
+    WCHAR pathBuffer[MAX_PATH + 1];
+    GetTempPathW(MAX_PATH, pathBuffer);
+    GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
+    CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
+    return FilePath(convertedPath.m_psz, "");
+#else // _MSC_VER
+    return FilePath("/tmp", "");
+#endif // _MSC_VER
+}
+
+FilePath TestFixture::sTempDir = GetTempDirectory();
 
 
 string stringWithFormat(const char *format, ...) {
@@ -165,7 +179,7 @@ TestFixture::TestFixture()
 
         LogDomain::setCallback(&logCallback, false);
         if (LogDomain::fileLogLevel() == LogLevel::None) {
-            auto path = FilePath::tempDirectory()["LiteCoreC++TestLogs"].mkTempDir();
+            auto path = sTempDir["LiteCoreC++TestLogs"].mkTempDir();
             Log("Beginning logging to %s", path.path().c_str());
             LogFileOptions fileOptions { path.path(), LogLevel::Verbose, 1024*1024, 5, false };
             LogDomain::writeEncodedLogsTo(fileOptions,
@@ -228,7 +242,7 @@ FilePath TestFixture::GetPath(const string& name, const string& extension) noexc
     TempArray(folderName, char, name.size() + 32);
     sprintf(folderName, "%s%lld.%s", name.c_str(), unique.count(), trimmedExtension);
 
-    const auto base = FilePath::tempDirectory()[(const char *)folderName];
+    const auto base = sTempDir[(const char *)folderName];
 
     return base;   
 }
