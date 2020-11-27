@@ -35,7 +35,7 @@ TEST_CASE("C4Certificate smoke test", "[Certs][C]") {
     for (int i = 0; c4cert_subjectNameAtIndex(certs.temporaryClientIdentity.cert, i, &name); ++i) {
         C4Log("  %.*s = '%.*s'", SPLAT(name.id), SPLAT(name.value));
         if (i == 0) {
-            CHECK(name.id == kC4Cert_CommonName);
+            CHECK((name.id == kC4Cert_CommonName));
             CHECK(name.value == "LiteCore Client Test"_sl);
         }
         c4slice_free(name.id);

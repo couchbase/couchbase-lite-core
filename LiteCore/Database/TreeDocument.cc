@@ -250,6 +250,8 @@ namespace c4Internal {
                         _db->documentSaved(this);
                     }
                     return true;
+                default:
+                    Assert(false, "Invalid save result received");
             }
         }
 

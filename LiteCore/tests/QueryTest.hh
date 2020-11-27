@@ -13,6 +13,7 @@
 #include "StringUtil.hh"
 
 #include "LiteCoreTest.hh"
+#include <set>
 
 using namespace litecore;
 using namespace fleece::impl;

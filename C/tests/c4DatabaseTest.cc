@@ -142,7 +142,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     REQUIRE(bundle);
     CHECK(c4db_getName(bundle) == kTestBundleName);
     C4SliceResult path = c4db_getPath(bundle);
-    CHECK(path == TEMPDIR("cbl_core_test_bundle.cblite2" kPathSeparator)); // note trailing '/'
+    CHECK((path == TEMPDIR("cbl_core_test_bundle.cblite2" kPathSeparator))); // note trailing '/'
     c4slice_free(path);
     REQUIRE(c4db_close(bundle, &error));
     c4db_release(bundle);
@@ -194,9 +194,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]")
 
     C4RawDocument *doc = c4raw_get(db, c4str("test"), key, &error);
     REQUIRE(doc != nullptr);
-    REQUIRE(doc->key == key);
-    REQUIRE(doc->meta == meta);
-    REQUIRE(doc->body == kFleeceBody);
+    REQUIRE((doc->key == key));
+    REQUIRE((doc->meta == meta));
+    REQUIRE((doc->body == kFleeceBody));
     c4raw_free(doc);
 
     // Nonexistent:
@@ -232,20 +232,20 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
         auto doc = c4enum_getDocument(e, &error);
         REQUIRE(doc);
         sprintf(docID, "doc-%03d", i);
-        REQUIRE(doc->docID == c4str(docID));
-        REQUIRE(doc->revID == kRevID);
-        REQUIRE(doc->selectedRev.revID == kRevID);
+        REQUIRE((doc->docID == c4str(docID)));
+        REQUIRE((doc->revID == kRevID));
+        REQUIRE((doc->selectedRev.revID == kRevID));
         REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)i);
-        REQUIRE(doc->selectedRev.body == kC4SliceNull);
+        REQUIRE((doc->selectedRev.body == kC4SliceNull));
         // Doc was loaded without its body, but it should load on demand:
         REQUIRE(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
-        REQUIRE(doc->selectedRev.body == kFleeceBody);
+        REQUIRE((doc->selectedRev.body == kFleeceBody));
 
         C4DocumentInfo info;
         REQUIRE(c4enum_getDocumentInfo(e, &info));
-        REQUIRE(info.docID == c4str(docID));
+        REQUIRE((info.docID == c4str(docID)));
         REQUIRE(info.flags == kDocExists);
-        REQUIRE(info.revID == kRevID);
+        REQUIRE((info.revID == kRevID));
         REQUIRE(info.bodySize >= 11);
         REQUIRE(info.bodySize <= 40);   // size includes rev-tree overhead so it's not exact
 
@@ -271,8 +271,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][C]") 
         REQUIRE(c4enum_getDocumentInfo(e, &doc));
         char docID[20];
         sprintf(docID, "doc-%03d", i);
-        REQUIRE(doc.docID == c4str(docID));
-        REQUIRE(doc.revID == kRevID);
+        REQUIRE((doc.docID == c4str(docID)));
+        REQUIRE((doc.revID == kRevID));
         REQUIRE(doc.sequence == (uint64_t)i);
         REQUIRE(doc.flags == (C4DocumentFlags)kDocExists);
         REQUIRE(doc.bodySize >= 11);
@@ -302,7 +302,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
         REQUIRE(doc->selectedRev.sequence == seq);
         char docID[30];
         sprintf(docID, "doc-%03llu", (unsigned long long)seq);
-        REQUIRE(doc->docID == c4str(docID));
+        REQUIRE((doc->docID == c4str(docID)));
         c4doc_release(doc);
         seq++;
     }
@@ -316,7 +316,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
         REQUIRE(doc->selectedRev.sequence == seq);
         char docID[30];
         sprintf(docID, "doc-%03llu", (unsigned long long)seq);
-        REQUIRE(doc->docID == c4str(docID));
+        REQUIRE((doc->docID == c4str(docID)));
         c4doc_release(doc);
         seq++;
     }
@@ -332,7 +332,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
         REQUIRE(doc->selectedRev.sequence == seq);
         char docID[30];
         sprintf(docID, "doc-%03llu", (unsigned long long)seq);
-        REQUIRE(doc->docID == c4str(docID));
+        REQUIRE((doc->docID == c4str(docID)));
         c4doc_release(doc);
         seq--;
     }

@@ -421,7 +421,7 @@ void C4Test::createConflictingRev(C4Database *db,
     rq.save = true;
     C4Error error;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
-    char buf[256];
+//    char buf[256];
 //    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
 //    REQUIRE(doc != nullptr);        // can't use Catch on bg threads
     C4Assert(doc != nullptr);
@@ -452,10 +452,10 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4S
     rq.save = true;
     C4Error error;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
-    if (!doc) {
-        char buf[256];
+    //if (!doc) {
+        //char buf[256];
         //INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
-    }
+    //}
     //REQUIRE(doc != nullptr);        // can't use Catch on bg threads
     C4Assert(doc != nullptr);
     string revID((char*)doc->revID.buf, doc->revID.size);
@@ -570,7 +570,8 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
 void C4Test::checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData) {
     C4Error c4err;
     C4SliceResult blob = c4blob_getContents(c4db_getBlobStore(inDB, nullptr), blobKey, &c4err);
-    CHECK(blob == expectedData);
+    auto equal = blob == expectedData;
+    CHECK(equal);
     c4slice_free(blob);
 }
 

@@ -28,6 +28,7 @@
 #endif
 
 #include "LiteCoreTest.hh"
+#include <sstream>
 
 using namespace litecore;
 using namespace fleece::impl;

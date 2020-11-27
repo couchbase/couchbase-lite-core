@@ -30,6 +30,7 @@ using namespace fleece;
 #include "PlatformCompat.hh"
 #include <function_ref.hh>
 #include <functional>
+#include <set>
 
 
 #if 0 // disabled because CMake is building test binaries with optimization

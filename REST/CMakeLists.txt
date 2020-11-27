@@ -64,4 +64,9 @@ if(BUILD_ENTERPRISE)
     )
 endif()
 
+target_link_libraries(
+    LiteCoreREST_Static PUBLIC
+    LiteCoreStatic
+)
+
 setup_rest_build()

@@ -490,10 +490,10 @@ TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
         CHECK(results->getRowCount() == 2);
         
         CHECK(results->next());
-        CHECK(results->missingColumns() == (1 << expectedMissing));
+        CHECK(results->missingColumns() == (1ULL << expectedMissing));
         
         CHECK(results->next());
-        CHECK(results->missingColumns() == ((1 << expectedMissing) | 1 << 1));
+        CHECK(results->missingColumns() == ((1ULL << expectedMissing) | 1 << 1));
         expectedMissing = 0;
     }
 }

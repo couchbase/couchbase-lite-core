@@ -32,7 +32,6 @@ protected:
 
     string translate(const char *n1ql) {
         cerr << n1ql << "\n-->  " ;
-        C4Error error;
         unsigned errorPos;
 
         FLValue dict = (FLValue) n1ql::parse(n1ql, &errorPos);

@@ -19,14 +19,18 @@
 #include "c4Internal.hh"
 #include "InstanceCounted.hh"
 #include "catch.hpp"
+#include "NumConversion.hh"
 #include "Actor.hh"
 #include <exception>
+#include <chrono>
+#include <thread>
 #ifdef WIN32
 #include <winerror.h>
 #endif
 
-
 using namespace fleece;
+using namespace std;
+using namespace std::chrono_literals;
 
 
 // NOTE: These tests have to be in the C++ tests target, not the C tests, because they use internal
@@ -173,6 +177,23 @@ namespace {
         delete n;
         delete v;
         REQUIRE(InstanceCounted::count() == baseInstances);
+    }
+
+    TEST_CASE("Narrow Cast") {
+        CHECK(narrow_cast<uint8_t, uint16_t>(128U) == 128U);
+        CHECK(narrow_cast<uint8_t, int16_t>(128) == 128U);
+        CHECK(narrow_cast<int8_t, int16_t>(64) == 64);
+        CHECK(narrow_cast<int8_t, int16_t>(-1) == -1);
+
+#if DEBUG
+        CHECK_THROWS(narrow_cast<uint8_t, uint16_t>(UINT8_MAX + 1));
+        CHECK_THROWS(narrow_cast<uint8_t, int16_t>(-1));
+        CHECK_THROWS(narrow_cast<int8_t, int16_t>(INT8_MAX + 1));
+#else
+        CHECK(narrow_cast<uint8_t, uint16_t>(UINT8_MAX + 1) == static_cast<uint8_t>(UINT8_MAX + 1));
+        CHECK(narrow_cast<uint8_t, int8_t>(-1) == static_cast<uint8_t>(-1));
+        CHECK(narrow_cast<int8_t, int16_t>(INT8_MAX + 1) == static_cast<int8_t>(INT8_MAX + 1));
+#endif
     }
 
     TEST_CASE("Channel Manifest") {

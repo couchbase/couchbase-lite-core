@@ -244,7 +244,7 @@ public:
         std::unique_lock<std::mutex> lock(test->_mutex);
 
         char message[256];
-        test->_docsEnded += nDocs;
+        test->_docsEnded += (int)nDocs;
         for (size_t i = 0; i < nDocs; ++i) {
             auto doc = docs[i];
             if (doc->error.code) {
@@ -336,7 +336,7 @@ public:
             CHECK(status.error.code == 0);
             CHECK(_numCallbacksWithLevel[kC4Busy] > 0);
             if (!db2)
-                CHECK(_headers);
+                CHECK(!!_headers);
         }
         CHECK(_numCallbacksWithLevel[kC4Stopped] == 1);
         CHECK(_callbackStatus.level == status.level);

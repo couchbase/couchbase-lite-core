@@ -24,6 +24,7 @@
 #include "PublicKey.hh"
 #include "Logging.hh"
 #include "c4.hh"
+#include "NumConversion.hh"
 #include <vector>
 
 #undef ENABLE_SENDING_CERT_REQUESTS
@@ -191,7 +192,7 @@ bool c4cert_subjectNameAtIndex(C4Cert* cert,
         outInfo->value = C4StringResult(dn[index].second);
         return true;
     } else {
-        index -= dn.size();
+        index -= narrow_cast<unsigned>(dn.size());
     }
 
     // Then look in SubjectAlternativeName:

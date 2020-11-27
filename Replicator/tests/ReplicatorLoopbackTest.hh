@@ -413,9 +413,8 @@ public:
         Log("-------- %s: Done creating revs --------", name);
     }
 
-    static std::thread* runInParallel(std::function<void()> callback) {
-        C4Error error;
-        return new std::thread([=]() mutable {
+    static thread* runInParallel(function<void()> callback) {
+        return new thread([=]() mutable {
             callback();
         });
     }
@@ -450,8 +449,8 @@ public:
     void compareDocs(C4Document *doc1, C4Document *doc2) {
         const auto kPublicDocumentFlags = (kDocDeleted | kDocConflicted | kDocHasAttachments);
 
-        fastREQUIRE(doc1->docID == doc2->docID);
-        fastREQUIRE(doc1->revID == doc2->revID);
+        fastREQUIRE((doc1->docID == doc2->docID));
+        fastREQUIRE((doc1->revID == doc2->revID));
         fastREQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
 
         // Compare canonical JSON forms of both docs:
@@ -509,7 +508,7 @@ public:
                                               &err) );
         INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID) << "'; err = " << err.domain << "," << err.code);
         REQUIRE(doc);
-        CHECK(doc->body == c4str(body));
+        CHECK((doc->body == c4str(body)));
         if (!local)
             CHECK(c4rev_getGeneration(doc->meta) >= c4rev_getGeneration(c4str(meta)));
     }

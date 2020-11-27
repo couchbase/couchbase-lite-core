@@ -134,6 +134,12 @@ function(setup_litecore_build_win)
         zlibstatic 
         Ws2_32
     )
+
+    # Suppress zlib errors
+    target_compile_options(
+        zlibstatic PRIVATE
+        "/wd4267" # loss of data due to size narrowing
+    )
 endfunction()
 
 function(setup_support_build)
