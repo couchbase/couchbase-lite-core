@@ -23,6 +23,7 @@
 #include "HTTPTypes.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
+#include <cinttypes>
 
 using namespace std;
 using namespace litecore::blip;
@@ -150,7 +151,7 @@ namespace litecore::repl {
                 doneWithRev(rev, false, false);
                 break;
             case MessageProgress::kAwaitingReply:
-                logDebug("Transmitted 'rev' %.*s #%.*s (seq #%llu)",
+                logDebug("Transmitted 'rev' %.*s #%.*s (seq #%" PRIu64 ")",
                          SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                 decrement(_revisionsInFlight);
                 increment(_revisionBytesAwaitingReply, progress.bytesSent);

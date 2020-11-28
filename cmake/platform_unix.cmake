@@ -1,4 +1,5 @@
 include(${CMAKE_CURRENT_LIST_DIR}/platform_base.cmake)
+include(CheckTypeSize)
 
 macro(check_threading_unix)
     set(THREADS_PREFER_PTHREAD_FLAG ON) 
@@ -87,6 +88,16 @@ function(setup_litecore_build_unix)
 	${LITECORE_WARNINGS}
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
+
+    set(CMAKE_EXTRA_INCLUDE_FILES "sys/socket.h")
+    check_type_size(socklen_t SOCKLEN_T)
+    if(${HAVE_SOCKLEN_T})
+        # mbedtls fails to detect this accurately
+        target_compile_definitions(
+            mbedtls PRIVATE
+            _SOCKLEN_T_DECLARED
+        )
+    endif()
 endfunction()
 
 function(setup_rest_build_unix)

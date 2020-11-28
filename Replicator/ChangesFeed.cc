@@ -29,6 +29,7 @@
 #include "c4DocEnumerator.h"
 #include "c4Observer.h"
 #include "fleece/Fleece.hh"
+#include <cinttypes>
 
 using namespace std;
 using namespace fleece;
@@ -159,7 +160,7 @@ namespace litecore { namespace repl {
                 break;
 
             if (!ext && !_echoLocalChanges) {
-                logDebug("Observed %u of my own db changes #%llu ... #%llu (ignoring)",
+                logDebug("Observed %u of my own db changes #%" PRIu64 " ... #%" PRIu64 " (ignoring)",
                          nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
                 _maxSequence = c4changes[nChanges-1].sequence;
                 continue;     // ignore changes I made myself

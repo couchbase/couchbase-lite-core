@@ -340,7 +340,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
 
-    int expectedPending;
+    int expectedPending = 0;
     SECTION("Normal") {
         expectedPending = 100;
     }
