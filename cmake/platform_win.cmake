@@ -140,6 +140,12 @@ function(setup_litecore_build_win)
         zlibstatic PRIVATE
         "/wd4267" # loss of data due to size narrowing
     )
+
+    # Windows always has socklen_t
+    target_compile_definitions(
+        mbedtls PRIVATE
+        _SOCKLEN_T_DECLARED
+    )
 endfunction()
 
 function(setup_support_build)

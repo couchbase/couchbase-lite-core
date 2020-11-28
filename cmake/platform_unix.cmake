@@ -55,37 +55,43 @@ function(setup_litecore_build_unix)
     endif()
 
     set(LITECORE_WARNINGS
-        #-Wnon-virtual-dtor
-        #-Werror=overloaded-virtual
-        #-Werror=missing-braces
-        #-Werror=parentheses
-        #-Werror=switch
+        -Werror=missing-braces
+        -Werror=parentheses
+        -Werror=switch
         -Werror=unused-function
         -Werror=unused-label
         -Werror=unused-variable
         -Werror=unused-value
         -Werror=uninitialized
+        -Werror=float-conversion
         #-Wshadow
-        #-Werror=float-conversion
         #-Weffc++
     )
 
+    set(LITECORE_CXX_WARNINGS
+        -Wnon-virtual-dtor
+        -Werror=overloaded-virtual
+    )
+
     set(LITECORE_C_WARNINGS
-	-Werror=incompatible-pointer-types
-	-Werror=int-conversion
-	-Werror=strict-prototypes
+        -Werror=incompatible-pointer-types
+        -Werror=int-conversion
+        -Werror=strict-prototypes
     )
 
     target_compile_options(LiteCoreStatic PRIVATE 
-	${LITECORE_WARNINGS} 
+    ${LITECORE_WARNINGS} 
+    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
     target_compile_options(BLIPStatic PRIVATE 
 	${LITECORE_WARNINGS}
+    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
     target_compile_options(FleeceStatic PRIVATE 
 	${LITECORE_WARNINGS}
+    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
 
