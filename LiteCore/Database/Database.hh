@@ -151,7 +151,7 @@ namespace c4Internal {
         void unlockClientMutex()                            {_clientMutex.unlock();}
 
         // DataFile::Delegate API:
-        virtual slice fleeceAccessor(slice recordBody) const override;
+        virtual const fleece::impl::Dict* fleeceAccessor(slice recordBody) const override;
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         virtual void externalTransactionCommitted(const SequenceTracker&) override;
 

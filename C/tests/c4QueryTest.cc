@@ -1030,18 +1030,18 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query RevisionID", "[Query][C][!throws]")
     auto revID = toString(doc1a->revID);
     compileSelect(json5("{WHAT: [['._revisionID']], WHERE: ['=', ['._id'], 'doc1']}"));
     CHECK(run() == (vector<string>{revID}));
-    
-    // revisionID in WHERE:
-    compileSelect(json5("{WHAT: [['._id']], WHERE: ['=', ['._revisionID'], '" + revID + "']}"));
-    CHECK(run() == (vector<string>{"doc1"}));
-    
+
     // Updated Doc:
     auto doc1b = c4doc_update(doc1a, json2fleece("{'ok':'go'}"), 0, &error);
     revID = toString(doc1b->revID);
     c4doc_release(doc1a);
     compileSelect(json5("{WHAT: [['._revisionID']], WHERE: ['=', ['._id'], 'doc1']}"));
     CHECK(run() == (vector<string>{revID}));
-    
+
+    // revisionID in WHERE:
+    compileSelect(json5("{WHAT: [['._id']], WHERE: ['=', ['._revisionID'], '" + revID + "']}"));
+    CHECK(run() == (vector<string>{"doc1"}));
+
     // Deleted Doc:
     auto doc1c = c4doc_update(doc1b, kC4SliceNull, kRevDeleted, &error);
     revID = toString(doc1c->revID);

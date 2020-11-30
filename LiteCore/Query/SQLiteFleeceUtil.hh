@@ -21,6 +21,7 @@
 #include "DataFile.hh"
 #include "SQLite_Internal.hh"
 #include "FleeceImpl.hh"
+#include "Error.hh"
 #include <sqlite3.h>
 
 
@@ -29,7 +30,9 @@ namespace litecore {
 
     // SQLite value subtypes to represent type info that SQL doesn't convey:
     enum {
-        kPlainBlobSubtype     = 0x66,   // Blob is raw data (otherwise assumed to be Fleece)
+        kDocBodyBlobSubtype   = 0,      // Ordinary blob is assumed to be `_doc.body`
+        kFleeceBlobSubtype    = 0x66,   // Blob containing just Fleece data
+        kPlainBlobSubtype,              // Blob containing raw data (i.e. a N1QL blob)
         kFleeceNullSubtype,             // Zero-length blob representing JSON null
         kFleeceIntBoolean,              // Integer is a boolean (true or false)
         kFleeceIntUnsigned,             // Integer is unsigned
@@ -45,11 +48,10 @@ namespace litecore {
     // Establishes a scope for the Fleece data, and evaluates the path, setting `root`
     class QueryFleeceScope : public fleece::impl::Scope {
     public:
-        QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv);
-        ~QueryFleeceScope();
+        QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv)
+            :QueryFleeceScope(ctx, 2, argv) { }
+        QueryFleeceScope(sqlite3_context *ctx, int argc, sqlite3_value **argv);
         const fleece::impl::Value *root;
-    private:
-        bool _copied;
     };
 
 
@@ -57,9 +59,13 @@ namespace litecore {
         return ((fleeceFuncContext*)sqlite3_user_data(ctx))->delegate;
     }
 
-    static inline slice fleeceAccessor(sqlite3_context *ctx, slice body) {
-        auto delegate = getDBDelegate(ctx);
-        return delegate ? delegate->fleeceAccessor(body) : body;
+    static inline const fleece::impl::Dict* fleeceAccessor(sqlite3_context *ctx, slice body) {
+        if (auto delegate = getDBDelegate(ctx); delegate) {
+            return delegate->fleeceAccessor(body);
+        } else {
+            // A few fns operate only on virtual tables, so don't need an accessor
+            return fleece::impl::Value::fromTrustedData(body)->asDict();
+        }
     }
 
     // Returns the data of a SQLite blob value as a slice
@@ -100,10 +106,10 @@ namespace litecore {
 
     // Sets the function result to a Fleece container (a blob with subtype 0)
     static inline void setResultBlobFromFleeceData(sqlite3_context *ctx, slice blob) noexcept {
-        setResultBlobFromData(ctx, blob, 0);
+        setResultBlobFromData(ctx, blob, kFleeceBlobSubtype);
     }
     static inline void setResultBlobFromFleeceData(sqlite3_context *ctx, alloc_slice blob) noexcept {
-        setResultBlobFromData(ctx, blob, 0);
+        setResultBlobFromData(ctx, blob, kFleeceBlobSubtype);
     }
 
     // Encodes the Value as a Fleece container and sets it as the result

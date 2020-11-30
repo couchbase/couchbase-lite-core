@@ -706,6 +706,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
         C4Log("Committing...");
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");
+    CHECK(c4db_getDocumentCount(db) == numDocs);
     return numDocs;
 }
 

@@ -581,15 +581,21 @@ namespace c4Internal {
         return new TreeDocument(database(), rec);
     }
 
-    slice TreeDocumentFactory::fleeceAccessor(slice docBody) {
-        return RawRevision::getCurrentRevBody(docBody);
+    const fleece::impl::Dict* TreeDocumentFactory::fleeceAccessor(slice docBody) const {
+        slice revBody = RawRevision::getCurrentRevBody(docBody);
+        if (!revBody)
+            return nullptr;
+        const Value *root = Value::fromTrustedData(revBody);
+        if (!root)
+            return nullptr;
+        return root->asDict();
     }
 
-    alloc_slice TreeDocumentFactory::revIDFromVersion(slice version) {
+    alloc_slice TreeDocumentFactory::revIDFromVersion(slice version) const {
         return revid(version).expanded();
     }
 
-    bool TreeDocumentFactory::isFirstGenRevID(slice revID) {
+    bool TreeDocumentFactory::isFirstGenRevID(slice revID) const {
         return revID.hasPrefix(slice("1-", 2));
     }
 

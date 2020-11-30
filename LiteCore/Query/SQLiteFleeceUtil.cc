@@ -36,23 +36,14 @@ namespace litecore {
     const char* const kFleeceValuePointerType = "FleeceValue";
 
 
-    static inline slice argAsDocBody(sqlite3_context* ctx, sqlite3_value *arg, bool &copied) {
-        copied = false;
+    static inline slice argAsDocBody(sqlite3_context* ctx, sqlite3_value *arg) {
         auto type = sqlite3_value_type(arg);
         if (_usuallyFalse(type == SQLITE_NULL))
             return nullslice;             // No 'body' column; may be deleted doc
         DebugAssert(type == SQLITE_BLOB);
-        DebugAssert(sqlite3_value_subtype(arg) == 0);
-        slice fleece = fleeceAccessor(ctx, valueAsSlice(arg));
-
-        if (_usuallyFalse(size_t(fleece.buf) & 1)) {
-            // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
-            // revision data, so it could occur. Now that it's not allowed, we have to work around
-            // this by copying the data to an even address. (#589)
-            fleece = fleece.copy();
-            copied = true;
-        }
-        return fleece;
+        DebugAssert(sqlite3_value_subtype(arg) == kDocBodyBlobSubtype
+                    || sqlite3_value_subtype(arg) == kFleeceBlobSubtype);
+        return valueAsSlice(arg);
     }
 
 
@@ -60,7 +51,7 @@ namespace litecore {
         switch (sqlite3_value_type(arg)) {
             case SQLITE_BLOB: {
                 switch (sqlite3_value_subtype(arg)) {
-                    case 0: {
+                    case kFleeceBlobSubtype: {
                         const Value *root = Value::fromTrustedData(valueAsSlice(arg));
                         if (root)
                             return root;
@@ -125,29 +116,23 @@ namespace litecore {
     }
 
 
-    QueryFleeceScope::QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv)
-    :Scope(argAsDocBody(ctx, argv[0], _copied),
+    QueryFleeceScope::QueryFleeceScope(sqlite3_context *ctx, int argc, sqlite3_value **argv)
+    :Scope(argAsDocBody(ctx, argv[0]),
            ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys)
     {
-        if (_usuallyTrue(data().buf != nullptr)) {
-            root = Value::fromTrustedData(data());
-            if (_usuallyFalse(!root)) {
-                Warn("Invalid Fleece data in SQLite table");
-                error::_throw(error::CorruptRevisionData);
-            }
-        } else {
-            root = Dict::kEmpty;             // No current revision body; may be deleted rev
+        if (_usuallyFalse(data().buf == nullptr))
+            root = Dict::kEmpty;                    // No current revision body; may be deleted rev
+        else if (sqlite3_value_subtype(argv[0]) == kDocBodyBlobSubtype)
+            root = fleeceAccessor(ctx, data());     // Document body
+        else
+            root = Value::fromTrustedData(data());  // Fleece data (result of an expression)
+
+        if (_usuallyFalse(!root)) {
+            Warn("QueryFleeceScope: Invalid Fleece data in SQLite table");
+            error::_throw(error::CorruptRevisionData);
         }
-        if (_usuallyTrue(sqlite3_value_type(argv[1]) != SQLITE_NULL))
+        if (argc > 1 && _usuallyTrue(sqlite3_value_type(argv[1]) != SQLITE_NULL))
             root = evaluatePathFromArg(ctx, argv, 1, root);
-    }
-
-
-    QueryFleeceScope::~QueryFleeceScope() {
-        if (_usuallyFalse(_copied)) {
-            unregister();
-            data().free();
-        }
     }
 
 

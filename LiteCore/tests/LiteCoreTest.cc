@@ -308,8 +308,8 @@ sequence_t DataFileTestFixture::writeDoc(slice docID,
 }
 
 
-slice DataFileTestFixture::fleeceAccessor(slice recordBody) const {
-    return recordBody;
+const fleece::impl::Dict* DataFileTestFixture::fleeceAccessor(slice recordBody) const {
+    return fleece::impl::Value::fromData(recordBody)->asDict();
 }
 
 alloc_slice DataFileTestFixture::blobAccessor(const fleece::impl::Dict*) const {

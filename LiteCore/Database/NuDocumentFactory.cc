@@ -331,7 +331,12 @@ namespace c4Internal {
     }
 
 
-    alloc_slice NuDocumentFactory::revIDFromVersion(slice version) {
+    const fleece::impl::Dict* NuDocumentFactory::fleeceAccessor(slice docBody) const {
+        return (fleece::impl::Dict*)(FLDict)NuDocument::propertiesFromRecordBody(docBody);
+    }
+
+
+    alloc_slice NuDocumentFactory::revIDFromVersion(slice version) const {
         return revid(version).expanded();
     }
 

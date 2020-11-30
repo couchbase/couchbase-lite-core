@@ -175,6 +175,12 @@ namespace litecore {
         /// Returns the next RemoteID for which a revision is stored.
         RemoteID nextRemoteID(RemoteID) const;
 
+        //---- For queries:
+
+        /// Given a Record body, returns a pointer to the local revision's properties.
+        /// This is used by the innards of the query evaluator; probably isn't needed elsewhere.
+        static fleece::Dict propertiesFromRecordBody(slice recordBody);
+
         //---- For testing:
 
         /// Generates a revision ID given document properties, parent revision ID, and flags.

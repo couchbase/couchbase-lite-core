@@ -41,8 +41,9 @@ namespace litecore {
         slice body = valueAsSlice(argv[0]);
         if (body) {
             DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_BLOB);
-            DebugAssert(sqlite3_value_subtype(argv[0]) == 0);
-            setResultBlobFromFleeceData(ctx, fleeceAccessor(ctx, body));
+            DebugAssert(sqlite3_value_subtype(argv[0]) == kDocBodyBlobSubtype);
+            QueryFleeceScope scope(ctx, argc, argv);
+            setResultBlobFromEncodedValue(ctx, scope.root);
             return;
         }
         // If arg isn't a blob, check if it's a tagged Fleece pointer:
@@ -246,8 +247,8 @@ namespace litecore {
                     break;
                 case SQLITE_BLOB: {
                     switch (sqlite3_value_subtype(arg)) {
-                        case 0:
-                            // Untagged blob is already Fleece data
+                        case kFleeceBlobSubtype:
+                            // Blob is already Fleece data:
                             break;
                         case kFleeceNullSubtype: {
                             // A tagged Fleece/JSON null:
@@ -407,7 +408,7 @@ namespace litecore {
                 break;
             case SQLITE_BLOB: {
                 switch (sqlite3_value_subtype(arg)) {
-                    case 0: {
+                    case kFleeceBlobSubtype: {
                         const Value *value = fleeceParam(ctx, arg);
                         if (!value)
                             return false; // error occurred

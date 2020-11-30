@@ -237,9 +237,11 @@ namespace c4Internal {
         virtual Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID,
                                                            bool withBody) =0;
 
-        virtual alloc_slice revIDFromVersion(slice version) =0;
+        virtual const fleece::impl::Dict* fleeceAccessor(slice docBody) const =0;
 
-        virtual bool isFirstGenRevID(slice revID)               {return false;}
+        virtual alloc_slice revIDFromVersion(slice version) const =0;
+
+        virtual bool isFirstGenRevID(slice revID) const               {return false;}
 
         virtual vector<alloc_slice> findAncestors(const vector<slice> &docIDs,
                                                   const vector<slice> &revIDs,

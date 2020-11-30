@@ -349,8 +349,8 @@ namespace c4Internal {
 #pragma mark - ACCESSORS:
 
 
-    slice Database::fleeceAccessor(slice recordBody) const {
-        return TreeDocumentFactory::fleeceAccessor(recordBody);
+    const fleece::impl::Dict* Database::fleeceAccessor(slice recordBody) const {
+        return _documentFactory->fleeceAccessor(recordBody);
     }
 
 

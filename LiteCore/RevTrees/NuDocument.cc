@@ -49,9 +49,9 @@ namespace litecore {
      */
 
     // Properties in revision dicts:
-    static constexpr slice kMetaBody  = "body";
-    static constexpr slice kMetaRevID = "revID";
-    static constexpr slice kMetaFlags = "flags";
+    static constexpr slice kMetaProperties  = "p";
+    static constexpr slice kMetaRevID = "r";
+    static constexpr slice kMetaFlags = "f";
 
 
     NuDocument::NuDocument(KeyStore& store, const Record& rec)
@@ -90,7 +90,7 @@ namespace litecore {
             return false;
         if (!_revisions)
             error::_throw(error::CorruptRevisionData);
-        _properties = _revisions[int(RemoteID::Local)].asDict()[kMetaBody].asDict();
+        _properties = _revisions[int(RemoteID::Local)].asDict()[kMetaProperties].asDict();
         if (!_properties)
             _properties = Dict::emptyDict();
         return true;
@@ -118,28 +118,25 @@ namespace litecore {
     }
 
 
+    /*static*/ fleece::Dict NuDocument::propertiesFromRecordBody(slice recordBody) {
+        if (!recordBody)
+            return nullptr;
+        Value root = Value::fromData(recordBody, kFLTrusted);
+        Dict localRev = root.asArray()[0].asDict();
+        if (!localRev)
+            error::_throw(error::CorruptRevisionData);
+        Dict properties = localRev[kMetaProperties].asDict();
+        return properties ? properties : Dict::emptyDict();
+    }
+
 
 #pragma mark - REVISIONS:
-
-
-//    void NuDocument::readRevisions(alloc_slice &body) {
-//        if (initFleeceDoc(body)) {
-//            if (!_revisions)
-//                error::_throw(error::CorruptRevisionData);
-//            _properties = _revisions[int(RemoteID::Local)].asDict()[kMetaBody].asDict();
-//            if (!_properties)
-//                error::_throw(error::CorruptRevisionData);
-//        } else {
-//            // "Untitled" empty state:
-//            (void)mutableProperties();
-//        }
-//    }
 
 
     optional<Revision> NuDocument::remoteRevision(RemoteID remote) const {
         if (Dict revDict = _revisions[int(remote)].asDict(); revDict) {
             // revisions have a top-level dict with the revID, flags, properties.
-            Dict properties = revDict[kMetaBody].asDict();
+            Dict properties = revDict[kMetaProperties].asDict();
             revid revID(revDict[kMetaRevID].asData());
             auto flags = DocumentFlags(revDict[kMetaFlags].asInt());
             if (!properties && !_bodiless)
@@ -199,8 +196,8 @@ namespace litecore {
                 if (remote == RemoteID::Local)
                     _revIDChanged = true;
             }
-            if (newRev.properties != revDict[kMetaBody]) {
-                revDict[kMetaBody] = newRev.properties;
+            if (newRev.properties != revDict[kMetaProperties]) {
+                revDict[kMetaProperties] = newRev.properties;
                 if (remote == RemoteID::Local)
                     _properties = newRev.properties;
                 _changed = true;
@@ -251,7 +248,7 @@ namespace litecore {
 
     Dict NuDocument::originalProperties() const {
         Dict rev = savedRevisions()[int(RemoteID::Local)].asDict();
-        return rev[kMetaBody].asDict();
+        return rev[kMetaProperties].asDict();
     }
 
 
@@ -260,9 +257,9 @@ namespace litecore {
         MutableDict mutProperties = _properties.asMutable();
         if (!mutProperties) {
             MutableDict rev = mutableRevisionDict(RemoteID::Local);
-            mutProperties = rev.getMutableDict(kMetaBody);
+            mutProperties = rev.getMutableDict(kMetaProperties);
             if (!mutProperties)
-                rev[kMetaBody] = mutProperties = MutableDict::newDict();
+                rev[kMetaProperties] = mutProperties = MutableDict::newDict();
             _properties = mutProperties;
         }
         return mutProperties;
@@ -364,11 +361,11 @@ namespace litecore {
             // The client might still have references to mutable objects under _properties,
             // so keep that mutable Dict as the current _properties:
             auto rev = mutableRevisionDict(RemoteID::Local);
-            rev[kMetaBody] = mutableProperties;
+            rev[kMetaProperties] = mutableProperties;
             _properties = mutableProperties;
             clearPropertiesChanged();
         } else {
-            _properties = _revisions[int(RemoteID::Local)].asDict()[kMetaBody].asDict();
+            _properties = _revisions[int(RemoteID::Local)].asDict()[kMetaProperties].asDict();
         }
 
         return newSequence ? kNewSequence : kNoNewSequence;

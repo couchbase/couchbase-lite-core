@@ -47,7 +47,7 @@ extern "C" {
     /** Encryption algorithms. */
     typedef C4_ENUM(uint32_t, C4EncryptionAlgorithm) {
         kC4EncryptionNone = 0,      ///< No encryption (default)
-        kC4EncryptionAES256,        ///< AES with 256-bit key
+        kC4EncryptionAES256,        ///< AES with 256-bit key [ENTERPRISE EDITION ONLY]
     };
 
     /** Encryption key sizes (in bytes). */
@@ -64,7 +64,7 @@ extern "C" {
     /** Main database configuration struct (version 2) for use with c4db_openNamed etc.. */
     typedef struct C4DatabaseConfig2 {
         C4Slice parentDirectory;        ///< Directory for databases
-        C4DatabaseFlags flags;          ///< Create, ReadOnly, NoUpgrade (AutoCompact & SharedKeys always set)
+        C4DatabaseFlags flags;          ///< Flags for opening db, versioning, ...
         C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
     } C4DatabaseConfig2;
 
