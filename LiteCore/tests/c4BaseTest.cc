@@ -180,6 +180,7 @@ namespace {
     }
 
     TEST_CASE("Narrow Cast") {
+        CHECK(narrow_cast<long, uint64_t>(4) == 4);
         CHECK(narrow_cast<uint8_t, uint16_t>(128U) == 128U);
         CHECK(narrow_cast<uint8_t, int16_t>(128) == 128U);
         CHECK(narrow_cast<int8_t, int16_t>(64) == 64);
@@ -188,11 +189,11 @@ namespace {
 #if DEBUG
         CHECK_THROWS(narrow_cast<uint8_t, uint16_t>(UINT8_MAX + 1));
         CHECK_THROWS(narrow_cast<uint8_t, int16_t>(-1));
-        CHECK_THROWS(narrow_cast<int8_t, int16_t>(INT8_MAX + 1));
+        CHECK_THROWS(narrow_cast<int8_t, int16_t>(INT16_MAX - 1));
 #else
         CHECK(narrow_cast<uint8_t, uint16_t>(UINT8_MAX + 1) == static_cast<uint8_t>(UINT8_MAX + 1));
         CHECK(narrow_cast<uint8_t, int8_t>(-1) == static_cast<uint8_t>(-1));
-        CHECK(narrow_cast<int8_t, int16_t>(INT8_MAX + 1) == static_cast<int8_t>(INT8_MAX + 1));
+        CHECK(narrow_cast<int8_t, int16_t>(INT16_MAX - 1) == static_cast<int8_t>(INT16_MAX - 1));
 #endif
     }
 
