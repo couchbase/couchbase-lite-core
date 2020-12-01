@@ -181,7 +181,7 @@ namespace c4Internal {
             // First-time initialization:
             doc.setBodyAsUInt((uint64_t)inConfig.versioning);
             Transaction t(*_dataFile);
-            info.write(doc, t);
+            info.set(doc, t);
             (void)generateUUID(kPublicUUIDKey, t);
             (void)generateUUID(kPrivateUUIDKey, t);
             t.commit();
@@ -349,7 +349,7 @@ namespace c4Internal {
 #pragma mark - ACCESSORS:
 
 
-    const fleece::impl::Dict* Database::fleeceAccessor(slice recordBody) const {
+    slice Database::fleeceAccessor(slice recordBody) const {
         return _documentFactory->fleeceAccessor(recordBody);
     }
 
@@ -388,7 +388,7 @@ namespace c4Internal {
         if (depth != rec.bodyAsUInt()) {
             rec.setBodyAsUInt(depth);
             Transaction t(*_dataFile);
-            info.write(rec, t);
+            info.set(rec, t);
             t.commit();
         }
         _maxRevTreeDepth = depth;

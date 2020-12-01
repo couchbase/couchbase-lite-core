@@ -138,7 +138,7 @@ protected:
             Record doc = store->get(docID);
             CHECK(doc.exists());
             doc.setFlag(DocumentFlags::kDeleted);
-            store->write(doc, t);
+            store->set(doc, t);
         }
         t.commit();
     }
@@ -148,7 +148,7 @@ protected:
         Record doc = store->get(docID);
         CHECK(doc.exists());
         doc.clearFlag(DocumentFlags::kDeleted);
-        store->write(doc, t);
+        store->set(doc, t);
         t.commit();
     }
 

@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Base.hh"
+#include <optional>
 
 namespace litecore {
 
@@ -38,6 +39,10 @@ namespace litecore {
         return (DocumentFlags)((uint8_t)a | (uint8_t)b);
     }
 
+    static inline DocumentFlags operator- (DocumentFlags a, DocumentFlags b) {
+        return (DocumentFlags)((uint8_t)a & ~(uint8_t)b);
+    }
+
 
     /** A Record's sequence number in a KeyStore. */
     typedef uint64_t sequence_t;
@@ -48,19 +53,29 @@ namespace litecore {
     typedef int64_t expiration_t;
 
 
+    /** Specifies what parts of a record to read. (Used by KeyStore::get, RecordEnumerator, etc.) */
+    enum ContentOption {
+        kMetaOnly,          // Skip `extra` and `body`
+        kCurrentRevOnly,    // Skip `extra`
+        kEntireBody,        // Everything
+    };
+
+
     /** The unit of storage in a DataFile: a key, version and body (all opaque blobs);
         and some extra metadata like flags and a sequence number. */
     class Record {
     public:
-        Record()                              { }
+        Record()                                  { }
         explicit Record(slice key);
         explicit Record(alloc_slice key);
-        Record(const Record&);
-        Record(Record&&) noexcept;
+
+        /** Which content was loaded (set by KeyStore::get and RecordEnumerator) */
+        ContentOption contentLoaded() const FLPURE {return _contentLoaded;}
 
         const alloc_slice& key() const FLPURE     {return _key;}
         const alloc_slice& version() const FLPURE {return _version;}
         const alloc_slice& body() const FLPURE    {return _body;}
+        const alloc_slice& extra() const FLPURE   {return _extra;}
 
         size_t bodySize() const FLPURE            {return _bodySize;}
 
@@ -79,10 +94,13 @@ namespace litecore {
             void setVersion(const T &vers)       {_version = vers;}
         template <typename T>
             void setBody(const T &body)          {_body = body; _bodySize = _body.size;}
+        template <typename T>
+            void setExtra(const T &extra)        {_extra = extra;}
 
         void setKey(alloc_slice &&key)           {_key = std::move(key);}
         void setVersion(alloc_slice &&vers)      {_version = std::move(vers);}
         void setBody(alloc_slice &&body)         {_body = std::move(body); _bodySize = _body.size;}
+        void setExtra(alloc_slice &&extra)       {_extra = std::move(extra);}
 
         uint64_t bodyAsUInt() const noexcept FLPURE;
         void setBodyAsUInt(uint64_t) noexcept;
@@ -96,9 +114,10 @@ namespace litecore {
         void updateSequence(sequence_t s)       {_sequence = s;}
         void setUnloadedBodySize(size_t size)   {_body = nullslice; _bodySize = size;}
         void setExists()                        {_exists = true;}
+        void setContentLoaded(ContentOption opt){_contentLoaded = opt;}
 
         // Only RecordEnumerator sets the expiration property
-        expiration_t expiration() const FLPURE         {return _expiration;}
+        expiration_t expiration() const FLPURE  {return _expiration;}
         void setExpiration(expiration_t x)      {_expiration = x;}
 
     private:
@@ -106,12 +125,23 @@ namespace litecore {
         friend class Transaction;
         friend class RecordEnumerator;
 
-        alloc_slice     _key, _version, _body;  // The key, metadata and body of the record
+        alloc_slice     _key, _version, _body, _extra;  // The key, metadata and body of the record
         size_t          _bodySize {0};          // Size of body, if body wasn't loaded
         sequence_t      _sequence {0};          // Sequence number (if KeyStore supports sequences)
         expiration_t    _expiration {0};        // Expiration time (only set by RecordEnumerator)
         DocumentFlags   _flags {DocumentFlags::kNone};// Document flags (deleted, conflicted, etc.)
         bool            _exists {false};        // Does the record exist?
+        ContentOption   _contentLoaded {kMetaOnly}; // Which content was loaded
+    };
+
+
+    /** A lightweight struct used to update a record without all the heap allocation of a Record object.
+        (See `KeyStore::set`.) */
+    struct RecordSetter {
+        slice                       key, version, body, extra;
+        std::optional<sequence_t>   sequence;
+        bool                        updateSequence {true};
+        DocumentFlags               flags {DocumentFlags::kNone};
     };
 
 }

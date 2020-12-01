@@ -28,9 +28,9 @@ namespace c4Internal {
 
     class NuDocumentAdapter : public Document {
     public:
-        NuDocumentAdapter(Database* database, C4Slice docID)
+        NuDocumentAdapter(Database* database, C4Slice docID, ContentOption whichContent)
         :Document(database, docID)
-        ,_versionedDoc(database->defaultKeyStore(), docID)
+        ,_versionedDoc(database->defaultKeyStore(), docID, whichContent)
         {
             initialize();
         }
@@ -134,11 +134,21 @@ namespace c4Internal {
         }
 
         virtual bool loadSelectedRevBody() override {
-            return _versionedDoc.loadData();
+            if (!_remoteID)
+                return false;
+            auto which = (*_remoteID == RemoteID::Local) ? kCurrentRevOnly : kEntireBody;
+            return _versionedDoc.loadData(which);
         }
 
         virtual slice getSelectedRevBody() noexcept override {
-            error::_throw(error::Unimplemented);    // FIXME: IMPLEMENT
+            if (!_remoteID)
+                return nullslice;
+            else if (*_remoteID != RemoteID::Local)
+                error::_throw(error::Unimplemented);    // FIXME: IMPLEMENT
+            else if (_versionedDoc.contentAvailable() < kCurrentRevOnly)
+                return nullslice;
+            else
+                return _versionedDoc.currentRevisionData();
         }
 
         virtual FLDict getSelectedRevRoot() noexcept override {
@@ -310,7 +320,7 @@ namespace c4Internal {
 
 
     Retained<Document> NuDocumentFactory::newDocumentInstance(C4Slice docID) {
-        return new NuDocumentAdapter(database(), docID);
+        return new NuDocumentAdapter(database(), docID, kEntireBody);
     }
 
 
@@ -323,16 +333,20 @@ namespace c4Internal {
                                                                   C4Slice revID,
                                                                   bool withBody)
     {
-        auto opt = (withBody || revID.buf) ? kEntireBody : kMetaOnly;
-        Retained<Document> doc = newDocumentInstance(database()->defaultKeyStore().get(docID, opt));
-        if (doc && revID.buf)
-            doc->selectRevision(revID, withBody);
+        ContentOption opt = kMetaOnly;
+        if (revID.buf)
+            opt = kEntireBody;
+        else if (withBody)
+            opt = kCurrentRevOnly;
+        Retained<NuDocumentAdapter> doc = new NuDocumentAdapter(database(), docID, opt);
+        if (revID.buf)
+            doc->selectRevision(revID, true);
         return doc;
     }
 
 
-    const fleece::impl::Dict* NuDocumentFactory::fleeceAccessor(slice docBody) const {
-        return (fleece::impl::Dict*)(FLDict)NuDocument::propertiesFromRecordBody(docBody);
+    slice NuDocumentFactory::fleeceAccessor(slice docBody) const {
+        return docBody;
     }
 
 

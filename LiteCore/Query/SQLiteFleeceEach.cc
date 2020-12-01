@@ -225,17 +225,27 @@ private:
             Warn("fleece_each filter called with null document! Query is likely to fail. (#379)");
             return SQLITE_OK;
         }
-
-        _scope.emplace(data, _vtab->context.sharedKeys);
         if (idxNum == kPathIndex) {
             // If fl_each is called with a 2nd (property path) argument, then the first arg is the
-            // doc body, and we need to call a special accessor to get the Fleece root:
-            _container = _vtab->context.delegate->fleeceAccessor(data);
-            assert(_container);//TEMP
+            // doc body, which we need to extract Fleece from:
+            data = _vtab->context.delegate->fleeceAccessor(data);
+        }
+        if (size_t(data.buf) & 1) {
+            // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
+            // revision data, so it could occur. Now that it's not allowed, we have to work around
+            // this by copying the data to an even address. (#787)
+            // NOTE: This same problem is already solved by QueryFleeceScope, but it requires
+            // a sqlite3_context*, which we don't have here ... refactoring that class to be
+            // useable here too would be more code change than I want to introduce right now
+            // while fixing this bug, but would be good for long-term cleanup.
+            alloc_slice copiedFleeceData(data);
+            _scope.emplace(copiedFleeceData, _vtab->context.sharedKeys);
+            data = copiedFleeceData;
         } else {
-            _container = Value::fromTrustedData(data);
+            _scope.emplace(data, _vtab->context.sharedKeys);
         }
 
+        _container = Value::fromTrustedData(data);
         if (!_container) {
             Warn("Invalid Fleece data in SQLite table");
             return SQLITE_MISMATCH; // failed to parse Fleece data

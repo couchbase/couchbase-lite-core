@@ -44,13 +44,10 @@ namespace litecore {
         sequence_t lastSequence() const override;
         uint64_t purgeCount() const override;
 
-        Record get(sequence_t) const override;
+        Record get(sequence_t, ContentOption) const override;
         bool read(Record &rec, ContentOption) const override;
 
-        sequence_t set(slice key, slice meta, slice value, DocumentFlags,
-                       Transaction&,
-                       std::optional<sequence_t> replacingSequence =std::nullopt,
-                       bool newSequence =true) override;
+        sequence_t set(const RecordSetter&, Transaction&) override;
 
         bool del(slice key, Transaction&, sequence_t s) override;
 

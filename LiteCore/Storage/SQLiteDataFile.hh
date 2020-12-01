@@ -55,9 +55,7 @@ namespace litecore {
 
         operator SQLite::Database&() {return *_sqlDb;}
 
-#if 0 //UNUSED:
-        std::vector<std::string> allKeyStoreNames() override;
-#endif
+        std::vector<std::string> allKeyStoreNames() /*override*/;
         bool keyStoreExists(const std::string &name);
         bool tableExists(const std::string &name) const;
         bool getSchema(const std::string &name, const std::string &type,
@@ -129,10 +127,14 @@ namespace litecore {
         enum class SchemaVersion {
             None            = 0,    // Newly created database
             MinReadable     = 201,  // Cannot open earlier versions than this (CBL 2.0)
-            MaxReadable     = 399,  // Cannot open versions newer than this
+            MaxReadable     = 499,  // Cannot open versions newer than this
 
             WithIndexTable  = 301,  // Added 'indexes' table (CBL 2.5)
             WithPurgeCount  = 302,  // Added 'purgeCnt' column to KeyStores (CBL 2.7)
+
+            WithNewDocs     = 400,  // New document/revision storage (CBL 3.0)
+
+            Current = WithNewDocs
         };
 
         void reopenSQLiteHandle();

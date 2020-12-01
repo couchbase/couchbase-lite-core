@@ -43,7 +43,7 @@ namespace litecore {
         void removeTransactionObserver(TransactionObserver* NONNULL);
 
     private:
-        const fleece::impl::Dict* fleeceAccessor(slice recordBody) const override;
+        slice fleeceAccessor(slice recordBody) const override;
         alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         void externalTransactionCommitted(const SequenceTracker &sourceTracker) override;
         void notifyTransactionObservers();

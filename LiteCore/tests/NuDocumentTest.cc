@@ -93,6 +93,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
         {
             Transaction t(db);
             CHECK(doc.save(t) == NuDocument::kNewSequence);
+            CHECK(!doc.changed());
             t.commit();
         }
 
@@ -166,7 +167,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remotes", "[NuDocument]
 
     CHECK(doc.sequence() == 1);
     CHECK(doc.revID().str() == "1-f000");
-    CHECK(doc.flags() == DocumentFlags::kNone);
+    CHECK(doc.flags() == DocumentFlags::kHasAttachments);
     CHECK(doc.properties().toJSON(true, true) == "{rodent:\"mouse\"}");
     CHECK(!doc.changed());
 
@@ -203,7 +204,9 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remote Update", "[NuDoc
     cerr << "\nStorage after pull:\n" << doc.dumpStorage();
 
     CHECK(doc.currentRevision() == *doc.remoteRevision(kRemote1));
+#if 0 // FIX: Re-enable this optimization in NuDocument
     CHECK(doc.properties() == doc.remoteRevision(kRemote1)->properties); // rev body only stored once
+#endif
 
     // Update doc locally:
     doc.mutableProperties()["age"] = 2;
@@ -216,7 +219,9 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remote Update", "[NuDoc
     auto props1 = doc.properties(), props2 = doc.remoteRevision(kRemote1)->properties;
     CHECK(props1.toJSON(true, true) == "{age:2,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
     CHECK(props2.toJSON(true, true) == "{age:1,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
+#if 0 // FIX: Re-enable this optimization in NuDocument
     CHECK(props1["rodent"] == props2["rodent"]);    // string should only be stored once
     CHECK(props1["loc"] == props2["loc"]);          // array should only be stored once
+#endif
     CHECK(props1["age"] != props2["age"]);
 }

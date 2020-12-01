@@ -70,7 +70,7 @@ namespace litecore {
         NuDocument(KeyStore&, const Record&);
 
         /// Reads a document given the docID.
-        NuDocument(KeyStore& store, slice docID);
+        NuDocument(KeyStore& store, slice docID, ContentOption =kEntireBody);
 
         ~NuDocument();
 
@@ -83,13 +83,12 @@ namespace litecore {
         /// Returns true if the document exists in the database.
         bool exists() const noexcept FLPURE                 {return _sequence > 0;}
 
-        /// Returns true if only the document-level metadata is available, not the remotes or revision bodies.
-        /// (This happens if the NuDocument was instantiated from a Record with no body.)
-        bool isStub() const noexcept FLPURE                 {return _bodiless;}
+        /// Returns what content has been loaded: metadata, current revision, or all revisions.
+        ContentOption contentAvailable() const noexcept FLPURE {return _whichContent;}
 
         /// If the document is a stub, loads the body.
         /// Returns true if the body data is available, false if the document doesn't exist.
-        bool loadData();
+        bool loadData(ContentOption which =kEntireBody);
         
         //---- Metadata:
 
@@ -100,10 +99,10 @@ namespace litecore {
         const alloc_slice& docID() const noexcept FLPURE    {return _docID;}
 
         /// The current revision's properties. Never null, but is empty if this is a new document.
-        Dict properties() const noexcept FLPURE             {return _properties;}
+        Dict properties() const noexcept FLPURE             {return _current.properties;}
 
         /// The current revision ID, initially a null slice in a new document.
-        revid revID() const FLPURE                          {return currentRevision().revID;}
+        revid revID() const FLPURE                          {return _current.revID;}
 
         /// The current document flags (kDeleted, kHasAttachments, kConflicted.)
         DocumentFlags flags() const FLPURE                  {return _docFlags;}
@@ -111,8 +110,9 @@ namespace litecore {
         /// Returns the current properties, revID and flags in a single struct.
         /// \warning  The `properties` and `revID` fields point to the _current_ values. Calling
         ///          \ref setProperties. \ref setRevID or \ref save will invalidate those pointers.
-        Revision currentRevision() const FLPURE           {return *remoteRevision(RemoteID::Local);}
+        Revision currentRevision() const FLPURE             {return _current;}
 
+        slice currentRevisionData() const;
 
         //---- Modifying the document:
 
@@ -144,7 +144,7 @@ namespace litecore {
         /// Sets the properties, revID and flags at once.
         /// \note  See the note on the \ref setProperties method about performance implications of storing
         ///       a different properties Dict.
-        void setCurrentRevision(const Revision &rev)      {setRemoteRevision(RemoteID::Local, rev);}
+        void setCurrentRevision(const Revision &rev);
 
         /// Returns true if in-memory state of this object has changed since it was created or last saved.
         bool changed() const FLPURE;
@@ -175,12 +175,6 @@ namespace litecore {
         /// Returns the next RemoteID for which a revision is stored.
         RemoteID nextRemoteID(RemoteID) const;
 
-        //---- For queries:
-
-        /// Given a Record body, returns a pointer to the local revision's properties.
-        /// This is used by the innards of the query evaluator; probably isn't needed elsewhere.
-        static fleece::Dict propertiesFromRecordBody(slice recordBody);
-
         //---- For testing:
 
         /// Generates a revision ID given document properties, parent revision ID, and flags.
@@ -194,30 +188,35 @@ namespace litecore {
     private:
         class LinkedFleeceDoc;
 
-        bool initFleeceDoc(const alloc_slice &body);
-        bool readRecordBody(const alloc_slice &body);
-        void requireBody();
-        fleece::Array savedRevisions() const;
+        FLSharedKeys sharedKeys() const;
+        fleece::Doc newLinkedFleeceDoc(const alloc_slice &body);
+        void readRecordBody(const alloc_slice &body);
+        void readRecordExtra(const alloc_slice &extra);
+        void requireBody() const;
+        void requireRemotes() const;
         void mutateRevisions();
         MutableDict mutableRevisionDict(RemoteID remoteID);
         Dict originalProperties() const;
-        alloc_slice encodeBody(FLEncoder);
+        std::pair<alloc_slice,alloc_slice> encodeBody(FLEncoder);
         bool propertiesChanged() const;
         void clearPropertiesChanged();
+        void updateDocFlags();
 
         KeyStore&                    _store;                // The database KeyStore
-        fleece::SharedKeys           _sharedKeys;           // Fleece shared keys (global to DB)
         FLEncoder                    _encoder {nullptr};    // Database shared Fleece Encoder
         alloc_slice                  _docID;                // The docID
         sequence_t                   _sequence;             // The sequence
-        Retained<LinkedFleeceDoc>    _fleeceDoc;            // If saved, a Doc of the Fleece body
+        DocumentFlags                _docFlags;             // Document-level flags
+        alloc_slice                  _revID;                // Current revision ID backing store
+        Revision                     _current;              // Current revision
+        fleece::RetainedValue        _currentProperties;    // Retains local properties
+        fleece::Doc                  _bodyDoc;              // If saved, a Doc of the Fleece body
+        fleece::Doc                  _extraDoc;             // Fleece Doc holding record `extra`
         fleece::Array                _revisions;            // Top-level parsed body; stores revs
         mutable fleece::MutableArray _mutatedRevisions;     // Mutable version of `_revisions`
-        Dict                         _properties;           // Current revision properties
-        DocumentFlags                _docFlags;             // Document-level flags
         bool                         _changed {false};      // Set to true on explicit change
         bool                         _revIDChanged {false}; // Has setRevID() been called?
-        bool                         _bodiless {false};     // Loaded from Record w/o a body
+        ContentOption                _whichContent;         // Which parts of record are available
         // (Note: _changed doesn't reflect mutations to _properties; changed() checks for those.)
     };
 }

@@ -842,6 +842,7 @@ static void testOpeningOlderDBFixture(const string & dbPath,
 
 TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", 0);
-    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
-    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
+// In 3.0 it's no longer possible to open 2.7 databases without upgrading
+//    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
+//    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
 }

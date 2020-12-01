@@ -51,7 +51,7 @@ namespace litecore {
             rec.updateSequence((int64_t)_stmt->getColumn(0));
             rec.setFlags((DocumentFlags)(int)_stmt->getColumn(1));
             rec.setKey(SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)));
-            rec.setExpiration(_stmt->getColumn(5));
+            rec.setExpiration(_stmt->getColumn(6));
             SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt, _content);
             return true;
         }
@@ -76,12 +76,11 @@ namespace litecore {
         }
 
         stringstream sql;
-        const char* kBodyItem[3] = {"body", "fl_root(body)", "length(body)"};
-        sql << "SELECT sequence, flags, key, version, " << kBodyItem[options.contentOption];
-        if (mayHaveExpiration())
-            sql << ", expiration";
-        else
-            sql << ", 0";
+        sql << "SELECT sequence, flags, key, version, ";
+        static constexpr const char* kBodyItem[3] = {"length(body)", "fl_root(body)", "body"};
+        sql << kBodyItem[options.contentOption];
+        sql << (options.contentOption >= kEntireBody     ? ", extra" : ", length(extra)");
+        sql << (mayHaveExpiration() ? ", expiration" : ", 0");
         sql << " FROM kv_" << name();
         
         bool writeAnd = false;

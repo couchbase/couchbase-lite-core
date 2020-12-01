@@ -215,11 +215,11 @@ namespace litecore {
                       "BEGIN; "
                       "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
                       "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) WITHOUT ROWID; "
-                      "PRAGMA user_version=302; "
+                      "PRAGMA user_version=400; "
                       "END;"
                       );
                 Assert(intQuery("PRAGMA auto_vacuum") == 2, "Incremental vacuum was not enabled!");
-                _schemaVersion = SchemaVersion::WithPurgeCount;
+                _schemaVersion = SchemaVersion::Current;
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
             } else if (_schemaVersion < SchemaVersion::MinReadable) {
@@ -245,6 +245,17 @@ namespace litecore {
                             throw;
                     }
                 }
+            }
+
+            if (_schemaVersion < SchemaVersion::WithNewDocs) {
+                // Add the 'extra' column to every KeyStore:
+                if (!options().writeable || !options().upgradeable)
+                    error::_throw(error::CantUpgradeDatabase);
+                for (string &name : allKeyStoreNames()) {
+                    _exec("ALTER TABLE kv_" + name + " ADD COLUMN extra BLOB; "
+                          "PRAGMA user_version=400; ");
+                }
+                _schemaVersion = SchemaVersion::WithNewDocs;
             }
         });
 

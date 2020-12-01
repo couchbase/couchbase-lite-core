@@ -581,14 +581,8 @@ namespace c4Internal {
         return new TreeDocument(database(), rec);
     }
 
-    const fleece::impl::Dict* TreeDocumentFactory::fleeceAccessor(slice docBody) const {
-        slice revBody = RawRevision::getCurrentRevBody(docBody);
-        if (!revBody)
-            return nullptr;
-        const Value *root = Value::fromTrustedData(revBody);
-        if (!root)
-            return nullptr;
-        return root->asDict();
+    slice TreeDocumentFactory::fleeceAccessor(slice docBody) const {
+        return RawRevision::getCurrentRevBody(docBody);
     }
 
     alloc_slice TreeDocumentFactory::revIDFromVersion(slice version) const {

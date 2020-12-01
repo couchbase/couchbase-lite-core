@@ -32,12 +32,6 @@ namespace litecore {
         kAscending = 1
     };
 
-    enum ContentOption {
-        kEntireBody,
-        kCurrentRevOnly,
-        kMetaOnly,
-    };
-
     /** KeyStore enumerator/iterator that returns a range of Records.
         Usage:
             for (auto e=db.enumerate(); e.next(); ) {...}

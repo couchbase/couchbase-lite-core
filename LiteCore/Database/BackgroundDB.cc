@@ -45,7 +45,7 @@ namespace litecore {
     }
 
 
-    const fleece::impl::Dict* BackgroundDB::fleeceAccessor(slice recordBody) const {
+    slice BackgroundDB::fleeceAccessor(slice recordBody) const {
         return _database->fleeceAccessor(recordBody);
     }
 

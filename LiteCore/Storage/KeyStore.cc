@@ -45,30 +45,20 @@ namespace litecore {
         fn(rec);
     }
 
-    void KeyStore::get(sequence_t seq, function_ref<void(const Record&)> fn) {
-        fn(get(seq));
-    }
-
-    void KeyStore::readBody(Record &rec) const {
-        if (!rec.body()) {
-            Record fullDoc = rec.sequence() ? get(rec.sequence())
-                                            : get(rec.key(), kEntireBody);
-            rec._body = fullDoc._body;
-        }
-    }
-
 #if ENABLE_DELETE_KEY_STORES
     void KeyStore::deleteKeyStore(Transaction& trans) {
         trans.dataFile().deleteKeyStore(name());
     }
 #endif
-    
-    sequence_t KeyStore::write(Record &rec,
-                               Transaction &t,
-                               optional<sequence_t> replacingSequence,
-                               bool newSequence)
+
+    sequence_t KeyStore::set(Record &rec,
+                             Transaction &t,
+                             optional<sequence_t> replacingSequence,
+                             bool newSequence)
     {
-        auto seq = set(rec.key(), rec.version(), rec.body(), rec.flags(), t, replacingSequence, newSequence);
+        RecordSetter r = {rec.key(), rec.version(), rec.body(), nullslice,
+                          replacingSequence, newSequence, rec.flags()};
+        auto seq = set(r, t);
         if (seq > 0) {
             rec.setExists();
             rec.updateSequence(seq);

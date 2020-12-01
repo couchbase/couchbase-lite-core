@@ -65,13 +65,53 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]")
     alloc_slice key("key");
     {
         Transaction t(db);
-        store->set(key, "value"_sl, t);
+        RecordSetter rec;
+        rec.key = key;
+        rec.body = "body"_sl;
+        rec.version = "version"_sl;
+        rec.extra = "extra"_sl;
+        store->set(rec, t);
         t.commit();
     }
-    REQUIRE(store->lastSequence() == 1);
-    Record rec = db->defaultKeyStore().get(key);
-    REQUIRE(rec.key() == key);
-    REQUIRE(rec.body() == "value"_sl);
+    CHECK(store->lastSequence() == 1);
+
+    // Get by key:
+    Record rec = db->defaultKeyStore().get(key, kMetaOnly);
+    REQUIRE(rec.exists());
+    CHECK(rec.key() == key);
+    CHECK(rec.body() == nullslice);
+    CHECK(rec.bodySize() == 4);
+    CHECK(rec.version() == "version"_sl);
+    CHECK(rec.extra() == nullslice);
+    CHECK(rec.sequence() == 1);
+
+    rec = db->defaultKeyStore().get(key, kCurrentRevOnly);
+    REQUIRE(rec.exists());
+    CHECK(rec.key() == key);
+    CHECK(rec.body() == "body"_sl);
+    CHECK(rec.bodySize() == 4);
+    CHECK(rec.version() == "version"_sl);
+    CHECK(rec.extra() == nullslice);
+    CHECK(rec.sequence() == 1);
+
+    rec = db->defaultKeyStore().get(key, kEntireBody);
+    REQUIRE(rec.exists());
+    CHECK(rec.key() == key);
+    CHECK(rec.body() == "body"_sl);
+    CHECK(rec.bodySize() == 4);
+    CHECK(rec.version() == "version"_sl);
+    CHECK(rec.extra() == "extra"_sl);
+    CHECK(rec.sequence() == 1);
+
+    // Get by sequence:
+    rec = db->defaultKeyStore().get(1);
+    REQUIRE(rec.exists());
+    CHECK(rec.key() == key);
+    CHECK(rec.body() == "body"_sl);
+    CHECK(rec.bodySize() == 4);
+    CHECK(rec.version() == "version"_sl);
+    CHECK(rec.extra() == "extra"_sl);
+    CHECK(rec.sequence() == 1);
 }
 
 
@@ -91,7 +131,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
         Record rec("rec"_sl);
         rec.setVersion("m-e-t-a"_sl);
         rec.setBody("THIS IS THE BODY"_sl);
-        store->write(rec, t);
+        store->set(rec, t);
 
         REQUIRE(rec.sequence() == 2);
         REQUIRE(store->lastSequence() == 2);
@@ -101,7 +141,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
         REQUIRE(doc_alias.body() == rec.body());
 
         doc_alias.setBody("NU BODY"_sl);
-        store->write(doc_alias, t);
+        store->set(doc_alias, t);
 
         REQUIRE(store->read(rec));
         REQUIRE(rec.sequence() == 3);

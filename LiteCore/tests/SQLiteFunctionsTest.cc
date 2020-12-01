@@ -49,26 +49,20 @@ public:
         insertStmt = make_unique<SQLite::Statement>(db, "INSERT INTO kv (key, body) VALUES (?, ?)");
     }
 
-    static void invertBytes(slice s) {
-#if 0
-        uint8_t* bytes = (uint8_t*)s.buf;
-        for (size_t i = 0; i < s.size; ++i)
-        bytes[i] ^= 0xFF;
-#endif
-    }
-
     void insert(const char *key, const char *json) {
         auto body = JSONConverter::convertJSON(slice(json5(json)), sharedKeys);
-        invertBytes(body); // 'encode' the data in the database to test the accessor function
+        fleeceAccessor(body); // 'encode' the data in the database to test the accessor function
         insertStmt->bind(1, key);
         insertStmt->bind(2, body.buf, (int)body.size);
         insertStmt->exec();
         insertStmt->reset();
     }
 
-    virtual const fleece::impl::Dict* fleeceAccessor(slice s) const override {
-        invertBytes(s);
-        return fleece::impl::Value::fromData(s)->asDict();
+    virtual slice fleeceAccessor(slice s) const override {
+        uint8_t* bytes = (uint8_t*)s.buf;
+        for (size_t i = 0; i < s.size; ++i)
+            bytes[i] ^= 0xFF;
+        return s;
     }
 
 

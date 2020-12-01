@@ -1349,7 +1349,7 @@ namespace litecore {
             // a collection type (e.g. alias = {"foo": "bar"}, and want to
             // ORDER BY alias.foo
             property.drop(1);
-            _sql << "fl_nested_value(\"" << iType->first << "\", '" << string(property) << "')";
+            _sql << kNestedValueFnName << "(\"" << iType->first << "\", '" << string(property) << "')";
             return;
         } 
         
