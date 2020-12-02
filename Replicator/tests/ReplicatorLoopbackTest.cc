@@ -139,8 +139,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":100}");
 
     Log("-------- Second Replication --------");
-    createRev("new1"_sl, "1-1234"_sl, kFleeceBody);
-    createRev("new2"_sl, "1-2341"_sl, kFleeceBody);
+    createRev("new1"_sl, kRev1ID, kFleeceBody);
+    createRev("new2"_sl, kRev1ID_Alt, kFleeceBody);
     _expectedDocumentCount = 2;
 
     runPushReplication();

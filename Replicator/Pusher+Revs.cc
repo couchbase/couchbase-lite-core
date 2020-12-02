@@ -87,9 +87,11 @@ namespace litecore::repl {
             auto revisionFlags = doc->selectedRev.flags;
             if (revisionFlags & kRevDeleted)
                 msg["deleted"_sl] = "1"_sl;
-            string history = request->historyString(doc);
-            if (!history.empty())
-                msg["history"_sl] = history;
+
+            // Include the document history, but skip the current revision 'cause it's redundant
+            alloc_slice history = request->historyString(doc);
+            if (auto comma = history.findByte(','); comma)
+                msg["history"_sl] = slice(comma+1, history.end());
 
             bool sendLegacyAttachments = (request->legacyAttachments
                                           && (revisionFlags & kRevHasAttachments)

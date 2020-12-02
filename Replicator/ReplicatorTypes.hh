@@ -78,7 +78,7 @@ namespace litecore { namespace repl {
         Dir dir() const override                    {return Dir::kPushing;}
         void trim() override;
 
-        std::string historyString(C4Document*);
+        alloc_slice historyString(C4Document*);
         
     protected:
         ~RevToSend() =default;

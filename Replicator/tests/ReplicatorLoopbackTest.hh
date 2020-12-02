@@ -41,7 +41,7 @@ public:
 
 
     ReplicatorLoopbackTest()
-    :C4Test(0)
+    :C4Test(VersionVectorOption) //TEMP
     ,db2(createDatabase("2"))
     {
         // Change tuning param so that tests will actually create deltas, despite using small

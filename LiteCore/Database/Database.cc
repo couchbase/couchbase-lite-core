@@ -18,7 +18,7 @@
 
 #include "Database.hh"
 #include "TreeDocument.hh"
-#include "NuDocumentFactory.hh"
+#include "VectorDocument.hh"
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
@@ -150,7 +150,7 @@ namespace c4Internal {
 
         DocumentFactory* factory;
         if (inConfig.flags & kC4DB_VersionVectors) 
-            factory = new NuDocumentFactory(this);
+            factory = new VectorDocumentFactory(this);
         else
             factory = new TreeDocumentFactory(this);
         _documentFactory.reset(factory);
@@ -497,6 +497,20 @@ namespace c4Internal {
         generateUUID(kPublicUUIDKey, t, true);
         generateUUID(kPrivateUUIDKey, t, true);
         t.commit();
+    }
+
+
+    uint64_t Database::myPeerID() {
+        if (_myPeerID == 0) {
+            // Compute my peer ID from the first 64 bits of the public UUID.
+            auto uuid = getUUID(kPublicUUIDKey);
+            memcpy(&_myPeerID, &uuid, sizeof(_myPeerID));
+            _myPeerID = endian::dec64(_myPeerID);
+            // Don't let it be zero:
+            if (_myPeerID == 0)
+                _myPeerID = 1;
+        }
+        return _myPeerID;
     }
     
     

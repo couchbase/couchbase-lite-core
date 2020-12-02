@@ -136,8 +136,8 @@ namespace c4Internal {
         }
     }
 
-    Document* TreeDocumentFactory::leafDocumentContaining(const Value *value) {
-        const Doc *doc = fleece::impl::Doc::containing(value);
+    Document* TreeDocumentFactory::leafDocumentContaining(FLValue value) {
+        const Doc *doc = fleece::impl::Doc::containing((const Value*)value);
         if (!doc)
             return nullptr;
         auto leafDoc = dynamic_cast<const LeafFleeceDoc*>(doc);

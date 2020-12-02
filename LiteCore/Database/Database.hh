@@ -76,6 +76,8 @@ namespace c4Internal {
         UUID getUUID(slice key);
         void resetUUIDs();
 
+        uint64_t myPeerID();
+
         void rekey(const C4EncryptionKey *newKey);
         
         void maintenance(DataFile::MaintenanceType what);
@@ -199,6 +201,7 @@ namespace c4Internal {
         recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
         unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
         Retained<Housekeeper>       _housekeeper;           // for expiration/cleanup tasks
+        uint64_t                    _myPeerID {0};
     };
 
 }

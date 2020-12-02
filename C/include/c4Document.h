@@ -162,6 +162,9 @@ extern "C" {
         @param maxRevs  The maximum number of revisions to include in the result. */
     C4SliceResult c4doc_getRevisionHistory(C4Document* doc C4NONNULL, unsigned maxRevs) C4API;
 
+    /** Returns the selected revision's ID in a form that will make sense to another peer/server. */
+    C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API;
+
     /** Selects the parent of the selected revision, if it's known, else returns NULL. */
     bool c4doc_selectParentRevision(C4Document* doc C4NONNULL) C4API;
 

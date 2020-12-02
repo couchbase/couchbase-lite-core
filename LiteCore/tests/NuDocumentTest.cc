@@ -143,6 +143,44 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
 }
 
 
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Empty Properties", "[NuDocument]") {
+    {
+        NuDocument doc(*store, "Nuu");
+        CHECK(!doc.exists());
+        CHECK(doc.properties() != nullptr);
+        CHECK(doc.properties().empty());
+
+        Transaction t(db);
+        CHECK(doc.save(t) == NuDocument::kNewSequence);
+        CHECK(!doc.changed());
+        t.commit();
+
+        CHECK(doc.properties() != nullptr);
+        CHECK(doc.properties().empty());
+    }
+    {
+        NuDocument doc(*store, "Nuu", kEntireBody);
+        CHECK(doc.exists());
+        CHECK(doc.properties() != nullptr);
+        CHECK(doc.properties().empty());
+    }
+    {
+        NuDocument doc(*store, "Nuu", kCurrentRevOnly);
+        CHECK(doc.exists());
+        CHECK(doc.properties() != nullptr);
+        CHECK(doc.properties().empty());
+    }
+    {
+        NuDocument doc(*store, "Nuu", kMetaOnly);
+        CHECK(doc.exists());
+        CHECK(doc.properties() == nullptr);
+        doc.loadData(kCurrentRevOnly);
+        CHECK(doc.properties() != nullptr);
+        CHECK(doc.properties().empty());
+    }
+}
+
+
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remotes", "[NuDocument]") {
     Transaction t(db);
     NuDocument doc(*store, "Nuu");

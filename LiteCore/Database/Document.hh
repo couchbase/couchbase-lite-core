@@ -65,7 +65,8 @@ namespace c4Internal {
             return _db->mustBeInTransaction(outError);
         }
 
-        Database* database()    {return _db;}
+        Database* database()                                            {return _db;}
+        const Database* database() const                                {return _db;}
 
         virtual bool exists() =0;
         virtual void loadRevisions()                                    { }
@@ -107,7 +108,7 @@ namespace c4Internal {
             return false;
         }
 
-        virtual bool selectParentRevision() noexcept =0;
+        virtual bool selectParentRevision() noexcept    {failUnsupported();}
         virtual bool selectNextRevision() =0;
         virtual bool selectNextLeafRevision(bool includeDeleted) =0;
         virtual bool selectCommonAncestorRevision(slice revID1, slice revID2) {
@@ -131,6 +132,8 @@ namespace c4Internal {
         }
 
         virtual alloc_slice getSelectedRevHistory(unsigned maxHistory) =0;
+
+        virtual alloc_slice getSelectedRevIDGlobalForm()    {return alloc_slice(selectedRev.revID);}
 
         alloc_slice bodyAsJSON(bool canonical =false);
 
@@ -237,11 +240,17 @@ namespace c4Internal {
         virtual Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID,
                                                            bool withBody) =0;
 
-        virtual slice fleeceAccessor(slice docBody) const =0;
+        virtual slice fleeceAccessor(slice docBody) const {
+            return docBody;
+        }
 
-        virtual alloc_slice revIDFromVersion(slice version) const =0;
+        virtual alloc_slice revIDFromVersion(slice version) const {
+            return revid(version).expanded();
+        }
 
-        virtual bool isFirstGenRevID(slice revID) const               {return false;}
+        virtual bool isFirstGenRevID(slice revID) const {
+            return false;
+        }
 
         virtual vector<alloc_slice> findAncestors(const vector<slice> &docIDs,
                                                   const vector<slice> &revIDs,

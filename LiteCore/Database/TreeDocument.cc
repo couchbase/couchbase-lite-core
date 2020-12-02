@@ -115,6 +115,7 @@ namespace c4Internal {
 
 
         alloc_slice getSelectedRevHistory(unsigned maxRevs) override {
+            auto selRev = _selectedRev;
             int revsWritten = 0;
             stringstream historyStream;
 
@@ -129,8 +130,8 @@ namespace c4Internal {
             // revisions, but always write the rev known to the peer if there is one.
             // There may be gaps in the history (non-consecutive generations) if revs have been pruned.
             // If sending these, make up random revIDs for them since they don't matter.
-            unsigned lastGen = c4rev_getGeneration(selectedRev.revID);
-            while (revsWritten < maxRevs && selectParentRevision()) {
+            unsigned lastGen = c4rev_getGeneration(selectedRev.revID) + 1;
+            do {
                 slice revID = selectedRev.revID;
                 unsigned gen = c4rev_getGeneration(revID);
                 while (gen < --lastGen && revsWritten < maxRevs) {
@@ -141,7 +142,8 @@ namespace c4Internal {
                 }
                 lastGen = gen;
                 append(revID);
-            }
+            } while (revsWritten < maxRevs && selectParentRevision());
+            selectRevision(selRev);
             return alloc_slice(historyStream.str());
         }
 
@@ -585,16 +587,12 @@ namespace c4Internal {
         return RawRevision::getCurrentRevBody(docBody);
     }
 
-    alloc_slice TreeDocumentFactory::revIDFromVersion(slice version) const {
-        return revid(version).expanded();
-    }
-
     bool TreeDocumentFactory::isFirstGenRevID(slice revID) const {
         return revID.hasPrefix(slice("1-", 2));
     }
 
-    Document* TreeDocumentFactory::treeDocumentContaining(const Value *value) {
-        VersionedDocument *vdoc = VersionedDocument::containing(value);
+    Document* TreeDocumentFactory::treeDocumentContaining(FLValue value) {
+        VersionedDocument *vdoc = VersionedDocument::containing((const Value*)value);
         return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
     }
 

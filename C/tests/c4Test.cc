@@ -69,59 +69,11 @@ void ps(fleece::slice s) {
 }
 
 
-static string c4sliceToHex(C4Slice result) {
-    string hex;
-    for (size_t i = 0; i < result.size; i++) {
-        char str[4];
-        sprintf(str, "%02X", ((const uint8_t*)result.buf)[i]);
-        hex.append(str);
-        if ((i % 4) == 3 && i != result.size-1)
-            hex.append(" ");
-    }
-    return hex;
-}
-
-
-ostream& operator<< (ostream& o, fleece::slice s) {
-    o << "slice[";
-    if (s.buf == nullptr)
-        return o << "null]";
-    auto buf = (const uint8_t*)s.buf;
-    for (size_t i = 0; i < s.size; i++) {
-        if (buf[i] < 32 || buf[i] > 126)
-            return o << c4sliceToHex(s) << "]";
-    }
-    return o << '"' << string((char*)s.buf, s.size) << "\"]";
-}
-
-
-ostream& operator<< (ostream& o, fleece::alloc_slice s)         {return o << fleece::slice(s.buf, s.size);}
-std::ostream& operator<< (std::ostream& o, C4Slice s)           {return o << fleece::slice(s);}
-std::ostream& operator<< (std::ostream& o, C4SliceResult s)     {return o << fleece::slice(s.buf,s.size);}
-
-
-
 ostream& operator<< (ostream &out, C4Error error) {
     C4SliceResult s = c4error_getDescription(error);
     out << "C4Error(" << string((const char*)s.buf, s.size) << ")";
     c4slice_free(s);
     return out;
-}
-
-
-fleece::alloc_slice json5slice(std::string str) {
-    FLStringResult errorMsg = {};
-    size_t errorPos = 0;
-    FLError err;
-    FLSliceResult json = FLJSON5_ToJSON(slice(str), &errorMsg, &errorPos, &err);
-    INFO("JSON5 error: " << string(alloc_slice(errorMsg)) << ", input was: " << str);
-    REQUIRE(json.buf);
-    return json;
-}
-
-
-std::string json5(std::string str) {
-    return string(json5slice(str));
 }
 
 
@@ -244,11 +196,12 @@ C4Test::C4Test(int testOption)
     _dbConfig = {slice(TempDir()), kC4DB_Create};
     if (testOption & 1) {
         _dbConfig.flags |= kC4DB_VersionVectors;
-        kRevID = C4STR("1@*");
+        kRev1ID = kRevID = kRev1ID_Alt = C4STR("1@*");
         kRev2ID = C4STR("2@*");
         kRev3ID = C4STR("3@*");
     } else {
-        kRevID = C4STR("1-abcd");
+        kRev1ID = kRevID = C4STR("1-abcd");
+        kRev1ID_Alt = C4STR("1-dcba");
         kRev2ID = C4STR("2-c001d00d");
         kRev3ID = C4STR("3-deadbeef");
     }
@@ -675,9 +628,10 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
     }
     
     unsigned numDocs = 0;
+    bool completed;
     {
         TransactionHelper t(database);
-        readFileByLines(path, [&](FLSlice line)
+        completed = readFileByLines(path, [&](FLSlice line)
         {
             C4Error c4err;
             fleece::alloc_slice body = c4db_encodeJSON(database, {line.buf, line.size}, &c4err);
@@ -706,7 +660,8 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
         C4Log("Committing...");
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");
-    CHECK(c4db_getDocumentCount(db) == numDocs);
+    if (completed)
+        CHECK(c4db_getDocumentCount(database) == numDocs);
     return numDocs;
 }
 

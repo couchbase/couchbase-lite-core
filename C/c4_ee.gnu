@@ -369,6 +369,8 @@ CBL {
 		c4doc_getSingleRevision;
 		c4doc_generateID;
 		c4doc_getProperties;
+		c4doc_getSelectedRevIDGlobalForm;
+		c4doc_getRevisionHistory;
 
 		c4db_getIndexesInfo;
 

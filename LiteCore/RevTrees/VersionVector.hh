@@ -49,26 +49,41 @@ namespace litecore {
 
     /** A single version identifier in a VersionVector.
         Consists of a peerID (author) and generation count.
+        The local peer's ID is represented as 0 (`kMePeerID`) for simplicity and compactness.
 
-        The string form of a Version is: <hex generation> '@' (<hex peerID> | '*')
-        where the '*' represents the "me" peer ID (0).
+        The absolute ASCII form of a Version is: <hex generation> '@' <hex peerID> .
+        The relative form uses a "*" character for the peerID when it's equal to the local peer's ID.
 
         The binary form is the generation as a varint followed by the peerID as a varint. */
     class Version {
     public:
         Version(generation g, peerID p)         :_author(p), _gen(g) {validate();}
-        explicit Version(slice ascii);
+
+        /** Initializes from ASCII. Throws BadRevisionID if the string's not valid.
+            If `myPeerID` is given, then the string is expected to be in absolute
+            form, with no "*" allowed. myPeerID in the string will be changed to kMePeerID (0). */
+        explicit Version(slice ascii, peerID myPeerID =kMePeerID);
+
+        /** Initializes from binary. On return, `binaryP->buf` will point just past the last byte read. */
         explicit Version(slice *binaryP);
 
+        /** The peer that created this version. */
         const peerID author() const             {return _author;}
+
+        /** The generation count: the number of versions this peer has created. */
         generation gen() const                  {return _gen;}
 
-        // Max length of a Version in ASCII form.
+        /** Max length of a Version in ASCII form. */
         static constexpr size_t kMaxASCIILength = 2 * 16 + 1;
 
-        bool writeBinary(slice *buf, peerID myID =kMePeerID) const;
-        bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
+        /** Converts the version to a human-readable string.
+            When sharing a version with another peer, pass your actual peer ID in `myID`;
+            then if `author` is kMePeerID it will be written as that ID.
+            Otherwise it's written as '*'. */
         alloc_slice asASCII(peerID myID =kMePeerID) const;
+
+        bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
+        bool writeBinary(slice *buf, peerID myID =kMePeerID) const;
 
         /** Convenience to compare two generations and return a versionOrder. */
         static versionOrder compareGen(generation a, generation b);
@@ -99,10 +114,10 @@ namespace litecore {
         The binary format is consecutive binary Versions (see above). */
     class VersionVector {
     public:
-        /** Returns a VersionVector parsed from ASCII. */
-        static VersionVector fromASCII(slice asciiString) {
+        /** Returns a VersionVector parsed from ASCII; see `readASCII` for details. */
+        static VersionVector fromASCII(slice asciiString, peerID myPeerID =kMePeerID) {
             VersionVector v;
-            v.readASCII(asciiString);
+            v.readASCII(asciiString, myPeerID);
             return v;
         }
 
@@ -116,8 +131,11 @@ namespace litecore {
         /** Constructs an empty vector. */
         VersionVector() { }
 
-        /** Parses textual form from ASCII data */
-        void readASCII(slice asciiString);
+        /** Parses textual form from ASCII data.
+            Throws BadRevisionID if the string's not valid.
+            If `myPeerID` is given, then the string is expected to be in absolute
+            form, with no "*" allowed. myPeerID in the string will be changed to kMePeerID (0). */
+        void readASCII(slice asciiString, peerID myPeerID =kMePeerID);
 
         /** Reads binary form. */
         void readBinary(slice binaryData);
@@ -165,8 +183,10 @@ namespace litecore {
         /** Generates binary form. */
         fleece::alloc_slice asBinary(peerID myID = kMePeerID) const;
 
-        /** Converts the vector to a human-readable string, replacing kMePeerID ("*") with the
-            given peerID in the output. Use this when sharing a vector with another peer. */
+        /** Converts the vector to a human-readable string.
+            When sharing a vector with another peer, pass your actual peer ID in `myID`;
+            then occurrences of kMePeerID will be written as that ID.
+            Otherwise they're written as '*'. */
         fleece::alloc_slice asASCII(peerID myID = kMePeerID) const;
 
         bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
@@ -188,24 +208,6 @@ namespace litecore {
 
         bool operator == (const Version& v) const           {return compareTo(v) == kSame;}
         bool operator >= (const Version& v) const           {return compareTo(v) != kOlder;}
-
-#if 0
-        // Methods that were implemented but untested and not in use...
-
-        std::string canonicalString(peerID myPeerID) const;
-
-        /** Given a string-encoded VersionVector, returns its current version. */
-        static slice extractCurrentVersionFromString(slice versionVectorString) {
-            return versionVectorString.upTo(versionVectorString.findByteOrEnd(','));
-        }
-
-        /** Populates an empty vector from a Fleece value. */
-        void readFrom(fleece::Value);
-
-        /** Writes a VersionVector to a Fleece encoder (as an array of alternating generations and
-         peer IDs.) */
-        void writeTo(fleece::Encoder&) const;
-#endif
 
     private:
         std::vector<Version>::iterator findPeerIter(peerID);

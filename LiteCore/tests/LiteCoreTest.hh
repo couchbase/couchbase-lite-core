@@ -18,12 +18,10 @@
 
 #pragma once
 
-#include <iostream>
-#include "fleece/slice.hh"
+#include "TestUtils.hh"
 #include "PlatformCompat.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#include "JSON5.hh"
 #include "c4Base.h"
 #include <functional>
 
@@ -35,26 +33,14 @@
 #define REQUIRE_IF_DEBUG(x)
 #endif
 
-namespace fleece { namespace impl {
+namespace fleece::impl {
     class Dict;
     class Encoder;
-} }
+}
 using namespace fleece;
 
 
 std::string stringWithFormat(const char *format, ...) __printflike(1, 2);
-
-// Converts JSON5 to JSON; helps make JSON test input more readable!
-static inline std::string json5(const std::string &s)      {return fleece::ConvertJSON5(s);}
-
-std::string sliceToHex(slice);
-std::string sliceToHexDump(slice, size_t width = 16);
-
-// Some operators to make slice work with unit-testing assertions:
-// (This has to be declared before including catch.hpp, because C++ sucks)
-namespace fleece {
-    std::ostream& operator<< (std::ostream& o, slice s);
-}
 
 
 // The lambda must throw a litecore::error with the given domain and code, or the test fails.

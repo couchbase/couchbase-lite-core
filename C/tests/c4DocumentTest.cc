@@ -326,6 +326,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
     CHECK(docBodyEquals(doc, kFleeceBody2));
 
     if (isRevTrees()) {
+        alloc_slice history = c4doc_getRevisionHistory(doc, 99);
+        CHECK(history == "2-c001d00d,1-abcd");
+
         // Select 1st revision:
         REQUIRE(c4doc_selectParentRevision(doc));
         CHECK(doc->selectedRev.revID == kRevID);
@@ -386,6 +389,12 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
         CHECK(!doc);
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorNotFound);
+    } else {
+        // The history is going to end with this database's peerID, a random 64-bit hex string,
+        // so we don't know exactly what it will be. But it will start "2@".
+        alloc_slice history = c4doc_getRevisionHistory(doc, 99);
+        CHECK(history.hasPrefix("2@"));
+        CHECK(history.size <= 2 + 32);
     }
     c4doc_release(doc);
 }
@@ -1110,3 +1119,12 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Document][C]") {
     c4doc_release(updatedDocRefreshed);
 }
 
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Global Rev ID", "[Document][C]") {
+    createRev(kDocID, kRevID, kFleeceBody);
+    C4Document *doc = c4doc_get(db, kDocID, true, nullptr);
+    alloc_slice revID = c4doc_getSelectedRevIDGlobalForm(doc);
+    C4Log("Global rev ID = %.*s", (int)revID.size, (char*)revID.buf);
+    CHECK(revID.findByte('*') == nullptr);
+    c4doc_release(doc);
+}

@@ -26,6 +26,7 @@
 #include "c4Private.h"
 
 #include "TreeDocument.hh"
+#include "VectorDocument.hh"
 #include "Document.hh"
 #include "Database.hh"
 #include "LegacyAttachments.hh"
@@ -132,12 +133,17 @@ bool c4doc_hasRevisionBody(C4Document* doc) noexcept {
 }
 
 
-C4Slice c4doc_getRevisionBody(C4Document* doc C4NONNULL) C4API {
+C4Slice c4doc_getRevisionBody(C4Document* doc) C4API {
     return asInternal(doc)->getSelectedRevBody();
 }
 
 
-C4SliceResult c4doc_getRevisionHistory(C4Document* doc C4NONNULL, unsigned maxRevs) C4API {
+C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API {
+    return C4SliceResult(asInternal(doc)->getSelectedRevIDGlobalForm());
+}
+
+
+C4SliceResult c4doc_getRevisionHistory(C4Document* doc, unsigned maxRevs) C4API {
     return C4SliceResult(asInternal(doc)->getSelectedRevHistory(maxRevs));
 }
 
@@ -701,7 +707,10 @@ FLDict c4doc_getProperties(C4Document* doc) C4API {
 
 
 C4Document* c4doc_containingValue(FLValue value) {
-    return TreeDocumentFactory::documentContaining((const fleece::impl::Value*)value);
+    auto doc = VectorDocumentFactory::documentContaining(value);
+    if (!doc)
+        doc = TreeDocumentFactory::documentContaining(value);
+    return doc;
 }
 
 

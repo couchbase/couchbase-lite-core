@@ -26,10 +26,30 @@ using namespace fleece;
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 
-#include "CatchHelper.hh"
-#include "PlatformCompat.hh"
+#include "TestUtils.hh"
 #include <function_ref.hh>
 #include <functional>
+#include <set>
+
+
+std::ostream& operator<< (std::ostream &out, C4Error error);
+
+
+template <class T>
+std::ostream& operator<< (std::ostream &o, const std::set<T> &things) {
+    o << "{";
+    int n = 0;
+    for (const T &thing : things) {
+        if (n++) o << ", ";
+        o << '"' << thing << '"';
+    }
+    o << "}";
+    return o;
+}
+
+
+// Now include Catch (this has to go after the `operator<<` methods, so Catch knows about them.)
+#include "CatchHelper.hh"
 
 
 #if 0 // disabled because CMake is building test binaries with optimization
@@ -70,35 +90,8 @@ using namespace fleece;
 const std::string& TempDir();
 
 
-// These '<<' functions help Catch log values of custom types in assertion messages:
-std::ostream& operator<< (std::ostream& o, fleece::slice s);
-std::ostream& operator<< (std::ostream& o, fleece::alloc_slice s);
-
-std::ostream& operator<< (std::ostream& o, C4Slice s);
-std::ostream& operator<< (std::ostream& o, C4SliceResult s);
-
-std::ostream& operator<< (std::ostream &out, C4Error error);
-
-template <class T>
-std::ostream& operator<< (std::ostream &o, const std::set<T> &things) {
-    o << "{";
-    int n = 0;
-    for (const T &thing : things) {
-        if (n++) o << ", ";
-        o << '"' << thing << '"';
-    }
-    o << "}";
-    return o;
-}
-
-
 // Converts a slice to a C++ string
 static inline std::string toString(C4Slice s)   {return std::string((char*)s.buf, s.size);}
-
-
-// Converts JSON5 to JSON; helps make JSON test input more readable!
-std::string json5(std::string);
-fleece::alloc_slice json5slice(std::string str);
 
 
 void CheckError(C4Error err,
@@ -144,8 +137,17 @@ struct ExpectingExceptions {
 class C4Test {
 public:
 #if defined(COUCHBASE_ENTERPRISE)
+    enum TestOptions {
+        RevTreeOption = 0,
+        VersionVectorOption,
+        EncryptedRevTreeOption
+    };
     static const int numberOfOptions = 3;       // rev-tree, version vector, rev-tree encrypted
 #else
+    enum TestOptions {
+        RevTreeOption = 0,
+        VersionVectorOption
+    };
     static const int numberOfOptions = 2;       // rev-tree, version vector
 #endif
 
@@ -247,6 +249,8 @@ public:
     // Some handy constants to use
     static const C4Slice kDocID;    // "mydoc"
     C4Slice kRevID;    // "1-abcd"
+    C4Slice kRev1ID;   // "1-abcd"
+    C4Slice kRev1ID_Alt;   // "1-dcba"
     C4Slice kRev2ID;   // "2-c001d00d"
     C4Slice kRev3ID;   // "3-deadbeef"
     static C4Slice kFleeceBody;             // {"ans*wer":42}, in Fleece

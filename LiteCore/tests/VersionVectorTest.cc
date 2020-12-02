@@ -58,7 +58,9 @@ TEST_CASE("Version", "[RevIDs]") {
 
     Version me(0x3e, kMePeerID);
     CHECK(me.asASCII() == "3e@*"_sl);
+    CHECK(me.asASCII(Alice) == "3e@100"_sl);
     CHECK(Version("3e@*") == me);
+    CHECK(Version("3e@100", Alice) == me);
 }
 
 
@@ -91,6 +93,13 @@ TEST_CASE("VersionVector <-> String", "[RevIDs]") {
     CHECK(v[3] == Version(2, Carol));
     CHECK(v.asASCII() == "3@*,2@100,1@103,2@102");
     CHECK(v.asASCII(Bob) == "3@101,2@100,1@103,2@102");
+
+    v.readASCII("3@101,2@100,1@103,2@102", Bob);
+    CHECK(v.count() == 4);
+    CHECK(v[0] == Version(3, kMePeerID));
+    CHECK(v[1] == Version(2, Alice));
+    CHECK(v[2] == Version(1, Dave));
+    CHECK(v[3] == Version(2, Carol));
 }
 
 

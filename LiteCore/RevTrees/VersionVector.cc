@@ -54,17 +54,27 @@ namespace litecore {
     }
 
 
-    Version::Version(slice string) {
-        slice in = string;
+    Version::Version(slice ascii, peerID myPeerID) {
+        slice in = ascii;
         _gen = in.readHex();
         if (in.readByte() != '@' || _gen == 0)
-            throwBadASCII(string);
+            throwBadASCII(ascii);
         if (in == "*"_sl) {
+#if 0
+            if (myPeerID != kMePeerID) {
+                // If I'm given an explicit peer ID for me, then '*' is not valid; the string
+                // is expected to contain that explicit ID instead.
+                error::_throw(error::BadRevisionID,
+                              "A '*' is not valid in this version string: '%.*s'", SPLAT(ascii));
+            }
+#endif
             _author = kMePeerID;
         } else {
             _author.id = in.readHex();
             if (in.size > 0 || _author == kMePeerID)
-                throwBadASCII(string);
+                throwBadASCII(ascii);
+            if (_author == myPeerID)
+                _author = kMePeerID;    // Abbreviate my ID
         }
     }
 
@@ -176,13 +186,13 @@ namespace litecore {
     }
 
 
-    void VersionVector::readASCII(slice str) {
+    void VersionVector::readASCII(slice str, peerID myPeerID) {
         if (str.size == 0)
             throwBadASCII(str);
         reset();
         while (str.size > 0) {
             const void *comma = str.findByteOrEnd(',');
-            _vers.emplace_back(str.upTo(comma));
+            _vers.emplace_back(str.upTo(comma), myPeerID);
             str = str.from(comma);
             if (str.size > 0)
                 str.moveStart(1); // skip comma
@@ -338,47 +348,5 @@ namespace litecore {
         }
         return result;
     }
-
-
-
-#if 0
-    string VersionVector::canonicalString(peerID myPeerID) const {
-        auto vec = *this; // copy before sorting
-        vec.expandMyPeerID(myPeerID);
-        sort(vec._vers.begin(), vec._vers.end(),
-             [myPeerID](const Version &a, const Version &b) {
-            return a.author().id < b.author().id;
-        });
-        return vec.asString();
-    }
-
-
-    void VersionVector::readFrom(Value val) {
-        reset();
-        Array arr = val.asArray();
-        if (!arr)
-            error::_throw(error::BadRevisionID);
-        Array::iterator i(arr);
-        if (i.count() % 2 != 0)
-            error::_throw(error::BadRevisionID);
-        _vers.reserve(i.count() / 2);
-        for (; i; ++i,++i) {
-            auto g = i[0], p = i[1];
-            if (!g.isInteger() || !p.isInteger())
-                error::_throw(error::BadRevisionID);
-            _vers.emplace_back((generation)g.asUnsigned(), peerID{p.asUnsigned()});
-        }
-    }
-
-
-    void VersionVector::writeTo(Encoder &encoder) const {
-        encoder.beginArray(2*_vers.size());
-        for (auto &v : _vers) {
-            encoder << v.gen();
-            encoder << v.author().id;
-        }
-        encoder.endArray();
-    }
-#endif
 
 }

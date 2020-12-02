@@ -84,14 +84,19 @@ namespace litecore {
 
 
     void NuDocument::readRecordBody(const alloc_slice &body) {
-        if (body)
+        if (body) {
             _bodyDoc = newLinkedFleeceDoc(body);
-        else
+            _current.properties = _bodyDoc.asDict();
+            if (!_current.properties)
+                error::_throw(error::CorruptRevisionData);
+        } else  {
             _bodyDoc = nullptr;
-        _current.properties = _bodyDoc.asDict();
-        _currentProperties = _current.properties;       // retains the Dict
-        if (body && !_current.properties)
-            error::_throw(error::CorruptRevisionData);
+            if (_whichContent != kMetaOnly)
+                _current.properties = Dict::emptyDict();
+            else
+                _current.properties = nullptr;
+        }
+        _currentProperties = _current.properties;       // retains it
     }
 
     void NuDocument::readRecordExtra(const alloc_slice &extra) {
@@ -103,6 +108,15 @@ namespace litecore {
         _mutatedRevisions = nullptr;
         if (extra && !_revisions)
             error::_throw(error::CorruptRevisionData);
+
+        // The kSynced flag is set when the document's current revision is pushed to remote #1.
+        // This is done instead of updating the doc body, for reasons of speed. So when loading
+        // the document, detect that flag and belatedly update remote #1's state.
+        if (_docFlags & DocumentFlags::kSynced) {
+            setRemoteRevision(RemoteID(1), currentRevision());
+            _docFlags = _docFlags - DocumentFlags::kSynced;
+            _changed = false;
+        }
     }
 
 
@@ -115,11 +129,13 @@ namespace litecore {
         Record rec = _store.get(_sequence, which);
         if (!rec.exists())
             return false;
-        if (_whichContent < kCurrentRevOnly)
-            readRecordBody(rec.body());
-        if (_whichContent < kEntireBody)
-            readRecordExtra(rec.extra());
+
+        auto oldWhich = _whichContent;
         _whichContent = which;
+        if (which >= kCurrentRevOnly && oldWhich < kCurrentRevOnly)
+            readRecordBody(rec.body());
+        if (which == kEntireBody && oldWhich < kEntireBody)
+            readRecordExtra(rec.extra());
         return true;
     }
 

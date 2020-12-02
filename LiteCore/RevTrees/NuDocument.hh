@@ -74,6 +74,9 @@ namespace litecore {
 
         ~NuDocument();
 
+        /// You can store a pointer to whatever you want here.
+        void* owner = nullptr;
+
         /// Given a Fleece Value, finds the NuDocument it belongs to.
         static NuDocument* containing(fleece::Value);
 

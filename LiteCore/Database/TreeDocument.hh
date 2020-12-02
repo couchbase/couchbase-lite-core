@@ -29,7 +29,6 @@ namespace c4Internal {
         Retained<Document> newDocumentInstance(C4Slice docID) override;
         Retained<Document> newDocumentInstance(const Record&) override;
         Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID, bool withBody) override;
-        alloc_slice revIDFromVersion(slice version) const override;
         bool isFirstGenRevID(slice revID) const override;
         slice fleeceAccessor(slice docBody) const override;
 
@@ -37,15 +36,15 @@ namespace c4Internal {
                                           unsigned maxAncestors, bool mustHaveBodies,
                                           C4RemoteID remoteDBID) override;
 
-        static Document* documentContaining(const fleece::impl::Value *value) {
+        static Document* documentContaining(FLValue value) {
             auto doc = treeDocumentContaining(value);
             return doc ? doc : leafDocumentContaining(value);
         }
 
 
     private:
-        static Document* treeDocumentContaining(const fleece::impl::Value *value);
-        static Document* leafDocumentContaining(const fleece::impl::Value *value);
+        static Document* treeDocumentContaining(FLValue value);
+        static Document* leafDocumentContaining(FLValue value);
     };
 
 }
