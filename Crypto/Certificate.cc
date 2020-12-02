@@ -42,12 +42,17 @@
 #pragma clang diagnostic pop
 
 #include <algorithm>
-#include <stdlib.h>
+#include <cstdlib>
+#include <chrono>
+#include "date/date.h"
 
 namespace litecore { namespace crypto {
     using namespace std;
+    using namespace std::chrono;
+    using namespace std::chrono_literals;
     using namespace fleece;
     using namespace net;
+    using namespace date;
 
 
 #pragma mark - DISTINGUISHED NAME
@@ -309,12 +314,11 @@ namespace litecore { namespace crypto {
                                        : string(subjectParams.subjectName);
         LogTo(TLSLogDomain, "Signing X.509 cert for '%s', as issuer '%s'", subjectName.c_str(), issuerName.c_str());
         // Format the dates:
-        time_t now = time(nullptr) - 60;
-        time_t exp = now + issuerParams.validity_secs;
-        struct tm tmnb, tmna;
-        char notBefore[20], notAfter[20];
-        strftime(notBefore, sizeof(notBefore), "%Y%m%d%H%M%S", gmtime_r(&now, &tmnb));
-        strftime(notAfter,  sizeof(notAfter),  "%Y%m%d%H%M%S", gmtime_r(&exp, &tmna));
+        auto now = floor<seconds>(system_clock::now()) - 60s;
+        auto exp = now + seconds(issuerParams.validity_secs);
+        stringstream notBefore, notAfter;
+        notBefore << date::format("%Y%m%d%H%M%S", now);
+        notAfter << date::format("%Y%m%d%H%M%S", exp);
 
         // Set certificate attributes:
         mbedtls_x509write_crt_set_subject_key(&crt, subjectKey->context());
@@ -323,7 +327,7 @@ namespace litecore { namespace crypto {
         TRY( mbedtls_x509write_crt_set_issuer_name(&crt, issuerName.c_str()) );
         mbedtls_x509write_crt_set_version(&crt, MBEDTLS_X509_CRT_VERSION_3);
         mbedtls_x509write_crt_set_md_alg(&crt, MBEDTLS_MD_SHA256);
-        TRY( mbedtls_x509write_crt_set_validity(&crt, notBefore, notAfter) );
+        TRY( mbedtls_x509write_crt_set_validity(&crt, notBefore.str().c_str(), notAfter.str().c_str()) );
 
         if (!subjectParams.subjectAltNames.empty()) {
             // Subject Alternative Name -- mbedTLS doesn't have high-level APIs for this
@@ -424,19 +428,22 @@ namespace litecore { namespace crypto {
 
 
     static time_t x509_to_time_t(const mbedtls_x509_time &xtime) {
-        // Note: X.509 times are in GMT.
-        ::tm time = {};
-        time.tm_year = xtime.year - 1900;
-        time.tm_mon  = xtime.mon - 1;
-        time.tm_mday = xtime.day;
-        time.tm_hour = xtime.hour;
-        time.tm_min  = xtime.min;
-        time.tm_sec  = xtime.sec;
-
-        time_t t = timegm(&time);
-        if (t == -1)
-            error::_throw(error::CorruptData, "Invalid date/time in X.509 certificate");
-        return t;
+        sys_days date = year{xtime.year}/xtime.mon/xtime.day;
+        sys_seconds datetime = date + (hours(xtime.hour) + minutes(xtime.min) + seconds(xtime.sec));
+        
+        // The limit of 32-bit time_t is approaching...
+        auto result = datetime.time_since_epoch().count();
+        if(_usuallyFalse(result > numeric_limits<time_t>::max())) {
+            Warn("time_t overflow, capping to max!");
+            return numeric_limits<time_t>::max();
+        }
+        
+        if(_usuallyFalse(result < numeric_limits<time_t>::min())) {
+            Warn("time_t underflow, capping to min!");
+            return numeric_limits<time_t>::min();
+        }
+        
+        return (time_t)result;
     }
 
     pair<time_t,time_t> Cert::validTimespan() {

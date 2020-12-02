@@ -234,7 +234,8 @@ set_litecore_source(RESULT ALL_SRC_FILES)
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 target_compile_definitions(
     LiteCoreStatic PRIVATE
-    -DLITECORE_IMPL
+    LITECORE_IMPL
+    HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
 
 target_compile_definitions(
@@ -255,6 +256,7 @@ target_include_directories(
     vendor/fleece/Fleece/Core
     vendor/fleece/Fleece/Mutable
     vendor/fleece/Fleece/Support
+    vendor/fleece/vendor/date/include
     LiteCore/BlobStore
     LiteCore/Database
     LiteCore/Query
