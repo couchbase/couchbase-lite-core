@@ -21,32 +21,14 @@
 #include <ctime>
 #include <cfloat>
 #include <cinttypes>
+#include <chrono>
+#include "date/date.h"
+#include "ParseDate.hh"
 
 using namespace fleece::impl;
 using namespace std;
-
-static string local_to_utc(const char* format, int days, int hours, int minutes,
-                               int hourOffset, int minuteOffset) {
-    minutes -= minuteOffset;
-    hours -= hourOffset;
-    if(hours < 0) {
-        hours += 24;
-        days -= 1;
-    } else if (hours > 23) {
-        hours -= 24;
-        days += 1;
-    }
-    
-    if(minutes < 0) {
-        minutes += 60;
-        hours -= 1;
-    } else if(minutes > 59) {
-        minutes -= 60;
-        hours += 1;
-    }
-    
-    return stringWithFormat(format, days, hours, minutes);
-}
+using namespace std::chrono;
+using namespace date;
 
 TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
@@ -979,27 +961,23 @@ TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 
 
 TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
+
     // Calculate offset
-    time_t rawtime = 1540252800; // 2018-10-23 midnight GMT
-    struct tm gbuf;
-    struct tm lbuf;
-    gmtime_r(&rawtime, &gbuf);
-    localtime_r(&rawtime, &lbuf);
-    time_t gmt = mktime(&gbuf);
-    auto diff = (int)difftime(rawtime, gmt);
-    if(lbuf.tm_isdst > 0) {
-        // mktime uses GMT, but we want UTC which is unaffected
-        // by DST
-        diff += 3600;
-    }
+    auto rawtime = sys_seconds { 1540252800s }; // 2018-10-23 midnight GMT
+    auto localtime = local_seconds { 1540252800s };
+    struct tm tmpTime = FromTimestamp(localtime.time_since_epoch());
+    localtime += GetLocalTZOffset(&tmpTime, false);
     
-    auto diffTotal = (int)(diff / 60.0);
-    auto diffHour = (int)(diffTotal / 60.0);
-    auto diffMinute = diffTotal % 60;
-    
-    auto expected1 = local_to_utc("2018-10-%02dT%02d:%02d:00Z", 23, 0, 0, diffHour, diffMinute);
-    auto expected2 = local_to_utc("2018-10-%02dT%02d:%02d:00Z", 23, 18, 33, diffHour, diffMinute);
-    auto expected3 = local_to_utc("2018-10-%02dT%02d:%02d:01Z", 23, 18, 33, diffHour, diffMinute);
+    stringstream s1, s2, s3;
+    s1 << date::format("%FT%TZ", localtime);
+    localtime += 18h + 33min;
+    s2 << date::format("%FT%TZ", localtime);
+    localtime += 1s;
+    s3 << date::format("%FT%TZ", localtime);
+
+    auto expected1 = s1.str();
+    auto expected2 = s2.str();
+    auto expected3 = s3.str();
     
     testExpressions( {
         {"['str_to_utc()', null]",                            "null"},
