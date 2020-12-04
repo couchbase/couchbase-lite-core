@@ -17,12 +17,10 @@ function(set_litecore_source)
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_winapi.cc
         MSVC/asprintf.c
-        vendor/fleece/MSVC/memmem.cc
         MSVC/mkstemp.cc
         MSVC/mkdtemp.cc
         MSVC/strlcat.c
         MSVC/vasprintf-msvc.c
-        MSVC/arc4random.cc
         MSVC/strptime.cc
         LiteCore/Support/StringUtil_winapi.cc
         LiteCore/Support/Error_windows.cc

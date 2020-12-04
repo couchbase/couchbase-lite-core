@@ -9,13 +9,11 @@ function(setup_build)
         ${TOP}LiteCore/Support/PlatformIO.cc
         ${TOP}MSVC/vasprintf-msvc.c
         ${TOP}MSVC/asprintf.c
-        ${TOP}MSVC/arc4random.cc
         ${TOP}MSVC/mkdtemp.cc
         ${TOP}MSVC/mkstemp.cc
         ${TOP}MSVC/strlcat.c
         ${TOP}MSVC/asprintf.c
         ${TOP}vendor/fleece/Fleece/Support/slice.cc
-        ${TOP}vendor/fleece/MSVC/memmem.cc
     )
 
     target_compile_definitions(

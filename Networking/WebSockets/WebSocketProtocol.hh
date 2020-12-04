@@ -52,7 +52,6 @@
 #endif
     #include <WinSock2.h>
     #include <Ws2tcpip.h>
-    #include <arc4random.h>
     #ifdef __MINGW32__
         // Windows has always been tied to LE
         #define htobe64(x) __builtin_bswap64(x)
@@ -67,12 +66,12 @@
     #endif
     #include <endian.h>
     #include <arpa/inet.h>
-    #include "arc4random.h"
 #endif
 //jpa: End of code adapted from Networking.h
 
 #include <cstring>
 #include <cstdlib>
+#include "SecureRandomize.hh"
 
 namespace uWS {
 
@@ -356,7 +355,7 @@ public:
         char mask[4];
         if (!isServer) {
             ((uint8_t*)dst)[1] |= 0x80;
-            uint32_t random = arc4random();
+            uint32_t random = litecore::RandomNumber();
             memcpy(mask, &random, 4);
             memcpy(dst + headerLength, &random, 4);
             headerLength += 4;
