@@ -138,7 +138,7 @@ namespace litecore::repl {
             sendRequest(msg);
 
             doneWithRev(request, false, false);
-            enqueue(&Pusher::maybeSendMoreRevs);  // async call to avoid recursion
+            enqueue(FUNCTION_TO_QUEUE(Pusher::maybeSendMoreRevs));  // async call to avoid recursion
         }
     }
 

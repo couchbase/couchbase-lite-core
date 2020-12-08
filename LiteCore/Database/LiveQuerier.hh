@@ -25,7 +25,7 @@ namespace litecore {
         as documents change. */
     class LiveQuerier : public actor::Actor,
                         BackgroundDB::TransactionObserver,
-                        Logging, fleece::InstanceCounted
+                        fleece::InstanceCounted
     {
     public:
 

@@ -109,7 +109,7 @@ namespace litecore { namespace repl {
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if (_options.pullValidator|| jsonBody.size > kMaxImmediateParseSize
                                   || jsonMightContainBlobs(jsonBody))
-            enqueue(&IncomingRev::parseAndInsert, move(jsonBody));
+            enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), move(jsonBody));
         else
             parseAndInsert(move(jsonBody));
     }

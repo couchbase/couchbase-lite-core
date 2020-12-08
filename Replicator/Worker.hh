@@ -35,7 +35,7 @@ namespace litecore { namespace repl {
     extern LogDomain SyncBusyLog;
 
     /** Abstract base class of Actors used by the replicator */
-    class Worker : public actor::Actor, public fleece::InstanceCountedIn<Worker>, public Logging {
+    class Worker : public actor::Actor, public fleece::InstanceCountedIn<Worker> {
     public:
         
         using slice = fleece::slice;
@@ -57,12 +57,12 @@ namespace litecore { namespace repl {
 
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
-            enqueue(&Worker::_connectionClosed);
+            enqueue(FUNCTION_TO_QUEUE(Worker::_connectionClosed));
         }
 
         /** Called by child actors when their status changes. */
         void childChangedStatus(Worker *task, const Status &status) {
-            enqueue(&Worker::_childChangedStatus, task, status);
+            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), task, status);
         }
 
 #if !DEBUG
@@ -94,7 +94,7 @@ namespace litecore { namespace repl {
                              void (ACTOR::*method)(Retained<blip::MessageIn>)) {
             std::function<void(Retained<blip::MessageIn>)> fn(
                                         std::bind(method, (ACTOR*)this, std::placeholders::_1) );
-            _connection->setRequestHandler(profile, false, asynchronize(fn));
+            _connection->setRequestHandler(profile, false, asynchronize(profile, fn));
         }
 
         /** Implementation of connectionClosed(). May be overridden, but call super. */

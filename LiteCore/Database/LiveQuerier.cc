@@ -44,7 +44,7 @@ namespace litecore {
                              Query *query,
                              bool continuous,
                              Delegate *delegate)
-    :Logging(QueryLog)
+    :Actor(QueryLog)
     ,_database(db)
     ,_backgroundDB(db->backgroundDatabase())
     ,_expression(query->expression())
@@ -73,20 +73,20 @@ namespace litecore {
 
     void LiveQuerier::start(Query::Options options) {
         _lastTime = clock::now();
-        enqueue(&LiveQuerier::_runQuery, options);
+        enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_runQuery), options);
     }
 
 
     void LiveQuerier::stop() {
         logInfo("Stopping");
         _stopping = true;
-        enqueue(&LiveQuerier::_stop);
+        enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_stop));
     }
 
 
     // Database change (transaction committed) notification
     void LiveQuerier::transactionCommitted() {
-        enqueue(&LiveQuerier::_dbChanged, clock::now());
+        enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_dbChanged), clock::now());
     }
 
 
@@ -119,7 +119,7 @@ namespace litecore {
         delay_t delay = (idleTime <= kRapidChanges) ? kLongDelay : kShortDelay;
         logVerbose("DB changed after %.3f sec. Triggering query in %.3f secs",
                    idleTime.count(), delay.count());
-        enqueueAfter(delay, &LiveQuerier::_runQuery, _currentEnumerator->options());
+        enqueueAfter(delay, FUNCTION_TO_QUEUE(LiveQuerier::_runQuery), _currentEnumerator->options());
         _waitingToRun = true;
     }
 

@@ -30,19 +30,19 @@ namespace litecore {
     using namespace std;
 
     Housekeeper::Housekeeper(Database *db)
-    :Actor("Housekeeper")
+    :Actor(DBLog, "Housekeeper")
     ,_bgdb(db->backgroundDatabase())
     ,_expiryTimer(std::bind(&Housekeeper::_doExpiration, this))
     { }
 
 
     void Housekeeper::start() {
-        enqueue(&Housekeeper::_scheduleExpiration);
+        enqueue(FUNCTION_TO_QUEUE(Housekeeper::_scheduleExpiration));
     }
 
 
     void Housekeeper::stop() {
-        enqueue(&Housekeeper::_stop);
+        enqueue(FUNCTION_TO_QUEUE(Housekeeper::_stop));
         waitTillCaughtUp();
     }
 

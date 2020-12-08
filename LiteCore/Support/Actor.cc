@@ -33,7 +33,7 @@ namespace litecore { namespace actor {
         std::mutex mut;
         std::condition_variable cond;
         bool finished = false;
-        enqueue(&Actor::_waitTillCaughtUp, &mut, &cond, &finished);
+        enqueue(FUNCTION_TO_QUEUE(Actor::_waitTillCaughtUp), &mut, &cond, &finished);
         
         std::unique_lock<std::mutex> lock(mut);
         cond.wait(lock, [&]{return finished;});

@@ -69,7 +69,7 @@ namespace litecore { namespace repl {
     ,_connectionState(connection().state())
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_docsEnded(this, &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
+    ,_docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     ,_checkpointer(_options, webSocket->url())
     {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
@@ -106,7 +106,7 @@ namespace litecore { namespace repl {
         if (synchronous)
             _start(reset);
         else
-            enqueue(&Replicator::_start, reset);
+            enqueue(FUNCTION_TO_QUEUE(Replicator::_start), reset);
     }
 
 
@@ -356,7 +356,7 @@ namespace litecore { namespace repl {
                 reportStatus();
             } else if (!_waitingToCallDelegate) {
                 _waitingToCallDelegate = true;
-                enqueueAfter(waitFor, &Replicator::reportStatus);
+                enqueueAfter(waitFor, FUNCTION_TO_QUEUE(Replicator::reportStatus));
             }
         }
     }
@@ -414,7 +414,7 @@ namespace litecore { namespace repl {
 
 
     void Replicator::onHTTPResponse(int status, const websocket::Headers &headers) {
-        enqueue(&Replicator::_onHTTPResponse, status, headers);
+        enqueue(FUNCTION_TO_QUEUE(Replicator::_onHTTPResponse), status, headers);
     }
 
 
