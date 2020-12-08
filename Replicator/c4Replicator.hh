@@ -164,6 +164,7 @@ struct C4Replicator : public RefCounted,
     virtual void setProperties(AllocedDict properties) {
         LOCK(_mutex);
         _options.properties = properties;
+        _progressLevel = static_cast<C4ReplicatorProgressLevel>(_options.progressLevel());
     }
 
     // Prevents any future client callbacks (called by `c4repl_free`.)
@@ -180,6 +181,15 @@ struct C4Replicator : public RefCounted,
 
     C4SliceResult pendingDocumentIDs(C4Error* outErr) const {
         return PendingDocuments(this).pendingDocumentIDs(outErr);
+    }
+
+    void setProgressLevel(C4ReplicatorProgressLevel level) {
+        _progressLevel = level;
+        if(_replicator) {
+            _replicator->setProgressNotificationLevel(static_cast<int>(level));
+        } else {
+            logVerbose("Replicator not yet created, saving progress level value for later...");
+        }
     }
     
 #ifdef COUCHBASE_ENTERPRISE
@@ -209,6 +219,7 @@ protected:
     ,_onDocumentsEnded(params.onDocumentsEnded)
     ,_onBlobProgress(params.onBlobProgress)
     {
+        _progressLevel = static_cast<C4ReplicatorProgressLevel>(_options.progressLevel());
         _status.flags |= kC4HostReachable;
     }
 
@@ -278,6 +289,8 @@ protected:
             if(!createReplicator()) {
                 return false;
             }
+
+            _replicator->setProgressNotificationLevel(static_cast<int>(_progressLevel));
         }
 
 		setStatusFlag(kC4Suspended, false);
@@ -503,6 +516,7 @@ protected:
     mutable std::mutex          _mutex;
     Retained<C4Database> const  _database;
     Replicator::Options         _options;
+    C4ReplicatorProgressLevel   _progressLevel {kC4ReplProgressOverall};
 
     Retained<Replicator>        _replicator;
     C4ReplicatorStatus          _status {kC4Stopped};

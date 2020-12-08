@@ -75,7 +75,14 @@ namespace litecore { namespace repl {
         bool skipDeleted() const  {return properties[kC4ReplicatorOptionSkipDeleted].asBool();}
         bool noIncomingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
         bool noOutgoingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
-        int progressLevel() const  {return (int)properties[kC4ReplicatorOptionProgressLevel].asInt();}
+        int progressLevel() const  {
+            if(properties[kC4ReplicatorOptionProgressLevel]) {
+                C4Warn("Passing in progress level via configuration is deprecated; use the setProgressLevel API");
+            }
+
+            return (int)properties[kC4ReplicatorOptionProgressLevel].asInt();
+        }
+
         bool disableDeltaSupport() const {return properties[kC4ReplicatorOptionDisableDeltas].asBool();}
 
         /** Returns a string that uniquely identifies the remote database; by default its URL,

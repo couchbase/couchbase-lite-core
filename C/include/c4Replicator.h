@@ -80,6 +80,17 @@ extern "C" {
         kC4Suspended     = 0x4          ///< If true, will not connect until unsuspended
     };
 
+    /** An enumeration of the levels of progress callbacks the replicator can provide.
+     *  Each level is serviced by a different callback.  The higher the level, the more
+     *  notifications that the replicator has to send out, which has an impact on performance,
+     *  since it takes up time in the execution queue.
+     */
+    typedef C4_ENUM(int32_t, C4ReplicatorProgressLevel) {
+        kC4ReplProgressOverall,         ///< Callback about completion and estimated total (C4ReplicatorStatusChangedCallback)
+        kC4ReplProgressPerDocument,     ///< Callback for every document replicated (C4ReplicatorDocumentsEndedCallback)
+        kC4ReplProgressPerAttachment,   ///< Callback for every document and attachment replicated (C4ReplicatorBlobProgressCallback)
+    };
+
     /** Current status of replication. Passed to `C4ReplicatorStatusChangedCallback`. */
     typedef struct {
         C4ReplicatorActivityLevel level;
@@ -293,6 +304,15 @@ extern "C" {
 
     /** Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket) */
     C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl C4NONNULL, C4Error* outErr) C4API;
+
+    /** Sets the progress level of the replicator, indicating what information should be provided via
+     *  callback.
+     *
+     *  @param level The progress level to set on the replicator
+     *  @param outErr Records error information, if any.
+     *  @return true if the progress level was set, false if there was an error.
+     */
+    bool c4repl_setProgressLevel(C4Replicator* repl C4NONNULL, C4ReplicatorProgressLevel level, C4Error* outErr) C4API;
 
 
 #pragma mark - COOKIES:

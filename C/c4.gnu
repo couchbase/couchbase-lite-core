@@ -152,6 +152,7 @@ CBL {
 		c4repl_isDocumentPending;
 		c4repl_setOptions;
 		c4repl_setHostReachable;
+		c4repl_setProgressLevel;
 
 		c4socket_registerFactory;
 		c4socket_fromNative;

@@ -219,6 +219,23 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level Error Handling", "[C][Pull]") {
+    C4Error err;
+    C4Address addr {kC4Replicator2Scheme, C4STR("localhost"),  4984};
+    C4ReplicatorParameters params {};
+    params.pull = kC4OneShot;
+    c4::ref<C4Replicator> repl = c4repl_new(db, addr, C4STR("db"), params, &err);
+    REQUIRE(repl);
+
+    CHECK(!c4repl_setProgressLevel(nullptr, kC4ReplProgressPerAttachment, &err));
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorInvalidParameter);
+
+    CHECK(!c4repl_setProgressLevel(nullptr, (C4ReplicatorProgressLevel)250, &err));
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorInvalidParameter);
+}
+
 #ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
@@ -592,4 +609,78 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     
     waitForStatus(kC4Stopped);
 }
+
+static void addDocEndedIDs(C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
+    auto docIDs = (std::vector<std::string>*)context;
+    for(size_t i = 0; i < numDocs; i++) {
+        docIDs->emplace_back(slice(docs[i]->docID));
+    }
+}
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
+    createDB2();
+
+    C4Error err;
+    C4ReplicatorParameters params {};
+    std::vector<std::string> docIDs;
+    params.pull = kC4OneShot;
+    params.onDocumentsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        auto docIDs = (std::vector<std::string>*)context;
+        for(size_t i = 0; i < numDocs; i++) {
+            docIDs->emplace_back(slice(docs[i]->docID));
+        }
+    };
+
+    params.callbackContext = &docIDs;
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, &err);
+    REQUIRE(repl);
+
+    {
+        TransactionHelper t(db2);
+        char docID[20], json[100];
+        for (unsigned i = 1; i <= 50; i++) {
+            sprintf(docID, "doc-%03u", i);
+            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
+        }
+    }
+
+    c4repl_start(repl, false);
+    do {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    } while(c4repl_getStatus(repl).level != kC4Stopped);
+
+    REQUIRE(c4db_getLastSequence(db) == 50);
+    CHECK(docIDs.empty());
+    docIDs.clear();
+
+    REQUIRE(c4repl_setProgressLevel(repl, kC4ReplProgressPerDocument, &err));
+
+    {
+        TransactionHelper t(db2);
+        char docID[20], json[100];
+        for (unsigned i = 51; i <= 100; i++) {
+            sprintf(docID, "doc-%03u", i);
+            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            C4Test::createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
+        }
+    }
+
+    c4repl_start(repl, false);
+    do {
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    } while(c4repl_getStatus(repl).level != kC4Stopped);
+    
+    REQUIRE(c4db_getLastSequence(db) == 100);
+    REQUIRE(docIDs.size() == 50); 
+    for(unsigned i = 0; i < 50; i++) {
+        auto nextID = litecore::format( "doc-%03u", i + 51);
+        CHECK(nextID == docIDs[i]);
+    }
+}
+
 #endif

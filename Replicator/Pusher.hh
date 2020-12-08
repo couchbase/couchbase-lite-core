@@ -43,6 +43,8 @@ namespace litecore { namespace repl {
             enqueue(FUNCTION_TO_QUEUE(Pusher::_docRemoteAncestorChanged), docID, remoteAncestorRevID);
         }
 
+        int progressNotificationLevel() const override;
+
     protected:
         virtual void dbHasNewChanges() override {enqueue(FUNCTION_TO_QUEUE(Pusher::_dbHasNewChanges));}
         virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) override {

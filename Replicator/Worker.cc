@@ -237,7 +237,7 @@ namespace litecore { namespace repl {
     void Worker::finishedDocument(ReplicatedRev *rev) {
         if (rev->error.code == 0)
             addProgress({0, 0, 1});
-        if (rev->error.code || rev->isWarning || _progressNotificationLevel >= 1)
+        if (rev->error.code || rev->isWarning || progressNotificationLevel() >= 1)
             replicator()->endedDocument(rev);
     }
 
@@ -258,7 +258,11 @@ namespace litecore { namespace repl {
         }
     }
 
-
+    void Worker::setProgressNotificationLevel(int level) {
+        if(_progressNotificationLevel.exchange(level) != level) {
+            logVerbose("Set progress notification level to %d", level);
+        }
+    }
 
     Worker::ActivityLevel Worker::computeActivityLevel() const {
         if (eventCount() > 1 || _pendingResponseCount > 0)

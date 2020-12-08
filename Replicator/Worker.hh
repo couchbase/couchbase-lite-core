@@ -65,6 +65,11 @@ namespace litecore { namespace repl {
             enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), task, status);
         }
 
+        // Tech Debt: Where is the line between worker and replicator?
+        // Also, this level should be an enum
+        virtual int progressNotificationLevel() const   {return _progressNotificationLevel;}
+        void setProgressNotificationLevel(int level);
+
 #if !DEBUG
     protected:
 #endif
@@ -133,8 +138,6 @@ namespace litecore { namespace repl {
         void addProgress(C4Progress);
         void setProgress(C4Progress);
 
-        int progressNotificationLevel() const   {return _progressNotificationLevel;}
-
         virtual void _childChangedStatus(Worker *task, Status) { }
 
         virtual void afterEvent() override;
@@ -153,7 +156,7 @@ namespace litecore { namespace repl {
     private:
         Retained<blip::Connection> _connection;
         int _pendingResponseCount {0};
-        int _progressNotificationLevel;
+        std::atomic_int _progressNotificationLevel;
         Status _status {kC4Idle};
         bool _statusChanged {false};
     };

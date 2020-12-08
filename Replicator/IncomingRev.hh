@@ -46,6 +46,8 @@ namespace litecore { namespace repl {
         void revisionProvisionallyInserted();
         void revisionInserted();
 
+        int progressNotificationLevel() const override;
+
     protected:
         ActivityLevel computeActivityLevel() const override;
 

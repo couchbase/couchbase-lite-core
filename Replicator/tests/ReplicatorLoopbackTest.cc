@@ -639,8 +639,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][C
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Push][Continuous]") {
     // NOTE: Despite the name, both sides are not active. Client pushes & pulls, server is passive.
     alloc_slice docID("doc");
-    auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous)
-                        .setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous);
     auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
     installConflictHandler();
 
@@ -667,6 +666,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
     _expectedDocPushErrors = {"doc"};
     _ignoreTransientErrors = true;      // (retries will show up as transient errors)
     _checkDocsFinished = false;
+    _clientProgressLevel = kC4ReplProgressPerDocument;
 
     runReplicators(clientOpts, serverOpts);
     thread1->join();
@@ -689,7 +689,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Attachments", "[Push][blob]") {
         _expectedDocsFinished.insert("att1");
     }
 
-    auto opts = Replicator::Options::pushing().setProperty(C4STR(kC4ReplicatorOptionProgressLevel), 2);
+    auto opts = Replicator::Options::pushing();
+    _clientProgressLevel = kC4ReplProgressPerAttachment;
     runReplicators(opts, Replicator::Options::passive());
 
     compareDatabases();
@@ -711,8 +712,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
         _expectedDocsFinished.insert("att1");
     }
 
-    auto pullOpts = Replicator::Options::pulling().setProperty(C4STR(kC4ReplicatorOptionProgressLevel), 2);
-    auto serverOpts = Replicator::Options::passive().setProperty(C4STR(kC4ReplicatorOptionProgressLevel), 2);
+    auto pullOpts = Replicator::Options::pulling();
+    auto serverOpts = Replicator::Options::passive();
+    _clientProgressLevel = _serverProgressLevel = kC4ReplProgressPerAttachment;
     runReplicators(serverOpts, pullOpts);
 
     compareDatabases();
@@ -766,7 +768,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
         }
     }
 
-    auto pullOpts = Replicator::Options::pulling().setProperty(C4STR(kC4ReplicatorOptionProgressLevel), 2);
+    auto pullOpts = Replicator::Options::pulling();
+    _serverProgressLevel = kC4ReplProgressPerAttachment;
     runReplicators(Replicator::Options::passive(), pullOpts);
 
     compareDatabases();
@@ -1352,18 +1355,18 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
     for (int i = 1; i <= 100; ++i)
         _expectedDocsFinished.insert(format("%07d", i));
     auto opts = Replicator::Options::pushing();
-    opts.setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    _clientProgressLevel = kC4ReplProgressPerDocument;
     runReplicators(opts, Replicator::Options::passive());
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Pull]") {
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
     for (int i = 1; i <= 100; ++i)
         _expectedDocsFinished.insert(format("%07d", i));
     auto opts = Replicator::Options::pulling();
-    opts.setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    _serverProgressLevel = kC4ReplProgressPerDocument;
     runReplicators(Replicator::Options::passive(), opts);
 }
 

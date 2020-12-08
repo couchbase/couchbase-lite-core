@@ -290,6 +290,12 @@ namespace litecore { namespace repl {
     }
 
 
+    int IncomingRev::progressNotificationLevel() const {
+        return _puller ? _puller->progressNotificationLevel() : 0;
+    }
+
+
+
     Worker::ActivityLevel IncomingRev::computeActivityLevel() const {
         if (Worker::computeActivityLevel() == kC4Busy || _pendingCallbacks > 0
                                                       || (_blob != _pendingBlobs.end())) {
