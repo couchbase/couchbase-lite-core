@@ -477,6 +477,12 @@ namespace litecore { namespace repl {
 #pragma mark - PROGRESS:
 
 
+    int Pusher::progressNotificationLevel() const {
+        const auto repl = const_cast<Pusher*>(this)->replicatorIfAny();
+        return repl ? repl->progressNotificationLevel() : 0;
+    }
+
+
     void Pusher::_connectionClosed() {
         auto conflicts = move(_conflictsIMightRetry);
         if (!conflicts.empty()) {

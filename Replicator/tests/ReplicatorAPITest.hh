@@ -127,6 +127,8 @@ public:
         }
         
         if (_enableDocProgressNotifications) {
+            // This will trigger a warning in the tests now, but I'm leaving it in
+            // to make sure the old behavior continues to function until it is removed
             enc.writeKey(C4STR(kC4ReplicatorOptionProgressLevel));
             enc.writeInt(1);
         }
@@ -305,6 +307,12 @@ public:
         }
         if (!_repl)
             return false;
+
+        // TODO: Enable this when options entry is removed
+       /* if(_enableDocProgressNotifications) {
+            REQUIRE(c4repl_setProgressLevel(_repl, kC4ReplProgressPerDocument, err));
+        }*/
+
         c4repl_start(_repl, false);
         return true;
     }

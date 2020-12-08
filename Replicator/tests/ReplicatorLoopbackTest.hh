@@ -46,6 +46,7 @@ public:
         // document bodies:
         litecore::repl::tuning::kMinBodySizeForDelta = 0;
         litecore::repl::Checkpoint::gWriteTimestamps = false;
+        _clientProgressLevel = _serverProgressLevel = kC4ReplProgressOverall;
     }
 
     ~ReplicatorLoopbackTest() {
@@ -74,15 +75,20 @@ public:
             // always make opts1 the active (client) side
             std::swap(dbServer, dbClient);
             std::swap(opts1, opts2);
+            std::swap(_clientProgressLevel, _serverProgressLevel);
         }
 
         // Create client (active) and server (passive) replicators:
         _replClient = new Replicator(dbClient,
                                      new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Client, kLatency),
                                      *this, opts1);
+
+        _replClient->setProgressNotificationLevel(_clientProgressLevel);
         _replServer = new Replicator(dbServer,
                                      new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Server, kLatency),
                                      *this, opts2);
+
+        _replServer->setProgressNotificationLevel(_serverProgressLevel);
         Log("Client replicator is %s", _replClient->loggingName().c_str());
 
         // Response headers:
@@ -550,6 +556,7 @@ public:
     std::mutex _mutex;
     std::condition_variable _cond;
     bool _replicatorClientFinished {false}, _replicatorServerFinished {false};
+    int _clientProgressLevel {0}, _serverProgressLevel {0};
     bool _gotResponse {false};
     Replicator::Status _statusReceived { };
     unsigned _statusChangedCalls {0};

@@ -308,6 +308,11 @@ namespace litecore { namespace repl {
 
 #pragma mark - STATUS / PROGRESS:
 
+    int Puller::progressNotificationLevel() const {
+        const auto repl = const_cast<Puller*>(this)->replicatorIfAny();
+        return repl ? repl->progressNotificationLevel() : 0;
+    }
+
 
     void Puller::_childChangedStatus(Worker *task, Status status) {
         // Combine the IncomingRev's progress into mine:
