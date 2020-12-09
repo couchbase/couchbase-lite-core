@@ -241,7 +241,7 @@ FilePath TestFixture::GetPath(const string& name, const string& extension) noexc
 
     const char* trimmedExtension = !extension.empty() && extension[0] == '.' ? extension.c_str() + 1 : extension.c_str();
     TempArray(folderName, char, name.size() + 32);
-    sprintf(folderName, "%s%lld.%s", name.c_str(), unique.count(), trimmedExtension);
+    sprintf(folderName, "%s%" PRIms ".%s", name.c_str(), unique.count(), trimmedExtension);
 
     const auto base = sTempDir[(const char *)folderName];
 

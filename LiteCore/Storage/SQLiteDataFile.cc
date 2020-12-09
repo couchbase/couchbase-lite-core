@@ -42,6 +42,7 @@
 #include <sstream>
 #include <mutex>
 #include <thread>
+#include <cinttypes>
 
 extern "C" {
     #include "sqlite3_unicodesn_tokenizer.h"
@@ -694,7 +695,7 @@ namespace litecore {
             auto elapsed = st.elapsed();
 
             int64_t shrunk = pageCount - intQuery("PRAGMA page_count");
-            logInfo("    ...removed %lld pages (%lldKB) in %.3f sec",
+            logInfo("    ...removed %" PRIi64 " pages (%" PRIi64 "KB) in %.3f sec",
                     shrunk, shrunk * kPageSize / 1024, elapsed);
 
             if (fixAutoVacuum && intQuery("PRAGMA auto_vacuum") == 0)

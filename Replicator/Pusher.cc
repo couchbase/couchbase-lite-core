@@ -163,7 +163,7 @@ namespace litecore { namespace repl {
 #if DEBUG
             if (willLog(LogLevel::Debug)) {
                 for (auto &change : changes.revs)
-                    logDebug("    - %.4llu: '%.*s' #%.*s (remote #%.*s)",
+                    logDebug("    - %.4" PRIu64 ": '%.*s' #%.*s (remote #%.*s)",
                              change->sequence, SPLAT(change->docID), SPLAT(change->revID),
                              SPLAT(change->remoteAncestorRevID));
             }

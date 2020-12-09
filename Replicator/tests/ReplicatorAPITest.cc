@@ -246,11 +246,11 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
     c4::ref<C4Document> doc = c4doc_get(db2, "doc"_sl, true, nullptr);
     REQUIRE(doc);
 
-    CHECK(doc->revID == kRev2ID);
+    CHECK((doc->revID == kRev2ID));
     CHECK((doc->flags & kDocDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK(doc->selectedRev.revID == kRevID);
+    CHECK((doc->selectedRev.revID == kRevID));
 }
 #endif
 
@@ -313,7 +313,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]")
                       size_t numDocs,
                       const C4DocumentEnded* docs[],
                       void* context) {
-        ((ReplicatorAPITest*)context)->_docsEnded += numDocs;
+        ((ReplicatorAPITest*)context)->_docsEnded += (int)numDocs;
         c4repl_stop(repl);
     };
     
@@ -340,7 +340,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
 
-    int expectedPending;
+    int expectedPending = 0;
     SECTION("Normal") {
         expectedPending = 100;
     }

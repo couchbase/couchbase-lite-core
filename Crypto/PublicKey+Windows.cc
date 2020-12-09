@@ -31,6 +31,7 @@
 #include "mbedtls/md5.h"
 #include "TempArray.hh"
 #include "Defer.hh"
+#include "NumConversion.hh"
 #include <Windows.h>
 #include <ncrypt.h>
 #include <wincrypt.h>
@@ -80,7 +81,7 @@ namespace litecore::crypto {
         PCCERT_CONTEXT resultCert = CertCreateCertificateContext(
             X509_ASN_ENCODING|PKCS_7_ASN_ENCODING,
             (const BYTE *)cert->data().buf,
-            cert->data().size
+            narrow_cast<DWORD>(cert->data().size)
         );
 
         if(!resultCert) {
@@ -334,7 +335,7 @@ namespace litecore::crypto {
                 _keyLength,
                 nullptr,
                 PBYTE(output),
-                output_max_len,
+                narrow_cast<DWORD>(output_max_len),
                 reinterpret_cast<DWORD*>(output_len),
                 NCRYPT_PAD_PKCS1_FLAG
             );
@@ -387,7 +388,7 @@ namespace litecore::crypto {
                 _keyPair,
                 &padding,
                 PBYTE(inputData.buf),
-                inputData.size,
+                narrow_cast<DWORD>(inputData.size),
                 PBYTE(outSignature),
                 _keyLength,
                 &dummy,
@@ -539,7 +540,7 @@ namespace litecore::crypto {
 
             if(cert == this) {
                 CRYPT_DATA_BLOB idBlob {
-                    persistentID.size() + 1,
+                    narrow_cast<DWORD>(persistentID.size() + 1),
                     PBYTE(persistentID.c_str())
                 };
 

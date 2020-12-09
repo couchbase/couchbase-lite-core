@@ -237,11 +237,11 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Deletion", "[.SyncServer]") {
     c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
     REQUIRE(doc);
 
-    CHECK(doc->revID == kRev2ID);
+    CHECK((doc->revID == kRev2ID));
     CHECK((doc->flags & kDocDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK(doc->selectedRev.revID == kRevID);
+    CHECK((doc->selectedRev.revID == kRevID));
 }
 
 
@@ -341,11 +341,11 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     c4::ref<C4Document> doc = c4doc_get(db, C4STR("0000013"), true, nullptr);
     REQUIRE(doc);
 	C4Slice revID = C4STR("2-f000");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK((doc->selectedRev.revID == revID));
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = slice(originalRevID);
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK((doc->selectedRev.revID == revID));
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
 
@@ -363,11 +363,11 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
 	revID = C4STR("2-f000");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK((doc->selectedRev.revID == revID));
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = slice(originalRevID);
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK((doc->selectedRev.revID == revID));
 #if 0 // FIX: These checks fail due to issue #402; re-enable when fixing that bug
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
@@ -375,12 +375,12 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     REQUIRE(c4doc_selectCurrentRevision(doc));
     REQUIRE(c4doc_selectNextRevision(doc));
 	revID = C4STR("2-883a2dacc15171a466f76b9d2c39669b");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK((doc->selectedRev.revID == revID));
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = slice(originalRevID);
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK((doc->selectedRev.revID == revID));
 }
 
 
@@ -402,7 +402,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]"
     c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
     REQUIRE(doc);
 	C4Slice revID = C4STR("2-bbbb");
-    CHECK(doc->revID == revID);
+    CHECK((doc->revID == revID));
     CHECK((doc->flags & kDocDeleted) == 0);
     REQUIRE(c4doc_selectParentRevision(doc));
     CHECK(doc->selectedRev.revID == "1-aaaa"_sl);
@@ -417,7 +417,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]"
     // Verify doc is updated on SG:
     auto body = sendRemoteRequest("GET", "doc");
 	C4Slice bodySlice = C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"ans*wer\":42}");
-    CHECK(C4Slice(body) == bodySlice);
+    CHECK((C4Slice(body) == bodySlice));
 }
 
 

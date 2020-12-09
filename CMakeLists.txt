@@ -50,7 +50,6 @@ include(CMakeDependentOption)
 
 ### BUILD SETTINGS:
 
-set(COMPILE_FLAGS   "${COMPILE_FLAGS}   -Wall -Werror")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -224,6 +223,11 @@ target_include_directories(
     vendor/mbedtls/crypto/include
 )
 
+target_link_libraries(
+    LiteCoreWebSocket PUBLIC
+    LiteCoreStatic
+)
+
 ### LITECORE LIBRARY:
 
 set_litecore_source(RESULT ALL_SRC_FILES)
@@ -231,6 +235,11 @@ add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 target_compile_definitions(
     LiteCoreStatic PRIVATE
     -DLITECORE_IMPL
+)
+
+target_compile_definitions(
+    LiteCoreStatic PUBLIC
+    -DLITECORE_EXPORTS
 )
 
 if(BUILD_ENTERPRISE)

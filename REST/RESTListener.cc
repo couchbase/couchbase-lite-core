@@ -156,7 +156,7 @@ namespace litecore { namespace REST {
         Retained<Cert> cert;
         try {
             cert = (Cert*)config->certificate;
-        } catch (const error &x) {
+        } catch (const error &) {
             error::_throw(error::InvalidParameter, "Can't parse certificate data");
         }
 

@@ -32,6 +32,7 @@
 #include <chrono>
 #include <thread>
 #include <fstream>
+#include <cinttypes>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -265,7 +266,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import iTunesMusicLibrary", "[Perf][C][.slow]"
     st.printReport("******** Importing JSON w/spaces", numDocs, "doc");
     
     litecore::FilePath path(alloc_slice(c4db_getPath(db)).asString(), "db.sqlite3");
-    fprintf(stderr, "******** DB size is %llu\n", path.dataSize());
+    fprintf(stderr, "******** DB size is %" PRIi64 "\n", path.dataSize());
     reopenDB();
     string sf = generateShowfast((double)numDocs / st.elapsed(), "tunes_import_json");
     writeShowFastToFile("tunes_import_json", sf);

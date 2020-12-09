@@ -16,11 +16,13 @@
 // limitations under the License.
 //
 
+#include "mbedtls/config.h"
 #include "PublicKey.hh"
 #include "TLSContext.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "mbedUtils.hh"
+#include "Error.hh"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
@@ -70,6 +72,8 @@ namespace litecore { namespace crypto {
             }
             case KeyFormat::Raw:
                 return publicKeyRawData();
+            default:
+                Assert(false, "Invalid key format received (%d)", format);
         }
     }
 
@@ -122,6 +126,8 @@ namespace litecore { namespace crypto {
             }
             case KeyFormat::Raw:
                 return publicKeyRawData();
+            default:
+                Assert(false, "Invalid key format received (%d)", format);
         }
 
     }

@@ -90,7 +90,7 @@ static void testResults(Query *query) {
         if (docNo < 101) {
             REQUIRE(col[1]->asDict());
             CHECK(col[1]->asDict()->get("integer"_sl)->asInt() == 1);
-            CHECK(col[1]->asDict()->get("even"_sl)->asInt() == !(docNo % 2));
+            CHECK(col[1]->asDict()->get("even"_sl)->asBool() == !(docNo % 2));
         } else {
             CHECK(col[1]->type() == kNull);
         }

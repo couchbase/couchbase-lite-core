@@ -1,4 +1,5 @@
 include(${CMAKE_CURRENT_LIST_DIR}/platform_base.cmake)
+include(CheckTypeSize)
 
 macro(check_threading_unix)
     set(THREADS_PREFER_PTHREAD_FLAG ON) 
@@ -54,39 +55,55 @@ function(setup_litecore_build_unix)
     endif()
 
     set(LITECORE_WARNINGS
-        #-Wnon-virtual-dtor
-        #-Werror=overloaded-virtual
-        #-Werror=missing-braces
-        #-Werror=parentheses
-        #-Werror=switch
+        -Werror=missing-braces
+        -Werror=parentheses
+        -Werror=switch
         -Werror=unused-function
         -Werror=unused-label
         -Werror=unused-variable
         -Werror=unused-value
         -Werror=uninitialized
+        -Werror=float-conversion
         #-Wshadow
-        #-Werror=float-conversion
         #-Weffc++
     )
 
+    set(LITECORE_CXX_WARNINGS
+        -Wnon-virtual-dtor
+        -Werror=overloaded-virtual
+    )
+
     set(LITECORE_C_WARNINGS
-	-Werror=incompatible-pointer-types
-	-Werror=int-conversion
-	-Werror=strict-prototypes
+        -Werror=incompatible-pointer-types
+        -Werror=int-conversion
+        -Werror=strict-prototypes
     )
 
     target_compile_options(LiteCoreStatic PRIVATE 
-	${LITECORE_WARNINGS} 
+    ${LITECORE_WARNINGS} 
+    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
     target_compile_options(BLIPStatic PRIVATE 
 	${LITECORE_WARNINGS}
+    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
     target_compile_options(FleeceStatic PRIVATE 
 	${LITECORE_WARNINGS}
+    $<$<COMPILE_LANGUAGE:CXX>:${LITECORE_CXX_WARNINGS}>
 	$<$<COMPILE_LANGUAGE:C>:${LITECORE_C_WARNINGS}>
     )
+
+    set(CMAKE_EXTRA_INCLUDE_FILES "sys/socket.h")
+    check_type_size(socklen_t SOCKLEN_T)
+    if(${HAVE_SOCKLEN_T})
+        # mbedtls fails to detect this accurately
+        target_compile_definitions(
+            mbedtls PRIVATE
+            _SOCKLEN_T_DECLARED
+        )
+    endif()
 endfunction()
 
 function(setup_rest_build_unix)
