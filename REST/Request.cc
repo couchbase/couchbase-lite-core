@@ -26,10 +26,14 @@
 #include "c4.hh"
 #include "netUtils.hh"
 #include "TCPSocket.hh"
+#include "date/date.h"
+#include <chrono>
 #include <cstdarg>
 #include <cinttypes>
 
 using namespace std;
+using namespace std::chrono;
+using namespace date;
 using namespace fleece;
 
 namespace litecore { namespace REST {
@@ -160,14 +164,10 @@ namespace litecore { namespace REST {
         _sentStatus = true;
 
         // Add the 'Date:' header:
-        char date[50];
-        time_t t = time(NULL);
-        struct tm tm;
-        if (gmtime_r(&t, &tm))
-            strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S GMT", &tm);
-        else
-            strcpy(date, "Thu, 01 Jan 1970 00:00:00 GMT");
-        setHeader("Date", date);
+        stringstream s;
+        auto tp = floor<seconds>(system_clock::now());
+        s << date::format("%a, %d %b %Y %H:%M:%S GMT", tp);
+        setHeader("Date", s.str().c_str());
     }
 
 
