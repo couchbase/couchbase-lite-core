@@ -12,6 +12,7 @@
 #include "c4Socket.h"
 #include "c4Socket+Internal.hh"
 #include "fleece/Fleece.hh"
+#include "c4Internal.hh"
 
 using namespace fleece;
 using namespace std;
@@ -218,6 +219,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
     CHECK(_numCallbacksWithLevel[kC4Idle] == 0);
 }
 
+C4_START_WARNINGS_SUPPRESSION
+C4_IGNORE_NONNULL
+#ifndef __clang_analyzer__
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level Error Handling", "[C][Pull]") {
     C4Error err;
@@ -235,6 +239,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level Error Handling", "[C][Pu
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorInvalidParameter);
 }
+
+#endif
+C4_STOP_WARNINGS_SUPPRESSION
 
 #ifdef COUCHBASE_ENTERPRISE
 TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[C][Push]") {
