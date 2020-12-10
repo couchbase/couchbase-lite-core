@@ -319,10 +319,15 @@ C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) C4API 
 
 
 bool c4repl_setProgressLevel(C4Replicator* repl, C4ReplicatorProgressLevel level, C4Error* outErr) C4API {
-    if(_usuallyFalse(!repl)) {
+    C4_START_WARNINGS_SUPPRESSION
+    C4_IGNORE_TAUTOLOGICAL
+    
+    if(_usuallyFalse(repl == nullptr)) {
         *outErr = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("repl was null"));
         return false;
     }
+    
+    C4_STOP_WARNINGS_SUPPRESSION
 
     if(_usuallyFalse(level < kC4ReplProgressOverall || level > kC4ReplProgressPerAttachment)) {
         *outErr = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("level out of range"));
