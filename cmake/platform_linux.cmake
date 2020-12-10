@@ -49,7 +49,6 @@ function(set_litecore_source_linux)
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_ICU.cc
         LiteCore/Unix/strlcat.c
-        LiteCore/Unix/arc4random.cc
         LiteCore/Support/StringUtil_icu.cc
         PARENT_SCOPE
     )

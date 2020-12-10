@@ -30,11 +30,6 @@ namespace litecore {
     // Converts a decimal or hex digit to its integer equivalent (0..15), or 0 if not a digit.
     // (This function is part of <ctype.h> in BSD and Apple OSs.)
     int digittoint(char ch);
-
-    // Like strncpy but guarantees dst will be nul-terminated. `dstSize` is the size of the
-    // destination buffer; the maximum length of string that can be copied is one less.
-    // (This function is part of <string.h> in BSD and Apple OSs.)
-    void strlcpy(char *dst NONNULL, const char *src NONNULL, size_t dstSize);
 #endif
 
     // Adds EXPR to a stringstream and returns the resulting string.

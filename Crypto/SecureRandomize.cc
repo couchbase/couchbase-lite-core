@@ -18,11 +18,11 @@
 
 #include "SecureRandomize.hh"
 #include "Error.hh"
+#include <random>
 
 #ifdef __APPLE__
     #include <CommonCrypto/CommonRandom.h>
 #else
-    #include "arc4random.h"
     #include "mbedUtils.hh"
     #include "mbedtls/ctr_drbg.h"
 #endif
@@ -30,12 +30,16 @@
 
 namespace litecore {
 
+    std::random_device rd;
+    std::default_random_engine e(rd());
+
     uint32_t RandomNumber() {
-        return arc4random();
+        return e();
     }
 
     uint32_t RandomNumber(uint32_t upperBound) {
-        return arc4random_uniform(upperBound);
+        std::uniform_int_distribution<uint32_t> uniform(0, upperBound - 1);
+        return uniform(e);
     }
 
 

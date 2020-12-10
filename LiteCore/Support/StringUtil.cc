@@ -45,14 +45,6 @@ namespace litecore {
         }
         return 0;
     }
-
-
-    void strlcpy(char *dst, const char *src, size_t n) {
-        for (; *src != '\0' && n > 1; n--) {
-            *dst++ = *src++;
-        }
-        *dst = '\0';
-    }
 #endif // defined(__ANDROID__) || defined(__GLIBC__)
 
 

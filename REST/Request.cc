@@ -166,7 +166,7 @@ namespace litecore { namespace REST {
         if (gmtime_r(&t, &tm))
             strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S GMT", &tm);
         else
-            strlcpy(date, "Thu, 01 Jan 1970 00:00:00 GMT", sizeof(date));
+            strcpy(date, "Thu, 01 Jan 1970 00:00:00 GMT");
         setHeader("Date", date);
     }
 
