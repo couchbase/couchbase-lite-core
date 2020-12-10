@@ -242,8 +242,11 @@ namespace c4Internal {
             return rev ? rev->revID.expanded() : alloc_slice();
         }
 
-        void setRemoteAncestorRevID(C4RemoteID remote) override {
-            _versionedDoc.setLatestRevisionOnRemote(remote, _selectedRev);
+        void setRemoteAncestorRevID(C4RemoteID remote, C4String revID) override {
+            const Rev *rev = _versionedDoc[revidBuffer(revID)];
+            if (!rev)
+                error::_throw(error::NotFound);
+            _versionedDoc.setLatestRevisionOnRemote(remote, rev);
         }
 
         void updateFlags() {
@@ -324,7 +327,7 @@ namespace c4Internal {
                 rq.revFlags = kRevDeleted | kRevClosed;
                 rq.history = &losingRevID;
                 rq.historyCount = 1;
-                Assert(putNewRevision(rq));
+                Assert(putNewRevision(rq, nullptr));
             }
 
             if (mergedBody.buf) {
@@ -345,7 +348,7 @@ namespace c4Internal {
                 rq.body = mergedBody;
                 rq.history = &winningRevID;
                 rq.historyCount = 1;
-                Assert(putNewRevision(rq));
+                Assert(putNewRevision(rq, nullptr));
                 LogTo(DBLog, "Resolved conflict, adding rev '%.*s' #%.*s",
                       SPLAT(docID), SPLAT(selectedRev.revID));
             } else if(winningRev->sequence == sequence) {
@@ -491,21 +494,19 @@ namespace c4Internal {
         }
 
 
-        bool putNewRevision(const C4DocPutRequest &rq) override {
-            if (rq.remoteDBID != 0)
-                error::_throw(error::InvalidParameter, "remoteDBID cannot be used when existing=false");
+        bool putNewRevision(const C4DocPutRequest &rq, C4Error *outError) override {
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
 
             if (rq.maxRevTreeDepth > 0)
                 _versionedDoc.setPruneDepth(rq.maxRevTreeDepth);
 
-            C4Error err;
-            alloc_slice body = requestBody(rq, &err);
+            alloc_slice body = requestBody(rq, outError);
             if (!body)
-                error::_throw((error::Domain)err.domain, err.code); //FIX: Ick.
+                return false;
 
             revidBuffer encodedNewRevID = generateDocRevID(body, selectedRev.revID, deletion);
 
+            C4ErrorCode errorCode = {};
             int httpStatus;
             auto newRev = _versionedDoc.insert(encodedNewRevID,
                                                body,
@@ -515,18 +516,24 @@ namespace c4Internal {
                                                false,
                                                httpStatus);
             if (newRev) {
-                return saveNewRev(rq, newRev);
+                if (!saveNewRev(rq, newRev))
+                    errorCode = kC4ErrorConflict;
             } else if (httpStatus == 200) {
                 // Revision already exists, so nothing was added. Not an error.
                 selectRevision(encodedNewRevID.expanded(), true);
-                return true;
             } else if (httpStatus == 400) {
-                error::_throw(error::InvalidParameter);
+                errorCode = kC4ErrorInvalidParameter;
             } else if (httpStatus == 409) {
-                error::_throw(error::Conflict);
+                errorCode = kC4ErrorConflict;
             } else {
-                error::_throw(error::UnexpectedError);
+                errorCode = kC4ErrorUnexpectedError;
             }
+
+            if (errorCode) {
+                c4error_return(LiteCoreDomain, errorCode, nullslice, outError);
+                return false;
+            }
+            return true;
         }
 
 
@@ -608,14 +615,14 @@ namespace c4Internal {
             revMap[docIDs[i]] = revIDs[i];
         stringstream result;
 
-        auto callback = [&](slice docID, slice docBody, sequence_t sequence) -> alloc_slice {
+        auto callback = [&](const RecordLite &rec) -> alloc_slice {
             // --- This callback runs inside the SQLite query ---
             // --- It will be called once for each docID in the vector ---
             // Convert revID to encoded binary form:
             revidBuffer revID;
-            revID.parse(revMap[docID]);
+            revID.parse(revMap[rec.key]);
 
-            RevTree tree(docBody, 0);
+            RevTree tree(rec.body, 0);
 
             // Does it exist in the doc?
             if (tree[revID]) {

@@ -115,7 +115,7 @@ namespace c4Internal {
             failUnsupported();
         }
         virtual alloc_slice remoteAncestorRevID(C4RemoteID) =0;
-        virtual void setRemoteAncestorRevID(C4RemoteID) =0;
+        virtual void setRemoteAncestorRevID(C4RemoteID, C4String revID) =0;
 
         virtual bool hasRevisionBody() noexcept =0;
         virtual bool loadSelectedRevBody() =0; // can throw; returns false if compacted away
@@ -137,8 +137,11 @@ namespace c4Internal {
 
         alloc_slice bodyAsJSON(bool canonical =false);
 
+        // Returns the index (in rq.history) of the common ancestor; or -1 on error
         virtual int32_t putExistingRevision(const C4DocPutRequest&, C4Error*) =0;
-        virtual bool putNewRevision(const C4DocPutRequest&) =0;
+
+        // Returns false on error
+        virtual bool putNewRevision(const C4DocPutRequest&, C4Error*) =0;
 
         virtual void resolveConflict(C4String winningRevID,
                                      C4String losingRevID,

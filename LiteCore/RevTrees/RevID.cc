@@ -224,7 +224,7 @@ namespace litecore {
                     return false;   // 0 must be expresed as '*'
             }
             if (ascii.size > 0)
-                return false;
+                return false;       // Must end after peerID. Multi-version vector is NOT allowed.
             dst += PutUVarInt(dst, peerID);
         }
 

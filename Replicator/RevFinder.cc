@@ -79,7 +79,7 @@ namespace litecore { namespace repl {
     }
 
 
-    // Actually handle a "changes" message:
+    // Actually handle a "changes" (or "proposeChanges") message:
     void RevFinder::handleChangesNow(MessageIn *req) {
         slice reqType = req->property("Profile"_sl);
         bool proposed = (reqType == "proposeChanges"_sl);
@@ -149,6 +149,27 @@ namespace litecore { namespace repl {
     }
 
 
+    bool RevFinder::checkDocAndRevID(slice docID, slice revID) {
+        if (docID.size == 0) {
+            warn("Invalid empty docID in change message");
+            return false;
+        }
+        if (_db->usingVersionVectors()) {
+            // Incoming version IDs must be in absolute form (no '*')
+            if (revID.findByte('*') || !revID.findByte('@')) {
+                warn("Invalid version '%.*s' in 'proposeChanges' message", SPLAT(revID)); //TEMP
+                return false;
+            }
+        } else {
+            if (!revID.findByte('-')) {
+                warn("Invalid revID '%.*s' in change message", SPLAT(revID));
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     // Looks through the contents of a "changes" message, encodes the response,
     // adds each entry to `sequences`, and returns the number of new revs.
     unsigned RevFinder::findRevs(Array changes,
@@ -165,8 +186,12 @@ namespace litecore { namespace repl {
         for (auto item : changes) {
             // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
             auto change = item.asArray();
-            docIDs.push_back(change[1].asString());
-            revIDs.push_back(change[2].asString());
+            slice docID = change[1].asString();
+            slice revID = change[2].asString();
+            if (!checkDocAndRevID(docID, revID))
+                continue;
+            docIDs.push_back(docID);
+            revIDs.push_back(revID);
             sequences[i].sequence = RemoteSequence(change[0]);
             sequences[i].bodySize = max(change[4].asUnsigned(), (uint64_t)1);
             ++i;
@@ -234,10 +259,8 @@ namespace litecore { namespace repl {
             auto change = item.asArray();
             alloc_slice docID( change[0].asString() );
             slice revID = change[1].asString();
-            if (docID.size == 0 || revID.size == 0) {
-                warn("Invalid entry in 'changes' message");
-                continue;     // ???  Should this abort the replication?
-            }
+            if (!checkDocAndRevID(docID, revID))
+                continue;
 
             slice parentRevID = change[2].asString();
             if (parentRevID.size == 0)
@@ -274,6 +297,7 @@ namespace litecore { namespace repl {
         //OPT: We don't need the document body, just its metadata, but there's no way to say that
         c4::ref<C4Document> doc = _db->getDoc(docID, &err);
         if (!doc) {
+            outCurrentRevID = nullslice;
             if (isNotFoundError(err)) {
                 // Doc doesn't exist; it's a conflict if the peer thinks it does:
                 return parentRevID ? 409 : 0;
@@ -282,22 +306,21 @@ namespace litecore { namespace repl {
                 return 500;
             }
         }
+        outCurrentRevID = c4doc_getSelectedRevIDGlobalForm(doc);
         int status;
-        if (slice(doc->revID) == revID) {
+        if (outCurrentRevID == revID) {
             // I already have this revision:
             status = 304;
         } else if (!parentRevID) {
             // Peer is creating new doc; that's OK if doc is currently deleted:
             status = (doc->flags & kDocDeleted) ? 0 : 409;
-        } else if (slice(doc->revID) != parentRevID) {
+        } else if (outCurrentRevID != parentRevID) {
             // Peer's revID isn't current, so this is a conflict:
             status = 409;
         } else {
             // I don't have this revision and it's not a conflict, so I want it!
             status = 0;
         }
-        if (status > 0)
-            outCurrentRevID = slice(doc->revID);
         return status;
     }
 

@@ -49,6 +49,8 @@ namespace litecore {
         /** Call this as soon as the database begins a transaction. */
         void beginTransaction();
 
+        bool changedDuringTransaction() const;
+
         /** Call this after the database commits or aborts a transaction.
             But before this, you must call \ref addExternalTransaction on all other
             SequenceTrackers on the same database file. */

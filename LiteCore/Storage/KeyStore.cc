@@ -56,7 +56,7 @@ namespace litecore {
                              optional<sequence_t> replacingSequence,
                              bool newSequence)
     {
-        RecordSetter r = {rec.key(), rec.version(), rec.body(), nullslice,
+        RecordLite r = {rec.key(), rec.version(), rec.body(), nullslice,
                           replacingSequence, newSequence, rec.flags()};
         auto seq = set(r, t);
         if (seq > 0) {

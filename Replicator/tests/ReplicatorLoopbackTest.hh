@@ -39,6 +39,7 @@ public:
 
     static constexpr duration kLatency              = chrono::milliseconds(50);
 
+    slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
     ReplicatorLoopbackTest()
     :C4Test(VersionVectorOption) //TEMP
@@ -48,6 +49,20 @@ public:
         // document bodies:
         litecore::repl::tuning::kMinBodySizeForDelta = 0;
         litecore::repl::Checkpoint::gWriteTimestamps = false;
+
+        if (isRevTrees()) {
+            kNonLocalRev1ID = kRev1ID;
+            kNonLocalRev2ID = kRev2ID;
+            kNonLocalRev2ID = kRev3ID;
+            kConflictRev2AID = "2-2a2a2a2a"_sl;
+            kConflictRev2BID = "2-2b2b2b2b"_sl;
+        } else {
+            kNonLocalRev1ID = "1@cafe"_sl;
+            kNonLocalRev2ID = "2@cafe"_sl;
+            kNonLocalRev3ID = "3@cafe"_sl;
+            kConflictRev2AID = "1@babe1"_sl;
+            kConflictRev2BID = "1@babe2"_sl;
+        }
     }
 
     ~ReplicatorLoopbackTest() {
@@ -107,11 +122,6 @@ public:
         CHECK(_gotResponse);
         CHECK(_statusChangedCalls > 0);
         CHECK(_statusReceived.level == kC4Stopped);
-        CHECK(_statusReceived.progress.unitsCompleted == _statusReceived.progress.unitsTotal);
-        if(_expectedUnitsComplete >= 0)
-            CHECK(_expectedUnitsComplete == _statusReceived.progress.unitsCompleted);
-        if (_expectedDocumentCount >= 0)
-            CHECK(_statusReceived.progress.documentCount == uint64_t(_expectedDocumentCount));
         CHECK(_statusReceived.error.code == _expectedError.code);
         if (_expectedError.code)
             CHECK(_statusReceived.error.domain == _expectedError.domain);
@@ -119,6 +129,11 @@ public:
         CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
         if (_checkDocsFinished)
             CHECK(asVector(_docsFinished) == asVector(_expectedDocsFinished));
+        CHECK(_statusReceived.progress.unitsCompleted == _statusReceived.progress.unitsTotal);
+        if(_expectedUnitsComplete >= 0)
+            CHECK(_expectedUnitsComplete == _statusReceived.progress.unitsCompleted);
+        if (_expectedDocumentCount >= 0)
+            CHECK(_statusReceived.progress.documentCount == uint64_t(_expectedDocumentCount));
     }
 
     void runPushReplication(C4ReplicatorMode mode =kC4OneShot) {
@@ -347,6 +362,7 @@ public:
                 WarnError("conflictHandler: c4doc_resolveConflict failed in '%.*s'", SPLAT(rev->docID));
                 Assert(false, "conflictHandler: c4doc_resolveConflict failed");
             }
+            Assert((doc->flags & kDocConflicted) == 0);
             if (!c4doc_save(doc, 0, &error)) {
                 WarnError("conflictHandler: c4doc_save failed in '%.*s'", SPLAT(rev->docID));
                 Assert(false, "conflictHandler: c4doc_save failed");
@@ -369,7 +385,7 @@ public:
         this_thread::sleep_for(interval);
     }
 
-    static int addDocs(C4Database *db, duration interval, int total) {
+    int addDocs(C4Database *db, duration interval, int total) {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         int docNo = 1;
         for (int i = 1; docNo <= total; i++) {
@@ -381,7 +397,7 @@ public:
             for (int j = 0; j < 2*i; j++) {
                 char docID[20];
                 sprintf(docID, "newdoc%d", docNo++);
-                createRev(db, c4str(docID), "1-11"_sl, kFleeceBody);
+                createRev(db, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             }
             Assert(t.commit(&err));
         }
@@ -403,7 +419,7 @@ public:
             Assert(t.begin(&err));
             string revID;
             if (useFakeRevIDs) {
-                revID = format("%d-ffff", revNo);
+                revID = isRevTrees() ? format("%d-ffff", revNo) : format("%d@*", revNo);
                 createRev(db, docID, slice(revID), alloc_slice(kFleeceBody));
             } else {
                 string json = format("{\"db\":\"%p\",\"i\":%d}", db, revNo);
@@ -443,13 +459,21 @@ public:
 #pragma mark - VALIDATION:
 
 
+    alloc_slice absoluteRevID(C4Document *doc) {
+        if (isRevTrees())
+            return alloc_slice(doc->revID);
+        else
+            return alloc_slice(c4doc_getRevisionHistory(doc, 999));
+    }
+
+
 #define fastREQUIRE(EXPR)  if (EXPR) ; else REQUIRE(EXPR)       // REQUIRE() is kind of expensive
 
     void compareDocs(C4Document *doc1, C4Document *doc2) {
         const auto kPublicDocumentFlags = (kDocDeleted | kDocConflicted | kDocHasAttachments);
 
         fastREQUIRE(doc1->docID == doc2->docID);
-        fastREQUIRE(doc1->revID == doc2->revID);
+        fastREQUIRE(absoluteRevID(doc1) == absoluteRevID(doc2));
         fastREQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
 
         // Compare canonical JSON forms of both docs:

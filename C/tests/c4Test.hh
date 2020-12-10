@@ -170,6 +170,12 @@ public:
     bool isRevTrees() const                     {return (_dbConfig.flags & kC4DB_VersionVectors) == 0;}
     bool isEncrypted() const                    {return (_dbConfig.encryptionKey.algorithm != kC4EncryptionNone);}
 
+    static bool isRevTrees(C4Database *database) {
+        return (c4db_getConfig2(database)->flags & kC4DB_VersionVectors) == 0;
+    }
+
+    C4String revOrVersID(slice revID, slice versID) const {return isRevTrees() ? revID : versID;}
+    
     // Creates an extra database, with the same path as db plus the suffix.
     // Caller is responsible for closing & deleting this database when the test finishes.
     C4Database* createDatabase(const std::string &nameSuffix);
@@ -253,6 +259,7 @@ public:
     C4Slice kRev1ID_Alt;   // "1-dcba"
     C4Slice kRev2ID;   // "2-c001d00d"
     C4Slice kRev3ID;   // "3-deadbeef"
+    C4Slice kRev4ID;   // "4-44444444"
     static C4Slice kFleeceBody;             // {"ans*wer":42}, in Fleece
     static C4Slice kEmptyFleeceBody;        // {}, in Fleece
 

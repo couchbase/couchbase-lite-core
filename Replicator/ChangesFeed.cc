@@ -292,6 +292,7 @@ namespace litecore { namespace repl {
 
     ReplicatorChangesFeed::ReplicatorChangesFeed(Delegate &delegate, Options &options, DBAccess &db, Checkpointer *cp)
     :ChangesFeed(delegate, options, db, cp)     // DBAccess is a subclass of access_lock<C4Database*>
+    ,_usingVersionVectors(db.usingVersionVectors())
     { }
 
 
@@ -305,7 +306,7 @@ namespace litecore { namespace repl {
         logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
         if (foreignAncestor == slice(doc->revID))
             return false;   // skip this rev: it's already on the peer
-        if (foreignAncestor
+        if (foreignAncestor && !_usingVersionVectors
                     && c4rev_getGeneration(foreignAncestor) >= c4rev_getGeneration(doc->revID)) {
             if (_options.pull <= kC4Passive) {
                 C4Error error = c4error_make(WebSocketDomain, 409,

@@ -107,9 +107,9 @@ namespace c4Internal {
         virtual bool selectNextRevision() override                          {failUnsupported();}
         virtual bool selectNextLeafRevision(bool includeDeleted) override   {failUnsupported();}
         virtual alloc_slice remoteAncestorRevID(C4RemoteID) override        {failUnsupported();}
-        virtual void setRemoteAncestorRevID(C4RemoteID) override            {failUnsupported();}
+        virtual void setRemoteAncestorRevID(C4RemoteID,C4String) override   {failUnsupported();}
         virtual bool save(unsigned maxRevTreeDepth =0) override             {failUnsupported();}
-        virtual bool putNewRevision(const C4DocPutRequest&) override        {failUnsupported();}
+        virtual bool putNewRevision(const C4DocPutRequest&, C4Error*) override {failUnsupported();}
         virtual int32_t putExistingRevision(const C4DocPutRequest&, C4Error*) override{failUnsupported();}
         virtual alloc_slice getSelectedRevHistory(unsigned maxRevs) override{failUnsupported();}
     private:

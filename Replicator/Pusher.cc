@@ -221,18 +221,21 @@ namespace litecore { namespace repl {
             // Write the info array for this change:
             enc.beginArray();
             if (_proposeChanges) {
-                enc << change->docID << change->revID;
+                enc << change->docID;
+                encodeRevID(enc, change->revID);
                 slice remoteAncestorRevID = change->remoteAncestorRevID;
                 if (remoteAncestorRevID || change->bodySize > 0)
-                    enc << remoteAncestorRevID;
-                if (remoteAncestorRevID && c4rev_getGeneration(remoteAncestorRevID)
-                                                >= c4rev_getGeneration(change->revID)) {
+                    encodeRevID(enc, remoteAncestorRevID);
+                if (!_db->usingVersionVectors() && remoteAncestorRevID
+                                                && c4rev_getGeneration(remoteAncestorRevID)
+                                                            >= c4rev_getGeneration(change->revID)) {
                     warn("Proposed rev '%.*s' #%.*s has invalid ancestor %.*s",
                          SPLAT(change->docID), SPLAT(change->revID),
                          SPLAT(remoteAncestorRevID));
                 }
             } else {
-                enc << change->sequence << change->docID << change->revID;
+                enc << change->sequence << change->docID;
+                encodeRevID(enc, change->revID);
                 if (change->deleted() || change->bodySize > 0)
                     enc << change->deleted();
             }
@@ -256,6 +259,14 @@ namespace litecore { namespace repl {
             if (progress.state == MessageProgress::kComplete)
                 handleChangesResponse(changes, progress.reply, proposedChanges);
         });
+    }
+
+
+    void Pusher::encodeRevID(Encoder &enc, slice revID) {
+        if (_db->usingVersionVectors() && revID.findByte('*'))
+            enc << _db->convertVersionToAbsolute(revID);
+        else
+            enc << revID;
     }
 
 

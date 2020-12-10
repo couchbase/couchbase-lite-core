@@ -258,6 +258,15 @@ bool c4db_getUUIDs(C4Database* database, C4UUID *publicUUID, C4UUID *privateUUID
 }
 
 
+C4StringResult c4db_getPeerID(C4Database* database C4NONNULL) C4API {
+    return tryCatch<C4StringResult>(nil, [&]{
+        char buf[32];
+        sprintf(buf, "%llx", database->myPeerID());
+        return C4StringResult( alloc_slice(buf) );
+    });
+}
+
+
 C4ExtraInfo c4db_getExtraInfo(C4Database *database C4NONNULL) C4API {
     return database->extraInfo;
 }

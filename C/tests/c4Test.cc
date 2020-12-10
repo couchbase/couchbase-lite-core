@@ -199,11 +199,13 @@ C4Test::C4Test(int testOption)
         kRev1ID = kRevID = kRev1ID_Alt = C4STR("1@*");
         kRev2ID = C4STR("2@*");
         kRev3ID = C4STR("3@*");
+        kRev4ID = C4STR("4@*");
     } else {
         kRev1ID = kRevID = C4STR("1-abcd");
         kRev1ID_Alt = C4STR("1-dcba");
         kRev2ID = C4STR("2-c001d00d");
         kRev3ID = C4STR("3-deadbeef");
+        kRev4ID = C4STR("4-44444444");
     }
 
     if (testOption & 2) {
@@ -337,9 +339,14 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFla
 
 void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
     TransactionHelper t(db);
-    C4Error error;
+    C4Error error; 
     auto curDoc = c4doc_get(db, docID, false, &error);
     REQUIRE(curDoc != nullptr);
+    alloc_slice parentID;
+    if (isRevTrees(db))
+        parentID = curDoc->revID;
+    else
+        parentID = c4doc_getRevisionHistory(curDoc, 0);
     createConflictingRev(db, docID, curDoc->revID, revID, body, flags);
     c4doc_release(curDoc);
 }
@@ -407,7 +414,7 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4S
 
 
 string C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice json,
-                             C4RevisionFlags flags)
+                               C4RevisionFlags flags)
 {
     TransactionHelper t(db);
     SharedEncoder enc(c4db_getSharedFleeceEncoder(db));

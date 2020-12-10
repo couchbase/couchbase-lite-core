@@ -111,68 +111,108 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document PossibleAncestors", "[Document][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
-    if (!isRevTrees()) return;
-
     C4String doc1 = C4STR("doc1"), doc2 = C4STR("doc2"), doc3 = C4STR("doc3");
-    createRev(doc1, kRevID, kFleeceBody);
-    createRev(doc1, kRev2ID, kFleeceBody);
-    createRev(doc1, kRev3ID, kFleeceBody);
-
-    createRev(doc2, kRevID, kFleeceBody);
-    createRev(doc2, kRev2ID, kFleeceBody);
-    createRev(doc2, kRev3ID, kFleeceBody);
-
-    createRev(doc3, kRevID, kFleeceBody);
-    createRev(doc3, kRev2ID, kFleeceBody);
-    createRev(doc3, kRev3ID, kFleeceBody);
-
+    auto toString = [](C4SliceResult sr) {return std::string(alloc_slice(std::move(sr)));};
+    static constexpr bool kNoBodies = false;
+    C4RemoteID kRemoteID = 1;
+    static constexpr unsigned kMaxAncestors = 4;
     C4SliceResult ancestors[4] = {};
     C4Error error;
 
-    unsigned maxResults = 10;
-    bool bodies = false;
-    C4RemoteID remote = 1;
+    auto findDocAncestor = [&](C4Slice docID, C4Slice revID, bool requireBodies = false) -> std::string {
+        C4SliceResult ancestors[1] = {};
+        REQUIRE(c4db_findDocAncestors(db, 1, kMaxAncestors, requireBodies, kRemoteID, &docID, &revID, ancestors, &error));
+        return toString(std::move(ancestors[0]));
+    };
 
-    auto toString = [](C4SliceResult sr) {return std::string(alloc_slice(std::move(sr)));};
+    if (isRevTrees()) {
+        // Rev-trees:
+        createRev(doc1, kRevID, kFleeceBody);
+        createRev(doc1, kRev2ID, kFleeceBody);
+        createRev(doc1, kRev3ID, kFleeceBody);
 
-    // Doc I don't have yet:
-    C4String newDocID = "new"_sl;
-    REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &newDocID, &kRev3ID, ancestors, &error));
-    CHECK(ancestors[0].size == 0);
-    CHECK(ancestors[0].buf == 0);       // empty slice
+        createRev(doc2, kRevID, kFleeceBody);
+        createRev(doc2, kRev2ID, kFleeceBody);
+        createRev(doc2, kRev3ID, kFleeceBody);
 
-    // Revision I already have:
-    REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &doc1, &kRev3ID, ancestors, &error));
-    CHECK(alloc_slice(std::move(ancestors[0])) == kC4AncestorExists);       // null slice
+        createRev(doc3, kRevID, kFleeceBody);
+        createRev(doc3, kRev2ID, kFleeceBody);
+        createRev(doc3, kRev3ID, kFleeceBody);
 
-    // Newer revision:
-    C4String newRevID = "4-deadbeef"_sl;
-    REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &doc1, &newRevID, ancestors, &error));
-    CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
+        // Doc I don't have yet:
+        CHECK(findDocAncestor("new"_sl, kRev3ID) == "");
 
-    // Conflict:
-    newRevID = "3-00000000"_sl;
-    REQUIRE(c4db_findDocAncestors(db, 1, maxResults, bodies, remote, &doc1, &newRevID, ancestors, &error));
-    CHECK(toString(std::move(ancestors[0])) == R"(["2-c001d00d","1-abcd"])");
+        // Revision I already have:
+        CHECK(findDocAncestor(doc1, kRev3ID) == "1"); //kC4AncestorExists
 
-    // Require bodies:
-    newRevID = "4-deadbeef"_sl;
-    REQUIRE(c4db_findDocAncestors(db, 1, maxResults, true, remote, &doc1, &newRevID, ancestors, &error));
-    CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef"])");
+        // Newer revision:
+        CHECK(findDocAncestor(doc1, "4-deadbeef"_sl) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
 
-    // Limit number of results:
-    newRevID = "4-deadbeef"_sl;
-    REQUIRE(c4db_findDocAncestors(db, 1, 1, bodies, remote, &doc1, &newRevID, ancestors, &error));
-    CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef"])");
+        // Conflict:
+        CHECK(findDocAncestor(doc1, "3-00000000"_sl) == R"(["2-c001d00d","1-abcd"])");
 
-    // Multiple docs:
-    C4String docIDs[4] = {doc2,            doc1,    C4STR("doc4"),    doc3};
-    C4String revIDs[4] = {"4-deadbeef"_sl, kRev3ID, C4STR("17-eeee"), "2-f000"_sl};
-    REQUIRE(c4db_findDocAncestors(db, 4, maxResults, bodies, remote, docIDs, revIDs, ancestors, &error));
-    CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
-    CHECK(alloc_slice(std::move(ancestors[1])) == kC4AncestorExists);
-    CHECK(!slice(ancestors[2]));
-    CHECK(toString(std::move(ancestors[3])) == R"(["1-abcd"])");
+        // Require bodies:
+        CHECK(findDocAncestor(doc1, "4-deadbeef"_sl, true) == R"(["3-deadbeef"])");
+
+        // Limit number of results:
+        C4Slice newRevID = "4-deadbeef"_sl;
+        REQUIRE(c4db_findDocAncestors(db, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors, &error));
+        CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef"])");
+
+        // Multiple docs:
+        C4String docIDs[4] = {doc2,            doc1,    C4STR("doc4"),    doc3};
+        C4String revIDs[4] = {"4-deadbeef"_sl, kRev3ID, C4STR("17-eeee"), "2-f000"_sl};
+        REQUIRE(c4db_findDocAncestors(db, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors, &error));
+        CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
+        CHECK(alloc_slice(std::move(ancestors[1])) == kC4AncestorExists);
+        CHECK(!slice(ancestors[2]));
+        CHECK(toString(std::move(ancestors[3])) == R"(["1-abcd"])");
+
+    } else {
+        // Version-vectors:
+        createRev(doc1, "3@100,10@8"_sl, kFleeceBody);
+        createRev(doc2, "3@100,10@8"_sl, kFleeceBody);
+        createRev(doc3, "3@300,30@8"_sl, kFleeceBody);
+
+        // Doc I don't have yet:
+        CHECK(findDocAncestor("new"_sl, "3@300,30@8"_sl) == "");
+
+        // Revision I already have:
+        CHECK(findDocAncestor(doc1, "3@100,10@8"_sl) == "1");// kC4AncestorExists
+                                                             // Require bodies:
+        CHECK(findDocAncestor(doc1, "3@100,10@8"_sl, true) == "1");// kC4AncestorExists
+
+        // Older revision:
+        CHECK(findDocAncestor(doc1, "2@100,10@8"_sl) == "1");// kC4AncestorExists
+        // Require bodies:
+        CHECK(findDocAncestor(doc1, "2@100,10@8"_sl, true) == R"([])");
+
+        // Newer revision:
+        CHECK(findDocAncestor(doc1, "11@8,3@100"_sl) == R"(["3@100,10@8"])");
+
+        // Conflict:
+        CHECK(findDocAncestor(doc1, "4@100,9@8"_sl) == R"([])");
+
+        // Single version:
+        CHECK(findDocAncestor(doc1, "3@100"_sl) == "1");// kC4AncestorExists
+        CHECK(findDocAncestor(doc1, "11@8"_sl) == R"(["3@100,10@8"])");
+        CHECK(findDocAncestor(doc1, "30@8"_sl) == R"(["3@100,10@8"])");
+        CHECK(findDocAncestor(doc1, "66@666"_sl) == R"(["3@100,10@8"])");
+
+        // Limit number of results:
+        C4Slice newRevID = "11@8,3@100"_sl;
+        REQUIRE(c4db_findDocAncestors(db, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors, &error));
+        CHECK(toString(std::move(ancestors[0])) == R"(["3@100,10@8"])");
+
+        // Multiple docs:
+        C4String docIDs[4] = {doc2,            doc1,     C4STR("doc4"),    doc3};
+        C4String revIDs[4] = {"9@100,10@8"_sl, "3@100,10@8"_sl, C4STR("17@17"),   "1@99,3@300,30@8"_sl};
+        REQUIRE(c4db_findDocAncestors(db, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors, &error));
+        CHECK(toString(std::move(ancestors[0])) == R"(["3@100,10@8"])");
+        CHECK(alloc_slice(std::move(ancestors[1])) == kC4AncestorExists);
+        CHECK(!slice(ancestors[2]));
+        CHECK(toString(std::move(ancestors[3])) == R"(["3@300,30@8"])");
+    }
 }
 
 
@@ -810,14 +850,25 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
-    if (!isRevTrees())
-        return;
+    slice kRev1ID, kRev2ID, kRev3ID, kRev3ConflictID, kRev4ConflictID;
+    if (isRevTrees()) {
+        kRev1ID = "1-aaaaaa";
+        kRev2ID = "2-aaaaaa";
+        kRev3ID = "3-aaaaaa";
+        kRev3ConflictID = "3-ababab";
+        kRev4ConflictID = "4-dddd";
+    } else {
+        kRev1ID = "1@*";
+        kRev2ID = "2@*";
+        kRev3ID = "3@*";
+        kRev3ConflictID = "3@cafe";
+        kRev4ConflictID = "4@cafe";
+    }
 
-    static constexpr slice kRev3ID("3-aaaaaa"), kRev3ConflictID("3-ababab"), kRev4ConflictID("4-dddd");
     const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
     const auto kFleeceBody3 = json2fleece("{'ubu':'roi'}");
 
-    createRev(kDocID, kRevID, kFleeceBody);
+    createRev(kDocID, kRev1ID, kFleeceBody);
     createRev(kDocID, kRev2ID, kFleeceBody2, kRevKeepBody);
     createRev(kDocID, kRev3ID, kFleeceBody3);
 
@@ -838,15 +889,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
     C4Error err;
     auto doc = c4doc_put(db, &rq, nullptr, &err);
     REQUIRE(doc);
-
-    // kRevID -- [kRev2ID] -- kRev3ID
-    //                      \ kRev3ConflictID -- [kRev4ConflictID]       [] = remote rev, keep body
-
-    // Check that the pulled revision is treated as a conflict:
     CHECK(doc->selectedRev.revID == kRev4ConflictID);
-    CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict | kRevKeepBody));
-    REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK((int)doc->selectedRev.flags == kRevIsConflict);
 
     // Check that the local revision is still current:
     CHECK(doc->revID == kRev3ID);
@@ -854,75 +897,113 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
     CHECK(doc->selectedRev.revID == kRev3ID);
     CHECK((int)doc->selectedRev.flags == kRevLeaf);
 
-    // Now check the common ancestor algorithm:
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev4ConflictID));
-    CHECK(doc->selectedRev.revID == kRev2ID);
+    if (isRevTrees()) {
+        // kRevID -- [kRev2ID] -- kRev3ID
+        //                      \ kRev3ConflictID -- [kRev4ConflictID]    [] = remote rev, keep body
 
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev4ConflictID, kRev3ID));
-    CHECK(doc->selectedRev.revID == kRev2ID);
+        // Check that the pulled revision is treated as a conflict:
+        REQUIRE(c4doc_selectRevision(doc, kRev4ConflictID, true, nullptr));
+        CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict | kRevKeepBody));
+        REQUIRE(c4doc_selectParentRevision(doc));
+        CHECK((int)doc->selectedRev.flags == kRevIsConflict);
 
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ConflictID, kRev3ID));
-    CHECK(doc->selectedRev.revID == kRev2ID);
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev3ConflictID));
-    CHECK(doc->selectedRev.revID == kRev2ID);
+        // Now check the common ancestor algorithm:
+        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev4ConflictID));
+        CHECK(doc->selectedRev.revID == kRev2ID);
 
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev3ID));
-    CHECK(doc->selectedRev.revID == kRev2ID);
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev2ID));
-    CHECK(doc->selectedRev.revID == kRev2ID);
+        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev4ConflictID, kRev3ID));
+        CHECK(doc->selectedRev.revID == kRev2ID);
 
-    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev2ID));
-    CHECK(doc->selectedRev.revID == kRev2ID);
+        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ConflictID, kRev3ID));
+        CHECK(doc->selectedRev.revID == kRev2ID);
+        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev3ConflictID));
+        CHECK(doc->selectedRev.revID == kRev2ID);
+
+        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev3ID));
+        CHECK(doc->selectedRev.revID == kRev2ID);
+        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev2ID));
+        CHECK(doc->selectedRev.revID == kRev2ID);
+
+        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev2ID));
+        CHECK(doc->selectedRev.revID == kRev2ID);
+    } else {
+        // Check that the pulled revision is treated as a conflict:
+        REQUIRE(c4doc_selectRevision(doc, kRev4ConflictID, true, nullptr));
+        CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict));
+    }
 
     auto mergedBody = json2fleece("{\"merged\":true}");
 
-    SECTION("Merge, 4 wins") {
-        static constexpr slice kMergedRevID("5-79b2ecd897d65887a18c46cc39db6f0a3f7b38c4");
+    //SECTION("Merge, 4 wins")
+    {
+        C4Log("--- Merge, 4 wins");
         REQUIRE(c4doc_resolveConflict(doc, kRev4ConflictID, kRev3ID, mergedBody, 0, &err));
-        // kRevID -- kRev2ID -- kRev3ConflictID -- [kRev4ConflictID] -- kMergedRevID
         c4doc_selectCurrentRevision(doc);
-        CHECK(doc->selectedRev.revID == kMergedRevID);
         CHECK(docBodyEquals(doc, mergedBody));
-        CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
+        if (isRevTrees()) {
+            // kRevID -- kRev2ID -- kRev3ConflictID -- [kRev4ConflictID] -- kMergedRevID
+            CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
+            CHECK(doc->selectedRev.revID == "5-79b2ecd897d65887a18c46cc39db6f0a3f7b38c4"_sl);
+            alloc_slice revHistory(c4doc_getRevisionHistory(doc, 99));
+            CHECK(revHistory == "5-79b2ecd897d65887a18c46cc39db6f0a3f7b38c4,4-dddd,3-ababab,2-aaaaaa,1-aaaaaa"_sl);
 
-        c4doc_selectParentRevision(doc);
-        CHECK(doc->selectedRev.revID == kRev4ConflictID);
-        CHECK((int)doc->selectedRev.flags == kRevKeepBody);
+            c4doc_selectParentRevision(doc);
+            CHECK(doc->selectedRev.revID == kRev4ConflictID);
+            CHECK((int)doc->selectedRev.flags == kRevKeepBody);
 
-        c4doc_selectParentRevision(doc);
-        CHECK(doc->selectedRev.revID == kRev3ConflictID);
-        CHECK((int)doc->selectedRev.flags == 0);
+            c4doc_selectParentRevision(doc);
+            CHECK(doc->selectedRev.revID == kRev3ConflictID);
+            CHECK((int)doc->selectedRev.flags == 0);
 
-        c4doc_selectParentRevision(doc);
-        CHECK(doc->selectedRev.revID == kRev2ID);
-        CHECK((int)doc->selectedRev.flags == 0);
+            c4doc_selectParentRevision(doc);
+            CHECK(doc->selectedRev.revID == kRev2ID);
+            CHECK((int)doc->selectedRev.flags == 0);
+        } else {
+            CHECK((int)doc->selectedRev.flags == kRevLeaf);
+            CHECK(doc->selectedRev.revID == "4@*"_sl);
+            alloc_slice vector(c4doc_getRevisionHistory(doc, 0));
+            CHECK(vector == "4@*,4@cafe"_sl);
+        }
 
         CHECK(! c4doc_selectRevision(doc, kRev3ID, false, nullptr));
     }
 
-    SECTION("Merge, 3 wins") {
-        static constexpr slice kMergedRevID("4-1fa2dbcb66b5e0456f6d6fc4a90918d42f3dd302");
+    c4doc_release(doc);
+    doc = c4doc_get(db, kDocID, true, &err);
+    REQUIRE(doc);
+
+    //SECTION("Merge, 3 wins")
+    {
+        C4Log("--- Merge, 3 wins");
         REQUIRE(c4doc_resolveConflict(doc, kRev3ID, kRev4ConflictID, mergedBody, 0, &err));
         // kRevID -- [kRev2ID] -- kRev3ID -- kMergedRevID
         c4doc_selectCurrentRevision(doc);
-        CHECK(doc->selectedRev.revID == kMergedRevID);
         CHECK(docBodyEquals(doc, mergedBody));
-        CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
+        if (isRevTrees()) {
+            CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
+            CHECK(doc->selectedRev.revID == "4-1fa2dbcb66b5e0456f6d6fc4a90918d42f3dd302"_sl);
 
-        c4doc_selectParentRevision(doc);
-        CHECK(doc->selectedRev.revID == kRev3ID);
-        CHECK((int)doc->selectedRev.flags == 0);
+            c4doc_selectParentRevision(doc);
+            CHECK(doc->selectedRev.revID == kRev3ID);
+            CHECK((int)doc->selectedRev.flags == 0);
 
-        c4doc_selectParentRevision(doc);
-        CHECK(doc->selectedRev.revID == kRev2ID);
-        CHECK((int)doc->selectedRev.flags == kRevKeepBody);
+            c4doc_selectParentRevision(doc);
+            CHECK(doc->selectedRev.revID == kRev2ID);
+            CHECK((int)doc->selectedRev.flags == kRevKeepBody);
 
-        CHECK(! c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
-        CHECK(! c4doc_selectRevision(doc, kRev3ConflictID, false, nullptr));
+            CHECK(! c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
+            CHECK(! c4doc_selectRevision(doc, kRev3ConflictID, false, nullptr));
+        } else {
+            CHECK((int)doc->selectedRev.flags == kRevLeaf);
+            CHECK(doc->selectedRev.revID == "4@*"_sl);
+            alloc_slice vector(c4doc_getRevisionHistory(doc, 0));
+            CHECK(vector == "4@*,4@cafe"_sl);
+        }
     }
 
     c4doc_release(doc);
 }
+
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document from Fleece", "[Document][C]") {
     if (!isRevTrees())

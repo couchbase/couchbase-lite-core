@@ -70,6 +70,7 @@ namespace litecore { namespace repl {
                                alloc_slice &outCurrentRevID);
         void _revReceived();
         void _reRequestingRev();
+        bool checkDocAndRevID(slice docID, slice revID);
 
         Retained<Delegate> _delegate;
         std::deque<Retained<blip::MessageIn>> _waitingChangesMessages; // Queued 'changes' messages

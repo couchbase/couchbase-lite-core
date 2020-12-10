@@ -132,12 +132,26 @@ namespace litecore {
 #pragma mark - CONVERSION:
 
 
+    void VersionVector::validate() const {
+        //OPT: This is O(n^2)
+        if (count() > 1) {
+            for (auto i = next(_vers.begin()); i != _vers.end(); ++i) {
+                peerID author = i->author();
+                for (auto j = _vers.begin(); j != i; ++j)
+                    if (j->author() == author)
+                        error::_throw(error::BadRevisionID, "Duplicate ID in version vector");
+            }
+        }
+    }
+
+
     void VersionVector::readBinary(slice data) {
         reset();
         if (data.size < 1 || data.readByte() != 0)
             throwBadBinary();
         while (data.size > 0)
             _vers.emplace_back(&data);
+        validate();
     }
 
 
@@ -197,6 +211,36 @@ namespace litecore {
             if (str.size > 0)
                 str.moveStart(1); // skip comma
         }
+        validate();
+    }
+
+
+    void VersionVector::readHistory(const slice history[], size_t historyCount, peerID myPeerID) {
+        // Assemble the version vector from the history. This can take a few forms:
+        //   <new version vector>
+        //   <new version>  <parent version vector>
+        //   <new version>  <parent version>  <grandparent version> ...
+        Assert(historyCount > 0);
+        readASCII(history[0], myPeerID);
+        if (historyCount == 1)
+            return;                             // -> Single version vector (or single version)
+        if (count() > 1)
+            error::_throw(error::BadRevisionID,
+                          "Invalid version history (vector followed by other history)");
+        if (historyCount == 2) {
+            Version newVers = _vers[0];
+            readASCII(history[1], myPeerID);
+            add(newVers);                       // -> New version plus parent vector
+        } else {
+            for (size_t i = 1; i < historyCount; ++i) {
+                Version parentVers(history[i], myPeerID);
+                if (auto gen = genOfAuthor(parentVers.author()); gen ==0)
+                    _vers.push_back(parentVers);
+                else if (gen <= parentVers.gen())
+                    error::_throw(error::BadRevisionID,
+                                  "Invalid version history (increasing generation)");
+            }
+        }                                       // -> List of versions
     }
 
     
@@ -260,6 +304,16 @@ namespace litecore {
         return (v != _vers.end()) ? v->gen() : 0;
     }
 
+
+#pragma mark - MODIFICATION:
+
+
+    void VersionVector::limitCount(size_t maxCount) {
+        if (_vers.size() > maxCount)
+            _vers.erase(_vers.begin() + maxCount, _vers.end());
+    }
+
+
     void VersionVector::incrementGen(peerID author) {
         generation gen = 1;
         if (auto versP = findPeerIter(author); versP != _vers.end()) {
@@ -269,37 +323,57 @@ namespace litecore {
         _vers.insert(_vers.begin(), Version(gen, author));
     }
 
-    void VersionVector::limitCount(size_t maxCount) {
-        if (_vers.size() > maxCount)
-            _vers.erase(_vers.begin() + maxCount, _vers.end());
+
+    bool VersionVector::add(Version v) {
+        if (auto versP = findPeerIter(v.author()); versP != _vers.end()) {
+            if (versP->gen() >= v.gen())
+                return false;
+            _vers.erase(versP);
+        }
+        _vers.insert(_vers.begin(), v);
+        return true;
     }
 
-    
 
-#pragma mark - MODIFICATION:
-
-
-    void VersionVector::append(const Version &vers) {
+    void VersionVector::push_back(const Version &vers) {
+        if (genOfAuthor(vers.author()) > 0)
+            error::_throw(error::BadRevisionID, "Adding duplicate ID to version vector");
         _vers.push_back(vers);
     }
 
+
+//    bool VersionVector::addHistory(VersionVector &&earlier) {
+//        if (_vers.empty()) {
+//            _vers = move(earlier._vers);
+//        } else {
+//            for (auto &v : earlier._vers) {
+//                if (genOfAuthor(v.author()) > 0)
+//                    return false;   // duplicate author
+//                _vers.push_back(v);
+//            }
+//        }
+//        return true;
+//    }
+
+
     void VersionVector::compactMyPeerID(peerID myID) {
+        if (genOfAuthor(kMePeerID) > 0)
+            error::_throw(error::BadRevisionID, "Vector already contains '*'");
         auto versP = findPeerIter(myID);
         if (versP != _vers.end())
             *versP = Version(versP->gen(), kMePeerID);
     }
 
     void VersionVector::expandMyPeerID(peerID myID) {
+        if (genOfAuthor(myID) > 0)
+            error::_throw(error::BadRevisionID, "Vector already contains myID");
         auto versP = findPeerIter(kMePeerID);
         if (versP != _vers.end())
             *versP = Version(versP->gen(), myID);
     }
 
     bool VersionVector::isExpanded() const {
-        for (auto &vers : _vers)
-            if (vers.author() == kMePeerID)
-                return false;
-        return true;
+        return genOfAuthor(kMePeerID) == 0;
     }
 
 
@@ -339,11 +413,11 @@ namespace litecore {
         for (size_t i = 0; i < maxSize; ++i) {
             if (i < mySize) {
                 if (auto &vers = _vers[i]; vers.gen() >= otherMap[vers.author()])
-                    result.append(vers);
+                    result.push_back(vers);
             }
             if (i < itsSize) {
                 if (auto &vers = other._vers[i]; vers.gen() > myMap[vers.author()])
-                    result.append(vers);
+                    result.push_back(vers);
             }
         }
         return result;

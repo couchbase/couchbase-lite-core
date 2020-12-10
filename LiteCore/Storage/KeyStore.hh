@@ -83,7 +83,7 @@ namespace litecore {
         /** Creates a database query object. */
         virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
 
-        using WithDocBodyCallback = std::function<alloc_slice(slice docID, slice body, sequence_t)>;
+        using WithDocBodyCallback = std::function<alloc_slice(const RecordLite&)>;
 
         /** Invokes the callback once for each document found in the database.
             The callback is given the docID, body and sequence, and returns a string.
@@ -100,7 +100,7 @@ namespace litecore {
             current sequence must be provided in `rec.sequence`.
             Returns the record's new sequence, or 0 if the record was not updated due to a sequence
             conflict. */
-        virtual sequence_t set(const RecordSetter &rec, Transaction&) =0;
+        virtual sequence_t set(const RecordLite &rec, Transaction&) =0;
 
         // Convenience wrappers for set():
 
@@ -110,14 +110,14 @@ namespace litecore {
                        std::optional<sequence_t> replacingSequence =std::nullopt,
                        bool newSequence =true)
         {
-            RecordSetter r = {key, version, value, nullslice, replacingSequence, newSequence, flags};
+            RecordLite r = {key, version, value, nullslice, replacingSequence, newSequence, flags};
             return set(r, t);
         }
 
         sequence_t set(slice key, slice value, Transaction &t,
                        std::optional<sequence_t> replacingSequence =std::nullopt,
                        bool newSequence =true) {
-            RecordSetter r = {key, nullslice, value, nullslice,
+            RecordLite r = {key, nullslice, value, nullslice,
                               replacingSequence, newSequence, DocumentFlags::kNone};
             return set(r, t);
         }

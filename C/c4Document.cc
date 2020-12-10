@@ -314,9 +314,11 @@ C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase
 }
 
 
-bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase, C4Error *outError) C4API {
+bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase, C4String revID,
+                             C4Error *outError) C4API
+{
     return tryCatch<bool>(outError, [&]{
-        asInternal(doc)->setRemoteAncestorRevID(remoteDatabase);
+        asInternal(doc)->setRemoteAncestorRevID(remoteDatabase, revID);
         return true;
     });
 }
@@ -355,7 +357,7 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
             found = (doc->selectedRev.sequence == sequence);
         } while (!found && doc->selectNextRevision());
         if (found) {
-            doc->setRemoteAncestorRevID(remoteID);
+            doc->setRemoteAncestorRevID(remoteID, doc->selectedRev.revID);
             result = c4doc_save(doc.get(), 9999, outError);       // don't prune anything
         }
     } catchError(outError)
@@ -411,7 +413,7 @@ static pair<Document*,int> putNewDoc(C4Database *database,
     if (rq->existingRevision)
         commonAncestorIndex = idoc->putExistingRevision(*rq, nullptr);
     else
-        commonAncestorIndex = idoc->putNewRevision(*rq) ? 0 : -1;
+        commonAncestorIndex = idoc->putNewRevision(*rq, nullptr) ? 0 : -1;
     if (commonAncestorIndex < 0)
         idoc = nullptr;
     return {retain(idoc.get()), commonAncestorIndex};
@@ -491,6 +493,9 @@ C4Document* c4doc_put(C4Database *database,
         if (!checkParam(rq->historyCount > 0 || !(rq->revFlags & kRevDeleted),
                         "Can't create a new already-deleted document", outError))
             return nullptr;
+        if (rq->remoteDBID != 0)
+            error::_throw(error::InvalidParameter,
+                          "remoteDBID cannot be used when existingRevision=false");
     }
 
     int commonAncestorIndex = 0;
@@ -523,7 +528,11 @@ C4Document* c4doc_put(C4Database *database,
                                       outError);
                 if (!doc)
                     return nullptr;
-                commonAncestorIndex = asInternal(doc)->putNewRevision(*rq) ? 0 : -1;
+                if (!asInternal(doc)->putNewRevision(*rq, outError)) {
+                    c4doc_release(doc);
+                    return nullptr;
+                }
+                commonAncestorIndex = 0;
             }
         }
 

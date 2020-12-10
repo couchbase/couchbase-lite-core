@@ -158,11 +158,16 @@ extern "C" {
     /** Returns the body (encoded Fleece data) of the selected revision, if available. */
     C4Slice c4doc_getRevisionBody(C4Document* doc C4NONNULL) C4API;
 
-    /** Returns a string encoding the selected revision's history.
-        @param maxRevs  The maximum number of revisions to include in the result. */
+    /** Returns a string encoding the selected revision's history, as comma-separate revision/version IDs
+        in reverse chronological order.
+        In a version-vector database this is of course the revision's version vector. It will be in
+        global form (real peerID instead of "*") unless the `maxRevs` parameter is 0.
+        @param maxRevs  The maximum number of revisions to include in the result; or 0 for unlimited. */
     C4SliceResult c4doc_getRevisionHistory(C4Document* doc C4NONNULL, unsigned maxRevs) C4API;
 
-    /** Returns the selected revision's ID in a form that will make sense to another peer/server. */
+    /** Returns the selected revision's ID in a form that will make sense to another peer/server.
+        (This doesn't affect tree-based revIDs. In vector-based version IDs it uses the database's actual
+        peer ID instead of the shorthand "*" character.) */
     C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API;
 
     /** Selects the parent of the selected revision, if it's known, else returns NULL. */
@@ -220,9 +225,10 @@ extern "C" {
     C4SliceResult c4doc_getRemoteAncestor(C4Document *doc C4NONNULL,
                                           C4RemoteID remoteDatabase) C4API;
 
-    /** Marks the selected revision as current for the given remote database. */
+    /** Marks a revision as current for the given remote database. */
     bool c4doc_setRemoteAncestor(C4Document *doc C4NONNULL,
                                  C4RemoteID remoteDatabase,
+                                 C4String revID,
                                  C4Error *error) C4API;
 
     /** Given a revision ID, returns its generation number (the decimal number before

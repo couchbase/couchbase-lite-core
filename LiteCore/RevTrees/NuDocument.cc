@@ -20,6 +20,7 @@
 #include "Record.hh"
 #include "KeyStore.hh"
 #include "DataFile.hh"
+#include "VersionVector.hh"
 #include "DeDuplicateEncoder.hh"
 #include "Error.hh"
 #include "Defer.hh"
@@ -48,10 +49,20 @@ namespace litecore {
      space, writing repeated values only once.
      */
 
-    // Properties in revision dicts:
-    static constexpr slice kMetaProperties  = "p";
-    static constexpr slice kMetaRevID = "r";
-    static constexpr slice kMetaFlags = "f";
+    // Keys in revision dicts (deliberately short and ineligible for sharedKeys.)
+    static constexpr slice kMetaProperties  = "{";
+    static constexpr slice kMetaRevID = "@";
+    static constexpr slice kMetaFlags = "&";
+
+
+    Version Revision::version() const {
+        return VersionVector::readCurrentVersionFromBinary(revID);
+    }
+
+    VersionVector Revision::versionVector() const {
+        return VersionVector::fromBinary(revID);
+    }
+
 
 
     NuDocument::NuDocument(KeyStore& store, const Record& rec)
@@ -227,7 +238,10 @@ namespace litecore {
                 _changed = true;
             }
             if (newRev.properties != revDict[kMetaProperties]) {
-                revDict[kMetaProperties] = newRev.properties;
+                if (newRev.properties)
+                    revDict[kMetaProperties] = newRev.properties;
+                else
+                    revDict.remove(kMetaProperties);
                 _changed = true;
             }
             if (int(newRev.flags) != revDict[kMetaFlags].asInt()) {
@@ -264,9 +278,9 @@ namespace litecore {
             if (revDict) {
                 auto flags = DocumentFlags(revDict[kMetaFlags].asInt());
                 if (flags & DocumentFlags::kConflicted)
-                    newDocFlags = newDocFlags | DocumentFlags::kConflicted;
+                    newDocFlags |= DocumentFlags::kConflicted;
                 if (flags & DocumentFlags::kHasAttachments)
-                    newDocFlags = newDocFlags | DocumentFlags::kHasAttachments;
+                    newDocFlags |= DocumentFlags::kHasAttachments;
             }
         }
         _docFlags = newDocFlags;
@@ -399,7 +413,7 @@ namespace litecore {
         auto seq = _sequence;
         bool updateSequence = (seq == 0 || _revIDChanged);
         Assert(revID);
-        RecordSetter rec = {_docID, revID, body, extra, seq, updateSequence, _docFlags};
+        RecordLite rec = {_docID, revID, body, extra, seq, updateSequence, _docFlags};
         seq = _store.set(rec, transaction);
         if (seq == 0)
             return kConflict;
@@ -588,6 +602,25 @@ namespace litecore {
             fleece::impl::Value::dump(_extraDoc.allocedData(), out);
         }
         return out.str();
+    }
+
+
+    /*static*/ void NuDocument::forAllRevIDs(const RecordLite &rec,
+                                             function_ref<void(revid,RemoteID)> callback)
+    {
+        callback(revid(rec.version), RemoteID::Local);
+        if (rec.extra.size > 0) {
+            Array remotes = Value::fromData(rec.extra, kFLTrusted).asArray();
+            int n = 0;
+            for (Array::iterator i(remotes); i; ++i, ++n) {
+                if (n > 0) {
+                    Dict remote = i.value().asDict();
+                    slice revID = remote[kMetaRevID].asData();
+                    if (revID)
+                        callback(revid(revID), RemoteID(n));
+                }
+            }
+        }
     }
 
 }

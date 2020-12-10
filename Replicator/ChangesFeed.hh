@@ -110,5 +110,7 @@ namespace litecore::repl {
 
     protected:
         bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const override;
+    private:
+        const bool _usingVersionVectors;
     };
 }

@@ -39,6 +39,11 @@ namespace litecore {
         return (DocumentFlags)((uint8_t)a | (uint8_t)b);
     }
 
+    static inline DocumentFlags& operator|= (DocumentFlags &a, DocumentFlags b) {
+        a = a | b;
+        return a;
+    }
+
     static inline DocumentFlags operator- (DocumentFlags a, DocumentFlags b) {
         return (DocumentFlags)((uint8_t)a & ~(uint8_t)b);
     }
@@ -135,9 +140,9 @@ namespace litecore {
     };
 
 
-    /** A lightweight struct used to update a record without all the heap allocation of a Record object.
+    /** A lightweight struct used to represent a record without all the heap allocation of a Record object.
         (See `KeyStore::set`.) */
-    struct RecordSetter {
+    struct RecordLite {
         slice                       key, version, body, extra;
         std::optional<sequence_t>   sequence;
         bool                        updateSequence {true};

@@ -85,6 +85,8 @@ C4SliceResult c4db_getIndexRows(C4Database* database C4NONNULL,
                                 C4String indexName,
                                 C4Error* outError) C4API;
 
+C4StringResult c4db_getPeerID(C4Database* database C4NONNULL) C4API;
+
 /** Sets the document flag kSynced. Used by the replicator to track synced documents. */
 bool c4db_markSynced(C4Database *database,
                      C4String docID,
@@ -96,14 +98,15 @@ bool c4db_markSynced(C4Database *database,
     or if not, what ancestors exist.
 
     The \ref requireBodies flag, if set, means that only ancestors whose bodies are available
-    will be returned.
+    will be considered.
 
     The answer is written into the corresponding entry of \ref ancestors:
     * If the document doesn't exist at all, the answer will be a null slice.
     * If the document exists but not that revision, the answer will be a JSON array of existing
       ancestor revision IDs (maximum length \ref maxAncestors.)
-    * If the document revision exists, the answer will be "1".
-    * ... unless it's not marked as the current server revision, in which case the answer is "2" */
+    * If the document revision exists, the answer will be `kC4AncestorExists` ("1").
+    * ... unless it's not marked as the current server revision for `remoteDBID`, in which case the answer is
+     `kC4AncestorExistsButNotCurrent` "2" */
 bool c4db_findDocAncestors(C4Database *database,
                            unsigned numDocs,
                            unsigned maxAncestors,

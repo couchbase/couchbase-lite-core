@@ -58,6 +58,7 @@ namespace litecore { namespace repl {
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
         void gotOutOfOrderChange(RevToSend* NONNULL);
+        void encodeRevID(Encoder &enc, slice revID);
         void sendChanges(RevToSendList&);
         void handleChangesResponse(RevToSendList&, blip::MessageIn*, bool proposedChanges);
         bool handleChangeResponse(RevToSend *change, Value response);
@@ -112,6 +113,7 @@ namespace litecore { namespace repl {
         unsigned _blobsInFlight {0};              // # of blobs being sent
         std::deque<Retained<RevToSend>> _revQueue;// Revs to send to peer but not sent yet
         RevToSendList _revsToRetry;               // Revs that failed with a transient error
+        string _myPeerID;
     };
     
     

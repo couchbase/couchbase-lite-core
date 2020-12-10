@@ -65,7 +65,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]")
     alloc_slice key("key");
     {
         Transaction t(db);
-        RecordSetter rec;
+        RecordLite rec;
         rec.key = key;
         rec.body = "body"_sl;
         rec.version = "version"_sl;

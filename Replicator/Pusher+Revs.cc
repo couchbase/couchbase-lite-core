@@ -79,7 +79,7 @@ namespace litecore::repl {
         MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
         msg.compressed = true;
         msg["id"_sl] = request->docID;
-        msg["rev"_sl] = request->revID;
+        msg["rev"_sl] = _db->convertVersionToAbsolute(request->revID);
         msg["sequence"_sl] = request->sequence;
         if (root) {
             if (request->noConflicts)
@@ -102,7 +102,7 @@ namespace litecore::repl {
                                                     c4doc_getRevisionBody(doc).size,
                                                     sendLegacyAttachments);
             if (delta) {
-                msg["deltaSrc"_sl] = doc->selectedRev.revID;
+                msg["deltaSrc"_sl] = _db->convertVersionToAbsolute(doc->selectedRev.revID);
                 msg.jsonBody().writeRaw(delta);
             } else if (root.empty()) {
                 msg.write("{}"_sl);

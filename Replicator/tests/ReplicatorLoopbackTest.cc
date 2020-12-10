@@ -269,8 +269,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
     validateCheckpoints(db2, db, "{\"remote\":100}");
 
     Log("-------- Second Replication --------");
-    createRev("new1"_sl, "1-2341"_sl, kFleeceBody);
-    createRev("new2"_sl, "1-2341"_sl, kFleeceBody);
+    createRev("new1"_sl, kRev1ID, kFleeceBody);
+    createRev("new2"_sl, kRev1ID_Alt, kFleeceBody);
     _expectedDocumentCount = 2;
 
     runPullReplication();
@@ -354,12 +354,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
     // Start with "mydoc" in both dbs with the same revs, so it won't be replicated.
     // But each db has one unique document.
-    createRev(db, kDocID, kRevID, kFleeceBody);
-    createRev(db, kDocID, kRev2ID, kFleeceBody);
+    createRev(db, kDocID, kNonLocalRev1ID, kFleeceBody);
+    createRev(db, kDocID, kNonLocalRev2ID, kFleeceBody);
     createRev(db, "onlyInDB1"_sl, kRevID, kFleeceBody);
     
-    createRev(db2, kDocID, kRevID, kFleeceBody);
-    createRev(db2, kDocID, kRev2ID, kFleeceBody);
+    createRev(db2, kDocID, kNonLocalRev1ID, kFleeceBody);
+    createRev(db2, kDocID, kNonLocalRev2ID, kFleeceBody);
     createRev(db2, "onlyInDB2"_sl, kRevID, kFleeceBody);
 
     _expectedDocumentCount = 1;
@@ -373,9 +373,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
-    createRev(db, "obsolete"_sl, kRevID, kFleeceBody);
-    createRev(db, "fresh"_sl, kRevID, kFleeceBody);
-    createRev(db, "permanent"_sl, kRevID, kFleeceBody);
+    createRev(db, "obsolete"_sl,  kNonLocalRev1ID, kFleeceBody);
+    createRev(db, "fresh"_sl,     kNonLocalRev1ID, kFleeceBody);
+    createRev(db, "permanent"_sl, kNonLocalRev1ID, kFleeceBody);
 
     REQUIRE(c4doc_setExpiration(db, "obsolete"_sl, c4_now() - 1, nullptr));
     REQUIRE(c4doc_setExpiration(db, "fresh"_sl, c4_now() + 100000, nullptr));
@@ -392,11 +392,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
 
     doc = c4doc_get(db2, "fresh"_sl, true, &error);
     REQUIRE(doc);
-    CHECK(doc->revID == kRevID);
+    CHECK(doc->revID == kNonLocalRev1ID);
 
     doc = c4doc_get(db2, "permanent"_sl, true, &error);
     REQUIRE(doc);
-    CHECK(doc->revID == kRevID);
+    CHECK(doc->revID == kNonLocalRev1ID);
 }
 
 
@@ -511,6 +511,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
     // For #436
+    if (!isRevTrees())
+        return;
+
     createRev("doc"_sl, kRevID, kFleeceBody);
     _expectedDocumentCount = 1;
 
@@ -534,6 +537,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
+    // For #436
+    if (!isRevTrees())
+        return;
+
     createRev("doc"_sl, kRevID, kFleeceBody);
     _expectedDocumentCount = 1;
 
@@ -563,8 +570,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][Continuous]") {
-    createRev(db, "doc1"_sl, "1-11"_sl, kFleeceBody);
-    createRev(db, "doc2"_sl, "1-aa"_sl, kFleeceBody);
+    createRev(db, "doc1"_sl, kRev1ID, kFleeceBody);
+    createRev(db, "doc2"_sl, kRev1ID_Alt, kFleeceBody);
     _expectedDocumentCount = 2;
 
     stopWhenIdle();
@@ -574,8 +581,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][C
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][Continuous]") {
-    createRev(db, "doc1"_sl, "1-11"_sl, kFleeceBody);
-    createRev(db, "doc2"_sl, "1-aa"_sl, kFleeceBody);
+    createRev(db, "doc1"_sl, kRev1ID, kFleeceBody);
+    createRev(db, "doc2"_sl, kRev1ID_Alt, kFleeceBody);
     _expectedDocumentCount = 2;
 
     stopWhenIdle();
@@ -598,12 +605,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Emp
 //        serverOpts.setNoIncomingConflicts();
 //    }
     SECTION("Pre-existing docs") {
-        createRev(db, "doc1"_sl, "1-11"_sl, kFleeceBody);
-        createRev(db, "doc2"_sl, "1-aa"_sl, kFleeceBody);
+        createRev(db, "doc1"_sl, kRev1ID, kFleeceBody);
+        createRev(db, "doc2"_sl, kRev1ID, kFleeceBody);
         _expectedDocumentCount = 2;
         runPushReplication();
         C4Log("-------- Finished pre-existing push --------");
-        createRev(db2, "other1"_sl, "1-11"_sl, kFleeceBody);
+        createRev(db2, "other1"_sl, kRev1ID, kFleeceBody);
     }
     addRevsInParallel(chrono::milliseconds(1000), alloc_slice("docko"), 1, 3);
     _expectedDocumentCount = 3; // only 1 doc, but we get notified about it 3 times...
@@ -633,52 +640,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continu
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][Continuous]") {
     alloc_slice docID("dock");
-    createRev(db, docID, "1-aaaa"_sl, kFleeceBody);
+    createRev(db, docID, kRev1ID, kFleeceBody);
     _expectedDocumentCount = -1;
     addRevsInParallel(chrono::milliseconds(10), docID, 2, 200);
     runPushReplication(kC4Continuous);
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":201}");
-}
-
-
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Push][Continuous]") {
-    // NOTE: Despite the name, both sides are not active. Client pushes & pulls, server is passive.
-    alloc_slice docID("doc");
-    auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous)
-                        .setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
-    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
-    installConflictHandler();
-
-    static const int intervalMs = -500;     // random interval
-    static const int iterations = 30;
-
-    atomic_int completed {0};
-    unique_ptr<thread> thread1( runInParallel([&]() {
-        addRevs(db, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
-        if (++completed == 2) {
-            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
-            stopWhenIdle();
-        }
-    }));
-    unique_ptr<thread> thread2( runInParallel([&]() {
-        addRevs(db2, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
-        if (++completed == 2) {
-            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
-            stopWhenIdle();
-        }
-    }));
-    
-    _expectedDocumentCount = -1;
-    _expectedDocPushErrors = {"doc"};
-    _ignoreTransientErrors = true;      // (retries will show up as transient errors)
-    _checkDocsFinished = false;
-
-    runReplicators(clientOpts, serverOpts);
-    thread1->join();
-    thread2->join();
-
-    compareDatabases();
 }
 
 
@@ -929,7 +896,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict]") {
-    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
+    createFleeceRev(db,  C4STR("conflict"), kNonLocalRev1ID, C4STR("{}"));
     _expectedDocumentCount = 1;
     
     // Push db to db2, so both will have the doc:
@@ -937,20 +904,20 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     // Update the doc differently in each db:
-    createFleeceRev(db,  C4STR("conflict"), C4STR("2-2a2a2a2a"), C4STR("{\"db\":1}"));
-    createFleeceRev(db2, C4STR("conflict"), C4STR("2-2b2b2b2b"), C4STR("{\"db\":2}"));
+    createFleeceRev(db,  C4STR("conflict"), kConflictRev2AID, C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("conflict"), kConflictRev2BID, C4STR("{\"db\":2}"));
 
-    // Verify that rev 1 body is still available, for later use in conflict resolution:
-    c4::ref<C4Document> doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
-    REQUIRE(doc);
-	C4Slice revID = C4STR("2-2a2a2a2a");
-    CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getProperties(doc) != nullptr);
-    REQUIRE(c4doc_selectParentRevision(doc));
-	revID = C4STR("1-11111111");
-    CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getProperties(doc) != nullptr);
-    CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+    if (isRevTrees()) {
+        // Verify that rev 1 body is still available, for later use in conflict resolution:
+        c4::ref<C4Document> doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
+        REQUIRE(doc);
+        CHECK(doc->selectedRev.revID == kConflictRev2AID);
+        CHECK(c4doc_getProperties(doc) != nullptr);
+        REQUIRE(c4doc_selectParentRevision(doc));
+        CHECK(doc->selectedRev.revID == kRev1ID);
+        CHECK(c4doc_getProperties(doc) != nullptr);
+        CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+    }
 
     // Now pull to db from db2, creating a conflict:
     C4Log("-------- Pull db <- db2 --------");
@@ -958,33 +925,33 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
     validateCheckpoints(db, db2, "{\"local\":1,\"remote\":2}");
 
-    doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
+    c4::ref<C4Document> doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
-	revID = C4STR("2-2a2a2a2a");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK(doc->selectedRev.revID == kConflictRev2AID);
     CHECK(c4doc_getProperties(doc) != nullptr);
-    REQUIRE(c4doc_selectParentRevision(doc));
-	revID = C4STR("1-11111111");
-    CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_getProperties(doc) != nullptr);
-    CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+    if (isRevTrees()) {
+        REQUIRE(c4doc_selectParentRevision(doc));
+        CHECK(doc->selectedRev.revID == kRev1ID);
+        CHECK(c4doc_getProperties(doc) != nullptr);
+        CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+    }
     REQUIRE(c4doc_selectCurrentRevision(doc));
     REQUIRE(c4doc_selectNextRevision(doc));
-	revID = C4STR("2-2b2b2b2b");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK(doc->selectedRev.revID == kConflictRev2BID);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     CHECK(c4doc_getProperties(doc) != nullptr);
-    REQUIRE(c4doc_selectParentRevision(doc));
-	revID = C4STR("1-11111111");
-    CHECK(doc->selectedRev.revID == revID);
+    if (isRevTrees()) {
+        REQUIRE(c4doc_selectParentRevision(doc));
+        CHECK(doc->selectedRev.revID == kRev1ID);
+    }
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict", "[Push][Conflict][NoConflicts]") {
     // In the default no-outgoing-conflicts mode, make sure a local conflict isn't pushed to server:
     auto serverOpts = Replicator::Options::passive();
-    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
+    createFleeceRev(db,  C4STR("conflict"), kNonLocalRev1ID, C4STR("{}"));
     _expectedDocumentCount = 1;
 
     // Push db to db2, so both will have the doc:
@@ -992,8 +959,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict", "[Push][Conflict][NoCo
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     // Update the doc differently in each db:
-    createFleeceRev(db,  C4STR("conflict"), C4STR("2-2a2a2a2a"), C4STR("{\"db\":1}"));
-    createFleeceRev(db2, C4STR("conflict"), C4STR("2-2b2b2b2b"), C4STR("{\"db\":2}"));
+    createFleeceRev(db,  C4STR("conflict"), kConflictRev2AID, C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("conflict"), kConflictRev2BID, C4STR("{\"db\":2}"));
     REQUIRE(c4db_getLastSequence(db2) == 2);
 
     // Push db to db2 again:
@@ -1010,7 +977,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict", "[Push][Conflict][NoCo
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "[Push][Conflict][NoConflicts]") {
     // Put server in no-conflicts mode and verify that a conflict can't be pushed to it.
     auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
-    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
+    createFleeceRev(db,  C4STR("conflict"), kNonLocalRev1ID, C4STR("{}"));
     _expectedDocumentCount = 1;
 
     // Push db to db2, so both will have the doc:
@@ -1018,8 +985,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     // Update the doc differently in each db:
-    createFleeceRev(db,  C4STR("conflict"), C4STR("2-2a2a2a2a"), C4STR("{\"db\":1}"));
-    createFleeceRev(db2, C4STR("conflict"), C4STR("2-2b2b2b2b"), C4STR("{\"db\":2}"));
+    createFleeceRev(db,  C4STR("conflict"), kConflictRev2AID, C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("conflict"), kConflictRev2BID, C4STR("{\"db\":2}"));
     REQUIRE(c4db_getLastSequence(db2) == 2);
 
     // Push db to db2 again:
@@ -1034,10 +1001,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict OutgoingConflicts", "[Push][Conflict][NoConflicts]") {
+    // this test doesn't work with version vectors, because a passive replicator can't add a conflict
+    if (!isRevTrees())
+        return;
+
     // Enable outgoing conflicts; verify that a conflict gets pushed to the server.
     auto pushOpts = Replicator::Options::pushing().setProperty(slice(kC4ReplicatorOptionOutgoingConflicts), true);
     auto serverOpts = Replicator::Options::passive();
-    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
+    createFleeceRev(db,  C4STR("conflict"), kNonLocalRev1ID, C4STR("{}"));
     _expectedDocumentCount = 1;
 
     // Push db to db2, so both will have the doc:
@@ -1045,8 +1016,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict OutgoingConflicts", "[Pu
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     // Update the doc differently in each db:
-    createFleeceRev(db,  C4STR("conflict"), C4STR("2-2a2a2a2a"), C4STR("{\"db\":1}"));
-    createFleeceRev(db2, C4STR("conflict"), C4STR("2-2b2b2b2b"), C4STR("{\"db\":2}"));
+    createFleeceRev(db,  C4STR("conflict"), kConflictRev2AID, C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("conflict"), kConflictRev2BID, C4STR("{\"db\":2}"));
     REQUIRE(c4db_getLastSequence(db2) == 2);
 
     // Push db to db2 again:
@@ -1059,15 +1030,19 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict OutgoingConflicts", "[Pu
     CHECK((doc->flags & kDocConflicted) != 0);
 	C4Slice revID = C4STR("2-2b2b2b2b");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_selectRevision(doc, C4STR("2-2a2a2a2a"), true, nullptr));
+    CHECK(c4doc_selectRevision(doc, kConflictRev2AID, true, nullptr));
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][Push][Conflict][NoConflicts]") {
+    static constexpr slice kTreeRevs[7] = {"", "1-1111", "2-2222", "3-3333", "4-4444", "5-5555", "6-6666"};
+    static constexpr slice kVersions[7] = {"", "1@*", "2@*", "1@*", "2@*", "3@*", "4@*"};
+    const slice* kRevIDs = isRevTrees() ? kTreeRevs : kVersions;
+
     auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
 
-    createRev(kDocID, kRevID, kFleeceBody);
-    createRev(kDocID, kRev2ID, kFleeceBody);
+    createRev(kDocID, kRevIDs[1], kFleeceBody);
+    createRev(kDocID, kRevIDs[2], kFleeceBody);
     _expectedDocumentCount = 1;
 
     Log("-------- First Replication db->db2 --------");
@@ -1085,8 +1060,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
         enc.writeInt(666);
         enc.endDict();
         body = enc.finish();
-        createRev(db2, kDocID, kRev3ID, body);
-        createRev(db2, kDocID, "4-4444"_sl, body);
+        createNewRev(db2, kDocID, body);
+        createNewRev(db2, kDocID, body);
         _expectedDocumentCount = 1;
     }
 
@@ -1098,8 +1073,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
     compareDatabases();
 
     Log("-------- Update Doc Again --------");
-    createRev(db2, kDocID, "5-5555"_sl, body);
-    createRev(db2, kDocID, "6-6666"_sl, body);
+    createNewRev(db2, kDocID, body);
+    createNewRev(db2, kDocID, body);
     _expectedDocumentCount = 1;
 
     Log("-------- Third Replication db2->db --------");
@@ -1117,8 +1092,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
     // Pusher will fail with a 409 because the remote rev is too old.
     // When the puller sees the server has 3-deadbeef and updates the remote-rev, the puller
     // can retry and this time succeed.
-    static constexpr slice kRev4ID = "4-baba"_sl;
-
     auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
 
     createRev(kDocID, kRevID, kFleeceBody);
@@ -1129,10 +1102,17 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
     runReplicators(Replicator::Options::pushpull(), serverOpts);
 
     Log("-------- Update Doc --------");
-    createRev(db, kDocID, kRev3ID, kFleeceBody);
-    createRev(db, kDocID, kRev4ID, kFleeceBody);
+    if (isRevTrees()) {
+        createRev(db, kDocID, kRev3ID, kFleeceBody);
+        createRev(db, kDocID, "4-baba"_sl, kFleeceBody);
 
-    createRev(db2, kDocID, kRev3ID, kFleeceBody);
+        createRev(db2, kDocID, kRev3ID, kFleeceBody);
+    } else {
+        createRev(db, kDocID, "1@d00d"_sl, kFleeceBody);
+        createRev(db, kDocID, "3@*"_sl, kFleeceBody);
+
+        createRev(db2, kDocID, "1@d00d"_sl, kFleeceBody);
+    }
 
     Log("-------- Second Replication db<->db2 --------");
     runReplicators(Replicator::Options::pushpull(), serverOpts);
@@ -1162,7 +1142,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push]
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]") {
     C4Slice docID = C4STR("Khan");
 
-    createFleeceRev(db,  docID, C4STR("1-11111111"), C4STR("{}"));
+    createFleeceRev(db,  docID, kRev1ID, C4STR("{}"));
     _expectedDocumentCount = 1;
 
     // Push db to db2, so both will have the doc:
@@ -1214,16 +1194,15 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conflict]") {
     C4Slice docID = C4STR("Khan");
 
-	C4Slice revID =  C4STR("1-11111111");
-    createFleeceRev(db,  docID, revID, C4STR("{}"));
+    createFleeceRev(db,  docID, kRev1ID, C4STR("{}"));
     _expectedDocumentCount = 1;
 
     // Push db to db2, so both will have the doc:
     runPushReplication();
 
     // Delete doc in db, update it in db2
-    createFleeceRev(db,  docID, C4STR("2-dddddddd"), C4STR("{}"), kRevDeleted);
-    createFleeceRev(db2, docID, C4STR("2-88888888"), C4STR("{\"db\":1}"));
+    createFleeceRev(db,  docID, kConflictRev2AID, C4STR("{}"), kRevDeleted);
+    createFleeceRev(db2, docID, kConflictRev2BID, C4STR("{\"db\":1}"));
 
     // Now pull to db from db2, creating a conflict:
     C4Log("-------- Pull db <- db2 --------");
@@ -1232,12 +1211,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
 
     c4::ref<C4Document> doc = c4doc_get(db, docID, true, nullptr);
     REQUIRE(doc);
-	revID = C4STR("2-dddddddd");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK(doc->selectedRev.revID == kConflictRev2AID);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-	revID = C4STR("2-88888888");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK(doc->selectedRev.revID == kConflictRev2BID);
     CHECK(c4doc_getProperties(doc) != nullptr);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
 
@@ -1246,17 +1223,21 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
         c4::Transaction t(db);
         REQUIRE(t.begin(nullptr));
         C4Error error;
-        CHECK(c4doc_resolveConflict(doc, C4STR("2-88888888"), C4STR("2-dddddddd"),
+        CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID,
                                     kC4SliceNull, kRevDeleted, &error));
         CHECK(c4doc_save(doc, 0, &error));
         REQUIRE(t.commit(nullptr));
     }
 
     doc = c4doc_get(db, docID, true, nullptr);
-    CHECK(doc->revID == revID);
+    alloc_slice mergedID(c4doc_getRevisionHistory(doc, 0));
+    if (isRevTrees())
+        CHECK(mergedID == kConflictRev2BID);
+    else
+        CHECK(mergedID == "2@*,1@babe1,1@babe2"_sl);
 
     // Update the doc and push it to db2:
-    createRev(db, docID, "3-cafebabe"_sl, kFleeceBody);
+    createNewRev(db, docID, kFleeceBody);
     runPushReplication();
 
     compareDatabases();
@@ -1264,6 +1245,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull][Conflict]") {
+    if (!isRevTrees())
+        return;     // this does not make sense with version vectors
+    
     // For https://github.com/couchbase/sync_gateway/issues/3359
     C4Slice docID = C4STR("Khan");
 
@@ -1352,6 +1336,47 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Push][Continuous][Conflict]") {
+    // NOTE: Despite the name, both sides are not active. Client pushes & pulls, server is passive.
+    //       But both sides are rapidly changing the single document.
+    alloc_slice docID("doc");
+    auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous)
+    .setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    installConflictHandler();
+
+    static const int intervalMs = -500;     // random interval
+    static const int iterations = 30;
+
+    atomic_int completed {0};
+    unique_ptr<thread> thread1( runInParallel([&]() {
+        addRevs(db, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
+        if (++completed == 2) {
+            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            stopWhenIdle();
+        }
+    }));
+    unique_ptr<thread> thread2( runInParallel([&]() {
+        addRevs(db2, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
+        if (++completed == 2) {
+            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            stopWhenIdle();
+        }
+    }));
+
+    _expectedDocumentCount = -1;
+    _expectedDocPushErrors = {"doc"};
+    _ignoreTransientErrors = true;      // (retries will show up as transient errors)
+    _checkDocsFinished = false;
+
+    runReplicators(clientOpts, serverOpts);
+    thread1->join();
+    thread2->join();
+
+    compareDatabases();
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
@@ -1375,21 +1400,21 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflict]") {
-    createFleeceRev(db, C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
-    createFleeceRev(db, C4STR("non-conflict"), C4STR("1-22222222"), C4STR("{}"));
-    createFleeceRev(db, C4STR("db-deleted"), C4STR("1-33333333"), C4STR("{}"));
-    createFleeceRev(db, C4STR("db2-deleted"), C4STR("1-44444444"), C4STR("{}"));
+    createFleeceRev(db, C4STR("conflict"), kRev1ID, C4STR("{}"));
+    createFleeceRev(db, C4STR("non-conflict"), kRev1ID_Alt, C4STR("{}"));
+    createFleeceRev(db, C4STR("db-deleted"), kRev1ID, C4STR("{}"));
+    createFleeceRev(db, C4STR("db2-deleted"), kRev1ID, C4STR("{}"));
     _expectedDocumentCount = 4;
     
     // Push db to db2, so both will have docs:
     runPushReplication();
     
     // Update the docs differently in each db:
-    createFleeceRev(db, C4STR("conflict"), C4STR("2-12121212"), C4STR("{\"db\": 1}"));
-    createFleeceRev(db2, C4STR("conflict"), C4STR("2-13131313"), C4STR("{\"db\": 2}"));
-    createFleeceRev(db, C4STR("db-deleted"), C4STR("2-32323232"), C4STR("{\"db\":2}"), kRevDeleted);
-    createFleeceRev(db2, C4STR("db-deleted"), C4STR("2-31313131"), C4STR("{\"db\": 1}"));
-    createFleeceRev(db, C4STR("db2-deleted"), C4STR("2-41414141"), C4STR("{\"db\": 1}"));
+    createFleeceRev(db,  C4STR("conflict"),    C4STR("2-12121212"), C4STR("{\"db\": 1}"));
+    createFleeceRev(db2, C4STR("conflict"),    C4STR("2-13131313"), C4STR("{\"db\": 2}"));
+    createFleeceRev(db,  C4STR("db-deleted"),  C4STR("2-32323232"), C4STR("{\"db\":2}"), kRevDeleted);
+    createFleeceRev(db2, C4STR("db-deleted"),  C4STR("2-31313131"), C4STR("{\"db\": 1}"));
+    createFleeceRev(db,  C4STR("db2-deleted"), C4STR("2-41414141"), C4STR("{\"db\": 1}"));
     createFleeceRev(db2, C4STR("db2-deleted"), C4STR("2-42424242"), C4STR("{\"db\":2}"), kRevDeleted);
     
     // Now pull to db from db2, creating conflicts:
@@ -1772,8 +1797,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull replication checkpoint mismatch",
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revision", "[Pull][Conflict]") {
     // CBL-1174
-    createFleeceRev(db,  C4STR("doc1"), C4STR("1-11111111"), C4STR("{}"));
-    createFleeceRev(db,  C4STR("doc2"), C4STR("1-22222222"), C4STR("{}"));
+    createFleeceRev(db,  C4STR("doc1"), kRev1ID, C4STR("{}"));
+    createFleeceRev(db,  C4STR("doc2"), kRev1ID_Alt, C4STR("{}"));
     _expectedDocumentCount = 2;
     runPushReplication();
     validateCheckpoints(db, db2, "{\"local\":2}");

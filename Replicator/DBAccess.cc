@@ -47,6 +47,7 @@ namespace litecore { namespace repl {
                        bind(&DBAccess::markRevsSyncedLater, this),
                        tuning::kInsertionDelay)
     ,_timer(bind(&DBAccess::markRevsSyncedNow, this))
+    ,_usingVersionVectors((c4db_getConfig2(db)->flags & kC4DB_VersionVectors) != 0)
     {
         c4db_retain(db);
         // Copy database's sharedKeys:
@@ -82,6 +83,21 @@ namespace litecore { namespace repl {
                 c4db_release(idb);
             });
         }
+    }
+
+
+    string DBAccess::convertVersionToAbsolute(slice revID) {
+        string version(revID);
+        if (_usingVersionVectors) {
+            if (_myPeerID.empty()) {
+                use([&](C4Database *c4db) {
+                    if (_myPeerID.empty())
+                        _myPeerID = string(alloc_slice(c4db_getPeerID(c4db)));
+                });
+            }
+            replace(version, "*", _myPeerID);
+        }
+        return version;
     }
 
 
@@ -124,14 +140,11 @@ namespace litecore { namespace repl {
         bool ok = use<bool>([&](C4Database *db) {
             c4::Transaction t(db);
             c4::ref<C4Document> doc = c4doc_get(db, docID, true, &error);
-            if(!doc || !c4doc_selectRevision(doc, revID, false, &error))
-                return false;
-            
-            
-            return t.begin(&error)
-                   && c4doc_setRemoteAncestor(doc, _remoteDBID, &error)
-                   && c4doc_save(doc, 0, &error)
-                   && t.commit(&error);
+            return doc
+                && t.begin(&error)
+                && c4doc_setRemoteAncestor(doc, _remoteDBID, revID, &error)
+                && c4doc_save(doc, 0, &error)
+                && t.commit(&error);
         });
 
         if (!ok) {
@@ -139,7 +152,7 @@ namespace litecore { namespace repl {
                  _remoteDBID, SPLAT(docID), SPLAT(revID), error.domain, error.code);
         }
     }
-    
+
     C4DocEnumerator* DBAccess::unresolvedDocsEnumerator(bool orderByID, C4Error *outError) {
         C4DocEnumerator* e;
         use([&](C4Database *db) {

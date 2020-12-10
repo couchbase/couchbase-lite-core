@@ -99,8 +99,18 @@ namespace litecore { namespace repl {
             return;
         }
 
-        if (!_rev->historyBuf && c4rev_getGeneration(_rev->revID) > 1)
-            warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
+        if (_db->usingVersionVectors()) {
+            // Incoming version IDs must be in absolute form (no '*')
+            if (_rev->revID.findByte('*') || _rev->revID.findByte(',')
+                    || !_rev->revID.findByte('@')) {
+                warn("Invalid version ID in 'rev': '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
+                failWithError(WebSocketDomain, 400, "received invalid version ID"_sl);
+                return;
+            }
+        } else {
+            if (!_rev->historyBuf && c4rev_getGeneration(_rev->revID) > 1) 
+                warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
+        }
 
         auto jsonBody = _revMessage->extractBody();
         if (_revMessage->noReply())

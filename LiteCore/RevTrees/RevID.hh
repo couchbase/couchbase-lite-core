@@ -42,26 +42,29 @@ namespace litecore {
           (The leading zero is to distinguish it from the digest form.)
         The version form is also represented by the `Version` class.
 
-        A revid in version form can store an entire version vector, since that format just consists of
-        multiple binary versions concatenated. The `revid` API only gives information about the first
-        (current) version in the vector, except for the `asVersionVector` method.
-     */
+        PLEASE NOTE: A revid in version form can store an entire version vector, since that format just
+        consists of multiple binary versions concatenated. HOWEVER, the `revid` API only gives information
+        about the first (current) version in the vector, except for the `asVersionVector` method. */
     class revid : public slice {
     public:
         revid()                                     :slice() {}
         revid(const void* b, size_t s)              :slice(b,s) {}
         explicit revid(slice s)                     :slice(s) {}
 
+        bool operator< (const revid&) const;
+        bool operator> (const revid &r) const       {return r < *this;}
+
+        /// Returns true for version-vector style (gen@peer), false for rev-tree style (gen-digest).
+        bool isVersion() const                      {return size > 0 && (*this)[0] == 0;}
+
+        //---- Tree revision IDs only
         std::pair<unsigned,slice> generationAndDigest() const;
         unsigned generation() const;
         slice digest() const                        {return generationAndDigest().second;}
 
-        bool isVersion() const                      {return size > 0 && (*this)[0] == 0;}
+        //---- Version IDs only
         Version asVersion() const;
         VersionVector asVersionVector() const;
-
-        bool operator< (const revid&) const;
-        bool operator> (const revid &r) const       {return r < *this;}
 
         //---- ASCII conversions:
         alloc_slice expanded() const;
@@ -70,7 +73,11 @@ namespace litecore {
         explicit operator std::string() const       {return str();}
     };
 
-    /** A self-contained revid that includes its own data buffer. */
+    /** A self-contained revid that includes its own data buffer.
+
+        PLEASE NOTE: the `parse` and `tryParse` methods can parse a single version, but not an entire
+        VersionVector -- they will barf at the first comma. This is intentional. A `revidBuffer` is fixed-
+        size and can't hold an arbitrarily long version vector. */
     class revidBuffer : public revid {
     public:
         revidBuffer()                               :revid(&_buffer, 0) {}

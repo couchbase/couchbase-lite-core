@@ -137,6 +137,10 @@ namespace litecore {
             form, with no "*" allowed. myPeerID in the string will be changed to kMePeerID (0). */
         void readASCII(slice asciiString, peerID myPeerID =kMePeerID);
 
+        void readHistory(const slice history[],
+                         size_t historyCount,
+                         peerID myPeerID =kMePeerID);
+
         /** Reads binary form. */
         void readBinary(slice binaryData);
 
@@ -164,6 +168,14 @@ namespace litecore {
 
         /** Truncates the vector to the maximum count `maxCount`. */
         void limitCount(size_t maxCount);
+
+        /** Adds a version to the front of the vector.
+            Any earlier version by the same author is removed.
+            If there's an equal or newer version by the same author, the call fails and returns false. */
+        bool add(Version);
+
+        /** Adds a Version at the _end_ of the vector (the oldest position.) */
+        void push_back(const Version&);
 
         /** Returns a new vector representing a merge of this vector and the argument.
             All the authors in both are present, with the larger of the two generations. */
@@ -210,8 +222,12 @@ namespace litecore {
         bool operator >= (const Version& v) const           {return compareTo(v) != kOlder;}
 
     private:
+#if DEBUG
+        void validate() const;
+#else
+        void validate() const                               { }
+#endif
         std::vector<Version>::iterator findPeerIter(peerID);
-        void append(const Version&);
 
         std::vector<Version> _vers;          // versions, in order
     };

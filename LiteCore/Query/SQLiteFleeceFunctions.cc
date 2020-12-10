@@ -476,18 +476,21 @@ namespace litecore {
 #pragma mark - REVISION HISTORY:
 
 
-    // fl_callback(docID, body, sequence, callback) -> string
+    // fl_callback(docID, revID, body, extra, sequence, callback) -> string
     static void fl_callback(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        slice docID = valueAsSlice(argv[0]);
-        slice body = valueAsSlice(argv[1]);
-        sequence_t sequence = sqlite3_value_int(argv[2]);
-        auto callback = (KeyStore::WithDocBodyCallback*)sqlite3_value_pointer(argv[3], kWithDocBodiesCallbackPointerType);
-        if (!callback || !docID) {
+        RecordLite rec;
+        rec.key = valueAsSlice(argv[0]);
+        rec.version = valueAsSlice(argv[1]);
+        rec.body = valueAsSlice(argv[2]);
+        rec.extra = valueAsSlice(argv[3]);
+        rec.sequence = sqlite3_value_int(argv[4]);
+        auto callback = sqlite3_value_pointer(argv[5], kWithDocBodiesCallbackPointerType);
+        if (!callback || !rec.key) {
             sqlite3_result_error(ctx, "Missing or invalid callback", -1);
             return;
         }
         try {
-            alloc_slice result = (*callback)(docID, body, sequence);
+            alloc_slice result = (*(KeyStore::WithDocBodyCallback*)callback)(rec);
             setResultTextFromSlice(ctx, result);
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_callback: exception!", -1);
@@ -513,7 +516,7 @@ namespace litecore {
         { "fl_bool",           1, fl_bool },
         { "array_of",         -1, array_of },
         { "dict_of",          -1, dict_of },
-        { "fl_callback",       4, fl_callback },
+        { "fl_callback",       6, fl_callback },
         { }
     };
 

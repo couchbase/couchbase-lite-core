@@ -571,7 +571,7 @@ namespace c4Internal {
     void Database::_cleanupTransaction(bool committed) {
         if (_sequenceTracker) {
             _sequenceTracker->use([&](SequenceTracker &st) {
-                if (committed) {
+                if (committed && st.changedDuringTransaction()) {
                     // Notify other Database instances on this file:
                     _transaction->notifyCommitted(st);
                 }

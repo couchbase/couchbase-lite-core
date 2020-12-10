@@ -29,13 +29,18 @@
 namespace litecore {
     class KeyStore;
     class Transaction;
+    class Version;
+    class VersionVector;
 
 
     /// Metadata and properties of a document revision.
     struct Revision {
         fleece::Dict  properties;
-        revid         revID;
+        revid         revID;    // In a version vector db, this is the entire VersionVector
         DocumentFlags flags;
+
+        Version version() const;
+        VersionVector versionVector() const;
 
         bool isDeleted() const FLPURE      {return (flags & DocumentFlags::kDeleted) != 0;}
         bool isConflicted() const FLPURE   {return (flags & DocumentFlags::kConflicted) != 0;}
@@ -177,6 +182,9 @@ namespace litecore {
 
         /// Returns the next RemoteID for which a revision is stored.
         RemoteID nextRemoteID(RemoteID) const;
+
+        /// Given only a record, find all the revision IDs and pass them to the callback.
+        static void forAllRevIDs(const RecordLite&, function_ref<void(revid,RemoteID)>);
 
         //---- For testing:
 
