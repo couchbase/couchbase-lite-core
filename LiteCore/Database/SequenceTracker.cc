@@ -125,29 +125,28 @@ namespace litecore {
 
 
     bool SequenceTracker::changedDuringTransaction() const {
-        return inTransaction() && _lastSequence > _preTransactionLastSequence;
+        Assert(inTransaction());
+        if (_lastSequence > _preTransactionLastSequence)
+            return true;
+        for (auto entry = next(_transaction->_placeholder); entry != _changes.end(); ++entry)
+            if (!entry->isPlaceholder())
+                return true;
+        return false;
     }
 
 
     void SequenceTracker::endTransaction(bool commit) {
         Assert(inTransaction());
 
-        bool housekeeping = true;
-        if (_lastSequence == _preTransactionLastSequence) {
-            logInfo("%s: no changes were made", (commit ? "commit" : "abort"));
-#if DEBUG
-            for (auto entry = next(_transaction->_placeholder); entry != _changes.end(); ++entry)
-                Assert(entry->isPlaceholder());
-#endif
-            housekeeping = false;
-
-        } else if (commit) {
+        bool housekeeping = false;
+        if (commit) {
             logInfo("commit: sequences #%" PRIu64 " -- #%" PRIu64,
                     _preTransactionLastSequence + 1, _lastSequence);
             // Bump their committedSequences:
             for (auto entry = next(_transaction->_placeholder); entry != _changes.end(); ++entry) {
                 if (!entry->isPlaceholder()) {
                     const_cast<Entry&>(*entry).committedSequence = entry->sequence;
+                    housekeeping = true;
                 }
             }
 
@@ -168,6 +167,7 @@ namespace litecore {
                                      entry->committedSequence, entry->flags);
                 }
             } while (entry != lastEntry);
+            housekeeping = true;
         }
 
         _transaction.reset();

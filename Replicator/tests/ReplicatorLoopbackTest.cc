@@ -1094,8 +1094,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
     // can retry and this time succeed.
     auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
 
-    createRev(kDocID, kRevID, kFleeceBody);
-    createRev(kDocID, kRev2ID, kFleeceBody);
+    createRev(kDocID, kNonLocalRev1ID, kFleeceBody);
+    createRev(kDocID, kNonLocalRev2ID, kFleeceBody);
     _expectedDocumentCount = 1;
 
     Log("-------- First Replication db<->db2 --------");
@@ -1109,7 +1109,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pul
         createRev(db2, kDocID, kRev3ID, kFleeceBody);
     } else {
         createRev(db, kDocID, "1@d00d"_sl, kFleeceBody);
-        createRev(db, kDocID, "3@*"_sl, kFleeceBody);
+        createRev(db, kDocID, "1@*"_sl, kFleeceBody);
 
         createRev(db2, kDocID, "1@d00d"_sl, kFleeceBody);
     }
@@ -1139,7 +1139,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push]
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][Conflict]") {
     C4Slice docID = C4STR("Khan");
 
     createFleeceRev(db,  docID, kRev1ID, C4STR("{}"));
@@ -1149,8 +1149,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
     runPushReplication();
 
     // Update doc in db, delete it in db2
-    createFleeceRev(db,  docID, C4STR("2-88888888"), C4STR("{\"db\":1}"));
-    createFleeceRev(db2, docID, C4STR("2-dddddddd"), C4STR("{}"), kRevDeleted);
+    createFleeceRev(db,  docID, kConflictRev2AID, C4STR("{\"db\":1}"));
+    createFleeceRev(db2, docID, kConflictRev2BID, C4STR("{}"), kRevDeleted);
 
     // Now pull to db from db2, creating a conflict:
     C4Log("-------- Pull db <- db2 --------");
@@ -1159,12 +1159,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
 
     c4::ref<C4Document> doc = c4doc_get(db, docID, true, nullptr);
     REQUIRE(doc);
-	C4Slice revID = C4STR("2-88888888");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK(doc->selectedRev.revID == kConflictRev2AID);
     CHECK(c4doc_getProperties(doc) != nullptr);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-	revID = C4STR("2-dddddddd");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK(doc->selectedRev.revID == kConflictRev2BID);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
 
@@ -1173,18 +1171,17 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
         c4::Transaction t(db);
         REQUIRE(t.begin(nullptr));
         C4Error error;
-        CHECK(c4doc_resolveConflict(doc, C4STR("2-dddddddd"), C4STR("2-88888888"),
+        CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID,
                                     kC4SliceNull, kRevDeleted, &error));
         CHECK(c4doc_save(doc, 0, &error));
         REQUIRE(t.commit(nullptr));
     }
     
     doc = c4doc_get(db, docID, true, nullptr);
-	revID = C4STR("2-dddddddd");
-    CHECK(doc->revID == revID);
+    CHECK(doc->revID == revOrVersID(kConflictRev2BID, "2@*"));
 
     // Update the doc and push it to db2:
-    createRev(db, docID, "3-cafebabe"_sl, kFleeceBody);
+    createNewRev(db, docID, kFleeceBody);
     runPushReplication();
 
     compareDatabases();
@@ -1410,12 +1407,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     runPushReplication();
     
     // Update the docs differently in each db:
-    createFleeceRev(db,  C4STR("conflict"),    C4STR("2-12121212"), C4STR("{\"db\": 1}"));
-    createFleeceRev(db2, C4STR("conflict"),    C4STR("2-13131313"), C4STR("{\"db\": 2}"));
-    createFleeceRev(db,  C4STR("db-deleted"),  C4STR("2-32323232"), C4STR("{\"db\":2}"), kRevDeleted);
-    createFleeceRev(db2, C4STR("db-deleted"),  C4STR("2-31313131"), C4STR("{\"db\": 1}"));
-    createFleeceRev(db,  C4STR("db2-deleted"), C4STR("2-41414141"), C4STR("{\"db\": 1}"));
-    createFleeceRev(db2, C4STR("db2-deleted"), C4STR("2-42424242"), C4STR("{\"db\":2}"), kRevDeleted);
+    createFleeceRev(db,  C4STR("conflict"),    revOrVersID("2-12121212", "1@cafe"), C4STR("{\"db\": 1}"));
+    createFleeceRev(db2, C4STR("conflict"),    revOrVersID("2-13131313", "1@babe"), C4STR("{\"db\": 2}"));
+    createFleeceRev(db,  C4STR("db-deleted"),  revOrVersID("2-32323232", "1@cafe"), C4STR("{\"db\":2}"), kRevDeleted);
+    createFleeceRev(db2, C4STR("db-deleted"),  revOrVersID("2-31313131", "1@babe"), C4STR("{\"db\": 1}"));
+    createFleeceRev(db,  C4STR("db2-deleted"), revOrVersID("2-41414141", "1@cafe"), C4STR("{\"db\": 1}"));
+    createFleeceRev(db2, C4STR("db2-deleted"), revOrVersID("2-42424242", "1@babe"), C4STR("{\"db\":2}"), kRevDeleted);
     
     // Now pull to db from db2, creating conflicts:
     C4Log("-------- Pull db <- db2 --------");
@@ -1429,9 +1426,13 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     C4DocEnumerator* e = acc->unresolvedDocsEnumerator(true, &err);
     
     // verify only returns the conflicted documents, including the deleted ones.
-    vector<C4Slice> docIDs = {"conflict"_sl,   "db-deleted"_sl, "db2-deleted"_sl};
-    vector<C4Slice> revIDs = {"2-12121212"_sl, "2-32323232"_sl, "2-41414141"_sl};
-    vector<bool> deleteds =  {false,           true,            false};
+    vector<C4Slice> docIDs = {"conflict"_sl,
+                              "db-deleted"_sl,
+                              "db2-deleted"_sl};
+    vector<C4Slice> revIDs = {revOrVersID("2-12121212", "1@cafe"),
+                              revOrVersID("2-12121212", "1@cafe"),
+                              revOrVersID("2-41414141", "1@cafe")};
+    vector<bool> deleteds =  {false, true, false};
 
     for (int count = 0; count < 3; ++count) {
         REQUIRE(c4enum_next(e, &err));
@@ -1804,64 +1805,70 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     validateCheckpoints(db, db2, "{\"local\":2}");
     REQUIRE(c4db_getLastSequence(db) == 2);
     REQUIRE(c4db_getLastSequence(db2) == 2);
-    
-    createFleeceRev(db,  C4STR("doc1"), C4STR("2-1111111a"), C4STR("{\"db\":1}"));
-    createFleeceRev(db2, C4STR("doc1"), C4STR("2-1111111b"), C4STR("{\"db\":2}"));
-    createFleeceRev(db,  C4STR("doc2"), C4STR("2-2222222a"), C4STR("{\"db\":1}"));
-    createFleeceRev(db2, C4STR("doc2"), C4STR("2-2222222b"), C4STR("{\"db\":2}"), kRevDeleted);
+
+    const slice kDoc1Rev2A = revOrVersID("2-1111111a", "1@1a1a");
+    const slice kDoc1Rev2B = revOrVersID("2-1111111b", "1@1b1b");
+    const slice kDoc2Rev2A = revOrVersID("2-1111111a", "1@2a2a");
+    const slice kDoc2Rev2B = revOrVersID("2-1111111a", "1@2b2b");
+
+    createFleeceRev(db,  C4STR("doc1"), kDoc1Rev2A, C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("doc1"), kDoc1Rev2B, C4STR("{\"db\":2}"));
+    createFleeceRev(db,  C4STR("doc2"), kDoc2Rev2A, C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("doc2"), kDoc2Rev2B, C4STR("{\"db\":2}"), kRevDeleted);
     REQUIRE(c4db_getLastSequence(db) == 4);
     REQUIRE(c4db_getLastSequence(db2) == 4);
     
     _expectedDocPullErrors = set<string> { "doc1", "doc2" };
     runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
     validateCheckpoints(db, db2, "{\"local\":2,\"remote\":4}");
-    REQUIRE(c4db_getLastSequence(db) == 6); // #5(doc1) and #6(doc2) seq, received from other side
+    if (isRevTrees())
+        REQUIRE(c4db_getLastSequence(db) == 6); // #5(doc1) and #6(doc2) seq, received from other side
     REQUIRE(c4db_getLastSequence(db2) == 4);
     
     // resolve doc1 and create a new revision(#7) which should bring the `_lastSequence` greater than the doc2's sequence
     c4::ref<C4Document> doc = c4doc_get(db, C4STR("doc1"), true, nullptr);
     REQUIRE(doc);
-    CHECK(doc->selectedRev.revID == C4STR("2-1111111a"));
+    CHECK(doc->selectedRev.revID == kDoc1Rev2A);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-    CHECK(doc->selectedRev.revID == C4STR("2-1111111b"));
+    CHECK(doc->selectedRev.revID == kDoc1Rev2B);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     {
         c4::Transaction t(db);
         REQUIRE(t.begin(nullptr));
         C4Error error;
-        CHECK(c4doc_resolveConflict(doc, C4STR("2-1111111b"), C4STR("2-1111111a"),
+        CHECK(c4doc_resolveConflict(doc, kDoc1Rev2B, kDoc1Rev2A,
                                     json2fleece("{\"merged\":true}"), 0, &error));
         CHECK(c4doc_save(doc, 0, &error));
         REQUIRE(t.commit(nullptr));
     }
     doc = c4doc_get(db, C4STR("doc1"), true, nullptr);
-    C4Slice revID = C4STR("2-1111111b");
-    REQUIRE(c4db_getLastSequence(db) == 7); // db-sequence is greater than #6(doc2)
+    C4SequenceNumber seq = isRevTrees() ? 7 : 5;
+    CHECK(doc->sequence == seq);
+    CHECK(c4db_getLastSequence(db) == seq); // db-sequence is greater than #6(doc2)
     
     // resolve doc2; choose remote revision, so no need to create a new revision
     doc = c4doc_get(db, C4STR("doc2"), true, nullptr);
     REQUIRE(doc);
-    revID = C4STR("2-2222222a");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK(doc->selectedRev.revID == kDoc2Rev2A);
     CHECK(c4doc_getProperties(doc) != nullptr);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-    revID = C4STR("2-2222222b");
-    CHECK(doc->selectedRev.revID == revID);
+    CHECK(doc->selectedRev.revID == kDoc2Rev2B);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     {
         c4::Transaction t(db);
         REQUIRE(t.begin(nullptr));
         C4Error error;
-        CHECK(c4doc_resolveConflict(doc, C4STR("2-2222222b"), C4STR("2-2222222a"),
+        CHECK(c4doc_resolveConflict(doc, kDoc2Rev2B, kDoc2Rev2A,
                                     kC4SliceNull, kRevDeleted, &error));
         CHECK(c4doc_save(doc, 0, &error));
         REQUIRE(t.commit(nullptr));
     }
     
     doc = c4doc_get(db, C4STR("doc2"), true, nullptr);
-    revID = C4STR("2-2222222b");
-    CHECK(doc->revID == revID);
+    CHECK(doc->revID == revOrVersID(kDoc1Rev2B, "2@*"));
     CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
-    CHECK(c4db_getLastSequence(db) == 8);
+    seq = isRevTrees() ? 8 : 6;
+    CHECK(doc->sequence == seq);
+    CHECK(c4db_getLastSequence(db) == seq);
 }

@@ -333,6 +333,11 @@ namespace c4Internal {
                 return false;
             newRev.properties = fldoc.asDict();
 
+            _db->dataFile()->_logVerbose("putNewRevision '%.*s' %s ; currently %s",
+                    SPLAT(docID),
+                    string(newVers.asASCII()).c_str(),
+                    string(_currentVersionVector().asASCII()).c_str());
+
             // Store in NuDocument, and update C4Document properties:
             _doc.setCurrentRevision(newRev);
             _selectRemote(RemoteID::Local);
@@ -364,13 +369,26 @@ namespace c4Internal {
                 order = newVers.compareTo(_currentVersionVector());
             }
 
-            static constexpr const char* kOrderName[4] = {"same", "older", "newer", "conflict"};
-            LogToAt(DBLog, Verbose, "putExistingRevision (remote %d), '%.*s' %s ; currently %s --> %s",
-                    rq.remoteDBID,
-                    SPLAT(docID),
-                    string(newVers.asASCII()).c_str(),
-                    string(_currentVersionVector().asASCII()).c_str(),
-                    kOrderName[order]);
+            // Log the update. Normally verbose, but a conflict is info (if from the replicator)
+            // or error (if local).
+            if (DBLog.willLog(LogLevel::Verbose) || order == kConflicting) {
+                static constexpr const char* kOrderName[4] = {"same", "older", "newer", "conflict"};
+                alloc_slice newVersStr = newVers.asASCII();
+                alloc_slice oldVersStr = _currentVersionVector().asASCII();
+                if (order != kConflicting)
+                    _db->dataFile()->_logVerbose(
+                        "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %s (remote %d)",
+                        SPLAT(docID), SPLAT(newVersStr), SPLAT(oldVersStr),
+                        kOrderName[order], rq.remoteDBID);
+                else if (remote != RemoteID::Local)
+                    _db->dataFile()->_logInfo(
+                        "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> conflict (remote %d)",
+                        SPLAT(docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
+                else
+                    _db->dataFile()->_logWarning(
+                        "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> conflict (remote %d)",
+                        SPLAT(docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
+            }
 
             switch (order) {
                 case kSame:
@@ -461,17 +479,9 @@ namespace c4Internal {
 
 
         bool _saveNewRev(const C4DocPutRequest &rq, const Revision &newRev, C4Error *outError) {
-            if (rq.save) {
-                if (!save()) {
-                    c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
-                    return false;
-                }
-                if (_db->dataFile()->willLog(LogLevel::Verbose)) {
-                    alloc_slice revID = newRev.revID.expanded();
-                    _db->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
-                                                 ((rq.revFlags & kRevDeleted) ? "Deleted" : "Saved"),
-                                                 SPLAT(rq.docID), SPLAT(revID), sequence);
-                }
+            if (rq.save && !save()) {
+                c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
+                return false;
             }
             return true;
         }

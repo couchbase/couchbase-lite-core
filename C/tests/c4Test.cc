@@ -347,7 +347,7 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
         parentID = curDoc->revID;
     else
         parentID = c4doc_getRevisionHistory(curDoc, 0);
-    createConflictingRev(db, docID, curDoc->revID, revID, body, flags);
+    createConflictingRev(db, docID, parentID, revID, body, flags);
     c4doc_release(curDoc);
 }
 
