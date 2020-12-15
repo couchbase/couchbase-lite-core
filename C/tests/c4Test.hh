@@ -156,7 +156,7 @@ public:
 
     static constexpr slice kDatabaseName = "cbl_core_test";
 
-    C4Test(int testOption =1);
+    C4Test(int testOption =VersionVectorOption);
     ~C4Test();
 
     alloc_slice databasePath() const            {return alloc_slice(c4db_getPath(db));}

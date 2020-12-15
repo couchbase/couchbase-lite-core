@@ -41,8 +41,10 @@ public:
 
     slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
-    ReplicatorLoopbackTest()
-    :C4Test(VersionVectorOption) //TEMP
+    static const int numberOfOptions = 1/*TEMP*/;       // rev-tree, version vector
+
+    ReplicatorLoopbackTest(int option = RevTreeOption)
+    :C4Test(option)
     ,db2(createDatabase("2"))
     {
         // Change tuning param so that tests will actually create deltas, despite using small
