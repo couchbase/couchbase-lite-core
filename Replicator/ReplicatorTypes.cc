@@ -71,7 +71,25 @@ namespace litecore { namespace repl {
 
 
     alloc_slice RevToSend::historyString(C4Document *doc) {
-        return alloc_slice(c4doc_getRevisionHistory(doc, maxHistory));
+        const alloc_slice* ancestors = nullptr;
+        size_t ancestorCount = 0;
+        if (ancestorRevIDs) {
+            if (remoteAncestorRevID)
+                ancestorRevIDs->push_back(remoteAncestorRevID);
+            ancestors = ancestorRevIDs->data();
+            ancestorCount = ancestorRevIDs->size();
+        } else if (remoteAncestorRevID) {
+            ancestors = &remoteAncestorRevID;
+            ancestorCount = 1;
+        }
+        auto result = alloc_slice(c4doc_getRevisionHistory(doc, maxHistory,
+                                                           (const C4String*)ancestors,
+                                                           unsigned(ancestorCount)));
+        if (ancestorRevIDs && remoteAncestorRevID) {
+            // Undo the push_back above
+            ancestorRevIDs->resize(ancestorCount - 1);
+        }
+        return result;
     }
 
 

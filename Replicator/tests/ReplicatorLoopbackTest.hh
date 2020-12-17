@@ -41,10 +41,8 @@ public:
 
     slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
-    static const int numberOfOptions = 1/*TEMP*/;       // rev-tree, version vector
-
-    ReplicatorLoopbackTest(int option = RevTreeOption)
-    :C4Test(option)
+    ReplicatorLoopbackTest()
+    :C4Test(GENERATE(Catch::values(0, 1)))
     ,db2(createDatabase("2"))
     {
         // Change tuning param so that tests will actually create deltas, despite using small
@@ -55,7 +53,7 @@ public:
         if (isRevTrees()) {
             kNonLocalRev1ID = kRev1ID;
             kNonLocalRev2ID = kRev2ID;
-            kNonLocalRev2ID = kRev3ID;
+            kNonLocalRev3ID = kRev3ID;
             kConflictRev2AID = "2-2a2a2a2a"_sl;
             kConflictRev2BID = "2-2b2b2b2b"_sl;
         } else {
@@ -465,7 +463,7 @@ public:
         if (isRevTrees())
             return alloc_slice(doc->revID);
         else
-            return alloc_slice(c4doc_getRevisionHistory(doc, 999));
+            return alloc_slice(c4doc_getRevisionHistory(doc, 999, nullptr, 0));
     }
 
 

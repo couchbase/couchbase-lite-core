@@ -208,7 +208,10 @@ namespace c4Internal {
         }
 
 
-        alloc_slice getSelectedRevHistory(unsigned maxRevs) override {
+        alloc_slice getSelectedRevHistory(unsigned maxRevs,
+                                          const C4String backToRevs[],
+                                          unsigned backToRevsCount) override
+        {
             if (auto rev = _selectedRevision(); rev) {
                 VersionVector vers;
                 vers.readBinary(rev->revID);
@@ -563,6 +566,8 @@ namespace c4Internal {
                                                              bool mustHaveBodies,
                                                              C4RemoteID remoteDBID)
     {
+        // I actually ignore `mustHaveBodies` ... it's not relevant for VV replication.
+
         // Map docID->revID for faster lookup in the callback:
         unordered_map<slice,slice> revMap(docIDs.size());
         for (ssize_t i = docIDs.size() - 1; i >= 0; --i)
@@ -582,7 +587,7 @@ namespace c4Internal {
             if (vers.count() == 1)
                 singleVers = vers[0];
 
-            // First check whether the document has this exact version:
+            // First check whether the document has this version or a newer one:
             bool found = false, notCurrent = false;
             NuDocument::forAllRevIDs(rec, [&](revid aRev, RemoteID aRemote) {
                 aVers.readBinary(aRev);

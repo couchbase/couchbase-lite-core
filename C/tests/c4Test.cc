@@ -329,7 +329,7 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
     if (isRevTrees(db))
         parentID = curDoc->revID;
     else
-        parentID = c4doc_getRevisionHistory(curDoc, 0);
+        parentID = c4doc_getRevisionHistory(curDoc, 0, nullptr, 0);
     createConflictingRev(db, docID, parentID, revID, body, flags);
     c4doc_release(curDoc);
 }

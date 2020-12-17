@@ -185,7 +185,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         // Older revision:
         CHECK(findDocAncestor(doc1, "2@100,10@8"_sl) == "1");// kC4AncestorExists
         // Require bodies:
-        CHECK(findDocAncestor(doc1, "2@100,10@8"_sl, true) == R"([])");
+        CHECK(findDocAncestor(doc1, "2@100,10@8"_sl, true) == "1");
 
         // Newer revision:
         CHECK(findDocAncestor(doc1, "11@8,3@100"_sl) == R"(["3@100,10@8"])");
@@ -366,7 +366,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
     CHECK(docBodyEquals(doc, kFleeceBody2));
 
     if (isRevTrees()) {
-        alloc_slice history = c4doc_getRevisionHistory(doc, 99);
+        alloc_slice history = c4doc_getRevisionHistory(doc, 99, nullptr, 0);
         CHECK(history == "2-c001d00d,1-abcd");
 
         // Select 1st revision:
@@ -432,7 +432,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
     } else {
         // The history is going to end with this database's peerID, a random 64-bit hex string,
         // so we don't know exactly what it will be. But it will start "2@".
-        alloc_slice history = c4doc_getRevisionHistory(doc, 99);
+        alloc_slice history = c4doc_getRevisionHistory(doc, 99, nullptr, 0);
         CHECK(history.hasPrefix("2@"));
         CHECK(history.size <= 2 + 32);
     }
@@ -944,7 +944,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
             // kRevID -- kRev2ID -- kRev3ConflictID -- [kRev4ConflictID] -- kMergedRevID
             CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
             CHECK(doc->selectedRev.revID == "5-79b2ecd897d65887a18c46cc39db6f0a3f7b38c4"_sl);
-            alloc_slice revHistory(c4doc_getRevisionHistory(doc, 99));
+            alloc_slice revHistory(c4doc_getRevisionHistory(doc, 99, nullptr, 0));
             CHECK(revHistory == "5-79b2ecd897d65887a18c46cc39db6f0a3f7b38c4,4-dddd,3-ababab,2-aaaaaa,1-aaaaaa"_sl);
 
             c4doc_selectParentRevision(doc);
@@ -961,7 +961,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         } else {
             CHECK((int)doc->selectedRev.flags == kRevLeaf);
             CHECK(doc->selectedRev.revID == "4@*"_sl);
-            alloc_slice vector(c4doc_getRevisionHistory(doc, 0));
+            alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
             CHECK(vector == "4@*,4@cafe"_sl);
         }
 
@@ -996,7 +996,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         } else {
             CHECK((int)doc->selectedRev.flags == kRevLeaf);
             CHECK(doc->selectedRev.revID == "4@*"_sl);
-            alloc_slice vector(c4doc_getRevisionHistory(doc, 0));
+            alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
             CHECK(vector == "4@*,4@cafe"_sl);
         }
     }

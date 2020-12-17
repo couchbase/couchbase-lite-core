@@ -1227,9 +1227,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     }
 
     doc = c4doc_get(db, docID, true, nullptr);
-    alloc_slice mergedID(c4doc_getRevisionHistory(doc, 0));
+    alloc_slice mergedID(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
     if (isRevTrees())
-        CHECK(mergedID == kConflictRev2BID);
+        CHECK(mergedID == "2-2b2b2b2b,1-abcd"_sl);
     else
         CHECK(mergedID == "2@*,1@babe1,1@babe2"_sl);
 
@@ -1409,8 +1409,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     // Update the docs differently in each db:
     createFleeceRev(db,  C4STR("conflict"),    revOrVersID("2-12121212", "1@cafe"), C4STR("{\"db\": 1}"));
     createFleeceRev(db2, C4STR("conflict"),    revOrVersID("2-13131313", "1@babe"), C4STR("{\"db\": 2}"));
-    createFleeceRev(db,  C4STR("db-deleted"),  revOrVersID("2-32323232", "1@cafe"), C4STR("{\"db\":2}"), kRevDeleted);
-    createFleeceRev(db2, C4STR("db-deleted"),  revOrVersID("2-31313131", "1@babe"), C4STR("{\"db\": 1}"));
+    createFleeceRev(db,  C4STR("db-deleted"),  revOrVersID("2-31313131", "1@cafe"), C4STR("{\"db\":2}"), kRevDeleted);
+    createFleeceRev(db2, C4STR("db-deleted"),  revOrVersID("2-32323232", "1@babe"), C4STR("{\"db\": 1}"));
     createFleeceRev(db,  C4STR("db2-deleted"), revOrVersID("2-41414141", "1@cafe"), C4STR("{\"db\": 1}"));
     createFleeceRev(db2, C4STR("db2-deleted"), revOrVersID("2-42424242", "1@babe"), C4STR("{\"db\":2}"), kRevDeleted);
     
@@ -1430,7 +1430,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
                               "db-deleted"_sl,
                               "db2-deleted"_sl};
     vector<C4Slice> revIDs = {revOrVersID("2-12121212", "1@cafe"),
-                              revOrVersID("2-12121212", "1@cafe"),
+                              revOrVersID("2-31313131", "1@cafe"),
                               revOrVersID("2-41414141", "1@cafe")};
     vector<bool> deleteds =  {false, true, false};
 
@@ -1604,7 +1604,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
     auto before = DBAccess::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
     compareDatabases();
-    CHECK(DBAccess::gNumDeltasApplied - before == 15);
+    if (isRevTrees())       // VV does not currently send deltas from a passive replicator
+        CHECK(DBAccess::gNumDeltasApplied - before == 15);
 }
 
 
@@ -1721,7 +1722,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
     _expectedDocumentCount = 1;
     auto before = DBAccess::gNumDeltasApplied.load();
     runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
-    CHECK(DBAccess::gNumDeltasApplied - before == 1);
+    if (isRevTrees())       // VV does not currently send deltas from a passive replicator
+        CHECK(DBAccess::gNumDeltasApplied - before == 1);
 
     c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
@@ -1768,7 +1770,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
     _expectedDocumentCount = 1;
     auto before = DBAccess::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
-    CHECK(DBAccess::gNumDeltasApplied - before == 1);
+    if (isRevTrees())       // VV does not currently send deltas from a passive replicator
+        CHECK(DBAccess::gNumDeltasApplied - before == 1);
 
     c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc, true, nullptr);
@@ -1809,7 +1812,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     const slice kDoc1Rev2A = revOrVersID("2-1111111a", "1@1a1a");
     const slice kDoc1Rev2B = revOrVersID("2-1111111b", "1@1b1b");
     const slice kDoc2Rev2A = revOrVersID("2-1111111a", "1@2a2a");
-    const slice kDoc2Rev2B = revOrVersID("2-1111111a", "1@2b2b");
+    const slice kDoc2Rev2B = revOrVersID("2-1111111b", "1@2b2b");
 
     createFleeceRev(db,  C4STR("doc1"), kDoc1Rev2A, C4STR("{\"db\":1}"));
     createFleeceRev(db2, C4STR("doc1"), kDoc1Rev2B, C4STR("{\"db\":2}"));

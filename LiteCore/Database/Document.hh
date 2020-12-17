@@ -131,7 +131,9 @@ namespace c4Internal {
                 return nullptr;
         }
 
-        virtual alloc_slice getSelectedRevHistory(unsigned maxHistory) =0;
+        virtual alloc_slice getSelectedRevHistory(unsigned maxHistory,
+                                                  const C4String backToRevs[],
+                                                  unsigned backToRevsCount) {failUnsupported();}
 
         virtual alloc_slice getSelectedRevIDGlobalForm()    {return alloc_slice(selectedRev.revID);}
 

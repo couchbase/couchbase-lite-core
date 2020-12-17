@@ -114,15 +114,38 @@ namespace c4Internal {
         }
 
 
-        alloc_slice getSelectedRevHistory(unsigned maxRevs) override {
+        alloc_slice getSelectedRevHistory(unsigned maxRevs,
+                                          const C4String backToRevs[],
+                                          unsigned backToRevsCount) override
+        {
             auto selRev = _selectedRev;
             int revsWritten = 0;
             stringstream historyStream;
+            string::size_type lastPos = 0;
+
+            if (maxRevs == 0)
+                maxRevs = UINT_MAX;
 
             auto append = [&](slice revID) {
+                lastPos = (string::size_type)historyStream.tellp();
                 if (revsWritten++ > 0)
                     historyStream << ',';
                 historyStream.write((const char*)revID.buf, revID.size);
+            };
+
+            auto hasRemoteAncestor = [&](C4String revID) {
+                for (unsigned i = 0; i < backToRevsCount; ++i)
+                    if (slice(backToRevs[i]) == slice(revID))
+                        return true;
+                return false;
+            };
+
+            auto removeLast = [&]() {
+                string buf = historyStream.str();
+                buf.resize(lastPos);
+                historyStream.str(buf);
+                historyStream.seekp(lastPos);
+                --revsWritten;
             };
 
             // Go back through history, starting with the desired rev's parent, until we either reach
@@ -141,8 +164,22 @@ namespace c4Internal {
                                         lastGen, RandomNumber(), RandomNumber())));
                 }
                 lastGen = gen;
-                append(revID);
-            } while (revsWritten < maxRevs && selectParentRevision());
+
+                if (hasRemoteAncestor(revID)) {
+                    // Always write the common ancestor, making room if necessary:
+                    if (revsWritten == maxRevs)
+                        removeLast();
+                    append(revID);
+                    break;
+                } else {
+                    // Write a regular revision if there's room:
+                    if (revsWritten < maxRevs) {
+                        append(revID);
+                        if (backToRevsCount == 0 && revsWritten == maxRevs)
+                            break;
+                    }
+                }
+            } while (selectParentRevision());
             selectRevision(selRev);
             return alloc_slice(historyStream.str());
         }
@@ -438,6 +475,10 @@ namespace c4Internal {
                                                          (rq.remoteDBID != 0));
             if (commonAncestor < 0) {
                 if (outError) {
+                    alloc_slice current = _versionedDoc.revID().expanded();
+                    LogToAt(DBLog, Warning,
+                           "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %d",
+                           SPLAT(docID), SPLAT(rq.history[0]), SPLAT(current), -commonAncestor);
                     if (commonAncestor == -409)
                         *outError = {LiteCoreDomain, kC4ErrorConflict};
                     else
