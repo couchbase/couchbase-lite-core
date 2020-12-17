@@ -41,6 +41,9 @@ namespace litecore {
     static constexpr unsigned kTicksPerSec = 1000000;
 
 
+#pragma mark - LOG ITERATOR:
+
+
     /*static*/ LogIterator::Timestamp LogIterator::now() {
         using namespace chrono;
 
@@ -89,20 +92,6 @@ namespace litecore {
         return out.str();
     }
 
-    
-    void LogIterator::decodeTo(ostream &out, const std::vector<std::string> &levelNames) {
-        while (next()) {
-            writeTimestamp(timestamp(), out);
-
-            string levelName;
-            if (level() >= 0 && level() < levelNames.size())
-                levelName = levelNames[level()];
-            writeHeader(levelName, domain(), out);
-            decodeMessageTo(out);
-            out << '\n';
-        }
-    }
-
 
     /*static*/ void LogIterator::writeHeader(const string &levelName,
                                             const string &domainName,
@@ -117,6 +106,28 @@ namespace litecore {
                 out << '[' << domainName << "]: ";
         }
     }
+
+
+    void LogIterator::decodeTo(ostream &out,
+                               const std::vector<std::string> &levelNames,
+                               optional<Timestamp> start) {
+        while (next()) {
+            auto ts = timestamp();
+            if (start && ts < *start)
+                continue;
+            writeTimestamp(ts, out);
+
+            string levelName;
+            if (level() >= 0 && level() < levelNames.size())
+                levelName = levelNames[level()];
+            writeHeader(levelName, domain(), out);
+            decodeMessageTo(out);
+            out << '\n';
+        }
+    }
+
+
+#pragma mark - LOG DECODER:
 
 
     LogDecoder::LogDecoder(std::istream &in)
@@ -176,15 +187,20 @@ namespace litecore {
     }
 
 
-    void LogDecoder::decodeTo(ostream &out, const std::vector<std::string> &levelNames) {
-        writeTimestamp({_startTime, 0}, out);
-        struct tm tm;
-        localtime_r(&_startTime, &tm);
-        char datestamp[100];
-        strftime(datestamp, sizeof(datestamp), "---- Logging begins on %A, %x ----\n", &tm);
-        out << datestamp;
+    void LogDecoder::decodeTo(ostream &out,
+                              const std::vector<std::string> &levelNames,
+                              std::optional<Timestamp> startingAt)
+    {
+        if (!startingAt || *startingAt < Timestamp{_startTime, 0}) {
+            writeTimestamp({_startTime, 0}, out);
+            struct tm tm;
+            localtime_r(&_startTime, &tm);
+            char datestamp[100];
+            strftime(datestamp, sizeof(datestamp), "---- Logging begins on %A, %x ----\n", &tm);
+            out << datestamp;
+        }
 
-        LogIterator::decodeTo(out, levelNames);
+        LogIterator::decodeTo(out, levelNames, startingAt);
     }
 
 

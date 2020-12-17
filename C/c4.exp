@@ -295,6 +295,7 @@ _kC4WebSocketLog
 
 _c4log_willLog
 _c4log_getWarnOnErrors
+_c4log_flushLogFiles
 
 _c4error_getDescription
 _c4error_getDescriptionC

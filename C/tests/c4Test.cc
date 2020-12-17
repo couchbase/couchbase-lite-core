@@ -137,22 +137,6 @@ C4Test::C4Test(int testOption)
 {
     static once_flag once;
     call_once(once, [] {
-        c4log_enableFatalExceptionBacktrace();
-
-        fleece::alloc_slice buildInfo = c4_getBuildInfo();
-        fleece::alloc_slice version = c4_getVersion();
-        C4Log("This is LiteCore %.*s ... short version %.*s", SPLAT(buildInfo), SPLAT(version));
-
-        if (c4log_binaryFileLevel() == kC4LogNone) {
-            string path = TempDir() + "LiteCoreAPITests";
-            C4Log("Beginning binary logging to %s", path.c_str());
-            C4Error error;
-            REQUIRE(c4log_writeToBinaryFile({kC4LogVerbose, c4str(path.c_str()), 16*1024, 1, false}, &error));
-        }
-        //c4log_setBinaryFileLevel(kC4LogDebug);
-        if (getenv("LiteCoreTestsQuiet"))
-            c4log_setCallbackLevel(kC4LogWarning);
-
         auto enc = FLEncoder_New();
         FLEncoder_BeginDict(enc, 1);
         FLEncoder_WriteKey(enc, FLSTR("ans*wer"));
@@ -187,7 +171,6 @@ C4Test::C4Test(int testOption)
         });
 #endif
     });
-    c4log_warnOnErrors(true);
 
     c4_shutdown(nullptr);
 

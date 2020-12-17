@@ -104,6 +104,7 @@ public:
     using Callback_t = void(*)(const LogDomain&, LogLevel, const char *format, va_list);
 
     static void defaultCallback(const LogDomain&, LogLevel, const char *format, va_list);
+    static Callback_t currentCallback();
 
     /** Registers (or unregisters) a callback to be passed log messages.
         @param callback  The callback function, or NULL to unregister.
@@ -121,6 +122,8 @@ public:
     static LogLevel fileLogLevel() noexcept             {return sFileMinLevel;}
     static void setCallbackLogLevel(LogLevel) noexcept;
     static void setFileLogLevel(LogLevel) noexcept;
+
+    static void flushLogFiles();
 
 private:
     friend class Logging;
@@ -156,30 +159,30 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 
 #ifdef _MSC_VER
 #define LogToAt(DOMAIN, LEVEL, FMT, ...) \
-    do{if (_usuallyFalse((DOMAIN).willLog(LogLevel::LEVEL))) \
-        (DOMAIN).log(LogLevel::LEVEL, FMT, ##__VA_ARGS__);} while(0)
+    do{if (_usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL))) \
+        (DOMAIN).log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__);} while(0)
 
 #define LogTo(DOMAIN, FMT, ...)         LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
 #define LogVerbose(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
 #define LogDebug(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
 
-#define Debug(FMT, ...)                 LogToAt(kC4Cpp_DefaultLog, Debug,   FMT, ##__VA_ARGS__)
-#define Log(FMT, ...)                   LogToAt(kC4Cpp_DefaultLog, Info,    FMT, ##__VA_ARGS__)
-#define Warn(FMT, ...)                  LogToAt(kC4Cpp_DefaultLog, Warning, FMT, ##__VA_ARGS__)
-#define WarnError(FMT, ...)             LogToAt(kC4Cpp_DefaultLog, Error,   FMT, ##__VA_ARGS__)
+#define Debug(FMT, ...)                 LogToAt(litecore::kC4Cpp_DefaultLog, Debug,   FMT, ##__VA_ARGS__)
+#define Log(FMT, ...)                   LogToAt(litecore::kC4Cpp_DefaultLog, Info,    FMT, ##__VA_ARGS__)
+#define Warn(FMT, ...)                  LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##__VA_ARGS__)
+#define WarnError(FMT, ...)             LogToAt(litecore::kC4Cpp_DefaultLog, Error,   FMT, ##__VA_ARGS__)
 #else
 #define LogToAt(DOMAIN, LEVEL, FMT, ARGS...) \
-    ({if (_usuallyFalse((DOMAIN).willLog(LogLevel::LEVEL))) \
-        (DOMAIN).log(LogLevel::LEVEL, FMT, ##ARGS);})
+    ({if (_usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL))) \
+        (DOMAIN).log(litecore::LogLevel::LEVEL, FMT, ##ARGS);})
 
 #define LogTo(DOMAIN, FMT, ARGS...)         LogToAt(DOMAIN, Info, FMT, ##ARGS)
 #define LogVerbose(DOMAIN, FMT, ARGS...)    LogToAt(DOMAIN, Verbose, FMT, ##ARGS)
 #define LogDebug(DOMAIN, FMT, ARGS...)      LogToAt(DOMAIN, Debug, FMT, ##ARGS)
 
-#define Debug(FMT, ARGS...)                 LogToAt(kC4Cpp_DefaultLog, Debug,   FMT, ##ARGS)
-#define Log(FMT, ARGS...)                   LogToAt(kC4Cpp_DefaultLog, Info,    FMT, ##ARGS)
-#define Warn(FMT, ARGS...)                  LogToAt(kC4Cpp_DefaultLog, Warning, FMT, ##ARGS)
-#define WarnError(FMT, ARGS...)             LogToAt(kC4Cpp_DefaultLog, Error,   FMT, ##ARGS)
+#define Debug(FMT, ARGS...)                 LogToAt(litecore::kC4Cpp_DefaultLog, Debug,   FMT, ##ARGS)
+#define Log(FMT, ARGS...)                   LogToAt(litecore::kC4Cpp_DefaultLog, Info,    FMT, ##ARGS)
+#define Warn(FMT, ARGS...)                  LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##ARGS)
+#define WarnError(FMT, ARGS...)             LogToAt(litecore::kC4Cpp_DefaultLog, Error,   FMT, ##ARGS)
 #endif
 
 
@@ -243,8 +246,8 @@ private:
     };
 
 #define _logAt(LEVEL, FMT, ...) do { \
-    if (_usuallyFalse(this->willLog(LogLevel::LEVEL))) \
-        this->_log(LogLevel::LEVEL, FMT, ##__VA_ARGS__); \
+    if (_usuallyFalse(this->willLog(litecore::LogLevel::LEVEL))) \
+        this->_log(litecore::LogLevel::LEVEL, FMT, ##__VA_ARGS__); \
     } while(0)
 #define logInfo(FMT, ...)    _logAt(Info,    FMT, ##__VA_ARGS__)
 #define logVerbose(FMT, ...) _logAt(Verbose, FMT, ##__VA_ARGS__)

@@ -327,6 +327,10 @@ void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool prefor
     LogDomain::setCallback((LogDomain::Callback_t)callback, preformatted);
     LogDomain::setCallbackLogLevel((LogLevel)level);
 }
+
+C4LogCallback c4log_getCallback() noexcept {
+    return (C4LogCallback)LogDomain::currentCallback();
+}
 // LCOV_EXCL_STOP
 
 bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error *outError) noexcept {
@@ -409,6 +413,10 @@ void c4log_enableFatalExceptionBacktrace() C4API {
     });
 }
 
+
+void c4log_flushLogFiles() C4API {
+    LogDomain::flushLogFiles();
+}
 
 void c4log(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, ...) noexcept {
     va_list args;

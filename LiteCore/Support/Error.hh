@@ -126,6 +126,8 @@ namespace litecore {
 
         static std::string backtrace(unsigned skipFrames =0);
 
+        static void setNotableExceptionHook(std::function<void()> hook);
+
         static bool sWarnOnError;
     };
 

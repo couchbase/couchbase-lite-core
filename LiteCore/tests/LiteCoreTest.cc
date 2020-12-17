@@ -88,13 +88,14 @@ void ExpectException(litecore::error::Domain domain, int code, std::function<voi
 #pragma mark - TESTFIXTURE:
 
 
+static LogDomain::Callback_t sPrevCallback;
 static atomic_uint sWarningsLogged;
 
 
 static void logCallback(const LogDomain &domain, LogLevel level,
                         const char *fmt, va_list args)
 {
-    LogDomain::defaultCallback(domain, level, fmt, args);
+    sPrevCallback(domain, level, fmt, args);
     if (level >= LogLevel::Warning)
         ++sWarningsLogged;
 }
@@ -106,22 +107,20 @@ TestFixture::TestFixture()
 {
     static once_flag once;
     call_once(once, [] {
-        Backtrace::installTerminateHandler(nullptr);
-
-        C4StringResult version = c4_getBuildInfo();
-        Log("This is LiteCore %.*s", SPLAT(version));
-
+        sPrevCallback = LogDomain::currentCallback();
         LogDomain::setCallback(&logCallback, false);
-        if (LogDomain::fileLogLevel() == LogLevel::None) {
-            auto path = FilePath::tempDirectory()["LiteCoreC++TestLogs"].mkTempDir();
-            Log("Beginning logging to %s", path.path().c_str());
-            LogFileOptions fileOptions { path.path(), LogLevel::Verbose, 1024*1024, 5, false };
-            LogDomain::writeEncodedLogsTo(fileOptions,
-                                          format("LiteCore %.*s", SPLAT(version)));
-        }
-        if (getenv("LiteCoreTestsQuiet"))
-            LogDomain::setCallbackLogLevel(LogLevel::Warning);
-        c4slice_free(version);
+        
+//        C4StringResult version = c4_getBuildInfo();
+//        if (LogDomain::fileLogLevel() == LogLevel::None) {
+//            auto path = FilePath::tempDirectory()["LiteCoreC++TestLogs"].mkTempDir();
+//            Log("Beginning logging to %s", path.path().c_str());
+//            LogFileOptions fileOptions { path.path(), LogLevel::Verbose, 1024*1024, 5, false };
+//            LogDomain::writeEncodedLogsTo(fileOptions,
+//                                          format("LiteCore %.*s", SPLAT(version)));
+//        }
+//        if (getenv("LiteCoreTestsQuiet"))
+//            LogDomain::setCallbackLogLevel(LogLevel::Warning);
+//        c4slice_free(version);
 
 #if TARGET_OS_IPHONE
         // iOS tests copy the fixture files into the test bundle.
@@ -136,7 +135,6 @@ TestFixture::TestFixture()
 #endif
 
     });
-    error::sWarnOnError = true;
 }
 
 

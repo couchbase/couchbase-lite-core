@@ -187,6 +187,15 @@ namespace litecore {
         }
     }
 
+    void LogDomain::flushLogFiles() {
+        unique_lock<mutex> lock(sLogMutex);
+
+        for(auto& encoder : sLogEncoder)
+            if (encoder) encoder->flush();
+        for (auto& fout : sFileOut)
+            if (fout) fout->flush();
+    }
+
 #pragma mark - GLOBAL SETTINGS:
 
 
@@ -197,6 +206,11 @@ namespace litecore {
         sCallback = callback;
         sCallbackPreformatted = preformatted;
         _invalidateEffectiveLevels();
+    }
+
+
+    LogDomain::Callback_t LogDomain::currentCallback() {
+        return sCallback;
     }
 
 

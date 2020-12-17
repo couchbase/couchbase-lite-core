@@ -125,6 +125,10 @@
 		274128512578138700EEC02C /* TestUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2741284F2578138700EEC02C /* TestUtils.cc */; };
 		27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
 		2742D10C2305C25D003197E1 /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
+		27431BC7258A8AB0009E3EC5 /* LoggingReporter.hh in Sources */ = {isa = PBXBuildFile; fileRef = 27431BC6258A8AB0009E3EC5 /* LoggingReporter.hh */; };
+		27431BC8258A8AB0009E3EC5 /* LoggingReporter.hh in Sources */ = {isa = PBXBuildFile; fileRef = 27431BC6258A8AB0009E3EC5 /* LoggingReporter.hh */; };
+		27431BC9258A8AB0009E3EC5 /* LoggingReporter.hh in Sources */ = {isa = PBXBuildFile; fileRef = 27431BC6258A8AB0009E3EC5 /* LoggingReporter.hh */; };
+		27431C2B258ADB27009E3EC5 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		2744B34F241854F2005A194D /* Headers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B32F241854F2005A194D /* Headers.cc */; };
 		2744B350241854F2005A194D /* WebSocketInterface.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B330241854F2005A194D /* WebSocketInterface.cc */; };
 		2744B351241854F2005A194D /* WebSocketImpl.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B331241854F2005A194D /* WebSocketImpl.cc */; };
@@ -949,6 +953,7 @@
 		2741284E2578138700EEC02C /* TestUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TestUtils.hh; sourceTree = "<group>"; };
 		2741284F2578138700EEC02C /* TestUtils.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestUtils.cc; sourceTree = "<group>"; };
 		27416E291E0494DF00F10F65 /* c4QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4QueryTest.cc; sourceTree = "<group>"; };
+		27431BC6258A8AB0009E3EC5 /* LoggingReporter.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LoggingReporter.hh; sourceTree = "<group>"; };
 		2744B30C241854F2005A194D /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2744B316241854F2005A194D /* WebSocketInterface.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketInterface.hh; sourceTree = "<group>"; };
 		2744B317241854F2005A194D /* BLIPConnection.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIPConnection.hh; sourceTree = "<group>"; };
@@ -2647,6 +2652,7 @@
 				27E3DD361DB450B300F2872D /* Logging.hh */,
 				726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */,
 				2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */,
+				27431BC6258A8AB0009E3EC5 /* LoggingReporter.hh */,
 			);
 			name = Logging;
 			sourceTree = "<group>";
@@ -3768,6 +3774,7 @@
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
+				27431BC7258A8AB0009E3EC5 /* LoggingReporter.hh in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
 				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
@@ -3855,8 +3862,10 @@
 				27C77302216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm in Sources */,
 				2716F9BF249AD3CB00BE21D9 /* c4CertificateTest.cc in Sources */,
 				42030A3E2498442F00283CE8 /* SecureRandomize.cc in Sources */,
+				27431BC8258A8AB0009E3EC5 /* LoggingReporter.hh in Sources */,
 				2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
+				27431C2B258ADB27009E3EC5 /* LogDecoder.cc in Sources */,
 				42030A422498446000283CE8 /* LibC++Debug.cc in Sources */,
 				27CCD4B22315DBD3003DEB99 /* Address.cc in Sources */,
 				42030A402498444900283CE8 /* Error.cc in Sources */,
@@ -3930,6 +3939,7 @@
 				27FE0CF024BE7C2A00A36EC2 /* DocumentKeysTest.cc in Sources */,
 				27FE0CF124BE7C2A00A36EC2 /* FTSTest.cc in Sources */,
 				27FE0CF224BE7C2A00A36EC2 /* LogEncoderTest.cc in Sources */,
+				27431BC9258A8AB0009E3EC5 /* LoggingReporter.hh in Sources */,
 				27FE0CF324BE7C2A00A36EC2 /* PredictiveQueryTest.cc in Sources */,
 				27FE0CF424BE7C2A00A36EC2 /* N1QLParserTest.cc in Sources */,
 				27FE0CF524BE7C2A00A36EC2 /* QueryParserTest.cc in Sources */,

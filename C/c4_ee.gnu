@@ -334,6 +334,7 @@ CBL {
 
 		c4log_willLog;
 		c4log_getWarnOnErrors;
+		c4log_flushLogFiles;
 
 		c4error_getDescription;
 		c4error_getDescriptionC;

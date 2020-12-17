@@ -48,4 +48,4 @@
 @end
 
 
-#include "CaseListReporter.hh"
+#include "LoggingReporter.hh"
