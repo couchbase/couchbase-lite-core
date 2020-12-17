@@ -215,6 +215,7 @@ TEST_CASE("Logging rollover", "[Log]") {
     }
     
 
+    const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
     LogFileOptions fileOptions { tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 1, false };
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     LogObject obj("dummy");
@@ -259,7 +260,7 @@ TEST_CASE("Logging rollover", "[Log]") {
     LogDecoder d2(fin2);
     d2.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
 
-    LogDomain::setFileLogLevel(LogLevel::None); // undo writeEncodedLogsTo() call above
+    LogDomain::writeEncodedLogsTo(prevOptions); // undo writeEncodedLogsTo() call above
 }
 
 TEST_CASE("Logging plaintext", "[Log]") {
@@ -269,6 +270,7 @@ TEST_CASE("Logging plaintext", "[Log]") {
     tmpLogDir.delRecursive();
     tmpLogDir.mkdir();
 
+    const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
     LogFileOptions fileOptions { tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5, true };
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     LogObject obj("dummy");
@@ -296,6 +298,5 @@ TEST_CASE("Logging plaintext", "[Log]") {
     CHECK(lines[1].find("{dummy#") != string::npos);
     CHECK(lines[1].find("This will be in plaintext") != string::npos);
 
-    LogDomain::setFileLogLevel(LogLevel::None); // undo writeEncodedLogsTo() call above
+    LogDomain::writeEncodedLogsTo(prevOptions); // undo writeEncodedLogsTo() call above
 }
-

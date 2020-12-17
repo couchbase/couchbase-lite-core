@@ -17,6 +17,7 @@
 //
 
 #include "c4Test.hh"
+#include "TestsCommon.hh"
 #include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
@@ -45,26 +46,7 @@
 using namespace std;
 
 const std::string& TempDir() {
-    static string kTempDir;
-
-    static once_flag f;
-    call_once(f, [=] {
-        char folderName[64];
-        sprintf(folderName, "LiteCore_C_Tests%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
-        #ifdef _MSC_VER
-            WCHAR pathBuffer[MAX_PATH + 1];
-            GetTempPathW(MAX_PATH, pathBuffer);
-            GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
-            CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
-            auto sharedTemp = litecore::FilePath(convertedPath.m_psz, "");
-        #else // _MSC_VER
-            auto sharedTemp = litecore::FilePath("/tmp", "");
-        #endif // _MSC_VER
-        auto temp = sharedTemp[folderName];
-        temp.mkdir();
-        kTempDir = temp.path();
-    });
-
+    static string kTempDir = GetTempDirectory().path();
     return kTempDir;
 }
 
@@ -138,15 +120,6 @@ std::string json5(std::string str) {
 }
 
 
-//static void log(C4LogDomain domain, C4LogLevel level, C4Slice message) {
-//    static const char* kLevelNames[5] = {"debug", "verbose", "info", "WARNING", "ERROR"};
-//    fprintf(stderr, "LiteCore-C %s %s: %.*s\n",
-//            c4log_getDomainName(domain),
-//            kLevelNames[level],
-//            (int)message.size, (char*)message.buf);
-//}
-
-
 void AssertionFailed(const char *fn, const char *file, unsigned line, const char *expr,
                      const char *message)
 {
@@ -203,21 +176,7 @@ _versioning(kC4RevisionTrees)
 {
     static once_flag once;
     call_once(once, [] {
-        c4log_enableFatalExceptionBacktrace();
-
-        fleece::alloc_slice buildInfo = c4_getBuildInfo();
-        fleece::alloc_slice version = c4_getVersion();
-        C4Log("This is LiteCore %.*s ... short version %.*s", SPLAT(buildInfo), SPLAT(version));
-
-        if (c4log_binaryFileLevel() == kC4LogNone) {
-            string path = TempDir() + "LiteCoreAPITests";
-            C4Log("Beginning binary logging to %s", path.c_str());
-            C4Error error;
-            REQUIRE(c4log_writeToBinaryFile({kC4LogVerbose, c4str(path.c_str()), 16*1024, 1, false}, &error));
-        }
-        //c4log_setBinaryFileLevel(kC4LogDebug);
-        if (getenv("LiteCoreTestsQuiet"))
-            c4log_setCallbackLevel(kC4LogWarning);
+        InitTestLogging();
 
         auto enc = FLEncoder_New();
         FLEncoder_BeginDict(enc, 1);
@@ -253,7 +212,6 @@ _versioning(kC4RevisionTrees)
         });
 #endif
     });
-    c4log_warnOnErrors(true);
 
     c4_shutdown(nullptr);
 
@@ -274,7 +232,7 @@ _versioning(kC4RevisionTrees)
     if (_dbConfig.flags != sLastConfig.flags
                     || _dbConfig.encryptionKey.algorithm != sLastConfig.encryptionKey.algorithm) {
         fprintf(stderr, "        --- %s\n",
-                (_dbConfig.encryptionKey.algorithm ? ", encrypted" : ""));
+                (_dbConfig.encryptionKey.algorithm ? "encrypted" : "unencrypted"));
         sLastConfig = _dbConfig;
     }
 

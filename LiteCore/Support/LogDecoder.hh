@@ -20,6 +20,7 @@
 #include <ctime>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -29,22 +30,24 @@ namespace litecore {
     /** Abstract interface for reading logs. */
     class LogIterator {
     public:
-        virtual ~LogIterator() = default;
-
-        /** Decodes the entire log and writes it to the output stream, with timestamps.
-            If you want more control over the presentation, use the other methods below to
-            read the timestamps and messages individually. */
-        virtual void decodeTo(std::ostream&, const std::vector<std::string> &levelNames);
-
-        /** Reads the next line from the log, or returns false at EOF. */
-        virtual bool next() =0;
-
         /** A timestamp, given as a standard time_t (seconds since 1/1/1970) plus a number of
          microseconds. */
         struct Timestamp {
             time_t secs;
             unsigned microsecs;
         };
+
+        virtual ~LogIterator() = default;
+
+        /** Decodes the entire log and writes it to the output stream, with timestamps.
+            If you want more control over the presentation, use the other methods below to
+            read the timestamps and messages individually. */
+        virtual void decodeTo(std::ostream&,
+                              const std::vector<std::string> &levelNames,
+                              std::optional<Timestamp> startingAt =std::nullopt);
+
+        /** Reads the next line from the log, or returns false at EOF. */
+        virtual bool next() =0;
 
         /** Returns the time logging began. */
         virtual Timestamp startTime() const =0;
@@ -88,7 +91,9 @@ namespace litecore {
         LogDecoder(std::istream&);
 
         // LogIterator API:
-        void decodeTo(std::ostream&, const std::vector<std::string> &levelNames) override;
+        void decodeTo(std::ostream&,
+                      const std::vector<std::string> &levelNames,
+                      std::optional<Timestamp> startingAt =std::nullopt) override;
         bool next() override;
         Timestamp startTime() const override             {return {_startTime, 0};}
         Timestamp timestamp() const override             {return _timestamp;}

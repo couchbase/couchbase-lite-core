@@ -60,12 +60,12 @@ add_executable(
     ${TOP}LiteCore/tests/main.cpp
     ${TOP}Crypto/SecureRandomize.cc
     ${TOP}LiteCore/Support/FilePath.cc
+    ${TOP}LiteCore/Support/LogDecoder.cc
     ${TOP}LiteCore/Support/Logging_Stub.cc
     ${TOP}LiteCore/Support/StringUtil.cc
+    ${TOP}LiteCore/Support/TestsCommon.cc
     ${TOP}LiteCore/Support/Error.cc
-    ${TOP}vendor/fleece/Fleece/Support/slice.cc
     ${TOP}vendor/fleece/ObjC/slice+CoreFoundation.cc
-    ${TOP}vendor/fleece/Fleece/Support/betterassert.cc
     ${TOP}vendor/fleece/vendor/libb64/cencode.c
     ${TOP}vendor/fleece/vendor/libb64/cdecode.c
 )
@@ -81,6 +81,7 @@ target_link_libraries(
     C4Tests PRIVATE
     LiteCore
     BLIPStatic
+    FleeceBase
 )
 
 target_include_directories(
@@ -101,6 +102,7 @@ target_include_directories(
     ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}vendor/SQLiteCpp/include
     ${TOP}vendor/mbedtls/crypto/include
+    ${TOP}vendor/fleece/vendor/date/include
     ${TOP}vendor/fleece/vendor/libb64
 )
 

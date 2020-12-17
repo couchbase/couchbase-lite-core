@@ -21,6 +21,7 @@
 #include "Base.hh"
 #include <stdexcept>
 #include <atomic>
+#include <functional>
 
 #undef check
 
@@ -124,6 +125,8 @@ namespace litecore {
                                                  const char *message =nullptr, ...);
 
         static std::string backtrace(unsigned skipFrames =0);
+
+        static void setNotableExceptionHook(std::function<void()> hook);
 
         static bool sWarnOnError;
     };
