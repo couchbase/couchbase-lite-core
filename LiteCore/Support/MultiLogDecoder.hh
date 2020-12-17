@@ -6,8 +6,11 @@
 
 #pragma once
 #include "LogDecoder.hh"
+#include <algorithm>
 #include <climits>
+#include <fstream>
 #include <queue>
+#include <string>
 
 namespace litecore {
 
@@ -37,7 +40,7 @@ namespace litecore {
         }
 
         // Adds a LogDecoder on the log file at the given path.
-        bool add(const string &logPath) {
+        bool add(const std::string &logPath) {
             std::ifstream in(logPath, std::ifstream::in | std::ifstream::binary);
             if (!in)
                 return false;

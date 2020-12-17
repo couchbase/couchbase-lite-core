@@ -328,6 +328,10 @@ void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool prefor
     LogDomain::setCallback((LogDomain::Callback_t)callback, preformatted);
     LogDomain::setCallbackLogLevel((LogLevel)level);
 }
+
+C4LogCallback c4log_getCallback() noexcept {
+    return (C4LogCallback)LogDomain::currentCallback();
+}
 // LCOV_EXCL_STOP
 
 bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error *outError) noexcept {
@@ -347,6 +351,13 @@ C4LogLevel c4log_binaryFileLevel() noexcept      {return (C4LogLevel)LogDomain::
 void c4log_setCallbackLevel(C4LogLevel level) noexcept   {LogDomain::setCallbackLogLevel((LogLevel)level);} //LCOV_EXCL_LINE
 void c4log_setBinaryFileLevel(C4LogLevel level) noexcept {LogDomain::setFileLogLevel((LogLevel)level);}
 
+C4StringResult c4log_binaryFilePath(void) C4API {
+    auto options = LogDomain::currentLogFileOptions();
+    if (!options.path.empty() && !options.isPlaintext)
+        return C4StringResult(alloc_slice(options.path));
+    else
+        return {};
+}
 
 CBL_CORE_API const C4LogDomain kC4DefaultLog    = (C4LogDomain)&kC4Cpp_DefaultLog;
 CBL_CORE_API const C4LogDomain kC4DatabaseLog   = (C4LogDomain)&DBLog;
@@ -410,6 +421,10 @@ void c4log_enableFatalExceptionBacktrace() C4API {
     });
 }
 
+
+void c4log_flushLogFiles() C4API {
+    LogDomain::flushLogFiles();
+}
 
 void c4log(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, ...) noexcept {
     va_list args;

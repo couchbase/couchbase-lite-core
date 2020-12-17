@@ -536,6 +536,13 @@ namespace litecore {
     }
 
 
+    static std::function<void()> sNotableExceptionHook;
+
+    void error::setNotableExceptionHook(function<void()> hook) {
+        sNotableExceptionHook = hook;
+    }
+
+
     void error::_throw() {
 #ifdef LITECORE_IMPL
         bool warn = sWarnOnError;
@@ -545,6 +552,8 @@ namespace litecore {
         if (warn && !isUnremarkable()) {
             WarnError("LiteCore throwing %s error %d: %s%s",
                       nameOfDomain(domain), code, what(), backtrace(1).c_str());
+            if (sNotableExceptionHook)
+                sNotableExceptionHook();
         }
         throw *this;
     }
@@ -592,6 +601,8 @@ namespace litecore {
         } else {
             messageStr += expr;
         }
+        if (sNotableExceptionHook)
+            sNotableExceptionHook();
         if (!WillLog(LogLevel::Error))
             fprintf(stderr, "%s (%s:%u, in %s)", messageStr.c_str(), file, line, fn);
         WarnError("%s (%s:%u, in %s)%s",

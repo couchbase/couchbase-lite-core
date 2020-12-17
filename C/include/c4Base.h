@@ -370,11 +370,19 @@ void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool prefor
     @return  True on success, false on failure. */
 bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* C4NULLABLE error) C4API;
 
+/** Ensures all log messages have been written to the current log files. */
+void c4log_flushLogFiles(void) C4API;
+
 C4LogLevel c4log_callbackLevel(void) C4API;
 void c4log_setCallbackLevel(C4LogLevel level) C4API;
 
 C4LogLevel c4log_binaryFileLevel(void) C4API;
 void c4log_setBinaryFileLevel(C4LogLevel level) C4API;
+
+C4StringResult c4log_binaryFilePath(void) C4API;
+
+/** Returns the current logging callback, or the default one if none has been set. */
+C4LogCallback c4log_getCallback(void) C4API;
 
 /** Looks up a named log domain.
     @param name  The name of the domain, or NULL for the default domain.
