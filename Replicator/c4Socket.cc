@@ -37,6 +37,14 @@ using namespace fleece;
 using namespace litecore;
 using namespace litecore::net;
 
+#define catchAndClose() \
+    catch (const std::exception &x) { \
+        closeWithException(x); \
+    } catch (...) { \
+        WarnError("Non-exception error type caught, closing socket..."); \
+        close(kCodeUnexpectedCondition, "Internal exception"_sl); \
+    }
+
 namespace litecore { namespace repl {
 
     using namespace websocket;
@@ -101,8 +109,11 @@ namespace litecore { namespace repl {
     }
 
     C4SocketImpl::~C4SocketImpl() {
-        if (_factory.dispose)
-            _factory.dispose(this);
+        if (_factory.dispose) {
+            try {
+                _factory.dispose(this);
+            } catchEverything()
+        }
     }
 
 
@@ -145,16 +156,22 @@ namespace litecore { namespace repl {
         WebSocketImpl::connect();
         if (_factory.open) {
             net::Address c4addr(url());
-            _factory.open(this, &c4addr, options().data(), _factory.context);
+            try {
+                _factory.open(this, &c4addr, options().data(), _factory.context);
+            } catchAndClose()
         }
     }
 
     void C4SocketImpl::requestClose(int status, fleece::slice message) {
-        _factory.requestClose(this, status, message);
+        try {
+            _factory.requestClose(this, status, message);
+        } catchEverything()
     }
 
     void C4SocketImpl::closeSocket() {
-        _factory.close(this);
+        try {
+            _factory.close(this);
+        } catchEverything()
     }
 
     void C4SocketImpl::closeWithException(const std::exception &x) {
@@ -166,11 +183,15 @@ namespace litecore { namespace repl {
     }
 
     void C4SocketImpl::sendBytes(alloc_slice bytes) {
-        _factory.write(this, C4SliceResult(bytes));
+        try {
+            _factory.write(this, C4SliceResult(bytes));
+        } catchAndClose()
     }
 
     void C4SocketImpl::receiveComplete(size_t byteCount) {
-        _factory.completedReceive(this, byteCount);
+        try {
+            _factory.completedReceive(this, byteCount);
+        } catchAndClose()
     }
 
 } }
@@ -184,7 +205,11 @@ using namespace litecore::repl;
 static C4SocketImpl* internal(C4Socket *s)  {return (C4SocketImpl*)s;}
 
 #define catchForSocket(S) \
-    catch (const std::exception &x) {internal(S)->closeWithException(x);}
+    catch (const std::exception &x) {internal(S)->closeWithException(x);} \
+    catch (...) { \
+        WarnError("Non-exception type error caught, closing socket..."); \
+        internal(S)->close(kCodeUnexpectedCondition, "Internal exception"_sl); \
+    }
 
 
 void c4socket_registerFactory(C4SocketFactory factory) C4API {
@@ -235,9 +260,7 @@ void c4socket_closed(C4Socket *socket, C4Error error) C4API {
 
     try {
         internal(socket)->onClose(status);
-    } catch (const std::exception &x) {
-        WarnError("Exception caught in c4Socket_closed: %s", x.what());
-    }
+    } catchEverything()
 }
 
 void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API {

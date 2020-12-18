@@ -34,6 +34,7 @@
 
 namespace litecore { namespace repl {
     using namespace std;
+    using namespace std::chrono;
     using namespace fleece;
 
 
@@ -146,8 +147,10 @@ namespace litecore { namespace repl {
         // mutex must be locked
         if (_timer) {
             _changed = true;
-            if (!_saving && !_timer->scheduled())
+            if (!_saving && !_timer->scheduled()) {
+                WriteVerbose("Checkpointer scheduling change in %lld seconds", duration_cast<seconds>(_saveTime).count());
                 _timer->fireAfter(_saveTime);
+            }
         }
     }
 
@@ -161,14 +164,17 @@ namespace litecore { namespace repl {
             if (_saving) {
                 // Can't save immediately because a save is still in progress.
                 // Remember that I'm in this state, so when save finishes I can re-save.
+                WriteVerbose("Checkpointer save already in progress, remembering save for later");
                 _overdueForSave = true;
                 return false;
             }
+
             Assert(_checkpoint);
             _changed = false;
             _saving = true;
             json = _checkpoint->toJSON();
         }
+
         _saveCallback(json);
         return true;
     }
@@ -182,12 +188,16 @@ namespace litecore { namespace repl {
                 _saving = false;
                 if (_overdueForSave)
                     saveAgain = true;
-                else if (_changed)
+                else if (_changed) {
+                    WriteVerbose("Checkpointer scheduling change in %lld seconds", duration_cast<seconds>(_saveTime).count());
                     _timer->fireAfter(_saveTime);
+                }
             }
         }
-        if (saveAgain)
+        if (saveAgain) {
+            WriteVerbose("Checkpointer saving again due to backed up scheduled saves");
             save();
+        }
     }
 
     
@@ -203,8 +213,11 @@ namespace litecore { namespace repl {
     slice Checkpointer::remoteDocID(C4Database *db, C4Error* err) {
         if(!_docID) {
             C4UUID privateID;
-            if (!c4db_getUUIDs(db, nullptr, &privateID, err))
+            if (!c4db_getUUIDs(db, nullptr, &privateID, err)) {
+                WarnError("Checkpointer failed to read local UUID");
                 return nullslice;
+            }
+
             _docID = docIDForUUID(privateID);
         }
 
@@ -248,10 +261,24 @@ namespace litecore { namespace repl {
             writeValueOrNull(enc, filterParams);
             writeValueOrNull(enc, docIDs);
         }
+        
         enc.endArray();
         const alloc_slice data = enc.finish();
         SHA1 digest(data);
         string finalProduct = string("cp-") + slice(&digest, sizeof(digest)).base64String();
+
+        if(WillLog(LogLevel::Verbose)) {
+            WriteVerbose("Checkpoint ID Inputs:");
+            const slice uuidHex = {&localUUID, sizeof(C4UUID)};
+            WriteVerbose("\tUUID: %s", uuidHex.hexString().c_str());
+            WriteVerbose("\tRemote DB ID: %.*s", SPLAT(remoteDBIDString()));
+            WriteVerbose("\tChannels: %.*s", SPLAT(channels.toJSON()));
+            WriteVerbose("\tFilter: %.*s", SPLAT(filter.asString()));
+            WriteVerbose("\tFilter Parameters: %.*s", SPLAT(filterParams.toJSON()));
+            WriteVerbose("\tDoc IDs: %.*s", SPLAT(docIDs.toJSON()));
+            WriteVerbose("Checkpoint ID: %s", finalProduct.c_str());
+        }
+
         return finalProduct;
     }
 
@@ -280,20 +307,27 @@ namespace litecore { namespace repl {
 
             body = _read(db, _initialDocID, outError);
             if (!body) {
-                if (!isNotFoundError(*outError))
+                if (!isNotFoundError(*outError)) {
+                    WarnError("Checkpointer failed to read checkpoint body");
                     return false;
+                }
 
-                // Look for a prior database UUID:
+                Log("Failed to find checkpoint, searching for previous checkpoint from prebuilt DB");
                 const c4::ref<C4RawDocument> doc = c4raw_get(db, kC4InfoStore,
                                                              constants::kPreviousPrivateUUIDKey, outError);
                 if (doc) {
                     // If there is one, derive a doc ID from that and look for a checkpoint there:
                     _initialDocID = docIDForUUID(*(C4UUID*)doc->body.buf);
                     body = _read(db, _initialDocID, outError);
-                    if (!body && !isNotFoundError(*outError))
+                    if (!body && !isNotFoundError(*outError)) {
+                        WarnError("Checkpointer failed to read previous checkpoint body");
                         return false;
+                    }
                 } else if (!isNotFoundError(*outError)) {
+                    WarnError("Checkpointer failed to read previous checkpoint ID");
                     return false;
+                } else {
+                    WriteVerbose("Previous checkpoint not found");
                 }
             }
         }
@@ -323,8 +357,11 @@ namespace litecore { namespace repl {
     bool Checkpointer::write(C4Database *db, slice data, C4Error *outError) {
         const auto checkpointID = remoteDocID(db, outError);
         if (!checkpointID || !c4raw_put(db, constants::kLocalCheckpointStore,
-                                         checkpointID, nullslice, data, outError))
+                                         checkpointID, nullslice, data, outError)) {
+            WarnError("Checkpointer unable to save checkpoint");
             return false;
+        }
+
         // Now that we've saved, use the real checkpoint ID for any future reads:
         _initialDocID = checkpointID;
         _checkpointJSON = nullslice;
@@ -381,13 +418,15 @@ namespace litecore { namespace repl {
             return false;
         }
 
-        if(!read(db, false, outErr) && outErr->code != 0)
+        if(!read(db, false, outErr) && outErr->code != 0) {
+            WarnError("pendingDocumentIDs unable to read checkpoint");
             return false;
+        }
 
         const auto dbLastSequence = c4db_getLastSequence(db);
         const auto replLastSequence = this->localMinSequence();
         if(replLastSequence >= dbLastSequence) {
-            // No changes since the last checkpoint
+            WriteVerbose("No new pending document IDs since the last checkpoint");
             return true;
         }
 
@@ -433,8 +472,10 @@ namespace litecore { namespace repl {
                     continue;
                 }
 
-                if(!isDocumentAllowed(nextDoc))
+                if(!isDocumentAllowed(nextDoc)) {
+                    WriteVerbose("Skipping %.*s due to filter settings", SPLAT(nextDoc->docID));
                     continue;
+                }
             }
 
             callback(info);
@@ -451,12 +492,21 @@ namespace litecore { namespace repl {
             return false;
         }
 
-        if(!read(db, false, outErr) && outErr->code != 0)
+        if(!read(db, false, outErr) && outErr->code != 0) {
+            WarnError("isDocumentPending unable to read checkpoint");
             return false;
+        }
 
         c4::ref<C4Document> doc = c4doc_get(db, docId, false, outErr);
-        if (!doc)
+        if (!doc) {
+            if(outErr->code != 0) {
+                Warn("Unable to get document '%.*s' to check if it is pending", SPLAT(docId));
+            } else {
+                WriteVerbose("isDocumentPending called on non-existent document '%.*s'", SPLAT(docId));
+            }
+
             return false;
+        }
 
         outErr->code = 0;
         return !_checkpoint->isSequenceCompleted(doc->sequence) && isDocumentAllowed(doc);
@@ -490,8 +540,9 @@ namespace litecore { namespace repl {
                                           C4Error* outError)
     {
         c4::Transaction t(db);
-        if (!t.begin(outError))
+        if (!t.begin(outError)) {
             return false;
+        }
 
         // Get the existing raw doc so we can check its revID:
         C4Error tempErr;

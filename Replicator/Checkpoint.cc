@@ -48,10 +48,12 @@ namespace litecore { namespace repl {
             enc.writeInt(c4_now() / 1000);
         }
 
+        LogVerbose(SyncLog, "Contents of checkpoint (besides time):");
         auto minSeq = localMinSequence();
         if (minSeq > 0) {
             enc.writeKey("local"_sl);
             enc.writeUInt(minSeq);
+            LogVerbose(SyncLog, "\t local: %" PRIu64, minSeq);
         }
 
 #ifdef SPARSE_CHECKPOINTS
@@ -59,18 +61,25 @@ namespace litecore { namespace repl {
             // New property for sparse checkpoint. Write the pending sequence ranges as
             // (sequence, length) pairs in an array, omitting the 'infinity' at the end of the last.
             enc.writeKey("localCompleted"_sl);
+            LogVerbose(SyncLog, "\tlocalCompleted: [");
             enc.beginArray();
             for (auto &range : _completed) {
                 enc.writeInt(range.first);
                 enc.writeInt(range.second - range.first);
+                LogVerbose(SyncLog, "\t\t%" PRIu64, range.first);
+                LogVerbose(SyncLog, "\t\t%" PRIu64, range.second - range.first);
             };
+
+            LogVerbose(SyncLog, "\t]");
             enc.endArray();
         }
 #endif
 
         if (_remote) {
+            const auto json = _remote.toJSON();
             enc.writeKey("remote"_sl);
-            enc.writeRaw(_remote.toJSON());
+            enc.writeRaw(json);
+            LogVerbose(SyncLog, "\tremote: %.*s", SPLAT(json));
         }
         
         enc.endDict();

@@ -35,7 +35,10 @@ C4Timestamp c4_now(void) C4API {
 
 
 bool c4db_mayHaveExpiration(C4Database *db) C4API {
-    return db->dataFile()->defaultKeyStore().mayHaveExpiration();
+    return tryCatch<bool>(nullptr, [=] {
+        // Throws exception if db is closed
+        return db->dataFile()->defaultKeyStore().mayHaveExpiration();
+    });
 }
 
 
@@ -70,7 +73,7 @@ int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error *outError) C4API {
     if (c4db_beginTransaction(db, outError)) {
         try {
             count = db->purgeExpiredDocs();
-        } catchError(outError);
+        } catchError(outError)
         if (!c4db_endTransaction(db, (count > 0), outError))
             count = -1;
     }

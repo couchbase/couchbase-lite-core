@@ -43,11 +43,23 @@ namespace c4Internal {
     /** Macro to substitute for a regular 'catch' block, that saves any exception in OUTERR. */
     #define catchError(OUTERR) \
         catch (const std::exception &x) { \
+            C4WarnError("Recording exception caught in %s: %s", __func__, x.what()); \
             c4Internal::recordException(x, OUTERR); \
         }
 
     #define catchExceptions() \
-        catch (const std::exception &) { }
+        catch (const std::exception &x) { \
+            C4WarnError("Exception caught in %s: %s", __func__, x.what()); \
+        }
+
+    #define catchTripleDot() \
+        catch (...) { \
+            C4WarnError("Non-exception type error caught in %s", __func__); \
+        }
+
+    #define catchEverything() \
+            catchExceptions() \
+            catchTripleDot()
 
     #define checkParam(TEST, MSG, OUTERROR) \
         ((TEST) || (c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR(MSG), OUTERROR), false))

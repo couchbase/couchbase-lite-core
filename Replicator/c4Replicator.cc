@@ -62,9 +62,15 @@ static uint16_t defaultPortForScheme(slice scheme) {
 bool c4repl_isValidDatabaseName(C4String dbName) C4API {
     slice name = dbName;
     // Same rules as Couchbase Lite 1.x and CouchDB
-    return name.size > 0 && name.size < 240
+    const auto valid = name.size > 0 && name.size < 240
         && islower(name[0])
         && !slice(name).findByteNotIn("abcdefghijklmnopqrstuvwxyz0123456789_$()+-/"_sl);
+
+    if(!valid) {
+        WarnError("%.*s is not a valid database name for replication", SPLAT(dbName));
+    }
+
+    return valid;
 }
 
 
@@ -89,25 +95,40 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
     slice str = url;
 
     auto colon = str.findByteOrEnd(':');
-    if (!colon)
+    if (!colon) {
+        // Can't log URL yet unless we add a function to strip out a potential password
+        WarnError("c4address_fromURL: Invalid URL (missing colon)");
         return false;
+    }
+
     address->scheme = slice(str.buf, colon);
-    if (!isValidScheme(address->scheme))
+    if (!isValidScheme(address->scheme)) {
+        WarnError("c4address_fromURL: Invalid URL scheme '%.*s' (must be ws or wss)", SPLAT(address->scheme));
         return false;
+    }
+
     address->port = defaultPortForScheme(address->scheme);
     str.setStart(colon);
-    if (!str.hasPrefix("://"_sl))
+    if (!str.hasPrefix("://"_sl)) {
+        WarnError("c4address_fromURL: Invalid URL (missing :// after scheme)");
         return false;
-    str.moveStart(3);
+    }
 
+    str.moveStart(3);
     if (str.size > 0 && str[0] == '[') {
         // IPv6 address in URL is bracketed (RFC 2732):
         auto endBr = str.findByte(']');
-        if (!endBr)
+        if (!endBr) {
+            WarnError("c4address_fromURL: Invalid URL (unmatched '[' in IPv6 address)");
             return false;
+        }
+
         address->hostname = slice(&str[1], endBr);
-        if (address->hostname.size == 0)
+        if (address->hostname.size == 0) {
+            WarnError("c4address_fromURL: Invalid URL (empty hostname inside '[]')");
             return false;
+        }
+
         str.setStart(endBr + 1);
     } else {
         address->hostname = nullslice;
@@ -115,17 +136,24 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
 
     colon = str.findByteOrEnd(':');
     auto pathStart = str.findByteOrEnd('/');
-    if (str.findByteOrEnd('@') < pathStart)
-        return false;                               // No usernames or passwords allowed!
+    if (str.findByteOrEnd('@') < pathStart) {
+        WarnError("c4address_fromURL: Invalid URL (inline password not allowed)");
+        return false;
+    }
+
     if (colon < pathStart) {
         int port;
         try {
             port = stoi(slice(colon+1, pathStart).asString());
         } catch (...) {
+            WarnError("c4address_fromURL: Unexpected error in stoi");
             return false;
         }
-        if (port < 0 || port > 65535)
+        if (port < 0 || port > 65535) {
+            // Finally now we already checked and there is no password in the URL, safe to log
+            WarnError("c4address_fromURL: Invalid URL '%.*s' (port %d out of range 0-65535)", SPLAT(url), port);
             return false;
+        }
         address->port = (uint16_t)port;
     } else {
         colon = pathStart;
@@ -137,8 +165,10 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
     }
 
     if (dbName) {
-        if (pathStart >= str.end())
+        if (pathStart >= str.end()) {
+            WarnError("c4address_fromURL: Invalid URL '%.*s' (dbName parameter passed, but missing path element)", SPLAT(url));
             return false;
+        }
 
         str.setStart(pathStart + 1);
 

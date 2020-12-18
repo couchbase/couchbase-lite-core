@@ -185,22 +185,24 @@ bool c4cert_subjectNameAtIndex(C4Cert* cert,
     outInfo->id = {};
     outInfo->value = {};
 
-    // First go through the DistinguishedNames:
-    auto subjectName = internal(cert)->subjectName();
-    if (auto dn = subjectName.asVector(); index < dn.size()) {
-        outInfo->id = FLSlice_Copy(dn[index].first);
-        outInfo->value = C4StringResult(dn[index].second);
-        return true;
-    } else {
-        index -= narrow_cast<unsigned>(dn.size());
-    }
+    try {
+        // First go through the DistinguishedNames:
+        auto subjectName = internal(cert)->subjectName();
+        if (auto dn = subjectName.asVector(); index < dn.size()) {
+            outInfo->id = FLSlice_Copy(dn[index].first);
+            outInfo->value = C4StringResult(dn[index].second);
+            return true;
+        } else {
+            index -= narrow_cast<unsigned>(dn.size());
+        }
 
-    // Then look in SubjectAlternativeName:
-    if (auto san = internal(cert)->subjectAltNames(); index < san.size()) {
-        outInfo->id = FLSlice_Copy(SubjectAltNames::nameOfTag(san[index].first));
-        outInfo->value = C4StringResult(alloc_slice(san[index].second));
-        return true;
-    }
+        // Then look in SubjectAlternativeName:
+        if (auto san = internal(cert)->subjectAltNames(); index < san.size()) {
+            outInfo->id = FLSlice_Copy(SubjectAltNames::nameOfTag(san[index].first));
+            outInfo->value = C4StringResult(alloc_slice(san[index].second));
+            return true;
+        }
+    } catchExceptions()
 
     return false;
 }
@@ -232,7 +234,7 @@ void c4cert_getValidTimespan(C4Cert* cert C4NONNULL,
                 *outExpires = C4Timestamp(difftime(tExpires, 0) * 1000.0);
             return;
         }
-    } catch (...) { }
+    } catchEverything()
     
     if (outCreated)
         *outCreated = 0;

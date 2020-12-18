@@ -42,8 +42,11 @@ namespace litecore { namespace repl {
 
 
     void DatabaseCookies::saveChanges() {
-        if (!_store->changed())
+        if (!_store->changed()) {
+            WriteVerbose("Cookie Store unchanged, skipping save...");
             return;
+        }
+
         _db->beginTransaction();
         try {
             alloc_slice data = _store->encode();
