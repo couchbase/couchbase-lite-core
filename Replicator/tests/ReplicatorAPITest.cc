@@ -221,7 +221,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
 
 C4_START_WARNINGS_SUPPRESSION
 C4_IGNORE_NONNULL
-#ifndef __clang_analyzer__
 
 TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level Error Handling", "[C][Pull]") {
     C4Error err;
@@ -231,16 +230,22 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level Error Handling", "[C][Pu
     c4::ref<C4Replicator> repl = c4repl_new(db, addr, C4STR("db"), params, &err);
     REQUIRE(repl);
 
+    #if defined(DEBUG) || !defined(__APPLE__)
+    // Apple adorably tries to help out by making all null checks return false for parameters marks non null,
+    // regardless of whether or not they are null.  This means this test is impossible to run in release
+    // mode because it will just SIGSEGV
+
     CHECK(!c4repl_setProgressLevel(nullptr, kC4ReplProgressPerAttachment, &err));
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorInvalidParameter);
 
-    CHECK(!c4repl_setProgressLevel(nullptr, (C4ReplicatorProgressLevel)250, &err));
+    #endif
+
+    CHECK(!c4repl_setProgressLevel(repl, (C4ReplicatorProgressLevel)250, &err));
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorInvalidParameter);
 }
 
-#endif
 C4_STOP_WARNINGS_SUPPRESSION
 
 #ifdef COUCHBASE_ENTERPRISE
