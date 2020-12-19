@@ -27,7 +27,7 @@ namespace litecore {
 
 #if defined(__APPLE__) && LITECORE_SIGNPOSTS
 
-    os_log_t LiteCore = os_log_create("com.couchbase", "signposts");;
+    os_log_t LiteCore = os_log_create("com.couchbase.litecore", "signposts");;
 
     enum Color {
         blue, green, purple, orange, red    // used for last argument
