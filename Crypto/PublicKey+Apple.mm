@@ -578,11 +578,24 @@ namespace litecore { namespace crypto {
                           "Couldn't create a trust to get certificate chain");
             CFAutorelease(trustRef);
             
+#if TARGET_OS_MACCATALYST
+            if (@available(iOS 12.0, macos 10.14, *)) {
+                CFErrorRef error;
+                BOOL trusted = SecTrustEvaluateWithError(trustRef, &error);
+                if (!trusted) {
+                    warnCFError(error, "SecTrustEvaluateWithError");
+                    error::_throw(error::CryptoError, "Couldn't evaluate the trust to get certificate chain");
+                }
+            } else {
+                LogToAt(TLSLogDomain, Error, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
+                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
+            }
+#else
             SecTrustResultType result; // Result will be ignored.
             checkOSStatus(SecTrustEvaluate(trustRef, &result),
                           "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain" );
-            
+#endif
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
             for (CFIndex i = 1; i < count; i++) {
@@ -622,10 +635,24 @@ namespace litecore { namespace crypto {
                           "Couldn't create a trust to get certificate chain");
             CFAutorelease(trustRef);
             
+#if TARGET_OS_MACCATALYST
+            if (@available(iOS 12.0, macos 10.14, *)) {
+                CFErrorRef error;
+                BOOL trusted = SecTrustEvaluateWithError(trustRef, &error);
+                if (!trusted) {
+                    warnCFError(error, "SecTrustEvaluateWithError");
+                    error::_throw(error::CryptoError, "Couldn't evaluate the trust to get certificate chain");
+                }
+            } else {
+                LogToAt(TLSLogDomain, Error, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
+                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
+            }
+#else
             SecTrustResultType result; // Result will be ignored.
             checkOSStatus(SecTrustEvaluate(trustRef, &result),
                           "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain");
+#endif
             
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
@@ -677,13 +704,28 @@ namespace litecore { namespace crypto {
             checkOSStatus(SecTrustCreateWithCertificates(thisCert, policy, &trust),
                           "SecTrustCreateWithCertificates", "Couldn't validate certificate");
             CFAutorelease(trust);
+            
+#if TARGET_OS_MACCATALYST
+            if (@available(iOS 12.0, macos 10.14, *)) {
+                CFErrorRef error;
+                BOOL trusted = SecTrustEvaluateWithError(trust, &error);
+                if (!trusted) {
+                    warnCFError(error, "SecTrustEvaluateWithError");
+                    error::_throw(error::CryptoError, "Couldn't validate certificate");
+                }
+            } else {
+                LogToAt(TLSLogDomain, Error, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
+                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
+            }
+#else
             SecTrustResultType result;
             checkOSStatus(SecTrustEvaluate(trust, &result),
                           "SecTrustEvaluate", "Couldn't validate certificate");
             LogTo(TLSLogDomain, "    ...SecTrustEvaluate returned %d", result);
             if (result != kSecTrustResultUnspecified && result != kSecTrustResultProceed)
                 return nullptr;
-
+#endif
+            
             Retained<Cert> root;
             CFIndex certCount = SecTrustGetCertificateCount(trust);
             for (CFIndex i = 1; i < certCount; ++i) {

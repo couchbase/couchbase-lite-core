@@ -70,6 +70,8 @@ SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/../vendor/SQLite
 
 COMBINE_HIDPI_IMAGES                               = YES    // Stop Xcode from complaining
 
+SDKROOT                                            = iphoneos       // necessary for catalyst
+
 // Disable C++17 aligned-allocation feature in 32-bit builds, to avoid compile errors about lack
 // of support pre-iOS 11. Remove these lines when we stop supporting either 32-bit or iOS 9/10.
 // (CBL-734)
