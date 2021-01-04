@@ -245,8 +245,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Deletion", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
-    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
-    vector<C4BlobKey> blobKeys;
+    std::vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    std::vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
         blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
@@ -284,7 +284,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Prove Attachments", "[.SyncServer]") {
-    vector<string> attachments = {"Hey, this is an attachment!"};
+    std::vector<string> attachments = {"Hey, this is an attachment!"};
     {
         TransactionHelper t(db);
         addDocWithAttachments("doc one"_sl, attachments, "text/plain");

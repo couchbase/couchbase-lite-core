@@ -40,7 +40,7 @@ public:
     slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
     ReplicatorLoopbackTest()
-    :C4Test(GENERATE(Catch::values(0, 1)))
+    :C4Test(GENERATE(0, 1))
     ,db2(createDatabase("2"))
     {
         // Change tuning param so that tests will actually create deltas, despite using small
