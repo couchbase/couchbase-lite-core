@@ -128,8 +128,9 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
 
 
 static void testOpeningEncryptedDBFixture(const char *dbPath, const void *key) {
-    static const C4DatabaseFlags kFlagsToTry[] = {kC4DB_ReadOnly, /*kC4DB_NoUpgrade,*/ 0};
+    static const C4DatabaseFlags kFlagsToTry[] = {/*kC4DB_ReadOnly, kC4DB_NoUpgrade,*/ 0};
     // Skipping NoUpgrade because schema version 302 is mandatory for writeable dbs in CBL 2.7.
+    // Skipping ReadOnly because CBL 3.0 can't open 2.x dbs without upgrading them.
 
     for (C4DatabaseFlags flag : kFlagsToTry) {
         C4DatabaseConfig2 config = { };
