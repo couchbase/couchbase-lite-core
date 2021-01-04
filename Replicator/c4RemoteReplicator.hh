@@ -163,7 +163,7 @@ namespace c4Internal {
 
         // Starts the timer to call `retry` in the future.
         void scheduleRetry(unsigned delayInSecs) {
-            _retryTimer.fireAfter(chrono::seconds(delayInSecs));
+            _retryTimer.fireAfter(std::chrono::seconds(delayInSecs));
             setStatusFlag(kC4WillRetry, true);
         }
 

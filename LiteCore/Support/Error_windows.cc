@@ -21,6 +21,7 @@
 #include <Windows.h>
 #include <string>
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#include "NumConversion.hh"
 #include <DbgHelp.h>
 #include "asprintf.h"
 #include <sstream>
@@ -78,9 +79,9 @@ namespace litecore {
 		symOptions |= SYMOPT_LOAD_LINES | SYMOPT_UNDNAME;
 		SymSetOptions(symOptions);
 		DWORD cbNeeded;
-		EnumProcessModules(process, &module_handles[0], module_handles.size() * sizeof(HMODULE), &cbNeeded);
+		EnumProcessModules(process, &module_handles[0], fleece::narrow_cast<DWORD>(module_handles.size() * sizeof(HMODULE)), &cbNeeded);
 		module_handles.resize(cbNeeded / sizeof(HMODULE));
-		EnumProcessModules(process, &module_handles[0], module_handles.size() * sizeof(HMODULE), &cbNeeded);
+		EnumProcessModules(process, &module_handles[0], fleece::narrow_cast<DWORD>(module_handles.size() * sizeof(HMODULE)), &cbNeeded);
 		transform(module_handles.begin(), module_handles.end(), back_inserter(modules), get_mod_info(process));
 
         const auto captured = CaptureStackBackTrace(0, 50, stack, nullptr);

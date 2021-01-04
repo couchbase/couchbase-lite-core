@@ -25,13 +25,17 @@
 #include <chrono>
 #include <algorithm>
 #include "PlatformCompat.hh"
+#include "date/date.h"
+#include "ParseDate.hh"
 
 #if __APPLE__
 #include <sys/time.h>
 #endif
 
 using namespace std;
+using namespace std::chrono;
 using namespace fleece;
+using namespace date;
 
 namespace litecore {
 
@@ -56,33 +60,26 @@ namespace litecore {
 
 
     void LogIterator::writeTimestamp(Timestamp t, ostream &out) {
-        struct tm tm;
-        localtime_r(&t.secs, &tm);
-        char timestamp[100];
-        strftime(timestamp, sizeof(timestamp), "%T", &tm);
-        out << timestamp;
-        sprintf(timestamp, ".%06u| ", t.microsecs);
-        out << timestamp;
+        local_time<microseconds> tp { seconds(t.secs) + microseconds(t.microsecs) };
+        struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+        tp -= GetLocalTZOffset(&tmpTime, true);
+        out << format("%T| ", tp);
     }
 
 
     void LogIterator::writeISO8601DateTime(Timestamp t, std::ostream &out) {
-        struct tm tm;
-        gmtime_r(&t.secs, &tm);
-        char timestamp[100];
-        strftime(timestamp, sizeof(timestamp), "%FT%T", &tm);
-        out << timestamp;
-        sprintf(timestamp, ".%06uZ", t.microsecs);
-        out << timestamp;
+        sys_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
+        out << format("%FT%TZ", tp);
     }
 
 
     string LogIterator::formatDate(Timestamp t) {
-        struct tm tm;
-        localtime_r(&t.secs, &tm);
-        char timestamp[100];
-        strftime(timestamp, sizeof(timestamp), "%c", &tm);
-        return timestamp;
+        local_time<microseconds> tp(seconds(t.secs) + microseconds(t.microsecs));
+        struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+        tp -= GetLocalTZOffset(&tmpTime, true);
+        stringstream out;
+        out << format("%c", tp);
+        return out.str();
     }
 
 
@@ -193,11 +190,10 @@ namespace litecore {
     {
         if (!startingAt || *startingAt < Timestamp{_startTime, 0}) {
             writeTimestamp({_startTime, 0}, out);
-            struct tm tm;
-            localtime_r(&_startTime, &tm);
-            char datestamp[100];
-            strftime(datestamp, sizeof(datestamp), "---- Logging begins on %A, %x ----\n", &tm);
-            out << datestamp;
+        	local_time<seconds> tp {seconds(_startTime)};
+        	struct tm tmpTime = FromTimestamp(duration_cast<seconds>(tp.time_since_epoch()));
+        	tp -= GetLocalTZOffset(&tmpTime, true);
+        	out << "---- Logging begins on " << format("%A, %x", tp) << " ----" << endl;
         }
 
         LogIterator::decodeTo(out, levelNames, startingAt);
@@ -280,7 +276,7 @@ namespace litecore {
                             break;
                         }
                         case 'x': case 'X':
-                            out << hex << readUVarInt() << dec;
+                            out << hex << readUVarInt() << std::dec;
                             break;
                         case 'u': {
                             out << readUVarInt();
@@ -330,7 +326,7 @@ namespace litecore {
                                 _in.read((char*)&ptr, sizeof(ptr));
                                 out << ptr;
                             }
-                            out << dec;
+                            out << std::dec;
                             break;
                         }
                         case '%':

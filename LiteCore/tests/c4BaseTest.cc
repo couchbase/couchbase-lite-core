@@ -19,12 +19,18 @@
 #include "c4Internal.hh"
 #include "InstanceCounted.hh"
 #include "catch.hpp"
+#include "NumConversion.hh"
+#include "Actor.hh"
+#include <exception>
+#include <chrono>
+#include <thread>
 #ifdef WIN32
 #include <winerror.h>
 #endif
 
-
 using namespace fleece;
+using namespace std;
+using namespace std::chrono_literals;
 
 
 // NOTE: These tests have to be in the C++ tests target, not the C tests, because they use internal
@@ -113,6 +119,53 @@ namespace {
         int32_t bar;
     };
 
+    class TestActor : public litecore::actor::Actor {
+    public:
+        TestActor() 
+            :Actor(kC4Cpp_DefaultLog, "TestActor")
+        {}
+
+        void doot() {
+            enqueue(FUNCTION_TO_QUEUE(TestActor::_doot));    
+        }
+
+        void delayed_doot() {
+            C4Log("I'LL DO IT LATER...");
+            enqueueAfter(0.5s, FUNCTION_TO_QUEUE(TestActor::_doot));
+        }
+
+        void recursive_doot() {
+            enqueue(FUNCTION_TO_QUEUE(TestActor::_recursive_doot));
+        }
+
+        void bad_doot() {
+            enqueue(FUNCTION_TO_QUEUE(TestActor::_bad_doot));
+        }
+
+        void bad_recursive_doot() {
+            enqueue(FUNCTION_TO_QUEUE(TestActor::_bad_recursive_doot));
+        }
+
+    private:
+        void _doot() {
+            C4Log("DOOT!");
+        }
+
+        void _recursive_doot() {
+            C4Log("GETTING READY...");
+            doot();
+        }
+
+        void _bad_doot() {
+            throw std::runtime_error("TURN TO THE DARK SIDE");
+        }
+
+        void _bad_recursive_doot() {
+            C4Log("LET THE HATE FLOW THROUGH YOU...");
+            bad_doot();
+        }
+    };
+
     TEST_CASE("fleece::InstanceCounted") {
         auto baseInstances = InstanceCounted::count();
         auto n = new NonVirtCounty(12);
@@ -126,4 +179,42 @@ namespace {
         REQUIRE(InstanceCounted::count() == baseInstances);
     }
 
+    TEST_CASE("Narrow Cast") {
+        CHECK(narrow_cast<long, uint64_t>(4) == 4);
+        CHECK(narrow_cast<uint8_t, uint16_t>(128U) == 128U);
+        CHECK(narrow_cast<uint8_t, int16_t>(128) == 128U);
+        CHECK(narrow_cast<int8_t, int16_t>(64) == 64);
+        CHECK(narrow_cast<int8_t, int16_t>(-1) == -1);
+
+#if DEBUG
+        CHECK_THROWS(narrow_cast<uint8_t, uint16_t>(UINT8_MAX + 1));
+        CHECK_THROWS(narrow_cast<uint8_t, int16_t>(-1));
+        CHECK_THROWS(narrow_cast<int8_t, int16_t>(INT16_MAX - 1));
+#else
+        CHECK(narrow_cast<uint8_t, uint16_t>(UINT8_MAX + 1) == static_cast<uint8_t>(UINT8_MAX + 1));
+        CHECK(narrow_cast<uint8_t, int8_t>(-1) == static_cast<uint8_t>(-1));
+        CHECK(narrow_cast<int8_t, int16_t>(INT16_MAX - 1) == static_cast<int8_t>(INT16_MAX - 1));
+#endif
+    }
+
+    TEST_CASE("Channel Manifest") {
+        thread t[4];
+        auto actor = retained(new TestActor());
+        for(int i = 0; i < 4; i++) {
+            t[i] = thread([&actor]() {
+                actor->doot();
+            });
+        }
+
+        actor->delayed_doot();
+        t[0].join();
+        t[1].join();
+        t[2].join();
+        t[3].join();
+
+        actor->recursive_doot();
+        this_thread::sleep_for(1s);
+        actor->bad_recursive_doot();
+        this_thread::sleep_for(2s);
+    }
 }

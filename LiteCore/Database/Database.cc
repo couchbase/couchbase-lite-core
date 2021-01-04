@@ -45,6 +45,7 @@ namespace c4Internal {
     using namespace litecore;
     using namespace fleece;
     using namespace fleece::impl;
+    using namespace std;
 
 
     static const slice kMaxRevTreeDepthKey = "maxRevTreeDepth"_sl;
@@ -640,15 +641,19 @@ namespace c4Internal {
     }
 
 
-#if DEBUG
     // Validate that all dictionary keys in this value behave correctly, i.e. the keys found
     // through iteration also work for element lookup. (This tests the fix for issue #156.)
+    // In a debug build this scans the entire collection recursively, while release will stick to
+    // the top level
     static void validateKeys(const Value *val, bool atRoot =true) {
+        // CBL-862: Need to reject invalid top level keys, even in release
         switch (val->type()) {
+#if DEBUG
             case kArray:
                 for (Array::iterator j(val->asArray()); j; ++j)
                     validateKeys(j.value(), false);
                 break;
+#endif
             case kDict: {
                 const Dict *d = val->asDict();
                 for (Dict::iterator i(d); i; ++i) {
@@ -659,10 +664,12 @@ namespace c4Internal {
                     if (atRoot && (key == "_id"_sl || key == "_rev"_sl || key == "_deleted"_sl))
                         error::_throw(error::CorruptRevisionData,
                                       "Illegal top-level key `%.*s` in document", SPLAT(key));
+#if DEBUG
                     if (i.key()->asString() && val->sharedKeys()->couldAdd(key))
                         error::_throw(error::CorruptRevisionData,
                                       "Key `%.*s` should have been shared-key encoded", SPLAT(key));
                     validateKeys(i.value(), false);
+#endif
                 }
                 break;
             }
@@ -688,7 +695,6 @@ namespace c4Internal {
             validateKeys(v);
         }
     }
-#endif
 
 
     void Database::documentSaved(Document* doc) {

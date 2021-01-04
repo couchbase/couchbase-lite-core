@@ -22,7 +22,7 @@
 #include <sys/stat.h>
 #include <atlbase.h>
 #include "TempArray.hh"
-#include "arc4random.h"
+#include "SecureRandomize.hh"
 #include <Error.hh>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -39,7 +39,7 @@ static char* mktemp_internal(char* templ)
 {
     char* start = strchr(templ, '\0');
     while(*(--start) == 'X') {
-	    const uint32_t r = arc4random_uniform(62);
+	    const uint32_t r = litecore::RandomNumber(62);
 		Assert(r < 62);
 		*start = letter_choices[r];
     }

@@ -40,7 +40,7 @@ namespace litecore { namespace repl {
 
     Inserter::Inserter(Replicator *repl)
     :Worker(repl, "Insert")
-    ,_revsToInsert(this, &Inserter::_insertRevisionsNow,
+    ,_revsToInsert(this, "revsToInsert", &Inserter::_insertRevisionsNow,
                    tuning::kInsertionDelay, tuning::kInsertionBatchSize)
     {
         _passive = _options.pull <= kC4Passive;

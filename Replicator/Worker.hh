@@ -35,7 +35,7 @@ namespace litecore { namespace repl {
     extern LogDomain SyncBusyLog;
 
     /** Abstract base class of Actors used by the replicator */
-    class Worker : public actor::Actor, public fleece::InstanceCountedIn<Worker>, public Logging {
+    class Worker : public actor::Actor, public fleece::InstanceCountedIn<Worker> {
     public:
         
         using slice = fleece::slice;
@@ -57,13 +57,18 @@ namespace litecore { namespace repl {
 
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
-            enqueue(&Worker::_connectionClosed);
+            enqueue(FUNCTION_TO_QUEUE(Worker::_connectionClosed));
         }
 
         /** Called by child actors when their status changes. */
         void childChangedStatus(Worker *task, const Status &status) {
-            enqueue(&Worker::_childChangedStatus, task, status);
+            enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), task, status);
         }
+
+        // Tech Debt: Where is the line between worker and replicator?
+        // Also, this level should be an enum
+        virtual int progressNotificationLevel() const   {return _progressNotificationLevel;}
+        void setProgressNotificationLevel(int level);
 
 #if !DEBUG
     protected:
@@ -94,7 +99,7 @@ namespace litecore { namespace repl {
                              void (ACTOR::*method)(Retained<blip::MessageIn>)) {
             std::function<void(Retained<blip::MessageIn>)> fn(
                                         std::bind(method, (ACTOR*)this, std::placeholders::_1) );
-            _connection->setRequestHandler(profile, false, asynchronize(fn));
+            _connection->setRequestHandler(profile, false, asynchronize(profile, fn));
         }
 
         /** Implementation of connectionClosed(). May be overridden, but call super. */
@@ -133,8 +138,6 @@ namespace litecore { namespace repl {
         void addProgress(C4Progress);
         void setProgress(C4Progress);
 
-        int progressNotificationLevel() const   {return _progressNotificationLevel;}
-
         virtual void _childChangedStatus(Worker *task, Status) { }
 
         virtual void afterEvent() override;
@@ -153,7 +156,7 @@ namespace litecore { namespace repl {
     private:
         Retained<blip::Connection> _connection;
         int _pendingResponseCount {0};
-        int _progressNotificationLevel;
+        std::atomic_int _progressNotificationLevel;
         Status _status {kC4Idle};
         bool _statusChanged {false};
     };

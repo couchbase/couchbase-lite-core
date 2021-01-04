@@ -21,9 +21,12 @@
 #include "LogDecoder.hh"
 #include "LiteCoreTest.hh"
 #include "StringUtil.hh"
+#include "PlatformCompat.hh"
 #include <regex>
 #include <sstream>
 #include <fstream>
+
+using namespace std;
 
 #define DATESTAMP "\\w+, \\d{2}/\\d{2}/\\d{2}"
 #define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}\\| "
@@ -200,8 +203,8 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
 TEST_CASE("Logging rollover", "[Log]") {
     auto now = chrono::milliseconds(time(nullptr));
     char folderName[64];
-    sprintf(folderName, "Log_Rollover_%lld/", now.count());
-    FilePath tmpLogDir = FilePath::tempDirectory()[folderName];
+    sprintf(folderName, "Log_Rollover_%" PRIms "/", now.count());
+    FilePath tmpLogDir = TestFixture::sTempDir[folderName];
     tmpLogDir.delRecursive();
     tmpLogDir.mkdir();
     tmpLogDir["intheway"].mkdir();
@@ -227,8 +230,8 @@ TEST_CASE("Logging rollover", "[Log]") {
 
     // HACK: Cause a flush so that the test has something in the second log
     // to actually read into the decoder
-    sprintf(folderName, "Log_Rollover2_%lld/", now.count());
-    FilePath other = FilePath::tempDirectory()[folderName];
+    sprintf(folderName, "Log_Rollover2_%" PRIms "/", now.count());
+    FilePath other = TestFixture::sTempDir[folderName];
     other.mkdir();
     LogFileOptions fileOptions2 { other.canonicalPath(), LogLevel::Info, 1024, 2, false };
     LogDomain::writeEncodedLogsTo(fileOptions2, "Hello");
@@ -261,8 +264,8 @@ TEST_CASE("Logging rollover", "[Log]") {
 
 TEST_CASE("Logging plaintext", "[Log]") {
     char folderName[64];
-    sprintf(folderName, "Log_Plaintext_%lld/", chrono::milliseconds(time(nullptr)).count());
-    FilePath tmpLogDir = FilePath::tempDirectory()[folderName];
+    sprintf(folderName, "Log_Plaintext_%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
+    FilePath tmpLogDir = TestFixture::sTempDir[folderName];
     tmpLogDir.delRecursive();
     tmpLogDir.mkdir();
 

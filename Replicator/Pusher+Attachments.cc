@@ -82,7 +82,7 @@ namespace litecore::repl {
             progress.bytesCompleted += bytesRead;
             if (bytesRead < capacity) {
                 c4stream_close(blob);
-                this->enqueue(&Pusher::_attachmentSent);
+                this->enqueue(FUNCTION_TO_QUEUE(Pusher::_attachmentSent));
                 done = true;
             }
             if (err.code) {

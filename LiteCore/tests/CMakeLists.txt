@@ -131,6 +131,7 @@ target_include_directories(
     ${TOP}REST
     ${TOP}REST/tests
     ${TOP}vendor/sockpp/include
+    ${TOP}vendor/fleece/vendor/date/include
 )
 
 target_link_libraries(
@@ -139,5 +140,6 @@ target_link_libraries(
     LiteCoreStatic
     LiteCoreREST_Static
     LiteCoreWebSocket
+    BLIPStatic          # Explicitly needed in here because GCC is a dinosaur...
     ${END_GROUP_FLAG}
 )

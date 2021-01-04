@@ -22,6 +22,19 @@
 #include <queue>
 #include "Error.hh"
 
+#if __APPLE__ && !defined(ACTORS_USE_GCD)
+// Use GCD if available, as it's more efficient and has better integration with OS & debugger.
+#define ACTORS_USE_GCD
+#endif
+
+// TODO: Add developer switch / debug mode to enable these options at runtime
+// Set to 1 to have Actor object report performance statistics in their destructors
+#define ACTORS_TRACK_STATS  0
+
+// Set to 1 to have Actor objects track their calls through manifests to provide an
+// async stack trace on exception
+#define ACTORS_USE_MANIFESTS 0
+
 namespace litecore { namespace actor {
 
     /** A simple thread-safe producer/consumer queue. */

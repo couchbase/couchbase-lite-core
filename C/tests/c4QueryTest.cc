@@ -21,6 +21,7 @@
 #include "c4Observer.h"
 #include "StringUtil.hh"
 #include <thread>
+using namespace std;
 
 
 static bool operator==(C4FullTextMatch a, C4FullTextMatch b) {
@@ -997,7 +998,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
         REQUIRE(FLArray_Count(indexArray) == 1);
         FLDict indexInfo = FLValue_AsDict(FLArray_Get(indexArray, 0));
         FLSlice indexName = FLValue_AsString(FLDict_Get(indexInfo, "name"_sl));
-        CHECK(indexName == names[i]);
+        CHECK((indexName == names[i]));
 
         REQUIRE(c4db_deleteIndex(db, names[i], &err));
 
@@ -1016,8 +1017,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Database alias column names", "[Query][C][!
     query = c4query_new(db, (C4Slice)queryStr, &err);
     FLSlice expected1 = FLSTR("main");
     FLSlice expected2 = FLSTR("secondary");
-    CHECK(c4query_columnTitle(query, 0) == expected1);
-    CHECK(c4query_columnTitle(query, 1) == expected2);
+    CHECK((c4query_columnTitle(query, 0) == expected1));
+    CHECK((c4query_columnTitle(query, 1) == expected2));
     FLSliceResult_Release(queryStr);
 }
 

@@ -36,6 +36,7 @@ namespace c4Internal {
 
     using namespace fleece;
     using namespace fleece::impl;
+    using namespace std;
 
     class TreeDocument : public Document {
     public:
@@ -318,6 +319,8 @@ namespace c4Internal {
                         _db->documentSaved(this);
                     }
                     return true;
+                default:
+                    Assert(false, "Invalid save result received");
             }
         }
 

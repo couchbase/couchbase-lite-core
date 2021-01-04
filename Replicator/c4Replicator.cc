@@ -29,6 +29,7 @@
 #include <errno.h>
 
 using namespace c4Internal;
+using namespace std;
 
 
 CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[6] = {
@@ -317,6 +318,34 @@ C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) C4API 
     outErr->code = kC4ErrorUnsupported;
     return nullptr;
 #endif
+}
+
+
+bool c4repl_setProgressLevel(C4Replicator* repl, C4ReplicatorProgressLevel level, C4Error* outErr) C4API {
+    C4_START_WARNINGS_SUPPRESSION
+    C4_IGNORE_TAUTOLOGICAL
+    
+    if(_usuallyFalse(repl == nullptr)) {
+        if(outErr) {
+            *outErr = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("repl was null"));
+        }
+
+        return false;
+    }
+    
+    C4_STOP_WARNINGS_SUPPRESSION
+
+    if(_usuallyFalse(level < kC4ReplProgressOverall || level > kC4ReplProgressPerAttachment)) {
+        if(outErr) {
+            *outErr = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("repl was null"));
+        }
+
+        *outErr = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("level out of range"));
+        return false;
+    }
+
+    repl->setProgressLevel(level);
+    return true;
 }
 
 

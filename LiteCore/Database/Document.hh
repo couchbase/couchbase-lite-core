@@ -53,7 +53,7 @@ namespace c4Internal {
         template <class SLICE>
         Document(Database *database, SLICE docID_)
         :_db(database)
-        ,_docIDBuf(move(docID_))
+        ,_docIDBuf(std::move(docID_))
         {
             docID = _docIDBuf;
             extraInfo = { };
@@ -257,11 +257,11 @@ namespace c4Internal {
             return false;
         }
 
-        virtual vector<alloc_slice> findAncestors(const vector<slice> &docIDs,
-                                                  const vector<slice> &revIDs,
-                                                  unsigned maxAncestors,
-                                                  bool mustHaveBodies,
-                                                  C4RemoteID remoteDBID) =0;
+        virtual std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs,
+                                                       const std::vector<slice> &revIDs,
+                                                       unsigned maxAncestors,
+                                                       bool mustHaveBodies,
+                                                       C4RemoteID remoteDBID) =0;
 
     private:
         Database* const _db;

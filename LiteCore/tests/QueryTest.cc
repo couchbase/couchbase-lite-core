@@ -18,33 +18,17 @@
 
 #include "QueryTest.hh"
 #include "SQLiteDataFile.hh"
-#include <time.h>
-#include <float.h>
+#include <ctime>
+#include <cfloat>
+#include <cinttypes>
+#include <chrono>
+#include "date/date.h"
+#include "ParseDate.hh"
 
 using namespace fleece::impl;
-
-static string local_to_utc(const char* format, int days, int hours, int minutes,
-                               int hourOffset, int minuteOffset) {
-    minutes -= minuteOffset;
-    hours -= hourOffset;
-    if(hours < 0) {
-        hours += 24;
-        days -= 1;
-    } else if (hours > 23) {
-        hours -= 24;
-        days += 1;
-    }
-    
-    if(minutes < 0) {
-        minutes += 60;
-        hours -= 1;
-    } else if(minutes > 59) {
-        minutes -= 60;
-        hours += 1;
-    }
-    
-    return stringWithFormat(format, days, hours, minutes);
-}
+using namespace std;
+using namespace std::chrono;
+using namespace date;
 
 TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
@@ -124,7 +108,7 @@ TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
     alloc_slice rows;
     ((SQLiteDataFile&)store->dataFile()).inspectIndex("nums"_sl, rowCount, &rows);
     string rowsJSON = Value::fromTrustedData(rows)->toJSONString();
-    Log("Index has %lld rows", rowCount);
+    Log("Index has %" PRIi64 " rows", rowCount);
     Log("Index contents: %s", rowsJSON.c_str());
     CHECK(rowCount == 100);
 }
@@ -977,27 +961,28 @@ TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 
 
 TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
-    // Calculate offset
-    time_t rawtime = 1540252800; // 2018-10-23 midnight GMT
-    struct tm gbuf;
-    struct tm lbuf;
-    gmtime_r(&rawtime, &gbuf);
-    localtime_r(&rawtime, &lbuf);
-    time_t gmt = mktime(&gbuf);
-    auto diff = (int)difftime(rawtime, gmt);
-    if(lbuf.tm_isdst > 0) {
-        // mktime uses GMT, but we want UTC which is unaffected
-        // by DST
-        diff += 3600;
-    }
+    local_seconds localtime = (local_days)(2018_y/10/23); 
+    struct tm tmpTime = FromTimestamp(localtime.time_since_epoch());
+    localtime += GetLocalTZOffset(&tmpTime, false);
     
-    auto diffTotal = (int)(diff / 60.0);
-    auto diffHour = (int)(diffTotal / 60.0);
-    auto diffMinute = diffTotal % 60;
-    
-    auto expected1 = local_to_utc("2018-10-%02dT%02d:%02d:00Z", 23, 0, 0, diffHour, diffMinute);
-    auto expected2 = local_to_utc("2018-10-%02dT%02d:%02d:00Z", 23, 18, 33, diffHour, diffMinute);
-    auto expected3 = local_to_utc("2018-10-%02dT%02d:%02d:01Z", 23, 18, 33, diffHour, diffMinute);
+    stringstream s1, s2, s3;
+    s1 << date::format("%FT%TZ", localtime);
+    localtime += 18h + 33min;
+    s2 << date::format("%FT%TZ", localtime);
+    localtime += 1s;
+    s3 << date::format("%FT%TZ", localtime);
+
+    localtime = (local_days)(1944_y/6/6);
+    localtime += 6h + 30min;
+    tmpTime = FromTimestamp(localtime.time_since_epoch());
+    localtime += GetLocalTZOffset(&tmpTime, false);
+    stringstream s4;
+    s4 << date::format("%FT%TZ", localtime);
+
+    auto expected1 = s1.str();
+    auto expected2 = s2.str();
+    auto expected3 = s3.str();
+    auto expected4 = s4.str();
     
     testExpressions( {
         {"['str_to_utc()', null]",                            "null"},
@@ -1007,6 +992,7 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
         {"['str_to_utc()', '2018-10-23']",                    expected1},
         {"['str_to_utc()', '2018-10-23T18:33']",              expected2},
         {"['str_to_utc()', '2018-10-23T18:33:01']",           expected3},
+        {"['str_to_utc()', '1944-06-06T06:30:00']",           expected4},
         {"['str_to_utc()', '2018-10-23T18:33:01Z']",          "2018-10-23T18:33:01Z"},
         {"['str_to_utc()', '2018-10-23T11:33:01-0700']",      "2018-10-23T18:33:01Z"},
         {"['str_to_utc()', '2018-10-23T11:33:01+03:30']",     "2018-10-23T08:03:01Z"},
@@ -1015,6 +1001,7 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
 
         {"['str_to_millis()', '']",                           "null"},
         {"['str_to_millis()', '1970-01-01T00:00:00Z']",       "0"},
+        {"['str_to_millis()', '1944-06-06T06:30:00+01:00']",  "-806956200000"},
         {"['str_to_millis()', '2018-10-23T11:33:01-0700']",   "1540319581000"},
         {"['str_to_millis()', '2018-10-23T18:33:01Z']",       "1540319581000"},
         {"['str_to_millis()', '2018-10-23T18:33:01.123Z']",   "1540319581123"},
@@ -1053,6 +1040,7 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
         {"['millis_to_utc()', 1540319581000]",                "2018-10-23T18:33:01Z"},
         {"['millis_to_utc()', 1540319581123]",                "2018-10-23T18:33:01.123Z"},
         {"['millis_to_utc()', 1540319581999]",                "2018-10-23T18:33:01.999Z"},
+        {"['millis_to_utc()', -806956200000]",                "1944-06-06T05:30:00Z"},
 
         // It's hard to test millis_to_str directly, because the result depends on the
         // local time zone...

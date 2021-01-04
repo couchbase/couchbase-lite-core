@@ -25,6 +25,7 @@
 #include <algorithm>
 
 using namespace litecore::REST;
+using namespace std;
 
 
 #ifdef COUCHBASE_ENTERPRISE

@@ -28,12 +28,32 @@
 #include "function_ref.hh"
 #include <functional>
 
-using namespace std;
 using namespace litecore;
 
-
-#define LOCK(MUTEX)     unique_lock<mutex> _lock(MUTEX)
+#define LOCK(MUTEX)     std::unique_lock<std::mutex> _lock(MUTEX)
 #define UNLOCK()        _lock.unlock();
+
+#if defined(__clang__)
+    #define C4_START_WARNINGS_SUPPRESSION _Pragma( "clang diagnostic push" )
+    #define C4_STOP_WARNINGS_SUPPRESSION _Pragma( "clang diagnostic pop" )
+    #define C4_IGNORE_TAUTOLOGICAL _Pragma( "clang diagnostic ignored \"-Wtautological-pointer-compare\"" )
+    #define C4_IGNORE_NONNULL _Pragma( "clang diagnostic ignored \"-Wnonnull\"" )
+#elif defined(__GNUC__)
+    #define C4_START_WARNINGS_SUPPRESSION _Pragma( "GCC diagnostic push" )
+    #define C4_STOP_WARNINGS_SUPPRESSION _Pragma( "GCC diagnostic pop" )
+    #define C4_IGNORE_TAUTOLOGICAL
+    #define C4_IGNORE_NONNULL _Pragma( "GCC diagnostic ignored \"-Wnonnull\"" )
+#elif defined(_MSC_VER)
+    #define C4_START_WARNINGS_SUPPRESSION __pragma( warning(push) )
+    #define C4_STOP_WARNINGS_SUPPRESSION __pragma( warning(pop) )
+    #define C4_IGNORE_TAUTOLOGICAL
+    #define C4_IGNORE_NONNULL
+#else
+    #define C4_START_WARNINGS_SUPPRESSION
+    #define C4_STOP_WARNINGS_SUPPRESSION
+    #define C4_IGNORE_TAUTOLOGICAL
+    #define C4_IGNORE_NONNULL
+#endif
 
 
 namespace c4Internal {
@@ -48,9 +68,9 @@ namespace c4Internal {
     // SLICES:
 
     C4SliceResult sliceResult(const char *str);
-    C4SliceResult sliceResult(const string&);
+    C4SliceResult sliceResult(const std::string&);
 
-    string toString(C4Slice);
+    std::string toString(C4Slice);
 
     void destructExtraInfo(C4ExtraInfo&) noexcept;
 }

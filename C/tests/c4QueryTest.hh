@@ -16,13 +16,11 @@
 #include "StringUtil.hh"
 #include <iostream>
 
-using namespace std;
 using namespace fleece;
-
 
 class C4QueryTest : public C4Test {
 public:
-    C4QueryTest(int which, string filename)
+    C4QueryTest(int which, std::string filename)
     :C4Test(which)
     {
         if (!filename.empty())
@@ -37,7 +35,7 @@ public:
         c4query_release(query);
     }
 
-    void compileSelect(const string &queryStr) {
+    void compileSelect(const std::string &queryStr) {
         INFO("Query = " << queryStr);
         C4Error error{};
         c4query_release(query);
@@ -47,11 +45,11 @@ public:
         REQUIRE(query);
     }
 
-    void compile(const string &whereExpr,
-                 const string &sortExpr ="",
+    void compile(const std::string &whereExpr,
+                 const std::string &sortExpr ="",
                  bool addOffsetLimit =false)
     {
-        stringstream json;
+        std::stringstream json;
         json << "[\"SELECT\", {\"WHAT\": [[\"._id\"]], \"WHERE\": " << whereExpr;
         if (!sortExpr.empty())
             json << ", \"ORDER_BY\": " << sortExpr;
@@ -71,8 +69,8 @@ public:
 
     // Runs query, invoking callback for each row and collecting its return values into a vector
     template <class Collected>
-    vector<Collected> runCollecting(const char *bindings,
-                                    function<Collected(C4QueryEnumerator*)> callback)
+    std::vector<Collected> runCollecting(const char *bindings,
+                                    std::function<Collected(C4QueryEnumerator*)> callback)
     {
         REQUIRE(query);
         C4QueryOptions options = kC4DefaultQueryOptions;
@@ -80,7 +78,7 @@ public:
         auto e = c4query_run(query, &options, c4str(bindings), &error);
         INFO("c4query_run got error " << error.domain << "/" << error.code);
         REQUIRE(e);
-        vector<Collected> results;
+        std::vector<Collected> results;
         while (c4queryenum_next(e, &error))
             results.push_back(callback(e));
         CHECK(error.code == 0);
@@ -89,11 +87,11 @@ public:
     }
 
     // Runs query, returning vector of doc IDs (or whatever 1st result col is)
-    vector<string> run(const char *bindings =nullptr) {
-        return runCollecting<string>(bindings, [&](C4QueryEnumerator *e) {
+    std::vector<std::string> run(const char *bindings =nullptr) {
+        return runCollecting<std::string>(bindings, [&](C4QueryEnumerator *e) {
             REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
             if (e->missingColumns & 1)
-                return string("MISSING");
+                return std::string("MISSING");
             FLValue val = FLArrayIterator_GetValueAt(&e->columns, 0);
             fleece::alloc_slice result;
             if (FLValue_GetType(val) == kFLString)
@@ -105,8 +103,8 @@ public:
     }
 
     // Runs query, returning vector of doc IDs
-    vector<string> run2(const char *bindings =nullptr) {
-        return runCollecting<string>(bindings, [&](C4QueryEnumerator *e) {
+    std::vector<std::string> run2(const char *bindings =nullptr) {
+        return runCollecting<std::string>(bindings, [&](C4QueryEnumerator *e) {
             REQUIRE(FLArrayIterator_GetCount(&e->columns) >= 2);
             fleece::alloc_slice c1 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 0));
             fleece::alloc_slice c2 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 1));
@@ -119,18 +117,18 @@ public:
     }
 
     // Runs query, returning vectors of FTS matches (one vector per row)
-    vector<vector<C4FullTextMatch>> runFTS(const char *bindings =nullptr) {
-        return runCollecting<vector<C4FullTextMatch>>(bindings, [&](C4QueryEnumerator *e) {
-            return vector<C4FullTextMatch>(&e->fullTextMatches[0],
+    std::vector<std::vector<C4FullTextMatch>> runFTS(const char *bindings =nullptr) {
+        return runCollecting<std::vector<C4FullTextMatch>>(bindings, [&](C4QueryEnumerator *e) {
+            return std::vector<C4FullTextMatch>(&e->fullTextMatches[0],
                                            &e->fullTextMatches[e->fullTextMatchCount]);
         });
     }
 
-    void checkColumnTitles(const vector<string> &expectedTitles) {
+    void checkColumnTitles(const std::vector<std::string> &expectedTitles) {
         size_t n = c4query_columnCount(query);
-        vector<string> titles;
+        std::vector<std::string> titles;
         for (unsigned i = 0; i < n; ++i)
-            titles.push_back( string(slice(c4query_columnTitle(query, i))) );
+            titles.push_back( std::string(slice(c4query_columnTitle(query, i))) );
         CHECK(titles == expectedTitles);
     }
 

@@ -34,7 +34,7 @@
 #include <android/log.h>
 #endif
 
-#if defined(__clang__) && !defined(__ANDROID__)
+#if (defined(__linux__) || defined(__APPLE__)) && !defined(__ANDROID__)
 #include <cxxabi.h>
 #endif
 
@@ -536,12 +536,16 @@ namespace litecore {
     }
 
 
-    unsigned LogDomain::registerObject(const void *object,
+    unsigned LogDomain::registerObject(const void *object, const unsigned* val,
                                        const string &description,
                                        const string &nickname,
                                        LogLevel level)
     {
         unique_lock<mutex> lock(sLogMutex);
+        if(*val != 0) {
+            return *val;
+        }
+
         unsigned objRef = ++slastObjRef;
         sObjNames.insert({objRef, nickname});
         if (sCallback && level >= _callbackLogLevel())
@@ -567,7 +571,7 @@ namespace litecore {
 
     static std::string classNameOf(const Logging *obj) {
         const char *name = typeid(*obj).name();
-#if defined(__clang__) && !defined(__ANDROID__)
+#if (defined(__linux__) || defined(__APPLE__)) && !defined(__ANDROID__)
         // Get the name of my class, unmangle it, and remove namespaces:
         size_t unmangledLen;
         int status;
@@ -583,7 +587,7 @@ namespace litecore {
     }
 
     std::string Logging::loggingName() const {
-        return format("{%s#%u}", loggingClassName().c_str(), _objectRef);
+        return format("{%s#%u}", loggingClassName().c_str(), getObjectRef());
     }
 
     std::string Logging::loggingClassName() const {
@@ -604,7 +608,7 @@ namespace litecore {
         if(_objectRef == 0) {
             string nickname = loggingClassName();
             string identifier = classNameOf(this) + " " + loggingIdentifier();
-            _objectRef = _domain.registerObject(this, identifier, nickname, level);
+            _objectRef = _domain.registerObject(this, &_objectRef, identifier, nickname, level);
         }
         return _objectRef;
     }

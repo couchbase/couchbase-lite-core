@@ -28,6 +28,7 @@
 
 using namespace litecore::net;
 using namespace litecore::REST;
+using namespace std;
 
 
 //#ifdef COUCHBASE_ENTERPRISE
@@ -121,7 +122,7 @@ public:
 #endif
         if (!r->run())
             C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
-        C4Log("Status: %d %s", r->status(), r->statusMessage().c_str());
+        C4Log("Status: %d %s", static_cast<int>(r->status()), r->statusMessage().c_str());
         string responseBody = r->body().asString();
         C4Log("Body: %s", responseBody.c_str());
         INFO("Error: " << c4error_descriptionStr(r->error()));

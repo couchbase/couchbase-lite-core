@@ -21,6 +21,7 @@
 
 using namespace fleece;
 using namespace fleece::impl;
+using namespace std;
 
 
 class DocumentKeysTestFixture : public DataFileTestFixture {

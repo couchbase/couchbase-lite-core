@@ -28,6 +28,8 @@
 #endif
 
 #include "LiteCoreTest.hh"
+#include <sstream>
+#include <cinttypes>
 
 using namespace litecore;
 using namespace fleece::impl;
@@ -496,7 +498,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
     }
 
     int64_t newSize = db->fileSize();
-    Log("File size went from %llu to %llu", oldSize, newSize);
+    Log("File size went from %" PRIi64 " to %" PRIi64, oldSize, newSize);
     CHECK(newSize < oldSize - 100000);
 }
 
@@ -505,7 +507,7 @@ TEST_CASE("CanonicalPath") {
     const char* startPath = "C:\\folder\\..\\subfolder\\";
     string endPath = "C:\\subfolder\\";
 #else
-    auto tmpPath = FilePath::tempDirectory().path();
+    auto tmpPath = TestFixture::sTempDir.path();
     auto startPath = tmpPath + "folder/";
     ::mkdir(startPath.c_str(), 777);
     startPath += "../subfolder/";

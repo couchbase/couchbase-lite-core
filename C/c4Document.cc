@@ -35,6 +35,7 @@
 #include "FleeceImpl.hh"
 
 using namespace fleece::impl;
+using namespace std;
 
 
 C4Document* c4doc_retain(C4Document *doc) noexcept {
@@ -232,7 +233,7 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
         // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
         // If the ID isn't found, then do a second pass where we either add the remote URL
         // or create the doc from scratch, in a transaction.
-        for (int creating = false; creating <= true; ++creating) {
+        for (int creating = 0; creating <= 1; ++creating) {
             if (creating) {     // 2nd pass takes place in a transaction
                 db->beginTransaction();
                 inTransaction = true;

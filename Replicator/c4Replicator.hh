@@ -33,11 +33,9 @@
 #include "fleece/Fleece.hh"
 #include <atomic>
 
-using namespace std;
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::repl;
-
 
 /** Glue between C4 API and internal LiteCore replicator. Abstract class. */
 struct C4Replicator : public RefCounted,
@@ -166,6 +164,7 @@ struct C4Replicator : public RefCounted,
     virtual void setProperties(AllocedDict properties) {
         LOCK(_mutex);
         _options.properties = properties;
+        _progressLevel = static_cast<C4ReplicatorProgressLevel>(_options.progressLevel());
     }
 
     // Prevents any future client callbacks (called by `c4repl_free`.)
@@ -182,6 +181,15 @@ struct C4Replicator : public RefCounted,
 
     C4SliceResult pendingDocumentIDs(C4Error* outErr) const {
         return PendingDocuments(this).pendingDocumentIDs(outErr);
+    }
+
+    void setProgressLevel(C4ReplicatorProgressLevel level) {
+        _progressLevel = level;
+        if(_replicator) {
+            _replicator->setProgressNotificationLevel(static_cast<int>(level));
+        } else {
+            logVerbose("Replicator not yet created, saving progress level value for later...");
+        }
     }
     
 #ifdef COUCHBASE_ENTERPRISE
@@ -211,6 +219,7 @@ protected:
     ,_onDocumentsEnded(params.onDocumentsEnded)
     ,_onBlobProgress(params.onBlobProgress)
     {
+        _progressLevel = static_cast<C4ReplicatorProgressLevel>(_options.progressLevel());
         _status.flags |= kC4HostReachable;
     }
 
@@ -262,7 +271,7 @@ protected:
 
     unsigned getIntProperty(slice key, unsigned defaultValue) const {
         if (auto val = _options.properties[key]; val.type() == kFLNumber)
-            return unsigned( max(int64_t(0), min(int64_t(UINT_MAX), val.asInt())) );
+            return unsigned(std::max(int64_t(0), std::min(int64_t(UINT_MAX), val.asInt())) );
         else
             return defaultValue;
     }
@@ -280,6 +289,8 @@ protected:
             if(!createReplicator()) {
                 return false;
             }
+
+            _replicator->setProgressNotificationLevel(static_cast<int>(_progressLevel));
         }
 
 		setStatusFlag(kC4Suspended, false);
@@ -379,7 +390,7 @@ protected:
             return;
 
         auto nRevs = revs.size();
-        vector<const C4DocumentEnded*> docsEnded;
+        std::vector<const C4DocumentEnded*> docsEnded;
         docsEnded.reserve(nRevs);
         for (int pushing = 0; pushing <= 1; ++pushing) {
             docsEnded.clear();
@@ -497,14 +508,15 @@ protected:
 
     private:
         Retained<Replicator> replicator;
-        optional<Checkpointer> checkpointer;
+        std::optional<Checkpointer> checkpointer;
         Retained<C4Database> database;
     };
 
 
-    mutable mutex               _mutex;
+    mutable std::mutex          _mutex;
     Retained<C4Database> const  _database;
     Replicator::Options         _options;
+    C4ReplicatorProgressLevel   _progressLevel {kC4ReplProgressOverall};
 
     Retained<Replicator>        _replicator;
     C4ReplicatorStatus          _status {kC4Stopped};
@@ -517,7 +529,7 @@ private:
     mutable alloc_slice         _peerTLSCertificateData;
     mutable c4::ref<C4Cert>     _peerTLSCertificate;
     Retained<C4Replicator>      _selfRetain;            // Keeps me from being deleted
-    atomic<C4ReplicatorStatusChangedCallback>   _onStatusChanged;
-    atomic<C4ReplicatorDocumentsEndedCallback>  _onDocumentsEnded;
-    atomic<C4ReplicatorBlobProgressCallback>    _onBlobProgress;
+    std::atomic<C4ReplicatorStatusChangedCallback>   _onStatusChanged;
+    std::atomic<C4ReplicatorDocumentsEndedCallback>  _onDocumentsEnded;
+    std::atomic<C4ReplicatorBlobProgressCallback>    _onBlobProgress;
 };

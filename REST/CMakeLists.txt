@@ -56,6 +56,7 @@ target_include_directories(
     ../vendor/fleece/Fleece/Support
     ../vendor/mbedtls/include
     ../vendor/sockpp/include
+    ../vendor/fleece/vendor/date/include
 )
 if(BUILD_ENTERPRISE)
     target_include_directories(
@@ -63,5 +64,15 @@ if(BUILD_ENTERPRISE)
         ../../vendor/couchbase-lite-core-EE/Listener
     )
 endif()
+
+target_compile_definitions(
+    LiteCoreREST_Static PRIVATE
+    HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
+)
+
+target_link_libraries(
+    LiteCoreREST_Static PUBLIC
+    LiteCoreStatic
+)
 
 setup_rest_build()

@@ -214,7 +214,7 @@ namespace litecore {
                         if (sizeof(param) == 8)
                             param = fleece::endian::encLittle64(param);
                         else
-                            param = fleece::endian::encLittle32(param);
+                            param = fleece::endian::encLittle32((uint32_t)param);
                         _writer.write(&param, sizeof(param));
                         break;
                     }

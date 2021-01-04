@@ -40,6 +40,8 @@ namespace litecore {
     /** SQLite implementation of KeyStore; corresponds to a SQL table. */
     class SQLiteKeyStore : public KeyStore, public QueryParser::delegate {
     public:
+        using KeyStore::get; // GCC gets confused by the overloaded virtual functions in KeyStore
+
         uint64_t recordCount() const override;
         sequence_t lastSequence() const override;
         uint64_t purgeCount() const override;

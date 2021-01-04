@@ -128,7 +128,7 @@ public:
 private:
     friend class Logging;
     static std::string getObject(unsigned);
-    unsigned registerObject(const void *object, const std::string &description,
+    unsigned registerObject(const void *object, const unsigned* val, const std::string &description,
                             const std::string &nickname, LogLevel level);
     void unregisterObject(unsigned obj);
     void vlog(LogLevel level, unsigned obj, bool callback, const char *fmt, va_list);
@@ -166,10 +166,10 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 #define LogVerbose(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
 #define LogDebug(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
 
-#define Debug(FMT, ...)                 LogToAt(litecore::kC4Cpp_DefaultLog, Debug,   FMT, ##__VA_ARGS__)
 #define Log(FMT, ...)                   LogToAt(litecore::kC4Cpp_DefaultLog, Info,    FMT, ##__VA_ARGS__)
 #define Warn(FMT, ...)                  LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##__VA_ARGS__)
 #define WarnError(FMT, ...)             LogToAt(litecore::kC4Cpp_DefaultLog, Error,   FMT, ##__VA_ARGS__)
+#define WriteDebug(FMT, ...)            LogToAt(litecore::kC4Cpp_DefaultLog, Debug,   FMT, ##__VA_ARGS__)
 #else
 #define LogToAt(DOMAIN, LEVEL, FMT, ARGS...) \
     ({if (_usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL))) \
@@ -179,7 +179,7 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 #define LogVerbose(DOMAIN, FMT, ARGS...)    LogToAt(DOMAIN, Verbose, FMT, ##ARGS)
 #define LogDebug(DOMAIN, FMT, ARGS...)      LogToAt(DOMAIN, Debug, FMT, ##ARGS)
 
-#define Debug(FMT, ARGS...)                 LogToAt(litecore::kC4Cpp_DefaultLog, Debug,   FMT, ##ARGS)
+#define WriteDebug(FMT, ARGS...)            LogToAt(litecore::kC4Cpp_DefaultLog, Debug,   FMT, ##ARGS)
 #define Log(FMT, ARGS...)                   LogToAt(litecore::kC4Cpp_DefaultLog, Info,    FMT, ##ARGS)
 #define Warn(FMT, ARGS...)                  LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##ARGS)
 #define WarnError(FMT, ARGS...)             LogToAt(litecore::kC4Cpp_DefaultLog, Error,   FMT, ##ARGS)

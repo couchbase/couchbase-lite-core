@@ -24,6 +24,7 @@
 #include "Increment.hh"
 #include "StringUtil.hh"
 #include "c4Document+Fleece.h"
+#include <cinttypes>
 
 using namespace std;
 using namespace litecore::blip;
@@ -138,7 +139,7 @@ namespace litecore::repl {
             sendRequest(msg);
 
             doneWithRev(request, false, false);
-            enqueue(&Pusher::maybeSendMoreRevs);  // async call to avoid recursion
+            enqueue(FUNCTION_TO_QUEUE(Pusher::maybeSendMoreRevs));  // async call to avoid recursion
         }
     }
 
@@ -150,7 +151,7 @@ namespace litecore::repl {
                 doneWithRev(rev, false, false);
                 break;
             case MessageProgress::kAwaitingReply:
-                logDebug("Transmitted 'rev' %.*s #%.*s (seq #%llu)",
+                logDebug("Transmitted 'rev' %.*s #%.*s (seq #%" PRIu64 ")",
                          SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                 decrement(_revisionsInFlight);
                 increment(_revisionBytesAwaitingReply, progress.bytesSent);

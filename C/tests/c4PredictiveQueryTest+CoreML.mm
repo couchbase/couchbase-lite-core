@@ -28,6 +28,7 @@
 #include <array>
 
 using namespace fleece;
+using namespace std;
 
 
 static NSString* asNSString(const string &str) {

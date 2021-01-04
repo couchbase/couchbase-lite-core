@@ -14,9 +14,6 @@
 
 #include "c4.hh"
 #include "StringUtil.hh"
-
-
-using namespace std;
 using namespace fleece;
 
 
@@ -68,8 +65,8 @@ public:
 
 
     // Read cert & private key from files
-    static Identity readIdentity(const string &certPath,
-                                 const string &keyPath, const string& keyPassword)
+    static Identity readIdentity(const std::string &certPath,
+                                 const std::string &keyPath, const std::string& keyPassword)
     {
         Identity id {
             c4cert_fromData(C4Test::readFile(certPath), nullptr),

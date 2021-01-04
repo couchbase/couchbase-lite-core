@@ -1,0 +1,5 @@
+#cmakedefine HAVE_PTHREAD_GETNAME_NP
+#cmakedefine HAVE_PTHREAD_THREADID_NP
+#cmakedefine HAVE_PRCTL
+#cmakedefine HAVE_SYS_GETTID
+#cmakedefine HAVE_NR_GETTID

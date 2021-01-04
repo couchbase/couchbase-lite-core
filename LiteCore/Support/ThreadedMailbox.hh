@@ -17,23 +17,14 @@
 //
 
 #pragma once
-#include "PlatformCompat.hh"
 #include "Channel.hh"
+#include "ChannelManifest.hh"
 #include "RefCounted.hh"
 #include "Stopwatch.hh"
 #include <atomic>
 #include <string>
 #include <thread>
 #include <functional>
-
-#if __APPLE__ && __has_extension(blocks)
-// Use GCD if available, as it's more efficient and has better integration with OS & debugger.
-#define ACTORS_USE_GCD
-#endif
-
-
-// Set to 1 to have Actor object report performance statistics in their destructors
-#define ACTORS_TRACK_STATS  0
 
 namespace litecore { namespace actor {
     using fleece::RefCounted;
@@ -58,8 +49,8 @@ namespace litecore { namespace actor {
 
         unsigned eventCount() const                         {return (unsigned)size() + (unsigned)_delayedEventCount;}
 
-        void enqueue(const std::function<void()>&);
-        void enqueueAfter(delay_t delay, const std::function<void()>&);
+        void enqueue(const char* name, const std::function<void()>&);
+        void enqueueAfter(delay_t delay, const char* name, const std::function<void()>&);
 
         static Actor* currentActor()                        {return sCurrentActor;}
 
@@ -92,6 +83,11 @@ namespace litecore { namespace actor {
 #endif
         
         static thread_local Actor* sCurrentActor;
+
+#if ACTORS_USE_MANIFESTS
+        mutable ChannelManifest _localManifest;
+        static thread_local std::shared_ptr<ChannelManifest> sThreadManifest;
+#endif
     };
 
     /** The Scheduler is reponsible for calling ThreadedMailboxes to run their Actor methods.

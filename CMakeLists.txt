@@ -20,8 +20,8 @@ This project is built for the following platforms at Couchbase:
 - Windows 10
 - UWP
 - macOS 10.13
-- CentOS 7 (clang / libc++)
-- Android API 19+
+- CentOS 7 (gcc 7.x+)
+- Android API 22+
 
 Platform logic is largely separated into the cmake/platform_*.cmake files.  Platforms are conglomerated together as follows
 - platform_base
@@ -50,7 +50,6 @@ include(CMakeDependentOption)
 
 ### BUILD SETTINGS:
 
-set(COMPILE_FLAGS   "${COMPILE_FLAGS}   -Wall -Werror")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -122,6 +121,7 @@ if(CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-psabi -Wno-odr")
 endif()
 
+check_threading()
 setup_globals()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${LITECORE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LITECORE_CXX_FLAGS}")
@@ -129,8 +129,6 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LITECORE_SHARED_LI
 set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LITECORE_STATIC_LINKER_FLAGS}")
 set(SQLITE3_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/vendor/SQLiteCpp/sqlite3) # For SQLite3_UnicodeSN
 
-add_subdirectory(Networking/BLIP            EXCLUDE_FROM_ALL)
-add_subdirectory(REST                       EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
@@ -138,6 +136,7 @@ add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 # Generate file repo_version.h containing Git repo information, and add it to #include path:
 set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
 file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
+configure_file(cmake/config_thread.h.in ${GENERATED_HEADERS_DIR}/config_thread.h)
 if (UNIX)
     execute_process(COMMAND /bin/bash "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.sh"
                                       "${GENERATED_HEADERS_DIR}/repo_version.h"
@@ -148,6 +147,9 @@ else()
                                       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 endif()
 include_directories(${GENERATED_HEADERS_DIR})
+
+add_subdirectory(Networking/BLIP            EXCLUDE_FROM_ALL)
+add_subdirectory(REST                       EXCLUDE_FROM_ALL)
 
 ### sqlite3 LIBRARY:
 
@@ -221,13 +223,24 @@ target_include_directories(
     vendor/mbedtls/crypto/include
 )
 
+target_link_libraries(
+    LiteCoreWebSocket PUBLIC
+    LiteCoreStatic
+)
+
 ### LITECORE LIBRARY:
 
 set_litecore_source(RESULT ALL_SRC_FILES)
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 target_compile_definitions(
     LiteCoreStatic PRIVATE
-    -DLITECORE_IMPL
+    LITECORE_IMPL
+    HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
+)
+
+target_compile_definitions(
+    LiteCoreStatic PUBLIC
+    -DLITECORE_EXPORTS
 )
 
 if(BUILD_ENTERPRISE)
@@ -243,6 +256,7 @@ target_include_directories(
     vendor/fleece/Fleece/Core
     vendor/fleece/Fleece/Mutable
     vendor/fleece/Fleece/Support
+    vendor/fleece/vendor/date/include
     LiteCore/BlobStore
     LiteCore/Database
     LiteCore/Query

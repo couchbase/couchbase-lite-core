@@ -1,4 +1,12 @@
 include("${CMAKE_CURRENT_LIST_DIR}/platform_unix.cmake")
+include(CheckSymbolExists)
+
+macro(check_threading)
+    check_threading_unix()
+    
+    check_symbol_exists(pthread_getname_np pthread.h HAVE_PTHREAD_GETNAME_NP)
+    check_symbol_exists(pthread_threadid_np pthread.h HAVE_PTHREAD_THREADID_NP)
+endmacro()
 
 function(setup_globals)
     setup_globals_unix()

@@ -85,9 +85,8 @@ namespace litecore { namespace repl {
                    const Options &options,
                    std::shared_ptr<DBAccess> dbAccess,
                    const char *namePrefix)
-    :Actor(string(namePrefix) + connection->name(),
+    :Actor(SyncLog, string(namePrefix) + connection->name(),
            (parent ? parent->mailboxForChildren() : nullptr))
-    ,Logging(SyncLog)
     ,_connection(connection)
     ,_parent(parent)
     ,_options(options)
@@ -121,7 +120,7 @@ namespace litecore { namespace repl {
     void Worker::sendRequest(blip::MessageBuilder& builder, MessageProgressCallback callback) {
         if (callback) {
             increment(_pendingResponseCount);
-            builder.onProgress = asynchronize([=](MessageProgress progress) {
+            builder.onProgress = asynchronize("sendRequest callback", [=](MessageProgress progress) {
                 if (progress.state >= MessageProgress::kComplete)
                     decrement(_pendingResponseCount);
                 callback(progress);
@@ -238,7 +237,7 @@ namespace litecore { namespace repl {
     void Worker::finishedDocument(ReplicatedRev *rev) {
         if (rev->error.code == 0)
             addProgress({0, 0, 1});
-        if (rev->error.code || rev->isWarning || _progressNotificationLevel >= 1)
+        if (rev->error.code || rev->isWarning || progressNotificationLevel() >= 1)
             replicator()->endedDocument(rev);
     }
 
@@ -259,7 +258,11 @@ namespace litecore { namespace repl {
         }
     }
 
-
+    void Worker::setProgressNotificationLevel(int level) {
+        if(_progressNotificationLevel.exchange(level) != level) {
+            logVerbose("Set progress notification level to %d", level);
+        }
+    }
 
     Worker::ActivityLevel Worker::computeActivityLevel() const {
         if (eventCount() > 1 || _pendingResponseCount > 0)

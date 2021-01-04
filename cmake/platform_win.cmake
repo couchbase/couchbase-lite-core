@@ -1,5 +1,9 @@
 include(${CMAKE_CURRENT_LIST_DIR}/platform_base.cmake)
 
+macro(check_threading)
+    message(STATUS "No threading checks needed for Windows")
+endmacro()
+
 function(set_litecore_source)
     set(oneValueArgs RESULT)
     cmake_parse_arguments(WIN_SSS "" ${oneValueArgs} "" ${ARGN})
@@ -13,13 +17,10 @@ function(set_litecore_source)
         ${BASE_LITECORE_FILES}
         LiteCore/Storage/UnicodeCollator_winapi.cc
         MSVC/asprintf.c
-        vendor/fleece/MSVC/memmem.cc
         MSVC/mkstemp.cc
         MSVC/mkdtemp.cc
         MSVC/strlcat.c
         MSVC/vasprintf-msvc.c
-        MSVC/arc4random.cc
-        MSVC/strptime.cc
         LiteCore/Support/StringUtil_winapi.cc
         LiteCore/Support/Error_windows.cc
         Crypto/PublicKey+Windows.cc
@@ -31,6 +32,7 @@ function(setup_globals)
     set(CMAKE_C_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "/MD /O1 /Ob1 /DNDEBUG /Zi /GL" CACHE INTERNAL "")
     set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
+    set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
     set(CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL "/LTCG:incremental" CACHE INTERNAL "")
     
     # Compile string literals as UTF-8,
@@ -128,6 +130,18 @@ function(setup_litecore_build_win)
         LiteCoreStatic INTERFACE 
         zlibstatic 
         Ws2_32
+    )
+
+    # Suppress zlib errors
+    target_compile_options(
+        zlibstatic PRIVATE
+        "/wd4267" # loss of data due to size narrowing
+    )
+
+    # Windows always has socklen_t
+    target_compile_definitions(
+        mbedtls PRIVATE
+        _SOCKLEN_T_DECLARED
     )
 endfunction()
 

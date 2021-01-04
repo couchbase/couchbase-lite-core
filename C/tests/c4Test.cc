@@ -38,6 +38,10 @@
 #include <CoreFoundation/CFBundle.h>
 #endif
 
+#ifdef _MSC_VER
+#include <atlbase.h>
+#endif
+
 using namespace std;
 
 const std::string& TempDir() {
@@ -46,8 +50,17 @@ const std::string& TempDir() {
     static once_flag f;
     call_once(f, [=] {
         char folderName[64];
-        sprintf(folderName, "LiteCore_C_Tests%lld/", chrono::milliseconds(time(nullptr)).count());
-        auto temp = litecore::FilePath::tempDirectory()[folderName];
+        sprintf(folderName, "LiteCore_C_Tests%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
+        #ifdef _MSC_VER
+            WCHAR pathBuffer[MAX_PATH + 1];
+            GetTempPathW(MAX_PATH, pathBuffer);
+            GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
+            CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
+            auto sharedTemp = litecore::FilePath(convertedPath.m_psz, "");
+        #else // _MSC_VER
+            auto sharedTemp = litecore::FilePath("/tmp", "");
+        #endif // _MSC_VER
+        auto temp = sharedTemp[folderName];
         temp.mkdir();
         kTempDir = temp.path();
     });
@@ -353,7 +366,7 @@ void C4Test::createConflictingRev(C4Database *db,
     rq.save = true;
     C4Error error;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
-    char buf[256];
+//    char buf[256];
 //    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
 //    REQUIRE(doc != nullptr);        // can't use Catch on bg threads
     C4Assert(doc != nullptr);
@@ -384,10 +397,10 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4S
     rq.save = true;
     C4Error error;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
-    if (!doc) {
-        char buf[256];
+    //if (!doc) {
+        //char buf[256];
         //INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
-    }
+    //}
     //REQUIRE(doc != nullptr);        // can't use Catch on bg threads
     C4Assert(doc != nullptr);
     string revID((char*)doc->revID.buf, doc->revID.size);
@@ -513,7 +526,8 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
 void C4Test::checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData) {
     C4Error c4err;
     C4SliceResult blob = c4blob_getContents(c4db_getBlobStore(inDB, nullptr), blobKey, &c4err);
-    CHECK(blob == expectedData);
+    auto equal = blob == expectedData;
+    CHECK(equal);
     c4slice_free(blob);
 }
 

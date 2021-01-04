@@ -98,7 +98,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(d.secure);
     }
     SECTION("Expires") {
-        Cookie c("x=y; lang=en-US; EXPIRES=Wed, 09 Jun 2099 10:18:14 GMT", "example.com", "/");
+        Cookie c("x=y; lang=en-US; EXPIRES=Tue, 09 Jun 2099 10:18:14 GMT", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");
@@ -176,7 +176,7 @@ TEST_CASE("CookieStore", "[Cookies]") {
     CHECK(!store->cookies().empty());
     CHECK(!store->changed());    // it's non-persistent
     CHECK(store->setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", "www.example.com", "/"));
-    CHECK(store->setCookie("f=ma; Domain=www.ox.ac.uk; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "www.ox.ac.uk", "/"));
+    CHECK(store->setCookie("f=ma; Domain=www.ox.ac.uk; Expires=Tue, 09 Jun 2099 10:18:14 GMT", "www.ox.ac.uk", "/"));
     CHECK(store->changed());
     CHECK(store->setCookie("jens=awesome; Domain=snej.example.com", "example.com", "/"));
     CHECK(store->cookiesForRequest(kRequest) == "x=y; e=mc^2");
@@ -193,7 +193,7 @@ TEST_CASE("CookieStore", "[Cookies]") {
     SECTION("No-Op Replace Cookie") {
         store->clearChanged();
         CHECK(store->setCookie("x=y; Domain=Example.Com", "example.com", "/"));
-        CHECK(store->setCookie("f=ma; Domain=www.ox.ac.uk; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "www.ox.ac.uk", "/"));
+        CHECK(store->setCookie("f=ma; Domain=www.ox.ac.uk; Expires=Tue, 09 Jun 2099 10:18:14 GMT", "www.ox.ac.uk", "/"));
         CHECK(!store->changed());
     }
     SECTION("Secure Cookie") {

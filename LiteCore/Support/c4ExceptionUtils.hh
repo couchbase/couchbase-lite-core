@@ -72,6 +72,8 @@ namespace c4Internal {
         return false;
     }
 
-    #define c4error_descriptionStr(ERR)     alloc_slice(c4error_getDescription(ERR)).asString().c_str()
+#ifndef c4error_descriptionStr
+    #define c4error_descriptionStr(ERR)     fleece::alloc_slice(c4error_getDescription(ERR)).asString().c_str()
+#endif
 
 }

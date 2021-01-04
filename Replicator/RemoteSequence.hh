@@ -8,6 +8,7 @@
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include <variant>
+#include <cinttypes>
 
 namespace litecore::repl {
 
@@ -48,7 +49,7 @@ namespace litecore::repl {
         fleece::alloc_slice toJSON() const {
             if (isInt()) {
                 char buf[30];
-                sprintf(buf, "%llu", intValue());
+                sprintf(buf, "%" PRIu64, intValue());
                 return fleece::alloc_slice(buf);
             } else {
                 return sliceValue();
@@ -57,7 +58,7 @@ namespace litecore::repl {
 
         std::string toJSONString() const {
             if (isInt())
-                return format("%llu", intValue());
+                return format("%" PRIu64, intValue());
             else
                 return string(sliceValue());
         }

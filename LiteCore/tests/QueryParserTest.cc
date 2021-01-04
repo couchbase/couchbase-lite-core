@@ -21,6 +21,7 @@
 #include "Error.hh"
 #include <vector>
 #include <iostream>
+using namespace std;
 
 
 string QueryParserTest::parse(FLValue val) {

@@ -241,7 +241,7 @@ expr0 =
          )?                             { $$ = x; }
 
 collation =
-    <("NO"i? ("UNICODE"i | "CASE"i | "DIACRITICS"i)> WB)  { $$ = string(yytext); }
+    <("NO"i? ("UNICODE"i | "CASE"i | "DIAC"i)> WB)  { $$ = string(yytext); }
 
 baseExpr =
     literal

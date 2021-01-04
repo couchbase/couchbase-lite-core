@@ -40,8 +40,8 @@ namespace litecore { namespace repl {
     :Delegate(replicator, "Pull")
     ,_inserter(new Inserter(replicator))
     ,_revFinder(new RevFinder(replicator, this))
-    ,_provisionallyHandledRevs(this, &Puller::_revsWereProvisionallyHandled)
-    ,_returningRevs(this, &Puller::_revsFinished)
+    ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
+    ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
 #if __APPLE__
     ,_revMailbox(nullptr, "Puller revisions")
 #endif
@@ -257,7 +257,7 @@ namespace litecore { namespace repl {
 
 
     void Puller::revReRequested(fleece::Retained<IncomingRev> inc) {
-        enqueue(&Puller::_revReRequested, inc);
+        enqueue(FUNCTION_TO_QUEUE(Puller::_revReRequested), inc);
     }
 
 
@@ -307,6 +307,11 @@ namespace litecore { namespace repl {
 
 
 #pragma mark - STATUS / PROGRESS:
+
+    int Puller::progressNotificationLevel() const {
+        const auto repl = const_cast<Puller*>(this)->replicatorIfAny();
+        return repl ? repl->progressNotificationLevel() : 0;
+    }
 
 
     void Puller::_childChangedStatus(Worker *task, Status status) {

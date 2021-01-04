@@ -25,6 +25,7 @@
 namespace litecore {
     using namespace actor;
     using namespace std::placeholders;
+    using namespace std;
 
 
     BackgroundDB::BackgroundDB(Database *db)
@@ -70,7 +71,7 @@ namespace litecore {
             bool commit;
             try {
                 commit = task(dataFile, &sequenceTracker);
-            } catch (const exception &x) {
+            } catch (const exception &) {
                 t.abort();
                 sequenceTracker.endTransaction(false);
                 throw;
