@@ -622,13 +622,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     waitForStatus(kC4Stopped);
 }
 
-static void addDocEndedIDs(C4Replicator* repl, bool pushing, size_t numDocs, const C4DocumentEnded* docs[], void* context) {
-    auto docIDs = (std::vector<std::string>*)context;
-    for(size_t i = 0; i < numDocs; i++) {
-        docIDs->emplace_back(slice(docs[i]->docID));
-    }
-}
-
 TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     createDB2();
 
