@@ -17,6 +17,7 @@
 //
 
 #include "c4Internal.hh"
+#include "c4Test.hh"
 #include "InstanceCounted.hh"
 #include "catch.hpp"
 #include "NumConversion.hh"
@@ -187,9 +188,12 @@ namespace {
         CHECK(narrow_cast<int8_t, int16_t>(-1) == -1);
 
 #if DEBUG
-        CHECK_THROWS(narrow_cast<uint8_t, uint16_t>(UINT8_MAX + 1));
-        CHECK_THROWS(narrow_cast<uint8_t, int16_t>(-1));
-        CHECK_THROWS(narrow_cast<int8_t, int16_t>(INT16_MAX - 1));
+        {
+            ExpectingExceptions x;
+            CHECK_THROWS(narrow_cast<uint8_t, uint16_t>(UINT8_MAX + 1));
+            CHECK_THROWS(narrow_cast<uint8_t, int16_t>(-1));
+            CHECK_THROWS(narrow_cast<int8_t, int16_t>(INT16_MAX - 1));
+        }
 #else
         CHECK(narrow_cast<uint8_t, uint16_t>(UINT8_MAX + 1) == static_cast<uint8_t>(UINT8_MAX + 1));
         CHECK(narrow_cast<uint8_t, int8_t>(-1) == static_cast<uint8_t>(-1));
@@ -214,6 +218,8 @@ namespace {
 
         actor->recursive_doot();
         this_thread::sleep_for(1s);
+        
+        ExpectingExceptions x;
         actor->bad_recursive_doot();
         this_thread::sleep_for(2s);
     }
