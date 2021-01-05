@@ -337,10 +337,9 @@ bool c4repl_setProgressLevel(C4Replicator* repl, C4ReplicatorProgressLevel level
 
     if(_usuallyFalse(level < kC4ReplProgressOverall || level > kC4ReplProgressPerAttachment)) {
         if(outErr) {
-            *outErr = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("repl was null"));
+            *outErr = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("level out of range"));
         }
 
-        *outErr = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("level out of range"));
         return false;
     }
 

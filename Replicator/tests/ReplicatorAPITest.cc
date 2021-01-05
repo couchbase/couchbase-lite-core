@@ -275,11 +275,11 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
     c4::ref<C4Document> doc = c4doc_get(db2, "doc"_sl, true, nullptr);
     REQUIRE(doc);
 
-    CHECK((doc->revID == kRev2ID));
+    CHECK(doc->revID == kRev2ID);
     CHECK((doc->flags & kDocDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK((doc->selectedRev.revID == kRevID));
+    CHECK(doc->selectedRev.revID == kRevID);
 }
 #endif
 

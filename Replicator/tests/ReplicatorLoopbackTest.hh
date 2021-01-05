@@ -534,7 +534,7 @@ public:
                                               &err) );
         INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID) << "'; err = " << err.domain << "," << err.code);
         REQUIRE(doc);
-        CHECK((doc->body == c4str(body)));
+        CHECK(doc->body == c4str(body));
         if (!local)
             CHECK(c4rev_getGeneration(doc->meta) >= c4rev_getGeneration(c4str(meta)));
     }

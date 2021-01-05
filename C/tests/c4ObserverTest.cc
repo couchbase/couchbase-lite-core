@@ -52,8 +52,8 @@ class C4ObserverTest : public C4Test {
         auto changeCount = c4dbobs_getChanges(dbObserver, changes, 100, &external);
         REQUIRE(changeCount == expectedDocIDs.size());
         for (unsigned i = 0; i < changeCount; ++i) {
-            CHECK((changes[i].docID == c4str(expectedDocIDs[i])));
-            CHECK((changes[i].revID == c4str(expectedRevIDs[i])));
+            CHECK(changes[i].docID == c4str(expectedDocIDs[i]));
+            CHECK(changes[i].revID == c4str(expectedRevIDs[i]));
             i++;
         }
         CHECK(external == expectedExternal);

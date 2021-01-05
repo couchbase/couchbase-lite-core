@@ -998,7 +998,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
         REQUIRE(FLArray_Count(indexArray) == 1);
         FLDict indexInfo = FLValue_AsDict(FLArray_Get(indexArray, 0));
         FLSlice indexName = FLValue_AsString(FLDict_Get(indexInfo, "name"_sl));
-        CHECK((indexName == names[i]));
+        CHECK(indexName == names[i]);
 
         REQUIRE(c4db_deleteIndex(db, names[i], &err));
 

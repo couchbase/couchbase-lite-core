@@ -91,7 +91,7 @@ namespace litecore { namespace repl {
 
 #ifdef SPARSE_CHECKPOINTS
             // New properties for sparse checkpoint:
-            Array pending = root["localPending"].asArray();
+            Array pending = root["localCompleted"].asArray();
             if (pending) {
                 for (Array::iterator i(pending); i; ++i) {
                     C4SequenceNumber first = i->asInt();
