@@ -19,6 +19,8 @@
 #pragma once
 #include "c4Base.h"
 
+C4_ASSUME_NONNULL_BEGIN
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,7 +48,7 @@ extern "C" {
             es/spanish, sv/swedish, tr/turkish.
             If left null,  or set to an unrecognized language, no language-specific behaviors
             such as stemming and stop-word removal occur. */
-        const char *language;
+        const char* C4NULLABLE language;
 
         /** Should diacritical marks (accents) be ignored? Defaults to false.
             Generally this should be left false for non-English text. */
@@ -67,7 +69,7 @@ extern "C" {
             To suppress stop-words, use an empty string.
             To provide a custom list of words, use a string containing the words in lowercase
             separated by spaces. */
-        const char *stopWords;
+        const char* C4NULLABLE stopWords;
     } C4IndexOptions;
 
 
@@ -123,29 +125,29 @@ extern "C" {
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-    bool c4db_createIndex(C4Database *database C4NONNULL,
+    bool c4db_createIndex(C4Database *database,
                           C4String name,
                           C4String indexSpecJSON,
                           C4IndexType indexType,
-                          const C4IndexOptions *indexOptions,
-                          C4Error *outError) C4API;
+                          const C4IndexOptions* C4NULLABLE indexOptions,
+                          C4Error* C4NULLABLE outError) C4API;
 
     /** Deletes an index that was created by `c4db_createIndex`.
         @param database  The database to index.
         @param name The name of the index to delete
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-    bool c4db_deleteIndex(C4Database *database C4NONNULL,
+    bool c4db_deleteIndex(C4Database *database,
                           C4String name,
-                          C4Error *outError) C4API;
+                          C4Error* C4NULLABLE outError) C4API;
 
     /** Returns the names of all indexes in the database.
         @param database  The database to check
         @param outError  On failure, will be set to the error status.
         @return  A Fleece-encoded array of strings, or NULL on failure. */
     C4_DEPRECATED("Use c4db_getIndexesInfo")
-    C4SliceResult c4db_getIndexes(C4Database* database C4NONNULL,
-                                  C4Error* outError) C4API;
+    C4SliceResult c4db_getIndexes(C4Database* database,
+                                  C4Error* C4NULLABLE outError) C4API;
 
     /** Returns information about all indexes in the database.
         The result is a Fleece-encoded array of dictionaries, one per index.
@@ -153,11 +155,13 @@ extern "C" {
         @param database  The database to check
         @param outError  On failure, will be set to the error status.
         @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
-    C4SliceResult c4db_getIndexesInfo(C4Database* database C4NONNULL,
-                                      C4Error* outError) C4API;
+    C4SliceResult c4db_getIndexesInfo(C4Database* database,
+                                      C4Error* C4NULLABLE outError) C4API;
 
     /** @} */
 
 #ifdef __cplusplus
 }
 #endif
+
+C4_ASSUME_NONNULL_END

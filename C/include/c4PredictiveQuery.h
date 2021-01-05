@@ -21,6 +21,8 @@
 #include "c4Base.h"
 #include "fleece/Fleece.h"
 
+C4_ASSUME_NONNULL_BEGIN
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -64,7 +66,7 @@ extern "C" {
     typedef struct {
         /** A pointer to any external data needed by the `prediction` callback, which will receive
             this as its first parameter. */
-        void* context;
+        void* C4NULLABLE context;
 
         /** Called from within a query (or document indexing) to run the prediction.
             @warning This function must be "pure": given the same input parameters it must always
@@ -83,23 +85,23 @@ extern "C" {
                     return a null slice.
             @return  The output of the prediction function, encoded as a Fleece dictionary,
                     or as {NULL, 0} if there is no output. */
-        C4SliceResult (*prediction)(void* context,
-                                    FLDict C4NONNULL input,
-                                    C4Database* C4NONNULL database,
-                                    C4Error *error);
+        C4SliceResult (*prediction)(void* C4NULLABLE context,
+                                    FLDict input,
+                                    C4Database* database,
+                                    C4Error* C4NULLABLE error);
 
         /** Called if the model is unregistered, so it can release resources. */
-        void (*unregistered)(void* context);
+        void (* C4NULLABLE unregistered)(void* context);
     } C4PredictiveModel;
 
 
     /** Registers a predictive model, under a name. The model can now be invoked within a query
         by calling `prediction(_name_, _input_)`. The model remains registered until it's explicitly
         unregistered, or another model is registered with the same name. */
-    void c4pred_registerModel(const char* C4NONNULL name, C4PredictiveModel) C4API;
+    void c4pred_registerModel(const char* name, C4PredictiveModel) C4API;
 
     /** Unregisters whatever model was last registered with this name. */
-    bool c4pred_unregisterModel(const char* C4NONNULL name) C4API;
+    bool c4pred_unregisterModel(const char* name) C4API;
 
 
     /** @} */
@@ -107,3 +109,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+C4_ASSUME_NONNULL_END

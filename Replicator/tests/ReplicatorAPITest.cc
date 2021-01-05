@@ -222,7 +222,11 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[C][Push]") {
 C4_START_WARNINGS_SUPPRESSION
 C4_IGNORE_NONNULL
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level Error Handling", "[C][Pull]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level Error Handling", "[C][Pull]")
+#ifdef __clang__
+__attribute__((no_sanitize("nullability-arg"))) // suppress breakpoint passing nullptr below
+#endif
+{
     C4Error err;
     C4Address addr {kC4Replicator2Scheme, C4STR("localhost"),  4984};
     C4ReplicatorParameters params {};
@@ -230,16 +234,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level Error Handling", "[C][Pu
     c4::ref<C4Replicator> repl = c4repl_new(db, addr, C4STR("db"), params, &err);
     REQUIRE(repl);
 
-    #if defined(DEBUG) || !defined(__APPLE__)
-    // Apple adorably tries to help out by making all null checks return false for parameters marks non null,
-    // regardless of whether or not they are null.  This means this test is impossible to run in release
-    // mode because it will just SIGSEGV
-
     CHECK(!c4repl_setProgressLevel(nullptr, kC4ReplProgressPerAttachment, &err));
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorInvalidParameter);
-
-    #endif
 
     CHECK(!c4repl_setProgressLevel(repl, (C4ReplicatorProgressLevel)250, &err));
     CHECK(err.domain == LiteCoreDomain);
@@ -289,7 +286,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]
     bool factoryCalled = false;
     C4SocketFactory factory = {};
     factory.context = &factoryCalled;
-    factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+    factory.open = [](C4Socket* socket, const C4Address* addr,
                       C4Slice options, void *context) {
         *(bool*)context = true;
         c4socket_closed(socket, {NetworkDomain, kC4NetErrTooManyRedirects});
@@ -555,7 +552,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
 TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pull]") {
     C4SocketFactory factory = {};
     SECTION("Using framing") {
-        factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+        factory.open = [](C4Socket* socket, const C4Address* addr,
                           C4Slice options, void *context) {
             // Do nothing, just let things time out....
         };
@@ -569,7 +566,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pul
     
     SECTION("Not using framing") {
         factory.framing = kC4NoFraming;
-        factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+        factory.open = [](C4Socket* socket, const C4Address* addr,
                           C4Slice options, void *context) {
             // Do nothing, just let things time out....
         };
@@ -599,7 +596,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pul
 TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C][Push][Pull]") {
     _mayGoOffline = true;
     C4SocketFactory factory = {};
-    factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+    factory.open = [](C4Socket* socket, const C4Address* addr,
                       C4Slice options, void *context) {
         c4socket_closed(socket, {NetworkDomain, kC4NetErrUnknownHost});
     };

@@ -113,7 +113,7 @@ CBL_CORE_API const C4CertIssuerParameters kDefaultCertIssuerParameters = {
 C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
                              size_t nameCount,
                              C4CertUsage certUsages,
-                             C4KeyPair *subjectKey C4NONNULL,
+                             C4KeyPair *subjectKey,
                              C4Error *outError) C4API
 {
     return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
@@ -180,7 +180,7 @@ C4StringResult c4cert_subjectNameComponent(C4Cert* cert, C4CertNameAttributeID a
 
 bool c4cert_subjectNameAtIndex(C4Cert* cert,
                                unsigned index,
-                               C4CertNameInfo *outInfo C4NONNULL) C4API
+                               C4CertNameInfo *outInfo) C4API
 {
     outInfo->id = {};
     outInfo->value = {};
@@ -218,7 +218,7 @@ C4StringResult c4cert_summary(C4Cert* cert) C4API {
 }
 
 
-void c4cert_getValidTimespan(C4Cert* cert C4NONNULL,
+void c4cert_getValidTimespan(C4Cert* cert,
                              C4Timestamp *outCreated,
                              C4Timestamp *outExpires)
 {
@@ -297,10 +297,10 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
 }
 
 
-bool c4cert_sendSigningRequest(C4Cert *c4Cert C4NONNULL,
+bool c4cert_sendSigningRequest(C4Cert *c4Cert,
                                C4Address address,
                                C4Slice optionsDictFleece,
-                               C4CertSigningCallback callback C4NONNULL,
+                               C4CertSigningCallback callback,
                                void *context,
                                C4Error *outError) C4API
 {

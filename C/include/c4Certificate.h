@@ -23,6 +23,8 @@
 
 #ifdef COUCHBASE_ENTERPRISE
 
+C4_ASSUME_NONNULL_BEGIN
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -77,30 +79,30 @@ extern "C" {
               \ref c4cert_nextInChain.
         \note You are responsible for releasing the returned reference. */
     C4Cert* c4cert_fromData(C4Slice certData,
-                            C4Error *outError) C4API;
+                            C4Error* C4NULLABLE outError) C4API;
 
     /** Returns the encoded X.509 data in DER (binary) or PEM (ASCII) form.
         \warning DER format can only encode a _single_ certificate, so if this C4Cert includes
             multiple certificates, use PEM format to preserve them.
         \note You are responsible for releasing the returned data. */
-    C4SliceResult c4cert_copyData(C4Cert* C4NONNULL,
+    C4SliceResult c4cert_copyData(C4Cert*,
                                   bool pemEncoded) C4API;
 
     /** Returns a human-readable, multi-line string describing the certificate in detail.
         \note You are responsible for releasing the returned data. */
-    C4StringResult c4cert_summary(C4Cert* C4NONNULL) C4API;
+    C4StringResult c4cert_summary(C4Cert*) C4API;
 
     /** Returns the cert's Subject Name, which identifies the cert's owner.
         This is an X.509 structured string consisting of "KEY=VALUE" pairs separated by commas,
         where the keys are attribute names. (Commas in values are backslash-escaped.)
         \note Rather than parsing this yourself, use \ref c4cert_subjectNameComponent.
         \note You are responsible for releasing the returned data. */
-    C4StringResult c4cert_subjectName(C4Cert* C4NONNULL) C4API;
+    C4StringResult c4cert_subjectName(C4Cert*) C4API;
 
     /** Returns one component of a cert's subject name, given the attribute ID.
         \note If there are multiple names with this ID, only the first is returned.
         \note You are responsible for releasing the returned string. */
-    C4StringResult c4cert_subjectNameComponent(C4Cert* C4NONNULL, C4CertNameAttributeID) C4API;
+    C4StringResult c4cert_subjectNameComponent(C4Cert*, C4CertNameAttributeID) C4API;
 
     /** Information about a single component of a certificate's subject name. */
     typedef struct C4CertNameInfo {
@@ -115,34 +117,34 @@ extern "C" {
         @param outInfo  The component's name and value will be written here.
         @return  True if the index was valid, false if out of range.
         \note You are responsible for releasing `outInfo->value`. */
-    bool c4cert_subjectNameAtIndex(C4Cert* cert C4NONNULL,
+    bool c4cert_subjectNameAtIndex(C4Cert* cert,
                                    unsigned index,
-                                   C4CertNameInfo *outInfo C4NONNULL) C4API;
+                                   C4CertNameInfo *outInfo) C4API;
 
     /** Returns the time range during which a (signed) certificate is valid.
         @param cert  The signed certificate.
         @param outCreated  On return, the date/time the cert became valid (was signed).
         @param outExpires  On return, the date/time at which the certificate expires. */
-    void c4cert_getValidTimespan(C4Cert* cert C4NONNULL,
-                                 C4Timestamp *outCreated,
-                                 C4Timestamp *outExpires);
+    void c4cert_getValidTimespan(C4Cert* cert,
+                                 C4Timestamp* C4NULLABLE outCreated,
+                                 C4Timestamp* C4NULLABLE outExpires);
 
     /** Returns the usage flags of a cert. */
-    C4CertUsage c4cert_usages(C4Cert* C4NONNULL) C4API;
+    C4CertUsage c4cert_usages(C4Cert*) C4API;
 
     /** Returns true if the issuer is the same as the subject.
         \note This will be true of root CA certs, as well as self-signed peer certs. */
-    bool c4cert_isSelfSigned(C4Cert* C4NONNULL) C4API;
+    bool c4cert_isSelfSigned(C4Cert*) C4API;
 
     /** Returns a certificate's public key.
         \note You are responsible for releasing the returned key reference. */
-    C4KeyPair* c4cert_getPublicKey(C4Cert* C4NONNULL) C4API;
+    C4KeyPair* c4cert_getPublicKey(C4Cert*) C4API;
 
     /** Loads a certificate's matching private key from the OS's persistent store, if it exists,
         and returns the key-pair with both private and public key.
         \note You are responsible for releasing the returned key reference. */
-    C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert* C4NONNULL,
-                                           C4Error *outError) C4API;
+    C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert*,
+                                               C4Error* C4NULLABLE outError) C4API;
 
     /** @} */
 
@@ -182,19 +184,19 @@ extern "C" {
         @param subjectKey  The owner's private key that this certificate will attest to.
         @param outError  On failure, the error info will be stored here.
         @return  The new certificate request, or NULL on failure. */
-    C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents C4NONNULL,
+    C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
                                  size_t nameCount,
                                  C4CertUsage certUsages,
-                                 C4KeyPair *subjectKey C4NONNULL,
-                                 C4Error *outError) C4API;
+                                 C4KeyPair *subjectKey,
+                                 C4Error* C4NULLABLE outError) C4API;
 
     /** Instantiates a C4Cert from an X.509 certificate signing request (CSR) in DER or PEM form.
         \note You are responsible for releasing the returned reference. */
     C4Cert* c4cert_requestFromData(C4Slice certRequestData,
-                                   C4Error *outError) C4API;
+                                   C4Error* C4NULLABLE outError) C4API;
 
     /** Returns true if this is a signed certificate, false if it's a signing request (CSR). */
-    bool c4cert_isSigned(C4Cert* C4NONNULL) C4API;
+    bool c4cert_isSigned(C4Cert*) C4API;
 
     /** Completion routine called when an async \ref c4cert_sendSigningRequest finishes.
         @param context  The same `context` value passed to \ref c4cert_sendSigningRequest.
@@ -218,12 +220,12 @@ extern "C" {
         @param context  An arbitrary value that will be passed to the callback function.
         @param outError If the parameters are invalid, error info will be written here.
         @return  True if the parameters are valid and the request will be sent; else false. */
-    bool c4cert_sendSigningRequest(C4Cert *certRequest C4NONNULL,
+    bool c4cert_sendSigningRequest(C4Cert *certRequest,
                                    C4Address address,
                                    C4Slice optionsDictFleece,
-                                   C4CertSigningCallback callback C4NONNULL,
-                                   void *context,
-                                   C4Error *outError) C4API;
+                                   C4CertSigningCallback callback,
+                                   void* C4NULLABLE context,
+                                   C4Error* C4NULLABLE outError) C4API;
 
     /** Signs an unsigned certificate (a CSR) with a private key, and returns the new signed
         certificate. This is the primary function of a Certificate Authority; but it can also
@@ -237,11 +239,11 @@ extern "C" {
                     \p issuerPrivateKey), or NULL if self-signing.
         @param outError  On failure, the error info will be stored here.
         @return  The signed certificate, or NULL on failure. */
-    C4Cert* c4cert_signRequest(C4Cert *certRequest C4NONNULL,
-                               const C4CertIssuerParameters *params,
-                               C4KeyPair *issuerPrivateKey C4NONNULL,
-                               C4Cert *issuerCert,
-                               C4Error *outError) C4API;
+    C4Cert* c4cert_signRequest(C4Cert *certRequest,
+                               const C4CertIssuerParameters* C4NULLABLE params,
+                               C4KeyPair *issuerPrivateKey,
+                               C4Cert* C4NULLABLE issuerCert,
+                               C4Error* C4NULLABLE outError) C4API;
 
     /** @} */
 
@@ -252,11 +254,11 @@ extern "C" {
 
     /** Returns the next certificate in the chain after this one, if any.
         \note You are responsible for releasing the returned reference. */
-    C4Cert* c4cert_nextInChain(C4Cert* C4NONNULL) C4API;
+    C4Cert* C4NULLABLE c4cert_nextInChain(C4Cert*) C4API;
 
     /** Returns the encoded data of this cert and the following ones in the chain, in PEM form.
         \note You are responsible for releasing the returned data.*/
-    C4SliceResult c4cert_copyChainData(C4Cert* C4NONNULL) C4API;
+    C4SliceResult c4cert_copyChainData(C4Cert*) C4API;
 
     /** @} */
 
@@ -275,7 +277,7 @@ extern "C" {
     bool c4cert_save(C4Cert *cert,
                      bool entireChain,
                      C4String name,
-                     C4Error *outError);
+                     C4Error* C4NULLABLE outError);
 
     /** Loads a certificate from a persistent storage given the name it was saved under.
         \note You are responsible for releasing the returned key reference.
@@ -283,7 +285,7 @@ extern "C" {
         @param outError  On failure, the error info will be stored here.
         @return  The certificate, or NULL if missing or if it failed to parse. */
     C4Cert* c4cert_load(C4String name,
-                        C4Error *outError);
+                        C4Error* C4NULLABLE outError);
 
     /** @} */
 
@@ -313,49 +315,49 @@ extern "C" {
     C4KeyPair* c4keypair_generate(C4KeyPairAlgorithm algorithm,
                                   unsigned sizeInBits,
                                   bool persistent,
-                                  C4Error *outError) C4API;
+                                  C4Error* C4NULLABLE outError) C4API;
 
     /** Loads a public key from its data.
         The resulting C4KeyPair will not have a private key.
         \note You are responsible for releasing the returned reference. */
     C4KeyPair* c4keypair_fromPublicKeyData(C4Slice publicKeyData,
-                                           C4Error *outError) C4API;
+                                           C4Error* C4NULLABLE outError) C4API;
 
     /** Loads a private key from its data.
         The resulting C4KeyPair will have both a public and private key.
         \note You are responsible for releasing the returned reference. */
     C4KeyPair* c4keypair_fromPrivateKeyData(C4Slice privateKeyData,
                                             C4Slice passwordOrNull,
-                                            C4Error *outError) C4API;
+                                            C4Error* C4NULLABLE outError) C4API;
 
     /** Returns true if the C4KeyPair has a private as well as a public key. */
-    bool c4keypair_hasPrivateKey(C4KeyPair* C4NONNULL) C4API;
+    bool c4keypair_hasPrivateKey(C4KeyPair*) C4API;
 
     /** Returns a hex digest of the public key.
         \note You are responsible for releasing the returned data. */
-    C4SliceResult c4keypair_publicKeyDigest(C4KeyPair* C4NONNULL) C4API;
+    C4SliceResult c4keypair_publicKeyDigest(C4KeyPair*) C4API;
 
     /** Returns the public key data.
         \note You are responsible for releasing the returned data. */
-    C4SliceResult c4keypair_publicKeyData(C4KeyPair* C4NONNULL) C4API;
+    C4SliceResult c4keypair_publicKeyData(C4KeyPair*) C4API;
 
     /** Returns the private key data, if the private key is known and its data is accessible.
         \note Persistent private keys generally don't have accessible data.
         \note You are responsible for releasing the returned data. */
-    C4SliceResult c4keypair_privateKeyData(C4KeyPair* C4NONNULL) C4API;
+    C4SliceResult c4keypair_privateKeyData(C4KeyPair*) C4API;
 
     /** Returns true if the C4KeyPair is stored int the OS's persistent store. */
-    bool c4keypair_isPersistent(C4KeyPair* C4NONNULL) C4API;
+    bool c4keypair_isPersistent(C4KeyPair*) C4API;
 
     /** Attempts to find & load the persistent key-pair matching this public key.
         \note If there is no matching persistent key, returns NULL but sets no error.
         \note You are responsible for releasing the returned reference. */
-    C4KeyPair* c4keypair_persistentWithPublicKey(C4KeyPair* C4NONNULL,
-                                                 C4Error *outError) C4API;
+    C4KeyPair* c4keypair_persistentWithPublicKey(C4KeyPair*,
+                                                 C4Error* C4NULLABLE outError) C4API;
 
     /** Removes a private key from persistent storage. */
-    bool c4keypair_removePersistent(C4KeyPair* C4NONNULL,
-                                C4Error *outError) C4API;
+    bool c4keypair_removePersistent(C4KeyPair*,
+                                C4Error* C4NULLABLE outError) C4API;
 
     /** @} */
 
@@ -379,7 +381,7 @@ extern "C" {
                                       size_t keySizeInBits,
                                       void *externalKey,
                                       struct C4ExternalKeyCallbacks callbacks,
-                                      C4Error *outError);
+                                      C4Error* C4NULLABLE outError);
 
 
     /** Digest algorithms to be used when generating signatures.
@@ -434,7 +436,7 @@ extern "C" {
         /** Called when the C4KeyPair is released and the externalKey is no longer needed, so that
             your code can free any associated resources. (This callback is optionaly and may be NULL.)
             @param externalKey  The client-provided key value given when the C4KeyPair was created. */
-        void (*free)(void *externalKey);
+        void (* C4NULLABLE free)(void *externalKey);
     } C4ExternalKeyCallbacks;
 
 
@@ -443,5 +445,7 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+C4_ASSUME_NONNULL_END
 
 #endif // COUCHBASE_ENTERPRISE

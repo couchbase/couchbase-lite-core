@@ -15,6 +15,8 @@
 #include "c4Database.h"
 #include <assert.h>
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace c4 {
 
     /** Manages a transaction safely. The begin() method calls c4db_beginTransaction, then commit()
@@ -31,7 +33,7 @@ namespace c4 {
                 abort(nullptr);
         }
 
-        bool begin(C4Error *error) {
+        bool begin(C4Error* C4NULLABLE error) {
             assert(!_active);
             if (!c4db_beginTransaction(_db, error))
                 return false;
@@ -39,14 +41,14 @@ namespace c4 {
             return true;
         }
 
-        bool end(bool commit, C4Error *error) {
+        bool end(bool commit, C4Error* C4NULLABLE error) {
             assert(_active);
             _active = false;
             return c4db_endTransaction(_db, commit, error);
         }
 
-        bool commit(C4Error *error)     {return end(true, error);}
-        bool abort(C4Error *error)      {return end(false, error);}
+        bool commit(C4Error* C4NULLABLE error)     {return end(true, error);}
+        bool abort(C4Error* C4NULLABLE error)      {return end(false, error);}
 
         bool active() const             {return _active;}
 
@@ -56,3 +58,5 @@ namespace c4 {
     };
 
 }
+
+C4_ASSUME_NONNULL_END
