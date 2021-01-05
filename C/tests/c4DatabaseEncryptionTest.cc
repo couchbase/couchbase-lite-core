@@ -100,7 +100,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
     REQUIRE(c4blob_create(blobStore, blobToStore, nullptr, &blobKey, &error));
 
     C4SliceResult blobResult = c4blob_getContents(blobStore, blobKey, &error);
-    CHECK((blobResult == blobToStore));
+    CHECK(blobResult == blobToStore);
     c4slice_free(blobResult);
 
     // If we're on the unencrypted pass, encrypt the db. Otherwise decrypt it:
@@ -117,7 +117,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
     REQUIRE(c4db_getDocumentCount(db) == 99);
     REQUIRE(blobStore);
     blobResult = c4blob_getContents(blobStore, blobKey, &error);
-    CHECK((blobResult == blobToStore));
+    CHECK(blobResult == blobToStore);
     c4slice_free(blobResult);
 
     // Check that db can be reopened with the new key:
