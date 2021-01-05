@@ -16,6 +16,7 @@
 #include "betterassert.hh"
 #include "fleece/Mutable.hh"
 
+using namespace std;
 using namespace litecore::actor;
 
 constexpr Timer::duration ReplicatorLoopbackTest::kLatency;

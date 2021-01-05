@@ -89,7 +89,7 @@ private:
     alloc_slice _parameters;
 
     Retained<LiveQuerier> _bgQuerier;
-    std::set<c4QueryObserver*> _observers;
+    std::set<C4QueryObserver*> _observers;
     mutable std::mutex _mutex;
 };
 

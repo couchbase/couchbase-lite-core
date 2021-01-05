@@ -29,6 +29,10 @@
 #include <fstream>
 #include <optional>
 
+#ifdef _MSC_VER
+#include <atlbase.h>
+#endif
+
 
 struct LoggingReporter: public CaseListReporter {
 
@@ -46,7 +50,7 @@ struct LoggingReporter: public CaseListReporter {
         if (c4log_binaryFileLevel() == kC4LogNone) {
             auto folderName = litecore::format("LiteCore_Test_Logs_%lld/",
                                                std::chrono::milliseconds(time(nullptr)).count());
-            _logDir = litecore::FilePath::tempDirectory()[folderName];
+            _logDir = getTempDirectory()[folderName];
             _logDir->mkdir();
             std::string path = _logDir->path();
             C4Log("Beginning binary logging to %s", path.c_str());
@@ -97,13 +101,28 @@ struct LoggingReporter: public CaseListReporter {
         CaseListReporter::sectionStarting(sectionInfo);
     }
 
-    virtual bool assertionEnded( Catch::AssertionStats const& assertionStats ) CATCH_OVERRIDE {
+
+    virtual bool assertionEnded( Catch::AssertionStats const& assertionStats ) override {
         if (!assertionStats.assertionResult.isOk())
             dumpBinaryLogs();
         return CaseListReporter::assertionEnded(assertionStats);
     }
 
+
 private:
+    static litecore::FilePath getTempDirectory() {
+#ifdef _MSC_VER
+        WCHAR pathBuffer[MAX_PATH + 1];
+        GetTempPathW(MAX_PATH, pathBuffer);
+        GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
+        CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
+        return litecore::FilePath(convertedPath.m_psz, "");
+#else // _MSC_VER
+        return litecore::FilePath("/tmp", "");
+#endif // _MSC_VER
+    }
+
+
     void dumpBinaryLogs() {
         if (_logDir && c4log_callbackLevel() == kC4LogWarning) {
             c4log_flushLogFiles();
@@ -128,4 +147,4 @@ private:
     litecore::LogIterator::Timestamp _caseStartTime;
 };
 
-REGISTER_REPORTER( "logging", LoggingReporter )
+CATCH_REGISTER_REPORTER( "logging", LoggingReporter )

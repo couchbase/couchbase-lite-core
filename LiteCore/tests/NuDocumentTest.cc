@@ -46,6 +46,7 @@ namespace litecore {
 
 #include "LiteCoreTest.hh"
 
+using namespace std;
 using namespace litecore;
 using namespace fleece;
 

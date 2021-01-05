@@ -19,11 +19,11 @@ namespace c4Internal {
         Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID,
                                                    bool withBody) override;
         
-        vector<alloc_slice> findAncestors(const vector<slice> &docIDs,
-                                          const vector<slice> &revIDs,
-                                          unsigned maxAncestors,
-                                          bool mustHaveBodies,
-                                          C4RemoteID remoteDBID) override;
+        std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs,
+                                               const std::vector<slice> &revIDs,
+                                               unsigned maxAncestors,
+                                               bool mustHaveBodies,
+                                               C4RemoteID remoteDBID) override;
 
         static Document* documentContaining(FLValue value);
 

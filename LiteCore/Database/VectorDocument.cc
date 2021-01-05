@@ -24,6 +24,7 @@
 #include <set>
 
 namespace c4Internal {
+    using namespace std;
     using namespace fleece;
 
 
