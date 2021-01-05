@@ -394,11 +394,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
 
     doc = c4doc_get(db2, "fresh"_sl, true, &error);
     REQUIRE(doc);
-    CHECK((doc->revID == kRevID));
+    CHECK(doc->revID == kRevID);
 
     doc = c4doc_get(db2, "permanent"_sl, true, &error);
     REQUIRE(doc);
-    CHECK((doc->revID == kRevID));
+    CHECK(doc->revID == kRevID);
 }
 
 
@@ -941,11 +941,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     c4::ref<C4Document> doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
     REQUIRE(doc);
 	C4Slice revID = C4STR("2-2a2a2a2a");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = C4STR("1-11111111");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
 
@@ -959,22 +959,22 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
 	revID = C4STR("2-2a2a2a2a");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = C4STR("1-11111111");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
     REQUIRE(c4doc_selectCurrentRevision(doc));
     REQUIRE(c4doc_selectNextRevision(doc));
 	revID = C4STR("2-2b2b2b2b");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = C4STR("1-11111111");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
 }
 
 
@@ -1055,7 +1055,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict OutgoingConflicts", "[Pu
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
 	C4Slice revID = C4STR("2-2b2b2b2b");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(c4doc_selectRevision(doc, C4STR("2-2a2a2a2a"), true, nullptr));
 }
 
@@ -1177,11 +1177,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
     c4::ref<C4Document> doc = c4doc_get(db, docID, true, nullptr);
     REQUIRE(doc);
 	C4Slice revID = C4STR("2-88888888");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
 	revID = C4STR("2-dddddddd");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
 
@@ -1198,7 +1198,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
     
     doc = c4doc_get(db, docID, true, nullptr);
 	revID = C4STR("2-dddddddd");
-    CHECK((doc->revID == revID));
+    CHECK(doc->revID == revID);
 
     // Update the doc and push it to db2:
     createRev(db, docID, "3-cafebabe"_sl, kFleeceBody);
@@ -1230,11 +1230,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     c4::ref<C4Document> doc = c4doc_get(db, docID, true, nullptr);
     REQUIRE(doc);
 	revID = C4STR("2-dddddddd");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
 	revID = C4STR("2-88888888");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
 
@@ -1250,7 +1250,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     }
 
     doc = c4doc_get(db, docID, true, nullptr);
-    CHECK((doc->revID == revID));
+    CHECK(doc->revID == revID);
 
     // Update the doc and push it to db2:
     createRev(db, docID, "3-cafebabe"_sl, kFleeceBody);
@@ -1277,7 +1277,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
     c4::ref<C4Document> doc = c4doc_get(db2, docID, true, nullptr);
     REQUIRE(doc);
 	C4Slice revID = C4STR("3-33333333");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->flags & kDocConflicted) == 0);  // locally in db there is no conflict
 
     {
@@ -1288,8 +1288,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
     doc = c4doc_get(db, docID, true, nullptr);
     REQUIRE(doc);
 	revID = C4STR("2-ffffffff");
-    CHECK((doc->revID == revID));
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->revID == revID);
+    CHECK(doc->selectedRev.revID == revID);
 
     SECTION("Unmodified") {
         Log("-------- Second pull --------");
@@ -1297,7 +1297,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
 
         doc = c4doc_get(db2, docID, true, nullptr);
         REQUIRE(doc);
-        CHECK((doc->selectedRev.revID == revID));
+        CHECK(doc->selectedRev.revID == revID);
         CHECK((doc->flags & kDocConflicted) == 0);
     }
 
@@ -1315,11 +1315,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         REQUIRE(doc);
         CHECK((doc->flags & kDocConflicted) != 0);
 		revID = C4STR("4-4444");
-        CHECK((doc->selectedRev.revID == revID));
+        CHECK(doc->selectedRev.revID == revID);
         CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
         CHECK(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
 		revID = C4STR("2-ffffffff");
-        CHECK((doc->selectedRev.revID == revID));
+        CHECK(doc->selectedRev.revID == revID);
         CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
 
         {
@@ -1333,17 +1333,17 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         REQUIRE(doc);
         CHECK((doc->flags & kDocConflicted) == 0);
 		revID = C4STR("4-4444");
-        CHECK((doc->selectedRev.revID == revID));
+        CHECK(doc->selectedRev.revID == revID);
         CHECK(!c4doc_selectNextLeafRevision(doc, false, false, nullptr));
         CHECK(c4doc_selectParentRevision(doc));
 		revID = C4STR("3-33333333");
-        CHECK((doc->selectedRev.revID == revID));
+        CHECK(doc->selectedRev.revID == revID);
         CHECK(c4doc_selectParentRevision(doc));
 		revID = C4STR("2-22222222");
-        CHECK((doc->selectedRev.revID == revID));
+        CHECK(doc->selectedRev.revID == revID);
         CHECK(c4doc_selectParentRevision(doc));
 		revID = C4STR("1-11111111");
-        CHECK((doc->selectedRev.revID == revID));
+        CHECK(doc->selectedRev.revID == revID);
         CHECK(!c4doc_selectParentRevision(doc));
     }
 }
@@ -1409,8 +1409,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
         REQUIRE(c4enum_next(e, &err));
         C4DocumentInfo info;
         c4enum_getDocumentInfo(e, &info);
-        CHECK((info.docID == docIDs[count]));
-        CHECK((info.revID == revIDs[count]));
+        CHECK(info.docID == docIDs[count]);
+        CHECK(info.revID == revIDs[count]);
         CHECK((info.flags & kDocConflicted) == kDocConflicted);
         bool deleted = ((info.flags & kDocDeleted) != 0);
         CHECK(deleted == deleteds[count]);
@@ -1793,9 +1793,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     // resolve doc1 and create a new revision(#7) which should bring the `_lastSequence` greater than the doc2's sequence
     c4::ref<C4Document> doc = c4doc_get(db, C4STR("doc1"), true, nullptr);
     REQUIRE(doc);
-    CHECK((doc->selectedRev.revID == C4STR("2-1111111a")));
+    CHECK(doc->selectedRev.revID == C4STR("2-1111111a"));
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-    CHECK((doc->selectedRev.revID == C4STR("2-1111111b")));
+    CHECK(doc->selectedRev.revID == C4STR("2-1111111b"));
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     {
         c4::Transaction t(db);
@@ -1814,11 +1814,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     doc = c4doc_get(db, C4STR("doc2"), true, nullptr);
     REQUIRE(doc);
     revID = C4STR("2-2222222a");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
     revID = C4STR("2-2222222b");
-    CHECK((doc->selectedRev.revID == revID));
+    CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     {
@@ -1833,7 +1833,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     
     doc = c4doc_get(db, C4STR("doc2"), true, nullptr);
     revID = C4STR("2-2222222b");
-    CHECK((doc->revID == revID));
+    CHECK(doc->revID == revID);
     CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
     CHECK(c4db_getLastSequence(db) == 8);
 }
