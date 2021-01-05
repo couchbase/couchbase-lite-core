@@ -19,14 +19,29 @@
 
 #ifdef _MSC_VER
 #  define C4INLINE __forceinline
-#  define C4NONNULL
-#elif defined(__GNUC__) && !defined(__clang__)
-#  define C4INLINE inline
-  //gcc supports only __attribute((nonnull)) for whole function, so
-#  define C4NONNULL /**/
 #else
 #  define C4INLINE inline
-#  define C4NONNULL __attribute((nonnull))
+#endif
+
+// Non-null annotations, for function parameters and struct fields.
+// In between C4_ASSUME_NONNULL_BEGIN and C4_ASSUME_NONNULL_END, all pointer declarations implicitly
+// disallow NULL values, unless annotated with C4NULLABLE (which must come after the `*`.)
+// (C4NONNULL is occasionally necessary when there are multiple levels of pointers.)
+// NOTE: Does not apply to function return values, for some reason. Those may still be null,
+//       unless annotated with C4_RETURNS_NONNULL.
+// NOTE: Only supported in Clang, so far.
+#if __has_feature(nullability)
+#  define C4_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
+#  define C4_ASSUME_NONNULL_END _Pragma("clang assume_nonnull end")
+#  define C4NULLABLE _Nullable
+#  define C4NONNULL _Nonnull
+#  define C4_RETURNS_NONNULL __attribute__((returns_nonnull))
+#else
+#  define C4_ASSUME_NONNULL_BEGIN
+#  define C4_ASSUME_NONNULL_END
+#  define C4NULLABLE
+#  define C4NONNULL
+#  define C4_RETURNS_NONNULL
 #endif
 
 // Macros for defining typed enumerations and option flags.

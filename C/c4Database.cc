@@ -111,7 +111,7 @@ C4Database* c4db_open(C4Slice path,
 
 
 C4Database* c4db_openNamed(C4String name,
-                           const C4DatabaseConfig2 *config C4NONNULL,
+                           const C4DatabaseConfig2 *config,
                            C4Error *outError) C4API
 {
     if (!ensureConfigDirExists(config, outError))
@@ -144,7 +144,7 @@ bool c4db_copy(C4String sourcePath, C4String destinationPath, const C4DatabaseCo
 
 bool c4db_copyNamed(C4String sourcePath,
                     C4String destinationName,
-                    const C4DatabaseConfig2* config C4NONNULL,
+                    const C4DatabaseConfig2* config,
                     C4Error* error) C4API
 {
     if (!ensureConfigDirExists(config, error))
@@ -259,11 +259,11 @@ bool c4db_getUUIDs(C4Database* database, C4UUID *publicUUID, C4UUID *privateUUID
 }
 
 
-C4ExtraInfo c4db_getExtraInfo(C4Database *database C4NONNULL) C4API {
+C4ExtraInfo c4db_getExtraInfo(C4Database *database) C4API {
     return database->extraInfo;
 }
 
-void c4db_setExtraInfo(C4Database *database C4NONNULL, C4ExtraInfo x) C4API {
+void c4db_setExtraInfo(C4Database *database, C4ExtraInfo x) C4API {
     database->extraInfo = x;
 }
 

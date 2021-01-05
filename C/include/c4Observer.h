@@ -20,6 +20,8 @@
 
 #include "c4Base.h"
 
+C4_ASSUME_NONNULL_BEGIN
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -53,8 +55,8 @@ extern "C" {
 
         @param observer  The observer that initiated the callback.
         @param context  user-defined parameter given when registering the callback. */
-    typedef void (*C4DatabaseObserverCallback)(C4DatabaseObserver* observer C4NONNULL,
-                                               void *context);
+    typedef void (*C4DatabaseObserverCallback)(C4DatabaseObserver* observer,
+                                               void* C4NULLABLE context);
 
     /** Creates a new database observer, with a callback that will be invoked after the database
         changes. The callback will be called _once_, after the first change. After that it won't
@@ -63,9 +65,9 @@ extern "C" {
         @param callback  The function to call after the database changes.
         @param context  An arbitrary value that will be passed to the callback.
         @return  The new observer reference. */
-    C4DatabaseObserver* c4dbobs_create(C4Database* database C4NONNULL,
-                                       C4DatabaseObserverCallback callback C4NONNULL,
-                                       void *context) C4API;
+    C4DatabaseObserver* c4dbobs_create(C4Database* database,
+                                       C4DatabaseObserverCallback callback,
+                                       void* C4NULLABLE context) C4API;
 
     /** Identifies which documents have changed since the last time this function was called, or
         since the observer was created. This function effectively "reads" changes from a stream,
@@ -83,22 +85,22 @@ extern "C" {
         @param outExternal  Will be set to true if the changes were made by a different C4Database.
         @return  The number of changes written to `outChanges`. If this is less than `maxChanges`,
                             the end has been reached and the observer is reset. */
-    uint32_t c4dbobs_getChanges(C4DatabaseObserver *observer C4NONNULL,
-                                C4DatabaseChange outChanges[] C4NONNULL,
+    uint32_t c4dbobs_getChanges(C4DatabaseObserver *observer,
+                                C4DatabaseChange outChanges[C4NONNULL],
                                 uint32_t maxChanges,
-                                bool *outExternal C4NONNULL) C4API;
+                                bool *outExternal) C4API;
 
     /** Releases the memory used by the C4DatabaseChange structs (to hold the docID and revID
         strings.) This must be called after `c4dbobs_getChanges().
         @param changes  The same array of changes that was passed to `c4dbobs_getChanges`.
         @param numChanges  The number of changes returned by `c4dbobs_getChanges`, i.e. the number
                             of valid items in `changes`. */
-    void c4dbobs_releaseChanges(C4DatabaseChange changes[],
+    void c4dbobs_releaseChanges(C4DatabaseChange changes[C4NONNULL],
                                 uint32_t numChanges) C4API;
 
     /** Stops an observer and frees the resources it's using.
         It is safe to pass NULL to this call. */
-    void c4dbobs_free(C4DatabaseObserver*) C4API;
+    void c4dbobs_free(C4DatabaseObserver* C4NULLABLE) C4API;
 
     /** @} */
 
@@ -111,10 +113,10 @@ extern "C" {
         @param docID  The ID of the document that changed.
         @param sequence  The sequence number of the change.
         @param context  user-defined parameter given when registering the callback. */
-    typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer C4NONNULL,
+    typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer,
                                                C4String docID,
                                                C4SequenceNumber sequence,
-                                               void *context);
+                                               void * C4NULLABLE context);
 
     /** Creates a new document observer, with a callback that will be invoked when the document
         changes. The callback will be called every time the document changes.
@@ -123,14 +125,14 @@ extern "C" {
         @param callback  The function to call after the database changes.
         @param context  An arbitrary value that will be passed to the callback.
         @return  The new observer reference. */
-    C4DocumentObserver* c4docobs_create(C4Database* database C4NONNULL,
+    C4DocumentObserver* c4docobs_create(C4Database* database,
                                         C4String docID,
                                         C4DocumentObserverCallback callback,
-                                        void *context) C4API;
+                                        void* C4NULLABLE context) C4API;
 
     /** Stops an observer and frees the resources it's using.
         It is safe to pass NULL to this call. */
-    void c4docobs_free(C4DocumentObserver*) C4API;
+    void c4docobs_free(C4DocumentObserver* C4NULLABLE) C4API;
 
     /** @} */
 
@@ -147,9 +149,9 @@ extern "C" {
         @param observer  The observer triggering the callback.
         @param query  The C4Query that the observer belongs to.
         @param context  The `context` parameter you passed to \ref c4queryobs_create. */
-    typedef void (*C4QueryObserverCallback)(C4QueryObserver *observer C4NONNULL,
-                                            C4Query *query C4NONNULL,
-                                            void *context);
+    typedef void (*C4QueryObserverCallback)(C4QueryObserver *observer,
+                                            C4Query *query,
+                                            void* C4NULLABLE context);
 
     /** Creates a new query observer, with a callback that will be invoked when the query
         results change, with an enumerator containing the new results.
@@ -157,9 +159,9 @@ extern "C" {
         every change, to avoid performance problems. Instead, there's a brief delay so multiple
         changes can be coalesced.
         \note The new observer needs to be enabled by calling \ref c4queryobs_setEnabled.*/
-    C4QueryObserver* c4queryobs_create(C4Query *query C4NONNULL,
+    C4QueryObserver* c4queryobs_create(C4Query *query,
                                        C4QueryObserverCallback callback,
-                                       void *context) C4API;
+                                       void* C4NULLABLE context) C4API;
 
     /** Enables a query observer so its callback can be called, or disables it to stop callbacks. */
     void c4queryobs_setEnabled(C4QueryObserver *obs, bool enabled) C4API;
@@ -176,13 +178,13 @@ extern "C" {
                     release the enumerator.
         @param error  If the last evaluation of the query failed, the error will be stored here.
         @return  The current query results, or NULL if the query hasn't run or has failed. */
-    C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs C4NONNULL,
-                                                bool forget,
-                                                C4Error *error) C4API;
+    C4QueryEnumerator* C4NULLABLE c4queryobs_getEnumerator(C4QueryObserver *obs,
+                                                           bool forget,
+                                                           C4Error* C4NULLABLE error) C4API;
 
     /** Stops an observer and frees the resources it's using.
         It is safe to pass NULL to this call. */
-    void c4queryobs_free(C4QueryObserver*) C4API;
+    void c4queryobs_free(C4QueryObserver* C4NULLABLE) C4API;
 
     /** @} */
 
@@ -190,3 +192,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+C4_ASSUME_NONNULL_END

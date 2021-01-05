@@ -27,7 +27,7 @@ namespace cbl {
         virtual ~PredictiveModel()                                  {unregister();}
 
         /** Registers this instance under the given name. */
-        void registerWithName(const char* C4NONNULL name);
+        void registerWithName(const char*name);
 
         /** Unregisters this instance. */
         void unregister();
@@ -55,7 +55,7 @@ namespace cbl {
     class API_AVAILABLE(macos(10.13), ios(11))
     CoreMLPredictiveModel : public PredictiveModel {
     public:
-        CoreMLPredictiveModel(MLModel* C4NONNULL model);
+        CoreMLPredictiveModel(MLModel*model);
 
     protected:
         virtual bool predict(fleece::Dict input,
