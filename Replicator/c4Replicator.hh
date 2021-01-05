@@ -138,7 +138,25 @@ struct C4Replicator : public RefCounted,
 
     C4ReplicatorStatus status() {
         LOCK(_mutex);
-        return _status;
+        switch (_status.level) {
+        // CBL-1513: Any new approved statuses must be added to this list,
+        // or they will be forced to busy in order to prevent internal statuses
+        // from leaking
+        case kC4Busy:
+        case kC4Connecting:
+        case kC4Idle:
+        case kC4Offline:
+        case kC4Stopped:
+            return _status;
+            
+        default:
+            return {
+                kC4Busy,
+                _status.progress,
+                _status.error,
+                _status.flags
+            };
+        }
     }
 
     virtual void stop() {
