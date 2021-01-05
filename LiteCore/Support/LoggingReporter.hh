@@ -56,7 +56,7 @@ struct LoggingReporter: public CaseListReporter {
             C4Log("Beginning binary logging to %s", path.c_str());
             C4Error error;
             if (!c4log_writeToBinaryFile({kC4LogVerbose, c4str(path.c_str()), 16*1024, 1, false},
-                                            &error)) {
+                                         &error)) {
                 C4Log("*** ERROR: Can't log to binary file");
             }
             c4log_setBinaryFileLevel(kC4LogVerbose);

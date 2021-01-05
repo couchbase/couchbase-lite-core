@@ -116,7 +116,10 @@ public:
         @param options The options to use when performing file logging
         @param initialMessage  First message that will be written to the log, e.g. version info */
     static void writeEncodedLogsTo(const LogFileOptions& options,
-                                   const std::string &initialMessage);
+                                   const std::string &initialMessage = "");
+
+    /** Returns the current log file configuration options, as given to `writeEncodedLogsTo`. */
+    static LogFileOptions currentLogFileOptions();
 
     static LogLevel callbackLogLevel() noexcept;
     static LogLevel fileLogLevel() noexcept             {return sFileMinLevel;}

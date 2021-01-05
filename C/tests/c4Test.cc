@@ -90,15 +90,6 @@ ostream& operator<< (ostream &out, C4Error error) {
 }
 
 
-//static void log(C4LogDomain domain, C4LogLevel level, C4Slice message) {
-//    static const char* kLevelNames[5] = {"debug", "verbose", "info", "WARNING", "ERROR"};
-//    fprintf(stderr, "LiteCore-C %s %s: %.*s\n",
-//            c4log_getDomainName(domain),
-//            kLevelNames[level],
-//            (int)message.size, (char*)message.buf);
-//}
-
-
 void AssertionFailed(const char *fn, const char *file, unsigned line, const char *expr,
                      const char *message)
 {

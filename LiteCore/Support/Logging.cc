@@ -61,6 +61,7 @@ namespace litecore {
     map<unsigned, string> LogDomain::sObjNames;
     static ofstream* sFileOut[5] = {}; // File per log level
     static LogEncoder* sLogEncoder[5] = {};
+    static LogFileOptions sCurrentOptions;
     static string sLogDirectory;
     static int sMaxCount = 0;       // For rotation
     static int64_t sMaxSize = 1024; // For rotation
@@ -226,6 +227,7 @@ namespace litecore {
             teardownFileOut();
         }
 
+        sCurrentOptions = options;
         sLogDirectory = options.path;
         sInitialMessage = initialMessage;
         if (sLogDirectory.empty()) {
@@ -275,6 +277,13 @@ namespace litecore {
             });
         }
         _invalidateEffectiveLevels();
+        sCurrentOptions = options;
+    }
+
+
+    LogFileOptions LogDomain::currentLogFileOptions() {
+        unique_lock<mutex> lock(sLogMutex);
+        return sCurrentOptions;
     }
 
 
