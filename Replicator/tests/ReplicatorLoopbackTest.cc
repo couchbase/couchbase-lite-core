@@ -15,9 +15,10 @@
 #include <chrono>
 #include "betterassert.hh"
 #include "fleece/Mutable.hh"
+#include "PlatformCompat.hh"
 
-using namespace std;
 using namespace litecore::actor;
+using namespace std;
 
 constexpr Timer::duration ReplicatorLoopbackTest::kLatency;
 
@@ -52,7 +53,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt databas
     // Use c4db_copyNamed to copy the db to a new file (with new UUIDs):
     C4Error error;
     alloc_slice path(c4db_getPath(db));
-    string scratchDBName = format("scratch%lld", chrono::milliseconds(time(nullptr)).count());
+    string scratchDBName = format("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
     REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), &error));
 
     // Open the copied db:
@@ -663,7 +664,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Attachments", "[Push][blob]") {
         _expectedDocsFinished.insert("att1");
     }
 
-    auto opts = Replicator::Options::pushing().setProperty(C4STR(kC4ReplicatorOptionProgressLevel), 2);
+    auto opts = Replicator::Options::pushing();
+    _clientProgressLevel = kC4ReplProgressPerAttachment;
     runReplicators(opts, Replicator::Options::passive());
 
     compareDatabases();
@@ -685,8 +687,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
         _expectedDocsFinished.insert("att1");
     }
 
-    auto pullOpts = Replicator::Options::pulling().setProperty(C4STR(kC4ReplicatorOptionProgressLevel), 2);
-    auto serverOpts = Replicator::Options::passive().setProperty(C4STR(kC4ReplicatorOptionProgressLevel), 2);
+    auto pullOpts = Replicator::Options::pulling();
+    auto serverOpts = Replicator::Options::passive();
+    _clientProgressLevel = _serverProgressLevel = kC4ReplProgressPerAttachment;
     runReplicators(serverOpts, pullOpts);
 
     compareDatabases();
@@ -740,7 +743,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
         }
     }
 
-    auto pullOpts = Replicator::Options::pulling().setProperty(C4STR(kC4ReplicatorOptionProgressLevel), 2);
+    auto pullOpts = Replicator::Options::pulling();
+    _serverProgressLevel = kC4ReplProgressPerAttachment;
     runReplicators(Replicator::Options::passive(), pullOpts);
 
     compareDatabases();
@@ -1338,8 +1342,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
     // NOTE: Despite the name, both sides are not active. Client pushes & pulls, server is passive.
     //       But both sides are rapidly changing the single document.
     alloc_slice docID("doc");
-    auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous)
-    .setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous);
+    _clientProgressLevel = kC4ReplProgressPerDocument;
     auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
     installConflictHandler();
 
@@ -1381,7 +1385,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
     for (int i = 1; i <= 100; ++i)
         _expectedDocsFinished.insert(format("%07d", i));
     auto opts = Replicator::Options::pushing();
-    opts.setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    _clientProgressLevel = kC4ReplProgressPerDocument;
     runReplicators(opts, Replicator::Options::passive());
 }
 
@@ -1392,7 +1396,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
     for (int i = 1; i <= 100; ++i)
         _expectedDocsFinished.insert(format("%07d", i));
     auto opts = Replicator::Options::pulling();
-    opts.setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    _serverProgressLevel = kC4ReplProgressPerDocument;
     runReplicators(Replicator::Options::passive(), opts);
 }
 
