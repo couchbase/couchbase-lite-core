@@ -166,6 +166,7 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 #define Log(FMT, ...)                   LogToAt(kC4Cpp_DefaultLog, Info,    FMT, ##__VA_ARGS__)
 #define Warn(FMT, ...)                  LogToAt(kC4Cpp_DefaultLog, Warning, FMT, ##__VA_ARGS__)
 #define WarnError(FMT, ...)             LogToAt(kC4Cpp_DefaultLog, Error,   FMT, ##__VA_ARGS__)
+#define WriteVerbose(FMT, ...)          LogToAt(kC4Cpp_DefaultLog, Verbose, FMT, ##__VA_ARGS__)
 #define WriteDebug(FMT, ...)            LogToAt(kC4Cpp_DefaultLog, Debug,   FMT, ##__VA_ARGS__)
 #else
 #define LogToAt(DOMAIN, LEVEL, FMT, ARGS...) \
@@ -176,10 +177,11 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 #define LogVerbose(DOMAIN, FMT, ARGS...)    LogToAt(DOMAIN, Verbose, FMT, ##ARGS)
 #define LogDebug(DOMAIN, FMT, ARGS...)      LogToAt(DOMAIN, Debug, FMT, ##ARGS)
 
-#define WriteDebug(FMT, ARGS...)            LogToAt(kC4Cpp_DefaultLog, Debug,   FMT, ##ARGS)
 #define Log(FMT, ARGS...)                   LogToAt(kC4Cpp_DefaultLog, Info,    FMT, ##ARGS)
 #define Warn(FMT, ARGS...)                  LogToAt(kC4Cpp_DefaultLog, Warning, FMT, ##ARGS)
 #define WarnError(FMT, ARGS...)             LogToAt(kC4Cpp_DefaultLog, Error,   FMT, ##ARGS)
+#define WriteVerbose(FMT, ARGS...)          LogToAt(kC4Cpp_DefaultLog, Verbose, FMT, ##ARGS)
+#define WriteDebug(FMT, ARGS...)            LogToAt(kC4Cpp_DefaultLog, Debug,   FMT, ##ARGS)
 #endif
 
 

@@ -26,6 +26,10 @@ namespace c4Internal {
 
     void recordException(const exception &e, C4Error* outError) noexcept {
         error err = error::convertException(e).standardized();
+        if(outError) {
+            C4WarnError("Exception '%s' converted to %s / %d / '%s'", e.what(), error::nameOfDomain(err.domain), err.code, err.what());
+        }
+
         c4error_return((C4ErrorDomain)err.domain, err.code, c4str(e.what()), outError);
     }
 

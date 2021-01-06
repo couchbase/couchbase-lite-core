@@ -52,10 +52,12 @@ namespace litecore {
 
     bool blobKey::readFromBase64(slice data, bool prefixed) {
         if (prefixed) {
-            if (data.hasPrefix("sha1-"_sl))
+            if (data.hasPrefix("sha1-"_sl)) {
                 data.moveStart(5);
-            else
+            } else {
+                Warn("blobKey unable to read base64 (expecting to start with 'sha1-'): %.*s", SPLAT(data));
                 return false;
+            }
         }
         if (data.size == kBlobKeyStringLength) {
             // Decoder always writes a multiple of 3 bytes, so round up:
@@ -63,6 +65,8 @@ namespace litecore {
             slice result = data.readBase64Into(slice(buf, sizeof(buf)));
             return digest.setDigest(result);
         }
+
+        Warn("blobKey unable to read base64 (expecting size %zu; found %zu)", kBlobKeyStringLength, data.size);
         return false;
     }
 
@@ -185,6 +189,7 @@ namespace litecore {
         auto key = computeKey();
         if (expectedKey && *expectedKey != key)
             error::_throw(error::CorruptData);
+
         Blob blob(_store, key);
         if(!blob.path().exists()) {
             _tmpPath.setReadOnly(true);
@@ -192,6 +197,7 @@ namespace litecore {
         } else {
             // If the destination already exists, then this blob
             // already exists and doesn't need to be written again
+            LogVerbose(BlobLog, "Blob already exists, deleting tmp file...");
             if(!_tmpPath.del()) {
                 string tmpPath = _tmpPath.path();
                 Warn("Unable to delete temporary blob %s", tmpPath.c_str());
@@ -207,6 +213,7 @@ namespace litecore {
     void BlobStore::deleteAllExcept(const unordered_set<string> &inUse) {
         _dir.forEachFile([&inUse](const FilePath &path) {
             if(find(inUse.cbegin(), inUse.cend(), path.fileName()) == inUse.cend()) {
+                LogVerbose(BlobLog, "Deleting unused blob %s", path.canonicalPath().c_str());
                 path.del();
             }
         });
@@ -243,8 +250,11 @@ namespace litecore {
     void BlobStore::copyBlobsTo(BlobStore &toStore) {
         _dir.forEachFile([&](const FilePath &path) {
             blobKey key;
-            if (!key.readFromFilename(path.fileName()))
+            if (!key.readFromFilename(path.fileName())) {
+                Warn( "Skipping unrecognizable file %s", path.fileName().c_str());
                 return;
+            }
+
             Blob srcBlob(*this, key);
             auto src = srcBlob.read();
             BlobWriteStream dst(toStore);

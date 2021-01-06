@@ -137,6 +137,7 @@ namespace litecore { namespace repl {
 
         if (limit > 0 && !_caughtUp) {
             // Couldn't get as many changes as asked for, so I've caught up with the DB.
+            logInfo("Changes feed caught up with remote");
             _caughtUp = true;
         }
         changes.askAgain = !_caughtUp || _continuous;
@@ -230,10 +231,18 @@ namespace litecore { namespace repl {
         if (info.expiration > 0 && info.expiration < c4_now()) {
             logVerbose("'%.*s' is expired; not pushing it", SPLAT(info.docID));
             return nullptr;             // skip rev: expired
-        } else if (!_passive && _checkpointer && _checkpointer->isSequenceCompleted(info.sequence)) {
+        } 
+
+        if (!_passive && _checkpointer && _checkpointer->isSequenceCompleted(info.sequence)) {
+            logVerbose("Sequence %" PRIu64 " of '%.*s' is already marked as pushed, skipping...", 
+                info.sequence, SPLAT(info.docID));
             return nullptr;             // skip rev: checkpoint says we already pushed it before
-        } else if (_docIDs != nullptr
+        } 
+
+        if (_docIDs != nullptr
                     && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) {
+            logVerbose("Skipping push of '%.*s' because it is not in the explicit list of docIDs",
+                SPLAT(info.docID));
             return nullptr;             // skip rev: not in list of docIDs
         } else {
             auto rev = retained(new RevToSend(info));
@@ -261,13 +270,18 @@ namespace litecore { namespace repl {
                 _delegate.failedToGetChange(rev, error, false);
                 return false;         // fail the rev: error getting doc
             }
-            if (slice(doc->revID) != slice(rev->revID))
+            if (slice(doc->revID) != slice(rev->revID)) {
+                logVerbose("Revision ID '%.*s' does not match stored ID '%.*s', not pushing...",
+                    SPLAT(rev->revID), SPLAT(doc->revID));
                 return false;         // skip rev: there's a newer one already
+            }
 
             if (needRemoteRevID) {
                 // For proposeChanges, find the nearest foreign ancestor of the current rev:
-                if (!getRemoteRevID(rev, doc))
+                if (!getRemoteRevID(rev, doc)) {
+                    logVerbose("getRemoteRevID returned false, not pushing...");
                     return false;     // skip or fail rev: it's already on the peer
+                }
             }
             if (_options.pushFilter) {
                 // If there's a push filter, ask it whether to push the doc:
@@ -304,8 +318,11 @@ namespace litecore { namespace repl {
         Assert(dbAccess.remoteDBID());
         alloc_slice foreignAncestor = dbAccess.getDocRemoteAncestor(doc);
         logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
-        if (foreignAncestor == slice(doc->revID))
+        if (foreignAncestor == slice(doc->revID)) {
+            logVerbose("Local rev ID matches remote rev ID already, no update needed");
             return false;   // skip this rev: it's already on the peer
+        }
+
         if (foreignAncestor
                     && c4rev_getGeneration(foreignAncestor) >= c4rev_getGeneration(doc->revID)) {
             if (_options.pull <= kC4Passive) {

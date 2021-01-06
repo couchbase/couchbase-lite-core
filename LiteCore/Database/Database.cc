@@ -269,6 +269,7 @@ namespace c4Internal {
             doc->selectCurrentRevision();
             do {
                 if(!doc->loadSelectedRevBody()) {
+                    Warn("Blob collection skipping unloadable doc '%.*s'", SPLAT(doc->docID));
                     continue;
                 }
 
@@ -299,7 +300,8 @@ namespace c4Internal {
                 }
             } while(doc->selectNextRevision());
         }
-        
+
+        Log("Found %zu unused blobs to collect", usedDigests.size());
         return usedDigests;
     }
 
@@ -432,24 +434,32 @@ namespace c4Internal {
 
 
     BackgroundDB* Database::backgroundDatabase() {
-        if (!_backgroundDB)
+        if (!_backgroundDB) {
+            
+            Log("Creating background database for '%s'", path().canonicalPath().c_str());
             _backgroundDB.reset(new BackgroundDB(this));
+        }
+
         return _backgroundDB.get();
     }
 
 
     void Database::stopBackgroundTasks() {
         if (_housekeeper) {
+            Log("Stopping database housekeeping for '%s'", path().canonicalPath().c_str());
             _housekeeper->stop();
             _housekeeper = nullptr;
         }
-        if (_backgroundDB)
+        if (_backgroundDB) {
+            Log("Closing background database for '%s'", path().canonicalPath().c_str());
             _backgroundDB->close();
+        }
     }
 
 
     bool Database::startHousekeeping() {
         if (!_housekeeper) {
+            Log("Starting database housekeeping for '%s'", path().canonicalPath().c_str());
             if (_config.flags & kC4DB_ReadOnly)
                 return false;
             _housekeeper = new Housekeeper(this);
@@ -508,7 +518,8 @@ namespace c4Internal {
 
 
     void Database::beginTransaction() {
-        if (++_transactionLevel == 1) {
+        auto transactionLevel = ++_transactionLevel;
+        if (transactionLevel == 1) {
             _transaction = new Transaction(_dataFile.get());
             if (_sequenceTracker) {
                 _sequenceTracker->use([](SequenceTracker &st) {
@@ -516,6 +527,8 @@ namespace c4Internal {
                 });
             }
         }
+
+        WriteVerbose("Database %s now at transaction level %d", name().c_str(), transactionLevel);
     }
 
     bool Database::inTransaction() noexcept {
@@ -541,7 +554,9 @@ namespace c4Internal {
     void Database::endTransaction(bool commit) {
         if (_transactionLevel == 0)
             error::_throw(error::NotInTransaction);
-        if (--_transactionLevel == 0) {
+
+        auto transactionLevel = --_transactionLevel;
+        if (transactionLevel == 0) {
             auto t = _transaction;
             try {
                 if (commit)
@@ -554,6 +569,8 @@ namespace c4Internal {
             }
             _cleanupTransaction(commit);
         }
+
+        WriteVerbose("Database %s now at transaction level %d", name().c_str(), transactionLevel);
     }
 
 
@@ -731,8 +748,11 @@ namespace c4Internal {
     bool Database::setExpiration(slice docID, expiration_t expiration) {
         {
             TransactionHelper t(this);
-            if (!_dataFile->defaultKeyStore().setExpiration(docID, expiration))
+            if (!_dataFile->defaultKeyStore().setExpiration(docID, expiration)) {
+                Warn("Failed to set expiration on '%.*s'", SPLAT(docID));
                 return false;
+            }
+
             t.commit();
         }
         if (_housekeeper)

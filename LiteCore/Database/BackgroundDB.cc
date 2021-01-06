@@ -71,13 +71,15 @@ namespace litecore {
             bool commit;
             try {
                 commit = task(dataFile, &sequenceTracker);
-            } catch (const exception &) {
+            } catch (const exception &x) {
+                Warn("Error during BackgroundDB::useIntransaction %s", x.what());
                 t.abort();
                 sequenceTracker.endTransaction(false);
                 throw;
             }
 
             if (!commit) {
+                WriteVerbose("BackgroundDB::useInTransaction not committing transaction due to callback returning false...");
                 t.abort();
                 sequenceTracker.endTransaction(false);
                 return;

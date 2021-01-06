@@ -32,6 +32,7 @@
 #include "RevTree.hh"   // only for kDefaultRemoteID
 #include "SecureRandomize.hh"
 #include "FleeceImpl.hh"
+#include "StringUtil.hh"
 
 using namespace fleece::impl;
 using namespace std;
@@ -223,6 +224,9 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
             }
 
             // Look up the doc in the db, and the remote URL in the doc:
+            // Tech Debt: Constants are not matched with their most used form
+            // (i.e. kC4InfoStore is usually used as a string, and kRemoteDBURLsDoc
+            // is always used as a slice)
             Record doc = db->getRawDocument(toString(kC4InfoStore), slice(kRemoteDBURLsDoc));
             const Dict *remotes = nullptr;
             C4RemoteID remoteID = 0;
@@ -239,10 +243,16 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
 
             if (remoteID > 0) {
                 // Found the remote ID!
+                WriteVerbose("c4db_getRemoteDBID: Found remote ID %" PRIu32 " for %.*s", remoteID, SPLAT(remoteAddress));
                 return remoteID;
-            } else if (!canCreate) {
+            } 
+
+            if (!canCreate) {
+                WriteVerbose("c4db_getRemoteDBID: Remote ID not found for %.*s, and creation suppressed...", SPLAT(remoteAddress));
                 break;
-            } else if (creating) {
+            } 
+
+            if (creating) {
                 // Update or create the document, adding the identifier:
                 remoteID = 1;
                 Encoder enc;
@@ -255,6 +265,7 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
                         remoteID = max(remoteID, 1 + C4RemoteID(existingID));   // make sure new ID is unique
                     }
                 }
+
                 enc.writeKey(remoteAddress);                       // Add new entry
                 enc.writeUInt(remoteID);
                 enc.endDictionary();
@@ -264,15 +275,22 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
                 db->putRawDocument(toString(kC4InfoStore), slice(kRemoteDBURLsDoc), nullslice, body);
                 db->endTransaction(true);
                 inTransaction = false;
+                Log("c4db_getRemoteDBID: Created remote ID %" PRIu32 " for %.*s", remoteID, SPLAT(remoteAddress));
                 return remoteID;
             }
         }
         if (outError)
             *outError = c4error_make(LiteCoreDomain, kC4ErrorNotFound, {});
-        return C4RemoteID(0);
+
+        return C4RemoteID();
     });
-    if (inTransaction)
-        c4db_endTransaction(db, false, nullptr);
+
+    if (inTransaction) {
+        if(!c4db_endTransaction(db, false, nullptr)) {
+            WarnError("Failed to end transaction in c4db_getRemoteDBID");
+        }
+    }
+
     return remoteID;
 }
 
@@ -290,6 +308,8 @@ C4SliceResult c4db_getRemoteDBAddress(C4Database *db, C4RemoteID remoteID) C4API
                 }
             }
         }
+
+        Warn("c4db_getRemoteDBAddress: Address not found for remote ID %" PRIu32, remoteID);
         return C4SliceResult{};
     });
 }
@@ -336,15 +356,21 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
         // Slow path: Load the doc and update the remote-ancestor info in the rev tree:
         Retained<Document> doc(asInternal(c4doc_get(database, docID, true, outError)));
         release(doc.get());     // balances the +1 ref returned by c4doc_get()
-        if (!doc)
+        if (!doc) {
+            Warn("c4db_markSynced cannot mark nonexistent doc '%.*s'", SPLAT(docID));
             return false;
+        }
+
         bool found = false;
         do {
             found = (doc->selectedRev.sequence == sequence);
         } while (!found && doc->selectNextRevision());
+
         if (found) {
             doc->setRemoteAncestorRevID(remoteID);
             result = c4doc_save(doc.get(), 9999, outError);       // don't prune anything
+        } else {
+            Warn("c4db_markSynced called on non-existent sequence %" PRIu64 " of '%.*s", sequence, SPLAT(docID));
         }
     } catchError(outError)
     return result;
@@ -355,8 +381,11 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
 
 
 char* c4doc_generateID(char *docID, size_t bufferSize) noexcept {
-    if (bufferSize < kC4GeneratedIDLength + 1)
+    if (bufferSize < kC4GeneratedIDLength + 1) {
+        WarnError("c4doc_generateID: %zu bytes is not large enough", bufferSize);
         return nullptr;
+    }
+
     static const char kBase64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
     "0123456789-_";
     uint8_t r[kC4GeneratedIDLength - 1];
@@ -429,19 +458,24 @@ C4Document* c4doc_getForPut(C4Database *database,
 
         if (parentRevID.buf) {
             // Updating an existing revision; make sure it exists and is a leaf:
-            if (!idoc->exists())
+            if (!idoc->exists()) {
+                Warn("c4doc_getForPut called on non-existent document %.*s", SPLAT(docID));
                 code = kC4ErrorNotFound;
-            else if (!idoc->selectRevision(parentRevID, false))
+            } else if (!idoc->selectRevision(parentRevID, false)) {
+                Warn("c4doc_getForPut called on non-existent revision %.*s / %.*s", SPLAT(docID), SPLAT(parentRevID));
                 code = allowConflict ? kC4ErrorNotFound : kC4ErrorConflict;
-            else if (!allowConflict && !(idoc->selectedRev.flags & kRevLeaf))
+            } else if (!allowConflict && !(idoc->selectedRev.flags & kRevLeaf)) {
                 code = kC4ErrorConflict;
+            }
         } else {
             // No parent revision given:
             if (deleting) {
                 // Didn't specify a revision to delete: NotFound or a Conflict, depending
-                code = ((idoc->flags & kDocExists) ?kC4ErrorConflict :kC4ErrorNotFound);
+                Warn("c4doc_getForPut attempting to delete %.*s with no specified revision", SPLAT(docID));
+                code = ((idoc->flags & kDocExists) ? kC4ErrorConflict : kC4ErrorNotFound);
             } else if ((idoc->flags & kDocExists) && !(idoc->selectedRev.flags & kDocDeleted)) {
                 // If doc exists, current rev must be a deletion or there will be a conflict:
+                Warn("c4doc_getForPut trying to create new document %.*s, but it already exists", SPLAT(docID));
                 code = kC4ErrorConflict;
             }
         }
@@ -461,12 +495,16 @@ C4Document* c4doc_put(C4Database *database,
                       size_t *outCommonAncestorIndex,
                       C4Error *outError) noexcept
 {
-    if (!database->mustBeInTransaction(outError))
+    // All of these precondition checks are specific enough to omit logging
+    if (!database->mustBeInTransaction(outError)) {
         return nullptr;
+    }
+
     if (rq->docID.buf && !Document::isValidDocID(rq->docID)) {
         c4error_return(LiteCoreDomain, kC4ErrorBadDocID, C4STR("Invalid docID"), outError);
         return nullptr;
     }
+
     if (rq->existingRevision || rq->historyCount > 0)
         if (!checkParam(rq->docID.buf, "Missing docID", outError))
             return nullptr;
@@ -493,10 +531,14 @@ C4Document* c4doc_put(C4Database *database,
             if (rq->existingRevision) {
                 // Insert existing revision:
                 doc = c4doc_get(database, rq->docID, false, outError);
-                if (!doc)
+                if (!doc) {
+                    WarnError("c4doc_put: Failed to get document to update");
                     return nullptr;
+                }
+
                 commonAncestorIndex = asInternal(doc)->putExistingRevision(*rq, outError);
                 if (commonAncestorIndex < 0) {
+                    WarnError("c4doc_put: Failed to insert revision");
                     c4doc_release(doc);
                     return nullptr;
                 }
@@ -596,7 +638,17 @@ C4Document* c4doc_update(C4Document *doc,
 
 bool c4doc_removeRevisionBody(C4Document* doc) noexcept {
     auto idoc = asInternal(doc);
-    return idoc->mustBeInTransaction(NULL) && idoc->removeSelectedRevBody();
+    if(!idoc->mustBeInTransaction(nullptr)) {
+        WarnError("c4doc_removeRevisionBody: Called outside transaction");
+        return false;
+    }
+
+    if(!idoc->removeSelectedRevBody()) {
+        Warn("c4doc_removeRevisionBody: failed to remove");
+        return false;
+    }
+
+    return true;
 }
 
 

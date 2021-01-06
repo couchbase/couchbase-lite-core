@@ -43,11 +43,9 @@ public:
                                        (FLDict)input,
                                        dynamic_cast<c4Database*>(dfDelegate),
                                        outError);
-        } catch (const std::exception &x) {
-            if (outError)
-                *outError = c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what()));
-            return C4SliceResult{};
-        }
+        } catchError(outError)
+
+        return C4SliceResult{};
     }
 
 protected:

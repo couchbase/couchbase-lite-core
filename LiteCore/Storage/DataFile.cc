@@ -73,6 +73,8 @@ namespace litecore {
 
     DataFile::Factory* DataFile::factoryNamed(const std::string &name) {
         auto facs = factories();
+        DebugAssert(facs.size() > 0);
+
         if (name.empty())
             return facs[0];
         for (auto factory : facs)

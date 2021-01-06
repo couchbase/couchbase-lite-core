@@ -70,6 +70,7 @@ static bool ensureConfigDirExists(const C4DatabaseConfig2 *config, C4Error *outE
         (void)FilePath(string(slice(config->parentDirectory)), "").mkdir();
         return true;
     } catch (const exception &x) {
+        WarnError("Error creating database parent directory '%.*s'", SPLAT(config->parentDirectory));
         recordException(x, outError);
         return false;
     }
@@ -385,11 +386,23 @@ bool c4raw_put(C4Database* database,
                C4Slice body,
                C4Error *outError) noexcept
 {
-    if (!c4db_beginTransaction(database, outError))
+    static const char* kErrMsg = "c4raw_put failed to %s (see exception details above)";
+
+    if (!c4db_beginTransaction(database, outError)) {
+        // Exception is logged by tryCatch inside c4db_beginTransaction
+        WarnError(kErrMsg, "begin transaction");
         return false;
+    }
     bool commit = tryCatch(outError,
                                  bind(&Database::putRawDocument, database, toString(storeName),
                                       key, meta, body));
-    c4db_endTransaction(database, commit, outError);
+    if(!commit) {
+        WarnError(kErrMsg, "put raw document, aborting transaction");
+    }
+
+    if(!c4db_endTransaction(database, commit, outError)) {
+        WarnError(kErrMsg, "end transaction");
+    }
+
     return commit;
 }
