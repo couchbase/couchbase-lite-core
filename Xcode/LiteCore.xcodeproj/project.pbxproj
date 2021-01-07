@@ -1018,11 +1018,9 @@
 		274EDDF41DA30B43003AD158 /* QueryParser.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueryParser.cc; sourceTree = "<group>"; };
 		274EDDF51DA30B43003AD158 /* QueryParser.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = QueryParser.hh; sourceTree = "<group>"; };
 		274EDDF91DA322D4003AD158 /* QueryParserTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueryParserTest.cc; sourceTree = "<group>"; };
-		2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LiteCore-Prefix.pch"; sourceTree = "<group>"; };
 		275072AB18E4A68E00A80C5A /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		275072AF18E4A68E00A80C5A /* LiteCore Tests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "LiteCore Tests-Info.plist"; sourceTree = "<group>"; };
 		275072B118E4A68E00A80C5A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		275072B518E4A68E00A80C5A /* LiteCore Tests-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LiteCore Tests-Prefix.pch"; sourceTree = "<group>"; };
 		275073581F4B5E13003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = CMakeLists.txt; path = ../CMakeLists.txt; sourceTree = "<group>"; };
 		275073591F4B5E66003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2750735A1F4B5ECC003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
@@ -2152,7 +2150,6 @@
 				2744B33D241854F2005A194D /* ThreadUtil.hh */,
 				2744B343241854F2005A194D /* Timer.cc */,
 				2744B345241854F2005A194D /* Timer.hh */,
-				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -2172,7 +2169,6 @@
 			children = (
 				275072AF18E4A68E00A80C5A /* LiteCore Tests-Info.plist */,
 				275072B018E4A68E00A80C5A /* InfoPlist.strings */,
-				275072B518E4A68E00A80C5A /* LiteCore Tests-Prefix.pch */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -4374,7 +4370,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
-				PRODUCT_NAME = LiteCoreCppTests;
 			};
 			name = Debug;
 		};
@@ -4382,7 +4377,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
-				PRODUCT_NAME = LiteCoreCppTests;
 			};
 			name = Release;
 		};
@@ -4404,16 +4398,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../vendor/fleece/API",
-					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
-					"$(SRCROOT)/../vendor/fleece/Fleece/Core",
-					"$(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp",
-					"$(SRCROOT)/../vendor/BLIP-Cpp/src/util/",
-					"$(SRCROOT)/../vendor/SQLiteCpp/include/",
-					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
-				);
 			};
 			name = Debug;
 		};
@@ -4421,16 +4405,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../vendor/fleece/API",
-					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
-					"$(SRCROOT)/../vendor/fleece/Fleece/Core",
-					"$(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp",
-					"$(SRCROOT)/../vendor/BLIP-Cpp/src/util/",
-					"$(SRCROOT)/../vendor/SQLiteCpp/include/",
-					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
-				);
 			};
 			name = Release;
 		};
@@ -4844,7 +4818,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
-				PRODUCT_NAME = LiteCoreCppTests;
 			};
 			name = Debug_EE;
 		};
@@ -4852,16 +4825,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../vendor/fleece/API",
-					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
-					"$(SRCROOT)/../vendor/fleece/Fleece/Core",
-					"$(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp",
-					"$(SRCROOT)/../vendor/BLIP-Cpp/src/util/",
-					"$(SRCROOT)/../vendor/SQLiteCpp/include/",
-					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
-				);
 			};
 			name = Debug_EE;
 		};
@@ -5014,7 +4977,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
-				PRODUCT_NAME = LiteCoreCppTests;
 			};
 			name = Release_EE;
 		};
@@ -5022,16 +4984,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/../vendor/fleece/API",
-					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
-					"$(SRCROOT)/../vendor/fleece/Fleece/Core",
-					"$(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp",
-					"$(SRCROOT)/../vendor/BLIP-Cpp/src/util/",
-					"$(SRCROOT)/../vendor/SQLiteCpp/include/",
-					"$(SRCROOT)/../vendor/fleece/vendor/catch/",
-				);
 			};
 			name = Release_EE;
 		};
