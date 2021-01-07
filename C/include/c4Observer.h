@@ -91,9 +91,9 @@ extern "C" {
                                 bool *outExternal) C4API;
 
     /** Releases the memory used by the C4DatabaseChange structs (to hold the docID and revID
-        strings.) This must be called after `c4dbobs_getChanges().
-        @param changes  The same array of changes that was passed to `c4dbobs_getChanges`.
-        @param numChanges  The number of changes returned by `c4dbobs_getChanges`, i.e. the number
+        strings.) This must be called after \ref c4dbobs_getChanges().
+        @param changes  The same array of changes that was passed to \ref c4dbobs_getChanges.
+        @param numChanges  The number of changes returned by \ref c4dbobs_getChanges, i.e. the number
                             of valid items in `changes`. */
     void c4dbobs_releaseChanges(C4DatabaseChange changes[C4NONNULL],
                                 uint32_t numChanges) C4API;

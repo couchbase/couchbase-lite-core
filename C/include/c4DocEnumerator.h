@@ -26,7 +26,7 @@ C4_ASSUME_NONNULL_BEGIN
 extern "C" {
 #endif
 
-    /** \defgroup Document Enumeration
+    /** \defgroup DocEnumerator  Document Enumeration
         @{ */
 
 

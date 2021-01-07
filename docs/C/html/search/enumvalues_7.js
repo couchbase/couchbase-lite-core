@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['unknownvalue',['UnknownValue',['../group___fleece.html#gga6a3de980e42db083a0ec3081c4ae8eceacfa939f5e054d908c85456d4747e3115',1,'Fleece.h']]]
+  ['websocketdomain',['WebSocketDomain',['../group___errors.html#gga6cbe7be44f2f63425404284687e6861ca0302b37e37e11311e3cd992f9373b048',1,'c4Base.h']]]
 ];

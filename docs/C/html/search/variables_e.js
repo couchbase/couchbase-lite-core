@@ -1,11 +1,10 @@
 var searchData=
 [
-  ['path',['path',['../struct_c4_address.html#a878f4bc000abd3e15eb257ae0c74645e',1,'C4Address']]],
-  ['port',['port',['../struct_c4_address.html#addf23cc4d3fcd99b1cd2400ba616b1f7',1,'C4Address']]],
-  ['private3',['private3',['../struct_f_l_dict_key.html#aa06c2a0cb2524ce979769005d223a4e5',1,'FLDictKey']]],
-  ['private5',['private5',['../struct_f_l_dict_key.html#ad3bb4f43805cf1fe2a168f21509e2bfd',1,'FLDictKey']]],
-  ['progress',['progress',['../struct_c4_replicator_status.html#a2de879a27c205e0eb4b0b7edd1ed112d',1,'C4ReplicatorStatus']]],
-  ['provideswebsockets',['providesWebSockets',['../struct_c4_socket_factory.html#a6ffdb161d5848e7bad419837e9c91b73',1,'C4SocketFactory']]],
-  ['pull',['pull',['../struct_c4_replicator_parameters.html#a2e2e04c89e9d4493640ff747bb9f2ca0',1,'C4ReplicatorParameters']]],
-  ['push',['push',['../struct_c4_replicator_parameters.html#a8724676c6b4ff3da03ec80edc27b730b',1,'C4ReplicatorParameters']]]
+  ['rankfulltext_5fdeprecated',['rankFullText_DEPRECATED',['../struct_c4_query_options.html#a7d0a806d31ac8cd06243fef1b05e7b08',1,'C4QueryOptions']]],
+  ['remotedbid',['remoteDBID',['../struct_c4_doc_put_request.html#af410fb7af767819092c166b1abf535dc',1,'C4DocPutRequest']]],
+  ['requestclose',['requestClose',['../struct_c4_socket_factory.html#ab3a2bbe301941260e172bbd477db10d7',1,'C4SocketFactory']]],
+  ['requireclientcerts',['requireClientCerts',['../struct_c4_t_l_s_config.html#aad8354541adea6073d792306b4591f07',1,'C4TLSConfig']]],
+  ['revflags',['revFlags',['../struct_c4_doc_put_request.html#aa1673083f7a825c698dfa1267d952704',1,'C4DocPutRequest']]],
+  ['revid',['revID',['../struct_c4_document_info.html#a832117e4d9ad7f2bf29da0c16325f1af',1,'C4DocumentInfo::revID()'],['../struct_c4_revision.html#ae07fd2dcb6c4f2e161f22bba91280db4',1,'C4Revision::revID()'],['../struct_c4_document.html#afcf8e0de04396aced602e3997ed752cf',1,'C4Document::revID()'],['../struct_c4_database_change.html#a6ac356683ef2c89d654598a9bf9a2833',1,'C4DatabaseChange::revID()'],['../struct_c4_document_ended.html#a495dd085ba363d5d178b318a415121f4',1,'C4DocumentEnded::revID()']]],
+  ['rootclientcerts',['rootClientCerts',['../struct_c4_t_l_s_config.html#a34f77a103f6a786bca5e848f77ddebc0',1,'C4TLSConfig']]]
 ];

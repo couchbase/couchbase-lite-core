@@ -33,6 +33,9 @@ extern "C" {
 C4_ASSUME_NONNULL_BEGIN
 
 
+/** \defgroup Base  Data Types and Base Functions
+ @{ */
+
 /** A database sequence number, representing the order in which a revision was created. */
 typedef uint64_t C4SequenceNumber;
 
@@ -179,6 +182,13 @@ int c4_getObjectCount(void) C4API;
 void c4_dumpInstances(void) C4API;
 
 
+/** @} */
+
+
+/** \defgroup Errors  Error Codes and Error Handling
+    @{ */
+
+
 //////// ERRORS:
 
 
@@ -299,7 +309,14 @@ bool c4error_mayBeTransient(C4Error err) C4API;
 bool c4error_mayBeNetworkDependent(C4Error err) C4API;
 
 
+/** @} */
+
+
 //////// LOGGING:
+
+
+/** \defgroup  Logging  Logging
+    @{ */
 
 
 /** Logging levels. */
@@ -413,7 +430,14 @@ void c4slog(C4LogDomain domain, C4LogLevel level, C4String msg) C4API;
 #define C4WarnError(FMT, ...)       C4LogToAt(kC4DefaultLog, kC4LogError,   FMT, ## __VA_ARGS__)
 
 
+/** @} */
+
+
 //////// INFO:
+
+
+/** \defgroup Miscellaneous  Miscellaneous Functions
+ @{ */
 
 
 /** A string describing the version of LiteCore. Currently this just describes the Git branch and
@@ -445,6 +469,11 @@ bool c4_setTempDir(C4String path, C4Error* C4NULLABLE err) C4API;
         to provide state. Obviously, whatever this points to must remain valid until the
         future time when `task` is called. */
 void c4_runAsyncTask(void (*task)(void*), void* C4NULLABLE context) C4API;
+
+
+/** @} */
+
+
 
 #ifdef __cplusplus
 }

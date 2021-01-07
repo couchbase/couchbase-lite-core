@@ -237,6 +237,7 @@ extern "C" {
 
     /** Tells a replicator to start. Ignored if it's not in the Stopped state.
         \note This function is thread-safe.
+        @param repl  The C4Replicator instance.
         @param reset If true, the replicator will reset its checkpoint and start replication from the beginning
      */
     void c4repl_start(C4Replicator* repl, bool reset) C4API;
@@ -285,7 +286,8 @@ extern "C" {
      *  API is a snapshot and results may change between the time the call was made and the time
      *  the call returns.
      *
-     *  @param outErr Records error information, if any.  This will be set to 0 on success.
+     *  @param repl  The C4Replicator instance.
+     *  @param outErr On failure, error information will be written here if non-NULL.
      *  @return A fleece encoded array of document IDs, each of which has one or more pending
      *  revisions.  If none are pending, nullslice is returned (note that an error
      * condition will return nullslice with the outErr code set to non-zero)
@@ -296,10 +298,11 @@ extern "C" {
      *  API is a snapshot and results may change between the time the call was made and the time
      *  the call returns.
      *
-     * @param docID The ID of the document to check
-     * @param outErr Records error information, if any.  This will be set to 0 on success.
-     * @return true if the document has one or more revisions pending, false otherwise (note that an error
-     * condition will return false with the outErr code set to non-zero)
+     *  @param repl  The C4Replicator instance.
+     *  @param docID The ID of the document to check
+     *  @param outErr On failure, error information will be written here if non-NULL.
+     *  @return true if the document has one or more revisions pending, false otherwise (note that an error
+     *  condition will return false with the outErr code set to non-zero)
      */
     bool c4repl_isDocumentPending(C4Replicator* repl, C4String docID, C4Error* C4NULLABLE outErr) C4API;
 
@@ -311,6 +314,7 @@ extern "C" {
     /** Sets the progress level of the replicator, indicating what information should be provided via
      *  callback.
      *
+     *  @param repl  The C4Replicator instance.
      *  @param level The progress level to set on the replicator
      *  @param outErr Records error information, if any.
      *  @return true if the progress level was set, false if there was an error.

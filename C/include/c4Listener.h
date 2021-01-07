@@ -113,6 +113,7 @@ extern "C" {
                       If this is left null, a name will be chosen based as though you had called
                       \ref c4db_URINameFromPath.
         @param db  The database to share.
+        @param outError On failure, the error info is stored here if non-NULL.
         @return  True on success, false if the name is invalid as a URI component. */
     bool c4listener_shareDB(C4Listener *listener,
                             C4String name,
@@ -166,6 +167,9 @@ extern "C" {
                 database path (does not end with ".cblite2".) */
     C4StringResult c4db_URINameFromPath(C4String path) C4API;
 
+
+/** @} */
+    
 #ifdef __cplusplus
 }
 #endif

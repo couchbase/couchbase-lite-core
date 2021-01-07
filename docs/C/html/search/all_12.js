@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['tcp_20socket_20provider_20api',['TCP Socket Provider API',['../group___socket.html',1,'']]],
-  ['termindex',['termIndex',['../struct_c4_full_text_term.html#a2c538c85a2531c89ba2d8a05a308099c',1,'C4FullTextTerm']]],
-  ['total',['total',['../struct_c4_progress.html#a935625b1d867c5af6b65904582485089',1,'C4Progress']]]
+  ['term',['term',['../struct_c4_full_text_match.html#a7aa89e1ce160b85c24dde9ed405753ff',1,'C4FullTextMatch']]],
+  ['tlscallbackcontext',['tlsCallbackContext',['../struct_c4_t_l_s_config.html#a133efcd475c2b4b9d20fcb781f0d5945',1,'C4TLSConfig']]],
+  ['tlsconfig',['tlsConfig',['../struct_c4_listener_config.html#a204b8096d8519fad0d2bcb3346d3d37b',1,'C4ListenerConfig']]]
 ];
