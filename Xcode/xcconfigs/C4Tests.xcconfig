@@ -7,6 +7,8 @@
 
 #include "Tests.xcconfig"
 
+PRODUCT_NAME                = C4Tests
+
 // Use of CoreML in predictive-query unit tests requires a more recent OS than LiteCore's baseline.
 IPHONEOS_DEPLOYMENT_TARGET  = 11.0
 MACOSX_DEPLOYMENT_TARGET    = 10.13
@@ -15,9 +17,8 @@ TVOS_DEPLOYMENT_TARGET      = 11.0
 SDKROOT                     = macosx
 SUPPORTED_PLATFORMS         = macosx
 
-HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core  $(SRCROOT)/../vendor/fleece/vendor/date/include   $(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp   $(SRCROOT)/../vendor/BLIP-Cpp/src/util/  $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/fleece/vendor/catch/
+HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core  $(SRCROOT)/../vendor/fleece/vendor/date/include   $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/fleece/vendor/catch/
 
 OTHER_LDFLAGS                = -lmbedtls -lmbedcrypto -lmbedx509
 
-ONLY_ACTIVE_ARCH            = YES
 LLVM_LTO                    = NO    // LTO makes tests very slow to link
