@@ -31,9 +31,9 @@ namespace litecore::repl {
      * in their URLs)
      */
     enum class URLTransformStrategy : unsigned {
-        AsIs,       //< Pass through the URL unaltered
-        AddPort,    //< Force the port in the URL
-        RemovePort  //< Force no port in the URL
+        AsIs,       ///< Pass through the URL unaltered
+        AddPort,    ///< Force the port in the URL
+        RemovePort  ///< Force no port in the URL
     };
 
     // An operator to allow simple forward iteration on the enum values
