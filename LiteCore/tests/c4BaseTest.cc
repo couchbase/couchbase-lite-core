@@ -21,6 +21,7 @@
 #include "catch.hpp"
 #include "NumConversion.hh"
 #include "Actor.hh"
+#include "URLTransformer.hh"
 #include <exception>
 #include <chrono>
 #include <thread>
@@ -31,6 +32,7 @@
 using namespace fleece;
 using namespace std;
 using namespace std::chrono_literals;
+using namespace litecore::repl;
 
 
 // NOTE: These tests have to be in the C++ tests target, not the C tests, because they use internal
@@ -216,5 +218,50 @@ namespace {
         this_thread::sleep_for(1s);
         actor->bad_recursive_doot();
         this_thread::sleep_for(2s);
+    }
+
+    TEST_CASE("URLTransformer") {
+        slice withPort, unaffected;
+        alloc_slice withoutPort;
+        SECTION("Plain") {
+            withPort = "ws://duckduckgo.com:80/search"_sl;
+            withoutPort = "ws://duckduckgo.com/search"_sl;
+            unaffected = "ws://duckduckgo.com:4984/search"_sl;
+        }
+
+        SECTION("TLS") {
+            withPort = "wss://duckduckgo.com:443/search"_sl;
+            withoutPort = "wss://duckduckgo.com/search"_sl;
+            unaffected = "wss://duckduckgo.com:4984/search"_sl;
+        }
+
+        alloc_slice asIsWithPort = URLTransformer::Transform(withPort, URLTransformStrategy::AsIs);
+        alloc_slice asIsWithoutPort = URLTransformer::Transform(withoutPort, URLTransformStrategy::AsIs);
+        alloc_slice asInUnaffected = URLTransformer::Transform(unaffected, URLTransformStrategy::AsIs);
+
+        CHECK(asIsWithPort == withPort);
+        CHECK(asIsWithoutPort == withoutPort);
+        CHECK(asIsWithoutPort.buf == withoutPort.buf);
+        CHECK(asInUnaffected == unaffected);
+
+        alloc_slice addPortWithPort = URLTransformer::Transform(withPort, URLTransformStrategy::AddPort);
+        alloc_slice addPortWithoutPort = URLTransformer::Transform(withoutPort, URLTransformStrategy::AddPort);
+        alloc_slice addPortUnaffected = URLTransformer::Transform(unaffected, URLTransformStrategy::AddPort);
+
+        CHECK(addPortWithPort == withPort);
+        CHECK(addPortWithoutPort == withPort);
+        CHECK(!addPortUnaffected);
+
+        alloc_slice removePortWithPort = URLTransformer::Transform(withPort, URLTransformStrategy::RemovePort);
+        alloc_slice removePortWithoutPort = URLTransformer::Transform(withoutPort, URLTransformStrategy::RemovePort);
+        alloc_slice removePortUnaffected = URLTransformer::Transform(unaffected, URLTransformStrategy::RemovePort);
+
+        CHECK(removePortWithPort == withoutPort);
+        CHECK(removePortWithoutPort == withoutPort);
+        CHECK(!removePortUnaffected);
+
+        URLTransformStrategy strategy = URLTransformStrategy::AsIs;
+        CHECK(++strategy == URLTransformStrategy::AddPort);
+        CHECK(++strategy == URLTransformStrategy::RemovePort);
     }
 }
