@@ -139,7 +139,7 @@ C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
         Retained<Document> doc = e->getDoc();
         if (!doc)
             clearError(outError);      // end of iteration is not an error
-        return retain(doc.get());
+        return retain(std::move(doc));
     });
 }
 

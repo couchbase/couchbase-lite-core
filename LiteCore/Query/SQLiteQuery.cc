@@ -496,9 +496,8 @@ namespace litecore {
             unicodesn_tokenizerRunningQuery(false);
 
             enc.endArray();
-            Retained<Doc> recording = enc.finishDoc();
             return new SQLiteQueryEnumerator(_query, &_options, _lastSequence, _purgeCount,
-                                             recording, rowCount, st.elapsed());
+                                             enc.finishDoc(), rowCount, st.elapsed());
         }
 
     private:

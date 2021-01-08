@@ -49,9 +49,7 @@ C4ListenerAPIs c4listener_availableAPIs(void) C4API {
 C4Listener* c4listener_start(const C4ListenerConfig *config, C4Error *outError) C4API {
     C4Listener* c4Listener = nullptr;
     try {
-        Retained<Listener> listener = NewListener(config);
-        retain(listener.get()); // Bump ref-count until client calls c4listener_free
-        c4Listener = external(listener);
+        c4Listener = external(retain(NewListener(config)));
         if (!c4Listener)
             c4error_return(LiteCoreDomain, kC4ErrorUnsupported,
                            "Unsupported listener API"_sl, outError);
