@@ -591,7 +591,7 @@ namespace litecore { namespace crypto {
                 error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
             }
 #else
-            err = SecTrustEvaluate(trustRef, &result)
+            err = SecTrustEvaluate(trustRef, &result);
 #endif
             checkOSStatus(err, "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain" );
