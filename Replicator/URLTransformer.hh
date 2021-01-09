@@ -43,7 +43,7 @@ namespace litecore::repl {
      * Transforms the URL passed in input using the provided strategy (note only URLs using
      * standard ports 80 / 443 will be considered for transformation)
      *
-     * @param input The URL to transform
+     * @param inputURL The URL to transform
      * @param strategy The strategy to use
      * @returns The transformed URL.  If the URL is not a candidate for AddPort or RemovePort
      *          (e.g. not a valid URL, or not using a standard port) then nullslice is returned)
@@ -55,7 +55,7 @@ namespace litecore::repl {
      * standard ports 80 / 443 will be considered for transformation).  This overload
      * is simply to allow the optimization to not make copies in the AsIs strategy.
      *
-     * @param input The URL to transform
+     * @param inputURL The URL to transform
      * @param strategy The strategy to use
      * @returns The transformed URL.  If the URL is not a candidate for AddPort or RemovePort
      *          (e.g. not a valid URL, or not using a standard port) then nullslice is returned)
