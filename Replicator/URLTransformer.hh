@@ -40,32 +40,26 @@ namespace litecore::repl {
     URLTransformStrategy& operator++(URLTransformStrategy& s);
 
     /**
-     * A class for transforming URLs based on a provided strategy.  Note this
-     * class will only function for URLs that are on either port 80
-     * (standard HTTP) or 443 (standard TLS)
+     * Transforms the URL passed in input using the provided strategy (note only URLs using
+     * standard ports 80 / 443 will be considered for transformation)
+     *
+     * @param input The URL to transform
+     * @param strategy The strategy to use
+     * @returns The transformed URL.  If the URL is not a candidate for AddPort or RemovePort
+     *          (e.g. not a valid URL, or not using a standard port) then nullslice is returned)
      */
-    class URLTransformer {
-    public:
-        /**
-         * Transforms the URL passed in input using the provided strategy
-         *
-         * @param input The URL to transform
-         * @param strategy The strategy to use
-         * @returns The transformed URL.  If the URL is not a candidate for AddPort or RemovePort
-         *          (e.g. not a valid URL, or not using a standard port) then nullslice is returned)
-         */
-        static alloc_slice Transform(const slice &input, URLTransformStrategy strategy);
+    alloc_slice transform_url(slice inputURL, URLTransformStrategy strategy);
 
-        /**
-         * Transforms the URL passed in input using the provided strategy.  This overload
-         * is simply to allow the optimization to not make copies in the AsIs strategy.
-         *
-         * @param input The URL to transform
-         * @param strategy The strategy to use
-         * @returns The transformed URL.  If the URL is not a candidate for AddPort or RemovePort
-         *          (e.g. not a valid URL, or not using a standard port) then nullslice is returned)
-         */
-        static alloc_slice Transform(const alloc_slice &input, URLTransformStrategy strategy);
-    };
+    /**
+     * Transforms the URL passed in input using the provided strategy (note only URLs using
+     * standard ports 80 / 443 will be considered for transformation).  This overload
+     * is simply to allow the optimization to not make copies in the AsIs strategy.
+     *
+     * @param input The URL to transform
+     * @param strategy The strategy to use
+     * @returns The transformed URL.  If the URL is not a candidate for AddPort or RemovePort
+     *          (e.g. not a valid URL, or not using a standard port) then nullslice is returned)
+     */
+    alloc_slice transform_url(const alloc_slice &inputURL, URLTransformStrategy strategy);
 }
 

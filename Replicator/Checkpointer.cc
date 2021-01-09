@@ -241,12 +241,12 @@ namespace litecore { namespace repl {
         enc.writeString({&localUUID, sizeof(C4UUID)});
 
         alloc_slice rawURL(remoteDBIDString());
-        auto encodedURL = URLTransformer::Transform(rawURL, urlStrategy);
+        auto encodedURL = transform_url(rawURL, urlStrategy);
         if(!encodedURL) {
             return "";
         }
 
-        enc.writeString(encodedURL);;
+        enc.writeString(encodedURL);
         if (!channels.empty() || !docIDs.empty() || filter) {
             // Optional stuff:
             writeValueOrNull(enc, channels);

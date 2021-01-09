@@ -25,16 +25,13 @@ namespace litecore::repl {
         return s;
     }
 
-
-    typedef alloc_slice(*URLStrategyFunction)(const slice &input);
-
-    static alloc_slice AsIs(const slice &input) {
-        return static_cast<alloc_slice>(input);
+    static alloc_slice AsIs(slice inputURL) {
+        return static_cast<alloc_slice>(inputURL);
     }
 
-    static alloc_slice AddPort(const slice &input) {
+    static alloc_slice AddPort(slice inputURL) {
         C4Address addr;
-        if(!c4address_fromURL(input, &addr, nullptr) || (addr.port != 80 && addr.port != 443)) {
+        if(!c4address_fromURL(inputURL, &addr, nullptr) || (addr.port != 80 && addr.port != 443)) {
             return nullslice;
         }
 
@@ -47,9 +44,9 @@ namespace litecore::repl {
         return c4address_toURL(addr);
     }
 
-    static alloc_slice RemovePort(const slice &input) {
+    static alloc_slice RemovePort(slice inputURL) {
         C4Address addr;
-        if(!c4address_fromURL(input, &addr, nullptr) || (addr.port != 80 && addr.port != 443)) {
+        if(!c4address_fromURL(inputURL, &addr, nullptr) || (addr.port != 80 && addr.port != 443)) {
             return nullslice;
         }
 
@@ -57,16 +54,29 @@ namespace litecore::repl {
         return c4address_toURL(addr);
     }
 
-    static URLStrategyFunction sStrategies[] = { AsIs, AddPort, RemovePort };
-    /* static */ alloc_slice URLTransformer::Transform(const slice &input, URLTransformStrategy strategy) {
-        return sStrategies[static_cast<int>(strategy)](input);
-    }
-
-    /* static */ alloc_slice URLTransformer::Transform(const alloc_slice &input, URLTransformStrategy strategy) {
-        if(strategy == URLTransformStrategy::AsIs) {
-            return input;
+    alloc_slice transform_url(slice inputURL, URLTransformStrategy strategy) {
+        switch(strategy) {
+        case URLTransformStrategy::AsIs:
+            return AsIs(inputURL);
+        case URLTransformStrategy::AddPort:
+            return AddPort(inputURL);
+        case URLTransformStrategy::RemovePort:
+            return RemovePort(inputURL);
         }
 
-        return sStrategies[static_cast<int>(strategy)](input);
+        return nullslice;
+    }
+
+    alloc_slice transform_url(const alloc_slice &inputURL, URLTransformStrategy strategy) {
+        switch(strategy) {
+        case URLTransformStrategy::AsIs:
+            return inputURL;
+        case URLTransformStrategy::AddPort:
+            return AddPort(inputURL);
+        case URLTransformStrategy::RemovePort:
+            return RemovePort(inputURL);
+        }
+
+        return nullslice;
     }
 }

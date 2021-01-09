@@ -220,7 +220,7 @@ namespace {
         this_thread::sleep_for(2s);
     }
 
-    TEST_CASE("URLTransformer") {
+    TEST_CASE("URL Transformation") {
         slice withPort, unaffected;
         alloc_slice withoutPort;
         SECTION("Plain") {
@@ -235,26 +235,26 @@ namespace {
             unaffected = "wss://duckduckgo.com:4984/search"_sl;
         }
 
-        alloc_slice asIsWithPort = URLTransformer::Transform(withPort, URLTransformStrategy::AsIs);
-        alloc_slice asIsWithoutPort = URLTransformer::Transform(withoutPort, URLTransformStrategy::AsIs);
-        alloc_slice asInUnaffected = URLTransformer::Transform(unaffected, URLTransformStrategy::AsIs);
+        alloc_slice asIsWithPort = transform_url(withPort, URLTransformStrategy::AsIs);
+        alloc_slice asIsWithoutPort = transform_url(withoutPort, URLTransformStrategy::AsIs);
+        alloc_slice asInUnaffected = transform_url(unaffected, URLTransformStrategy::AsIs);
 
         CHECK(asIsWithPort == withPort);
         CHECK(asIsWithoutPort == withoutPort);
         CHECK(asIsWithoutPort.buf == withoutPort.buf);
         CHECK(asInUnaffected == unaffected);
 
-        alloc_slice addPortWithPort = URLTransformer::Transform(withPort, URLTransformStrategy::AddPort);
-        alloc_slice addPortWithoutPort = URLTransformer::Transform(withoutPort, URLTransformStrategy::AddPort);
-        alloc_slice addPortUnaffected = URLTransformer::Transform(unaffected, URLTransformStrategy::AddPort);
+        alloc_slice addPortWithPort = transform_url(withPort, URLTransformStrategy::AddPort);
+        alloc_slice addPortWithoutPort = transform_url(withoutPort, URLTransformStrategy::AddPort);
+        alloc_slice addPortUnaffected = transform_url(unaffected, URLTransformStrategy::AddPort);
 
         CHECK(addPortWithPort == withPort);
         CHECK(addPortWithoutPort == withPort);
         CHECK(!addPortUnaffected);
 
-        alloc_slice removePortWithPort = URLTransformer::Transform(withPort, URLTransformStrategy::RemovePort);
-        alloc_slice removePortWithoutPort = URLTransformer::Transform(withoutPort, URLTransformStrategy::RemovePort);
-        alloc_slice removePortUnaffected = URLTransformer::Transform(unaffected, URLTransformStrategy::RemovePort);
+        alloc_slice removePortWithPort = transform_url(withPort, URLTransformStrategy::RemovePort);
+        alloc_slice removePortWithoutPort = transform_url(withoutPort, URLTransformStrategy::RemovePort);
+        alloc_slice removePortUnaffected = transform_url(unaffected, URLTransformStrategy::RemovePort);
 
         CHECK(removePortWithPort == withoutPort);
         CHECK(removePortWithoutPort == withoutPort);
