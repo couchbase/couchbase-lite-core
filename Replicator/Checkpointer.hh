@@ -10,6 +10,7 @@
 #include "Timer.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
+#include "URLTransformer.hh"
 #include <chrono>
 #include <memory>
 #include <mutex>
@@ -156,7 +157,7 @@ namespace litecore { namespace repl {
 
     private:
         void checkpointIsInvalid();
-        std::string docIDForUUID(const C4UUID&);
+        std::string docIDForUUID(const C4UUID&, URLTransformStrategy strategy);
         slice remoteDocID(C4Database *db NONNULL, C4Error* err);
         alloc_slice _read(C4Database *db NONNULL, slice, C4Error*);
         void initializeDocIDs();

@@ -482,6 +482,7 @@
 		42030A402498444900283CE8 /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		42030A412498445600283CE8 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
 		42030A422498446000283CE8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
+		42B6B0E225A6A9D9004B20A7 /* URLTransformer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 42B6B0E125A6A9D9004B20A7 /* URLTransformer.cc */; };
 		726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
 		728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
 		729272F52238DC0C00E7208E /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 729272F12238DB8500E7208E /* c4ExceptionUtils.cc */; };
@@ -1549,6 +1550,8 @@
 		27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLiteFleeceUtil.hh; sourceTree = "<group>"; };
 		27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFunctionsTest.cc; sourceTree = "<group>"; };
 		27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-dylib_Release.xcconfig"; sourceTree = "<group>"; };
+		42B6B0DD25A6A9D9004B20A7 /* URLTransformer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = URLTransformer.hh; sourceTree = "<group>"; };
+		42B6B0E125A6A9D9004B20A7 /* URLTransformer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = URLTransformer.cc; sourceTree = "<group>"; };
 		720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DefaultLogger.cc; sourceTree = "<group>"; };
 		7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libLiteCore.dylib; path = ../build_cmake/libLiteCore.dylib; sourceTree = "<group>"; };
@@ -2473,6 +2476,8 @@
 				2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */,
 				27FA569524B640E700B2F1F8 /* RemoteSequence.hh */,
 				2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */,
+				42B6B0DD25A6A9D9004B20A7 /* URLTransformer.hh */,
+				42B6B0E125A6A9D9004B20A7 /* URLTransformer.cc */,
 				275CE1131E5BAC180084E014 /* Worker.cc */,
 				275CE1141E5BAC180084E014 /* Worker.hh */,
 			);
@@ -4030,6 +4035,7 @@
 				27469D07233D719800A1EE1A /* PublicKey.cc in Sources */,
 				27098AC421752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc in Sources */,
 				278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */,
+				42B6B0E225A6A9D9004B20A7 /* URLTransformer.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				27FC8DB622135BCE0083B033 /* ChangesFeed.cc in Sources */,
 				27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */,
@@ -5308,6 +5314,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27DF7D6D1F4239A80022F3DF /* SQLite_Release.xcconfig */;
 			buildSettings = {
+				LLVM_LTO = NO;
 			};
 			name = Release;
 		};
@@ -5322,6 +5329,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */;
 			buildSettings = {
+				LLVM_LTO = NO;
 			};
 			name = Release;
 		};
@@ -5336,6 +5344,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
 			buildSettings = {
+				LLVM_LTO = NO;
 			};
 			name = Release;
 		};
