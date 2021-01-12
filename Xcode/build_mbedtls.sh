@@ -11,7 +11,7 @@ CMAKE_OPTS="$CMAKE_OPTS \
 
 if [[ "$CONFIGURATION" == "Release*" ]]
 then
-    CMAKE_OPTS="$CMAKE_OPTS -DCMAKE_BUILD_TYPE=RelWithDebugInfo"
+    CMAKE_OPTS="$CMAKE_OPTS -DCMAKE_BUILD_TYPE=MinSizeRel"
 else
     CMAKE_OPTS="$CMAKE_OPTS -DCMAKE_BUILD_TYPE=Debug"
     if [ "$ENABLE_ADDRESS_SANITIZER" == "YES" ]
@@ -23,7 +23,14 @@ fi
 echo "CMake options: $CMAKE_OPTS"
 
 # Build!
-cmake "$SRCROOT/../vendor/mbedtls" $CMAKE_OPTS
+if [[ "$EFFECTIVE_PLATFORM_NAME" == "-maccatalyst" ]]
+then
+    cmake "$SRCROOT/../vendor/mbedtls" $CMAKE_OPTS \
+        '-DCMAKE_CXX_FLAGS=-target x86_64-apple-ios13.1-macabi' \
+        '-DCMAKE_C_FLAGS=-target x86_64-apple-ios13.1-macabi'
+else
+    cmake "$SRCROOT/../vendor/mbedtls" $CMAKE_OPTS
+fi
 make
 
 # Copy the resulting static libraries to the Xcode build dir where the linker will find them:
