@@ -19,12 +19,15 @@
 #include "c4Internal.hh"
 #include "InstanceCounted.hh"
 #include "catch.hpp"
+#include "Actor.hh"
+#include "URLTransformer.hh"
 #ifdef WIN32
 #include <winerror.h>
 #endif
 
 
 using namespace fleece;
+using namespace litecore::repl;
 
 
 // NOTE: These tests have to be in the C++ tests target, not the C tests, because they use internal
@@ -126,4 +129,49 @@ namespace {
         REQUIRE(InstanceCounted::count() == baseInstances);
     }
 
+
+    TEST_CASE("URL Transformation") {
+        slice withPort, unaffected;
+        alloc_slice withoutPort;
+        SECTION("Plain") {
+            withPort = "ws://duckduckgo.com:80/search"_sl;
+            withoutPort = "ws://duckduckgo.com/search"_sl;
+            unaffected = "ws://duckduckgo.com:4984/search"_sl;
+        }
+
+        SECTION("TLS") {
+            withPort = "wss://duckduckgo.com:443/search"_sl;
+            withoutPort = "wss://duckduckgo.com/search"_sl;
+            unaffected = "wss://duckduckgo.com:4984/search"_sl;
+        }
+
+        alloc_slice asIsWithPort = transform_url(withPort, URLTransformStrategy::AsIs);
+        alloc_slice asIsWithoutPort = transform_url(withoutPort, URLTransformStrategy::AsIs);
+        alloc_slice asInUnaffected = transform_url(unaffected, URLTransformStrategy::AsIs);
+
+        CHECK(asIsWithPort == withPort);
+        CHECK(asIsWithoutPort == withoutPort);
+        CHECK(asIsWithoutPort.buf == withoutPort.buf);
+        CHECK(asInUnaffected == unaffected);
+
+        alloc_slice addPortWithPort = transform_url(withPort, URLTransformStrategy::AddPort);
+        alloc_slice addPortWithoutPort = transform_url(withoutPort, URLTransformStrategy::AddPort);
+        alloc_slice addPortUnaffected = transform_url(unaffected, URLTransformStrategy::AddPort);
+
+        CHECK(addPortWithPort == withPort);
+        CHECK(addPortWithoutPort == withPort);
+        CHECK(!addPortUnaffected);
+
+        alloc_slice removePortWithPort = transform_url(withPort, URLTransformStrategy::RemovePort);
+        alloc_slice removePortWithoutPort = transform_url(withoutPort, URLTransformStrategy::RemovePort);
+        alloc_slice removePortUnaffected = transform_url(unaffected, URLTransformStrategy::RemovePort);
+
+        CHECK(removePortWithPort == withoutPort);
+        CHECK(removePortWithoutPort == withoutPort);
+        CHECK(!removePortUnaffected);
+
+        URLTransformStrategy strategy = URLTransformStrategy::AsIs;
+        CHECK(++strategy == URLTransformStrategy::AddPort);
+        CHECK(++strategy == URLTransformStrategy::RemovePort);
+    }
 }

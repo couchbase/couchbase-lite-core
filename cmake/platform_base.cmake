@@ -97,6 +97,7 @@ function(set_litecore_source_base)
         Replicator/Replicator.cc
         Replicator/ReplicatorTypes.cc
         Replicator/RevFinder.cc
+        Replicator/URLTransformer.cc
         Replicator/Worker.cc
         LiteCore/Support/c4ExceptionUtils.cc
         LiteCore/Support/Logging.cc
