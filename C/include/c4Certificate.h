@@ -274,7 +274,7 @@ extern "C" {
         @param name  The name to save as.
         @param outError  On failure, the error info will be stored here.
         @return  True on success, false on failure. */
-    bool c4cert_save(C4Cert *cert,
+    bool c4cert_save(C4Cert* C4NULLABLE cert,
                      bool entireChain,
                      C4String name,
                      C4Error* C4NULLABLE outError);
