@@ -249,6 +249,9 @@ protected:
         // objects (including C4Databases) to be leaked. [CBL-524]
         if (_replicator)
             _replicator->terminate();
+
+        // The below contains sensitive information, so zero it before destruction
+        _options.properties.clear();
     }
 
 
