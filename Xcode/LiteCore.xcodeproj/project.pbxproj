@@ -4808,8 +4808,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "Apple Development";
-				DEVELOPMENT_TEAM = N2Q372V7W2;
 			};
 			name = Debug_EE;
 		};
@@ -4967,8 +4965,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "Apple Development";
-				DEVELOPMENT_TEAM = N2Q372V7W2;
 			};
 			name = Release_EE;
 		};
@@ -5366,8 +5362,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "Apple Development";
-				DEVELOPMENT_TEAM = N2Q372V7W2;
 			};
 			name = Debug;
 		};
@@ -5375,8 +5369,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */;
 			buildSettings = {
-				CODE_SIGN_IDENTITY = "Apple Development";
-				DEVELOPMENT_TEAM = N2Q372V7W2;
 			};
 			name = Release;
 		};
