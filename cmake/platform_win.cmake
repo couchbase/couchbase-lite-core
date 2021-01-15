@@ -34,7 +34,7 @@ function(setup_globals)
     set(CMAKE_SHARED_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
     set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "/INCREMENTAL:NO /LTCG:incremental /debug" CACHE INTERNAL "")
     set(CMAKE_STATIC_LINKER_FLAGS_MINSIZEREL "/LTCG:incremental" CACHE INTERNAL "")
-    
+
     # Compile string literals as UTF-8,
     # Enable exception handling for C++ but disable for extern C
     # Disable the following warnings:
@@ -43,9 +43,10 @@ function(setup_globals)
     #   4018 (signed / unsigned mismatch)
     #   4819 (character that cannot be represented in current code page)
     #   4800 (value forced to bool)
+    #   5105 ("macro expansion producing 'defined' has undefined behavior")
     # Disable warning about "insecure" C runtime functions (strcpy vs strcpy_s)
     string(
-        CONCAT LITECORE_CXX_FLAGS 
+        CONCAT LITECORE_CXX_FLAGS
         "/utf-8 "
         "/EHsc "
         "/wd4068 "
@@ -53,10 +54,11 @@ function(setup_globals)
         "/wd4018 "
         "/wd4819 "
         "/wd4800 "
+        "/wd5105 "
         "-D_CRT_SECURE_NO_WARNINGS=1"
     )
     set(LITECORE_CXX_FLAGS ${LITECORE_CXX_FLAGS} CACHE INTERNAL "")
-    
+
     string(
         CONCAT LITECORE_C_FLAGS
         "/utf-8 "
@@ -65,20 +67,21 @@ function(setup_globals)
         "/wd4018 "
         "/wd4819 "
         "/wd4800 "
-        "-D_CRT_SECURE_NO_WARNINGS=1" 
+        "/wd5105 "
+        "-D_CRT_SECURE_NO_WARNINGS=1"
     )
     set(LITECORE_C_FLAGS ${LITECORE_C_FLAGS} CACHE INTERNAL "")
-    
+
     # Disable the following warnings:
     #   4099 (library linked without debug info)
     #   4221 (object file with no new public symbols)
     string(
-        CONCAT LITECORE_SHARED_LINKER_FLAGS 
+        CONCAT LITECORE_SHARED_LINKER_FLAGS
         "/ignore:4099 "
         "/ignore:4221"
     )
     set(LITECORE_SHARED_LINKER_FLAGS ${LITECORE_SHARED_LINKER_FLAGS} CACHE INTERNAL "")
-    
+
     set(
         LITECORE_STATIC_LINKER_FLAGS
         "/ignore:4221"
@@ -88,7 +91,7 @@ endfunction()
 
 function(setup_litecore_build_win)
     target_compile_definitions(
-        LiteCoreStatic PRIVATE 
+        LiteCoreStatic PRIVATE
         -DUNICODE               # Use wide string variants for Win32 calls
         -D_UNICODE              # Ditto
         -D_USE_MATH_DEFINES     # Define math constants like PI
@@ -127,8 +130,8 @@ function(setup_litecore_build_win)
 
     # Link with subproject libz and Windows sockets lib
     target_link_libraries(
-        LiteCoreStatic INTERFACE 
-        zlibstatic 
+        LiteCoreStatic INTERFACE
+        zlibstatic
         Ws2_32
     )
 

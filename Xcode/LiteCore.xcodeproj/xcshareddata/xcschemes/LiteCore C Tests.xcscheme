@@ -56,7 +56,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-r list"
+            argument = "-r quiet"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument

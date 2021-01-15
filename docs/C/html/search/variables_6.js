@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['flags',['flags',['../struct_c4_database_config.html#adf831ee29253d9663d02638148d2fa97',1,'C4DatabaseConfig::flags()'],['../struct_c4_enumerator_options.html#add6d64017c17f830362d06625c1a345e',1,'C4EnumeratorOptions::flags()'],['../struct_c4_document_info.html#a7eeec6256ecb22e64cab165278717479',1,'C4DocumentInfo::flags()'],['../struct_c4_revision.html#a68b1b5370165e0183a25751c624db811',1,'C4Revision::flags()'],['../struct_c4_document.html#a7a2be6e3548bdb53799f38e2017ac705',1,'C4Document::flags()']]],
-  ['fulltexttermcount',['fullTextTermCount',['../struct_c4_query_enumerator.html#a632523828738c016004fa51686a78d99',1,'C4QueryEnumerator']]],
-  ['fulltextterms',['fullTextTerms',['../struct_c4_query_enumerator.html#a581aee4cdfa7f5c635bcccea13da8529',1,'C4QueryEnumerator']]]
+  ['header',['header',['../struct_c4_log_file_options.html#adbd3c5ea185419aa9caadc33a1fc9bf7',1,'C4LogFileOptions']]],
+  ['history',['history',['../struct_c4_doc_put_request.html#a05a8f2c9fae2487dd165a28a940cd135',1,'C4DocPutRequest']]],
+  ['historycount',['historyCount',['../struct_c4_doc_put_request.html#a6cd19a75d5c72485f9490ae112e20413',1,'C4DocPutRequest']]],
+  ['hostname',['hostname',['../struct_c4_address.html#a3873e737f8abbbd16be9e9593bccba43',1,'C4Address']]],
+  ['httpauthcallback',['httpAuthCallback',['../struct_c4_listener_config.html#a0ffb4271c1680b1909b9f3634e80fb73',1,'C4ListenerConfig']]]
 ];

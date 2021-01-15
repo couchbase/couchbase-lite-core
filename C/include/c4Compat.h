@@ -7,14 +7,31 @@
 #pragma once
 #include "fleece/Base.h"
 
-#define C4NONNULL NONNULL   // Base.h defines NONNULL
-
 #ifdef _MSC_VER
 #  define C4INLINE __forceinline
-#elif defined(__GNUC__) && !defined(__clang__)
-#  define C4INLINE inline
 #else
 #  define C4INLINE inline
+#endif
+
+// Non-null annotations, for function parameters and struct fields.
+// In between C4_ASSUME_NONNULL_BEGIN and C4_ASSUME_NONNULL_END, all pointer declarations implicitly
+// disallow NULL values, unless annotated with C4NULLABLE (which must come after the `*`.)
+// (C4NONNULL is occasionally necessary when there are multiple levels of pointers.)
+// NOTE: Does not apply to function return values, for some reason. Those may still be null,
+//       unless annotated with C4_RETURNS_NONNULL.
+// NOTE: Only supported in Clang, so far.
+#if __has_feature(nullability)
+#  define C4_ASSUME_NONNULL_BEGIN _Pragma("clang assume_nonnull begin")
+#  define C4_ASSUME_NONNULL_END _Pragma("clang assume_nonnull end")
+#  define C4NULLABLE _Nullable
+#  define C4NONNULL _Nonnull
+#  define C4_RETURNS_NONNULL __attribute__((returns_nonnull))
+#else
+#  define C4_ASSUME_NONNULL_BEGIN
+#  define C4_ASSUME_NONNULL_END
+#  define C4NULLABLE
+#  define C4NONNULL
+#  define C4_RETURNS_NONNULL
 #endif
 
 // Macros for defining typed enumerations and option flags.

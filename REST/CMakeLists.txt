@@ -50,8 +50,6 @@ target_include_directories(
     ../Networking/HTTP
     ../Networking/WebSockets
     ../Replicator
-    ../vendor/BLIP-Cpp/include/blip_cpp
-    ../vendor/BLIP-Cpp/src/util
     ../vendor/fleece/API
     ../vendor/fleece/Fleece/Support
     ../vendor/mbedtls/include

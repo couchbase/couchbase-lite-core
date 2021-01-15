@@ -205,7 +205,7 @@ namespace litecore { namespace repl {
             C4UUID privateID;
             if (!c4db_getUUIDs(db, nullptr, &privateID, err))
                 return nullslice;
-            _docID = docIDForUUID(privateID);
+            _docID = docIDForUUID(privateID, URLTransformStrategy::AsIs);
         }
 
         return _docID;
@@ -228,7 +228,7 @@ namespace litecore { namespace repl {
 
 
     // Computes the ID of the checkpoint document.
-    string Checkpointer::docIDForUUID(const C4UUID &localUUID) {
+    string Checkpointer::docIDForUUID(const C4UUID &localUUID, URLTransformStrategy urlStrategy) {
         // Derive docID from from db UUID, remote URL, channels, filter, and docIDs.
         Array channels = _options.channels();
         Value filter = _options.properties[kC4ReplicatorOptionFilter];
@@ -240,7 +240,13 @@ namespace litecore { namespace repl {
         enc.beginArray();
         enc.writeString({&localUUID, sizeof(C4UUID)});
 
-        enc.writeString(remoteDBIDString());
+        alloc_slice rawURL(remoteDBIDString());
+        auto encodedURL = transform_url(rawURL, urlStrategy);
+        if(!encodedURL) {
+            return "";
+        }
+
+        enc.writeString(encodedURL);
         if (!channels.empty() || !docIDs.empty() || filter) {
             // Optional stuff:
             writeValueOrNull(enc, channels);
@@ -287,11 +293,24 @@ namespace litecore { namespace repl {
                 const c4::ref<C4RawDocument> doc = c4raw_get(db, kC4InfoStore,
                                                              constants::kPreviousPrivateUUIDKey, outError);
                 if (doc) {
-                    // If there is one, derive a doc ID from that and look for a checkpoint there:
-                    _initialDocID = docIDForUUID(*(C4UUID*)doc->body.buf);
-                    body = _read(db, _initialDocID, outError);
-                    if (!body && !isNotFoundError(*outError))
-                        return false;
+                    // If there is one, derive a doc ID from that and look for a checkpoint there
+                    for(URLTransformStrategy strategy = URLTransformStrategy::AddPort; strategy <= URLTransformStrategy::RemovePort; ++strategy) {
+                        // CBL-1515: Make sure to account for platform inconsistencies in the format
+                        // (some have been forcing the port for standard ports and others were omitting it)
+                        _initialDocID = docIDForUUID(*(C4UUID*)doc->body.buf, strategy);
+                        if(!_initialDocID) {
+                            continue;
+                        }
+
+                        body = _read(db, _initialDocID, outError);
+                        if(body) {
+                            break;
+                        } 
+
+                        if (!isNotFoundError(*outError)) {
+                            return false;
+                        }
+                    }
                 } else if (!isNotFoundError(*outError)) {
                     return false;
                 }

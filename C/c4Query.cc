@@ -59,7 +59,7 @@ C4Query* c4query_new2(C4Database *database,
 }
 
 
-C4Query* c4query_new(C4Database *database C4NONNULL, C4String expression, C4Error *error) C4API {
+C4Query* c4query_new(C4Database *database, C4String expression, C4Error *error) C4API {
     return c4query_new2(database, kC4JSONQuery, expression, nullptr, error);
 }
 

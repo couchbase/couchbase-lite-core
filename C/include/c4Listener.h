@@ -20,6 +20,8 @@
 #include "c4Base.h"
 #include "fleece/Fleece.h"
 
+C4_ASSUME_NONNULL_BEGIN
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,7 +51,7 @@ extern "C" {
         @return  True to allow the connection, false to refuse it. */
     typedef bool (*C4ListenerCertAuthCallback)(C4Listener *listener,
                                                C4Slice clientCertData,
-                                               void *context);
+                                               void * C4NULLABLE context);
 
     /** Called when a client connects, after the TLS handshake (if any), when the initial HTTP request is
         received.
@@ -59,39 +61,39 @@ extern "C" {
         @return  True to allow the connection, false to refuse it. */
     typedef bool (*C4ListenerHTTPAuthCallback)(C4Listener *listener,
                                                C4Slice authHeader,
-                                               void *context);
+                                               void * C4NULLABLE context);
 
     /** TLS configuration for C4Listener. */
     typedef struct C4TLSConfig {
         C4PrivateKeyRepresentation privateKeyRepresentation; ///< Interpretation of `privateKey`
-        C4KeyPair* key;                 ///< A key pair that contains the private key
-        C4Cert* certificate;            ///< X.509 certificate data
-        bool requireClientCerts;        ///< True to require clients to authenticate with a cert
-        C4Cert* rootClientCerts;        ///< Root CA certs to trust when verifying client cert
-        C4ListenerCertAuthCallback certAuthCallback; ///< Callback cor X.509 cert auth
-        void* tlsCallbackContext;
+        C4KeyPair* key;                         ///< A key pair that contains the private key
+        C4Cert* certificate;                    ///< X.509 certificate data
+        bool requireClientCerts;                ///< True to require clients to authenticate with a cert
+        C4Cert* C4NULLABLE rootClientCerts;     ///< Root CA certs to trust when verifying client cert
+        C4ListenerCertAuthCallback C4NULLABLE certAuthCallback; ///< Callback for X.509 cert auth
+        void* C4NULLABLE tlsCallbackContext;
     } C4TLSConfig;
 
 
     /** Configuration for a C4Listener. */
     typedef struct C4ListenerConfig {
-        uint16_t port;                  ///< TCP port to listen on
-        C4String networkInterface;      ///< name or address of interface to listen on; else all
-        C4ListenerAPIs apis;            ///< Which API(s) to enable
-        C4TLSConfig* tlsConfig;         ///< TLS configuration, or NULL for no TLS
+        uint16_t port;                          ///< TCP port to listen on
+        C4String networkInterface;              ///< name or address of interface to listen on; else all
+        C4ListenerAPIs apis;                    ///< Which API(s) to enable
+        C4TLSConfig* C4NULLABLE tlsConfig;      ///< TLS configuration, or NULL for no TLS
 
-        C4ListenerHTTPAuthCallback httpAuthCallback; ///< Callback for HTTP auth
-        void* callbackContext;
+        C4ListenerHTTPAuthCallback C4NULLABLE httpAuthCallback; ///< Callback for HTTP auth
+        void* C4NULLABLE callbackContext;       ///< Client value passed to HTTP auth callback
 
         // For REST listeners only:
-        C4String directory;             ///< Directory where newly-PUT databases will be created
-        bool allowCreateDBs;            ///< If true, "PUT /db" is allowed
-        bool allowDeleteDBs;            ///< If true, "DELETE /db" is allowed
+        C4String directory;                     ///< Directory where newly-PUT databases will be created
+        bool allowCreateDBs;                    ///< If true, "PUT /db" is allowed
+        bool allowDeleteDBs;                    ///< If true, "DELETE /db" is allowed
 
         // For sync listeners only:
-        bool allowPush;
-        bool allowPull;
-        bool enableDeltaSync;
+        bool allowPush;                         ///< Allow peers to push changes to local db
+        bool allowPull;                         ///< Allow peers to pull changes from local db
+        bool enableDeltaSync;                   ///< Enable document-deltas optimization
     } C4ListenerConfig;
 
 
@@ -99,10 +101,11 @@ extern "C" {
     C4ListenerAPIs c4listener_availableAPIs(void) C4API;
 
     /** Starts a new listener. */
-    C4Listener* c4listener_start(const C4ListenerConfig *config C4NONNULL, C4Error *error) C4API;
+    C4Listener* c4listener_start(const C4ListenerConfig *config,
+                                 C4Error* C4NULLABLE error) C4API;
 
     /** Closes and disposes a listener. */
-    void c4listener_free(C4Listener *listener) C4API;
+    void c4listener_free(C4Listener * C4NULLABLE listener) C4API;
 
     /** Makes a database available from the network.
         @param listener  The listener that should share the database.
@@ -110,16 +113,17 @@ extern "C" {
                       If this is left null, a name will be chosen based as though you had called
                       \ref c4db_URINameFromPath.
         @param db  The database to share.
+        @param outError On failure, the error info is stored here if non-NULL.
         @return  True on success, false if the name is invalid as a URI component. */
-    bool c4listener_shareDB(C4Listener *listener C4NONNULL,
+    bool c4listener_shareDB(C4Listener *listener,
                             C4String name,
-                            C4Database *db C4NONNULL,
-                            C4Error *outError) C4API;
+                            C4Database *db,
+                            C4Error* C4NULLABLE outError) C4API;
 
     /** Makes a previously-shared database unavailable. */
-    bool c4listener_unshareDB(C4Listener *listener C4NONNULL,
-                              C4Database *db C4NONNULL,
-                              C4Error *outError) C4API;
+    bool c4listener_unshareDB(C4Listener *listener,
+                              C4Database *db,
+                              C4Error* C4NULLABLE outError) C4API;
 
     /** Returns the URL(s) of a database being shared, or of the root, separated by "\n" bytes.
         The URLs will differ only in their hostname -- there will be one for each IP address or known
@@ -137,21 +141,21 @@ extern "C" {
         @param err The error information, if any
         @return  Fleece array of or more URL strings, or null if an error occurred.
                 Caller is responsible for releasing the result. */
-    FLMutableArray c4listener_getURLs(C4Listener *listener C4NONNULL,
-                                      C4Database *db,
+    FLMutableArray c4listener_getURLs(C4Listener *listener,
+                                      C4Database* C4NULLABLE db,
                                       C4ListenerAPIs api,
-                                      C4Error* err) C4API;
+                                      C4Error* C4NULLABLE err) C4API;
 
     /** Returns the port number the listener is accepting connections on.
         This is useful if you didn't specify a port in the config (`port`=0), so you can find out which
         port the kernel picked. */
-    uint16_t c4listener_getPort(C4Listener *listener C4NONNULL) C4API;
+    uint16_t c4listener_getPort(C4Listener *listener) C4API;
 
     /** Returns the number of client connections, and how many of those are currently active.
         Either parameter can be NULL if you don't care about it. */
-    void c4listener_getConnectionStatus(C4Listener *listener C4NONNULL,
-                                        unsigned *connectionCount,
-                                        unsigned *activeConnectionCount) C4API;
+    void c4listener_getConnectionStatus(C4Listener *listener,
+                                        unsigned * C4NULLABLE connectionCount,
+                                        unsigned * C4NULLABLE activeConnectionCount) C4API;
 
     /** A convenience that, given a filesystem path to a database, returns the database name
         for use in an HTTP URI path.
@@ -163,6 +167,11 @@ extern "C" {
                 database path (does not end with ".cblite2".) */
     C4StringResult c4db_URINameFromPath(C4String path) C4API;
 
+
+/** @} */
+    
 #ifdef __cplusplus
 }
 #endif
+
+C4_ASSUME_NONNULL_END

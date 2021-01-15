@@ -99,7 +99,7 @@ namespace litecore { namespace websocket {
         :CloseStatus(kUnknownError, 0, fleece::nullslice) { }
 
         CloseStatus(CloseReason reason_, int code_, fleece::alloc_slice message_)
-        :reason(reason_), code(code_), message(message_) { }
+        :reason(reason_), code(code_), message(std::move(message_)) { }
 
         CloseStatus(CloseReason reason_, int code_, fleece::slice message_)
         :CloseStatus(reason_, code_, fleece::alloc_slice(message_)) { }

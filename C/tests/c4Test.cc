@@ -17,6 +17,7 @@
 //
 
 #include "c4Test.hh"
+#include "TestsCommon.hh"
 #include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
@@ -45,26 +46,7 @@
 using namespace std;
 
 const std::string& TempDir() {
-    static string kTempDir;
-
-    static once_flag f;
-    call_once(f, [=] {
-        char folderName[64];
-        sprintf(folderName, "LiteCore_C_Tests%" PRIms "/", chrono::milliseconds(time(nullptr)).count());
-        #ifdef _MSC_VER
-            WCHAR pathBuffer[MAX_PATH + 1];
-            GetTempPathW(MAX_PATH, pathBuffer);
-            GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
-            CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
-            auto sharedTemp = litecore::FilePath(convertedPath.m_psz, "");
-        #else // _MSC_VER
-            auto sharedTemp = litecore::FilePath("/tmp", "");
-        #endif // _MSC_VER
-        auto temp = sharedTemp[folderName];
-        temp.mkdir();
-        kTempDir = temp.path();
-    });
-
+    static string kTempDir = GetTempDirectory().path();
     return kTempDir;
 }
 
@@ -141,6 +123,8 @@ C4Test::C4Test(int testOption)
 {
     static once_flag once;
     call_once(once, [] {
+        InitTestLogging();
+
         auto enc = FLEncoder_New();
         FLEncoder_BeginDict(enc, 1);
         FLEncoder_WriteKey(enc, FLSTR("ans*wer"));

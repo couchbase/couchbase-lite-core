@@ -588,12 +588,12 @@ C4Document* c4doc_update(C4Document *doc,
     rq.historyCount = 1;
     rq.save = true;
 
-    doc = c4doc_put(external(asInternal(doc)->database()), &rq, nullptr, outError);
-    if (!doc) {
+    auto savedDoc = c4doc_put(external(asInternal(doc)->database()), &rq, nullptr, outError);
+    if (!savedDoc) {
         if (outError && outError->domain == LiteCoreDomain && outError->code == kC4ErrorNotFound)
             outError->code = kC4ErrorConflict;  // This is what the logic below returns
     }
-    return doc;
+    return savedDoc;
 #else
     auto idoc = asInternal(doc);
     if (!idoc->mustBeInTransaction(outError))

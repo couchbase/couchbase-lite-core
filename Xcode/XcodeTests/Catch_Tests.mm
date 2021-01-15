@@ -48,4 +48,4 @@
 @end
 
 
-#include "LoggingReporter.hh"
+#include "QuietReporter.hh"

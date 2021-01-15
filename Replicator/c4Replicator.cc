@@ -206,7 +206,7 @@ C4Replicator* c4repl_new(C4Database* db,
 
 #ifdef COUCHBASE_ENTERPRISE
 C4Replicator* c4repl_newLocal(C4Database* db,
-                              C4Database* otherLocalDB C4NONNULL,
+                              C4Database* otherLocalDB,
                               C4ReplicatorParameters params,
                               C4Error *outError) C4API
 {

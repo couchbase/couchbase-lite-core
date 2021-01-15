@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['language',['language',['../struct_c4_index_options.html#a40c6848b88286cbabacc3b7185d05d93',1,'C4IndexOptions']]],
-  ['length',['length',['../struct_c4_full_text_term.html#ab084c162e51b486db27fc3b337218aaf',1,'C4FullTextTerm']]],
-  ['level',['level',['../struct_c4_replicator_status.html#af636661b9dab5d90e87a9fde633bcf2e',1,'C4ReplicatorStatus']]]
+  ['max_5frotate_5fcount',['max_rotate_count',['../struct_c4_log_file_options.html#abf2712a60653edf16876d8e4dc16a280',1,'C4LogFileOptions']]],
+  ['max_5fsize_5fbytes',['max_size_bytes',['../struct_c4_log_file_options.html#ad021987386dc466c41469ce317245683',1,'C4LogFileOptions']]],
+  ['maxrevtreedepth',['maxRevTreeDepth',['../struct_c4_doc_put_request.html#a1cdcf9ead8eb970d76cc870f987fc160',1,'C4DocPutRequest']]],
+  ['meta',['meta',['../struct_c4_raw_document.html#abf608b56c11e3df3ea7e59ed9d120f34',1,'C4RawDocument']]],
+  ['missingcolumns',['missingColumns',['../struct_c4_query_enumerator.html#a056567f92b7c797e0a8f5baee936ec00',1,'C4QueryEnumerator']]]
 ];

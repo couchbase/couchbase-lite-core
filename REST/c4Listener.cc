@@ -140,7 +140,7 @@ FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db,
 }
 
 
-void c4listener_getConnectionStatus(C4Listener *listener C4NONNULL,
+void c4listener_getConnectionStatus(C4Listener *listener,
                                     unsigned *connectionCount,
                                     unsigned *activeConnectionCount) C4API
 {

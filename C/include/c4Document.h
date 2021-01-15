@@ -20,6 +20,8 @@
 
 #include "c4Base.h"
 
+C4_ASSUME_NONNULL_BEGIN
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -85,7 +87,7 @@ extern "C" {
         @param buffer  Where to write the string.
         @param bufferSize  Size of the buffer (must be at least kC4GeneratedIDLength + 1)
         @return  A pointer to the string in the buffer, or NULL if the buffer is too small. */
-    char* c4doc_generateID(char *buffer C4NONNULL, size_t bufferSize) C4API;
+    char* c4doc_generateID(char *buffer, size_t bufferSize) C4API;
 
     /** Gets a document from the database. If there's no such document, the behavior depends on
         the mustExist flag. If it's true, NULL is returned. If it's false, a valid but empty
@@ -93,16 +95,16 @@ extern "C" {
         saved.)
         The current revision is selected (if the document exists.)
         You must call `c4doc_release()` when finished with the document. */
-    C4Document* c4doc_get(C4Database *database C4NONNULL,
+    C4Document* c4doc_get(C4Database *database,
                           C4String docID,
                           bool mustExist,
-                          C4Error *outError) C4API;
+                          C4Error* C4NULLABLE outError) C4API;
 
     /** Gets a document from the database given its sequence number.
         You must call `c4doc_release()` when finished with the document.  */
-    C4Document* c4doc_getBySequence(C4Database *database C4NONNULL,
+    C4Document* c4doc_getBySequence(C4Database *database,
                                     C4SequenceNumber,
-                                    C4Error *outError) C4API;
+                                    C4Error* C4NULLABLE outError) C4API;
 
     /** Gets a specific revision of a document.
         ONLY that revision is available; any calls that would access other revisions will fail.
@@ -117,14 +119,14 @@ extern "C" {
                                         C4Slice docID,
                                         C4Slice revID,
                                         bool withBody,
-                                        C4Error *error) C4API;
+                                        C4Error* C4NULLABLE error) C4API;
 
     /** Saves changes to a C4Document.
         Must be called within a transaction.
         The revision history will be pruned to the maximum depth given. */
-    bool c4doc_save(C4Document *doc C4NONNULL,
+    bool c4doc_save(C4Document *doc,
                     uint32_t maxRevTreeDepth,
-                    C4Error *outError) C4API;
+                    C4Error* C4NULLABLE outError) C4API;
 
     /** @} */
     
@@ -137,26 +139,26 @@ extern "C" {
 
 
     /** Selects a specific revision of a document (or no revision, if revID is NULL.) */
-    bool c4doc_selectRevision(C4Document* doc C4NONNULL,
+    bool c4doc_selectRevision(C4Document* doc,
                               C4String revID,
                               bool withBody,
-                              C4Error *outError) C4API;
+                              C4Error* C4NULLABLE outError) C4API;
 
     /** Selects the current revision of a document.
         (This is the first revision, in the order they appear in the document.) */
-    bool c4doc_selectCurrentRevision(C4Document* doc C4NONNULL) C4API;
+    bool c4doc_selectCurrentRevision(C4Document* doc) C4API;
 
     /** Populates the body field of a doc's selected revision,
         if it was initially loaded without its body. */
-    bool c4doc_loadRevisionBody(C4Document* doc C4NONNULL,
-                                C4Error *outError) C4API;
+    bool c4doc_loadRevisionBody(C4Document* doc,
+                                C4Error* C4NULLABLE outError) C4API;
 
     /** Returns true if the body of the selected revision is available,
         i.e. if c4doc_loadRevisionBody() would succeed. */
-    bool c4doc_hasRevisionBody(C4Document* doc C4NONNULL) C4API;
+    bool c4doc_hasRevisionBody(C4Document* doc) C4API;
 
     /** Returns the body (encoded Fleece data) of the selected revision, if available. */
-    C4Slice c4doc_getRevisionBody(C4Document* doc C4NONNULL) C4API;
+    C4Slice c4doc_getRevisionBody(C4Document* doc) C4API;
 
     /** Returns a string encoding the selected revision's history, as comma-separate revision/version IDs
         in reverse chronological order.
@@ -167,9 +169,9 @@ extern "C" {
                             these, and _must_ go back to one of these if possible, even if it means
                             skipping some revisions.
         @param backToRevsCount  The number of revisions in the `backToRevs` array. */
-    C4SliceResult c4doc_getRevisionHistory(C4Document* doc C4NONNULL,
+    C4SliceResult c4doc_getRevisionHistory(C4Document* doc,
                                            unsigned maxRevs,
-                                           const C4String backToRevs[],
+                                           const C4String backToRevs[C4NULLABLE],
                                            unsigned backToRevsCount) C4API;
 
     /** Returns the selected revision's ID in a form that will make sense to another peer/server.
@@ -178,34 +180,34 @@ extern "C" {
     C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API;
 
     /** Selects the parent of the selected revision, if it's known, else returns NULL. */
-    bool c4doc_selectParentRevision(C4Document* doc C4NONNULL) C4API;
+    bool c4doc_selectParentRevision(C4Document* doc) C4API;
 
     /** Selects the next revision in priority order.
         This can be used to iterate over all revisions, starting from the current revision. */
-    bool c4doc_selectNextRevision(C4Document* doc C4NONNULL) C4API;
+    bool c4doc_selectNextRevision(C4Document* doc) C4API;
 
     /** Selects the next leaf revision; like selectNextRevision but skips over non-leaves.
         To distinguish between the end of the iteration and a failure, check the value of
         *outError after the function returns false: if there's no error (code==0) it's normal. */
-    bool c4doc_selectNextLeafRevision(C4Document* doc C4NONNULL,
+    bool c4doc_selectNextLeafRevision(C4Document* doc,
                                       bool includeDeleted,
                                       bool withBody,
-                                      C4Error *outError) C4API;
+                                      C4Error* C4NULLABLE outError) C4API;
 
 #if 0
     /** Selects the first revision that could be an ancestor of the given revID, or returns false
         if there is none. */
-    bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc C4NONNULL,
+    bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc,
                                              C4String revID) C4API;
 
     /** Selects the next revision (after the selected one) that could be an ancestor of the given
         revID, or returns false if there are no more. */
-    bool c4doc_selectNextPossibleAncestorOf(C4Document* doc C4NONNULL,
+    bool c4doc_selectNextPossibleAncestorOf(C4Document* doc,
                                             C4String revID) C4API;
 #endif
 
     /** Selects the common ancestor of two revisions. Returns false if none is found. */
-    bool c4doc_selectCommonAncestorRevision(C4Document* doc C4NONNULL,
+    bool c4doc_selectCommonAncestorRevision(C4Document* doc,
                                             C4String rev1ID,
                                             C4String rev2ID) C4API;
 
@@ -216,10 +218,10 @@ extern "C" {
         @param canCreate  If true, a new identifier will be created if one doesn't exist.
         @param outError  Error information is stored here.
         @return  The ID, or 0 on error. */
-    C4RemoteID c4db_getRemoteDBID(C4Database *db C4NONNULL,
+    C4RemoteID c4db_getRemoteDBID(C4Database *db,
                                   C4String remoteAddress,
                                   bool canCreate,
-                                  C4Error *outError) C4API;
+                                  C4Error* C4NULLABLE outError) C4API;
 
     /** Given a remote database ID, returns its replication URL / unique identifier.
         @param db  The database.
@@ -229,14 +231,14 @@ extern "C" {
                                           C4RemoteID remoteID) C4API;
 
     /** Returns the revision ID that has been marked as current for the given remote database. */
-    C4SliceResult c4doc_getRemoteAncestor(C4Document *doc C4NONNULL,
+    C4SliceResult c4doc_getRemoteAncestor(C4Document *doc,
                                           C4RemoteID remoteDatabase) C4API;
 
     /** Marks a revision as current for the given remote database. */
-    bool c4doc_setRemoteAncestor(C4Document *doc C4NONNULL,
+    bool c4doc_setRemoteAncestor(C4Document *doc,
                                  C4RemoteID remoteDatabase,
                                  C4String revID,
-                                 C4Error *error) C4API;
+                                 C4Error* C4NULLABLE error) C4API;
 
     /** Given a revision ID, returns its generation number (the decimal number before
         the hyphen), or zero if it's unparseable. */
@@ -247,7 +249,7 @@ extern "C" {
         Must be called within a transaction. Remember to save the document afterwards.
         @param doc  The document to operate on.
         @return  True if successful, false if unsuccessful. */
-    bool c4doc_removeRevisionBody(C4Document* doc C4NONNULL) C4API;
+    bool c4doc_removeRevisionBody(C4Document* doc) C4API;
 
     /** Removes a branch from a document's history. The revID must correspond to a leaf
         revision; that revision and its ancestors will be removed, except for ancestors that are
@@ -260,9 +262,9 @@ extern "C" {
         @param revID  The ID of the revision to purge. If null, all revisions are purged.
         @param outError  Error information is stored here.
         @return  The total number of revisions purged (including ancestors), or -1 on error. */
-        int32_t c4doc_purgeRevision(C4Document *doc C4NONNULL,
-                                    C4String revID,
-                                    C4Error *outError) C4API;
+    int32_t c4doc_purgeRevision(C4Document *doc,
+                                C4String revID,
+                                C4Error* C4NULLABLE outError) C4API;
 
     /** Resolves a conflict between two leaf revisions, by deleting one of them and optionally
         adding a new merged revision as a child of the other.
@@ -274,12 +276,12 @@ extern "C" {
         @param mergedFlags  Flags for the merged revision.
         @param error  Error information is stored here.
         @return  True on success, false on failure. */
-    bool c4doc_resolveConflict(C4Document *doc C4NONNULL,
+    bool c4doc_resolveConflict(C4Document *doc,
                                C4String winningRevID,
                                C4String losingRevID,
                                C4Slice mergedBody,
                                C4RevisionFlags mergedFlags,
-                               C4Error *error) C4API;
+                               C4Error* C4NULLABLE error) C4API;
 
     /** @} */
 
@@ -292,7 +294,7 @@ extern "C" {
 
 
     /** Removes all trace of a document and its revisions from the database. */
-    bool c4db_purgeDoc(C4Database *database C4NONNULL, C4String docID, C4Error *outError) C4API;
+    bool c4db_purgeDoc(C4Database *database, C4String docID, C4Error* C4NULLABLE outError) C4API;
 
 
     /** Sets an expiration date on a document.  After this time the
@@ -303,10 +305,10 @@ extern "C" {
                     A value of 0 indicates that the expiration should be cancelled.
         @param outError Information about any error that occurred
         @return true on sucess, false on failure */
-    bool c4doc_setExpiration(C4Database *db C4NONNULL,
+    bool c4doc_setExpiration(C4Database *db,
                              C4String docID,
                              C4Timestamp timestamp,
-                             C4Error *outError) C4API;
+                             C4Error* C4NULLABLE outError) C4API;
 
     /** Returns the expiration time of a document, if one has been set, else 0.
         @param db  The database to set the expiration date in
@@ -317,7 +319,7 @@ extern "C" {
                     or -1 if an error occurred. */
     C4Timestamp c4doc_getExpiration(C4Database *db,
                                     C4String docID,
-                                    C4Error *outError) C4API;
+                                    C4Error* C4NULLABLE outError) C4API;
 
 
     /** @} */
@@ -341,7 +343,7 @@ extern "C" {
     typedef C4SliceResult (*C4DocDeltaApplier)(void *context,
                                                C4Document *doc,
                                                C4Slice delta,
-                                               C4Error *outError);
+                                               C4Error* C4NULLABLE outError);
 
     /** Parameters for adding a revision using c4doc_put. */
     typedef struct {
@@ -358,8 +360,8 @@ extern "C" {
 
         C4SliceResult allocedBody;  ///< Set this instead of body if body is heap-allocated
 
-        C4DocDeltaApplier deltaCB;  ///< If non-NULL, will be called to generate the actual body
-        void *deltaCBContext;       ///< Passed to `deltaCB` callback
+        C4DocDeltaApplier C4NULLABLE deltaCB;  ///< If non-NULL, will be called to generate the actual body
+        void* C4NULLABLE deltaCBContext;       ///< Passed to `deltaCB` callback
         C4String deltaSourceRevID;  ///< Source rev for delta (must be valid if deltaCB is given)
     } C4DocPutRequest;
 
@@ -372,10 +374,10 @@ extern "C" {
         Note that actually saving the document back to the database is optional -- it only happens
         if request->save is true. You can set this to false if you want to review the changes
         before saving, e.g. to run them through a validation function. */
-    C4Document* c4doc_put(C4Database *database C4NONNULL,
-                          const C4DocPutRequest *request C4NONNULL,
-                          size_t *outCommonAncestorIndex,
-                          C4Error *outError) C4API;
+    C4Document* c4doc_put(C4Database *database,
+                          const C4DocPutRequest *request,
+                          size_t * C4NULLABLE outCommonAncestorIndex,
+                          C4Error* C4NULLABLE outError) C4API;
 
     /** Convenience function to create a new document. This just a wrapper around c4doc_put.
         If the document already exists, it will fail with the error kC4ErrorConflict.
@@ -385,11 +387,11 @@ extern "C" {
         @param revisionFlags  The flags of the new revision
         @param error Information about any error that occurred
         @return  On success, a new C4Document with the new revision selected; else NULL. */
-    C4Document* c4doc_create(C4Database *db C4NONNULL,
+    C4Document* c4doc_create(C4Database *db,
                              C4String docID,
                              C4Slice body,
                              C4RevisionFlags revisionFlags,
-                             C4Error *error) C4API;
+                             C4Error* C4NULLABLE error) C4API;
 
     /** Adds a revision to a document already in memory as a C4Document. This is more efficient
         than c4doc_put because it doesn't have to read from the database before writing; but if
@@ -401,13 +403,15 @@ extern "C" {
         @param revisionFlags  The flags of the new revision
         @param error Information about any error that occurred
         @return  On success, a new C4Document with the new revision selected; else NULL. */
-    C4Document* c4doc_update(C4Document *doc C4NONNULL,
+    C4Document* c4doc_update(C4Document *doc,
                              C4Slice revisionBody,
                              C4RevisionFlags revisionFlags,
-                             C4Error *error) C4API;
+                             C4Error* C4NULLABLE error) C4API;
 
     /** @} */
     /** @} */
 #ifdef __cplusplus
 }
 #endif
+
+C4_ASSUME_NONNULL_END

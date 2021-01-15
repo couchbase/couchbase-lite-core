@@ -30,6 +30,12 @@ extern "C" {
 #endif
 
 
+C4_ASSUME_NONNULL_BEGIN
+
+
+/** \defgroup Base  Data Types and Base Functions
+ @{ */
+
 /** A database sequence number, representing the order in which a revision was created. */
 typedef uint64_t C4SequenceNumber;
 
@@ -44,8 +50,8 @@ C4Timestamp c4_now(void) C4API;
 
 
 typedef struct {
-    void* pointer;
-    void (*destructor)(void*);
+    void* C4NULLABLE pointer;
+    void (*C4NULLABLE destructor)(void*);
 } C4ExtraInfo;
 
 
@@ -60,7 +66,7 @@ typedef C4Slice C4String;
 typedef C4HeapSlice C4HeapString;
 typedef C4SliceResult C4StringResult;
 
-static C4INLINE C4Slice c4str(const char *str) {return FLStr(str);}
+static C4INLINE C4Slice c4str(const char* C4NULLABLE str) {return FLStr(str);}
 #define C4STR(STR) FLSTR(STR)
 #define kC4SliceNull kFLSliceNull
 
@@ -138,34 +144,35 @@ typedef struct C4WriteStream C4WriteStream;
 
 
 // The actual functions behind c4xxx_retain / c4xxx_release; don't call directly
-void* c4base_retain(void *obj) C4API;
-void c4base_release(void *obj) C4API;
+void* c4base_retain(void * C4NULLABLE obj) C4API;
+void c4base_release(void * C4NULLABLE obj) C4API;
 
 // These types are reference counted and have c4xxx_retain / c4xxx_release functions:
-static inline C4Cert* c4cert_retain(C4Cert* r) C4API {return (C4Cert*)c4base_retain(r);}
-static inline void    c4cert_release(C4Cert* r) C4API {c4base_release(r);}
-static inline C4KeyPair* c4keypair_retain(C4KeyPair* r) C4API {return (C4KeyPair*)c4base_retain(r);}
-static inline void       c4keypair_release(C4KeyPair* r) C4API {c4base_release(r);}
-static inline C4Database* c4db_retain(C4Database* r) C4API {return (C4Database*)c4base_retain(r);}
-static inline void        c4db_release(C4Database* r) C4API {c4base_release(r);}
-static inline C4Query* c4query_retain(C4Query* r) C4API {return (C4Query*)c4base_retain(r);}
-static inline void     c4query_release(C4Query* r) C4API {c4base_release(r);}
-    
-C4Document* c4doc_retain(C4Document* r) C4API;
-void        c4doc_release(C4Document* r) C4API;
-C4QueryEnumerator* c4queryenum_retain(C4QueryEnumerator* r) C4API;
-void               c4queryenum_release(C4QueryEnumerator* r) C4API;
+// (Dunno why it's necessary to mark the return type as C4NULLABLE here but not elsewhere --jpa)
+static inline C4Cert* C4NULLABLE c4cert_retain(C4Cert* C4NULLABLE r) C4API {return (C4Cert*)c4base_retain(r);}
+static inline void c4cert_release(C4Cert* C4NULLABLE r) C4API {c4base_release(r);}
+static inline C4KeyPair* C4NULLABLE c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {return (C4KeyPair*)c4base_retain(r);}
+static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API {c4base_release(r);}
+static inline C4Database* C4NULLABLE c4db_retain(C4Database* C4NULLABLE r) C4API {return (C4Database*)c4base_retain(r);}
+static inline void c4db_release(C4Database* C4NULLABLE r) C4API {c4base_release(r);}
+static inline C4Query* C4NULLABLE c4query_retain(C4Query* C4NULLABLE r) C4API {return (C4Query*)c4base_retain(r);}
+static inline void c4query_release(C4Query* C4NULLABLE r) C4API {c4base_release(r);}
+
+C4Document* C4NULLABLE c4doc_retain(C4Document* C4NULLABLE) C4API;
+void c4doc_release(C4Document* C4NULLABLE) C4API;
+C4QueryEnumerator* C4NULLABLE c4queryenum_retain(C4QueryEnumerator* C4NULLABLE) C4API;
+void c4queryenum_release(C4QueryEnumerator* C4NULLABLE) C4API;
 
 // These types are _not_ ref-counted but must be freed after use:
-void c4dbobs_free   (C4DatabaseObserver*) C4API;
-void c4docobs_free  (C4DocumentObserver*) C4API;
-void c4enum_free    (C4DocEnumerator*) C4API;
-void c4listener_free(C4Listener*) C4API;
-void c4queryobs_free(C4QueryObserver*) C4API;
-void c4raw_free     (C4RawDocument*) C4API;
-void c4repl_free    (C4Replicator*) C4API;
-void c4stream_close(C4ReadStream*) C4API;
-void c4stream_closeWriter(C4WriteStream*) C4API;
+void c4dbobs_free   (C4DatabaseObserver* C4NULLABLE) C4API;
+void c4docobs_free  (C4DocumentObserver* C4NULLABLE) C4API;
+void c4enum_free    (C4DocEnumerator* C4NULLABLE) C4API;
+void c4listener_free(C4Listener* C4NULLABLE) C4API;
+void c4queryobs_free(C4QueryObserver* C4NULLABLE) C4API;
+void c4raw_free     (C4RawDocument* C4NULLABLE) C4API;
+void c4repl_free    (C4Replicator* C4NULLABLE) C4API;
+void c4stream_close(C4ReadStream* C4NULLABLE) C4API;
+void c4stream_closeWriter(C4WriteStream* C4NULLABLE) C4API;
 
 
 /** Returns the number of objects that have been created but not yet freed.
@@ -173,6 +180,13 @@ void c4stream_closeWriter(C4WriteStream*) C4API;
 int c4_getObjectCount(void) C4API;
 
 void c4_dumpInstances(void) C4API;
+
+
+/** @} */
+
+
+/** \defgroup Errors  Error Codes and Error Handling
+    @{ */
 
 
 //////// ERRORS:
@@ -277,10 +291,10 @@ C4SliceResult c4error_getDescription(C4Error error) C4API;
     The description is copied to the buffer as a C string.
     It will not write past the end of the buffer; the message will be truncated if necessary.
     @param error  The error to describe
-    @param buffer  Where to write the C string to
+    @param outBuffer  Where to write the C string to
     @param bufferSize  The size of the buffer
     @return  A pointer to the string, i.e. to the first byte of the buffer. */
-char* c4error_getDescriptionC(C4Error error, char buffer[] C4NONNULL, size_t bufferSize) C4API;
+char* c4error_getDescriptionC(C4Error error, char *outBuffer, size_t bufferSize) C4API;
 
 /** Creates a C4Error struct with the given domain and code, and associates the message with it. */
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
@@ -295,7 +309,14 @@ bool c4error_mayBeTransient(C4Error err) C4API;
 bool c4error_mayBeNetworkDependent(C4Error err) C4API;
 
 
+/** @} */
+
+
 //////// LOGGING:
+
+
+/** \defgroup  Logging  Logging
+    @{ */
 
 
 /** Logging levels. */
@@ -312,7 +333,7 @@ typedef C4_ENUM(int8_t, C4LogLevel) {
 typedef struct c4LogDomain *C4LogDomain;
 
 /** A logging callback that the application can register. */
-typedef void (*C4LogCallback)(C4LogDomain, C4LogLevel, const char *fmt C4NONNULL, va_list args);
+typedef void (* C4NULLABLE C4LogCallback)(C4LogDomain, C4LogLevel, const char *fmt, va_list args);
 
 
 CBL_CORE_API extern const C4LogDomain
@@ -347,7 +368,10 @@ void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool prefor
     @param options The options to use when setting up the binary logger
     @param error  On failure, the filesystem error that caused the call to fail.
     @return  True on success, false on failure. */
-bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error *error) C4API;
+bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* C4NULLABLE error) C4API;
+
+/** Ensures all log messages have been written to the current log files. */
+void c4log_flushLogFiles(void) C4API;
 
 /** Ensures all log messages have been written to the current log files. */
 void c4log_flushLogFiles(void) C4API;
@@ -357,6 +381,8 @@ void c4log_setCallbackLevel(C4LogLevel level) C4API;
 
 C4LogLevel c4log_binaryFileLevel(void) C4API;
 void c4log_setBinaryFileLevel(C4LogLevel level) C4API;
+
+C4StringResult c4log_binaryFilePath(void) C4API;
 
 /** Returns the current logging callback, or the default one if none has been set. */
 C4LogCallback c4log_getCallback(void) C4API;
@@ -368,10 +394,10 @@ C4LogCallback c4log_getCallback(void) C4API;
 C4LogDomain c4log_getDomain(const char *name, bool create) C4API;
 
 /** Returns the name of a log domain. (The default domain's name is an empty string.) */
-const char* c4log_getDomainName(C4LogDomain C4NONNULL) C4API;
+const char* c4log_getDomainName(C4LogDomain) C4API;
 
 /** Returns the current log level of a domain, the minimum level of message it will log. */
-C4LogLevel c4log_getLevel(C4LogDomain C4NONNULL) C4API;
+C4LogLevel c4log_getLevel(C4LogDomain) C4API;
 
 /** Returns true if logging to this domain at this level will have an effect.
     This is called by the C4Log macros (below), to skip the possibly-expensive evaluation of
@@ -379,7 +405,7 @@ C4LogLevel c4log_getLevel(C4LogDomain C4NONNULL) C4API;
     (This is not the same as comparing c4log_getLevel, because even if the domain's level
     indicates it would log, logging could still be suppressed by the global callbackLevel or
     binaryFileLevel.) */
-bool c4log_willLog(C4LogDomain C4NONNULL, C4LogLevel) C4API;
+bool c4log_willLog(C4LogDomain, C4LogLevel) C4API;
 
 /** Changes the level of the given log domain.
     This setting is global to the entire process.
@@ -387,7 +413,7 @@ bool c4log_willLog(C4LogDomain C4NONNULL, C4LogLevel) C4API;
     For example, if you set the Foo domain's level to Verbose, and the current log callback is
     at level Warning while the binary file is at Verbose, then verbose Foo log messages will be
     written to the file but not to the callback. */
-void c4log_setLevel(C4LogDomain c4Domain C4NONNULL, C4LogLevel level) C4API;
+void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) C4API;
 
 /** Logs a message/warning/error to a specific domain, if its current level is less than
     or equal to the given level. This message will then be written to the current callback and/or
@@ -396,13 +422,13 @@ void c4log_setLevel(C4LogDomain c4Domain C4NONNULL, C4LogLevel level) C4API;
     @param level  The level of the message. If the domain's level is greater than this,
                     nothing will be logged.
     @param fmt  printf-style format string, followed by arguments (if any). */
-void c4log(C4LogDomain domain C4NONNULL, C4LogLevel level, const char *fmt C4NONNULL, ...) C4API __printflike(3,4);
+void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt, ...) C4API __printflike(3,4);
 
 /** Same as c4log, for use in calling functions that already take variable args. */
-void c4vlog(C4LogDomain domain C4NONNULL, C4LogLevel level, const char *fmt C4NONNULL, va_list args) C4API;
+void c4vlog(C4LogDomain domain, C4LogLevel level, const char *fmt, va_list args) C4API;
 
 /** Same as c4log, except it accepts preformatted messages as C4Slices */
-void c4slog(C4LogDomain domain C4NONNULL, C4LogLevel level, C4String msg) C4API;
+void c4slog(C4LogDomain domain, C4LogLevel level, C4String msg) C4API;
 
 // Convenient aliases for c4log:
 #define C4LogToAt(DOMAIN, LEVEL, FMT, ...)        \
@@ -415,7 +441,14 @@ void c4slog(C4LogDomain domain C4NONNULL, C4LogLevel level, C4String msg) C4API;
 #define C4WarnError(FMT, ...)       C4LogToAt(kC4DefaultLog, kC4LogError,   FMT, ## __VA_ARGS__)
 
 
+/** @} */
+
+
 //////// INFO:
+
+
+/** \defgroup Miscellaneous  Miscellaneous Functions
+ @{ */
 
 
 /** A string describing the version of LiteCore. Currently this just describes the Git branch and
@@ -437,7 +470,7 @@ C4StringResult c4_getVersion(void) C4API;
                 records it.
     @note  If you do call this function, you should call it before opening any databases.
     @note  Needless to say, the directory must already exist. */
-bool c4_setTempDir(C4String path, C4Error* err) C4API;
+bool c4_setTempDir(C4String path, C4Error* C4NULLABLE err) C4API;
 
 /** Schedules a function to be called asynchronously on a background thread.
     @param task  A pointer to the function to run. It must take a single `void*` argument and
@@ -446,8 +479,15 @@ bool c4_setTempDir(C4String path, C4Error* err) C4API;
     @param context  An arbitrary pointer that will be passed to the function. You can use this
         to provide state. Obviously, whatever this points to must remain valid until the
         future time when `task` is called. */
-void c4_runAsyncTask(void (*task)(void*) C4NONNULL, void *context) C4API;
+void c4_runAsyncTask(void (*task)(void*), void* C4NULLABLE context) C4API;
+
+
+/** @} */
+
+
 
 #ifdef __cplusplus
 }
 #endif
+
+C4_ASSUME_NONNULL_END

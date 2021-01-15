@@ -116,7 +116,7 @@ public:
         C4DocPutRequest rq = {};
         rq.allowConflict = false;
         rq.docID = docID;
-        rq.history = revID == kC4SliceNull? NULL : history;
+        rq.history = history;
         rq.historyCount = (size_t)(revID == kC4SliceNull? 0 : 1);
         rq.body = encodedBody;
         rq.revFlags = flags;

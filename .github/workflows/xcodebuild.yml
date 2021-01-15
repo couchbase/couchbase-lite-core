@@ -1,0 +1,45 @@
+name: Xcode Build
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+      - 'release/*'
+  pull_request:
+    branches:
+      - '**'
+
+env:
+  # Customize the Xcode configuration here (Release or Debug)
+  # NOTE: If we decide to archive the build products we should build with RelWithDebInfo instead.
+  CONFIGURATION: Debug
+
+jobs:
+  build:
+    runs-on: macOS-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+#### BUILD
+
+    - name: "Build C++ Tests"
+      uses: sersoft-gmbh/xcodebuild-action@v1
+      with:
+        project: Xcode/LiteCore.xcodeproj
+        scheme: LiteCore C++ Tests
+        destination: platform=macOS
+        configuration: $CONFIGURATION
+        action: build
+
+    - name: "Build C4Tests"
+      uses: sersoft-gmbh/xcodebuild-action@v1
+      with:
+        project: Xcode/LiteCore.xcodeproj
+        scheme: LiteCore C Tests
+        destination: platform=macOS
+        configuration: $CONFIGURATION
+        action: build

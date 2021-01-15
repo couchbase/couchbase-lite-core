@@ -21,6 +21,7 @@
 #include "Base.hh"
 #include <stdexcept>
 #include <atomic>
+#include <functional>
 
 #undef check
 

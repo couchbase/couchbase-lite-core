@@ -26,6 +26,8 @@
 #include <stdatomic.h>
 #endif
 
+C4_ASSUME_NONNULL_BEGIN
+
 #ifdef __cplusplus
 extern "C" {
 
@@ -42,7 +44,7 @@ extern "C" {
 C4SliceResult c4slice_createResult(C4Slice slice);
 
 /** Stores a C4Error in `*outError`. */
-void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) C4API;
+void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error* C4NULLABLE outError) C4API;
 
 /** If set to true, LiteCore will log a warning of the form "LiteCore throwing %s error %d: %s"
     just before throwing an internal exception. This can be a good way to catch the source where
@@ -64,16 +66,16 @@ void c4db_unlock(C4Database *db) C4API;
 
 /** Compiles a JSON query and returns the result set as JSON: an array with one item per result,
     and each result is an array of columns. */
-C4SliceResult c4db_rawQuery(C4Database *database C4NONNULL, C4String query, C4Error *outError) C4API;
+C4SliceResult c4db_rawQuery(C4Database *database, C4String query, C4Error* C4NULLABLE outError) C4API;
 
 /** Subroutine of c4doc_put that reads the current revision of the document.
     Only exposed for testing; see the unit test "Document GetForPut". */
-C4Document* c4doc_getForPut(C4Database *database C4NONNULL,
+C4Document* c4doc_getForPut(C4Database *database,
                             C4Slice docID,
                             C4Slice parentRevID,
                             bool deleting,
                             bool allowConflict,
-                            C4Error *outError) C4API;
+                            C4Error* C4NULLABLE outError) C4API;
 
 /** Converts C4DocumentFlags to the equivalent C4RevisionFlags. */
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags);
@@ -81,18 +83,18 @@ C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags);
 
 /** Returns the contents of the index as a Fleece-encoded array of arrays.
     (The last column of each row is the internal SQLite rowid of the document.) */
-C4SliceResult c4db_getIndexRows(C4Database* database C4NONNULL,
+C4SliceResult c4db_getIndexRows(C4Database* database,
                                 C4String indexName,
-                                C4Error* outError) C4API;
+                                C4Error* C4NULLABLE error) C4API;
 
-C4StringResult c4db_getPeerID(C4Database* database C4NONNULL) C4API;
+C4StringResult c4db_getPeerID(C4Database* database) C4API;
 
 /** Sets the document flag kSynced. Used by the replicator to track synced documents. */
 bool c4db_markSynced(C4Database *database,
                      C4String docID,
                      C4SequenceNumber sequence,
                      C4RemoteID remoteID,
-                     C4Error *outError) C4API;
+                     C4Error* C4NULLABLE outError) C4API;
 
 /** Given a list of document+revision IDs, checks whether each revision exists in the database
     or if not, what ancestors exist.
@@ -112,9 +114,10 @@ bool c4db_findDocAncestors(C4Database *database,
                            unsigned maxAncestors,
                            bool requireBodies,
                            C4RemoteID remoteDBID,
-                           const C4String docIDs[], const C4String revIDs[],
-                           C4StringResult ancestors[],
-                           C4Error *outError) C4API;
+                           const C4String docIDs[C4NONNULL],
+                           const C4String revIDs[C4NONNULL],
+                           C4StringResult ancestors[C4NONNULL],
+                           C4Error* C4NULLABLE outError) C4API;
 
 #define kC4AncestorExists               C4STR("1")
 #define kC4AncestorExistsButNotCurrent  C4STR("2")
@@ -134,7 +137,7 @@ namespace litecore { namespace websocket {
 C4Replicator* c4repl_newWithWebSocket(C4Database* db,
                                       litecore::websocket::WebSocket *openSocket,
                                       C4ReplicatorParameters params,
-                                      C4Error *outError) C4API;
+                                      C4Error* C4NULLABLE outError) C4API;
 
 
 namespace litecore { namespace constants {
@@ -144,3 +147,5 @@ namespace litecore { namespace constants {
 }}
 
 #endif
+
+C4_ASSUME_NONNULL_END

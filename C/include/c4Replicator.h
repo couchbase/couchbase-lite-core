@@ -20,6 +20,8 @@
 #include "c4Document.h"
 #include "fleece/Fleece.h"
 
+C4_ASSUME_NONNULL_BEGIN
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -52,7 +54,7 @@ extern "C" {
     };
 
     /** For convenience, an array of C strings naming the C4ReplicatorActivityLevel values. */
-    CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[6];
+    CBL_CORE_API extern const char* C4NONNULL const kC4ReplicatorActivityLevelNames[6];
 
 
     /** A simple parsed-URL type. */
@@ -112,22 +114,22 @@ extern "C" {
 
     /** Callback a client can register, to get progress information.
         This will be called on arbitrary background threads, and should not block. */
-    typedef void (*C4ReplicatorStatusChangedCallback)(C4Replicator* C4NONNULL,
+    typedef void (*C4ReplicatorStatusChangedCallback)(C4Replicator*,
                                                       C4ReplicatorStatus,
-                                                      void *context);
+                                                      void * C4NULLABLE context);
 
     /** Callback a client can register, to hear about the replication status of documents.
         By default, only errors will be reported via this callback.
         To also receive callbacks for successfully completed documents, set the
         kC4ReplicatorOptionProgressLevel option to a value greater than zero. */
-    typedef void (*C4ReplicatorDocumentsEndedCallback)(C4Replicator* C4NONNULL,
+    typedef void (*C4ReplicatorDocumentsEndedCallback)(C4Replicator*,
                                                        bool pushing,
                                                        size_t numDocs,
-                                                       const C4DocumentEnded* docs[],
-                                                       void *context);
+                                                       const C4DocumentEnded* C4NONNULL docs[C4NONNULL],
+                                                       void * C4NULLABLE context);
 
     /** Callback a client can register, to hear about the status of blobs. */
-    typedef void (*C4ReplicatorBlobProgressCallback)(C4Replicator* C4NONNULL,
+    typedef void (*C4ReplicatorBlobProgressCallback)(C4Replicator*,
                                                      bool pushing,
                                                      C4String docID,
                                                      C4String docProperty,
@@ -135,7 +137,7 @@ extern "C" {
                                                      uint64_t bytesComplete,
                                                      uint64_t bytesTotal,
                                                      C4Error error,
-                                                     void *context);
+                                                     void * C4NULLABLE context);
 
     /** Callback that can choose to reject an incoming pulled revision, or stop a local
         revision from being pushed, by returning false.
@@ -145,7 +147,7 @@ extern "C" {
                                                    C4String revID,
                                                    C4RevisionFlags,
                                                    FLDict body,
-                                                   void* context);
+                                                   void* C4NULLABLE context);
 
     /** Checks whether a database name is valid, for purposes of appearing in a replication URL */
     bool c4repl_isValidDatabaseName(C4String dbName) C4API;
@@ -154,7 +156,7 @@ extern "C" {
         (c4repl_new makes the same checks; this function is exposed so CBL can fail sooner.) */
     bool c4repl_isValidRemote(C4Address remoteAddress,
                               C4String remoteDatabaseName,
-                              C4Error *outError) C4API;
+                              C4Error* C4NULLABLE outError) C4API;
 
     /** A simple URL parser that populates a C4Address from a URL string.
         The fields of the address will point inside the url string.
@@ -166,8 +168,8 @@ extern "C" {
                         component of `url`; `address->path` will not include this component.
         @return  True on success, false on failure. */
     bool c4address_fromURL(C4String url,
-                           C4Address *address C4NONNULL,
-                           C4String *dbName) C4API;
+                           C4Address *address,
+                           C4String * C4NULLABLE dbName) C4API;
 
     /** Converts a C4Address to a URL. */
     C4StringResult c4address_toURL(C4Address address) C4API;
@@ -178,13 +180,13 @@ extern "C" {
         C4ReplicatorMode                    push;              ///< Push mode (from db to remote/other db)
         C4ReplicatorMode                    pull;              ///< Pull mode (from db to remote/other db).
         C4Slice                             optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.
-        C4ReplicatorValidationFunction      pushFilter;        ///< Callback that can reject outgoing revisions
-        C4ReplicatorValidationFunction      validationFunc;    ///< Callback that can reject incoming revisions
-        C4ReplicatorStatusChangedCallback   onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
-        C4ReplicatorDocumentsEndedCallback  onDocumentsEnded;  ///< Callback notifying status of individual documents
-        C4ReplicatorBlobProgressCallback    onBlobProgress;    ///< Callback notifying blob progress
-        void*                               callbackContext;   ///< Value to be passed to the callbacks.
-        const C4SocketFactory*              socketFactory;     ///< Custom C4SocketFactory, if not NULL
+        C4ReplicatorValidationFunction C4NULLABLE      pushFilter;        ///< Callback that can reject outgoing revisions
+        C4ReplicatorValidationFunction C4NULLABLE      validationFunc;    ///< Callback that can reject incoming revisions
+        C4ReplicatorStatusChangedCallback C4NULLABLE   onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
+        C4ReplicatorDocumentsEndedCallback C4NULLABLE onDocumentsEnded;  ///< Callback notifying status of individual documents
+        C4ReplicatorBlobProgressCallback C4NULLABLE    onBlobProgress;    ///< Callback notifying blob progress
+        void* C4NULLABLE                               callbackContext;   ///< Value to be passed to the callbacks.
+        const C4SocketFactory* C4NULLABLE              socketFactory;     ///< Custom C4SocketFactory, if not NULL
     } C4ReplicatorParameters;
 
 
@@ -195,11 +197,11 @@ extern "C" {
         @param params Replication parameters (see above.)
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
-    C4Replicator* c4repl_new(C4Database* db C4NONNULL,
+    C4Replicator* c4repl_new(C4Database* db,
                              C4Address remoteAddress,
                              C4String remoteDatabaseName,
                              C4ReplicatorParameters params,
-                             C4Error *outError) C4API;
+                             C4Error* C4NULLABLE outError) C4API;
 
 #ifdef COUCHBASE_ENTERPRISE
     /** Creates a new replicator to another local database.
@@ -208,10 +210,10 @@ extern "C" {
         @param params Replication parameters (see above.)
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
-    C4Replicator* c4repl_newLocal(C4Database* db C4NONNULL,
-                                  C4Database* otherLocalDB C4NONNULL,
+    C4Replicator* c4repl_newLocal(C4Database* db,
+                                  C4Database* otherLocalDB,
                                   C4ReplicatorParameters params,
-                                  C4Error *outError) C4API;
+                                             C4Error* C4NULLABLE outError) C4API;
 #endif
 
     /** Creates a new replicator from an already-open C4Socket. This is for use by listeners
@@ -222,33 +224,34 @@ extern "C" {
         @param params  Replication parameters. Will usually use kC4Passive modes.
         @param outError  Error, if replication can't be created.
         @return  The newly created replicator, or NULL on error. */
-    C4Replicator* c4repl_newWithSocket(C4Database* db C4NONNULL,
-                                       C4Socket *openSocket C4NONNULL,
+    C4Replicator* c4repl_newWithSocket(C4Database* db,
+                                       C4Socket *openSocket,
                                        C4ReplicatorParameters params,
-                                       C4Error *outError) C4API;
+                                       C4Error* C4NULLABLE outError) C4API;
 
     /** Frees a replicator reference.
         Does not stop the replicator -- if the replicator still has other internal references,
         it will keep going. If you need the replicator to stop, call \ref c4repl_stop first.
         \note This function is thread-safe. */
-    void c4repl_free(C4Replicator* repl) C4API;
+    void c4repl_free(C4Replicator* C4NULLABLE repl) C4API;
 
     /** Tells a replicator to start. Ignored if it's not in the Stopped state.
         \note This function is thread-safe.
+        @param repl  The C4Replicator instance.
         @param reset If true, the replicator will reset its checkpoint and start replication from the beginning
      */
-    void c4repl_start(C4Replicator* repl C4NONNULL, bool reset) C4API;
+    void c4repl_start(C4Replicator* repl, bool reset) C4API;
 
     /** Tells a replicator to stop. Ignored if in the Stopped state.
         This function is thread-safe.  */
-    void c4repl_stop(C4Replicator* repl C4NONNULL) C4API;
+    void c4repl_stop(C4Replicator* repl) C4API;
 
     /** Tells a replicator that's in the offline state to reconnect immediately.
         \note This function is thread-safe.
         @param repl  The replicator.
         @param outError  On failure, error information is stored here.
         @return  True if the replicator will reconnect, false if it won't. */
-    bool c4repl_retry(C4Replicator* repl C4NONNULL, C4Error *outError) C4API;
+    bool c4repl_retry(C4Replicator* repl, C4Error* C4NULLABLE outError) C4API;
 
     /** Informs the replicator whether it's considered possible to reach the remote host with
         the current network configuration. The default value is true. This only affects the
@@ -256,7 +259,7 @@ extern "C" {
         * Setting it to false will cancel any pending retry and prevent future automatic retries.
         * Setting it back to true will initiate an immediate retry.
         \note This function is thread-safe. */
-    void c4repl_setHostReachable(C4Replicator* repl C4NONNULL, bool reachable) C4API;
+    void c4repl_setHostReachable(C4Replicator* repl, bool reachable) C4API;
 
     /** Puts the replicator in or out of "suspended" state.
         * Setting suspended=true causes the replicator to disconnect and enter Offline state;
@@ -264,7 +267,7 @@ extern "C" {
         * Setting suspended=false causes the replicator to attempt to reconnect, _if_ it was
           connected when suspended, and is still in Offline state.
         \note This function is thread-safe. */
-    void c4repl_setSuspended(C4Replicator* repl C4NONNULL, bool suspended) C4API;
+    void c4repl_setSuspended(C4Replicator* repl, bool suspended) C4API;
 
     /** Sets the replicator's options dictionary.
         The changes will take effect next time the replicator connects.
@@ -273,46 +276,52 @@ extern "C" {
 
     /** Returns the current state of a replicator.
         This function is thread-safe.  */
-    C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl C4NONNULL) C4API;
+    C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API;
 
     /** Returns the HTTP response headers as a Fleece-encoded dictionary.
         \note This function is thread-safe.  */
-    C4Slice c4repl_getResponseHeaders(C4Replicator *repl C4NONNULL) C4API;
+    C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API;
 
     /** Gets a fleece encoded list of IDs of documents who have revisions pending push.  This
      *  API is a snapshot and results may change between the time the call was made and the time
      *  the call returns.
      *
-     *  @param outErr Records error information, if any.  This will be set to 0 on success.
+     *  @param repl  The C4Replicator instance.
+     *  @param outErr On failure, error information will be written here if non-NULL.
      *  @return A fleece encoded array of document IDs, each of which has one or more pending
      *  revisions.  If none are pending, nullslice is returned (note that an error
      * condition will return nullslice with the outErr code set to non-zero)
      */
-    C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl C4NONNULL, C4Error* outErr) C4API;
+    C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* C4NULLABLE outErr) C4API;
 
     /** Checks if the document with the given ID has revisions pending push.  This
      *  API is a snapshot and results may change between the time the call was made and the time
      *  the call returns.
      *
-     * @param docID The ID of the document to check
-     * @param outErr Records error information, if any.  This will be set to 0 on success.
-     * @return true if the document has one or more revisions pending, false otherwise (note that an error
-     * condition will return false with the outErr code set to non-zero)
+     *  @param repl  The C4Replicator instance.
+     *  @param docID The ID of the document to check
+     *  @param outErr On failure, error information will be written here if non-NULL.
+     *  @return true if the document has one or more revisions pending, false otherwise (note that an error
+     *  condition will return false with the outErr code set to non-zero)
      */
-    bool c4repl_isDocumentPending(C4Replicator* repl C4NONNULL, C4String docID, C4Error* outErr) C4API;
+    bool c4repl_isDocumentPending(C4Replicator* repl, C4String docID, C4Error* C4NULLABLE outErr) C4API;
 
 
     /** Gets the TLS certificate, if any, that was sent from the remote server (NOTE: Only functions when using BuiltInWebSocket) */
-    C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl C4NONNULL, C4Error* outErr) C4API;
+    C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl,
+                                         C4Error* C4NULLABLE outErr) C4API;
 
     /** Sets the progress level of the replicator, indicating what information should be provided via
      *  callback.
      *
+     *  @param repl  The C4Replicator instance.
      *  @param level The progress level to set on the replicator
      *  @param outErr Records error information, if any.
      *  @return true if the progress level was set, false if there was an error.
      */
-    bool c4repl_setProgressLevel(C4Replicator* repl C4NONNULL, C4ReplicatorProgressLevel level, C4Error* outErr) C4API;
+    bool c4repl_setProgressLevel(C4Replicator* repl,
+                                 C4ReplicatorProgressLevel level,
+                                 C4Error* C4NULLABLE outErr) C4API;
 
 
 #pragma mark - COOKIES:
@@ -327,16 +336,16 @@ extern "C" {
                         C4String setCookieHeader,
                         C4String fromHost,
                         C4String fromPath,
-                        C4Error *outError) C4API;
+                        C4Error* C4NULLABLE outError) C4API;
 
     /** Locates any saved HTTP cookies relevant to the given request, and returns them as a string
         that can be used as the value of a "Cookie:" header. */
-    C4StringResult c4db_getCookies(C4Database *db C4NONNULL,
+    C4StringResult c4db_getCookies(C4Database *db,
                                    C4Address request,
-                                   C4Error *error) C4API;
+                                   C4Error* C4NULLABLE error) C4API;
 
     /** Removes all cookies from the database's cookie store. */
-    void c4db_clearCookies(C4Database *db C4NONNULL) C4API;
+    void c4db_clearCookies(C4Database *db) C4API;
 
 
 #pragma mark - CONSTANTS:
@@ -407,3 +416,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+C4_ASSUME_NONNULL_END

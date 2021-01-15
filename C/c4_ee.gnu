@@ -333,6 +333,7 @@ CBL {
 		kC4SyncLog;
 		kC4WebSocketLog;
 
+		c4log_binaryFilePath;
 		c4log_willLog;
 		c4log_getWarnOnErrors;
 		c4log_flushLogFiles;

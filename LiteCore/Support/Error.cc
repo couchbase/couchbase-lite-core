@@ -583,6 +583,8 @@ namespace litecore {
                 sNotableExceptionHook();
             WarnError("LiteCore throwing %s error %d: %s%s",
                       nameOfDomain(domain), code, what(), backtrace(1).c_str());
+            if (sNotableExceptionHook)
+                sNotableExceptionHook();
         }
         throw *this;
     }

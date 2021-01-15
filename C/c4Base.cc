@@ -351,6 +351,13 @@ C4LogLevel c4log_binaryFileLevel() noexcept      {return (C4LogLevel)LogDomain::
 void c4log_setCallbackLevel(C4LogLevel level) noexcept   {LogDomain::setCallbackLogLevel((LogLevel)level);} //LCOV_EXCL_LINE
 void c4log_setBinaryFileLevel(C4LogLevel level) noexcept {LogDomain::setFileLogLevel((LogLevel)level);}
 
+C4StringResult c4log_binaryFilePath(void) C4API {
+    auto options = LogDomain::currentLogFileOptions();
+    if (!options.path.empty() && !options.isPlaintext)
+        return C4StringResult(alloc_slice(options.path));
+    else
+        return {};
+}
 
 CBL_CORE_API C4LogDomain const kC4DefaultLog    = (C4LogDomain)&kC4Cpp_DefaultLog;
 CBL_CORE_API C4LogDomain const kC4DatabaseLog   = (C4LogDomain)&DBLog;
