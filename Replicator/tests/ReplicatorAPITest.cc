@@ -685,6 +685,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     }
 }
 
+
 #include "c4Replicator.hh"
 
 struct C4TestReplicator : public C4Replicator {
@@ -692,16 +693,12 @@ struct C4TestReplicator : public C4Replicator {
         : C4Replicator(db, params)
     {}
 
-    const void* propertiesMemory() const { return _options.properties.data().buf; }
+    alloc_slice propertiesMemory() const { return _options.properties.data(); }
 
     bool createReplicator() override { return false; }
 
     alloc_slice URL() const override { return nullslice; }
 };
-
-#ifndef DEBUG
-// The below test is not reliable in debug builds due to dead memory
-// fill patterns that will overwrite the memory block on free
 
 TEST_CASE_METHOD(ReplicatorAPITest, "c4Replicator Zero Memory", "[Replicator]") {
      {
@@ -720,15 +717,13 @@ TEST_CASE_METHOD(ReplicatorAPITest, "c4Replicator Zero Memory", "[Replicator]") 
     C4ReplicatorParameters params {};
     params.optionsDictFleece = _options.data();
     const auto *repl = new C4TestReplicator(db, params);
-    const void* stored = repl->propertiesMemory();
+    alloc_slice stored = repl->propertiesMemory();
     delete repl;
 
-    const auto* p = (const uint8_t *)stored;
-    for(size_t i = 0; i < params.optionsDictFleece.size; i++) {
-        CHECK(p[i] == 0);
+    for(size_t i = 0; i < stored.size; i++) {
+        CHECK(stored[i] == 0);
     }
 }
 
-#endif
 
 #endif
