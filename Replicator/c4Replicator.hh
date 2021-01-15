@@ -251,7 +251,7 @@ protected:
             _replicator->terminate();
 
         // The below contains sensitive information, so zero it before destruction
-        _options.properties.clear();
+        _options.properties.wipe();
     }
 
 

@@ -685,4 +685,50 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     }
 }
 
+#include "c4Replicator.hh"
+
+struct C4TestReplicator : public C4Replicator {
+    C4TestReplicator(C4Database* db, C4ReplicatorParameters params)
+        : C4Replicator(db, params)
+    {}
+
+    const void* propertiesMemory() const { return _options.properties.data().buf; }
+
+    bool createReplicator() override { return false; }
+
+    alloc_slice URL() const override { return nullslice; }
+};
+
+#ifndef DEBUG
+// The below test is not reliable in debug builds due to dead memory
+// fill patterns that will overwrite the memory block on free
+
+TEST_CASE_METHOD(ReplicatorAPITest, "c4Replicator Zero Memory", "[Replicator]") {
+     {
+         Encoder enc;
+         enc.beginDict();
+         enc.writeKey(kC4ReplicatorOptionAuthentication);
+         enc.beginDict();
+         enc[kC4ReplicatorAuthType] = "basic"_sl;
+         enc[kC4ReplicatorAuthUserName] = "jim"_sl;
+         enc[kC4ReplicatorAuthPassword] = "password"_sl;
+         enc.endDict();
+         enc.endDict();
+         _options = AllocedDict(enc.finish());
+    }
+
+    C4ReplicatorParameters params {};
+    params.optionsDictFleece = _options.data();
+    const auto *repl = new C4TestReplicator(db, params);
+    const void* stored = repl->propertiesMemory();
+    delete repl;
+
+    const auto* p = (const uint8_t *)stored;
+    for(size_t i = 0; i < params.optionsDictFleece.size; i++) {
+        CHECK(p[i] == 0);
+    }
+}
+
+#endif
+
 #endif
