@@ -180,37 +180,6 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
 }
 
 
-#if 0
-bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept {
-    // LCOV_EXCL_START
-    if (asInternal(doc)->database()->configV1()->versioning != kC4RevisionTrees) {
-        Warn("c4doc_selectFirstPossibleAncestorOf only works with revision trees");
-        return false;
-    }
-    // LCOV_EXCL_STOP
-
-    // Start at first (current) revision; return it if it's a candidate, else go to the next:
-    c4doc_selectCurrentRevision(doc);
-    auto generation = c4rev_getGeneration(revID);
-    if (c4rev_getGeneration(doc->selectedRev.revID) < generation)
-        return true;
-    else
-        return c4doc_selectNextPossibleAncestorOf(doc, revID);
-}
-
-
-bool c4doc_selectNextPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept {
-    auto generation = c4rev_getGeneration(revID);
-    while (c4doc_selectNextRevision(doc)) {
-        // A possible ancestor is one with a lower generation number:
-        if (c4rev_getGeneration(doc->selectedRev.revID) < generation)
-            return true;
-    }
-    return false;
-}
-#endif
-
-
 bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1, C4String rev2) noexcept {
     return tryCatch<bool>(nullptr, [&]{
         return asInternal(doc)->selectCommonAncestorRevision(rev1, rev2);

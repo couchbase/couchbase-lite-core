@@ -194,18 +194,6 @@ extern "C" {
                                       bool withBody,
                                       C4Error* C4NULLABLE outError) C4API;
 
-#if 0
-    /** Selects the first revision that could be an ancestor of the given revID, or returns false
-        if there is none. */
-    bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc,
-                                             C4String revID) C4API;
-
-    /** Selects the next revision (after the selected one) that could be an ancestor of the given
-        revID, or returns false if there are no more. */
-    bool c4doc_selectNextPossibleAncestorOf(C4Document* doc,
-                                            C4String revID) C4API;
-#endif
-
     /** Selects the common ancestor of two revisions. Returns false if none is found. */
     bool c4doc_selectCommonAncestorRevision(C4Document* doc,
                                             C4String rev1ID,
