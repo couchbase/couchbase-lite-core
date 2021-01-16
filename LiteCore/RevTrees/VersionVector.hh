@@ -12,6 +12,7 @@
 #include <vector>
 #include <list>
 #include <iostream>
+#include <optional>
 #include <string_view>
 
 namespace fleece {
@@ -154,6 +155,7 @@ namespace litecore {
         explicit operator bool() const                      {return count() > 0;}
 
         size_t count() const                                {return _vers.size();}
+        bool empty() const                                  {return _vers.size() == 0;}
         const Version& operator[] (size_t i) const          {return _vers[i];}
         const Version& current() const                      {return _vers.at(0);}
         const std::vector<Version>& versions() const        {return _vers;}
@@ -161,6 +163,52 @@ namespace litecore {
         /** Returns the generation count for the given author. */
         generation genOfAuthor(peerID) const;
         generation operator[] (peerID author) const         {return genOfAuthor(author);}
+
+        //---- Comparisons:
+
+        /** Compares this vector to another. */
+        versionOrder compareTo(const VersionVector&) const;
+
+        bool operator == (const VersionVector& v) const     {return compareTo(v) == kSame;}
+        bool operator != (const VersionVector& v) const     {return !(*this == v);}
+        bool operator <  (const VersionVector& v) const     {return compareTo(v) == kOlder;}
+        bool operator >  (const VersionVector& v) const     {return compareTo(v) == kNewer;}
+        bool operator <= (const VersionVector& v) const     {return compareTo(v) <= kOlder;}
+        bool operator >= (const VersionVector& v) const     {return v <= *this;}
+
+        /** Compares with a single version, i.e. whether this vector is newer/older/same as a
+            vector with the given current version. (Will never return kConflicting.) */
+        versionOrder compareTo(const Version&) const;
+
+        bool operator == (const Version& v) const           {return compareTo(v) == kSame;}
+        bool operator >= (const Version& v) const           {return compareTo(v) != kOlder;}
+
+        //---- Conversions:
+
+        /** Generates binary form. */
+        fleece::alloc_slice asBinary(peerID myID = kMePeerID) const;
+
+        /** Converts the vector to a human-readable string.
+            When sharing a vector with another peer, pass your actual peer ID in `myID`;
+            then occurrences of kMePeerID will be written as that ID.
+            Otherwise they're written as '*'. */
+        fleece::alloc_slice asASCII(peerID myID = kMePeerID) const;
+
+        bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
+        size_t maxASCIILen() const;
+
+        //---- Expanding "*":
+
+        /** Returns true if none of the versions' authors are "*". */
+        bool isExpanded() const;
+
+        /** Replaces kMePeerID ("*") with the given peerID in the vector. */
+        void expandMyPeerID(peerID myID);
+
+        /** Replaces the given peerID with kMePeerID ("*") in the vector. */
+        void compactMyPeerID(peerID myID);
+
+        //---- Operations:
 
         /** Increments the generation count of the given author (or sets it to 1 if it didn't exist)
             and moves it to the start of the vector. */
@@ -181,53 +229,31 @@ namespace litecore {
             All the authors in both are present, with the larger of the two generations. */
         VersionVector mergedWith(const VersionVector&) const;
 
-        /** Replaces the given peerID with kMePeerID ("*") in the vector. */
-        void compactMyPeerID(peerID myID);
+        //---- Deltas:
 
-        /** Replaces kMePeerID ("*") with the given peerID in the vector. */
-        void expandMyPeerID(peerID myID);
+        /** Creates a VersionVector expressing the changes from an earlier VersionVector to this one.
+            If the other vector is not earlier or equal, `nullopt` is returned. */
+        std::optional<VersionVector> deltaFrom(const VersionVector &base) const;
 
-        /** Returns true if none of the versions' authors are "*". */
-        bool isExpanded() const;
-
-        //---- Conversions:
-
-        /** Generates binary form. */
-        fleece::alloc_slice asBinary(peerID myID = kMePeerID) const;
-
-        /** Converts the vector to a human-readable string.
-            When sharing a vector with another peer, pass your actual peer ID in `myID`;
-            then occurrences of kMePeerID will be written as that ID.
-            Otherwise they're written as '*'. */
-        fleece::alloc_slice asASCII(peerID myID = kMePeerID) const;
-
-        bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
-        size_t maxASCIILen() const;
-
-        //---- Comparisons:
-
-        /** Compares this vector to another. */
-        versionOrder compareTo(const VersionVector&) const;
-
-        bool operator == (const VersionVector& v) const     {return compareTo(v) == kSame;}
-        bool operator != (const VersionVector& v) const     {return !(*this == v);}
-        bool operator < (const VersionVector& v) const      {return compareTo(v) == kOlder;}
-        bool operator > (const VersionVector& v) const      {return compareTo(v) == kNewer;}
-
-        /** Compares with a single version, i.e. whether this vector is newer/older/same as a
-            vector with the given current version. (Will never return kConflicting.) */
-        versionOrder compareTo(const Version&) const;
-
-        bool operator == (const Version& v) const           {return compareTo(v) == kSame;}
-        bool operator >= (const Version& v) const           {return compareTo(v) != kOlder;}
+        /** Applies a delta created by calling \ref deltaFrom on a newer VersionVector.
+            if `D = B.deltaFrom(A)`, then `A.byApplyingDelta(D) == B`.
+            If the delta is invalid, throws `BadRevisionID`.
+            \warning If the delta was not created with this revision as a base, the result is undefined.
+                    The method is likely to return an incorrect vector, not throw an exception. */
+        VersionVector byApplyingDelta(const VersionVector &delta) const;
 
     private:
+        VersionVector(std::vector<Version>::const_iterator begin,
+                      std::vector<Version>::const_iterator end)
+        :_vers(begin, end)
+        { }
 #if DEBUG
         void validate() const;
 #else
         void validate() const                               { }
 #endif
-        std::vector<Version>::iterator findPeerIter(peerID);
+        // Finds my version by this author and returns an iterator to it, else returns end()
+        std::vector<Version>::iterator findPeerIter(peerID) const;
 
         std::vector<Version> _vers;          // versions, in order
     };

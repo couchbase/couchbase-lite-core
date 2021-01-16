@@ -19,6 +19,7 @@
 #include "VersionVector.hh"
 #include "RevTree.hh"
 #include "LiteCoreTest.hh"
+#include "StringUtil.hh"
 
 using namespace litecore;
 using namespace std;
@@ -35,9 +36,30 @@ namespace litecore {
     /** Writes an ASCII representation of a VersionVector to a stream.
      Note: This does not replace "*" with the local author's ID! */
     static inline std::ostream& operator<< (std::ostream& o, const VersionVector &vv) {
-        return o << vv.asASCII();
+        return o << string(vv.asASCII());
+    }
+
+    static inline std::ostream& operator<< (std::ostream& o, const optional<VersionVector> &vv) {
+        if (vv)
+            return o << *vv;
+        else
+            return o << "nullopt";
     }
 }
+
+
+// `_vers` suffix after a string literal makes it a Version
+//static Version operator "" _vers (const char *str NONNULL, size_t length) {
+//    return Version(slice(str, length));
+//}
+
+// `_vv` suffix after a string literal makes it a VersionVector
+static VersionVector operator "" _vv (const char *str NONNULL, size_t length) {
+    if (length == 0)
+        return VersionVector();
+    return VersionVector::fromASCII(slice(str, length));
+}
+
 
 static constexpr peerID Alice {0x100}, Bob {0x101}, Carol {0x102}, Dave {0x103}, Zegpold {0xFFFF};
 
@@ -79,7 +101,7 @@ TEST_CASE("Empty VersionVector", "[RevIDs]") {
 
 
 TEST_CASE("VersionVector <-> String", "[RevIDs]") {
-    auto v = VersionVector::fromASCII("3@*"s);
+    VersionVector v = "3@*"_vv;
     CHECK(v.count() == 1);
     CHECK(v[0] == Version(3, kMePeerID));
     CHECK(v.asASCII() == "3@*");
@@ -124,7 +146,7 @@ TEST_CASE("VersionVector <-> Binary", "[RevIDs]") {
 
 
 TEST_CASE("VersionVector peers", "[RevIDs]") {
-    auto v = VersionVector::fromASCII("3@*,2@100,1@103,2@102"s);
+    VersionVector v = "3@*,2@100,1@103,2@102"_vv;
     CHECK(v.current() == Version(3, kMePeerID));
     CHECK(v.genOfAuthor(Alice) == 2);
     CHECK(v[Alice] == 2);
@@ -146,25 +168,51 @@ TEST_CASE("VersionVector peers", "[RevIDs]") {
 
 
 TEST_CASE("VersionVector conflicts", "[RevIDs]") {
-    auto v1 = VersionVector::fromASCII("3@*,2@100,1@103,2@102"s);
+    VersionVector v1 = "3@*,2@100,1@103,2@102"_vv;
     CHECK(v1 == v1);
-    CHECK(v1 == VersionVector::fromASCII("3@*,2@100,1@103,2@102"s));
+    CHECK(v1 == "3@*,2@100,1@103,2@102"_vv);
 
-    CHECK(v1 > VersionVector::fromASCII("2@*,2@100,1@103,2@102"s));
-    CHECK(v1 > VersionVector::fromASCII("2@100,1@103,2@102"s));
-    CHECK(v1 > VersionVector::fromASCII("1@102"s));
+    CHECK(v1 > "2@*,2@100,1@103,2@102"_vv);
+    CHECK(v1 > "2@100,1@103,2@102"_vv);
+    CHECK(v1 > "1@102"_vv);
     CHECK(v1 > VersionVector());
 
-    CHECK(v1 < VersionVector::fromASCII("2@103,3@*,2@100,2@102"s));
-    CHECK(v1 < VersionVector::fromASCII("2@103,1@666,3@*,2@100,9@102"s));
+    CHECK(v1 < "2@103,3@*,2@100,2@102"_vv);
+    CHECK(v1 < "2@103,1@666,3@*,2@100,9@102"_vv);
 
-    auto v3 = VersionVector::fromASCII("4@100,1@103,2@102"s);
+    auto v3 = "4@100,1@103,2@102"_vv;
     CHECK(v1.compareTo(v3) == kConflicting);
     CHECK(!(v1 == v3));
     CHECK(!(v1 < v3));
     CHECK(!(v1 > v3));
 
     CHECK(v1.mergedWith(v3).asASCII() == "3@*,4@100,1@103,2@102");
+}
+
+
+TEST_CASE("VersionVector deltas", "[RevIDs]") {
+    auto testGoodDelta = [&](VersionVector src, VersionVector dst) {
+        INFO("src = '" << src << "' ; dst = '" << dst << "'");
+        auto delta = dst.deltaFrom(src);
+        REQUIRE(delta);
+        Log("delta = '%.*s'", SPLAT(delta->asASCII()));
+        CHECK(src.byApplyingDelta(*delta) == dst);
+    };
+
+    auto testBadDelta = [&](VersionVector src, VersionVector dst) {
+        INFO("src = '" << src << "' ; dst = '" << dst << "'");
+        auto delta = dst.deltaFrom(src);
+        CHECK(!delta);
+    };
+
+    testGoodDelta(""_vv,                "4@aa,1@bb,2@cc"_vv);
+    testGoodDelta("4@aa,1@bb,2@cc"_vv,  "4@aa,1@bb,2@cc"_vv);
+    testGoodDelta("4@aa,1@bb,2@cc"_vv,  "3@cc,1@dd,4@aa,1@bb"_vv);
+    testGoodDelta("4@aa,1@bb,2@cc"_vv,  "3@cc,5@aa,1@dd,1@bb"_vv);
+
+    testBadDelta ("4@aa,1@bb,2@cc"_vv,  ""_vv);
+    testBadDelta ("4@aa,1@bb,2@cc"_vv,  "1@bb,2@cc"_vv);
+    testBadDelta ("4@aa,1@bb,2@cc"_vv,  "5@aa"_vv);
 }
 
 
@@ -294,7 +342,7 @@ TEST_CASE("RevID Version Parsing", "[RevIDs]") {
 
 
 TEST_CASE("RevID <-> Version", "[RevIDs]") {
-    auto vv = VersionVector::fromASCII("11@100,2@101,1@666"s);
+    VersionVector vv = "11@100,2@101,1@666"_vv;
     alloc_slice vvData = vv.asBinary();
     revid rev(vvData);
     CHECK(rev.isVersion());

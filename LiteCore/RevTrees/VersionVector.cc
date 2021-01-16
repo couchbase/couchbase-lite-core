@@ -185,7 +185,7 @@ namespace litecore {
 
 
     alloc_slice VersionVector::asASCII(peerID myID) const {
-        if (_vers.empty())
+        if (empty())
             return nullslice;
         return writeAlloced(maxASCIILen(), [&](slice *out) {
             return writeASCII(out, myID);
@@ -248,7 +248,7 @@ namespace litecore {
 
 
     versionOrder VersionVector::compareTo(const Version& v) const {
-        auto mine = const_cast<VersionVector*>(this)->findPeerIter(v.author());
+        auto mine = findPeerIter(v.author());
         if (mine == _vers.end())
             return kOlder;
         else if (mine->gen() < v.gen())
@@ -261,16 +261,23 @@ namespace litecore {
 
 
     versionOrder VersionVector::compareTo(const VersionVector &other) const {
-        //OPT: This is O(n^2), since the `for` loop calls `other[ ]`, which is a linear search.
+        // First check if either or both are empty:
+        auto myCount = count(), otherCount = other.count();
+        if (myCount == 0)
+            return otherCount == 0 ? kSame : kOlder;
+        else if (otherCount == 0)
+            return kNewer;
+
         versionOrder o = kSame;
-        ssize_t countDiff = count() - other.count();
+        ssize_t countDiff = ssize_t(myCount) - ssize_t(otherCount);
         if (countDiff < 0)
             o = kOlder;             // other must have versions from authors I don't have
         else if (countDiff > 0)
             o = kNewer;             // I must have versions from authors other doesn't have
-        else if (count() > 0 && (*this)[0] == other[0])
+        else if (myCount > 0 && (*this)[0] == other[0])
             return kSame;           // first revs are identical so vectors are equal
 
+        //OPT: This is O(n^2), since the `for` loop calls `other[ ]`, which is a linear search.
         for (auto &v : _vers) {
             auto othergen = other[v.author()];
             if (v.gen() < othergen) {
@@ -290,9 +297,10 @@ namespace litecore {
         return o;
     }
 
-    vector<Version>::iterator VersionVector::findPeerIter(peerID author) {
-        auto v = _vers.begin();
-        for (; v != _vers.end(); ++v) {
+    vector<Version>::iterator VersionVector::findPeerIter(peerID author) const {
+        auto &vers = const_cast<VersionVector*>(this)->_vers;
+        auto v = vers.begin();
+        for (; v != vers.end(); ++v) {
             if (v->author() == author)
                 break;
         }
@@ -343,7 +351,7 @@ namespace litecore {
 
 
 //    bool VersionVector::addHistory(VersionVector &&earlier) {
-//        if (_vers.empty()) {
+//        if (empty()) {
 //            _vers = move(earlier._vers);
 //        } else {
 //            for (auto &v : earlier._vers) {
@@ -420,6 +428,46 @@ namespace litecore {
                     result.push_back(vers);
             }
         }
+        return result;
+    }
+
+
+    /*  A delta from A to B is a prefix of B,
+        containing all the versions in B that are newer than in A. */
+
+    optional<VersionVector> VersionVector::deltaFrom(const VersionVector &src) const {
+        if (src.empty())
+            return *this;                       // a delta from nothing is the same as me
+        else if (src.count() > count())
+            return nullopt;                     // src must be newer if it has more versions; fail
+
+        // Look through myself for a version equal to one in `src`:
+        auto i = _vers.begin();
+        for (; i != _vers.end(); ++i) {
+            int64_t deltaGen = i->gen() - src[i->author()];
+            if (deltaGen == 0)
+                break;                          // found equal version; changes are done
+            else if (deltaGen < 0)
+                return nullopt;                 // src is newer (or a conflict), so fail
+        }
+        // Return a prefix of me to before the matching version:
+        return VersionVector(_vers.begin(), i);
+    }
+
+
+    VersionVector VersionVector::byApplyingDelta(const VersionVector &delta) const {
+        // Reconstruct the target vector by appending to `delta` all components of myself that
+        // don't appear in it.
+        VersionVector result = delta;
+        result._vers.reserve(_vers.size());
+        for (auto &vers : _vers) {
+            if (auto genInDelta = delta[vers.author()]; genInDelta == 0)
+                result._vers.push_back(vers);
+            else if (genInDelta < vers.gen())
+                error::_throw(error::BadRevisionID, "Invalid VersionVector delta");
+        }
+        result.validate();
+        assert(result >= *this); // should be impossible given the above checks
         return result;
     }
 
