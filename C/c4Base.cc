@@ -476,7 +476,7 @@ void c4_dumpInstances(void) C4API {
 
 bool c4_setTempDir(C4String path, C4Error* err) C4API {
     if(sqlite3_temp_directory != nullptr) {
-        c4error_make(LiteCoreDomain, kC4ErrorUnsupported, C4STR("c4_setTempDir cannot be called more than once!"));
+        c4error_return(LiteCoreDomain, kC4ErrorUnsupported, C4STR("c4_setTempDir cannot be called more than once!"), err);
         return false;
     }
 
