@@ -14,14 +14,11 @@
 //  and limitations under the License.
 
 #include "VersionVector.hh"
-#include "SecureDigest.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "fleece/Fleece.hh"
 #include "varint.hh"
-#include <sstream>
-#include <unordered_map>
 #include <algorithm>
+#include <unordered_map>
 
 
 namespace litecore {
@@ -30,102 +27,12 @@ namespace litecore {
 
 
     // Utility that allocates a buffer, lets the callback write into it, then trims the buffer.
-    static alloc_slice writeAlloced(size_t maxSize, function_ref<bool(slice*)> writer) {
+    static inline alloc_slice writeAlloced(size_t maxSize, function_ref<bool(slice*)> writer) {
         alloc_slice buf(maxSize);
         slice out = buf;
         Assert( writer(&out) );
         buf.shorten(buf.size - out.size);
         return buf;
-    }
-
-
-#pragma mark - VERSION:
-
-
-    static void throwBadBinary() {
-        error::_throw(error::BadRevisionID, "Invalid binary version ID");
-    }
-
-    static void throwBadASCII(slice string = nullslice) {
-        if (string)
-            error::_throw(error::BadRevisionID, "Invalid version string '%.*s'", SPLAT(string));
-        else
-            error::_throw(error::BadRevisionID, "Invalid version string");
-    }
-
-
-    Version::Version(slice ascii, peerID myPeerID) {
-        slice in = ascii;
-        _gen = in.readHex();
-        if (in.readByte() != '@' || _gen == 0)
-            throwBadASCII(ascii);
-        if (in == "*"_sl) {
-#if 0
-            if (myPeerID != kMePeerID) {
-                // If I'm given an explicit peer ID for me, then '*' is not valid; the string
-                // is expected to contain that explicit ID instead.
-                error::_throw(error::BadRevisionID,
-                              "A '*' is not valid in this version string: '%.*s'", SPLAT(ascii));
-            }
-#endif
-            _author = kMePeerID;
-        } else {
-            _author.id = in.readHex();
-            if (in.size > 0 || _author == kMePeerID)
-                throwBadASCII(ascii);
-            if (_author == myPeerID)
-                _author = kMePeerID;    // Abbreviate my ID
-        }
-    }
-
-    Version::Version(slice *dataP) {
-        if (!ReadUVarInt(dataP, &_gen) || !ReadUVarInt(dataP, &_author.id))
-            throwBadBinary();
-        validate();
-    }
-
-    void Version::validate() const {
-        if (_gen == 0)
-            error::_throw(error::BadRevisionID);
-    }
-
-    bool Version::writeBinary(slice *out, peerID myID) const {
-        uint64_t id = (_author == kMePeerID) ? myID.id : _author.id;
-        return WriteUVarInt(out, _gen) && WriteUVarInt(out, id);
-    }
-
-    bool Version::writeASCII(slice *out, peerID myID) const {
-        if (!out->writeHex(_gen) || !out->writeByte('@'))
-            return false;
-        auto author = (_author != kMePeerID) ? _author : myID;
-        if (author != kMePeerID)
-            return out->writeHex(author.id);
-        else
-            return out->writeByte('*');
-    }
-
-    alloc_slice Version::asASCII(peerID myID) const {
-        return writeAlloced(kMaxASCIILength, [&](slice *out) {
-            return writeASCII(out, myID);
-        });
-    }
-
-    versionOrder Version::compareGen(generation a, generation b) {
-        if (a > b)
-            return kNewer;
-        else if (a < b)
-            return kOlder;
-        return kSame;
-    }
-
-    versionOrder Version::compareTo(const VersionVector &vv) const {
-        versionOrder o = vv.compareTo(*this);
-        if (o == kOlder)
-            return kNewer;
-        else if (o == kNewer)
-            return kOlder;
-        else
-            return o;
     }
 
 
@@ -148,7 +55,7 @@ namespace litecore {
     void VersionVector::readBinary(slice data) {
         reset();
         if (data.size < 1 || data.readByte() != 0)
-            throwBadBinary();
+            Version::throwBadBinary();
         while (data.size > 0)
             _vers.emplace_back(&data);
         validate();
@@ -195,14 +102,14 @@ namespace litecore {
 
     Version VersionVector::readCurrentVersionFromBinary(slice data) {
         if (data.size < 1 || data.readByte() != 0)
-            throwBadBinary();
+            Version::throwBadBinary();
         return Version(&data);
     }
 
 
     void VersionVector::readASCII(slice str, peerID myPeerID) {
         if (str.size == 0)
-            throwBadASCII(str);
+            Version::throwBadASCII(str);
         reset();
         while (str.size > 0) {
             const void *comma = str.findByteOrEnd(',');
@@ -216,10 +123,6 @@ namespace litecore {
 
 
     void VersionVector::readHistory(const slice history[], size_t historyCount, peerID myPeerID) {
-        // Assemble the version vector from the history. This can take a few forms:
-        //   <new version vector>
-        //   <new version>  <parent version vector>
-        //   <new version>  <parent version>  <grandparent version> ...
         Assert(historyCount > 0);
         readASCII(history[0], myPeerID);
         if (historyCount == 1)
@@ -259,6 +162,15 @@ namespace litecore {
             return kNewer;
     }
 
+    versionOrder Version::compareTo(const VersionVector &vv) const {
+        versionOrder o = vv.compareTo(*this);
+        if (o == kOlder)
+            return kNewer;
+        else if (o == kNewer)
+            return kOlder;
+        else
+            return o;
+    }
 
     versionOrder VersionVector::compareTo(const VersionVector &other) const {
         // First check if either or both are empty:

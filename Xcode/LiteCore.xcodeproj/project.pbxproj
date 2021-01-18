@@ -155,6 +155,7 @@
 		27480E37253A5D9C0091CF37 /* NuDocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27480E36253A5D9C0091CF37 /* NuDocumentTest.cc */; };
 		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		274B36BE25B24A67001FC28D /* TestUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2741284F2578138700EEC02C /* TestUtils.cc */; };
+		274B36D225B271F7001FC28D /* Version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274B36D125B271F7001FC28D /* Version.cc */; };
 		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
@@ -1017,6 +1018,8 @@
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
 		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
+		274B36D025B271F7001FC28D /* Version.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Version.hh; sourceTree = "<group>"; };
+		274B36D125B271F7001FC28D /* Version.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Version.cc; sourceTree = "<group>"; };
 		274D03E11BA732FC00FF7C35 /* JavaVM.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaVM.framework; path = System/Library/Frameworks/JavaVM.framework; sourceTree = SDKROOT; };
 		274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseTest.cc; sourceTree = "<group>"; };
 		274D04081BA75E1C00FF7C35 /* C4Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = C4Tests; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1899,6 +1902,8 @@
 			children = (
 				276993E525390C3300FDF699 /* NuDocument.cc */,
 				276993E125390C3300FDF699 /* NuDocument.hh */,
+				274B36D125B271F7001FC28D /* Version.cc */,
+				274B36D025B271F7001FC28D /* Version.hh */,
 				27027CD1255F4A9B00A96D7D /* VersionVector.cc */,
 				27027CCD255F4A9B00A96D7D /* VersionVector.hh */,
 				27E487291923F24D007D8940 /* VersionedDocument.cc */,
@@ -4071,6 +4076,7 @@
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */,
 				27469D08233D719800A1EE1A /* PublicKey+Apple.mm in Sources */,
+				274B36D225B271F7001FC28D /* Version.cc in Sources */,
 				27FC8E77221399AC0083B033 /* LeafDocument.cc in Sources */,
 				2744B351241854F2005A194D /* WebSocketImpl.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
