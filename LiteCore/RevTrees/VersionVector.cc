@@ -39,6 +39,7 @@ namespace litecore {
 #pragma mark - CONVERSION:
 
 
+#if DEBUG
     void VersionVector::validate() const {
         //OPT: This is O(n^2)
         if (count() > 1) {
@@ -50,6 +51,7 @@ namespace litecore {
             }
         }
     }
+#endif
 
 
     void VersionVector::readBinary(slice data) {

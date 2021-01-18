@@ -26,7 +26,7 @@ using namespace fleece;
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 
-#include "TestUtils.hh"
+#include "TestsCommon.hh"
 #include <function_ref.hh>
 #include <functional>
 #include <set>

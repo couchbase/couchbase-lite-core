@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "TestUtils.hh"
 #include "PlatformCompat.hh"
+#include "TestsCommon.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "c4Base.h"

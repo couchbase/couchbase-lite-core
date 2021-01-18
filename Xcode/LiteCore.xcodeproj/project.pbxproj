@@ -123,7 +123,6 @@
 		273E9F771C516145003115A6 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273F481525A68588005D4FE2 /* TestsCommon.cc */; };
 		273F481725A68588005D4FE2 /* TestsCommon.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273F481525A68588005D4FE2 /* TestsCommon.cc */; };
-		274128502578138700EEC02C /* TestUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2741284F2578138700EEC02C /* TestUtils.cc */; };
 		27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
 		2742D10C2305C25D003197E1 /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
 		27431BC7258A8AB0009E3EC5 /* QuietReporter.hh in Sources */ = {isa = PBXBuildFile; fileRef = 27431BC6258A8AB0009E3EC5 /* QuietReporter.hh */; };
@@ -154,7 +153,6 @@
 		27469D09233D719800A1EE1A /* mbedUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01C22EB933100F9AB18 /* mbedUtils.cc */; };
 		27480E37253A5D9C0091CF37 /* NuDocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27480E36253A5D9C0091CF37 /* NuDocumentTest.cc */; };
 		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
-		274B36BE25B24A67001FC28D /* TestUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2741284F2578138700EEC02C /* TestUtils.cc */; };
 		274B36D225B271F7001FC28D /* Version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274B36D125B271F7001FC28D /* Version.cc */; };
 		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
@@ -956,8 +954,6 @@
 		273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tokenizer.xcconfig; sourceTree = "<group>"; };
 		273F481425A68588005D4FE2 /* TestsCommon.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TestsCommon.hh; sourceTree = "<group>"; };
 		273F481525A68588005D4FE2 /* TestsCommon.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestsCommon.cc; sourceTree = "<group>"; };
-		2741284E2578138700EEC02C /* TestUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TestUtils.hh; sourceTree = "<group>"; };
-		2741284F2578138700EEC02C /* TestUtils.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestUtils.cc; sourceTree = "<group>"; };
 		27416E291E0494DF00F10F65 /* c4QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4QueryTest.cc; sourceTree = "<group>"; };
 		27431BC6258A8AB0009E3EC5 /* QuietReporter.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QuietReporter.hh; sourceTree = "<group>"; };
 		2744B30C241854F2005A194D /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
@@ -1787,8 +1783,6 @@
 				27505DDC256335B000123115 /* VersionVectorTest.cc */,
 				2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */,
 				2708FE591CF4D0450022F721 /* LiteCoreTest.hh */,
-				2741284E2578138700EEC02C /* TestUtils.hh */,
-				2741284F2578138700EEC02C /* TestUtils.cc */,
 				274D040A1BA75E1C00FF7C35 /* main.cpp */,
 				2750735A1F4B5ECC003D2CCE /* CMakeLists.txt */,
 				2719253B23970F4E0053DDA6 /* replacedb */,
@@ -3799,7 +3793,6 @@
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
 				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
 				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
-				274128502578138700EEC02C /* TestUtils.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
@@ -3875,7 +3868,6 @@
 				2716F9BF249AD3CB00BE21D9 /* c4CertificateTest.cc in Sources */,
 				42030A3E2498442F00283CE8 /* SecureRandomize.cc in Sources */,
 				27431BC8258A8AB0009E3EC5 /* QuietReporter.hh in Sources */,
-				274B36BE25B24A67001FC28D /* TestUtils.cc in Sources */,
 				2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
 				27431C2B258ADB27009E3EC5 /* LogDecoder.cc in Sources */,
