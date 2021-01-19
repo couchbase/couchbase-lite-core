@@ -76,7 +76,7 @@ protected:
     }
 
     void verifyDoc(slice docID, slice bodyJSON, vector<slice> revIDs) {
-        Retained<Document> doc1( db->documentFactory().newDocumentInstance(docID) );
+        Retained<Document> doc1( db->documentFactory().newDocumentInstance(docID, kEntireBody) );
         CHECK(doc1->exists());
         CHECK(doc1->bodyAsJSON() == bodyJSON);
         int i = 0;

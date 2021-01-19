@@ -299,8 +299,7 @@ namespace litecore { namespace repl {
                                      alloc_slice &outCurrentRevID)
     {
         C4Error err;
-        //OPT: We don't need the document body, just its metadata, but there's no way to say that
-        c4::ref<C4Document> doc = _db->getDoc(docID, &err);
+        c4::ref<C4Document> doc = _db->getDoc(docID, kDocGetMetadata, &err);
         if (!doc) {
             outCurrentRevID = nullslice;
             if (isNotFoundError(err)) {

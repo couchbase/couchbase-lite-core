@@ -406,7 +406,7 @@ namespace litecore { namespace repl {
         bool retry = false;
         _db->use([&](C4Database *db) {
             C4Error error;
-            c4::ref<C4Document> doc = c4doc_get(db, rev->docID, true, &error);
+            c4::ref<C4Document> doc = c4db_getDoc(db, rev->docID, true, kDocGetAll, &error);
             if (doc && doc->revID == rev->revID) {
                 alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
                 if (foreignAncestor && foreignAncestor != rev->remoteAncestorRevID) {

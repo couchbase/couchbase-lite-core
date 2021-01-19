@@ -311,7 +311,7 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFla
 void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
     TransactionHelper t(db);
     C4Error error; 
-    auto curDoc = c4doc_get(db, docID, false, &error);
+    auto curDoc = c4db_getDoc(db, docID, false, kDocGetAll, &error);
     REQUIRE(curDoc != nullptr);
     alloc_slice parentID;
     if (isRevTrees(db))

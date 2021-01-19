@@ -231,7 +231,7 @@ namespace c4Internal {
 
         virtual ~DocumentFactory() { }
         
-        virtual Retained<Document> newDocumentInstance(C4Slice docID) =0;
+        virtual Retained<Document> newDocumentInstance(C4Slice docID, ContentOption) =0;
 
         virtual Retained<Document> newDocumentInstance(const Record&) =0;
 

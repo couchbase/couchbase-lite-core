@@ -256,7 +256,12 @@ namespace litecore { namespace repl {
         if (needRemoteRevID || _options.pushFilter) {
             c4::ref<C4Document> doc;
             C4Error error;
-            doc = e ? c4enum_getDocument(e, &error) : c4doc_get(db, rev->docID, true, &error);
+            if (e)
+                doc = c4enum_getDocument(e, &error);
+            else
+                doc = c4db_getDoc(db, rev->docID, true,
+                                 (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev),
+                                 &error);
             if (!doc) {
                 _delegate.failedToGetChange(rev, error, false);
                 return false;         // fail the rev: error getting doc

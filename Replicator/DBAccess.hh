@@ -56,9 +56,9 @@ namespace litecore { namespace repl {
         //////// DOCUMENTS:
 
         /** Gets a document by ID */
-        C4Document* getDoc(slice docID, C4Error *outError) const {
+        C4Document* getDoc(slice docID, C4DocContentLevel content, C4Error *outError) const {
             return use<C4Document*>([&](C4Database *db) {
-                return c4doc_get(db, docID, true, outError);
+                return c4db_getDoc(db, docID, true, content, outError);
             });
         }
 

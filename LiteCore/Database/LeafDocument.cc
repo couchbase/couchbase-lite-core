@@ -126,7 +126,7 @@ namespace c4Internal {
     {
         if (revID.buf) {
             // TODO: Implement LeafDocument ability to load a specific revision
-            auto doc = newDocumentInstance(docID);
+            auto doc = newDocumentInstance(docID, kEntireBody);
             if (!doc->selectRevision(revID, withBody))
                 doc = nullptr;
             return doc;

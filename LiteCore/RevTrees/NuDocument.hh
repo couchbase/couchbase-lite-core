@@ -92,8 +92,8 @@ namespace litecore {
         /// Returns what content has been loaded: metadata, current revision, or all revisions.
         ContentOption contentAvailable() const noexcept FLPURE {return _whichContent;}
 
-        /// If the document is a stub, loads the body.
-        /// Returns true if the body data is available, false if the document doesn't exist.
+        /// If the requested content isn't in memory, loads it.
+        /// Returns true if the content is now available, false if it couldn't be loaded.
         bool loadData(ContentOption which =kEntireBody);
         
         //---- Metadata:
@@ -176,11 +176,17 @@ namespace litecore {
         ///          \ref setRemoteRevision or \ref save will invalidate those pointers.
         std::optional<Revision> remoteRevision(RemoteID) const FLPURE;
 
+        /// Same as \ref remoteRevision, but loads the document's remote revisions if not in memory yet.
+        std::optional<Revision> loadRemoteRevision(RemoteID);
+
         /// Stores a revision for the given \ref RemoteID, or removes it if the revision is `nullopt`.
         void setRemoteRevision(RemoteID, const std::optional<Revision>&);
 
         /// Returns the next RemoteID for which a revision is stored.
         RemoteID nextRemoteID(RemoteID) const;
+
+        /// Same as \ref nextRemoteID, but loads the document's remote revisions if not in memory yet.
+        RemoteID loadNextRemoteID(RemoteID);
 
         /// Given only a record, find all the revision IDs and pass them to the callback.
         static void forAllRevIDs(const RecordLite&, function_ref<void(revid,RemoteID)>);
@@ -204,6 +210,7 @@ namespace litecore {
         void readRecordExtra(const alloc_slice &extra);
         void requireBody() const;
         void requireRemotes() const;
+        void mustLoadRemotes();
         void mutateRevisions();
         MutableDict mutableRevisionDict(RemoteID remoteID);
         Dict originalProperties() const;

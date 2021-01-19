@@ -139,7 +139,7 @@ namespace litecore { namespace repl {
         C4Error error;
         bool ok = use<bool>([&](C4Database *db) {
             c4::Transaction t(db);
-            c4::ref<C4Document> doc = c4doc_get(db, docID, true, &error);
+            c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetAll, &error);
             return doc
                 && t.begin(&error)
                 && c4doc_setRemoteAncestor(doc, _remoteDBID, revID, &error)
@@ -400,7 +400,7 @@ namespace litecore { namespace repl {
                              C4Error *outError)
     {
         return useForInsert<Doc>([&](C4Database *idb)->Doc {
-            c4::ref<C4Document> doc = c4doc_get(idb, docID, true, outError);
+            c4::ref<C4Document> doc = c4db_getDoc(idb, docID, true, kDocGetAll, outError);
             if (doc && c4doc_selectRevision(doc, baseRevID, true, outError)) {
                 if (c4doc_loadRevisionBody(doc, nullptr)) {
                     return applyDelta(doc, deltaJSON, false, outError);

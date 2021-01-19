@@ -360,6 +360,7 @@ CBL {
 		c4db_mayHaveExpiration;
 		c4db_getCookies;
 		c4db_setCookie;
+		c4db_getDoc;
 
 		c4doc_removeRevisionBody;
 		c4doc_getForPut;

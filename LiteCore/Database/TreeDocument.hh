@@ -26,7 +26,7 @@ namespace c4Internal {
     class TreeDocumentFactory : public DocumentFactory {
     public:
         TreeDocumentFactory(Database *db)   :DocumentFactory(db) { }
-        Retained<Document> newDocumentInstance(C4Slice docID) override;
+        Retained<Document> newDocumentInstance(C4Slice docID, ContentOption) override;
         Retained<Document> newDocumentInstance(const Record&) override;
         Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID, bool withBody) override;
         bool isFirstGenRevID(slice revID) const override;

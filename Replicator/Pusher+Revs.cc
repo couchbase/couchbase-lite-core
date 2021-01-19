@@ -60,7 +60,7 @@ namespace litecore::repl {
         // Get the document & revision:
         C4Error c4err;
         Dict root;
-        c4::ref<C4Document> doc = _db->getDoc(request->docID, &c4err);
+        c4::ref<C4Document> doc = _db->getDoc(request->docID, kDocGetAll, &c4err);
         if (doc) {
             if (c4doc_selectRevision(doc, request->revID, true, &c4err)) {
                 root = c4doc_getProperties(doc);

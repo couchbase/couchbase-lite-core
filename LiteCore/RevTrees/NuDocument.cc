@@ -141,6 +141,7 @@ namespace litecore {
         if (!rec.exists())
             return false;
 
+        //Warn("NuDocument: Loading more data (which=%d) of '%.*s'", int(which), SPLAT(docID()));
         auto oldWhich = _whichContent;
         _whichContent = which;
         if (which >= kCurrentRevOnly && oldWhich < kCurrentRevOnly)
@@ -159,6 +160,12 @@ namespace litecore {
     void NuDocument::requireRemotes() const {
         if (_whichContent < kEntireBody)
             error::_throw(error::UnsupportedOperation, "Document's other revisions are not loaded");
+    }
+
+
+    void NuDocument::mustLoadRemotes() {
+        if (exists() && !loadData(kEntireBody))
+            error::_throw(error::Conflict, "Document is outdated, revisions can't be loaded");
     }
 
 
@@ -186,6 +193,13 @@ namespace litecore {
     }
 
 
+    optional<Revision> NuDocument::loadRemoteRevision(RemoteID remote) {
+        if (remote != RemoteID::Local)
+            mustLoadRemotes();
+        return remoteRevision(remote);
+    }
+
+
     RemoteID NuDocument::nextRemoteID(RemoteID remote) const {
         int iremote = int(remote);
         while (++iremote < _revisions.count()) {
@@ -195,6 +209,11 @@ namespace litecore {
         return RemoteID(iremote);
     }
 
+
+    RemoteID NuDocument::loadNextRemoteID(RemoteID remote) {
+        mustLoadRemotes();
+        return nextRemoteID(remote);
+    }
 
     // If _revisions is not mutable, makes a mutable copy and assigns it to _mutatedRevisions.
     void NuDocument::mutateRevisions() {
@@ -226,7 +245,7 @@ namespace litecore {
             return setCurrentRevision(*optRev);
         }
 
-        requireRemotes();
+        mustLoadRemotes();
         bool changedFlags = false;
         if (auto &newRev = *optRev; optRev) {
             // Creating/updating a revision (possibly the local one):

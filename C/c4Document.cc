@@ -63,14 +63,24 @@ static C4Document* newDoc(bool mustExist, C4Error *outError,
 }
 
 
+C4Document* c4db_getDoc(C4Database *database,
+                       C4Slice docID,
+                       bool mustExist,
+                       C4DocContentLevel content,
+                       C4Error *outError) noexcept
+{
+    return newDoc(mustExist, outError, [=] {
+        return database->documentFactory().newDocumentInstance(docID, ContentOption(content));
+    });
+}
+
+
 C4Document* c4doc_get(C4Database *database,
                       C4Slice docID,
                       bool mustExist,
                       C4Error *outError) noexcept
 {
-    return newDoc(mustExist, outError, [=] {
-        return database->documentFactory().newDocumentInstance(docID);
-    });
+    return c4db_getDoc(database, docID, mustExist, kDocGetCurrentRev, outError);
 }
 
 
@@ -91,7 +101,8 @@ C4Document* c4doc_getBySequence(C4Database *database,
                                 C4Error *outError) noexcept
 {
     return newDoc(true, outError, [=] {
-        return database->documentFactory().newDocumentInstance(database->defaultKeyStore().get(sequence));
+        return database->documentFactory().newDocumentInstance(
+                                        database->defaultKeyStore().get(sequence, kEntireBody));
     });
 }
 
@@ -322,7 +333,7 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
         }
 
         // Slow path: Load the doc and update the remote-ancestor info in the rev tree:
-        Retained<Document> doc(asInternal(c4doc_get(database, docID, true, outError)));
+        Retained<Document> doc(asInternal(c4db_getDoc(database, docID, true, kDocGetAll, outError)));
         release(doc.get());     // balances the +1 ref returned by c4doc_get()
         if (!doc)
             return false;
@@ -412,7 +423,8 @@ C4Document* c4doc_getForPut(C4Database *database,
             docID = newDocID;
         }
 
-        Retained<Document> idoc = database->documentFactory().newDocumentInstance(docID);
+        Retained<Document> idoc = database->documentFactory().newDocumentInstance(docID,
+                                                                                  kEntireBody);
         int code = 0;
 
         if (parentRevID.buf) {
@@ -483,7 +495,7 @@ C4Document* c4doc_put(C4Database *database,
         if (!doc) {
             if (rq->existingRevision) {
                 // Insert existing revision:
-                doc = c4doc_get(database, rq->docID, false, outError);
+                doc = c4db_getDoc(database, rq->docID, false, kDocGetAll, outError);
                 if (!doc)
                     return nullptr;
                 commonAncestorIndex = asInternal(doc)->putExistingRevision(*rq, outError);

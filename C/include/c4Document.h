@@ -52,6 +52,14 @@ extern "C" {
     }; // Note: Same as litecore::Rev::Flags
 
 
+    /** Specifies how much content to retrieve when getting a document. */
+    typedef C4_ENUM(uint8_t, C4DocContentLevel) {
+        kDocGetMetadata,            ///< Only get revID and flags
+        kDocGetCurrentRev,          ///< Get current revision body but not other revisions/remotes
+        kDocGetAll,                 ///< Get everything
+    }; // Note: Same as litecore::ContentOption
+
+
     /** Describes a revision of a document. A sub-struct of C4Document. */
     typedef struct {
         C4HeapString revID;         ///< Revision ID
@@ -89,12 +97,25 @@ extern "C" {
         @return  A pointer to the string in the buffer, or NULL if the buffer is too small. */
     char* c4doc_generateID(char *buffer, size_t bufferSize) C4API;
 
-    /** Gets a document from the database. If there's no such document, the behavior depends on
-        the mustExist flag. If it's true, NULL is returned. If it's false, a valid but empty
-        C4Document is returned, that doesn't yet exist in the database (but will be added when
-        saved.)
+
+    /** Gets a document from the database given its ID.
         The current revision is selected (if the document exists.)
-        You must call `c4doc_release()` when finished with the document. */
+        You must call `c4doc_release()` when finished with the document.
+        @param database  The database to read from.
+        @param docID  The document's ID.
+        @param mustExist  Governs behavior if no document with that ID exists. If true, the call fails
+                            with error kC4NotFound. If false, a C4Document with no contents is returned.
+        @param content  How much content to retrieve: metadata only, current revision, or all revisions.
+        @param outError  On failure, error information is stored here.
+        @return  A new C4Document instance (which must be released), or NULL. */
+    C4Document* c4db_getDoc(C4Database *database,
+                            C4String docID,
+                            bool mustExist,
+                            C4DocContentLevel content,
+                            C4Error* C4NULLABLE outError) C4API;
+
+    /** Gets a document from the database given its ID (semi-deprecated).
+        This is the same as \ref c4db_getDoc with `content` equal to `kDocGetAll`. */
     C4Document* c4doc_get(C4Database *database,
                           C4String docID,
                           bool mustExist,

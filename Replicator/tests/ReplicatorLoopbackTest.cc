@@ -914,7 +914,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
 
     if (isRevTrees()) {
         // Verify that rev 1 body is still available, for later use in conflict resolution:
-        c4::ref<C4Document> doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
+        c4::ref<C4Document> doc = c4db_getDoc(db, C4STR("conflict"), true, kDocGetAll, nullptr);
         REQUIRE(doc);
         CHECK(doc->selectedRev.revID == kConflictRev2AID);
         CHECK(c4doc_getProperties(doc) != nullptr);
@@ -930,7 +930,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
     validateCheckpoints(db, db2, "{\"local\":1,\"remote\":2}");
 
-    c4::ref<C4Document> doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db, C4STR("conflict"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
     CHECK(doc->selectedRev.revID == kConflictRev2AID);
@@ -1030,7 +1030,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict OutgoingConflicts", "[Pu
     validateCheckpoints(db, db2, "{\"local\":2}");
 
     // Verify conflict was pushed to db2:
-    c4::ref<C4Document> doc = c4doc_get(db2, C4STR("conflict"), true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db2, C4STR("conflict"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
 	C4Slice revID = C4STR("2-2b2b2b2b");
@@ -1162,7 +1162,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][C
     _expectedDocPullErrors = set<string>{"Khan"};
     runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
 
-    c4::ref<C4Document> doc = c4doc_get(db, docID, true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kConflictRev2AID);
     CHECK(c4doc_getProperties(doc) != nullptr);
@@ -1211,7 +1211,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     _expectedDocPullErrors = set<string>{"Khan"};
     runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
 
-    c4::ref<C4Document> doc = c4doc_get(db, docID, true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kConflictRev2AID);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
@@ -1231,7 +1231,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
         REQUIRE(t.commit(nullptr));
     }
 
-    doc = c4doc_get(db, docID, true, nullptr);
+    doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
     alloc_slice mergedID(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
     if (isRevTrees())
         CHECK(mergedID == "2-2b2b2b2b,1-abcd"_sl);
@@ -1300,7 +1300,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         Log("-------- Second pull --------");
         runPullReplication();
 
-        doc = c4doc_get(db2, docID, true, nullptr);
+        doc = c4db_getDoc(db2, docID, true, kDocGetAll, nullptr);
         REQUIRE(doc);
         CHECK((doc->flags & kDocConflicted) != 0);
 		revID = C4STR("4-4444");
@@ -1318,7 +1318,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
             CHECK(c4doc_save(doc, 0, &error));
         }
 
-        doc = c4doc_get(db2, docID, true, nullptr);
+        doc = c4db_getDoc(db2, docID, true, kDocGetAll, nullptr);
         REQUIRE(doc);
         CHECK((doc->flags & kDocConflicted) == 0);
 		revID = C4STR("4-4444");
@@ -1834,7 +1834,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     REQUIRE(c4db_getLastSequence(db2) == 4);
     
     // resolve doc1 and create a new revision(#7) which should bring the `_lastSequence` greater than the doc2's sequence
-    c4::ref<C4Document> doc = c4doc_get(db, C4STR("doc1"), true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db, C4STR("doc1"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kDoc1Rev2A);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
@@ -1855,7 +1855,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     CHECK(c4db_getLastSequence(db) == seq); // db-sequence is greater than #6(doc2)
     
     // resolve doc2; choose remote revision, so no need to create a new revision
-    doc = c4doc_get(db, C4STR("doc2"), true, nullptr);
+    doc = c4db_getDoc(db, C4STR("doc2"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kDoc2Rev2A);
     CHECK(c4doc_getProperties(doc) != nullptr);

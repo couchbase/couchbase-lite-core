@@ -39,17 +39,19 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
     C4DocEnumerator(C4Database *database,
                     sequence_t since,
                     const C4EnumeratorOptions &options)
-    :RecordEnumerator(database->defaultKeyStore(), since, recordOptions(options))
+    :RecordEnumerator(database->defaultKeyStore(), since, recordOptions(database, options))
     ,_database(database)
     { }
 
     C4DocEnumerator(C4Database *database,
                     const C4EnumeratorOptions &options)
-    :RecordEnumerator(database->defaultKeyStore(), recordOptions(options))
+    :RecordEnumerator(database->defaultKeyStore(), recordOptions(database, options))
     ,_database(database)
     { }
 
-    static RecordEnumerator::Options recordOptions(const C4EnumeratorOptions &c4options) {
+    static RecordEnumerator::Options recordOptions(C4Database *database,
+                                                   const C4EnumeratorOptions &c4options)
+    {
         RecordEnumerator::Options options;
         if (c4options.flags & kC4Descending)
             options.sortOption = kDescending;
@@ -59,6 +61,8 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
         options.onlyConflicts  = (c4options.flags & kC4IncludeNonConflicted) == 0;
         if ((c4options.flags & kC4IncludeBodies) == 0)
             options.contentOption = kMetaOnly;
+        else
+            options.contentOption = kEntireBody;
         return options;
     }
 

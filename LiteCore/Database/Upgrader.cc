@@ -125,7 +125,7 @@ namespace litecore {
                 Log("Importing doc '%.*s'", SPLAT(docID));
                 try {
                     Retained<Document> newDoc(
-                                    _newDB->documentFactory().newDocumentInstance(docID));
+                            _newDB->documentFactory().newDocumentInstance(docID, kEntireBody));
                     copyRevisions(docKey, newDoc);
                 } catch (const error &x) {
                     // Add docID to exception message:

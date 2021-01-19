@@ -103,24 +103,26 @@ namespace c4Internal {
                 // It's a version vector; look for an exact match:
                 VersionVector vers = VersionVector::fromASCII(revID, myPeerID());
                 alloc_slice binary = vers.asBinary();
-                while (auto rev = _doc.remoteRevision(remote)) {
+                while (auto rev = _doc.loadRemoteRevision(remote)) {
                     if (rev->revID == binary)
                         return {{remote, *rev}};
-                    remote = _doc.nextRemoteID(remote);
+                    remote = _doc.loadNextRemoteID(remote);
                 }
             } else {
                 // It's a single version, so find a vector that starts with it:
                 Version vers = _parseRevID(revID).asVersion();
-                while (auto rev = _doc.remoteRevision(remote)) {
+                while (auto rev = _doc.loadRemoteRevision(remote)) {
                     if (rev->revID && rev->version() == vers)
                         return {{remote, *rev}};
-                    remote = _doc.nextRemoteID(remote);
+                    remote = _doc.loadNextRemoteID(remote);
                 }
             }
             return nullopt;
         }
 
 
+        // intentionally does not load other revisions ... throws if they're not in memory.
+        // Calling code should be fixed to load the doc with all revisions using c4db_getDoc2.
         bool _selectRemote(RemoteID remote) {
             if (auto rev = _doc.remoteRevision(remote); rev && rev->revID) {
                 return _selectRemote(remote, *rev);
@@ -227,7 +229,7 @@ namespace c4Internal {
 
 
         alloc_slice remoteAncestorRevID(C4RemoteID remote) override {
-            if (auto rev = _doc.remoteRevision(RemoteID(remote)))
+            if (auto rev = _doc.loadRemoteRevision(RemoteID(remote)))
                 return rev->revID.expanded();
             return nullptr;
         }
@@ -527,8 +529,8 @@ namespace c4Internal {
 #pragma mark - FACTORY:
 
 
-    Retained<Document> VectorDocumentFactory::newDocumentInstance(C4Slice docID) {
-        return new VectorDocument(database(), docID, kEntireBody);
+    Retained<Document> VectorDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
+        return new VectorDocument(database(), docID, c);
     }
 
 

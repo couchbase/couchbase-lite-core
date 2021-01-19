@@ -626,8 +626,11 @@ namespace c4Internal {
 #pragma mark - FACTORY:
 
 
-    Retained<Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID) {
-        return new TreeDocument(database(), docID);
+    Retained<Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
+        if (c != kMetaOnly)
+            return new TreeDocument(database(), docID);
+        else
+            return newLeafDocumentInstance(docID, nullslice, false);
     }
 
     Retained<Document> TreeDocumentFactory::newDocumentInstance(const Record &rec) {
