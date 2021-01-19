@@ -23,6 +23,7 @@
 #include <string.h>
 #include <vector>
 #include <sstream>
+#include <string_view>
 
 namespace litecore {
 
@@ -77,17 +78,17 @@ namespace litecore {
     void replace(std::string &str, char oldChar, char newChar);
 
     /** Replaces all occurrences of `oldStr` with `newStr`. */
-    void replace(std::string &str, string_view oldStr, string_view newStr);
+    void replace(std::string &str, std::string_view oldStr, std::string_view newStr);
 
     /** Returns true if `str` begins with the string `prefix`. */
-    bool hasPrefix(string_view str, string_view prefix) noexcept;
+    bool hasPrefix(std::string_view str, std::string_view prefix) noexcept;
 
     /** Returns true if `str` ends with the string `prefix`. */
-    bool hasSuffix(string_view str, string_view suffix) noexcept;
+    bool hasSuffix(std::string_view str, std::string_view suffix) noexcept;
 
     /** Returns true if `str` ends with the string `prefix`, treating ASCII upper/lower case
         letters as equivalent. */
-    bool hasSuffixIgnoringCase(string_view str, string_view suffix) noexcept;
+    bool hasSuffixIgnoringCase(std::string_view str, std::string_view suffix) noexcept;
 
     /** Compares strings, treating ASCII upper/lowercase letters equivalent. Returns -1, 0 or 1. */
     int compareIgnoringCase(const std::string &a, const std::string &b);

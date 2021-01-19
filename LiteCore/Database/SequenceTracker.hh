@@ -22,7 +22,6 @@
 #include "Logging.hh"
 #include <list>
 #include <unordered_map>
-#include <vector>
 #include <functional>
 
 namespace c4Internal {

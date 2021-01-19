@@ -25,8 +25,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
-#include <string_view>
-
 
 namespace litecore {
     using fleece::slice;
@@ -37,7 +35,6 @@ namespace litecore {
     using fleece::Retained;
 
     using std::string;
-    using std::string_view;
 
     // Database sequence number
     typedef uint64_t sequence_t;

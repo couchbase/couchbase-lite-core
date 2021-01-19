@@ -22,6 +22,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include <atomic>
+#include <vector>
 
 namespace fleece::impl {
     class ArrayIterator;

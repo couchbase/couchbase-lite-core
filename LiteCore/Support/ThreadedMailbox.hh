@@ -25,6 +25,7 @@
 #include <string>
 #include <thread>
 #include <functional>
+#include <vector>
 
 namespace litecore { namespace actor {
     using fleece::RefCounted;

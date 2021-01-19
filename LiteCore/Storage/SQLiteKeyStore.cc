@@ -565,7 +565,7 @@ namespace litecore {
     }
 
 
-    unsigned SQLiteKeyStore::expireRecords(ExpirationCallback callback) {
+    unsigned SQLiteKeyStore::expireRecords(optional<ExpirationCallback> callback) {
         if (!mayHaveExpiration())
             return 0;
         expiration_t t = now();
@@ -578,7 +578,7 @@ namespace litecore {
             none = true;
             while (_findExpStmt->executeStep()) {
                 none = false;
-                callback(columnAsSlice(_findExpStmt->getColumn(0)));
+                (*callback)(columnAsSlice(_findExpStmt->getColumn(0)));
             }
         }
         if (!none) {

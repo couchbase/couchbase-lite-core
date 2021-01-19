@@ -21,7 +21,6 @@
 #include "RefCounted.hh"
 #include "RecordEnumerator.hh"
 #include "function_ref.hh"
-#include <functional>
 #include <optional>
 #include <vector>
 
@@ -83,7 +82,7 @@ namespace litecore {
         /** Creates a database query object. */
         virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
 
-        using WithDocBodyCallback = std::function<alloc_slice(const RecordLite&)>;
+        using WithDocBodyCallback = function_ref<alloc_slice(const RecordLite&)>;
 
         /** Invokes the callback once for each document found in the database.
             The callback is given the docID, body and sequence, and returns a string.
@@ -152,11 +151,11 @@ namespace litecore {
         /** Returns the nearest future time at which a record will expire, or 0 if none. */
         virtual expiration_t nextExpiration() =0;
 
-        using ExpirationCallback = std::function<void(slice docID)>;
+        using ExpirationCallback = function_ref<void(slice docID)>;
 
         /** Deletes all records whose expiration time is in the past.
             @return  The number of records deleted */
-        virtual unsigned expireRecords(ExpirationCallback =nullptr) =0;
+        virtual unsigned expireRecords(std::optional<ExpirationCallback> =std::nullopt) =0;
 
 
         //////// Indexing:

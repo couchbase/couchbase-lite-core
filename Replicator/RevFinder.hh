@@ -22,6 +22,7 @@
 #include "ReplicatorTuning.hh"
 #include "ReplicatorTypes.hh"
 #include <deque>
+#include <vector>
 
 namespace litecore { namespace repl {
 

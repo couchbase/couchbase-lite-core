@@ -24,6 +24,7 @@
 #include "fleece/Fleece.hh"
 #include "InstanceCounted.hh"
 #include "Stopwatch.hh"
+#include <vector>
 
 namespace litecore { namespace repl {
 

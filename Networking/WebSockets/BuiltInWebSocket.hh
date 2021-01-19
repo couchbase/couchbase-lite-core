@@ -13,6 +13,7 @@
 #include <exception>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 extern "C" {
     /** Call this to use BuiltInWebSocket as the WebSocket implementation. */

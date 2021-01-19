@@ -22,9 +22,7 @@
 #include "fleece/Fleece.hh"
 #include "fleece/Mutable.hh"
 #include <iosfwd>
-#include <memory>
 #include <optional>
-#include <vector>
 
 namespace litecore {
     class KeyStore;
@@ -120,6 +118,7 @@ namespace litecore {
         ///          \ref setProperties. \ref setRevID or \ref save will invalidate those pointers.
         Revision currentRevision() const FLPURE             {return _current;}
 
+        /// The current revision's encoded Fleece data.
         slice currentRevisionData() const;
 
         //---- Modifying the document:

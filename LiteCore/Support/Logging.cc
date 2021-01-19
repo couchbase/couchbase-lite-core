@@ -24,6 +24,7 @@
 #include "FilePath.hh"
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <mutex>
 #include <ctime>
 

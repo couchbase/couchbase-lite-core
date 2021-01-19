@@ -21,6 +21,7 @@
 #include "QueryParser.hh"
 #include <mutex>
 #include <atomic>
+#include <string_view>
 
 namespace fleece::impl {
     class ArrayIterator;
@@ -60,7 +61,7 @@ namespace litecore {
         virtual bool setExpiration(slice key, expiration_t) override;
         virtual expiration_t getExpiration(slice key) override;
         virtual expiration_t nextExpiration() override;
-        virtual unsigned expireRecords(ExpirationCallback =nullptr) override;
+        virtual unsigned expireRecords(std::optional<ExpirationCallback>) override;
 
         bool supportsIndexes(IndexSpec::Type t) const override               {return true;}
         bool createIndex(const IndexSpec&) override;
@@ -117,11 +118,11 @@ namespace litecore {
         std::string subst(const char *sqlTemplate) const;
         void setLastSequence(sequence_t seq);
         void incrementPurgeCount();
-        void createTrigger(string_view triggerName,
-                           string_view triggerSuffix,
-                           string_view operation,
+        void createTrigger(std::string_view triggerName,
+                           std::string_view triggerSuffix,
+                           std::string_view operation,
                            std::string when,
-                           string_view statements);
+                           std::string_view statements);
         bool createValueIndex(const IndexSpec&);
         bool createIndex(const IndexSpec&,
                               const std::string &sourceTableName,

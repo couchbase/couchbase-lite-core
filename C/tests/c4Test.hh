@@ -28,8 +28,8 @@ using namespace fleece;
 
 #include "TestsCommon.hh"
 #include <function_ref.hh>
-#include <functional>
 #include <set>
+#include <vector>
 
 
 std::ostream& operator<< (std::ostream &out, C4Error error);
@@ -225,7 +225,7 @@ public:
                             std::string idPrefix ="",
                             double timeout =0.0,
                             bool verbose =false);
-    bool readFileByLines(std::string path, std::function<bool(FLSlice)>);
+    bool readFileByLines(std::string path, function_ref<bool(FLSlice)>);
     unsigned importJSONLines(std::string path, double timeout =0.0, bool verbose =false,
                              C4Database* database = nullptr);
 

@@ -25,8 +25,6 @@
 #include "fleece/Fleece.h"
 #include "c4Base.h"
 #include "c4ExceptionUtils.hh"
-#include "function_ref.hh"
-#include <functional>
 
 using namespace litecore;
 

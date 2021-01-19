@@ -530,7 +530,7 @@ fleece::alloc_slice C4Test::readFile(std::string path) {
 }
 
 
-bool C4Test::readFileByLines(string path, function<bool(FLSlice)> callback) {
+bool C4Test::readFileByLines(string path, function_ref<bool(FLSlice)> callback) {
     INFO("Reading lines from " << path);
     fstream fd(path.c_str(), ios_base::in);
     REQUIRE(fd);

@@ -72,11 +72,14 @@ namespace litecore {
     void Housekeeper::_doExpiration() {
         LogToAt(DBLog, Verbose, "Housekeeper: expiring documents...");
         _bgdb->useInTransaction([&](DataFile* dataFile, SequenceTracker *sequenceTracker) -> bool {
-            KeyStore::ExpirationCallback callback;
             auto &keyStore = dataFile->defaultKeyStore();
-            if (sequenceTracker)
-                callback = [&](slice docID) { sequenceTracker->documentPurged(docID); };
-            keyStore.expireRecords(callback);
+            if (sequenceTracker) {
+                keyStore.expireRecords([&](slice docID) {
+                    sequenceTracker->documentPurged(docID);
+                });
+            } else {
+                keyStore.expireRecords();
+            }
             return true;
         });
 

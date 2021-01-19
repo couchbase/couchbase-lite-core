@@ -22,12 +22,21 @@
 #include "BlobStore.hh"
 #include "StringUtil.hh"
 #include "Doc.hh"
+#include "RevID.hh"
 #include "DeepIterator.hh"
 
 using namespace fleece;
 using namespace fleece::impl;
 
 namespace c4Internal {
+
+    void Document::setRevID(revid id) {
+        if (id.size > 0)
+            _revIDBuf = id.expanded();
+        else
+            _revIDBuf = nullslice;
+        revID = _revIDBuf;
+    }
 
     alloc_slice Document::bodyAsJSON(bool canonical) {
         if (!loadSelectedRevBody())
@@ -185,5 +194,11 @@ namespace c4Internal {
         else
             return true;
     }
+
+
+    alloc_slice DocumentFactory::revIDFromVersion(slice version) const {
+        return revid(version).expanded();
+    }
+
 
 }

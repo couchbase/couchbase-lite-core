@@ -19,7 +19,7 @@
 #pragma once
 #include "RefCounted.hh"
 #include "fleece/Fleece.hh"
-#include <iostream>
+#include <iosfwd>
 #include <memory>
 #include <mutex>
 #include <time.h>

@@ -26,7 +26,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <atomic> // for std::atomic_uint
-#include <functional> // for std::function
 #ifdef check
 #undef check
 #endif

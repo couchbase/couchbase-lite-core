@@ -18,15 +18,8 @@
 
 #pragma once
 #include "CookieStore.hh"
-#include "fleece/slice.hh"
-#include <mutex>
-#include <unordered_map>
 
 struct C4Database;
-
-namespace litecore { namespace net {
-    class CookieStore;
-} }
 
 namespace litecore { namespace repl {
     using namespace fleece;

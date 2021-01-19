@@ -20,16 +20,15 @@
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "Database.hh"
-#include "DataFile.hh"
 #include "BlobStore.hh"
-#include "RevID.hh"
 #include "InstanceCounted.hh"
 #include "RefCounted.hh"
-#include "Logging.hh"
 #include "function_ref.hh"
+#include <vector>
 
 namespace litecore {
     class Record;
+    class revid;
 }
 
 namespace fleece { namespace impl {
@@ -202,13 +201,7 @@ namespace c4Internal {
             destructExtraInfo(extraInfo);
         }
 
-        void setRevID(revid id) {
-            if (id.size > 0)
-                _revIDBuf = id.expanded();
-            else
-                _revIDBuf = nullslice;
-            revID = _revIDBuf;
-        }
+        void setRevID(revid);
 
         void clearSelectedRevision() noexcept {
             _selectedRevIDBuf = nullslice;
@@ -249,9 +242,7 @@ namespace c4Internal {
             return docBody;
         }
 
-        virtual alloc_slice revIDFromVersion(slice version) const {
-            return revid(version).expanded();
-        }
+        virtual alloc_slice revIDFromVersion(slice version) const;
 
         virtual bool isFirstGenRevID(slice revID) const {
             return false;

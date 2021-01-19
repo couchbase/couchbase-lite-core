@@ -22,7 +22,6 @@
 #include "c4.hh"
 #include "c4Private.h"
 #include "access_lock.hh"
-#include <functional>
 #include <vector>
 
 struct C4DocumentInfo;

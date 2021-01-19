@@ -23,7 +23,6 @@
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
 #include <atomic>
-#include <map>
 #include <string>
 
 namespace litecore { namespace websocket {

@@ -18,7 +18,7 @@
 
 #pragma once
 #include <ctime>
-#include <iostream>
+#include <ios>
 #include <map>
 #include <optional>
 #include <stdint.h>

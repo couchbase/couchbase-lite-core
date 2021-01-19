@@ -734,7 +734,7 @@ namespace c4Internal {
                 });
             });
         } else {
-            return _dataFile->defaultKeyStore().expireRecords(nullptr);
+            return _dataFile->defaultKeyStore().expireRecords();
         }
     }
 
