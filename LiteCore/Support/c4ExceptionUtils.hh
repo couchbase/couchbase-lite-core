@@ -52,14 +52,6 @@ namespace c4Internal {
             C4WarnError("Exception caught in %s: %s", __func__, x.what()); \
         }
 
-    #define catchTripleDot() \
-        catch (...) { \
-            C4WarnError("Non-exception type error caught in %s", __func__); \
-        }
-
-    #define catchEverything() \
-            catchExceptions() \
-            catchTripleDot()
 
     #define checkParam(TEST, MSG, OUTERROR) \
         ((TEST) || (c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR(MSG), OUTERROR), false))

@@ -234,7 +234,7 @@ void c4cert_getValidTimespan(C4Cert* cert C4NONNULL,
                 *outExpires = C4Timestamp(difftime(tExpires, 0) * 1000.0);
             return;
         }
-    } catchEverything()
+    } catchExceptions()
     
     if (outCreated)
         *outCreated = 0;

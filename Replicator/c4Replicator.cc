@@ -66,10 +66,6 @@ bool c4repl_isValidDatabaseName(C4String dbName) C4API {
         && islower(name[0])
         && !slice(name).findByteNotIn("abcdefghijklmnopqrstuvwxyz0123456789_$()+-/"_sl);
 
-    if(!valid) {
-        WarnError("%.*s is not a valid database name for replication", SPLAT(dbName));
-    }
-
     return valid;
 }
 
@@ -96,21 +92,17 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
 
     auto colon = str.findByteOrEnd(':');
     if (!colon) {
-        // Can't log URL yet unless we add a function to strip out a potential password
-        WarnError("c4address_fromURL: Invalid URL (missing colon)");
         return false;
     }
 
     address->scheme = slice(str.buf, colon);
     if (!isValidScheme(address->scheme)) {
-        WarnError("c4address_fromURL: Invalid URL scheme '%.*s' (must be ws or wss)", SPLAT(address->scheme));
         return false;
     }
 
     address->port = defaultPortForScheme(address->scheme);
     str.setStart(colon);
     if (!str.hasPrefix("://"_sl)) {
-        WarnError("c4address_fromURL: Invalid URL (missing :// after scheme)");
         return false;
     }
 
@@ -119,13 +111,11 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
         // IPv6 address in URL is bracketed (RFC 2732):
         auto endBr = str.findByte(']');
         if (!endBr) {
-            WarnError("c4address_fromURL: Invalid URL (unmatched '[' in IPv6 address)");
             return false;
         }
 
         address->hostname = slice(&str[1], endBr);
         if (address->hostname.size == 0) {
-            WarnError("c4address_fromURL: Invalid URL (empty hostname inside '[]')");
             return false;
         }
 
@@ -137,7 +127,6 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
     colon = str.findByteOrEnd(':');
     auto pathStart = str.findByteOrEnd('/');
     if (str.findByteOrEnd('@') < pathStart) {
-        WarnError("c4address_fromURL: Invalid URL (inline password not allowed)");
         return false;
     }
 
@@ -166,7 +155,6 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
 
     if (dbName) {
         if (pathStart >= str.end()) {
-            WarnError("c4address_fromURL: Invalid URL '%.*s' (dbName parameter passed, but missing path element)", SPLAT(url));
             return false;
         }
 
@@ -217,8 +205,11 @@ C4Replicator* c4repl_new(C4Database* db,
             return nullptr;
 
         if (!params.socketFactory) {
-            if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError))
+            if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError)) {
+                Warn("c4repl_new: Invalid address or database name");
                 return nullptr;
+            }
+
             if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
                 Warn("POSSIBLE SECURITY ISSUE: It looks like you're connecting to Sync Gateway's "
                      "admin port (4985) -- this is usually a bad idea. By default this port is "

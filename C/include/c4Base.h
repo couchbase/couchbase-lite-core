@@ -142,8 +142,8 @@ void* c4base_retain(void *obj) C4API;
 void c4base_release(void *obj) C4API;
 
 // These types are reference counted and have c4xxx_retain / c4xxx_release functions:
-// NOTE that in debug builds retain and release cann throw exceptions despite being
-// marked noexcept.  Release builds are exception free.
+// NOTE that in debug builds retain and release throw exceptions, but this is marked noexcept
+// anyway so that the process will terminate in invalid conditions
 static inline C4Cert* c4cert_retain(C4Cert* r) C4API {return (C4Cert*)c4base_retain(r);}
 static inline void    c4cert_release(C4Cert* r) C4API {c4base_release(r);}
 static inline C4KeyPair* c4keypair_retain(C4KeyPair* r) C4API {return (C4KeyPair*)c4base_retain(r);}

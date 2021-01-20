@@ -43,7 +43,6 @@ namespace litecore { namespace repl {
 
     void DatabaseCookies::saveChanges() {
         if (!_store->changed()) {
-            WriteVerbose("Cookie Store unchanged, skipping save...");
             return;
         }
 

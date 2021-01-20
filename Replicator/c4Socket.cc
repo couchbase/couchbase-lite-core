@@ -37,14 +37,6 @@ using namespace fleece;
 using namespace litecore;
 using namespace litecore::net;
 
-#define catchAndClose() \
-    catch (const std::exception &x) { \
-        closeWithException(x); \
-    } catch (...) { \
-        WarnError("Non-exception error type caught, closing socket..."); \
-        close(kCodeUnexpectedCondition, "Internal exception"_sl); \
-    }
-
 namespace litecore { namespace repl {
 
     using namespace websocket;
@@ -112,7 +104,7 @@ namespace litecore { namespace repl {
         if (_factory.dispose) {
             try {
                 _factory.dispose(this);
-            } catchEverything()
+            } catchExceptions()
         }
     }
 
@@ -156,22 +148,16 @@ namespace litecore { namespace repl {
         WebSocketImpl::connect();
         if (_factory.open) {
             net::Address c4addr(url());
-            try {
-                _factory.open(this, &c4addr, options().data(), _factory.context);
-            } catchAndClose()
+            _factory.open(this, &c4addr, options().data(), _factory.context);
         }
     }
 
     void C4SocketImpl::requestClose(int status, fleece::slice message) {
-        try {
-            _factory.requestClose(this, status, message);
-        } catchEverything()
+        _factory.requestClose(this, status, message);
     }
 
     void C4SocketImpl::closeSocket() {
-        try {
-            _factory.close(this);
-        } catchEverything()
+        _factory.close(this);
     }
 
     void C4SocketImpl::closeWithException(const std::exception &x) {
@@ -183,15 +169,11 @@ namespace litecore { namespace repl {
     }
 
     void C4SocketImpl::sendBytes(alloc_slice bytes) {
-        try {
-            _factory.write(this, C4SliceResult(bytes));
-        } catchAndClose()
+        _factory.write(this, C4SliceResult(bytes));
     }
 
     void C4SocketImpl::receiveComplete(size_t byteCount) {
-        try {
-            _factory.completedReceive(this, byteCount);
-        } catchAndClose()
+        _factory.completedReceive(this, byteCount);
     }
 
 } }
@@ -260,7 +242,7 @@ void c4socket_closed(C4Socket *socket, C4Error error) C4API {
 
     try {
         internal(socket)->onClose(status);
-    } catchEverything()
+    } catchExceptions()
 }
 
 void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API {
