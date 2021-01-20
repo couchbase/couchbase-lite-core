@@ -317,6 +317,7 @@ extern "C" {
 
     typedef C4_ENUM(uint32_t, C4DocumentVersioning) {
         kC4RevisionTrees,           ///< Revision trees
+        kC4VectorVersioning         ///< Version vectors
     };
 
     typedef const char* C4StorageEngine;

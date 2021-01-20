@@ -180,6 +180,7 @@ namespace c4Internal {
         std::unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         std::unordered_set<std::string> collectBlobs();
         void removeUnusedBlobs(const std::unordered_set<std::string> &used);
+        void upgradeToVersionVectors(Transaction&);
 
         const string                _name;
         const string                _parentDirectory;

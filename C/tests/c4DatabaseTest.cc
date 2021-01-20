@@ -875,3 +875,8 @@ TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
 }
+
+
+TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
+    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
+}

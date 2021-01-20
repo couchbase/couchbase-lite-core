@@ -61,7 +61,7 @@ namespace c4Internal {
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
     /*static*/ FilePath Database::findOrCreateBundle(const string &path,
                                                      bool canCreate,
-                                 C4StorageEngine &storageEngine)
+                                                     C4StorageEngine &storageEngine)
     {
         FilePath bundle(path, "");
         bool createdDir = (canCreate && bundle.mkdir());
@@ -176,8 +176,18 @@ namespace c4Internal {
         auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
         Record doc = info.get(slice("versioning"));
         if (doc.exists()) {
-            if (doc.bodyAsUInt() != (uint64_t)inConfig.versioning)
-                error::_throw(error::WrongFormat);
+            if (doc.bodyAsUInt() != (uint64_t)inConfig.versioning) {
+                if (!(_config.flags & (kC4DB_ReadOnly |kC4DB_NoUpgrade))
+                        && inConfig.versioning == kC4VectorVersioning) {
+                    doc.setBodyAsUInt((uint64_t)inConfig.versioning);
+                    Transaction t(*_dataFile);
+                    info.set(doc, t);
+                    upgradeToVersionVectors(t);
+                    t.commit();
+                } else {
+                    error::_throw(error::WrongFormat);
+                }
+            }
         } else if (_config.flags & kC4DB_Create) {
             // First-time initialization:
             doc.setBodyAsUInt((uint64_t)inConfig.versioning);
@@ -750,18 +760,5 @@ namespace c4Internal {
             _housekeeper->documentExpirationChanged(expiration);
         return true;
     }
-
-
-#if 0 // unused
-    bool Database::mustUseVersioning(C4DocumentVersioning requiredVersioning,
-                                     C4Error *outError) noexcept
-    {
-        if (config.versioning == requiredVersioning)
-            return true;
-        recordError(LiteCoreDomain, kC4ErrorUnsupported, outError);
-        return false;
-    }
-#endif
-
 
 }
