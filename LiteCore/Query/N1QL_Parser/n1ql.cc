@@ -4222,7 +4222,7 @@ YY_RULE(int) yy_from(yycontext *yy)
 {  int yypos0= yy->__pos, yythunkpos0= yy->__thunkpos;  yyDo(yy, yyPush, 2, 0);
   yyprintf((stderr, "%s\n", "from"));  if (!yy_FROM(yy)) goto l295;  if (!yy_dataSource(yy)) goto l295;  yyDo(yy, yySet, -2, 0);  yyDo(yy, yy_1_from, yy->__begin, yy->__end);
   l296:;	
-  {  int yypos297= yy->__pos, yythunkpos297= yy->__thunkpos;  if (!yy_join(yy)) goto l297;  yyDo(yy, yySet, -1, 0);  yyDo(yy, yy_2_from, yy->__begin, yy->__end);  goto l296;
+  {  int yypos297= yy->__pos, yythunkpos297= yy->__thunkpos;  if (!yy__(yy)) goto l297;  if (!yy_join(yy)) goto l297;  yyDo(yy, yySet, -1, 0);  yyDo(yy, yy_2_from, yy->__begin, yy->__end);  goto l296;
   l297:;	  yy->__pos= yypos297; yy->__thunkpos= yythunkpos297;
   }  yyDo(yy, yy_3_from, yy->__begin, yy->__end);
   yyprintf((stderr, "  ok   %s @ %s\n", "from", yy->__buf+yy->__pos));  yyDo(yy, yyPop, 2, 0);
