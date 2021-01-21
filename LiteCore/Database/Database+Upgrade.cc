@@ -17,6 +17,7 @@
 //
 
 #include "Database.hh"
+#include "NuDocument.hh"
 #include "RecordEnumerator.hh"
 #include "RevID.hh"
 #include "VersionedDocument.hh"
@@ -29,6 +30,17 @@ namespace c4Internal {
 
     // The fake peer/source ID used for versions migrated from revIDs.
     static constexpr peerID kLegacyPeerID {0x7777777};
+
+
+    static const Rev* commonAncestor(const Rev *a, const Rev *b) {
+        if (a && b) {
+            for (auto rev = b; rev; rev = rev->parent) {
+                if (rev->isAncestorOf(a))
+                    return rev;
+            }
+        }
+        return nullptr;
+    }
 
 
     void Database::upgradeToVersionVectors(Transaction &transaction) {
@@ -46,18 +58,32 @@ namespace c4Internal {
             const Record &rec = e.record();
             VersionedDocument doc(defaultKeyStore(), rec);
             auto currentRev = doc.currentRevision();
+            auto remoteRev = doc.latestRevisionOnRemote(RevTree::kDefaultRemoteID);
+            auto baseRev = commonAncestor(currentRev, remoteRev);
 
-            // Make up a version:
+            // Create a version vector:
+            // - If there's a remote base revision, use its generation with the legacy peer ID.
+            // - Add the current rev's generation (relative to the remote base, if any)
+            //   with the local 'me' peer ID.
             VersionVector vv;
-            vv.add({currentRev->revID.generation(), kLegacyPeerID});
-            //TODO: If there is an earlier server rev, use it as the base version
+            int localChanges = int(currentRev->revID.generation());
+            if (baseRev) {
+                vv.add({baseRev->revID.generation(), kLegacyPeerID});
+                localChanges -= int(baseRev->revID.generation());
+            }
+            if (localChanges > 0)
+                vv.add({generation(localChanges), kMePeerID});
             auto binaryVersion = vv.asBinary();
+
+            // Propagate any saved remote revisions to the new document:
+            alloc_slice extra = upgradeRemoteRevsToVersionVectors(doc, binaryVersion);
 
             // Now save:
             RecordLite newRec;
             newRec.key = doc.docID();
             newRec.flags = doc.flags();
             newRec.body = currentRev->body();
+            newRec.extra = extra;
             newRec.version = binaryVersion;
             newRec.sequence = doc.sequence();
             newRec.updateSequence = false;
@@ -65,13 +91,52 @@ namespace c4Internal {
             defaultKeyStore().set(newRec, transaction);
 
             ++docCount;
-            LogToAt(DBLog, Verbose, "   Upgraded doc '%.*s', %s -> [%s]",
+            LogToAt(DBLog, Verbose, "  - Upgraded doc '%.*s', %s -> [%s]",
                     SPLAT(rec.key()),
                     revid(rec.version()).str().c_str(),
                     string(vv.asASCII()).c_str());
         }
 
         LogTo(DBLog, "*** %llu documents upgraded, now committing changes... ***", docCount);
+    }
+
+
+    alloc_slice Database::upgradeRemoteRevsToVersionVectors(VersionedDocument &doc,
+                                                            alloc_slice currentVersion) {
+        auto &remoteRevs = doc.remoteRevisions();
+        if (remoteRevs.empty())
+            return nullslice;
+
+        // Instantiate a NuDocument for this document (without reading the database):
+        Record fakeRec(doc.docID());
+        auto currentRev = doc.currentRevision();
+        fakeRec.setBody(currentRev->body());
+        fakeRec.setVersion(currentVersion);
+        NuDocument nuDoc(defaultKeyStore(), fakeRec);
+
+        // Add each remote revision that's a conflict:
+        for (auto i = doc.remoteRevisions().begin(); i != doc.remoteRevisions().end(); ++i) {
+            auto remoteID = RemoteID(i->first);
+            const Rev *rev = i->second;
+            Revision nuRev;
+            alloc_slice binaryVers;
+            if (rev == currentRev) {
+                nuRev = nuDoc.currentRevision();
+            } else {
+                if (rev->body())
+                    nuRev.properties = fleece::Value::fromData(rev->body(), kFLTrusted).asDict();
+                nuRev.flags = {};
+                if (rev->flags & Rev::kDeleted)        nuRev.flags |= DocumentFlags::kDeleted;
+                if (rev->flags & Rev::kHasAttachments) nuRev.flags |= DocumentFlags::kHasAttachments;
+
+                VersionVector vv;
+                vv.add({rev->revID.generation(), kLegacyPeerID});
+                binaryVers = vv.asBinary();
+                nuRev.revID = revid(binaryVers);
+            }
+            nuDoc.setRemoteRevision(remoteID, nuRev);
+        }
+        return nuDoc.encodeExtra();
     }
 
 

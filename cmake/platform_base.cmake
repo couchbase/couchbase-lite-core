@@ -35,6 +35,7 @@ function(set_litecore_source_base)
         LiteCore/BlobStore/Stream.cc
         LiteCore/Database/BackgroundDB.cc
         LiteCore/Database/Database.cc
+        LiteCore/Database/Database+Upgrade.cc
         LiteCore/Database/Document.cc
         LiteCore/Database/Housekeeper.cc
         LiteCore/Database/LeafDocument.cc

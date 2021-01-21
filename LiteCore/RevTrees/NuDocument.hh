@@ -168,6 +168,7 @@ namespace litecore {
         /// \note  Most errors are thrown as exceptions, but a conflict is returned as `kConflict`.
         SaveResult save(Transaction &t);
 
+        alloc_slice encodeExtra();
 
         //---- Revisions of different remotes:
 
@@ -215,6 +216,7 @@ namespace litecore {
         MutableDict mutableRevisionDict(RemoteID remoteID);
         Dict originalProperties() const;
         std::pair<alloc_slice,alloc_slice> encodeBody(FLEncoder);
+        alloc_slice encodeExtra(FLEncoder);
         bool propertiesChanged() const;
         void clearPropertiesChanged();
         void updateDocFlags();

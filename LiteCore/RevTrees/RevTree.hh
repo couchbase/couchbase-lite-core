@@ -56,8 +56,6 @@ namespace litecore {
         bool isAncestorOf(const Rev* NONNULL) const FLPURE;
         bool isLatestRemoteRevision() const FLPURE;
 
-        bool operator< (const Rev& rev) const FLPURE;
-
         enum Flags : uint8_t {
             kNoFlags        = 0x00,
             kDeleted        = 0x01, /**< Is this revision a deletion/tombstone? */
@@ -180,8 +178,11 @@ namespace litecore {
         static constexpr RemoteID kNoRemoteID = 0;
         static constexpr RemoteID kDefaultRemoteID = 1;     // 1st (& usually only) remote server
 
+        using RemoteRevMap = std::unordered_map<RemoteID, const Rev*>;
+
         const Rev* latestRevisionOnRemote(RemoteID);
         void setLatestRevisionOnRemote(RemoteID, const Rev*);
+        const RemoteRevMap& remoteRevisions() const         {return _remoteRevs;}
 
 #if DEBUG
         void dump();
@@ -207,8 +208,6 @@ namespace litecore {
         bool confirmLeaf(Rev* testRev NONNULL);
         void compact();
         void checkForResolvedConflict();
-
-        using RemoteRevMap = std::unordered_map<RemoteID, const Rev*>;
 
         bool                     _sorted {true};        // Is _revs currently sorted?
         std::vector<Rev*>        _revs;                 // Revs in sorted order

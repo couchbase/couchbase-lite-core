@@ -332,6 +332,7 @@ c4doc_hasOldMetaProperties
 c4doc_containingValue
 c4doc_encodeStrippingOldMetaProperties
 c4doc_getRemoteAncestor
+c4doc_setRemoteAncestor
 c4doc_getBlobData
 c4doc_getSingleRevision
 c4doc_generateID

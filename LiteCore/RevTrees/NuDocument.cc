@@ -250,9 +250,9 @@ namespace litecore {
         if (auto &newRev = *optRev; optRev) {
             // Creating/updating a revision (possibly the local one):
             MutableDict revDict = mutableRevisionDict(remote);
+            if (!newRev.revID)
+                error::_throw(error::CorruptRevisionData);
             if (auto oldRevID = revDict[kMetaRevID].asData(); newRev.revID != oldRevID) {
-                if (!newRev.revID)
-                    error::_throw(error::CorruptRevisionData);
                 revDict[kMetaRevID].setData(newRev.revID);
                 _changed = true;
             }
@@ -457,50 +457,57 @@ namespace litecore {
 
 
     pair<alloc_slice,alloc_slice> NuDocument::encodeBody(FLEncoder flEnc) {
-        alloc_slice body, extra;
-        SharedEncoder enc(flEnc);
-
+        alloc_slice body;
         if (!_current.properties.empty()) {
+            SharedEncoder enc(flEnc);
             enc.writeValue(_current.properties);
             body = enc.finish();
         }
+        return {body, encodeExtra(flEnc)};
+    }
 
+
+    alloc_slice NuDocument::encodeExtra(FLEncoder flEnc) {
         unsigned nRevs = _revisions.count();
-        if (nRevs > 0) {
-            enc.reset();
-            if (nRevs == 1) {
-                enc.writeValue(_revisions);
-            } else {
-                // If there are multiple revisions, de-duplicate as much as possible, including entire
-                // revision dicts, or top-level property values in each revision.
-                // Revision dicts will not be pointer-equal if revisions have been added, so we have
-                // to compare them by revid. (This is O(n^2), but the number of revs is small.)
-                enc.beginArray();
-                DeDuplicateEncoder ddenc(enc);
-                for (unsigned i = 0; i < nRevs; i++) {
-                    Value rev = _revisions[i];
-                    if (Dict revDict = rev.asDict(); revDict) {
-                        // De-duplicate the revision ID:
-                        slice revid = revDict[kMetaRevID].asData();
-                        DebugAssert(revid);
-                        for (unsigned j = 0; j < i; j++) {
-                            auto revj = _revisions[j];
-                            if (revj == rev || revj.asDict()[kMetaRevID].asData() == revid) {
-                                DebugAssert(revj.isEqual(rev), "RevIDs match but revisions don't");
-                                rev = revj;
-                                break;
-                            }
+        if (nRevs == 0)
+            return nullslice;
+        SharedEncoder enc(flEnc);
+        enc.reset();
+        if (nRevs == 1) {
+            enc.writeValue(_revisions);
+        } else {
+            // If there are multiple revisions, de-duplicate as much as possible, including entire
+            // revision dicts, or top-level property values in each revision.
+            // Revision dicts will not be pointer-equal if revisions have been added, so we have
+            // to compare them by revid. (This is O(n^2), but the number of revs is small.)
+            enc.beginArray();
+            DeDuplicateEncoder ddenc(enc);
+            for (unsigned i = 0; i < nRevs; i++) {
+                Value rev = _revisions[i];
+                if (Dict revDict = rev.asDict(); revDict) {
+                    // De-duplicate the revision ID:
+                    slice revid = revDict[kMetaRevID].asData();
+                    DebugAssert(revid);
+                    for (unsigned j = 0; j < i; j++) {
+                        auto revj = _revisions[j];
+                        if (revj == rev || revj.asDict()[kMetaRevID].asData() == revid) {
+                            DebugAssert(revj.isEqual(rev), "RevIDs match but revisions don't");
+                            rev = revj;
+                            break;
                         }
                     }
-                    // De-duplicate the revision dict itself, and the properties dict in it (depth 2)
-                    ddenc.writeValue(rev, 2);
                 }
-                enc.endArray();
+                // De-duplicate the revision dict itself, and the properties dict in it (depth 2)
+                ddenc.writeValue(rev, 2);
             }
-            extra = enc.finish();
+            enc.endArray();
         }
+        return enc.finish();
+    }
 
-        return {body, extra};
+
+    alloc_slice NuDocument::encodeExtra() {
+        return _encoder ? encodeExtra(_encoder) : encodeExtra(Encoder(sharedKeys()));
     }
 
 

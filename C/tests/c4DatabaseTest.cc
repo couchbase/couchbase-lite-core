@@ -880,3 +880,114 @@ TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
 TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
 }
+
+
+static void setRemoteRev(C4Database *db, slice docID, slice revID, C4RemoteID remote) {
+    C4Error error;
+    C4Document *doc = c4db_getDoc(db, docID, true, kDocGetAll, &error);
+    REQUIRE(doc);
+    REQUIRE(c4doc_setRemoteAncestor(doc, remote, revID, &error));
+    REQUIRE(c4doc_save(doc, 0, &error));
+    c4doc_release(doc);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[Database][Upgrade][C]") {
+    if (!isRevTrees())
+        return;
+
+    {
+        TransactionHelper t(db);
+        createNumberedDocs(5);
+        // Add a deleted doc to make sure it's skipped by default:
+        createRev(c4str("doc-DEL"), kRevID, kC4SliceNull, kRevDeleted);
+
+        // Add a 2nd revision to doc 1:
+        createNewRev(db, "doc-001"_sl, kFleeceBody);
+
+        // Add a 2nd rev, synced with remote, to doc 2:
+        createRev("doc-002"_sl, kRev2ID, kFleeceBody);
+        createRev("doc-002"_sl, kRev3ID, kFleeceBody);
+        setRemoteRev(db, "doc-002"_sl, kRev3ID, 1);
+
+        // Add a 2nd rev, and rev 1 synced with remote, to doc 3:
+        createRev("doc-003"_sl, kRev2ID, kFleeceBody);
+        createRev("doc-003"_sl, kRev3ID, kFleeceBody);
+        setRemoteRev(db, "doc-003"_sl, kRev2ID, 1);
+
+        // Add a conflict to doc 4:
+        createRev("doc-004"_sl, kRev2ID, kFleeceBody);
+        createRev("doc-004"_sl, kRev3ID, kFleeceBody);
+        createConflictingRev(db, "doc-004"_sl, kRev2ID, "3-cc"_sl);
+        setRemoteRev(db, "doc-004"_sl, "3-cc"_sl, 1);
+    }
+
+    // Reopen database, upgrading to version vectors:
+    C4DatabaseConfig2 config = dbConfig();
+    config.flags |= kC4DB_VersionVectors;
+    closeDB();
+    C4Log("---- Reopening db with version vectors ---");
+    C4Error error;
+    db = c4db_openNamed(kDatabaseName, &config, &error);
+    REQUIRE(db);
+
+    // Note: The revID/version checks below hardcode the "legacy source ID", currently 0x7777777.
+    // If/when that's changed (in Database+Upgrade.cc), those checks will break.
+
+    // Check doc 1:
+    C4Document *doc;
+    doc = c4db_getDoc(db, "doc-001"_sl, true, kDocGetAll, &error);
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "2@*");
+    alloc_slice versionVector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
+    CHECK(versionVector == "2@*");
+    CHECK(doc->sequence == 7);
+    c4doc_release(doc);
+
+    // Check doc 2:
+    doc = c4db_getDoc(db, "doc-002"_sl, true, kDocGetAll, &error);
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "3@7777777");
+    versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(versionVector == "3@7777777");
+    CHECK(doc->sequence == 9);
+    alloc_slice remoteVers = c4doc_getRemoteAncestor(doc, 1);
+    CHECK(remoteVers == "3@7777777");
+    c4doc_release(doc);
+
+    // Check doc 3:
+    doc = c4db_getDoc(db, "doc-003"_sl, true, kDocGetAll, &error);
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "1@*");
+    versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(versionVector == "1@*,2@7777777");
+    CHECK(doc->sequence == 11);
+    remoteVers = c4doc_getRemoteAncestor(doc, 1);
+    CHECK(remoteVers == "2@7777777");
+    c4doc_release(doc);
+
+    // Check doc 4:
+    doc = c4db_getDoc(db, "doc-004"_sl, true, kDocGetAll, &error);
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "1@*");
+    versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(versionVector == "1@*,2@7777777");
+    CHECK(doc->sequence == 14);
+    CHECK(doc->flags == (kDocConflicted | kDocExists));
+    remoteVers = c4doc_getRemoteAncestor(doc, 1);
+    CHECK(remoteVers == "3@7777777");
+    REQUIRE(c4doc_selectRevision(doc, remoteVers, true, &error));
+    versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(versionVector == "3@7777777");
+    c4doc_release(doc);
+
+    // Check deleted doc:
+    doc = c4db_getDoc(db, "doc-DEL"_sl, true, kDocGetAll, &error);
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "1@*");
+    versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(versionVector == "1@*");
+    CHECK(doc->sequence == 6);
+    CHECK(doc->flags == (kDocDeleted | kDocExists));
+    c4doc_release(doc);
+}
