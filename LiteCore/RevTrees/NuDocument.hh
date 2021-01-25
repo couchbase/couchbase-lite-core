@@ -33,16 +33,35 @@ namespace litecore {
 
     /// Metadata and properties of a document revision.
     struct Revision {
+        /// The root of the document's properties.
+        /// \warning  Mutating the owning \ref NuDocument will invalidate this pointer!
         fleece::Dict  properties;
-        revid         revID;    // In a version vector db, this is the entire VersionVector
+
+        /// The encoded version/revision ID. Typically this stores a VersionVector.
+        revid revID;
+
+        /// The revision's flags:
+        /// - kDeleted: This is a tombstone
+        /// - kConflicted: This is a conflict with the current local revision
+        /// - kHasAttachments: Properties include references to blobs.
         DocumentFlags flags;
 
+        /// Returns the current (first) version of the version vector encoded in the `revID`.
         Version version() const;
+
+        /// Decodes the entire version vector encoded in the `revID`. (This allocates heap space.)
         VersionVector versionVector() const;
 
         bool isDeleted() const FLPURE      {return (flags & DocumentFlags::kDeleted) != 0;}
         bool isConflicted() const FLPURE   {return (flags & DocumentFlags::kConflicted) != 0;}
         bool hasAttachments() const FLPURE {return (flags & DocumentFlags::kHasAttachments) != 0;}
+    };
+
+
+    /// Type of revision versioning to use: rev-trees or version vectors.
+    enum class Versioning : uint8_t {
+        RevTrees,
+        Vectors
     };
 
 
@@ -53,7 +72,9 @@ namespace litecore {
     /// parent revision when pushing an update.
     ///
     /// RemoteIDs must be positive. They are assigned by the C4Database, which stores a list of remote
-    /// database URLs. NuDocument assumes that RemoteIDs are small numbers and uses them as array indexes.
+    /// database URLs.
+    /// \note NuDocument's current implementation assumes that RemoteIDs are small consecutive numbers
+    ///      starting at 0, and so uses them as array indexes.
     enum class RemoteID: int {
         Local = 0       /// Refers to the local revision, not a remote.
     };
@@ -61,8 +82,10 @@ namespace litecore {
 
     /// Rewritten document class for 3.0.
     /// Instead of a revision tree, it stores the _current_ local revision, and may store the current
-    /// revision for each database this one replicates with, as indexed by `RemoteID`.
-    /// It attempts to optimize storage when these revisions are either identical or share common values.
+    /// revision for each database this one replicates with, as indexed by its `RemoteID`.
+    ///
+    /// It attempts to optimize storage when these revisions are either identical or share common property
+    /// values.
     class NuDocument {
     public:
         using Dict = fleece::Dict;
@@ -70,10 +93,10 @@ namespace litecore {
 
         /// Reads a document given a Record. If the document doesn't exist, the resulting NuDocument will be
         /// empty, with an empty `properties` Dict and a null revision ID.
-        NuDocument(KeyStore&, const Record&);
+        NuDocument(KeyStore&, Versioning, const Record&);
 
         /// Reads a document given the docID.
-        NuDocument(KeyStore& store, slice docID, ContentOption =kEntireBody);
+        NuDocument(KeyStore& store, Versioning, slice docID, ContentOption =kEntireBody);
 
         ~NuDocument();
 
@@ -133,9 +156,6 @@ namespace litecore {
 
         /// Replaces the current properties with a new Dict.
         /// (This is a no-op if the Dict is pointer-equal to the \ref properties or \ref mutableProperties.)
-        /// \note The preferred way to change the properties of an existing document is to mutate the Dict
-        ///       returned by \ref mutableProperties. This allows the document to detect which properties
-        ///       are unchanged, which generally reduces storage space and optimizes delta operations.
         void setProperties(Dict);
 
         /// Assigns a custom revision ID for the current in-memory changes. When saving, this revID will be
@@ -149,18 +169,18 @@ namespace litecore {
         void setFlags(DocumentFlags);
 
         /// Sets the properties, revID and flags at once.
-        /// \note  See the note on the \ref setProperties method about performance implications of storing
-        ///       a different properties Dict.
         void setCurrentRevision(const Revision &rev);
 
         /// Returns true if in-memory state of this object has changed since it was created or last saved.
         bool changed() const FLPURE;
 
+        //---- Saving:
+
         /// Possible results of the \ref save method.
         enum SaveResult {
             kConflict,      ///< The document was **not saved** because a newer revision already exists.
             kNoSave,        ///< There were no changes to save.
-            kNoNewSequence, ///< The document was saved, but the local revision was unchanged so no new sequence number was assigned.
+            kNoNewSequence, ///< Saved, but the local rev was unchanged so no new sequence was assigned.
             kNewSequence    ///< The document was saved and a new sequence number assigned.
         };
 
@@ -168,7 +188,9 @@ namespace litecore {
         /// \note  Most errors are thrown as exceptions, but a conflict is returned as `kConflict`.
         SaveResult save(Transaction &t);
 
-        alloc_slice encodeExtra();
+        /// Returns the `body` and `extra` Record values representing the current in-memory state.
+        /// This is used by the \ref save method and the database upgrader. Shouldn't be needed elsewhere.
+        std::pair<alloc_slice,alloc_slice> encodeBodyAndExtra();
 
         //---- Revisions of different remotes:
 
@@ -194,8 +216,10 @@ namespace litecore {
 
         //---- For testing:
 
-        /// Generates a revision ID given document properties, parent revision ID, and flags.
-        static revidBuffer generateRevID(Dict, revid parentRevID, DocumentFlags);
+        /// Generates a rev-tree revision ID given document properties, parent revision ID, and flags.
+        static alloc_slice generateRevID(Dict, revid parentRevID, DocumentFlags);
+        /// Generates a version-vector revision ID given parent vector.
+        static alloc_slice generateVersionVector(revid parentVersionVector);
 
         std::string dump() const;           ///< Returns an ASCII dump of the object's state.
         void dump(std::ostream&) const;     ///< Writes an ASCII dump of the object's state.
@@ -215,8 +239,8 @@ namespace litecore {
         void mutateRevisions();
         MutableDict mutableRevisionDict(RemoteID remoteID);
         Dict originalProperties() const;
-        std::pair<alloc_slice,alloc_slice> encodeBody(FLEncoder);
-        alloc_slice encodeExtra(FLEncoder);
+        std::pair<alloc_slice,alloc_slice> encodeBodyAndExtra(FLEncoder NONNULL);
+        alloc_slice encodeExtra(FLEncoder NONNULL);
         bool propertiesChanged() const;
         void clearPropertiesChanged();
         void updateDocFlags();
@@ -233,6 +257,7 @@ namespace litecore {
         fleece::Doc                  _extraDoc;             // Fleece Doc holding record `extra`
         fleece::Array                _revisions;            // Top-level parsed body; stores revs
         mutable fleece::MutableArray _mutatedRevisions;     // Mutable version of `_revisions`
+        Versioning                   _versioning;           // RevIDs or VersionVectors?
         bool                         _changed {false};      // Set to true on explicit change
         bool                         _revIDChanged {false}; // Has setRevID() been called?
         ContentOption                _whichContent;         // Which parts of record are available

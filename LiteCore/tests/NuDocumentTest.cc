@@ -55,7 +55,7 @@ static constexpr auto kRemote1 = RemoteID(1), kRemote2 = RemoteID(2);
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Untitled NuDocument", "[NuDocument]") {
-    NuDocument doc(*store, "Nuu");
+    NuDocument doc(*store, Versioning::RevTrees, "Nuu");
     cerr << "Doc is: " << doc << "\n";
 
     CHECK(!doc.exists());
@@ -83,7 +83,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Untitled NuDocument", "[NuDocument
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") {
     {
-        NuDocument doc(*store, "Nuu");
+        NuDocument doc(*store, Versioning::RevTrees, "Nuu");
 
         doc.mutableProperties()["year"] = 2525;
         CHECK(doc.mutableProperties() == doc.properties());
@@ -131,7 +131,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
         cerr << "Storage:\n" << doc.dumpStorage();
     }
     {
-        NuDocument readDoc(*store, store->get("Nuu"));
+        NuDocument readDoc(*store, Versioning::RevTrees, store->get("Nuu"));
         CHECK(readDoc.docID() == "Nuu");
         CHECK(readDoc.sequence() == 2);
         CHECK(readDoc.revID().str() == "2-c8eeae1245a44de160c2ca96e448f1650dd901da");
@@ -146,7 +146,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Empty Properties", "[NuDocument]") {
     {
-        NuDocument doc(*store, "Nuu");
+        NuDocument doc(*store, Versioning::RevTrees, "Nuu");
         CHECK(!doc.exists());
         CHECK(doc.properties() != nullptr);
         CHECK(doc.properties().empty());
@@ -160,19 +160,19 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Empty Properties", "[Nu
         CHECK(doc.properties().empty());
     }
     {
-        NuDocument doc(*store, "Nuu", kEntireBody);
+        NuDocument doc(*store, Versioning::RevTrees, "Nuu", kEntireBody);
         CHECK(doc.exists());
         CHECK(doc.properties() != nullptr);
         CHECK(doc.properties().empty());
     }
     {
-        NuDocument doc(*store, "Nuu", kCurrentRevOnly);
+        NuDocument doc(*store, Versioning::RevTrees, "Nuu", kCurrentRevOnly);
         CHECK(doc.exists());
         CHECK(doc.properties() != nullptr);
         CHECK(doc.properties().empty());
     }
     {
-        NuDocument doc(*store, "Nuu", kMetaOnly);
+        NuDocument doc(*store, Versioning::RevTrees, "Nuu", kMetaOnly);
         CHECK(doc.exists());
         CHECK(doc.properties() == nullptr);
         doc.loadData(kCurrentRevOnly);
@@ -184,7 +184,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Empty Properties", "[Nu
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remotes", "[NuDocument]") {
     Transaction t(db);
-    NuDocument doc(*store, "Nuu");
+    NuDocument doc(*store, Versioning::RevTrees, "Nuu");
 
     doc.mutableProperties()["rodent"] = "mouse";
     doc.setRevID(revidBuffer("1-f000"));
@@ -221,46 +221,48 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remotes", "[NuDocument]
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remote Update", "[NuDocument]") {
     Transaction t(db);
-    NuDocument doc(*store, "Nuu");
-
-    // Create doc, as if pulled from a remote:
-    revidBuffer revid1("1-1111");
-    doc.mutableProperties()["rodent"] = "mouse";
-    doc.mutableProperties()["age"] = 1;
-    MutableArray loc = MutableArray::newArray();
-    loc.append(-108.3);
-    loc.append(37.234);
-    doc.mutableProperties()["loc"] = loc;
-    doc.setRevID(revid1);
-
-    // Make remote 1 the same as local:
     {
+        NuDocument doc(*store, Versioning::RevTrees, "Nuu");
+        
+        // Create doc, as if pulled from a remote:
+        revidBuffer revid1("1-1111");
+        doc.mutableProperties()["rodent"] = "mouse";
+        doc.mutableProperties()["age"] = 1;
+        MutableArray loc = MutableArray::newArray();
+        loc.append(-108.3);
+        loc.append(37.234);
+        doc.mutableProperties()["loc"] = loc;
+        doc.setRevID(revid1);
+        
+        // Make remote 1 the same as local:
         auto local = doc.currentRevision();
         CHECK(local == (Revision{doc.properties(), revid1}));
         doc.setRemoteRevision(kRemote1, local);
         CHECK(doc.save(t) == NuDocument::kNewSequence);
     }
-    cerr << "\nStorage after pull:\n" << doc.dumpStorage();
+    {
+        NuDocument doc(*store, Versioning::RevTrees, "Nuu");
+        cerr << "\nStorage after pull:\n" << doc.dumpStorage();
+        
+        CHECK(doc.currentRevision() == *doc.remoteRevision(kRemote1));
+        CHECK(doc.properties() == doc.remoteRevision(kRemote1)->properties); // rev body only stored once
+        
+        // Update doc locally:
+        doc.mutableProperties()["age"] = 2;
+        revidBuffer revid2("2-2222");
+        doc.setRevID(revid2);
+        doc.setFlags(DocumentFlags::kNone);
+        CHECK(doc.save(t));
+    }
+    {
+        NuDocument doc(*store, Versioning::RevTrees, "Nuu");
+        cerr << "\nStorage after save:\n" << doc.dumpStorage();
 
-    CHECK(doc.currentRevision() == *doc.remoteRevision(kRemote1));
-#if 0 // FIX: Re-enable this optimization in NuDocument
-    CHECK(doc.properties() == doc.remoteRevision(kRemote1)->properties); // rev body only stored once
-#endif
-
-    // Update doc locally:
-    doc.mutableProperties()["age"] = 2;
-    revidBuffer revid2("2-2222");
-    doc.setRevID(revid2);
-    doc.setFlags(DocumentFlags::kNone);
-    CHECK(doc.save(t));
-    cerr << "\nStorage after save:\n" << doc.dumpStorage();
-
-    auto props1 = doc.properties(), props2 = doc.remoteRevision(kRemote1)->properties;
-    CHECK(props1.toJSON(true, true) == "{age:2,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
-    CHECK(props2.toJSON(true, true) == "{age:1,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
-#if 0 // FIX: Re-enable this optimization in NuDocument
-    CHECK(props1["rodent"] == props2["rodent"]);    // string should only be stored once
-    CHECK(props1["loc"] == props2["loc"]);          // array should only be stored once
-#endif
-    CHECK(props1["age"] != props2["age"]);
+        auto props1 = doc.properties(), props2 = doc.remoteRevision(kRemote1)->properties;
+        CHECK(props1.toJSON(true, true) == "{age:2,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
+        CHECK(props2.toJSON(true, true) == "{age:1,loc:[-108.3,37.234],rodent:\"mouse\"}"_sl);
+        CHECK(props1["rodent"] == props2["rodent"]);    // string should only be stored once
+        CHECK(props1["loc"] == props2["loc"]);          // array should only be stored once
+        CHECK(props1["age"] != props2["age"]);
+    }
 }

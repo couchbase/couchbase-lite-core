@@ -32,7 +32,7 @@ namespace c4Internal {
     public:
         VectorDocument(Database* database, C4Slice docID, ContentOption whichContent)
         :Document(database, docID)
-        ,_doc(database->defaultKeyStore(), docID, whichContent)
+        ,_doc(database->defaultKeyStore(), Versioning::Vectors, docID, whichContent)
         {
             _initialize();
         }
@@ -40,7 +40,7 @@ namespace c4Internal {
 
         VectorDocument(Database *database, const Record &doc)
         :Document(database, doc.key())
-        ,_doc(database->defaultKeyStore(), doc)
+        ,_doc(database->defaultKeyStore(), Versioning::Vectors, doc)
         {
             _initialize();
         }
@@ -53,6 +53,7 @@ namespace c4Internal {
 
         void _initialize() {
             _doc.owner = this;
+            _doc.setEncoder(_db->sharedFLEncoder());
             _updateDocFields();
             _selectRemote(RemoteID::Local);
         }

@@ -34,25 +34,65 @@ namespace litecore {
     using namespace fleece;
 
     /*
-     RECORD BODY FORMAT:
+     RECORD SCHEMA:
 
-     A record body (i.e. the `body` column of the `kv_default` table) is a Fleece-encoded array.
-     Each item of the array describes a revision.
-     The first item is the local current revision.
-     Other revisions are the known versions at remote peers, indexed by RemoteID values.
-     Each revision is a Dict with keys:
-        - `body` (document body, itself a Dict),
-        - `revID` (revision ID, binary data),
-        - `flags` (DocumentFlags, int, omitted if 0)
-     It's very common for two or more revisions to be the same, or at least have a lot of property
-     values in common. Thus, when encoding the record body we use a DeDuplicatingEncoder to save
-     space, writing repeated values only once.
+     A table row, and `Record` object, contain these columns/properties:
+       - `key`        --The document ID
+       - `version`    --Current revision's ID (if a version, just 1st component, not whole vector)
+       - `flags`      --Current document flags, based on all stored revisions
+       - `sequence`   --The document's current sequence number
+       - `body`       --Fleece-encoded properties of the current revision
+       - `extra`      --Other revisions, if any, as described below
+
+     This separation of `body` and `extra` lets us avoid reading the remote revision(s) into RAM
+     unless needed ... and they're normally only needed by the replicator.
+
+     THE "EXTRA" COLUMN:
+
+     If remote revisions are stored, the `extra` column contains a Fleece-encoded Array.
+
+     The indices of the Array correspond to `RemoteID`s. Each remote revision is stored at its
+     RemoteID's index as a Dict, with keys:
+       - `kRevPropertiesKey` --document body, itself a Dict
+       - `kRevIDKey`         --revision ID, binary data
+       - `kRevFlagsKey`      --DocumentFlags, int, omitted if 0
+     An array item whose index doesn't correspond to any Revision contains a `null` instead
+     of a Dict. This includes the first (0) item, since storing the local revision here would be
+     redundant.
+
+     DE-DUPLICATING PROPERTY VALUES:
+
+     It's very common for two or more RemoteIDs to refer to the same revision, i.e. have the same
+     version/properties/flags. This happens whenever the local document is in sync with its remote
+     counterpart.
+
+     It's also common for different revisions to have a lot of common property values; for example,
+     if the local database changes one property but leaves the rest alone.
+
+     Thus, when encoding the record `body` and `extra` we use a DeDuplicatingEncoder to save
+     space. This encoder recognizes when `writeValue` is called twice with the same `Value`;
+     after the first time it just encodes a Fleece "pointer" to the already-encoded value data.
+     (This turns the Fleece structure, normally a tree, into a DAG. That's largely immaterial to
+     clients, because the structure is read-only. You'd have to be looking for equal pointers to
+     tell the difference.)
+
+     Even this wouldn't normally de-duplicate between the _current_ revision and a remote,
+     since they're encoded into separate Fleece containers (stored in `body` and `extra`.)
+     To get around that, we use the arcane `FLEncoder_Snip` function, which allows you to write
+     multiple Fleece containers with the same encoder. We write the body properties first, snip
+     those as one container that will be written to `body`, then continue encoding the rest of
+     the remote revisions, which will end up in `extra`. This means that `extra` may contain
+     references back into `body`, but this is OK as long as, when we load `extra`, we tell it that
+     its "extern" data is the `body` data. Then, when Fleece detects it's following an internal
+     reference in `extra` whose destination is outside `extra`, it will resolve it to the
+     corresponding address in `body`. It's as though they're a single container.
      */
 
-    // Keys in revision dicts (deliberately short and ineligible for sharedKeys.)
-    static constexpr slice kMetaProperties  = "{";
-    static constexpr slice kMetaRevID = "@";
-    static constexpr slice kMetaFlags = "&";
+    
+    // Keys in revision dicts (deliberately tiny and ineligible for SharedKeys, to save space.)
+    static constexpr slice kRevPropertiesKey = ".";
+    static constexpr slice kRevIDKey         = "@";
+    static constexpr slice kRevFlagsKey      = "&";
 
 
     Version Revision::version() const {
@@ -65,13 +105,14 @@ namespace litecore {
 
 
 
-    NuDocument::NuDocument(KeyStore& store, const Record& rec)
+    NuDocument::NuDocument(KeyStore& store, Versioning versioning, const Record& rec)
     :_store(store)
     ,_docID(rec.key())
     ,_sequence(rec.sequence())
     ,_revID(rec.version())
     ,_docFlags(rec.flags())
     ,_whichContent(rec.contentLoaded())
+    ,_versioning(versioning)
     {
         _current.revID = revid(_revID);
         _current.flags = rec.flags() - DocumentFlags::kConflicted - DocumentFlags::kSynced;
@@ -86,8 +127,8 @@ namespace litecore {
     }
 
 
-    NuDocument::NuDocument(KeyStore& store, slice docID, ContentOption whichContent)
-    :NuDocument(store, store.get(docID, whichContent))
+    NuDocument::NuDocument(KeyStore& store, Versioning v, slice docID, ContentOption whichContent)
+    :NuDocument(store, v, store.get(docID, whichContent))
     { }
 
 
@@ -111,8 +152,9 @@ namespace litecore {
     }
 
     void NuDocument::readRecordExtra(const alloc_slice &extra) {
-        if (extra)
-            _extraDoc = Doc(extra, kFLTrusted, sharedKeys());
+        if (extra) {
+            _extraDoc = Doc(extra, kFLTrusted, sharedKeys(), _bodyDoc.data());
+        }
         else
             _extraDoc = nullptr;
         _revisions = _extraDoc.asArray();
@@ -179,9 +221,9 @@ namespace litecore {
 
         if (Dict revDict = _revisions[int(remote)].asDict(); revDict) {
             // revisions have a top-level dict with the revID, flags, properties.
-            Dict properties = revDict[kMetaProperties].asDict();
-            revid revID(revDict[kMetaRevID].asData());
-            auto flags = DocumentFlags(revDict[kMetaFlags].asInt());
+            Dict properties = revDict[kRevPropertiesKey].asDict();
+            revid revID(revDict[kRevIDKey].asData());
+            auto flags = DocumentFlags(revDict[kRevFlagsKey].asInt());
             if (!properties)
                 properties = Dict::emptyDict();
             if (!revID)
@@ -248,26 +290,26 @@ namespace litecore {
         mustLoadRemotes();
         bool changedFlags = false;
         if (auto &newRev = *optRev; optRev) {
-            // Creating/updating a revision (possibly the local one):
+            // Creating/updating a remote revision:
             MutableDict revDict = mutableRevisionDict(remote);
             if (!newRev.revID)
                 error::_throw(error::CorruptRevisionData);
-            if (auto oldRevID = revDict[kMetaRevID].asData(); newRev.revID != oldRevID) {
-                revDict[kMetaRevID].setData(newRev.revID);
+            if (auto oldRevID = revDict[kRevIDKey].asData(); newRev.revID != oldRevID) {
+                revDict[kRevIDKey].setData(newRev.revID);
                 _changed = true;
             }
-            if (newRev.properties != revDict[kMetaProperties]) {
+            if (newRev.properties != revDict[kRevPropertiesKey]) {
                 if (newRev.properties)
-                    revDict[kMetaProperties] = newRev.properties;
+                    revDict[kRevPropertiesKey] = newRev.properties;
                 else
-                    revDict.remove(kMetaProperties);
+                    revDict.remove(kRevPropertiesKey);
                 _changed = true;
             }
-            if (int(newRev.flags) != revDict[kMetaFlags].asInt()) {
+            if (int(newRev.flags) != revDict[kRevFlagsKey].asInt()) {
                 if (newRev.flags != DocumentFlags::kNone)
-                    revDict[kMetaFlags] = int(newRev.flags);
+                    revDict[kRevFlagsKey] = int(newRev.flags);
                 else
-                    revDict.remove(kMetaFlags);
+                    revDict.remove(kRevFlagsKey);
                 _changed = changedFlags = true;
             }
         } else if (_revisions[int(remote)]) {
@@ -287,23 +329,7 @@ namespace litecore {
     }
 
 
-    void NuDocument::updateDocFlags() {
-        // Take the local revision's flags, and add the Conflicted and Attachments flags
-        // if any remote rev has them.
-        auto newDocFlags = _docFlags - DocumentFlags::kConflicted - DocumentFlags::kHasAttachments;
-        newDocFlags = newDocFlags | _current.flags;
-        for (Array::iterator i(_revisions); i; ++i) {
-            Dict revDict = i.value().asDict();
-            if (revDict) {
-                auto flags = DocumentFlags(revDict[kMetaFlags].asInt());
-                if (flags & DocumentFlags::kConflicted)
-                    newDocFlags |= DocumentFlags::kConflicted;
-                if (flags & DocumentFlags::kHasAttachments)
-                    newDocFlags |= DocumentFlags::kHasAttachments;
-            }
-        }
-        _docFlags = newDocFlags;
-    }
+#pragma mark - CURRENT REVISION:
 
 
     slice NuDocument::currentRevisionData() const {
@@ -370,6 +396,28 @@ namespace litecore {
     }
 
 
+#pragma mark - CHANGE HANDLING:
+
+
+    void NuDocument::updateDocFlags() {
+        // Take the local revision's flags, and add the Conflicted and Attachments flags
+        // if any remote rev has them.
+        auto newDocFlags = _docFlags - DocumentFlags::kConflicted - DocumentFlags::kHasAttachments;
+        newDocFlags = newDocFlags | _current.flags;
+        for (Array::iterator i(_revisions); i; ++i) {
+            Dict revDict = i.value().asDict();
+            if (revDict) {
+                auto flags = DocumentFlags(revDict[kRevFlagsKey].asInt());
+                if (flags & DocumentFlags::kConflicted)
+                    newDocFlags |= DocumentFlags::kConflicted;
+                if (flags & DocumentFlags::kHasAttachments)
+                    newDocFlags |= DocumentFlags::kHasAttachments;
+            }
+        }
+        _docFlags = newDocFlags;
+    }
+
+
     bool NuDocument::changed() const {
         return _changed || propertiesChanged();
     }
@@ -418,16 +466,22 @@ namespace litecore {
             return kNoSave;
 
         // If the revID hasn't been changed but the local properties have, generate a new revID:
-        revidBuffer generatedRev;
+        alloc_slice generatedRev;
         if (newRevision && !_revIDChanged) {
-            generatedRev = generateRevID(_current.properties, revID, flags);
-            setRevID(generatedRev);
-            revID = generatedRev;
-            Log("Generated revID '%s'", generatedRev.str().c_str());
+            switch (_versioning) {
+                case Versioning::RevTrees:
+                    generatedRev = generateRevID(_current.properties, revID, flags);
+                    break;
+                case Versioning::Vectors:
+                    generatedRev = generateVersionVector(revID);
+            }
+            revID = revid(generatedRev);
+            setRevID(revID);
+            Log("Generated revID '%s'", revID.str().c_str());
         }
 
         alloc_slice body, extra;
-        tie(body, extra) = _encoder ? encodeBody(_encoder) : encodeBody(Encoder(sharedKeys()));
+        tie(body, extra) = encodeBodyAndExtra();
 
         auto seq = _sequence;
         bool updateSequence = (seq == 0 || _revIDChanged);
@@ -456,62 +510,46 @@ namespace litecore {
     }
 
 
-    pair<alloc_slice,alloc_slice> NuDocument::encodeBody(FLEncoder flEnc) {
-        alloc_slice body;
-        if (!_current.properties.empty()) {
-            SharedEncoder enc(flEnc);
-            enc.writeValue(_current.properties);
-            body = enc.finish();
-        }
-        return {body, encodeExtra(flEnc)};
+    pair<alloc_slice,alloc_slice> NuDocument::encodeBodyAndExtra() {
+        return _encoder ? encodeBodyAndExtra(_encoder)
+                        : encodeBodyAndExtra(Encoder(sharedKeys()));
     }
 
 
-    alloc_slice NuDocument::encodeExtra(FLEncoder flEnc) {
-        unsigned nRevs = _revisions.count();
-        if (nRevs == 0)
-            return nullslice;
+    pair<alloc_slice,alloc_slice> NuDocument::encodeBodyAndExtra(FLEncoder flEnc) {
         SharedEncoder enc(flEnc);
-        enc.reset();
-        if (nRevs == 1) {
-            enc.writeValue(_revisions);
+        alloc_slice body, extra;
+        unsigned nRevs = _revisions.count();
+        if (nRevs == 0) {
+            // Only a current rev, nothing else, so only generate a body:
+            if (!_current.properties.empty()) {
+                enc.writeValue(_current.properties);
+                body = enc.finish();
+            }
         } else {
-            // If there are multiple revisions, de-duplicate as much as possible, including entire
-            // revision dicts, or top-level property values in each revision.
-            // Revision dicts will not be pointer-equal if revisions have been added, so we have
-            // to compare them by revid. (This is O(n^2), but the number of revs is small.)
             enc.beginArray();
             DeDuplicateEncoder ddenc(enc);
-            for (unsigned i = 0; i < nRevs; i++) {
+            // Write current rev:
+            enc.beginDict();
+            enc.writeKey(kRevPropertiesKey);
+            ddenc.writeValue(_current.properties, 1);
+            body = alloc_slice(FLEncoder_Snip(enc));
+            enc.endDict();
+
+            // Write other revs:
+            for (unsigned i = 1; i < nRevs; i++) {
                 Value rev = _revisions[i];
-                if (Dict revDict = rev.asDict(); revDict) {
-                    // De-duplicate the revision ID:
-                    slice revid = revDict[kMetaRevID].asData();
-                    DebugAssert(revid);
-                    for (unsigned j = 0; j < i; j++) {
-                        auto revj = _revisions[j];
-                        if (revj == rev || revj.asDict()[kMetaRevID].asData() == revid) {
-                            DebugAssert(revj.isEqual(rev), "RevIDs match but revisions don't");
-                            rev = revj;
-                            break;
-                        }
-                    }
-                }
-                // De-duplicate the revision dict itself, and the properties dict in it (depth 2)
                 ddenc.writeValue(rev, 2);
             }
             enc.endArray();
+            extra = enc.finish();
         }
-        return enc.finish();
+
+        return {body, extra};
     }
 
 
-    alloc_slice NuDocument::encodeExtra() {
-        return _encoder ? encodeExtra(_encoder) : encodeExtra(Encoder(sharedKeys()));
-    }
-
-
-    revidBuffer NuDocument::generateRevID(Dict body, revid parentRevID, DocumentFlags flags) {
+    alloc_slice NuDocument::generateRevID(Dict body, revid parentRevID, DocumentFlags flags) {
         // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and JSON:
         alloc_slice json = FLValue_ToJSONX(body, false, true);
         parentRevID.setSize(min(parentRevID.size, size_t(255)));
@@ -519,7 +557,14 @@ namespace litecore {
         uint8_t delByte = (flags & DocumentFlags::kDeleted) != 0;
         SHA1 digest = (SHA1Builder() << revLen << parentRevID << delByte << json).finish();
         unsigned generation = parentRevID ? parentRevID.generation() + 1 : 1;
-        return revidBuffer(generation, slice(digest));
+        return alloc_slice(revidBuffer(generation, slice(digest)));
+    }
+
+
+    alloc_slice NuDocument::generateVersionVector(revid parentRevID) {
+        VersionVector vec = parentRevID.asVersionVector();
+        vec.incrementGen(kMePeerID);
+        return vec.asBinary();
     }
 
 
@@ -620,12 +665,14 @@ namespace litecore {
     string NuDocument::dumpStorage() const {
         stringstream out;
         if (_bodyDoc) {
-            out << "BODY:\n";
-            fleece::impl::Value::dump(_bodyDoc.allocedData(), out);
+            slice data = _bodyDoc.allocedData();
+            out << "---BODY: " << data.size << " bytes at " << (void*)data.buf << ":\n";
+            fleece::impl::Value::dump(data, out);
         }
-        if (_bodyDoc) {
-            out << "EXTRA:\n";
-            fleece::impl::Value::dump(_extraDoc.allocedData(), out);
+        if (_extraDoc) {
+            slice data = _extraDoc.allocedData();
+            out << "---EXTRA: " << data.size << " bytes at " << (void*)data.buf << ":\n";
+            fleece::impl::Value::dump(data, out);
         }
         return out.str();
     }
@@ -636,12 +683,13 @@ namespace litecore {
     {
         callback(revid(rec.version), RemoteID::Local);
         if (rec.extra.size > 0) {
+            fleece::impl::Scope scope(rec.extra, nullptr, rec.body);
             Array remotes = Value::fromData(rec.extra, kFLTrusted).asArray();
             int n = 0;
             for (Array::iterator i(remotes); i; ++i, ++n) {
                 if (n > 0) {
                     Dict remote = i.value().asDict();
-                    slice revID = remote[kMetaRevID].asData();
+                    slice revID = remote[kRevIDKey].asData();
                     if (revID)
                         callback(revid(revID), RemoteID(n));
                 }

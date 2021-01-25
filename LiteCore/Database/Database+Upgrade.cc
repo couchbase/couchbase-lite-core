@@ -26,10 +26,14 @@
 #include <vector>
 
 namespace c4Internal {
+    using namespace std;
     using namespace litecore;
 
     // The fake peer/source ID used for versions migrated from revIDs.
     static constexpr peerID kLegacyPeerID {0x7777777};
+
+    static pair<alloc_slice, alloc_slice>
+    upgradeRemoteRevs(Database*, Record rec, VersionedDocument&, alloc_slice currentVersion);
 
 
     static const Rev* commonAncestor(const Rev *a, const Rev *b) {
@@ -76,13 +80,20 @@ namespace c4Internal {
             auto binaryVersion = vv.asBinary();
 
             // Propagate any saved remote revisions to the new document:
-            alloc_slice extra = upgradeRemoteRevsToVersionVectors(doc, binaryVersion);
+            slice body;
+            alloc_slice allocedBody, extra;
+            if (doc.remoteRevisions().empty()) {
+                body = currentRev->body();
+            } else {
+                std::tie(allocedBody, extra) = upgradeRemoteRevs(this, rec, doc, binaryVersion);
+                body = allocedBody;
+            }
 
             // Now save:
             RecordLite newRec;
             newRec.key = doc.docID();
             newRec.flags = doc.flags();
-            newRec.body = currentRev->body();
+            newRec.body = body;
             newRec.extra = extra;
             newRec.version = binaryVersion;
             newRec.sequence = doc.sequence();
@@ -91,30 +102,31 @@ namespace c4Internal {
             defaultKeyStore().set(newRec, transaction);
 
             ++docCount;
-            LogToAt(DBLog, Verbose, "  - Upgraded doc '%.*s', %s -> [%s]",
+            LogToAt(DBLog, Verbose, "  - Upgraded doc '%.*s', %s -> [%s], %zu bytes body, %zu bytes extra",
                     SPLAT(rec.key()),
                     revid(rec.version()).str().c_str(),
-                    string(vv.asASCII()).c_str());
+                    string(vv.asASCII()).c_str(),
+                    newRec.body.size, newRec.extra.size);
         }
 
         LogTo(DBLog, "*** %llu documents upgraded, now committing changes... ***", docCount);
     }
 
 
-    alloc_slice Database::upgradeRemoteRevsToVersionVectors(VersionedDocument &doc,
-                                                            alloc_slice currentVersion) {
-        auto &remoteRevs = doc.remoteRevisions();
-        if (remoteRevs.empty())
-            return nullslice;
-
+    static pair<alloc_slice, alloc_slice> upgradeRemoteRevs(Database *db,
+                                                            Record rec,
+                                                            VersionedDocument &doc,
+                                                            alloc_slice currentVersion)
+    {
         // Instantiate a NuDocument for this document (without reading the database):
-        Record fakeRec(doc.docID());
         auto currentRev = doc.currentRevision();
-        fakeRec.setBody(currentRev->body());
-        fakeRec.setVersion(currentVersion);
-        NuDocument nuDoc(defaultKeyStore(), fakeRec);
+        rec.setBody(currentRev->body());
+        rec.setVersion(currentVersion);
+        
+        NuDocument nuDoc(db->defaultKeyStore(), Versioning::RevTrees, rec);
+        nuDoc.setEncoder(db->sharedFLEncoder());
 
-        // Add each remote revision that's a conflict:
+        // Add each remote revision:
         for (auto i = doc.remoteRevisions().begin(); i != doc.remoteRevisions().end(); ++i) {
             auto remoteID = RemoteID(i->first);
             const Rev *rev = i->second;
@@ -136,7 +148,8 @@ namespace c4Internal {
             }
             nuDoc.setRemoteRevision(remoteID, nuRev);
         }
-        return nuDoc.encodeExtra();
+
+        return nuDoc.encodeBodyAndExtra();
     }
 
 

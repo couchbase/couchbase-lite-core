@@ -903,21 +903,21 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
         createRev(c4str("doc-DEL"), kRevID, kC4SliceNull, kRevDeleted);
 
         // Add a 2nd revision to doc 1:
-        createNewRev(db, "doc-001"_sl, kFleeceBody);
+        createFleeceRev(db, "doc-001"_sl, nullslice, slice(json5("{doc:'one',rev:'two'}")));
 
         // Add a 2nd rev, synced with remote, to doc 2:
-        createRev("doc-002"_sl, kRev2ID, kFleeceBody);
-        createRev("doc-002"_sl, kRev3ID, kFleeceBody);
+        createFleeceRev(db, "doc-002"_sl, kRev2ID, slice(json5("{doc:'two',rev:'two'}")));
+        createFleeceRev(db, "doc-002"_sl, kRev3ID, slice(json5("{doc:'two',rev:'three'}")));
         setRemoteRev(db, "doc-002"_sl, kRev3ID, 1);
 
         // Add a 2nd rev, and rev 1 synced with remote, to doc 3:
-        createRev("doc-003"_sl, kRev2ID, kFleeceBody);
-        createRev("doc-003"_sl, kRev3ID, kFleeceBody);
+        createFleeceRev(db, "doc-003"_sl, kRev2ID, slice(json5("{doc:'three',rev:'two'}")), kRevKeepBody);
         setRemoteRev(db, "doc-003"_sl, kRev2ID, 1);
+        createFleeceRev(db, "doc-003"_sl, kRev3ID, slice(json5("{doc:'three',rev:'three'}")));
 
         // Add a conflict to doc 4:
-        createRev("doc-004"_sl, kRev2ID, kFleeceBody);
-        createRev("doc-004"_sl, kRev3ID, kFleeceBody);
+        createFleeceRev(db, "doc-004"_sl, kRev2ID, slice(json5("{doc:'four',rev:'two'}")));
+        createFleeceRev(db, "doc-004"_sl, kRev3ID, slice(json5("{doc:'four',rev:'three'}")));
         createConflictingRev(db, "doc-004"_sl, kRev2ID, "3-cc"_sl);
         setRemoteRev(db, "doc-004"_sl, "3-cc"_sl, 1);
     }
@@ -942,6 +942,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     alloc_slice versionVector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
     CHECK(versionVector == "2@*");
     CHECK(doc->sequence == 7);
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"one","rev":"two"})");
     c4doc_release(doc);
 
     // Check doc 2:
@@ -951,8 +952,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
     CHECK(versionVector == "3@7777777");
     CHECK(doc->sequence == 9);
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
     alloc_slice remoteVers = c4doc_getRemoteAncestor(doc, 1);
     CHECK(remoteVers == "3@7777777");
+    CHECK(c4doc_selectRevision(doc, remoteVers, true, &error));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
     c4doc_release(doc);
 
     // Check doc 3:
@@ -962,8 +966,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
     CHECK(versionVector == "1@*,2@7777777");
     CHECK(doc->sequence == 11);
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"three"})");
     remoteVers = c4doc_getRemoteAncestor(doc, 1);
     CHECK(remoteVers == "2@7777777");
+    CHECK(c4doc_selectRevision(doc, remoteVers, true, &error));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"two"})");
     c4doc_release(doc);
 
     // Check doc 4:
@@ -974,11 +981,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     CHECK(versionVector == "1@*,2@7777777");
     CHECK(doc->sequence == 14);
     CHECK(doc->flags == (kDocConflicted | kDocExists));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"four","rev":"three"})");
     remoteVers = c4doc_getRemoteAncestor(doc, 1);
     CHECK(remoteVers == "3@7777777");
     REQUIRE(c4doc_selectRevision(doc, remoteVers, true, &error));
     versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
     CHECK(versionVector == "3@7777777");
+    CHECK(c4doc_selectRevision(doc, remoteVers, true, &error));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"ans*wer":42})");
     c4doc_release(doc);
 
     // Check deleted doc:
