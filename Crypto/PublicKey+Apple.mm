@@ -579,10 +579,22 @@ namespace litecore { namespace crypto {
             CFAutorelease(trustRef);
             
             SecTrustResultType result; // Result will be ignored.
-            checkOSStatus(SecTrustEvaluate(trustRef, &result),
-                          "SecTrustEvaluate",
+            OSStatus err;
+#if TARGET_OS_MACCATALYST
+            if (@available(iOS 12.0, macos 10.14, *)) {
+                CFErrorRef cferr;
+                if (!SecTrustEvaluateWithError(trustRef, &cferr))
+                    warnCFError(cferr, "SecTrustEvaluateWithError");
+                err = SecTrustGetTrustResult(trustRef, &result);
+            } else {
+                LogToAt(TLSLogDomain, Error, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
+                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
+            }
+#else
+            err = SecTrustEvaluate(trustRef, &result);
+#endif
+            checkOSStatus(err, "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain" );
-            
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
             for (CFIndex i = 1; i < count; i++) {
@@ -623,8 +635,21 @@ namespace litecore { namespace crypto {
             CFAutorelease(trustRef);
             
             SecTrustResultType result; // Result will be ignored.
-            checkOSStatus(SecTrustEvaluate(trustRef, &result),
-                          "SecTrustEvaluate",
+            OSStatus err;
+#if TARGET_OS_MACCATALYST
+            if (@available(iOS 12.0, macos 10.14, *)) {
+                CFErrorRef cferr;
+                if (!SecTrustEvaluateWithError(trustRef, &cferr))
+                    warnCFError(cferr, "SecTrustEvaluateWithError");
+                err = SecTrustGetTrustResult(trustRef, &result);
+            } else {
+                LogToAt(TLSLogDomain, Error, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
+                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
+            }
+#else
+            err = SecTrustEvaluate(trustRef, &result);
+#endif
+            checkOSStatus(err, "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain");
             
             CFIndex count = SecTrustGetCertificateCount(trustRef);
@@ -677,13 +702,27 @@ namespace litecore { namespace crypto {
             checkOSStatus(SecTrustCreateWithCertificates(thisCert, policy, &trust),
                           "SecTrustCreateWithCertificates", "Couldn't validate certificate");
             CFAutorelease(trust);
+            
             SecTrustResultType result;
-            checkOSStatus(SecTrustEvaluate(trust, &result),
-                          "SecTrustEvaluate", "Couldn't validate certificate");
+            OSStatus err;
+#if TARGET_OS_MACCATALYST
+            if (@available(iOS 12.0, macos 10.14, *)) {
+                CFErrorRef cferr;
+                if (!SecTrustEvaluateWithError(trust, &cferr))
+                    warnCFError(cferr, "SecTrustEvaluateWithError");
+                err = SecTrustGetTrustResult(trust, &result);
+            } else {
+                LogToAt(TLSLogDomain, Error, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
+                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
+            }
+#else
+            err = SecTrustEvaluate(trust, &result);
+#endif
+            checkOSStatus(err, "SecTrustEvaluate", "Couldn't validate certificate");
             LogTo(TLSLogDomain, "    ...SecTrustEvaluate returned %d", result);
             if (result != kSecTrustResultUnspecified && result != kSecTrustResultProceed)
                 return nullptr;
-
+            
             Retained<Cert> root;
             CFIndex certCount = SecTrustGetCertificateCount(trust);
             for (CFIndex i = 1; i < certCount; ++i) {
