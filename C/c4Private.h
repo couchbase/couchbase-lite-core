@@ -92,6 +92,7 @@ C4StringResult c4db_getPeerID(C4Database* database) C4API;
 /** Sets the document flag kSynced. Used by the replicator to track synced documents. */
 bool c4db_markSynced(C4Database *database,
                      C4String docID,
+                     C4String revID,
                      C4SequenceNumber sequence,
                      C4RemoteID remoteID,
                      C4Error* C4NULLABLE outError) C4API;

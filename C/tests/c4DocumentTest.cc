@@ -1170,7 +1170,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Document][C]") {
     REQUIRE(curDoc != nullptr);
 
     // Call MarkRevSynced which will set the flag
-    bool markSynced = c4db_markSynced(db, kDocID, curDoc->sequence, testRemoteId, &error);
+    bool markSynced = c4db_markSynced(db, kDocID, curDoc->revID, curDoc->sequence,
+                                      testRemoteId, &error);
     REQUIRE(markSynced);
 
     // Get the latest version of the doc

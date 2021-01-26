@@ -315,7 +315,10 @@ C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) {
 
 
 // LCOV_EXCL_START
-bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequence,
+bool c4db_markSynced(C4Database *database,
+                     C4String docID,
+                     C4String revID,
+                     C4SequenceNumber sequence,
                      C4RemoteID remoteID,
                      C4Error *outError) noexcept
 {
@@ -337,14 +340,22 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
         release(doc.get());     // balances the +1 ref returned by c4doc_get()
         if (!doc)
             return false;
-        bool found = false;
-        do {
-            found = (doc->selectedRev.sequence == sequence);
-        } while (!found && doc->selectNextRevision());
-        if (found) {
-            doc->setRemoteAncestorRevID(remoteID, doc->selectedRev.revID);
-            result = c4doc_save(doc.get(), 9999, outError);       // don't prune anything
+        if (!revID.buf) {
+            // Look up revID by sequence, if it wasn't given:
+            Assert(sequence != 0);
+            do {
+                if (doc->selectedRev.sequence == sequence) {
+                    revID = doc->selectedRev.revID;
+                    break;
+                }
+            } while (doc->selectNextRevision());
+            if (!revID.buf) {
+                c4error_return(LiteCoreDomain, kC4ErrorNotFound, slice("Sequence not found"), outError);
+                return false;
+            }
         }
+        doc->setRemoteAncestorRevID(remoteID, revID);
+        result = c4doc_save(doc.get(), 9999, outError);       // don't prune anything
     } catchError(outError)
     return result;
 }
