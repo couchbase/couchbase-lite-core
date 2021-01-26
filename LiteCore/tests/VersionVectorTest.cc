@@ -234,7 +234,8 @@ TEST_CASE("RevID Parsing", "[RevIDs]") {
         {"97-beef",                 97,     "\xbe\xef",                         "61beef"},
         {"1-1234567890abcdef",      1,      "\x12\x34\x56\x78\x90\xab\xcd\xef", "011234567890abcdef"},
         {"123456-1234567890abcdef", 123456, "\x12\x34\x56\x78\x90\xab\xcd\xef", "c0c4071234567890abcdef"},
-
+        {"1234-d4596393df73462bbda0b9f8982c66a2", 1234,
+            "\xd4\x59\x63\x93\xdf\x73\x46\x2b\xbd\xa0\xb9\xf8\x98\x2c\x66\xa2", "d209d4596393df73462bbda0b9f8982c66a2"},
         // bad:
         {""},
         {"1"},

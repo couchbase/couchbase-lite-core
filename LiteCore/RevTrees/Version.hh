@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Base.hh"
+#include <optional>
 
 namespace fleece {
     class Value;
@@ -70,6 +71,8 @@ namespace litecore {
         /** Max length of a Version in ASCII form. */
         static constexpr size_t kMaxASCIILength = 2 * 16 + 1;
 
+        static std::optional<Version> readASCII(slice ascii, peerID myPeerID =kMePeerID);
+
         /** Converts the version to a human-readable string.
             When sharing a version with another peer, pass your actual peer ID in `myID`;
             then if `author` is kMePeerID it will be written as that ID.
@@ -100,6 +103,8 @@ namespace litecore {
         static void throwBadASCII(fleece::slice string = fleece::nullslice);
 
     private:
+        Version() { }
+        bool _readASCII(slice ascii) noexcept;
         void validate() const;
 
         peerID      _author;                // The ID of the peer who created this revision

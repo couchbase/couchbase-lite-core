@@ -180,11 +180,11 @@ namespace litecore {
     }
 
     bool revidBuffer::tryParse(slice ascii) noexcept {
-        uint8_t* start = _buffer, *end = start + sizeof(_buffer), *dst = start;
-        set(start, 0);
-
         if (ascii.findByte('-') != nullptr) {
             // Digest type:
+            uint8_t* start = _buffer, *end = start + sizeof(_buffer), *dst = start;
+            set(start, 0);
+
             uint64_t gen = ascii.readDecimal();
             if (gen == 0 || gen > UINT_MAX)
                 return false;
@@ -201,35 +201,17 @@ namespace litecore {
                     return false; // digest is not hex
                 *dst++ = (uint8_t)(16*digittoint(ascii[i]) + digittoint(ascii[i+1]));
             }
+
+            setEnd(dst);
+            return true;
         } else {
-            // Version type:
-            uint64_t gen = ascii.readHex();
-            if (gen == 0)
+            // Vector type:
+            auto vers = Version::readASCII(ascii);
+            if (!vers)
                 return false;
-            *dst++ = 0;
-            dst += PutUVarInt(dst, gen);
-
-            if (ascii.readByte() != '@')
-                return false;
-
-            uint64_t peerID;
-            if (ascii.peekByte() == '*') {
-                ascii.moveStart(1);
-                peerID = kMePeerID.id;
-            } else {
-                if (ascii.size == 0)
-                    return false;
-                peerID = ascii.readHex();
-                if (peerID == 0)
-                    return false;   // 0 must be expresed as '*'
-            }
-            if (ascii.size > 0)
-                return false;       // Must end after peerID. Multi-version vector is NOT allowed.
-            dst += PutUVarInt(dst, peerID);
+            *this = *vers;
+            return true;
         }
-
-        setEnd(dst);
-        return true;
     }
 
 }

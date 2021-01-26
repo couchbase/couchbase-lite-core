@@ -42,27 +42,10 @@ namespace litecore {
 
 
     Version::Version(slice ascii, peerID myPeerID) {
-        slice in = ascii;
-        _gen = in.readHex();
-        if (in.readByte() != '@' || _gen == 0)
+        if (!_readASCII(ascii))
             throwBadASCII(ascii);
-        if (in == "*"_sl) {
-#if 0
-            if (myPeerID != kMePeerID) {
-                // If I'm given an explicit peer ID for me, then '*' is not valid; the string
-                // is expected to contain that explicit ID instead.
-                error::_throw(error::BadRevisionID,
-                              "A '*' is not valid in this version string: '%.*s'", SPLAT(ascii));
-            }
-#endif
-            _author = kMePeerID;
-        } else {
-            _author.id = in.readHex();
-            if (in.size > 0 || _author == kMePeerID)
-                throwBadASCII(ascii);
-            if (_author == myPeerID)
-                _author = kMePeerID;    // Abbreviate my ID
-        }
+        if (_author == myPeerID)
+            _author = kMePeerID;    // Abbreviate my ID
     }
 
     
@@ -70,6 +53,33 @@ namespace litecore {
         if (!ReadUVarInt(dataP, &_gen) || !ReadUVarInt(dataP, &_author.id))
             throwBadBinary();
         validate();
+    }
+
+
+    /*static*/ optional<Version> Version::readASCII(slice ascii, peerID myPeerID) {
+        Version vers;
+        if (!vers._readASCII(ascii))
+            return nullopt;
+        if (vers._author == myPeerID)
+            vers._author = kMePeerID;    // Abbreviate my ID
+        return vers;
+    }
+
+
+    bool Version::_readASCII(slice ascii) noexcept {
+        slice in = ascii;
+        _gen = in.readHex();
+        if (in.readByte() != '@' || _gen == 0)
+            return false;
+        if (in.peekByte() == '*') {
+            in.readByte();
+            _author = kMePeerID;
+        } else {
+            _author.id = in.readHex();
+            if (_author.id == 0 || _author == kMePeerID)
+                return false;
+        }
+        return (in.size == 0);
     }
 
 
