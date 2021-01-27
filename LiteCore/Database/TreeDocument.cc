@@ -22,7 +22,7 @@
 #include "Database.hh"
 #include "Record.hh"
 #include "RawRevTree.hh"
-#include "VersionedDocument.hh"
+#include "RevTreeRecord.hh"
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
@@ -306,11 +306,11 @@ namespace c4Internal {
             else
                 _versionedDoc.prune();
             switch (_versionedDoc.save(_db->transaction())) {
-                case litecore::VersionedDocument::kConflict:
+                case litecore::RevTreeRecord::kConflict:
                     return false;
-                case litecore::VersionedDocument::kNoNewSequence:
+                case litecore::RevTreeRecord::kNoNewSequence:
                     return true;
-                case litecore::VersionedDocument::kNewSequence:
+                case litecore::RevTreeRecord::kNewSequence:
                     selectedRev.flags &= ~kRevNew;
                     if (_versionedDoc.sequence() > sequence) {
                         sequence = _versionedDoc.sequence();
@@ -618,7 +618,7 @@ namespace c4Internal {
 
 
     private:
-        VersionedDocument _versionedDoc;
+        RevTreeRecord _versionedDoc;
         const Rev *_selectedRev;
     };
 
@@ -646,7 +646,7 @@ namespace c4Internal {
     }
 
     Document* TreeDocumentFactory::treeDocumentContaining(FLValue value) {
-        VersionedDocument *vdoc = VersionedDocument::containing((const Value*)value);
+        RevTreeRecord *vdoc = RevTreeRecord::containing((const Value*)value);
         return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
     }
 

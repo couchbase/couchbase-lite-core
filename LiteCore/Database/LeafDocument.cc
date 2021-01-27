@@ -19,7 +19,6 @@
 #include "Document.hh"
 #include "TreeDocument.hh"
 #include "Database.hh"
-#include "VersionedDocument.hh"
 #include "RevID.hh"
 #include "Doc.hh"
 

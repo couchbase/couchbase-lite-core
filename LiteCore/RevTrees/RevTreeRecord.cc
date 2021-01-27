@@ -1,5 +1,5 @@
 //
-// VersionedDocument.cc
+// RevTreeRecord.cc
 //
 // Copyright (c) 2014 Couchbase, Inc All rights reserved.
 //
@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "VersionedDocument.hh"
+#include "RevTreeRecord.hh"
 #include "Record.hh"
 #include "KeyStore.hh"
 #include "DataFile.hh"
@@ -31,19 +31,19 @@ namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
 
-    VersionedDocument::VersionedDocument(KeyStore& store, slice docID)
+    RevTreeRecord::RevTreeRecord(KeyStore& store, slice docID)
     :_store(store), _rec(docID)
     {
         read();
     }
 
-    VersionedDocument::VersionedDocument(KeyStore& store, const Record& rec)
+    RevTreeRecord::RevTreeRecord(KeyStore& store, const Record& rec)
     :_store(store), _rec(rec)
     {
         decode();
     }
 
-    VersionedDocument::VersionedDocument(const VersionedDocument &other)
+    RevTreeRecord::RevTreeRecord(const RevTreeRecord &other)
     :RevTree(other)
     ,_store(other._store)
     ,_rec(other._rec)
@@ -51,16 +51,16 @@ namespace litecore {
         updateScope();
     }
 
-    VersionedDocument::~VersionedDocument() {
+    RevTreeRecord::~RevTreeRecord() {
         _fleeceScopes.clear(); // do this before the memory is freed (by _rec)
     }
 
-    void VersionedDocument::read() {
+    void RevTreeRecord::read() {
         _store.read(_rec);
         decode();
     }
 
-    void VersionedDocument::decode() {
+    void RevTreeRecord::decode() {
         _unknown = false;
         updateScope();
         if (_rec.body().buf) {
@@ -80,12 +80,12 @@ namespace litecore {
         }
     }
 
-    void VersionedDocument::updateScope() {
+    void RevTreeRecord::updateScope() {
         Assert(_fleeceScopes.empty());
         addScope(_rec.body());
     }
 
-    alloc_slice VersionedDocument::addScope(const alloc_slice &body) {
+    alloc_slice RevTreeRecord::addScope(const alloc_slice &body) {
         // A Scope associates the SharedKeys with the Fleece data in the body, so Fleece Dict
         // accessors can decode the int keys.
         if (body)
@@ -94,7 +94,7 @@ namespace litecore {
         return body;
     }
 
-    VersionedDocument* VersionedDocument::containing(const Value *value) {
+    RevTreeRecord* RevTreeRecord::containing(const Value *value) {
         if (value->isMutable()) {
             // Scope doesn't know about mutable Values (they're in the heap), but the mutable
             // Value may be a mutable copy of a Value with scope...
@@ -115,15 +115,15 @@ namespace litecore {
         return versScope->document;
     }
 
-    alloc_slice VersionedDocument::copyBody(slice body) {
+    alloc_slice RevTreeRecord::copyBody(slice body) {
         return addScope(RevTree::copyBody(body));
     }
 
-    alloc_slice VersionedDocument::copyBody(const alloc_slice &body) {
+    alloc_slice RevTreeRecord::copyBody(const alloc_slice &body) {
         return addScope(RevTree::copyBody(body));
     }
 
-    Retained<fleece::impl::Doc> VersionedDocument::fleeceDocFor(slice s) const {
+    Retained<fleece::impl::Doc> RevTreeRecord::fleeceDocFor(slice s) const {
         if (!s)
             return nullptr;
         for (auto &doc : _fleeceScopes) {
@@ -131,11 +131,11 @@ namespace litecore {
                 return new Doc(doc, s, Doc::kTrusted);
         }
         error::_throw(error::AssertionFailed,
-                      "VersionedDocument has no fleece::Doc containing slice");
+                      "RevTreeRecord has no fleece::Doc containing slice");
     }
 
 
-    bool VersionedDocument::updateMeta() {
+    bool RevTreeRecord::updateMeta() {
         auto oldFlags = _rec.flags();
         alloc_slice oldRevID = _rec.version();
 
@@ -163,7 +163,7 @@ namespace litecore {
         return _rec.flags() != oldFlags || _rec.version() != oldRevID;
     }
 
-    VersionedDocument::SaveResult VersionedDocument::save(Transaction& transaction) {
+    RevTreeRecord::SaveResult RevTreeRecord::save(Transaction& transaction) {
         if (!_changed)
             return kNoNewSequence;
         updateMeta();
@@ -193,7 +193,7 @@ namespace litecore {
     }
 
 #if DEBUG
-    void VersionedDocument::dump(std::ostream& out) {
+    void RevTreeRecord::dump(std::ostream& out) {
         out << "\"" << (std::string)docID() << "\" / " << (std::string)revID();
         out << " (seq " << sequence() << ") ";
         if (isDeleted())

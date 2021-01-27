@@ -40,7 +40,7 @@ namespace litecore {
     class BlobStore;
     class BackgroundDB;
     class Housekeeper;
-    class VersionedDocument;
+    class RevTreeRecord;
 }
 
 
@@ -182,7 +182,7 @@ namespace c4Internal {
         std::unordered_set<std::string> collectBlobs();
         void removeUnusedBlobs(const std::unordered_set<std::string> &used);
         void upgradeToVersionVectors(Transaction&);
-        alloc_slice upgradeRemoteRevsToVersionVectors(VersionedDocument&, alloc_slice currentVersion);
+        alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
         const string                _name;
         const string                _parentDirectory;

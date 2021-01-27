@@ -206,7 +206,7 @@ namespace litecore {
     }
 
     bool RevTree::isBodyOfRevisionAvailable(const Rev* rev) const {
-        return rev->_body.buf != nullptr; // VersionedDocument overrides this
+        return rev->_body.buf != nullptr; // RevTreeRecord overrides this
     }
 
     bool RevTree::confirmLeaf(Rev* testRev) {

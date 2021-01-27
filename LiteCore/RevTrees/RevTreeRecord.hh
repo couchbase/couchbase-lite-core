@@ -1,5 +1,5 @@
 //
-// VersionedDocument.hh
+// RevTreeRecord.hh
 //
 // Copyright (c) 2014 Couchbase, Inc All rights reserved.
 //
@@ -32,14 +32,14 @@ namespace litecore {
     class Transaction;
 
     /** Manages storage of a serialized RevTree in a Record. */
-    class VersionedDocument : public RevTree {
+    class RevTreeRecord : public RevTree {
     public:
 
-        VersionedDocument(KeyStore&, slice docID);
-        VersionedDocument(KeyStore&, const Record&);
+        RevTreeRecord(KeyStore&, slice docID);
+        RevTreeRecord(KeyStore&, const Record&);
 
-        VersionedDocument(const VersionedDocument&);
-        ~VersionedDocument();
+        RevTreeRecord(const RevTreeRecord&);
+        ~RevTreeRecord();
 
         /** Reads and parses the body of the record. Useful if doc was read as meta-only. */
         void read();
@@ -68,8 +68,8 @@ namespace litecore {
 
         fleece::Retained<fleece::impl::Doc> fleeceDocFor(slice) const;
 
-        /** Given a Fleece Value, finds the VersionedDocument it belongs to. */
-        static VersionedDocument* containing(const fleece::impl::Value*);
+        /** Given a Fleece Value, finds the RevTreeRecord it belongs to. */
+        static RevTreeRecord* containing(const fleece::impl::Value*);
 
         /** A pointer for clients to use */
         void* owner {nullptr};
@@ -88,12 +88,12 @@ namespace litecore {
         class VersFleeceDoc : public fleece::impl::Doc {
         public:
             VersFleeceDoc(const alloc_slice &fleeceData, fleece::impl::SharedKeys* sk,
-                         VersionedDocument *document_)
+                         RevTreeRecord *document_)
             :fleece::impl::Doc(fleeceData, Doc::kDontParse, sk)
             ,document(document_)
             { }
 
-            VersionedDocument* const document;
+            RevTreeRecord* const document;
         };
 
         void decode();

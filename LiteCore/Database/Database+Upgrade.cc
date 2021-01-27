@@ -20,7 +20,7 @@
 #include "NuDocument.hh"
 #include "RecordEnumerator.hh"
 #include "RevID.hh"
-#include "VersionedDocument.hh"
+#include "RevTreeRecord.hh"
 #include "VersionVector.hh"
 #include "StringUtil.hh"
 #include <vector>
@@ -33,7 +33,7 @@ namespace c4Internal {
     static constexpr peerID kLegacyPeerID {0x7777777};
 
     static pair<alloc_slice, alloc_slice>
-    upgradeRemoteRevs(Database*, Record rec, VersionedDocument&, alloc_slice currentVersion);
+    upgradeRemoteRevs(Database*, Record rec, RevTreeRecord&, alloc_slice currentVersion);
 
 
     static const Rev* commonAncestor(const Rev *a, const Rev *b) {
@@ -58,9 +58,9 @@ namespace c4Internal {
         options.contentOption = kEntireBody;
         RecordEnumerator e(defaultKeyStore(), options);
         while (e.next()) {
-            // Read the doc as a rev-tree based VersionedDocument:
+            // Read the doc as a RevTreeRecord:
             const Record &rec = e.record();
-            VersionedDocument doc(defaultKeyStore(), rec);
+            RevTreeRecord doc(defaultKeyStore(), rec);
             auto currentRev = doc.currentRevision();
             auto remoteRev = doc.latestRevisionOnRemote(RevTree::kDefaultRemoteID);
             auto baseRev = commonAncestor(currentRev, remoteRev);
@@ -115,7 +115,7 @@ namespace c4Internal {
 
     static pair<alloc_slice, alloc_slice> upgradeRemoteRevs(Database *db,
                                                             Record rec,
-                                                            VersionedDocument &doc,
+                                                            RevTreeRecord &doc,
                                                             alloc_slice currentVersion)
     {
         // Instantiate a NuDocument for this document (without reading the database):
