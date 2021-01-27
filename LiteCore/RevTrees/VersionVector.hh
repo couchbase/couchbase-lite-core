@@ -9,8 +9,8 @@
 #pragma once
 
 #include "Version.hh"
+#include "SmallVector.hh"
 #include <optional>
-#include <vector>
 
 namespace litecore {
 
@@ -65,11 +65,13 @@ namespace litecore {
         /** True if the vector is non-empty. */
         explicit operator bool() const                      {return count() > 0;}
 
+        using vec = fleece::smallVector<Version, 2>;
+
         size_t count() const                                {return _vers.size();}
         bool empty() const                                  {return _vers.size() == 0;}
         const Version& operator[] (size_t i) const          {return _vers[i];}
-        const Version& current() const                      {return _vers.at(0);}
-        const std::vector<Version>& versions() const        {return _vers;}
+        const Version& current() const                      {return _vers.get(0);}
+        const vec& versions() const        {return _vers;}
 
         /** Returns the generation count for the given author. */
         generation genOfAuthor(peerID) const;
@@ -154,8 +156,9 @@ namespace litecore {
         VersionVector byApplyingDelta(const VersionVector &delta) const;
 
     private:
-        VersionVector(std::vector<Version>::const_iterator begin,
-                      std::vector<Version>::const_iterator end)
+
+        VersionVector(vec::const_iterator begin,
+                      vec::const_iterator end)
         :_vers(begin, end)
         { }
 #if DEBUG
@@ -164,9 +167,9 @@ namespace litecore {
         void validate() const                               { }
 #endif
         // Finds my version by this author and returns an iterator to it, else returns end()
-        std::vector<Version>::iterator findPeerIter(peerID) const;
+        vec::iterator findPeerIter(peerID) const;
 
-        std::vector<Version> _vers;          // versions, in order
+        vec _vers;          // versions, in order
     };
 
 }

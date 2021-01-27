@@ -25,6 +25,8 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
+    using vec = VersionVector::vec;
+
 
     // Utility that allocates a buffer, lets the callback write into it, then trims the buffer.
     static inline alloc_slice writeAlloced(size_t maxSize, function_ref<bool(slice*)> writer) {
@@ -211,7 +213,7 @@ namespace litecore {
         return o;
     }
 
-    vector<Version>::iterator VersionVector::findPeerIter(peerID author) const {
+    vec::iterator VersionVector::findPeerIter(peerID author) const {
         auto &vers = const_cast<VersionVector*>(this)->_vers;
         auto v = vers.begin();
         for (; v != vers.end(); ++v) {
@@ -305,7 +307,7 @@ namespace litecore {
     // A hash table mapping peerID->generation, as an optimization for versionVector operations
     class versionMap {
     public:
-        versionMap(const vector<Version> &vec) {
+        versionMap(const vec &vec) {
             _map.reserve(vec.size());
             for (auto &v : vec)
                 add(v);
