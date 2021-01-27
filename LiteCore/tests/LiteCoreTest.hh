@@ -102,7 +102,6 @@ public:
     sequence_t writeDoc(slice docID, DocumentFlags, Transaction&,
                         std::function<void(fleece::impl::Encoder&)>);
 
-    virtual slice fleeceAccessor(slice recordBody) const override;
     virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
 };
 

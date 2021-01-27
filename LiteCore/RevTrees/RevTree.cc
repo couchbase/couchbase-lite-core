@@ -36,8 +36,8 @@ namespace litecore {
 
     static bool compareRevs(const Rev *rev1, const Rev *rev2);
 
-    RevTree::RevTree(slice raw_tree, sequence_t seq) {
-        decode(raw_tree, seq);
+    RevTree::RevTree(slice body, slice extra, sequence_t seq) {
+        decode(body, extra, seq);
     }
 
     RevTree::RevTree(const RevTree &other)
@@ -66,9 +66,18 @@ namespace litecore {
         }
     }
 
-    void RevTree::decode(litecore::slice raw_tree, sequence_t seq) {
-        _revsStorage = RawRevision::decodeTree(raw_tree, _remoteRevs, this, seq);
+    void RevTree::decode(slice body, slice extra, sequence_t seq) {
+        // In 2.0 schema, entire tree is stored in `body` and there is no `extra`.
+        // In 3.0 schema, the rev tree is in `extra`, except the current rev's body is in `body`.
+        slice rawTree = (extra ? extra : body);
+        _revsStorage = RawRevision::decodeTree(rawTree, _remoteRevs, this, seq);
         initRevs();
+        if (body && extra) {
+            auto cur = currentRevision();
+            Assert(cur);
+            Assert(!cur->body());
+            substituteBody(cur, body);
+        }
     }
 
     void RevTree::initRevs() {
@@ -80,9 +89,18 @@ namespace litecore {
         }
     }
 
-    alloc_slice RevTree::encode() {
+    std::pair<slice,alloc_slice> RevTree::encode() {
         sort();
-        return RawRevision::encodeTree(_revs, _remoteRevs);
+        const Rev *cur = currentRevision();
+        slice curBody;
+        if (cur) {
+            curBody = cur->body();
+            substituteBody(cur, nullslice);
+        }
+        alloc_slice tree = RawRevision::encodeTree(_revs, _remoteRevs);
+        if (cur)
+            substituteBody(cur, curBody);
+        return {curBody, tree};
     }
 
 #if DEBUG

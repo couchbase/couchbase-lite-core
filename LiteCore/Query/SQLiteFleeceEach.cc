@@ -225,11 +225,6 @@ private:
             Warn("fleece_each filter called with null document! Query is likely to fail. (#379)");
             return SQLITE_OK;
         }
-        if (idxNum == kPathIndex) {
-            // If fl_each is called with a 2nd (property path) argument, then the first arg is the
-            // doc body, which we need to extract Fleece from:
-            data = _vtab->context.delegate->fleeceAccessor(data);
-        }
         if (size_t(data.buf) & 1) {
             // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
             // revision data, so it could occur. Now that it's not allowed, we have to work around

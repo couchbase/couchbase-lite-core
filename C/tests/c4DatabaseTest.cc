@@ -869,7 +869,7 @@ static void testOpeningOlderDBFixture(const string & dbPath,
 }
 
 
-TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
+TEST_CASE("Database Upgrade From 2.7 to New Rev-Trees", "[Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", 0);
 // In 3.0 it's no longer possible to open 2.7 databases without upgrading
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
@@ -897,6 +897,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
         return;
 
     {
+        // Initially populate a v3 rev-tree based database:
         TransactionHelper t(db);
         createNumberedDocs(5);
         // Add a deleted doc to make sure it's skipped by default:

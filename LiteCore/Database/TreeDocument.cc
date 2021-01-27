@@ -637,10 +637,6 @@ namespace c4Internal {
         return new TreeDocument(database(), rec);
     }
 
-    slice TreeDocumentFactory::fleeceAccessor(slice docBody) const {
-        return RawRevision::getCurrentRevBody(docBody);
-    }
-
     bool TreeDocumentFactory::isFirstGenRevID(slice revID) const {
         return revID.hasPrefix(slice("1-", 2));
     }
@@ -669,7 +665,7 @@ namespace c4Internal {
             revidBuffer revID;
             revID.parse(revMap[rec.key]);
 
-            RevTree tree(rec.body, 0);
+            RevTree tree(rec.body, rec.extra, 0);
 
             // Does it exist in the doc?
             if (tree[revID]) {

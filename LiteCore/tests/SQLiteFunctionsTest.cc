@@ -51,20 +51,11 @@ public:
 
     void insert(const char *key, const char *json) {
         auto body = JSONConverter::convertJSON(slice(json5(json)), sharedKeys);
-        fleeceAccessor(body); // 'encode' the data in the database to test the accessor function
         insertStmt->bind(1, key);
         insertStmt->bind(2, body.buf, (int)body.size);
         insertStmt->exec();
         insertStmt->reset();
     }
-
-    virtual slice fleeceAccessor(slice s) const override {
-        uint8_t* bytes = (uint8_t*)s.buf;
-        for (size_t i = 0; i < s.size; ++i)
-            bytes[i] ^= 0xFF;
-        return s;
-    }
-
 
     virtual alloc_slice blobAccessor(const Dict *blob) const override {
         auto digestProp = blob->get("digest"_sl);

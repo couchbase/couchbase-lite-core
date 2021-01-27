@@ -316,7 +316,8 @@ extern "C" {
     //-------- DEPRECATED API --------
 
     typedef C4_ENUM(uint32_t, C4DocumentVersioning) {
-        kC4RevisionTrees,           ///< Revision trees
+        kC4TreeVersioning_v2,       ///< Revision trees, old v2.x schema
+        kC4TreeVersioning,          ///< Revision trees, v3.x schema
         kC4VectorVersioning         ///< Version vectors
     };
 

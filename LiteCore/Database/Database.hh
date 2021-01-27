@@ -150,7 +150,6 @@ namespace c4Internal {
         void unlockClientMutex()                            {_clientMutex.unlock();}
 
         // DataFile::Delegate API:
-        virtual slice fleeceAccessor(slice recordBody) const override;
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         virtual void externalTransactionCommitted(const SequenceTracker&) override;
 
@@ -181,7 +180,10 @@ namespace c4Internal {
         std::unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         std::unordered_set<std::string> collectBlobs();
         void removeUnusedBlobs(const std::unordered_set<std::string> &used);
-        void upgradeToVersionVectors(Transaction&);
+
+        void checkDocumentVersioning();
+        void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,
+                                       Transaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
         const string                _name;

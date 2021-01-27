@@ -42,7 +42,7 @@ namespace litecore {
         if (body) {
             DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_BLOB);
             DebugAssert(sqlite3_value_subtype(argv[0]) == 0);
-            setResultBlobFromFleeceData(ctx, fleeceAccessor(ctx, body));
+            setResultBlobFromFleeceData(ctx, body);
             return;
         }
         // If arg isn't a blob, check if it's a tagged Fleece pointer:

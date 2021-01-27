@@ -23,6 +23,7 @@
 #include <climits>
 #include <deque>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 
@@ -90,13 +91,13 @@ namespace litecore {
     class RevTree {
     public:
         RevTree() { }
-        RevTree(slice raw_tree, sequence_t seq);
+        RevTree(slice body, slice extra, sequence_t seq);
         RevTree(const RevTree&);
         virtual ~RevTree() { }
 
-        void decode(slice raw_tree, sequence_t seq);
+        void decode(slice body, slice extra, sequence_t seq);
 
-        alloc_slice encode();
+        std::pair<slice,alloc_slice> encode();
 
         size_t size() const FLPURE                             {return _revs.size();}
         const Rev* get(unsigned index) const FLPURE;
@@ -193,6 +194,7 @@ namespace litecore {
         bool isLatestRemoteRevision(const Rev* NONNULL) const FLPURE;
         virtual alloc_slice copyBody(slice body);
         virtual alloc_slice copyBody(const alloc_slice &body);
+        void substituteBody(const Rev *rev, slice body)       {const_cast<Rev*>(rev)->_body = body;}
 #if DEBUG
         virtual void dump(std::ostream&);
 #endif

@@ -21,6 +21,7 @@
 #include "KeyStore.hh"
 #include "DataFile.hh"
 #include "Error.hh"
+#include "StringUtil.hh"
 #include "Doc.hh"
 #include "varint.hh"
 #include "MutableArray.hh"
@@ -63,26 +64,36 @@ namespace litecore {
     void RevTreeRecord::decode() {
         _unknown = false;
         updateScope();
-        if (_rec.body().buf) {
-            RevTree::decode(_rec.body(), _rec.sequence());
-            // The kSynced flag is set when the document's current revision is pushed to a server.
-            // This is done instead of updating the doc body, for reasons of speed. So when loading
-            // the document, detect that flag and belatedly update the current revision's flags.
-            // Since the revision is now likely stored on the server, it may be the base of a merge
-            // in the future, so preserve its body:
-            if (_rec.flags() & DocumentFlags::kSynced) {
-                setLatestRevisionOnRemote(kDefaultRemoteID, currentRevision());
-                keepBody(currentRevision());
-                _changed = false;
-            }
+
+        if (_rec.body() || _rec.extra()) {
+            RevTree::decode(_rec.body(), _rec.extra(),  _rec.sequence());
+            // If there is no `extra`, this record is being upgraded from v2.x and must be saved:
+            if (!_rec.extra())
+                _changed = true;
         } else if (_rec.bodySize() > 0) {
             _unknown = true;        // i.e. rec was read as meta-only
+        }
+
+        if (!_unknown) {
+            if (auto cur = currentRevision(); cur && (_rec.flags() & DocumentFlags::kSynced)) {
+                // The kSynced flag is set when the document's current revision is pushed to a server.
+                // This is done instead of updating the doc body, for reasons of speed. So when loading
+                // the document, detect that flag and belatedly update the current revision's flags.
+                // Since the revision is now likely stored on the server, it may be the base of a merge
+                // in the future, so preserve its body:
+                bool wasChanged = _changed;
+                setLatestRevisionOnRemote(kDefaultRemoteID, cur);
+                keepBody(cur);
+                _changed = wasChanged;
+            }
         }
     }
 
     void RevTreeRecord::updateScope() {
         Assert(_fleeceScopes.empty());
         addScope(_rec.body());
+        if (_rec.extra())
+            addScope(_rec.extra());
     }
 
     alloc_slice RevTreeRecord::addScope(const alloc_slice &body) {
@@ -169,18 +180,33 @@ namespace litecore {
         updateMeta();
         sequence_t seq = _rec.sequence();
         bool createSequence;
-        if (currentRevision()) {
+        if (auto cur = currentRevision(); cur) {
+            createSequence = (seq == 0 || hasNewRevisions());
             removeNonLeafBodies();
-            auto newBody = encode();
-            createSequence = seq == 0 || hasNewRevisions();
-            // (Don't call _rec.setBody(), because it'd invalidate all the inner pointers from
-            // Revs into the existing body buffer.)
-            seq = _store.set(_rec.key(), _rec.version(), newBody, _rec.flags(),
-                          transaction, seq, createSequence);
+            slice newBody;
+            alloc_slice newExtra;
+            std::tie(newBody, newExtra) = encode();
+
+            RecordLite newRec;
+            newRec.key = _rec.key();
+            newRec.version = _rec.version();
+            newRec.flags = _rec.flags();
+            newRec.sequence = seq;
+            newRec.updateSequence = createSequence;
+            newRec.body = newBody;
+            newRec.extra = newExtra;
+
+            seq = _store.set(newRec, transaction);
             if (!seq)
                 return kConflict;               // Conflict
+
             _rec.updateSequence(seq);
             _rec.setExists();
+            // (Don't update _rec body or extra, because it'd invalidate all the inner pointers from
+            // Rev objects into the existing body/extra buffer.)
+            LogToAt(DBLog, Verbose, "Saved doc '%.*s' #%s; body=%zu, extra=%zu",
+                  SPLAT(newRec.key), revid(newRec.version).str().c_str(),
+                  newRec.body.size, newRec.extra.size);
             if (createSequence)
                 saved(seq);
         } else {

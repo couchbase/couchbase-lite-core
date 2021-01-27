@@ -55,11 +55,6 @@ namespace litecore {
         return ((fleeceFuncContext*)sqlite3_user_data(ctx))->delegate;
     }
 
-    static inline slice fleeceAccessor(sqlite3_context *ctx, slice body) {
-        auto delegate = getDBDelegate(ctx);
-        return delegate ? delegate->fleeceAccessor(body) : body;
-    }
-
     // Returns the data of a SQLite blob value as a slice
     static inline slice valueAsSlice(sqlite3_value *arg) noexcept {
         const void *blob = sqlite3_value_blob(arg); // must be called _before_ sqlite3_value_bytes

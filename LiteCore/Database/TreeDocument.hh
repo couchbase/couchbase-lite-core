@@ -30,7 +30,6 @@ namespace c4Internal {
         Retained<Document> newDocumentInstance(const Record&) override;
         Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID, bool withBody) override;
         bool isFirstGenRevID(slice revID) const override;
-        slice fleeceAccessor(slice docBody) const override;
 
         std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs, const std::vector<slice> &revIDs,
                                                unsigned maxAncestors, bool mustHaveBodies,

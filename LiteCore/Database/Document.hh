@@ -238,10 +238,6 @@ namespace c4Internal {
         virtual Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID,
                                                            bool withBody) =0;
 
-        virtual slice fleeceAccessor(slice docBody) const {
-            return docBody;
-        }
-
         virtual alloc_slice revIDFromVersion(slice version) const;
 
         virtual bool isFirstGenRevID(slice revID) const {

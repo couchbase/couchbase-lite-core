@@ -44,11 +44,6 @@ namespace litecore {
         static alloc_slice encodeTree(const std::vector<Rev*> &revs,
                                       const RevTree::RemoteRevMap &remoteMap);
 
-        static inline slice getCurrentRevBody(slice raw_tree) noexcept {
-            const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
-            return rawRev->body();
-        }
-
     private:
         static const uint16_t kNoParent = UINT16_MAX;
 

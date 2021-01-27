@@ -25,6 +25,7 @@
 #include "BackgroundDB.hh"
 #include "Housekeeper.hh"
 #include "DataFile.hh"
+#include "SQLiteDataFile.hh"
 #include "Record.hh"
 #include "SequenceTracker.hh"
 #include "FleeceImpl.hh"
@@ -172,33 +173,8 @@ namespace c4Internal {
         if (options.useDocumentKeys)
             _encoder->setSharedKeys(documentKeys());
 
-        // Validate that the versioning matches what's used in the database:
-        auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
-        Record doc = info.get(slice("versioning"));
-        if (doc.exists()) {
-            if (doc.bodyAsUInt() != (uint64_t)inConfig.versioning) {
-                if (!(_config.flags & (kC4DB_ReadOnly |kC4DB_NoUpgrade))
-                        && inConfig.versioning == kC4VectorVersioning) {
-                    doc.setBodyAsUInt((uint64_t)inConfig.versioning);
-                    Transaction t(*_dataFile);
-                    info.set(doc, t);
-                    upgradeToVersionVectors(t);
-                    t.commit();
-                } else {
-                    error::_throw(error::WrongFormat);
-                }
-            }
-        } else if (_config.flags & kC4DB_Create) {
-            // First-time initialization:
-            doc.setBodyAsUInt((uint64_t)inConfig.versioning);
-            Transaction t(*_dataFile);
-            info.set(doc, t);
-            (void)generateUUID(kPublicUUIDKey, t);
-            (void)generateUUID(kPrivateUUIDKey, t);
-            t.commit();
-        } else if (inConfig.versioning != kC4RevisionTrees) {
-            error::_throw(error::WrongFormat);
-        }
+        // Validate or upgrade the database's document schema/versioning:
+        checkDocumentVersioning();
     }
 
 
@@ -214,6 +190,43 @@ namespace c4Internal {
 
 
 #pragma mark - HOUSEKEEPING:
+
+
+    void Database::checkDocumentVersioning() {
+        //FIXME: This ought to be done _before_ the SQLite userVersion is updated
+        // Compare existing versioning against runtime config:
+        auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
+        Record versDoc = info.get(slice("versioning"));
+        auto curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
+        auto newVersioning = _configV1.versioning;
+        if (versDoc.exists() && curVersioning == newVersioning)
+            return;
+
+        // Mismatch -- open a transaction and recheck:
+        Transaction t(_dataFile);
+        versDoc = info.get(slice("versioning"));
+        curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
+        if (versDoc.exists() && curVersioning == newVersioning)
+            return;
+
+        // Yup, mismatch confirmed, so deal with it:
+        if (versDoc.exists()) {
+            // Existing db versioning does not match runtime config!
+            upgradeDocumentVersioning(curVersioning, newVersioning, t);
+        } else if (_config.flags & kC4DB_Create) {
+            // First-time initialization:
+            (void)generateUUID(kPublicUUIDKey, t);
+            (void)generateUUID(kPrivateUUIDKey, t);
+        } else {
+            // Should never occur (existing db must have its versioning marked!)
+            error::_throw(error::WrongFormat);
+        }
+
+        // Store new versioning:
+        versDoc.setBodyAsUInt((uint64_t)newVersioning);
+        info.set(versDoc, t);
+        t.commit();
+    }
 
 
     void Database::close() {
@@ -358,11 +371,6 @@ namespace c4Internal {
 
 
 #pragma mark - ACCESSORS:
-
-
-    slice Database::fleeceAccessor(slice recordBody) const {
-        return _documentFactory->fleeceAccessor(recordBody);
-    }
 
 
     // Callback that takes a base64 blob digest and returns the blob data

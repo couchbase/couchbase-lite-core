@@ -51,8 +51,6 @@ namespace litecore {
         class Delegate {
         public:
             virtual ~Delegate() =default;
-            // Callback that takes a record body and returns the portion of it containing Fleece data
-            virtual slice fleeceAccessor(slice recordBody) const =0;
             // Callback that takes a blob dictionary and returns the blob data
             virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const =0;
             // Notifies that another DataFile on the same physical file has committed a transaction

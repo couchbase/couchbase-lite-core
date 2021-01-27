@@ -42,7 +42,7 @@ namespace litecore {
             return nullslice;             // No 'body' column; may be deleted doc
         DebugAssert(type == SQLITE_BLOB);
         DebugAssert(sqlite3_value_subtype(arg) == 0);
-        return fleeceAccessor(ctx, valueAsSlice(arg));
+        return valueAsSlice(arg);
     }
 
 
