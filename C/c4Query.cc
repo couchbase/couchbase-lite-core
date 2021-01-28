@@ -88,7 +88,7 @@ C4QueryEnumerator* c4query_run(C4Query *query,
                                C4Error *outError) noexcept
 {
     return tryCatch<C4QueryEnumerator*>(outError, [&]{
-        return retain(query->createEnumerator(c4options, encodedParameters).get());
+        return retain(query->createEnumerator(c4options, encodedParameters));
     });
 }
 
@@ -198,7 +198,7 @@ C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs,
                                             bool forget,
                                             C4Error *outError) C4API
 {
-    return retain(obs->currentEnumerator(forget, outError).get());
+    return retain(obs->currentEnumerator(forget, outError));
 }
 
 

@@ -19,6 +19,7 @@ _c4log_setBinaryFileLevel
 _c4log_getDomain
 _c4log_getDomainName
 _c4log_warnOnErrors
+_c4log_enableFatalExceptionBacktrace
 
 _c4error_make
 _c4error_getMessage
@@ -370,7 +371,6 @@ _c4error_return
 _c4db_markSynced
 _c4_dumpInstances
 _gC4ExpectExceptions
-_c4log_enableFatalExceptionBacktrace
 
 _FLDoc_FromJSON
 _FLDoc_Retain

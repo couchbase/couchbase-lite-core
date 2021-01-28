@@ -49,10 +49,6 @@ using namespace std;
 static inline CertBase* internal(C4Cert *cert)    {return (CertBase*)cert;}
 static inline C4Cert* external(CertBase *cert)    {return (C4Cert*)cert;}
 
-static C4Cert* retainedExternal(CertBase *cert) {
-    return external(retain(cert));
-}
-
 static CertSigningRequest* asUnsignedCert(C4Cert *cert NONNULL, C4Error *outError =nullptr) {
     if (internal(cert)->isSigned()) {
         c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Cert already signed"_sl, outError);
@@ -73,10 +69,6 @@ static Cert* asSignedCert(C4Cert *cert NONNULL, C4Error *outError =nullptr) {
 static inline Key* internal(C4KeyPair *key)    {return (Key*)key;}
 static inline C4KeyPair* external(Key *key)    {return (C4KeyPair*)key;}
 
-static C4KeyPair* retainedExternal(Key *key) {
-    return external(retain(key));
-}
-
 LITECORE_UNUSED static PublicKey* publicKey(C4KeyPair *c4key NONNULL) {
     auto key = internal(c4key);
     return key->isPrivate() ? ((PrivateKey*)key)->publicKey().get() : (PublicKey*)key;
@@ -94,6 +86,13 @@ static PersistentPrivateKey* persistentPrivateKey(C4KeyPair *c4key NONNULL) {
     return nullptr;
 }
 #endif
+
+
+template <class T>
+static auto retainedExternal(T *ref)            {return external(retain(ref));}
+
+template <class T>
+static auto retainedExternal(Retained<T> &&ref) {return external(retain(std::move(ref)));}
 
 
 CBL_CORE_API const C4CertIssuerParameters kDefaultCertIssuerParameters = {
@@ -291,8 +290,7 @@ C4Cert* c4cert_signRequest(C4Cert *c4Cert,
         }
 
         // Sign!
-        Retained<Cert> cert = csr->sign(params, privateKey(issuerPrivateKey), issuerCert);
-        return retainedExternal(cert.get());
+        return retainedExternal(csr->sign(params, privateKey(issuerPrivateKey), issuerCert));
     });
 }
 
@@ -338,7 +336,7 @@ C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert* cert, C4Error *outError) C4AP
     return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
         if (auto signedCert = asSignedCert(cert, outError); signedCert) {
             if (auto key = signedCert->loadPrivateKey(); key)
-                return retainedExternal(key);
+                return retainedExternal(std::move(key));
         }
         return nullptr;
     });
@@ -397,7 +395,7 @@ C4Cert* c4cert_load(C4String name,
 {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     return tryCatch<C4Cert*>(outError, [&]() {
-        return retainedExternal(Cert::loadCert(toString(name)).get());
+        return retainedExternal(Cert::loadCert(toString(name)));
     });
 #else
     c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
@@ -430,7 +428,7 @@ C4KeyPair* c4keypair_generate(C4KeyPairAlgorithm algorithm,
         } else {
             privateKey = PrivateKey::generateTemporaryRSA(sizeInBits);
         }
-        return retainedExternal(privateKey);
+        return retainedExternal(std::move(privateKey));
     });
 }
 
@@ -460,7 +458,7 @@ C4KeyPair* c4keypair_persistentWithPublicKey(C4KeyPair* key, C4Error *outError) 
             clearError(outError);
             return nullptr;
         }
-        return retainedExternal(privKey);
+        return retainedExternal(std::move(privKey));
     });
 #else
     c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);

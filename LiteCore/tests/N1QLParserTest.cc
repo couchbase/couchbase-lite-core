@@ -247,4 +247,12 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
           == "{'FROM':[{'AS':'db'},{'AS':'other','JOIN':'INNER','ON':['=',['.other.key'],['.db.key']]}],'WHAT':[['.db.name']]}");
     CHECK(translate("SELECT db.name FROM db JOIN db AS other ON other.key = db.key CROSS JOIN x")
           == "{'FROM':[{'AS':'db'},{'AS':'other','JOIN':'INNER','ON':['=',['.other.key'],['.db.key']]},{'AS':'x','JOIN':'CROSS'}],'WHAT':[['.db.name']]}");
+    CHECK(translate("SELECT rec, dss, dem FROM db rec LEFT JOIN db dss ON rec.sessionId = dss.meta.id "
+                    "LEFT JOIN db dem ON rec.demId = dem.meta.id WHERE rec.meta.id LIKE 'rec:%'")
+          == "{'FROM':[{'AS':'rec'},{'AS':'dss','JOIN':'LEFT','ON':['=',['.rec.sessionId'],['.dss._id']]},"
+             "{'AS':'dem','JOIN':'LEFT','ON':['=',['.rec.demId'],['.dem._id']]}],'WHAT':[['.rec'],['.dss'],['.dem']],"
+             "'WHERE':['LIKE',['.rec._id'],'rec:%']}");
+    CHECK(translate("SELECT a, b, c FROM db a JOIN db b ON (a.n = b.n) JOIN db c ON (b.m = c.m) WHERE a.type = b.type AND b.type = c.type")
+          == "{'FROM':[{'AS':'a'},{'AS':'b','JOIN':'INNER','ON':['=',['.a.n'],['.b.n']]},{'AS':'c','JOIN':'INNER','ON':['=',['.b.m'],['.c.m']]}],"
+             "'WHAT':[['.a'],['.b'],['.c']],'WHERE':['AND',['=',['.a.type'],['.b.type']],['=',['.b.type'],['.c.type']]]}");
 }

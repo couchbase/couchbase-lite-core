@@ -963,7 +963,7 @@ TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
     local_seconds localtime = (local_days)(2018_y/10/23); 
     struct tm tmpTime = FromTimestamp(localtime.time_since_epoch());
-    localtime += GetLocalTZOffset(&tmpTime, false);
+    localtime -= GetLocalTZOffset(&tmpTime, false);
     
     stringstream s1, s2, s3;
     s1 << date::format("%FT%TZ", localtime);
@@ -975,7 +975,7 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
     localtime = (local_days)(1944_y/6/6);
     localtime += 6h + 30min;
     tmpTime = FromTimestamp(localtime.time_since_epoch());
-    localtime += GetLocalTZOffset(&tmpTime, false);
+    localtime -= GetLocalTZOffset(&tmpTime, false);
     stringstream s4;
     s4 << date::format("%FT%TZ", localtime);
 

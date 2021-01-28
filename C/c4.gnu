@@ -20,6 +20,7 @@ CBL {
 		c4log_getDomain;
 		c4log_getDomainName;
 		c4log_warnOnErrors;
+		c4log_enableFatalExceptionBacktrace;
 
 		c4error_make;
 		c4error_getMessage;
@@ -370,7 +371,6 @@ CBL {
 		c4db_markSynced;
 		c4_dumpInstances;
 		gC4ExpectExceptions;
-		c4log_enableFatalExceptionBacktrace;
 
 		FLDoc_FromJSON;
 		FLDoc_Retain;

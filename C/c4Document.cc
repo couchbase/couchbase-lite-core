@@ -58,7 +58,7 @@ static C4Document* newDoc(bool mustExist, C4Error *outError,
             doc = nullptr;
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         }
-        return retain(doc.get());
+        return retain(move(doc));
     });
 }
 
@@ -400,7 +400,7 @@ static pair<Document*,int> putNewDoc(C4Database *database,
         commonAncestorIndex = idoc->putNewRevision(*rq, nullptr) ? 0 : -1;
     if (commonAncestorIndex < 0)
         idoc = nullptr;
-    return {retain(idoc.get()), commonAncestorIndex};
+    return {retain(move(idoc)), commonAncestorIndex};
 }
 
 
@@ -448,7 +448,7 @@ C4Document* c4doc_getForPut(C4Database *database,
         if (code)
             recordError(LiteCoreDomain, code, outError);
         else
-            return retain(idoc.get());
+            return retain(move(idoc));
 
     } catchError(outError)
     return nullptr;

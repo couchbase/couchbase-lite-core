@@ -71,7 +71,7 @@ selectResult =
 
 from =
     FROM d:dataSource                   { d = arrayWith(d);}
-        (j:join                         { appendAny(d, j);}
+        (_ j:join                       { appendAny(d, j);}
          )*                             { $$ = d;}
 
 dataSource =

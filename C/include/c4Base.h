@@ -415,6 +415,10 @@ bool c4log_willLog(C4LogDomain, C4LogLevel) C4API;
     written to the file but not to the callback. */
 void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) C4API;
 
+/** Registers a handler with the C++ runtime that will log a backtrace when an uncaught C++
+    exception occurs. */
+void c4log_enableFatalExceptionBacktrace(void) C4API;
+
 /** Logs a message/warning/error to a specific domain, if its current level is less than
     or equal to the given level. This message will then be written to the current callback and/or
     binary file, if their levels are less than or equal to the given level.
