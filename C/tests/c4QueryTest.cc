@@ -412,15 +412,6 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query dict literal", "[Query][C]") {
     CHECK(results[0] == "{d:1234.5,f:false,i:12345,id:\"0000001\",n:null,s:\"howdy\",t:true}");
 }
 
-N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query N1QL parse error", "[Query][C][N1QL][!throws]") {
-    int errPos;
-    C4Error error;
-
-    C4Query *q = c4query_new2(db, kC4N1QLQuery, "SELECT foo asAlias, bar"_sl, &errPos, &error);
-    CHECK(q != nullptr);
-    c4query_release(q);
-}
-
 #pragma mark - FTS:
 
 
