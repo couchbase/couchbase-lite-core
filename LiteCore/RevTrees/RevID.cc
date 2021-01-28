@@ -23,6 +23,7 @@
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
 #include <math.h>
+#include <limits.h>
 
 
 namespace litecore {

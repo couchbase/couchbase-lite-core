@@ -22,6 +22,7 @@
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
 #include "Writer.hh"
+#include <functional>
 #include <map>
 #include <vector>
 

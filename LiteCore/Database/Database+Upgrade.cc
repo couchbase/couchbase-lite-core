@@ -23,6 +23,7 @@
 #include "RevTreeRecord.hh"
 #include "VersionVector.hh"
 #include "StringUtil.hh"
+#include <inttypes.h>
 #include <vector>
 
 namespace c4Internal {
@@ -94,7 +95,7 @@ namespace c4Internal {
             ++docCount;
         }
 
-        LogTo(DBLog, "*** %llu documents upgraded, now committing changes... ***", docCount);
+        LogTo(DBLog, "*** %" PRIu64 " documents upgraded, now committing changes... ***", docCount);
     }
 
 

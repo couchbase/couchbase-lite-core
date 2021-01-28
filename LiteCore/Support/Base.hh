@@ -22,6 +22,7 @@
 #include "PlatformCompat.hh"
 #include "function_ref.hh"
 #include "RefCounted.hh"
+#include <memory>
 #include <stddef.h>
 #include <stdint.h>
 #include <string>

@@ -7,6 +7,7 @@
 #pragma once
 #include "fleece/slice.hh"
 #include <array>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>

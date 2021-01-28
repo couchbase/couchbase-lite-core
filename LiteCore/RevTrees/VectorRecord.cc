@@ -460,7 +460,8 @@ namespace litecore {
 
     VectorRecord::SaveResult VectorRecord::save(Transaction& transaction) {
         requireRemotes();
-        auto [_, revID, flags] = currentRevision();
+        auto [props, revID, flags] = currentRevision();
+        props = nullptr; // unused
         bool newRevision = !revID || propertiesChanged();
         if (!newRevision && !_changed)
             return kNoSave;

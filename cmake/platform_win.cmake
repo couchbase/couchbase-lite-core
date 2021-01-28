@@ -105,6 +105,11 @@ function(setup_litecore_build_win)
         -DPERSISTENT_PRIVATE_KEY_AVAILABLE
     )
 
+    target_compile_definitions(
+        LiteCoreWebSocket PRIVATE
+        -DNOMINMAX              # Disable min/max macros (they interfere with std::min and max)
+    )
+
     target_include_directories(LiteCoreStatic PRIVATE MSVC)
     target_include_directories(LiteCoreStatic PRIVATE vendor/fleece/MSVC)
     target_include_directories(LiteCoreWebSocket PRIVATE MSVC)
