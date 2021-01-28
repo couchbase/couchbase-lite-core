@@ -19,7 +19,9 @@
 #pragma once
 
 #include "Record.hh"
+#include <algorithm>
 #include <limits.h>
+#include <memory>
 
 namespace litecore {
 

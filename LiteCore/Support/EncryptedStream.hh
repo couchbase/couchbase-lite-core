@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Stream.hh"
+#include <memory>
 
 
 namespace litecore {

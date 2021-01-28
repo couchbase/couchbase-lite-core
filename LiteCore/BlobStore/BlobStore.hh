@@ -21,6 +21,7 @@
 #include "FilePath.hh"
 #include "Stream.hh"
 #include "SecureDigest.hh"
+#include <memory>
 #include <unordered_set>
 
 namespace litecore {
