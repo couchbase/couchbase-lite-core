@@ -452,7 +452,6 @@
 		27FC81F91EAAB7C60028E38E /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
 		27FC8DB622135BCE0083B033 /* ChangesFeed.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DB522135BCE0083B033 /* ChangesFeed.cc */; };
 		27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DBC22135BDA0083B033 /* RevFinder.cc */; };
-		27FC8E77221399AC0083B033 /* LeafDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8E76221399AC0083B033 /* LeafDocument.cc */; };
 		27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */; };
 		27FE0CE824BE6E4900A36EC2 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
@@ -1476,7 +1475,6 @@
 		27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCore.xcconfig; sourceTree = "<group>"; wrapsLines = 1; };
 		27FC8DB522135BCE0083B033 /* ChangesFeed.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ChangesFeed.cc; sourceTree = "<group>"; };
 		27FC8DBC22135BDA0083B033 /* RevFinder.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RevFinder.cc; sourceTree = "<group>"; };
-		27FC8E76221399AC0083B033 /* LeafDocument.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LeafDocument.cc; sourceTree = "<group>"; };
 		27FDDEF6236770F900860E69 /* pem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pem.h; sourceTree = "<group>"; };
 		27FDDEF7236770F900860E69 /* check_config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = check_config.h; sourceTree = "<group>"; };
 		27FDDEF8236770F900860E69 /* error.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = error.h; sourceTree = "<group>"; };
@@ -2354,7 +2352,6 @@
 				271057D61D3D70B10018247B /* Document.hh */,
 				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
 				2764ED3123870A72007F020F /* TreeDocument.hh */,
-				27FC8E76221399AC0083B033 /* LeafDocument.cc */,
 				273D25F42564666A008643D2 /* VectorDocument.hh */,
 				273D25F52564666A008643D2 /* VectorDocument.cc */,
 				2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */,
@@ -4072,7 +4069,6 @@
 				272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */,
 				27469D08233D719800A1EE1A /* PublicKey+Apple.mm in Sources */,
 				274B36D225B271F7001FC28D /* Version.cc in Sources */,
-				27FC8E77221399AC0083B033 /* LeafDocument.cc in Sources */,
 				2744B351241854F2005A194D /* WebSocketImpl.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				2744B354241854F2005A194D /* Actor.cc in Sources */,

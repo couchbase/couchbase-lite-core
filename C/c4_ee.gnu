@@ -371,7 +371,6 @@ CBL {
 		c4doc_getRemoteAncestor;
 		c4doc_setRemoteAncestor;
 		c4doc_getBlobData;
-		c4doc_getSingleRevision;
 		c4doc_generateID;
 		c4doc_getProperties;
 		c4doc_getSelectedRevIDGlobalForm;

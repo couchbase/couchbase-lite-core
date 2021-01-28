@@ -540,22 +540,6 @@ namespace c4Internal {
     }
 
 
-    Retained<Document> VectorDocumentFactory::newLeafDocumentInstance(C4Slice docID,
-                                                                      C4Slice revID,
-                                                                      bool withBody)
-    {
-        ContentOption opt = kMetaOnly;
-        if (revID.buf)
-            opt = kEntireBody;
-        else if (withBody)
-            opt = kCurrentRevOnly;
-        Retained<VectorDocument> doc = new VectorDocument(database(), docID, opt);
-        if (revID.buf)
-            doc->selectRevision(revID, true);
-        return doc;
-    }
-
-
     Document* VectorDocumentFactory::documentContaining(FLValue value) {
         if (auto nuDoc = NuDocument::containing(value); nuDoc)
             return (VectorDocument*)nuDoc->owner;

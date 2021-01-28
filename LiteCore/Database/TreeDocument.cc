@@ -646,10 +646,7 @@ namespace c4Internal {
 
 
     Retained<Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
-        if (c == kMetaOnly)
-            return newLeafDocumentInstance(docID, nullslice, false);
-        else
-            return new TreeDocument(database(), docID, c);
+        return new TreeDocument(database(), docID, c);
     }
 
     Retained<Document> TreeDocumentFactory::newDocumentInstance(const Record &rec) {
@@ -660,7 +657,7 @@ namespace c4Internal {
         return revID.hasPrefix(slice("1-", 2));
     }
 
-    Document* TreeDocumentFactory::treeDocumentContaining(FLValue value) {
+    Document* TreeDocumentFactory::documentContaining(FLValue value) {
         RevTreeRecord *vdoc = RevTreeRecord::containing((const Value*)value);
         return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
     }

@@ -84,18 +84,6 @@ C4Document* c4doc_get(C4Database *database,
 }
 
 
-C4Document* c4doc_getSingleRevision(C4Database *database,
-                                    C4Slice docID,
-                                    C4Slice revID,
-                                    bool withBody,
-                                    C4Error *outError) noexcept
-{
-    return newDoc(true, outError, [=] {
-        return database->documentFactory().newLeafDocumentInstance(docID, revID, withBody);
-    });
-}
-
-
 C4Document* c4doc_getBySequence(C4Database *database,
                                 C4SequenceNumber sequence,
                                 C4Error *outError) noexcept

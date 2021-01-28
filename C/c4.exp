@@ -332,7 +332,6 @@ _c4doc_encodeStrippingOldMetaProperties
 _c4doc_getRemoteAncestor
 _c4doc_setRemoteAncestor
 _c4doc_getBlobData
-_c4doc_getSingleRevision
 _c4doc_generateID
 _c4doc_getProperties
 _c4doc_getSelectedRevIDGlobalForm

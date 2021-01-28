@@ -226,19 +226,13 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     REQUIRE(error.code == (int)kC4ErrorNotFound);
     c4doc_release(doc);
 
-    // Test c4doc_getSingleRevision, which also fails:
-    doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, false, &error);
-    REQUIRE(!doc);
-    REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
-    REQUIRE(error.code == (int)kC4ErrorNotFound);
-    doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, true, &error);
-    REQUIRE(!doc);
-    REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
-    REQUIRE(error.code == (int)kC4ErrorNotFound);
-    doc = c4doc_getSingleRevision(db, kDocID, kRevID, true, &error);
-    REQUIRE(!doc);
-    REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
-    REQUIRE(error.code == (int)kC4ErrorNotFound);
+    // Test c4db_getDoc, which also fails:
+    for (C4DocContentLevel content : {kDocGetMetadata, kDocGetCurrentRev, kDocGetAll}) {
+        doc = c4db_getDoc(db, kDocID, true, content, &error);
+        REQUIRE(!doc);
+        REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
+        REQUIRE(error.code == (int)kC4ErrorNotFound);
+    }
 
     // Now get the doc with mustExist=false, which returns an empty doc:
     doc = c4doc_get(db, kDocID, false, &error);
@@ -309,41 +303,22 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     CHECK(error.domain == LiteCoreDomain);
     CHECK(error.code == kC4ErrorNotFound);
 
-    // Test c4doc_getSingleRevision (without body):
-    doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, false, &error);
-    REQUIRE(doc != nullptr);
-    CHECK(doc->sequence == 1);
-    CHECK(doc->flags == kDocExists);
-    CHECK(doc->docID == kDocID);
-    CHECK(doc->revID == kRevID);
-    CHECK(doc->selectedRev.revID == kRevID);
-    CHECK(doc->selectedRev.sequence == 1);
-    CHECK(c4doc_getProperties(doc) == nullptr);
-    c4doc_release(doc);
-
-    // Test c4doc_getSingleRevision (with body):
-    doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, true, &error);
-    REQUIRE(doc != nullptr);
-    CHECK(doc->sequence == 1);
-    CHECK(doc->flags == kDocExists);
-    CHECK(doc->docID == kDocID);
-    CHECK(doc->revID == kRevID);
-    CHECK(doc->selectedRev.revID == kRevID);
-    CHECK(doc->selectedRev.sequence == 1);
-    CHECK(docBodyEquals(doc, kFleeceBody));
-    c4doc_release(doc);
-
-    // Test c4doc_getSingleRevision (with specific rev):
-    doc = c4doc_getSingleRevision(db, kDocID, kRevID, true, &error);
-    REQUIRE(doc != nullptr);
-    CHECK(doc->sequence == 1);
-    CHECK(doc->flags == kDocExists);
-    CHECK(doc->docID == kDocID);
-    CHECK(doc->revID == kRevID);
-    CHECK(doc->selectedRev.revID == kRevID);
-    CHECK(doc->selectedRev.sequence == 1);
-    CHECK(docBodyEquals(doc, kFleeceBody));
-    c4doc_release(doc);
+    // Test c4db_getDoc:
+    for (C4DocContentLevel content : {kDocGetMetadata, kDocGetCurrentRev, kDocGetAll}) {
+        doc = c4db_getDoc(db, kDocID, true, content, &error);
+        REQUIRE(doc != nullptr);
+        CHECK(doc->sequence == 1);
+        CHECK(doc->flags == kDocExists);
+        CHECK(doc->docID == kDocID);
+        CHECK(doc->revID == kRevID);
+        CHECK(doc->selectedRev.revID == kRevID);
+        CHECK(doc->selectedRev.sequence == 1);
+        if (content == kDocGetMetadata)
+            CHECK(c4doc_getProperties(doc) == nullptr);
+        else
+            CHECK(docBodyEquals(doc, kFleeceBody));
+        c4doc_release(doc);
+    }
 }
 
 
@@ -390,29 +365,22 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
         CHECK(docBodyEquals(doc, kFleeceBody2));
         c4doc_release(doc);
 
-        // Test c4doc_getSingleRevision (with body):
-        doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, true, &error);
-        REQUIRE(doc != nullptr);
-        CHECK(doc->sequence == 3);
-        CHECK(doc->flags == kDocExists);
-        CHECK(doc->docID == kDocID);
-        CHECK(doc->revID == kRev3ID);
-        CHECK(doc->selectedRev.revID == kRev3ID);
-        CHECK(doc->selectedRev.sequence == 3);
-        CHECK(docBodyEquals(doc, kFleeceBody3));
-        c4doc_release(doc);
-
-        // Test c4doc_getSingleRevision (with specific revision):
-        doc = c4doc_getSingleRevision(db, kDocID, kRev2ID, true, &error);
-        REQUIRE(doc != nullptr);
-        CHECK(doc->sequence == 3);
-        CHECK(doc->flags == kDocExists);
-        CHECK(doc->docID == kDocID);
-        CHECK(doc->revID == kRev3ID);
-        CHECK(doc->selectedRev.revID == kRev2ID);
-        CHECK(doc->selectedRev.sequence == 2);
-        CHECK(docBodyEquals(doc, kFleeceBody2));
-        c4doc_release(doc);
+        // Test c4db_getDoc:
+        for (C4DocContentLevel content : {kDocGetMetadata, kDocGetCurrentRev, kDocGetAll}) {
+            doc = c4db_getDoc(db, kDocID, true, content, &error);
+            REQUIRE(doc != nullptr);
+            CHECK(doc->sequence == 3);
+            CHECK(doc->flags == kDocExists);
+            CHECK(doc->docID == kDocID);
+            CHECK(doc->revID == kRev3ID);
+            CHECK(doc->selectedRev.revID == kRev3ID);
+            CHECK(doc->selectedRev.sequence == 3);
+            if (content == kDocGetMetadata)
+                CHECK(c4doc_getProperties(doc) == nullptr);
+            else
+                CHECK(docBodyEquals(doc, kFleeceBody3));
+            c4doc_release(doc);
+        }
 
         // Purge doc
         {
@@ -439,41 +407,6 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
     c4doc_release(doc);
 }
 
-
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Get Single Revision", "[Document][C]") {
-    if (!isRevTrees()) return;
-
-    createRev(kDocID, kRevID, kEmptyFleeceBody);
-    createRev(kDocID, kRev2ID, kEmptyFleeceBody);
-    createRev(kDocID, kRev3ID, kFleeceBody);
-
-    C4Error error;
-    for (int withBody = 0; withBody <= 1; ++withBody) {
-        C4Document *doc = c4doc_getSingleRevision(db, kDocID, nullslice, withBody, &error);
-        REQUIRE(doc);
-        CHECK(doc->sequence == 3);
-        CHECK(doc->flags == kDocExists);
-        CHECK(doc->docID == kDocID);
-        CHECK(doc->revID == kRev3ID);
-        CHECK(doc->selectedRev.revID == kRev3ID);
-        CHECK(doc->selectedRev.sequence == 3);
-        if (withBody)
-            CHECK(docBodyEquals(doc, kFleeceBody));
-        else
-            CHECK(c4doc_getProperties(doc) == nullptr);
-        c4doc_release(doc);
-    }
-
-    C4Document *doc = c4doc_getSingleRevision(db, kDocID, "99-ffff"_sl, true, &error);
-    CHECK(!doc);
-    CHECK(error.domain == LiteCoreDomain);
-    CHECK(error.code == kC4ErrorNotFound);
-
-    doc = c4doc_getSingleRevision(db, "missing"_sl, nullslice, true, &error);
-    CHECK(!doc);
-    CHECK(error.domain == LiteCoreDomain);
-    CHECK(error.code == kC4ErrorNotFound);
-}
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][Document][C]") {
     C4Error err;
@@ -1035,7 +968,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Leaf Document from Fleece", "[Document][C]") {
     const auto kFleeceBody = json2fleece("{'ubu':'roi'}");
     createRev(kDocID, kRevID, kFleeceBody);
 
-    C4Document* doc = c4doc_getSingleRevision(db, kDocID, nullslice, true, nullptr);
+    C4Document* doc = c4db_getDoc(db, kDocID, true, kDocGetCurrentRev, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == kRevID);
     FLValue root = FLValue(c4doc_getProperties(doc));
