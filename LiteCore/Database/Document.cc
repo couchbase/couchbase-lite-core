@@ -65,8 +65,7 @@ namespace c4Internal {
 
 
     // Finds blob references in a Fleece Dict, recursively.
-    bool Document::findBlobReferences(const Dict *dict, const FindBlobCallback &callback)
-    {
+    bool Document::findBlobReferences(const Dict *dict, const FindBlobCallback &callback) {
         for (DeepIterator i(dict); i; ++i) {
             auto d = i.value()->asDict();
             if (d && dictIsBlob(d)) {
@@ -122,7 +121,7 @@ namespace c4Internal {
     // See <http://www.iana.org/assignments/media-types/media-types.xhtml>
 
     // These substrings in a MIME type mean it's definitely not compressible:
-    static const slice kCompressedTypeSubstrings[] = {
+    static constexpr slice kCompressedTypeSubstrings[] = {
         "zip"_sl,
         "zlib"_sl,
         "pkcs"_sl,
@@ -135,7 +134,7 @@ namespace c4Internal {
     };
 
     // These substrings mean it is compressible:
-    static const slice kGoodTypeSubstrings[] = {
+    static constexpr slice kGoodTypeSubstrings[] = {
         "json"_sl,
         "html"_sl,
         "xml"_sl,
@@ -145,7 +144,7 @@ namespace c4Internal {
 
     // These prefixes mean it's not compressible, unless it matches the above good-types list
     // (like SVG (image/svg+xml), which is compressible.)
-    static const slice kBadTypePrefixes[] = {
+    static constexpr slice kBadTypePrefixes[] = {
         "image/"_sl,
         "audio/"_sl,
         "video/"_sl,
@@ -194,11 +193,5 @@ namespace c4Internal {
         else
             return true;
     }
-
-
-    alloc_slice DocumentFactory::revIDFromVersion(slice version) const {
-        return revid(version).expanded();
-    }
-
 
 }

@@ -35,8 +35,10 @@ namespace c4Internal {
     static constexpr const char* kNameOfVersioning[3] = {
         "v2.x rev-trees", "v3.x rev-trees", "version vectors"};
 
+
+    static void upgradeToVersionVectors(Database*, const Record&, RevTreeRecord&, Transaction&);
     static pair<alloc_slice, alloc_slice>
-    upgradeRemoteRevs(Database*, Record rec, RevTreeRecord&, alloc_slice currentVersion);
+    upgradeRemoteRevs(Database*, Record, RevTreeRecord&, alloc_slice currentVersion);
 
 
     static const Rev* commonAncestor(const Rev *a, const Rev *b) {
@@ -72,59 +74,16 @@ namespace c4Internal {
         options.contentOption = kEntireBody;
         RecordEnumerator e(defaultKeyStore(), options);
         while (e.next()) {
-            // Read the doc as a RevTreeRecord:
+            // Read the doc as a RevTreeRecord. This will correctly read both the old 2.x style
+            // record (with no `extra`) and the new 3.x style.
             const Record &rec = e.record();
             RevTreeRecord revTree(defaultKeyStore(), rec);
-
             if (newVersioning == kC4VectorVersioning) {
                 // Upgrade from rev-trees (v2 or v3) to version-vectors:
-                auto currentRev = revTree.currentRevision();
-                auto remoteRev = revTree.latestRevisionOnRemote(RevTree::kDefaultRemoteID);
-                auto baseRev = commonAncestor(currentRev, remoteRev);
-
-                // Create a version vector:
-                // - If there's a remote base revision, use its generation with the legacy peer ID.
-                // - Add the current rev's generation (relative to the remote base, if any)
-                //   with the local 'me' peer ID.
-                VersionVector vv;
-                int localChanges = int(currentRev->revID.generation());
-                if (baseRev) {
-                    vv.add({baseRev->revID.generation(), kLegacyPeerID});
-                    localChanges -= int(baseRev->revID.generation());
-                }
-                if (localChanges > 0)
-                    vv.add({generation(localChanges), kMePeerID});
-                auto binaryVersion = vv.asBinary();
-
-                // Propagate any saved remote revisions to the new document:
-                slice body;
-                alloc_slice allocedBody, extra;
-                if (revTree.remoteRevisions().empty()) {
-                    body = currentRev->body();
-                } else {
-                    std::tie(allocedBody, extra) = upgradeRemoteRevs(this, rec, revTree, binaryVersion);
-                    body = allocedBody;
-                }
-
-                // Now save:
-                RecordLite newRec;
-                newRec.key = revTree.docID();
-                newRec.flags = revTree.flags();
-                newRec.body = body;
-                newRec.extra = extra;
-                newRec.version = binaryVersion;
-                newRec.sequence = revTree.sequence();
-                newRec.updateSequence = false;
-                //TODO: Find conflicts and add them to newRec.extra
-                defaultKeyStore().set(newRec, t);
-
-                LogToAt(DBLog, Verbose, "  - Upgraded doc '%.*s', %s -> [%s], %zu bytes body, %zu bytes extra",
-                        SPLAT(rec.key()),
-                        revid(rec.version()).str().c_str(),
-                        string(vv.asASCII()).c_str(),
-                        newRec.body.size, newRec.extra.size);
+                upgradeToVersionVectors(this, rec, revTree, t);
             } else {
-                // Upgrade v2 rev-tree storage to new db schema with `extra` column:
+                // Upgrading v2 rev-trees to new db schema with `extra` column;
+                // simply resave and RevTreeRecord will use the new schema:
                 auto result = revTree.save(t);
                 Assert(result == RevTreeRecord::kNoNewSequence);
                 LogToAt(DBLog, Verbose, "  - Upgraded doc '%.*s' #%s",
@@ -139,6 +98,62 @@ namespace c4Internal {
     }
 
 
+    // Upgrades a Record from rev-trees to version vectors.
+    static void upgradeToVersionVectors(Database *db,
+                                        const Record &rec,
+                                        RevTreeRecord &revTree,
+                                        Transaction &t)
+    {
+        // Upgrade from rev-trees (v2 or v3) to version-vectors:
+        auto currentRev = revTree.currentRevision();
+        auto remoteRev = revTree.latestRevisionOnRemote(RevTree::kDefaultRemoteID);
+        auto baseRev = commonAncestor(currentRev, remoteRev);
+
+        // Create a version vector:
+        // - If there's a remote base revision, use its generation with the legacy peer ID.
+        // - Add the current rev's generation (relative to the remote base, if any)
+        //   with the local 'me' peer ID.
+        VersionVector vv;
+        int localChanges = int(currentRev->revID.generation());
+        if (baseRev) {
+            vv.add({baseRev->revID.generation(), kLegacyPeerID});
+            localChanges -= int(baseRev->revID.generation());
+        }
+        if (localChanges > 0)
+            vv.add({generation(localChanges), kMePeerID});
+        auto binaryVersion = vv.asBinary();
+
+        // Propagate any saved remote revisions to the new document:
+        slice body;
+        alloc_slice allocedBody, extra;
+        if (revTree.remoteRevisions().empty()) {
+            body = currentRev->body();
+        } else {
+            tie(allocedBody, extra) = upgradeRemoteRevs(db, rec, revTree, binaryVersion);
+            body = allocedBody;
+        }
+
+        // Now save:
+        RecordLite newRec;
+        newRec.key = revTree.docID();
+        newRec.flags = revTree.flags();
+        newRec.body = body;
+        newRec.extra = extra;
+        newRec.version = binaryVersion;
+        newRec.sequence = revTree.sequence();
+        newRec.updateSequence = false;
+        //TODO: Find conflicts and add them to newRec.extra
+        db->defaultKeyStore().set(newRec, t);
+
+        LogToAt(DBLog, Verbose, "  - Upgraded doc '%.*s', %s -> [%s], %zu bytes body, %zu bytes extra",
+                SPLAT(rec.key()),
+                revid(rec.version()).str().c_str(),
+                string(vv.asASCII()).c_str(),
+                newRec.body.size, newRec.extra.size);
+    }
+
+
+    // Subroutine that does extra work to upgrade a doc with revs tagged as remote.
     static pair<alloc_slice, alloc_slice> upgradeRemoteRevs(Database *db,
                                                             Record rec,
                                                             RevTreeRecord &revTree,

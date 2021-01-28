@@ -39,15 +39,15 @@ namespace fleece { namespace impl {
 
 namespace c4Internal {
 
-    /** A versioned LiteCore document.
+    /** A LiteCore document.
         This is an abstract base class whose concrete subclasses are TreeDocument (revision trees) 
-        and LeafDocument (single revisions)
+        and VectorDocument (version vectors).
         Note: Its parent 'class' C4Document is the public struct declared in c4Document.h. */
     class Document : public RefCounted, public C4Document, public fleece::InstanceCountedIn<Document> {
     public:
-        alloc_slice const _docIDBuf;
-        alloc_slice _revIDBuf;
-        alloc_slice _selectedRevIDBuf;
+        alloc_slice const _docIDBuf;    // Backing store for C4Document::docID
+        alloc_slice _revIDBuf;          // Backing store for C4Document::revID
+        alloc_slice _selectedRevIDBuf;  // Backing store for C4Document::selectedRevision::revID
 
         template <class SLICE>
         Document(Database *database, SLICE docID_)
@@ -226,29 +226,22 @@ namespace c4Internal {
     /** Abstract interface for creating Document instances; owned by a Database. */
     class DocumentFactory {
     public:
-        DocumentFactory(Database *db)       :_db(db) { }
-        Database* database() const          {return _db;}
+        DocumentFactory(Database *db)                       :_db(db) { }
+        virtual ~DocumentFactory()                          { }
+        Database* database() const                          {return _db;}
 
-        virtual ~DocumentFactory() { }
-        
+        virtual bool isFirstGenRevID(slice revID) const     {return false;}
+
         virtual Retained<Document> newDocumentInstance(C4Slice docID, ContentOption) =0;
-
         virtual Retained<Document> newDocumentInstance(const Record&) =0;
-
-        virtual alloc_slice revIDFromVersion(slice version) const;
-
-        virtual bool isFirstGenRevID(slice revID) const {
-            return false;
-        }
 
         virtual std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs,
                                                        const std::vector<slice> &revIDs,
                                                        unsigned maxAncestors,
                                                        bool mustHaveBodies,
                                                        C4RemoteID remoteDBID) =0;
-
     private:
-        Database* const _db;
+        Database* const _db;    // Unretained, to avoid ref-cycle with Database
     };
 
 } // end namespace

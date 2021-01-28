@@ -73,6 +73,7 @@ namespace litecore {
         explicit operator std::string() const       {return str();}
     };
 
+    
     /** A self-contained revid that includes its own data buffer.
 
         PLEASE NOTE: the `parse` and `tryParse` methods can parse a single version, but not an entire
@@ -95,11 +96,13 @@ namespace litecore {
         revidBuffer& operator= (const Version &vers);
 
         /** Parses a regular ASCII revID (digest or version style) and compresses it.
-            Throws BadRevisionID if the string isn't parseable.*/
+            Throws BadRevisionID if the string isn't parseable.
+            \warning This will not parse an entire version vector! Use the VersionVector class for that.             */
         void parse(slice asciiString);
 
         /** Parses a regular ASCII revID (digest or version style) and compresses it.
-            Returns false if the string isn't parseable. */
+            Returns false if the string isn't parseable.
+            \warning This will not parse an entire version vector! Use the VersionVector class for that. */
         bool tryParse(slice asciiString) noexcept;
 
     private:
