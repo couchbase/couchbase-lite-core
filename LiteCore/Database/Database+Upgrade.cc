@@ -17,7 +17,7 @@
 //
 
 #include "Database.hh"
-#include "NuDocument.hh"
+#include "VectorRecord.hh"
 #include "RecordEnumerator.hh"
 #include "RevID.hh"
 #include "RevTreeRecord.hh"
@@ -150,8 +150,8 @@ namespace c4Internal {
         rec.setBody(currentRev->body());
         rec.setExtra(nullslice);
 
-        // Instantiate a NuDocument for this document, without reading the database:
-        NuDocument nuDoc(db->defaultKeyStore(), Versioning::RevTrees, rec);
+        // Instantiate a VectorRecord for this document, without reading the database:
+        VectorRecord nuDoc(db->defaultKeyStore(), Versioning::RevTrees, rec);
         nuDoc.setEncoder(db->sharedFLEncoder());
 
         // Add each remote revision:

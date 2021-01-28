@@ -1,5 +1,5 @@
 //
-// NuDocument.hh
+// VectorRecord.hh
 //
 // Copyright (c) 2020 Couchbase, Inc All rights reserved.
 //
@@ -34,7 +34,7 @@ namespace litecore {
     /// Metadata and properties of a document revision.
     struct Revision {
         /// The root of the document's properties.
-        /// \warning  Mutating the owning \ref NuDocument will invalidate this pointer!
+        /// \warning  Mutating the owning \ref VectorRecord will invalidate this pointer!
         fleece::Dict  properties;
 
         /// The encoded version/revision ID. Typically this stores a VersionVector.
@@ -66,14 +66,14 @@ namespace litecore {
 
 
     /// Persistent local identifier of a remote database that replicates with this one.
-    /// This is used as a tag, to let NuDocument remember the last-known revision of a document in that
+    /// This is used as a tag, to let VectorRecord remember the last-known revision of a document in that
     /// database. This allows the replicator to generate and apply deltas when replicating.
     /// It's also used when the remote replicator runs in no-conflict mode and requires that we identify the
     /// parent revision when pushing an update.
     ///
     /// RemoteIDs must be positive. They are assigned by the C4Database, which stores a list of remote
     /// database URLs.
-    /// \note NuDocument's current implementation assumes that RemoteIDs are small consecutive numbers
+    /// \note VectorRecord's current implementation assumes that RemoteIDs are small consecutive numbers
     ///      starting at 0, and so uses them as array indexes.
     enum class RemoteID: int {
         Local = 0       /// Refers to the local revision, not a remote.
@@ -86,25 +86,25 @@ namespace litecore {
     ///
     /// It attempts to optimize storage when these revisions are either identical or share common property
     /// values.
-    class NuDocument {
+    class VectorRecord {
     public:
         using Dict = fleece::Dict;
         using MutableDict = fleece::MutableDict;
 
-        /// Reads a document given a Record. If the document doesn't exist, the resulting NuDocument will be
+        /// Reads a document given a Record. If the document doesn't exist, the resulting VectorRecord will be
         /// empty, with an empty `properties` Dict and a null revision ID.
-        NuDocument(KeyStore&, Versioning, const Record&);
+        VectorRecord(KeyStore&, Versioning, const Record&);
 
         /// Reads a document given the docID.
-        NuDocument(KeyStore& store, Versioning, slice docID, ContentOption =kEntireBody);
+        VectorRecord(KeyStore& store, Versioning, slice docID, ContentOption =kEntireBody);
 
-        ~NuDocument();
+        ~VectorRecord();
 
         /// You can store a pointer to whatever you want here.
         void* owner = nullptr;
 
-        /// Given a Fleece Value, finds the NuDocument it belongs to.
-        static NuDocument* containing(fleece::Value);
+        /// Given a Fleece Value, finds the VectorRecord it belongs to.
+        static VectorRecord* containing(fleece::Value);
 
         /// Sets a custom Fleece Encoder to use when saving.
         void setEncoder(FLEncoder enc)                      {_encoder = enc;}

@@ -24,6 +24,7 @@
 #include "DataFile.hh"
 #include "Record.hh"
 #include "RecordEnumerator.hh"
+#include "RevID.hh"
 #include "Logging.hh"
 #include "InstanceCounted.hh"
 
@@ -76,7 +77,7 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
         if (!*this)
             return false;
         outInfo->docID = record().key();
-        outInfo->revID = _docRevID = _database->documentFactory().revIDFromVersion(record().version());
+        outInfo->revID = _docRevID = revid(record().version()).expanded();
         outInfo->flags = (C4DocumentFlags)record().flags() | kDocExists;
         outInfo->sequence = record().sequence();
         outInfo->bodySize = record().bodySize();

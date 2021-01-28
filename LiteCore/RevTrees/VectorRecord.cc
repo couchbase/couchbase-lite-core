@@ -1,5 +1,5 @@
 //
-// NuDocument.cc
+// VectorRecord.cc
 //
 // Copyright (c) 2020 Couchbase, Inc All rights reserved.
 //
@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "NuDocument.hh"
+#include "VectorRecord.hh"
 #include "Record.hh"
 #include "KeyStore.hh"
 #include "DataFile.hh"
@@ -105,7 +105,7 @@ namespace litecore {
 
 
 
-    NuDocument::NuDocument(KeyStore& store, Versioning versioning, const Record& rec)
+    VectorRecord::VectorRecord(KeyStore& store, Versioning versioning, const Record& rec)
     :_store(store)
     ,_docID(rec.key())
     ,_sequence(rec.sequence())
@@ -127,15 +127,15 @@ namespace litecore {
     }
 
 
-    NuDocument::NuDocument(KeyStore& store, Versioning v, slice docID, ContentOption whichContent)
-    :NuDocument(store, v, store.get(docID, whichContent))
+    VectorRecord::VectorRecord(KeyStore& store, Versioning v, slice docID, ContentOption whichContent)
+    :VectorRecord(store, v, store.get(docID, whichContent))
     { }
 
 
-    NuDocument::~NuDocument() = default;
+    VectorRecord::~VectorRecord() = default;
 
 
-    void NuDocument::readRecordBody(const alloc_slice &body) {
+    void VectorRecord::readRecordBody(const alloc_slice &body) {
         if (body) {
             _bodyDoc = newLinkedFleeceDoc(body);
             _current.properties = _bodyDoc.asDict();
@@ -151,7 +151,7 @@ namespace litecore {
         _currentProperties = _current.properties;       // retains it
     }
 
-    void NuDocument::readRecordExtra(const alloc_slice &extra) {
+    void VectorRecord::readRecordExtra(const alloc_slice &extra) {
         if (extra) {
             _extraDoc = Doc(extra, kFLTrusted, sharedKeys(), _bodyDoc.data());
         }
@@ -173,7 +173,7 @@ namespace litecore {
     }
 
 
-    bool NuDocument::loadData(ContentOption which) {
+    bool VectorRecord::loadData(ContentOption which) {
         if (!exists())
             return false;
         if (which <= _whichContent)
@@ -183,7 +183,7 @@ namespace litecore {
         if (!rec.exists())
             return false;
 
-        //Warn("NuDocument: Loading more data (which=%d) of '%.*s'", int(which), SPLAT(docID()));
+        //Warn("VectorRecord: Loading more data (which=%d) of '%.*s'", int(which), SPLAT(docID()));
         auto oldWhich = _whichContent;
         _whichContent = which;
         if (which >= kCurrentRevOnly && oldWhich < kCurrentRevOnly)
@@ -194,18 +194,18 @@ namespace litecore {
     }
 
 
-    void NuDocument::requireBody() const {
+    void VectorRecord::requireBody() const {
         if (_whichContent < kCurrentRevOnly)
             error::_throw(error::UnsupportedOperation, "Document's body is not loaded");
     }
 
-    void NuDocument::requireRemotes() const {
+    void VectorRecord::requireRemotes() const {
         if (_whichContent < kEntireBody)
             error::_throw(error::UnsupportedOperation, "Document's other revisions are not loaded");
     }
 
 
-    void NuDocument::mustLoadRemotes() {
+    void VectorRecord::mustLoadRemotes() {
         if (exists() && !loadData(kEntireBody))
             error::_throw(error::Conflict, "Document is outdated, revisions can't be loaded");
     }
@@ -214,7 +214,7 @@ namespace litecore {
 #pragma mark - REVISIONS:
 
 
-    optional<Revision> NuDocument::remoteRevision(RemoteID remote) const {
+    optional<Revision> VectorRecord::remoteRevision(RemoteID remote) const {
         if (remote == RemoteID::Local)
             return currentRevision();
         requireRemotes();
@@ -235,14 +235,14 @@ namespace litecore {
     }
 
 
-    optional<Revision> NuDocument::loadRemoteRevision(RemoteID remote) {
+    optional<Revision> VectorRecord::loadRemoteRevision(RemoteID remote) {
         if (remote != RemoteID::Local)
             mustLoadRemotes();
         return remoteRevision(remote);
     }
 
 
-    RemoteID NuDocument::nextRemoteID(RemoteID remote) const {
+    RemoteID VectorRecord::nextRemoteID(RemoteID remote) const {
         int iremote = int(remote);
         while (++iremote < _revisions.count()) {
             if (_revisions[iremote].asDict() != nullptr)
@@ -252,13 +252,13 @@ namespace litecore {
     }
 
 
-    RemoteID NuDocument::loadNextRemoteID(RemoteID remote) {
+    RemoteID VectorRecord::loadNextRemoteID(RemoteID remote) {
         mustLoadRemotes();
         return nextRemoteID(remote);
     }
 
     // If _revisions is not mutable, makes a mutable copy and assigns it to _mutatedRevisions.
-    void NuDocument::mutateRevisions() {
+    void VectorRecord::mutateRevisions() {
         requireRemotes();
         if (!_mutatedRevisions) {
             _mutatedRevisions = _revisions ? _revisions.mutableCopy() : MutableArray::newArray();
@@ -268,7 +268,7 @@ namespace litecore {
 
     // Returns the MutableDict for a revision.
     // If it's not mutable yet, replaces it with a mutable copy.
-    MutableDict NuDocument::mutableRevisionDict(RemoteID remote) {
+    MutableDict VectorRecord::mutableRevisionDict(RemoteID remote) {
         Assert(remote > RemoteID::Local);
         mutateRevisions();
         if (_mutatedRevisions.count() <= int(remote))
@@ -281,7 +281,7 @@ namespace litecore {
 
 
     // Updates a revision. (Local changes, e.g. setRevID and setFlags, go through this too.)
-    void NuDocument::setRemoteRevision(RemoteID remote, const optional<Revision> &optRev) {
+    void VectorRecord::setRemoteRevision(RemoteID remote, const optional<Revision> &optRev) {
         if (remote == RemoteID::Local) {
             Assert(optRev);
             return setCurrentRevision(*optRev);
@@ -332,26 +332,26 @@ namespace litecore {
 #pragma mark - CURRENT REVISION:
 
 
-    slice NuDocument::currentRevisionData() const {
+    slice VectorRecord::currentRevisionData() const {
         requireBody();
         return _bodyDoc.data();
     }
 
 
-    void NuDocument::setCurrentRevision(const Revision &rev) {
+    void VectorRecord::setCurrentRevision(const Revision &rev) {
         setRevID(rev.revID);
         setProperties(rev.properties);
         setFlags(rev.flags);
     }
 
 
-    Dict NuDocument::originalProperties() const {
+    Dict VectorRecord::originalProperties() const {
         requireBody();
         return _bodyDoc.asDict();
     }
 
 
-    MutableDict NuDocument::mutableProperties() {
+    MutableDict VectorRecord::mutableProperties() {
         requireBody();
         MutableDict mutProperties = _current.properties.asMutable();
         if (!mutProperties) {
@@ -366,7 +366,7 @@ namespace litecore {
     }
 
 
-    void NuDocument::setProperties(Dict newProperties) {
+    void VectorRecord::setProperties(Dict newProperties) {
         requireBody();
         if (newProperties != _current.properties) {
             _currentProperties = newProperties;
@@ -375,7 +375,7 @@ namespace litecore {
         }
     }
 
-    void NuDocument::setRevID(revid newRevID) {
+    void VectorRecord::setRevID(revid newRevID) {
         requireBody();
         if (!newRevID)
             error::_throw(error::InvalidParameter);
@@ -386,7 +386,7 @@ namespace litecore {
         }
     }
 
-    void NuDocument::setFlags(DocumentFlags newFlags) {
+    void VectorRecord::setFlags(DocumentFlags newFlags) {
         requireBody();
         if (newFlags != _current.flags) {
             _current.flags = newFlags;
@@ -399,7 +399,7 @@ namespace litecore {
 #pragma mark - CHANGE HANDLING:
 
 
-    void NuDocument::updateDocFlags() {
+    void VectorRecord::updateDocFlags() {
         // Take the local revision's flags, and add the Conflicted and Attachments flags
         // if any remote rev has them.
         auto newDocFlags = _docFlags - DocumentFlags::kConflicted - DocumentFlags::kHasAttachments;
@@ -418,12 +418,12 @@ namespace litecore {
     }
 
 
-    bool NuDocument::changed() const {
+    bool VectorRecord::changed() const {
         return _changed || propertiesChanged();
     }
 
 
-    bool NuDocument::propertiesChanged() const {
+    bool VectorRecord::propertiesChanged() const {
         for (DeepIterator i(_current.properties); i; ++i) {
             if (Value val = i.value(); val.isMutable()) {
                 if (auto dict = val.asDict(); dict) {
@@ -441,7 +441,7 @@ namespace litecore {
     }
 
 
-    void NuDocument::clearPropertiesChanged() {
+    void VectorRecord::clearPropertiesChanged() {
         for (DeepIterator i(_current.properties); i; ++i) {
             if (Value val = i.value(); val.isMutable()) {
                 if (auto dict = val.asDict(); dict)
@@ -458,7 +458,7 @@ namespace litecore {
 #pragma mark - SAVING:
 
 
-    NuDocument::SaveResult NuDocument::save(Transaction& transaction) {
+    VectorRecord::SaveResult VectorRecord::save(Transaction& transaction) {
         requireRemotes();
         auto [_, revID, flags] = currentRevision();
         bool newRevision = !revID || propertiesChanged();
@@ -510,13 +510,13 @@ namespace litecore {
     }
 
 
-    pair<alloc_slice,alloc_slice> NuDocument::encodeBodyAndExtra() {
+    pair<alloc_slice,alloc_slice> VectorRecord::encodeBodyAndExtra() {
         return _encoder ? encodeBodyAndExtra(_encoder)
                         : encodeBodyAndExtra(Encoder(sharedKeys()));
     }
 
 
-    pair<alloc_slice,alloc_slice> NuDocument::encodeBodyAndExtra(FLEncoder flEnc) {
+    pair<alloc_slice,alloc_slice> VectorRecord::encodeBodyAndExtra(FLEncoder flEnc) {
         SharedEncoder enc(flEnc);
         alloc_slice body, extra;
         unsigned nRevs = _revisions.count();
@@ -549,7 +549,7 @@ namespace litecore {
     }
 
 
-    alloc_slice NuDocument::generateRevID(Dict body, revid parentRevID, DocumentFlags flags) {
+    alloc_slice VectorRecord::generateRevID(Dict body, revid parentRevID, DocumentFlags flags) {
         // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and JSON:
         alloc_slice json = FLValue_ToJSONX(body, false, true);
         parentRevID.setSize(min(parentRevID.size, size_t(255)));
@@ -561,7 +561,7 @@ namespace litecore {
     }
 
 
-    alloc_slice NuDocument::generateVersionVector(revid parentRevID) {
+    alloc_slice VectorRecord::generateVersionVector(revid parentRevID) {
         VersionVector vec = parentRevID.asVersionVector();
         vec.incrementGen(kMePeerID);
         return vec.asBinary();
@@ -571,7 +571,7 @@ namespace litecore {
 #pragma mark - TESTING:
 
 
-    void NuDocument::dump(ostream& out) const {
+    void VectorRecord::dump(ostream& out) const {
         out << "\"" << (string)docID() << "\" #" << sequence() << " ";
         int nRevs = _revisions.count();
         for (int i = 0; i < nRevs; ++i) {
@@ -594,7 +594,7 @@ namespace litecore {
         }
     }
 
-    string NuDocument::dump() const {
+    string VectorRecord::dump() const {
         stringstream out;
         dump(out);
         return out.str();
@@ -614,33 +614,33 @@ namespace litecore {
 
 namespace litecore {
 
-    // Subclass of Doc that points back to the NuDocument instance. That way when we use
+    // Subclass of Doc that points back to the VectorRecord instance. That way when we use
     // Scope::containing to look up where a Fleece Value* is, we can track it back to the
-    // NuDocument that owns the Doc.
-    class NuDocument::LinkedFleeceDoc : public fleece::impl::Doc {
+    // VectorRecord that owns the Doc.
+    class VectorRecord::LinkedFleeceDoc : public fleece::impl::Doc {
     public:
         LinkedFleeceDoc(const alloc_slice &fleeceData, fleece::impl::SharedKeys* sk,
-                        NuDocument *document_)
+                        VectorRecord *document_)
         :fleece::impl::Doc(fleeceData, Doc::kTrusted, sk)
         ,document(document_)
         { }
 
-        NuDocument* const document;
+        VectorRecord* const document;
     };
 
 
-    FLSharedKeys NuDocument::sharedKeys() const {
+    FLSharedKeys VectorRecord::sharedKeys() const {
         return (FLSharedKeys)_store.dataFile().documentKeys();
     }
 
 
-    Doc NuDocument::newLinkedFleeceDoc(const alloc_slice &body) {
+    Doc VectorRecord::newLinkedFleeceDoc(const alloc_slice &body) {
         auto sk = _store.dataFile().documentKeys();
         return (FLDoc) new LinkedFleeceDoc(body, sk, this);
     }
 
 
-    NuDocument* NuDocument::containing(Value value) {
+    VectorRecord* VectorRecord::containing(Value value) {
         if (value.isMutable()) {
             // Scope doesn't know about mutable Values (they're in the heap), but the mutable
             // Value may be a mutable copy of a Value with scope...
@@ -662,7 +662,7 @@ namespace litecore {
     }
 
 
-    string NuDocument::dumpStorage() const {
+    string VectorRecord::dumpStorage() const {
         stringstream out;
         if (_bodyDoc) {
             slice data = _bodyDoc.allocedData();
@@ -678,7 +678,7 @@ namespace litecore {
     }
 
 
-    /*static*/ void NuDocument::forAllRevIDs(const RecordLite &rec,
+    /*static*/ void VectorRecord::forAllRevIDs(const RecordLite &rec,
                                              function_ref<void(revid,RemoteID)> callback)
     {
         callback(revid(rec.version), RemoteID::Local);

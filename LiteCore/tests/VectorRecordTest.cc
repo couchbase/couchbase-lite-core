@@ -1,5 +1,5 @@
 //
-// NuDocumentTest.cc
+// VectorRecordTest.cc
 //
 // Copyright (C) 2020 Jens Alfke. All Rights Reserved.
 //
@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "NuDocument.hh"
+#include "VectorRecord.hh"
 #include "fleece/Mutable.hh"
 #include <iostream>
 
@@ -27,7 +27,7 @@ namespace fleece {
     static inline std::ostream& operator<< (std::ostream &out, fleece::Dict dict) {
         return out << dict.toJSONString();
     }
-    static inline std::ostream& operator<< (std::ostream &out, const litecore::NuDocument &doc) {
+    static inline std::ostream& operator<< (std::ostream &out, const litecore::VectorRecord &doc) {
         doc.dump(out); return out;
     }
 }
@@ -54,8 +54,8 @@ using namespace fleece;
 static constexpr auto kRemote1 = RemoteID(1), kRemote2 = RemoteID(2);
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Untitled NuDocument", "[NuDocument]") {
-    NuDocument doc(*store, Versioning::RevTrees, "Nuu");
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Untitled VectorRecord", "[VectorRecord]") {
+    VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
     cerr << "Doc is: " << doc << "\n";
 
     CHECK(!doc.exists());
@@ -81,9 +81,9 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Untitled NuDocument", "[NuDocument
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save VectorRecord", "[VectorRecord]") {
     {
-        NuDocument doc(*store, Versioning::RevTrees, "Nuu");
+        VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
 
         doc.mutableProperties()["year"] = 2525;
         CHECK(doc.mutableProperties() == doc.properties());
@@ -93,7 +93,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
 
         {
             Transaction t(db);
-            CHECK(doc.save(t) == NuDocument::kNewSequence);
+            CHECK(doc.save(t) == VectorRecord::kNewSequence);
             CHECK(!doc.changed());
             t.commit();
         }
@@ -110,11 +110,11 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
 
         {
             Transaction t(db);
-            CHECK(doc.save(t) == NuDocument::kNoSave);
+            CHECK(doc.save(t) == VectorRecord::kNoSave);
 
             doc.mutableProperties()["weekday"] = "Friday";
             doc.setFlags(DocumentFlags::kNone);
-            CHECK(doc.save(t) == NuDocument::kNewSequence);
+            CHECK(doc.save(t) == VectorRecord::kNewSequence);
             t.commit();
         }
 
@@ -131,7 +131,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
         cerr << "Storage:\n" << doc.dumpStorage();
     }
     {
-        NuDocument readDoc(*store, Versioning::RevTrees, store->get("Nuu"));
+        VectorRecord readDoc(*store, Versioning::RevTrees, store->get("Nuu"));
         CHECK(readDoc.docID() == "Nuu");
         CHECK(readDoc.sequence() == 2);
         CHECK(readDoc.revID().str() == "2-c8eeae1245a44de160c2ca96e448f1650dd901da");
@@ -144,15 +144,15 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save NuDocument", "[NuDocument]") 
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Empty Properties", "[NuDocument]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Empty Properties", "[VectorRecord]") {
     {
-        NuDocument doc(*store, Versioning::RevTrees, "Nuu");
+        VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
         CHECK(!doc.exists());
         CHECK(doc.properties() != nullptr);
         CHECK(doc.properties().empty());
 
         Transaction t(db);
-        CHECK(doc.save(t) == NuDocument::kNewSequence);
+        CHECK(doc.save(t) == VectorRecord::kNewSequence);
         CHECK(!doc.changed());
         t.commit();
 
@@ -160,19 +160,19 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Empty Properties", "[Nu
         CHECK(doc.properties().empty());
     }
     {
-        NuDocument doc(*store, Versioning::RevTrees, "Nuu", kEntireBody);
+        VectorRecord doc(*store, Versioning::RevTrees, "Nuu", kEntireBody);
         CHECK(doc.exists());
         CHECK(doc.properties() != nullptr);
         CHECK(doc.properties().empty());
     }
     {
-        NuDocument doc(*store, Versioning::RevTrees, "Nuu", kCurrentRevOnly);
+        VectorRecord doc(*store, Versioning::RevTrees, "Nuu", kCurrentRevOnly);
         CHECK(doc.exists());
         CHECK(doc.properties() != nullptr);
         CHECK(doc.properties().empty());
     }
     {
-        NuDocument doc(*store, Versioning::RevTrees, "Nuu", kMetaOnly);
+        VectorRecord doc(*store, Versioning::RevTrees, "Nuu", kMetaOnly);
         CHECK(doc.exists());
         CHECK(doc.properties() == nullptr);
         doc.loadData(kCurrentRevOnly);
@@ -182,13 +182,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Empty Properties", "[Nu
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remotes", "[NuDocument]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remotes", "[VectorRecord]") {
     Transaction t(db);
-    NuDocument doc(*store, Versioning::RevTrees, "Nuu");
+    VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
 
     doc.mutableProperties()["rodent"] = "mouse";
     doc.setRevID(revidBuffer("1-f000"));
-    CHECK(doc.save(t) == NuDocument::kNewSequence);
+    CHECK(doc.save(t) == VectorRecord::kNewSequence);
 
     // Add a remote revision:
     MutableDict remoteProps = MutableDict::newDict();
@@ -200,7 +200,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remotes", "[NuDocument]
     CHECK(doc.remoteRevision(kRemote1)->revID == remoteRev);
     CHECK(doc.remoteRevision(kRemote1)->flags == DocumentFlags::kHasAttachments);
 
-    CHECK(doc.save(t) == NuDocument::kNoNewSequence);
+    CHECK(doc.save(t) == VectorRecord::kNoNewSequence);
     cerr << "Doc is: " << doc << "\n";
     cerr << "Revisions: " << doc.revisionStorage() << "\n";
 
@@ -219,10 +219,10 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remotes", "[NuDocument]
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remote Update", "[NuDocument]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remote Update", "[VectorRecord]") {
     Transaction t(db);
     {
-        NuDocument doc(*store, Versioning::RevTrees, "Nuu");
+        VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
         
         // Create doc, as if pulled from a remote:
         revidBuffer revid1("1-1111");
@@ -238,10 +238,10 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remote Update", "[NuDoc
         auto local = doc.currentRevision();
         CHECK(local == (Revision{doc.properties(), revid1}));
         doc.setRemoteRevision(kRemote1, local);
-        CHECK(doc.save(t) == NuDocument::kNewSequence);
+        CHECK(doc.save(t) == VectorRecord::kNewSequence);
     }
     {
-        NuDocument doc(*store, Versioning::RevTrees, "Nuu");
+        VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
         cerr << "\nStorage after pull:\n" << doc.dumpStorage();
         
         CHECK(doc.currentRevision() == *doc.remoteRevision(kRemote1));
@@ -255,7 +255,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "NuDocument Remote Update", "[NuDoc
         CHECK(doc.save(t));
     }
     {
-        NuDocument doc(*store, Versioning::RevTrees, "Nuu");
+        VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
         cerr << "\nStorage after save:\n" << doc.dumpStorage();
 
         auto props1 = doc.properties(), props2 = doc.remoteRevision(kRemote1)->properties;

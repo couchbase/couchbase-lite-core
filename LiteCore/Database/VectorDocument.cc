@@ -17,7 +17,7 @@
 //
 
 #include "VectorDocument.hh"
-#include "NuDocument.hh"
+#include "VectorRecord.hh"
 #include "VersionVector.hh"
 #include "c4Private.h"
 #include "StringUtil.hh"
@@ -139,7 +139,7 @@ namespace c4Internal {
             _remoteID = remote;
             _selectedRevIDBuf = _expandRevID(rev.revID);
             selectedRev.revID = _selectedRevIDBuf;
-            selectedRev.sequence = _doc.sequence(); // NuDocument doesn't have per-rev sequence
+            selectedRev.sequence = _doc.sequence(); // VectorRecord doesn't have per-rev sequence
 
             selectedRev.flags = 0;
             if (remote == RemoteID::Local)  selectedRev.flags |= kRevLeaf;
@@ -345,7 +345,7 @@ namespace c4Internal {
                     string(newVers.asASCII()).c_str(),
                     string(_currentVersionVector().asASCII()).c_str());
 
-            // Store in NuDocument, and update C4Document properties:
+            // Store in VectorRecord, and update C4Document properties:
             _doc.setCurrentRevision(newRev);
             _selectRemote(RemoteID::Local);
             return _saveNewRev(rq, newRev, outError);
@@ -497,14 +497,14 @@ namespace c4Internal {
         bool save(unsigned maxRevTreeDepth =0) override {
             requireValidDocID();
             switch (_doc.save(database()->transaction())) {
-                case NuDocument::kNoSave:
+                case VectorRecord::kNoSave:
                     return true;
-                case NuDocument::kNoNewSequence:
+                case VectorRecord::kNoNewSequence:
                     _updateDocFields();  // flags may have changed
                     return true;
-                case NuDocument::kConflict:
+                case VectorRecord::kConflict:
                     return false;
-                case NuDocument::kNewSequence:
+                case VectorRecord::kNewSequence:
                     _updateDocFields();
                     _selectRemote(RemoteID::Local);
                     if (_doc.sequence() > sequence)
@@ -522,7 +522,7 @@ namespace c4Internal {
 
 
     private:
-        NuDocument          _doc;
+        VectorRecord          _doc;
         optional<RemoteID>  _remoteID;    // Identifies selected revision
     };
 
@@ -541,7 +541,7 @@ namespace c4Internal {
 
 
     Document* VectorDocumentFactory::documentContaining(FLValue value) {
-        if (auto nuDoc = NuDocument::containing(value); nuDoc)
+        if (auto nuDoc = VectorRecord::containing(value); nuDoc)
             return (VectorDocument*)nuDoc->owner;
         else
             return nullptr;
@@ -577,7 +577,7 @@ namespace c4Internal {
 
             // First check whether the document has this version or a newer one:
             bool found = false, notCurrent = false;
-            NuDocument::forAllRevIDs(rec, [&](revid aRev, RemoteID aRemote) {
+            VectorRecord::forAllRevIDs(rec, [&](revid aRev, RemoteID aRemote) {
                 aVers.readBinary(aRev);
                 auto cmp = singleVers ? aVers.compareTo(*singleVers) : aVers.compareTo(vers);
                 if (cmp == kSame || cmp == kNewer)
@@ -601,7 +601,7 @@ namespace c4Internal {
             unsigned n = 0;
 
             std::set<alloc_slice> added;
-            NuDocument::forAllRevIDs(rec, [&](revid aRev, RemoteID) {
+            VectorRecord::forAllRevIDs(rec, [&](revid aRev, RemoteID) {
                 if (n < maxAncestors) {
                     aVers.readBinary(aRev);
                     auto cmp = singleVers ? aVers.compareTo(*singleVers) : aVers.compareTo(vers);

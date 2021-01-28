@@ -38,7 +38,6 @@ function(set_litecore_source_base)
         LiteCore/Database/Database+Upgrade.cc
         LiteCore/Database/Document.cc
         LiteCore/Database/Housekeeper.cc
-        LiteCore/Database/LeafDocument.cc
         LiteCore/Database/LegacyAttachments.cc
         LiteCore/Database/LiveQuerier.cc
         LiteCore/Database/PrebuiltCopier.cc
@@ -64,11 +63,11 @@ function(set_litecore_source_base)
         LiteCore/Query/SQLitePredictionFunction.cc
         LiteCore/Query/SQLiteQuery.cc
         LiteCore/Query/N1QL_Parser/n1ql.cc
-        LiteCore/RevTrees/NuDocument.cc
+        LiteCore/RevTrees/VectorRecord.cc
         LiteCore/RevTrees/RawRevTree.cc
         LiteCore/RevTrees/RevID.cc
         LiteCore/RevTrees/RevTree.cc
-        LiteCore/RevTrees/VersionedDocument.cc
+        LiteCore/RevTrees/RevTreeRecord.cc
         LiteCore/RevTrees/Version.cc
         LiteCore/RevTrees/VersionVector.cc
         LiteCore/Storage/DataFile.cc
