@@ -35,17 +35,20 @@ namespace litecore {
     class RevTreeRecord : public RevTree {
     public:
 
-        RevTreeRecord(KeyStore&, slice docID);
+        RevTreeRecord(KeyStore&, slice docID, ContentOption =kEntireBody);
         RevTreeRecord(KeyStore&, const Record&);
 
         RevTreeRecord(const RevTreeRecord&);
         ~RevTreeRecord();
 
         /** Reads and parses the body of the record. Useful if doc was read as meta-only. */
-        void read();
+        void read(ContentOption);
 
         /** Returns false if the record was loaded metadata-only. Revision accessors will fail. */
-        bool revsAvailable() const {return !_unknown;}
+        bool revsAvailable() const          {return _contentLoaded == kEntireBody;}
+        bool currentRevAvailable() const    {return _contentLoaded >= kCurrentRevOnly;}
+
+        slice currentRevBody();
 
         const alloc_slice& docID() const FLPURE {return _rec.key();}
         revid revID() const FLPURE         {return revid(_rec.version());}
@@ -103,5 +106,6 @@ namespace litecore {
         KeyStore&       _store;
         Record          _rec;
         std::vector<Retained<VersFleeceDoc>> _fleeceScopes;
+        ContentOption   _contentLoaded;
     };
 }

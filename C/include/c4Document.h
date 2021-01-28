@@ -115,7 +115,7 @@ extern "C" {
                             C4Error* C4NULLABLE outError) C4API;
 
     /** Gets a document from the database given its ID (semi-deprecated).
-        This is the same as \ref c4db_getDoc with `content` equal to `kDocGetAll`. */
+        This is the same as \ref c4db_getDoc with `content` equal to `kDocGetCurrentRev`. */
     C4Document* c4doc_get(C4Database *database,
                           C4String docID,
                           bool mustExist,

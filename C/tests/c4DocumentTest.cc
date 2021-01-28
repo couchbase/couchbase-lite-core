@@ -356,7 +356,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
 
     // Reload the doc:
     C4Error error;
-    C4Document *doc = c4doc_get(db, kDocID, true, &error);
+    C4Document *doc = c4db_getDoc(db, kDocID, true, kDocGetAll, &error);
     REQUIRE(doc != nullptr);
     CHECK(doc->flags == kDocExists);
     CHECK(doc->docID == kDocID);
@@ -381,7 +381,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Document][C
         // Add a 3rd revision:
         createRev(kDocID, kRev3ID, kFleeceBody3);
         // Revision 2 should keep its body due to the kRevKeepBody flag:
-        doc = c4doc_get(db, kDocID, true, &error);
+        doc = c4db_getDoc(db, kDocID, true, kDocGetAll, &error);
         REQUIRE(doc != nullptr);
         REQUIRE(c4doc_selectParentRevision(doc));
         CHECK(doc->selectedRev.revID == kRev2ID);

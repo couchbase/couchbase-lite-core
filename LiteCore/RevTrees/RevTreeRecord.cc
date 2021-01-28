@@ -32,10 +32,10 @@ namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
 
-    RevTreeRecord::RevTreeRecord(KeyStore& store, slice docID)
+    RevTreeRecord::RevTreeRecord(KeyStore& store, slice docID, ContentOption content)
     :_store(store), _rec(docID)
     {
-        read();
+        read(content);
     }
 
     RevTreeRecord::RevTreeRecord(KeyStore& store, const Record& rec)
@@ -56,8 +56,8 @@ namespace litecore {
         _fleeceScopes.clear(); // do this before the memory is freed (by _rec)
     }
 
-    void RevTreeRecord::read() {
-        _store.read(_rec);
+    void RevTreeRecord::read(ContentOption content) {
+        _store.read(_rec, content);
         decode();
     }
 
@@ -65,32 +65,62 @@ namespace litecore {
         _unknown = false;
         updateScope();
 
-        if (_rec.body() || _rec.extra()) {
-            RevTree::decode(_rec.body(), _rec.extra(),  _rec.sequence());
-            // If there is no `extra`, this record is being upgraded from v2.x and must be saved:
-            if (!_rec.extra())
-                _changed = true;
-        } else if (_rec.bodySize() > 0) {
-            _unknown = true;        // i.e. rec was read as meta-only
-        }
+        if (_rec.exists()) {
+            _contentLoaded = _rec.contentLoaded();
+            switch (_contentLoaded) {
+                case kEntireBody:
+                    RevTree::decode(_rec.body(), _rec.extra(),  _rec.sequence());
+                    if (auto cur = currentRevision(); cur && (_rec.flags() & DocumentFlags::kSynced)) {
+                        // The kSynced flag is set when the document's current revision is pushed to a server.
+                        // This is done instead of updating the doc body, for reasons of speed. So when loading
+                        // the document, detect that flag and belatedly update the current revision's flags.
+                        // Since the revision is now likely stored on the server, it may be the base of a merge
+                        // in the future, so preserve its body:
+                        setLatestRevisionOnRemote(kDefaultRemoteID, cur);
+                        keepBody(cur);
+                        _changed = false;
+                    }
 
-        if (!_unknown) {
-            if (auto cur = currentRevision(); cur && (_rec.flags() & DocumentFlags::kSynced)) {
-                // The kSynced flag is set when the document's current revision is pushed to a server.
-                // This is done instead of updating the doc body, for reasons of speed. So when loading
-                // the document, detect that flag and belatedly update the current revision's flags.
-                // Since the revision is now likely stored on the server, it may be the base of a merge
-                // in the future, so preserve its body:
-                bool wasChanged = _changed;
-                setLatestRevisionOnRemote(kDefaultRemoteID, cur);
-                keepBody(cur);
-                _changed = wasChanged;
+                    // If there is no `extra`, this record is being upgraded from v2.x and must be saved:
+                    if (!_rec.extra())
+                        _changed = true;
+                    break;
+                case kCurrentRevOnly: {
+#if 1
+                    _unknown = true;
+#else
+                    // Only the current revision body is loaded, not the tree. Create a fake Rev:
+                    Rev::Flags flags = {};
+                    int status;
+                    insert(revid(_rec.version()),
+                           _rec.body(),
+                           flags,
+                           revid(),
+                           false, false, status);
+                    Assert(status == 200);
+#endif
+                    break;
+                }
+                case kMetaOnly:
+                    _unknown = true;        // i.e. rec was read as meta-only
+                    break;
             }
+        } else {
+            _contentLoaded = kEntireBody;
+        }
+    }
+
+    slice RevTreeRecord::currentRevBody() {
+        if (revsAvailable())
+            return currentRevision()->body();
+        else {
+            Assert(currentRevAvailable());
+            return _rec.body();
         }
     }
 
     void RevTreeRecord::updateScope() {
-        Assert(_fleeceScopes.empty());
+        _fleeceScopes.clear();
         addScope(_rec.body());
         if (_rec.extra())
             addScope(_rec.extra());
@@ -175,6 +205,7 @@ namespace litecore {
     }
 
     RevTreeRecord::SaveResult RevTreeRecord::save(Transaction& transaction) {
+        Assert(revsAvailable());
         if (!_changed)
             return kNoNewSequence;
         updateMeta();

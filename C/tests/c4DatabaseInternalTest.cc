@@ -69,13 +69,16 @@ public:
         REQUIRE(cmsg == &buf[0]);
     }
     
-    C4Document* getDoc(C4String docID){
-        return getDoc(db, docID);
+    C4Document* getDoc(C4String docID, C4DocContentLevel content =kDocGetCurrentRev) {
+        return getDoc(db, docID, content);
     }
     
-    C4Document* getDoc(C4Database* db, C4String docID){
+    C4Document* getDoc(C4Database* db,
+                       C4String docID,
+                       C4DocContentLevel content =kDocGetCurrentRev)
+    {
         C4Error error = {};
-        C4Document* doc = c4doc_get(db, docID, true, &error);
+        C4Document* doc = c4db_getDoc(db, docID, true, content, &error);
         errorInfo(error);
         REQUIRE(doc);
         REQUIRE(doc->docID == docID);
@@ -349,7 +352,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4enum_free(e);
     
     // Check the revision-history object (_revisions property):
-    doc = c4doc_get(db, docID, true, &c4err);
+    doc = c4db_getDoc(db, docID, true, kDocGetAll, &c4err);
     REQUIRE(doc);
     int latest = 3;
     do{
@@ -404,7 +407,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4doc_release(doc);
     
     // Make sure history still works after compaction:
-    doc = c4doc_get(db, docID, true, &c4err);
+    doc = c4db_getDoc(db, docID, true, kDocGetAll, &c4err);
     REQUIRE(doc);
     latest = 3;
     do{
@@ -574,7 +577,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
 
     REQUIRE(c4db_getDocumentCount(db) == 1);
     
-    C4Document* doc = getDoc(docID);
+    C4Document* doc = getDoc(docID, kDocGetAll);
     verifyRev(doc, history, historyCount, body);
     c4doc_release(doc);
 
@@ -598,7 +601,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     // in other words the oldest revision always wins the conflict; it has nothing to do with the
     // revIDs.
     REQUIRE(c4db_getDocumentCount(db) == 1);
-    doc = getDoc(docID);
+    doc = getDoc(docID, kDocGetAll);
     verifyRev(doc, history, historyCount, body);
     c4doc_release(doc);
     //TODO - conflict check
@@ -611,14 +614,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     forceInsert(otherDocID, otherHistory, otherHistoryCount, otherBody);
 
     // Fetch one of those phantom revisions with no body:
-    doc = getDoc(docID);
+    doc = getDoc(docID, kDocGetAll);
     C4Error error = {};
     REQUIRE(c4doc_selectRevision(doc, C4STR("2-2222"), false, &error));
     REQUIRE_FALSE((doc->selectedRev.flags & (C4RevisionFlags)(kRevKeepBody)));
     REQUIRE(c4doc_getProperties(doc) == nullptr);
     c4doc_release(doc);
 
-    doc = getDoc(otherDocID);
+    doc = getDoc(otherDocID, kDocGetAll);
     REQUIRE_FALSE(c4doc_selectRevision(doc, C4STR("666-6666"), false, &error));
     REQUIRE(error.domain == LiteCoreDomain);
     REQUIRE(error.code == kC4ErrorNotFound);
@@ -635,7 +638,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     c4doc_release(doc);
     
     // Check that the list of conflicts is accurate:
-    doc = getDoc(docID);
+    doc = getDoc(docID, kDocGetAll);
     std::vector<alloc_slice> conflictingRevs = getRevisionHistory(doc, true, true);
     REQUIRE(conflictingRevs.size() == 2);
     REQUIRE(conflictingRevs[0] == history[0]);

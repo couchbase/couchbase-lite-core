@@ -269,7 +269,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
     replicate(kC4OneShot, kC4Disabled);
     CHECK(_docsEnded == 1);
 
-    c4::ref<C4Document> doc = c4doc_get(db2, "doc"_sl, true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db2, "doc"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
 
     CHECK(doc->revID == kRev2ID);

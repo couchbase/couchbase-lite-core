@@ -521,7 +521,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
 
     runPushReplication();
 
-    c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db, "doc"_sl, true, kDocGetAll, nullptr);
     alloc_slice remote(c4doc_getRemoteAncestor(doc, 1));
     CHECK(remote == slice(kRevID));
 
@@ -561,7 +561,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
     validateCheckpoints(db2, db, "{\"remote\":50}");
 
     // Check that doc is not conflicted in db2:
-    doc = c4doc_get(db2, "doc"_sl, true, nullptr);
+    doc = c4db_getDoc(db2, "doc"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK(doc->revID == "50-0000"_sl);
     CHECK(!c4doc_selectNextLeafRevision(doc, true, false, nullptr));

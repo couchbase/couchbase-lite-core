@@ -40,9 +40,9 @@ namespace c4Internal {
 
     class TreeDocument : public Document {
     public:
-        TreeDocument(Database* database, C4Slice docID)
+        TreeDocument(Database* database, C4Slice docID, ContentOption content)
         :Document(database, docID),
-         _revTree(database->defaultKeyStore(), docID),
+         _revTree(database->defaultKeyStore(), docID, content),
          _selectedRev(nullptr)
         {
             init();
@@ -84,7 +84,7 @@ namespace c4Internal {
             sequence = _revTree.sequence();
         }
 
-        bool exists() override {
+        bool exists() noexcept override {
             return _revTree.exists();
         }
 
@@ -92,26 +92,43 @@ namespace c4Internal {
             return _revTree.revsAvailable();
         }
 
+        void requireRevisions() const {
+            if (!_revTree.revsAvailable())
+                error::_throw(error::UnsupportedOperation,
+                        "This function is not legal on a C4Document loaded without kDocGetAll");
+        }
+
+        // This method can throw exceptions, so should not be called from 'noexcept' overrides!
+        // Such methods should call requireRevisions instead.
         void loadRevisions() override {
             if (!_revTree.revsAvailable()) {
-                _revTree.read();
+                LogTo(DBLog, "Need to read rev-tree of doc '%.*s'", SPLAT(docID));
+                _revTree.read(kEntireBody);
                 selectRevision(_revTree.currentRevision());
             }
         }
 
         bool hasRevisionBody() noexcept override {
-            if (!revisionsLoaded())
-                Warn("c4doc_hasRevisionBody called on doc loaded without kC4IncludeBodies");
-            return _selectedRev && _selectedRev->isBodyAvailable();
+            if (_revTree.revsAvailable())
+                return _selectedRev && _selectedRev->isBodyAvailable();
+            else
+                return _revTree.currentRevAvailable();
         }
 
         bool loadSelectedRevBody() override {
+            if (!_selectedRev && _revTree.currentRevAvailable())
+                return true;            // only the current rev is available, so return true
             loadRevisions();
             return _selectedRev &&_selectedRev->body();
         }
 
         virtual slice getSelectedRevBody() noexcept override {
-            return _selectedRev ? _selectedRev->body() : slice();
+            if (_selectedRev)
+                return _selectedRev->body();
+            else if (_revTree.currentRevAvailable())
+                return _revTree.currentRevBody();
+            else
+                return nullslice;
         }
 
 
@@ -226,24 +243,21 @@ namespace c4Internal {
         }
 
         bool selectParentRevision() noexcept override {
-            if (!revisionsLoaded())
-                Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+            requireRevisions();
             if (_selectedRev)
                 selectRevision(_selectedRev->parent);
             return _selectedRev != nullptr;
         }
 
         bool selectNextRevision() noexcept override {    // does not throw
-            if (!revisionsLoaded())
-                Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+            requireRevisions();
             if (_selectedRev)
                 selectRevision(_selectedRev->next());
             return _selectedRev != nullptr;
         }
 
         bool selectNextLeafRevision(bool includeDeleted) noexcept override {
-            if (!revisionsLoaded())
-                Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+            requireRevisions();
             auto rev = _selectedRev;
             if (!rev)
                 return false;
@@ -258,6 +272,7 @@ namespace c4Internal {
         }
 
         bool selectCommonAncestorRevision(slice revID1, slice revID2) override {
+            requireRevisions();
             const Rev *rev1 = _revTree[revidBuffer(revID1)];
             const Rev *rev2 = _revTree[revidBuffer(revID2)];
             if (!rev1 || !rev2)
@@ -276,11 +291,13 @@ namespace c4Internal {
         }
 
         alloc_slice remoteAncestorRevID(C4RemoteID remote) override {
+            loadRevisions();
             auto rev = _revTree.latestRevisionOnRemote(remote);
             return rev ? rev->revID.expanded() : alloc_slice();
         }
 
         void setRemoteAncestorRevID(C4RemoteID remote, C4String revID) override {
+            loadRevisions();
             const Rev *rev = _revTree[revidBuffer(revID)];
             if (!rev)
                 error::_throw(error::NotFound);
@@ -325,6 +342,7 @@ namespace c4Internal {
         }
 
         int32_t purgeRevision(C4Slice revID) override {
+            loadRevisions();
             int32_t total;
             if (revID.buf)
                 total = _revTree.purge(revidBuffer(revID));
@@ -343,6 +361,7 @@ namespace c4Internal {
                              C4Slice mergedBody, C4RevisionFlags mergedFlags,
                              bool pruneLosingBranch =true) override
         {
+            loadRevisions();
             // Validate the revIDs:
             auto winningRev = _revTree[revidBuffer(winningRevID)];
             auto losingRev = _revTree[revidBuffer(losingRevID)];
@@ -627,10 +646,10 @@ namespace c4Internal {
 
 
     Retained<Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
-        if (c != kMetaOnly)
-            return new TreeDocument(database(), docID);
-        else
+        if (c == kMetaOnly)
             return newLeafDocumentInstance(docID, nullslice, false);
+        else
+            return new TreeDocument(database(), docID, c);
     }
 
     Retained<Document> TreeDocumentFactory::newDocumentInstance(const Record &rec) {
