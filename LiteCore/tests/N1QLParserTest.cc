@@ -197,8 +197,13 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL collation", "[Query][N1QL][C]") {
     CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE") == "{'WHAT':[['COLLATE',{'CASE':false},['=',['.name'],'fred']]]}");
-    CHECK(translate("SELECT (name = 'fred') COLLATE UNICODE CASE NODIAC") == "{'WHAT':[['COLLATE',{'CASE':true,'DIAC':false,'UNICODE':true},['=',['.name'],'fred']]]}");
-    CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE FRED") == "");
+    CHECK(translate("SELECT (name = 'fred') COLLATE (UNICODE CASE NODIAC)") == "{'WHAT':[['COLLATE',{'CASE':true,'DIAC':false,'UNICODE':true},['=',['.name'],'fred']]]}");
+    CHECK(translate("SELECT (name = 'fred') COLLATE UNICODE NOCASE") == "");
+    CHECK(translate("SELECT (name = 'fred') COLLATE (NOCASE FRED)") == "");
+    CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE FRED")
+          == "{'WHAT':[['AS',['COLLATE',{'CASE':false},['=',['.name'],'fred']],'FRED']]}");
+    CHECK(translate("SELECT (name = 'fred') COLLATE (NOCASE) FRED")
+          == "{'WHAT':[['AS',['COLLATE',{'CASE':false},['=',['.name'],'fred']],'FRED']]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
@@ -206,7 +211,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
     CHECK(translate("SELECT ALL foo") == "{'WHAT':[['.foo']]}");
     CHECK(translate("SELECT DISTINCT foo") == "{'DISTINCT':true,'WHAT':[['.foo']]}");
 
-    CHECK(translate("SELECT foo bar") == "");
+    CHECK(translate("SELECT foo bar") == "{'WHAT':[['AS',['.foo'],'bar']]}");
     CHECK(translate("SELECT from where true") == "");
     CHECK(translate("SELECT `from` where true") == "{'WHAT':[['.from']],'WHERE':true}");
 
