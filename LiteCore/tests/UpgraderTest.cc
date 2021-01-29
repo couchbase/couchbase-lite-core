@@ -96,7 +96,7 @@ protected:
 
 
 TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from Android 1.2", "[Upgrade]") {
-    C4DocumentVersioning vers = GENERATE(kC4TreeVersioning, kC4VectorVersioning);
+    auto vers = C4DocumentVersioning(GENERATE((int)kC4TreeVersioning, (int)kC4VectorVersioning));
     upgrade(TestFixture::sFixturesDir + "replacedb/android120/androiddb.cblite2/", vers);
     verifyDoc("doc1"_sl,
               "{\"key\":\"1\",\"_attachments\":{\"attach1\":{\"length\":7,\"digest\":\"sha1-P1i5kI/sosq745/9BDR7kEghKps=\",\"revpos\":2,\"content_type\":\"text/plain; charset=utf-8\",\"stub\":true}}}"_sl,
@@ -110,7 +110,7 @@ TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from Android 1.2", "[Upgrade]") {
 
 
 TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from Android 1.3", "[Upgrade]") {
-    C4DocumentVersioning vers = GENERATE(kC4TreeVersioning, kC4VectorVersioning);
+    auto vers = C4DocumentVersioning(GENERATE((int)kC4TreeVersioning, (int)kC4VectorVersioning));
     upgrade(TestFixture::sFixturesDir + "replacedb/android130/androiddb.cblite2/", vers);
     verifyDoc("doc1"_sl,
               "{\"_attachments\":{\"attach1\":{\"length\":7,\"digest\":\"sha1-P1i5kI/sosq745/9BDR7kEghKps=\",\"revpos\":2,\"content_type\":\"plain/text\",\"stub\":true}},\"key\":\"1\"}"_sl,
@@ -124,7 +124,7 @@ TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from Android 1.3", "[Upgrade]") {
 
 
 TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from iOS 1.2", "[Upgrade]") {
-    C4DocumentVersioning vers = GENERATE(kC4TreeVersioning, kC4VectorVersioning);
+    auto vers = C4DocumentVersioning(GENERATE((int)kC4TreeVersioning, (int)kC4VectorVersioning));
     upgrade(TestFixture::sFixturesDir + "replacedb/ios120/iosdb.cblite2/", vers);
     verifyDoc("doc1"_sl,
               "{\"_attachments\":{\"attach1\":{\"content_type\":\"text/plain; charset=utf-8\",\"digest\":\"sha1-P1i5kI/sosq745/9BDR7kEghKps=\",\"length\":7,\"revpos\":2,\"stub\":true}},\"boolean\":true,\"date\":\"2016-01-15T23:08:40.803Z\",\"foo\":\"bar\",\"number\":1,\"type\":\"doc\"}"_sl,
@@ -138,7 +138,7 @@ TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from iOS 1.2", "[Upgrade]") {
 
 
 TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from iOS 1.3", "[Upgrade]") {
-    C4DocumentVersioning vers = GENERATE(kC4TreeVersioning, kC4VectorVersioning);
+    auto vers = C4DocumentVersioning(GENERATE((int)kC4TreeVersioning, (int)kC4VectorVersioning));
     upgrade(TestFixture::sFixturesDir + "replacedb/ios130/iosdb.cblite2/", vers);
     verifyDoc("doc1"_sl,
               "{\"_attachments\":{\"attach1\":{\"content_type\":\"text/plain; charset=utf-8\",\"digest\":\"sha1-P1i5kI/sosq745/9BDR7kEghKps=\",\"length\":7,\"revpos\":2,\"stub\":true}},\"boolean\":true,\"date\":\"2016-07-07T03:12:13.471Z\",\"foo\":\"bar\",\"number\":1,\"type\":\"doc\"}"_sl,
@@ -152,7 +152,7 @@ TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from iOS 1.3", "[Upgrade]") {
 
 
 TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from .NET 1.2", "[Upgrade]") {
-    C4DocumentVersioning vers = GENERATE(kC4TreeVersioning, kC4VectorVersioning);
+    auto vers = C4DocumentVersioning(GENERATE((int)kC4TreeVersioning, (int)kC4VectorVersioning));
     upgrade(TestFixture::sFixturesDir + "replacedb/net120/netdb.cblite2/", vers);
     verifyDoc("doc1"_sl,
               "{\"_attachments\":{\"attach1\":{\"content_type\":\"image/png\",\"digest\":\"sha1-1uqCkSGvnQJexh2BV/z46ktEUSk=\",\"length\":38790,\"revpos\":2,\"stub\":true}},\"description\":\"Jim's avatar\"}"_sl,
@@ -166,7 +166,7 @@ TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from .NET 1.2", "[Upgrade]") {
 
 
 TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from .NET 1.3", "[Upgrade]") {
-    C4DocumentVersioning vers = GENERATE(kC4TreeVersioning, kC4VectorVersioning);
+    auto vers = C4DocumentVersioning(GENERATE((int)kC4TreeVersioning, (int)kC4VectorVersioning));
     upgrade(TestFixture::sFixturesDir + "replacedb/net130/netdb.cblite2/", vers);
     verifyDoc("doc1"_sl,
               "{\"_attachments\":{\"attach1\":{\"content_type\":\"image/png\",\"digest\":\"sha1-v1M1+8aDtoX7zr6cJ2O7BlaaPAo=\",\"length\":10237,\"revpos\":2,\"stub\":true}},\"description\":\"Jim's avatar\"}"_sl,
@@ -182,7 +182,7 @@ TEST_CASE_METHOD(UpgradeTestFixture, "Upgrade from .NET 1.3", "[Upgrade]") {
 #pragma mark - UPGRADING IN PLACE:
 
 TEST_CASE_METHOD(UpgradeTestFixture, "Open and upgrade", "[Upgrade]") {
-    C4DocumentVersioning vers = GENERATE(kC4TreeVersioning, kC4VectorVersioning);
+    auto vers = C4DocumentVersioning(GENERATE((int)kC4TreeVersioning, (int)kC4VectorVersioning));
     upgradeInPlace(TestFixture::sFixturesDir + "replacedb/android120/androiddb.cblite2/", vers);
 
     verifyDoc("doc1"_sl,
