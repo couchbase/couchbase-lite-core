@@ -278,7 +278,7 @@ baseExpr =
   | '(' _ expression _ ')'
 
 OP_PREFIX =
-    <('-'|'+'|'~'|NOT)>                 { $$ = trim(yytext);}
+    <('-'|'+'|NOT)>                     { $$ = trim(yytext);}
 
 
 ######## PROPERTIES:
