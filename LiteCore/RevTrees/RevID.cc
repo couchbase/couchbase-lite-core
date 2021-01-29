@@ -30,8 +30,6 @@ namespace litecore {
 
     using namespace fleece;
 
-    static constexpr const char kHexDigits[] = "0123456789abcdef";
-
     static inline bool islowerxdigit(char c) {
         return isxdigit(c) && !isupper(c);
     }
@@ -40,7 +38,7 @@ namespace litecore {
 #pragma mark - API:
 
 
-    std::pair<unsigned,slice> revid::generationAndDigest() const {
+    pair<unsigned,slice> revid::generationAndDigest() const {
         if (isVersion())
             error::_throw(error::InvalidParameter);
         slice digest = *this;
@@ -94,16 +92,10 @@ namespace litecore {
                 return false;
         } else {
             auto [gen, digest] = generationAndDigest();
-            if (!out.writeDecimal(gen) || !out.writeByte('-') || out.size < 2 * digest.size)
+            if (!out.writeDecimal(gen) || !out.writeByte('-') || !out.writeHex(digest))
                 return false;
-            auto dst = (char*)out.buf;
-            for (size_t i = 0; i < digest.size; ++i) {
-                *dst++ = kHexDigits[digest[i] >> 4];
-                *dst++ = kHexDigits[digest[i] & 0x0F];
-            }
-            out.moveStart(2*digest.size);
         }
-        result.shorten(result.size - out.size);
+        result.setEnd(out.buf);
         return true;
     }
 
