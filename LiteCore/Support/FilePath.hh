@@ -19,10 +19,11 @@
 #pragma once
 
 #include "PlatformCompat.hh"
+#include "function_ref.hh"
 #include <string>
 #include <tuple> // for std::tie
 #include <ctime>
-#include "function_ref.hh"
+#include <utility>
 
 namespace litecore {
 

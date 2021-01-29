@@ -962,7 +962,6 @@
 		2744B318241854F2005A194D /* WebSocketImpl.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketImpl.hh; sourceTree = "<group>"; };
 		2744B319241854F2005A194D /* BLIP.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIP.hh; sourceTree = "<group>"; };
 		2744B31A241854F2005A194D /* Headers.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Headers.hh; sourceTree = "<group>"; };
-		2744B31B241854F2005A194D /* MockProvider.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MockProvider.hh; sourceTree = "<group>"; };
 		2744B31C241854F2005A194D /* MessageBuilder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageBuilder.hh; sourceTree = "<group>"; };
 		2744B31D241854F2005A194D /* LoopbackProvider.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LoopbackProvider.hh; sourceTree = "<group>"; };
 		2744B31E241854F2005A194D /* Message.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Message.hh; sourceTree = "<group>"; };
@@ -1016,6 +1015,8 @@
 		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
 		274B36D025B271F7001FC28D /* Version.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Version.hh; sourceTree = "<group>"; };
 		274B36D125B271F7001FC28D /* Version.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Version.cc; sourceTree = "<group>"; };
+		274C1DC325C4A79C00B0EEAC /* ChannelManifest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ChannelManifest.cc; sourceTree = "<group>"; };
+		274C1DC425C4A79C00B0EEAC /* ChannelManifest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ChannelManifest.hh; sourceTree = "<group>"; };
 		274D03E11BA732FC00FF7C35 /* JavaVM.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaVM.framework; path = System/Library/Frameworks/JavaVM.framework; sourceTree = SDKROOT; };
 		274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseTest.cc; sourceTree = "<group>"; };
 		274D04081BA75E1C00FF7C35 /* C4Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = C4Tests; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1946,7 +1947,6 @@
 				2744B30C241854F2005A194D /* CMakeLists.txt */,
 				2744B317241854F2005A194D /* BLIPConnection.hh */,
 				2744B319241854F2005A194D /* BLIP.hh */,
-				2744B31B241854F2005A194D /* MockProvider.hh */,
 				2744B31C241854F2005A194D /* MessageBuilder.hh */,
 				2744B31D241854F2005A194D /* LoopbackProvider.hh */,
 				2744B31E241854F2005A194D /* Message.hh */,
@@ -1997,6 +1997,8 @@
 				2744B341241854F2005A194D /* Async.hh */,
 				2744B342241854F2005A194D /* Channel.cc */,
 				2744B344241854F2005A194D /* Channel.hh */,
+				274C1DC325C4A79C00B0EEAC /* ChannelManifest.cc */,
+				274C1DC425C4A79C00B0EEAC /* ChannelManifest.hh */,
 			);
 			name = Actors;
 			sourceTree = "<group>";

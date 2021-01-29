@@ -7,6 +7,7 @@
 #pragma once
 #include "ReplicatorTypes.hh"
 #include "Logging.hh"
+#include <atomic>
 #include <memory>
 #include <string>
 #include <unordered_set>

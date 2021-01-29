@@ -24,6 +24,8 @@
 #include "Logging.hh"
 #include <stdarg.h>
 #include <iosfwd>
+#include <map>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>

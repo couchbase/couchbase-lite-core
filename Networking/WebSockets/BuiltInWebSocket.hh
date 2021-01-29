@@ -11,6 +11,7 @@
 #include "c4.hh"
 #include <atomic>
 #include <exception>
+#include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>

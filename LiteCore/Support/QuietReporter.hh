@@ -26,6 +26,7 @@
 #include "StringUtil.hh"
 #include "TestsCommon.hh"
 #include <fstream>
+#include <iostream>
 
 #ifdef _MSC_VER
 #include <atlbase.h>

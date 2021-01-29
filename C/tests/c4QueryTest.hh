@@ -14,7 +14,9 @@
 #include "c4.hh"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
+#include <functional>
 #include <iostream>
+#include <vector>
 
 using namespace fleece;
 

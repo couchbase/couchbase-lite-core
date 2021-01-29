@@ -12,6 +12,7 @@
 #include "fleece/slice.hh"
 #include "URLTransformer.hh"
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>

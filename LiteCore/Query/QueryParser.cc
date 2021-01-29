@@ -31,7 +31,6 @@
 #include "PlatformIO.hh"
 #include "SecureDigest.hh"
 #include "NumConversion.hh"
-#include <utility>
 #include <algorithm>
 
 using namespace std;

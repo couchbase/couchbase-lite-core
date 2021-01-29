@@ -9,6 +9,7 @@
 #include "DataFile.hh"
 #include "access_lock.hh"
 #include "function_ref.hh"
+#include <mutex>
 #include <vector>
 
 namespace c4Internal {

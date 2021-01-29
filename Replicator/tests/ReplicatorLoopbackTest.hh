@@ -21,7 +21,12 @@
 #include "SecureRandomize.hh"
 #include <algorithm>
 #include <chrono>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <set>
 #include <thread>
+#include <vector>
 
 #include "c4Test.hh"
 

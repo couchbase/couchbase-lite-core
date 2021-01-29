@@ -11,6 +11,7 @@
 #include <memory>
 #include <optional>
 #include <time.h>
+#include <utility>
 #include <vector>
 
 struct mbedtls_x509_crt;

@@ -240,7 +240,7 @@ namespace litecore { namespace actor {
 
         T&& extractResult() {
             assert(_ready);
-            return std::move(_result);
+            return move(_result);
         }
 
     private:

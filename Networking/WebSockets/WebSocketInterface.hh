@@ -24,6 +24,7 @@
 #include "fleece/Fleece.hh"
 #include <atomic>
 #include <string>
+#include <utility>
 
 namespace litecore { namespace websocket {
     using fleece::RefCounted;

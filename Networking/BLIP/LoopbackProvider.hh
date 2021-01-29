@@ -23,6 +23,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "NumConversion.hh"
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <iomanip>

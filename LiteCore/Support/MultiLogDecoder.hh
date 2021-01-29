@@ -11,6 +11,8 @@
 #include <fstream>
 #include <queue>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace litecore {
 

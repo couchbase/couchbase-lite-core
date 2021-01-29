@@ -24,6 +24,8 @@
 #include "Logging.hh"
 #include "c4Base.h"
 #include <functional>
+#include <memory>
+#include <utility>
 
 #ifdef DEBUG
 #define CHECK_IF_DEBUG CHECK

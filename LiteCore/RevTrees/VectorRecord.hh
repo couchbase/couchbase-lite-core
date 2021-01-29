@@ -190,7 +190,7 @@ namespace litecore {
 
         /// Returns the `body` and `extra` Record values representing the current in-memory state.
         /// This is used by the \ref save method and the database upgrader. Shouldn't be needed elsewhere.
-        std::pair<alloc_slice,alloc_slice> encodeBodyAndExtra();
+        pair<alloc_slice,alloc_slice> encodeBodyAndExtra();
 
         //---- Revisions of different remotes:
 
@@ -239,7 +239,7 @@ namespace litecore {
         void mutateRevisions();
         MutableDict mutableRevisionDict(RemoteID remoteID);
         Dict originalProperties() const;
-        std::pair<alloc_slice,alloc_slice> encodeBodyAndExtra(FLEncoder NONNULL);
+        pair<alloc_slice,alloc_slice> encodeBodyAndExtra(FLEncoder NONNULL);
         alloc_slice encodeExtra(FLEncoder NONNULL);
         bool propertiesChanged() const;
         void clearPropertiesChanged();

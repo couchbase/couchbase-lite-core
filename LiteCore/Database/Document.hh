@@ -52,7 +52,7 @@ namespace c4Internal {
         template <class SLICE>
         Document(Database *database, SLICE docID_)
         :_db(database)
-        ,_docIDBuf(std::move(docID_))
+        ,_docIDBuf(move(docID_))
         {
             docID = _docIDBuf;
             extraInfo = { };

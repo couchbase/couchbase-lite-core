@@ -58,7 +58,7 @@ namespace litecore {
         bool isVersion() const                      {return size > 0 && (*this)[0] == 0;}
 
         //---- Tree revision IDs only
-        std::pair<unsigned,slice> generationAndDigest() const;
+        pair<unsigned,slice> generationAndDigest() const;
         unsigned generation() const;
         slice digest() const                        {return generationAndDigest().second;}
 

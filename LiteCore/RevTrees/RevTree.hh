@@ -23,7 +23,6 @@
 #include <climits>
 #include <deque>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 
@@ -97,7 +96,7 @@ namespace litecore {
 
         void decode(slice body, slice extra, sequence_t seq);
 
-        std::pair<slice,alloc_slice> encode();
+        pair<slice,alloc_slice> encode();
 
         size_t size() const FLPURE                             {return _revs.size();}
         const Rev* get(unsigned index) const FLPURE;
@@ -117,7 +116,7 @@ namespace litecore {
         /// * {nullptr, n} , where n=history.size(), if there are no common revisions;
         /// * {nullptr, -400} if the history array is invalid
         /// * {nullptr, -409} if `allowConflict` is false and inserting would cause a conflict
-        std::pair<Rev*,int> findCommonAncestor(const std::vector<revidBuffer> history,
+        pair<Rev*,int> findCommonAncestor(const std::vector<revidBuffer> history,
                                                bool allowConflict);
 
         // Adds a new leaf revision, given the parent's revID

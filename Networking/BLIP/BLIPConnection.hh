@@ -21,6 +21,7 @@
 #include "Message.hh"
 #include "Logging.hh"
 #include <atomic>
+#include <functional>
 
 namespace litecore { namespace blip {
     class BLIPIO;

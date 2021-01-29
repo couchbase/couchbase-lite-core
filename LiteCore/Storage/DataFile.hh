@@ -254,7 +254,7 @@ namespace litecore {
         FilePath const          _path;                          // Path as given (non-canonical)
         Options                 _options;                       // Option/capability flags
         mutable KeyStore*       _defaultKeyStore {nullptr};     // The default KeyStore
-        std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
+        std::unordered_map<std::string, unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         mutable Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         std::unordered_set<Query*> _queries;                    // Query objects
         bool                    _inTransaction {false};         // Am I in a Transaction?
@@ -270,7 +270,7 @@ namespace litecore {
     public:
         explicit Transaction(DataFile*);
         explicit Transaction(DataFile &db)  :Transaction(&db) { }
-        explicit Transaction(const std::unique_ptr<DataFile>& db)  :Transaction(db.get()) { }
+        explicit Transaction(const unique_ptr<DataFile>& db)  :Transaction(db.get()) { }
         ~Transaction();
 
         DataFile& dataFile() const          {return _db;}

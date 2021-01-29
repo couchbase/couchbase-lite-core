@@ -143,7 +143,7 @@ namespace litecore {
         sequence_t                              _lastSequence {0};
         size_t                                  _numPlaceholders {0};
         size_t                                  _numDocObservers {0};
-        std::unique_ptr<DatabaseChangeNotifier> _transaction;
+        unique_ptr<DatabaseChangeNotifier>      _transaction;
         sequence_t                              _preTransactionLastSequence;
     };
 

@@ -22,6 +22,7 @@
 #include "IndexSpec.hh"
 #include "UnicodeCollator.hh"
 #include <optional>
+#include <vector>
 
 namespace SQLite {
     class Database;
@@ -104,7 +105,7 @@ namespace litecore {
         uint64_t purgeCount(const std::string& keyStoreName) const;
         void setPurgeCount(SQLiteKeyStore&, uint64_t);
 
-        SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
+        SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
                                    const char *sql) const;
         int exec(const std::string &sql);
         int execWithLock(const std::string &sql);
@@ -153,11 +154,11 @@ namespace litecore {
         SQLiteIndexSpec specFromStatement(SQLite::Statement &stmt);
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore *store =nullptr);
 
-        std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
-        std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
-        std::unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
-        CollationContextVector               _collationContexts;
-        SchemaVersion                        _schemaVersion {SchemaVersion::None};
+        unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
+        unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
+        unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
+        CollationContextVector          _collationContexts;
+        SchemaVersion                   _schemaVersion {SchemaVersion::None};
     };
 
 

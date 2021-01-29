@@ -15,6 +15,9 @@
 
 #include "InstanceCounted.hh"
 
+#include <mutex>
+#include <utility>
+
 
 using namespace litecore;
 // This is the definition of the C4Query type in the public C API,

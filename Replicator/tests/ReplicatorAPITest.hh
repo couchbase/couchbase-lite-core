@@ -18,11 +18,14 @@
 #include "StringUtil.hh"
 #include <algorithm>
 #include <chrono>
+#include <cinttypes>
 #include <condition_variable>
 #include <iostream>
-#include <thread>
+#include <memory>
 #include <mutex>
-#include <cinttypes>
+#include <set>
+#include <thread>
+#include <vector>
 
 using namespace fleece;
 using namespace litecore;

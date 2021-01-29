@@ -89,7 +89,7 @@ namespace litecore {
         }
     }
 
-    std::pair<slice,alloc_slice> RevTree::encode() {
+    pair<slice,alloc_slice> RevTree::encode() {
         sort();
         const Rev *cur = currentRevision();
         slice curBody;
@@ -235,7 +235,7 @@ namespace litecore {
         return true;
     }
 
-    std::pair<Rev*,int> RevTree::findCommonAncestor(const std::vector<revidBuffer> history,
+    pair<Rev*,int> RevTree::findCommonAncestor(const std::vector<revidBuffer> history,
                                                     bool allowConflict)
     {
         Assert(history.size() > 0);

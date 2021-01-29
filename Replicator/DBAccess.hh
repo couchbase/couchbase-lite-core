@@ -26,6 +26,9 @@
 #include "access_lock.hh"
 #include "function_ref.hh"
 #include "fleece/Fleece.hh"
+#include <atomic>
+#include <memory>
+#include <mutex>
 
 
 namespace litecore { namespace repl {

@@ -25,6 +25,8 @@
 #include "fleece/Fleece.h"
 #include "c4Base.h"
 #include "c4ExceptionUtils.hh"
+#include <mutex>
+#include <string_view>
 
 using namespace litecore;
 

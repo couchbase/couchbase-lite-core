@@ -102,10 +102,10 @@ namespace litecore {
         template <typename T>
             void setExtra(const T &extra)        {_extra = extra;}
 
-        void setKey(alloc_slice &&key)           {_key = std::move(key);}
-        void setVersion(alloc_slice &&vers)      {_version = std::move(vers);}
-        void setBody(alloc_slice &&body)         {_body = std::move(body); _bodySize = _body.size;}
-        void setExtra(alloc_slice &&extra)       {_extra = std::move(extra);}
+        void setKey(alloc_slice &&key)           {_key = move(key);}
+        void setVersion(alloc_slice &&vers)      {_version = move(vers);}
+        void setBody(alloc_slice &&body)         {_body = move(body); _bodySize = _body.size;}
+        void setExtra(alloc_slice &&extra)       {_extra = move(extra);}
 
         uint64_t bodyAsUInt() const noexcept FLPURE;
         void setBodyAsUInt(uint64_t) noexcept;

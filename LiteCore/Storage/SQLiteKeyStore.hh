@@ -19,9 +19,11 @@
 #pragma once
 #include "KeyStore.hh"
 #include "QueryParser.hh"
-#include <mutex>
 #include <atomic>
+#include <mutex>
+#include <optional>
 #include <string_view>
+#include <vector>
 
 namespace fleece::impl {
     class ArrayIterator;
@@ -93,7 +95,7 @@ namespace litecore {
         Retained<Query> compileQuery(slice expression, QueryLanguage) override;
 
         SQLite::Statement* compile(const std::string &sql) const;
-        SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
+        SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
                                    const char *sqlTemplate) const;
 
         void transactionWillEnd(bool commit);
@@ -140,13 +142,13 @@ namespace litecore {
 #endif
 
         // All of these Statement pointers have to be reset in the close() method.
-        std::unique_ptr<SQLite::Statement> _recCountStmt;
-        std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getCurByKeyStmt, _getMetaByKeyStmt;
-        std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getCurBySeqStmt, _getMetaBySeqStmt;
-        std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
-        std::unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
-        std::unique_ptr<SQLite::Statement> _setFlagStmt, _withDocBodiesStmt;
-        std::unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
+        unique_ptr<SQLite::Statement> _recCountStmt;
+        unique_ptr<SQLite::Statement> _getByKeyStmt, _getCurByKeyStmt, _getMetaByKeyStmt;
+        unique_ptr<SQLite::Statement> _getBySeqStmt, _getCurBySeqStmt, _getMetaBySeqStmt;
+        unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
+        unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
+        unique_ptr<SQLite::Statement> _setFlagStmt, _withDocBodiesStmt;
+        unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
 
         enum Existence : uint8_t { kNonexistent, kUncommitted, kCommitted };
 

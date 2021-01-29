@@ -13,7 +13,10 @@
 #include "StringUtil.hh"
 
 #include "LiteCoreTest.hh"
+#include <algorithm>
 #include <set>
+#include <utility>
+#include <vector>
 
 using namespace litecore;
 using namespace fleece::impl;

@@ -6,6 +6,7 @@
 
 #pragma once
 #include "Document.hh"
+#include <vector>
 
 namespace c4Internal {
 

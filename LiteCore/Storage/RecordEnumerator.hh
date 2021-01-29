@@ -59,7 +59,7 @@ namespace litecore {
                          sequence_t since,
                          Options options = Options());
 
-        RecordEnumerator(RecordEnumerator&& e) noexcept         {*this = std::move(e);}
+        RecordEnumerator(RecordEnumerator&& e) noexcept         {*this = move(e);}
 
         RecordEnumerator& operator=(RecordEnumerator&& e) noexcept {
             _store = e._store;
@@ -99,9 +99,9 @@ namespace litecore {
         RecordEnumerator(const RecordEnumerator&) = delete;               // no copying allowed
         RecordEnumerator& operator=(const RecordEnumerator&) = delete;    // no assignment allowed
 
-        KeyStore *      _store;             // The KeyStore I'm enumerating
-        Record          _record;            // Current record
-        std::unique_ptr<Impl> _impl;        // The storage-specific implementation
+        KeyStore *       _store;            // The KeyStore I'm enumerating
+        Record           _record;           // Current record
+        unique_ptr<Impl> _impl;             // The storage-specific implementation
     };
 
 }
