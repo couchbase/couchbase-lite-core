@@ -113,7 +113,7 @@ namespace litecore { namespace actor {
             empty = true;
             return T();
         } else {
-            T t( move(_queue.front()) );
+            T t( std::move(_queue.front()) );
             _queue.pop();
             empty = _queue.empty();
             return t;

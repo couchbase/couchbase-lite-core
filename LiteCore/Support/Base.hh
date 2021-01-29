@@ -32,6 +32,7 @@ namespace litecore {
     // For types #included above, add them to the `litecore` namespace so headers don't have to
     // use their full names. (This also keeps usages in those headers from being flagged by the
     // `missing_includes` script, which only notices types prefixed with `std::`.)
+    using std::move;
     using std::pair;
     using std::string;
     using std::shared_ptr;
