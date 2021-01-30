@@ -71,6 +71,7 @@ namespace litecore { namespace qp {
     }
 
     const Value* getCaseInsensitive(const Dict *dict, slice key);
+    bool isImplicitBool(const Value* op);
 
     const Array* requiredArray(const Value *v, const char *what);
     const Dict* requiredDict(const Value *v, const char *what);

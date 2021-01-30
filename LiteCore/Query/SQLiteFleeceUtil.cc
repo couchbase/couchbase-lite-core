@@ -25,6 +25,7 @@
 #include "Logging.hh"
 #include <SQLiteCpp/Exception.h>
 #include <sqlite3.h>
+#include <cmath>
 
 using namespace fleece;
 using namespace fleece::impl;
