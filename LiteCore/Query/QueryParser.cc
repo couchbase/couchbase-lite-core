@@ -33,6 +33,7 @@
 #include "NumConversion.hh"
 #include <utility>
 #include <algorithm>
+#include <unordered_set>
 
 using namespace std;
 using namespace fleece;
@@ -44,6 +45,38 @@ namespace litecore {
 #pragma mark - UTILITY FUNCTIONS:
 
     namespace qp {
+        struct caseInsensitiveSlice {
+            size_t operator() (pure_slice const& s) const {
+                uint32_t h = 2166136261;
+                for (size_t i = 0; i < s.size; i++) {
+                    h = (h ^ tolower(s[i])) * 16777619;
+	            }
+                        
+	            return h;
+            }
+
+            bool operator()(const slice& a, const slice& b) const {
+                return a.caseEquivalent(b);
+            }
+        };
+
+        using case_insensitive_set = std::unordered_set<slice, caseInsensitiveSlice, caseInsensitiveSlice>;
+
+        bool isImplicitBool(const Value* op) {
+            if(!op) {
+                return false;
+            }
+
+            static const case_insensitive_set implicitBoolOps = {
+                "!="_sl, "="_sl, ">"_sl, "<"_sl, ">="_sl, "<="_sl,
+                "IS"_sl, "IS NOT"_sl, "NOT"_sl,
+                "BETWEEN"_sl, "AND"_sl, "OR"_sl,
+                "NOT IN"_sl, "EVERY"_sl, "ANY AND EVERY"_sl
+            };
+
+            return implicitBoolOps.count(op->asString()) > 0;
+        }
+
         void fail(const char *format, ...) {
             va_list args;
             va_start(args, format);
@@ -746,7 +779,7 @@ namespace litecore {
                 _sql << ") AS \"" << title << '"';
                 addAlias(title, kResultAlias);
             } else {
-                _sql << kResultFnName << "(";
+                _sql << (isImplicitBool(expr[0]) ? kBoolResultFnName : kResultFnName) << "(";
                 if (result->type() == kString) {
                     // Convenience shortcut: interpret a string in a WHAT as a property path
                     writePropertyGetter(kValueFnName, Path(result->asString()));
