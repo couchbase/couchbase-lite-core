@@ -124,28 +124,45 @@ namespace c4Internal {
     static mutex sErrorMessagesMutex;
 
 
-    void recordError(C4ErrorDomain domain, int code, string_view message, C4Error* outError) noexcept {
-        if (outError) {
-            outError->domain = domain;
-            outError->code = code;
-            outError->internal_info = 0;
-            if (!message.empty()) {
-                try {
-                    lock_guard<mutex> lock(sErrorMessagesMutex);
-                    sErrorMessages.emplace_back(message);
-                    if (sErrorMessages.size() > kMaxErrorMessagesToSave) {
-                        sErrorMessages.pop_front();
-                        ++sFirstErrorMessageInternalInfo;
-                    }
-                    outError->internal_info = (uint32_t)(sFirstErrorMessageInternalInfo +
-                                                         sErrorMessages.size() - 1);
-                } catch (...) { }
-            }
+    static C4Error c4error_vprintf(C4ErrorDomain domain, int code,
+                                   const char *format, va_list args) noexcept
+    {
+        C4Error error {domain, code, 0};
+        if (format && *format) {
+            try {
+                lock_guard<mutex> lock(sErrorMessagesMutex);
+                sErrorMessages.emplace_back(vformat(format, args));
+                if (sErrorMessages.size() > kMaxErrorMessagesToSave) {
+                    sErrorMessages.pop_front();
+                    ++sFirstErrorMessageInternalInfo;
+                }
+                error.internal_info = (uint32_t)(sFirstErrorMessageInternalInfo +
+                                                 sErrorMessages.size() - 1);
+            } catch (...) { }
         }
+        return error;
+    }
+
+
+    void recordError(C4ErrorDomain domain, int code, string_view message, C4Error* outError) noexcept {
+        if (outError)
+            *outError = c4error_make(domain, code, slice(message));
     }
 
     void recordError(C4ErrorDomain domain, int code, C4Error* outError) noexcept {
-        recordError(domain, code, string(), outError);
+        if (outError)
+            *outError = c4error_make(domain, code, nullslice);
+    }
+
+    void recordError(C4Error *outError, C4ErrorDomain domain, int code,
+                     const char *format, ...) noexcept
+    {
+        if (outError) {
+            va_list args;
+            va_start(args, format);
+            *outError = c4error_vprintf(domain, code, format, args);
+            va_end(args);
+        }
     }
 
     static string lookupErrorMessage(C4Error &error) {
@@ -159,11 +176,24 @@ namespace c4Internal {
     }
 }
 
+using namespace c4Internal;
+
+
+
+C4Error c4error_printf(C4ErrorDomain domain, int code, const char *format, ...) C4API {
+    va_list args;
+    va_start(args, format);
+    C4Error error = c4error_vprintf(domain, code, format, args);
+    va_end(args);
+    return error;
+}
+
 
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API {
-    C4Error error;
-    recordError(domain, code, toString(message), &error);
-    return error;
+    if (message.size > 0)
+        return c4error_printf(domain, code, "%.*s", SPLAT(message));
+    else
+        return c4error_printf(domain, code, "");
 }
 
 

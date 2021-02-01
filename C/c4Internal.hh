@@ -64,6 +64,8 @@ namespace c4Internal {
 
     void recordError(C4ErrorDomain, int code, std::string_view message, C4Error* outError) noexcept;
     void recordError(C4ErrorDomain, int code, C4Error* outError) noexcept;
+    void recordError(C4Error *outError, C4ErrorDomain, int code, const char *format, ...)
+            noexcept __printflike(4, 5);
     
     // SLICES:
 

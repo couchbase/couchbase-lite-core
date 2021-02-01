@@ -441,11 +441,13 @@ namespace c4Internal {
             } else {
                 // Apply a delta via a callback:
                 if (!rq.deltaSourceRevID.buf || !selectRevision(rq.deltaSourceRevID, true)) {
-                    recordError(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                "Unknown source revision ID for delta", outError);
+                    recordError(outError, LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                "Missing source revision '%.*s' for delta",
+                                SPLAT(rq.deltaSourceRevID));
                 } else if (!getSelectedRevBody()) {
-                    recordError(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                "Missing source revision body for delta", outError);
+                    recordError(outError, LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                "Missing body of source revision '%.*s' for delta",
+                                SPLAT(rq.deltaSourceRevID));
                 } else {
                     slice delta = (rq.allocedBody.buf)? slice(rq.allocedBody) : slice(rq.body);
                     body = rq.deltaCB(rq.deltaCBContext, this, delta, outError);

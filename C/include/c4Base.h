@@ -299,6 +299,12 @@ char* c4error_getDescriptionC(C4Error error, char *outBuffer, size_t bufferSize)
 /** Creates a C4Error struct with the given domain and code, and associates the message with it. */
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
 
+/** Creates a C4Error struct with the given domain and code, formats the message as with
+    `printf`, and associates the message with the error. */
+C4Error c4error_printf(C4ErrorDomain domain,
+                       int code,
+                       const char *format, ...) C4API __printflike(3,4);
+
 
 /** Returns true if this is a network error that may be transient,
     i.e. the client should retry after a delay. */
