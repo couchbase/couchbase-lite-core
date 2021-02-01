@@ -74,7 +74,7 @@ C4Document* c4doc_getForPut(C4Database *database,
                             C4Error* C4NULLABLE outError) C4API;
 
 /** Converts C4DocumentFlags to the equivalent C4RevisionFlags. */
-C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags);
+C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) C4API;
 
 
 /** Returns the contents of the index as a Fleece-encoded array of arrays.

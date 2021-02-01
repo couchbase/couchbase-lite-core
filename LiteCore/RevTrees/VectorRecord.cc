@@ -38,7 +38,7 @@ namespace litecore {
 
      A table row, and `Record` object, contain these columns/properties:
        - `key`        --The document ID
-       - `version`    --Current revision's ID (if a version, just 1st component, not whole vector)
+       - `version`    --Current revision's ID (entire version vector, or current tree revID)
        - `flags`      --Current document flags, based on all stored revisions
        - `sequence`   --The document's current sequence number
        - `body`       --Fleece-encoded properties of the current revision

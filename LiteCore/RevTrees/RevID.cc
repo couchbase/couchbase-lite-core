@@ -85,7 +85,14 @@ namespace litecore {
         }
     }
 
-    bool revid::expandInto(slice &result) const {
+    bool revid::isEquivalentTo(const revid& other) const noexcept {
+        if (*this == other)
+            return true;
+        else
+            return isVersion() && other.isVersion() && asVersion() == other.asVersion();
+    }
+
+    bool revid::expandInto(slice &result) const noexcept {
         slice out = result;
         if (isVersion()) {
             if (!asVersion().writeASCII(&out))
@@ -136,7 +143,7 @@ namespace litecore {
     }
 
 
-    revidBuffer& revidBuffer::operator= (const revidBuffer& other) {
+    revidBuffer& revidBuffer::operator= (const revidBuffer& other) noexcept {
         memcpy(_buffer, other._buffer, sizeof(_buffer));
         set(&_buffer, other.size);
         return *this;
@@ -157,7 +164,7 @@ namespace litecore {
     }
 
 
-    revidBuffer& revidBuffer::operator= (const Version &vers) {
+    revidBuffer& revidBuffer::operator= (const Version &vers) noexcept {
         slice out(_buffer, sizeof(_buffer));
         out.writeByte(0);
         vers.writeBinary(&out);
@@ -199,7 +206,8 @@ namespace litecore {
             return true;
         } else {
             // Vector type:
-            auto vers = Version::readASCII(ascii);
+            auto comma = ascii.findByteOrEnd(',');
+            auto vers = Version::readASCII(slice(ascii.buf, comma));
             if (!vers)
                 return false;
             *this = *vers;

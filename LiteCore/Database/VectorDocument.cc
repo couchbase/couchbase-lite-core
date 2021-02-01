@@ -207,8 +207,10 @@ namespace c4Internal {
 
 
         alloc_slice getSelectedRevIDGlobalForm() override {
-            auto rev = _selectedRevision();
-            return rev ? _expandRevID(rev->revID, myPeerID()) : nullslice;
+            if (auto rev = _selectedRevision(); rev)
+                return rev->versionVector().asASCII(myPeerID());
+            else
+                return nullslice;
         }
 
 

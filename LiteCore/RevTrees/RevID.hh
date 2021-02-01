@@ -47,28 +47,33 @@ namespace litecore {
         about the first (current) version in the vector, except for the `asVersionVector` method. */
     class revid : public slice {
     public:
-        revid()                                     :slice() {}
-        revid(const void* b, size_t s)              :slice(b,s) {}
-        explicit revid(slice s)                     :slice(s) {}
+        revid()                                            :slice() {}
+        revid(const void* b, size_t s)                     :slice(b,s) {}
+        explicit revid(slice s)                            :slice(s) {}
 
-        bool operator< (const revid&) const;
-        bool operator> (const revid &r) const       {return r < *this;}
+        bool operator< (const revid&) const FLPURE;
+        bool operator> (const revid &r) const FLPURE       {return r < *this;}
+
+        /// Returns true if both revids represent the same revision:
+        /// - If both are version vectors (or single versions) and their leading versions are equal
+        /// - or if both are digest-based and are bitwise equal.
+        bool isEquivalentTo(const revid&) const noexcept FLPURE;
 
         /// Returns true for version-vector style (gen@peer), false for rev-tree style (gen-digest).
-        bool isVersion() const                      {return size > 0 && (*this)[0] == 0;}
+        bool isVersion() const noexcept FLPURE             {return size > 0 && (*this)[0] == 0;}
 
         //---- Tree revision IDs only
-        pair<unsigned,slice> generationAndDigest() const;
-        unsigned generation() const;
-        slice digest() const                        {return generationAndDigest().second;}
+        pair<unsigned,slice> generationAndDigest() const FLPURE;
+        unsigned generation() const FLPURE;
+        slice digest() const FLPURE                        {return generationAndDigest().second;}
 
         //---- Version IDs only
-        Version asVersion() const;
+        Version asVersion() const FLPURE;
         VersionVector asVersionVector() const;
 
         //---- ASCII conversions:
         alloc_slice expanded() const;
-        bool expandInto(slice &dst) const;
+        bool expandInto(slice &dst) const noexcept;
         std::string str() const;
         explicit operator std::string() const       {return str();}
     };
@@ -91,18 +96,20 @@ namespace litecore {
             Throws BadRevisionID if the string isn't parseable.*/
         explicit revidBuffer(slice asciiString)     :revid(&_buffer, 0) {parse(asciiString);}
 
-        revidBuffer& operator= (const revidBuffer&);
+        revidBuffer& operator= (const revidBuffer&) noexcept;
         revidBuffer& operator= (const revid&);
-        revidBuffer& operator= (const Version &vers);
+        revidBuffer& operator= (const Version &vers) noexcept;
 
         /** Parses a regular ASCII revID (digest or version style) and compresses it.
             Throws BadRevisionID if the string isn't parseable.
-            \warning This will not parse an entire version vector! Use the VersionVector class for that.             */
+            \warning This will not parse an entire version vector, only its first component!
+                    To parse the entire vector, call \ref VersionVector::fromASCII. */
         void parse(slice asciiString);
 
         /** Parses a regular ASCII revID (digest or version style) and compresses it.
             Returns false if the string isn't parseable.
-            \warning This will not parse an entire version vector! Use the VersionVector class for that. */
+            \warning This will not parse an entire version vector, only its first component!
+                    To parse the entire vector, call \ref VersionVector::fromASCII. */
         bool tryParse(slice asciiString) noexcept;
 
     private:

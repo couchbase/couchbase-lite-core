@@ -112,8 +112,6 @@ namespace litecore {
 
 
     void VersionVector::readASCII(slice str, peerID myPeerID) {
-        if (str.size == 0)
-            Version::throwBadASCII(str);
         reset();
         while (str.size > 0) {
             const void *comma = str.findByteOrEnd(',');

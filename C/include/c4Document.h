@@ -239,6 +239,12 @@ extern "C" {
     unsigned c4rev_getGeneration(C4String revID) C4API;
 
 
+    /** Returns true if two revision IDs are equivalent.
+        - Digest-based IDs are equivalent only if byte-for-byte equal.
+        - Version-vector based IDs are equivalent if their initial versions are equal. */
+    bool c4rev_equal(C4Slice rev1, C4Slice rev2) C4API;
+
+
     /** Removes the body of the selected revision and clears its kKeepBody flag.
         Must be called within a transaction. Remember to save the document afterwards.
         @param doc  The document to operate on.

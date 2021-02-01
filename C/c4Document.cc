@@ -297,11 +297,6 @@ bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase, C4Strin
 }
 
 
-C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) {
-    return Document::currentRevFlagsFromDocFlags(docFlags);
-}
-
-
 // LCOV_EXCL_START
 bool c4db_markSynced(C4Database *database,
                      C4String docID,
@@ -681,11 +676,28 @@ bool c4doc_save(C4Document *doc,
 }
 
 
-unsigned c4rev_getGeneration(C4Slice revID) noexcept {
+#pragma mark - REVISION IDS & FLAGS:
+
+
+/// Returns true if the two ASCII revIDs are equal (though they may not be byte-for-byte equal.)
+bool c4rev_equal(C4Slice rev1, C4Slice rev2) C4API {
+    if (slice(rev1) == slice(rev2))
+        return true;
+    revidBuffer buf1, buf2;
+    return buf1.tryParse(rev1) && buf2.tryParse(rev2) && buf1.isEquivalentTo(buf2);
+}
+
+
+unsigned c4rev_getGeneration(C4Slice revID) C4API {
     try {
         return revidBuffer(revID).generation();
     }catchExceptions()
     return 0;
+}
+
+
+C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) C4API {
+    return Document::currentRevFlagsFromDocFlags(docFlags);
 }
 
 
