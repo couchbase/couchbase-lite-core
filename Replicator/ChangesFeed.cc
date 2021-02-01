@@ -28,6 +28,7 @@
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
 #include "c4Observer.h"
+#include "RevID.hh"
 #include "fleece/Fleece.hh"
 #include <cinttypes>
 
@@ -38,7 +39,7 @@ namespace litecore { namespace repl {
 
 
     ChangesFeed::ChangesFeed(Delegate &delegate, Options &options,
-                             access_lock<C4Database*> &db, Checkpointer *checkpointer)
+                             DBAccess &db, Checkpointer *checkpointer)
     :Logging(SyncLog)
     ,_delegate(delegate)
     ,_options(options)
@@ -118,6 +119,8 @@ namespace litecore { namespace repl {
             options.flags &= ~kC4IncludeBodies;
         if (!_skipDeleted)
             options.flags |= kC4IncludeDeleted;
+        if (_db.usingVersionVectors())
+            options.flags |= kC4IncludeRevHistory;
 
         _db.use([&](C4Database* db) {
             c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _maxSequence, &options, &changes.err);

@@ -235,7 +235,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][Docu
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][Document][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][Document][Enumerator][C]") {
     setupAllDocs();
     C4Error error;
     C4DocEnumerator* e;
@@ -253,60 +253,89 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][Document]
         auto doc = c4enum_getDocument(e, &error);
         REQUIRE(doc);
         sprintf(docID, "doc-%03d", i);
-        REQUIRE(doc->docID == c4str(docID));
-        REQUIRE(doc->revID == kRevID);
-        REQUIRE(doc->selectedRev.revID == kRevID);
-        REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)i);
-        REQUIRE(c4doc_getProperties(doc) == nullptr);
+        CHECK(doc->docID == c4str(docID));
+        CHECK(doc->revID == kRevID);
+        CHECK(doc->selectedRev.revID == kRevID);
+        CHECK(doc->selectedRev.sequence == (C4SequenceNumber)i);
+        CHECK(c4doc_getProperties(doc) == nullptr);
         // Doc was loaded without its body, but it should load on demand:
-        REQUIRE(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
-        REQUIRE(docBodyEquals(doc, kFleeceBody));
+        CHECK(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
+        CHECK(docBodyEquals(doc, kFleeceBody));
 
         C4DocumentInfo info;
         REQUIRE(c4enum_getDocumentInfo(e, &info));
-        REQUIRE(info.docID == c4str(docID));
-        REQUIRE(info.flags == kDocExists);
-        REQUIRE(info.revID == kRevID);
-        REQUIRE(info.bodySize >= 11);
-        REQUIRE(info.bodySize <= 40);   // size includes rev-tree overhead so it's not exact
+        CHECK(info.docID == c4str(docID));
+        CHECK(info.flags == kDocExists);
+        CHECK(info.revID == kRevID);
+        CHECK(info.bodySize == kFleeceBody.size);
 
         c4doc_release(doc);
         i++;
     }
     c4enum_free(e);
-    REQUIRE(i == 100);
+    CHECK(i == 100);
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][Enumerator][C]") {
     setupAllDocs();
     C4Error error;
     C4DocEnumerator* e;
 
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     e = c4db_enumerateAllDocs(db, &options, &error);
-    REQUIRE(e);
+    CHECK(e);
     int i = 1;
     while(c4enum_next(e, &error)) {
-        C4DocumentInfo doc;
-        REQUIRE(c4enum_getDocumentInfo(e, &doc));
+        C4DocumentInfo info;
+        REQUIRE(c4enum_getDocumentInfo(e, &info));
         char docID[20];
         sprintf(docID, "doc-%03d", i);
-        REQUIRE(doc.docID == c4str(docID));
-        REQUIRE(doc.revID == kRevID);
-        REQUIRE(doc.sequence == (uint64_t)i);
-        REQUIRE(doc.flags == (C4DocumentFlags)kDocExists);
-        REQUIRE(doc.bodySize >= 11);
-        REQUIRE(doc.bodySize <= 40);   // size includes rev-tree overhead so it's not exact
+        CHECK(info.docID == c4str(docID));
+        CHECK(info.revID == kRevID);
+        CHECK(info.sequence == (uint64_t)i);
+        CHECK(info.flags == (C4DocumentFlags)kDocExists);
+        CHECK(info.bodySize == kFleeceBody.size);
         i++;
     }
     c4enum_free(e);
-    REQUIRE(error.code == 0);
-    REQUIRE(i == 100);
+    CHECK(error.code == 0);
+    CHECK(i == 100);
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs With History", "[Database][Enumerator][C]") {
+    if (isRevTrees())
+        return;
+
+    C4Error error;
+    C4DocEnumerator* e;
+
+    createRev("doc-100"_sl, "1@*"_sl, kFleeceBody);
+    createRev("doc-100"_sl, "1@d00d"_sl, kFleeceBody);
+
+    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+    e = c4db_enumerateAllDocs(db, &options, &error);
+    REQUIRE(e);
+    REQUIRE(c4enum_next(e, &error));
+    C4DocumentInfo info;
+    REQUIRE(c4enum_getDocumentInfo(e, &info));
+    CHECK(info.docID == "doc-100"_sl);
+    CHECK(info.revID == "1@d00d"_sl);       // Latest version only
+    c4enum_free(e);
+
+    options.flags |= kC4IncludeRevHistory;
+    e = c4db_enumerateAllDocs(db, &options, &error);
+    REQUIRE(e);
+    REQUIRE(c4enum_next(e, &error));
+    REQUIRE(c4enum_getDocumentInfo(e, &info));
+    CHECK(info.docID == "doc-100"_sl);
+    CHECK(info.revID == "1@d00d,1@*"_sl);       // Entire version vector
+    c4enum_free(e);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerator][C]") {
     createNumberedDocs(99);
 
     C4Error error;

@@ -25,6 +25,7 @@
 #include "Record.hh"
 #include "RecordEnumerator.hh"
 #include "RevID.hh"
+#include "VersionVector.hh"
 #include "Logging.hh"
 #include "InstanceCounted.hh"
 
@@ -42,12 +43,14 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
                     const C4EnumeratorOptions &options)
     :RecordEnumerator(database->defaultKeyStore(), since, recordOptions(database, options))
     ,_database(database)
+    ,_options(options)
     { }
 
     C4DocEnumerator(C4Database *database,
                     const C4EnumeratorOptions &options)
     :RecordEnumerator(database->defaultKeyStore(), recordOptions(database, options))
     ,_database(database)
+    ,_options(options)
     { }
 
     static RecordEnumerator::Options recordOptions(C4Database *database,
@@ -76,8 +79,15 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
     bool getDocInfo(C4DocumentInfo *outInfo) {
         if (!*this)
             return false;
+
+        revid vers(record().version());
+        if ((_options.flags & kC4IncludeRevHistory) && vers.isVersion())
+            _docRevID = vers.asVersionVector().asASCII();
+        else
+            _docRevID = vers.expanded();
+
         outInfo->docID = record().key();
-        outInfo->revID = _docRevID = revid(record().version()).expanded();
+        outInfo->revID = _docRevID;
         outInfo->flags = (C4DocumentFlags)record().flags() | kDocExists;
         outInfo->sequence = record().sequence();
         outInfo->bodySize = record().bodySize();
@@ -87,6 +97,7 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
 
 private:
     Retained<Database> _database;
+    C4EnumeratorOptions const _options;
     alloc_slice _docRevID;
 };
 
