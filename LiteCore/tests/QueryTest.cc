@@ -541,7 +541,7 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     }
     
     Retained<Query> query{ store->compileQuery(json5(
-        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSING()', ['.bogus'], ['.value']], null]}")) };
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSING()', ['.bogus'], ['MISSING'], ['.value']], null]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -557,20 +557,31 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
     
     query =store->compileQuery(json5(
-        "{'WHAT': ['._id'], WHERE: ['=', ['IFNULL()', ['.real_value'], ['.atai']], 1]}"));
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.atai'], ['.value']], null]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
 
     query =store->compileQuery(json5(
-        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.real_value'], ['.atai']], 1]}"));
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFNULL()', ['.value'], ['.real_value'], ['.atai']], 1]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.real_value'], ['.value'], ['.atai']], 1]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+
+    // missingif, TBD
+
+    // nullif, TBD
 }
 
 

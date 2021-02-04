@@ -314,15 +314,7 @@ namespace litecore {
             && sqlite3_value_subtype(arg) == kFleeceNullSubtype;
     }
 
-    // ifmissing(...) returns its first non-MISSING argument.
-    static void ifmissing(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        for(int i = 0; i < argc; i++) {
-            if(!isMissing(argv[i])) {
-                sqlite3_result_value(ctx, argv[i]);
-                return;
-            }
-        }
-    }
+    // ifmissing() is transpiled to SQLite3 as coalesce().
 
     // ifmissingornull(...) returns its first non-MISSING, non-null argument.
     static void ifmissingornull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
@@ -332,6 +324,8 @@ namespace litecore {
                 return;
             }
         }
+        // Returns NULL if all arguments are either isMissing() or isNull().
+        setResultFleeceNull(ctx);
     }
 
     // ifnull(...) returns its first non-null argument. I.e. it may return MISSING.
@@ -342,6 +336,8 @@ namespace litecore {
                 return;
             }
         }
+        // Returns NULL if all arguments isNull().
+        setResultFleeceNull(ctx);
     }
 
     // missingif(a,b) returns MISSING if a==b, else returns a.
@@ -1240,7 +1236,7 @@ namespace litecore {
 //        { "array_symdiffn",   -1, unimplemented },
 //        { "array_union",      -1, unimplemented },
 
-        { "ifmissing",        -1, ifmissing },
+//        { "ifmissing",        -1, ifmissing },
         { "ifmissingornull",  -1, ifmissingornull },
         { "N1QL_ifnull",      -1, ifnull },
         { "missingif",         2, missingif },
