@@ -65,6 +65,7 @@ namespace litecore { namespace repl {
         void handleChangesResponse(RevToSendList&, blip::MessageIn*, bool proposedChanges);
         bool handleChangeResponse(RevToSend *change, Value response);
         bool handleProposedChangeResponse(RevToSend *change, Value response);
+        bool handlePushConflict(RevToSend *change);
         void maybeGetMoreChanges()          {enqueue(FUNCTION_TO_QUEUE(Pusher::_maybeGetMoreChanges));}
         void _maybeGetMoreChanges();
         void gotChanges(ChangesFeed::Changes);

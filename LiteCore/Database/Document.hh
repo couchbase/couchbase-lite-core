@@ -98,6 +98,7 @@ namespace c4Internal {
         virtual bool selectCurrentRevision() noexcept {
             // By default just fill in what we know about the current revision:
             if (exists()) {
+                _selectedRevIDBuf = _revIDBuf;
                 selectedRev.revID = revID;
                 selectedRev.sequence = sequence;
                 selectedRev.flags = currentRevFlagsFromDocFlags(flags);
@@ -134,7 +135,10 @@ namespace c4Internal {
                                                   const C4String backToRevs[],
                                                   unsigned backToRevsCount) {failUnsupported();}
 
-        virtual alloc_slice getSelectedRevIDGlobalForm()    {return alloc_slice(selectedRev.revID);}
+        virtual alloc_slice getSelectedRevIDGlobalForm() {
+            DebugAssert(_selectedRevIDBuf == slice(selectedRev.revID));
+            return _selectedRevIDBuf;
+        }
 
         alloc_slice bodyAsJSON(bool canonical =false);
 

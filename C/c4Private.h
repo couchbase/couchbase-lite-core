@@ -93,6 +93,18 @@ bool c4db_markSynced(C4Database *database,
                      C4RemoteID remoteID,
                      C4Error* C4NULLABLE outError) C4API;
 
+
+/** Flags produced by \ref c4db_findDocAncestors, the result of comparing a local document's
+    revision(s) against the requested revID. */
+typedef C4_OPTIONS(uint8_t, C4FindDocAncestorsResultFlags) {
+    kRevsSame           = 0,    // Current revision is equal
+    kRevsLocalIsOlder   = 1,    // Current revision is older
+    kRevsLocalIsNewer   = 2,    // Current revision is newer
+    kRevsConflict       = 3,    // Current revision conflicts (== LocalIsOlder | LocalIsNewer)
+    kRevsAtThisRemote   = 4,    // The given C4RemoteID has this revID
+    kRevsHaveLocal      = 8,    // Local doc has this revID with its body
+};
+
 /** Given a list of document+revision IDs, checks whether each revision exists in the database
     or if not, what ancestors exist.
 
@@ -115,9 +127,6 @@ bool c4db_findDocAncestors(C4Database *database,
                            const C4String revIDs[C4NONNULL],
                            C4StringResult ancestors[C4NONNULL],
                            C4Error* C4NULLABLE outError) C4API;
-
-#define kC4AncestorExists               C4STR("1")
-#define kC4AncestorExistsButNotCurrent  C4STR("2")
 
 /** Call this to use BuiltInWebSocket as the WebSocket implementation.
     (Only available if linked with libLiteCoreWebSocket) */

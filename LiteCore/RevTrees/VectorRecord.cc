@@ -291,6 +291,7 @@ namespace litecore {
         bool changedFlags = false;
         if (auto &newRev = *optRev; optRev) {
             // Creating/updating a remote revision:
+            Assert((uint8_t(newRev.flags) & ~0x7) == 0);    // only deleted/attachments/conflicted are legal
             MutableDict revDict = mutableRevisionDict(remote);
             if (!newRev.revID)
                 error::_throw(error::CorruptRevisionData);
@@ -387,6 +388,7 @@ namespace litecore {
     }
 
     void VectorRecord::setFlags(DocumentFlags newFlags) {
+        Assert((uint8_t(newFlags) & ~0x5) == 0);    // only kDeleted and kHasAttachments are legal
         requireBody();
         if (newFlags != _current.flags) {
             _current.flags = newFlags;
@@ -680,9 +682,9 @@ namespace litecore {
 
 
     /*static*/ void VectorRecord::forAllRevIDs(const RecordLite &rec,
-                                             function_ref<void(revid,RemoteID)> callback)
+                                               const ForAllRevIDsCallback &callback)
     {
-        callback(revid(rec.version), RemoteID::Local);
+        callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);
         if (rec.extra.size > 0) {
             fleece::impl::Scope scope(rec.extra, nullptr, rec.body);
             Array remotes = Value::fromData(rec.extra, kFLTrusted).asArray();
@@ -690,9 +692,8 @@ namespace litecore {
             for (Array::iterator i(remotes); i; ++i, ++n) {
                 if (n > 0) {
                     Dict remote = i.value().asDict();
-                    slice revID = remote[kRevIDKey].asData();
-                    if (revID)
-                        callback(revid(revID), RemoteID(n));
+                    if (slice revID = remote[kRevIDKey].asData(); revID)
+                        callback(RemoteID(n), revid(revID), remote[kRevPropertiesKey] != nullptr);
                 }
             }
         }

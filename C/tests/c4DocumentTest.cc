@@ -143,30 +143,30 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         CHECK(findDocAncestor("new"_sl, kRev3ID) == "");
 
         // Revision I already have:
-        CHECK(findDocAncestor(doc1, kRev3ID) == "1"); //kC4AncestorExists
+        CHECK(findDocAncestor(doc1, kRev3ID) == "8"); // kRevHaveLocal | kRevSame
 
         // Newer revision:
-        CHECK(findDocAncestor(doc1, "4-deadbeef"_sl) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
-
-        // Conflict:
-        CHECK(findDocAncestor(doc1, "3-00000000"_sl) == R"(["2-c001d00d","1-abcd"])");
+        CHECK(findDocAncestor(doc1, "4-deadbeef"_sl) == R"(1["3-deadbeef","2-c001d00d","1-abcd"])");
 
         // Require bodies:
-        CHECK(findDocAncestor(doc1, "4-deadbeef"_sl, true) == R"(["3-deadbeef"])");
+        CHECK(findDocAncestor(doc1, "4-deadbeef"_sl, true) == R"(1["3-deadbeef"])");
+
+        // Conflict:
+        CHECK(findDocAncestor(doc1, "3-00000000"_sl) == R"(3["2-c001d00d","1-abcd"])");
 
         // Limit number of results:
         C4Slice newRevID = "4-deadbeef"_sl;
         REQUIRE(c4db_findDocAncestors(db, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors, &error));
-        CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef"])");
+        CHECK(toString(std::move(ancestors[0])) == R"(1["3-deadbeef"])");
 
         // Multiple docs:
         C4String docIDs[4] = {doc2,            doc1,    C4STR("doc4"),    doc3};
         C4String revIDs[4] = {"4-deadbeef"_sl, kRev3ID, C4STR("17-eeee"), "2-f000"_sl};
         REQUIRE(c4db_findDocAncestors(db, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors, &error));
-        CHECK(toString(std::move(ancestors[0])) == R"(["3-deadbeef","2-c001d00d","1-abcd"])");
-        CHECK(alloc_slice(std::move(ancestors[1])) == kC4AncestorExists);
+        CHECK(toString(std::move(ancestors[0])) == R"(1["3-deadbeef","2-c001d00d","1-abcd"])");
+        CHECK(toString(std::move(ancestors[1])) == "8");
         CHECK(!slice(ancestors[2]));
-        CHECK(toString(std::move(ancestors[3])) == R"(["1-abcd"])");
+        CHECK(toString(std::move(ancestors[3])) == R"(3["1-abcd"])");
 
     } else {
         // Version-vectors:
@@ -178,40 +178,41 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document FindDocAncestors", "[Document][C]") {
         CHECK(findDocAncestor("new"_sl, "3@300,30@8"_sl) == "");
 
         // Revision I already have:
-        CHECK(findDocAncestor(doc1, "3@100,10@8"_sl) == "1");// kC4AncestorExists
-                                                             // Require bodies:
-        CHECK(findDocAncestor(doc1, "3@100,10@8"_sl, true) == "1");// kC4AncestorExists
+        CHECK(findDocAncestor(doc1, "3@100,10@8"_sl) == "0");// kRevSame
+
+        // Require bodies:
+        CHECK(findDocAncestor(doc1, "3@100,10@8"_sl, true) == "0");// kRevSame
 
         // Older revision:
-        CHECK(findDocAncestor(doc1, "2@100,10@8"_sl) == "1");// kC4AncestorExists
+        CHECK(findDocAncestor(doc1, "2@100,10@8"_sl) == "2");// kRevNewer
+
         // Require bodies:
-        CHECK(findDocAncestor(doc1, "2@100,10@8"_sl, true) == "1");
+        CHECK(findDocAncestor(doc1, "2@100,10@8"_sl, true) == "2");
 
         // Newer revision:
-        CHECK(findDocAncestor(doc1, "11@8,3@100"_sl) == R"(["3@100,10@8"])");
+        CHECK(findDocAncestor(doc1, "11@8,3@100"_sl) == R"(1["3@100,10@8"])");
 
         // Conflict:
-        CHECK(findDocAncestor(doc1, "4@100,9@8"_sl) == R"([])");
+        CHECK(findDocAncestor(doc1, "4@100,9@8"_sl) == R"(3[])");
 
         // Single version:
-        CHECK(findDocAncestor(doc1, "3@100"_sl) == "1");// kC4AncestorExists
-        CHECK(findDocAncestor(doc1, "11@8"_sl) == R"(["3@100,10@8"])");
-        CHECK(findDocAncestor(doc1, "30@8"_sl) == R"(["3@100,10@8"])");
-        CHECK(findDocAncestor(doc1, "66@666"_sl) == R"(["3@100,10@8"])");
+        CHECK(findDocAncestor(doc1, "10@8"_sl) == "2");
+        CHECK(findDocAncestor(doc1, "11@8"_sl) == "3[]");
+        CHECK(findDocAncestor(doc1, "1@99"_sl) == "3[]");
 
         // Limit number of results:
         C4Slice newRevID = "11@8,3@100"_sl;
         REQUIRE(c4db_findDocAncestors(db, 1, 1, kNoBodies, kRemoteID, &doc1, &newRevID, ancestors, &error));
-        CHECK(toString(std::move(ancestors[0])) == R"(["3@100,10@8"])");
+        CHECK(toString(std::move(ancestors[0])) == R"(1["3@100,10@8"])");
 
         // Multiple docs:
-        C4String docIDs[4] = {doc2,            doc1,     C4STR("doc4"),    doc3};
+        C4String docIDs[4] = {doc2,            doc1,            C4STR("doc4"),    doc3};
         C4String revIDs[4] = {"9@100,10@8"_sl, "3@100,10@8"_sl, C4STR("17@17"),   "1@99,3@300,30@8"_sl};
         REQUIRE(c4db_findDocAncestors(db, 4, kMaxAncestors, kNoBodies, kRemoteID, docIDs, revIDs, ancestors, &error));
-        CHECK(toString(std::move(ancestors[0])) == R"(["3@100,10@8"])");
-        CHECK(alloc_slice(std::move(ancestors[1])) == kC4AncestorExists);
+        CHECK(toString(std::move(ancestors[0])) == R"(1["3@100,10@8"])");
+        CHECK(alloc_slice(std::move(ancestors[1])) == "0");
         CHECK(!slice(ancestors[2]));
-        CHECK(toString(std::move(ancestors[3])) == R"(["3@300,30@8"])");
+        CHECK(toString(std::move(ancestors[3])) == R"(1["3@300,30@8"])");
     }
 }
 

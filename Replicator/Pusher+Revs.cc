@@ -53,7 +53,7 @@ namespace litecore::repl {
         if (!connected())
             return;
 
-        logVerbose("Sending rev %.*s %.*s (seq #%" PRIu64 ") [%d/%d]",
+        logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%d/%d]",
                    SPLAT(request->docID), SPLAT(request->revID), request->sequence,
                    _revisionsInFlight, tuning::kMaxRevsInFlight);
 
@@ -75,12 +75,14 @@ namespace litecore::repl {
             }
         }
 
+        auto fullRevID = alloc_slice(_db->convertVersionToAbsolute(request->revID));
+
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
         // "norev" and include the error code:
         MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
         msg.compressed = true;
         msg["id"_sl] = request->docID;
-        msg["rev"_sl] = _db->convertVersionToAbsolute(request->revID);
+        msg["rev"_sl] = fullRevID;
         msg["sequence"_sl] = request->sequence;
         if (root) {
             if (request->noConflicts)
@@ -91,8 +93,8 @@ namespace litecore::repl {
 
             // Include the document history, but skip the current revision 'cause it's redundant
             alloc_slice history = request->historyString(doc);
-            if (auto comma = history.findByte(','); comma)
-                msg["history"_sl] = slice(comma+1, history.end());
+            if (history.hasPrefix(fullRevID) && history.size > fullRevID.size)
+                msg["history"_sl] = history.from(fullRevID.size + 1);
 
             bool sendLegacyAttachments = (request->legacyAttachments
                                           && (revisionFlags & kRevHasAttachments)
@@ -291,6 +293,7 @@ namespace litecore::repl {
     // `synced` - whether the revision was successfully stored on the peer
     void Pusher::doneWithRev(RevToSend *rev, bool completed, bool synced) {
         if (!passive()) {
+            logDebug("** doneWithRev %.*s #%.*s", SPLAT(rev->docID), SPLAT(rev->revID));//TEMP
             addProgress({rev->bodySize, 0});
             if (completed) {
                 _checkpointer.completedSequence(rev->sequence);

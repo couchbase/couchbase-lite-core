@@ -20,6 +20,7 @@
 #include "VectorRecord.hh"
 #include "VersionVector.hh"
 #include "c4Private.h"
+#include "Delimiter.hh"
 #include "StringUtil.hh"
 #include <set>
 
@@ -219,8 +220,7 @@ namespace c4Internal {
                                           unsigned backToRevsCount) override
         {
             if (auto rev = _selectedRevision(); rev) {
-                VersionVector vers;
-                vers.readBinary(rev->revID);
+                VersionVector vers = rev->versionVector();
                 if (maxRevs > 0 && vers.count() > maxRevs)
                     vers.limitCount(maxRevs);
                 // Easter egg: if maxRevs is 0, don't replace '*' with my peer ID [tests use this]
@@ -558,74 +558,71 @@ namespace c4Internal {
                                                              bool mustHaveBodies,
                                                              C4RemoteID remoteDBID)
     {
-        // I actually ignore `mustHaveBodies` ... it's not relevant for VV replication.
-
         // Map docID->revID for faster lookup in the callback:
         unordered_map<slice,slice> revMap(docIDs.size());
         for (ssize_t i = docIDs.size() - 1; i >= 0; --i)
             revMap[docIDs[i]] = revIDs[i];
-        peerID myPeerID {database()->myPeerID()};
+        const peerID myPeerID {database()->myPeerID()};
+
+        // These variables get reused in every call to the callback but are declared outside to
+        // avoid multiple construct/destruct calls:
         stringstream result;
-        VersionVector aVers;
+        VersionVector localVec, requestedVec;
+
+        // Subroutine to compare a local version with the requested one:
+        auto compareLocalRev = [&](slice revVersion) -> versionOrder {
+            localVec.readBinary(revVersion);
+            return localVec.compareTo(requestedVec);
+        };
 
         auto callback = [&](const RecordLite &rec) -> alloc_slice {
             // --- This callback runs inside the SQLite query ---
-            // --- It will be called once for each docID in the vector ---
-            
-            // Convert revID to encoded binary form:
-            auto vers = VersionVector::fromASCII(revMap[rec.key], myPeerID);
-            // It might be a single version not a vector:
-            optional<Version> singleVers;
-            if (vers.count() == 1)
-                singleVers = vers[0];
+            // --- It will be called once for each existing requested docID, in arbitrary order ---
 
-            // First check whether the document has this version or a newer one:
-            bool found = false, notCurrent = false;
-            VectorRecord::forAllRevIDs(rec, [&](revid aRev, RemoteID aRemote) {
-                aVers.readBinary(aRev);
-                auto cmp = singleVers ? aVers.compareTo(*singleVers) : aVers.compareTo(vers);
-                if (cmp == kSame || cmp == kNewer)
-                    found = true;
-                if (cmp != kSame && remoteDBID && C4RemoteID(aRemote) == remoteDBID)
-                    notCurrent = true;
-            });
+            // Look up matching requested revID, and convert to encoded binary form:
+            requestedVec.readASCII(revMap[rec.key], myPeerID);
 
-            if (found) {
-                if (notCurrent) {
-                    return alloc_slice(kC4AncestorExistsButNotCurrent);
-                } else {
-                    static alloc_slice kAncestorExists = alloc_slice(kC4AncestorExists);
-                    return kAncestorExists;
-                }
+            // Check whether the doc's current rev is this version, or a newer, or a conflict:
+            auto cmp = compareLocalRev(rec.version);
+            auto status = C4FindDocAncestorsResultFlags(cmp);
+
+            // Check whether this revID matches any of the doc's remote revisions:
+            if (remoteDBID != 0) {
+                VectorRecord::forAllRevIDs(rec, [&](RemoteID remote, revid aRev, bool hasBody) {
+                    if (remote > RemoteID::Local && compareLocalRev(aRev) == kSame) {
+                        if (hasBody)
+                            status |= kRevsHaveLocal;
+                        if (remote == RemoteID(remoteDBID))
+                            status |= kRevsAtThisRemote;
+                    }
+                });
             }
 
-            // Find revs that could be ancestors of it and write them as a JSON array:
+            char statusChar = '0' + char(status);
+            if (cmp == kNewer || cmp == kSame) {
+                // If I already have this revision, just return the status byte:
+                return alloc_slice(&statusChar, 1);
+            }
+
+            // I don't have the requested rev, so find revs that could be ancestors of it,
+            // and append them as a JSON array:
             result.str("");
-            result << '[';
-            unsigned n = 0;
+            result << statusChar << '[';
 
             std::set<alloc_slice> added;
-            VectorRecord::forAllRevIDs(rec, [&](revid aRev, RemoteID) {
-                if (n < maxAncestors) {
-                    aVers.readBinary(aRev);
-                    auto cmp = singleVers ? aVers.compareTo(*singleVers) : aVers.compareTo(vers);
-                    if (cmp == kOlder) {
-                        alloc_slice vector = aVers.asASCII(myPeerID);
-                        if (added.insert(vector).second) {      // skip identical vectors
-                            if (n++ == 0)
-                                result << '"';
-                            else
-                                result << "\",\"";
-                            result << vector;
-                        }
+            delimiter delim(",");
+            VectorRecord::forAllRevIDs(rec, [&](RemoteID, revid aRev, bool hasBody) {
+                if (delim.count() < maxAncestors && hasBody >= mustHaveBodies) {
+                    if (!(compareLocalRev(aRev) & kNewer)) {
+                        alloc_slice vector = localVec.asASCII(myPeerID);
+                        if (added.insert(vector).second)            // [skip duplicate vectors]
+                            result << delim << '"' << vector << '"';
                     }
                 }
             });
 
-            if (n > 0)
-                result << '"';
             result << ']';
-            return alloc_slice(result.str());
+            return alloc_slice(result.str());                       // --> Done!
         };
         return database()->dataFile()->defaultKeyStore().withDocBodies(docIDs, callback);
     }

@@ -23,6 +23,7 @@
 #include "Record.hh"
 #include "RawRevTree.hh"
 #include "RevTreeRecord.hh"
+#include "Delimiter.hh"
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
@@ -682,44 +683,51 @@ namespace c4Internal {
             // Convert revID to encoded binary form:
             revidBuffer revID;
             revID.parse(revMap[rec.key]);
-
+            auto revGeneration = revID.generation();
+            C4FindDocAncestorsResultFlags status = {};
             RevTree tree(rec.body, rec.extra, 0);
+            auto current = tree.currentRevision();
 
             // Does it exist in the doc?
-            if (tree[revID]) {
-                if (remoteDBID) {
-                    const Rev *curRemoteRev = tree.latestRevisionOnRemote(remoteDBID);
-                    if (curRemoteRev && curRemoteRev->revID != revID) {
-                        return alloc_slice(kC4AncestorExistsButNotCurrent);
-                    }
+            if (const Rev *rev = tree[revID]) {
+                if (rev->isBodyAvailable())
+                    status |= kRevsHaveLocal;
+                if (remoteDBID && rev == tree.latestRevisionOnRemote(remoteDBID))
+                    status |= kRevsAtThisRemote;
+                if (current != rev) {
+                    if (rev->isAncestorOf(current))
+                        status |= kRevsLocalIsNewer;
+                    else
+                        status |= kRevsConflict;
                 }
-                static alloc_slice kAncestorExists = alloc_slice(kC4AncestorExists);
-                return kAncestorExists;
+            } else {
+                if (current->revID.generation() < revGeneration)
+                    status |= kRevsLocalIsOlder;
+                else
+                    status |= kRevsConflict;
+            }
+
+            char statusChar = '0' + char(status);
+            if (!(status & kRevsLocalIsOlder)) {
+                return alloc_slice(&statusChar, 1);
             }
 
             // Find revs that could be ancestors of it and write them as a JSON array:
             result.str("");
-            result << '[';
-            auto generation = revID.generation();
+            result << statusChar << '[';
             char expandedBuf[100];
-            unsigned n = 0;
+            delimiter delim(",");
             for (auto rev : tree.allRevisions()) {
-                if (rev->revID.generation() < generation
+                if (rev->revID.generation() < revGeneration
                             && !(mustHaveBodies && !rev->isBodyAvailable())) {
                     slice expanded(expandedBuf, sizeof(expandedBuf));
                     if (rev->revID.expandInto(expanded)) {
-                        if (n++ == 0)
-                            result << '"';
-                        else
-                            result << "\",\"";
-                        result << expanded;
-                        if (n >= maxAncestors)
+                        result << delim << '"' << expanded << '"';
+                        if (delim.count() >= maxAncestors)
                             break;
                     }
                 }
             }
-            if (n > 0)
-                result << '"';
             result << ']';
             return alloc_slice(result.str());
         };

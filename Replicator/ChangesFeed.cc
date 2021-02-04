@@ -239,7 +239,7 @@ namespace litecore { namespace repl {
                     && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) {
             return nullptr;             // skip rev: not in list of docIDs
         } else {
-            auto rev = retained(new RevToSend(info));
+            auto rev = make_retained<RevToSend>(info);
             return shouldPushRev(rev, e, db) ? rev : nullptr;
         }
     }
@@ -269,7 +269,7 @@ namespace litecore { namespace repl {
                 _delegate.failedToGetChange(rev, error, false);
                 return false;         // fail the rev: error getting doc
             }
-            if (slice(doc->revID) != slice(rev->revID))
+            if (!c4rev_equal(doc->revID, rev->revID))
                 return false;         // skip rev: there's a newer one already
 
             if (needRemoteRevID) {

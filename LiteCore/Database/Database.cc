@@ -724,7 +724,7 @@ namespace c4Internal {
             _sequenceTracker->use([doc](SequenceTracker &st) {
                 Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
                 st.documentChanged(doc->_docIDBuf,
-                                   doc->_selectedRevIDBuf,
+                                   doc->getSelectedRevIDGlobalForm(), // entire version vector
                                    doc->selectedRev.sequence,
                                    SequenceTracker::RevisionFlags(doc->selectedRev.flags));
             });

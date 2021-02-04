@@ -1005,40 +1005,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict OutgoingConflicts", "[Push][Conflict][NoConflicts]") {
-    // this test doesn't work with version vectors, because a passive replicator can't add a conflict
-    if (!isRevTrees())
-        return;
-
-    // Enable outgoing conflicts; verify that a conflict gets pushed to the server.
-    auto pushOpts = Replicator::Options::pushing().setProperty(slice(kC4ReplicatorOptionOutgoingConflicts), true);
-    auto serverOpts = Replicator::Options::passive();
-    createFleeceRev(db,  C4STR("conflict"), kNonLocalRev1ID, C4STR("{}"));
-    _expectedDocumentCount = 1;
-
-    // Push db to db2, so both will have the doc:
-    runReplicators(pushOpts, serverOpts);
-    validateCheckpoints(db, db2, "{\"local\":1}");
-
-    // Update the doc differently in each db:
-    createFleeceRev(db,  C4STR("conflict"), kConflictRev2AID, C4STR("{\"db\":1}"));
-    createFleeceRev(db2, C4STR("conflict"), kConflictRev2BID, C4STR("{\"db\":2}"));
-    REQUIRE(c4db_getLastSequence(db2) == 2);
-
-    // Push db to db2 again:
-    runReplicators(pushOpts, serverOpts);
-    validateCheckpoints(db, db2, "{\"local\":2}");
-
-    // Verify conflict was pushed to db2:
-    c4::ref<C4Document> doc = c4db_getDoc(db2, C4STR("conflict"), true, kDocGetAll, nullptr);
-    REQUIRE(doc);
-    CHECK((doc->flags & kDocConflicted) != 0);
-	C4Slice revID = C4STR("2-2b2b2b2b");
-    CHECK(doc->selectedRev.revID == revID);
-    CHECK(c4doc_selectRevision(doc, kConflictRev2AID, true, nullptr));
-}
-
-
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][Push][Conflict][NoConflicts]") {
     static constexpr slice kTreeRevs[7] = {"", "1-1111", "2-2222", "3-3333", "4-4444", "5-5555", "6-6666"};
     static constexpr slice kVersions[7] = {"", "1@*", "2@*", "1@*", "2@*", "3@*", "4@*"};
@@ -1187,6 +1153,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][C
 
     // Update the doc and push it to db2:
     createNewRev(db, docID, kFleeceBody);
+    C4Log("-------- Push db -> db2 --------");
     runPushReplication();
 
     compareDatabases();

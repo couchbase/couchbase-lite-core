@@ -44,7 +44,7 @@ namespace litecore {
         /// - kDeleted: This is a tombstone
         /// - kConflicted: This is a conflict with the current local revision
         /// - kHasAttachments: Properties include references to blobs.
-        DocumentFlags flags;
+        DocumentFlags flags {};
 
         /// Returns the current (first) version of the version vector encoded in the `revID`.
         Version version() const;
@@ -52,9 +52,9 @@ namespace litecore {
         /// Decodes the entire version vector encoded in the `revID`. (This allocates heap space.)
         VersionVector versionVector() const;
 
-        bool isDeleted() const FLPURE      {return (flags & DocumentFlags::kDeleted) != 0;}
-        bool isConflicted() const FLPURE   {return (flags & DocumentFlags::kConflicted) != 0;}
-        bool hasAttachments() const FLPURE {return (flags & DocumentFlags::kHasAttachments) != 0;}
+        bool isDeleted() const FLPURE      {return flags & DocumentFlags::kDeleted;}
+        bool isConflicted() const FLPURE   {return flags & DocumentFlags::kConflicted;}
+        bool hasAttachments() const FLPURE {return flags & DocumentFlags::kHasAttachments;}
     };
 
 
@@ -211,8 +211,10 @@ namespace litecore {
         /// Same as \ref nextRemoteID, but loads the document's remote revisions if not in memory yet.
         RemoteID loadNextRemoteID(RemoteID);
 
+        using ForAllRevIDsCallback = function_ref<void(RemoteID,revid,bool hasBody)>;
+
         /// Given only a record, find all the revision IDs and pass them to the callback.
-        static void forAllRevIDs(const RecordLite&, function_ref<void(revid,RemoteID)>);
+        static void forAllRevIDs(const RecordLite&, const ForAllRevIDsCallback&);
 
         //---- For testing:
 
