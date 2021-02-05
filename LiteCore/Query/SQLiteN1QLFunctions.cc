@@ -549,6 +549,7 @@ namespace litecore {
                                    stringSliceArgument(argv[1]),
                                    collationContextFromArg(ctx, argc, argv, 2));
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
 
@@ -557,6 +558,7 @@ namespace litecore {
         const int likeResult = LikeUTF8(valueAsStringSlice(argv[0]), valueAsStringSlice(argv[1]),
                                         collationContextFromArg(ctx, argc, argv, 2));
         sqlite3_result_int(ctx, likeResult == kLikeMatch);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
 
@@ -703,6 +705,7 @@ namespace litecore {
             regex r((const char*)pattern.buf, pattern.size, regex_constants::ECMAScript);
             bool result = regex_search((const char*)str.buf, (const char*)str.end(), r);
             sqlite3_result_int(ctx, result != 0);
+            sqlite3_result_subtype(ctx, kFleeceIntBoolean);
         }
     }
 
@@ -947,6 +950,7 @@ namespace litecore {
     static void isarray(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "array" ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // isatom(v) returns true if `v` is a boolean, number or string.
@@ -954,6 +958,7 @@ namespace litecore {
         auto type = value_type(ctx, argv[0]);
         int result = (type == "boolean" || type == "number" || type == "string") ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // isboolean(v) returns true if `v` is a boolean. (Since SQLite doesn't distinguish between
@@ -961,24 +966,28 @@ namespace litecore {
     static void isboolean(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "boolean" ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // isnumber(v) returns true if `v` is a number.
     static void isnumber(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "number" ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // isobject(v) returns true if `v` is a dictionary.
     static void isobject(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "object" ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // isatom(v) returns true if `v` is a string.
     static void isstring(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "string" ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // type(v) returns a string naming the type of `v`.
@@ -1045,55 +1054,15 @@ namespace litecore {
     // Empty strings, arrays, and objects are false.
     // All other values are true.
     static void toboolean(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        bool result;
-        switch(sqlite3_value_type(argv[0])) {
-            case SQLITE_NULL:
-                sqlite3_result_null(ctx);
-                return;
-            case SQLITE_FLOAT:
-            case SQLITE_INTEGER:
-            {
-                auto val = sqlite3_value_double(argv[0]);
-                result = (val != 0.0 && !std::isnan(val));
-                break;
-            }
-            case SQLITE_TEXT:
-            {
-                // Need to call sqlite3_value_text here?
-                result = sqlite3_value_bytes(argv[0]) > 0;
-                break;
-            }
-            case SQLITE_BLOB:
-            {
-                auto fleece = fleeceParam(ctx, argv[0]);
-                if (fleece == nullptr) {
-                    result = false;
-                } else switch(fleece->type()) {
-                    case valueType::kArray:
-                        result = fleece->asArray()->count() > 0;
-                        break;
-                    case valueType::kData:
-                        result = fleece->asData().size > 0;
-                        break;
-                    case valueType::kDict:
-                        result = fleece->asDict()->count() > 0;
-                        break;
-                    case valueType::kNull:
-                        sqlite3_result_value(ctx, argv[0]);
-                        return;
-                    default:
-                        // Other Fleece types never show up in blobs
-                        result = false;
-                        break;
-                }
-                break;
-            }
-            default:
-                result = true;
-                break;
+        enhanced_bool_t result = booleanValue(ctx, argv[0]);
+        if(result == kTrue || result == kFalse) {
+            sqlite3_result_int(ctx, result);
+            sqlite3_result_subtype(ctx, kFleeceIntBoolean);
+        } else if(result == kMissing) {
+            sqlite3_result_null(ctx);
+        } else {
+            sqlite3_result_value(ctx, argv[0]);
         }
-        sqlite3_result_int(ctx, result);
-        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // tonumber(v) returns a number derived from `v`:
