@@ -91,6 +91,7 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
         outInfo->flags = (C4DocumentFlags)record().flags() | kDocExists;
         outInfo->sequence = record().sequence();
         outInfo->bodySize = record().bodySize();
+        outInfo->metaSize = record().extraSize();
         outInfo->expiration = record().expiration();
         return true;
     }

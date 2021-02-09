@@ -235,7 +235,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][Docu
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][Document][Enumerator][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator", "[Database][Document][Enumerator][C]") {
     setupAllDocs();
     C4Error error;
     C4DocEnumerator* e;
@@ -277,7 +277,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][Document]
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][Enumerator][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Database][Enumerator][C]") {
     setupAllDocs();
     C4Error error;
     C4DocEnumerator* e;
@@ -296,6 +296,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][Enume
         CHECK(info.sequence == (uint64_t)i);
         CHECK(info.flags == (C4DocumentFlags)kDocExists);
         CHECK(info.bodySize == kFleeceBody.size);
+        if (isRevTrees())
+            CHECK(info.metaSize > 0);       // (VV doesn't use `extra` until remote revs are added)
         i++;
     }
     c4enum_free(e);
@@ -304,7 +306,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][Enume
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs With History", "[Database][Enumerator][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With History", "[Database][Enumerator][C]") {
     if (isRevTrees())
         return;
 

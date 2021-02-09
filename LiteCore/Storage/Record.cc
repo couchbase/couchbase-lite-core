@@ -34,7 +34,7 @@ namespace litecore {
 
     void Record::clearMetaAndBody() noexcept {
         _version = _body = _extra = nullslice;
-        _bodySize = _sequence = 0;
+        _bodySize = _extraSize = _sequence = 0;
         _flags = DocumentFlags::kNone;
         _contentLoaded = kMetaOnly;
         _exists = false;

@@ -83,6 +83,7 @@ namespace litecore {
         const alloc_slice& extra() const FLPURE   {return _extra;}
 
         size_t bodySize() const FLPURE            {return _bodySize;}
+        size_t extraSize() const FLPURE           {return _extraSize;}
 
         sequence_t sequence() const FLPURE        {return _sequence;}
 
@@ -100,12 +101,12 @@ namespace litecore {
         template <typename T>
             void setBody(const T &body)          {_body = body; _bodySize = _body.size;}
         template <typename T>
-            void setExtra(const T &extra)        {_extra = extra;}
+            void setExtra(const T &extra)        {_extra = extra; _extraSize = _extra.size;}
 
         void setKey(alloc_slice &&key)           {_key = move(key);}
         void setVersion(alloc_slice &&vers)      {_version = move(vers);}
         void setBody(alloc_slice &&body)         {_body = move(body); _bodySize = _body.size;}
-        void setExtra(alloc_slice &&extra)       {_extra = move(extra);}
+        void setExtra(alloc_slice &&extra)       {_extra = move(extra); _extraSize = _extra.size;}
 
         uint64_t bodyAsUInt() const noexcept FLPURE;
         void setBodyAsUInt(uint64_t) noexcept;
@@ -118,6 +119,7 @@ namespace litecore {
 
         void updateSequence(sequence_t s)       {_sequence = s;}
         void setUnloadedBodySize(size_t size)   {_body = nullslice; _bodySize = size;}
+        void setUnloadedExtraSize(size_t size)  {_extra = nullslice; _extraSize = size;}
         void setExists()                        {_exists = true;}
         void setContentLoaded(ContentOption opt){_contentLoaded = opt;}
 
@@ -132,6 +134,7 @@ namespace litecore {
 
         alloc_slice     _key, _version, _body, _extra;  // The key, metadata and body of the record
         size_t          _bodySize {0};          // Size of body, if body wasn't loaded
+        size_t          _extraSize {0};         // Size of `extra` col, if not loaded
         sequence_t      _sequence {0};          // Sequence number (if KeyStore supports sequences)
         expiration_t    _expiration {0};        // Expiration time (only set by RecordEnumerator)
         DocumentFlags   _flags {DocumentFlags::kNone};// Document flags (deleted, conflicted, etc.)

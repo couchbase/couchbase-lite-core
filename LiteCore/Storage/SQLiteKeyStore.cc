@@ -237,7 +237,8 @@ namespace litecore {
     // alloc_slice (not just slice).
 
 
-    // Gets flags from col 1, version from col 3, body (or its length) from col 4, extra from col 5
+    // Gets flags from col 1, version from col 3, body (or its size) from col 4,
+    // extra (or its size) from col 5
     /*static*/ void SQLiteKeyStore::setRecordMetaAndBody(Record &rec,
                                                          SQLite::Statement &stmt,
                                                          ContentOption content)
@@ -253,7 +254,7 @@ namespace litecore {
         if (content == kEntireBody)
             rec.setExtra(columnAsSlice(stmt.getColumn(5)));
         else
-            rec.setExtra(nullslice);
+            rec.setUnloadedExtraSize((ssize_t)stmt.getColumn(5));
     }
     
 
@@ -262,11 +263,11 @@ namespace litecore {
         switch (content) {
             case kMetaOnly:
                 stmt = &compile(_getMetaByKeyStmt,
-                        "SELECT sequence, flags, 0, version, length(body) FROM kv_@ WHERE key=?");
+                        "SELECT sequence, flags, 0, version, length(body), length(extra) FROM kv_@ WHERE key=?");
                 break;
             case kCurrentRevOnly:
                 stmt = &compile(_getCurByKeyStmt,
-                        "SELECT sequence, flags, 0, version, fl_root(body) FROM kv_@ WHERE key=?");
+                        "SELECT sequence, flags, 0, version, body, length(extra) FROM kv_@ WHERE key=?");
                 break;
             case kEntireBody:
                 stmt = &compile(_getByKeyStmt,
@@ -299,11 +300,11 @@ namespace litecore {
         switch (content) {
             case kMetaOnly:
                 stmt = &compile(_getMetaBySeqStmt,
-                        "SELECT 0, flags, key, version, length(body) FROM kv_@ WHERE sequence=?");
+                        "SELECT 0, flags, key, version, length(body), length(extra) FROM kv_@ WHERE sequence=?");
                 break;
             case kCurrentRevOnly:
                 stmt = &compile(_getCurBySeqStmt,
-                        "SELECT 0, flags, key, version, fl_root(body) FROM kv_@ WHERE sequence=?");
+                        "SELECT 0, flags, key, version, body, length(extra) FROM kv_@ WHERE sequence=?");
                 break;
             case kEntireBody:
                 stmt = &compile(_getBySeqStmt,

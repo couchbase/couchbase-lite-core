@@ -76,9 +76,8 @@ namespace litecore {
         }
 
         stringstream sql;
-        sql << "SELECT sequence, flags, key, version, ";
-        static constexpr const char* kBodyItem[3] = {"length(body)", "fl_root(body)", "body"};
-        sql << kBodyItem[options.contentOption];
+        sql << "SELECT sequence, flags, key, version";
+        sql << (options.contentOption >= kCurrentRevOnly ? ", body"  : ", length(body)");
         sql << (options.contentOption >= kEntireBody     ? ", extra" : ", length(extra)");
         sql << (mayHaveExpiration() ? ", expiration" : ", 0");
         sql << " FROM kv_" << name();
