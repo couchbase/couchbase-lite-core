@@ -340,15 +340,65 @@ namespace litecore {
         setResultFleeceNull(ctx);
     }
 
-    // missingif(a,b) returns MISSING if a==b, else returns a.
-    static void missingif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto slice0 = valueAsSlice(argv[0]);
-        auto slice1 = valueAsSlice(argv[1]);
-        if(slice0.buf == nullptr || slice1.buf == nullptr || slice0.size == 0 || slice1.size == 0) {
-            sqlite3_result_null(ctx);
+    namespace {
+        inline bool isNumber(sqlite3_value* argv) {
+            return sqlite3_value_type(argv) == SQLITE_INTEGER || sqlite3_value_type(argv) == SQLITE_FLOAT;
         }
 
-        if(slice0.compare(slice1) == 0) {
+        bool equalNumbers(double d, int64_t i) {
+            if (modf(d, &d) != 0.0 ||
+                d < numeric_limits<int64_t>::min() ||
+                d >= numeric_limits<int64_t>::max()) {
+                return false;
+            } else {
+                return (int64_t)d == i;
+            }
+        }
+
+        // Pre-conditions: isNumber(argv0) && isNumber(argv1)
+        bool equalNumbers(sqlite3_value* argv0, sqlite3_value* argv1) {
+            if (sqlite3_value_type(argv0) == SQLITE_INTEGER) {
+                swap(argv0, argv1);
+            }
+            // Assertion: sqlite3_value_type(argv0) == SQLITE_FLOAT || both are integer
+            if (sqlite3_value_type(argv0) == SQLITE_INTEGER) {
+                return sqlite3_value_int64(argv0) == sqlite3_value_int64(argv1);
+            } else {
+                double d = sqlite3_value_double(argv0);
+                if (sqlite3_value_type(argv1) == SQLITE_FLOAT) {
+                    return d == sqlite3_value_double(argv1);
+                } else {
+                    return equalNumbers(d, sqlite3_value_int64(argv1));
+                }
+            }
+        }
+
+        // Pre-conditions: none of argv0 or argv1 isNull() or isMissing()
+        bool isEqual(sqlite3_value* argv0, sqlite3_value* argv1) {
+            bool ret = false;
+            if (isNumber(argv0)) {
+                ret = isNumber(argv1) && equalNumbers(argv0, argv1);
+            } else if (sqlite3_value_type(argv0) == sqlite3_value_type(argv1)) {
+                auto slice0 = valueAsSlice(argv0);
+                auto slice1 = valueAsSlice(argv1);
+                ret = (slice0 == slice1);
+            }
+            return ret;
+        }
+    }
+
+    // missingif(a,b) returns MISSING if a==b, else returns a.
+    static void missingif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        if (isMissing(argv[0]) || isMissing(argv[1])) {
+            sqlite3_result_null(ctx);
+            return;
+        }
+        if (isNull(argv[0]) || isNull(argv[1])) {
+            setResultFleeceNull(ctx);
+            return;
+        }
+
+        if (isEqual(argv[0], argv[1])) {
             sqlite3_result_null(ctx);
         } else {
             sqlite3_result_value(ctx, argv[0]);
@@ -357,13 +407,16 @@ namespace litecore {
 
     // nullif(a,b) returns null if a==b, else returns a.
     static void nullif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto slice0 = valueAsSlice(argv[0]);
-        auto slice1 = valueAsSlice(argv[1]);
-        if(slice0.buf == nullptr || slice1.buf == nullptr || slice0.size == 0 || slice1.size == 0) {
+        if (isMissing(argv[0]) || isMissing(argv[1])) {
             sqlite3_result_null(ctx);
+            return;
+        }
+        if (isNull(argv[0]) || isNull(argv[1])) {
+            setResultFleeceNull(ctx);
+            return;
         }
 
-        if(slice0.compare(slice1) == 0) {
+        if (isEqual(argv[0], argv[1])) {
             setResultFleeceNull(ctx);
         } else {
             sqlite3_result_value(ctx, argv[0]);

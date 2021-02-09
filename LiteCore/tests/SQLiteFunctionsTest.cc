@@ -204,13 +204,31 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_agg", "[Query]") {
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "N1QL missingif/nullif", "[Query]") {
     insert("a",   "{\"hey\": [null, null, 2, true, true, 4, \"bar\"]}");
-    
+
     CHECK(query("SELECT MISSINGIF('5', '5') FROM kv")
             == (vector<string>{ "MISSING" }));
+    CHECK(query("SELECT MISSINGIF(5, 5.0) FROM kv") // compare int with float
+            == (vector<string>{ "MISSING" }));
+    CHECK(query("SELECT MISSINGIF(9223372036854775807, 9.22337e+18) FROM kv")
+            == (vector<string>{ "9223372036854775807" }));
+    CHECK(query("SELECT MISSINGIF(9223370000000000000, 9.22337e+18) FROM kv")
+            == (vector<string>{ "MISSING" }));
+    CHECK(query("SELECT MISSINGIF(9.22337e+200, 9.22337e+200) FROM kv")
+            == (vector<string>{ "MISSING" }));
+    CHECK(query("SELECT MISSINGIF(9223370000000000001, 9.22337e+18) FROM kv")
+            == (vector<string>{ "9223370000000000001" }));
+    CHECK(query("SELECT MISSINGIF(9223372036854775807, 9223372036854775807) FROM kv")
+            == (vector<string>{ "MISSING" }));
+    CHECK(query("SELECT N1QL_NULLIF(-9223372036854775808, -9223372036854775808) FROM kv")
+            == (vector<string>{ "null" }));
+    CHECK(query("SELECT MISSINGIF('5', 5) FROM kv")
+            == (vector<string>{ "5" }));
     CHECK(query("SELECT MISSINGIF('5', '4') FROM kv")
             == (vector<string>{ "5" }));
     CHECK(query("SELECT N1QL_NULLIF('5', '5') FROM kv")
             == (vector<string>{ "null" }));
+    CHECK(query("SELECT N1QL_NULLIF(5, '5') FROM kv")
+            == (vector<string>{ "5" }));
     CHECK(query("SELECT N1QL_NULLIF('5', '4') FROM kv")
             == (vector<string>{ "5" }));
 }

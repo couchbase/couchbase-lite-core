@@ -638,9 +638,48 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
 
-    // missingif, TBD
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['MISSINGIF()', ['.real_value'], 3], 1]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+    
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['IS', ['MISSINGIF()', ['.real_value'], 1], ['MISSING']]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
 
-    // nullif, TBD
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['IS', ['MISSINGIF()', ['.value'], 1], ['MISSING']]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 0);
+    
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['IS', ['MISSINGIF()', ['.value'], 1], null]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['NULLIF()', 3, ['.atai']], 3]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+    
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['NULLIF()', 1, ['.atai']], null]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+    
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['IS', ['NULLIF()', 1, ['.atai']], ['MISSING']]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
 }
 
 
