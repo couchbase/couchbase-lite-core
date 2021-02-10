@@ -19,6 +19,7 @@
 #include "VectorDocument.hh"
 #include "VectorRecord.hh"
 #include "VersionVector.hh"
+#include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "Delimiter.hh"
 #include "StringUtil.hh"
@@ -190,14 +191,20 @@ namespace c4Internal {
 
 
         slice getSelectedRevBody() noexcept override {
-            if (!_remoteID)
-                return nullslice;
-            else if (*_remoteID != RemoteID::Local)
-                error::_throw(error::Unimplemented);    // FIXME: IMPLEMENT
-            else if (_doc.contentAvailable() < kCurrentRevOnly)
-                return nullslice;
-            else
-                return _doc.currentRevisionData();
+            if (auto rev = _selectedRevision()) {
+                // Current revision, or remote with the same version:
+                if (rev->revID == _doc.revID())
+                    return _doc.currentRevisionData();
+
+                // Else the properties have to be re-encoded to a slice:
+                if (rev->properties) {
+                    SharedEncoder enc(_db->sharedFLEncoder());
+                    enc << rev->properties;
+                    _latestBody = enc.finish();
+                    return _latestBody;
+                }
+            }
+            return nullslice;
         }
 
 
@@ -526,8 +533,9 @@ namespace c4Internal {
 
 
     private:
-        VectorRecord          _doc;
+        VectorRecord        _doc;
         optional<RemoteID>  _remoteID;    // Identifies selected revision
+        alloc_slice         _latestBody;    // Holds onto latest Fleece body I created
     };
 
 

@@ -163,7 +163,9 @@ extern "C" {
         i.e. if c4doc_loadRevisionBody() would succeed. */
     bool c4doc_hasRevisionBody(C4Document* doc) C4API;
 
-    /** Returns the body (encoded Fleece data) of the selected revision, if available. */
+    /** Returns the body (encoded Fleece data) of the selected revision, if available.
+        \warning  In a version-vector document, and if this is not the current revision,
+                  the returned slice is invalidated the next time this function is called. */
     C4Slice c4doc_getRevisionBody(C4Document* doc) C4API;
 
     /** Returns a string encoding the selected revision's history, as comma-separate revision/version IDs
