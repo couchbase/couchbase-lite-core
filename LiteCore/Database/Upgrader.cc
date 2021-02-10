@@ -76,7 +76,8 @@ namespace litecore {
             if (userVersion < kMinOldUserVersion)
                 error::_throw(error::DatabaseTooOld);
             else if (userVersion > kMaxOldUserVersion)
-                error::_throw(error::CantUpgradeDatabase);
+                error::_throw(error::CantUpgradeDatabase,
+                              "Database cannot be upgraded because its internal version number isn't recognized");
 
             Database::TransactionHelper t(_newDB);
             try {

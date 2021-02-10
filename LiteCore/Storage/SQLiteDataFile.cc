@@ -235,7 +235,8 @@ namespace litecore {
                 // is only used to mark changes to the database, and we won't be changing it.
                 if (options().writeable) {
                     if (!options().upgradeable)
-                        error::_throw(error::CantUpgradeDatabase);
+                        error::_throw(error::CantUpgradeDatabase,
+                                      "Database needs upgrade to add document-purging metadata");
                     try {
                         _exec("ALTER TABLE kvmeta ADD COLUMN purgeCnt INTEGER DEFAULT 0; "
                               "PRAGMA user_version=302; ");
@@ -251,7 +252,8 @@ namespace litecore {
             if (_schemaVersion < SchemaVersion::WithNewDocs) {
                 // Add the 'extra' column to every KeyStore:
                 if (!options().writeable || !options().upgradeable)
-                    error::_throw(error::CantUpgradeDatabase);
+                    error::_throw(error::CantUpgradeDatabase,
+                                  "Database needs upgrade to newer document storage format");
                 for (string &name : allKeyStoreNames()) {
                     _exec("ALTER TABLE kv_" + name + " ADD COLUMN extra BLOB; "
                           "PRAGMA user_version=400; ");
