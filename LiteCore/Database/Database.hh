@@ -180,15 +180,15 @@ namespace c4Internal {
         std::unordered_set<std::string> collectBlobs();
         void removeUnusedBlobs(const std::unordered_set<std::string> &used);
 
-        void checkDocumentVersioning();
+        C4DocumentVersioning checkDocumentVersioning();
         void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,
                                        Transaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
-        const string                _name;
-        const string                _parentDirectory;
-        const C4DatabaseConfig2     _config;
-        const C4DatabaseConfig      _configV1;              // TODO: DEPRECATED
+        const string                _name;                  // Database filename (w/o extension)
+        const string                _parentDirectory;       // Path to parent directory
+        C4DatabaseConfig2           _config;                // Configuration
+        C4DatabaseConfig            _configV1;              // TODO: DEPRECATED
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
         Transaction*                _transaction {nullptr}; // Current Transaction, or null
         int                         _transactionLevel {0};  // Nesting level of transaction
@@ -201,7 +201,7 @@ namespace c4Internal {
         std::recursive_mutex        _clientMutex;           // Mutex for c4db_lock/unlock
         unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
         Retained<Housekeeper>       _housekeeper;           // for expiration/cleanup tasks
-        uint64_t                    _myPeerID {0};
+        uint64_t                    _myPeerID {0};          // My identifier in version vectors
     };
 
 }

@@ -44,7 +44,7 @@ namespace litecore {
     class Upgrader {
     public:
         Upgrader(const FilePath &oldPath, const FilePath &newPath, C4DatabaseConfig config)
-        :Upgrader(oldPath, new Database(newPath.path(), config))
+        :Upgrader(oldPath, new Database(newPath.path(), asTreeVersioning(config)))
         { }
 
 
@@ -59,6 +59,12 @@ namespace litecore {
 
             sqlite3_create_collation(_oldDB.getHandle(), "REVID", SQLITE_UTF8, NULL,
                                      &compareRevIDs);
+        }
+
+
+        static C4DatabaseConfig asTreeVersioning(C4DatabaseConfig config) {
+            config.versioning = kC4TreeVersioning_v2;
+            return config;
         }
 
 

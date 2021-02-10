@@ -41,7 +41,7 @@ extern "C" {
         kC4DB_Create        = 0x01, ///< Create the file if it doesn't exist
         kC4DB_ReadOnly      = 0x02, ///< Open file read-only
         kC4DB_AutoCompact   = 0x04, ///< Enable auto-compaction [UNIMPLEMENTED]
-        kC4DB_VersionVectors= 0x08, ///< Use version vectors instead of revision trees [EXPERIMENTAL]
+        kC4DB_VersionVectors= 0x08, ///< Upgrade DB to version vectors instead of rev trees [EXPERIMENTAL]
         kC4DB_NoUpgrade     = 0x20, ///< Disable upgrading an older-version database
         kC4DB_NonObservable = 0x40, ///< Disable C4DatabaseObserver, for slightly faster writes
     };

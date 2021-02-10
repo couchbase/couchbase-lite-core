@@ -33,6 +33,7 @@ class UpgradeTestFixture : public TestFixture {
 protected:
 
     Retained<Database> db;
+    C4DocumentVersioning _versioning;
 
     void upgrade(string oldPath, C4DocumentVersioning versioning) {
         char folderName[64];
@@ -44,6 +45,7 @@ protected:
         config.flags = kC4DB_Create;
         config.storageEngine = kC4SQLiteStorageEngine;
         config.versioning = versioning;
+        _versioning = versioning;
 
         UpgradeDatabase(oldPath, newPath, config);
 
@@ -62,6 +64,7 @@ protected:
         config.flags = kC4DB_NoUpgrade;
         config.storageEngine = kC4SQLiteStorageEngine;
         config.versioning = versioning;
+        _versioning = versioning;
 
         // First check that NoUpgrade flag correctly triggers an exception:
         ExpectException(error::LiteCore, error::DatabaseTooOld, [&]{
@@ -79,13 +82,15 @@ protected:
         Retained<Document> doc1( db->documentFactory().newDocumentInstance(docID, kEntireBody) );
         CHECK(doc1->exists());
         CHECK(doc1->bodyAsJSON() == bodyJSON);
-        int i = 0;
-        for (slice revID : revIDs) {
-            if (i++ > 0)
-                CHECK(doc1->selectNextRevision());
-            CHECK(slice(doc1->selectedRev.revID) == revID);
+        if (_versioning != kC4VectorVersioning) {
+            int i = 0;
+            for (slice revID : revIDs) {
+                if (i++ > 0)
+                    CHECK(doc1->selectNextRevision());
+                CHECK(slice(doc1->selectedRev.revID) == revID);
+            }
+            CHECK(!doc1->selectNextRevision());
         }
-        CHECK(!doc1->selectNextRevision());
     }
 
     void verifyAttachment(string digest) {

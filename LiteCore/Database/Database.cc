@@ -146,17 +146,6 @@ namespace c4Internal {
         if (!storageFactory)
             error::_throw(error::Unimplemented);
 
-        // Initialize important objects:
-        if (!(_config.flags & kC4DB_NonObservable))
-            _sequenceTracker.reset(new access_lock<SequenceTracker>());
-
-        DocumentFactory* factory;
-        if (inConfig.flags & kC4DB_VersionVectors) 
-            factory = new VectorDocumentFactory(this);
-        else
-            factory = new TreeDocumentFactory(this);
-        _documentFactory.reset(factory);
-
         // Open the DataFile:
         try {
             _dataFile.reset( storageFactory->openFile(dataFilePath, this, &options) );
@@ -173,8 +162,19 @@ namespace c4Internal {
         if (options.useDocumentKeys)
             _encoder->setSharedKeys(documentKeys());
 
+        if (!(_config.flags & kC4DB_NonObservable))
+            _sequenceTracker.reset(new access_lock<SequenceTracker>());
+
         // Validate or upgrade the database's document schema/versioning:
-        checkDocumentVersioning();
+        _configV1.versioning = checkDocumentVersioning();
+
+        if (_configV1.versioning == kC4VectorVersioning) {
+            _config.flags |= kC4DB_VersionVectors;
+            _documentFactory = make_unique<VectorDocumentFactory>(this);
+        } else {
+            _config.flags &= ~kC4DB_VersionVectors;
+            _documentFactory = make_unique<TreeDocumentFactory>(this);
+        }
     }
 
 
@@ -192,22 +192,22 @@ namespace c4Internal {
 #pragma mark - HOUSEKEEPING:
 
 
-    void Database::checkDocumentVersioning() {
+    C4DocumentVersioning Database::checkDocumentVersioning() {
         //FIXME: This ought to be done _before_ the SQLite userVersion is updated
         // Compare existing versioning against runtime config:
         auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
         Record versDoc = info.get(slice("versioning"));
         auto curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
         auto newVersioning = _configV1.versioning;
-        if (versDoc.exists() && curVersioning == newVersioning)
-            return;
+        if (versDoc.exists() && curVersioning >= newVersioning)
+            return curVersioning;
 
-        // Mismatch -- open a transaction and recheck:
+        // Mismatch -- could be a race condition. Open a transaction and recheck:
         Transaction t(_dataFile);
         versDoc = info.get(slice("versioning"));
         curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
-        if (versDoc.exists() && curVersioning == newVersioning)
-            return;
+        if (versDoc.exists() && curVersioning >= newVersioning)
+            return curVersioning;
 
         // Yup, mismatch confirmed, so deal with it:
         if (versDoc.exists()) {
@@ -226,6 +226,7 @@ namespace c4Internal {
         versDoc.setBodyAsUInt((uint64_t)newVersioning);
         info.set(versDoc, t);
         t.commit();
+        return newVersioning;
     }
 
 
