@@ -76,6 +76,15 @@ namespace litecore { namespace repl {
             req->respondWithError({"LiteCore"_sl, 501, "Not implemented."_sl});
             return;
         }
+
+        slice versioning = req->property("versioning");
+        bool vv = _db->usingVersionVectors();
+        if ((vv && versioning != "version-vectors")
+                    || (!vv && versioning && versioning != "rev-trees")) {
+            req->respondWithError({"LiteCore"_sl, 501, "Incompatible document versioning."_sl});
+            return;
+        }
+
         C4SequenceNumber since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
         _changesFeed.setContinuous(_continuous);

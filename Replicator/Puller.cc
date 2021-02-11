@@ -22,6 +22,7 @@
 #include "RevFinder.hh"
 #include "Inserter.hh"
 #include "IncomingRev.hh"
+#include "DBAccess.hh"
 #include "ReplicatorTuning.hh"
 #include "Error.hh"
 #include "Increment.hh"
@@ -70,7 +71,7 @@ namespace litecore { namespace repl {
         if (_options.pull == kC4Continuous)
             msg["continuous"_sl] = "true"_sl;
         msg["batch"_sl] = tuning::kChangesBatchSize;
-
+        msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
         if (_skipDeleted)
             msg["activeOnly"_sl] = "true"_sl;
 
