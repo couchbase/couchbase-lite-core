@@ -181,6 +181,22 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
 
     CHECK(translate("SELECT EXISTS (SELECT 6 IS 9)") == "{'WHAT':[['EXISTS',['SELECT',{'WHAT':[['IS',6,9]]}]]]}");
 
+    CHECK(translate("SELECT product.categories CATG, COUNT(*) AS numprods WHERE test_id = \"agg_func\" "
+                    "GROUP BY product.categories HAVING COUNT(*) BETWEEN 15 and 30 ORDER BY CATG, numprods LIMIT 3")
+          == "{'GROUP_BY':[['.product.categories']],"
+             "'HAVING':['BETWEEN',['COUNT()',['.']],15,30],"
+             "'LIMIT':3,"
+             "'ORDER_BY':[['.CATG'],['.numprods']],"
+             "'WHAT':[['AS',['.product.categories'],'CATG'],['AS',['COUNT()',['.']],'numprods']],"
+             "'WHERE':['=',['.test_id'],'agg_func']}");
+    CHECK(translate("SELECT product.categories CATG, COUNT ( * ) AS numprods WHERE test_id = \"agg_func\" "
+                    "GROUP BY product.categories HAVING COUNT(*) BETWEEN POWER ( ABS(-2) , ABS(3) ) and 30 ORDER BY CATG, numprods LIMIT 3")
+          == "{'GROUP_BY':[['.product.categories']],"
+             "'HAVING':['BETWEEN',['COUNT()',['.']],['POWER()',['ABS()',-2],['ABS()',3]],30],"
+             "'LIMIT':3,"
+             "'ORDER_BY':[['.CATG'],['.numprods']],"
+             "'WHAT':[['AS',['.product.categories'],'CATG'],['AS',['COUNT()',['.']],'numprods']],"
+             "'WHERE':['=',['.test_id'],'agg_func']}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {

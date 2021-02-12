@@ -263,7 +263,7 @@ collateSuffix =
 collation =
     <("NO"i? ("UNICODE"i | "CASE"i | "DIAC"i)> WB)  { $$ = string(yytext); }
 
-baseExpr =
+_baseExpr =
     literal
   | arrayLiteral
   | dictLiteral
@@ -276,6 +276,7 @@ baseExpr =
   | meta
   | property
   | '(' _ expression _ ')'
+baseExpr = _baseExpr _                  # baseExpr to absorb all trailing white space
 
 OP_PREFIX =
     <('-'|'+'|NOT)>                     { $$ = trim(yytext);}
@@ -320,9 +321,9 @@ functionName    =
     IDENTIFIER                         &{isFunction(yytext)}
 
 parenExprs =
-    f:_ '('                             { f = MutableArray::newArray();}
+    f:_ '(' _                           { f = MutableArray::newArray();}
         ( e:expression                  { appendAny(f, e);}
-        (_ ',' _ e2:expression          { appendAny(f, e2);}
+        (',' _ e2:expression            { appendAny(f, e2);}
         )* )? ')'                       { $$ = f;}
 
 
