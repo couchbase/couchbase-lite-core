@@ -193,7 +193,7 @@ void c4_dumpInstances(void) C4API;
 
 
 // (These are identical to the internal C++ error::Domain enum values.)
-typedef C4_ENUM(uint32_t, C4ErrorDomain) {
+typedef C4_ENUM(uint8_t, C4ErrorDomain) {
     LiteCoreDomain = 1, // code is a Couchbase Lite Core error code (see below)
     POSIXDomain,        // code is an errno
     SQLiteDomain,       // code is a SQLite error; see "sqlite3.h"
@@ -274,9 +274,9 @@ typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
       (e.g. false or NULL.) If the function doesn't fail, it does NOT zero out the error, so its
       contents should be considered uninitialized garbage. */
 typedef struct {
-    C4ErrorDomain domain;
-    int32_t code;
-    int32_t internal_info;
+    C4ErrorDomain domain        : 8;    // Domain of error (LiteCore, POSIX, SQLite, ...)
+    int           code          :24;    // Error code. Domain-specific, except 0 is ALWAYS "none".
+    unsigned      internal_info :32;    // No user-serviceable parts inside. Do not touch.
 } C4Error;
 
 
@@ -296,6 +296,17 @@ C4SliceResult c4error_getDescription(C4Error error) C4API;
     @return  A pointer to the string, i.e. to the first byte of the buffer. */
 char* c4error_getDescriptionC(C4Error error, char *outBuffer, size_t bufferSize) C4API;
 
+/** If set to `true`, then when a C4Error is created the current thread's stack backtrace will
+    be captured along with it, and can later be examined by calling \ref c4error_getBacktrace.
+    Even if false, some errors (like assertion failures) will still have backtraces. */
+void c4error_setCaptureBacktraces(bool) C4API;
+
+bool c4error_getCaptureBacktraces(void) C4API;
+
+/** Returns the stack backtrace, if any, associated with a C4Error.
+    This is formatted in human-readable form similar to a debugger or crash log. */
+C4StringResult c4error_getBacktrace(C4Error error) C4API;
+
 /** Creates a C4Error struct with the given domain and code, and associates the message with it. */
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
 
@@ -304,6 +315,10 @@ C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
 C4Error c4error_printf(C4ErrorDomain domain,
                        int code,
                        const char *format, ...) C4API __printflike(3,4);
+
+/** Same as \ref c4error_printf, but with a premade `va_list`. */
+C4Error c4error_vprintf(C4ErrorDomain domain, int code,
+                        const char *format, va_list args) C4API;
 
 
 /** Returns true if this is a network error that may be transient,

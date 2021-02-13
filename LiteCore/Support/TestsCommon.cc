@@ -85,6 +85,7 @@ void InitTestLogging() {
             C4Log("Binary logging is already enabled, so I'm not doing it");
         }
 
+        c4error_setCaptureBacktraces(true);
         c4log_enableFatalExceptionBacktrace();
     });
 }

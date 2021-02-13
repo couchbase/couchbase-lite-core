@@ -25,6 +25,10 @@
 
 #undef check
 
+namespace fleece {
+    class Backtrace;
+}
+
 namespace litecore {
 
     /** Most API calls can throw this. */
@@ -86,14 +90,18 @@ namespace litecore {
             NumLiteCoreErrorsPlus1
         };
 
+        //---- Data members:
         Domain const domain;
         int const code;
+        std::shared_ptr<fleece::Backtrace> backtrace;
 
         error (Domain, int code );
         error(error::Domain, int code, const std::string &what);
         explicit error (LiteCoreError e)     :error(LiteCore, e) {}
 
         error& operator= (const error &e);
+
+        void captureBacktrace(unsigned skipFrames =0);
 
         [[noreturn]] void _throw();
 
@@ -125,11 +133,10 @@ namespace litecore {
                                                  const char *expr,
                                                  const char *message =nullptr, ...);
 
-        static std::string backtrace(unsigned skipFrames =0);
-
         static void setNotableExceptionHook(std::function<void()> hook);
 
         static bool sWarnOnError;
+        static bool sCaptureBacktraces;
     };
 
 

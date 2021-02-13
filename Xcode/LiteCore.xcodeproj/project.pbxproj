@@ -56,6 +56,7 @@
 		270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */; };
 		270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		270F2BD52301E8AE00D8DB21 /* TCPSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */; };
+		2712F5AF25D5A9AB0082D526 /* c4Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2712F5AE25D5A9AB0082D526 /* c4Error.cc */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F91E248578D000BE21D9 /* mbedSnippets.cc */; };
 		2716F9BF249AD3CB00BE21D9 /* c4CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */; };
@@ -856,6 +857,7 @@
 		270F2BD32301E8AE00D8DB21 /* TCPSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TCPSocket.hh; sourceTree = "<group>"; };
 		270F2BD42301E8AE00D8DB21 /* TCPSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TCPSocket.cc; sourceTree = "<group>"; };
 		271057D61D3D70B10018247B /* Document.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Document.hh; sourceTree = "<group>"; };
+		2712F5AE25D5A9AB0082D526 /* c4Error.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Error.cc; sourceTree = "<group>"; };
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27139B3018F8E9750021A9A3 /* LiteCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LiteCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		271507F1212259DE005FE6E8 /* c4Compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Compat.h; sourceTree = "<group>"; };
@@ -2231,6 +2233,7 @@
 				273E9F7A1C516B76003115A6 /* c4Private.h */,
 				274D04261BA8A5BC00FF7C35 /* c4Internal.hh */,
 				27D74A9E1D4FF65000D806E0 /* c4Base.cc */,
+				2712F5AE25D5A9AB0082D526 /* c4Error.cc */,
 				2722504D1D7892610006D5A5 /* c4BlobStore.cc */,
 				27469D04233D58D900A1EE1A /* c4Certificate.cc */,
 				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
@@ -4154,6 +4157,7 @@
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
 				27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */,
+				2712F5AF25D5A9AB0082D526 /* c4Error.cc in Sources */,
 				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,

@@ -340,6 +340,10 @@ CBL {
 
 		c4db_getIndexesInfo;
 
+		c4error_getBacktrace;
+		c4error_getCaptureBacktraces;
+		c4error_setCaptureBacktraces;
+
 		kC4DefaultEnumeratorOptions;
 		kC4DefaultQueryOptions;
 

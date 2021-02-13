@@ -31,8 +31,9 @@
 // C4Error equality tests:
 // (These have to be in the global namespace, because C4Error is...)
 static inline bool operator== (C4Error a, C4Error b) {
-    return a.code == b.code && a.domain == b.domain;
+    return a.code == b.code && (a.code == 0 || a.domain == b.domain);
 }
+
 static inline bool operator!= (C4Error a, C4Error b) {
     return !(a == b);
 }

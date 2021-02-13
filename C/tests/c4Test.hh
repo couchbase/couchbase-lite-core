@@ -25,6 +25,7 @@ using namespace fleece;
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
+#include "c4.hh"
 
 #include "TestsCommon.hh"
 #include <function_ref.hh>
@@ -32,9 +33,13 @@ using namespace fleece;
 #include <vector>
 
 
-std::ostream& operator<< (std::ostream &out, C4Error error);
+// This lets you write a C4Error to a stream like cerr, or pass it to a Catch logging macro
+// like INFO() or WARN().
+std::ostream& operator<< (std::ostream &out, C4Error);
 
 
+// Logging std::set instances to cerr or Catch.
+// This lets you test functions returning sets in CHECK or REQUIRE.
 template <class T>
 std::ostream& operator<< (std::ostream &o, const std::set<T> &things) {
     o << "{";
@@ -52,18 +57,47 @@ std::ostream& operator<< (std::ostream &o, const std::set<T> &things) {
 #include "CatchHelper.hh"
 
 
-#if 0 // disabled because CMake is building test binaries with optimization
-#ifdef NDEBUG
-    // Catch's assertion macros are pretty slow, and affect benchmark times.
-    // So replace them with quick-n-dirty alternatives in an optimized build.
-    #undef REQUIRE
-    #define REQUIRE(X) do {if (!(X)) abort();} while (0)
-    #undef CHECK
-    #define CHECK(X) do {if (!(X)) abort();} while (0)
-    #undef INFO
-    #define INFO(X)
-#endif
-#endif
+/** A utility for logging errors from LiteCore calls. Where you would pass `&error` as a
+    parameter, instead pass `ERROR_INFO(error)`. After the call returns, if the error code is
+    nonzero, the error will be logged via Catch's UNSCOPED_INFO() utility, so the subsequent
+    failed CHECK() or REQUIRE() will log it.
+
+    You don't even need your own C4Error variable. You can just pass `ERROR_INFO()`.
+
+    Example:
+    ```
+        C4Document *doc = c4db_getDocument(db, docID, ERROR_INFO());
+        REQUIRE(doc != nullptr);
+    ```
+
+    \warning  Don't use ERROR_INFO _inside_ a CHECK() or REQUIRE() call ... due to the way Catch is
+              implemented, the error check will happen too late, so the info won't be logged.*/
+class ERROR_INFO {
+public:
+    ERROR_INFO(C4Error *outError)   :_error(outError) {*_error = {};}
+    ERROR_INFO(C4Error &outError)   :ERROR_INFO(&outError) { }
+    ERROR_INFO()                    :ERROR_INFO(_buf) { }
+    ~ERROR_INFO();
+    operator C4Error* ()            {return _error;}
+private:
+    C4Error* _error;
+    C4Error _buf;
+};
+
+
+/** WITH_ERROR is just like ERROR_INFO except it's meant to be used _inside_ a CHECK() or
+    REQUIRE() call. It logs the error via WARN() so it'll show up in that context. */
+class WITH_ERROR {
+public:
+    WITH_ERROR(C4Error *outError)   :_error(outError) {*_error = {};}
+    WITH_ERROR(C4Error &outError)   :WITH_ERROR(&outError) { }
+    WITH_ERROR()                    :WITH_ERROR(_buf) { }
+    ~WITH_ERROR();
+    operator C4Error* ()            {return _error;}
+private:
+    C4Error* _error;
+    C4Error _buf;
+};
 
 
 // REQUIRE, CHECK and other Catch macros can't be used on background threads because Check is not

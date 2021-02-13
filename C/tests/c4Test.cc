@@ -65,10 +65,33 @@ void ps(fleece::slice s) {
 
 
 ostream& operator<< (ostream &out, C4Error error) {
-    C4SliceResult s = c4error_getDescription(error);
-    out << "C4Error(" << string((const char*)s.buf, s.size) << ")";
-    c4slice_free(s);
+    if (error.code) {
+        C4SliceResult s = c4error_getDescription(error);
+        out << "C4Error(";
+        out.write((const char*)s.buf, s.size);
+        out << ")";
+        c4slice_free(s);
+
+        alloc_slice backtrace = c4error_getBacktrace(error);
+        if (backtrace) {
+            out << ":\n";
+            out.write((const char*)backtrace.buf, backtrace.size);
+        }
+    } else {
+        out << "C4Error(none)";
+    }
     return out;
+}
+
+
+ERROR_INFO::~ERROR_INFO() {
+    if (_error->code)
+        UNSCOPED_INFO(*_error);
+}
+
+WITH_ERROR::~WITH_ERROR() {
+    if (_error->code)
+        std::cerr << "with error: " << *_error << '\n';
 }
 
 
@@ -85,10 +108,7 @@ void AssertionFailed(const char *fn, const char *file, unsigned line, const char
 void CheckError(C4Error error,
                 C4ErrorDomain expectedDomain, int expectedCode, const char *expectedMessage)
 {
-    alloc_slice desc = c4error_getDescription(error);
-    INFO("Error is " << string(desc));
-    CHECK(error.domain == expectedDomain);
-    CHECK(error.code == expectedCode);
+    CHECK(error == (C4Error{expectedDomain, expectedCode}));
     if (expectedMessage) {
         C4StringResult msg = c4error_getMessage(error);
         CHECK(string((char*)msg.buf, msg.size) == string(expectedMessage));
@@ -194,10 +214,9 @@ C4Test::C4Test(int testOption)
     }
 
     C4Error error;
-    if (!c4db_deleteNamed(kDatabaseName, _dbConfig.parentDirectory, &error))
+    if (!c4db_deleteNamed(kDatabaseName, _dbConfig.parentDirectory, ERROR_INFO(&error)))
         REQUIRE(error.code == 0);
-    db = c4db_openNamed(kDatabaseName, &_dbConfig, &error);
-    INFO("Error " << error.domain << "/" << error.code);
+    db = c4db_openNamed(kDatabaseName, &_dbConfig, ERROR_INFO(&error));
     REQUIRE(db != nullptr);
 }
 
@@ -228,17 +247,16 @@ C4Database* C4Test::createDatabase(const string &nameSuffix) {
     REQUIRE(!nameSuffix.empty());
     string name = string(kDatabaseName) + "_" + nameSuffix;
     C4Error error;
-    if (!c4db_deleteNamed(slice(name), _dbConfig.parentDirectory, &error))
+    if (!c4db_deleteNamed(slice(name), _dbConfig.parentDirectory, ERROR_INFO(&error)))
         REQUIRE(error.code == 0);
-    auto newDB = c4db_openNamed(slice(name), &_dbConfig, &error);
+    auto newDB = c4db_openNamed(slice(name), &_dbConfig, ERROR_INFO());
     REQUIRE(newDB != nullptr);
     return newDB;
 }
 
 
 void C4Test::closeDB() {
-    C4Error error;
-    REQUIRE(c4db_close(db, &error));
+    REQUIRE(c4db_close(db, WITH_ERROR()));
     c4db_release(db);
     db = nullptr;
 }
@@ -250,27 +268,23 @@ void C4Test::reopenDB() {
     _dbConfig.encryptionKey = c4db_getConfig2(db)->encryptionKey;
 
     closeDB();
-    C4Error error;
-    db = c4db_openNamed(kDatabaseName, &_dbConfig, &error);
+    db = c4db_openNamed(kDatabaseName, &_dbConfig, ERROR_INFO());
     REQUIRE(db);
 }
 
 
 void C4Test::reopenDBReadOnly() {
-    C4Error error;
-    REQUIRE(c4db_close(db, &error));
+    REQUIRE(c4db_close(db, WITH_ERROR()));
     c4db_release(db);
     db = nullptr;
     _dbConfig.flags = (_dbConfig.flags & ~kC4DB_Create) | kC4DB_ReadOnly;
-    db = c4db_openNamed(kDatabaseName, &_dbConfig, &error);
+    db = c4db_openNamed(kDatabaseName, &_dbConfig, ERROR_INFO());
     REQUIRE(db);
 }
 
 
 void C4Test::deleteDatabase(){
-    C4Error error = {};
-    bool deletedDb = c4db_delete(db, &error);
-    INFO("Error " << error.domain << "/" << error.code);
+    bool deletedDb = c4db_delete(db, ERROR_INFO());
     REQUIRE(deletedDb);
     c4db_release(db);
     db = nullptr;
@@ -284,12 +298,11 @@ void C4Test::deleteAndRecreateDB(C4Database* &db) {
     alloc_slice parentDir(config.parentDirectory);
     config.parentDirectory = parentDir;
 
-    C4Error error;
-    REQUIRE(c4db_delete(db, &error));
+    REQUIRE(c4db_delete(db, WITH_ERROR()));
     c4db_release(db);
     db = nullptr;
 
-    db = c4db_openNamed(name, &config, &error);
+    db = c4db_openNamed(name, &config, ERROR_INFO());
     REQUIRE(db);
 }
 
@@ -310,8 +323,7 @@ void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFla
 
 void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
     TransactionHelper t(db);
-    C4Error error; 
-    auto curDoc = c4db_getDoc(db, docID, false, kDocGetAll, &error);
+    auto curDoc = c4db_getDoc(db, docID, false, kDocGetAll, ERROR_INFO());
     REQUIRE(curDoc != nullptr);
     alloc_slice parentID;
     if (isRevTrees(db))
@@ -339,8 +351,7 @@ void C4Test::createConflictingRev(C4Database *db,
     rq.body = body;
     rq.revFlags = flags;
     rq.save = true;
-    C4Error error;
-    auto doc = c4doc_put(db, &rq, nullptr, &error);
+    auto doc = c4doc_put(db, &rq, nullptr, ERROR_INFO());
 //    char buf[256];
 //    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
 //    REQUIRE(doc != nullptr);        // can't use Catch on bg threads
@@ -430,10 +441,9 @@ string C4Test::listSharedKeys(string delimiter) {
 
 
 string C4Test::getDocJSON(C4Database* inDB, C4Slice docID) {
-    C4Error error;
-    auto doc = c4doc_get(inDB, docID, true, &error);
+    auto doc = c4doc_get(inDB, docID, true, ERROR_INFO());
     REQUIRE(doc);
-    fleece::alloc_slice json( c4doc_bodyAsJSON(doc, true, &error) );
+    fleece::alloc_slice json( c4doc_bodyAsJSON(doc, true, ERROR_INFO()) );
     REQUIRE(json);
     c4doc_release(doc);
     return json.asString();
@@ -461,14 +471,13 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
                                                 C4RevisionFlags flags)
 {
     vector<C4BlobKey> keys;
-    C4Error c4err;
     stringstream json;
     int i = 0;
     json << (legacyNames ? "{_attachments: {" : "{attached: [");
     for (string &attachment : attachments) {
         C4BlobKey key;
         REQUIRE(c4blob_create(c4db_getBlobStore(db, nullptr), fleece::slice(attachment),
-                              nullptr, &key,  &c4err));
+                              nullptr, &key,  WITH_ERROR()));
         keys.push_back(key);
         C4SliceResult keyStr = c4blob_keyToString(key);
         if (legacyNames)
@@ -482,7 +491,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     }
     json << (legacyNames ? "}}" : "]}");
     string jsonStr = json5(json.str());
-    C4SliceResult body = c4db_encodeJSON(db, c4str(jsonStr.c_str()), &c4err);
+    C4SliceResult body = c4db_encodeJSON(db, c4str(jsonStr.c_str()), ERROR_INFO());
     REQUIRE(body.buf);
 
     // Save document:
@@ -491,7 +500,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     rq.revFlags = flags | kRevHasAttachments;
     rq.allocedBody = body;
     rq.save = true;
-    C4Document* doc = c4doc_put(db, &rq, nullptr, &c4err);
+    C4Document* doc = c4doc_put(db, &rq, nullptr, ERROR_INFO());
     c4slice_free(body);
     REQUIRE(doc != nullptr);
     c4doc_release(doc);
@@ -499,8 +508,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
 }
 
 void C4Test::checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData) {
-    C4Error c4err;
-    C4SliceResult blob = c4blob_getContents(c4db_getBlobStore(inDB, nullptr), blobKey, &c4err);
+    C4SliceResult blob = c4blob_getContents(c4db_getBlobStore(inDB, nullptr), blobKey, ERROR_INFO());
     auto equal = blob == expectedData;
     CHECK(equal);
     c4slice_free(blob);
@@ -576,12 +584,11 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
         FLSliceResult body = FLEncoder_Finish(enc, nullptr);
 
         // Save document:
-        C4Error c4err;
         C4DocPutRequest rq = {};
         rq.docID = c4str(docID);
         rq.allocedBody = body;
         rq.save = true;
-        C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
+        C4Document *doc = c4doc_put(db, &rq, nullptr, ERROR_INFO());
         REQUIRE(doc != nullptr);
         c4doc_release(doc);
         FLSliceResult_Release(body);
@@ -612,8 +619,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
         TransactionHelper t(database);
         completed = readFileByLines(path, [&](FLSlice line)
         {
-            C4Error c4err;
-            fleece::alloc_slice body = c4db_encodeJSON(database, {line.buf, line.size}, &c4err);
+            fleece::alloc_slice body = c4db_encodeJSON(database, {line.buf, line.size}, ERROR_INFO());
             REQUIRE(body.buf);
 
             char docID[20];
@@ -624,7 +630,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             rq.docID = c4str(docID);
             rq.allocedBody = {(void*)body.buf, body.size};
             rq.save = true;
-            C4Document *doc = c4doc_put(database, &rq, nullptr, &c4err);
+            C4Document *doc = c4doc_put(database, &rq, nullptr, ERROR_INFO());
             REQUIRE(doc != nullptr);
             c4doc_release(doc);
             ++numDocs;
