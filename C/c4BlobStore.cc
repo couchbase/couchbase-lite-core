@@ -121,10 +121,10 @@ C4StringResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* ou
     try {
         auto path = store->get(asInternal(key)).path();
         if (!path.exists()) {
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
             return {nullptr, 0};
         } else if (store->isEncrypted()) {
-            recordError(LiteCoreDomain, kC4ErrorWrongFormat, outError);
+            c4error_return(LiteCoreDomain, kC4ErrorWrongFormat, {}, outError);
             return {nullptr, 0};
         }
         return sliceResult((string)path);

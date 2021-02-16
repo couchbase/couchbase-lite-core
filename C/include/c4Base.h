@@ -307,6 +307,7 @@ bool c4error_getCaptureBacktraces(void) C4API;
     This is formatted in human-readable form similar to a debugger or crash log. */
 C4StringResult c4error_getBacktrace(C4Error error) C4API;
 
+
 /** Creates a C4Error struct with the given domain and code, and associates the message with it. */
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
 
@@ -319,6 +320,12 @@ C4Error c4error_printf(C4ErrorDomain domain,
 /** Same as \ref c4error_printf, but with a premade `va_list`. */
 C4Error c4error_vprintf(C4ErrorDomain domain, int code,
                         const char *format, va_list args) C4API;
+
+/** Creates and stores a C4Error in `*outError`, if not NULL. Useful in functions that use the
+    LiteCore error reporting convention of taking a `C4Error *outError` parameter. */
+void c4error_return(C4ErrorDomain domain, int code,
+                    C4String message,
+                    C4Error* C4NULLABLE outError) C4API;
 
 
 /** Returns true if this is a network error that may be transient,
@@ -436,9 +443,19 @@ bool c4log_willLog(C4LogDomain, C4LogLevel) C4API;
     written to the file but not to the callback. */
 void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) C4API;
 
+
+/** If set to true, LiteCore will log a warning of the form "LiteCore throwing %s error %d: %s"
+    just before throwing an internal exception. This can be a good way to catch the source where
+    an error occurs. */
+void c4log_warnOnErrors(bool) C4API;
+
+/** Returns true if warn-on-errors is on; see \ref c4log_warnOnErrors. Default is false.*/
+bool c4log_getWarnOnErrors(void) C4API;
+
 /** Registers a handler with the C++ runtime that will log a backtrace when an uncaught C++
-    exception occurs. */
+    exception occurs, just before the process aborts. */
 void c4log_enableFatalExceptionBacktrace(void) C4API;
+
 
 /** Logs a message/warning/error to a specific domain, if its current level is less than
     or equal to the given level. This message will then be written to the current callback and/or

@@ -59,10 +59,10 @@ std::ostream& operator<< (std::ostream &o, const std::set<T> &things) {
 
 /** A utility for logging errors from LiteCore calls. Where you would pass `&error` as a
     parameter, instead pass `ERROR_INFO(error)`. After the call returns, if the error code is
-    nonzero, the error will be logged via Catch's UNSCOPED_INFO() utility, so the subsequent
-    failed CHECK() or REQUIRE() will log it.
+    nonzero, the error message & backtrace will be captured (by Catch's UNSCOPED_INFO())
+    and then reported by the subsequent failed CHECK() or REQUIRE().
 
-    You don't even need your own C4Error variable. You can just pass `ERROR_INFO()`.
+    You don't even need your own C4Error variable. You can just pass `ERROR_INFO()` with no arg.
 
     Example:
     ```
@@ -85,8 +85,15 @@ private:
 };
 
 
-/** WITH_ERROR is just like ERROR_INFO except it's meant to be used _inside_ a CHECK() or
-    REQUIRE() call. It logs the error via WARN() so it'll show up in that context. */
+/** `WITH_ERROR` is just like `ERROR_INFO` except it's meant to be used _inside_ a CHECK() or
+    REQUIRE() call. It logs the error immediately via WARN() so it'll show up at the same time as
+    Catch's failure message.
+
+    Example:
+    ```
+        REQUIRE( c4db_beginTransaction(db, WITH_ERROR()));
+    ```
+*/
 class WITH_ERROR {
 public:
     WITH_ERROR(C4Error *outError)   :_error(outError) {*_error = {};}

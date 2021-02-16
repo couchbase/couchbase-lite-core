@@ -19,6 +19,7 @@
 #pragma once
 #include "c4Document.h"
 #include "c4Replicator.h"
+#include <stdarg.h>
 
 #ifdef __cplusplus
 #include <atomic>
@@ -42,16 +43,6 @@ extern "C" {
 
 /** Allocates a C4SliceResult by copying the memory of a slice. */
 C4SliceResult c4slice_createResult(C4Slice slice);
-
-/** Stores a C4Error in `*outError`. */
-void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error* C4NULLABLE outError) C4API;
-
-/** If set to true, LiteCore will log a warning of the form "LiteCore throwing %s error %d: %s"
-    just before throwing an internal exception. This can be a good way to catch the source where
-    an error occurs. */
-void c4log_warnOnErrors(bool) C4API;
-
-bool c4log_getWarnOnErrors(void) C4API;
 
 /** Locks a recursive mutex associated with the C4Database instance.
     Blocks if it's already locked. */

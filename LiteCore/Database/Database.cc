@@ -22,6 +22,7 @@
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
+#include "c4Private.h"
 #include "BackgroundDB.hh"
 #include "Housekeeper.hh"
 #include "DataFile.hh"
@@ -556,14 +557,14 @@ namespace c4Internal {
     bool Database::mustBeInTransaction(C4Error *outError) noexcept {
         if (inTransaction())
             return true;
-        recordError(LiteCoreDomain, kC4ErrorNotInTransaction, outError);
+        c4error_return(LiteCoreDomain, kC4ErrorNotInTransaction, {}, outError);
         return false;
     }
 
     bool Database::mustNotBeInTransaction(C4Error *outError) noexcept {
         if (!inTransaction())
             return true;
-        recordError(LiteCoreDomain, kC4ErrorTransactionNotClosed, outError);
+        c4error_return(LiteCoreDomain, kC4ErrorTransactionNotClosed, {}, outError);
         return false;
     }
 

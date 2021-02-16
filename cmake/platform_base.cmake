@@ -21,6 +21,7 @@ function(set_litecore_source_base)
         C/c4DocEnumerator.cc
         C/c4DocExpiration.cc
         C/c4Document.cc
+        C/c4Error.cc
         C/c4Observer.cc
         C/c4PredictiveQuery.cc
         C/c4Query.cc
@@ -105,7 +106,6 @@ function(set_litecore_source_base)
         Replicator/RevFinder.cc
         Replicator/URLTransformer.cc
         Replicator/Worker.cc
-        LiteCore/Support/c4ExceptionUtils.cc
         LiteCore/Support/Logging.cc
         LiteCore/Support/DefaultLogger.cc
         LiteCore/Support/Error.cc

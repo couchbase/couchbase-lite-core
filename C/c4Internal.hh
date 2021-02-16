@@ -60,13 +60,12 @@ namespace c4Internal {
 
     // ERRORS & EXCEPTIONS:
 
-    const size_t kMaxErrorMessagesToSave = 10;
+#if DEBUG
+    static constexpr size_t kMaxErrorMessagesToSave = 100;
+#else
+    static constexpr size_t kMaxErrorMessagesToSave = 10;
+#endif
 
-    void recordError(C4ErrorDomain, int code, std::string_view message, C4Error* outError) noexcept;
-    void recordError(C4ErrorDomain, int code, C4Error* outError) noexcept;
-    void recordError(C4Error *outError, C4ErrorDomain, int code, const char *format, ...)
-            noexcept __printflike(4, 5);
-    
     // SLICES:
 
     C4SliceResult sliceResult(const char *str);

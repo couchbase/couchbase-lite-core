@@ -56,7 +56,7 @@ static C4Document* newDoc(bool mustExist, C4Error *outError,
         auto doc = cb();
         if (!doc || (mustExist && !doc->exists())) {
             doc = nullptr;
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
         }
         return retain(move(doc));
     });
@@ -106,7 +106,7 @@ bool c4doc_selectRevision(C4Document* doc,
     return tryCatch<bool>(outError, [&]{
         if (asInternal(doc)->selectRevision(revID, withBody))
             return true;
-        recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+        c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
         return false;
     });
 }
@@ -122,7 +122,7 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) noexcept {
     return tryCatch<bool>(outError, [&]{
         if (asInternal(doc)->loadSelectedRevBody())
             return true;
-        recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+        c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
         return false;
     });
 }
@@ -441,7 +441,7 @@ C4Document* c4doc_getForPut(C4Database *database,
         }
 
         if (code)
-            recordError(LiteCoreDomain, code, outError);
+            c4error_return(LiteCoreDomain, code, {}, outError);
         else
             return retain(move(idoc));
 
@@ -631,7 +631,7 @@ bool c4doc_resolveConflict2(C4Document *doc,
         FLError flErr;
         mergedBody = FLEncoder_Finish(enc, &flErr);
         if (!mergedBody) {
-            recordError(FleeceDomain, flErr, "", outError);
+            c4error_return(FleeceDomain, flErr, nullslice, outError);
             return false;
         }
     }
@@ -737,7 +737,7 @@ C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outErro
         Encoder &enc = db->sharedEncoder();
         JSONConverter jc(enc);
         if (!jc.encodeJSON(jsonData)) {
-            recordError(FleeceDomain, jc.errorCode(), jc.errorMessage(), outError);
+            c4error_return(FleeceDomain, jc.errorCode(), slice(jc.errorMessage()), outError);
             return C4SliceResult{};
         }
         return C4SliceResult(enc.finish());

@@ -43,7 +43,7 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, C4Timestamp timestamp, C
     return tryCatch<bool>(outError, [=]{
         if (db->setExpiration(docId, timestamp))
             return true;
-        recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+        c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
         return false;
     });
 }

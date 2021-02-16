@@ -303,14 +303,16 @@ namespace c4Internal {
                 // Apply a delta via a callback:
                 slice delta = (rq.allocedBody.buf)? slice(rq.allocedBody) : slice(rq.body);
                 if (!rq.deltaSourceRevID.buf || !selectRevision(rq.deltaSourceRevID, true)) {
-                    recordError(outError, LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                "Missing source revision '%.*s' for delta",
-                                SPLAT(rq.deltaSourceRevID));
+                    if (outError)
+                        *outError = c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                        "Missing source revision '%.*s' for delta",
+                                        SPLAT(rq.deltaSourceRevID));
                     return nullptr;
                 } else if (!getSelectedRevBody()) {
-                    recordError(outError, LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                "Missing body of source revision '%.*s' for delta",
-                                SPLAT(rq.deltaSourceRevID));
+                    if (outError)
+                        *outError = c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                        "Missing body of source revision '%.*s' for delta",
+                                        SPLAT(rq.deltaSourceRevID));
                     return nullptr;
                 } else {
                     body = rq.deltaCB(rq.deltaCBContext, this, delta, outError);

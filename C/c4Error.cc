@@ -49,115 +49,98 @@ namespace c4Internal {
 
 
     // A buffer that stores recently generated error messages, referenced by C4Error.internal_info
-    struct c4ErrorInfo {
-        string message;
-        shared_ptr<Backtrace> backtrace;
+    class ErrorInfo {
+    public:
+        // Data of an ErrorInfo:
+        string                message;      // The error message, if any
+        shared_ptr<Backtrace> backtrace;    // The error's captured backtrace, if any
+
+
+        // Core function that creates/initializes a C4Error.
+        __cold
+        static C4Error makeError(C4ErrorDomain domain, int code,
+                                 ErrorInfo info,
+                                 unsigned skipStackFrames =0) noexcept
+        {
+            C4Error error {domain, code, 0};
+            if (error::sCaptureBacktraces && !info.backtrace)
+                info.backtrace = Backtrace::capture(skipStackFrames + 2);
+            if (!info.message.empty() || info.backtrace)
+                error.internal_info = _add(error, move(info));
+            return error;
+        }
+
+
+        // Creates a C4Error with a formatted message.
+        __cold
+        static C4Error vmakeError(C4ErrorDomain domain, int code,
+                                  const char *format, va_list args,
+                                  unsigned skipStackFrames =0) noexcept
+        {
+            string message;
+            if (format && *format) {
+                try {
+                    message = vformat(format, args);
+                } catch (...) { }
+            }
+            return makeError(domain, code, {move(message), nullptr}, skipStackFrames + 1);
+        }
+
+        // Returns a copy of the ErrorInfo associated with a C4Error.
+        __cold
+        static optional<ErrorInfo> copy(C4Error &error) noexcept {
+            if (auto infop = _get(error))
+                return *infop;
+            return nullopt;
+        }
+
+    private:
+        static ErrorInfo* _get(const C4Error &error) noexcept;
+        static uint32_t _add(C4Error &error, ErrorInfo&&) noexcept;
+
+        static inline uint32_t         sTableStart;    // internal_info of 1st item in table
+        static inline mutex            sMutex;         // mutex guarding the other data
     };
 
-    static uint32_t sFirstErrorMessageInternalInfo = 1000;  // internal_info of 1st item in deque
-    static deque<c4ErrorInfo> sErrorMessages;               // latest 10 error message infos
-    static mutex sErrorMessagesMutex;                       // mutex guarding the above
+
+    static deque<ErrorInfo> sTable; // This is the table that stores ErrorInfo objects!
 
 
-    // Must be called while holding the sErrorMessagesMutex
     __cold
-    static c4ErrorInfo* _getErrorInfo(C4Error &error, bool create) {
-        int32_t index = error.internal_info - sFirstErrorMessageInternalInfo;
-        if (index >= 0 && index < sErrorMessages.size()) {
-            return &sErrorMessages[index];
-        } else if (create) {
-            if (sErrorMessages.size() >= kMaxErrorMessagesToSave) {
-                sErrorMessages.pop_front();
-                ++sFirstErrorMessageInternalInfo;
-            }
-            sErrorMessages.push_back(c4ErrorInfo());
-            error.internal_info = (uint32_t)(sFirstErrorMessageInternalInfo +
-                                             sErrorMessages.size() - 1);
-            return &sErrorMessages.back();
-        } else {
+    ErrorInfo* ErrorInfo::_get(const C4Error &error) noexcept {
+        lock_guard<mutex> lock(sMutex);
+        int32_t index = error.internal_info - sTableStart;
+        if (index >= 0 && index < sTable.size())
+            return &sTable[index];
+        else
             return nullptr;
-        }
     }
 
-
-    __cold
-    static optional<c4ErrorInfo> copyErrorInfo(C4Error &error) {
-        lock_guard<mutex> lock(sErrorMessagesMutex);
-        if (auto infop = _getErrorInfo(error, false))
-            return *infop;
-        return nullopt;
+    uint32_t ErrorInfo::_add(C4Error &error, ErrorInfo &&info) noexcept {
+        lock_guard<mutex> lock(sMutex);
+        try {
+            if (sTable.size() >= kMaxErrorMessagesToSave) {
+                sTable.pop_front();
+                ++sTableStart;
+            }
+            sTable.emplace_back(move(info));
+            return (uint32_t)(sTableStart + sTable.size() - 1);
+        } catch (...) { }
+        return 0;
     }
+
 
 
 #pragma mark - INTERNAL API FOR CREATING C4ERRORS:
 
-
-    // Core function that creates/initializes a C4Error.
-    __cold
-    static C4Error makeError(C4ErrorDomain domain, int code,
-                             c4ErrorInfo info,
-                             unsigned skip =0) noexcept
-    {
-        C4Error error {domain, code, 0};
-        if (error::sCaptureBacktraces && !info.backtrace)
-            info.backtrace = Backtrace::capture(skip + 2); // don't capture this frame or its caller
-        if (!info.message.empty() || info.backtrace) {
-            try {
-                lock_guard<mutex> lock(sErrorMessagesMutex);
-                *_getErrorInfo(error, true) = move(info);
-            } catch (...) { }
-        }
-        return error;
-    }
-
-
-    __cold
-    static C4Error vmakeError(C4ErrorDomain domain, int code,
-                              const char *format, va_list args,
-                              unsigned skip =0) noexcept
-    {
-        string message;
-        if (format && *format) {
-            try {
-                message = vformat(format, args);
-            } catch (...) { }
-        }
-        return makeError(domain, code, {move(message), nullptr}, skip + 1);
-    }
-
-
-    __cold
-    void recordError(C4ErrorDomain domain, int code, string_view message, C4Error* outError) noexcept {
-        if (outError)
-            *outError = makeError(domain, code, {string(message)});
-    }
-
-
-    __cold
-    void recordError(C4ErrorDomain domain, int code, C4Error* outError) noexcept {
-        if (outError)
-            *outError = makeError(domain, code, {});
-    }
-
-
-    __cold
-    void recordError(C4Error *outError, C4ErrorDomain domain, int code,
-                     const char *format, ...) noexcept
-    {
-        if (outError) {
-            va_list args;
-            va_start(args, format);
-            *outError = vmakeError(domain, code, format, args);
-            va_end(args);
-        }
-    }
-
+    // Declared in c4ExceptionUtils.hh
 
     __cold
     void recordException(const exception &x, C4Error* outError) noexcept {
         if (outError) {
             error e = error::convertException(x).standardized();
-            *outError = makeError((C4ErrorDomain)e.domain, e.code, {e.what(), e.backtrace});
+            *outError = ErrorInfo::makeError((C4ErrorDomain)e.domain, e.code,
+                                             {e.what(), e.backtrace});
         }
     }
 
@@ -176,9 +159,8 @@ namespace c4Internal {
                     return;
                 } catch (...) { }
             }
-            shared_ptr<Backtrace> bt(new Backtrace(1));
-            *outError = makeError(LiteCoreDomain, kC4ErrorUnexpectedError,
-                                  {"Unknown C++ exception", bt});
+            *outError = ErrorInfo::makeError(LiteCoreDomain, kC4ErrorUnexpectedError,
+                                  {"Unknown C++ exception", Backtrace::capture(1)});
         }
     }
 
@@ -191,8 +173,11 @@ using namespace c4Internal;
 
 
 __cold
-C4Error c4error_vprintf(C4ErrorDomain domain, int code, const char *format, va_list args) noexcept {
-    return vmakeError(domain, code, format, args);
+C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) noexcept {
+    ErrorInfo info;
+    if (message.size > 0)
+        info.message = string(slice(message));
+    return ErrorInfo::makeError(domain, code, info);
 }
 
 
@@ -200,25 +185,22 @@ __cold
 C4Error c4error_printf(C4ErrorDomain domain, int code, const char *format, ...) noexcept {
     va_list args;
     va_start(args, format);
-    C4Error error = vmakeError(domain, code, format, args);
+    C4Error error = ErrorInfo::vmakeError(domain, code, format, args);
     va_end(args);
     return error;
 }
 
 
 __cold
-C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) noexcept {
-    string messageStr;
-    if (message.size > 0)
-        messageStr = string(slice(message));
-    return makeError(domain, code, {move(messageStr), nullptr});
+C4Error c4error_vprintf(C4ErrorDomain domain, int code, const char *format, va_list args) noexcept {
+    return ErrorInfo::vmakeError(domain, code, format, args);
 }
 
 
 __cold
 void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) noexcept {
     if (outError)
-        *outError = makeError(domain, code, {string(slice(message))});
+        *outError = ErrorInfo::makeError(domain, code, {string(slice(message))});
 }
 
 
@@ -231,7 +213,7 @@ static string getErrorMessage(C4Error err) {
         return "";
     } else if (err.domain < 1 || err.domain >= (C4ErrorDomain)error::NumDomainsPlus1) {
         return "invalid C4Error (unknown domain)";
-    } else if (auto info = copyErrorInfo(err); info && !info->message.empty()) {
+    } else if (auto info = ErrorInfo::copy(err); info && !info->message.empty()) {
         // Custom message referenced in info field
         return info->message;
     } else {
@@ -331,7 +313,7 @@ void c4error_setCaptureBacktraces(bool capture) noexcept {error::sCaptureBacktra
 
 
 C4StringResult c4error_getBacktrace(C4Error error) noexcept {
-    if (auto info = copyErrorInfo(error); info && info->backtrace)
+    if (auto info = ErrorInfo::copy(error); info && info->backtrace)
         return sliceResult(info->backtrace->toString());
     return {};
 }

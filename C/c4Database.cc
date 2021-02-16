@@ -312,7 +312,7 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexc
         if (database->purgeDocument(docID))
             return true;
         else
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
     } catchError(outError)
     return false;
 }
@@ -376,7 +376,7 @@ C4RawDocument* c4raw_get(C4Database* database,
     return tryCatch<C4RawDocument*>(outError, [&]{
         Record r = database->getRawDocument(toString(storeName), key);
         if (!r.exists()) {
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
             return (C4RawDocument*)nullptr;
         }
         auto rawDoc = new C4RawDocument;
