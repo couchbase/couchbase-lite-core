@@ -20,6 +20,7 @@
 #include "c4ExceptionUtils.hh"
 #include "c4Database.h"
 #include "c4Certificate.h"
+#include "c4Replicator.h"
 #include "Certificate.hh"
 #include "PublicKey.hh"
 #include "Logging.hh"

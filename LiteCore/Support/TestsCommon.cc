@@ -22,6 +22,7 @@
 #include "FilePath.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
+#include "fleece/Fleece.h"
 #include <mutex>
 
 #ifdef _MSC_VER

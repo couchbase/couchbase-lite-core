@@ -18,7 +18,6 @@
 
 #pragma once
 #include "c4Document.h"
-#include "c4Replicator.h"
 #include <stdarg.h>
 
 #ifdef __cplusplus
@@ -26,6 +25,10 @@
 #else
 #include <stdatomic.h>
 #endif
+
+// This file contains LiteCore C APIs that are intended only for use by the replicator and
+// listener implementations, and the `cblite` tool, not by Couchbase Lite implementations or others.
+// This stuff can change without warning.
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -123,25 +126,28 @@ bool c4db_findDocAncestors(C4Database *database,
     (Only available if linked with libLiteCoreWebSocket) */
 void C4RegisterBuiltInWebSocket();
 
+
 #ifdef __cplusplus
 }
 
-namespace litecore { namespace websocket {
+// C++-only stuff:
+
+namespace litecore::websocket {
     class WebSocket;
-}}
+}
 
 
 C4Replicator* c4repl_newWithWebSocket(C4Database* db,
                                       litecore::websocket::WebSocket *openSocket,
-                                      C4ReplicatorParameters params,
+                                      struct C4ReplicatorParameters params,
                                       C4Error* C4NULLABLE outError) C4API;
 
 
-namespace litecore { namespace constants {
+namespace litecore::constants {
     extern const C4Slice kLocalCheckpointStore;
     extern const C4Slice kPeerCheckpointStore;
     extern const C4Slice kPreviousPrivateUUIDKey;
-}}
+}
 
 #endif
 

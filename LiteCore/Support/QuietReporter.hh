@@ -17,7 +17,6 @@
 //
 
 #pragma once
-#include "CaseListReporter.hh"
 #include "c4Base.h"
 #include "c4Private.h"
 #include "Error.hh"
@@ -25,6 +24,7 @@
 #include "MultiLogDecoder.hh"
 #include "StringUtil.hh"
 #include "TestsCommon.hh"
+#include "CaseListReporter.hh"
 #include <fstream>
 #include <iostream>
 

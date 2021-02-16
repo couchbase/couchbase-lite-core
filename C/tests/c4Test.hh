@@ -17,7 +17,6 @@
 //
 
 #pragma once
-
 #include "fleece/Fleece.hh"
 
 using namespace fleece;
@@ -25,36 +24,37 @@ using namespace fleece;
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
+
+// c4.hh defines a bunch of useful C++ helpers for LiteCore API, in the `c4` namespace. Check it out!
 #include "c4.hh"
 
+// More test utilities that don't depend on the C API.
 #include "TestsCommon.hh"
+
 #include <function_ref.hh>
 #include <set>
 #include <vector>
 
 
-// This lets you write a C4Error to a stream like cerr, or pass it to a Catch logging macro
+#pragma mark - STREAM OPERATORS FOR LOGGING:
+
+
+#ifdef CATCH_VERSION_MAJOR
+#error "This header must be included before Catch.hpp"
+#endif
+
+
+// Logging a C4Error to a stream, or pass it to a Catch logging macro
 // like INFO() or WARN().
 std::ostream& operator<< (std::ostream &out, C4Error);
 
 
-// Logging std::set instances to cerr or Catch.
-// This lets you test functions returning sets in CHECK or REQUIRE.
-template <class T>
-std::ostream& operator<< (std::ostream &o, const std::set<T> &things) {
-    o << "{";
-    int n = 0;
-    for (const T &thing : things) {
-        if (n++) o << ", ";
-        o << '"' << thing << '"';
-    }
-    o << "}";
-    return o;
-}
-
-
-// Now include Catch (this has to go after the `operator<<` methods, so Catch knows about them.)
+// Now include Catch --
+// WARNING: This has to go _after_ all the `operator<<` methods, so Catch knows about them.
 #include "CatchHelper.hh"
+
+
+#pragma mark - C4ERROR REPORTING:
 
 
 /** A utility for logging errors from LiteCore calls. Where you would pass `&error` as a
@@ -107,18 +107,21 @@ private:
 };
 
 
-// REQUIRE, CHECK and other Catch macros can't be used on background threads because Check is not
-// thread-safe. Use this instead. Don't use regular assert() because if this is an optimized build
-// it'll be ignored.
+#pragma mark - OTHER TEST UTILITIES:
+
+
+/// REQUIRE, CHECK and other Catch macros can't be used on background threads because Check is not
+/// thread-safe. In multithreaded code, use this instead.
+/// \warning Don't use regular assert(), because if this is an optimized build it'll be ignored.
 #define	C4Assert(e, ...) \
     (_usuallyFalse(!(e)) ? AssertionFailed(__func__, __FILE__, __LINE__, #e, ##__VA_ARGS__) \
                          : (void)0)
-
 [[noreturn]] void AssertionFailed(const char *func, const char *file, unsigned line,
                                   const char *expr,
                                   const char *message =nullptr);
 
 
+// Platform-specific filesystem path separator.
 #ifdef _MSC_VER
     #define kPathSeparator "\\"
 #else
@@ -126,27 +129,26 @@ private:
 #endif
 
 
+// Temporary directory to use for tests.
 #define TEMPDIR(PATH) c4str((TempDir() + PATH).c_str())
 
 const std::string& TempDir();
 
 
-// Converts a slice to a C++ string
-static inline std::string toString(C4Slice s)   {return std::string((char*)s.buf, s.size);}
-
-
+// CHECKs that `err` matches the expected error domain/code and optional message.
 void CheckError(C4Error err,
                 C4ErrorDomain expectedDomain, int expectedCode,
                 const char *expectedMessage =nullptr);
 
     
-// Waits for the predicate to return true, checking every 100ms.
-// If the timeout elapses, calls FAIL.
+// Waits for the predicate to return true, blocking the current thread and checking every 100ms.
+// If the timeout (given in **milliseconds**) elapses, calls FAIL.
 void WaitUntil(int timeoutMillis, function_ref<bool()> predicate);
 
 
-// This helper is necessary because it ends an open transaction if an assertion fails.
-// If the transaction isn't ended, the c4db_delete call in tearDown will deadlock.
+// RAII utility class that wraps `c4db_begin/endTransaction`. Use this instead of the C calls,
+// because its destructor will abort the transaction if a REQUIRE fails or an exception is thrown.
+// Otherwise, the `c4db_delete` call in the test's teardown will deadlock.
 class TransactionHelper {
     public:
     explicit TransactionHelper(C4Database* db) {
@@ -167,14 +169,19 @@ class TransactionHelper {
 };
 
 
+// RAII utility to suppress reporting C++ exceptions (or breaking at them, in the Xcode debugger.)
+// Declare an instance when testing something that's expected to throw an exception internally.
 struct ExpectingExceptions {
     ExpectingExceptions()    {++gC4ExpectExceptions; c4log_warnOnErrors(false);}
     ~ExpectingExceptions()   {--gC4ExpectExceptions; c4log_warnOnErrors(true);}
 };
 
 
-// Handy base class that creates a new empty C4Database in its setUp method,
-// and closes & deletes it in tearDown.
+#pragma mark - C4TEST BASE CLASS:
+
+
+/// Base test fixture class for C4 tests. Creates a new empty C4Database in its setUp method,
+/// and closes & deletes it in tearDown. Also checks for leaks of classes that are InstanceCounted.
 class C4Test {
 public:
 #if defined(COUCHBASE_ENTERPRISE)

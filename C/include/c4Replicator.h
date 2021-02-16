@@ -176,7 +176,7 @@ extern "C" {
 
 
     /** Parameters describing a replication, used when creating a C4Replicator. */
-    typedef struct {
+    typedef struct C4ReplicatorParameters {
         C4ReplicatorMode                    push;              ///< Push mode (from db to remote/other db)
         C4ReplicatorMode                    pull;              ///< Pull mode (from db to remote/other db).
         C4Slice                             optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.

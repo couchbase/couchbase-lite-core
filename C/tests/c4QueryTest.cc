@@ -446,7 +446,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
     
     C4SliceResult matched = c4query_fullTextMatched(query, &results[0][0], &err);
     REQUIRE(matched.buf != nullptr);
-    CHECK(toString((C4Slice)matched) == "7 Wyoming Hwy");
+    CHECK(toString(matched) == "7 Wyoming Hwy");
     c4slice_free(matched);
 }
 
@@ -865,9 +865,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
     
-    C4SliceResult explanation = c4query_explain(query);
-    string explanationString = toString((C4Slice)explanation);
-    c4slice_free(explanation);
+    string explanationString = toString(c4query_explain(query));
     CHECK(litecore::hasPrefix(explanationString, "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'contact.address.state') = 'CA') AND (_doc.flags & 1 = 0)"));
     
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
