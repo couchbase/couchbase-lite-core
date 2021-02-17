@@ -599,7 +599,7 @@ namespace litecore {
             if (sNotableExceptionHook)
                 sNotableExceptionHook();
             captureBacktrace(2);
-            WarnError("LiteCore throwing %s error %d: %s%s",
+            WarnError("LiteCore throwing %s error %d: %s\n%s",
                       nameOfDomain(domain), code, what(), backtrace->toString().c_str());
         }
         throw *this;
