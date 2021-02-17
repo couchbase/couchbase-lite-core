@@ -63,7 +63,7 @@ class C4DatabaseTest : public C4Test {
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][Errors][C]") {
     alloc_slice msg = c4error_getMessage({LiteCoreDomain, 0});
-    REQUIRE(msg.buf == (const void*)nullptr);
+    REQUIRE(msg.buf == nullptr);
     REQUIRE((unsigned long)msg.size == 0ul);
 
     msg = c4error_getDescription({LiteCoreDomain, 0});
@@ -165,8 +165,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Doc", "[Database][Docume
     REQUIRE(c4db_endTransaction(db, true, WITH_ERROR()));
     CHECK(c4db_getDocumentCount(db) == 1);
 
-    C4Document *doc = c4doc_get(db, kDocID, true, WITH_ERROR());
-    REQUIRE(doc);
+    C4Document* doc = REQUIRED( c4doc_get(db, kDocID, true, WITH_ERROR()) );
     CHECK(doc->docID == kDocID);
     CHECK(doc->revID == kRevID);
     CHECK(doc->sequence == 1);
@@ -207,15 +206,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][Docu
     REQUIRE(c4raw_put(db, c4str("test"), key, meta, kFleeceBody, WITH_ERROR()));
     REQUIRE(c4db_endTransaction(db, true, WITH_ERROR()));
 
-    C4RawDocument *doc = c4raw_get(db, c4str("test"), key, ERROR_INFO());
-    REQUIRE(doc != nullptr);
+    C4RawDocument *doc = REQUIRED(c4raw_get(db, c4str("test"), key, WITH_ERROR()));
     REQUIRE(doc->key == key);
     REQUIRE(doc->meta == meta);
     REQUIRE(doc->body == kFleeceBody);
     c4raw_free(doc);
 
     // Nonexistent:
-    REQUIRE(c4raw_get(db, c4str("test"), c4str("bogus"), &error) == (C4RawDocument*)nullptr);
+    REQUIRE(c4raw_get(db, c4str("test"), c4str("bogus"), &error) == nullptr);
     REQUIRE(error == C4Error{LiteCoreDomain, kC4ErrorNotFound});
     
     // Delete
@@ -238,8 +236,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator", "[Database][Docume
     // No start or end ID:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
-    e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
-    REQUIRE(e);
+    e = REQUIRED(c4db_enumerateAllDocs(db, &options, WITH_ERROR()));
     char docID[20];
     int i = 1;
     while (c4enum_next(e, &error)) {

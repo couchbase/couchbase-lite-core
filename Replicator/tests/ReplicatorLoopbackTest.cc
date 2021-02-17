@@ -54,11 +54,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt databas
     C4Error error;
     alloc_slice path(c4db_getPath(db));
     string scratchDBName = format("scratch%" PRIms, chrono::milliseconds(time(nullptr)).count());
-    REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), &error));
+    REQUIRE(c4db_copyNamed(path, slice(scratchDBName), &dbConfig(), WITH_ERROR(&error)));
 
     // Open the copied db:
     c4db_release(db);
-    db = c4db_openNamed(slice(scratchDBName), &dbConfig(), &error);
+    db = c4db_openNamed(slice(scratchDBName), &dbConfig(), ERROR_INFO(error));
     REQUIRE(db);
 
     // Push from the copied db; this should reuse the checkpoint and not need to push any docs:
@@ -392,11 +392,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
     CHECK(error.domain == LiteCoreDomain);
     CHECK(error.code == kC4ErrorNotFound);
 
-    doc = c4doc_get(db2, "fresh"_sl, true, &error);
+    doc = c4doc_get(db2, "fresh"_sl, true, ERROR_INFO(error));
     REQUIRE(doc);
     CHECK(doc->revID == kNonLocalRev1ID);
 
-    doc = c4doc_get(db2, "permanent"_sl, true, &error);
+    doc = c4doc_get(db2, "permanent"_sl, true, ERROR_INFO(error));
     REQUIRE(doc);
     CHECK(doc->revID == kNonLocalRev1ID);
 }
@@ -1143,8 +1143,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][C
         REQUIRE(t.begin(nullptr));
         C4Error error;
         CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID,
-                                    kC4SliceNull, kRevDeleted, &error));
-        CHECK(c4doc_save(doc, 0, &error));
+                                    kC4SliceNull, kRevDeleted, WITH_ERROR(&error)));
+        CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
         REQUIRE(t.commit(nullptr));
     }
     
@@ -1193,8 +1193,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
         REQUIRE(t.begin(nullptr));
         C4Error error;
         CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID,
-                                    kC4SliceNull, kRevDeleted, &error));
-        CHECK(c4doc_save(doc, 0, &error));
+                                    kC4SliceNull, kRevDeleted, WITH_ERROR(&error)));
+        CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
         REQUIRE(t.commit(nullptr));
     }
 
@@ -1281,8 +1281,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         {
             TransactionHelper t(db2);
             C4Error error;
-            CHECK(c4doc_resolveConflict(doc, C4STR("4-4444"), C4STR("2-ffffffff"), kC4SliceNull, 0, &error));
-            CHECK(c4doc_save(doc, 0, &error));
+            CHECK(c4doc_resolveConflict(doc, C4STR("4-4444"), C4STR("2-ffffffff"), kC4SliceNull, 0, WITH_ERROR(&error)));
+            CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
         }
 
         doc = c4db_getDoc(db2, docID, true, kDocGetAll, nullptr);
@@ -1395,7 +1395,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     
     C4Error err = {};
     std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(db, false);
-    C4DocEnumerator* e = acc->unresolvedDocsEnumerator(true, &err);
+    C4DocEnumerator* e = acc->unresolvedDocsEnumerator(true, ERROR_INFO(err));
+    REQUIRE(e);
     
     // verify only returns the conflicted documents, including the deleted ones.
     vector<C4Slice> docIDs = {"conflict"_sl,
@@ -1407,7 +1408,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     vector<bool> deleteds =  {false, true, false};
 
     for (int count = 0; count < 3; ++count) {
-        REQUIRE(c4enum_next(e, &err));
+        REQUIRE(c4enum_next(e, WITH_ERROR(&err)));
         C4DocumentInfo info;
         c4enum_getDocumentInfo(e, &info);
         CHECK(info.docID == docIDs[count]);
@@ -1416,7 +1417,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
         bool deleted = ((info.flags & kDocDeleted) != 0);
         CHECK(deleted == deleteds[count]);
     }
-    CHECK(!c4enum_next(e, &err));
+    CHECK(!c4enum_next(e, WITH_ERROR(&err)));
     c4enum_free(e);
 }
 
@@ -1427,7 +1428,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
 static void mutateDoc(C4Database *db, slice docID, function<void(Dict,Encoder&)> mutator) {
     TransactionHelper t(db);
     C4Error error;
-    c4::ref<C4Document> doc = c4doc_get(db, docID, false, &error);
+    c4::ref<C4Document> doc = c4doc_get(db, docID, false, ERROR_INFO(error));
     REQUIRE(doc);
     Dict props = c4doc_getProperties(doc);
 
@@ -1443,7 +1444,7 @@ static void mutateDoc(C4Database *db, slice docID, function<void(Dict,Encoder&)>
     rq.history = &history;
     rq.historyCount = 1;
     rq.save = true;
-    doc = c4doc_put(db, &rq, nullptr, &error);
+    doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
     CHECK(doc);
 }
 
@@ -1812,8 +1813,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
         REQUIRE(t.begin(nullptr));
         C4Error error;
         CHECK(c4doc_resolveConflict(doc, kDoc1Rev2B, kDoc1Rev2A,
-                                    json2fleece("{\"merged\":true}"), 0, &error));
-        CHECK(c4doc_save(doc, 0, &error));
+                                    json2fleece("{\"merged\":true}"), 0, WITH_ERROR(&error)));
+        CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
         REQUIRE(t.commit(nullptr));
     }
     doc = c4doc_get(db, C4STR("doc1"), true, nullptr);
@@ -1835,8 +1836,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
         REQUIRE(t.begin(nullptr));
         C4Error error;
         CHECK(c4doc_resolveConflict(doc, kDoc2Rev2B, kDoc2Rev2A,
-                                    kC4SliceNull, kRevDeleted, &error));
-        CHECK(c4doc_save(doc, 0, &error));
+                                    kC4SliceNull, kRevDeleted, ERROR_INFO(&error)));
+        CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
         REQUIRE(t.commit(nullptr));
     }
     

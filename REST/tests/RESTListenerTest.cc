@@ -412,8 +412,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
     CHECK(revID.size > 0);
 
     {
-        C4Error err;
-        c4::ref<C4Document> doc = c4doc_get(db, docID, true, &err);
+        c4::ref<C4Document> doc = c4doc_get(db, docID, true, ERROR_INFO());
         REQUIRE(doc);
         CHECK(doc->revID == revID);
         body = c4doc_getProperties(doc);
@@ -433,8 +432,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
     revID = body["rev"].asString();
 
     {
-        C4Error err;
-        c4::ref<C4Document> doc = c4doc_get(db, docID, true, &err);
+        c4::ref<C4Document> doc = c4doc_get(db, docID, true, ERROR_INFO());
         REQUIRE(doc);
         CHECK((doc->flags & kDocDeleted) != 0);
         CHECK(doc->revID == revID);

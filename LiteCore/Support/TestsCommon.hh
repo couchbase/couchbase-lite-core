@@ -7,6 +7,7 @@
 #pragma once
 #include "fleece/slice.hh"
 #include "JSON5.hh"
+#include "function_ref.hh"
 #include <iostream>
 #include <set>
 #include <string>
@@ -76,3 +77,23 @@ std::ostream& operator<< (std::ostream &o, const std::set<T> &things) {
     o << "}";
     return o;
 }
+
+
+#pragma mark - SUPPRESSING EXCEPTION WARNINGS:
+
+
+// RAII utility to suppress reporting C++ exceptions (or breaking at them, in the Xcode debugger.)
+// Declare an instance when testing something that's expected to throw an exception internally.
+struct ExpectingExceptions {
+    ExpectingExceptions();
+    ~ExpectingExceptions();
+};
+
+
+#pragma mark - MISC.:
+
+
+// Waits for the predicate to return true, blocking the current thread and checking every 100ms.
+// If the timeout (given in **milliseconds**) elapses, calls FAIL.
+void WaitUntil(int timeoutMillis, fleece::function_ref<bool()> predicate);
+

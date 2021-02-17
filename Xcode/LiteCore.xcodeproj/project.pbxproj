@@ -2315,8 +2315,8 @@
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
 				273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */,
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
-				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
+				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
 				2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */,
 			);
 			path = tests;

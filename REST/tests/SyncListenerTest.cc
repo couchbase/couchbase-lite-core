@@ -173,9 +173,8 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync client cert", "[Push][Listene
 }
 
 TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync Expired Cert", "[Push][Listener][TLS][C]") {
-    C4Error error;
     Identity id;
-    id.key = c4keypair_generate(kC4RSA, 2048, false, &error);
+    id.key = c4keypair_generate(kC4RSA, 2048, false, ERROR_INFO());
     REQUIRE(id.key);
 
     const C4CertNameComponent subjectName[4] = {
@@ -184,13 +183,13 @@ TEST_CASE_METHOD(C4SyncListenerTest, "TLS P2P Sync Expired Cert", "[Push][Listen
         {kC4Cert_OrganizationUnit, "Mobile"_sl},
         {kC4Cert_EmailAddress,     nullslice} };
     c4::ref<C4Cert> csr = c4cert_createRequest(subjectName, 3,
-                                               kC4CertUsage_TLSServer, id.key, &error);
+                                               kC4CertUsage_TLSServer, id.key, ERROR_INFO());
     REQUIRE(csr);
 
     C4CertIssuerParameters issuerParams = kDefaultCertIssuerParameters;
     issuerParams.validityInSeconds = 0;
     issuerParams.isCA = false;
-    id.cert = c4cert_signRequest(csr, &issuerParams, id.key, id.cert, &error);
+    id.cert = c4cert_signRequest(csr, &issuerParams, id.key, id.cert, ERROR_INFO());
     REQUIRE(id.cert);
     
     this_thread::sleep_for(1s);
@@ -224,8 +223,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
     CHECK(connections == 0);
     CHECK(activeConns == 0);
 
-    C4Error err;
-    REQUIRE(startReplicator(kC4OneShot, kC4Disabled, &err));
+     REQUIRE(startReplicator(kC4OneShot, kC4Disabled, WITH_ERROR()));
 
     unsigned maxConnections = 0, maxActiveConns = 0;
     C4ReplicatorStatus status;
@@ -333,8 +331,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "Listener stops replicators", "[Listener]")
     ReplicatorAPITest::importJSONLines(sFixturesDir + "names_100.json");
     share(db2, "db2"_sl);
     _address.port = c4listener_getPort(listener());
-    C4Error err;
-    REQUIRE(_startReplicator(kC4Continuous, kC4Continuous, &err));
+    REQUIRE(_startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR()));
     waitForStatus(kC4Idle);
     stop();
     waitForStatus(kC4Stopped);

@@ -110,20 +110,9 @@ void CheckError(C4Error error,
 {
     CHECK(error == (C4Error{expectedDomain, expectedCode}));
     if (expectedMessage) {
-        C4StringResult msg = c4error_getMessage(error);
-        CHECK(string((char*)msg.buf, msg.size) == string(expectedMessage));
-        c4slice_free(msg);
+        alloc_slice msg = c4error_getMessage(error);
+        CHECK(msg == expectedMessage);
     }
-}
-
-
-void WaitUntil(int timeoutMillis, function_ref<bool()> predicate) {
-    for (int remaining = timeoutMillis; remaining >= 0; remaining -= 100) {
-        if (predicate())
-            return;
-        this_thread::sleep_for(chrono::milliseconds(100));
-    }
-    FAIL("Wait timed out after " << timeoutMillis << "ms");
 }
 
 

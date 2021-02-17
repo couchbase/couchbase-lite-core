@@ -19,11 +19,13 @@
 #include "TestsCommon.hh"
 #include "c4Base.h"
 #include "c4Private.h"
+#include "Error.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.h"
 #include <mutex>
+#include <thread>
 
 #ifdef _MSC_VER
 #include <atlbase.h>
@@ -157,6 +159,30 @@ fleece::alloc_slice json5slice(string_view str) {
 
 string json5(string_view str) {
     return string(json5slice(str));
+}
+
+
+extern "C" CBL_CORE_API std::atomic_int gC4ExpectExceptions;
+
+// While in scope, suppresses warnings about errors, and debugger exception breakpoints (in Xcode)
+ExpectingExceptions::ExpectingExceptions()    {
+    ++gC4ExpectExceptions;
+    c4log_warnOnErrors(false);
+}
+
+ExpectingExceptions::~ExpectingExceptions()   {
+    if (--gC4ExpectExceptions == 0)
+        c4log_warnOnErrors(true);
+}
+
+
+void WaitUntil(int timeoutMillis, function_ref<bool()> predicate) {
+    for (int remaining = timeoutMillis; remaining >= 0; remaining -= 100) {
+        if (predicate())
+            return;
+        this_thread::sleep_for(chrono::milliseconds(100));
+    }
+    FAIL("Wait timed out after " << timeoutMillis << "ms");
 }
 
 

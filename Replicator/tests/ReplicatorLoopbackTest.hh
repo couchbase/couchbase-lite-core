@@ -74,7 +74,7 @@ public:
             _parallelThread->join();
         _replClient = _replServer = nullptr;
         C4Error error;
-        REQUIRE(c4db_delete(db2, &error));
+        REQUIRE(c4db_delete(db2, WITH_ERROR(&error)));
         c4db_release(db2);
     }
 
@@ -499,26 +499,26 @@ public:
         if (compareDeletedDocs)
             options.flags |= kC4IncludeDeleted;
         C4Error error;
-        c4::ref<C4DocEnumerator> e1 = c4db_enumerateAllDocs(db, &options, &error);
+        c4::ref<C4DocEnumerator> e1 = c4db_enumerateAllDocs(db, &options, ERROR_INFO(error));
         REQUIRE(e1);
-        c4::ref<C4DocEnumerator> e2 = c4db_enumerateAllDocs(db2, &options, &error);
+        c4::ref<C4DocEnumerator> e2 = c4db_enumerateAllDocs(db2, &options, ERROR_INFO(error));
         REQUIRE(e2);
 
         unsigned i = 0;
-        while (c4enum_next(e1, &error)) {
-            c4::ref<C4Document> doc1 = c4enum_getDocument(e1, &error);
+        while (c4enum_next(e1, ERROR_INFO(error))) {
+            c4::ref<C4Document> doc1 = c4enum_getDocument(e1, ERROR_INFO(error));
             fastREQUIRE(doc1);
             INFO("db document #" << i << ": '" << slice(doc1->docID).asString() << "'");
-            bool ok = c4enum_next(e2, &error);
+            bool ok = c4enum_next(e2, ERROR_INFO(error));
             fastREQUIRE(ok);
-            c4::ref<C4Document> doc2 = c4enum_getDocument(e2, &error);
+            c4::ref<C4Document> doc2 = c4enum_getDocument(e2, ERROR_INFO(error));
             fastREQUIRE(doc2);
             compareDocs(doc1, doc2);
             ++i;
         }
         REQUIRE(error.code == 0);
         if (!db2MayHaveMoreDocs) {
-            REQUIRE(!c4enum_next(e2, &error));
+            REQUIRE(!c4enum_next(e2, ERROR_INFO(error)));
             REQUIRE(error.code == 0);
         }
     }
@@ -536,7 +536,7 @@ public:
         c4::ref<C4RawDocument> doc( c4raw_get(database,
                                               storeName,
                                               _checkpointID,
-                                              &err) );
+                                              WITH_ERROR(&err)) );
         INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID) << "'; err = " << err.domain << "," << err.code);
         REQUIRE(doc);
         CHECK(doc->body == c4str(body));
@@ -562,7 +562,7 @@ public:
         REQUIRE( c4raw_put(database,
                            storeName,
                            _checkpointID,
-                           kC4SliceNull, kC4SliceNull, &err) );
+                           kC4SliceNull, kC4SliceNull, ERROR_INFO(&err)) );
     }
 
     template <class SET>

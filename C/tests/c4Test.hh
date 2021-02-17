@@ -18,12 +18,11 @@
 
 #pragma once
 #include "fleece/Fleece.hh"
-
-using namespace fleece;
-
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
+#include "function_ref.hh"
+#include <vector>
 
 // c4.hh defines a bunch of useful C++ helpers for LiteCore API, in the `c4` namespace. Check it out!
 #include "c4.hh"
@@ -31,17 +30,15 @@ using namespace fleece;
 // More test utilities that don't depend on the C API.
 #include "TestsCommon.hh"
 
-#include <function_ref.hh>
-#include <set>
-#include <vector>
-
-
-#pragma mark - STREAM OPERATORS FOR LOGGING:
-
-
 #ifdef CATCH_VERSION_MAJOR
 #error "This header must be included before Catch.hpp"
 #endif
+
+
+using namespace fleece;
+
+
+#pragma mark - STREAM OPERATORS FOR LOGGING:
 
 
 // Logging a C4Error to a stream, or pass it to a Catch logging macro
@@ -141,11 +138,6 @@ void CheckError(C4Error err,
                 const char *expectedMessage =nullptr);
 
     
-// Waits for the predicate to return true, blocking the current thread and checking every 100ms.
-// If the timeout (given in **milliseconds**) elapses, calls FAIL.
-void WaitUntil(int timeoutMillis, function_ref<bool()> predicate);
-
-
 // RAII utility class that wraps `c4db_begin/endTransaction`. Use this instead of the C calls,
 // because its destructor will abort the transaction if a REQUIRE fails or an exception is thrown.
 // Otherwise, the `c4db_delete` call in the test's teardown will deadlock.
@@ -166,14 +158,6 @@ class TransactionHelper {
 
     private:
     C4Database* _db {nullptr};
-};
-
-
-// RAII utility to suppress reporting C++ exceptions (or breaking at them, in the Xcode debugger.)
-// Declare an instance when testing something that's expected to throw an exception internally.
-struct ExpectingExceptions {
-    ExpectingExceptions()    {++gC4ExpectExceptions; c4log_warnOnErrors(false);}
-    ~ExpectingExceptions()   {--gC4ExpectExceptions; c4log_warnOnErrors(true);}
 };
 
 
@@ -302,12 +286,15 @@ public:
 
     // Some handy constants to use
     static const C4Slice kDocID;    // "mydoc"
-    C4Slice kRevID;    // "1-abcd"
-    C4Slice kRev1ID;   // "1-abcd"
-    C4Slice kRev1ID_Alt;   // "1-dcba"
-    C4Slice kRev2ID;   // "2-c001d00d"
-    C4Slice kRev3ID;   // "3-deadbeef"
-    C4Slice kRev4ID;   // "4-44444444"
+
+                            // REV-TREES:       VERSION VECTORS:
+    C4Slice kRevID;         // "1-abcd"         "1@*"
+    C4Slice kRev1ID;        // "1-abcd"         "1@*"
+    C4Slice kRev1ID_Alt;    // "1-dcba"         "1@*"
+    C4Slice kRev2ID;        // "2-c001d00d"     "2@*"
+    C4Slice kRev3ID;        // "3-deadbeef"     "3@*"
+    C4Slice kRev4ID;        // "4-44444444"     "4@*"
+
     static C4Slice kFleeceBody;             // {"ans*wer":42}, in Fleece
     static C4Slice kEmptyFleeceBody;        // {}, in Fleece
 

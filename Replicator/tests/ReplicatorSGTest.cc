@@ -253,9 +253,10 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
     }
 
     C4Error error;
-    c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, &error);
+    c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, ERROR_INFO(error));
     REQUIRE(doc);
-    alloc_slice before = c4doc_bodyAsJSON(doc, true, &error);
+    alloc_slice before = c4doc_bodyAsJSON(doc, true, ERROR_INFO(error));
+    CHECK(before);
     doc = nullptr;
     C4Log("Original doc: %.*s", SPLAT(before));
 
@@ -266,18 +267,20 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
 
     replicate(kC4Disabled, kC4OneShot);
 
-    doc = c4doc_get(db, "att1"_sl, true, &error);
+    doc = c4doc_get(db, "att1"_sl, true, ERROR_INFO(error));
     REQUIRE(doc);
-    alloc_slice after = c4doc_bodyAsJSON(doc, true, &error);
+    alloc_slice after = c4doc_bodyAsJSON(doc, true, ERROR_INFO(error));
+    CHECK(after);
     C4Log("Pulled doc: %.*s", SPLAT(after));
 
     // Is the pulled identical to the original?
     CHECK(after == before);
 
     // Did we get all of its attachments?
-    auto blobStore = c4db_getBlobStore(db, &error);
+    auto blobStore = c4db_getBlobStore(db, ERROR_INFO(error));
+    REQUIRE(blobStore);
     for( auto key : blobKeys) {
-        alloc_slice blob = c4blob_getContents(blobStore, key, &error);
+        alloc_slice blob = c4blob_getContents(blobStore, key, ERROR_INFO(error));
         CHECK(blob);
     }
 }
@@ -308,7 +311,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Pull Big Attachments", "[.SyncServer]") 
     replicate(kC4Disabled, kC4OneShot);
 
     C4Error error;
-    c4::ref<C4Document> doc = c4doc_get(db, "Abstract"_sl, true, &error);
+    c4::ref<C4Document> doc = c4doc_get(db, "Abstract"_sl, true, ERROR_INFO(error));
     REQUIRE(doc);
     Dict root = c4doc_getProperties(doc);
     auto attach = root.get("_attachments"_sl).asDict().get("Abstract.jpg"_sl).asDict();
@@ -491,7 +494,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
             char docID[20];
             sprintf(docID, "doc-%03d", docNo);
             C4Error error;
-            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, &error);
+            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
             REQUIRE(doc);
             Dict props = c4doc_getProperties(doc);
 
@@ -541,8 +544,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
 
         int n = 0;
         C4Error error;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, &error);
-        while (c4enum_next(e, &error)) {
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, ERROR_INFO(error));
+        REQUIRE(e);
+        while (c4enum_next(e, ERROR_INFO(error))) {
             C4DocumentInfo info;
             c4enum_getDocumentInfo(e, &info);
             CHECK(slice(info.docID).hasPrefix("doc-"_sl));
@@ -584,7 +588,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
             char docID[20];
             sprintf(docID, "%07u", docNo + 1);
             C4Error error;
-            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, &error);
+            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
             REQUIRE(doc);
             Dict props = c4doc_getProperties(doc);
 
@@ -635,8 +639,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
 
         int n = 0;
         C4Error error;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, &error);
-        while (c4enum_next(e, &error)) {
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, ERROR_INFO(error));
+        REQUIRE(e);
+        while (c4enum_next(e, ERROR_INFO(error))) {
             C4DocumentInfo info;
             c4enum_getDocumentInfo(e, &info);
             //CHECK(slice(info.docID).hasPrefix("doc-"_sl));

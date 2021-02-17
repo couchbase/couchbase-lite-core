@@ -311,12 +311,9 @@ TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face similarity query", "[Query][Predic
     // Get the vector of one document:
     compileSelect(json5("{WHAT: [" + string(kPrediction) + "], WHERE: ['=', ['._id'], 'lennon-2']}"));
     C4Error error;
-    c4::ref<C4QueryEnumerator> e = c4query_run(query, &kC4DefaultQueryOptions, nullslice, &error);
-    INFO("c4query_run got error " << error.domain << "/" << error.code);
+    c4::ref<C4QueryEnumerator> e = c4query_run(query, &kC4DefaultQueryOptions, nullslice, ERROR_INFO(error));
     REQUIRE(e);
-    bool ok = (c4queryenum_next(e, &error));
-    INFO("c4queryenum_next got error " << error.domain << "/" << error.code);
-    REQUIRE(ok);
+    REQUIRE(c4queryenum_next(e, ERROR_INFO(error)));
     Value targetVector = Array::iterator(e->columns)[0];
 
     auto queryString = json5("{WHAT: [['._id'], " + similarity + "], ORDER_BY: [" + similarity + "]}");
