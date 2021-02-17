@@ -47,8 +47,10 @@ namespace litecore {
         bool isOpen() const noexcept override;
 
         uint64_t fileSize() override;
-        void optimize();
-        void vacuum(bool always);
+        void optimize() noexcept;
+        void _optimize();
+        void vacuum(bool always) noexcept;
+        void _vacuum(bool always);
         void integrityCheck();
         void maintenance(MaintenanceType) override;
 

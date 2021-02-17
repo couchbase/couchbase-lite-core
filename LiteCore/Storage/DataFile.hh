@@ -98,6 +98,8 @@ namespace litecore {
             kCompact,
             kReindex,
             kIntegrityCheck,
+            kQuickOptimize, ///< Quickly update db statistics to help optimize queries
+            kFullOptimize,        ///< Full update of db statistics; takes longer
         };
 
         /** Perform database maintenance of some type. Returns false if not supported. */

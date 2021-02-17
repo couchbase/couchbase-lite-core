@@ -196,6 +196,8 @@ bool c4db_compact(C4Database* database, C4Error *outError) noexcept {
 
 
 bool c4db_maintenance(C4Database* database, C4MaintenanceType type, C4Error *outError) C4API {
+    static_assert(int(kC4Compact) == int(DataFile::kCompact));
+    static_assert(int(kC4FullOptimize) == int(DataFile::kFullOptimize));
     return tryCatch(outError, [=]{return database->maintenance(DataFile::MaintenanceType(type));});
 }
 

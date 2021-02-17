@@ -651,30 +651,42 @@ namespace litecore {
     }
 
 
-    void SQLiteDataFile::optimize() {
-        // <https://sqlite.org/pragma.html#pragma_optimize>
-        try {
-            bool logged = false;
-            if (SQL.willLog(LogLevel::Verbose)) {
-                // Log the details of what the optimize will do, before actually doing it:
-                SQLite::Statement stmt(*_sqlDb, "PRAGMA optimize(3)");
-                while (stmt.executeStep()) {
-                    LogVerbose(SQL, "PRAGMA optimize ... %s", stmt.getColumn(0).getString().c_str());
-                    logged = true;
-                }
+#pragma mark - MAINTENANCE:
+
+
+    void SQLiteDataFile::_optimize() {
+        /* "The optimize pragma is usually a no-op but it will occasionally run ANALYZE if it
+            seems like doing so will be useful to the query planner. The analysis_limit pragma
+            limits the scope of any ANALYZE command that the optimize pragma runs so that it does
+            not consume too many CPU cycles. The constant "400" can be adjusted as needed. Values
+            between 100 and 1000 work well for most applications."
+            -- <https://sqlite.org/lang_analyze.html> */
+        bool logged = false;
+        if (SQL.willLog(LogLevel::Verbose)) {
+            // Log the details of what the optimize will do, before actually doing it:
+            SQLite::Statement stmt(*_sqlDb, "PRAGMA analysis_limit=400; PRAGMA optimize(-1)");
+            while (stmt.executeStep()) {
+                LogVerbose(SQL, "PRAGMA optimize ... %s", stmt.getColumn(0).getString().c_str());
+                logged = true;
             }
-            if (!logged)
-                LogVerbose(SQL, "PRAGMA optimize");
-            _sqlDb->exec("PRAGMA optimize");
+        }
+        if (!logged)
+            LogVerbose(SQL, "PRAGMA analysis_limit=400; PRAGMA optimize");
+        _sqlDb->exec("PRAGMA analysis_limit=400; PRAGMA optimize");
+    }
+
+
+    void SQLiteDataFile::optimize() noexcept {
+        try {
+            _optimize();
         } catch (const SQLite::Exception &x) {
             warn("Caught SQLite exception while optimizing: %s", x.what());
         }
     }
 
 
-    void SQLiteDataFile::vacuum(bool always) {
+    void SQLiteDataFile::_vacuum(bool always) {
         // <https://blogs.gnome.org/jnelson/2015/01/06/sqlite-vacuum-and-auto_vacuum/>
-        try {
             int64_t pageCount = intQuery("PRAGMA page_count");
             int64_t freePages = intQuery("PRAGMA freelist_count");
             logVerbose("Housekeeping: %lld of %lld pages free (%.0f%%)",
@@ -713,6 +725,12 @@ namespace litecore {
 
             if (fixAutoVacuum && intQuery("PRAGMA auto_vacuum") == 0)
                 warn("auto_vacuum mode did not take effect after running full VACUUM!");
+    }
+
+
+    void SQLiteDataFile::vacuum(bool always) noexcept {
+        try {
+            _vacuum(always);
         } catch (const SQLite::Exception &x) {
             warn("Caught SQLite exception while vacuuming: %s", x.what());
         }
@@ -740,17 +758,29 @@ namespace litecore {
 
 
     void SQLiteDataFile::maintenance(MaintenanceType what) {
+        checkOpen();
         switch (what) {
             case kCompact:
-                checkOpen();
-                optimize();
-                vacuum(true);
+                _optimize();
+                _vacuum(true);
                 break;
             case kReindex:
                 execWithLock("REINDEX");
                 break;
             case kIntegrityCheck:
                 integrityCheck();
+                break;
+            case kQuickOptimize:
+                /* "The analysis_limit pragma limits the scope of any ANALYZE command that the
+                    optimize pragma runs so that it does not consume too many CPU cycles.
+                    The constant "400" can be adjusted as needed. Values between 100 and 1000 work
+                    well for most applications." */
+                execWithLock("PRAGMA analysis_limit=400; ANALYZE");
+                break;
+            case kFullOptimize:
+                /* "...to disable the analysis limit, causing ANALYZE to do a complete scan of each
+                    index, set the analysis limit to 0." */
+                execWithLock("PRAGMA analysis_limit=0; ANALYZE");
                 break;
             default:
                 error::_throw(error::UnsupportedOperation);

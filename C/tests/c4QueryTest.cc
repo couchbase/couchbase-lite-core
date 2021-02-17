@@ -1053,13 +1053,34 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query RevisionID", "[Query][C][!throws]")
     c4doc_release(doc1c);
 }
 
+
+#pragma mark - BIGGER DATABASE:
+
+
+class BigDBQueryTest : public C4QueryTest {
+public:
+    BigDBQueryTest(int which) :C4QueryTest(which, "iTunesMusicLibrary.json") { }
+};
+
+
+N_WAY_TEST_CASE_METHOD(BigDBQueryTest, "C4Database Optimize", "[Database][C]") {
+    C4Log("Creating index...");
+    REQUIRE(c4db_createIndex(db, C4STR("byArtist"),
+                             R"([[".Artist"], [".Album"], [".Track Number"]])"_sl,
+                             kC4ValueIndex, nullptr, WITH_ERROR()));
+    C4Log("Incremental optimize...");
+    REQUIRE(c4db_maintenance(db, kC4QuickOptimize, WITH_ERROR()));
+    C4Log("Full optimize...");
+    REQUIRE(c4db_maintenance(db, kC4FullOptimize, WITH_ERROR()));
+}
+
+
 #pragma mark - COLLATION:
 
-class CollatedQueryTest : public C4QueryTest {
+
+class CollatedQueryTest : public BigDBQueryTest {
 public:
-    CollatedQueryTest(int which)
-    :C4QueryTest(which, "iTunesMusicLibrary.json")
-    { }
+    CollatedQueryTest(int which) :BigDBQueryTest(which) { }
 
     vector<string> run() {
         C4Error error;

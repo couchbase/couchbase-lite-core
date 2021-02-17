@@ -72,7 +72,6 @@ namespace litecore {
 
         if (created) {
             t.commit();
-            db().optimize();
             double time = st.elapsed();
             QueryLog.log((time < 3.0 ? LogLevel::Info : LogLevel::Warning),
                          "Created index '%s' in %.3f sec", spec.name.c_str(), time);

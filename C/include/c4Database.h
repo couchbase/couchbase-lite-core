@@ -228,16 +228,41 @@ extern "C" {
         @{ */
 
 
-    /** Types of maintenance that \ref c4db_maintenance can perform.
-        NOTE: Enum values must match the ones in DataFile::MaintenanceType */
+    /** Types of maintenance that \ref c4db_maintenance can perform. */
     typedef C4_ENUM(uint32_t, C4MaintenanceType) {
-        kC4Compact,         ///< Compact the database file and garbage-collect attachments
-        kC4Reindex,         ///< Rebuild indexes (not normally needed)
-        kC4IntegrityCheck,  ///< Check for database corruption, returning an error if it finds any
-    };
+        /// Shrinks the database file by removing any empty pages,
+        /// and deletes blobs that are no longer referenced by any documents.
+        /// (Runs SQLite `PRAGMA incremental_vacuum; PRAGMA wal_checkpoint(TRUNCATE)`.)
+        kC4Compact,
+
+        /// Rebuilds indexes from scratch. Normally never needed, but can be used to help
+        /// diagnose/troubleshoot cases of database corruption if only indexes are affected.
+        /// (Runs SQLite `REINDEX`.)
+        kC4Reindex,
+
+        /// Checks for database corruption, as might be caused by a damaged filesystem, or
+        /// memory corruption.
+        /// (Runs SQLite `PRAGMA integrity_check`.)
+        kC4IntegrityCheck,
+
+        /// Quickly updates database statistics that may help optimize queries that have been run
+        /// by this Database since it was opened. The more queries that have been run, the more
+        /// effective this will be, but it tries to do its work quickly by scanning only portions
+        /// of indexes.
+        /// This operation is also performed automatically by \ref c4db_close.
+        /// (Runs SQLite `PRAGMA analysis_limit=400; PRAGMA optimize`.)
+        kC4QuickOptimize,
+
+        /// Fully scans all indexes to gather database statistics that help optimize queries.
+        /// This may take some time, depending on the size of the indexes, but it doesn't have to
+        /// be redone unless the database changes drastically, or new indexes are created.
+        /// (Runs SQLite `PRAGMA analysis_limit=0; ANALYZE`.)
+        kC4FullOptimize,
+    };  // *NOTE:* These enum values must match the ones in DataFile::MaintenanceType
 
 
-    /** Performs database maintenance. */
+    /** Performs database maintenance.
+        For more detail, see the descriptions of the \ref C4MaintenanceType enum constants. */
     bool c4db_maintenance(C4Database* database,
                           C4MaintenanceType type,
                           C4Error* C4NULLABLE outError) C4API;
