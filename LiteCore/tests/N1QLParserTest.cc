@@ -125,10 +125,10 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     try {
         // "custId" must be explicitly scoped by a keyspace alias if joining with another table.
         translate("SELECT custId, other.custId FROM orders JOIN orders other ON orders.test_id = other.test_id ORDER BY custId");
-        assert(false);
+        CHECK(false);
     } catch (const exception& exc) {
         string error = "property 'custId.' does not begin with a declared 'AS' alias";
-        assert(error == exc.what());
+        CHECK(error == exc.what());
     }
 }
 
