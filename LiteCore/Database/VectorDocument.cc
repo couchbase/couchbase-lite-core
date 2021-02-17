@@ -531,6 +531,7 @@ namespace c4Internal {
                     database()->documentSaved(this);
                     return true;
             }
+            return false; // unreachable
         }
 
 

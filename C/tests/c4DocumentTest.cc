@@ -300,7 +300,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     // Get a bogus sequence
     doc = c4doc_getBySequence(db, 2, &error);
     CHECK(doc == nullptr);
-    CHECK(error == kC4ErrorNotFound);
+    CHECK(error == C4Error{LiteCoreDomain, kC4ErrorNotFound});
 
     // Test c4db_getDoc:
     for (C4DocContentLevel content : {kDocGetMetadata, kDocGetCurrentRev, kDocGetAll}) {

@@ -36,7 +36,7 @@ def look_for(header, classes = nil)
     end
 end
 
-look_for("algorithm",   ["binary_search", "clamp", "lower_bound", "max", "min", "minmax", "sort", "swap", "upper_bound"])
+look_for("algorithm",   ["binary_search", "clamp", "lower_bound", "max", "min", "minmax", "sort", "upper_bound"])
 look_for("atomic",      ["atomic", "atomic_ref", "atomic_flag", "memory_order"])
 look_for("chrono")
 look_for("fstream",     ["filebuf", "ifstream", "ofstream", "fstream"])
@@ -54,7 +54,7 @@ look_for("string_view")
 look_for("tuple",       ["tie", "tuple"])
 look_for("unordered_map")
 look_for("unordered_set")
-look_for("utility",     ["forward", "move", "pair", "get"])
+look_for("utility",     ["forward", "move", "pair", "get", "swap"])
 look_for("variant",      ["variant", "visit", "get_if"])
 look_for("vector")
 # TODO: This is obviously incomplete. I've just been adding the most common stuff I find.

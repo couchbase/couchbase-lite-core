@@ -115,7 +115,7 @@ TEST_CASE("Error Backtraces", "[Errors][C]") {
     c4error_setCaptureBacktraces(true);
     C4Error error = c4error_make(LiteCoreDomain, kC4ErrorUnimplemented, nullslice);
     alloc_slice backtrace = c4error_getBacktrace(error);
-    C4Log("Got backtrace: %.*s", (int)backtrace.size, backtrace.buf);
+    C4Log("Got backtrace: %.*s", FMTSLICE(backtrace));
     CHECK(backtrace);
 
     c4error_setCaptureBacktraces(false);

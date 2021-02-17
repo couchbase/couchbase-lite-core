@@ -12,6 +12,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #ifdef CATCH_VERSION_MAJOR
 #error "This header must be included before Catch.hpp"

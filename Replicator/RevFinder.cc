@@ -350,6 +350,7 @@ namespace litecore::repl {
                     case kNewer:        return 0;
                     case kConflicting:  return 409;
                 }
+                abort(); // unreachable
             } catch (const error &x) {
                 if (x == error::BadRevisionID)
                     return 500;

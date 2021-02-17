@@ -42,7 +42,6 @@ function(set_support_source)
     set(
         ${ANDROID_SSS_RESULT}
         ${BASE_SUPPORT_FILES}
-        LiteCore/Support/Error_android.cc
         PARENT_SCOPE
     )
 endfunction()
@@ -50,7 +49,7 @@ endfunction()
 function(setup_litecore_build)
     setup_litecore_build_linux()
 
-    
+
     target_compile_definitions(
         LiteCoreStatic PRIVATE
         -DLITECORE_USES_ICU=1

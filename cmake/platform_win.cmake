@@ -22,7 +22,6 @@ function(set_litecore_source)
         MSVC/strlcat.c
         MSVC/vasprintf-msvc.c
         LiteCore/Support/StringUtil_winapi.cc
-        LiteCore/Support/Error_windows.cc
         Crypto/PublicKey+Windows.cc
         PARENT_SCOPE
     )

@@ -26,6 +26,7 @@
 #include "fleece/Fleece.hh"
 #include "c4Base.h"
 #include <assert.h>
+#include <utility>
 
 
 // C4Error equality tests:
@@ -34,20 +35,9 @@ static inline bool operator== (const C4Error &a, const C4Error &b) {
     return a.code == b.code && (a.code == 0 || a.domain == b.domain);
 }
 
-static inline bool operator== (const C4Error &error, C4ErrorCode code) {
-    return error.code == code && error.domain == LiteCoreDomain;
+static inline bool operator!= (const C4Error &a, C4Error b) {
+    return !(a == b);
 }
-
-static inline bool operator== (const C4Error &error, C4NetworkErrorCode code) {
-    return error.code == code && error.domain == NetworkDomain;
-}
-
-static inline bool operator!= (const C4Error &a, C4Error b)             {return !(a == b);}
-static inline bool operator!= (const C4Error &a, C4ErrorCode b)         {return !(a == b);}
-static inline bool operator!= (const C4Error &a, C4NetworkErrorCode b)  {return !(a == b);}
-
-
-
 
 
 namespace c4 {

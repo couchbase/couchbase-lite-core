@@ -5,7 +5,6 @@ function(setup_build)
     target_sources(
         C4Tests PRIVATE
         ${TOP}Crypto/mbedUtils.cc
-        ${TOP}LiteCore/Support/Error_windows.cc
         ${TOP}LiteCore/Support/PlatformIO.cc
         ${TOP}MSVC/vasprintf-msvc.c
         ${TOP}MSVC/asprintf.c
@@ -37,7 +36,7 @@ function(setup_build)
         LiteCoreWebSocket PRIVATE
         ${TOP}MSVC
     )
-    
+
     add_custom_command(
         TARGET C4Tests POST_BUILD
         COMMAND ${CMAKE_COMMAND}

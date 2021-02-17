@@ -27,6 +27,7 @@
 #include <deque>
 #include <exception>
 #include <mutex>
+#include <optional>
 #include <sstream>
 
 using namespace std;
