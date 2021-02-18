@@ -62,7 +62,7 @@ selectResults =
       )*                                { $$ = sr; }
 
 selectResult =
-    x:expression (_ AS ca:columnAlias )?
+    x:expression (_ AS? ca:columnAlias )?
                                         { assert(!x.isNull());
                                           if (ca.isNull())
                                             $$ = x;
@@ -234,16 +234,36 @@ selectExpr =
 
 expr0 =
     x:baseExpr '.' p:propertyPath       { $$ = op("_.", x, p);}
-  | x:baseExpr
-        (_ COLLATE c:collation          { x = collateOp(x, c); }
-            ( _ c2:collation            { extendCollate(x, c2); }
-             )*
-         )?                             { $$ = x; }
+  | x:baseExpr _ co:collateSuffix       { MutableArray coArray = co;
+                                          bool did_collateOp = false;
+                                          for (auto iter = coArray.begin(); iter != coArray.end(); ++iter) {
+                                            if (did_collateOp) {
+                                               extendCollate(x, iter->asstring());
+                                            } else {
+                                               x = collateOp(x, iter->asstring());
+                                               did_collateOp = true;
+                                            }
+                                          }
+                                          $$ = x; }
+  | x:baseExpr                          { $$ = x; }
+
+collateSuffix =
+    co:COLLATE                          { co = Any(); }
+    (
+        c:collation _ !collation        { co = arrayWith(c); }
+      | '(' _
+        ( c:collation _                 { if (co.isNull()) {
+                                            co = arrayWith(c);
+                                          } else {
+                                            appendAny(co, c);
+                                          } }
+        )+ ')' _
+    )                                   { $$ = co; }
 
 collation =
     <("NO"i? ("UNICODE"i | "CASE"i | "DIAC"i)> WB)  { $$ = string(yytext); }
 
-baseExpr =
+_baseExpr =
     literal
   | arrayLiteral
   | dictLiteral
@@ -256,9 +276,10 @@ baseExpr =
   | meta
   | property
   | '(' _ expression _ ')'
+baseExpr = _baseExpr _                  # baseExpr to absorb all trailing white space
 
 OP_PREFIX =
-    <('-'|'+'|'~'|NOT)>                 { $$ = trim(yytext);}
+    <('-'|'+'|NOT)>                     { $$ = trim(yytext);}
 
 
 ######## PROPERTIES:
@@ -300,9 +321,9 @@ functionName    =
     IDENTIFIER                         &{isFunction(yytext)}
 
 parenExprs =
-    f:_ '('                             { f = MutableArray::newArray();}
+    f:_ '(' _                           { f = MutableArray::newArray();}
         ( e:expression                  { appendAny(f, e);}
-        (_ ',' _ e2:expression          { appendAny(f, e2);}
+        (',' _ e2:expression            { appendAny(f, e2);}
         )* )? ')'                       { $$ = f;}
 
 

@@ -28,13 +28,13 @@ namespace c4Internal {
 
         // Default maximum number of retry attempts before replications give up.
         // These can be overridden by setting the option `kC4ReplicatorOptionMaxRetries`.
-        static constexpr unsigned kMaxOneShotRetryCount = 2;
+        static constexpr unsigned kMaxOneShotRetryCount = 9;
         static constexpr unsigned kMaxContinuousRetryCount = UINT_MAX;
 
         // Longest possible retry delay, in seconds. The delay doubles on each failed retry
         // attempt, but pins to this value.
         // This can be overridden by setting the option `kC4ReplicatorOptionMaxRetryInterval`.
-        static constexpr unsigned kDefaultMaxRetryDelay = 10 * 60;
+        static constexpr unsigned kDefaultMaxRetryDelay = 5 * 60;
 
         C4RemoteReplicator(C4Database* db NONNULL,
                            const C4ReplicatorParameters &params,

@@ -25,6 +25,7 @@
 #include "Logging.hh"
 #include <SQLiteCpp/Exception.h>
 #include <sqlite3.h>
+#include <cmath>
 
 using namespace fleece;
 using namespace fleece::impl;
@@ -307,6 +308,44 @@ namespace litecore {
         }
     }
 
+    enhanced_bool_t booleanValue(sqlite3_context* ctx, sqlite3_value *arg) {
+        switch(sqlite3_value_type(arg)) {
+            case SQLITE_NULL:
+                return kMissing;
+            case SQLITE_FLOAT:
+            case SQLITE_INTEGER:
+            {
+                auto val = sqlite3_value_double(arg);
+                return static_cast<enhanced_bool_t>(val != 0.0 && !std::isnan(val));
+            }
+            case SQLITE_TEXT:
+            {
+                // Need to call sqlite3_value_text here?
+                return static_cast<enhanced_bool_t>(sqlite3_value_bytes(arg) > 0);
+            }
+            case SQLITE_BLOB:
+            {
+                auto fleece = fleeceParam(ctx, arg);
+                if (fleece == nullptr) {
+                    return kFalse;
+                } else switch(fleece->type()) {
+                    case valueType::kArray:
+                        return static_cast<enhanced_bool_t>(fleece->asArray()->count() > 0);
+                    case valueType::kData:
+                        return static_cast<enhanced_bool_t>(fleece->asData().size > 0);
+                    case valueType::kDict:
+                        return static_cast<enhanced_bool_t>(fleece->asDict()->count() > 0);
+                    case valueType::kNull:
+                        return kJSONNull;
+                    default:
+                        // Other Fleece types never show up in blobs
+                        return kFalse;
+                }
+            }
+            default:
+                return kTrue;
+        }
+    }
 
 
 }

@@ -124,10 +124,10 @@ namespace litecore {
         {"least"_sl,            2, 9, "min"_sl},
 
         // Conditional (unknowns):
-        {"ifmissing"_sl,        2, 2, "ifnull"_sl},
-        {"ifnull"_sl,           2, 2, "N1QL_ifnull"_sl},
-        {"ifmissingornull"_sl,  2, 2},
-        {"missingif"_sl,        2, 2, "nullif"_sl},
+        {"ifmissing"_sl,        2, 9, "coalesce"_sl},
+        {"ifnull"_sl,           2, 9, "N1QL_ifnull"_sl},
+        {"ifmissingornull"_sl,  2, 9},
+        {"missingif"_sl,        2, 2},
         {"nullif"_sl,           2, 2, "N1QL_nullif"_sl},
 
         // Dates/times:

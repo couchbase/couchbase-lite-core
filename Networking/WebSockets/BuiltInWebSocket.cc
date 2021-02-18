@@ -381,6 +381,18 @@ namespace litecore { namespace websocket {
                 closeWithError(_socket->error());
                 return;
             }
+            
+            // CBL-1633: Need to check for EOF here, or _socket->read returns
+            // 0 endlessly
+            if(n == 0 && _socket->atReadEOF()) {
+                if(_socket->atWriteEOF()) {
+                    closeSocket();
+                } else {
+                    close();
+                }
+                
+                return;
+            }
 
             // The bytes read count against the read-capacity:
             auto oldCapacity = _curReadCapacity.fetch_sub(n);
@@ -433,6 +445,16 @@ namespace litecore { namespace websocket {
             if (_usuallyFalse(n <= 0)) {
                 if (n < 0)
                     closeWithError(_socket->error());
+                return;
+            }
+            
+            // CBL-1633: Need to check for EOF here, or _socket->write returns
+            // 0 endlessly
+            if(n == 0 && _socket->atWriteEOF()) {
+                if(_socket->atReadEOF()) {
+                    closeSocket();
+                }
+                
                 return;
             }
 

@@ -314,15 +314,7 @@ namespace litecore {
             && sqlite3_value_subtype(arg) == kFleeceNullSubtype;
     }
 
-    // ifmissing(...) returns its first non-MISSING argument.
-    static void ifmissing(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        for(int i = 0; i < argc; i++) {
-            if(!isMissing(argv[i])) {
-                sqlite3_result_value(ctx, argv[i]);
-                return;
-            }
-        }
-    }
+    // ifmissing() is transpiled to SQLite3 as coalesce().
 
     // ifmissingornull(...) returns its first non-MISSING, non-null argument.
     static void ifmissingornull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
@@ -332,6 +324,8 @@ namespace litecore {
                 return;
             }
         }
+        // Returns NULL if all arguments are either isMissing() or isNull().
+        setResultFleeceNull(ctx);
     }
 
     // ifnull(...) returns its first non-null argument. I.e. it may return MISSING.
@@ -342,17 +336,69 @@ namespace litecore {
                 return;
             }
         }
+        // Returns NULL if all arguments isNull().
+        setResultFleeceNull(ctx);
+    }
+
+    namespace {
+        inline bool isNumber(sqlite3_value* argv) {
+            return sqlite3_value_type(argv) == SQLITE_INTEGER || sqlite3_value_type(argv) == SQLITE_FLOAT;
+        }
+
+        bool equalNumbers(double d, int64_t i) {
+            if (modf(d, &d) != 0.0 ||
+                d <  (double)numeric_limits<int64_t>::min() ||
+                d >= (double)numeric_limits<int64_t>::max()) {
+                return false;
+            } else {
+                return (int64_t)d == i;
+            }
+        }
+
+        // Pre-conditions: isNumber(argv0) && isNumber(argv1)
+        bool equalNumbers(sqlite3_value* argv0, sqlite3_value* argv1) {
+            if (sqlite3_value_type(argv0) == SQLITE_INTEGER) {
+                swap(argv0, argv1);
+            }
+            // Assertion: sqlite3_value_type(argv0) == SQLITE_FLOAT || both are integer
+            if (sqlite3_value_type(argv0) == SQLITE_INTEGER) {
+                return sqlite3_value_int64(argv0) == sqlite3_value_int64(argv1);
+            } else {
+                double d = sqlite3_value_double(argv0);
+                if (sqlite3_value_type(argv1) == SQLITE_FLOAT) {
+                    return d == sqlite3_value_double(argv1);
+                } else {
+                    return equalNumbers(d, sqlite3_value_int64(argv1));
+                }
+            }
+        }
+
+        // Pre-conditions: none of argv0 or argv1 isNull() or isMissing()
+        bool isEqual(sqlite3_value* argv0, sqlite3_value* argv1) {
+            bool ret = false;
+            if (isNumber(argv0)) {
+                ret = isNumber(argv1) && equalNumbers(argv0, argv1);
+            } else if (sqlite3_value_type(argv0) == sqlite3_value_type(argv1)) {
+                auto slice0 = valueAsSlice(argv0);
+                auto slice1 = valueAsSlice(argv1);
+                ret = (slice0 == slice1);
+            }
+            return ret;
+        }
     }
 
     // missingif(a,b) returns MISSING if a==b, else returns a.
     static void missingif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto slice0 = valueAsSlice(argv[0]);
-        auto slice1 = valueAsSlice(argv[1]);
-        if(slice0.buf == nullptr || slice1.buf == nullptr || slice0.size == 0 || slice1.size == 0) {
+        if (isMissing(argv[0]) || isMissing(argv[1])) {
             sqlite3_result_null(ctx);
+            return;
+        }
+        if (isNull(argv[0]) || isNull(argv[1])) {
+            setResultFleeceNull(ctx);
+            return;
         }
 
-        if(slice0.compare(slice1) == 0) {
+        if (isEqual(argv[0], argv[1])) {
             sqlite3_result_null(ctx);
         } else {
             sqlite3_result_value(ctx, argv[0]);
@@ -361,13 +407,16 @@ namespace litecore {
 
     // nullif(a,b) returns null if a==b, else returns a.
     static void nullif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto slice0 = valueAsSlice(argv[0]);
-        auto slice1 = valueAsSlice(argv[1]);
-        if(slice0.buf == nullptr || slice1.buf == nullptr || slice0.size == 0 || slice1.size == 0) {
+        if (isMissing(argv[0]) || isMissing(argv[1])) {
             sqlite3_result_null(ctx);
+            return;
+        }
+        if (isNull(argv[0]) || isNull(argv[1])) {
+            setResultFleeceNull(ctx);
+            return;
         }
 
-        if(slice0.compare(slice1) == 0) {
+        if (isEqual(argv[0], argv[1])) {
             setResultFleeceNull(ctx);
         } else {
             sqlite3_result_value(ctx, argv[0]);
@@ -553,6 +602,7 @@ namespace litecore {
                                    stringSliceArgument(argv[1]),
                                    collationContextFromArg(ctx, argc, argv, 2));
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
 
@@ -561,6 +611,7 @@ namespace litecore {
         const int likeResult = LikeUTF8(valueAsStringSlice(argv[0]), valueAsStringSlice(argv[1]),
                                         collationContextFromArg(ctx, argc, argv, 2));
         sqlite3_result_int(ctx, likeResult == kLikeMatch);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
 
@@ -707,6 +758,7 @@ namespace litecore {
             regex r((const char*)pattern.buf, pattern.size, regex_constants::ECMAScript);
             bool result = regex_search((const char*)str.buf, (const char*)str.end(), r);
             sqlite3_result_int(ctx, result != 0);
+            sqlite3_result_subtype(ctx, kFleeceIntBoolean);
         }
     }
 
@@ -951,6 +1003,7 @@ namespace litecore {
     static void isarray(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "array" ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // isatom(v) returns true if `v` is a boolean, number or string.
@@ -958,6 +1011,7 @@ namespace litecore {
         auto type = value_type(ctx, argv[0]);
         int result = (type == "boolean" || type == "number" || type == "string") ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // isboolean(v) returns true if `v` is a boolean. (Since SQLite doesn't distinguish between
@@ -965,24 +1019,28 @@ namespace litecore {
     static void isboolean(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "boolean" ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // isnumber(v) returns true if `v` is a number.
     static void isnumber(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "number" ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // isobject(v) returns true if `v` is a dictionary.
     static void isobject(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "object" ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // isatom(v) returns true if `v` is a string.
     static void isstring(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "string" ? 1 : 0;
         sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // type(v) returns a string naming the type of `v`.
@@ -1049,55 +1107,15 @@ namespace litecore {
     // Empty strings, arrays, and objects are false.
     // All other values are true.
     static void toboolean(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        bool result;
-        switch(sqlite3_value_type(argv[0])) {
-            case SQLITE_NULL:
-                sqlite3_result_null(ctx);
-                return;
-            case SQLITE_FLOAT:
-            case SQLITE_INTEGER:
-            {
-                auto val = sqlite3_value_double(argv[0]);
-                result = (val != 0.0 && !std::isnan(val));
-                break;
-            }
-            case SQLITE_TEXT:
-            {
-                // Need to call sqlite3_value_text here?
-                result = sqlite3_value_bytes(argv[0]) > 0;
-                break;
-            }
-            case SQLITE_BLOB:
-            {
-                auto fleece = fleeceParam(ctx, argv[0]);
-                if (fleece == nullptr) {
-                    result = false;
-                } else switch(fleece->type()) {
-                    case valueType::kArray:
-                        result = fleece->asArray()->count() > 0;
-                        break;
-                    case valueType::kData:
-                        result = fleece->asData().size > 0;
-                        break;
-                    case valueType::kDict:
-                        result = fleece->asDict()->count() > 0;
-                        break;
-                    case valueType::kNull:
-                        sqlite3_result_value(ctx, argv[0]);
-                        return;
-                    default:
-                        // Other Fleece types never show up in blobs
-                        result = false;
-                        break;
-                }
-                break;
-            }
-            default:
-                result = true;
-                break;
+        enhanced_bool_t result = booleanValue(ctx, argv[0]);
+        if(result == kTrue || result == kFalse) {
+            sqlite3_result_int(ctx, result);
+            sqlite3_result_subtype(ctx, kFleeceIntBoolean);
+        } else if(result == kMissing) {
+            sqlite3_result_null(ctx);
+        } else {
+            sqlite3_result_value(ctx, argv[0]);
         }
-        sqlite3_result_int(ctx, result);
-        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     // tonumber(v) returns a number derived from `v`:
@@ -1240,7 +1258,7 @@ namespace litecore {
 //        { "array_symdiffn",   -1, unimplemented },
 //        { "array_union",      -1, unimplemented },
 
-        { "ifmissing",        -1, ifmissing },
+//        { "ifmissing",        -1, ifmissing },
         { "ifmissingornull",  -1, ifmissingornull },
         { "N1QL_ifnull",      -1, ifnull },
         { "missingif",         2, missingif },

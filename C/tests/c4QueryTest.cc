@@ -411,22 +411,6 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query dict literal", "[Query][C]") {
     CHECK(results[0] == "{d:1234.5,f:false,i:12345,id:\"0000001\",n:null,s:\"howdy\",t:true}");
 }
 
-N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query N1QL parse error", "[Query][C][N1QL][!throws]") {
-    int errPos;
-    C4Error error;
-    {
-        ExpectingExceptions x;
-        CHECK(c4query_new2(db, kC4N1QLQuery, "SELECT foo bar"_sl, &errPos, &error) == nullptr);
-    }
-    CHECK(errPos == 11);
-    CHECK(error.domain == LiteCoreDomain);
-    CHECK(error.code == kC4ErrorInvalidQuery);
-
-    C4Query *q = c4query_new2(db, kC4N1QLQuery, "SELECT foo, bar"_sl, &errPos, ERROR_INFO(error));
-    CHECK(q != nullptr);
-    c4query_release(q);
-}
-
 #pragma mark - FTS:
 
 

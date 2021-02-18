@@ -39,6 +39,7 @@ namespace litecore { namespace qp {
     constexpr slice kCountFnName = "fl_count"_sl;
     constexpr slice kExistsFnName= "fl_exists"_sl;
     constexpr slice kResultFnName= "fl_result"_sl;
+    constexpr slice kBoolResultFnName = "fl_boolean_result"_sl;
     constexpr slice kContainsFnName = "fl_contains"_sl;
     constexpr slice kNullFnName = "fl_null"_sl;
     constexpr slice kBoolFnName = "fl_bool"_sl;
@@ -70,6 +71,7 @@ namespace litecore { namespace qp {
     }
 
     const Value* getCaseInsensitive(const Dict *dict, slice key);
+    bool isImplicitBool(const Value* op);
 
     const Array* requiredArray(const Value *v, const char *what);
     const Dict* requiredDict(const Value *v, const char *what);

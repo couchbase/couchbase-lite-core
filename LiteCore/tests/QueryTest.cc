@@ -355,6 +355,65 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     }
 }
 
+TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        writeDoc("tester"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("num");
+            enc.writeInt(1);
+            enc.writeKey("col");
+            enc.beginArray(4);
+            enc.writeInt(1);
+            enc.writeInt(2);
+            enc.writeInt(3);
+            enc.writeInt(4);
+            enc.endArray();
+        });
+        t.commit();
+    }
+
+    string queries[] = {
+        json5( "{WHAT: [['>', ['.num'], 50]]}"),
+        json5( "{WHAT: [['<', ['.num'], 50]]}"),
+        json5( "{WHAT: [['>=', ['.num'], 50]]}"),
+        json5( "{WHAT: [['<=', ['.num'], 50]]}"),
+        json5( "{WHAT: [['=', ['.num'], 50]]}"),
+        json5( "{WHAT: [['!=', ['.num'], 50]]}"),
+        json5( "{WHAT: [['is', ['.num'], 50]]}"),
+        json5( "{WHAT: [['IS NOT', ['.num'], 50]]}"),
+        json5( "{WHAT: [['NOT', ['=', ['.num'], 50]]]}"),
+        json5( "{WHAT: [['IN', 3, ['.col']]]}"),
+        json5( "{WHAT: [['NOT IN', 3, ['.col']]]}"),
+        json5( "{WHAT: [['BETWEEN', ['.num'], 3, 5]]}"),
+        json5( "{WHAT: [['EXISTS', ['.num']]]}"),
+        json5( "{WHAT: [['AND', 3, 0]]}"),
+        json5( "{WHAT: [['OR', 3, 0]]}"),
+        json5( "{WHAT: [['ANY', 'num', ['.col'], ['=', ['?num'], 1]]]}"),
+        json5( "{WHAT: [['EVERY', 'num', ['.col'], ['>', ['?num'], 0]]]}"),
+        json5( "{WHAT: [['ANY AND EVERY', 'num', ['.col'], ['>', ['?num'], 0]]]}"),
+        json5( "{WHAT: [['CONTAINS()', ['.col'], 1]]}"),
+        json5( "{WHAT: [['FL_LIKE()', ['.num'], '1%']]}"),
+        json5( "{WHAT: [['REGEXP_LIKE()', ['TOSTRING()', ['.num']], '1\\\\d+']]}"),
+        json5( "{WHAT: [['ISARRAY()', ['.num']]]}"),
+        json5( "{WHAT: [['ISARRAY()', ['.num']]]}"),
+        json5( "{WHAT: [['ISATOM()', ['.num']]]}"),
+        json5( "{WHAT: [['ISBOOLEAN()', ['.num']]]}"),
+        json5( "{WHAT: [['ISNUMBER()', ['.num']]]}"),
+        json5( "{WHAT: [['ISOBJECT()', ['.num']]]}"),
+        json5( "{WHAT: [['ISSTRING()', ['.num']]]}"),
+        json5( "{WHAT: [['TOBOOLEAN()', ['.num']]]}"),
+    };
+
+    for(auto query : queries) {
+        Retained<Query> q = store->compileQuery(query);
+        Retained<QueryEnumerator> e = q->createEnumerator();
+        REQUIRE(e->getRowCount() == 1);
+        REQUIRE(e->next());
+        CHECK(e->columns()[0]->type() == kBoolean);
+    }
+    
+}
+
 
 TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
     // For <https://github.com/couchbase/couchbase-lite-core/issues/545>
@@ -541,7 +600,7 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     }
     
     Retained<Query> query{ store->compileQuery(json5(
-        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSING()', ['.bogus'], ['.value']], null]}")) };
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSING()', ['.bogus'], ['MISSING'], ['.value']], null]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -557,20 +616,70 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
     
     query =store->compileQuery(json5(
-        "{'WHAT': ['._id'], WHERE: ['=', ['IFNULL()', ['.real_value'], ['.atai']], 1]}"));
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.atai'], ['.value']], null]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
 
     query =store->compileQuery(json5(
-        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.real_value'], ['.atai']], 1]}"));
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFNULL()', ['.value'], ['.real_value'], ['.atai']], 1]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.real_value'], ['.value'], ['.atai']], 1]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['MISSINGIF()', ['.real_value'], 3], 1]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+    
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['IS', ['MISSINGIF()', ['.real_value'], 1], ['MISSING']]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['IS', ['MISSINGIF()', ['.value'], 1], ['MISSING']]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 0);
+    
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['IS', ['MISSINGIF()', ['.value'], 1], null]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['NULLIF()', 3, ['.atai']], 3]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+    
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['NULLIF()', 1, ['.atai']], null]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+    
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['IS', ['NULLIF()', 1, ['.atai']], ['MISSING']]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
 }
 
 

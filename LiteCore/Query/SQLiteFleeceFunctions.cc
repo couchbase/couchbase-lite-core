@@ -289,6 +289,18 @@ namespace litecore {
         sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
+    // fl_boolean_result(value) -> value suitable for use as a result column
+    // Used for functions that SQLite returns as integers, that actually need a true or false
+    static void fl_boolean_result(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        enhanced_bool_t result = booleanValue(ctx, argv[0]);
+        if(result == kTrue || result == kFalse) {
+            slice encoded = result ? Encoder::kPreEncodedTrue : Encoder::kPreEncodedFalse;
+            sqlite3_result_blob(ctx, encoded.buf, int(encoded.size), SQLITE_STATIC);
+        } else {
+            fl_result(ctx, argc, argv);
+        }
+    }
+
 
 #pragma mark - CONTAINS()
 
@@ -379,6 +391,7 @@ namespace litecore {
             }
         }
         sqlite3_result_int(ctx, found);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
 
@@ -512,6 +525,7 @@ namespace litecore {
         { "fl_count",          2, fl_count },
         { "fl_contains",       3, fl_contains },
         { "fl_result",         1, fl_result },
+        { "fl_boolean_result", 1, fl_boolean_result },
         { "fl_null",           0, fl_null },
         { "fl_bool",           1, fl_bool },
         { "array_of",         -1, array_of },

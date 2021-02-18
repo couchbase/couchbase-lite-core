@@ -35,6 +35,13 @@ namespace litecore {
         kFleeceIntUnsigned,             // Integer is unsigned
     };
 
+    enum enhanced_bool_t : uint8_t {
+        kFalse,
+        kTrue,
+        kMissing,
+        kJSONNull
+    };
+
     extern const char* const kFleeceValuePointerType;
 
     static inline const fleece::impl::Value* asFleeceValue(sqlite3_value *value) {
@@ -113,6 +120,8 @@ namespace litecore {
     CollationContext& collationContextFromArg(sqlite3_context* ctx,
                                               int argc, sqlite3_value **argv,
                                               int argNo);
+
+    enhanced_bool_t booleanValue(sqlite3_context* ctx, sqlite3_value *arg);
 
 
 

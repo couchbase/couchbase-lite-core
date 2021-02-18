@@ -117,6 +117,14 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("SELECT db.*") == "{'WHAT':[['.db.']]}");
 
     CHECK(translate("select $var") == "{'WHAT':[['$var']]}");
+
+    // "custId" is implicitly scoped by the unique alias, "orders".
+    CHECK(translate("SELECT DISTINCT custId FROM orders where test_id = 'agg_func' ORDER BY custId") ==
+          "{'DISTINCT':true,'FROM':[{'AS':'orders'}],'ORDER_BY':[['.custId']],"
+          "'WHAT':[['.custId']],'WHERE':['=',['.test_id'],'agg_func']}");
+    CHECK_THROWS_WITH(translate("SELECT custId, other.custId FROM orders JOIN orders other "
+                                "ON orders.test_id = other.test_id ORDER BY custId"),
+                      "property 'custId.' does not begin with a declared 'AS' alias");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
@@ -181,6 +189,22 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
 
     CHECK(translate("SELECT EXISTS (SELECT 6 IS 9)") == "{'WHAT':[['EXISTS',['SELECT',{'WHAT':[['IS',6,9]]}]]]}");
 
+    CHECK(translate("SELECT product.categories CATG, COUNT(*) AS numprods WHERE test_id = \"agg_func\" "
+                    "GROUP BY product.categories HAVING COUNT(*) BETWEEN 15 and 30 ORDER BY CATG, numprods LIMIT 3")
+          == "{'GROUP_BY':[['.product.categories']],"
+             "'HAVING':['BETWEEN',['COUNT()',['.']],15,30],"
+             "'LIMIT':3,"
+             "'ORDER_BY':[['.CATG'],['.numprods']],"
+             "'WHAT':[['AS',['.product.categories'],'CATG'],['AS',['COUNT()',['.']],'numprods']],"
+             "'WHERE':['=',['.test_id'],'agg_func']}");
+    CHECK(translate("SELECT product.categories CATG, COUNT ( * ) AS numprods WHERE test_id = \"agg_func\" "
+                    "GROUP BY product.categories HAVING COUNT(*) BETWEEN POWER ( ABS(-2) , ABS(3) ) and 30 ORDER BY CATG, numprods LIMIT 3")
+          == "{'GROUP_BY':[['.product.categories']],"
+             "'HAVING':['BETWEEN',['COUNT()',['.']],['POWER()',['ABS()',-2],['ABS()',3]],30],"
+             "'LIMIT':3,"
+             "'ORDER_BY':[['.CATG'],['.numprods']],"
+             "'WHAT':[['AS',['.product.categories'],'CATG'],['AS',['COUNT()',['.']],'numprods']],"
+             "'WHERE':['=',['.test_id'],'agg_func']}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {
@@ -197,8 +221,13 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL collation", "[Query][N1QL][C]") {
     CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE") == "{'WHAT':[['COLLATE',{'CASE':false},['=',['.name'],'fred']]]}");
-    CHECK(translate("SELECT (name = 'fred') COLLATE UNICODE CASE NODIAC") == "{'WHAT':[['COLLATE',{'CASE':true,'DIAC':false,'UNICODE':true},['=',['.name'],'fred']]]}");
-    CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE FRED") == "");
+    CHECK(translate("SELECT (name = 'fred') COLLATE (UNICODE CASE NODIAC)") == "{'WHAT':[['COLLATE',{'CASE':true,'DIAC':false,'UNICODE':true},['=',['.name'],'fred']]]}");
+    CHECK(translate("SELECT (name = 'fred') COLLATE UNICODE NOCASE") == "");
+    CHECK(translate("SELECT (name = 'fred') COLLATE (NOCASE FRED)") == "");
+    CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE FRED")
+          == "{'WHAT':[['AS',['COLLATE',{'CASE':false},['=',['.name'],'fred']],'FRED']]}");
+    CHECK(translate("SELECT (name = 'fred') COLLATE (NOCASE) FRED")
+          == "{'WHAT':[['AS',['COLLATE',{'CASE':false},['=',['.name'],'fred']],'FRED']]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
@@ -206,7 +235,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
     CHECK(translate("SELECT ALL foo") == "{'WHAT':[['.foo']]}");
     CHECK(translate("SELECT DISTINCT foo") == "{'DISTINCT':true,'WHAT':[['.foo']]}");
 
-    CHECK(translate("SELECT foo bar") == "");
+    CHECK(translate("SELECT foo bar") == "{'WHAT':[['AS',['.foo'],'bar']]}");
     CHECK(translate("SELECT from where true") == "");
     CHECK(translate("SELECT `from` where true") == "{'WHAT':[['.from']],'WHERE':true}");
 
