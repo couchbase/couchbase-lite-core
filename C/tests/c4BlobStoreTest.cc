@@ -208,7 +208,8 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][Encryptio
 
     {
         ExpectingExceptions x;
-        CHECK( c4blob_openReadStream(store, bogusKey, WITH_ERROR(&error)) == nullptr);
+        CHECK( c4blob_openReadStream(store, bogusKey, &error) == nullptr);
+        CHECK( error == C4Error{LiteCoreDomain, kC4ErrorNotFound});
     }
 
     char buf[10000];

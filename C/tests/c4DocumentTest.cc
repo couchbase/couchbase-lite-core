@@ -763,18 +763,16 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
     {
         C4Log("Begin conflicting save");
         TransactionHelper t(db);
-        REQUIRE(c4doc_update(doc2, json2fleece("{'ok':'no way'}"), 0, WITH_ERROR(&error)) == nullptr);
-        CHECK(error.domain == LiteCoreDomain);
-        CHECK(error.code == kC4ErrorConflict);
+        REQUIRE(c4doc_update(doc2, json2fleece("{'ok':'no way'}"), 0, &error) == nullptr);
+        CHECK(error == C4Error{LiteCoreDomain, kC4ErrorConflict});
     }
 
     // Try to create a new doc with the same ID, which will fail:
     {
         C4Log("Begin conflicting create");
         TransactionHelper t(db);
-        REQUIRE(c4doc_create(db, kDocID, json2fleece("{'ok':'no way'}"), 0, WITH_ERROR(&error)) == nullptr);
-        CHECK(error.domain == LiteCoreDomain);
-        CHECK(error.code == kC4ErrorConflict);
+        REQUIRE(c4doc_create(db, kDocID, json2fleece("{'ok':'no way'}"), 0, &error) == nullptr);
+        CHECK(error == C4Error{LiteCoreDomain, kC4ErrorConflict});
     }
 
     c4doc_release(doc);

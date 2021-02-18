@@ -215,7 +215,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     // TODO: Observer
     
     // Get a nonexistent document:
-    REQUIRE(c4doc_get(db, C4STR("nonexistent"), true, WITH_ERROR(&c4err)) == NULL);
+    REQUIRE(c4doc_get(db, C4STR("nonexistent"), true, &c4err) == NULL);
     REQUIRE(c4err.domain == LiteCoreDomain);
     REQUIRE(c4err.code == kC4ErrorNotFound);
     

@@ -99,8 +99,8 @@ namespace c4Internal {
         static ErrorInfo* _get(const C4Error &error) noexcept;
         static uint32_t _add(C4Error &error, ErrorInfo&&) noexcept;
 
-        static inline uint32_t         sTableStart;    // internal_info of 1st item in table
-        static inline mutex            sMutex;         // mutex guarding the other data
+        static inline uint32_t         sTableStart = 1;     // internal_info of 1st item in table
+        static inline mutex            sMutex;              // mutex guarding the other data
     };
 
 
@@ -109,6 +109,8 @@ namespace c4Internal {
 
     __cold
     ErrorInfo* ErrorInfo::_get(const C4Error &error) noexcept {
+        if (error.internal_info == 0)
+            return nullptr;
         lock_guard<mutex> lock(sMutex);
         int32_t index = error.internal_info - sTableStart;
         if (index >= 0 && index < sTable.size())

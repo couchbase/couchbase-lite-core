@@ -416,7 +416,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query N1QL parse error", "[Query][C][N1QL
     C4Error error;
     {
         ExpectingExceptions x;
-        CHECK(c4query_new2(db, kC4N1QLQuery, "SELECT foo bar"_sl, &errPos, WITH_ERROR(&error)) == nullptr);
+        CHECK(c4query_new2(db, kC4N1QLQuery, "SELECT foo bar"_sl, &errPos, &error) == nullptr);
     }
     CHECK(errPos == 11);
     CHECK(error.domain == LiteCoreDomain);
@@ -833,11 +833,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
     REQUIRE(docID == "0000073"_sl);
     {
         ExpectingExceptions ex;
-        REQUIRE(!c4queryenum_seek(e, 100, WITH_ERROR(&error)));
+        REQUIRE(!c4queryenum_seek(e, 100, &error));
     }
     
-    CHECK(error.code == kC4ErrorInvalidParameter);
-    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error == C4Error{LiteCoreDomain, kC4ErrorInvalidParameter});
     c4queryenum_release(e);
 }
 
