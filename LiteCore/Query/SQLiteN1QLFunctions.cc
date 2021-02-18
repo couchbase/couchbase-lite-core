@@ -347,8 +347,8 @@ namespace litecore {
 
         bool equalNumbers(double d, int64_t i) {
             if (modf(d, &d) != 0.0 ||
-                d < numeric_limits<int64_t>::min() ||
-                d >= numeric_limits<int64_t>::max()) {
+                d <  (double)numeric_limits<int64_t>::min() ||
+                d >= (double)numeric_limits<int64_t>::max()) {
                 return false;
             } else {
                 return (int64_t)d == i;
