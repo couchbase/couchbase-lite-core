@@ -1,5 +1,5 @@
 //
-// VersionedDocument.hh
+// RevTreeRecord.hh
 //
 // Copyright (c) 2014 Couchbase, Inc All rights reserved.
 //
@@ -32,34 +32,37 @@ namespace litecore {
     class Transaction;
 
     /** Manages storage of a serialized RevTree in a Record. */
-    class VersionedDocument : public RevTree {
+    class RevTreeRecord : public RevTree {
     public:
 
-        VersionedDocument(KeyStore&, slice docID);
-        VersionedDocument(KeyStore&, const Record&);
+        RevTreeRecord(KeyStore&, slice docID, ContentOption =kEntireBody);
+        RevTreeRecord(KeyStore&, const Record&);
 
-        VersionedDocument(const VersionedDocument&);
-        ~VersionedDocument();
+        RevTreeRecord(const RevTreeRecord&);
+        ~RevTreeRecord();
 
         /** Reads and parses the body of the record. Useful if doc was read as meta-only. */
-        void read();
+        void read(ContentOption);
 
         /** Returns false if the record was loaded metadata-only. Revision accessors will fail. */
-        bool revsAvailable() const {return !_unknown;}
+        bool revsAvailable() const          {return _contentLoaded == kEntireBody;}
+        bool currentRevAvailable() const    {return _contentLoaded >= kCurrentRevOnly;}
 
-        const alloc_slice& docID() const {return _rec.key();}
-        revid revID() const         {return revid(_rec.version());}
-        DocumentFlags flags() const {return _rec.flags();}
-        bool isDeleted() const      {return (flags() & DocumentFlags::kDeleted) != 0;}
-        bool isConflicted() const   {return (flags() & DocumentFlags::kConflicted) != 0;}
-        bool hasAttachments() const {return (flags() & DocumentFlags::kHasAttachments) != 0;}
+        slice currentRevBody();
 
-        bool exists() const         {return _rec.exists();}
-        sequence_t sequence() const {return _rec.sequence();}
+        const alloc_slice& docID() const FLPURE {return _rec.key();}
+        revid revID() const FLPURE         {return revid(_rec.version());}
+        DocumentFlags flags() const FLPURE {return _rec.flags();}
+        bool isDeleted() const FLPURE      {return (flags() & DocumentFlags::kDeleted) != 0;}
+        bool isConflicted() const FLPURE   {return (flags() & DocumentFlags::kConflicted) != 0;}
+        bool hasAttachments() const FLPURE {return (flags() & DocumentFlags::kHasAttachments) != 0;}
 
-        const Record& record() const    {return _rec;}
+        bool exists() const FLPURE         {return _rec.exists();}
+        sequence_t sequence() const FLPURE {return _rec.sequence();}
 
-        bool changed() const        {return _changed;}
+        const Record& record() const FLPURE    {return _rec;}
+
+        bool changed() const FLPURE        {return _changed;}
 
         enum SaveResult {kConflict, kNoNewSequence, kNewSequence};
         SaveResult save(Transaction& transaction);
@@ -68,8 +71,8 @@ namespace litecore {
 
         fleece::Retained<fleece::impl::Doc> fleeceDocFor(slice) const;
 
-        /** Given a Fleece Value, finds the VersionedDocument it belongs to. */
-        static VersionedDocument* containing(const fleece::impl::Value*);
+        /** Given a Fleece Value, finds the RevTreeRecord it belongs to. */
+        static RevTreeRecord* containing(const fleece::impl::Value*);
 
         /** A pointer for clients to use */
         void* owner {nullptr};
@@ -88,12 +91,12 @@ namespace litecore {
         class VersFleeceDoc : public fleece::impl::Doc {
         public:
             VersFleeceDoc(const alloc_slice &fleeceData, fleece::impl::SharedKeys* sk,
-                         VersionedDocument *document_)
+                         RevTreeRecord *document_)
             :fleece::impl::Doc(fleeceData, Doc::kDontParse, sk)
             ,document(document_)
             { }
 
-            VersionedDocument* const document;
+            RevTreeRecord* const document;
         };
 
         void decode();
@@ -103,5 +106,6 @@ namespace litecore {
         KeyStore&       _store;
         Record          _rec;
         std::vector<Retained<VersFleeceDoc>> _fleeceScopes;
+        ContentOption   _contentLoaded;
     };
 }

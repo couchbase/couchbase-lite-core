@@ -9,6 +9,7 @@
 #include "DataFile.hh"
 #include "access_lock.hh"
 #include "function_ref.hh"
+#include <mutex>
 #include <vector>
 
 namespace c4Internal {
@@ -43,7 +44,6 @@ namespace litecore {
         void removeTransactionObserver(TransactionObserver* NONNULL);
 
     private:
-        slice fleeceAccessor(slice recordBody) const override;
         alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         void externalTransactionCommitted(const SequenceTracker &sourceTracker) override;
         void notifyTransactionObservers();

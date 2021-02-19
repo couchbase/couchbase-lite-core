@@ -198,7 +198,7 @@ namespace litecore {
     }
 
 
-    Retained<RefCounted>  DataFile::addSharedObject(const string &key, Retained<RefCounted> object) {
+    Retained<RefCounted> DataFile::addSharedObject(const string &key, RefCounted *object) {
         return _shared->addSharedObject(key, object);
     }
 

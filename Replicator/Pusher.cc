@@ -44,10 +44,10 @@ namespace litecore { namespace repl {
             _passive = true;
             _proposeChanges = false;
             _proposeChangesKnown = true;
-        } else if (_options.properties[kC4ReplicatorOptionOutgoingConflicts].asBool()) {
-            // Outgoing conflicts allowed: try "changes" 1st, but server may force "proposeChanges"
+        } else if (_db->usingVersionVectors()) {
+            // Always use "changes" with version vectors
             _proposeChanges = false;
-            _proposeChangesKnown = false;
+            _proposeChangesKnown = true;
         } else {
             // Default: always send "proposeChanges"
             _proposeChanges = true;
@@ -76,6 +76,15 @@ namespace litecore { namespace repl {
             req->respondWithError({"LiteCore"_sl, 501, "Not implemented."_sl});
             return;
         }
+
+        slice versioning = req->property("versioning");
+        bool vv = _db->usingVersionVectors();
+        if ((vv && versioning != "version-vectors")
+                    || (!vv && versioning && versioning != "rev-trees")) {
+            req->respondWithError({"LiteCore"_sl, 501, "Incompatible document versioning."_sl});
+            return;
+        }
+
         C4SequenceNumber since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
         _changesFeed.setContinuous(_continuous);
@@ -221,18 +230,21 @@ namespace litecore { namespace repl {
             // Write the info array for this change:
             enc.beginArray();
             if (_proposeChanges) {
-                enc << change->docID << change->revID;
+                enc << change->docID;
+                encodeRevID(enc, change->revID);
                 slice remoteAncestorRevID = change->remoteAncestorRevID;
                 if (remoteAncestorRevID || change->bodySize > 0)
-                    enc << remoteAncestorRevID;
-                if (remoteAncestorRevID && c4rev_getGeneration(remoteAncestorRevID)
-                                                >= c4rev_getGeneration(change->revID)) {
+                    encodeRevID(enc, remoteAncestorRevID);
+                if (!_db->usingVersionVectors() && remoteAncestorRevID
+                                                && c4rev_getGeneration(remoteAncestorRevID)
+                                                            >= c4rev_getGeneration(change->revID)) {
                     warn("Proposed rev '%.*s' #%.*s has invalid ancestor %.*s",
                          SPLAT(change->docID), SPLAT(change->revID),
                          SPLAT(remoteAncestorRevID));
                 }
             } else {
-                enc << change->sequence << change->docID << change->revID;
+                enc << change->sequence << change->docID;
+                encodeRevID(enc, change->revID);
                 if (change->deleted() || change->bodySize > 0)
                     enc << change->deleted();
             }
@@ -259,6 +271,14 @@ namespace litecore { namespace repl {
     }
 
 
+    void Pusher::encodeRevID(Encoder &enc, slice revID) {
+        if (_db->usingVersionVectors() && revID.findByte('*'))
+            enc << _db->convertVersionToAbsolute(revID);
+        else
+            enc << revID;
+    }
+
+
     // Handles the peer's response to a "changes" or "proposeChanges" message:
     void Pusher::handleChangesResponse(RevToSendList &changes,
                                         MessageIn *reply,
@@ -270,27 +290,35 @@ namespace litecore { namespace repl {
                 changes.size(), changes.front()->sequence);
         }
         decrement(_changeListsInFlight);
-        _proposeChangesKnown = true;
         _changesFeed.setFindForeignAncestors(getForeignAncestors());
         if (!proposedChanges && reply->isError()) {
             auto err = reply->getError();
             if (err.code == 409 && (err.domain == "BLIP"_sl || err.domain == "HTTP"_sl)) {
-                // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
-                logInfo("Server requires 'proposeChanges'; retrying...");
-                _proposeChanges = true;
-                _changesFeed.setFindForeignAncestors(getForeignAncestors());
-                sendChanges(changes);
+                if (!_proposeChanges && !_proposeChangesKnown) {
+                    // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
+                    logInfo("Server requires 'proposeChanges'; retrying...");
+                    _proposeChanges = true;
+                    _changesFeed.setFindForeignAncestors(getForeignAncestors());
+                    sendChanges(changes);
+                } else {
+                    logError("Server does not allow '%s'; giving up",
+                             (_proposeChanges ? "proposeChanges" : "changes"));
+                    for(RevToSend* change : changes)
+                        doneWithRev(change, false, false);
+                    gotError(c4error_make(LiteCoreDomain, kC4ErrorRemoteError,
+                                "Incompatible with server replication protocol (changes)"_sl));
+                }
                 return;
             }
         }
+        _proposeChangesKnown = true;
 
         // Request another batch of changes from the db:
         maybeGetMoreChanges();
 
         if (reply->isError()) {
-            for(RevToSend* change : changes) {
+            for(RevToSend* change : changes)
                 doneWithRev(change, false, false);
-            }
             gotError(reply);
             return;
         }
@@ -323,23 +351,27 @@ namespace litecore { namespace repl {
     }
 
 
-    // Handles peer's response to a single rev in a "changes" message.
+    // Handles peer's response to a single rev in a "changes" message. Returns true if queued.
     bool Pusher::handleChangeResponse(RevToSend *change, Value response)
     {
-        // Entry in "changes" response is an array of known ancestors, or null to skip:
         if (Array ancestorArray = response.asArray(); ancestorArray) {
+            // Array of the peer's known ancestors:
             for (Value a : ancestorArray)
                 change->addRemoteAncestor(a.asString());
             _revQueue.push_back(change);
             return true;
+        } else if (int64_t status = response.asInt(); status != 0) {
+            // A nonzero integer is an error status, probably conflict:
+            return handleProposedChangeResponse(change, response);
         } else {
+            // Zero or null means the peer doesn't want the revision:
             doneWithRev(change, true, false);  // not queued, so we're done with it
             return false;
         }
     }
 
 
-    // Handles peer's response to a single rev in a "proposeChanges" message.
+    // Handles peer's response to a single rev in a "proposeChanges" message. Returns true if queued.
     bool Pusher::handleProposedChangeResponse(RevToSend *change, Value response)
     {
         bool completed = true, synced = false;
@@ -354,9 +386,14 @@ namespace litecore { namespace repl {
             synced = true;
         } else if (status == 409) {
             // 409 means a push conflict
-            logInfo("Proposed rev '%.*s' #%.*s (ancestor %.*s) conflicts with newer server revision",
-                    SPLAT(change->docID), SPLAT(change->revID),
-                    SPLAT(change->remoteAncestorRevID));
+            if (_proposeChanges) {
+                logInfo("Proposed rev '%.*s' #%.*s (ancestor %.*s) conflicts with newer server revision",
+                        SPLAT(change->docID), SPLAT(change->revID),
+                        SPLAT(change->remoteAncestorRevID));
+            } else {
+                logInfo("Rev '%.*s' #%.*s conflicts with newer server revision",
+                        SPLAT(change->docID), SPLAT(change->revID));
+            }
             if (_options.pull <= kC4Passive) {
                 C4Error error = c4error_make(WebSocketDomain, 409,
                                              "conflicts with newer server revision"_sl);
@@ -371,14 +408,20 @@ namespace litecore { namespace repl {
             }
         } else {
             // Other error:
-            logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
-                     SPLAT(change->docID), SPLAT(change->revID),
-                     SPLAT(change->remoteAncestorRevID), status);
+            if (_proposeChanges) {
+                logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
+                         SPLAT(change->docID), SPLAT(change->revID),
+                         SPLAT(change->remoteAncestorRevID), status);
+            } else {
+                logError("Rev '%.*s' #%.*s rejected with status %d",
+                         SPLAT(change->docID), SPLAT(change->revID), status);
+            }
             auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
             finishedDocumentWithError(change, err, !completed);
         }
 
-        doneWithRev(change, completed, synced);  // not queued, so we're done with it
+        // If I haven't returned true, above, then it's not queued so we're done with this rev:
+        doneWithRev(change, completed, synced);
         return false;
     }
 
@@ -392,11 +435,14 @@ namespace litecore { namespace repl {
         // None of this is relevant if there's no puller getting stuff from the server
         DebugAssert(_options.pull > kC4Passive);
 
+        if (!_proposeChanges)
+            return false;
+
         bool retry = false;
         _db->use([&](C4Database *db) {
             C4Error error;
-            c4::ref<C4Document> doc = c4doc_get(db, rev->docID, true, &error);
-            if (doc && doc->revID == rev->revID) {
+            c4::ref<C4Document> doc = c4db_getDoc(db, rev->docID, true, kDocGetAll, &error);
+            if (doc && c4rev_equal(doc->revID, rev->revID)) {
                 alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
                 if (foreignAncestor && foreignAncestor != rev->remoteAncestorRevID) {
                     // Remote ancestor has changed, so retry if it's not a conflict:
@@ -424,6 +470,7 @@ namespace litecore { namespace repl {
 
     // Notified (by the Puller) that the remote revision of a document has changed:
     void Pusher::_docRemoteAncestorChanged(alloc_slice docID, alloc_slice foreignAncestor) {
+        DebugAssert(_proposeChanges);   // Only used with proposeChanges mode
         if (status().level == kC4Stopped || !connected())
             return;
         auto i = _conflictsIMightRetry.find(docID);
@@ -435,7 +482,7 @@ namespace litecore { namespace repl {
             c4::ref<C4Document> doc = _db->use<C4Document*>([&](C4Database *db) {
                 return c4doc_getBySequence(db, rev->sequence, nullptr);
             });
-            if (!doc || doc->revID != rev->revID) {
+            if (!doc || !c4rev_equal(doc->revID, rev->revID)) {
                 // Local document has changed, so stop working on this revision:
                 logVerbose("Notified that remote rev of '%.*s' is now #%.*s, but local doc has changed",
                            SPLAT(docID), SPLAT(foreignAncestor));
@@ -549,8 +596,10 @@ namespace litecore { namespace repl {
         logInfo("%d documents failed to push and will be retried now", int(revsToRetry.size()));
         _caughtUp = false;
         if (immediate) {
-            for (const auto& revToRetry : revsToRetry)
+            for (const auto& revToRetry : revsToRetry) {
                 _pushingDocs.insert({revToRetry->docID, revToRetry});
+                addProgress({0, revToRetry->bodySize});
+            }
             _revQueue.insert(_revQueue.begin(), revsToRetry.begin(), revsToRetry.end());
         } else {
             ChangesFeed::Changes changes = {};

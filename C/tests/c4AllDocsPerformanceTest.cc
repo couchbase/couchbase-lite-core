@@ -42,7 +42,7 @@ public:
 
         
         C4Error error;
-        REQUIRE(c4db_beginTransaction(db, &error));
+        REQUIRE(c4db_beginTransaction(db, WITH_ERROR(&error)));
 
         for (unsigned i = 0; i < kNumDocuments; i++) {
             char docID[50];
@@ -51,7 +51,7 @@ public:
             sprintf(revID, "1-deadbeefcafebabe80081e50");
             char json[kSizeOfDocument+100];
             sprintf(json, "{\"content\":\"%s\"}", content);
-            C4SliceResult body = c4db_encodeJSON(db, c4str(json), &error);
+            C4SliceResult body = c4db_encodeJSON(db, c4str(json), ERROR_INFO(error));
             REQUIRE(body.buf);
 
             C4Slice history[1] = {isRevTrees() ? c4str("1-deadbeefcafebabe80081e50")
@@ -63,13 +63,13 @@ public:
             rq.historyCount = 1;
             rq.body = (C4Slice)body;
             rq.save = true;
-            auto doc = c4doc_put(db, &rq, nullptr, &error);
+            auto doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
             REQUIRE(doc);
             c4doc_release(doc);
             c4slice_free(body);
         }
 
-        REQUIRE(c4db_endTransaction(db, true, &error));
+        REQUIRE(c4db_endTransaction(db, true, WITH_ERROR(&error)));
         C4Log("Created %u docs", kNumDocuments);
 
         REQUIRE(c4db_getDocumentCount(db) == (uint64_t)kNumDocuments);
@@ -83,11 +83,11 @@ N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
     C4Error error;
-    auto e = c4db_enumerateAllDocs(db, &options, &error);
+    auto e = c4db_enumerateAllDocs(db, &options, ERROR_INFO(error));
     REQUIRE(e);
     C4Document* doc;
     unsigned i = 0;
-    while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
+    while (nullptr != (doc = c4enum_nextDocument(e, ERROR_INFO(error)))) {
         i++;
         c4doc_release(doc);
     }

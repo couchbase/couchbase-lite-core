@@ -25,48 +25,24 @@ using namespace fleece;
 namespace litecore {
 
     Record::Record(slice key)
-    :Record()
-    {
-        setKey(key);
-    }
-
-    Record::Record(alloc_slice key)
-    :Record()
-    {
-        setKey(key);
-    }
-
-    Record::Record(const Record &d)
-    :_key(d._key),
-     _version(d._version),
-     _body(d._body),
-     _bodySize(d._bodySize),
-     _sequence(d._sequence),
-     _flags(d._flags),
-     _exists(d._exists)
+    :_key(key)
     { }
 
-    Record::Record(Record &&d) noexcept
-    :_key(move(d._key)),
-     _version(move(d._version)),
-     _body(move(d._body)),
-     _bodySize(d._bodySize),
-     _sequence(d._sequence),
-     _flags(d._flags),
-     _exists(d._exists)
+    Record::Record(alloc_slice key)
+    :_key(move(key))
     { }
 
     void Record::clearMetaAndBody() noexcept {
-        setVersion(nullslice);
-        setBody(nullslice);
-        _bodySize = _sequence = 0;
+        _version = _body = _extra = nullslice;
+        _bodySize = _extraSize = _sequence = 0;
         _flags = DocumentFlags::kNone;
+        _contentLoaded = kMetaOnly;
         _exists = false;
     }
 
     void Record::clear() noexcept {
+        _key = nullslice;
         clearMetaAndBody();
-        setKey(nullslice);
     }
 
     uint64_t Record::bodyAsUInt() const noexcept {

@@ -21,7 +21,13 @@
 #include "SecureRandomize.hh"
 #include <algorithm>
 #include <chrono>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <set>
 #include <thread>
+#include <utility>
+#include <vector>
 
 #include "c4Test.hh"
 
@@ -37,9 +43,10 @@ public:
 
     static constexpr duration kLatency              = std::chrono::milliseconds(50);
 
+    slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
     ReplicatorLoopbackTest()
-    :C4Test(0)
+    :C4Test(GENERATE(0, 1))
     ,db2(createDatabase("2"))
     {
         // Change tuning param so that tests will actually create deltas, despite using small
@@ -47,6 +54,20 @@ public:
         litecore::repl::tuning::kMinBodySizeForDelta = 0;
         litecore::repl::Checkpoint::gWriteTimestamps = false;
         _clientProgressLevel = _serverProgressLevel = kC4ReplProgressOverall;
+
+        if (isRevTrees()) {
+            kNonLocalRev1ID = kRev1ID;
+            kNonLocalRev2ID = kRev2ID;
+            kNonLocalRev3ID = kRev3ID;
+            kConflictRev2AID = "2-2a2a2a2a"_sl;
+            kConflictRev2BID = "2-2b2b2b2b"_sl;
+        } else {
+            kNonLocalRev1ID = "1@cafe"_sl;
+            kNonLocalRev2ID = "2@cafe"_sl;
+            kNonLocalRev3ID = "3@cafe"_sl;
+            kConflictRev2AID = "1@babe1"_sl;
+            kConflictRev2BID = "1@babe2"_sl;
+        }
     }
 
     ~ReplicatorLoopbackTest() {
@@ -54,7 +75,7 @@ public:
             _parallelThread->join();
         _replClient = _replServer = nullptr;
         C4Error error;
-        REQUIRE(c4db_delete(db2, &error));
+        REQUIRE(c4db_delete(db2, WITH_ERROR(&error)));
         c4db_release(db2);
     }
 
@@ -111,11 +132,6 @@ public:
         CHECK(_gotResponse);
         CHECK(_statusChangedCalls > 0);
         CHECK(_statusReceived.level == kC4Stopped);
-        CHECK(_statusReceived.progress.unitsCompleted == _statusReceived.progress.unitsTotal);
-        if(_expectedUnitsComplete >= 0)
-            CHECK(_expectedUnitsComplete == _statusReceived.progress.unitsCompleted);
-        if (_expectedDocumentCount >= 0)
-            CHECK(_statusReceived.progress.documentCount == uint64_t(_expectedDocumentCount));
         CHECK(_statusReceived.error.code == _expectedError.code);
         if (_expectedError.code)
             CHECK(_statusReceived.error.domain == _expectedError.domain);
@@ -123,6 +139,11 @@ public:
         CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
         if (_checkDocsFinished)
             CHECK(asVector(_docsFinished) == asVector(_expectedDocsFinished));
+        CHECK(_statusReceived.progress.unitsCompleted == _statusReceived.progress.unitsTotal);
+        if(_expectedUnitsComplete >= 0)
+            CHECK(_expectedUnitsComplete == _statusReceived.progress.unitsCompleted);
+        if (_expectedDocumentCount >= 0)
+            CHECK(_statusReceived.progress.documentCount == uint64_t(_expectedDocumentCount));
     }
 
     void runPushReplication(C4ReplicatorMode mode =kC4OneShot) {
@@ -306,14 +327,14 @@ public:
             TransactionHelper t(resolvDB);
             C4Error error;
             // Get the local rev:
-            c4::ref<C4Document> doc = c4doc_get(resolvDB, rev->docID, true, &error);
+            c4::ref<C4Document> doc = c4db_getDoc(resolvDB, rev->docID, true, kDocGetAll, &error);
             if (!doc) {
                 WarnError("conflictHandler: Couldn't read doc '%.*s'", SPLAT(rev->docID));
                 Assert(false, "conflictHandler: Couldn't read doc");
             }
             alloc_slice localRevID = doc->selectedRev.revID;
             C4RevisionFlags localFlags = doc->selectedRev.flags;
-            slice localBody = doc->selectedRev.body;
+            FLDict localBody = c4doc_getProperties(doc);
             // Get the remote rev:
             if (!c4doc_selectNextLeafRevision(doc, true, false, &error)) {
                 WarnError("conflictHandler: Couldn't get conflicting revision of '%.*s'", SPLAT(rev->docID));
@@ -340,17 +361,18 @@ public:
 
             // Resolve. The remote rev has to win, in that it has to stay on the main branch, to avoid
             // conflicts with the server. But if we want the local copy to really win, we use its body:
-            slice mergedBody;
+            FLDict mergedBody = nullptr;
             C4RevisionFlags mergedFlags = remoteFlags;
             if (remoteWins) {
                 mergedBody = localBody;
                 mergedFlags = localFlags;
             }
-            if (!c4doc_resolveConflict(doc, remoteRevID, localRevID,
+            if (!c4doc_resolveConflict2(doc, remoteRevID, localRevID,
                                         mergedBody, mergedFlags, &error)) {
                 WarnError("conflictHandler: c4doc_resolveConflict failed in '%.*s'", SPLAT(rev->docID));
                 Assert(false, "conflictHandler: c4doc_resolveConflict failed");
             }
+            Assert((doc->flags & kDocConflicted) == 0);
             if (!c4doc_save(doc, 0, &error)) {
                 WarnError("conflictHandler: c4doc_save failed in '%.*s'", SPLAT(rev->docID));
                 Assert(false, "conflictHandler: c4doc_save failed");
@@ -373,7 +395,7 @@ public:
         std::this_thread::sleep_for(interval);
     }
 
-    static int addDocs(C4Database *db, duration interval, int total) {
+    int addDocs(C4Database *db, duration interval, int total) {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         int docNo = 1;
         for (int i = 1; docNo <= total; i++) {
@@ -385,7 +407,7 @@ public:
             for (int j = 0; j < 2*i; j++) {
                 char docID[20];
                 sprintf(docID, "newdoc%d", docNo++);
-                createRev(db, c4str(docID), "1-11"_sl, kFleeceBody);
+                createRev(db, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             }
             Assert(t.commit(&err));
         }
@@ -407,7 +429,7 @@ public:
             Assert(t.begin(&err));
             string revID;
             if (useFakeRevIDs) {
-                revID = format("%d-ffff", revNo);
+                revID = isRevTrees() ? format("%d-ffff", revNo) : format("%d@*", revNo);
                 createRev(db, docID, slice(revID), alloc_slice(kFleeceBody));
             } else {
                 string json = format("{\"db\":\"%p\",\"i\":%d}", db, revNo);
@@ -446,24 +468,28 @@ public:
 #pragma mark - VALIDATION:
 
 
-#define fastREQUIRE(EXPR)  if (EXPR) ; else REQUIRE(EXPR)       // REQUIRE() is kind of expensive
-
-    static inline fleece::Doc getFleeceDoc(C4Document *doc) {
-        return fleece::Doc(c4doc_createFleeceDoc(doc), false);
+    alloc_slice absoluteRevID(C4Document *doc) {
+        if (isRevTrees())
+            return alloc_slice(doc->revID);
+        else
+            return alloc_slice(c4doc_getRevisionHistory(doc, 999, nullptr, 0));
     }
+
+
+#define fastREQUIRE(EXPR)  if (EXPR) ; else REQUIRE(EXPR)       // REQUIRE() is kind of expensive
 
     void compareDocs(C4Document *doc1, C4Document *doc2) {
         const auto kPublicDocumentFlags = (kDocDeleted | kDocConflicted | kDocHasAttachments);
 
         fastREQUIRE(doc1->docID == doc2->docID);
-        fastREQUIRE(doc1->revID == doc2->revID);
+        fastREQUIRE(absoluteRevID(doc1) == absoluteRevID(doc2));
         fastREQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
 
         // Compare canonical JSON forms of both docs:
-        Doc rev1 = getFleeceDoc(doc1), rev2 = getFleeceDoc(doc2);
-        if (!rev1.root().isEqual(rev2.root())) {        // fast check to avoid expensive toJSON
-            alloc_slice json1 = rev1.root().toJSON(true, true);
-            alloc_slice json2 = rev2.root().toJSON(true, true);
+        Dict rev1 = c4doc_getProperties(doc1), rev2 = c4doc_getProperties(doc2);
+        if (!rev1.isEqual(rev2)) {        // fast check to avoid expensive toJSON
+            alloc_slice json1 = rev1.toJSON(true, true);
+            alloc_slice json2 = rev2.toJSON(true, true);
             CHECK(json1 == json2);
         }
     }
@@ -474,26 +500,26 @@ public:
         if (compareDeletedDocs)
             options.flags |= kC4IncludeDeleted;
         C4Error error;
-        c4::ref<C4DocEnumerator> e1 = c4db_enumerateAllDocs(db, &options, &error);
+        c4::ref<C4DocEnumerator> e1 = c4db_enumerateAllDocs(db, &options, ERROR_INFO(error));
         REQUIRE(e1);
-        c4::ref<C4DocEnumerator> e2 = c4db_enumerateAllDocs(db2, &options, &error);
+        c4::ref<C4DocEnumerator> e2 = c4db_enumerateAllDocs(db2, &options, ERROR_INFO(error));
         REQUIRE(e2);
 
         unsigned i = 0;
-        while (c4enum_next(e1, &error)) {
-            c4::ref<C4Document> doc1 = c4enum_getDocument(e1, &error);
+        while (c4enum_next(e1, ERROR_INFO(error))) {
+            c4::ref<C4Document> doc1 = c4enum_getDocument(e1, ERROR_INFO(error));
             fastREQUIRE(doc1);
             INFO("db document #" << i << ": '" << slice(doc1->docID).asString() << "'");
-            bool ok = c4enum_next(e2, &error);
+            bool ok = c4enum_next(e2, ERROR_INFO(error));
             fastREQUIRE(ok);
-            c4::ref<C4Document> doc2 = c4enum_getDocument(e2, &error);
+            c4::ref<C4Document> doc2 = c4enum_getDocument(e2, ERROR_INFO(error));
             fastREQUIRE(doc2);
             compareDocs(doc1, doc2);
             ++i;
         }
         REQUIRE(error.code == 0);
         if (!db2MayHaveMoreDocs) {
-            REQUIRE(!c4enum_next(e2, &error));
+            REQUIRE(!c4enum_next(e2, ERROR_INFO(error)));
             REQUIRE(error.code == 0);
         }
     }
@@ -511,7 +537,7 @@ public:
         c4::ref<C4RawDocument> doc( c4raw_get(database,
                                               storeName,
                                               _checkpointID,
-                                              &err) );
+                                              WITH_ERROR(&err)) );
         INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID) << "'; err = " << err.domain << "," << err.code);
         REQUIRE(doc);
         CHECK(doc->body == c4str(body));
@@ -537,7 +563,7 @@ public:
         REQUIRE( c4raw_put(database,
                            storeName,
                            _checkpointID,
-                           kC4SliceNull, kC4SliceNull, &err) );
+                           kC4SliceNull, kC4SliceNull, ERROR_INFO(&err)) );
     }
 
     template <class SET>

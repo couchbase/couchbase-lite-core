@@ -7,6 +7,7 @@
 #pragma once
 #include "ReplicatorTypes.hh"
 #include "Logging.hh"
+#include <atomic>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -36,7 +37,7 @@ namespace litecore::repl {
             virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) =0;
         };
 
-        ChangesFeed(Delegate&, Options&, access_lock<C4Database*> &db, Checkpointer*);
+        ChangesFeed(Delegate&, Options&, DBAccess &db, Checkpointer*);
 
         // Setup:
         void setContinuous(bool continuous)         {_continuous = continuous;}
@@ -83,7 +84,7 @@ namespace litecore::repl {
     protected:
         Delegate& _delegate;
         Options &_options;
-        access_lock<C4Database*>& _db;
+        DBAccess& _db;
         bool _getForeignAncestors {false};                  // True in propose-changes mode
     private:
         Checkpointer* _checkpointer;
@@ -110,5 +111,7 @@ namespace litecore::repl {
 
     protected:
         bool getRemoteRevID(RevToSend *rev NONNULL, C4Document *doc NONNULL) const override;
+    private:
+        const bool _usingVersionVectors;
     };
 }

@@ -139,8 +139,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[P
     params.pull = kC4Disabled;
     params.callbackContext = this;
     params.socketFactory = _socketFactory;
+    _remoteDBName = "something"_sl;
 
-    _repl = c4repl_new(db, _address, kC4SliceNull, params, &err);
+    _repl = c4repl_new(db, _address, _remoteDBName, params, ERROR_INFO(err));
+    CHECK(_repl);
     C4Log("---- Releasing C4Replicator ----");
     _repl = nullptr;
 }
@@ -231,7 +233,7 @@ __attribute__((no_sanitize("nullability-arg"))) // suppress breakpoint passing n
     C4Address addr {kC4Replicator2Scheme, C4STR("localhost"),  4984};
     C4ReplicatorParameters params {};
     params.pull = kC4OneShot;
-    c4::ref<C4Replicator> repl = c4repl_new(db, addr, C4STR("db"), params, &err);
+    c4::ref<C4Replicator> repl = c4repl_new(db, addr, C4STR("db"), params, ERROR_INFO(err));
     REQUIRE(repl);
 
     CHECK(!c4repl_setProgressLevel(nullptr, kC4ReplProgressPerAttachment, &err));
@@ -269,7 +271,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
     replicate(kC4OneShot, kC4Disabled);
     CHECK(_docsEnded == 1);
 
-    c4::ref<C4Document> doc = c4doc_get(db2, "doc"_sl, true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db2, "doc"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
 
     CHECK(doc->revID == kRev2ID);
@@ -393,11 +395,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
         FLEncoder_Free(e);
     }
 
-    _repl = c4repl_newLocal(db, (C4Database*)db2, params, &err);
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
+    REQUIRE(_repl);
 
     FLSliceResult_Release(options);
 
-    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, &err);
+    C4SliceResult encodedDocIDs = c4repl_getPendingDocIDs(_repl, ERROR_INFO(err));
     REQUIRE(encodedDocIDs != nullslice);
     FLArray docIDs = FLValue_AsArray(FLValue_FromData(C4Slice(encodedDocIDs), kFLTrusted));
     CHECK(FLArray_Count(docIDs) == expectedPending);
@@ -456,17 +459,17 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
         FLEncoder_Free(e);
     }
 
-    _repl = c4repl_newLocal(db, (C4Database*)db2, params, &err);
+    _repl = c4repl_newLocal(db, (C4Database*)db2, params, ERROR_INFO(err));
+    REQUIRE(_repl);
 
-    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, &err);
+    bool isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, ERROR_INFO(err));
     CHECK(isPending == expectedIsPending);
-    CHECK(err.code == 0);
 
     c4repl_start(_repl, false);
     while (c4repl_getStatus(_repl).level != kC4Stopped)
            this_thread::sleep_for(chrono::milliseconds(100));
 
-    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, &err);
+    isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, ERROR_INFO(err));
     CHECK(!isPending);
     CHECK(err.code == 0);
 }
@@ -479,7 +482,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
     createDB2();
     _mayGoOffline = true;
     C4Error err;
-    REQUIRE(startReplicator(kC4Continuous, kC4Continuous, &err));
+    REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR(&err)));
     waitForStatus(kC4Busy, 5s);
     
     C4ReplicatorActivityLevel expected = kC4Stopped;
@@ -582,7 +585,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pul
     
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Passive, kC4Continuous, &err));
+    REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
     this_thread::sleep_for(100ms);
     CHECK(c4repl_getStatus(_repl).level == kC4Connecting);
     
@@ -608,7 +611,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     _socketFactory = &factory;
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
-    REQUIRE(startReplicator(kC4Passive, kC4Continuous, &err));
+    REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
     
     waitForStatus(kC4Offline);
     
@@ -638,7 +641,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     };
 
     params.callbackContext = &docIDs;
-    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, &err);
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
     REQUIRE(repl);
 
     {
@@ -660,7 +663,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     CHECK(docIDs.empty());
     docIDs.clear();
 
-    REQUIRE(c4repl_setProgressLevel(repl, kC4ReplProgressPerDocument, &err));
+    REQUIRE(c4repl_setProgressLevel(repl, kC4ReplProgressPerDocument, WITH_ERROR(&err)));
 
     {
         TransactionHelper t(db2);

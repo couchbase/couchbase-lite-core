@@ -255,6 +255,12 @@ namespace litecore { namespace repl {
             _status.progressDelta += p;
             _status.progress += p;
             _statusChanged = true;
+#if DEBUG
+            if (_status.progress.unitsCompleted > _status.progress.unitsTotal)
+                warn("Adding progress %" PRIu64 "/%" PRIu64 " gives invalid result %" PRIu64 "/%" PRIu64 "",
+                     p.unitsCompleted, p.unitsTotal,
+                     _status.progress.unitsCompleted, _status.progress.unitsTotal);
+#endif
         }
     }
 

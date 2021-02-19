@@ -24,6 +24,8 @@
 #include "DataFile.hh"
 #include "Record.hh"
 #include "RecordEnumerator.hh"
+#include "RevID.hh"
+#include "VersionVector.hh"
 #include "Logging.hh"
 #include "InstanceCounted.hh"
 
@@ -39,17 +41,21 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
     C4DocEnumerator(C4Database *database,
                     sequence_t since,
                     const C4EnumeratorOptions &options)
-    :RecordEnumerator(database->defaultKeyStore(), since, recordOptions(options))
+    :RecordEnumerator(database->defaultKeyStore(), since, recordOptions(database, options))
     ,_database(database)
+    ,_options(options)
     { }
 
     C4DocEnumerator(C4Database *database,
                     const C4EnumeratorOptions &options)
-    :RecordEnumerator(database->defaultKeyStore(), recordOptions(options))
+    :RecordEnumerator(database->defaultKeyStore(), recordOptions(database, options))
     ,_database(database)
+    ,_options(options)
     { }
 
-    static RecordEnumerator::Options recordOptions(const C4EnumeratorOptions &c4options) {
+    static RecordEnumerator::Options recordOptions(C4Database *database,
+                                                   const C4EnumeratorOptions &c4options)
+    {
         RecordEnumerator::Options options;
         if (c4options.flags & kC4Descending)
             options.sortOption = kDescending;
@@ -59,6 +65,8 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
         options.onlyConflicts  = (c4options.flags & kC4IncludeNonConflicted) == 0;
         if ((c4options.flags & kC4IncludeBodies) == 0)
             options.contentOption = kMetaOnly;
+        else
+            options.contentOption = kEntireBody;
         return options;
     }
 
@@ -71,17 +79,26 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
     bool getDocInfo(C4DocumentInfo *outInfo) {
         if (!*this)
             return false;
+
+        revid vers(record().version());
+        if ((_options.flags & kC4IncludeRevHistory) && vers.isVersion())
+            _docRevID = vers.asVersionVector().asASCII();
+        else
+            _docRevID = vers.expanded();
+
         outInfo->docID = record().key();
-        outInfo->revID = _docRevID = _database->documentFactory().revIDFromVersion(record().version());
+        outInfo->revID = _docRevID;
         outInfo->flags = (C4DocumentFlags)record().flags() | kDocExists;
         outInfo->sequence = record().sequence();
         outInfo->bodySize = record().bodySize();
+        outInfo->metaSize = record().extraSize();
         outInfo->expiration = record().expiration();
         return true;
     }
 
 private:
     Retained<Database> _database;
+    C4EnumeratorOptions const _options;
     alloc_slice _docRevID;
 };
 

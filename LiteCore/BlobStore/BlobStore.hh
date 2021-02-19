@@ -33,8 +33,9 @@ namespace litecore {
         SHA1 digest;
 
         blobKey() { }
-        blobKey(slice);
-        blobKey(const std::string &base64);
+        blobKey(slice rawBytes);
+
+        static blobKey withBase64(slice base64, bool prefixed =true);
 
         bool readFromBase64(slice base64, bool prefixed =true);
         bool readFromFilename(std::string filename);
@@ -66,7 +67,7 @@ namespace litecore {
 
         alloc_slice contents() const    {return read()->readAll();}
 
-        std::unique_ptr<SeekableReadStream> read() const;
+        unique_ptr<SeekableReadStream> read() const;
 
         void del()                      {_path.del();}
 
@@ -106,7 +107,7 @@ namespace litecore {
     private:
         BlobStore &_store;
         FilePath _tmpPath;
-        std::shared_ptr<WriteStream> _writer;
+        shared_ptr<WriteStream> _writer;
         uint64_t _bytesWritten {0};
         SHA1Builder _sha1ctx;
         blobKey _key;

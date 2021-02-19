@@ -83,7 +83,7 @@ namespace litecore { namespace websocket {
                                        unique_ptr<net::ResponderSocket> socket)
     :BuiltInWebSocket(url, Role::Server, Parameters())
     {
-        _socket.reset(socket.release());
+        _socket = move(socket);
     }
 
 
@@ -414,8 +414,8 @@ namespace litecore { namespace websocket {
     void BuiltInWebSocket::sendBytes(alloc_slice bytes) {
         unique_lock<mutex> lock(_outboxMutex);
         bool first = _outbox.empty();
-        _outboxAlloced.push_back(bytes);
-        _outbox.push_back(bytes);
+        _outboxAlloced.emplace_back(bytes);
+        _outbox.emplace_back(bytes);
         if (first)
             awaitWriteable();
     }

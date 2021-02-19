@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "c4Base.h"
+#include "c4Document.h"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -38,7 +38,7 @@ extern "C" {
         C4HeapString docID;         ///< The document's ID
         C4HeapString revID;         ///< The latest revision ID (or null if doc was purged)
         C4SequenceNumber sequence;  ///< The latest sequence number (or 0 if doc was purged)
-        uint32_t bodySize;          ///< The size of the revision body in bytes
+        C4RevisionFlags flags;
     } C4DatabaseChange;
 
     /** Callback invoked by a database observer.

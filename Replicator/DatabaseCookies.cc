@@ -29,7 +29,7 @@ namespace litecore { namespace repl {
     static constexpr slice kCookieStoreDocID = "org.couchbase.cookies"_sl;
 
 
-    DatabaseCookies::DatabaseCookies(c4Database *db)
+    DatabaseCookies::DatabaseCookies(C4Database *db)
     :_db(db)
     {
         auto object = db->dataFile()->sharedObject("CookieStore");

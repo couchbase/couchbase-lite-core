@@ -18,10 +18,13 @@
 
 #pragma once
 #include "Base.hh"
-#include "FleeceImpl.hh"
-#include "Doc.hh"
 #include <optional>
 #include <string>
+
+namespace fleece::impl {
+    class Array;
+    class Doc;
+}
 
 namespace litecore {
 
@@ -43,13 +46,12 @@ namespace litecore {
         IndexSpec(std::string name_,
                   Type type_,
                   alloc_slice expressionJSON_,
-                  const Options* opt =nullptr)
-        :name(name_), type(type_), expressionJSON(expressionJSON_)
-        ,options(opt ? std::make_optional(*opt) : std::optional<Options>())
-        { }
+                  const Options* opt =nullptr);
 
         IndexSpec(const IndexSpec&) =delete;
-        IndexSpec(IndexSpec&&) =default;
+        IndexSpec(IndexSpec&&);
+
+        ~IndexSpec();
 
         void validateName() const;
 

@@ -40,10 +40,6 @@
 #define C4STR_TO_STDSTR(x) std::string((char*)x.buf, x.size)
 #define C4STR_TO_CSTR(x)   C4STR_TO_STDSTR(x).c_str()
 
-static char sErrorMessageBuffer[256];
-#define errorInfo(error) \
-    INFO("Error: " << c4error_getDescriptionC(error, sErrorMessageBuffer, sizeof(sErrorMessageBuffer)))
-
 static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
     return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
 }
@@ -69,18 +65,17 @@ public:
         REQUIRE(cmsg == &buf[0]);
     }
     
-    C4Document* getDoc(C4String docID){
-        return getDoc(db, docID);
+    C4Document* getDoc(C4String docID, C4DocContentLevel content =kDocGetCurrentRev) {
+        return getDoc(db, docID, content);
     }
     
-    C4Document* getDoc(C4Database* db, C4String docID){
-        C4Error error = {};
-        C4Document* doc = c4doc_get(db, docID, true, &error);
-        errorInfo(error);
+    C4Document* getDoc(C4Database* db,
+                       C4String docID,
+                       C4DocContentLevel content =kDocGetCurrentRev)
+    {
+        C4Document* doc = c4db_getDoc(db, docID, true, content, ERROR_INFO());
         REQUIRE(doc);
         REQUIRE(doc->docID == docID);
-        REQUIRE(error.domain == 0);
-        REQUIRE(error.code == 0);
         return doc;
     }
     
@@ -91,9 +86,7 @@ public:
     
     C4Document* putDoc(C4Database *db, C4Slice docID, C4Slice revID,
                        C4Slice body, C4RevisionFlags flags) {
-        C4Error error = {};
-        C4Document* doc = putDoc(db, docID, revID, body, flags, &error);
-        errorInfo(error);
+        C4Document* doc = putDoc(db, docID, revID, body, flags, ERROR_INFO());
         REQUIRE(doc);
         return doc;
     }
@@ -136,11 +129,8 @@ public:
                             C4Slice body, C4RevisionFlags flags) {
         C4Error error = {};
         C4Document* doc = forceInsert(db, docID, history, historyCount,
-                                      body, flags, &error);
-        errorInfo(error);
+                                      body, flags, ERROR_INFO(error));
         REQUIRE(doc);
-        REQUIRE(error.domain == 0);
-        REQUIRE(error.code == 0);
         return doc;
     }
     
@@ -177,7 +167,6 @@ public:
         C4Error error = {};
         C4Document* doc = putDoc(db, docID, revID, body, flags, &error);
         REQUIRE(doc == nullptr);
-        errorInfo(error);
         REQUIRE(error.domain == expected.domain);
         REQUIRE(error.code == expected.code);
     };
@@ -205,8 +194,8 @@ public:
     void verifyRev(C4Document* doc, const C4String* history, int historyCount, C4String body){
         REQUIRE(doc->revID == history[0]);
         REQUIRE(doc->selectedRev.revID == history[0]);
-        REQUIRE(doc->selectedRev.body == body);
-        
+        REQUIRE(docBodyEquals(doc, body));
+
         std::vector<alloc_slice> revs = getAllParentRevisions(doc);
         REQUIRE(revs.size() == historyCount);
         for(int i = 0; i < historyCount; i++)
@@ -240,27 +229,27 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4doc_release(doc);
     
     // Read it back:
-    doc = c4doc_get(db, docID, true, &c4err);
+    doc = c4doc_get(db, docID, true, ERROR_INFO(&c4err));
     REQUIRE(doc);
     REQUIRE(doc->docID == docID);
     REQUIRE(doc->selectedRev.revID == revID1);
-    REQUIRE(doc->selectedRev.body == body);
+    REQUIRE(docBodyEquals(doc, body));
     c4doc_release(doc);
     
     // Now update it:
     doc = putDoc(docID, revID1, updatedBody, kRevKeepBody);
     REQUIRE(doc->docID == docID);
-    REQUIRE(doc->selectedRev.body == updatedBody);
+    REQUIRE(docBodyEquals(doc, updatedBody));
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "2-") == 0);
     alloc_slice revID2 = doc->revID;
     c4doc_release(doc);
     
     // Read it back:
-    doc = c4doc_get(db, docID, true, &c4err);
+    doc = c4doc_get(db, docID, true, ERROR_INFO(&c4err));
     REQUIRE(doc);
     REQUIRE(doc->docID == docID);
     REQUIRE(doc->selectedRev.revID == revID2);
-    REQUIRE(doc->selectedRev.body == updatedBody);
+    REQUIRE(docBodyEquals(doc, updatedBody));
     c4doc_release(doc);
     
     // Try to update the first rev, which should fail:
@@ -271,10 +260,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     
     // Check the changes feed, with and without filters:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    C4DocEnumerator* e = c4db_enumerateChanges(db, 0, &options, &c4err);
+    C4DocEnumerator* e = c4db_enumerateChanges(db, 0, &options, ERROR_INFO(&c4err));
     REQUIRE(e);
     C4SequenceNumber seq = 2;
-    while (nullptr != (doc = c4enum_nextDocument(e, &c4err))) {
+    while (nullptr != (doc = c4enum_nextDocument(e, ERROR_INFO(&c4err)))) {
         REQUIRE(doc->selectedRev.sequence == seq);
         REQUIRE(doc->selectedRev.revID == revID2);
         REQUIRE(doc->docID == docID);
@@ -302,14 +291,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4doc_release(doc);
     
     // Read the deletion revision:
-    doc = c4doc_get(db, docID, true, &c4err);
+    doc = c4doc_get(db, docID, true, ERROR_INFO(&c4err));
     REQUIRE(doc);
-    REQUIRE(doc->docID == docID);
-    REQUIRE(doc->revID == revID3);
-    REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
-    REQUIRE(doc->selectedRev.revID == revID3);
-    REQUIRE(doc->selectedRev.body != kC4SliceNull);  // valid revision should not have null body
-    REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
+    CHECK(doc->docID == docID);
+    CHECK(doc->revID == revID3);
+    CHECK(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    CHECK(doc->selectedRev.revID == revID3);
+    CHECK(c4doc_getProperties(doc) != nullptr);  // valid revision should not have null body
+    CHECK(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
     c4doc_release(doc);
     
     // Delete nonexistent doc:
@@ -321,11 +310,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     
     // Check the changes feed again after the deletion:
     // without deleted -> 0
-    c4err = {};
-    e = c4db_enumerateChanges(db, 0, &options, &c4err);
+    e = c4db_enumerateChanges(db, 0, &options, ERROR_INFO(&c4err));
     REQUIRE(e);
     seq = 3;
-    while (nullptr != (doc = c4enum_nextDocument(e, &c4err))) {
+    while (nullptr != (doc = c4enum_nextDocument(e, ERROR_INFO(&c4err)))) {
         c4doc_release(doc);
         seq++;
     }
@@ -333,12 +321,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4enum_free(e);
     
     // with deleted -> 1
-    c4err = {};
     options.flags |= kC4IncludeDeleted;
-    e = c4db_enumerateChanges(db, 0, &options, &c4err);
+    e = c4db_enumerateChanges(db, 0, &options, ERROR_INFO(&c4err));
     REQUIRE(e);
     seq = 3;
-    while (nullptr != (doc = c4enum_nextDocument(e, &c4err))) {
+    while (nullptr != (doc = c4enum_nextDocument(e, ERROR_INFO(&c4err)))) {
         REQUIRE(doc->selectedRev.sequence == seq);
         REQUIRE(doc->selectedRev.revID == revID3);
         REQUIRE(doc->docID == docID);
@@ -349,7 +336,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4enum_free(e);
     
     // Check the revision-history object (_revisions property):
-    doc = c4doc_get(db, docID, true, &c4err);
+    doc = c4db_getDoc(db, docID, true, kDocGetAll, ERROR_INFO(&c4err));
     REQUIRE(doc);
     int latest = 3;
     do{
@@ -378,25 +365,20 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     // + (NSDictionary*) makeRevisionHistoryDict: (NSArray<CBL_RevID*>*)history
     
     // Read rev 2 again:
-    c4err = {};
-    doc = c4doc_get(db, docID, true, &c4err);
+    doc = c4doc_get(db, docID, true, ERROR_INFO(&c4err));
     REQUIRE(doc);
-    c4err = {};
-    CHECK(c4doc_selectRevision(doc, revID2, true, &c4err));
+    CHECK(c4doc_selectRevision(doc, revID2, true, WITH_ERROR(&c4err)));
     REQUIRE(doc->selectedRev.revID == revID2);
-    REQUIRE(doc->selectedRev.body == updatedBody);
+    REQUIRE(docBodyEquals(doc, updatedBody));
     c4doc_release(doc);
     
     // Compact the database:
-    c4err = {};
-    REQUIRE(c4db_maintenance(db, kC4Compact, &c4err));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR(&c4err)));
     
     // Make sure old rev is missing:
-    c4err = {};
-    doc = c4doc_get(db, docID, true, &c4err);
+    doc = c4doc_get(db, docID, true, ERROR_INFO(&c4err));
     REQUIRE(doc);
-    c4err = {};
-    REQUIRE(c4doc_selectRevision(doc, revID2, true, &c4err));
+    REQUIRE(c4doc_selectRevision(doc, revID2, true, WITH_ERROR(&c4err)));
     REQUIRE(doc->selectedRev.revID == revID2);
     // TODO: c4db_compact() implementation is still work in progress.
     //       Following line should be activated after implementation.
@@ -404,7 +386,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4doc_release(doc);
     
     // Make sure history still works after compaction:
-    doc = c4doc_get(db, docID, true, &c4err);
+    doc = c4db_getDoc(db, docID, true, kDocGetAll, ERROR_INFO(&c4err));
     REQUIRE(doc);
     latest = 3;
     do{
@@ -442,10 +424,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "EmptyDoc", "[Database][C]") {
     
     C4Error error = {};
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    C4DocEnumerator *e = c4db_enumerateAllDocs(db, &options, &error);
+    C4DocEnumerator *e = c4db_enumerateAllDocs(db, &options, ERROR_INFO(error));
     REQUIRE(e);
     C4SequenceNumber seq = 1;
-    while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
+    while (nullptr != (doc = c4enum_nextDocument(e, ERROR_INFO(error)))) {
         REQUIRE(doc->selectedRev.sequence == seq);
         REQUIRE(doc->docID == docID);
         c4doc_release(doc);
@@ -507,12 +489,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
     // NOTE: LiteCore level c4doc_get() return non-null document, but
     //       higher level should return null.
     C4Error error = {};
-    doc = c4doc_get(db, docID, true, &error);
+    doc = c4doc_get(db, docID, true, ERROR_INFO(error));
     REQUIRE(doc);
-    REQUIRE(c4doc_selectRevision(doc, revID2, true, &error));
+    REQUIRE(c4doc_selectRevision(doc, revID2, true, WITH_ERROR(error)));
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
-    REQUIRE(doc->selectedRev.body == body2);
+    REQUIRE(docBodyEquals(doc, body2));
     c4doc_release(doc);
     
     // Make sure it's possible to create the doc from scratch again:
@@ -521,7 +503,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
     alloc_slice revID3 = doc->revID;
     c4doc_release(doc);
     
-    doc = c4doc_get(db, docID, true, &error);
+    doc = c4doc_get(db, docID, true, ERROR_INFO(error));
     REQUIRE(doc);
     REQUIRE(doc->revID == revID3);
     c4doc_release(doc);
@@ -534,9 +516,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     if(!isRevTrees()) return;
     
     // Create a document:
-    C4Document* doc = putDoc(C4STR("dock"), kC4SliceNull, C4STR("{'property':'value'}"));
+    alloc_slice body = encodeBodyIfJSON("{'property':'value'}"_sl);
+    C4Document* doc = putDoc(C4STR("dock"), kC4SliceNull, body);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "1-") == 0);
-    alloc_slice body(doc->selectedRev.body);
     alloc_slice revID1 = doc->revID;
     c4doc_release(doc);
     
@@ -545,14 +527,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "2-") == 0);
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
-    REQUIRE(doc->selectedRev.body != kC4SliceNull);  // valid revision should not have null body
+    REQUIRE(c4doc_getProperties(doc) != nullptr);  // valid revision should not have null body
     alloc_slice revID2 = doc->revID;
     c4doc_release(doc);
     
     // Recreate a document with same content with revision 1
-    doc = putDoc(C4STR("dock"), revID2, body);
+    doc = putDoc(C4STR("dock"), revID2, "{'property':'value'}"_sl);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "3-") == 0);
-    REQUIRE(doc->selectedRev.body == body);
+    REQUIRE(docBodyEquals(doc, body));
     c4doc_release(doc);
 }
 
@@ -574,7 +556,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
 
     REQUIRE(c4db_getDocumentCount(db) == 1);
     
-    C4Document* doc = getDoc(docID);
+    C4Document* doc = getDoc(docID, kDocGetAll);
     verifyRev(doc, history, historyCount, body);
     c4doc_release(doc);
 
@@ -598,7 +580,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     // in other words the oldest revision always wins the conflict; it has nothing to do with the
     // revIDs.
     REQUIRE(c4db_getDocumentCount(db) == 1);
-    doc = getDoc(docID);
+    doc = getDoc(docID, kDocGetAll);
     verifyRev(doc, history, historyCount, body);
     c4doc_release(doc);
     //TODO - conflict check
@@ -611,14 +593,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     forceInsert(otherDocID, otherHistory, otherHistoryCount, otherBody);
 
     // Fetch one of those phantom revisions with no body:
-    doc = getDoc(docID);
+    doc = getDoc(docID, kDocGetAll);
     C4Error error = {};
-    REQUIRE(c4doc_selectRevision(doc, C4STR("2-2222"), false, &error));
+    REQUIRE(c4doc_selectRevision(doc, C4STR("2-2222"), false, WITH_ERROR(&error)));
     REQUIRE_FALSE((doc->selectedRev.flags & (C4RevisionFlags)(kRevKeepBody)));
-    REQUIRE(doc->selectedRev.body == kC4SliceNull);
+    REQUIRE(c4doc_getProperties(doc) == nullptr);
     c4doc_release(doc);
 
-    doc = getDoc(otherDocID);
+    doc = getDoc(otherDocID, kDocGetAll);
     REQUIRE_FALSE(c4doc_selectRevision(doc, C4STR("666-6666"), false, &error));
     REQUIRE(error.domain == LiteCoreDomain);
     REQUIRE(error.code == kC4ErrorNotFound);
@@ -635,7 +617,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     c4doc_release(doc);
     
     // Check that the list of conflicts is accurate:
-    doc = getDoc(docID);
+    doc = getDoc(docID, kDocGetAll);
     std::vector<alloc_slice> conflictingRevs = getRevisionHistory(doc, true, true);
     REQUIRE(conflictingRevs.size() == 2);
     REQUIRE(conflictingRevs[0] == history[0]);
@@ -644,10 +626,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     
     // Get the _changes feed and verify only the winner is in it:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    C4DocEnumerator* e = c4db_enumerateChanges(db, 0, &options, &error);
+    C4DocEnumerator* e = c4db_enumerateChanges(db, 0, &options, ERROR_INFO(error));
     REQUIRE(e);
     int counter = 0;
-    while(c4enum_next(e, &error)){
+    while(c4enum_next(e, ERROR_INFO(error))){
         C4DocumentInfo docInfo;
         c4enum_getDocumentInfo(e, &docInfo);
         if(counter == 0){
@@ -664,11 +646,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     
     options = kC4DefaultEnumeratorOptions;
     options.flags |= kC4IncludeDeleted;
-    e = c4db_enumerateChanges(db, 0, &options, &error);
+    e = c4db_enumerateChanges(db, 0, &options, ERROR_INFO(error));
     REQUIRE(e);
     counter = 0;
-    while (c4enum_next(e, &error)) {
-        doc = c4enum_getDocument(e, &error);
+    while (c4enum_next(e, ERROR_INFO(error))) {
+        doc = c4enum_getDocument(e, ERROR_INFO(error));
         if (!doc)
             break;
         do{
@@ -676,15 +658,15 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
             if(counter == 0){
                 REQUIRE(doc->docID == docID);
                 REQUIRE(doc->selectedRev.revID == history[0]);
-                REQUIRE(c4SliceEqual(doc->selectedRev.body, body));
+                REQUIRE(docBodyEquals(doc, body));
             }else if(counter == 1){
                 REQUIRE(doc->docID == docID);
                 REQUIRE(doc->selectedRev.revID == conflictHistory[0]);
-                REQUIRE(c4SliceEqual(doc->selectedRev.body, conflictBody));
+                REQUIRE(docBodyEquals(doc, conflictBody));
             }else if(counter == 2){
                 REQUIRE(doc->docID == otherDocID);
                 REQUIRE(doc->selectedRev.revID == otherHistory[0]);
-                REQUIRE(c4SliceEqual(doc->selectedRev.body, otherBody));
+                REQUIRE(docBodyEquals(doc, otherBody));
             }
             counter++;
         }while(c4doc_selectNextLeafRevision(doc, true, true, &error));
@@ -697,7 +679,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     // Verify that compaction leaves the document history:
     // TODO: compact() is not fully implemented
 //    error = {};
-//    REQUIRE(c4db_compact(db, &error));
+//    REQUIRE(c4db_compact(db, WITH_ERROR(ERROR_INFO(error))));
 
     // Delete the current winning rev, leaving the other one:
     doc = putDoc(docID, conflictHistory[0], kC4SliceNull, kRevDeleted);
@@ -788,10 +770,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DuplicateRev", "[Database][C]") 
         rq.revFlags = 0;
         rq.save = true;
         C4Error error = {};
-        doc = c4doc_put(db, &rq, nullptr, &error);
+        doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
         REQUIRE(doc->docID == docID);
-        REQUIRE(error.domain == 0);
-        REQUIRE(error.code == 0);
     }
     alloc_slice revID2b = doc->revID;
     c4doc_release(doc);

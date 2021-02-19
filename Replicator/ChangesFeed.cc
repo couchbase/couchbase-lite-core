@@ -28,6 +28,7 @@
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
 #include "c4Observer.h"
+#include "RevID.hh"
 #include "fleece/Fleece.hh"
 #include <cinttypes>
 
@@ -38,7 +39,7 @@ namespace litecore { namespace repl {
 
 
     ChangesFeed::ChangesFeed(Delegate &delegate, Options &options,
-                             access_lock<C4Database*> &db, Checkpointer *checkpointer)
+                             DBAccess &db, Checkpointer *checkpointer)
     :Logging(SyncLog)
     ,_delegate(delegate)
     ,_options(options)
@@ -118,6 +119,8 @@ namespace litecore { namespace repl {
             options.flags &= ~kC4IncludeBodies;
         if (!_skipDeleted)
             options.flags |= kC4IncludeDeleted;
+        if (_db.usingVersionVectors())
+            options.flags |= kC4IncludeRevHistory;
 
         _db.use([&](C4Database* db) {
             c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _maxSequence, &options, &changes.err);
@@ -175,8 +178,8 @@ namespace litecore { namespace repl {
                 for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
                     if (c4change->sequence <= startingMaxSequence)
                         continue;
-                    C4DocumentInfo info {0, c4change->docID, c4change->revID,
-                                         c4change->sequence, c4change->bodySize};
+                    C4DocumentInfo info {c4change->flags, c4change->docID, c4change->revID,
+                                         c4change->sequence};
                     // Note: we send tombstones even if the original getChanges() call specified
                     // skipDeletions. This is intentional; skipDeletions applies only to the initial
                     // dump of existing docs, not to 'live' changes.
@@ -236,7 +239,7 @@ namespace litecore { namespace repl {
                     && _docIDs->find(slice(info.docID).asString()) == _docIDs->end()) {
             return nullptr;             // skip rev: not in list of docIDs
         } else {
-            auto rev = retained(new RevToSend(info));
+            auto rev = make_retained<RevToSend>(info);
             return shouldPushRev(rev, e, db) ? rev : nullptr;
         }
     }
@@ -256,12 +259,17 @@ namespace litecore { namespace repl {
         if (needRemoteRevID || _options.pushFilter) {
             c4::ref<C4Document> doc;
             C4Error error;
-            doc = e ? c4enum_getDocument(e, &error) : c4doc_get(db, rev->docID, true, &error);
+            if (e)
+                doc = c4enum_getDocument(e, &error);
+            else
+                doc = c4db_getDoc(db, rev->docID, true,
+                                 (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev),
+                                 &error);
             if (!doc) {
                 _delegate.failedToGetChange(rev, error, false);
                 return false;         // fail the rev: error getting doc
             }
-            if (slice(doc->revID) != slice(rev->revID))
+            if (!c4rev_equal(doc->revID, rev->revID))
                 return false;         // skip rev: there's a newer one already
 
             if (needRemoteRevID) {
@@ -293,6 +301,7 @@ namespace litecore { namespace repl {
 
     ReplicatorChangesFeed::ReplicatorChangesFeed(Delegate &delegate, Options &options, DBAccess &db, Checkpointer *cp)
     :ChangesFeed(delegate, options, db, cp)     // DBAccess is a subclass of access_lock<C4Database*>
+    ,_usingVersionVectors(db.usingVersionVectors())
     { }
 
 
@@ -306,7 +315,7 @@ namespace litecore { namespace repl {
         logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
         if (foreignAncestor == slice(doc->revID))
             return false;   // skip this rev: it's already on the peer
-        if (foreignAncestor
+        if (foreignAncestor && !_usingVersionVectors
                     && c4rev_getGeneration(foreignAncestor) >= c4rev_getGeneration(doc->revID)) {
             if (_options.pull <= kC4Passive) {
                 C4Error error = c4error_make(WebSocketDomain, 409,

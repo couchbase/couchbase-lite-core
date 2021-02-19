@@ -14,7 +14,9 @@
 #include "c4.hh"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
+#include <functional>
 #include <iostream>
+#include <vector>
 
 using namespace fleece;
 
@@ -39,9 +41,7 @@ public:
         INFO("Query = " << queryStr);
         C4Error error{};
         c4query_release(query);
-        query = c4query_new(db, c4str(queryStr.c_str()), &error);
-        char errbuf[256];
-        INFO("error " << c4error_getDescriptionC(error, errbuf, sizeof(errbuf)));
+        query = c4query_new(db, c4str(queryStr.c_str()), ERROR_INFO(error));
         REQUIRE(query);
     }
 
@@ -75,13 +75,11 @@ public:
         REQUIRE(query);
         C4QueryOptions options = kC4DefaultQueryOptions;
         C4Error error;
-        auto e = c4query_run(query, &options, c4str(bindings), &error);
-        INFO("c4query_run got error " << error.domain << "/" << error.code);
+        auto e = c4query_run(query, &options, c4str(bindings), ERROR_INFO(error));
         REQUIRE(e);
         std::vector<Collected> results;
-        while (c4queryenum_next(e, &error))
+        while (c4queryenum_next(e, ERROR_INFO(error)))
             results.push_back(callback(e));
-        CHECK(error.code == 0);
         c4queryenum_release(e);
         return results;
     }
@@ -169,7 +167,7 @@ public:
         rq.docID = slice(docID);
         rq.allocedBody = body;
         rq.save = true;
-        C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
+        C4Document *doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(&c4err));
         REQUIRE(doc != nullptr);
         c4doc_release(doc);
         FLSliceResult_Release(body);

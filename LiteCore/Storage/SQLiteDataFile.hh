@@ -22,6 +22,7 @@
 #include "IndexSpec.hh"
 #include "UnicodeCollator.hh"
 #include <optional>
+#include <vector>
 
 namespace SQLite {
     class Database;
@@ -46,8 +47,10 @@ namespace litecore {
         bool isOpen() const noexcept override;
 
         uint64_t fileSize() override;
-        void optimize();
-        void vacuum(bool always);
+        void optimize() noexcept;
+        void _optimize();
+        void vacuum(bool always) noexcept;
+        void _vacuum(bool always);
         void integrityCheck();
         void maintenance(MaintenanceType) override;
 
@@ -55,9 +58,7 @@ namespace litecore {
 
         operator SQLite::Database&() {return *_sqlDb;}
 
-#if 0 //UNUSED:
-        std::vector<std::string> allKeyStoreNames() override;
-#endif
+        std::vector<std::string> allKeyStoreNames() /*override*/;
         bool keyStoreExists(const std::string &name);
         bool tableExists(const std::string &name) const;
         bool getSchema(const std::string &name, const std::string &type,
@@ -106,7 +107,7 @@ namespace litecore {
         uint64_t purgeCount(const std::string& keyStoreName) const;
         void setPurgeCount(SQLiteKeyStore&, uint64_t);
 
-        SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
+        SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
                                    const char *sql) const;
         int exec(const std::string &sql);
         int execWithLock(const std::string &sql);
@@ -129,10 +130,14 @@ namespace litecore {
         enum class SchemaVersion {
             None            = 0,    // Newly created database
             MinReadable     = 201,  // Cannot open earlier versions than this (CBL 2.0)
-            MaxReadable     = 399,  // Cannot open versions newer than this
+            MaxReadable     = 499,  // Cannot open versions newer than this
 
             WithIndexTable  = 301,  // Added 'indexes' table (CBL 2.5)
             WithPurgeCount  = 302,  // Added 'purgeCnt' column to KeyStores (CBL 2.7)
+
+            WithNewDocs     = 400,  // New document/revision storage (CBL 3.0)
+
+            Current = WithNewDocs
         };
 
         void reopenSQLiteHandle();
@@ -151,11 +156,11 @@ namespace litecore {
         SQLiteIndexSpec specFromStatement(SQLite::Statement &stmt);
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore *store =nullptr);
 
-        std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
-        std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
-        std::unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
-        CollationContextVector               _collationContexts;
-        SchemaVersion                        _schemaVersion {SchemaVersion::None};
+        unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
+        unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
+        unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
+        CollationContextVector          _collationContexts;
+        SchemaVersion                   _schemaVersion {SchemaVersion::None};
     };
 
 

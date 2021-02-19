@@ -86,22 +86,22 @@ typedef struct C4BlobKey {
 typedef struct C4Address C4Address;
 
 /** Opaque handle for an object that manages storage of blobs. */
-typedef struct c4BlobStore C4BlobStore;
+typedef struct C4BlobStore C4BlobStore;
 
 /** An X.509 certificate, or certificate signing request (CSR). */
 typedef struct C4Cert C4Cert;
 
 /** Opaque handle to an opened database. */
-typedef struct c4Database C4Database;
+typedef struct C4Database C4Database;
 
 /** A database-observer reference. */
-typedef struct c4DatabaseObserver C4DatabaseObserver;
+typedef struct C4DatabaseObserver C4DatabaseObserver;
 
 /** Describes a version-controlled document. */
 typedef struct C4Document C4Document;
 
 /** A document-observer reference. */
-typedef struct c4DocumentObserver C4DocumentObserver;
+typedef struct C4DocumentObserver C4DocumentObserver;
 
 /** Opaque handle to a document enumerator. */
 typedef struct C4DocEnumerator C4DocEnumerator;
@@ -113,19 +113,19 @@ typedef struct C4KeyPair C4KeyPair;
 typedef struct C4Listener C4Listener;
 
 /** Opaque handle to a compiled query. */
-typedef struct c4Query C4Query;
+typedef struct C4Query C4Query;
 
 /** A query result enumerator. */
 typedef struct C4QueryEnumerator C4QueryEnumerator;
 
 /** A query-observer reference. */
-typedef struct c4QueryObserver C4QueryObserver;
+typedef struct C4QueryObserver C4QueryObserver;
 
 /** Contents of a raw document. */
 typedef struct C4RawDocument C4RawDocument;
 
 /** An open stream for reading data from a blob. */
-typedef struct c4ReadStream C4ReadStream;
+typedef struct C4ReadStream C4ReadStream;
 
 /** Opaque reference to a replicator. */
 typedef struct C4Replicator C4Replicator;
@@ -137,7 +137,7 @@ typedef struct C4Socket C4Socket;
 typedef struct C4SocketFactory C4SocketFactory;
 
 /** An open stream for writing data to a blob. */
-typedef struct c4WriteStream C4WriteStream;
+typedef struct C4WriteStream C4WriteStream;
 
 
 //////// REFERENCE COUNTING
@@ -193,7 +193,7 @@ void c4_dumpInstances(void) C4API;
 
 
 // (These are identical to the internal C++ error::Domain enum values.)
-typedef C4_ENUM(uint32_t, C4ErrorDomain) {
+typedef C4_ENUM(uint8_t, C4ErrorDomain) {
     LiteCoreDomain = 1, // code is a Couchbase Lite Core error code (see below)
     POSIXDomain,        // code is an errno
     SQLiteDomain,       // code is a SQLite error; see "sqlite3.h"
@@ -274,9 +274,9 @@ typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
       (e.g. false or NULL.) If the function doesn't fail, it does NOT zero out the error, so its
       contents should be considered uninitialized garbage. */
 typedef struct {
-    C4ErrorDomain domain;
-    int32_t code;
-    int32_t internal_info;
+    C4ErrorDomain domain        : 8;    // Domain of error (LiteCore, POSIX, SQLite, ...)
+    int           code          :24;    // Error code. Domain-specific, except 0 is ALWAYS "none".
+    unsigned      internal_info :32;    // No user-serviceable parts inside. Do not touch.
 } C4Error;
 
 
@@ -296,8 +296,36 @@ C4SliceResult c4error_getDescription(C4Error error) C4API;
     @return  A pointer to the string, i.e. to the first byte of the buffer. */
 char* c4error_getDescriptionC(C4Error error, char *outBuffer, size_t bufferSize) C4API;
 
+/** If set to `true`, then when a C4Error is created the current thread's stack backtrace will
+    be captured along with it, and can later be examined by calling \ref c4error_getBacktrace.
+    Even if false, some errors (like assertion failures) will still have backtraces. */
+void c4error_setCaptureBacktraces(bool) C4API;
+
+bool c4error_getCaptureBacktraces(void) C4API;
+
+/** Returns the stack backtrace, if any, associated with a C4Error.
+    This is formatted in human-readable form similar to a debugger or crash log. */
+C4StringResult c4error_getBacktrace(C4Error error) C4API;
+
+
 /** Creates a C4Error struct with the given domain and code, and associates the message with it. */
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
+
+/** Creates a C4Error struct with the given domain and code, formats the message as with
+    `printf`, and associates the message with the error. */
+C4Error c4error_printf(C4ErrorDomain domain,
+                       int code,
+                       const char *format, ...) C4API __printflike(3,4);
+
+/** Same as \ref c4error_printf, but with a premade `va_list`. */
+C4Error c4error_vprintf(C4ErrorDomain domain, int code,
+                        const char *format, va_list args) C4API;
+
+/** Creates and stores a C4Error in `*outError`, if not NULL. Useful in functions that use the
+    LiteCore error reporting convention of taking a `C4Error *outError` parameter. */
+void c4error_return(C4ErrorDomain domain, int code,
+                    C4String message,
+                    C4Error* C4NULLABLE outError) C4API;
 
 
 /** Returns true if this is a network error that may be transient,
@@ -373,6 +401,9 @@ bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error* C4NULLABLE error
 /** Ensures all log messages have been written to the current log files. */
 void c4log_flushLogFiles(void) C4API;
 
+/** Ensures all log messages have been written to the current log files. */
+void c4log_flushLogFiles(void) C4API;
+
 C4LogLevel c4log_callbackLevel(void) C4API;
 void c4log_setCallbackLevel(C4LogLevel level) C4API;
 
@@ -412,9 +443,19 @@ bool c4log_willLog(C4LogDomain, C4LogLevel) C4API;
     written to the file but not to the callback. */
 void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) C4API;
 
+
+/** If set to true, LiteCore will log a warning of the form "LiteCore throwing %s error %d: %s"
+    just before throwing an internal exception. This can be a good way to catch the source where
+    an error occurs. */
+void c4log_warnOnErrors(bool) C4API;
+
+/** Returns true if warn-on-errors is on; see \ref c4log_warnOnErrors. Default is false.*/
+bool c4log_getWarnOnErrors(void) C4API;
+
 /** Registers a handler with the C++ runtime that will log a backtrace when an uncaught C++
-    exception occurs. */
+    exception occurs, just before the process aborts. */
 void c4log_enableFatalExceptionBacktrace(void) C4API;
+
 
 /** Logs a message/warning/error to a specific domain, if its current level is less than
     or equal to the given level. This message will then be written to the current callback and/or

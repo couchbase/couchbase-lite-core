@@ -25,7 +25,6 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <set>
 
 namespace uWS {
     template <const bool isServer> class WebSocketProtocol;

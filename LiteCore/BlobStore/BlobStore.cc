@@ -44,9 +44,11 @@ namespace litecore {
             error::_throw(error::WrongFormat);
     }
 
-    blobKey::blobKey(const string &str) {
-        if (!readFromBase64(slice(str)))
+    blobKey blobKey::withBase64(slice base64, bool prefixed) {
+        blobKey key;
+        if (!key.readFromBase64(base64, prefixed))
             error::_throw(error::WrongFormat);
+        return key;
     }
 
 

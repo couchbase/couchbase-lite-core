@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Document.hh"
+#include <vector>
 
 namespace c4Internal {
     class Document;
@@ -26,26 +27,15 @@ namespace c4Internal {
     class TreeDocumentFactory : public DocumentFactory {
     public:
         TreeDocumentFactory(Database *db)   :DocumentFactory(db) { }
-        Retained<Document> newDocumentInstance(C4Slice docID) override;
+        Retained<Document> newDocumentInstance(C4Slice docID, ContentOption) override;
         Retained<Document> newDocumentInstance(const Record&) override;
-        Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID, bool withBody) override;
-        alloc_slice revIDFromVersion(slice version) override;
-        bool isFirstGenRevID(slice revID) override;
-        static slice fleeceAccessor(slice docBody);
+        bool isFirstGenRevID(slice revID) const override;
 
         std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs, const std::vector<slice> &revIDs,
                                                unsigned maxAncestors, bool mustHaveBodies,
                                                C4RemoteID remoteDBID) override;
 
-        static Document* documentContaining(const fleece::impl::Value *value) {
-            auto doc = treeDocumentContaining(value);
-            return doc ? doc : leafDocumentContaining(value);
-        }
-
-
-    private:
-        static Document* treeDocumentContaining(const fleece::impl::Value *value);
-        static Document* leafDocumentContaining(const fleece::impl::Value *value);
+        static Document* documentContaining(FLValue value);
     };
 
 }

@@ -41,7 +41,7 @@ public:
         try {
             return _c4Model.prediction(_c4Model.context,
                                        (FLDict)input,
-                                       dynamic_cast<c4Database*>(dfDelegate),
+                                       dynamic_cast<C4Database*>(dfDelegate),
                                        outError);
         } catch (const std::exception &x) {
             if (outError)

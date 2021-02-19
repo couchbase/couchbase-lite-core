@@ -26,8 +26,8 @@
 #include <time.h>
 
 #if __APPLE__
-#import <CoreFoundation/CFBase.h>
-#import <CoreFoundation/CFString.h>
+#include <CoreFoundation/CFBase.h>
+#include <CoreFoundation/CFString.h>
 #endif
 
 using namespace std;

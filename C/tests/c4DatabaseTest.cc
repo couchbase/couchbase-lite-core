@@ -46,7 +46,7 @@ class C4DatabaseTest : public C4Test {
         CHECK(std::string((char*)msg.buf, msg.size) == std::string(expectedMsg));
         c4slice_free(msg);
 
-        string expectedDesc = string(expectedDomainAndType) + " \"" + expectedMsg + "\"";
+        string expectedDesc = string(expectedDomainAndType) + ", \"" + expectedMsg + "\"";
         char buf[256];
         char *cmsg = c4error_getDescriptionC({domain, code}, buf, sizeof(buf));
         CHECK(std::string(cmsg) == expectedDesc);
@@ -61,9 +61,9 @@ class C4DatabaseTest : public C4Test {
 };
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][Errors][C]") {
     alloc_slice msg = c4error_getMessage({LiteCoreDomain, 0});
-    REQUIRE(msg.buf == (const void*)nullptr);
+    REQUIRE(msg.buf == nullptr);
     REQUIRE((unsigned long)msg.size == 0ul);
 
     msg = c4error_getDescription({LiteCoreDomain, 0});
@@ -77,11 +77,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]"
     assertMessage(SQLiteDomain, SQLITE_CORRUPT, "SQLite error 11", "database disk image is malformed");
     assertMessage(SQLiteDomain, SQLITE_IOERR_ACCESS, "SQLite error 3338", "disk I/O error (3338)");
     assertMessage(SQLiteDomain, SQLITE_IOERR, "SQLite error 10", "disk I/O error");
-    assertMessage(LiteCoreDomain, 15, "LiteCore error 15", "data is corrupted");
+    assertMessage(LiteCoreDomain, 15, "LiteCore CorruptData", "data is corrupted");
     assertMessage(POSIXDomain, ENOENT, "POSIX error 2", "No such file or directory");
-    assertMessage(LiteCoreDomain, kC4ErrorTransactionNotClosed, "LiteCore error 18", "transaction not closed");
+    assertMessage(LiteCoreDomain, kC4ErrorTransactionNotClosed, "LiteCore TransactionNotClosed", "transaction not closed");
     assertMessage(SQLiteDomain, -1234, "SQLite error -1234", "unknown error (-1234)");
-    assertMessage((C4ErrorDomain)666, -1234, "INVALID_DOMAIN error -1234", "unknown error domain");
+    assertMessage((C4ErrorDomain)666, -1234, "INVALID_DOMAIN error -1234", "invalid C4Error (unknown domain)");
 }
 
 
@@ -89,9 +89,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Info", "[Database][C]") {
     CHECK(c4db_exists(slice(kDatabaseName), slice(TempDir())));
     REQUIRE(c4db_getDocumentCount(db) == 0);
     REQUIRE(c4db_getLastSequence(db) == 0);
-    C4Error err;
     C4UUID publicUUID, privateUUID;
-    REQUIRE(c4db_getUUIDs(db, &publicUUID, &privateUUID, &err));
+    REQUIRE(c4db_getUUIDs(db, &publicUUID, &privateUUID, WITH_ERROR()));
     REQUIRE(memcmp(&publicUUID, &privateUUID, sizeof(C4UUID)) != 0);
     // Weird requirements of UUIDs according to the spec:
     REQUIRE((publicUUID.bytes[6] & 0xF0) == 0x40);
@@ -102,7 +101,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Info", "[Database][C]") {
     // Make sure UUIDs are persistent:
     reopenDB();
     C4UUID publicUUID2, privateUUID2;
-    REQUIRE(c4db_getUUIDs(db, &publicUUID2, &privateUUID2, &err));
+    REQUIRE(c4db_getUUIDs(db, &publicUUID2, &privateUUID2, WITH_ERROR()));
     REQUIRE(memcmp(&publicUUID, &publicUUID2, sizeof(C4UUID)) == 0);
     REQUIRE(memcmp(&privateUUID, &privateUUID2, sizeof(C4UUID)) == 0);
 }
@@ -112,22 +111,19 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database deletion lock", "[Database][C]"
     ExpectingExceptions x;
     C4Error err;
     REQUIRE(!c4db_deleteNamed(kDatabaseName, dbConfig().parentDirectory, &err));
-    CHECK(err.domain == LiteCoreDomain);
-    CHECK(err.code == kC4ErrorBusy);
+    CHECK(err == C4Error{LiteCoreDomain, kC4ErrorBusy});
 
     string equivalentPath = string(slice(dbConfig().parentDirectory)) + "/";
     REQUIRE(!c4db_deleteNamed(kDatabaseName, slice(equivalentPath), &err));
-    CHECK(err.domain == LiteCoreDomain);
-    CHECK(err.code == kC4ErrorBusy);
+    CHECK(err == C4Error{LiteCoreDomain, kC4ErrorBusy});
 }
 
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Read-Only UUIDs", "[Database][C]") {
     // Make sure UUIDs are available even if the db is opened read-only when they're first accessed.
     reopenDBReadOnly();
-    C4Error err;
     C4UUID publicUUID, privateUUID;
-    REQUIRE(c4db_getUUIDs(db, &publicUUID, &privateUUID, &err));
+    REQUIRE(c4db_getUUIDs(db, &publicUUID, &privateUUID, WITH_ERROR()));
 }
 
 
@@ -138,20 +134,20 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     C4Error error;
     if (!c4db_deleteNamed(kTestBundleName, config.parentDirectory, &error))
         REQUIRE(error.code == 0);
-    auto bundle = c4db_openNamed(kTestBundleName, &config, &error);
+    auto bundle = c4db_openNamed(kTestBundleName, &config, ERROR_INFO());
     REQUIRE(bundle);
     CHECK(c4db_getName(bundle) == kTestBundleName);
     C4SliceResult path = c4db_getPath(bundle);
     CHECK(path == TEMPDIR("cbl_core_test_bundle.cblite2" kPathSeparator)); // note trailing '/'
     c4slice_free(path);
-    REQUIRE(c4db_close(bundle, &error));
+    REQUIRE(c4db_close(bundle, WITH_ERROR()));
     c4db_release(bundle);
 
     // Reopen without 'create' flag:
     config.flags &= ~kC4DB_Create;
-    bundle = c4db_openNamed(kTestBundleName, &config, &error);
+    bundle = c4db_openNamed(kTestBundleName, &config, WITH_ERROR());
     REQUIRE(bundle);
-    REQUIRE(c4db_close(bundle, &error));
+    REQUIRE(c4db_close(bundle, WITH_ERROR()));
     c4db_release(bundle);
 
     // Reopen with wrong storage type:
@@ -162,59 +158,75 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     }
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][C]") {
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Create Doc", "[Database][Document][C]") {
+    REQUIRE(c4db_beginTransaction(db, WITH_ERROR()));
+    createRev(kDocID, kRevID, kFleeceBody);
+    REQUIRE(c4db_endTransaction(db, true, WITH_ERROR()));
+    CHECK(c4db_getDocumentCount(db) == 1);
+
+    C4Document* doc = REQUIRED( c4doc_get(db, kDocID, true, WITH_ERROR()) );
+    CHECK(doc->docID == kDocID);
+    CHECK(doc->revID == kRevID);
+    CHECK(doc->sequence == 1);
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->selectedRev.revID == kRevID);
+    CHECK(doc->selectedRev.flags == kRevLeaf);
+    CHECK(doc->selectedRev.sequence == 1);
+    c4doc_release(doc);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][Document][C]") {
     REQUIRE(c4db_getDocumentCount(db) == (C4SequenceNumber)0);
     REQUIRE(!c4db_isInTransaction(db));
-    C4Error(error);
-    REQUIRE(c4db_beginTransaction(db, &error));
+    REQUIRE(c4db_beginTransaction(db, WITH_ERROR()));
     REQUIRE(c4db_isInTransaction(db));
-    REQUIRE(c4db_beginTransaction(db, &error));
+    REQUIRE(c4db_beginTransaction(db, WITH_ERROR()));
     REQUIRE(c4db_isInTransaction(db));
-    REQUIRE(c4db_endTransaction(db, true, &error));
+    REQUIRE(c4db_endTransaction(db, true, WITH_ERROR()));
     REQUIRE(c4db_isInTransaction(db));
-    REQUIRE(c4db_endTransaction(db, true, &error));
+    REQUIRE(c4db_endTransaction(db, true, WITH_ERROR()));
     REQUIRE(!c4db_isInTransaction(db));
     
-    REQUIRE(c4db_beginTransaction(db, &error));
+    REQUIRE(c4db_beginTransaction(db, WITH_ERROR()));
     REQUIRE(c4db_isInTransaction(db));
     createRev(kDocID, kRevID, kFleeceBody);
-    REQUIRE(c4db_endTransaction(db, false, &error));
+    REQUIRE(c4db_endTransaction(db, false, WITH_ERROR()));
     REQUIRE(!c4db_isInTransaction(db));
     CHECK(c4db_getDocumentCount(db) == 0);
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][Document][C]") {
     const C4Slice key = c4str("key");
     const C4Slice meta = c4str("meta");
     C4Error error;
-    REQUIRE(c4db_beginTransaction(db, &error));
-    c4raw_put(db, c4str("test"), key, meta, kFleeceBody, &error);
-    REQUIRE(c4db_endTransaction(db, true, &error));
+    REQUIRE(c4db_beginTransaction(db, WITH_ERROR()));
+    REQUIRE(c4raw_put(db, c4str("test"), key, meta, kFleeceBody, WITH_ERROR()));
+    REQUIRE(c4db_endTransaction(db, true, WITH_ERROR()));
 
-    C4RawDocument *doc = c4raw_get(db, c4str("test"), key, &error);
-    REQUIRE(doc != nullptr);
+    C4RawDocument *doc = REQUIRED(c4raw_get(db, c4str("test"), key, WITH_ERROR()));
     REQUIRE(doc->key == key);
     REQUIRE(doc->meta == meta);
     REQUIRE(doc->body == kFleeceBody);
     c4raw_free(doc);
 
     // Nonexistent:
-    REQUIRE(c4raw_get(db, c4str("test"), c4str("bogus"), &error) == (C4RawDocument*)nullptr);
-    REQUIRE(error.domain == LiteCoreDomain);
-    REQUIRE(error.code == (int)kC4ErrorNotFound);
+    REQUIRE(c4raw_get(db, c4str("test"), c4str("bogus"), &error) == nullptr);
+    REQUIRE(error == C4Error{LiteCoreDomain, kC4ErrorNotFound});
     
     // Delete
-    REQUIRE(c4db_beginTransaction(db, &error));
-    c4raw_put(db, c4str("test"), key, kC4SliceNull, kC4SliceNull, &error);
-    REQUIRE(c4db_endTransaction(db, true, &error));
+    REQUIRE(c4db_beginTransaction(db, WITH_ERROR()));
+    REQUIRE(c4raw_put(db, c4str("test"), key, kC4SliceNull, kC4SliceNull, WITH_ERROR()));
+    REQUIRE(c4db_endTransaction(db, true, WITH_ERROR()));
     REQUIRE(c4raw_get(db, c4str("test"), key, &error) == (C4RawDocument*)nullptr);
     REQUIRE(error.domain == LiteCoreDomain);
     REQUIRE(error.code == (int)kC4ErrorNotFound);
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator", "[Database][Document][Enumerator][C]") {
     setupAllDocs();
     C4Error error;
     C4DocEnumerator* e;
@@ -224,68 +236,98 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
     // No start or end ID:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
-    e = c4db_enumerateAllDocs(db, &options, &error);
-    REQUIRE(e);
+    e = REQUIRED(c4db_enumerateAllDocs(db, &options, WITH_ERROR()));
     char docID[20];
     int i = 1;
     while (c4enum_next(e, &error)) {
-        auto doc = c4enum_getDocument(e, &error);
+        auto doc = c4enum_getDocument(e, ERROR_INFO());
         REQUIRE(doc);
         sprintf(docID, "doc-%03d", i);
-        REQUIRE(doc->docID == c4str(docID));
-        REQUIRE(doc->revID == kRevID);
-        REQUIRE(doc->selectedRev.revID == kRevID);
-        REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)i);
-        REQUIRE(doc->selectedRev.body == kC4SliceNull);
+        CHECK(doc->docID == c4str(docID));
+        CHECK(doc->revID == kRevID);
+        CHECK(doc->selectedRev.revID == kRevID);
+        CHECK(doc->selectedRev.sequence == (C4SequenceNumber)i);
+        CHECK(c4doc_getProperties(doc) == nullptr);
         // Doc was loaded without its body, but it should load on demand:
-        REQUIRE(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
-        REQUIRE(doc->selectedRev.body == kFleeceBody);
+        CHECK(c4doc_loadRevisionBody(doc, WITH_ERROR())); // have to explicitly load the body
+        CHECK(docBodyEquals(doc, kFleeceBody));
 
         C4DocumentInfo info;
         REQUIRE(c4enum_getDocumentInfo(e, &info));
-        REQUIRE(info.docID == c4str(docID));
-        REQUIRE(info.flags == kDocExists);
-        REQUIRE(info.revID == kRevID);
-        REQUIRE(info.bodySize >= 11);
-        REQUIRE(info.bodySize <= 40);   // size includes rev-tree overhead so it's not exact
+        CHECK(info.docID == c4str(docID));
+        CHECK(info.flags == kDocExists);
+        CHECK(info.revID == kRevID);
+        CHECK(info.bodySize == kFleeceBody.size);
 
         c4doc_release(doc);
         i++;
     }
     c4enum_free(e);
-    REQUIRE(i == 100);
+    CHECK(error == C4Error{});
+    CHECK(i == 100);
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Database][Enumerator][C]") {
     setupAllDocs();
     C4Error error;
     C4DocEnumerator* e;
 
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    e = c4db_enumerateAllDocs(db, &options, &error);
-    REQUIRE(e);
+    e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+    CHECK(e);
     int i = 1;
     while(c4enum_next(e, &error)) {
-        C4DocumentInfo doc;
-        REQUIRE(c4enum_getDocumentInfo(e, &doc));
+        C4DocumentInfo info;
+        REQUIRE(c4enum_getDocumentInfo(e, &info));
         char docID[20];
         sprintf(docID, "doc-%03d", i);
-        REQUIRE(doc.docID == c4str(docID));
-        REQUIRE(doc.revID == kRevID);
-        REQUIRE(doc.sequence == (uint64_t)i);
-        REQUIRE(doc.flags == (C4DocumentFlags)kDocExists);
-        REQUIRE(doc.bodySize >= 11);
-        REQUIRE(doc.bodySize <= 40);   // size includes rev-tree overhead so it's not exact
+        CHECK(info.docID == c4str(docID));
+        CHECK(info.revID == kRevID);
+        CHECK(info.sequence == (uint64_t)i);
+        CHECK(info.flags == (C4DocumentFlags)kDocExists);
+        CHECK(info.bodySize == kFleeceBody.size);
+        if (isRevTrees())
+            CHECK(info.metaSize > 0);       // (VV doesn't use `extra` until remote revs are added)
         i++;
     }
     c4enum_free(e);
-    REQUIRE(error.code == 0);
-    REQUIRE(i == 100);
+    CHECK(error == C4Error{});
+    CHECK(i == 100);
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With History", "[Database][Enumerator][C]") {
+    if (isRevTrees())
+        return;
+
+    C4DocEnumerator* e;
+
+    createRev("doc-100"_sl, "1@*"_sl, kFleeceBody);
+    createRev("doc-100"_sl, "1@d00d"_sl, kFleeceBody);
+
+    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+    e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+    REQUIRE(e);
+    REQUIRE(c4enum_next(e, WITH_ERROR()));
+    C4DocumentInfo info;
+    REQUIRE(c4enum_getDocumentInfo(e, &info));
+    CHECK(info.docID == "doc-100"_sl);
+    CHECK(info.revID == "1@d00d"_sl);       // Latest version only
+    c4enum_free(e);
+
+    options.flags |= kC4IncludeRevHistory;
+    e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+    REQUIRE(e);
+    REQUIRE(c4enum_next(e, WITH_ERROR()));
+    REQUIRE(c4enum_getDocumentInfo(e, &info));
+    CHECK(info.docID == "doc-100"_sl);
+    CHECK(info.revID == "1@d00d,1@*"_sl);       // Entire version vector
+    c4enum_free(e);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerator][C]") {
     createNumberedDocs(99);
 
     C4Error error;
@@ -295,7 +337,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
     // Since start:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
-    e = c4db_enumerateChanges(db, 0, &options, &error);
+    e = c4db_enumerateChanges(db, 0, &options, ERROR_INFO());
     REQUIRE(e);
     C4SequenceNumber seq = 1;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
@@ -306,10 +348,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
         c4doc_release(doc);
         seq++;
     }
+    CHECK(error == C4Error{});
     c4enum_free(e);
 
     // Since 6:
-    e = c4db_enumerateChanges(db, 6, &options, &error);
+    e = c4db_enumerateChanges(db, 6, &options, ERROR_INFO());
     REQUIRE(e);
     seq = 7;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
@@ -321,11 +364,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
         seq++;
     }
     c4enum_free(e);
+    CHECK(error == C4Error{});
     REQUIRE(seq == (C4SequenceNumber)100);
 
     // Descending:
     options.flags |= kC4Descending;
-    e = c4db_enumerateChanges(db, 94, &options, &error);
+    e = c4db_enumerateChanges(db, 94, &options, ERROR_INFO());
     REQUIRE(e);
     seq = 99;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
@@ -337,6 +381,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
         seq--;
     }
     c4enum_free(e);
+    CHECK(error == C4Error{});
     REQUIRE(seq == (C4SequenceNumber)94);
 }
 
@@ -363,35 +408,34 @@ static constexpr int ms = 1;
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C][Expiration]") {
     C4Error err;
     CHECK(c4db_nextDocExpiration(db) == 0);
-    CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
+    CHECK(c4db_purgeExpiredDocs(db, WITH_ERROR()) == 0);
     CHECK(!c4db_mayHaveExpiration(db));
 
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kFleeceBody);
     C4Timestamp expire = c4_now() + 1*secs;
-    REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
+    REQUIRE(c4doc_setExpiration(db, docID, expire, WITH_ERROR()));
 
     CHECK(c4db_mayHaveExpiration(db));
 
     expire = c4_now() + 2*secs;
     // Make sure setting it to the same is also true
-    REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
-    REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
+    REQUIRE(c4doc_setExpiration(db, docID, expire, WITH_ERROR()));
+    REQUIRE(c4doc_setExpiration(db, docID, expire, WITH_ERROR()));
     
     C4Slice docID2 = C4STR("expire_me_too");
     createRev(docID2, kRevID, kFleeceBody);
-    REQUIRE(c4doc_setExpiration(db, docID2, expire, &err));
+    REQUIRE(c4doc_setExpiration(db, docID2, expire, WITH_ERROR()));
 
     C4Slice docID3 = C4STR("dont_expire_me");
     createRev(docID3, kRevID, kFleeceBody);
 
     C4Slice docID4 = C4STR("expire_me_later");
     createRev(docID4, kRevID, kFleeceBody);
-    REQUIRE(c4doc_setExpiration(db, docID4, expire + 100*secs, &err));
+    REQUIRE(c4doc_setExpiration(db, docID4, expire + 100*secs, WITH_ERROR()));
 
     REQUIRE(!c4doc_setExpiration(db, "nonexistent"_sl, expire + 50*secs, &err));
-    CHECK(err.domain == LiteCoreDomain);
-    CHECK(err.code == kC4ErrorNotFound);
+    CHECK(err == C4Error{LiteCoreDomain, kC4ErrorNotFound});
 
     CHECK(c4doc_getExpiration(db, docID, nullptr)  == expire);
     CHECK(c4doc_getExpiration(db, docID2, nullptr) == expire);
@@ -407,12 +451,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C][Expira
     REQUIRE(c4_now() >= expire);
 
     C4Log("---- Purge expired docs");
-    REQUIRE(c4db_purgeExpiredDocs(db, &err) == 2);
+    REQUIRE(c4db_purgeExpiredDocs(db, WITH_ERROR()) == 2);
 
     CHECK(c4db_nextDocExpiration(db) == expire + 100*secs);
 
     C4Log("---- Purge expired docs (again)");
-    CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
+    CHECK(c4db_purgeExpiredDocs(db, WITH_ERROR()) == 0);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C][Expiration]")
@@ -423,12 +467,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C
     createRev("expire_me"_sl, kRevID, kFleeceBody);
     C4Timestamp expire = c4_now() + 10000*ms;
     C4Error err;
-    REQUIRE(c4doc_setExpiration(db, "expire_me"_sl, expire, &err));
+    REQUIRE(c4doc_setExpiration(db, "expire_me"_sl, expire, WITH_ERROR()));
     CHECK(c4db_mayHaveExpiration(db));
 
     createRev("expire_me_first"_sl, kRevID, kFleeceBody);
     expire = c4_now() + 1500*ms;
-    REQUIRE(c4doc_setExpiration(db, "expire_me_first"_sl, expire, &err));
+    REQUIRE(c4doc_setExpiration(db, "expire_me_first"_sl, expire, WITH_ERROR()));
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
@@ -437,8 +481,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C
         c4doc_release(doc);
         return doc == nullptr;
     });
-    CHECK(err.domain == LiteCoreDomain);
-    CHECK(err.code == kC4ErrorNotFound);
+    CHECK(err == C4Error{LiteCoreDomain, kC4ErrorNotFound});
     C4Log("---- Done...");
 }
 
@@ -448,7 +491,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration After Reopen", 
     createRev("expire_me_first"_sl, kRevID, kFleeceBody);
     auto expire = c4_now() + 1500*ms;
     C4Error err;
-    REQUIRE(c4doc_setExpiration(db, "expire_me_first"_sl, expire, &err));
+    REQUIRE(c4doc_setExpiration(db, "expire_me_first"_sl, expire, WITH_ERROR()));
     CHECK(c4db_mayHaveExpiration(db));
 
     C4Log("---- Reopening DB...");
@@ -473,22 +516,20 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C][E
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kFleeceBody);
     C4Timestamp expire = c4_now() + 2*secs;
-    C4Error err;
-    REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
+    REQUIRE(c4doc_setExpiration(db, docID, expire, WITH_ERROR()));
     REQUIRE(c4doc_getExpiration(db, docID, nullptr) == expire);
     CHECK(c4db_nextDocExpiration(db) == expire);
 
-    REQUIRE(c4doc_setExpiration(db, docID, 0, &err));
+    REQUIRE(c4doc_setExpiration(db, docID, 0, WITH_ERROR()));
     CHECK(c4doc_getExpiration(db, docID, nullptr) == 0);
     CHECK(c4db_nextDocExpiration(db) == 0);
-    CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
+    CHECK(c4db_purgeExpiredDocs(db, WITH_ERROR()) == 0);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[Database][C][Expiration]") {
     // Checks that after one instance creates the 'expiration' column, other instances recognize it
     // and don't try to create it themselves.
-    C4Error error;
-    auto db2 = c4db_openAgain(db, &error);
+    auto db2 = c4db_openAgain(db, ERROR_INFO());
     REQUIRE(db2);
 
     CHECK(c4db_nextDocExpiration(db) == 0);
@@ -498,7 +539,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[
     createRev(docID, kRevID, kFleeceBody);
 
     C4Timestamp expire = c4_now() + 1*secs;
-    REQUIRE(c4doc_setExpiration(db, docID, expire, &error));
+    REQUIRE(c4doc_setExpiration(db, docID, expire, WITH_ERROR()));
 
     CHECK(c4db_nextDocExpiration(db2) == expire);
 
@@ -536,14 +577,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BackgroundDB torture test", "[D
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C]")
 {
-    C4Error err;
-    C4BlobStore *blobs = c4db_getBlobStore(db, &err);
+    C4BlobStore *blobs = c4db_getBlobStore(db, ERROR_INFO());
     REQUIRE(blobs != nullptr);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
 {
-    C4Error err;
     C4Slice doc1ID = C4STR("doc001");
     C4Slice doc2ID = C4STR("doc002");
     C4Slice doc3ID = C4STR("doc003");
@@ -571,16 +610,16 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
         key3 = addDocWithAttachments(doc3ID, atts, "text/plain", &names)[0]; // legacy
     }
     
-    C4BlobStore* store = c4db_getBlobStore(db, &err);
+    C4BlobStore* store = c4db_getBlobStore(db, ERROR_INFO());
     REQUIRE(store);
-    REQUIRE(c4db_maintenance(db, kC4Compact, &err));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key1) > 0);
     REQUIRE(c4blob_getSize(store, key2) > 0);
     REQUIRE(c4blob_getSize(store, key3) > 0);
 
     // Only reference to first blob is gone
     createRev(doc1ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, &err));
+    REQUIRE(c4db_compact(db, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key1) == -1);
     REQUIRE(c4blob_getSize(store, key2) > 0);
     REQUIRE(c4blob_getSize(store, key3) > 0);
@@ -588,24 +627,24 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
     // Two references exist to the second blob, so it should still
     // exist after deleting doc002
     createRev(doc2ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, &err));
+    REQUIRE(c4db_compact(db, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key1) == -1);
     REQUIRE(c4blob_getSize(store, key2) > 0);
     REQUIRE(c4blob_getSize(store, key3) > 0);
 
     // After deleting doc4 both blobs should be gone
     createRev(doc4ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, &err));
+    REQUIRE(c4db_compact(db, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key2) == -1);
     REQUIRE(c4blob_getSize(store, key3) > 0);
 
     // Delete doc with legacy attachment, and it too will be gone
     createRev(doc3ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, &err));
+    REQUIRE(c4db_compact(db, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key3) == -1);
 
     // Try an integrity check too
-    REQUIRE(c4db_maintenance(db, kC4IntegrityCheck, &err));
+    REQUIRE(c4db_maintenance(db, kC4IntegrityCheck, WITH_ERROR()));
 }
 
 
@@ -617,9 +656,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
 
     createRev(doc1ID, kRevID, kFleeceBody);
     createRev(doc2ID, kRevID, kFleeceBody);
-    C4SliceResult srcPath = c4db_getPath(db);
-    string srcPathStr = toString((C4Slice)srcPath);
-    c4slice_free(srcPath);
+    string srcPathStr = toString(c4db_getPath(db));
 
     C4DatabaseConfig2 config = *c4db_getConfig2(db);
     string nuPath = string(slice(config.parentDirectory)) + string(kNuName) + ".cblite2" + kPathSeparator;
@@ -628,14 +665,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
         REQUIRE(error.code == 0);
     }
     
-    REQUIRE(c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, &error));
-    auto nudb = c4db_openNamed(kNuName, &config, &error);
+    REQUIRE(c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, WITH_ERROR()));
+    auto nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 2);
-    REQUIRE(c4db_delete(nudb, &error));
+    REQUIRE(c4db_delete(nudb, WITH_ERROR()));
     c4db_release(nudb);
     
-    nudb = c4db_openNamed(kNuName, &config, &error);
+    nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());
     REQUIRE(nudb);
     createRev(nudb, doc1ID, kRevID, kFleeceBody);
     CHECK(c4db_getDocumentCount(nudb) == 1);
@@ -651,7 +688,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
         CHECK(error.code == kC4ErrorNotFound);
     }
 
-    nudb = c4db_openNamed(kNuName, &config, &error);
+    nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 1);
     c4db_release(nudb);
@@ -664,7 +701,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
         CHECK(error.code == kC4ErrorNotFound);
     }
     
-    nudb = c4db_openNamed(kNuName, &config, &error);
+    nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 1);
     c4db_release(nudb);
@@ -676,10 +713,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
         CHECK(error.code == EEXIST);
     }
 
-    nudb = c4db_openNamed(kNuName, &config, &error);
+    nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());
     REQUIRE(nudb);
     CHECK(c4db_getDocumentCount(nudb) == 1);
-    REQUIRE(c4db_delete(nudb, &error));
+    REQUIRE(c4db_delete(nudb, WITH_ERROR()));
     c4db_release(nudb);
 }
 
@@ -694,7 +731,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
     c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error);
     REQUIRE(error.code == 0);
     CHECK(!c4db_exists(slice(db2Name), config.parentDirectory));
-    C4Database *db2 = c4db_openNamed(slice(db2Name), &config, &error);
+    C4Database *db2 = c4db_openNamed(slice(db2Name), &config, ERROR_INFO());
     REQUIRE(db2);
     alloc_slice db2Path = c4db_getPath(db2);
     CHECK(c4db_exists(slice(db2Name), config.parentDirectory));
@@ -713,19 +750,19 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
     c4db_setExtraInfo(db2, xtra);
     CHECK(!sXtraDestructed);
     CHECK(c4db_getExtraInfo(db2).pointer == this);
-    CHECK(c4db_close(db2, &error));
+    CHECK(c4db_close(db2, WITH_ERROR()));
     CHECK(!sXtraDestructed);
     c4db_release(db2);
     CHECK(sXtraDestructed);
 
     const string copiedDBName = string(kDatabaseName) + "_copy";
-    c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, &error);
+    c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, ERROR_INFO());
     REQUIRE(error.code == 0);
-    REQUIRE(c4db_copyNamed(db2Path, slice(copiedDBName), &config, &error));
+    REQUIRE(c4db_copyNamed(db2Path, slice(copiedDBName), &config, WITH_ERROR()));
     CHECK(c4db_exists(slice(copiedDBName), config.parentDirectory));
-    REQUIRE(c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, &error));
+    REQUIRE(c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, WITH_ERROR()));
 
-    REQUIRE(c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error));
+    REQUIRE(c4db_deleteNamed(slice(db2Name), config.parentDirectory, WITH_ERROR()));
 }
 
 
@@ -752,8 +789,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Reject invalid top-level keys", "[Databa
         C4Error error;
         auto doc = c4doc_put(db, &rq, nullptr, &error);
         CHECK(doc == nullptr);
-        CHECK(error.domain == LiteCoreDomain);
-        CHECK(error.code == kC4ErrorCorruptRevisionData);
+        CHECK(error == C4Error{LiteCoreDomain, kC4ErrorCorruptRevisionData});
     }
 }
 
@@ -800,7 +836,7 @@ static void testOpeningOlderDBFixture(const string & dbPath,
     auto name = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
 
     if (expectedErrorCode == 0) {
-        db = c4db_openNamed(name, &config, &error);
+        db = c4db_openNamed(name, &config, ERROR_INFO());
         REQUIRE(db);
     } else {
         ExpectingExceptions x;
@@ -816,7 +852,7 @@ static void testOpeningOlderDBFixture(const string & dbPath,
     for (unsigned i = 1; i <= 100; i++) {
         sprintf(docID, "doc-%03u", i);
         INFO("Checking docID " << docID);
-        C4Document *doc = c4doc_get(db, slice(docID), true, &error);
+        C4Document *doc = c4doc_get(db, slice(docID), true, ERROR_INFO());
         REQUIRE(doc);
         if (i <= 50)
             CHECK((doc->flags & kRevDeleted) == 0);
@@ -829,10 +865,10 @@ static void testOpeningOlderDBFixture(const string & dbPath,
     // Verify enumerating documents:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags |= kC4IncludeDeleted;
-    C4DocEnumerator *e = c4db_enumerateAllDocs(db, &options, &error);
+    C4DocEnumerator *e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
     REQUIRE(e);
     unsigned i = 1;
-    while (c4enum_next(e, &error)) {
+    while (c4enum_next(e, ERROR_INFO(&error))) {
         INFO("Checking enumeration #" << i);
         sprintf(docID, "doc-%03u", i);
         C4DocumentInfo info;
@@ -840,16 +876,142 @@ static void testOpeningOlderDBFixture(const string & dbPath,
         CHECK(slice(info.docID) == slice(docID));
         ++i;
     }
-    CHECK(error.code == 0);
+    CHECK(error == C4Error{});
     CHECK(i == 101);
 
-    CHECK(c4db_delete(db, &error));
+    CHECK(c4db_delete(db, WITH_ERROR()));
     c4db_release(db);
 }
 
 
-TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
+TEST_CASE("Database Upgrade From 2.7 to New Rev-Trees", "[Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", 0);
-    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
-    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
+// In 3.0 it's no longer possible to open 2.7 databases without upgrading
+//    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
+//    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
+}
+
+
+TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
+    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
+}
+
+
+static void setRemoteRev(C4Database *db, slice docID, slice revID, C4RemoteID remote) {
+    C4Document *doc = c4db_getDoc(db, docID, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    REQUIRE(c4doc_setRemoteAncestor(doc, remote, revID, WITH_ERROR()));
+    REQUIRE(c4doc_save(doc, 0, WITH_ERROR()));
+    c4doc_release(doc);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[Database][Upgrade][C]") {
+    if (!isRevTrees())
+        return;
+
+    {
+        // Initially populate a v3 rev-tree based database:
+        TransactionHelper t(db);
+        createNumberedDocs(5);
+        // Add a deleted doc to make sure it's skipped by default:
+        createRev(c4str("doc-DEL"), kRevID, kC4SliceNull, kRevDeleted);
+
+        // Add a 2nd revision to doc 1:
+        createFleeceRev(db, "doc-001"_sl, nullslice, slice(json5("{doc:'one',rev:'two'}")));
+
+        // Add a 2nd rev, synced with remote, to doc 2:
+        createFleeceRev(db, "doc-002"_sl, kRev2ID, slice(json5("{doc:'two',rev:'two'}")));
+        createFleeceRev(db, "doc-002"_sl, kRev3ID, slice(json5("{doc:'two',rev:'three'}")));
+        setRemoteRev(db, "doc-002"_sl, kRev3ID, 1);
+
+        // Add a 2nd rev, and rev 1 synced with remote, to doc 3:
+        createFleeceRev(db, "doc-003"_sl, kRev2ID, slice(json5("{doc:'three',rev:'two'}")), kRevKeepBody);
+        setRemoteRev(db, "doc-003"_sl, kRev2ID, 1);
+        createFleeceRev(db, "doc-003"_sl, kRev3ID, slice(json5("{doc:'three',rev:'three'}")));
+
+        // Add a conflict to doc 4:
+        createFleeceRev(db, "doc-004"_sl, kRev2ID, slice(json5("{doc:'four',rev:'two'}")));
+        createFleeceRev(db, "doc-004"_sl, kRev3ID, slice(json5("{doc:'four',rev:'three'}")));
+        createConflictingRev(db, "doc-004"_sl, kRev2ID, "3-cc"_sl);
+        setRemoteRev(db, "doc-004"_sl, "3-cc"_sl, 1);
+    }
+
+    // Reopen database, upgrading to version vectors:
+    C4DatabaseConfig2 config = dbConfig();
+    config.flags |= kC4DB_VersionVectors;
+    closeDB();
+    C4Log("---- Reopening db with version vectors ---");
+    db = c4db_openNamed(kDatabaseName, &config, ERROR_INFO());
+    REQUIRE(db);
+
+    // Note: The revID/version checks below hardcode the "legacy source ID", currently 0x7777777.
+    // If/when that's changed (in Database+Upgrade.cc), those checks will break.
+
+    // Check doc 1:
+    C4Document *doc;
+    doc = c4db_getDoc(db, "doc-001"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "2@*");
+    alloc_slice versionVector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
+    CHECK(versionVector == "2@*");
+    CHECK(doc->sequence == 7);
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"one","rev":"two"})");
+    c4doc_release(doc);
+
+    // Check doc 2:
+    doc = c4db_getDoc(db, "doc-002"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "3@7777777");
+    versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(versionVector == "3@7777777");
+    CHECK(doc->sequence == 9);
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
+    alloc_slice remoteVers = c4doc_getRemoteAncestor(doc, 1);
+    CHECK(remoteVers == "3@7777777");
+    CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"two","rev":"three"})");
+    c4doc_release(doc);
+
+    // Check doc 3:
+    doc = c4db_getDoc(db, "doc-003"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "1@*");
+    versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(versionVector == "1@*,2@7777777");
+    CHECK(doc->sequence == 11);
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"three"})");
+    remoteVers = c4doc_getRemoteAncestor(doc, 1);
+    CHECK(remoteVers == "2@7777777");
+    CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"three","rev":"two"})");
+    c4doc_release(doc);
+
+    // Check doc 4:
+    doc = c4db_getDoc(db, "doc-004"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "1@*");
+    versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(versionVector == "1@*,2@7777777");
+    CHECK(doc->sequence == 14);
+    CHECK(doc->flags == (kDocConflicted | kDocExists));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"doc":"four","rev":"three"})");
+    remoteVers = c4doc_getRemoteAncestor(doc, 1);
+    CHECK(remoteVers == "3@7777777");
+    REQUIRE(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
+    versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(versionVector == "3@7777777");
+    CHECK(c4doc_selectRevision(doc, remoteVers, true, WITH_ERROR()));
+    CHECK(Dict(c4doc_getProperties(doc)).toJSONString() == R"({"ans*wer":42})");
+    c4doc_release(doc);
+
+    // Check deleted doc:
+    doc = c4db_getDoc(db, "doc-DEL"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    CHECK(slice(doc->revID) == "1@*");
+    versionVector = c4doc_getRevisionHistory(doc, 0, nullptr, 0);
+    CHECK(versionVector == "1@*");
+    CHECK(doc->sequence == 6);
+    CHECK(doc->flags == (kDocDeleted | kDocExists));
+    c4doc_release(doc);
 }

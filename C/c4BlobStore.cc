@@ -1,5 +1,5 @@
 //
-// c4BlobStore.cc
+// C4BlobStore.cc
 //
 // Copyright (c) 2016 Couchbase, Inc All rights reserved.
 //
@@ -23,10 +23,10 @@
 using namespace std;
 
 
-// This is a no-op class that just serves to make c4BlobStore type-compatible with BlobStore.
-struct c4BlobStore : public BlobStore {
+// This is a no-op class that just serves to make C4BlobStore type-compatible with BlobStore.
+struct C4BlobStore : public BlobStore {
 public:
-    c4BlobStore(const FilePath &dirPath, const Options *options)
+    C4BlobStore(const FilePath &dirPath, const Options *options)
     :BlobStore(dirPath, options)
     { }
 };
@@ -45,8 +45,7 @@ bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
     try {
         if (!str.buf)
             return false;
-        blobKey key(string((char*)str.buf, str.size));
-        *outKey = external(key);
+        *outKey = external(blobKey::withBase64(str));
         return true;
     } catchExceptions()
     return false;
@@ -73,7 +72,7 @@ C4BlobStore* c4blob_openStore(C4Slice dirPath,
             options.encryptionAlgorithm = (EncryptionAlgorithm)key->algorithm;
             options.encryptionKey = alloc_slice(key->bytes, sizeof(key->bytes));
         }
-        return new c4BlobStore(FilePath(toString(dirPath)), &options);
+        return new C4BlobStore(FilePath(toString(dirPath)), &options);
     } catchError(outError)
     return nullptr;
 }
@@ -122,10 +121,10 @@ C4StringResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* ou
     try {
         auto path = store->get(asInternal(key)).path();
         if (!path.exists()) {
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
             return {nullptr, 0};
         } else if (store->isEncrypted()) {
-            recordError(LiteCoreDomain, kC4ErrorWrongFormat, outError);
+            c4error_return(LiteCoreDomain, kC4ErrorWrongFormat, {}, outError);
             return {nullptr, 0};
         }
         return sliceResult((string)path);

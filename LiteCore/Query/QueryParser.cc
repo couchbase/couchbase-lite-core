@@ -31,7 +31,6 @@
 #include "PlatformIO.hh"
 #include "SecureDigest.hh"
 #include "NumConversion.hh"
-#include <utility>
 #include <algorithm>
 #include <unordered_set>
 
@@ -1389,7 +1388,7 @@ namespace litecore {
             // a collection type (e.g. alias = {"foo": "bar"}, and want to
             // ORDER BY alias.foo
             property.drop(1);
-            _sql << "fl_nested_value(\"" << iType->first << "\", '" << string(property) << "')";
+            _sql << kNestedValueFnName << "(\"" << iType->first << "\", '" << string(property) << "')";
             return;
         } 
         

@@ -18,11 +18,14 @@
 #include "StringUtil.hh"
 #include <algorithm>
 #include <chrono>
+#include <cinttypes>
 #include <condition_variable>
 #include <iostream>
-#include <thread>
+#include <memory>
 #include <mutex>
-#include <cinttypes>
+#include <set>
+#include <thread>
+#include <vector>
 
 using namespace fleece;
 using namespace litecore;
@@ -88,9 +91,9 @@ public:
     void createDB2() {
         auto config = c4db_getConfig2(db);
         C4Error error;
-        if (!c4db_deleteNamed(kDB2Name, config->parentDirectory, &error))
+        if (!c4db_deleteNamed(kDB2Name, config->parentDirectory, ERROR_INFO(error)))
             REQUIRE(error.code == 0);
-        db2 = c4db_openNamed(kDB2Name, config, &error);
+        db2 = c4db_openNamed(kDB2Name, config, ERROR_INFO(error));
         REQUIRE(db2 != nullptr);
 
         _address = { };
@@ -337,7 +340,7 @@ public:
         std::unique_lock<std::mutex> lock(_mutex);
 
         C4Error err;
-        REQUIRE(_startReplicator(push, pull, &err));
+        REQUIRE(_startReplicator(push, pull, WITH_ERROR(&err)));
         _waitForStatus(lock, kC4Stopped, std::chrono::minutes(5));
 
         C4ReplicatorStatus status = c4repl_getStatus(_repl);

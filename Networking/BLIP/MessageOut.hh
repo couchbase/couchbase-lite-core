@@ -19,6 +19,7 @@
 #pragma once
 #include "MessageBuilder.hh"
 #include <ostream>
+#include <utility>
 
 namespace litecore { namespace blip {
     class Codec;

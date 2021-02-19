@@ -31,7 +31,11 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
+#include <algorithm>
 #include <atomic>
+#include <mutex>
+#include <optional>
+#include <vector>
 
 using namespace fleece;
 using namespace litecore;

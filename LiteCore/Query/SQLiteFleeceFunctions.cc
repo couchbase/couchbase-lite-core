@@ -42,7 +42,7 @@ namespace litecore {
         if (body) {
             DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_BLOB);
             DebugAssert(sqlite3_value_subtype(argv[0]) == 0);
-            setResultBlobFromFleeceData(ctx, fleeceAccessor(ctx, body));
+            setResultBlobFromFleeceData(ctx, body);
             return;
         }
         // If arg isn't a blob, check if it's a tagged Fleece pointer:
@@ -56,6 +56,7 @@ namespace litecore {
     }
 
     // fl_value(body, propertyPath) -> propertyValue
+    __hot
     static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             QueryFleeceScope scope(ctx, argv);
@@ -220,6 +221,7 @@ namespace litecore {
     // fl_result(value) -> value suitable for use as a result column
     // Primarily what this does is change the various custom value subtypes into Fleece containers
     // that can be read by SQLiteQueryRunner::encodeColumn().
+    __hot
     static void fl_result(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             auto arg = argv[0];
@@ -487,18 +489,21 @@ namespace litecore {
 #pragma mark - REVISION HISTORY:
 
 
-    // fl_callback(docID, body, sequence, callback) -> string
+    // fl_callback(docID, revID, body, extra, sequence, callback) -> string
     static void fl_callback(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        slice docID = valueAsSlice(argv[0]);
-        slice body = valueAsSlice(argv[1]);
-        sequence_t sequence = sqlite3_value_int(argv[2]);
-        auto callback = (KeyStore::WithDocBodyCallback*)sqlite3_value_pointer(argv[3], kWithDocBodiesCallbackPointerType);
-        if (!callback || !docID) {
+        RecordLite rec;
+        rec.key = valueAsSlice(argv[0]);
+        rec.version = valueAsSlice(argv[1]);
+        rec.body = valueAsSlice(argv[2]);
+        rec.extra = valueAsSlice(argv[3]);
+        rec.sequence = sqlite3_value_int(argv[4]);
+        auto callback = sqlite3_value_pointer(argv[5], kWithDocBodiesCallbackPointerType);
+        if (!callback || !rec.key) {
             sqlite3_result_error(ctx, "Missing or invalid callback", -1);
             return;
         }
         try {
-            alloc_slice result = (*callback)(docID, body, sequence);
+            alloc_slice result = (*(KeyStore::WithDocBodyCallback*)callback)(rec);
             setResultTextFromSlice(ctx, result);
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_callback: exception!", -1);
@@ -525,7 +530,7 @@ namespace litecore {
         { "fl_bool",           1, fl_bool },
         { "array_of",         -1, array_of },
         { "dict_of",          -1, dict_of },
-        { "fl_callback",       4, fl_callback },
+        { "fl_callback",       6, fl_callback },
         { }
     };
 

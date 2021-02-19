@@ -473,7 +473,7 @@ namespace litecore { namespace repl {
         if(!read(db, false, outErr) && outErr->code != 0)
             return false;
 
-        c4::ref<C4Document> doc = c4doc_get(db, docId, false, outErr);
+        c4::ref<C4Document> doc = c4db_getDoc(db, docId, false, kDocGetCurrentRev, outErr);
         if (!doc)
             return false;
 

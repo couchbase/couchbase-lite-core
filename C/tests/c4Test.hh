@@ -17,48 +17,108 @@
 //
 
 #pragma once
-
 #include "fleece/Fleece.hh"
-
-using namespace fleece;
-
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
+#include "function_ref.hh"
+#include <vector>
 
+// c4.hh defines a bunch of useful C++ helpers for LiteCore API, in the `c4` namespace. Check it out!
+#include "c4.hh"
+
+// More test utilities that don't depend on the C API.
+#include "TestsCommon.hh"
+
+#ifdef CATCH_VERSION_MAJOR
+#error "This header must be included before Catch.hpp"
+#endif
+
+
+using namespace fleece;
+
+
+#pragma mark - STREAM OPERATORS FOR LOGGING:
+
+
+// Logging a C4Error to a stream, or pass it to a Catch logging macro
+// like INFO() or WARN().
+std::ostream& operator<< (std::ostream &out, C4Error);
+
+
+// Now include Catch --
+// WARNING: This has to go _after_ all the `operator<<` methods, so Catch knows about them.
 #include "CatchHelper.hh"
-#include "PlatformCompat.hh"
-#include <function_ref.hh>
-#include <functional>
-#include <set>
 
 
-#if 0 // disabled because CMake is building test binaries with optimization
-#ifdef NDEBUG
-    // Catch's assertion macros are pretty slow, and affect benchmark times.
-    // So replace them with quick-n-dirty alternatives in an optimized build.
-    #undef REQUIRE
-    #define REQUIRE(X) do {if (!(X)) abort();} while (0)
-    #undef CHECK
-    #define CHECK(X) do {if (!(X)) abort();} while (0)
-    #undef INFO
-    #define INFO(X)
-#endif
-#endif
+#pragma mark - C4ERROR REPORTING:
 
 
-// REQUIRE, CHECK and other Catch macros can't be used on background threads because Check is not
-// thread-safe. Use this instead. Don't use regular assert() because if this is an optimized build
-// it'll be ignored.
+/** A utility for logging errors from LiteCore calls. Where you would pass `&error` as a
+    parameter, instead pass `ERROR_INFO(error)`. After the call returns, if the error code is
+    nonzero, the error message & backtrace will be captured (by Catch's UNSCOPED_INFO())
+    and then reported by the subsequent failed CHECK() or REQUIRE().
+
+    You don't even need your own C4Error variable. You can just pass `ERROR_INFO()` with no arg.
+
+    Example:
+    ```
+        C4Document *doc = c4db_getDocument(db, docID, ERROR_INFO());
+        REQUIRE(doc != nullptr);
+    ```
+
+    \warning  Don't use ERROR_INFO _inside_ a CHECK() or REQUIRE() call ... due to the way Catch is
+              implemented, the error check will happen too late, so the info won't be logged.*/
+class ERROR_INFO {
+public:
+    ERROR_INFO(C4Error *outError)   :_error(outError) {*_error = {};}
+    ERROR_INFO(C4Error &outError)   :ERROR_INFO(&outError) { }
+    ERROR_INFO()                    :ERROR_INFO(_buf) { }
+    ~ERROR_INFO();
+    operator C4Error* ()            {return _error;}
+private:
+    C4Error* _error;
+    C4Error _buf;
+};
+
+
+/** `WITH_ERROR` is just like `ERROR_INFO` except it's meant to be used _inside_ a CHECK() or
+    REQUIRE() call. It logs the error immediately via WARN() so it'll show up at the same time as
+    Catch's failure message.
+
+    Example:
+    ```
+        REQUIRE( c4db_beginTransaction(db, WITH_ERROR()));
+    ```
+*/
+class WITH_ERROR {
+public:
+    WITH_ERROR(C4Error *outError)   :_error(outError) {*_error = {};}
+    WITH_ERROR(C4Error &outError)   :WITH_ERROR(&outError) { }
+    WITH_ERROR()                    :WITH_ERROR(_buf) { }
+    ~WITH_ERROR();
+    operator C4Error* ()            {return _error;}
+private:
+    C4Error* _error;
+    C4Error _buf;
+};
+
+
+#pragma mark - OTHER TEST UTILITIES:
+
+
+/// REQUIRE, CHECK and other Catch macros can't be used on background threads because Check is not
+/// thread-safe. In multithreaded code, use this instead.
+/// \warning Don't use regular assert(), because if this is an optimized build it'll be ignored.
 #define	C4Assert(e, ...) \
     (_usuallyFalse(!(e)) ? AssertionFailed(__func__, __FILE__, __LINE__, #e, ##__VA_ARGS__) \
                          : (void)0)
-
 [[noreturn]] void AssertionFailed(const char *func, const char *file, unsigned line,
                                   const char *expr,
                                   const char *message =nullptr);
 
 
+// Platform-specific filesystem path separator.
 #ifdef _MSC_VER
     #define kPathSeparator "\\"
 #else
@@ -66,54 +126,21 @@ using namespace fleece;
 #endif
 
 
+// Temporary directory to use for tests.
 #define TEMPDIR(PATH) c4str((TempDir() + PATH).c_str())
 
 const std::string& TempDir();
 
 
-// These '<<' functions help Catch log values of custom types in assertion messages:
-std::ostream& operator<< (std::ostream& o, fleece::slice s);
-std::ostream& operator<< (std::ostream& o, fleece::alloc_slice s);
-
-std::ostream& operator<< (std::ostream& o, C4Slice s);
-std::ostream& operator<< (std::ostream& o, C4SliceResult s);
-
-std::ostream& operator<< (std::ostream &out, C4Error error);
-
-template <class T>
-std::ostream& operator<< (std::ostream &o, const std::set<T> &things) {
-    o << "{";
-    int n = 0;
-    for (const T &thing : things) {
-        if (n++) o << ", ";
-        o << '"' << thing << '"';
-    }
-    o << "}";
-    return o;
-}
-
-
-// Converts a slice to a C++ string
-static inline std::string toString(C4Slice s)   {return std::string((char*)s.buf, s.size);}
-
-
-// Converts JSON5 to JSON; helps make JSON test input more readable!
-std::string json5(std::string);
-fleece::alloc_slice json5slice(std::string str);
-
-
+// CHECKs that `err` matches the expected error domain/code and optional message.
 void CheckError(C4Error err,
                 C4ErrorDomain expectedDomain, int expectedCode,
                 const char *expectedMessage =nullptr);
 
     
-// Waits for the predicate to return true, checking every 100ms.
-// If the timeout elapses, calls FAIL.
-void WaitUntil(int timeoutMillis, function_ref<bool()> predicate);
-
-
-// This helper is necessary because it ends an open transaction if an assertion fails.
-// If the transaction isn't ended, the c4db_delete call in tearDown will deadlock.
+// RAII utility class that wraps `c4db_begin/endTransaction`. Use this instead of the C calls,
+// because its destructor will abort the transaction if a REQUIRE fails or an exception is thrown.
+// Otherwise, the `c4db_delete` call in the test's teardown will deadlock.
 class TransactionHelper {
     public:
     explicit TransactionHelper(C4Database* db) {
@@ -134,22 +161,26 @@ class TransactionHelper {
 };
 
 
-struct ExpectingExceptions {
-    ExpectingExceptions()    {++gC4ExpectExceptions; c4log_warnOnErrors(false);}
-    ~ExpectingExceptions()   {--gC4ExpectExceptions; c4log_warnOnErrors(true);}
-};
+#pragma mark - C4TEST BASE CLASS:
 
 
-// Handy base class that creates a new empty C4Database in its setUp method,
-// and closes & deletes it in tearDown.
+/// Base test fixture class for C4 tests. Creates a new empty C4Database in its setUp method,
+/// and closes & deletes it in tearDown. Also checks for leaks of classes that are InstanceCounted.
 class C4Test {
 public:
-#if ENABLE_VERSION_VECTORS
-    static const int numberOfOptions = 3;       // rev-tree, rev-tree encrypted, version vector
-#elif defined(COUCHBASE_ENTERPRISE)
-    static const int numberOfOptions = 2;       // rev-tree, rev-tree encrypted
+#if defined(COUCHBASE_ENTERPRISE)
+    enum TestOptions {
+        RevTreeOption = 0,
+        VersionVectorOption,
+        EncryptedRevTreeOption
+    };
+    static const int numberOfOptions = 3;       // rev-tree, version vector, rev-tree encrypted
 #else
-    static const int numberOfOptions = 1;       // rev-tree
+    enum TestOptions {
+        RevTreeOption = 0,
+        VersionVectorOption
+    };
+    static const int numberOfOptions = 2;       // rev-tree, version vector
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
@@ -157,7 +188,7 @@ public:
 
     static constexpr slice kDatabaseName = "cbl_core_test";
 
-    C4Test(int testOption =1);
+    C4Test(int testOption =VersionVectorOption);
     ~C4Test();
 
     alloc_slice databasePath() const            {return alloc_slice(c4db_getPath(db));}
@@ -168,10 +199,15 @@ public:
     const C4DatabaseConfig2& dbConfig() const   {return _dbConfig;}
     const C4StorageEngine storageType() const   {return _storage;}
     bool isSQLite() const                       {return storageType() == kC4SQLiteStorageEngine;}
-    C4DocumentVersioning versioning() const     {return _versioning;}
-    bool isRevTrees() const                     {return _versioning == kC4RevisionTrees;}
+    bool isRevTrees() const                     {return (_dbConfig.flags & kC4DB_VersionVectors) == 0;}
     bool isEncrypted() const                    {return (_dbConfig.encryptionKey.algorithm != kC4EncryptionNone);}
 
+    static bool isRevTrees(C4Database *database) {
+        return (c4db_getConfig2(database)->flags & kC4DB_VersionVectors) == 0;
+    }
+
+    C4String revOrVersID(slice revID, slice versID) const {return isRevTrees() ? revID : versID;}
+    
     // Creates an extra database, with the same path as db plus the suffix.
     // Caller is responsible for closing & deleting this database when the test finishes.
     C4Database* createDatabase(const std::string &nameSuffix);
@@ -221,11 +257,13 @@ public:
                             std::string idPrefix ="",
                             double timeout =0.0,
                             bool verbose =false);
-    bool readFileByLines(std::string path, std::function<bool(FLSlice)>);
+    bool readFileByLines(std::string path, function_ref<bool(FLSlice)>);
     unsigned importJSONLines(std::string path, double timeout =0.0, bool verbose =false,
                              C4Database* database = nullptr);
 
-    
+
+    bool docBodyEquals(C4Document *doc NONNULL, slice fleece);
+
     static std::string fleece2json(slice fleece) {
         auto value = Value::fromData(fleece);
         REQUIRE(value);
@@ -248,15 +286,20 @@ public:
 
     // Some handy constants to use
     static const C4Slice kDocID;    // "mydoc"
-    C4Slice kRevID;    // "1-abcd"
-    C4Slice kRev2ID;   // "2-c001d00d"
-    C4Slice kRev3ID;   // "3-deadbeef"
-    static C4Slice kFleeceBody;
-    static C4Slice kEmptyFleeceBody;
+
+                            // REV-TREES:       VERSION VECTORS:
+    C4Slice kRevID;         // "1-abcd"         "1@*"
+    C4Slice kRev1ID;        // "1-abcd"         "1@*"
+    C4Slice kRev1ID_Alt;    // "1-dcba"         "1@*"
+    C4Slice kRev2ID;        // "2-c001d00d"     "2@*"
+    C4Slice kRev3ID;        // "3-deadbeef"     "3@*"
+    C4Slice kRev4ID;        // "4-44444444"     "4@*"
+
+    static C4Slice kFleeceBody;             // {"ans*wer":42}, in Fleece
+    static C4Slice kEmptyFleeceBody;        // {}, in Fleece
 
 private:
     const C4StorageEngine _storage;
-    const C4DocumentVersioning _versioning;
     C4DatabaseConfig2 _dbConfig;
     int objectCount;
 };

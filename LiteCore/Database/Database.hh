@@ -25,7 +25,6 @@
 #include "FilePath.hh"
 #include "InstanceCounted.hh"
 #include "access_lock.hh"
-#include <memory>
 #include <mutex>
 #include <unordered_set>
 
@@ -40,6 +39,7 @@ namespace litecore {
     class BlobStore;
     class BackgroundDB;
     class Housekeeper;
+    class RevTreeRecord;
 }
 
 
@@ -75,6 +75,8 @@ namespace c4Internal {
 
         UUID getUUID(slice key);
         void resetUUIDs();
+
+        uint64_t myPeerID();
 
         void rekey(const C4EncryptionKey *newKey);
         
@@ -147,7 +149,6 @@ namespace c4Internal {
         void unlockClientMutex()                            {_clientMutex.unlock();}
 
         // DataFile::Delegate API:
-        virtual slice fleeceAccessor(slice recordBody) const override;
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         virtual void externalTransactionCommitted(const SequenceTracker&) override;
 
@@ -175,26 +176,32 @@ namespace c4Internal {
         bool getUUIDIfExists(slice key, UUID&);
         UUID generateUUID(slice key, Transaction&, bool overwrite =false);
 
-        std::unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
+        unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         std::unordered_set<std::string> collectBlobs();
         void removeUnusedBlobs(const std::unordered_set<std::string> &used);
 
-        const string                _name;
-        const string                _parentDirectory;
-        const C4DatabaseConfig2     _config;
-        const C4DatabaseConfig      _configV1;              // TODO: DEPRECATED
-        std::unique_ptr<DataFile>   _dataFile;              // Underlying DataFile
+        C4DocumentVersioning checkDocumentVersioning();
+        void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,
+                                       Transaction&);
+        alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
+
+        const string                _name;                  // Database filename (w/o extension)
+        const string                _parentDirectory;       // Path to parent directory
+        C4DatabaseConfig2           _config;                // Configuration
+        C4DatabaseConfig            _configV1;              // TODO: DEPRECATED
+        unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
         Transaction*                _transaction {nullptr}; // Current Transaction, or null
         int                         _transactionLevel {0};  // Nesting level of transaction
-        std::unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
-        std::unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder
+        unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
+        unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder
         FLEncoder                   _flEncoder {nullptr};   // Ditto, for clients
-        std::unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
-        mutable std::unique_ptr<BlobStore> _blobStore;           // Blob storage
+        unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
+        mutable unique_ptr<BlobStore> _blobStore;           // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
-        std::recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
-        std::unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
+        std::recursive_mutex        _clientMutex;           // Mutex for c4db_lock/unlock
+        unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
         Retained<Housekeeper>       _housekeeper;           // for expiration/cleanup tasks
+        uint64_t                    _myPeerID {0};          // My identifier in version vectors
     };
 
 }

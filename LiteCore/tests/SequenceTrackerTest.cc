@@ -54,6 +54,10 @@ namespace litecore {
         SequenceTracker::const_iterator since(sequence_t s) {
             return tracker._since(s);
         }
+
+        slice docIDAt(sequence_t s) {
+            return tracker._docIDAt(s);
+        }
         
         SequenceTracker::const_iterator end() {
             return tracker.end();
@@ -66,38 +70,49 @@ namespace litecore {
 }
 
 
+static constexpr auto Flag1 = SequenceTracker::RevisionFlags(0x11);
+static constexpr auto Flag2 = SequenceTracker::RevisionFlags(0x22);
+static constexpr auto Flag3 = SequenceTracker::RevisionFlags(0x33);
+static constexpr auto Flag4 = SequenceTracker::RevisionFlags(0x44);
+static constexpr auto Flag5 = SequenceTracker::RevisionFlags(0x55);
+static constexpr auto Flag6 = SequenceTracker::RevisionFlags(0x66);
+static constexpr auto Flag7 = SequenceTracker::RevisionFlags(0x77);
+static constexpr auto Flag8 = SequenceTracker::RevisionFlags(0x88);
+static constexpr auto Flag9 = SequenceTracker::RevisionFlags(0x99);
+
+
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker", "[notification]") {
     tracker.beginTransaction();
-    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111);
-    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222);
-    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, 3333);
-    REQUIRE_IF_DEBUG(dump(true) == "[(A@1#1111, B@2#2222, C@3#3333)]");
+    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, Flag1);
+    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, Flag2);
+    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, Flag3);
+    REQUIRE_IF_DEBUG(dump(true) == "[(A@1#11, B@2#22, C@3#33)]");
     CHECK(tracker.lastSequence() == seq);
-    tracker.documentChanged("B"_asl, "2-bb"_asl, ++seq, 4444);
-    REQUIRE_IF_DEBUG(dump(true) == "[(A@1#1111, C@3#3333, B@4#4444)]");
-    tracker.documentChanged("B"_asl, "3-bb"_asl, ++seq, 5555);
+    tracker.documentChanged("B"_asl, "2-bb"_asl, ++seq, Flag4);
+    REQUIRE_IF_DEBUG(dump(true) == "[(A@1#11, C@3#33, B@4#44)]");
+    tracker.documentChanged("B"_asl, "3-bb"_asl, ++seq, Flag5);
     CHECK(tracker.lastSequence() == seq);
-    REQUIRE_IF_DEBUG(dump(true) == "[(A@1#1111, C@3#3333, B@5#5555)]");
-    tracker.documentChanged("A"_asl, "2-aa"_asl, ++seq, 6666);
+    REQUIRE_IF_DEBUG(dump(true) == "[(A@1#11, C@3#33, B@5#55)]");
+    tracker.documentChanged("A"_asl, "2-aa"_asl, ++seq, Flag6);
     CHECK(tracker.lastSequence() == seq);
-    REQUIRE_IF_DEBUG(dump(true) == "[(C@3#3333, B@5#5555, A@6#6666)]");
-    tracker.documentChanged("D"_asl, "1-dd"_asl, ++seq, 7777);
+    REQUIRE_IF_DEBUG(dump(true) == "[(C@3#33, B@5#55, A@6#66)]");
+    tracker.documentChanged("D"_asl, "1-dd"_asl, ++seq, Flag7);
     CHECK(tracker.lastSequence() == seq);
-    REQUIRE_IF_DEBUG(dump(true) == "[(C@3#3333, B@5#5555, A@6#6666, D@7#7777)]");
+    REQUIRE_IF_DEBUG(dump(true) == "[(C@3#33, B@5#55, A@6#66, D@7#77)]");
 
-    REQUIRE(since(0)->docID == "C"_sl);
-    REQUIRE(since(4)->docID == "B"_sl);
-    REQUIRE(since(5)->docID == "A"_sl);
-    REQUIRE(since(6)->docID == "D"_sl);
+    REQUIRE(docIDAt(0) == "C"_sl);
+    REQUIRE(docIDAt(4) == "B"_sl);
+    REQUIRE(docIDAt(5) == "A"_sl);
+    REQUIRE(docIDAt(6) == "D"_sl);
     REQUIRE(since(7) == end());
 }
 
 
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeNotifier", "[notification]") {
     tracker.beginTransaction();
-    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111);
-    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222);
-    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, 3333);
+    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, Flag1);
+    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, Flag2);
+    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, Flag3);
 
     int count1=0, count2=0, count3=0;
     DatabaseChangeNotifier cn1(tracker, [&](DatabaseChangeNotifier&) {++count1;});
@@ -122,7 +137,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
         CHECK(count2==0);
         CHECK(count3==0);
 
-        tracker.documentChanged("B"_asl, "2-bb"_asl, ++seq, 4444);
+        tracker.documentChanged("B"_asl, "2-bb"_asl, ++seq, Flag4);
 
         REQUIRE(cn1.hasChanges());
         REQUIRE(cn1.readChanges(changes, 5, external) == 1);
@@ -140,7 +155,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
         CHECK(count2==1);
         CHECK(count3==1);
 
-        tracker.documentChanged("C"_asl, "2-cc"_asl, ++seq, 5555);
+        tracker.documentChanged("C"_asl, "2-cc"_asl, ++seq, Flag5);
 
         CHECK(count1==2);   // was notified again because it called changes() after 1st change
         CHECK(count2==1);   // wasn't because it didn't
@@ -164,9 +179,9 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
         // don't initialize cn. Now the tracker isn't recording document changes...
     }
 
-    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111);
-    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222);
-    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, 3333);
+    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, Flag1);
+    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, Flag2);
+    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, Flag3);
 
     int countA=0, countB=0, countB2=0, countD=0;
 
@@ -187,35 +202,35 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
         ++countD;
     });
 
-    tracker.documentChanged("A"_asl, "2-aa"_asl, ++seq, 4444);
+    tracker.documentChanged("A"_asl, "2-aa"_asl, ++seq, Flag4);
     CHECK(countA==1);
     CHECK(countB==0);
 
-    tracker.documentChanged("B"_asl, "2-bb"_asl, ++seq, 5555);
+    tracker.documentChanged("B"_asl, "2-bb"_asl, ++seq, Flag5);
     CHECK(countA==1);
     CHECK(countB==1);
 
     {
         DocChangeNotifier cnB2(tracker,"B"_sl, [&](DocChangeNotifier&,slice,sequence_t) {++countB2;});
-        tracker.documentChanged("B"_asl, "3-bb"_asl, ++seq, 6666);
+        tracker.documentChanged("B"_asl, "3-bb"_asl, ++seq, Flag6);
         CHECK(countA==1);
         CHECK(countB==2);
         CHECK(countB2==1);
     }
 
-    tracker.documentChanged("B"_asl, "4-bb"_asl, ++seq, 7777);
+    tracker.documentChanged("B"_asl, "4-bb"_asl, ++seq, Flag7);
     CHECK(countA==1);
     CHECK(countB==3);
     CHECK(countB2==1);
     CHECK(countD==0);
 
-    tracker.documentChanged("D"_asl, "1-dd"_asl, ++seq, 8888);
+    tracker.documentChanged("D"_asl, "1-dd"_asl, ++seq, Flag8);
     CHECK(countA==1);
     CHECK(countB==3);
     CHECK(countB2==1);
     CHECK(countD==1);
 
-    tracker.documentChanged("Z"_asl, "9-zz"_asl, ++seq, 999);
+    tracker.documentChanged("Z"_asl, "9-zz"_asl, ++seq, Flag9);
 
     tracker.endTransaction(true);
 }
@@ -232,9 +247,9 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
     // First create some docs:
     sequence_t seq = 0;
     tracker.beginTransaction();
-    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111);
-    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222);
-    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, 3333);
+    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, Flag1);
+    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, Flag2);
+    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, Flag3);
     tracker.endTransaction(true);
     CHECK_IF_DEBUG(tracker.dump() == "[*, A@1, B@2, C@3]");
     numChanges = cn.readChanges(changes, 10, external);
@@ -242,8 +257,8 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
 
     // Now start a transaction and make two more changes:
     tracker.beginTransaction();
-    tracker.documentChanged("B"_asl, "2-bb"_asl, ++seq, 4444);
-    tracker.documentChanged("D"_asl, "1-dd"_asl, ++seq, 5555);
+    tracker.documentChanged("B"_asl, "2-bb"_asl, ++seq, Flag4);
+    tracker.documentChanged("D"_asl, "1-dd"_asl, ++seq, Flag5);
 
     CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, *, (B@4, D@5)]");
 
@@ -342,8 +357,8 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Ignores ExternalChanges", "[notification]") {
     SequenceTracker track2;
     track2.beginTransaction();
-    track2.documentChanged("B"_asl, "2-bb"_asl, ++seq, 4444);
-    track2.documentChanged("Z"_asl, "1-ff"_asl, ++seq, 5555);
+    track2.documentChanged("B"_asl, "2-bb"_asl, ++seq, Flag4);
+    track2.documentChanged("Z"_asl, "1-ff"_asl, ++seq, Flag5);
 
     // Notify tracker about the transaction from track2:
     tracker.addExternalTransaction(track2);
@@ -361,9 +376,9 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges
 
     // Add some docs:
     tracker.beginTransaction();
-    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111);
-    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222);
-    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, 3333);
+    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, Flag1);
+    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, Flag2);
+    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, Flag3);
     tracker.endTransaction(true);
 
     // notifier was notified:
@@ -371,8 +386,8 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges
 
     SequenceTracker track2;
     track2.beginTransaction();
-    track2.documentChanged("B"_asl, "2-bb"_asl, ++seq, 4444);
-    track2.documentChanged("Z"_asl, "1-ff"_asl, ++seq, 5555);
+    track2.documentChanged("B"_asl, "2-bb"_asl, ++seq, Flag4);
+    track2.documentChanged("Z"_asl, "1-ff"_asl, ++seq, Flag5);
 
     // Notify tracker about the transaction from track2:
     tracker.addExternalTransaction(track2);
@@ -404,8 +419,8 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Purge", "[notif
     DatabaseChangeNotifier cn1(tracker, [&](DatabaseChangeNotifier&) {++count1;});
 
     tracker.beginTransaction();
-    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111);
-    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222);
+    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, Flag1);
+    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, Flag2);
     tracker.documentPurged("A"_sl);
 
     {

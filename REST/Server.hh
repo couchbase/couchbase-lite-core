@@ -21,9 +21,11 @@
 #include "InstanceCounted.hh"
 #include "Request.hh"
 #include "c4Base.h"
+#include <atomic>
 #include <map>
 #include <mutex>
 #include <functional>
+#include <memory>
 #include <thread>
 #include <vector>
 #include <regex>

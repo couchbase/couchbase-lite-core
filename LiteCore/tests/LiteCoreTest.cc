@@ -59,85 +59,24 @@ FilePath TestFixture::sTempDir = GetTempDirectory();
 string stringWithFormat(const char *format, ...) {
     va_list args;
     va_start(args, format);
-    char *cstr;
-    REQUIRE(vasprintf(&cstr, format, args) >= 0);
+    string str = vformat(format, args);
     va_end(args);
-    REQUIRE(cstr);
-    string str(cstr);
-    free(cstr);
     return str;
-}
-
-
-std::string sliceToHex(slice result) {
-    std::string hex;
-    for (size_t i = 0; i < result.size; i++) {
-        char str[4];
-        sprintf(str, "%02X", result[i]);
-        hex.append(str);
-        if (i % 2 && i != result.size-1)
-            hex.append(" ");
-    }
-    return hex;
-}
-
-
-std::string sliceToHexDump(slice result, size_t width) {
-    std::string hex;
-    for (size_t row = 0; row < result.size; row += width) {
-        size_t end = std::min(row + width, result.size);
-        for (size_t i = row; i < end; ++i) {
-            char str[4];
-            sprintf(str, "%02X", result[i]);
-            hex.append(str);
-            if (i % 2 && i != result.size-1)
-                hex.append(" ");
-        }
-        hex.append("    ");
-        for (size_t i = row; i < end; ++i) {
-            char str[2] = {(char)result[i], 0};
-            if (result[i] < 32 || result[i] >= 127)
-                str[0] = '.';
-            hex.append(str);
-        }
-        hex.append("\n");
-    }
-    return hex;
-}
-
-
-namespace fleece {
-    std::ostream& operator<< (std::ostream& o, slice s) {
-        o << "slice[";
-        if (s.buf == nullptr)
-            return o << "null]";
-        auto buf = (const uint8_t*)s.buf;
-        for (size_t i = 0; i < s.size; i++) {
-            if (buf[i] < 32 || buf[i] > 126)
-                return o << sliceToHex(s) << "]";
-        }
-        return o << "\"" << std::string((char*)s.buf, s.size) << "\"]";
-    }
 }
 
 
 void ExpectException(litecore::error::Domain domain, int code, std::function<void()> lambda) {
     try {
+        ExpectingExceptions x;
         Log("NOTE: Expecting an exception to be thrown...");
-        ++gC4ExpectExceptions;
-        error::sWarnOnError = false;
         lambda();
     } catch (std::runtime_error &x) {
         Log("... caught exception %s", x.what());
-        --gC4ExpectExceptions;
-        error::sWarnOnError = true;
         error err = error::convertRuntimeError(x).standardized();
         CHECK(err.domain == domain);
         CHECK(err.code == code);
         return;
     }
-    --gC4ExpectExceptions;
-    error::sWarnOnError = true;
     FAIL("Should have thrown an exception");
 }
 
@@ -300,10 +239,6 @@ sequence_t DataFileTestFixture::writeDoc(slice docID,
     return store->set(docID, nullslice, body, flags, t);
 }
 
-
-slice DataFileTestFixture::fleeceAccessor(slice recordBody) const {
-    return recordBody;
-}
 
 alloc_slice DataFileTestFixture::blobAccessor(const fleece::impl::Dict*) const {
     return {};

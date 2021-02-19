@@ -52,12 +52,19 @@ extern "C" {
     }; // Note: Same as litecore::Rev::Flags
 
 
+    /** Specifies how much content to retrieve when getting a document. */
+    typedef C4_ENUM(uint8_t, C4DocContentLevel) {
+        kDocGetMetadata,            ///< Only get revID and flags
+        kDocGetCurrentRev,          ///< Get current revision body but not other revisions/remotes
+        kDocGetAll,                 ///< Get everything
+    }; // Note: Same as litecore::ContentOption
+
+
     /** Describes a revision of a document. A sub-struct of C4Document. */
     typedef struct {
         C4HeapString revID;         ///< Revision ID
         C4RevisionFlags flags;      ///< Flags (deleted?, leaf?, new? hasAttachments?)
         C4SequenceNumber sequence;  ///< Sequence number in database
-        C4String body;              ///< The raw body, or NULL if not loaded yet
     } C4Revision;
 
 
@@ -90,12 +97,25 @@ extern "C" {
         @return  A pointer to the string in the buffer, or NULL if the buffer is too small. */
     char* c4doc_generateID(char *buffer, size_t bufferSize) C4API;
 
-    /** Gets a document from the database. If there's no such document, the behavior depends on
-        the mustExist flag. If it's true, NULL is returned. If it's false, a valid but empty
-        C4Document is returned, that doesn't yet exist in the database (but will be added when
-        saved.)
+
+    /** Gets a document from the database given its ID.
         The current revision is selected (if the document exists.)
-        You must call `c4doc_release()` when finished with the document. */
+        You must call `c4doc_release()` when finished with the document.
+        @param database  The database to read from.
+        @param docID  The document's ID.
+        @param mustExist  Governs behavior if no document with that ID exists. If true, the call fails
+                            with error kC4NotFound. If false, a C4Document with no contents is returned.
+        @param content  How much content to retrieve: metadata only, current revision, or all revisions.
+        @param outError  On failure, error information is stored here.
+        @return  A new C4Document instance (which must be released), or NULL. */
+    C4Document* c4db_getDoc(C4Database *database,
+                            C4String docID,
+                            bool mustExist,
+                            C4DocContentLevel content,
+                            C4Error* C4NULLABLE outError) C4API;
+
+    /** Gets a document from the database given its ID (semi-deprecated).
+        This is the same as \ref c4db_getDoc with `content` equal to `kDocGetCurrentRev`. */
     C4Document* c4doc_get(C4Database *database,
                           C4String docID,
                           bool mustExist,
@@ -106,21 +126,6 @@ extern "C" {
     C4Document* c4doc_getBySequence(C4Database *database,
                                     C4SequenceNumber,
                                     C4Error* C4NULLABLE outError) C4API;
-
-    /** Gets a specific revision of a document.
-        ONLY that revision is available; any calls that would access other revisions will fail.
-        On the plus side, this call is quicker than \ref c4doc_get and allocates less memory.
-        @param database  The database to read from.
-        @param docID  The document ID.
-        @param revID  The revision ID, or a null slice for the current revision.
-        @param withBody  Should the body of the revision be loaded?
-        @param error  Error information is stored here.
-        @return  The document, or NULL on error. */
-    C4Document* c4doc_getSingleRevision(C4Database *database,
-                                        C4Slice docID,
-                                        C4Slice revID,
-                                        bool withBody,
-                                        C4Error* C4NULLABLE error) C4API;
 
     /** Saves changes to a C4Document.
         Must be called within a transaction.
@@ -154,14 +159,33 @@ extern "C" {
     bool c4doc_loadRevisionBody(C4Document* doc,
                                 C4Error* C4NULLABLE outError) C4API;
 
-    /** Transfers ownership of the document's `selectedRev.body` to the caller, without copying.
-        The C4Document's field is cleared, and the value returned from this function. As with
-        all C4SliceResult values, the caller is responsible for freeing it when finished. */
-    C4StringResult c4doc_detachRevisionBody(C4Document* doc) C4API;
-
     /** Returns true if the body of the selected revision is available,
         i.e. if c4doc_loadRevisionBody() would succeed. */
     bool c4doc_hasRevisionBody(C4Document* doc) C4API;
+
+    /** Returns the body (encoded Fleece data) of the selected revision, if available.
+        \warning  In a version-vector document, and if this is not the current revision,
+                  the returned slice is invalidated the next time this function is called. */
+    C4Slice c4doc_getRevisionBody(C4Document* doc) C4API;
+
+    /** Returns a string encoding the selected revision's history, as comma-separate revision/version IDs
+        in reverse chronological order.
+        In a version-vector database this is of course the revision's version vector. It will be in
+        global form (real peerID instead of "*") unless the `maxRevs` parameter is 0.
+        @param maxRevs  The maximum number of revisions to include in the result; or 0 for unlimited.
+        @param backToRevs  An array of revision IDs: the history should stop when it gets to any of
+                            these, and _must_ go back to one of these if possible, even if it means
+                            skipping some revisions.
+        @param backToRevsCount  The number of revisions in the `backToRevs` array. */
+    C4SliceResult c4doc_getRevisionHistory(C4Document* doc,
+                                           unsigned maxRevs,
+                                           const C4String backToRevs[C4NULLABLE],
+                                           unsigned backToRevsCount) C4API;
+
+    /** Returns the selected revision's ID in a form that will make sense to another peer/server.
+        (This doesn't affect tree-based revIDs. In vector-based version IDs it uses the database's actual
+        peer ID instead of the shorthand "*" character.) */
+    C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API;
 
     /** Selects the parent of the selected revision, if it's known, else returns NULL. */
     bool c4doc_selectParentRevision(C4Document* doc) C4API;
@@ -177,16 +201,6 @@ extern "C" {
                                       bool includeDeleted,
                                       bool withBody,
                                       C4Error* C4NULLABLE outError) C4API;
-
-    /** Selects the first revision that could be an ancestor of the given revID, or returns false
-        if there is none. */
-    bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc,
-                                             C4String revID) C4API;
-
-    /** Selects the next revision (after the selected one) that could be an ancestor of the given
-        revID, or returns false if there are no more. */
-    bool c4doc_selectNextPossibleAncestorOf(C4Document* doc,
-                                            C4String revID) C4API;
 
     /** Selects the common ancestor of two revisions. Returns false if none is found. */
     bool c4doc_selectCommonAncestorRevision(C4Document* doc,
@@ -216,14 +230,21 @@ extern "C" {
     C4SliceResult c4doc_getRemoteAncestor(C4Document *doc,
                                           C4RemoteID remoteDatabase) C4API;
 
-    /** Marks the selected revision as current for the given remote database. */
+    /** Marks a revision as current for the given remote database. */
     bool c4doc_setRemoteAncestor(C4Document *doc,
                                  C4RemoteID remoteDatabase,
+                                 C4String revID,
                                  C4Error* C4NULLABLE error) C4API;
 
     /** Given a revision ID, returns its generation number (the decimal number before
         the hyphen), or zero if it's unparseable. */
     unsigned c4rev_getGeneration(C4String revID) C4API;
+
+
+    /** Returns true if two revision IDs are equivalent.
+        - Digest-based IDs are equivalent only if byte-for-byte equal.
+        - Version-vector based IDs are equivalent if their initial versions are equal. */
+    bool c4rev_equal(C4Slice rev1, C4Slice rev2) C4API;
 
 
     /** Removes the body of the selected revision and clears its kKeepBody flag.
@@ -317,12 +338,12 @@ extern "C" {
         revision body and the body of the `C4DocPutRequest`. It's intended for use when the new
         revision is specified as a delta.
         @param context  The same value given in the `C4DocPutRequest`'s `deltaCBContext` field.
-        @param baseRevision  The base revision requested in the `deltaSourceRevID`.
+        @param doc  The document; its selected revision is the one requested in the `deltaSourceRevID`.
         @param delta  The contents of the request's `body` or `allocedBody`.
         @param outError  If the callback fails, store an error here if it's non-NULL.
         @return  The body to store in the new revision, or a null slice on failure. */
     typedef C4SliceResult (*C4DocDeltaApplier)(void *context,
-                                               const C4Revision *baseRevision,
+                                               C4Document *doc,
                                                C4Slice delta,
                                                C4Error* C4NULLABLE outError);
 

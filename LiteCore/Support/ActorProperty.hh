@@ -19,6 +19,7 @@
 #pragma once
 #include "Actor.hh"
 #include <functional>
+#include <vector>
 
 namespace litecore { namespace actor {
 

@@ -101,7 +101,7 @@ namespace litecore { namespace net {
     void Poller::addListener(int fd, Event event, Listener listener) {
         Assert(fd >= 0);
         lock_guard<mutex> lock(_mutex);
-        _listeners[fd][event] = listener;
+        _listeners[fd][event] = move(listener);
         if (_waiting)
             interrupt(0);
     }

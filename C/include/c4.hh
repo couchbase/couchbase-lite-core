@@ -26,14 +26,16 @@
 #include "fleece/Fleece.hh"
 #include "c4Base.h"
 #include <assert.h>
+#include <utility>
 
 
 // C4Error equality tests:
 // (These have to be in the global namespace, because C4Error is...)
-static inline bool operator== (C4Error a, C4Error b) {
-    return a.code == b.code && a.domain == b.domain;
+static inline bool operator== (const C4Error &a, const C4Error &b) {
+    return a.code == b.code && (a.code == 0 || a.domain == b.domain);
 }
-static inline bool operator!= (C4Error a, C4Error b) {
+
+static inline bool operator!= (const C4Error &a, C4Error b) {
     return !(a == b);
 }
 
@@ -66,31 +68,30 @@ namespace c4 {
     static inline C4QueryEnumerator* retainRef(C4QueryEnumerator* c) noexcept {return c4queryenum_retain(c);}
 
 
-    /** A simple little smart pointer that frees the C4 object when it leaves scope.
+    /** Smart pointer for C4 references, similar to Retained<>.
 
-        NOTE that the constructor and assignment operator that take a T* assume they're being given
+        NOTE that construction and assignment from a T* assumes they're being given
         a newly created reference (i.e. the return value from some C API function that creates a
-        reference), so they don't retain it, but will release it when destructed or reassigned.
-        If the reference is an existing one instead, you'll need to call retainRef() on it
-        first so the retains and releases balance! */
+        reference), so they _don't retain it_, but will release it when destructed or reassigned.
+        If the reference is an existing one instead, call `retaining` on it first, so the retains
+        and releases balance! */
     template <class T>
     class ref {
     public:
-        ref() noexcept                          :_obj(nullptr) { }
-        ref(std::nullptr_t) noexcept            :ref() { }
-        ref(T *t) noexcept                      :_obj(t) { }
-        ref(ref &&r) noexcept                   :_obj(r._obj) {r._obj = nullptr;}
+        constexpr ref() noexcept                :_obj(nullptr) { }
+        constexpr ref(T *t) noexcept            :_obj(t) { }
+        constexpr ref(ref &&r) noexcept         :_obj(r._obj) {r._obj = nullptr;}
         ref(const ref &r) noexcept              :_obj(retainRef(r._obj)) { }
         ~ref() noexcept                         {releaseRef(_obj);}
 
-        static ref retaining(T *t)               {return ref(retainRef(t));}
+        static ref retaining(T *t)              {return ref(retainRef(t));}
 
         operator T* () const noexcept FLPURE    {return _obj;}
         T* operator -> () const noexcept FLPURE {return _obj;}
         T* get() const noexcept FLPURE          {return _obj;}
 
         ref& operator=(std::nullptr_t) noexcept { replaceRef(nullptr); return *this; }
-        ref& operator=(ref &&r) noexcept        { replaceRef(r._obj); r._obj = nullptr; return *this;}
+        ref& operator=(ref &&r) noexcept        { std::swap(_obj, r._obj); return *this;}
         ref& operator=(const ref &r) noexcept   { replaceRef(retainRef(r._obj)); return *this;}
 
     private:

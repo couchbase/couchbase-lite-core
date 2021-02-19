@@ -22,9 +22,12 @@
 #include "RefCounted.hh"
 #include "Stopwatch.hh"
 #include <atomic>
+#include <chrono>
+#include <memory>
 #include <string>
 #include <thread>
 #include <functional>
+#include <vector>
 
 namespace litecore { namespace actor {
     using fleece::RefCounted;

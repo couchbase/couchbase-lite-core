@@ -21,7 +21,7 @@
 #include "PlatformCompat.hh"
 #include <fleece/slice.hh>
 
-struct c4Database;
+struct C4Database;
 
 namespace litecore { namespace net {
 
@@ -33,7 +33,7 @@ namespace litecore { namespace net {
         explicit Address(const alloc_slice &url);
         explicit Address(slice url)                         :Address(alloc_slice(url)) { }
         explicit Address(const C4Address&);
-        explicit Address(c4Database* NONNULL);
+        explicit Address(C4Database* NONNULL);
 
         Address(slice scheme,
                 slice hostname,

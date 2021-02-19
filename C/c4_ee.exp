@@ -68,8 +68,6 @@ _c4doc_selectParentRevision
 _c4doc_selectNextRevision
 _c4doc_selectNextLeafRevision
 _c4doc_selectCommonAncestorRevision
-_c4doc_selectFirstPossibleAncestorOf
-_c4doc_selectNextPossibleAncestorOf
 _c4doc_put
 _c4doc_create
 _c4doc_update
@@ -363,6 +361,7 @@ _c4db_maintenance
 _c4db_mayHaveExpiration
 _c4db_getCookies
 _c4db_setCookie
+_c4db_getDoc
 
 _c4doc_removeRevisionBody
 _c4doc_getForPut
@@ -370,13 +369,19 @@ _c4doc_bodyAsJSON
 _c4doc_hasOldMetaProperties
 _c4doc_containingValue
 _c4doc_encodeStrippingOldMetaProperties
-_c4doc_detachRevisionBody
 _c4doc_getRemoteAncestor
+_c4doc_setRemoteAncestor
 _c4doc_getBlobData
-_c4doc_getSingleRevision
 _c4doc_generateID
+_c4doc_getProperties
+_c4doc_getSelectedRevIDGlobalForm
+_c4doc_getRevisionHistory
 
 _c4db_getIndexesInfo
+
+_c4error_getBacktrace
+_c4error_getCaptureBacktraces
+_c4error_setCaptureBacktraces
 
 _kC4DefaultEnumeratorOptions
 _kC4DefaultQueryOptions
@@ -428,6 +433,7 @@ _FLSliceResult_New
 _FLDictIterator_GetCount
 _FLDictIterator_End
 
+_FLValue_IsEqual
 _FLValue_ToJSON5
 
 

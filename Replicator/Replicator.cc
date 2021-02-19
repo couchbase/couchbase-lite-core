@@ -604,7 +604,7 @@ namespace litecore { namespace repl {
 
         alloc_slice json = move(_checkpointJSONToSave);
 
-        logVerbose("Saving remote checkpoint '%.*s' with rev='%.*s': %.*s ...",
+        logVerbose("Saving remote checkpoint '%.*s' over rev='%.*s': %.*s ...",
                    SPLAT(_remoteCheckpointDocID), SPLAT(_remoteCheckpointRevID), SPLAT(json));
         Assert(_remoteCheckpointReceived);
         Assert(json);

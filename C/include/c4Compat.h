@@ -1,21 +1,11 @@
 //
-// c4Compat.hh
+// c4Compat.h
 //
 // Copyright © 2018 Couchbase. All rights reserved.
 //
 
 #pragma once
-
-
-#ifndef __has_feature
-#define __has_feature(x) 0
-#endif
-#ifndef __has_attribute
-#define __has_attribute(x) 0
-#endif
-#ifndef __has_extension
-#define __has_extension(x) 0
-#endif
+#include "fleece/Base.h"
 
 #ifdef _MSC_VER
 #  define C4INLINE __forceinline
@@ -74,9 +64,9 @@
 
 // Declaration for API functions; should be just before the ending ";".
 #ifdef __cplusplus
-#define C4API noexcept
+    #define C4API noexcept
 #else
-#define C4API
+    #define C4API
 #endif
 
 // Deprecating functions & types  (Note: In C++only code, can use standard `[[deprecated]]`)
@@ -88,20 +78,21 @@
 
 // Export/import stuff:
 #ifdef _MSC_VER
-#ifdef LITECORE_EXPORTS
-#define CBL_CORE_API __declspec(dllexport)
+    #ifdef LITECORE_EXPORTS
+        #define CBL_CORE_API __declspec(dllexport)
+    #else
+        #define CBL_CORE_API __declspec(dllimport)
+    #endif
 #else
-#define CBL_CORE_API __declspec(dllimport)
+    #define CBL_CORE_API
 #endif
-#else // _MSC_VER
-#define CBL_CORE_API
-#endif
+
 
 // Type-checking for printf-style vararg functions:
 #ifdef _MSC_VER
-#define __printflike(A, B)
+    #define __printflike(A, B)
 #else
-#ifndef __printflike
-#define __printflike(fmtarg, firstvararg) __attribute__((__format__ (__printf__, fmtarg, firstvararg)))
-#endif
+    #ifndef __printflike
+        #define __printflike(fmtarg, firstvararg) __attribute__((__format__ (__printf__, fmtarg, firstvararg)))
+    #endif
 #endif

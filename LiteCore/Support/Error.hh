@@ -25,6 +25,10 @@
 
 #undef check
 
+namespace fleece {
+    class Backtrace;
+}
+
 namespace litecore {
 
     /** Most API calls can throw this. */
@@ -86,14 +90,18 @@ namespace litecore {
             NumLiteCoreErrorsPlus1
         };
 
+        //---- Data members:
         Domain const domain;
         int const code;
+        std::shared_ptr<fleece::Backtrace> backtrace;
 
         error (Domain, int code );
         error(error::Domain, int code, const std::string &what);
         explicit error (LiteCoreError e)     :error(LiteCore, e) {}
 
         error& operator= (const error &e);
+
+        void captureBacktrace(unsigned skipFrames =0);
 
         [[noreturn]] void _throw();
 
@@ -118,24 +126,39 @@ namespace litecore {
         [[noreturn]] static void _throw(LiteCoreError);
         [[noreturn]] static void _throwErrno();
         [[noreturn]] static void _throw(LiteCoreError, const char *msg, ...) __printflike(2,3);
+        [[noreturn]] static void _throwErrno(const char *msg, ...) __printflike(1, 2);
 
         /** Throws an assertion failure exception. Called by the Assert() macro. */
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
                                                  const char *expr,
                                                  const char *message =nullptr, ...);
 
-        static std::string backtrace(unsigned skipFrames =0);
-
         static void setNotableExceptionHook(std::function<void()> hook);
 
         static bool sWarnOnError;
+        static bool sCaptureBacktraces;
     };
 
 
+    static inline bool operator== (const error &a, const error &b) noexcept {
+        return a.domain == b.domain && a.code == b.code;
+    }
+
+    static inline bool operator== (const error &a, error::LiteCoreError code) noexcept {
+        return a.domain == error::LiteCore && a.code == code;
+    }
+
+
 // Like C assert() but throws an exception instead of aborting
-#define	Assert(e, ...) \
-    (_usuallyFalse(!(e)) ? litecore::error::assertionFailed(__func__, __FILE__, __LINE__, #e, ##__VA_ARGS__) \
-                         : (void)0)
+#ifdef __FILE_NAME__
+    #define	Assert(e, ...) \
+        (_usuallyFalse(!(e)) ? litecore::error::assertionFailed(__func__, __FILE_NAME__, __LINE__, #e, ##__VA_ARGS__) \
+                             : (void)0)
+#else
+    #define	Assert(e, ...) \
+        (_usuallyFalse(!(e)) ? litecore::error::assertionFailed(__func__, __FILE__, __LINE__, #e, ##__VA_ARGS__) \
+                             : (void)0)
+#endif
 
 // DebugAssert is removed from release builds; use when 'e' test is too expensive
 #ifndef DEBUG

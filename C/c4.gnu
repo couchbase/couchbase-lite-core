@@ -69,8 +69,6 @@ CBL {
 		c4doc_selectNextRevision;
 		c4doc_selectNextLeafRevision;
 		c4doc_selectCommonAncestorRevision;
-		c4doc_selectFirstPossibleAncestorOf;
-		c4doc_selectNextPossibleAncestorOf;
 		c4doc_put;
 		c4doc_create;
 		c4doc_update;
@@ -324,6 +322,7 @@ CBL {
 		c4db_mayHaveExpiration;
 		c4db_getCookies;
 		c4db_setCookie;
+		c4db_getDoc;
 
 		c4doc_removeRevisionBody;
 		c4doc_getForPut;
@@ -331,13 +330,19 @@ CBL {
 		c4doc_hasOldMetaProperties;
 		c4doc_containingValue;
 		c4doc_encodeStrippingOldMetaProperties;
-		c4doc_detachRevisionBody;
 		c4doc_getRemoteAncestor;
+		c4doc_setRemoteAncestor;
 		c4doc_getBlobData;
-		c4doc_getSingleRevision;
 		c4doc_generateID;
+		c4doc_getProperties;
+		c4doc_getSelectedRevIDGlobalForm;
+		c4doc_getRevisionHistory;
 
 		c4db_getIndexesInfo;
+
+		c4error_getBacktrace;
+		c4error_getCaptureBacktraces;
+		c4error_setCaptureBacktraces;
 
 		kC4DefaultEnumeratorOptions;
 		kC4DefaultQueryOptions;
@@ -389,6 +394,7 @@ CBL {
 		FLDictIterator_GetCount;
 		FLDictIterator_End;
 
+		FLValue_IsEqual;
 		FLValue_ToJSON5;
 	local:
 		*;

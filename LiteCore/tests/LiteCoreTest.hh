@@ -18,14 +18,14 @@
 
 #pragma once
 
-#include <iostream>
-#include "fleece/slice.hh"
 #include "PlatformCompat.hh"
+#include "TestsCommon.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#include "JSON5.hh"
 #include "c4Base.h"
 #include <functional>
+#include <memory>
+#include <utility>
 
 #ifdef DEBUG
 #define CHECK_IF_DEBUG CHECK
@@ -35,38 +35,18 @@
 #define REQUIRE_IF_DEBUG(x)
 #endif
 
-namespace fleece { namespace impl {
+namespace fleece::impl {
     class Dict;
     class Encoder;
-} }
+}
 using namespace fleece;
 
 
 std::string stringWithFormat(const char *format, ...) __printflike(1, 2);
 
-// Converts JSON5 to JSON; helps make JSON test input more readable!
-static inline std::string json5(const std::string &s)      {return fleece::ConvertJSON5(s);}
-
-std::string sliceToHex(slice);
-std::string sliceToHexDump(slice, size_t width = 16);
-
-// Some operators to make slice work with unit-testing assertions:
-// (This has to be declared before including catch.hpp, because C++ sucks)
-namespace fleece {
-    std::ostream& operator<< (std::ostream& o, slice s);
-}
-
 
 // The lambda must throw a litecore::error with the given domain and code, or the test fails.
 void ExpectException(litecore::error::Domain, int code, std::function<void()> lambda);
-
-extern "C" CBL_CORE_API std::atomic_int gC4ExpectExceptions;
-
-// While in scope, suppresses warnings about errors, and debugger exception breakpoints (in Xcode)
-struct ExpectingExceptions {
-    ExpectingExceptions()    {++gC4ExpectExceptions; litecore::error::sWarnOnError = false;}
-    ~ExpectingExceptions()   {--gC4ExpectExceptions; litecore::error::sWarnOnError = true;}
-};
 
 
 #include "CatchHelper.hh"
@@ -116,7 +96,6 @@ public:
     sequence_t writeDoc(slice docID, DocumentFlags, Transaction&,
                         std::function<void(fleece::impl::Encoder&)>);
 
-    virtual slice fleeceAccessor(slice recordBody) const override;
     virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
 };
 

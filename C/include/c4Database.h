@@ -38,19 +38,18 @@ extern "C" {
 
     /** Boolean options for C4DatabaseConfig. */
     typedef C4_OPTIONS(uint32_t, C4DatabaseFlags) {
-        kC4DB_Create        = 1,    ///< Create the file if it doesn't exist
-        kC4DB_ReadOnly      = 2,    ///< Open file read-only
-        kC4DB_AutoCompact   = 4,    ///< Enable auto-compaction
-//      kC4DB_Bundled       = 8,    // OBSOLETE; all dbs are now bundled
-        kC4DB_SharedKeys    = 0x10, // OBSOLETE; shared keys are always used
+        kC4DB_Create        = 0x01, ///< Create the file if it doesn't exist
+        kC4DB_ReadOnly      = 0x02, ///< Open file read-only
+        kC4DB_AutoCompact   = 0x04, ///< Enable auto-compaction [UNIMPLEMENTED]
+        kC4DB_VersionVectors= 0x08, ///< Upgrade DB to version vectors instead of rev trees [EXPERIMENTAL]
         kC4DB_NoUpgrade     = 0x20, ///< Disable upgrading an older-version database
-        kC4DB_NonObservable = 0x40, ///< Disable c4DatabaseObserver
+        kC4DB_NonObservable = 0x40, ///< Disable C4DatabaseObserver, for slightly faster writes
     };
 
     /** Encryption algorithms. */
     typedef C4_ENUM(uint32_t, C4EncryptionAlgorithm) {
         kC4EncryptionNone = 0,      ///< No encryption (default)
-        kC4EncryptionAES256,        ///< AES with 256-bit key
+        kC4EncryptionAES256,        ///< AES with 256-bit key [ENTERPRISE EDITION ONLY]
     };
 
     /** Encryption key sizes (in bytes). */
@@ -67,7 +66,7 @@ extern "C" {
     /** Main database configuration struct (version 2) for use with c4db_openNamed etc. */
     typedef struct C4DatabaseConfig2 {
         C4Slice parentDirectory;        ///< Directory for databases
-        C4DatabaseFlags flags;          ///< Create, ReadOnly, NoUpgrade (AutoCompact & SharedKeys always set)
+        C4DatabaseFlags flags;          ///< Flags for opening db, versioning, ...
         C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
     } C4DatabaseConfig2;
 
@@ -229,16 +228,41 @@ extern "C" {
         @{ */
 
 
-    /** Types of maintenance that \ref c4db_maintenance can perform.
-        NOTE: Enum values must match the ones in DataFile::MaintenanceType */
+    /** Types of maintenance that \ref c4db_maintenance can perform. */
     typedef C4_ENUM(uint32_t, C4MaintenanceType) {
-        kC4Compact,         ///< Compact the database file and garbage-collect attachments
-        kC4Reindex,         ///< Rebuild indexes (not normally needed)
-        kC4IntegrityCheck,  ///< Check for database corruption, returning an error if it finds any
-    };
+        /// Shrinks the database file by removing any empty pages,
+        /// and deletes blobs that are no longer referenced by any documents.
+        /// (Runs SQLite `PRAGMA incremental_vacuum; PRAGMA wal_checkpoint(TRUNCATE)`.)
+        kC4Compact,
+
+        /// Rebuilds indexes from scratch. Normally never needed, but can be used to help
+        /// diagnose/troubleshoot cases of database corruption if only indexes are affected.
+        /// (Runs SQLite `REINDEX`.)
+        kC4Reindex,
+
+        /// Checks for database corruption, as might be caused by a damaged filesystem, or
+        /// memory corruption.
+        /// (Runs SQLite `PRAGMA integrity_check`.)
+        kC4IntegrityCheck,
+
+        /// Quickly updates database statistics that may help optimize queries that have been run
+        /// by this Database since it was opened. The more queries that have been run, the more
+        /// effective this will be, but it tries to do its work quickly by scanning only portions
+        /// of indexes.
+        /// This operation is also performed automatically by \ref c4db_close.
+        /// (Runs SQLite `PRAGMA analysis_limit=400; PRAGMA optimize`.)
+        kC4QuickOptimize,
+
+        /// Fully scans all indexes to gather database statistics that help optimize queries.
+        /// This may take some time, depending on the size of the indexes, but it doesn't have to
+        /// be redone unless the database changes drastically, or new indexes are created.
+        /// (Runs SQLite `PRAGMA analysis_limit=0; ANALYZE`.)
+        kC4FullOptimize,
+    };  // *NOTE:* These enum values must match the ones in DataFile::MaintenanceType
 
 
-    /** Performs database maintenance. */
+    /** Performs database maintenance.
+        For more detail, see the descriptions of the \ref C4MaintenanceType enum constants. */
     bool c4db_maintenance(C4Database* database,
                           C4MaintenanceType type,
                           C4Error* C4NULLABLE outError) C4API;
@@ -317,7 +341,9 @@ extern "C" {
     //-------- DEPRECATED API --------
 
     typedef C4_ENUM(uint32_t, C4DocumentVersioning) {
-        kC4RevisionTrees,           ///< Revision trees
+        kC4TreeVersioning_v2,       ///< Revision trees, old v2.x schema
+        kC4TreeVersioning,          ///< Revision trees, v3.x schema
+        kC4VectorVersioning         ///< Version vectors
     };
 
     typedef const char* C4StorageEngine;

@@ -23,7 +23,9 @@
 #include "PlatformCompat.hh"
 #include "Logging.hh"
 #include <stdarg.h>
-#include <iostream>
+#include <iosfwd>
+#include <map>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>

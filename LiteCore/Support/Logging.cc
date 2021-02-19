@@ -24,6 +24,7 @@
 #include "FilePath.hh"
 #include <string>
 #include <fstream>
+#include <iostream>
 #include <mutex>
 #include <ctime>
 
@@ -559,8 +560,7 @@ namespace litecore {
         sObjNames.insert({objRef, nickname});
         if (sCallback && level >= _callbackLogLevel())
         invokeCallback(*this, level, "{%s#%u}==> %s @%p",
-            nickname.c_str(), objRef, description.c_str(), object);
-
+                       nickname.c_str(), objRef, description.c_str(), object);
         return objRef;
     }
 

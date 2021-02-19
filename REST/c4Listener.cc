@@ -87,7 +87,7 @@ bool c4listener_shareDB(C4Listener *listener, C4String name, C4Database *db,
             nameStr = slice(name);
         if (internal(listener)->registerDatabase(db, nameStr))
             return true;
-        recordError(LiteCoreDomain, kC4ErrorConflict, "Database already shared", outError);
+        c4error_return(LiteCoreDomain, kC4ErrorConflict, "Database already shared"_sl, outError);
     } catchError(outError);
     return false;
 }
@@ -99,7 +99,7 @@ bool c4listener_unshareDB(C4Listener *listener, C4Database *db,
     try {
         if (internal(listener)->unregisterDatabase(db))
             return true;
-        recordError(LiteCoreDomain, kC4ErrorNotOpen, "Database not shared", outError);
+        c4error_return(LiteCoreDomain, kC4ErrorNotOpen, "Database not shared"_sl, outError);
     } catchError(outError);
     return false;
 }

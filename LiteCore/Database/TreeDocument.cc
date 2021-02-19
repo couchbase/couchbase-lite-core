@@ -22,7 +22,8 @@
 #include "Database.hh"
 #include "Record.hh"
 #include "RawRevTree.hh"
-#include "VersionedDocument.hh"
+#include "RevTreeRecord.hh"
+#include "Delimiter.hh"
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
@@ -40,9 +41,9 @@ namespace c4Internal {
 
     class TreeDocument : public Document {
     public:
-        TreeDocument(Database* database, C4Slice docID)
+        TreeDocument(Database* database, C4Slice docID, ContentOption content)
         :Document(database, docID),
-         _versionedDoc(database->defaultKeyStore(), docID),
+         _revTree(database->defaultKeyStore(), docID, content),
          _selectedRev(nullptr)
         {
             init();
@@ -51,7 +52,7 @@ namespace c4Internal {
 
         TreeDocument(Database *database, const Record &doc)
         :Document(database, doc.key()),
-         _versionedDoc(database->defaultKeyStore(), doc),
+         _revTree(database->defaultKeyStore(), doc),
          _selectedRev(nullptr)
         {
             init();
@@ -60,24 +61,19 @@ namespace c4Internal {
 
         TreeDocument(const TreeDocument &other)
         :Document(other)
-        ,_versionedDoc(other._versionedDoc)
+        ,_revTree(other._revTree)
         ,_selectedRev(nullptr)
         {
             if (other._selectedRev)
-                _selectedRev = _versionedDoc[other._selectedRev->revID];
-        }
-
-
-        Document* copy() override {
-            return new TreeDocument(*this);
+                _selectedRev = _revTree[other._selectedRev->revID];
         }
 
 
         void init() {
-            _versionedDoc.owner = this;
-            _versionedDoc.setPruneDepth(_db->maxRevTreeDepth());
-            flags = (C4DocumentFlags)_versionedDoc.flags();
-            if (_versionedDoc.exists())
+            _revTree.owner = this;
+            _revTree.setPruneDepth(_db->maxRevTreeDepth());
+            flags = (C4DocumentFlags)_revTree.flags();
+            if (_revTree.exists())
                 flags = (C4DocumentFlags)(flags | kDocExists);
 
             initRevID();
@@ -85,35 +81,128 @@ namespace c4Internal {
         }
 
         void initRevID() {
-            setRevID(_versionedDoc.revID());
-            sequence = _versionedDoc.sequence();
+            setRevID(_revTree.revID());
+            sequence = _revTree.sequence();
         }
 
-        bool exists() override {
-            return _versionedDoc.exists();
+        bool exists() noexcept override {
+            return _revTree.exists();
         }
 
         bool revisionsLoaded() const noexcept override {
-            return _versionedDoc.revsAvailable();
+            return _revTree.revsAvailable();
         }
 
+        void requireRevisions() const {
+            if (!_revTree.revsAvailable())
+                error::_throw(error::UnsupportedOperation,
+                        "This function is not legal on a C4Document loaded without kDocGetAll");
+        }
+
+        // This method can throw exceptions, so should not be called from 'noexcept' overrides!
+        // Such methods should call requireRevisions instead.
         void loadRevisions() override {
-            if (!_versionedDoc.revsAvailable()) {
-                _versionedDoc.read();
-                selectRevision(_versionedDoc.currentRevision());
+            if (!_revTree.revsAvailable()) {
+                LogTo(DBLog, "Need to read rev-tree of doc '%.*s'", SPLAT(docID));
+                _revTree.read(kEntireBody);
+                selectRevision(_revTree.currentRevision());
             }
         }
 
         bool hasRevisionBody() noexcept override {
-            if (!revisionsLoaded())
-                Warn("c4doc_hasRevisionBody called on doc loaded without kC4IncludeBodies");
-            return _selectedRev && _selectedRev->isBodyAvailable();
+            if (_revTree.revsAvailable())
+                return _selectedRev && _selectedRev->isBodyAvailable();
+            else
+                return _revTree.currentRevAvailable();
         }
 
         bool loadSelectedRevBody() override {
+            if (!_selectedRev && _revTree.currentRevAvailable())
+                return true;            // only the current rev is available, so return true
             loadRevisions();
-            return selectedRev.body.buf != nullptr;
+            return _selectedRev &&_selectedRev->body();
         }
+
+        virtual slice getSelectedRevBody() noexcept override {
+            if (_selectedRev)
+                return _selectedRev->body();
+            else if (_revTree.currentRevAvailable())
+                return _revTree.currentRevBody();
+            else
+                return nullslice;
+        }
+
+
+        alloc_slice getSelectedRevHistory(unsigned maxRevs,
+                                          const C4String backToRevs[],
+                                          unsigned backToRevsCount) override
+        {
+            auto selRev = _selectedRev;
+            int revsWritten = 0;
+            stringstream historyStream;
+            string::size_type lastPos = 0;
+
+            if (maxRevs == 0)
+                maxRevs = UINT_MAX;
+
+            auto append = [&](slice revID) {
+                lastPos = (string::size_type)historyStream.tellp();
+                if (revsWritten++ > 0)
+                    historyStream << ',';
+                historyStream.write((const char*)revID.buf, revID.size);
+            };
+
+            auto hasRemoteAncestor = [&](C4String revID) {
+                for (unsigned i = 0; i < backToRevsCount; ++i)
+                    if (slice(backToRevs[i]) == slice(revID))
+                        return true;
+                return false;
+            };
+
+            auto removeLast = [&]() {
+                string buf = historyStream.str();
+                buf.resize(lastPos);
+                historyStream.str(buf);
+                historyStream.seekp(lastPos);
+                --revsWritten;
+            };
+
+            // Go back through history, starting with the desired rev's parent, until we either reach
+            // a rev known to the peer or we run out of history. Do not write more than `maxHistory`
+            // revisions, but always write the rev known to the peer if there is one.
+            // There may be gaps in the history (non-consecutive generations) if revs have been pruned.
+            // If sending these, make up random revIDs for them since they don't matter.
+            unsigned lastGen = c4rev_getGeneration(selectedRev.revID) + 1;
+            do {
+                slice revID = selectedRev.revID;
+                unsigned gen = c4rev_getGeneration(revID);
+                while (gen < --lastGen && revsWritten < maxRevs) {
+                    // We don't have this revision (the history got deeper than the local db's
+                    // maxRevTreeDepth), so make up a random revID. The server probably won't care.
+                    append(slice(format("%u-faded000%.08x%.08x",
+                                        lastGen, RandomNumber(), RandomNumber())));
+                }
+                lastGen = gen;
+
+                if (hasRemoteAncestor(revID)) {
+                    // Always write the common ancestor, making room if necessary:
+                    if (revsWritten == maxRevs)
+                        removeLast();
+                    append(revID);
+                    break;
+                } else {
+                    // Write a regular revision if there's room:
+                    if (revsWritten < maxRevs) {
+                        append(revID);
+                        if (backToRevsCount == 0 && revsWritten == maxRevs)
+                            break;
+                    }
+                }
+            } while (selectParentRevision());
+            selectRevision(selRev);
+            return alloc_slice(historyStream.str());
+        }
+
 
         bool selectRevision(const Rev *rev) noexcept {   // doesn't throw
             _selectedRev = rev;
@@ -122,7 +211,6 @@ namespace c4Internal {
                 selectedRev.revID = _selectedRevIDBuf;
                 selectedRev.flags = (C4RevisionFlags)rev->flags;
                 selectedRev.sequence = rev->sequence;
-                selectedRev.body = rev->body();
                 return true;
             } else {
                 clearSelectedRevision();
@@ -133,7 +221,7 @@ namespace c4Internal {
         bool selectRevision(C4Slice revID, bool withBody) override {
             if (revID.buf) {
                 loadRevisions();
-                const Rev *rev = _versionedDoc[revidBuffer(revID)];
+                const Rev *rev = _revTree[revidBuffer(revID)];
                 if (!selectRevision(rev))
                     return false;
                 if (withBody)
@@ -145,8 +233,8 @@ namespace c4Internal {
         }
 
         bool selectCurrentRevision() noexcept override { // doesn't throw
-            if (_versionedDoc.revsAvailable()) {
-                selectRevision(_versionedDoc.currentRevision());
+            if (_revTree.revsAvailable()) {
+                selectRevision(_revTree.currentRevision());
                 return true;
             } else {
                 _selectedRev = nullptr;
@@ -156,24 +244,21 @@ namespace c4Internal {
         }
 
         bool selectParentRevision() noexcept override {
-            if (!revisionsLoaded())
-                Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+            requireRevisions();
             if (_selectedRev)
                 selectRevision(_selectedRev->parent);
             return _selectedRev != nullptr;
         }
 
         bool selectNextRevision() noexcept override {    // does not throw
-            if (!revisionsLoaded())
-                Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+            requireRevisions();
             if (_selectedRev)
                 selectRevision(_selectedRev->next());
             return _selectedRev != nullptr;
         }
 
         bool selectNextLeafRevision(bool includeDeleted) noexcept override {
-            if (!revisionsLoaded())
-                Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
+            requireRevisions();
             auto rev = _selectedRev;
             if (!rev)
                 return false;
@@ -188,8 +273,9 @@ namespace c4Internal {
         }
 
         bool selectCommonAncestorRevision(slice revID1, slice revID2) override {
-            const Rev *rev1 = _versionedDoc[revidBuffer(revID1)];
-            const Rev *rev2 = _versionedDoc[revidBuffer(revID2)];
+            requireRevisions();
+            const Rev *rev1 = _revTree[revidBuffer(revID1)];
+            const Rev *rev2 = _revTree[revidBuffer(revID2)];
             if (!rev1 || !rev2)
                 error::_throw(error::NotFound);
             while (rev1 != rev2) {
@@ -206,45 +292,46 @@ namespace c4Internal {
         }
 
         alloc_slice remoteAncestorRevID(C4RemoteID remote) override {
-            auto rev = _versionedDoc.latestRevisionOnRemote(remote);
+            loadRevisions();
+            auto rev = _revTree.latestRevisionOnRemote(remote);
             return rev ? rev->revID.expanded() : alloc_slice();
         }
 
-        void setRemoteAncestorRevID(C4RemoteID remote) override {
-            _versionedDoc.setLatestRevisionOnRemote(remote, _selectedRev);
+        void setRemoteAncestorRevID(C4RemoteID remote, C4String revID) override {
+            loadRevisions();
+            const Rev *rev = _revTree[revidBuffer(revID)];
+            if (!rev)
+                error::_throw(error::NotFound);
+            _revTree.setLatestRevisionOnRemote(remote, rev);
         }
 
         void updateFlags() {
-            flags = (C4DocumentFlags)_versionedDoc.flags() | kDocExists;
+            flags = (C4DocumentFlags)_revTree.flags() | kDocExists;
             initRevID();
         }
 
         bool removeSelectedRevBody() noexcept override {
             if (!_selectedRev)
                 return false;
-            _versionedDoc.removeBody(_selectedRev);
+            _revTree.removeBody(_selectedRev);
             return true;
-        }
-
-        Retained<Doc> fleeceDoc() override {
-            return _versionedDoc.fleeceDocFor(selectedRev.body);
         }
 
         bool save(unsigned maxRevTreeDepth =0) override {
             requireValidDocID();
             if (maxRevTreeDepth > 0)
-                _versionedDoc.prune(maxRevTreeDepth);
+                _revTree.prune(maxRevTreeDepth);
             else
-                _versionedDoc.prune();
-            switch (_versionedDoc.save(_db->transaction())) {
-                case litecore::VersionedDocument::kConflict:
+                _revTree.prune();
+            switch (_revTree.save(_db->transaction())) {
+                case litecore::RevTreeRecord::kConflict:
                     return false;
-                case litecore::VersionedDocument::kNoNewSequence:
+                case litecore::RevTreeRecord::kNoNewSequence:
                     return true;
-                case litecore::VersionedDocument::kNewSequence:
+                case litecore::RevTreeRecord::kNewSequence:
                     selectedRev.flags &= ~kRevNew;
-                    if (_versionedDoc.sequence() > sequence) {
-                        sequence = _versionedDoc.sequence();
+                    if (_revTree.sequence() > sequence) {
+                        sequence = _revTree.sequence();
                         if (selectedRev.sequence == 0)
                             selectedRev.sequence = sequence;
                         _db->documentSaved(this);
@@ -256,16 +343,17 @@ namespace c4Internal {
         }
 
         int32_t purgeRevision(C4Slice revID) override {
+            loadRevisions();
             int32_t total;
             if (revID.buf)
-                total = _versionedDoc.purge(revidBuffer(revID));
+                total = _revTree.purge(revidBuffer(revID));
             else
-                total = _versionedDoc.purgeAll();
+                total = _revTree.purgeAll();
             if (total > 0) {
-                _versionedDoc.updateMeta();
+                _revTree.updateMeta();
                 updateFlags();
                 if (_selectedRevIDBuf == slice(revID))
-                    selectRevision(_versionedDoc.currentRevision());
+                    selectRevision(_revTree.currentRevision());
             }
             return total;
         }
@@ -274,9 +362,10 @@ namespace c4Internal {
                              C4Slice mergedBody, C4RevisionFlags mergedFlags,
                              bool pruneLosingBranch =true) override
         {
+            loadRevisions();
             // Validate the revIDs:
-            auto winningRev = _versionedDoc[revidBuffer(winningRevID)];
-            auto losingRev = _versionedDoc[revidBuffer(losingRevID)];
+            auto winningRev = _revTree[revidBuffer(winningRevID)];
+            auto losingRev = _revTree[revidBuffer(losingRevID)];
             if (!winningRev || !losingRev)
                 error::_throw(error::NotFound);
             if (!winningRev->isLeaf() || !losingRev->isLeaf())
@@ -284,8 +373,8 @@ namespace c4Internal {
             if (winningRev == losingRev)
                 error::_throw(error::InvalidParameter);
 
-            _versionedDoc.markBranchAsNotConflict(winningRev, true);
-            _versionedDoc.markBranchAsNotConflict(losingRev, false);
+            _revTree.markBranchAsNotConflict(winningRev, true);
+            _revTree.markBranchAsNotConflict(losingRev, false);
 
             // Deal with losingRev:
             if (pruneLosingBranch) {
@@ -298,7 +387,7 @@ namespace c4Internal {
                 rq.revFlags = kRevDeleted | kRevClosed;
                 rq.history = &losingRevID;
                 rq.historyCount = 1;
-                Assert(putNewRevision(rq));
+                Assert(putNewRevision(rq, nullptr));
             }
 
             if (mergedBody.buf) {
@@ -319,7 +408,7 @@ namespace c4Internal {
                 rq.body = mergedBody;
                 rq.history = &winningRevID;
                 rq.historyCount = 1;
-                Assert(putNewRevision(rq));
+                Assert(putNewRevision(rq, nullptr));
                 LogTo(DBLog, "Resolved conflict, adding rev '%.*s' #%.*s",
                       SPLAT(docID), SPLAT(selectedRev.revID));
             } else if(winningRev->sequence == sequence) {
@@ -334,7 +423,7 @@ namespace c4Internal {
                 // the sequence to 0 so that the required follow-up call to save() will
                 // generate a new one for it and then _that_ will go into the sequence
                 // tracker.
-                _versionedDoc.resetConflictSequence(winningRev);
+                _revTree.resetConflictSequence(winningRev);
                 selectRevision(winningRev);
             }
         }
@@ -353,14 +442,18 @@ namespace c4Internal {
             } else {
                 // Apply a delta via a callback:
                 if (!rq.deltaSourceRevID.buf || !selectRevision(rq.deltaSourceRevID, true)) {
-                    recordError(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                "Unknown source revision ID for delta", outError);
-                } else if (!selectedRev.body.buf) {
-                    recordError(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
-                                "Missing source revision body for delta", outError);
+                    if (outError)
+                        *outError = c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                               "Missing source revision '%.*s' for delta",
+                                               SPLAT(rq.deltaSourceRevID));
+                } else if (!getSelectedRevBody()) {
+                    if (outError)
+                        *outError = c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                               "Missing body of source revision '%.*s' for delta",
+                                               SPLAT(rq.deltaSourceRevID));
                 } else {
                     slice delta = (rq.allocedBody.buf)? slice(rq.allocedBody) : slice(rq.body);
-                    body = rq.deltaCB(rq.deltaCBContext, &selectedRev, delta, outError);
+                    body = rq.deltaCB(rq.deltaCBContext, this, delta, outError);
                 }
             }
 
@@ -385,11 +478,11 @@ namespace c4Internal {
                              && outError->domain == LiteCoreDomain) {
                     // A missing delta base might just be a side effect of a conflict:
                     if (!rq.allowConflict
-                        && _versionedDoc.findCommonAncestor(revIDBuffers, rq.allowConflict).second
+                        && _revTree.findCommonAncestor(revIDBuffers, rq.allowConflict).second
                                 == -409) {
                         *outError = c4error_make(LiteCoreDomain, kC4ErrorConflict, nullslice);
                     } else {
-                        alloc_slice cur = _versionedDoc.currentRevision()->revID.expanded();
+                        alloc_slice cur = _revTree.currentRevision()->revID.expanded();
                         Warn("Missing base rev for delta! Inserting rev %.*s, delta base is %.*s, "
                              "doc current rev is %.*s",
                              SPLAT(rq.history[0]), SPLAT(rq.deltaSourceRevID), SPLAT(cur));
@@ -399,16 +492,20 @@ namespace c4Internal {
             }
 
             if (rq.maxRevTreeDepth > 0)
-                _versionedDoc.setPruneDepth(rq.maxRevTreeDepth);
+                _revTree.setPruneDepth(rq.maxRevTreeDepth);
 
-            auto priorCurrentRev = _versionedDoc.currentRevision();
-            commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
+            auto priorCurrentRev = _revTree.currentRevision();
+            commonAncestor = _revTree.insertHistory(revIDBuffers,
                                                          body,
                                                          (Rev::Flags)rq.revFlags,
                                                          rq.allowConflict,
                                                          (rq.remoteDBID != 0));
             if (commonAncestor < 0) {
                 if (outError) {
+                    alloc_slice current = _revTree.revID().expanded();
+                    LogToAt(DBLog, Warning,
+                           "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %d",
+                           SPLAT(docID), SPLAT(rq.history[0]), SPLAT(current), -commonAncestor);
                     if (commonAncestor == -409)
                         *outError = {LiteCoreDomain, kC4ErrorConflict};
                     else
@@ -418,11 +515,11 @@ namespace c4Internal {
                 return -1;
             }
             
-            auto newRev = _versionedDoc[revidBuffer(rq.history[0])];
+            auto newRev = _revTree[revidBuffer(rq.history[0])];
             DebugAssert(newRev);
 
             if (rq.remoteDBID) {
-                auto oldRev = _versionedDoc.latestRevisionOnRemote(rq.remoteDBID);
+                auto oldRev = _revTree.latestRevisionOnRemote(rq.remoteDBID);
                 if (oldRev && !oldRev->isAncestorOf(newRev)) {
                     if(newRev->isAncestorOf(oldRev)) {
                         // CBL-578: Sometimes due to the parallel nature of the rev responses, older
@@ -439,13 +536,13 @@ namespace c4Internal {
                     Assert(newRev->isConflict());
                     const char *effect;
                     if (oldRev->isConflict()) {
-                        _versionedDoc.purge(oldRev->revID);
+                        _revTree.purge(oldRev->revID);
                         effect = "purging old branch";
                     } else if (oldRev == priorCurrentRev) {
-                        _versionedDoc.markBranchAsNotConflict(newRev, true);
-                        _versionedDoc.purge(oldRev->revID);
+                        _revTree.markBranchAsNotConflict(newRev, true);
+                        _revTree.purge(oldRev->revID);
                         effect = "making new branch main & purging old";
-                        Assert(_versionedDoc.currentRevision() == newRev);
+                        Assert(_revTree.currentRevision() == newRev);
                     } else {
                         effect = "doing nothing";
                     }
@@ -453,7 +550,7 @@ namespace c4Internal {
                           SPLAT(docID), SPLAT(oldRev->revID.expanded()),
                           SPLAT(newRev->revID.expanded()), effect);
                 }
-                _versionedDoc.setLatestRevisionOnRemote(rq.remoteDBID, newRev);
+                _revTree.setLatestRevisionOnRemote(rq.remoteDBID, newRev);
             }
 
             if (!saveNewRev(rq, newRev, (commonAncestor > 0 || rq.remoteDBID))) {
@@ -465,23 +562,21 @@ namespace c4Internal {
         }
 
 
-        bool putNewRevision(const C4DocPutRequest &rq) override {
-            if (rq.remoteDBID != 0)
-                error::_throw(error::InvalidParameter, "remoteDBID cannot be used when existing=false");
+        bool putNewRevision(const C4DocPutRequest &rq, C4Error *outError) override {
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
 
             if (rq.maxRevTreeDepth > 0)
-                _versionedDoc.setPruneDepth(rq.maxRevTreeDepth);
+                _revTree.setPruneDepth(rq.maxRevTreeDepth);
 
-            C4Error err;
-            alloc_slice body = requestBody(rq, &err);
+            alloc_slice body = requestBody(rq, outError);
             if (!body)
-                error::_throw((error::Domain)err.domain, err.code); //FIX: Ick.
+                return false;
 
             revidBuffer encodedNewRevID = generateDocRevID(body, selectedRev.revID, deletion);
 
+            C4ErrorCode errorCode = {};
             int httpStatus;
-            auto newRev = _versionedDoc.insert(encodedNewRevID,
+            auto newRev = _revTree.insert(encodedNewRevID,
                                                body,
                                                (Rev::Flags)rq.revFlags,
                                                _selectedRev,
@@ -489,18 +584,24 @@ namespace c4Internal {
                                                false,
                                                httpStatus);
             if (newRev) {
-                return saveNewRev(rq, newRev);
+                if (!saveNewRev(rq, newRev))
+                    errorCode = kC4ErrorConflict;
             } else if (httpStatus == 200) {
                 // Revision already exists, so nothing was added. Not an error.
                 selectRevision(encodedNewRevID.expanded(), true);
-                return true;
             } else if (httpStatus == 400) {
-                error::_throw(error::InvalidParameter);
+                errorCode = kC4ErrorInvalidParameter;
             } else if (httpStatus == 409) {
-                error::_throw(error::Conflict);
+                errorCode = kC4ErrorConflict;
             } else {
-                error::_throw(error::UnexpectedError);
+                errorCode = kC4ErrorUnexpectedError;
             }
+
+            if (errorCode) {
+                c4error_return(LiteCoreDomain, errorCode, nullslice, outError);
+                return false;
+            }
+            return true;
         }
 
 
@@ -513,10 +614,10 @@ namespace c4Internal {
                     alloc_slice revID = newRev->revID.expanded();
                     _db->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
                         ((rq.revFlags & kRevDeleted) ? "Deleted" : "Saved"),
-                        SPLAT(rq.docID), SPLAT(revID), _versionedDoc.sequence());
+                        SPLAT(rq.docID), SPLAT(revID), _revTree.sequence());
                 }
             } else {
-                _versionedDoc.updateMeta();
+                _revTree.updateMeta();
             }
             updateFlags();
             return true;
@@ -536,12 +637,12 @@ namespace c4Internal {
                 revidBuffer parentID(parentRevID);
                 generation = parentID.generation() + 1;
             }
-            return revidBuffer(generation, slice(digest), kDigestType);
+            return revidBuffer(generation, slice(digest));
         }
 
 
     private:
-        VersionedDocument _versionedDoc;
+        RevTreeRecord _revTree;
         const Rev *_selectedRev;
     };
 
@@ -549,28 +650,20 @@ namespace c4Internal {
 #pragma mark - FACTORY:
 
 
-    Retained<Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID) {
-        return new TreeDocument(database(), docID);
+    Retained<Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
+        return new TreeDocument(database(), docID, c);
     }
 
-    Retained<Document> TreeDocumentFactory::newDocumentInstance(const Record &doc) {
-        return new TreeDocument(database(), doc);
+    Retained<Document> TreeDocumentFactory::newDocumentInstance(const Record &rec) {
+        return new TreeDocument(database(), rec);
     }
 
-    slice TreeDocumentFactory::fleeceAccessor(slice docBody) {
-        return RawRevision::getCurrentRevBody(docBody);
-    }
-
-    alloc_slice TreeDocumentFactory::revIDFromVersion(slice version) {
-        return revid(version).expanded();
-    }
-
-    bool TreeDocumentFactory::isFirstGenRevID(slice revID) {
+    bool TreeDocumentFactory::isFirstGenRevID(slice revID) const {
         return revID.hasPrefix(slice("1-", 2));
     }
 
-    Document* TreeDocumentFactory::treeDocumentContaining(const Value *value) {
-        VersionedDocument *vdoc = VersionedDocument::containing(value);
+    Document* TreeDocumentFactory::documentContaining(FLValue value) {
+        RevTreeRecord *vdoc = RevTreeRecord::containing((const Value*)value);
         return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
     }
 
@@ -586,50 +679,57 @@ namespace c4Internal {
             revMap[docIDs[i]] = revIDs[i];
         stringstream result;
 
-        auto callback = [&](slice docID, slice docBody, sequence_t sequence) -> alloc_slice {
+        auto callback = [&](const RecordLite &rec) -> alloc_slice {
             // --- This callback runs inside the SQLite query ---
             // --- It will be called once for each docID in the vector ---
             // Convert revID to encoded binary form:
             revidBuffer revID;
-            revID.parse(revMap[docID]);
-
-            RevTree tree(docBody, 0);
+            revID.parse(revMap[rec.key]);
+            auto revGeneration = revID.generation();
+            C4FindDocAncestorsResultFlags status = {};
+            RevTree tree(rec.body, rec.extra, 0);
+            auto current = tree.currentRevision();
 
             // Does it exist in the doc?
-            if (tree[revID]) {
-                if (remoteDBID) {
-                    const Rev *curRemoteRev = tree.latestRevisionOnRemote(remoteDBID);
-                    if (curRemoteRev && curRemoteRev->revID != revID) {
-                        return alloc_slice(kC4AncestorExistsButNotCurrent);
-                    }
+            if (const Rev *rev = tree[revID]) {
+                if (rev->isBodyAvailable())
+                    status |= kRevsHaveLocal;
+                if (remoteDBID && rev == tree.latestRevisionOnRemote(remoteDBID))
+                    status |= kRevsAtThisRemote;
+                if (current != rev) {
+                    if (rev->isAncestorOf(current))
+                        status |= kRevsLocalIsNewer;
+                    else
+                        status |= kRevsConflict;
                 }
-                static alloc_slice kAncestorExists = alloc_slice(kC4AncestorExists);
-                return kAncestorExists;
+            } else {
+                if (current->revID.generation() < revGeneration)
+                    status |= kRevsLocalIsOlder;
+                else
+                    status |= kRevsConflict;
+            }
+
+            char statusChar = '0' + char(status);
+            if (!(status & kRevsLocalIsOlder)) {
+                return alloc_slice(&statusChar, 1);
             }
 
             // Find revs that could be ancestors of it and write them as a JSON array:
             result.str("");
-            result << '[';
-            auto generation = revID.generation();
+            result << statusChar << '[';
             char expandedBuf[100];
-            unsigned n = 0;
+            delimiter delim(",");
             for (auto rev : tree.allRevisions()) {
-                if (rev->revID.generation() < generation
+                if (rev->revID.generation() < revGeneration
                             && !(mustHaveBodies && !rev->isBodyAvailable())) {
                     slice expanded(expandedBuf, sizeof(expandedBuf));
                     if (rev->revID.expandInto(expanded)) {
-                        if (n++ == 0)
-                            result << '"';
-                        else
-                            result << "\",\"";
-                        result << expanded;
-                        if (n >= maxAncestors)
+                        result << delim << '"' << expanded << '"';
+                        if (delim.count() >= maxAncestors)
                             break;
                     }
                 }
             }
-            if (n > 0)
-                result << '"';
             result << ']';
             return alloc_slice(result.str());
         };
@@ -638,40 +738,3 @@ namespace c4Internal {
 
 
 } // end namespace c4Internal
-
-
-#pragma mark - REV-TREES-ONLY API:
-
-
-bool c4doc_save(C4Document *doc,
-                uint32_t maxRevTreeDepth,
-                C4Error *outError) noexcept
-{
-    auto idoc = asInternal(doc);
-#if 0 // unused
-    if (!idoc->mustUseVersioning(kC4RevisionTrees, outError))
-        return false;
-#endif
-    if (!idoc->mustBeInTransaction(outError))
-        return false;
-    try {
-        if (maxRevTreeDepth == 0)
-            maxRevTreeDepth = asInternal(doc)->database()->maxRevTreeDepth();
-        
-        if (!((TreeDocument*)idoc)->save(maxRevTreeDepth)) {
-            if (outError)
-                *outError = {LiteCoreDomain, kC4ErrorConflict};
-            return false;
-        }
-        return true;
-    } catchError(outError)
-    return false;
-}
-
-
-unsigned c4rev_getGeneration(C4Slice revID) noexcept {
-    try {
-        return revidBuffer(revID).generation();
-    }catchExceptions()
-    return 0;
-}

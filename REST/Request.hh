@@ -22,6 +22,10 @@
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
 #include "Writer.hh"
+#include <functional>
+#include <map>
+#include <memory>
+#include <vector>
 
 namespace litecore { namespace net {
     class ResponderSocket;

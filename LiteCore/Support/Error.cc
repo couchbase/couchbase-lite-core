@@ -18,9 +18,11 @@
 
 #include "Error.hh"
 #include "Logging.hh"
+#include "Backtrace.hh"
 #include "FleeceException.hh"
 #include "PlatformIO.hh"
 #include "StringUtil.hh"
+#include "betterassert.hh"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
 #include "WebSocketInterface.hh"    // for Network error codes
@@ -204,6 +206,7 @@ namespace litecore {
         {0, /*must end with err=0*/     error::Fleece,      0},
     };
 
+    __cold
     static bool mapError(error::Domain &domain, int &code, const codeMapping table[]) {
         for (const codeMapping *row = &table[0]; row->err != 0; ++row) {
             if (row->err == code) {
@@ -215,6 +218,7 @@ namespace litecore {
         return false;
     }
 
+    __cold
     static int getPrimaryCode(const error::Domain &domain, const int& code)
     {
 #ifdef WIN32
@@ -235,6 +239,7 @@ namespace litecore {
     }
 
 #ifdef LITECORE_IMPL
+    __cold
     static const char* litecore_errstr(error::LiteCoreError code) {
         static const char* kLiteCoreMessages[] = {
             // These must match up with the codes in the declaration of LiteCoreError
@@ -282,6 +287,7 @@ namespace litecore {
         return str;
     }
 
+    __cold
     static const char* fleece_errstr(fleece::ErrorCode code) {
         static const char* kFleeceMessages[] = {
             // These must match up with the codes in the declaration of FLError
@@ -305,6 +311,7 @@ namespace litecore {
         return str;
     }
 
+    __cold
     static const char* network_errstr(int code) {
         static const char* kNetworkMessages[] = {
             // These must match up with the codes in the NetworkError enum in WebSocketInterface.hh
@@ -335,6 +342,7 @@ namespace litecore {
         return str;
     }
 
+    __cold
     static const char* websocket_errstr(int code) {
         static const struct {int code; const char* message;} kWebSocketMessages[] = {
             {400, "invalid request"},
@@ -371,6 +379,7 @@ namespace litecore {
     }
 #endif // LITECORE_IMPL
 
+    __cold
     string error::_what(error::Domain domain, int code) noexcept {
 #ifdef LITECORE_IMPL
         switch (domain) {
@@ -416,6 +425,7 @@ namespace litecore {
     }
 
 
+    __cold
     const char* error::nameOfDomain(Domain domain) noexcept {
         // Indexed by Domain
         static const char* kDomainNames[] = {"0",
@@ -433,21 +443,32 @@ namespace litecore {
 #pragma mark - ERROR CLASS:
 
 
+#ifdef LITECORE_IMPL
     bool error::sWarnOnError = false;
-
+    bool error::sCaptureBacktraces = false;
+#else
+    #define sWarnOnError c4log_getWarnOnErrors()
+    #define sCaptureBacktraces c4error_getCaptureBacktraces()
+#endif
     
+    __cold
     error::error(error::Domain d, int c)
     :error(d, c, _what(d, c))
     { }
 
 
+    __cold
     error::error(error::Domain d, int c, const std::string &what)
     :runtime_error(what),
     domain(d),
     code(getPrimaryCode(d, c))
-    { }
+    {
+        if (sCaptureBacktraces)
+            captureBacktrace(3);
+    }
 
 
+    __cold
     error& error::operator= (const error &e) {
         // This has to be hacked, since `domain` and `code` are marked `const`.
         this->~error();
@@ -456,6 +477,14 @@ namespace litecore {
     }
 
 
+    __cold
+    void error::captureBacktrace(unsigned skipFrames) {
+        if (!backtrace)
+            backtrace = fleece::Backtrace::capture(skipFrames + 1);
+    }
+
+
+    __cold
     error error::standardized() const {
         Domain d = domain;
         int c = code;
@@ -472,10 +501,13 @@ namespace litecore {
             default:
                 return *this;
         }
-        return error(d, c);
+        error err(d, c);
+        err.backtrace = backtrace;
+        return err;
     }
 
 
+    __cold
     static error unexpectedException(const std::exception &x) {
         // Get the actual exception class name using RTTI.
         // Unmangle it by skipping class name prefix like "St12" (may be compiler dependent)
@@ -483,17 +515,27 @@ namespace litecore {
         while (isalpha(*name)) ++name;
         while (isdigit(*name)) ++name;
         Warn("Caught unexpected C++ %s(\"%s\")", name, x.what());
-        return error(error::LiteCore, error::UnexpectedError, x.what());
+        auto err = error(error::LiteCore, error::UnexpectedError, x.what());
+        err.captureBacktrace();     // always get backtrace of unexpected exceptions
+        return err;
     }
 
 
+    __cold
     error error::convertRuntimeError(const std::runtime_error &re) {
+        const char *what = re.what();
         if (auto e = dynamic_cast<const error*>(&re); e) {
             return *e;
+        } else if (auto iae = dynamic_cast<const invalid_argument*>(&re); iae) {
+            return error(LiteCore, InvalidParameter, what);
+        } else if (auto faf = dynamic_cast<const fleece::assertion_failure*>(&re); faf) {
+            return error(LiteCore, AssertionFailed, what);
         } else if (auto se = dynamic_cast<const SQLite::Exception*>(&re); se) {
-            return error(SQLite, se->getExtendedErrorCode(), se->what());
+            return error(SQLite, se->getExtendedErrorCode(), what);
         } else if (auto fe = dynamic_cast<const fleece::FleeceException*>(&re); fe) {
-            return error(Fleece, fe->code, fe->what());
+            error err(Fleece, fe->code, what);
+            err.backtrace = fe->backtrace;
+            return err;
 #ifdef LITECORE_IMPL
         } else if (auto syserr = dynamic_cast<const sockpp::sys_error*>(&re); syserr) {
             int code = syserr->error();
@@ -504,7 +546,7 @@ namespace litecore {
                              "Unknown hostname \"" + gx->hostname() + "\"");
             } else {
                 return error(Network, websocket::kNetErrDNSFailure,
-                             "Error resolving hostname \"" + gx->hostname() + "\": " + gx->what());
+                             "Error resolving hostname \"" + gx->hostname() + "\": " + what);
             }
 #endif
         } else {
@@ -512,14 +554,22 @@ namespace litecore {
         }
     }
 
+    __cold
     error error::convertException(const std::exception &x) {
         if (auto re = dynamic_cast<const std::runtime_error*>(&x); re)
             return convertRuntimeError(*re);
-        else
-            return unexpectedException(x);
+        if (auto le = dynamic_cast<const std::logic_error*>(&x); le) {
+            LiteCoreError code = AssertionFailed;
+            if (dynamic_cast<const std::invalid_argument*>(le) != nullptr
+                    || dynamic_cast<const std::domain_error*>(le) != nullptr)
+                code = InvalidParameter;
+            return error(LiteCore, code, le->what());
+        }
+        return unexpectedException(x);
     }
 
 
+    __cold
     bool error::isUnremarkable() const {
         if (code == 0)
             return true;
@@ -543,52 +593,61 @@ namespace litecore {
     }
 
 
+    __cold
     void error::_throw() {
-#ifdef LITECORE_IMPL
-        bool warn = sWarnOnError;
-#else
-        bool warn = c4log_getWarnOnErrors();
-#endif
-        if (warn && !isUnremarkable()) {
-            WarnError("LiteCore throwing %s error %d: %s%s",
-                      nameOfDomain(domain), code, what(), backtrace(1).c_str());
+        if (sWarnOnError && !isUnremarkable()) {
             if (sNotableExceptionHook)
                 sNotableExceptionHook();
+            captureBacktrace(2);
+            WarnError("LiteCore throwing %s error %d: %s\n%s",
+                      nameOfDomain(domain), code, what(), backtrace->toString().c_str());
         }
         throw *this;
     }
 
     
+    __cold
     void error::_throw(Domain domain, int code ) {
         DebugAssert(code != 0);
         error{domain, code}._throw();
     }
 
     
+    __cold
     void error::_throw(error::LiteCoreError err) {
         _throw(LiteCore, err);
     }
 
+    __cold
     void error::_throwErrno() {
         _throw(POSIX, errno);
     }
 
 
+    __cold
     void error::_throw(error::LiteCoreError code, const char *fmt, ...) {
-        char *msg = nullptr;
         va_list args;
         va_start(args, fmt);
-        int len = vasprintf(&msg, fmt, args);
+        std::string message = vformat(fmt, args);
         va_end(args);
-        std::string message;
-        if (len >= 0) {
-            message = msg;
-            free(msg);
-        }
         error{LiteCore, code, message}._throw();
     }
 
 
+    __cold
+    void error::_throwErrno(const char *fmt, ...) {
+        int code = errno;
+        va_list args;
+        va_start(args, fmt);
+        std::string message = vformat(fmt, args);
+        va_end(args);
+        message += ": ";
+        message += strerror(code);
+        error{POSIX, code, message}._throw();
+    }
+
+
+    __cold
     void error::assertionFailed(const char *fn, const char *file, unsigned line, const char *expr,
                                 const char *message, ...)
     {
@@ -605,58 +664,12 @@ namespace litecore {
             sNotableExceptionHook();
         if (!WillLog(LogLevel::Error))
             fprintf(stderr, "%s (%s:%u, in %s)", messageStr.c_str(), file, line, fn);
+        auto err = error(LiteCore, AssertionFailed, messageStr);
+        err.captureBacktrace(1);     // always get backtrace of assertion failure
         WarnError("%s (%s:%u, in %s)%s",
-                  messageStr.c_str(), file, line, fn, backtrace(1).c_str());
-        throw error(LiteCore, AssertionFailed, messageStr);
+                  messageStr.c_str(), file, line, fn, err.backtrace->toString().c_str());
+        throw err;
     }
 
-#if !defined(__ANDROID__) && !defined(_MSC_VER)
-    /*static*/ string error::backtrace(unsigned skip) {
-#ifdef __clang__
-        ++skip;     // skip the logBacktrace frame itself
-        void* addrs[50];
-        int n = ::backtrace(addrs, 50) - skip;
-        if (n <= 0)
-            return "";
-        char** lines = backtrace_symbols(&addrs[skip], n);
-        char* demangleBuffer = nullptr;
-        size_t unmangledLen = 0;
-
-        stringstream out;
-
-        for (int i = 0; i < n; ++i) {
-            out << "\n\t";
-            char library[101], functionBuf[201];
-            size_t pc;
-            int offset;
-            if (sscanf(lines[i], "%*d %100s %zi %200s + %i",
-                       library, &pc, functionBuf, &offset) == 4 ||
-                sscanf(lines[i], "%100[^(](%200[^+]+%i) ""[""%zi""]",
-                       library, functionBuf, &offset, &pc) == 4) {
-                const char *function = functionBuf;
-                int status;
-                char *unmangled = abi::__cxa_demangle(function, demangleBuffer, &unmangledLen, &status);
-                if (unmangled) {
-                    demangleBuffer = unmangled;
-                    if (status == 0)
-                        function = unmangled;
-                }
-                char *cstr = nullptr;
-                if (asprintf(&cstr, "%2d  %-25s %s + %d", i, library, function, offset) < 0)
-                    return "(error printing backtrace)";
-                out << cstr;
-                free(cstr);
-            } else {
-                out << lines[i];
-            }
-        }
-        free(demangleBuffer);
-        free(lines);
-        return out.str();
-#else
-        return " (no backtrace available)";
-#endif
-    }
-#endif
 }
 

@@ -26,10 +26,9 @@
 #include "TLSContext.hh"
 #include "Certificate.hh"
 #include "PublicKey.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
-#include <functional>
-#include <queue>
 
 using namespace std;
 using namespace fleece;

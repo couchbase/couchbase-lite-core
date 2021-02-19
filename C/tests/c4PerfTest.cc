@@ -116,7 +116,7 @@ public:
             rq.docID = trackID;
             rq.body = (C4Slice)body;
             rq.save = true;
-            C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
+            C4Document *doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(&c4err));
             REQUIRE(doc != nullptr);
             c4doc_release(doc);
             ++numDocs;
@@ -131,10 +131,11 @@ public:
         docIDs.reserve(1200);
 
         C4Error error;
-        C4Query *query = c4query_new(db, c4str(whereStr), &error);
+        C4Query *query = c4query_new(db, c4str(whereStr), ERROR_INFO(error));
         REQUIRE(query);
-        auto e = c4query_run(query, nullptr, kC4SliceNull, &error);
-        while (c4queryenum_next(e, &error)) {
+        auto e = c4query_run(query, nullptr, kC4SliceNull, ERROR_INFO(error));
+        REQUIRE(e);
+        while (c4queryenum_next(e, ERROR_INFO(error))) {
             REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
             fleece::slice docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
             std::string artist = docID.asString();
@@ -157,9 +158,9 @@ public:
             INFO("Reading doc " << docID);
             b.start();
             C4Error error;
-            auto doc = c4doc_get(db, c4str(docID), true, &error);
+            auto doc = c4doc_get(db, c4str(docID), true, ERROR_INFO(error));
             REQUIRE(doc);
-            REQUIRE(doc->selectedRev.body.size > 30);
+            CHECK(c4doc_getProperties(doc) != nullptr);
             c4doc_release(doc);
             b.stop();
         }
@@ -302,7 +303,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
             Stopwatch st2;
             C4Error error;
 			C4Slice property = C4STR("[[\".contact.address.state\"]]");
-            REQUIRE(c4db_createIndex(db, C4STR("byState"), property, kC4ValueIndex, nullptr, &error));
+            REQUIRE(c4db_createIndex(db, C4STR("byState"), property, kC4ValueIndex, nullptr, WITH_ERROR(&error)));
             st2.stop();
             st2.printReport("Creating SQL index of state", 1, "index");
             sf = generateShowfast(round(st2.elapsedMS()), "names_sql_index_creation");

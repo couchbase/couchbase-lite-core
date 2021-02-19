@@ -11,6 +11,8 @@
 #include <fstream>
 #include <queue>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace litecore {
 
@@ -92,8 +94,15 @@ namespace litecore {
 
         struct logcmp {
             bool operator()(LogIterator *lhs, LogIterator *rhs) const {
-                // priority_queue sorts in descending order, so compare using '>'
-                return !(lhs->timestamp() < rhs->timestamp());
+                // priority_queue sorts in descending order, so compare using '>'.
+                // It requires a strict ordering (two items can never be equal), so we break
+                // ties arbitrarily by comparing the iterator pointers.
+                if (rhs->timestamp() < lhs->timestamp())
+                    return true;
+                else if (rhs->timestamp() == lhs->timestamp())
+                    return intptr_t(rhs) < intptr_t(lhs);
+                else
+                    return false;
             }
         };
 

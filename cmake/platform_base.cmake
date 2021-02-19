@@ -21,6 +21,7 @@ function(set_litecore_source_base)
         C/c4DocEnumerator.cc
         C/c4DocExpiration.cc
         C/c4Document.cc
+        C/c4Error.cc
         C/c4Observer.cc
         C/c4PredictiveQuery.cc
         C/c4Query.cc
@@ -35,15 +36,16 @@ function(set_litecore_source_base)
         LiteCore/BlobStore/Stream.cc
         LiteCore/Database/BackgroundDB.cc
         LiteCore/Database/Database.cc
+        LiteCore/Database/Database+Upgrade.cc
         LiteCore/Database/Document.cc
         LiteCore/Database/Housekeeper.cc
-        LiteCore/Database/LeafDocument.cc
         LiteCore/Database/LegacyAttachments.cc
         LiteCore/Database/LiveQuerier.cc
         LiteCore/Database/PrebuiltCopier.cc
         LiteCore/Database/SequenceTracker.cc
         LiteCore/Database/TreeDocument.cc
         LiteCore/Database/Upgrader.cc
+        LiteCore/Database/VectorDocument.cc
         LiteCore/Query/IndexSpec.cc
         LiteCore/Query/PredictiveModel.cc
         LiteCore/Query/Query.cc
@@ -62,10 +64,13 @@ function(set_litecore_source_base)
         LiteCore/Query/SQLitePredictionFunction.cc
         LiteCore/Query/SQLiteQuery.cc
         LiteCore/Query/N1QL_Parser/n1ql.cc
+        LiteCore/RevTrees/VectorRecord.cc
         LiteCore/RevTrees/RawRevTree.cc
         LiteCore/RevTrees/RevID.cc
         LiteCore/RevTrees/RevTree.cc
-        LiteCore/RevTrees/VersionedDocument.cc
+        LiteCore/RevTrees/RevTreeRecord.cc
+        LiteCore/RevTrees/Version.cc
+        LiteCore/RevTrees/VersionVector.cc
         LiteCore/Storage/DataFile.cc
         LiteCore/Storage/KeyStore.cc
         LiteCore/Storage/Record.cc
@@ -101,7 +106,6 @@ function(set_litecore_source_base)
         Replicator/RevFinder.cc
         Replicator/URLTransformer.cc
         Replicator/Worker.cc
-        LiteCore/Support/c4ExceptionUtils.cc
         LiteCore/Support/Logging.cc
         LiteCore/Support/DefaultLogger.cc
         LiteCore/Support/Error.cc

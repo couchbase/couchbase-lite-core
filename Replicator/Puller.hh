@@ -23,6 +23,7 @@
 #include "RemoteSequenceSet.hh"
 #include "Batcher.hh"
 #include <deque>
+#include <vector>
 
 namespace litecore { namespace repl {
     class IncomingRev;

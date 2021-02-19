@@ -37,23 +37,13 @@ namespace litecore {
     const char* const kFleeceValuePointerType = "FleeceValue";
 
 
-    static slice argAsDocBody(sqlite3_context* ctx, sqlite3_value *arg, bool &copied) {
-        copied = false;
+    static inline slice argAsDocBody(sqlite3_context* ctx, sqlite3_value *arg) {
         auto type = sqlite3_value_type(arg);
-        if (type == SQLITE_NULL)
+        if (_usuallyFalse(type == SQLITE_NULL))
             return nullslice;             // No 'body' column; may be deleted doc
-        Assert(type == SQLITE_BLOB);
-        Assert(sqlite3_value_subtype(arg) == 0);
-        slice fleece = fleeceAccessor(ctx, valueAsSlice(arg));
-
-        if (size_t(fleece.buf) & 1) {
-            // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
-            // revision data, so it could occur. Now that it's not allowed, we have to work around
-            // this by copying the data to an even address. (#589)
-            fleece = fleece.copy();
-            copied = true;
-        }
-        return fleece;
+        DebugAssert(type == SQLITE_BLOB);
+        DebugAssert(sqlite3_value_subtype(arg) == 0);
+        return valueAsSlice(arg);
     }
 
 
@@ -92,7 +82,7 @@ namespace litecore {
 
 
     int evaluatePath(slice path, const Value **pValue) noexcept {
-        if (!path.buf)
+        if (_usuallyFalse(!path.buf))
             return SQLITE_FORMAT;
         try {
             *pValue = Path::eval(path, *pValue);    // can throw!
@@ -127,28 +117,20 @@ namespace litecore {
 
 
     QueryFleeceScope::QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv)
-    :Scope(argAsDocBody(ctx, argv[0], _copied),
+    :Scope(argAsDocBody(ctx, argv[0]),
            ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys)
     {
-        if (data()) {
+        if (_usuallyTrue(data().buf != nullptr)) {
             root = Value::fromTrustedData(data());
-            if (!root) {
+            if (_usuallyFalse(!root)) {
                 Warn("Invalid Fleece data in SQLite table");
                 error::_throw(error::CorruptRevisionData);
             }
         } else {
             root = Dict::kEmpty;             // No current revision body; may be deleted rev
         }
-        if (sqlite3_value_type(argv[1]) != SQLITE_NULL)
-        root = evaluatePathFromArg(ctx, argv, 1, root);
-    }
-
-
-    QueryFleeceScope::~QueryFleeceScope() {
-        if (_copied) {
-            unregister();
-            data().free();
-        }
+        if (_usuallyTrue(sqlite3_value_type(argv[1]) != SQLITE_NULL))
+            root = evaluatePathFromArg(ctx, argv, 1, root);
     }
 
 
@@ -188,7 +170,7 @@ namespace litecore {
     }
 
 
-    static void releaseAllocSlice(void *buf) {
+    static void releaseAllocSlice(void *buf) noexcept {
         alloc_slice::release({buf, 1});
     }
 
@@ -238,8 +220,8 @@ namespace litecore {
     }
 
 
-    bool setResultBlobFromEncodedValue(sqlite3_context *ctx,
-                                       const fleece::impl::Value *val)
+    bool setResultBlobFromEncodedValue(sqlite3_context *ctx, const fleece::impl::Value *val)
+    noexcept
     {
         try {
             Encoder enc;
@@ -255,7 +237,7 @@ namespace litecore {
     }
 
 
-    void setResultFleeceNull(sqlite3_context *ctx) {
+    void setResultFleeceNull(sqlite3_context *ctx) noexcept {
         // Fleece/JSON null isn't the same as a SQL null, which means 'missing value'.
         // We can't add new data types to SQLite, but let's use an empty blob for null
         // and tag it with a custom subtype.

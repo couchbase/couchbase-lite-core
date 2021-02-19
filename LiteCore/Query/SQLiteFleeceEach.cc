@@ -36,6 +36,7 @@
 #include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
 #include "Path.hh"
+#include <optional>
 
 #include <sqlite3.h>
 
@@ -79,7 +80,7 @@ class FleeceCursor : public sqlite3_vtab_cursor {
 private:
     // Instance data:
     FleeceVTab* _vtab;                  // The virtual table
-    unique_ptr<Scope> _scope;           // Fleece document
+    optional<Scope> _scope;             // Fleece document
     alloc_slice _rootPath;              // The path string within the data, if any
     const Value *_container;            // The object being iterated (target of the path)
     valueType _containerType;           // The value type of _container
@@ -224,11 +225,6 @@ private:
             Warn("fleece_each filter called with null document! Query is likely to fail. (#379)");
             return SQLITE_OK;
         }
-        if (idxNum == kPathIndex) {
-            // If fl_each is called with a 2nd (property path) argument, then the first arg is the
-            // doc body, which we need to extract Fleece from:
-            data = _vtab->context.delegate->fleeceAccessor(data);
-        }
         if (size_t(data.buf) & 1) {
             // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
             // revision data, so it could occur. Now that it's not allowed, we have to work around
@@ -238,10 +234,10 @@ private:
             // useable here too would be more code change than I want to introduce right now
             // while fixing this bug, but would be good for long-term cleanup.
             alloc_slice copiedFleeceData(data);
-            _scope = make_unique<Scope>(copiedFleeceData, _vtab->context.sharedKeys);
+            _scope.emplace(copiedFleeceData, _vtab->context.sharedKeys);
             data = copiedFleeceData;
         } else {
-            _scope = make_unique<Scope>(data, _vtab->context.sharedKeys);
+            _scope.emplace(data, _vtab->context.sharedKeys);
         }
 
         _container = Value::fromTrustedData(data);

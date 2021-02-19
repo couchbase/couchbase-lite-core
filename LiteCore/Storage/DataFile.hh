@@ -26,7 +26,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <atomic> // for std::atomic_uint
-#include <functional> // for std::function
 #ifdef check
 #undef check
 #endif
@@ -52,8 +51,6 @@ namespace litecore {
         class Delegate {
         public:
             virtual ~Delegate() =default;
-            // Callback that takes a record body and returns the portion of it containing Fleece data
-            virtual slice fleeceAccessor(slice recordBody) const =0;
             // Callback that takes a blob dictionary and returns the blob data
             virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const =0;
             // Notifies that another DataFile on the same physical file has committed a transaction
@@ -101,6 +98,8 @@ namespace litecore {
             kCompact,
             kReindex,
             kIntegrityCheck,
+            kQuickOptimize, ///< Quickly update db statistics to help optimize queries
+            kFullOptimize,        ///< Full update of db statistics; takes longer
         };
 
         /** Perform database maintenance of some type. Returns false if not supported. */
@@ -147,6 +146,7 @@ namespace litecore {
 
         // Redeclare logging methods as public, so Database can use them
         bool willLog(LogLevel level =LogLevel::Info) const         {return Logging::willLog(level);}
+        void _logWarning(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Warning)}
         void _logInfo(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Info)}
         void _logVerbose(const char *format, ...) const __printflike(2, 3){LOGBODY(Verbose)}
         void _logDebug(const char *format, ...) const __printflike(2, 3)  {LOGBODY(Debug)}
@@ -154,7 +154,7 @@ namespace litecore {
         //////// SHARED OBJECTS:
 
         Retained<RefCounted> sharedObject(const std::string &key);
-        Retained<RefCounted> addSharedObject(const std::string &key, Retained<RefCounted>);
+        Retained<RefCounted> addSharedObject(const std::string &key, RefCounted*);
 
         //////// FACTORY:
 
@@ -256,7 +256,7 @@ namespace litecore {
         FilePath const          _path;                          // Path as given (non-canonical)
         Options                 _options;                       // Option/capability flags
         mutable KeyStore*       _defaultKeyStore {nullptr};     // The default KeyStore
-        std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
+        std::unordered_map<std::string, unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         mutable Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         std::unordered_set<Query*> _queries;                    // Query objects
         bool                    _inTransaction {false};         // Am I in a Transaction?
@@ -272,7 +272,7 @@ namespace litecore {
     public:
         explicit Transaction(DataFile*);
         explicit Transaction(DataFile &db)  :Transaction(&db) { }
-        explicit Transaction(const std::unique_ptr<DataFile>& db)  :Transaction(db.get()) { }
+        explicit Transaction(const unique_ptr<DataFile>& db)  :Transaction(db.get()) { }
         ~Transaction();
 
         DataFile& dataFile() const          {return _db;}

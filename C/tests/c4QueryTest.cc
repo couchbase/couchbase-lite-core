@@ -259,10 +259,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Nested ANY of dict", "[Query][C]") 
 
     // New Doc:
     auto doc1 = c4doc_create(db, C4STR("doc1"),
-                             json2fleece("{'variants': [{'items': [{'id':1, 'value': 1}]}]}"), 0, &error);
+                             json2fleece("{'variants': [{'items': [{'id':1, 'value': 1}]}]}"), 0, ERROR_INFO(error));
 
     auto doc2 = c4doc_create(db, C4STR("doc2"),
-                             json2fleece("{'variants': [{'items': [{'id':2, 'value': 2}]}]}"), 0, &error);
+                             json2fleece("{'variants': [{'items': [{'id':2, 'value': 2}]}]}"), 0, ERROR_INFO(error));
 
     compile(json5("['ANY', 'V', ['.variants'], ['ANY', 'I', ['?V.items'], ['=', ['?I.id'], 2]]]"));
 
@@ -275,7 +275,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Nested ANY of dict", "[Query][C]") 
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query expression index", "[Query][C]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, WITH_ERROR(&err)));
     compile(json5("['=', ['length()', ['.name.first']], 9]"));
     CHECK(run() == (vector<string>{ "0000015", "0000099" }));
 
@@ -297,13 +297,13 @@ static bool lookForIndex(C4Database *db, slice name) {
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Reindex", "[Query][C]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, WITH_ERROR(&err)));
     CHECK(lookForIndex(db, "length"_sl));
     compile(json5("['=', ['length()', ['.name.first']], 9]"));
     CHECK(run() == (vector<string>{ "0000015", "0000099" }));
 
     C4Log("Reindexing");
-    REQUIRE(c4db_maintenance(db, kC4Reindex, &err));
+    REQUIRE(c4db_maintenance(db, kC4Reindex, WITH_ERROR(&err)));
 
     CHECK(lookForIndex(db, "length"_sl));
     CHECK(run() == (vector<string>{ "0000015", "0000099" }));
@@ -313,14 +313,14 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Reindex", "[Query][C]") {
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete indexed doc", "[Query][C]") {
     // Create the same index as the above test:
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, WITH_ERROR(&err)));
 
     // Delete doc "0000015":
     {
         TransactionHelper t(db);
 
         C4Error c4err;
-        C4Document *doc = c4doc_get(db, C4STR("0000015"), true, &c4err);
+        C4Document *doc = c4doc_get(db, C4STR("0000015"), true, ERROR_INFO(&c4err));
         REQUIRE(doc);
         C4DocPutRequest rq = {};
         rq.docID = C4STR("0000015");
@@ -328,8 +328,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete indexed doc", "[Query][C]") {
         rq.historyCount = 1;
         rq.revFlags = kRevDeleted;
         rq.save = true;
-        C4Document *updatedDoc = c4doc_put(db, &rq, nullptr, &c4err);
-        INFO("c4err = " << c4err.domain << "/" << c4err.code);
+        C4Document *updatedDoc = c4doc_put(db, &rq, nullptr, ERROR_INFO(&c4err));
         REQUIRE(updatedDoc != nullptr);
         c4doc_release(doc);
         c4doc_release(updatedDoc);
@@ -417,7 +416,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query dict literal", "[Query][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     compile(json5("['MATCH', 'byStreet', 'Hwy']"));
     auto results = runFTS();
     CHECK(results == (vector<vector<C4FullTextMatch>>{
@@ -428,9 +427,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
         {{52, 0, 0, 11, 3}}
     }));
     
-    C4SliceResult matched = c4query_fullTextMatched(query, &results[0][0], &err);
+    C4SliceResult matched = c4query_fullTextMatched(query, &results[0][0], ERROR_INFO(err));
     REQUIRE(matched.buf != nullptr);
-    CHECK(toString((C4Slice)matched) == "7 Wyoming Hwy");
+    CHECK(toString(matched) == "7 Wyoming Hwy");
     c4slice_free(matched);
 }
 
@@ -438,7 +437,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple properties", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byAddress"),
-                             C4STR("[[\".contact.address.street\"], [\".contact.address.city\"], [\".contact.address.state\"]]"), kC4FullTextIndex, nullptr, &err));
+                             C4STR("[[\".contact.address.street\"], [\".contact.address.city\"], [\".contact.address.state\"]]"), kC4FullTextIndex, nullptr, ERROR_INFO(err)));
     // Some docs match 'Santa' in the street name, some in the city name
     compile(json5("['MATCH', 'byAddress', 'Santa']"));
     CHECK(runFTS() == (vector<vector<C4FullTextMatch>>{
@@ -474,8 +473,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple properties", "[Query][
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple indexes", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
-    REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+    REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     compile(json5("['AND', ['MATCH', 'byStreet', 'Hwy'],\
                            ['MATCH', 'byCity',   'Santa']]"));
     CHECK(run() == (vector<string>{"0000015"}));
@@ -487,8 +486,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple indexes", "[Query][C][
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple ANDs", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
-    REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
+    REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     compile(json5("['AND', ['AND', ['=', ['.gender'], 'male'],\
                                    ['MATCH', 'byCity', 'Santa']],\
                            ['=', ['.name.first'], 'Cleveland']]"));
@@ -503,7 +502,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple queries", "[Query][C][
     // You can't query the same FTS index multiple times in a query (says SQLite)
     ExpectingExceptions x;
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     query = c4query_new(db,
                         json5slice("['AND', ['MATCH', 'byStreet', 'Hwy'],\
                                             ['MATCH', 'byStreet', 'Blvd']]"),
@@ -518,7 +517,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Buried", "[Query][C][FTS][!thro
     // You can't put an FTS match inside an expression other than a top-level AND (says SQLite)
     ExpectingExceptions x;
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     query = c4query_new(db,
                         json5slice("['OR', ['MATCH', 'byStreet', 'Hwy'],\
                                            ['=', ['.', 'contact', 'address', 'state'], 'CA']]"),
@@ -532,15 +531,16 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Buried", "[Query][C][FTS][!thro
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Aggregate", "[Query][C][FTS]") {
     // https://github.com/couchbase/couchbase-lite-core/issues/703
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     query = c4query_new(db,
             json5slice("['SELECT', { 'WHAT': [ [ 'count()', [ '.', 'uuid' ] ] ],"
                        " 'WHERE': [ 'AND', [ 'AND', [ '=', [ '.', 'doc_type' ], 'rec' ],"
                                                   " [ 'MATCH', 'byStreet', 'keyword' ] ],"
                                          "[ '=', [ '.', 'pId' ], 'bfe2970b-9be6-46f6-b9a7-38c5947c27b1' ] ] } ]"),
-                        &err);
+                        ERROR_INFO(err));
+    REQUIRE(query);
     // Just test whether the enumerator starts without an error:
-    auto e = c4query_run(query, nullptr, nullslice, &err);
+    auto e = c4query_run(query, nullptr, nullslice, ERROR_INFO(err));
     REQUIRE(e);
     c4queryenum_release(e);
 }
@@ -548,16 +548,17 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Aggregate", "[Query][C][FTS]") 
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with alias", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     query = c4query_new(db,
             json5slice("['SELECT', { 'WHAT': [ [ '.db.uuid' ] ],"
                        " 'FROM': [{ 'AS' : 'db'}],"
                        " 'WHERE': [ 'AND', [ 'AND', [ '=', [ '.db.doc_type' ], 'rec' ],"
                                                   " [ 'MATCH', 'byStreet', 'keyword' ] ],"
                                          "[ '=', [ '.db.pId' ], 'bfe2970b-9be6-46f6-b9a7-38c5947c27b1' ] ] } ]"),
-                        &err);
+                        ERROR_INFO(err));
+    REQUIRE(query);
     // Just test whether the enumerator starts without an error:
-    auto e = c4query_run(query, nullptr, nullslice, &err);
+    auto e = c4query_run(query, nullptr, nullslice, ERROR_INFO(err));
     REQUIRE(e);
     c4queryenum_release(e);
 }
@@ -570,32 +571,33 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with accents", "[Query][C][FTS]
        nullptr, false, false, nullptr
     };
 
-    REQUIRE(c4db_createIndex(db, C4STR("nameFTSIndex"), C4STR("[[\".content\"]]"), kC4FullTextIndex, &options, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("nameFTSIndex"), C4STR("[[\".content\"]]"), kC4FullTextIndex, &options, WITH_ERROR(&err)));
 
     {
         TransactionHelper t(db);
 
-        C4SliceResult bodyContent = c4db_encodeJSON(db, C4STR(u8"{\"content\": \"Hâkimler\"}"), &err);
+        C4SliceResult bodyContent = c4db_encodeJSON(db, C4STR(u8"{\"content\": \"Hâkimler\"}"), ERROR_INFO(err));
         REQUIRE(bodyContent.buf != nullptr);
         createNewRev(db, C4STR("1"), (C4Slice)bodyContent);
         c4slice_free(bodyContent);
 
-        bodyContent = c4db_encodeJSON(db, C4STR("{\"content\": \"Hakimler\"}"), &err);
+        bodyContent = c4db_encodeJSON(db, C4STR("{\"content\": \"Hakimler\"}"), ERROR_INFO(err));
         REQUIRE(bodyContent.buf != nullptr);
         createNewRev(db, C4STR("2"), (C4Slice)bodyContent);
         c4slice_free(bodyContent);
 
-        bodyContent = c4db_encodeJSON(db, C4STR("{\"content\": \"foo\"}"), &err);
+        bodyContent = c4db_encodeJSON(db, C4STR("{\"content\": \"foo\"}"), ERROR_INFO(err));
         REQUIRE(bodyContent.buf != nullptr);
         createNewRev(db, C4STR("3"), (C4Slice)bodyContent);
         c4slice_free(bodyContent);
     }
 
     C4Slice queryStr = C4STR("{\"WHERE\": [\"MATCH\",\"nameFTSIndex\",\"'hâkimler'\"], \"WHAT\": [[\".\"]]}");
-    query = c4query_new(db, queryStr, &err);
-    auto e = c4query_run(query, nullptr, nullslice, &err);
+    query = c4query_new(db, queryStr, ERROR_INFO(err));
+    REQUIRE(query);
+    auto e = c4query_run(query, nullptr, nullslice, ERROR_INFO(err));
     REQUIRE(e);
-    CHECK(c4queryenum_getRowCount(e, &err) == 1);
+    CHECK(c4queryenum_getRowCount(e, WITH_ERROR(&err)) == 1);
     c4queryenum_release(e);
 }
 
@@ -613,11 +615,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT", "[Query][C]") {
     REQUIRE(c4query_columnCount(query) == 2);
 
     C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
-    INFO("c4query_run got error " << error.domain << "/" << error.code);
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     int i = 0;
-    while (c4queryenum_next(e, &error)) {
+    while (c4queryenum_next(e, ERROR_INFO(error))) {
         CHECK(Array::iterator(e->columns)[0].asstring() == expectedFirst[i]);
         CHECK(Array::iterator(e->columns)[1].asstring() == expectedLast[i]);
         ++i;
@@ -638,12 +639,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT returning object", "[Query][C]
     REQUIRE(c4query_columnCount(query) == 1);
 
     C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
-    if (!e)
-        INFO("c4query_run got error " << error.domain << "/" << error.code);
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     int i = 0;
-    while (c4queryenum_next(e, &error)) {
+    while (c4queryenum_next(e, ERROR_INFO(error))) {
         Value col = Array::iterator(e->columns)[0];
         REQUIRE(col.type() == kFLDict);
         Dict name = col.asDict();
@@ -661,11 +660,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT returning object", "[Query][C]
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Aggregate", "[Query][C]") {
     compileSelect(json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
     C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
-    INFO("c4query_run got error " << error.domain << "/" << error.code);
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     int i = 0;
-    while (c4queryenum_next(e, &error)) {
+    while (c4queryenum_next(e, ERROR_INFO(error))) {
         CHECK(Array::iterator(e->columns)[0].asstring() == "Aerni");
         CHECK(Array::iterator(e->columns)[1].asstring() == "Zirk");
         ++i;
@@ -687,11 +685,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Grouped", "[Query][C]") {
                                 ['max()', ['.name.last']]],\
                      GROUP_BY: [['.contact.address.state']]}"));
     C4Error error {};
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
-    INFO("c4query_run got error " << error.domain << "/" << error.code);
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     int i = 0;
-    while (c4queryenum_next(e, &error)) {
+    while (c4queryenum_next(e, ERROR_INFO(error))) {
         string state   = Array::iterator(e->columns)[0].asstring();
         string minName = Array::iterator(e->columns)[1].asstring();
         string maxName = Array::iterator(e->columns)[2].asstring();
@@ -705,7 +702,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Grouped", "[Query][C]") {
     }
     CHECK(error.code == 0);
     CHECK(i == expectedRowCount);
-    CHECK(c4queryenum_getRowCount(e, &error) == 42);
+    CHECK(c4queryenum_getRowCount(e, WITH_ERROR(&error)) == 42);
     c4queryenum_release(e);
 }
 
@@ -721,11 +718,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Join", "[Query][C]") {
                          WHERE: ['>=', ['length()', ['.person.name.first']], 9],\
                       ORDER_BY: [['.person.name.first']]}"));
     C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
-    INFO("c4query_run got error " << error.domain << "/" << error.code);
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
     int i = 0;
-    while (c4queryenum_next(e, &error)) {
+    while (c4queryenum_next(e, ERROR_INFO(error))) {
         string first = Array::iterator(e->columns)[0].asstring();
         string state = Array::iterator(e->columns)[1].asstring();
         C4Log("first='%s', state='%s'", first.c_str(), state.c_str());
@@ -806,17 +802,17 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
-    REQUIRE(c4queryenum_next(e, &error));
+    REQUIRE(c4queryenum_next(e, WITH_ERROR(&error)));
     REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
     FLString docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
     REQUIRE(docID == "0000001"_sl);
-    REQUIRE(c4queryenum_next(e, &error));
-    REQUIRE(c4queryenum_seek(e, 0, &error));
+    REQUIRE(c4queryenum_next(e, WITH_ERROR(&error)));
+    REQUIRE(c4queryenum_seek(e, 0, WITH_ERROR(&error)));
     docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
     REQUIRE(docID == "0000001"_sl);
-    REQUIRE(c4queryenum_seek(e, 7, &error));
+    REQUIRE(c4queryenum_seek(e, 7, WITH_ERROR(&error)));
     docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
     REQUIRE(docID == "0000073"_sl);
     {
@@ -824,8 +820,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
         REQUIRE(!c4queryenum_seek(e, 100, &error));
     }
     
-    CHECK(error.code == kC4ErrorInvalidParameter);
-    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error == C4Error{LiteCoreDomain, kC4ErrorInvalidParameter});
     c4queryenum_release(e);
 }
 
@@ -849,35 +844,35 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
     
-    C4SliceResult explanation = c4query_explain(query);
-    string explanationString = toString((C4Slice)explanation);
-    c4slice_free(explanation);
+    string explanationString = toString(c4query_explain(query));
     CHECK(litecore::hasPrefix(explanationString, "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'contact.address.state') = 'CA') AND (_doc.flags & 1 = 0)"));
     
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
-    auto refreshed = c4queryenum_refresh(e, &error);
+    auto refreshed = c4queryenum_refresh(e, ERROR_INFO(error));
     REQUIRE(!refreshed);
     
     addPersonInState("added_later", "CA");
     
-    refreshed = c4queryenum_refresh(e, &error);
+    refreshed = c4queryenum_refresh(e, ERROR_INFO(error));
     REQUIRE(refreshed);
-    auto count = c4queryenum_getRowCount(refreshed, &error);
-    REQUIRE(c4queryenum_seek(refreshed, count - 1, &error));
+    auto count = c4queryenum_getRowCount(refreshed, ERROR_INFO(error));
+    REQUIRE(count > 0);
+    REQUIRE(c4queryenum_seek(refreshed, count - 1, WITH_ERROR(&error)));
     CHECK(FLValue_AsString(FLArrayIterator_GetValueAt(&refreshed->columns, 0)) == "added_later"_sl);
     c4queryenum_release(refreshed);
 
     {
         TransactionHelper t(db);
-        REQUIRE(c4db_purgeDoc(db, "added_later"_sl, &error));
+        REQUIRE(c4db_purgeDoc(db, "added_later"_sl, WITH_ERROR(&error)));
     }
 
-    refreshed = c4queryenum_refresh(e, &error);
+    refreshed = c4queryenum_refresh(e, ERROR_INFO(error));
     REQUIRE(refreshed);
     c4queryenum_close(e);
-    count = c4queryenum_getRowCount(refreshed, &error);
-    REQUIRE(c4queryenum_seek(refreshed, count - 1, &error));
+    count = c4queryenum_getRowCount(refreshed, ERROR_INFO(error));
+    REQUIRE(count > 0);
+    REQUIRE(c4queryenum_seek(refreshed, count - 1, WITH_ERROR(&error)));
     CHECK(FLValue_AsString(FLArrayIterator_GetValueAt(&refreshed->columns, 0)) != "added_later"_sl);
 
     c4queryenum_release(e);
@@ -913,11 +908,11 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
 
     C4Log("Checking query observer...");
     CHECK(state.count == 1);
-    c4::ref<C4QueryEnumerator> e = c4queryobs_getEnumerator(state.obs, true, &error);
+    c4::ref<C4QueryEnumerator> e = c4queryobs_getEnumerator(state.obs, true, ERROR_INFO(error));
     REQUIRE(e);
     CHECK(c4queryobs_getEnumerator(state.obs, true, &error) == nullptr);
     CHECK(error.code == 0);
-    CHECK(c4queryenum_getRowCount(e, &error) == 8);
+    CHECK(c4queryenum_getRowCount(e, WITH_ERROR(&error)) == 8);
     state.count = 0;
 
     addPersonInState("after1", "AL");
@@ -940,19 +935,19 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
 
     C4Log("---- Checking query observer again...");
     CHECK(state.count == 1);
-    c4::ref<C4QueryEnumerator> e2 = c4queryobs_getEnumerator(state.obs, false, &error);
+    c4::ref<C4QueryEnumerator> e2 = c4queryobs_getEnumerator(state.obs, false, ERROR_INFO(error));
     REQUIRE(e2);
     CHECK(e2 != e);
-    c4::ref<C4QueryEnumerator> e3 = c4queryobs_getEnumerator(state.obs, false, &error);
+    c4::ref<C4QueryEnumerator> e3 = c4queryobs_getEnumerator(state.obs, false, ERROR_INFO(error));
     CHECK(e3 == e2);
-    CHECK(c4queryenum_getRowCount(e2, &error) == 9);
+    CHECK(c4queryenum_getRowCount(e2, WITH_ERROR(&error)) == 9);
 
     // Testing with purged document:
     C4Log("---- Purging a document...");
     state.count = 0;
     {
         TransactionHelper t(db);
-        REQUIRE(c4db_purgeDoc(db, "after2"_sl, &error));
+        REQUIRE(c4db_purgeDoc(db, "after2"_sl, WITH_ERROR(&error)));
         C4Log("---- Commiting changes");
     }
 
@@ -961,10 +956,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
 
     C4Log("---- Checking query observer again...");
     CHECK(state.count == 1);
-    e2 = c4queryobs_getEnumerator(state.obs, true, &error);
+    e2 = c4queryobs_getEnumerator(state.obs, true, ERROR_INFO(error));
     REQUIRE(e2);
     CHECK(e2 != e);
-    CHECK(c4queryenum_getRowCount(e2, &error) == 8);
+    CHECK(c4queryenum_getRowCount(e2, WITH_ERROR(&error)) == 8);
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
@@ -975,18 +970,19 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
     C4IndexType types[2] = { kC4ValueIndex, kC4FullTextIndex };
     
     for(int i = 0; i < 2; i++) {
-        REQUIRE(c4db_createIndex(db, names[i], desc[i], types[i], nullptr, &err));
+        REQUIRE(c4db_createIndex(db, names[i], desc[i], types[i], nullptr, WITH_ERROR(&err)));
 
-        alloc_slice indexes = c4db_getIndexesInfo(db, &err);
+        alloc_slice indexes = c4db_getIndexesInfo(db, ERROR_INFO(err));
+        REQUIRE(indexes);
         FLArray indexArray = FLValue_AsArray(FLValue_FromData(indexes, kFLTrusted));
         REQUIRE(FLArray_Count(indexArray) == 1);
         FLDict indexInfo = FLValue_AsDict(FLArray_Get(indexArray, 0));
         FLSlice indexName = FLValue_AsString(FLDict_Get(indexInfo, "name"_sl));
         CHECK(indexName == names[i]);
 
-        REQUIRE(c4db_deleteIndex(db, names[i], &err));
+        REQUIRE(c4db_deleteIndex(db, names[i], WITH_ERROR(&err)));
 
-        indexes = c4db_getIndexesInfo(db, &err);
+        indexes = c4db_getIndexesInfo(db, ERROR_INFO(err));
         indexArray = FLValue_AsArray(FLValue_FromData(indexes, kFLTrusted));
         REQUIRE(FLArray_Count(indexArray) == 0);
     }
@@ -998,7 +994,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Database alias column names", "[Query][C][!
     C4Error err;
     string queryText = "{'WHAT':[['.main.'],['.secondary.']],'FROM':[{'AS':'main'},{'AS':'secondary','ON':['=',['.main.number1'],['.secondary.theone']]}]}";
     FLSliceResult queryStr = FLJSON5_ToJSON({queryText.data(), queryText.size()}, nullptr, nullptr, nullptr);
-    query = c4query_new(db, (C4Slice)queryStr, &err);
+    query = c4query_new(db, (C4Slice)queryStr, ERROR_INFO(err));
+    REQUIRE(query);
     FLSlice expected1 = FLSTR("main");
     FLSlice expected2 = FLSTR("secondary");
     CHECK((c4query_columnTitle(query, 0) == expected1));
@@ -1011,24 +1008,27 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query RevisionID", "[Query][C][!throws]")
     TransactionHelper t(db);
     
     // New Doc:
-    auto doc1a = c4doc_create(db, C4STR("doc1"), kC4SliceNull, 0, &error);
+    auto doc1a = c4doc_create(db, C4STR("doc1"), kC4SliceNull, 0, ERROR_INFO(error));
+    REQUIRE(doc1a);
     auto revID = toString(doc1a->revID);
     compileSelect(json5("{WHAT: [['._revisionID']], WHERE: ['=', ['._id'], 'doc1']}"));
     CHECK(run() == (vector<string>{revID}));
-    
-    // revisionID in WHERE:
-    compileSelect(json5("{WHAT: [['._id']], WHERE: ['=', ['._revisionID'], '" + revID + "']}"));
-    CHECK(run() == (vector<string>{"doc1"}));
-    
+
     // Updated Doc:
-    auto doc1b = c4doc_update(doc1a, json2fleece("{'ok':'go'}"), 0, &error);
+    auto doc1b = c4doc_update(doc1a, json2fleece("{'ok':'go'}"), 0, ERROR_INFO(error));
+    REQUIRE(doc1b);
     revID = toString(doc1b->revID);
     c4doc_release(doc1a);
     compileSelect(json5("{WHAT: [['._revisionID']], WHERE: ['=', ['._id'], 'doc1']}"));
     CHECK(run() == (vector<string>{revID}));
-    
+
+    // revisionID in WHERE:
+    compileSelect(json5("{WHAT: [['._id']], WHERE: ['=', ['._revisionID'], '" + revID + "']}"));
+    CHECK(run() == (vector<string>{"doc1"}));
+
     // Deleted Doc:
-    auto doc1c = c4doc_update(doc1b, kC4SliceNull, kRevDeleted, &error);
+    auto doc1c = c4doc_update(doc1b, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+    REQUIRE(doc1c);
     revID = toString(doc1c->revID);
     c4doc_release(doc1b);
     compileSelect(json5("{WHAT: [['._revisionID']], WHERE: ['AND', ['._deleted'], ['=', ['._id'], 'doc1']]}"));
@@ -1036,26 +1036,44 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query RevisionID", "[Query][C][!throws]")
     c4doc_release(doc1c);
 }
 
+
+#pragma mark - BIGGER DATABASE:
+
+
+class BigDBQueryTest : public C4QueryTest {
+public:
+    BigDBQueryTest(int which) :C4QueryTest(which, "iTunesMusicLibrary.json") { }
+};
+
+
+N_WAY_TEST_CASE_METHOD(BigDBQueryTest, "C4Database Optimize", "[Database][C]") {
+    C4Log("Creating index...");
+    REQUIRE(c4db_createIndex(db, C4STR("byArtist"),
+                             R"([[".Artist"], [".Album"], [".Track Number"]])"_sl,
+                             kC4ValueIndex, nullptr, WITH_ERROR()));
+    C4Log("Incremental optimize...");
+    REQUIRE(c4db_maintenance(db, kC4QuickOptimize, WITH_ERROR()));
+    C4Log("Full optimize...");
+    REQUIRE(c4db_maintenance(db, kC4FullOptimize, WITH_ERROR()));
+}
+
+
 #pragma mark - COLLATION:
 
-class CollatedQueryTest : public C4QueryTest {
+
+class CollatedQueryTest : public BigDBQueryTest {
 public:
-    CollatedQueryTest(int which)
-    :C4QueryTest(which, "iTunesMusicLibrary.json")
-    { }
+    CollatedQueryTest(int which) :BigDBQueryTest(which) { }
 
     vector<string> run() {
         C4Error error;
-        c4::ref<C4QueryEnumerator> e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
-        if (!e)
-            INFO("c4query_run got error " << error.domain << "/" << error.code);
+        c4::ref<C4QueryEnumerator> e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
         REQUIRE(e);
         vector<string> results;
-        while (c4queryenum_next(e, &error)) {
+        while (c4queryenum_next(e, ERROR_INFO(error))) {
             string result = Array::iterator(e->columns)[0].asstring();
             results.push_back(result);
         }
-        CHECK(error.code == 0);
         return results;
     }
 };

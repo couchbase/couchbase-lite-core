@@ -34,7 +34,7 @@ namespace litecore { namespace repl {
     private:
         void _insertRevisionsNow(int gen);
         bool insertRevisionNow(RevToInsert* NONNULL, C4Error*);
-        C4SliceResult applyDeltaCallback(const C4Revision *baseRevision NONNULL,
+        C4SliceResult applyDeltaCallback(C4Document *doc NONNULL,
                                          C4Slice deltaJSON,
                                          C4Error *outError);
 

@@ -17,57 +17,18 @@
 //
 
 #include "RevID.hh"
+#include "VersionVector.hh"
 #include "Error.hh"
 #include "varint.hh"
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
 #include <math.h>
+#include <limits.h>
 
 
 namespace litecore {
 
     using namespace fleece;
-
-    // Parses bytes from str to end as a decimal ASCII number. Returns 0 if non-digit found.
-    static inline uint64_t parseDigits(const char *str, const char *end)
-    {
-        uint64_t result = 0;
-        for (; str < end; ++str) {
-            if (!isdigit(*str))
-                return 0;
-            result = 10*result + (*str - '0');
-        }
-        return result;
-    }
-
-    // Writes the decimal representation of n to str, returning the number of digits written (1-20).
-    static inline size_t writeDigits(char *str, uint64_t n) {
-        size_t len;
-        if (n < 10) {
-            str[0] = '0' + (char)n;
-            len = 1;
-        } else {
-            char temp[20]; // max length is 20 decimal digits
-            char *dst = &temp[20];
-            len = 0;
-            do {
-                *(--dst) = '0' + (n % 10);
-                n /= 10;
-                len++;
-            } while (n > 0);
-            memcpy(str, dst, len);
-        }
-        str[len] = '\0';
-        return len;
-    }
-    
-    // Writes a byte to dst as two hex digits.
-    static inline char* byteToHex(char *dst, uint8_t byte) {
-        static const char hexchar[] = "0123456789abcdef";
-        dst[0] = hexchar[byte >> 4];
-        dst[1] = hexchar[byte & 0x0F];
-        return dst + 2;
-    }
 
     static inline bool islowerxdigit(char c) {
         return isxdigit(c) && !isupper(c);
@@ -77,94 +38,91 @@ namespace litecore {
 #pragma mark - API:
 
 
-    slice revid::skipFlag() const {
-        slice skipped = *this;
-        if (skipped.size > 0 && skipped[0] == 0)
-            skipped.moveStart(1);
-        return skipped;
-    }
-
-
-    uint64_t revid::getGenAndDigest(slice &digest) const {
-        digest = skipFlag();
+    pair<unsigned,slice> revid::generationAndDigest() const {
+        if (isVersion())
+            error::_throw(error::InvalidParameter);
+        slice digest = *this;
         uint64_t gen;
-        if (!ReadUVarInt(&digest, &gen))
-            error::_throw(error::CorruptRevisionData); // buffer too short!
-        return gen;
+        if (!ReadUVarInt(&digest, &gen) || gen == 0 || gen > UINT_MAX)
+            error::_throw(error::CorruptRevisionData);
+        return {unsigned(gen), digest};
     }
 
 
-    size_t revid::expandedSize() const {
-        slice digest;
-        uint64_t gen = getGenAndDigest(digest);
-        size_t size = 2 + size_t(::floor(::log10(gen)));    // digits and separator
-        if (isClock())
-            size += digest.size;
+    unsigned revid::generation() const {
+        if (isVersion())
+            return unsigned(asVersion().gen());         //FIX: Should Version.gen change to uint32?
         else
-            size += 2*digest.size;
-        return size;
+            return generationAndDigest().first;
     }
 
-    void revid::_expandInto(slice &expanded_rev) const {
-        slice digest;
-        uint64_t gen = getGenAndDigest(digest);
 
-        char* dst = (char*)expanded_rev.buf;
-        dst += writeDigits(dst, gen);
+    Version revid::asVersion() const {
+        if (isVersion())
+            return VersionVector::readCurrentVersionFromBinary(*this);
+        else if (size == 0)
+            error::_throw(error::CorruptRevisionData);  // buffer too short!
+        else
+            error::_throw(error::InvalidParameter);     // it's a digest, not a version
+    }
 
-        if (isClock()) {
-            *dst++ = '@';
-            memcpy(dst, digest.buf, digest.size);
-            dst += digest.size;
+    VersionVector revid::asVersionVector() const {
+        if (isVersion())
+            return VersionVector::fromBinary(*this);
+        else if (size == 0)
+            error::_throw(error::CorruptRevisionData);  // buffer too short!
+        else
+            error::_throw(error::InvalidParameter);     // it's a digest, not a version
+    }
+
+    bool revid::operator< (const revid& other) const {
+        if (isVersion()) {
+            return asVersion() < other.asVersion();
         } else {
-            *dst++ = '-';
-            const uint8_t* bytes = (const uint8_t*)digest.buf;
-            for (size_t i = 0; i < digest.size; ++i)
-                dst = byteToHex(dst, bytes[i]);
+            auto [myGen, myDigest] = generationAndDigest();
+            auto [otherGen, otherDigest] = other.generationAndDigest();
+            return (myGen != otherGen) ? myGen < otherGen : myDigest < otherDigest;
         }
-        expanded_rev.setSize(dst - (char*)expanded_rev.buf);
     }
 
-    bool revid::expandInto(slice &expanded_rev) const {
-        if (expanded_rev.size < expandedSize())
-            return false;
-        _expandInto(expanded_rev);
+    bool revid::isEquivalentTo(const revid& other) const noexcept {
+        if (*this == other)
+            return true;
+        else
+            return isVersion() && other.isVersion() && asVersion() == other.asVersion();
+    }
+
+    bool revid::expandInto(slice &result) const noexcept {
+        slice out = result;
+        if (isVersion()) {
+            if (!asVersion().writeASCII(&out))
+                return false;
+        } else {
+            auto [gen, digest] = generationAndDigest();
+            if (!out.writeDecimal(gen) || !out.writeByte('-') || !out.writeHex(digest))
+                return false;
+        }
+        result.setEnd(out.buf);
         return true;
     }
 
     alloc_slice revid::expanded() const {
         if (!buf)
             return alloc_slice();
-        alloc_slice resultBuf(expandedSize());
-        slice result(resultBuf);
-        _expandInto(result);
-        resultBuf.shorten(result.size);
-        return resultBuf;
+        if (isVersion()) {
+            return asVersion().asASCII();
+        } else {
+            auto [gen, digest] = generationAndDigest();
+            size_t expandedSize = 2 + size_t(::floor(::log10(gen))) + 2*digest.size;
+            alloc_slice resultBuf(expandedSize);
+            slice result(resultBuf);
+            Assert(expandInto(result));
+            resultBuf.shorten(result.size);
+            return resultBuf;
+        }
     }
 
-    unsigned revid::generation() const {
-        uint64_t gen;
-        if (GetUVarInt(skipFlag(), &gen) == 0)
-            error::_throw(error::CorruptRevisionData); // buffer too short!
-        return (unsigned) gen;
-    }
-
-    slice revid::digest() const {
-        uint64_t gen;
-        slice digest = skipFlag();
-        if (!ReadUVarInt(&digest, &gen))
-            error::_throw(error::CorruptRevisionData); // buffer too short!
-        return digest;
-    }
-
-    bool revid::operator< (const revid& other) const {
-        unsigned myGen = generation(), otherGen = other.generation();
-        if (myGen != otherGen)
-            return myGen < otherGen;
-        return digest() < other.digest();
-    }
-
-    revid::operator std::string() const {
+    std::string revid::str() const {
         alloc_slice exp = expanded();
         return std::string((char*)exp.buf, exp.size);
     }
@@ -173,94 +131,88 @@ namespace litecore {
 #pragma mark - RevIDBuffer:
 
 
-    revidBuffer::revidBuffer(const revidBuffer& other) {
-        *this = other;
+    revidBuffer::revidBuffer(unsigned generation, slice digest)
+    :revid(&_buffer, 0)
+    {
+        uint8_t* dst = _buffer;
+        dst += PutUVarInt(dst, generation);
+        setSize(dst + digest.size - _buffer);
+        if (size > sizeof(_buffer))
+            error::_throw(error::BadRevisionID); // digest too long!
+        memcpy(dst, digest.buf, digest.size);
     }
 
-    revidBuffer& revidBuffer::operator= (const revidBuffer& other) {
+
+    revidBuffer& revidBuffer::operator= (const revidBuffer& other) noexcept {
         memcpy(_buffer, other._buffer, sizeof(_buffer));
         set(&_buffer, other.size);
         return *this;
     }
 
+
     revidBuffer& revidBuffer::operator= (const revid &other) {
-        Assert(other.size <= sizeof(_buffer));
-        memcpy(_buffer, other.buf, other.size);
-        set(&_buffer, other.size);
+        if (other.isVersion()) {
+            // Just copy the first Version:
+            *this = other.asVersion();
+        } else {
+            if (other.size > sizeof(_buffer))
+                error::_throw(error::BadRevisionID); // digest too long!
+            memcpy(_buffer, other.buf, other.size);
+            set(&_buffer, other.size);
+        }
         return *this;
     }
 
 
-    revidBuffer::revidBuffer(unsigned generation, slice digest, revidType type)
-    :revid(&_buffer, 0)
-    {
-        uint8_t* dst = _buffer;
-        if (type == kClockType)
-            *(dst++) = 0;
-        dst += PutUVarInt(dst, generation);
-        setSize(dst + digest.size - _buffer);
-        if (size > sizeof(_buffer))
-            error::_throw(error::CorruptRevisionData); // digest too long!
-        memcpy(dst, digest.buf, digest.size);
+    revidBuffer& revidBuffer::operator= (const Version &vers) noexcept {
+        slice out(_buffer, sizeof(_buffer));
+        out.writeByte(0);
+        vers.writeBinary(&out);
+        set(&_buffer, 0);
+        setEnd(out.buf);
+        return *this;
     }
 
 
-    void revidBuffer::parse(slice s, bool allowClock) {
-        if (!tryParse(s, allowClock))
+    void revidBuffer::parse(slice s) {
+        if (!tryParse(s))
             error::_throw(error::BadRevisionID);
     }
 
-    void revidBuffer::parseNew(slice s) {
-        if (!tryParse(s, true))
-            error::_throw(error::BadRevisionID);
-    }
+    bool revidBuffer::tryParse(slice ascii) noexcept {
+        if (ascii.findByte('-') != nullptr) {
+            // Digest type:
+            uint8_t* start = _buffer, *end = start + sizeof(_buffer), *dst = start;
+            set(start, 0);
 
-    bool revidBuffer::tryParse(slice ascii, bool allowClock) {
-        uint8_t* start = _buffer, *dst = start;
-        set(start, 0);
-
-        // Find the separator; if it's '-' this is a digest type, if it's '@' it's a clock:
-        const char *sep = (const char*)ascii.findByte('@');
-        bool isClock = (sep != nullptr);
-        if (isClock) {
-            if (!allowClock)
+            uint64_t gen = ascii.readDecimal();
+            if (gen == 0 || gen > UINT_MAX)
                 return false;
-            *dst++ = 0; // leading zero byte denotes clock-style revid
-        } else {
-            sep = (const char*)ascii.findByte('-');
-            if (sep == nullptr)
-                return false; // separator is missing
-        }
+            dst += PutUVarInt(dst, gen);
 
-        ssize_t sepPos = sep - (const char*)ascii.buf;
-        if (sepPos == 0 || sepPos > 20 || sepPos >= ascii.size-1)
-            return false; // generation too large, or separator at end
+            if (ascii.readByte() != '-')
+                return false;
 
-        uint64_t gen = parseDigits((const char*)ascii.buf, sep);
-        if (gen == 0)
-            return false; // unparseable generation
-        size_t genSize = PutUVarInt(dst, gen);
-        dst += genSize;
-
-        slice suffix = ascii;
-        suffix.moveStart(sepPos + 1);
-
-        if (isClock) {
-            if (1 + genSize + suffix.size > sizeof(_buffer))
+            // Copy hex digest into dst as binary:
+            if (ascii.size == 0 || (ascii.size & 1) || dst + ascii.size / 2 > end)
                 return false; // rev ID is too long to fit in my buffer
-            memcpy(dst, suffix.buf, suffix.size);
-            dst += suffix.size;
-        } else {
-            if (genSize + suffix.size/2 > sizeof(_buffer) || (suffix.size & 1))
-                return false; // rev ID is too long to fit in my buffer
-            for (unsigned i=0; i<suffix.size; i+=2) {
-                if (!islowerxdigit(suffix[i]) || !islowerxdigit(suffix[i+1]))
+            for (unsigned i = 0; i < ascii.size; i += 2) {
+                if (!islowerxdigit(ascii[i]) || !islowerxdigit(ascii[i+1]))
                     return false; // digest is not hex
-                *dst++ = (uint8_t)(16*digittoint(suffix[i]) + digittoint(suffix[i+1]));
+                *dst++ = (uint8_t)(16*digittoint(ascii[i]) + digittoint(ascii[i+1]));
             }
+
+            setEnd(dst);
+            return true;
+        } else {
+            // Vector type:
+            auto comma = ascii.findByteOrEnd(',');
+            auto vers = Version::readASCII(slice(ascii.buf, comma));
+            if (!vers)
+                return false;
+            *this = *vers;
+            return true;
         }
-        setSize(dst - start);
-        return true;
     }
 
 }

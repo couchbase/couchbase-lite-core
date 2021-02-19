@@ -24,7 +24,6 @@
 #include "Server.hh"
 #include "FilePath.hh"
 #include "RefCounted.hh"
-#include <map>
 #include <memory>
 #include <mutex>
 #include <set>

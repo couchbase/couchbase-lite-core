@@ -30,7 +30,7 @@ namespace litecore {
     // Each operator has a name, min/max argument count, precedence, and a handler method.
     // https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
     // http://www.sqlite.org/lang_expr.html
-    typedef void (QueryParser::*OpHandler)(slice op, Array::iterator& args);
+    typedef void (QueryParser::*OpHandler)(slice op, ArrayIterator& args);
     struct QueryParser::Operation {
         slice op; int minArgs; int maxArgs; int precedence; OpHandler handler;};
     const QueryParser::Operation QueryParser::kOperationList[] = {

@@ -51,13 +51,25 @@ extern "C" {
     #define kC4LegacyAttachmentsProperty "_attachments"
 
 
+    /** Returns the properties of the selected revision, i.e. the root Fleece Dict. */
+    FLDict c4doc_getProperties(C4Document* C4NONNULL) C4API;
+
     /** Returns a Fleece document reference created from the selected revision.
         Caller must release the reference! */
     FLDoc c4doc_createFleeceDoc(C4Document*);
 
+    /** Resolves a conflict between two leaf revisions.
+        Identical to `c4doc_resolveConflict` except that it takes the merged body as a Fleece Dict,
+        instead of pre-encoded Fleece data. */
+    bool c4doc_resolveConflict2(C4Document *doc,
+                                C4String winningRevID,
+                                C4String losingRevID,
+                                FLDict C4NULLABLE mergedProperties,
+                                C4RevisionFlags mergedFlags,
+                                C4Error* C4NULLABLE error) C4API;
+
     /** Returns the C4Document, if any, that contains the given Fleece value. */
     C4Document* c4doc_containingValue(FLValue value);
-
 
     /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", "_deleted".)
         Does NOT return true for "_attachments" because that property isn't obsolete. */

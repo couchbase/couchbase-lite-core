@@ -14,6 +14,7 @@
 #include "Query.hh"
 #include "InstanceCounted.hh"
 #include "RefCounted.hh"
+#include "Array.hh"
 
 using namespace litecore;
 using namespace fleece::impl;

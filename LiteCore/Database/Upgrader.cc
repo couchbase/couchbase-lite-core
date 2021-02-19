@@ -44,7 +44,7 @@ namespace litecore {
     class Upgrader {
     public:
         Upgrader(const FilePath &oldPath, const FilePath &newPath, C4DatabaseConfig config)
-        :Upgrader(oldPath, new Database(newPath.path(), config))
+        :Upgrader(oldPath, new Database(newPath.path(), asTreeVersioning(config)))
         { }
 
 
@@ -62,6 +62,12 @@ namespace litecore {
         }
 
 
+        static C4DatabaseConfig asTreeVersioning(C4DatabaseConfig config) {
+            config.versioning = kC4TreeVersioning_v2;
+            return config;
+        }
+
+
         // Top-level method to invoke the upgrader.
         void run() {
             int userVersion = _oldDB.execAndGet("PRAGMA user_version");
@@ -70,7 +76,8 @@ namespace litecore {
             if (userVersion < kMinOldUserVersion)
                 error::_throw(error::DatabaseTooOld);
             else if (userVersion > kMaxOldUserVersion)
-                error::_throw(error::CantUpgradeDatabase);
+                error::_throw(error::CantUpgradeDatabase,
+                              "Database cannot be upgraded because its internal version number isn't recognized");
 
             Database::TransactionHelper t(_newDB);
             try {
@@ -125,7 +132,7 @@ namespace litecore {
                 Log("Importing doc '%.*s'", SPLAT(docID));
                 try {
                     Retained<Document> newDoc(
-                                    _newDB->documentFactory().newDocumentInstance(docID));
+                            _newDB->documentFactory().newDocumentInstance(docID, kEntireBody));
                     copyRevisions(docKey, newDoc);
                 } catch (const error &x) {
                     // Add docID to exception message:
@@ -133,7 +140,7 @@ namespace litecore {
                     if (!what)
                         what = "exception";
                     throw error(x.domain, x.code,
-                                format("%s, converting doc \"%.*s\"", what, SPLAT(docID)).c_str());
+                                format("%s, converting doc \"%.*s\"", what, SPLAT(docID)));
                 }
             }
         }
@@ -231,16 +238,16 @@ namespace litecore {
                 if (meta) {
                     auto digest = meta->get(slice(kC4BlobDigestProperty));
                     if (digest)
-                        copyAttachment((string)digest->asString());
+                        copyAttachment(digest->asString());
                 }
             }
         }
 
 
         // Copies a blob to the new database if it exists in the old one.
-        bool copyAttachment(string digest) {
-            Log("        ...attachment '%s'", digest.c_str());
-            blobKey key(digest);
+        bool copyAttachment(slice digest) {
+            Log("        ...attachment '%.*s'", SPLAT(digest));
+            blobKey key = blobKey::withBase64(digest);
             string hex = key.hexString();
             for (char &c : hex)
                 c = (char)toupper(c);

@@ -33,7 +33,7 @@ using namespace std;
 // http://www.sqlite.org/json1.html#jeach
 
 
-class SQLiteFunctionsTest : DataFile::Delegate {
+class SQLiteFunctionsTest : TestFixture, DataFile::Delegate {
 public:
 
     static constexpr int numberOfOptions = 2;
@@ -51,20 +51,11 @@ public:
 
     void insert(const char *key, const char *json) {
         auto body = JSONConverter::convertJSON(slice(json5(json)), sharedKeys);
-        fleeceAccessor(body); // 'encode' the data in the database to test the accessor function
         insertStmt->bind(1, key);
         insertStmt->bind(2, body.buf, (int)body.size);
         insertStmt->exec();
         insertStmt->reset();
     }
-
-    virtual slice fleeceAccessor(slice s) const override {
-        uint8_t* bytes = (uint8_t*)s.buf;
-        for (size_t i = 0; i < s.size; ++i)
-            bytes[i] ^= 0xFF;
-        return s;
-    }
-
 
     virtual alloc_slice blobAccessor(const Dict *blob) const override {
         auto digestProp = blob->get("digest"_sl);
@@ -234,17 +225,17 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "N1QL missingif/nullif", "[Query]") 
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[Query][fl_each]") {
-    insert("one",   "[1, 2, 3, 4]");
-    insert("two",   "[2, 4, 6, 8]");
-    insert("three", "[3, 6, 9, \"dozen\"]");
+    insert("one",   "{array:[1, 2, 3, 4]}");
+    insert("two",   "{array:[2, 4, 6, 8]}");
+    insert("three", "{array:[3, 6, 9, \"dozen\"]}");
 
-    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body, '.') WHERE kv.key = 'three'")
+    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body, 'array') WHERE kv.key = 'three'")
             == (vector<string>{"3", "6", "9", "dozen"}));
-    CHECK(query("SELECT fl_each.key FROM kv, fl_each(kv.body, '.') WHERE kv.key = 'three'")
+    CHECK(query("SELECT fl_each.key FROM kv, fl_each(kv.body, 'array') WHERE kv.key = 'three'")
             == (vector<string>{"MISSING", "MISSING", "MISSING", "MISSING"}));
-    CHECK(query("SELECT fl_each.type FROM kv, fl_each(kv.body, '.') WHERE kv.key = 'three'")
+    CHECK(query("SELECT fl_each.type FROM kv, fl_each(kv.body, 'array') WHERE kv.key = 'three'")
             == (vector<string>{"2", "2", "2", "3"}));
-    CHECK(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body, '.') WHERE fl_each.value = 4")
+    CHECK(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body, 'array') WHERE fl_each.value = 4")
             == (vector<string>{"one", "two"}));
 }
 

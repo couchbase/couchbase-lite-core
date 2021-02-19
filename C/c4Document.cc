@@ -26,6 +26,7 @@
 #include "c4Private.h"
 
 #include "TreeDocument.hh"
+#include "VectorDocument.hh"
 #include "Document.hh"
 #include "Database.hh"
 #include "LegacyAttachments.hh"
@@ -55,9 +56,21 @@ static C4Document* newDoc(bool mustExist, C4Error *outError,
         auto doc = cb();
         if (!doc || (mustExist && !doc->exists())) {
             doc = nullptr;
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
         }
         return retain(move(doc));
+    });
+}
+
+
+C4Document* c4db_getDoc(C4Database *database,
+                       C4Slice docID,
+                       bool mustExist,
+                       C4DocContentLevel content,
+                       C4Error *outError) noexcept
+{
+    return newDoc(mustExist, outError, [=] {
+        return database->documentFactory().newDocumentInstance(docID, ContentOption(content));
     });
 }
 
@@ -67,21 +80,7 @@ C4Document* c4doc_get(C4Database *database,
                       bool mustExist,
                       C4Error *outError) noexcept
 {
-    return newDoc(mustExist, outError, [=] {
-        return database->documentFactory().newDocumentInstance(docID);
-    });
-}
-
-
-C4Document* c4doc_getSingleRevision(C4Database *database,
-                                    C4Slice docID,
-                                    C4Slice revID,
-                                    bool withBody,
-                                    C4Error *outError) noexcept
-{
-    return newDoc(true, outError, [=] {
-        return database->documentFactory().newLeafDocumentInstance(docID, revID, withBody);
-    });
+    return c4db_getDoc(database, docID, mustExist, kDocGetCurrentRev, outError);
 }
 
 
@@ -90,7 +89,8 @@ C4Document* c4doc_getBySequence(C4Database *database,
                                 C4Error *outError) noexcept
 {
     return newDoc(true, outError, [=] {
-        return database->documentFactory().newDocumentInstance(database->defaultKeyStore().get(sequence));
+        return database->documentFactory().newDocumentInstance(
+                                        database->defaultKeyStore().get(sequence, kEntireBody));
     });
 }
 
@@ -106,7 +106,7 @@ bool c4doc_selectRevision(C4Document* doc,
     return tryCatch<bool>(outError, [&]{
         if (asInternal(doc)->selectRevision(revID, withBody))
             return true;
-        recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+        c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
         return false;
     });
 }
@@ -118,23 +118,37 @@ bool c4doc_selectCurrentRevision(C4Document* doc) noexcept
 }
 
 
-C4SliceResult c4doc_detachRevisionBody(C4Document* doc) noexcept {
-    return C4SliceResult(asInternal(doc)->detachSelectedRevBody());
-}
-
-
 bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) noexcept {
     return tryCatch<bool>(outError, [&]{
         if (asInternal(doc)->loadSelectedRevBody())
             return true;
-        recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+        c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
         return false;
     });
 }
 
 
 bool c4doc_hasRevisionBody(C4Document* doc) noexcept {
-    return tryCatch<bool>(nullptr, bind(&Document::hasRevisionBody, asInternal(doc)));
+    return tryCatch<bool>(nullptr, [=]{return asInternal(doc)->hasRevisionBody();});
+}
+
+
+C4Slice c4doc_getRevisionBody(C4Document* doc) C4API {
+    return asInternal(doc)->getSelectedRevBody();
+}
+
+
+C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API {
+    return C4SliceResult(asInternal(doc)->getSelectedRevIDGlobalForm());
+}
+
+
+C4SliceResult c4doc_getRevisionHistory(C4Document* doc,
+                                       unsigned maxRevs,
+                                       const C4String backToRevs[],
+                                       unsigned backToRevsCount) C4API {
+    return C4SliceResult(asInternal(doc)->getSelectedRevHistory(maxRevs,
+                                                                backToRevs, backToRevsCount));
 }
 
 
@@ -144,7 +158,7 @@ bool c4doc_selectParentRevision(C4Document* doc) noexcept {
 
 
 bool c4doc_selectNextRevision(C4Document* doc) noexcept {
-    return tryCatch<bool>(nullptr, bind(&Document::selectNextRevision, asInternal(doc)));
+    return tryCatch<bool>(nullptr, [=]{return asInternal(doc)->selectNextRevision();});
 }
 
 
@@ -162,35 +176,6 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
         clearError(outError); // normal failure
         return false;
     });
-}
-
-
-bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept {
-    // LCOV_EXCL_START
-    if (asInternal(doc)->database()->configV1()->versioning != kC4RevisionTrees) {
-        Warn("c4doc_selectFirstPossibleAncestorOf only works with revision trees");
-        return false;
-    }
-    // LCOV_EXCL_STOP
-
-    // Start at first (current) revision; return it if it's a candidate, else go to the next:
-    c4doc_selectCurrentRevision(doc);
-    auto generation = c4rev_getGeneration(revID);
-    if (c4rev_getGeneration(doc->selectedRev.revID) < generation)
-        return true;
-    else
-        return c4doc_selectNextPossibleAncestorOf(doc, revID);
-}
-
-
-bool c4doc_selectNextPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept {
-    auto generation = c4rev_getGeneration(revID);
-    while (c4doc_selectNextRevision(doc)) {
-        // A possible ancestor is one with a lower generation number:
-        if (c4rev_getGeneration(doc->selectedRev.revID) < generation)
-            return true;
-    }
-    return false;
 }
 
 
@@ -302,21 +287,21 @@ C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase
 }
 
 
-bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase, C4Error *outError) C4API {
+bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase, C4String revID,
+                             C4Error *outError) C4API
+{
     return tryCatch<bool>(outError, [&]{
-        asInternal(doc)->setRemoteAncestorRevID(remoteDatabase);
+        asInternal(doc)->setRemoteAncestorRevID(remoteDatabase, revID);
         return true;
     });
 }
 
 
-C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) {
-    return Document::currentRevFlagsFromDocFlags(docFlags);
-}
-
-
 // LCOV_EXCL_START
-bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequence,
+bool c4db_markSynced(C4Database *database,
+                     C4String docID,
+                     C4String revID,
+                     C4SequenceNumber sequence,
                      C4RemoteID remoteID,
                      C4Error *outError) noexcept
 {
@@ -334,18 +319,26 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
         }
 
         // Slow path: Load the doc and update the remote-ancestor info in the rev tree:
-        Retained<Document> doc(asInternal(c4doc_get(database, docID, true, outError)));
+        Retained<Document> doc(asInternal(c4db_getDoc(database, docID, true, kDocGetAll, outError)));
         release(doc.get());     // balances the +1 ref returned by c4doc_get()
         if (!doc)
             return false;
-        bool found = false;
-        do {
-            found = (doc->selectedRev.sequence == sequence);
-        } while (!found && doc->selectNextRevision());
-        if (found) {
-            doc->setRemoteAncestorRevID(remoteID);
-            result = c4doc_save(doc.get(), 9999, outError);       // don't prune anything
+        if (!revID.buf) {
+            // Look up revID by sequence, if it wasn't given:
+            Assert(sequence != 0);
+            do {
+                if (doc->selectedRev.sequence == sequence) {
+                    revID = doc->selectedRev.revID;
+                    break;
+                }
+            } while (doc->selectNextRevision());
+            if (!revID.buf) {
+                c4error_return(LiteCoreDomain, kC4ErrorNotFound, slice("Sequence not found"), outError);
+                return false;
+            }
         }
+        doc->setRemoteAncestorRevID(remoteID, revID);
+        result = c4doc_save(doc.get(), 9999, outError);       // don't prune anything
     } catchError(outError)
     return result;
 }
@@ -399,7 +392,7 @@ static pair<Document*,int> putNewDoc(C4Database *database,
     if (rq->existingRevision)
         commonAncestorIndex = idoc->putExistingRevision(*rq, nullptr);
     else
-        commonAncestorIndex = idoc->putNewRevision(*rq) ? 0 : -1;
+        commonAncestorIndex = idoc->putNewRevision(*rq, nullptr) ? 0 : -1;
     if (commonAncestorIndex < 0)
         idoc = nullptr;
     return {retain(move(idoc)), commonAncestorIndex};
@@ -424,7 +417,8 @@ C4Document* c4doc_getForPut(C4Database *database,
             docID = newDocID;
         }
 
-        Retained<Document> idoc = database->documentFactory().newDocumentInstance(docID);
+        Retained<Document> idoc = database->documentFactory().newDocumentInstance(docID,
+                                                                                  kEntireBody);
         int code = 0;
 
         if (parentRevID.buf) {
@@ -447,7 +441,7 @@ C4Document* c4doc_getForPut(C4Database *database,
         }
 
         if (code)
-            recordError(LiteCoreDomain, code, outError);
+            c4error_return(LiteCoreDomain, code, {}, outError);
         else
             return retain(move(idoc));
 
@@ -479,6 +473,9 @@ C4Document* c4doc_put(C4Database *database,
         if (!checkParam(rq->historyCount > 0 || !(rq->revFlags & kRevDeleted),
                         "Can't create a new already-deleted document", outError))
             return nullptr;
+        if (rq->remoteDBID != 0)
+            error::_throw(error::InvalidParameter,
+                          "remoteDBID cannot be used when existingRevision=false");
     }
 
     int commonAncestorIndex = 0;
@@ -492,7 +489,7 @@ C4Document* c4doc_put(C4Database *database,
         if (!doc) {
             if (rq->existingRevision) {
                 // Insert existing revision:
-                doc = c4doc_get(database, rq->docID, false, outError);
+                doc = c4db_getDoc(database, rq->docID, false, kDocGetAll, outError);
                 if (!doc)
                     return nullptr;
                 commonAncestorIndex = asInternal(doc)->putExistingRevision(*rq, outError);
@@ -511,7 +508,11 @@ C4Document* c4doc_put(C4Database *database,
                                       outError);
                 if (!doc)
                     return nullptr;
-                commonAncestorIndex = asInternal(doc)->putNewRevision(*rq) ? 0 : -1;
+                if (!asInternal(doc)->putNewRevision(*rq, outError)) {
+                    c4doc_release(doc);
+                    return nullptr;
+                }
+                commonAncestorIndex = 0;
             }
         }
 
@@ -615,6 +616,29 @@ int32_t c4doc_purgeRevision(C4Document *doc,
 }
 
 
+bool c4doc_resolveConflict2(C4Document *doc,
+                            C4String winningRevID,
+                            C4String losingRevID,
+                            FLDict mergedProperties,
+                            C4RevisionFlags mergedFlags,
+                            C4Error *outError) noexcept
+{
+    alloc_slice mergedBody;
+    if (mergedProperties) {
+        auto db = asInternal(doc)->database();
+        auto enc = db->sharedFLEncoder();
+        FLEncoder_WriteValue(enc, (FLValue)mergedProperties);
+        FLError flErr;
+        mergedBody = FLEncoder_Finish(enc, &flErr);
+        if (!mergedBody) {
+            c4error_return(FleeceDomain, flErr, nullslice, outError);
+            return false;
+        }
+    }
+    return c4doc_resolveConflict(doc, winningRevID, losingRevID, mergedBody, mergedFlags, outError);
+}
+
+
 bool c4doc_resolveConflict(C4Document *doc,
                            C4String winningRevID,
                            C4String losingRevID,
@@ -631,19 +655,68 @@ bool c4doc_resolveConflict(C4Document *doc,
 }
 
 
+bool c4doc_save(C4Document *doc,
+                uint32_t maxRevTreeDepth,
+                C4Error *outError) noexcept
+{
+    auto idoc = asInternal(doc);
+    if (!idoc->mustBeInTransaction(outError))
+        return false;
+    try {
+        if (maxRevTreeDepth == 0)
+            maxRevTreeDepth = asInternal(doc)->database()->maxRevTreeDepth();
+        if (!idoc->save(maxRevTreeDepth)) {
+            if (outError)
+                *outError = {LiteCoreDomain, kC4ErrorConflict};
+            return false;
+        }
+        return true;
+    } catchError(outError)
+    return false;
+}
+
+
+#pragma mark - REVISION IDS & FLAGS:
+
+
+/// Returns true if the two ASCII revIDs are equal (though they may not be byte-for-byte equal.)
+bool c4rev_equal(C4Slice rev1, C4Slice rev2) C4API {
+    if (slice(rev1) == slice(rev2))
+        return true;
+    revidBuffer buf1, buf2;
+    return buf1.tryParse(rev1) && buf2.tryParse(rev2) && buf1.isEquivalentTo(buf2);
+}
+
+
+unsigned c4rev_getGeneration(C4Slice revID) C4API {
+    try {
+        return revidBuffer(revID).generation();
+    }catchExceptions()
+    return 0;
+}
+
+
+C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) C4API {
+    return Document::currentRevFlagsFromDocFlags(docFlags);
+}
+
+
 #pragma mark - FLEECE-SPECIFIC:
 
 
 using namespace fleece;
 
 
-FLDoc c4doc_createFleeceDoc(C4Document *doc) {
-    return (FLDoc) retain(asInternal(doc)->fleeceDoc());
+FLDict c4doc_getProperties(C4Document* doc) C4API {
+    return asInternal(doc)->getSelectedRevRoot();
 }
 
 
 C4Document* c4doc_containingValue(FLValue value) {
-    return TreeDocumentFactory::documentContaining((const fleece::impl::Value*)value);
+    auto doc = VectorDocumentFactory::documentContaining(value);
+    if (!doc)
+        doc = TreeDocumentFactory::documentContaining(value);
+    return doc;
 }
 
 
@@ -664,7 +737,7 @@ C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outErro
         Encoder &enc = db->sharedEncoder();
         JSONConverter jc(enc);
         if (!jc.encodeJSON(jsonData)) {
-            recordError(FleeceDomain, jc.errorCode(), jc.errorMessage(), outError);
+            c4error_return(FleeceDomain, jc.errorCode(), slice(jc.errorMessage()), outError);
             return C4SliceResult{};
         }
         return C4SliceResult(enc.finish());

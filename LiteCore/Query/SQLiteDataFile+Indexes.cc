@@ -55,7 +55,7 @@ namespace litecore {
 
         int userVersion = _sqlDb->execAndGet("PRAGMA user_version");
         if (!options().upgradeable && userVersion < 301)
-            error::_throw(error::CantUpgradeDatabase);
+            error::_throw(error::CantUpgradeDatabase, "Database needs upgrade of index metadata");
 
         LogTo(DBLog, "Upgrading database to use 'indexes' table...");
         _exec("CREATE TABLE indexes (name TEXT PRIMARY KEY, type INTEGER NOT NULL,"
@@ -185,6 +185,8 @@ namespace litecore {
         SQLite::Statement getIndex(*this, "SELECT name, tbl_name FROM sqlite_master "
                                           "WHERE type = 'index' "
                                           "AND tbl_name LIKE 'kv_%' "
+                                          "AND name NOT LIKE 'kv_%_blobs' "
+                                          "AND name NOT LIKE 'kv_%_conflicts' "
                                           "AND name NOT LIKE 'kv_%_seqs' "
                                           "AND sql NOT NULL");
         while(getIndex.executeStep()) {
@@ -214,14 +216,15 @@ namespace litecore {
 
     // Gets info of a single index. (Subroutine of create/deleteIndex.)
     optional<SQLiteIndexSpec> SQLiteDataFile::getIndex(slice name) {
-        ensureIndexTableExists();
+        if (!indexTableExists())
+            return nullopt;
         SQLite::Statement stmt(*this, "SELECT name, type, expression, keyStore, indexTableName "
                                       "FROM indexes WHERE name=?");
         stmt.bindNoCopy(1, (char*)name.buf, (int)name.size);
         if (stmt.executeStep())
             return specFromStatement(stmt);
         else
-            return {};
+            return nullopt;
     }
 
 

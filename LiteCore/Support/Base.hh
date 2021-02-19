@@ -22,22 +22,28 @@
 #include "PlatformCompat.hh"
 #include "function_ref.hh"
 #include "RefCounted.hh"
+#include <memory>
 #include <stddef.h>
 #include <stdint.h>
 #include <string>
-#include <string_view>
-
+#include <utility>
 
 namespace litecore {
+    // For types #included above, add them to the `litecore` namespace so headers don't have to
+    // use their full names. (This also keeps usages in those headers from being flagged by the
+    // `missing_includes` script, which only notices types prefixed with `std::`.)
+    using std::move;
+    using std::pair;
+    using std::string;
+    using std::shared_ptr;
+    using std::unique_ptr;
+
     using fleece::slice;
     using fleece::alloc_slice;
     using fleece::nullslice;
     using fleece::function_ref;
     using fleece::RefCounted;
     using fleece::Retained;
-
-    using std::string;
-    using std::string_view;
 
     // Database sequence number
     typedef uint64_t sequence_t;

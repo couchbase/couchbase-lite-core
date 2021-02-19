@@ -26,6 +26,9 @@
 #include "access_lock.hh"
 #include "function_ref.hh"
 #include "fleece/Fleece.hh"
+#include <atomic>
+#include <memory>
+#include <mutex>
 
 
 namespace litecore { namespace repl {
@@ -47,14 +50,18 @@ namespace litecore { namespace repl {
         /** Returns the remote DB identifier of this replication, once it's been looked up. */
         C4RemoteID remoteDBID() const                   {return _remoteDBID;}
 
+        bool usingVersionVectors() const                {return _usingVersionVectors;}
+
+        string convertVersionToAbsolute(slice revID);
+
         // (The "use" method is inherited from access_lock)
 
         //////// DOCUMENTS:
 
         /** Gets a document by ID */
-        C4Document* getDoc(slice docID, C4Error *outError) const {
+        C4Document* getDoc(slice docID, C4DocContentLevel content, C4Error *outError) const {
             return use<C4Document*>([&](C4Database *db) {
-                return c4doc_get(db, docID, true, outError);
+                return c4db_getDoc(db, docID, true, content, outError);
             });
         }
 
@@ -95,7 +102,7 @@ namespace litecore { namespace repl {
         //////// DELTAS:
 
         /** Applies a delta to an existing revision. */
-        fleece::Doc applyDelta(const C4Revision *baseRevision NONNULL,
+        fleece::Doc applyDelta(C4Document *doc NONNULL,
                                slice deltaJSON,
                                bool useDBSharedKeys,
                                C4Error *outError);
@@ -204,11 +211,14 @@ namespace litecore { namespace repl {
         std::mutex _tempSharedKeysMutex;                    // Mutex for replacing _tempSharedKeys
         unsigned _tempSharedKeysInitialCount {0};           // Count when copied from db's keys
         C4RemoteID _remoteDBID {0};                         // ID # of remote DB in revision store
+        alloc_slice _remotePeerID;                          // peerID of remote peer
         bool const _disableBlobSupport;                     // Does replicator support blobs?
         actor::Batcher<ReplicatedRev> _revsToMarkSynced;    // Pending revs to be marked as synced
         actor::Timer _timer;                                // Implements Batcher delay
         bool _inTransaction {false};                        // True while in a transaction
         std::unique_ptr<access_lock<C4Database*>> _insertionDB; // DB handle to use for insertions
+        std::string _myPeerID;
+        const bool _usingVersionVectors;                    // True if DB uses version vectors
     };
 
 } }

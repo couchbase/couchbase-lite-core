@@ -17,8 +17,12 @@
 //
 
 #pragma once
-#include "FleeceImpl.hh"
-#include "SharedKeys.hh"
+#include "fleece/slice.hh"
+
+namespace fleece::impl {
+    class Dict;
+    class SharedKeys;
+}
 
 namespace litecore {
 

@@ -203,12 +203,14 @@ namespace litecore { namespace REST {
 
     void RESTListener::handleGetDoc(RequestResponse &rq, C4Database *db) {
         string docID = rq.path(1);
+        string revID = rq.query("rev");
         C4Error err;
-        c4::ref<C4Document> doc = c4doc_get(db, slice(docID), true, &err);
+        c4::ref<C4Document> doc = c4db_getDoc(db, slice(docID), true,
+                                             (revID.empty() ? kDocGetCurrentRev : kDocGetAll),
+                                             &err);
         if (!doc)
             return rq.respondWithError(err);
 
-        string revID = rq.query("rev");
         if (revID.empty()) {
             if (doc->flags & kDocDeleted)
                 return rq.respondWithStatus(HTTPStatus::NotFound);
@@ -219,8 +221,6 @@ namespace litecore { namespace REST {
         }
 
         // Get the revision
-        if (!doc->selectedRev.body.buf)
-            return rq.respondWithStatus(HTTPStatus::NotFound);
         alloc_slice json = c4doc_bodyAsJSON(doc, false, &err);
         if (!json)
             return rq.respondWithError(err);

@@ -159,19 +159,22 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
 
 
 C4StringResult c4address_toURL(C4Address address) C4API {
-    stringstream s;
-    s << address.scheme << "://";
-    if (slice(address.hostname).findByte(':'))
-        s << '[' << address.hostname << ']';
-    else
-        s << address.hostname;
-    if (address.port)
-        s << ':' << address.port;
-    if (address.path.size == 0 || slice(address.path)[0] != '/')
-        s << '/';
-    s << address.path;
-    auto str = s.str();
-    return c4slice_createResult({str.data(), str.size()});
+    try {
+        stringstream s;
+        s << address.scheme << "://";
+        if (slice(address.hostname).findByte(':'))
+            s << '[' << address.hostname << ']';
+        else
+            s << address.hostname;
+        if (address.port)
+            s << ':' << address.port;
+        if (address.path.size == 0 || slice(address.path)[0] != '/')
+            s << '/';
+        s << address.path;
+        auto str = s.str();
+        return c4slice_createResult({str.data(), str.size()});
+    } catchError(nullptr);
+    return {};
 }
 
 

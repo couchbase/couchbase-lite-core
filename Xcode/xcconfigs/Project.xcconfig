@@ -11,7 +11,7 @@ MBEDTLS = $(SRCROOT)/../vendor/mbedtls
 MBEDCRYPTO = $(MBEDTLS)/crypto
 SOCKPP = $(SRCROOT)/../vendor/sockpp
 
-WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-unknown-warning-option  // ignore unknown warning flags
+WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-unknown-warning-option -Wno-assume  // ignore unknown warning flags
 CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO
 CLANG_WARN_ASSIGN_ENUM = NO
 CLANG_WARN__EXIT_TIME_DESTRUCTORS = NO
@@ -21,13 +21,13 @@ GCC_WARN_SIGN_COMPARE = NO
 GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
 CLANG_STATIC_ANALYZER_MODE = shallow
 
-LITECORE_VERSION_STRING                            = 2.8.0
+LITECORE_VERSION_STRING                            = 3.0.0
 LITECORE_BUILD_NUMBER                              = 0
 
 IPHONEOS_DEPLOYMENT_TARGET                         =  9.0
 MACOSX_DEPLOYMENT_TARGET                           = 10.12
 TVOS_DEPLOYMENT_TARGET                             =  9.0
-ONLY_ACTIVE_ARCH                                   = NO
+ONLY_ACTIVE_ARCH                                   = YES
 SKIP_INSTALL                                       = YES
 SUPPORTED_PLATFORMS                                = macosx iphoneos iphonesimulator appletvos appletvsimulator
 

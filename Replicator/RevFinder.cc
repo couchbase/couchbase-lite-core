@@ -22,6 +22,7 @@
 #include "IncomingRev.hh"
 #include "DBAccess.hh"
 #include "Increment.hh"
+#include "VersionVector.hh"
 #include "StringUtil.hh"
 #include "Instrumentation.hh"
 #include "c4.hh"
@@ -36,13 +37,15 @@ using namespace std;
 using namespace fleece;
 using namespace litecore::blip;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     RevFinder::RevFinder(Replicator *replicator, Delegate *delegate)
     :Worker(replicator, "RevFinder")
     ,_delegate(delegate)
     {
         _passive = _options.pull <= kC4Passive;
+        _mustBeProposed = _passive && _options.noIncomingConflicts()
+                                   && !_db->usingVersionVectors();
         registerHandler("changes",          &RevFinder::handleChanges);
         registerHandler("proposeChanges",   &RevFinder::handleChanges);
     }
@@ -79,7 +82,7 @@ namespace litecore { namespace repl {
     }
 
 
-    // Actually handle a "changes" message:
+    // Actually handle a "changes" (or "proposeChanges") message:
     void RevFinder::handleChangesNow(MessageIn *req) {
         slice reqType = req->property("Profile"_sl);
         bool proposed = (reqType == "proposeChanges"_sl);
@@ -90,17 +93,17 @@ namespace litecore { namespace repl {
         if (!changes && req->body() != "null"_sl) {
             warn("Invalid body of 'changes' message");
             req->respondWithError({"BLIP"_sl, 400, "Invalid JSON body"_sl});
+        } else if ((!proposed && _mustBeProposed) || (proposed && _db->usingVersionVectors())) {
+            // In conflict-free mode plus rev-trees the protocol requires the pusher send
+            // "proposeChanges" instead. But with version vectors, always use "changes".
+            req->respondWithError({"BLIP"_sl, 409});
         } else if (nChanges == 0) {
-            // Empty array indicates we've caught up.
+            // Empty array indicates we've caught up. (This may have been sent no-reply)
             logInfo("Caught up with remote changes");
             _delegate->caughtUp();
             req->respond();
         } else if (req->noReply()) {
             warn("Got pointless noreply 'changes' message");
-        } else if (_options.noIncomingConflicts() && !proposed) {
-            // In conflict-free mode the protocol requires the pusher send "proposeChanges" instead
-            req->respondWithError({"BLIP"_sl, 409});
-            
         } else {
             // Alright, let's look at the changes:
             if (proposed) {
@@ -129,13 +132,21 @@ namespace litecore { namespace repl {
 
             Stopwatch st;
 
-            vector<ChangeSequence> sequences(nChanges); // the vector I will send to the delegate
+            vector<ChangeSequence> sequences; // the vector I will send to the delegate
+            sequences.reserve(nChanges);
 
+            C4Error error;
             auto &encoder = response.jsonBody();
             encoder.beginArray();
-            unsigned requested = proposed ? findProposedRevs(changes, encoder, sequences)
-                                          : findRevs(changes, encoder, sequences);
+            int requested = proposed ? findProposedRevs(changes, encoder, sequences, &error)
+                                     : findRevs(changes, encoder, sequences, &error);
             encoder.endArray();
+
+            if (requested < 0) {
+                gotError(error);
+                req->respondWithError(c4ToBLIPError(error));
+                return;
+            }
             
             // CBL-1399: Important that the order be call expectSequences and *then* respond
             // to avoid rev messages comes in before the Puller knows about them (mostly 
@@ -154,11 +165,29 @@ namespace litecore { namespace repl {
     }
 
 
+    bool RevFinder::checkDocAndRevID(slice docID, slice revID, C4Error *outError) {
+        bool valid;
+        if (docID.size < 1 || docID.size > 255)
+            valid = false;
+        else if (_db->usingVersionVectors())
+            valid = revID.findByte('@') && !revID.findByte('*');     // require absolute form
+        else
+            valid = revID.findByte('-');
+        if (!valid) {
+            *outError = c4error_printf(LiteCoreDomain, kC4ErrorRemoteError,
+                                       "Invalid docID/revID '%.*s' #%.*s in incoming change list",
+                                       SPLAT(docID), SPLAT(revID));
+        }
+        return valid;
+    }
+
+
     // Looks through the contents of a "changes" message, encodes the response,
     // adds each entry to `sequences`, and returns the number of new revs.
-    unsigned RevFinder::findRevs(Array changes,
-                                 Encoder &encoder,
-                                 vector<ChangeSequence> &sequences)
+    int RevFinder::findRevs(Array changes,
+                            Encoder &encoder,
+                            vector<ChangeSequence> &sequences,
+                            C4Error *outError)
     {
         // Compile the docIDs/revIDs into parallel vectors:
         unsigned itemsWritten = 0, requested = 0;
@@ -166,58 +195,78 @@ namespace litecore { namespace repl {
         auto nChanges = changes.count();
         docIDs.reserve(nChanges);
         revIDs.reserve(nChanges);
-        size_t i = 0;
         for (auto item : changes) {
             // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
             auto change = item.asArray();
-            docIDs.push_back(change[1].asString());
-            revIDs.push_back(change[2].asString());
-            sequences[i].sequence = RemoteSequence(change[0]);
-            sequences[i].bodySize = max(change[4].asUnsigned(), (uint64_t)1);
-            ++i;
+            slice docID = change[1].asString();
+            slice revID = change[2].asString();
+            if (!checkDocAndRevID(docID, revID, outError))
+                return -1;
+            docIDs.push_back(docID);
+            revIDs.push_back(revID);
+            sequences.push_back({RemoteSequence(change[0]),
+                                 max(change[4].asUnsigned(), (uint64_t)1)});
         }
 
         // Ask the database to look up the ancestors:
         vector<C4StringResult> ancestors(nChanges);
-        C4Error err;
         bool ok = _db->use<bool>([&](C4Database *db) {
             return c4db_findDocAncestors(db, nChanges, kMaxPossibleAncestors,
                                          !_options.disableDeltaSupport(),  // requireBodies
                                          _db->remoteDBID(),
                                          (C4String*)docIDs.data(), (C4String*)revIDs.data(),
-                                         ancestors.data(), &err);
+                                         ancestors.data(), outError);
         });
         if (!ok) {
-            gotError(err);
+            return -1;
         } else {
             // Look through the database response:
-            for (i = 0; i < nChanges; ++i) {
-                alloc_slice docID(docIDs[i]);
-                alloc_slice revID(revIDs[i]);
+            for (unsigned i = 0; i < nChanges; ++i) {
+                slice docID = docIDs[i], revID = revIDs[i];
                 alloc_slice anc(std::move(ancestors[i]));
-                if (anc == kC4AncestorExistsButNotCurrent) {
-                    // This means the rev exists but is not marked as the latest from the
-                    // remote server, so I better make it so:
-                    logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
-                             SPLAT(docID), SPLAT(revID));
-                    _db->setDocRemoteAncestor(docID, revID);
-                    replicator()->docRemoteAncestorChanged(docID, revID);
-                    sequences[i].bodySize = 0; // don't want the rev
-                } else if (anc == kC4AncestorExists) {
-                    sequences[i].bodySize = 0; // don't want the rev
-                } else {
-                    // Don't have revision -- request it:
-                    ++requested;
-                    // Append zeros for any items I skipped, using only writeRaw to avoid confusing
-                    // the JSONEncoder's comma mechanism (CBL-1208).
+                C4FindDocAncestorsResultFlags status = anc ? (anc[0] - '0') : kRevsLocalIsOlder;
+
+                if (status & kRevsLocalIsOlder) {
+                    // I have an older revision or a conflict:
+                    // First, append zeros for any items I skipped:
+                    // [use only writeRaw to avoid confusing JSONEncoder's comma mechanism, CBL-1208]
                     if (itemsWritten > 0)
                         encoder.writeRaw(",");      // comma after previous array item
                     while (itemsWritten++ < i)
                         encoder.writeRaw("0,");
-                    // Append array of ancestor revs I do have (it's already a JSON array):
-                    encoder.writeRaw(anc ? slice(anc) : "[]"_sl);
-                    logDebug("    - Requesting '%.*s' %.*s, ancestors %.*s",
-                             SPLAT(docID), SPLAT(revID), SPLAT(anc));
+
+                    if ((status & kRevsConflict) == kRevsConflict && passive()) {
+                        // Passive puller refuses conflicts:
+                        encoder.writeRaw("409");
+                        sequences[i].bodySize = 0;
+                        logDebug("    - '%.*s' #%.*s conflicts with local revision, rejecting",
+                                 SPLAT(docID), SPLAT(revID));
+                    } else {
+                        // OK, I want it!
+                        // Append array of ancestor revs I do have (it's already a JSON array):
+                        ++requested;
+                        slice jsonArray = (anc ? anc.from(1) : "[]"_sl);
+                        encoder.writeRaw(jsonArray);
+                        logDebug("    - Requesting '%.*s' #%.*s, I have ancestors %.*s",
+                                 SPLAT(docID), SPLAT(revID), SPLAT(jsonArray));
+                    }
+                } else {
+                    // I have an equal or newer revision; ignore this one:
+                    // [Implicitly this appends a 0, but we're skipping trailing zeroes.]
+                    sequences[i].bodySize = 0;
+                    if (status & kRevsAtThisRemote) {
+                        logDebug("    - Already have '%.*s' %.*s",
+                                 SPLAT(docID), SPLAT(revID));
+                    } else {
+                        // This means the rev exists but is not marked as the latest from the
+                        // remote server, so I better make it so:
+                        logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
+                                 SPLAT(docID), SPLAT(revID));
+                        _db->setDocRemoteAncestor(docID, revID);
+                        if (!_passive && !_db->usingVersionVectors())
+                            replicator()->docRemoteAncestorChanged(alloc_slice(docID),
+                                                                   alloc_slice(revID));
+                    }
                 }
             }
         }
@@ -226,9 +275,10 @@ namespace litecore { namespace repl {
 
 
     // Same as `findOrRequestRevs`, but for "proposeChanges" messages.
-    unsigned RevFinder::findProposedRevs(Array changes,
-                                         Encoder &encoder,
-                                         vector<ChangeSequence> &sequences)
+    int RevFinder::findProposedRevs(Array changes,
+                                    Encoder &encoder,
+                                    vector<ChangeSequence> &sequences,
+                                    C4Error *outError)
     {
         unsigned itemsWritten = 0, requested = 0;
         int i = -1;
@@ -239,10 +289,8 @@ namespace litecore { namespace repl {
             auto change = item.asArray();
             alloc_slice docID( change[0].asString() );
             slice revID = change[1].asString();
-            if (docID.size == 0 || revID.size == 0) {
-                warn("Invalid entry in 'changes' message");
-                continue;     // ???  Should this abort the replication?
-            }
+            if (!checkDocAndRevID(docID, revID, outError))
+                return -1;
 
             slice parentRevID = change[2].asString();
             if (parentRevID.size == 0)
@@ -254,8 +302,7 @@ namespace litecore { namespace repl {
                 logDebug("    - Accepting proposed change '%.*s' #%.*s with parent %.*s",
                          SPLAT(docID), SPLAT(revID), SPLAT(parentRevID));
                 ++requested;
-                Assert(sequences[i].bodySize == 0);
-                sequences[i].bodySize = max(change[3].asUnsigned(), (uint64_t)1);
+                sequences.push_back({RemoteSequence(), max(change[3].asUnsigned(), (uint64_t)1)});
                 // sequences[i].sequence remains null: proposeChanges entries have no sequence ID
             } else {
                 // Reject rev by appending status code:
@@ -275,36 +322,51 @@ namespace litecore { namespace repl {
     int RevFinder::findProposedChange(slice docID, slice revID, slice parentRevID,
                                      alloc_slice &outCurrentRevID)
     {
-        C4Error err;
-        //OPT: We don't need the document body, just its metadata, but there's no way to say that
-        c4::ref<C4Document> doc = _db->getDoc(docID, &err);
-        if (!doc) {
-            if (isNotFoundError(err)) {
-                // Doc doesn't exist; it's a conflict if the peer thinks it does:
-                return parentRevID ? 409 : 0;
-            } else {
+        C4DocumentFlags flags = 0;
+        {
+            // Get the local doc's current revID/vector and flags:
+            outCurrentRevID = nullslice;
+            C4Error err;
+            if (c4::ref<C4Document> doc = _db->getDoc(docID, kDocGetMetadata, &err); doc) {
+                flags = doc->flags;
+                outCurrentRevID = c4doc_getSelectedRevIDGlobalForm(doc);
+            } else if (!isNotFoundError(err)) {
                 gotError(err);
                 return 500;
             }
         }
-        int status;
-        if (slice(doc->revID) == revID) {
+
+        if (outCurrentRevID == revID) {
             // I already have this revision:
-            status = 304;
-        } else if (!parentRevID) {
-            // Peer is creating new doc; that's OK if doc is currently deleted:
-            status = (doc->flags & kDocDeleted) ? 0 : 409;
-        } else if (slice(doc->revID) != parentRevID) {
-            // Peer's revID isn't current, so this is a conflict:
-            status = 409;
+            return 304;
+        } else if (_db->usingVersionVectors()) {
+            // Version vectors:  (note that parentRevID is ignored; we don't need it)
+            try {
+                auto theirVers = VersionVector::fromASCII(revID);
+                auto myVers = VersionVector::fromASCII(outCurrentRevID);
+                switch (theirVers.compareTo(myVers)) {
+                    case kSame:
+                    case kOlder:        return 304;
+                    case kNewer:        return 0;
+                    case kConflicting:  return 409;
+                }
+                abort(); // unreachable
+            } catch (const error &x) {
+                if (x == error::BadRevisionID)
+                    return 500;
+                else
+                    throw;
+            }
         } else {
-            // I don't have this revision and it's not a conflict, so I want it!
-            status = 0;
+            // Rev-trees:
+            if (outCurrentRevID == parentRevID)
+                return 0;   // I don't have this revision and it's not a conflict, so I want it!
+            else if (!parentRevID && (flags & kDocDeleted))
+                return 0;   // Peer is creating a new doc; my doc is deleted, so that's OK
+            else
+                return 409; // Peer's revID isn't current, so this is a conflict
         }
-        if (status > 0)
-            outCurrentRevID = slice(doc->revID);
-        return status;
     }
 
 
-} }
+}

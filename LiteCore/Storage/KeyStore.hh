@@ -21,7 +21,7 @@
 #include "RefCounted.hh"
 #include "RecordEnumerator.hh"
 #include "function_ref.hh"
-#include <functional>
+#include <optional>
 #include <vector>
 
 namespace litecore {
@@ -72,22 +72,17 @@ namespace litecore {
         //////// Keys/values:
 
         Record get(slice key, ContentOption = kEntireBody) const;
-        virtual Record get(sequence_t) const =0;
+        virtual Record get(sequence_t, ContentOption = kEntireBody) const =0;
 
         virtual void get(slice key, ContentOption, function_ref<void(const Record&)>);
-        virtual void get(sequence_t, function_ref<void(const Record&)>);
 
         /** Reads a record whose key() is already set. */
         virtual bool read(Record &rec, ContentOption = kEntireBody) const =0;
 
-        /** Reads the body of a Record that's already been read with kMetaonly.
-            Does nothing if the record's body is non-null. */
-        virtual void readBody(Record &rec) const;
-
         /** Creates a database query object. */
         virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
 
-        using WithDocBodyCallback = std::function<alloc_slice(slice docID, slice body, sequence_t)>;
+        using WithDocBodyCallback = function_ref<alloc_slice(const RecordLite&)>;
 
         /** Invokes the callback once for each document found in the database.
             The callback is given the docID, body and sequence, and returns a string.
@@ -97,21 +92,39 @@ namespace litecore {
 
         //////// Writing:
 
-        /** Core write method. If replacingSequence is not null, will only update the
-            record if its existing sequence matches. (Or if the record doesn't already
-            exist, in the case where *replacingSequence == 0.) */
-        virtual sequence_t set(slice key, slice version, slice value,
-                               DocumentFlags,
-                               Transaction&,
-                               const sequence_t *replacingSequence =nullptr,
-                               bool newSequence =true) =0;
+        /** Core write method.
+            If `rec.sequence` is not `nullopt`, the record will not be updated if its existing sequence
+            doesn't match it. (A nonexistent record's "existing sequence" is considered to be 0.)
+            If `rec.updateSequence` is false, the record's sequence won't be changed, but its
+            current sequence must be provided in `rec.sequence`.
+            Returns the record's new sequence, or 0 if the record was not updated due to a sequence
+            conflict. */
+        virtual sequence_t set(const RecordLite &rec, Transaction&) =0;
 
-        sequence_t set(slice key, slice value, Transaction &t,
-                       const sequence_t *replacingSequence =nullptr) {
-            return set(key, nullslice, value, DocumentFlags::kNone, t, replacingSequence);
+        // Convenience wrappers for set():
+
+        sequence_t set(slice key, slice version, slice value,
+                       DocumentFlags flags,
+                       Transaction &t,
+                       std::optional<sequence_t> replacingSequence =std::nullopt,
+                       bool newSequence =true)
+        {
+            RecordLite r = {key, version, value, nullslice, replacingSequence, newSequence, flags};
+            return set(r, t);
         }
 
-        void write(Record&, Transaction&, const sequence_t *replacingSequence =nullptr);
+        sequence_t set(slice key, slice value, Transaction &t,
+                       std::optional<sequence_t> replacingSequence =std::nullopt,
+                       bool newSequence =true) {
+            RecordLite r = {key, nullslice, value, nullslice,
+                              replacingSequence, newSequence, DocumentFlags::kNone};
+            return set(r, t);
+        }
+
+        sequence_t set(Record&,
+                       Transaction&,
+                       std::optional<sequence_t> replacingSequence =std::nullopt,
+                       bool newSequence =true);
 
         virtual bool del(slice key, Transaction&, sequence_t replacingSequence =0) =0;
         bool del(const Record &rec, Transaction &t)                 {return del(rec.key(), t);}
@@ -138,11 +151,11 @@ namespace litecore {
         /** Returns the nearest future time at which a record will expire, or 0 if none. */
         virtual expiration_t nextExpiration() =0;
 
-        using ExpirationCallback = std::function<void(slice docID)>;
+        using ExpirationCallback = function_ref<void(slice docID)>;
 
         /** Deletes all records whose expiration time is in the past.
             @return  The number of records deleted */
-        virtual unsigned expireRecords(ExpirationCallback =nullptr) =0;
+        virtual unsigned expireRecords(std::optional<ExpirationCallback> =std::nullopt) =0;
 
 
         //////// Indexing:

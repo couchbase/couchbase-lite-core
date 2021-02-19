@@ -19,8 +19,8 @@
 #pragma once
 
 #include "Record.hh"
+#include <algorithm>
 #include <limits.h>
-#include <vector>
 
 namespace litecore {
 
@@ -30,12 +30,6 @@ namespace litecore {
         kDescending = -1,
         kUnsorted = 0,
         kAscending = 1
-    };
-
-    enum ContentOption {
-        kEntireBody,
-        kCurrentRevOnly,
-        kMetaOnly,
     };
 
     /** KeyStore enumerator/iterator that returns a range of Records.
@@ -65,7 +59,7 @@ namespace litecore {
                          sequence_t since,
                          Options options = Options());
 
-        RecordEnumerator(RecordEnumerator&& e) noexcept         {*this = std::move(e);}
+        RecordEnumerator(RecordEnumerator&& e) noexcept         {*this = move(e);}
 
         RecordEnumerator& operator=(RecordEnumerator&& e) noexcept {
             _store = e._store;
@@ -82,14 +76,14 @@ namespace litecore {
         void close() noexcept;
 
         /** True if the enumerator is at a record, false if it's at the end. */
-        bool hasRecord() const            {return _record.key().buf != nullptr;}
+        bool hasRecord() const FLPURE            {return _record.key().buf != nullptr;}
 
         /** The current record. */
-        const Record& record() const      {return _record;}
+        const Record& record() const FLPURE      {return _record;}
 
         // Can treat an enumerator as a record pointer:
-        operator const Record*() const    {return hasRecord() ? &_record : nullptr;}
-        const Record* operator->() const  {return hasRecord() ? &_record : nullptr;}
+        operator const Record*() const FLPURE    {return hasRecord() ? &_record : nullptr;}
+        const Record* operator->() const FLPURE  {return hasRecord() ? &_record : nullptr;}
 
         /** Internal implementation of enumerator; each storage type must subclass it. */
         class Impl {
@@ -105,9 +99,9 @@ namespace litecore {
         RecordEnumerator(const RecordEnumerator&) = delete;               // no copying allowed
         RecordEnumerator& operator=(const RecordEnumerator&) = delete;    // no assignment allowed
 
-        KeyStore *      _store;             // The KeyStore I'm enumerating
-        Record          _record;            // Current record
-        std::unique_ptr<Impl> _impl;        // The storage-specific implementation
+        KeyStore *       _store;            // The KeyStore I'm enumerating
+        Record           _record;           // Current record
+        unique_ptr<Impl> _impl;             // The storage-specific implementation
     };
 
 }

@@ -110,12 +110,12 @@ public:
             C4Error error;
             C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
             options.flags |= kC4IncludeBodies;
-            auto e = c4db_enumerateChanges(database, 0, &options, &error);
+            auto e = c4db_enumerateChanges(database, 0, &options, ERROR_INFO(error));
             REQUIRE(e);
 
             n = 0;
-            while (c4enum_next(e, &error)) {
-                auto doc = c4enum_getDocument(e, &error);
+            while (c4enum_next(e, ERROR_INFO(error))) {
+                auto doc = c4enum_getDocument(e, ERROR_INFO(error));
                 REQUIRE(doc);
                 c4doc_release(doc);
                 n++;

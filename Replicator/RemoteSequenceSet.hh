@@ -19,6 +19,7 @@
 #pragma once
 #include "RemoteSequence.hh"
 #include <map>
+#include <utility>
 
 namespace litecore { namespace repl {
 

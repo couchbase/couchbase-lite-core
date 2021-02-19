@@ -47,6 +47,7 @@ namespace litecore { namespace repl {
                        bind(&DBAccess::markRevsSyncedLater, this),
                        tuning::kInsertionDelay)
     ,_timer(bind(&DBAccess::markRevsSyncedNow, this))
+    ,_usingVersionVectors((c4db_getConfig2(db)->flags & kC4DB_VersionVectors) != 0)
     {
         c4db_retain(db);
         // Copy database's sharedKeys:
@@ -85,6 +86,21 @@ namespace litecore { namespace repl {
     }
 
 
+    string DBAccess::convertVersionToAbsolute(slice revID) {
+        string version(revID);
+        if (_usingVersionVectors) {
+            if (_myPeerID.empty()) {
+                use([&](C4Database *c4db) {
+                    if (_myPeerID.empty())
+                        _myPeerID = string(alloc_slice(c4db_getPeerID(c4db)));
+                });
+            }
+            replace(version, "*", _myPeerID);
+        }
+        return version;
+    }
+
+
     C4RemoteID DBAccess::lookUpRemoteDBID(slice key, C4Error *outError) {
         Assert(_remoteDBID == 0);
         use([&](C4Database *db) {
@@ -95,17 +111,14 @@ namespace litecore { namespace repl {
 
 
     Dict DBAccess::getDocRoot(C4Document *doc, C4RevisionFlags *outFlags) {
-        slice revisionBody(doc->selectedRev.body);
-        if (!revisionBody)
-            return nullptr;
         if (outFlags)
             *outFlags = doc->selectedRev.flags;
-        return Value::fromData(revisionBody, kFLTrusted).asDict();
+        return c4doc_getProperties(doc);
     }
 
 
     Dict DBAccess::getDocRoot(C4Document *doc, slice revID, C4RevisionFlags *outFlags) {
-        if (c4doc_selectRevision(doc, revID, true, nullptr) && c4doc_loadRevisionBody(doc, nullptr))
+        if (c4doc_selectRevision(doc, revID, true, nullptr))
             return getDocRoot(doc, outFlags);
         return nullptr;
     }
@@ -126,15 +139,12 @@ namespace litecore { namespace repl {
         C4Error error;
         bool ok = use<bool>([&](C4Database *db) {
             c4::Transaction t(db);
-            c4::ref<C4Document> doc = c4doc_get(db, docID, true, &error);
-            if(!doc || !c4doc_selectRevision(doc, revID, false, &error))
-                return false;
-            
-            
-            return t.begin(&error)
-                   && c4doc_setRemoteAncestor(doc, _remoteDBID, &error)
-                   && c4doc_save(doc, 0, &error)
-                   && t.commit(&error);
+            c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetAll, &error);
+            return doc
+                && t.begin(&error)
+                && c4doc_setRemoteAncestor(doc, _remoteDBID, revID, &error)
+                && c4doc_save(doc, 0, &error)
+                && t.commit(&error);
         });
 
         if (!ok) {
@@ -142,7 +152,7 @@ namespace litecore { namespace repl {
                  _remoteDBID, SPLAT(docID), SPLAT(revID), error.domain, error.code);
         }
     }
-    
+
     C4DocEnumerator* DBAccess::unresolvedDocsEnumerator(bool orderByID, C4Error *outError) {
         C4DocEnumerator* e;
         use([&](C4Database *db) {
@@ -280,6 +290,7 @@ namespace litecore { namespace repl {
                 // Copy database's sharedKeys:
                 _tempSharedKeys = SharedKeys::create(dbsk.stateData());
                 _tempSharedKeysInitialCount = dbsk.count();
+                assert(_tempSharedKeys);
             }
             return _tempSharedKeys;
         });
@@ -330,12 +341,12 @@ namespace litecore { namespace repl {
     }
 
 
-    Doc DBAccess::applyDelta(const C4Revision *baseRevision,
+    Doc DBAccess::applyDelta(C4Document *doc,
                              slice deltaJSON,
                              bool useDBSharedKeys,
                              C4Error *outError)
     {
-        Dict srcRoot = Value::fromData(baseRevision->body, kFLTrusted).asDict();
+        Dict srcRoot = c4doc_getProperties(doc);
         if (!srcRoot) {
             if (outError) *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptRevisionData, nullslice);
             return {};
@@ -389,10 +400,10 @@ namespace litecore { namespace repl {
                              C4Error *outError)
     {
         return useForInsert<Doc>([&](C4Database *idb)->Doc {
-            c4::ref<C4Document> doc = c4doc_get(idb, docID, true, outError);
+            c4::ref<C4Document> doc = c4db_getDoc(idb, docID, true, kDocGetAll, outError);
             if (doc && c4doc_selectRevision(doc, baseRevID, true, outError)) {
-                if (doc->selectedRev.body.buf) {
-                    return applyDelta(&doc->selectedRev, deltaJSON, false, outError);
+                if (c4doc_loadRevisionBody(doc, nullptr)) {
+                    return applyDelta(doc, deltaJSON, false, outError);
                 } else {
                     string msg = format("Couldn't apply delta: Don't have body of '%.*s' #%.*s [current is %.*s]",
                                         SPLAT(docID), SPLAT(baseRevID), SPLAT(doc->revID));
@@ -424,7 +435,7 @@ namespace litecore { namespace repl {
                 for (ReplicatedRev *rev : *revs) {
                     logDebug("Marking rev '%.*s' %.*s (#%" PRIu64 ") as synced to remote db %u",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, remoteDBID());
-                    if (!c4db_markSynced(idb, rev->docID, rev->sequence, remoteDBID(), &error))
+                    if (!c4db_markSynced(idb, rev->docID, rev->revID, rev->sequence, remoteDBID(), &error))
                         warn("Unable to mark '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, error.domain, error.code);
                 }

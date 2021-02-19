@@ -15,19 +15,22 @@
 
 #include "InstanceCounted.hh"
 
+#include <mutex>
+#include <utility>
+
 
 using namespace litecore;
 // This is the definition of the C4Query type in the public C API,
 // hence it must be in the global namespace.
-struct c4QueryObserver : public fleece::InstanceCounted {
+struct C4QueryObserver : public fleece::InstanceCounted {
 public:
-    c4QueryObserver(C4Query *query, C4QueryObserverCallback callback, void* context)
+    C4QueryObserver(C4Query *query, C4QueryObserverCallback callback, void* context)
     :_query(c4query_retain(query))
     ,_callback(callback)
     ,_context(context)
     { }
 
-    ~c4QueryObserver() {
+    ~C4QueryObserver() {
         c4query_release(_query);
     }
 

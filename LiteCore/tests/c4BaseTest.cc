@@ -40,20 +40,23 @@ using namespace litecore::repl;
 // LiteCore symbols that aren't exported by the dynamic library.
 
 
+#pragma mark - ERROR HANDLING:
+
+
 TEST_CASE("C4Error messages") {
-    C4Error errors[100];
-    for (int i = 0; i < 100; i++) {
+    C4Error errors[200];
+    for (int i = 0; i < 200; i++) {
         char message[100];
         sprintf(message, "Error number %d", 1000+i);
-        c4Internal::recordError(LiteCoreDomain, 1000+i, message, &errors[i]);
+        c4error_return(LiteCoreDomain, 1000+i, slice(message), &errors[i]);
     }
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 200; i++) {
         CHECK(errors[i].domain == LiteCoreDomain);
         CHECK(errors[i].code == 1000+i);
         alloc_slice message = c4error_getMessage(errors[i]);
         string messageStr = string(message);
-        if (i >= (100 - kMaxErrorMessagesToSave)) {
-            // The last 10 C4Errors generated will have their custom messages:
+        if (i >= (200 - kMaxErrorMessagesToSave)) {
+            // The latest C4Errors generated will have their custom messages:
             char expected[100];
             sprintf(expected, "Error number %d", 1000+i);
             CHECK(messageStr == string(expected));
@@ -96,6 +99,57 @@ TEST_CASE("C4Error exceptions") {
     string messageStr = string(message);
     CHECK(messageStr == "Oops");
 }
+
+
+static string fakeErrorTest(int n, C4Error *outError) {
+    if (n >= 0)
+        return "ok";
+    c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Dude, that's negative"_sl, outError);
+    return "bad";
+}
+
+
+TEST_CASE("Error Backtraces", "[Errors][C]") {
+    bool oldCapture = c4error_getCaptureBacktraces();
+
+    c4error_setCaptureBacktraces(true);
+    C4Error error = c4error_make(LiteCoreDomain, kC4ErrorUnimplemented, nullslice);
+    alloc_slice backtrace = c4error_getBacktrace(error);
+    C4Log("Got backtrace: %.*s", FMTSLICE(backtrace));
+    CHECK(backtrace);
+
+    c4error_setCaptureBacktraces(false);
+    error = c4error_make(LiteCoreDomain, kC4ErrorUnimplemented, nullslice);
+    backtrace = c4error_getBacktrace(error);
+    CHECK(!backtrace);
+
+    c4error_setCaptureBacktraces(oldCapture);
+}
+
+
+TEST_CASE("C4Error Reporting Macros", "[Errors][C]") {
+    C4Error error;
+    string result = fakeErrorTest(7, ERROR_INFO(error));
+    CHECK(result == "ok");
+    result = fakeErrorTest(-1, ERROR_INFO(error));
+
+#if 0 // enable these to test actual test failures and warnings:
+    CHECK(result == "ok");
+    WARN(error);
+
+    CHECK(fakeErrorTest(23, WITH_ERROR()) == "ok");
+    CHECK(fakeErrorTest(-1, WITH_ERROR()) == "ok");
+#endif
+
+#if 0
+    C4DatabaseConfig2 config = {"/ddddd"_sl, kC4DB_ReadOnly};
+    CHECK(c4db_openNamed("xxxxx"_sl, &config, WITH_ERROR()));
+#endif
+}
+
+
+#pragma mark - INSTANCECOUNTED:
+
 
 namespace {
 

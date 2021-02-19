@@ -41,6 +41,8 @@ namespace litecore {
                                             sequence_t curSeq)
     {
         const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
+        if (fleece::endian::dec32(rawRev->size_BE) > raw_tree.size)
+            error::_throw(error::CorruptRevisionData);
         unsigned count = rawRev->count();
         if (count > UINT16_MAX)
             error::_throw(error::CorruptRevisionData);

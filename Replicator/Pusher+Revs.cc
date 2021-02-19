@@ -23,6 +23,7 @@
 #include "HTTPTypes.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
+#include "c4Document+Fleece.h"
 #include <cinttypes>
 
 using namespace std;
@@ -52,25 +53,21 @@ namespace litecore::repl {
         if (!connected())
             return;
 
-        logVerbose("Sending rev %.*s %.*s (seq #%" PRIu64 ") [%d/%d]",
+        logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%d/%d]",
                    SPLAT(request->docID), SPLAT(request->revID), request->sequence,
                    _revisionsInFlight, tuning::kMaxRevsInFlight);
 
         // Get the document & revision:
         C4Error c4err;
-        slice revisionBody;
         Dict root;
-        c4::ref<C4Document> doc = _db->getDoc(request->docID, &c4err);
+        c4::ref<C4Document> doc = _db->getDoc(request->docID, kDocGetAll, &c4err);
         if (doc) {
             if (c4doc_selectRevision(doc, request->revID, true, &c4err)) {
-                revisionBody = doc->selectedRev.body;
-                if (!revisionBody)
+                root = c4doc_getProperties(doc);
+                if (!root)
                     c4err = {LiteCoreDomain, kC4ErrorNotFound};
             }
-            if (revisionBody) {
-                root = Value::fromData(revisionBody, kFLTrusted).asDict();
-                if (!root)
-                    c4err = {LiteCoreDomain, kC4ErrorCorruptData};
+            if (root) {
                 request->flags = doc->selectedRev.flags;
             } else {
                 if (c4err.code == kC4ErrorNotFound && c4err.domain == LiteCoreDomain)
@@ -78,12 +75,14 @@ namespace litecore::repl {
             }
         }
 
+        auto fullRevID = alloc_slice(_db->convertVersionToAbsolute(request->revID));
+
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
         // "norev" and include the error code:
         MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
         msg.compressed = true;
         msg["id"_sl] = request->docID;
-        msg["rev"_sl] = request->revID;
+        msg["rev"_sl] = fullRevID;
         msg["sequence"_sl] = request->sequence;
         if (root) {
             if (request->noConflicts)
@@ -91,19 +90,22 @@ namespace litecore::repl {
             auto revisionFlags = doc->selectedRev.flags;
             if (revisionFlags & kRevDeleted)
                 msg["deleted"_sl] = "1"_sl;
-            string history = request->historyString(doc);
-            if (!history.empty())
-                msg["history"_sl] = history;
+
+            // Include the document history, but skip the current revision 'cause it's redundant
+            alloc_slice history = request->historyString(doc);
+            if (history.hasPrefix(fullRevID) && history.size > fullRevID.size)
+                msg["history"_sl] = history.from(fullRevID.size + 1);
 
             bool sendLegacyAttachments = (request->legacyAttachments
                                           && (revisionFlags & kRevHasAttachments)
                                           && !_db->disableBlobSupport());
 
             // Delta compression:
-            alloc_slice delta = createRevisionDelta(doc, request, root, revisionBody.size,
+            alloc_slice delta = createRevisionDelta(doc, request, root,
+                                                    c4doc_getRevisionBody(doc).size,
                                                     sendLegacyAttachments);
             if (delta) {
-                msg["deltaSrc"_sl] = doc->selectedRev.revID;
+                msg["deltaSrc"_sl] = _db->convertVersionToAbsolute(doc->selectedRev.revID);
                 msg.jsonBody().writeRaw(delta);
             } else if (root.empty()) {
                 msg.write("{}"_sl);
@@ -291,6 +293,7 @@ namespace litecore::repl {
     // `synced` - whether the revision was successfully stored on the peer
     void Pusher::doneWithRev(RevToSend *rev, bool completed, bool synced) {
         if (!passive()) {
+            logDebug("** doneWithRev %.*s #%.*s", SPLAT(rev->docID), SPLAT(rev->revID));//TEMP
             addProgress({rev->bodySize, 0});
             if (completed) {
                 _checkpointer.completedSequence(rev->sequence);

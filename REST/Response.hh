@@ -23,7 +23,6 @@
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
 #include "c4Base.h"
-#include <functional>
 #include <memory>
 
 struct C4Cert;

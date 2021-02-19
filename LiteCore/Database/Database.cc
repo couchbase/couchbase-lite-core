@@ -18,12 +18,15 @@
 
 #include "Database.hh"
 #include "TreeDocument.hh"
+#include "VectorDocument.hh"
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
+#include "c4Private.h"
 #include "BackgroundDB.hh"
 #include "Housekeeper.hh"
 #include "DataFile.hh"
+#include "SQLiteDataFile.hh"
 #include "Record.hh"
 #include "SequenceTracker.hh"
 #include "FleeceImpl.hh"
@@ -60,7 +63,7 @@ namespace c4Internal {
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
     /*static*/ FilePath Database::findOrCreateBundle(const string &path,
                                                      bool canCreate,
-                                 C4StorageEngine &storageEngine)
+                                                     C4StorageEngine &storageEngine)
     {
         FilePath bundle(path, "");
         bool createdDir = (canCreate && bundle.mkdir());
@@ -144,20 +147,6 @@ namespace c4Internal {
         if (!storageFactory)
             error::_throw(error::Unimplemented);
 
-        // Initialize important objects:
-        if (!(_config.flags & kC4DB_NonObservable))
-            _sequenceTracker.reset(new access_lock<SequenceTracker>());
-
-        DocumentFactory* factory;
-        switch (inConfig.versioning) {
-#if ENABLE_VERSION_VECTORS
-            case kC4VersionVectors: factory = new VectorDocumentFactory(this); break;
-#endif
-            case kC4RevisionTrees:  factory = new TreeDocumentFactory(this); break;
-            default:                error::_throw(error::InvalidParameter);
-        }
-        _documentFactory.reset(factory);
-
         // Open the DataFile:
         try {
             _dataFile.reset( storageFactory->openFile(dataFilePath, this, &options) );
@@ -174,22 +163,18 @@ namespace c4Internal {
         if (options.useDocumentKeys)
             _encoder->setSharedKeys(documentKeys());
 
-        // Validate that the versioning matches what's used in the database:
-        auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
-        Record doc = info.get(slice("versioning"));
-        if (doc.exists()) {
-            if (doc.bodyAsUInt() != (uint64_t)inConfig.versioning)
-                error::_throw(error::WrongFormat);
-        } else if (_config.flags & kC4DB_Create) {
-            // First-time initialization:
-            doc.setBodyAsUInt((uint64_t)inConfig.versioning);
-            Transaction t(*_dataFile);
-            info.write(doc, t);
-            (void)generateUUID(kPublicUUIDKey, t);
-            (void)generateUUID(kPrivateUUIDKey, t);
-            t.commit();
-        } else if (inConfig.versioning != kC4RevisionTrees) {
-            error::_throw(error::WrongFormat);
+        if (!(_config.flags & kC4DB_NonObservable))
+            _sequenceTracker.reset(new access_lock<SequenceTracker>());
+
+        // Validate or upgrade the database's document schema/versioning:
+        _configV1.versioning = checkDocumentVersioning();
+
+        if (_configV1.versioning == kC4VectorVersioning) {
+            _config.flags |= kC4DB_VersionVectors;
+            _documentFactory = make_unique<VectorDocumentFactory>(this);
+        } else {
+            _config.flags &= ~kC4DB_VersionVectors;
+            _documentFactory = make_unique<TreeDocumentFactory>(this);
         }
     }
 
@@ -206,6 +191,44 @@ namespace c4Internal {
 
 
 #pragma mark - HOUSEKEEPING:
+
+
+    C4DocumentVersioning Database::checkDocumentVersioning() {
+        //FIXME: This ought to be done _before_ the SQLite userVersion is updated
+        // Compare existing versioning against runtime config:
+        auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
+        Record versDoc = info.get(slice("versioning"));
+        auto curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
+        auto newVersioning = _configV1.versioning;
+        if (versDoc.exists() && curVersioning >= newVersioning)
+            return curVersioning;
+
+        // Mismatch -- could be a race condition. Open a transaction and recheck:
+        Transaction t(_dataFile);
+        versDoc = info.get(slice("versioning"));
+        curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
+        if (versDoc.exists() && curVersioning >= newVersioning)
+            return curVersioning;
+
+        // Yup, mismatch confirmed, so deal with it:
+        if (versDoc.exists()) {
+            // Existing db versioning does not match runtime config!
+            upgradeDocumentVersioning(curVersioning, newVersioning, t);
+        } else if (_config.flags & kC4DB_Create) {
+            // First-time initialization:
+            (void)generateUUID(kPublicUUIDKey, t);
+            (void)generateUUID(kPrivateUUIDKey, t);
+        } else {
+            // Should never occur (existing db must have its versioning marked!)
+            error::_throw(error::WrongFormat);
+        }
+
+        // Store new versioning:
+        versDoc.setBodyAsUInt((uint64_t)newVersioning);
+        info.set(versDoc, t);
+        t.commit();
+        return newVersioning;
+    }
 
 
     void Database::close() {
@@ -272,8 +295,7 @@ namespace c4Internal {
                     continue;
                 }
 
-                Retained<Doc> fleeceDoc = doc->fleeceDoc();
-                const Dict* body = fleeceDoc->asDict();
+                auto body = (const Dict*)doc->getSelectedRevRoot();
 
                 // Iterate over blobs:
                 Document::findBlobReferences(body, [&](const Dict *blob) {
@@ -353,11 +375,6 @@ namespace c4Internal {
 #pragma mark - ACCESSORS:
 
 
-    slice Database::fleeceAccessor(slice recordBody) const {
-        return TreeDocumentFactory::fleeceAccessor(recordBody);
-    }
-
-
     // Callback that takes a base64 blob digest and returns the blob data
     alloc_slice Database::blobAccessor(const Dict *blobDict) const {
         return Document::getBlobData(blobDict, blobStore());
@@ -392,7 +409,7 @@ namespace c4Internal {
         if (depth != rec.bodyAsUInt()) {
             rec.setBodyAsUInt(depth);
             Transaction t(*_dataFile);
-            info.write(rec, t);
+            info.set(rec, t);
             t.commit();
         }
         _maxRevTreeDepth = depth;
@@ -502,6 +519,20 @@ namespace c4Internal {
         generateUUID(kPrivateUUIDKey, t, true);
         t.commit();
     }
+
+
+    uint64_t Database::myPeerID() {
+        if (_myPeerID == 0) {
+            // Compute my peer ID from the first 64 bits of the public UUID.
+            auto uuid = getUUID(kPublicUUIDKey);
+            memcpy(&_myPeerID, &uuid, sizeof(_myPeerID));
+            _myPeerID = endian::dec64(_myPeerID);
+            // Don't let it be zero:
+            if (_myPeerID == 0)
+                _myPeerID = 1;
+        }
+        return _myPeerID;
+    }
     
     
 #pragma mark - TRANSACTIONS:
@@ -526,14 +557,14 @@ namespace c4Internal {
     bool Database::mustBeInTransaction(C4Error *outError) noexcept {
         if (inTransaction())
             return true;
-        recordError(LiteCoreDomain, kC4ErrorNotInTransaction, outError);
+        c4error_return(LiteCoreDomain, kC4ErrorNotInTransaction, {}, outError);
         return false;
     }
 
     bool Database::mustNotBeInTransaction(C4Error *outError) noexcept {
         if (!inTransaction())
             return true;
-        recordError(LiteCoreDomain, kC4ErrorTransactionNotClosed, outError);
+        c4error_return(LiteCoreDomain, kC4ErrorTransactionNotClosed, {}, outError);
         return false;
     }
 
@@ -561,7 +592,7 @@ namespace c4Internal {
     void Database::_cleanupTransaction(bool committed) {
         if (_sequenceTracker) {
             _sequenceTracker->use([&](SequenceTracker &st) {
-                if (committed) {
+                if (committed && st.changedDuringTransaction()) {
                     // Notify other Database instances on this file:
                     _transaction->notifyCommitted(st);
                 }
@@ -695,9 +726,9 @@ namespace c4Internal {
             _sequenceTracker->use([doc](SequenceTracker &st) {
                 Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
                 st.documentChanged(doc->_docIDBuf,
-                                   doc->_selectedRevIDBuf,
+                                   doc->getSelectedRevIDGlobalForm(), // entire version vector
                                    doc->selectedRev.sequence,
-                                   doc->selectedRev.body.size);
+                                   SequenceTracker::RevisionFlags(doc->selectedRev.flags));
             });
         }
     }
@@ -723,7 +754,7 @@ namespace c4Internal {
                 });
             });
         } else {
-            return _dataFile->defaultKeyStore().expireRecords(nullptr);
+            return _dataFile->defaultKeyStore().expireRecords();
         }
     }
 
@@ -739,18 +770,5 @@ namespace c4Internal {
             _housekeeper->documentExpirationChanged(expiration);
         return true;
     }
-
-
-#if 0 // unused
-    bool Database::mustUseVersioning(C4DocumentVersioning requiredVersioning,
-                                     C4Error *outError) noexcept
-    {
-        if (config.versioning == requiredVersioning)
-            return true;
-        recordError(LiteCoreDomain, kC4ErrorUnsupported, outError);
-        return false;
-    }
-#endif
-
 
 }

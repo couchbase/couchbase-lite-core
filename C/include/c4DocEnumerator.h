@@ -38,11 +38,12 @@ extern "C" {
         kC4Unsorted             = 0x02, ///< If true, iteration order is undefined (may be faster!)
         kC4IncludeDeleted       = 0x08, ///< If true, include deleted documents.
         kC4IncludeNonConflicted = 0x10, ///< If false, include _only_ documents in conflict.
-        kC4IncludeBodies        = 0x20  /**< If false, document bodies will not be preloaded, just
+        kC4IncludeBodies        = 0x20, /** If false, document bodies will not be preloaded, just
                                    metadata (docID, revID, sequence, flags.) This is faster if you
                                    don't need to access the revision tree or revision bodies. You
                                    can still access all the data of the document, but it will
                                    trigger loading the document body from the database. */
+        kC4IncludeRevHistory    = 0x40  ///< Put entire revision history/version vector in `revID`
     };
 
 
@@ -61,7 +62,8 @@ extern "C" {
         C4HeapString docID;         ///< Document ID
         C4HeapString revID;         ///< RevID of current revision
         C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
-        uint64_t bodySize;          ///< Size in bytes of document body (approx)
+        uint64_t bodySize;          ///< Size in bytes of current revision body (as Fleece not JSON)
+        uint64_t metaSize;          ///< Size in bytes of extra metadata
         int64_t expiration;         ///< Expiration time, or 0 if none
     } C4DocumentInfo;
 

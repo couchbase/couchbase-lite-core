@@ -9,10 +9,13 @@
 #include "RefCounted.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
-#include "Value.hh"
 #include <string>
 
 #ifdef COUCHBASE_ENTERPRISE
+
+namespace fleece::impl {
+    class Dict;
+}
 
 namespace litecore {
 

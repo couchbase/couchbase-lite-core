@@ -448,12 +448,12 @@ namespace litecore { namespace net {
 
 
     void TCPSocket::onReadable(function<void()> listener) {
-        Poller::instance().addListener(fileDescriptor(), Poller::kReadable, listener);
+        Poller::instance().addListener(fileDescriptor(), Poller::kReadable, move(listener));
     }
 
 
     void TCPSocket::onWriteable(function<void()> listener) {
-        Poller::instance().addListener(fileDescriptor(), Poller::kWriteable, listener);
+        Poller::instance().addListener(fileDescriptor(), Poller::kWriteable, move(listener));
     }
 
 

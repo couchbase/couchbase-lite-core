@@ -19,11 +19,12 @@
 #pragma once
 #include "ThreadedMailbox.hh"
 #include "Logging.hh"
-#include <assert.h>
 #include <chrono>
 #include <functional>
+#include <mutex>
 #include <string>
 #include <thread>
+#include <betterassert.hh>
 
 #ifdef ACTORS_USE_GCD
 #include "GCDMailbox.hh"

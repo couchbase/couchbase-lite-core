@@ -93,7 +93,7 @@ namespace litecore { namespace REST {
     }
 
 
-    bool Listener::unregisterDatabase(c4Database *db) {
+    bool Listener::unregisterDatabase(C4Database *db) {
         lock_guard<mutex> lock(_mutex);
         for (auto i = _databases.begin(); i != _databases.end(); ++i) {
             if (i->second == db) {

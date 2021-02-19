@@ -22,6 +22,7 @@
 #include "ChannelManifest.hh"
 #include <atomic>
 #include <functional>
+#include <memory>
 #include <string>
 #include <dispatch/dispatch.h>
 

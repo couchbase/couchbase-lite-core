@@ -528,7 +528,10 @@ namespace litecore {
 
 
     bool FilePath::del() const {
-        auto result = isDir() ? rmdir_u8(path().c_str()) : unlink_u8(path().c_str());
+        std::string pathStr = path();
+        const char *pathCStr = pathStr.c_str();
+
+        auto result = isDir() ? rmdir_u8(pathCStr) : unlink_u8(pathCStr);
         if (result == 0)
             return true;
         
@@ -538,14 +541,14 @@ namespace litecore {
 #ifdef _MSC_VER
         if (errno == EACCES) {
             setReadOnly(false);
-            result = isDir() ? rmdir_u8(path().c_str()) : unlink_u8(path().c_str());
+            result = isDir() ? rmdir_u8(pathCStr) : unlink_u8(pathCStr);
             if (result == 0) {
                 return true;
             }
         }
 #endif
 
-        error::_throwErrno();
+        error::_throwErrno("Couldn't delete file %s", pathCStr);
     }
 
     static void _delRecursive(const FilePath &path) {
@@ -574,16 +577,19 @@ namespace litecore {
     }
 
     void FilePath::copyTo(const string &to) const {
+        std::string from = path();
+        const char *fromPathStr = from.c_str(), *toPathStr = to.c_str();
+        int result = 0;
 #if __APPLE__
         // The COPYFILE_CLONE mode enables super-fast file cloning on APFS.
         // Unfortunately there seems to be a bug in the iOS 9 simulator where, if this flag is
         // used, the resulting files have zero length. (See #473)
         if (__builtin_available(iOS 10, macOS 10.12, tvos 10, *)) {
             copyfile_flags_t flags = COPYFILE_CLONE | COPYFILE_RECURSIVE;
-            check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
+            result = copyfile(fromPathStr, toPathStr, nullptr, flags);
         } else {
             copyfile_flags_t flags = COPYFILE_ALL | COPYFILE_RECURSIVE;
-            check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
+            result = copyfile(fromPathStr, toPathStr, nullptr, flags);
         }
 #else
         if (isDir()) {
@@ -593,9 +599,12 @@ namespace litecore {
                 f.copyTo(toPath[f.fileOrDirName() + (f.isDir() ? "/" : "")]);
             });
         } else {
-            check(copyfile(path().c_str(), to.c_str()));
+            result = copyfile(fromPathStr, toPathStr);
         }
 #endif
+        if (result != 0) {
+            error::_throwErrno("Couldn't copy file from %s to %s", fromPathStr, toPathStr);
+        }
     }
 
     void FilePath::moveTo(const string &to) const {

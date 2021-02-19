@@ -22,6 +22,7 @@
 
 #if ACTORS_USE_MANIFESTS
 
+#include <chrono>
 #include <list>
 #include <iostream>
 #include <mutex>

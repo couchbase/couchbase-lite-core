@@ -28,8 +28,10 @@
 // The API is *NOT* identical to C++17's std::any!
 
 #pragma once
+#include <algorithm>
 #include <typeinfo>
 #include <type_traits>
+#include <utility>
 
 #ifdef _MSC_VER
 #pragma warning(push)

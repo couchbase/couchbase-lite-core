@@ -77,7 +77,7 @@ namespace litecore { namespace qp {
     const Dict* requiredDict(const Value *v, const char *what);
     slice requiredString(const Value *v, const char *what);
 
-    Path propertyFromOperands(Array::iterator &operands, bool skipDot =false);
+    Path propertyFromOperands(ArrayIterator &operands, bool skipDot =false);
     Path propertyFromNode(const Value *node, char prefix ='.');
 
     unsigned findNodes(const Value *root, fleece::slice op, unsigned argCount,

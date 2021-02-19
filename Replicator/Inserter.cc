@@ -98,7 +98,7 @@ namespace litecore { namespace repl {
             warn("Transaction failed!");
 
         // Notify owners of all revs that didn't already fail:
-        for (auto rev : *revs) {
+        for (auto &rev : *revs) {
             if (rev->error.code == 0) {
                 rev->error = transactionErr;
                 rev->owner->revisionInserted();
@@ -148,9 +148,9 @@ namespace litecore { namespace repl {
                 // If this is a delta, put the JSON delta in the put-request:
                 bodyForDB = move(rev->deltaSrc);
                 put.deltaSourceRevID = rev->deltaSrcRevID;
-                put.deltaCB = [](void *context, const C4Revision *baseRev,
+                put.deltaCB = [](void *context, C4Document *doc,
                                  C4Slice delta, C4Error *outError) {
-                    return ((Inserter*)context)->applyDeltaCallback(baseRev, delta, outError);
+                    return ((Inserter*)context)->applyDeltaCallback(doc, delta, outError);
                 };
                 put.deltaCBContext = this;
                 // Preserve rev body as the source of a future delta I may push back:
@@ -190,11 +190,11 @@ namespace litecore { namespace repl {
 
 
     // Callback from c4doc_put() that applies a delta, during _insertRevisionsNow()
-    C4SliceResult Inserter::applyDeltaCallback(const C4Revision *baseRevision,
+    C4SliceResult Inserter::applyDeltaCallback(C4Document *c4doc,
                                                C4Slice deltaJSON,
                                                C4Error *outError)
     {
-        Doc doc = _db->applyDelta(baseRevision, deltaJSON, true, outError);
+        Doc doc = _db->applyDelta(c4doc, deltaJSON, true, outError);
         if (!doc)
             return {};
         alloc_slice body = doc.allocedData();

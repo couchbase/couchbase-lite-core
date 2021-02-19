@@ -34,6 +34,7 @@
 #include "SecureSymmetricCrypto.hh"
 #include "StringUtil.hh"
 #include "PrebuiltCopier.hh"
+#include <inttypes.h>
 #include <thread>
 
 using namespace fleece;
@@ -48,7 +49,7 @@ CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 #pragma mark - C4DATABASE METHODS:
 
 
-c4Database::~c4Database() {
+C4Database::~C4Database() {
     destructExtraInfo(extraInfo);
 }
 
@@ -78,9 +79,9 @@ static bool ensureConfigDirExists(const C4DatabaseConfig2 *config, C4Error *outE
 
 static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 *config2) {
     return C4DatabaseConfig {
-        config2->flags | kC4DB_AutoCompact | kC4DB_SharedKeys,
+        config2->flags | kC4DB_AutoCompact,
         NULL,
-        kC4RevisionTrees,
+        (config2->flags & kC4DB_VersionVectors) ? kC4VectorVersioning : kC4TreeVersioning,
         config2->encryptionKey
     };
 }
@@ -161,12 +162,12 @@ bool c4db_copyNamed(C4String sourcePath,
 bool c4db_close(C4Database* database, C4Error *outError) noexcept {
     if (database == nullptr)
         return true;
-    return tryCatch(outError, bind(&Database::close, database));
+    return tryCatch(outError, [=]{return database->close();});
 }
 
 
 bool c4db_delete(C4Database* database, C4Error *outError) noexcept {
-    return tryCatch(outError, bind(&Database::deleteDatabase, database));
+    return tryCatch(outError, [=]{return database->deleteDatabase();});
 }
 
 
@@ -174,7 +175,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) noexcept {
 bool c4db_deleteAtPath(C4Slice dbPath, C4Error *outError) noexcept {
     if (outError)
         *outError = {};     // deleteDatabaseAtPath may return false w/o throwing an exception
-    return tryCatch<bool>(outError, bind(&Database::deleteDatabaseAtPath, toString(dbPath)));
+    return tryCatch<bool>(outError, [=]{return Database::deleteDatabaseAtPath(toString(dbPath));});
 }
 
 
@@ -195,12 +196,14 @@ bool c4db_compact(C4Database* database, C4Error *outError) noexcept {
 
 
 bool c4db_maintenance(C4Database* database, C4MaintenanceType type, C4Error *outError) C4API {
-    return tryCatch(outError, bind(&Database::maintenance, database, DataFile::MaintenanceType(type)));
+    static_assert(int(kC4Compact) == int(DataFile::kCompact));
+    static_assert(int(kC4FullOptimize) == int(DataFile::kFullOptimize));
+    return tryCatch(outError, [=]{return database->maintenance(DataFile::MaintenanceType(type));});
 }
 
 
 bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *outError) noexcept {
-    return tryCatch(outError, bind(&Database::rekey, database, newKey));
+    return tryCatch(outError, [=]{return database->rekey(newKey);});
 }
 
 
@@ -224,22 +227,22 @@ const C4DatabaseConfig2* c4db_getConfig2(C4Database *database) noexcept {
 
 
 uint64_t c4db_getDocumentCount(C4Database* database) noexcept {
-    return tryCatch<uint64_t>(nullptr, bind(&Database::countDocuments, database));
+    return tryCatch<uint64_t>(nullptr, [=]{return database->countDocuments();});
 }
 
 
 C4SequenceNumber c4db_getLastSequence(C4Database* database) noexcept {
-    return tryCatch<sequence_t>(nullptr, bind(&Database::lastSequence, database));
+    return tryCatch<sequence_t>(nullptr, [=]{return database->lastSequence();});
 }
 
 
 uint32_t c4db_getMaxRevTreeDepth(C4Database *database) noexcept {
-    return tryCatch<uint32_t>(nullptr, bind(&Database::maxRevTreeDepth, database));
+    return tryCatch<uint32_t>(nullptr, [=]{return database->maxRevTreeDepth();});
 }
 
 
 void c4db_setMaxRevTreeDepth(C4Database *database, uint32_t depth) noexcept {
-    tryCatch(nullptr, bind(&Database::setMaxRevTreeDepth, database, depth));
+    tryCatch(nullptr, [=]{return database->setMaxRevTreeDepth(depth);});
 }
 
 
@@ -255,6 +258,15 @@ bool c4db_getUUIDs(C4Database* database, C4UUID *publicUUID, C4UUID *privateUUID
             auto uuid = (Database::UUID*)privateUUID;
             *uuid = database->getUUID(Database::kPrivateUUIDKey);
         }
+    });
+}
+
+
+C4StringResult c4db_getPeerID(C4Database* database) C4API {
+    return tryCatch<C4StringResult>(nullptr, [&]{
+        char buf[32];
+        sprintf(buf, "%" PRIx64, database->myPeerID());
+        return C4StringResult( alloc_slice(buf) );
     });
 }
 
@@ -276,14 +288,14 @@ bool c4db_isInTransaction(C4Database* database) noexcept {
 bool c4db_beginTransaction(C4Database* database,
                            C4Error *outError) noexcept
 {
-    return tryCatch(outError, bind(&Database::beginTransaction, database));
+    return tryCatch(outError, [=]{return database->beginTransaction();});
 }
 
 bool c4db_endTransaction(C4Database* database,
                          bool commit,
                          C4Error *outError) noexcept
 {
-    return tryCatch(outError, bind(&Database::endTransaction, database, commit));
+    return tryCatch(outError, [=]{return database->endTransaction(commit);});
 }
 
 
@@ -302,7 +314,7 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexc
         if (database->purgeDocument(docID))
             return true;
         else
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
     } catchError(outError)
     return false;
 }
@@ -366,7 +378,7 @@ C4RawDocument* c4raw_get(C4Database* database,
     return tryCatch<C4RawDocument*>(outError, [&]{
         Record r = database->getRawDocument(toString(storeName), key);
         if (!r.exists()) {
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
             return (C4RawDocument*)nullptr;
         }
         auto rawDoc = new C4RawDocument;
@@ -388,8 +400,8 @@ bool c4raw_put(C4Database* database,
     if (!c4db_beginTransaction(database, outError))
         return false;
     bool commit = tryCatch(outError,
-                                 bind(&Database::putRawDocument, database, toString(storeName),
-                                      key, meta, body));
+                                 [=]{return database->putRawDocument(toString(storeName),
+                                                                     key, meta, body);});
     c4db_endTransaction(database, commit, outError);
     return commit;
 }

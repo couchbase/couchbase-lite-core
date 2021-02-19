@@ -19,19 +19,21 @@
 #pragma once
 #include "Base.hh"
 #include "UnicodeCollator.hh"
-#include "Array.hh"
+#include <map>
 #include <memory>
 #include <set>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
-namespace fleece { namespace impl {
-    class Value;
+namespace fleece::impl {
     class Array;
+    class ArrayIterator;
     class Dict;
     class Path;
-} }
+    class Value;
+}
 
 namespace litecore {
 
@@ -65,7 +67,7 @@ namespace litecore {
         void parseJustExpression(const fleece::impl::Value *expression);
 
         void writeCreateIndex(const std::string &name,
-                              fleece::impl::Array::iterator &whatExpressions,
+                              fleece::impl::ArrayIterator &whatExpressions,
                               const fleece::impl::Array *whereClause,
                               bool isUnnestedTable);
 
@@ -82,7 +84,7 @@ namespace litecore {
         bool usesExpiration() const                                 {return _checkedExpiration;}
 
         std::string expressionSQL(const fleece::impl::Value*);
-        std::string whereClauseSQL(const fleece::impl::Value*, string_view dbAlias);
+        std::string whereClauseSQL(const fleece::impl::Value*, std::string_view dbAlias);
         std::string eachExpressionSQL(const fleece::impl::Value*);
         std::string FTSExpressionSQL(const fleece::impl::Value*);
         static std::string FTSColumnName(const fleece::impl::Value *expression);
@@ -124,7 +126,7 @@ namespace litecore {
         void reset();
         void parseNode(const fleece::impl::Value*);
         void parseOpNode(const fleece::impl::Array*);
-        void handleOperation(const Operation*, slice actualOperator, fleece::impl::Array::iterator& operands);
+        void handleOperation(const Operation*, slice actualOperator, fleece::impl::ArrayIterator& operands);
         void parseStringLiteral(slice str);
 
         void writeSelect(const fleece::impl::Dict *dict);
@@ -142,33 +144,33 @@ namespace litecore {
                                      fleece::slice jsonKey,
                                      const char *keyword);
 
-        void prefixOp(slice, fleece::impl::Array::iterator&);
-        void postfixOp(slice, fleece::impl::Array::iterator&);
-        void infixOp(slice, fleece::impl::Array::iterator&);
-        void resultOp(slice, fleece::impl::Array::iterator&);
-        void arrayLiteralOp(slice, fleece::impl::Array::iterator&);
-        void betweenOp(slice, fleece::impl::Array::iterator&);
-        void existsOp(slice, fleece::impl::Array::iterator&);
-        void collateOp(slice, fleece::impl::Array::iterator&);
-        void concatOp(slice, fleece::impl::Array::iterator&);
-        void inOp(slice, fleece::impl::Array::iterator&);
-        void likeOp(slice, fleece::impl::Array::iterator&);
-        void matchOp(slice, fleece::impl::Array::iterator&);
-        void anyEveryOp(slice, fleece::impl::Array::iterator&);
-        void parameterOp(slice, fleece::impl::Array::iterator&);
-        void propertyOp(slice, fleece::impl::Array::iterator&);
-        void objectPropertyOp(slice, fleece::impl::Array::iterator&);
-        void blobOp(slice, fleece::impl::Array::iterator&);
-        void variableOp(slice, fleece::impl::Array::iterator&);
-        void missingOp(slice, fleece::impl::Array::iterator&);
-        void caseOp(slice, fleece::impl::Array::iterator&);
-        void selectOp(slice, fleece::impl::Array::iterator&);
-        void fallbackOp(slice, fleece::impl::Array::iterator&);
+        void prefixOp(slice, fleece::impl::ArrayIterator&);
+        void postfixOp(slice, fleece::impl::ArrayIterator&);
+        void infixOp(slice, fleece::impl::ArrayIterator&);
+        void resultOp(slice, fleece::impl::ArrayIterator&);
+        void arrayLiteralOp(slice, fleece::impl::ArrayIterator&);
+        void betweenOp(slice, fleece::impl::ArrayIterator&);
+        void existsOp(slice, fleece::impl::ArrayIterator&);
+        void collateOp(slice, fleece::impl::ArrayIterator&);
+        void concatOp(slice, fleece::impl::ArrayIterator&);
+        void inOp(slice, fleece::impl::ArrayIterator&);
+        void likeOp(slice, fleece::impl::ArrayIterator&);
+        void matchOp(slice, fleece::impl::ArrayIterator&);
+        void anyEveryOp(slice, fleece::impl::ArrayIterator&);
+        void parameterOp(slice, fleece::impl::ArrayIterator&);
+        void propertyOp(slice, fleece::impl::ArrayIterator&);
+        void objectPropertyOp(slice, fleece::impl::ArrayIterator&);
+        void blobOp(slice, fleece::impl::ArrayIterator&);
+        void variableOp(slice, fleece::impl::ArrayIterator&);
+        void missingOp(slice, fleece::impl::ArrayIterator&);
+        void caseOp(slice, fleece::impl::ArrayIterator&);
+        void selectOp(slice, fleece::impl::ArrayIterator&);
+        void fallbackOp(slice, fleece::impl::ArrayIterator&);
 
-        void functionOp(slice, fleece::impl::Array::iterator&);
+        void functionOp(slice, fleece::impl::ArrayIterator&);
 
         void writeDictLiteral(const fleece::impl::Dict*);
-        bool writeNestedPropertyOpIfAny(fleece::slice fnName, fleece::impl::Array::iterator &operands);
+        bool writeNestedPropertyOpIfAny(fleece::slice fnName, fleece::impl::ArrayIterator &operands);
         void writePropertyGetter(slice fn, fleece::impl::Path &&property,
                                  const fleece::impl::Value *param =nullptr);
         void writeFunctionGetter(slice fn, const fleece::impl::Value *source,
@@ -178,8 +180,8 @@ namespace litecore {
         void writeEachExpression(fleece::impl::Path &&property);
         void writeEachExpression(const fleece::impl::Value *arrayExpr);
         void writeSQLString(slice str)              {writeSQLString(_sql, str);}
-        void writeArgList(fleece::impl::Array::iterator& operands);
-        void writeColumnList(fleece::impl::Array::iterator& operands);
+        void writeArgList(fleece::impl::ArrayIterator& operands);
+        void writeColumnList(fleece::impl::ArrayIterator& operands);
         void writeResultColumn(const fleece::impl::Value*);
         void writeCollation();
         void parseCollatableNode(const fleece::impl::Value*);

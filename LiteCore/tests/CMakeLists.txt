@@ -61,10 +61,10 @@ add_executable(
     PredictiveQueryTest.cc
     QueryParserTest.cc
     QueryTest.cc
-    RevTreeTest.cc
     SequenceTrackerTest.cc
     SQLiteFunctionsTest.cc
     UpgraderTest.cc
+    VersionVectorTest.cc
     ${TOP}REST/tests/RESTListenerTest.cc
     ${TOP}REST/tests/SyncListenerTest.cc
     ${TOP}vendor/fleece/Tests/API_ValueTests.cc
@@ -82,7 +82,7 @@ add_executable(
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
     ${TOP}Replicator/tests/ReplicatorAPITest.cc
     ${TOP}Replicator/tests/ReplicatorSGTest.cc
-    ${TOP}C/tests/c4Test.cc 
+    ${TOP}C/tests/c4Test.cc
     ${TOP}Replicator/tests/CookieStoreTest.cc
     ${TOP}REST/Response.cc
     ${TOP}Crypto/CertificateTest.cc
@@ -96,7 +96,7 @@ target_compile_definitions(
     -DLITECORE_CPP_TESTS=1
     -D_USE_MATH_DEFINES     # Define math constants like PI
     -DNOMINMAX              # Get rid of min/max macros that interfere with std::min/std::max
-    -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK 
+    -DCATCH_CONFIG_CPP11_STREAM_INSERTABLE_CHECK
 )
 
 target_include_directories(

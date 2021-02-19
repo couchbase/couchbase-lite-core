@@ -17,10 +17,11 @@
 //
 
 #pragma once
+#include "Error.hh"
 #include <condition_variable>
 #include <mutex>
 #include <queue>
-#include "Error.hh"
+#include <utility>
 
 #if __APPLE__ && !defined(ACTORS_USE_GCD)
 // Use GCD if available, as it's more efficient and has better integration with OS & debugger.

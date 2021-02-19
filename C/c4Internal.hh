@@ -25,8 +25,8 @@
 #include "fleece/Fleece.h"
 #include "c4Base.h"
 #include "c4ExceptionUtils.hh"
-#include "function_ref.hh"
-#include <functional>
+#include <mutex>
+#include <string_view>
 
 using namespace litecore;
 
@@ -60,11 +60,12 @@ namespace c4Internal {
 
     // ERRORS & EXCEPTIONS:
 
-    const size_t kMaxErrorMessagesToSave = 10;
+#if DEBUG
+    static constexpr size_t kMaxErrorMessagesToSave = 100;
+#else
+    static constexpr size_t kMaxErrorMessagesToSave = 10;
+#endif
 
-    void recordError(C4ErrorDomain, int code, std::string message, C4Error* outError) noexcept;
-    void recordError(C4ErrorDomain, int code, C4Error* outError) noexcept;
-    
     // SLICES:
 
     C4SliceResult sliceResult(const char *str);

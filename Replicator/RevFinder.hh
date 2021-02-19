@@ -22,6 +22,7 @@
 #include "ReplicatorTuning.hh"
 #include "ReplicatorTypes.hh"
 #include <deque>
+#include <vector>
 
 namespace litecore { namespace repl {
 
@@ -64,17 +65,19 @@ namespace litecore { namespace repl {
         void handleChangesNow(blip::MessageIn *req);
 
         void findOrRequestRevs(Retained<blip::MessageIn>);
-        unsigned findRevs(fleece::Array, fleece::Encoder&, std::vector<ChangeSequence>&);
-        unsigned findProposedRevs(fleece::Array, fleece::Encoder&, std::vector<ChangeSequence>&);
+        int findRevs(fleece::Array, fleece::Encoder&, std::vector<ChangeSequence>&, C4Error*);
+        int findProposedRevs(fleece::Array, fleece::Encoder&, std::vector<ChangeSequence>&, C4Error*);
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
         void _revReceived();
         void _reRequestingRev();
+        bool checkDocAndRevID(slice docID, slice revID, C4Error*);
 
         Retained<Delegate> _delegate;
         std::deque<Retained<blip::MessageIn>> _waitingChangesMessages; // Queued 'changes' messages
-        unsigned _numRevsBeingRequested {0};   // # of 'rev' msgs requested but not yet received
-        bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?
+        unsigned _numRevsBeingRequested {0};    // # of 'rev' msgs requested but not yet received
+        bool _announcedDeltaSupport {false};    // Did I send "deltas:true" yet?
+        bool _mustBeProposed {false};           // Do I handle only "proposedChanges"?
     };
 
 } }

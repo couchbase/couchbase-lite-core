@@ -13,6 +13,7 @@
 #include "Address.hh"
 #include "StringUtil.hh"
 #include "Timer.hh"
+#include <algorithm>
 #include <chrono>
 #include <functional>
 

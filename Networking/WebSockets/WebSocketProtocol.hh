@@ -69,6 +69,7 @@
 #endif
 //jpa: End of code adapted from Networking.h
 
+#include <algorithm>
 #include <cstring>
 #include <cstdlib>
 #include "SecureRandomize.hh"

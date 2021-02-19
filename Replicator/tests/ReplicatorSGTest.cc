@@ -34,7 +34,6 @@
 #endif
 
 using namespace fleece;
-using namespace std;
 
 
 /* REAL-REPLICATOR (SYNC GATEWAY) TESTS
@@ -246,17 +245,18 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Deletion", "[.SyncServer]") {
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
-    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
-    vector<C4BlobKey> blobKeys;
+    std::vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    std::vector<C4BlobKey> blobKeys;
     {
         TransactionHelper t(db);
         blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
     }
 
     C4Error error;
-    c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, &error);
+    c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, ERROR_INFO(error));
     REQUIRE(doc);
-    alloc_slice before = c4doc_bodyAsJSON(doc, true, &error);
+    alloc_slice before = c4doc_bodyAsJSON(doc, true, ERROR_INFO(error));
+    CHECK(before);
     doc = nullptr;
     C4Log("Original doc: %.*s", SPLAT(before));
 
@@ -267,25 +267,27 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Attachments", "[.SyncServer]") {
 
     replicate(kC4Disabled, kC4OneShot);
 
-    doc = c4doc_get(db, "att1"_sl, true, &error);
+    doc = c4doc_get(db, "att1"_sl, true, ERROR_INFO(error));
     REQUIRE(doc);
-    alloc_slice after = c4doc_bodyAsJSON(doc, true, &error);
+    alloc_slice after = c4doc_bodyAsJSON(doc, true, ERROR_INFO(error));
+    CHECK(after);
     C4Log("Pulled doc: %.*s", SPLAT(after));
 
     // Is the pulled identical to the original?
     CHECK(after == before);
 
     // Did we get all of its attachments?
-    auto blobStore = c4db_getBlobStore(db, &error);
+    auto blobStore = c4db_getBlobStore(db, ERROR_INFO(error));
+    REQUIRE(blobStore);
     for( auto key : blobKeys) {
-        alloc_slice blob = c4blob_getContents(blobStore, key, &error);
+        alloc_slice blob = c4blob_getContents(blobStore, key, ERROR_INFO(error));
         CHECK(blob);
     }
 }
 
 
 TEST_CASE_METHOD(ReplicatorSGTest, "Prove Attachments", "[.SyncServer]") {
-    vector<string> attachments = {"Hey, this is an attachment!"};
+    std::vector<string> attachments = {"Hey, this is an attachment!"};
     {
         TransactionHelper t(db);
         addDocWithAttachments("doc one"_sl, attachments, "text/plain");
@@ -309,9 +311,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Pull Big Attachments", "[.SyncServer]") 
     replicate(kC4Disabled, kC4OneShot);
 
     C4Error error;
-    c4::ref<C4Document> doc = c4doc_get(db, "Abstract"_sl, true, &error);
+    c4::ref<C4Document> doc = c4doc_get(db, "Abstract"_sl, true, ERROR_INFO(error));
     REQUIRE(doc);
-    auto root = Value::fromData(doc->selectedRev.body).asDict();
+    Dict root = c4doc_getProperties(doc);
     auto attach = root.get("_attachments"_sl).asDict().get("Abstract.jpg"_sl).asDict();
     REQUIRE(attach);
     CHECK(attach.get("content_type").asString() == "image/jpeg"_sl);
@@ -342,11 +344,11 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     REQUIRE(doc);
 	C4Slice revID = C4STR("2-f000");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(doc->selectedRev.body.size > 0);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = slice(originalRevID);
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(doc->selectedRev.body.size > 0);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
 
     C4Log("-------- Pushing Again (conflict) --------");
@@ -364,12 +366,12 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     CHECK((doc->flags & kDocConflicted) != 0);
 	revID = C4STR("2-f000");
     CHECK(doc->selectedRev.revID == revID);
-    CHECK(doc->selectedRev.body.size > 0);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = slice(originalRevID);
     CHECK(doc->selectedRev.revID == revID);
 #if 0 // FIX: These checks fail due to issue #402; re-enable when fixing that bug
-    CHECK(doc->selectedRev.body.size > 0);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
 #endif
     REQUIRE(c4doc_selectCurrentRevision(doc));
@@ -377,7 +379,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
 	revID = C4STR("2-883a2dacc15171a466f76b9d2c39669b");
     CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
-    CHECK(doc->selectedRev.body.size > 0);
+    CHECK(c4doc_getProperties(doc) != nullptr);
     REQUIRE(c4doc_selectParentRevision(doc));
 	revID = slice(originalRevID);
     CHECK(doc->selectedRev.revID == revID);
@@ -417,7 +419,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]"
     // Verify doc is updated on SG:
     auto body = sendRemoteRequest("GET", "doc");
 	C4Slice bodySlice = C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"ans*wer\":42}");
-    CHECK((C4Slice(body) == bodySlice));
+    CHECK(C4Slice(body) == bodySlice);
 }
 
 
@@ -492,9 +494,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
             char docID[20];
             sprintf(docID, "doc-%03d", docNo);
             C4Error error;
-            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, &error);
+            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
             REQUIRE(doc);
-            Dict props = Value::fromData(doc->selectedRev.body).asDict();
+            Dict props = c4doc_getProperties(doc);
 
             enc.beginDict();
             enc.writeKey("_id"_sl);
@@ -542,8 +544,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull deltas from SG", "[.SyncServer][Delta]"
 
         int n = 0;
         C4Error error;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, &error);
-        while (c4enum_next(e, &error)) {
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, ERROR_INFO(error));
+        REQUIRE(e);
+        while (c4enum_next(e, ERROR_INFO(error))) {
             C4DocumentInfo info;
             c4enum_getDocumentInfo(e, &info);
             CHECK(slice(info.docID).hasPrefix("doc-"_sl));
@@ -585,9 +588,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
             char docID[20];
             sprintf(docID, "%07u", docNo + 1);
             C4Error error;
-            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, &error);
+            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, ERROR_INFO(error));
             REQUIRE(doc);
-            Dict props = Value::fromData(doc->selectedRev.body).asDict();
+            Dict props = c4doc_getProperties(doc);
 
             enc.beginDict();
             enc.writeKey("_id"_sl);
@@ -636,8 +639,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
 
         int n = 0;
         C4Error error;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, &error);
-        while (c4enum_next(e, &error)) {
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, ERROR_INFO(error));
+        REQUIRE(e);
+        while (c4enum_next(e, ERROR_INFO(error))) {
             C4DocumentInfo info;
             c4enum_getDocumentInfo(e, &info);
             //CHECK(slice(info.docID).hasPrefix("doc-"_sl));

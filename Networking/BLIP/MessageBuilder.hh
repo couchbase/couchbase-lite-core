@@ -18,6 +18,9 @@
 
 #pragma once
 #include "Message.hh"
+#include <functional>
+#include <initializer_list>
+#include <utility>
 #include <sstream>
 
 namespace litecore { namespace blip {

@@ -23,8 +23,8 @@
 #include "Logging.hh"
 #include "fleece/Fleece.hh"
 #include <atomic>
-#include <map>
 #include <string>
+#include <utility>
 
 namespace litecore { namespace websocket {
     using fleece::RefCounted;

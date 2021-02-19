@@ -19,10 +19,16 @@
 #pragma once
 #include "KeyStore.hh"
 #include "QueryParser.hh"
-#include "FleeceImpl.hh"
-#include <mutex>
 #include <atomic>
+#include <mutex>
+#include <optional>
+#include <string_view>
+#include <vector>
 
+namespace fleece::impl {
+    class ArrayIterator;
+    class Value;
+}
 namespace SQLite {
     class Column;
     class Statement;
@@ -43,13 +49,10 @@ namespace litecore {
         sequence_t lastSequence() const override;
         uint64_t purgeCount() const override;
 
-        Record get(sequence_t) const override;
+        Record get(sequence_t, ContentOption) const override;
         bool read(Record &rec, ContentOption) const override;
 
-        sequence_t set(slice key, slice meta, slice value, DocumentFlags,
-                       Transaction&,
-                       const sequence_t *replacingSequence =nullptr,
-                       bool newSequence =true) override;
+        sequence_t set(const RecordLite&, Transaction&) override;
 
         bool del(slice key, Transaction&, sequence_t s) override;
 
@@ -60,7 +63,7 @@ namespace litecore {
         virtual bool setExpiration(slice key, expiration_t) override;
         virtual expiration_t getExpiration(slice key) override;
         virtual expiration_t nextExpiration() override;
-        virtual unsigned expireRecords(ExpirationCallback =nullptr) override;
+        virtual unsigned expireRecords(std::optional<ExpirationCallback>) override;
 
         bool supportsIndexes(IndexSpec::Type t) const override               {return true;}
         bool createIndex(const IndexSpec&) override;
@@ -92,7 +95,7 @@ namespace litecore {
         Retained<Query> compileQuery(slice expression, QueryLanguage) override;
 
         SQLite::Statement* compile(const std::string &sql) const;
-        SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
+        SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
                                    const char *sqlTemplate) const;
 
         void transactionWillEnd(bool commit);
@@ -117,15 +120,15 @@ namespace litecore {
         std::string subst(const char *sqlTemplate) const;
         void setLastSequence(sequence_t seq);
         void incrementPurgeCount();
-        void createTrigger(string_view triggerName,
-                           string_view triggerSuffix,
-                           string_view operation,
+        void createTrigger(std::string_view triggerName,
+                           std::string_view triggerSuffix,
+                           std::string_view operation,
                            std::string when,
-                           string_view statements);
+                           std::string_view statements);
         bool createValueIndex(const IndexSpec&);
         bool createIndex(const IndexSpec&,
                               const std::string &sourceTableName,
-                              fleece::impl::Array::iterator &expressions);
+                              fleece::impl::ArrayIterator &expressions);
         void _createFlagsIndex(const char *indexName NONNULL, DocumentFlags flag, bool &created);
         bool createFTSIndex(const IndexSpec&);
         bool createArrayIndex(const IndexSpec&);
@@ -139,13 +142,13 @@ namespace litecore {
 #endif
 
         // All of these Statement pointers have to be reset in the close() method.
-        std::unique_ptr<SQLite::Statement> _recCountStmt;
-        std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getCurByKeyStmt, _getMetaByKeyStmt;
-        std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getCurBySeqStmt, _getMetaBySeqStmt;
-        std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
-        std::unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
-        std::unique_ptr<SQLite::Statement> _setFlagStmt, _withDocBodiesStmt;
-        std::unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
+        unique_ptr<SQLite::Statement> _recCountStmt;
+        unique_ptr<SQLite::Statement> _getByKeyStmt, _getCurByKeyStmt, _getMetaByKeyStmt;
+        unique_ptr<SQLite::Statement> _getBySeqStmt, _getCurBySeqStmt, _getMetaBySeqStmt;
+        unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
+        unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
+        unique_ptr<SQLite::Statement> _setFlagStmt, _withDocBodiesStmt;
+        unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
 
         enum Existence : uint8_t { kNonexistent, kUncommitted, kCommitted };
 

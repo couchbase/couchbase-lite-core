@@ -82,7 +82,7 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encry
     }
 
     // Reopen with correct key:
-    db = c4db_openNamed(kDatabaseName, &config, &error);
+    db = c4db_openNamed(kDatabaseName, &config, ERROR_INFO(error));
     REQUIRE(db);
     CHECK(c4db_getDocumentCount(db) == 99);
 }
@@ -95,11 +95,11 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
     C4Slice blobToStore = C4STR("This is a blob to store in the store!");
     C4BlobKey blobKey;
     C4Error error;
-    auto blobStore = c4db_getBlobStore(db, &error);
+    auto blobStore = c4db_getBlobStore(db, ERROR_INFO(error));
     REQUIRE(blobStore);
-    REQUIRE(c4blob_create(blobStore, blobToStore, nullptr, &blobKey, &error));
+    REQUIRE(c4blob_create(blobStore, blobToStore, nullptr, &blobKey, WITH_ERROR(&error)));
 
-    C4SliceResult blobResult = c4blob_getContents(blobStore, blobKey, &error);
+    C4SliceResult blobResult = c4blob_getContents(blobStore, blobKey, ERROR_INFO(error));
     CHECK(blobResult == blobToStore);
     c4slice_free(blobResult);
 
@@ -108,15 +108,15 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
     if (c4db_getConfig2(db)->encryptionKey.algorithm == kC4EncryptionNone) {
         newKey.algorithm = kC4EncryptionAES256;
         memcpy(newKey.bytes, "a different key than default....", kC4EncryptionKeySizeAES256);
-        REQUIRE(c4db_rekey(db, &newKey, &error));
+        REQUIRE(c4db_rekey(db, &newKey, WITH_ERROR(&error)));
     } else {
-        REQUIRE(c4db_rekey(db, nullptr, &error));
+        REQUIRE(c4db_rekey(db, nullptr, WITH_ERROR(&error)));
     }
 
     // Verify the db works:
     REQUIRE(c4db_getDocumentCount(db) == 99);
     REQUIRE(blobStore);
-    blobResult = c4blob_getContents(blobStore, blobKey, &error);
+    blobResult = c4blob_getContents(blobStore, blobKey, ERROR_INFO(error));
     CHECK(blobResult == blobToStore);
     c4slice_free(blobResult);
 
@@ -128,8 +128,9 @@ N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Rekey", "[Database][Encryptio
 
 
 static void testOpeningEncryptedDBFixture(const char *dbPath, const void *key) {
-    static const C4DatabaseFlags kFlagsToTry[] = {kC4DB_ReadOnly, /*kC4DB_NoUpgrade,*/ 0};
+    static const C4DatabaseFlags kFlagsToTry[] = {/*kC4DB_ReadOnly, kC4DB_NoUpgrade,*/ 0};
     // Skipping NoUpgrade because schema version 302 is mandatory for writeable dbs in CBL 2.7.
+    // Skipping ReadOnly because CBL 3.0 can't open 2.x dbs without upgrading them.
 
     for (C4DatabaseFlags flag : kFlagsToTry) {
         C4DatabaseConfig2 config = { };
@@ -139,7 +140,7 @@ static void testOpeningEncryptedDBFixture(const char *dbPath, const void *key) {
         memcpy(config.encryptionKey.bytes, key, kC4EncryptionKeySizeAES256);
         C4Error error;
         C4Log("---- Opening db %s with flags 0x%x", dbPath, config.flags);
-        auto db = c4db_openNamed(C4Test::copyFixtureDB(dbPath), &config, &error);
+        auto db = c4db_openNamed(C4Test::copyFixtureDB(dbPath), &config, ERROR_INFO(error));
         CHECK(db);
         c4db_release(db);
     }
