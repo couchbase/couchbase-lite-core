@@ -102,13 +102,13 @@ extern "C" {
     /** Derives the key of the given data, without storing it. */
     C4BlobKey c4blob_computeKey(C4Slice contents);
 
-    /** Stores a blob. The associated key will be written to `outKey`.
+    /** Stores a blob. The associated key will be written to `outKey`, if non-NULL.
         If `expectedKey` is not NULL, then the operation will fail unless the contents actually
         have that key. */
     bool c4blob_create(C4BlobStore *store,
                        C4Slice contents,
                        const C4BlobKey *C4NULLABLE expectedKey,
-                       C4BlobKey *outKey,
+                       C4BlobKey* C4NULLABLE outKey,
                        C4Error* C4NULLABLE error) C4API;
 
     /** Deletes a blob from the store given its key. */
