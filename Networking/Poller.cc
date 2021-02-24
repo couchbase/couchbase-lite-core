@@ -34,7 +34,6 @@
 #endif
 
 #define WSLog (*(LogDomain*)kC4WebSocketLog)
-#define LOG(LEVEL, ...) LogToAt(WSLog, LEVEL, ##__VA_ARGS__)
 
 namespace litecore { namespace net {
     using namespace std;
@@ -217,7 +216,7 @@ namespace litecore { namespace net {
         if(FD_ISSET(_interruptReadFD, &fds_read)) {
             int message;
             ::recv(_interruptReadFD, (char *)&message, sizeof(message), 0);
-            LOG(Debug, "Poller: interruption %d", message);
+            LogDebug(WSLog, "Poller: interruption %d", message);
             if (message < 0) {
                 // Receiving a negative message aborts the loop
                 result = false;
@@ -282,7 +281,7 @@ namespace litecore { namespace net {
                     // This is an interrupt -- read the byte from the pipe:
                     int message;
                     ::read(_interruptReadFD, &message, sizeof(message));
-                    LOG(Debug, "Poller: interruption %d", message);
+                    LogDebug(WSLog, "Poller: interruption %d", message);
                     if (message < 0) {
                         // Receiving a negative message aborts the loop
                         result = false;
@@ -292,7 +291,7 @@ namespace litecore { namespace net {
                         callAndRemoveListener(message, kWriteable);
                     }
                 } else {
-                    LOG(Debug, "Poller: fd %d got event 0x%02x", fd, entry.revents);
+                    LogDebug(WSLog, "Poller: fd %d got event 0x%02x", fd, entry.revents);
                     if (entry.revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL))
                         callAndRemoveListener(fd, kReadable);
                     if (entry.revents & (POLLOUT | POLLERR | POLLHUP | POLLNVAL))

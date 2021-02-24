@@ -68,7 +68,6 @@ namespace litecore { namespace net {
 
 
     #define WSLog (*(LogDomain*)kC4WebSocketLog)
-    #define LOG(LEVEL, ...) LogToAt(WSLog, LEVEL, ##__VA_ARGS__)
 
 
     TCPSocket::TCPSocket(bool isClient, TLSContext *tls)
@@ -485,7 +484,7 @@ namespace litecore { namespace net {
             // Some more specific errors for certificate validation failures, based on flags:
             auto tlsSocket = (tls_socket*)_socket.get();
             uint32_t flags = tlsSocket->peer_certificate_status();
-            LOG(Error, "TCPSocket TLS handshake failed; cert verify status 0x%02x", flags);
+            LogError(WSLog, "TCPSocket TLS handshake failed; cert verify status 0x%02x", flags);
             if (flags != 0 && flags != UINT32_MAX) {
                 string message = tlsSocket->peer_certificate_status_message();
                 int code;
@@ -512,7 +511,7 @@ namespace litecore { namespace net {
                                 && err >= mbedtls_context::FATAL_ERROR_ALERT_BASE - 0xFF) {
             // Handle TLS 'fatal alert' when peer rejects our cert:
             auto alert = mbedtls_context::FATAL_ERROR_ALERT_BASE - err;
-            LOG(Error, "TCPSocket TLS handshake failed with fatal alert %d", alert);
+            LogError(WSLog, "TCPSocket TLS handshake failed with fatal alert %d", alert);
             int code;
             if (alert == MBEDTLS_SSL_ALERT_MSG_NO_CERT) {
                 code = kNetErrTLSCertRequiredByPeer;
@@ -597,7 +596,7 @@ namespace litecore { namespace net {
         if (err > 0) {
             err = socketToPosixErrCode(err);
             string errStr = error::_what(error::POSIX, err);
-            LOG(Warning, "%s got POSIX error %d \"%s\"",
+            LogWarn(WSLog, "%s got POSIX error %d \"%s\"",
                 (_isClient ? "ClientSocket" : "ResponderSocket"),
                 err, errStr.c_str());
             if (err == EWOULDBLOCK)     // Occurs in blocking mode when I/O times out
@@ -608,7 +607,7 @@ namespace litecore { namespace net {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
             mbedtls_strerror(err, msgbuf, sizeof(msgbuf));
-            LOG(Warning, "%s got mbedTLS error -0x%04X \"%s\"",
+            LogWarn(WSLog, "%s got mbedTLS error -0x%04X \"%s\"",
                 (_isClient ? "ClientSocket" : "ResponderSocket"),
                 -err, msgbuf);
             setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));

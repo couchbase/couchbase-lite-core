@@ -35,7 +35,7 @@ namespace litecore {
                                        Options options)
     :_store(&store)
     {
-        LogToAt(QueryLog, Verbose, "RecordEnumerator %p: (%s, %d%d%d %d)",
+        LogVerbose(QueryLog, "RecordEnumerator %p: (%s, %d%d%d %d)",
                 this, store.name().c_str(),
                 options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
                 options.sortOption);
@@ -48,7 +48,7 @@ namespace litecore {
                                        Options options)
     :_store(&store)
     {
-        LogToAt(QueryLog, Verbose, "RecordEnumerator %p: (%s, #%llu..., %d%d%d %d)",
+        LogVerbose(QueryLog, "RecordEnumerator %p: (%s, #%llu..., %d%d%d %d)",
                 this, store.name().c_str(), (unsigned long long)since,
                 options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
                 options.sortOption);
@@ -74,7 +74,7 @@ namespace litecore {
                 close();
                 return false;
             }
-            LogToAt(QueryLog, Debug, "RecordEnumerator %p  --> '%.*s'", this, SPLAT(_record.key()));
+            LogDebug(QueryLog, "RecordEnumerator %p  --> '%.*s'", this, SPLAT(_record.key()));
             return true;
         }
     }

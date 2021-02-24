@@ -123,7 +123,7 @@ namespace litecore {
         if (baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY) {
             LogTo(DBLog, "SQLite message: %s", msg);
         } else {
-            LogToAt(DBLog, Error, "SQLite error (code %d): %s", errCode, msg);
+            LogError(DBLog, "SQLite error (code %d): %s", errCode, msg);
         }
     }
 
@@ -151,7 +151,7 @@ namespace litecore {
     SQLiteDataFile::Factory::Factory() {
         // One-time initialization at startup:
         SQLite::Exception::logger = [](const SQLite::Exception &x) {
-            LogToAt(SQL, Error, "%s (%d/%d)", x.what(), x.getErrorCode(), x.getExtendedErrorCode());
+            LogError(SQL, "%s (%d/%d)", x.what(), x.getErrorCode(), x.getExtendedErrorCode());
         };
         Assert(sqlite3_libversion_number() >= 300900, "LiteCore requires SQLite 3.9+");
         sqlite3_config(SQLITE_CONFIG_LOG, sqlite3_log_callback, NULL);
