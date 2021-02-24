@@ -1380,7 +1380,7 @@ namespace litecore {
             // vs alias -> doc["path"]["to"]["value"])
             if(property.size() == 1) {
                 // Simple case, the alias is being used as-is
-                _sql << '"' << string(property) << '"';
+                _sql << '"' << iType->first << '"';
                 return;
             }
 
