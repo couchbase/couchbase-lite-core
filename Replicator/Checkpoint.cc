@@ -84,7 +84,7 @@ namespace litecore { namespace repl {
         if (json) {
             Doc root = Doc::fromJSON(json, nullptr);
             if (!root) {
-                LogToAt(SyncLog, Error, "Unparseable checkpoint: %.*s", SPLAT(json));
+                LogError(SyncLog, "Unparseable checkpoint: %.*s", SPLAT(json));
                 return;
             }
             _remote = RemoteSequence(root["remote"_sl]);

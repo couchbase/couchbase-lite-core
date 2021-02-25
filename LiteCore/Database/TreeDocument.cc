@@ -503,7 +503,7 @@ namespace c4Internal {
             if (commonAncestor < 0) {
                 if (outError) {
                     alloc_slice current = _revTree.revID().expanded();
-                    LogToAt(DBLog, Warning,
+                    LogWarn(DBLog,
                            "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %d",
                            SPLAT(docID), SPLAT(rq.history[0]), SPLAT(current), -commonAncestor);
                     if (commonAncestor == -409)

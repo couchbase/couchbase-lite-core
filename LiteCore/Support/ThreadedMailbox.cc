@@ -103,13 +103,13 @@ namespace litecore { namespace actor {
 
 
     void Scheduler::task(unsigned taskID) {
-        LogToAt(ActorLog, Verbose, "   task %d starting", taskID);
+        LogVerbose(ActorLog, "   task %d starting", taskID);
         char name[100];
         sprintf(name, "CBL Scheduler#%u", taskID);
         SetThreadName(name);
         ThreadedMailbox *mailbox;
         while ((mailbox = _queue.pop()) != nullptr) {
-            LogToAt(ActorLog, Verbose, "   task %d calling Actor<%p>", taskID, mailbox);
+            LogVerbose(ActorLog, "   task %d calling Actor<%p>", taskID, mailbox);
             mailbox->performNextMessage();
             mailbox = nullptr;
         }
@@ -255,7 +255,7 @@ namespace litecore { namespace actor {
 
 
     void ThreadedMailbox::performNextMessage() {
-        LogToAt(ActorLog, Verbose, "%s performNextMessage", _actor->actorName().c_str());
+        LogVerbose(ActorLog, "%s performNextMessage", _actor->actorName().c_str());
         DebugAssert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
         sCurrentActor = _actor;
         auto &fn = front();

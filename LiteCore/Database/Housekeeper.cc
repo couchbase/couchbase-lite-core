@@ -49,7 +49,7 @@ namespace litecore {
 
     void Housekeeper::_stop() {
         _expiryTimer.stop();
-        LogToAt(DBLog, Verbose, "Housekeeper: stopped.");
+        LogVerbose(DBLog, "Housekeeper: stopped.");
     }
 
 
@@ -58,10 +58,10 @@ namespace litecore {
             return df ? df->defaultKeyStore().nextExpiration() : 0;
         });
         if (nextExp == 0) {
-            LogToAt(DBLog, Verbose, "Housekeeper: no scheduled document expiration");
+            LogVerbose(DBLog, "Housekeeper: no scheduled document expiration");
             return;
         } else if (expiration_t delay = nextExp - KeyStore::now(); delay > 0) {
-            LogToAt(DBLog, Verbose, "Housekeeper: scheduling expiration in %" PRIi64 "ms", delay);
+            LogVerbose(DBLog, "Housekeeper: scheduling expiration in %" PRIi64 "ms", delay);
             _expiryTimer.fireAfter(chrono::milliseconds(delay));
         } else {
             _doExpiration();
@@ -70,7 +70,7 @@ namespace litecore {
 
 
     void Housekeeper::_doExpiration() {
-        LogToAt(DBLog, Verbose, "Housekeeper: expiring documents...");
+        LogVerbose(DBLog, "Housekeeper: expiring documents...");
         _bgdb->useInTransaction([&](DataFile* dataFile, SequenceTracker *sequenceTracker) -> bool {
             auto &keyStore = dataFile->defaultKeyStore();
             if (sequenceTracker) {
@@ -93,7 +93,7 @@ namespace litecore {
             return;
         expiration_t delay = exp - KeyStore::now();
         if (_expiryTimer.fireEarlierAfter(chrono::milliseconds(delay)))
-            LogToAt(DBLog, Verbose, "Housekeeper: rescheduled expiration, now in %" PRIi64 "ms", delay);
+            LogVerbose(DBLog, "Housekeeper: rescheduled expiration, now in %" PRIi64 "ms", delay);
     }
 
 }

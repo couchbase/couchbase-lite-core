@@ -167,12 +167,20 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 
 #define LogTo(DOMAIN, FMT, ...)         LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
 #define LogVerbose(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
-#define LogDebug(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
+#define LogWarn(DOMAIN, FMT, ...)       LogToAt(DOMAIN, Warning, FMT, ##__VA_ARGS__)
+#define LogError(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Error, FMT, ##__VA_ARGS__)
 
 #define Log(FMT, ...)                   LogToAt(litecore::kC4Cpp_DefaultLog, Info,    FMT, ##__VA_ARGS__)
 #define Warn(FMT, ...)                  LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##__VA_ARGS__)
 #define WarnError(FMT, ...)             LogToAt(litecore::kC4Cpp_DefaultLog, Error,   FMT, ##__VA_ARGS__)
+
+#ifdef DEBUG
+#define LogDebug(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
 #define WriteDebug(FMT, ...)            LogToAt(litecore::kC4Cpp_DefaultLog, Debug,   FMT, ##__VA_ARGS__)
+#else
+#define LogDebug(DOMAIN, FMT, ...)
+#define WriteDebug(FMT, ...)
+#endif
 #else
 #define LogToAt(DOMAIN, LEVEL, FMT, ARGS...) \
     ({if (_usuallyFalse((DOMAIN).willLog(litecore::LogLevel::LEVEL))) \
@@ -180,28 +188,24 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 
 #define LogTo(DOMAIN, FMT, ARGS...)         LogToAt(DOMAIN, Info, FMT, ##ARGS)
 #define LogVerbose(DOMAIN, FMT, ARGS...)    LogToAt(DOMAIN, Verbose, FMT, ##ARGS)
-#define LogDebug(DOMAIN, FMT, ARGS...)      LogToAt(DOMAIN, Debug, FMT, ##ARGS)
+#define LogWarn(DOMAIN, FMT, ARGS...)       LogToAt(DOMAIN, Warning, FMT, ##ARGS)
+#define LogError(DOMAIN, FMT, ARGS...)      LogToAt(DOMAIN, Error, FMT, ##ARGS)
 
-#define WriteDebug(FMT, ARGS...)            LogToAt(litecore::kC4Cpp_DefaultLog, Debug,   FMT, ##ARGS)
 #define Log(FMT, ARGS...)                   LogToAt(litecore::kC4Cpp_DefaultLog, Info,    FMT, ##ARGS)
 #define Warn(FMT, ARGS...)                  LogToAt(litecore::kC4Cpp_DefaultLog, Warning, FMT, ##ARGS)
 #define WarnError(FMT, ARGS...)             LogToAt(litecore::kC4Cpp_DefaultLog, Error,   FMT, ##ARGS)
+
+#ifdef DEBUG
+#define WriteDebug(FMT, ARGS...)            LogToAt(litecore::kC4Cpp_DefaultLog, Debug,   FMT, ##ARGS)
+#define LogDebug(DOMAIN, FMT, ARGS...)      LogToAt(DOMAIN, Debug, FMT, ##ARGS)
+#else
+#define WriteDebug(FMT...)      ({ })
+#define LogDebug(DOMAIN, FMT, ARGS...)      ({ })
+#endif
 #endif
 
 
 static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv);}
-
-
-// Debug(...) is stripped out of release builds
-#if !DEBUG
-    #undef Debug
-    #ifdef _MSC_VER
-        #define Debug(FMT, ...)
-    #else
-        #define Debug(FMT...)      ({ })
-    #endif
-#endif
-
 
     /** Mixin that adds log(), warn(), etc. methods. The messages these write will be prefixed
         with a description of the object; by default this is just the class and address, but

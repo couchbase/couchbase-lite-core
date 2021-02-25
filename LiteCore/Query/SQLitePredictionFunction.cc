@@ -70,7 +70,7 @@ namespace litecore {
                     setResultBlobFromFleeceData(ctx, result);
                 } else {
                     alloc_slice desc(c4error_getDescription(error));
-                    LogToAt(QueryLog, Error, "Predictive model '%s' failed: %.*s",
+                    LogError(QueryLog, "Predictive model '%s' failed: %.*s",
                             name, SPLAT(desc));
                     alloc_slice msg = c4error_getMessage(error);
                     sqlite3_result_error(ctx, (const char*)msg.buf, (int)msg.size);

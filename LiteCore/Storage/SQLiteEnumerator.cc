@@ -121,7 +121,7 @@ namespace litecore {
                     sql << x.getColumn(i).getInt() << "|";
                 sql << " " << x.getColumn(3).getText();
             }
-            LogToAt(QueryLog, Debug, "%s", sql.str().c_str());
+            LogDebug(QueryLog, "%s", sql.str().c_str());
         }
 
 
