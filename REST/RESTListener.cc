@@ -167,7 +167,7 @@ namespace litecore { namespace REST {
                 break;
             case kC4PrivateKeyFromCert:
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-                privateKey = (PrivateKey*) cert->loadPrivateKey();
+                privateKey = cert->loadPrivateKey();
                 if (!privateKey)
                     error::_throw(error::CryptoError,
                                   "No persistent private key found matching certificate public key");

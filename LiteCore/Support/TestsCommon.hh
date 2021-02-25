@@ -33,8 +33,8 @@ litecore::FilePath GetTempDirectory();
 void InitTestLogging();
 
 
-std::string sliceToHex(fleece::slice);
-std::string sliceToHexDump(fleece::slice, size_t width = 16);
+std::string sliceToHex(fleece::pure_slice);
+std::string sliceToHexDump(fleece::pure_slice, size_t width = 16);
 
 // Converts a C4Slice or C4SliceResult to a C++ string.
 static inline std::string toString(fleece::slice s)   {return std::string(s);}
