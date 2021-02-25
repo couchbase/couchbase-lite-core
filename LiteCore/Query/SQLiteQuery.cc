@@ -497,7 +497,7 @@ namespace litecore {
 
             enc.endArray();
             return new SQLiteQueryEnumerator(_query, &_options, _lastSequence, _purgeCount,
-                                             enc.finishDoc(), rowCount, st.elapsed());
+                                             enc.finishDoc().get(), rowCount, st.elapsed());
         }
 
     private:

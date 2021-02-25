@@ -67,7 +67,9 @@ namespace litecore { namespace blip {
             auto i = find_if(begin(), end(), [&](const Retained<MessageOut> &msg) {
                 return msg->number() == msgNo && msg->isResponse() == isResponse;
             });
-            return (i != end()) ? *i : nullptr;
+            if (i == end())
+                return nullptr;
+            return *i;
         }
 
         Retained<MessageOut> pop() {

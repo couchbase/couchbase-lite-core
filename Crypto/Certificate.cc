@@ -244,7 +244,7 @@ namespace litecore { namespace crypto {
     Cert::Cert(const SubjectParameters &subjectParams,
                const IssuerParameters &issuerParams,
                PrivateKey *keyPair)
-    :Cert( create(subjectParams, keyPair->publicKey(), issuerParams, keyPair, nullptr) )
+    :Cert( create(subjectParams, keyPair->publicKey().get(), issuerParams, keyPair, nullptr) )
     { }
 
 
@@ -649,7 +649,7 @@ namespace litecore { namespace crypto {
         subjectParams.keyUsage = keyUsage();
         subjectParams.nsCertType = nsCertType();
         subjectParams.subjectAltNames = subjectAltNames();
-        auto cert = retained(new Cert(Cert::create(subjectParams, subjectPublicKey(),
+        auto cert = retained(new Cert(Cert::create(subjectParams, subjectPublicKey().get(),
                                                    issuerParams, issuerKeyPair, issuerCert)));
         if (issuerCert) {
             auto issuerCopy = retained(new Cert(issuerCert->dataOfChain()));

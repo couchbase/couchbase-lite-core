@@ -100,7 +100,7 @@ namespace litecore { namespace REST {
 
         _server->start(config.port,
                        config.networkInterface,
-                       createTLSContext(config.tlsConfig));
+                       createTLSContext(config.tlsConfig).get());
     }
 
 
@@ -251,7 +251,7 @@ namespace litecore { namespace REST {
                 return returnError(outError, LiteCoreDomain, kC4ErrorInvalidParameter,
                                    "Invalid database name");
         }
-        if (databaseNamed(name) != nullptr)
+        if (auto db = databaseNamed(name); db != nullptr)
             return returnError(outError, LiteCoreDomain, kC4ErrorConflict, "Database exists");
         C4DatabaseConfig2 config = {slice(path.dirName()), flags};
         c4::ref<C4Database> db = c4db_openNamed(slice(name), &config, outError);

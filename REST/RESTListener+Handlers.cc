@@ -108,7 +108,7 @@ namespace litecore { namespace REST {
         if (!_allowCreateDB)
             return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot create databases");
         string dbName = rq.path(0);
-        if (databaseNamed(dbName))
+        if (auto db = databaseNamed(dbName); db)
             return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Database exists");
         FilePath path;
         if (!pathFromDatabaseName(dbName, path))

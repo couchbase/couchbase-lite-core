@@ -86,13 +86,17 @@ namespace c4 {
 
         static ref retaining(T *t)              {return ref(retainRef(t));}
 
-        operator T* () const noexcept FLPURE    {return _obj;}
+        operator T* () const & noexcept FLPURE  {return _obj;}
         T* operator -> () const noexcept FLPURE {return _obj;}
         T* get() const noexcept FLPURE          {return _obj;}
 
         ref& operator=(std::nullptr_t) noexcept { replaceRef(nullptr); return *this; }
         ref& operator=(ref &&r) noexcept        { std::swap(_obj, r._obj); return *this;}
         ref& operator=(const ref &r) noexcept   { replaceRef(retainRef(r._obj)); return *this;}
+
+        // This operator is dangerous enough that it's prohibited.
+        // For details, see the lengthy comment in RefCounted.hh, around line 153.
+        operator T* () const && =delete;
 
     private:
         inline void replaceRef(T* newRef) {
