@@ -17,6 +17,7 @@
 //
 
 #include "SecureDigest.hh"
+#include "Base64.hh"
 #include "Error.hh"
 
 #pragma clang diagnostic push
@@ -47,6 +48,11 @@ namespace litecore {
             return false;
         memcpy(bytes, s.buf, sizeof(bytes));
         return true;
+    }
+
+
+    std::string SHA1::asBase64() const {
+        return fleece::base64::encode(asSlice());
     }
 
 

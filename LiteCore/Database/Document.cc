@@ -20,6 +20,7 @@
 #include "c4Document+Fleece.h"
 #include "LegacyAttachments.hh"
 #include "BlobStore.hh"
+#include "Base64.hh"
 #include "StringUtil.hh"
 #include "Doc.hh"
 #include "RevID.hh"
@@ -87,7 +88,7 @@ namespace c4Internal {
                 case fleece::impl::kData:
                     return alloc_slice(dataProp->asData());
                 case fleece::impl::kString: {
-                    alloc_slice data = dataProp->asString().decodeBase64();
+                    alloc_slice data = base64::decode(dataProp->asString());
                     if (!data)
                         error::_throw(error::CorruptData, "Blob data string is not valid Base64");
                     return data;

@@ -20,6 +20,7 @@
 #include "Checkpoint.hh"
 #include "ReplicatorOptions.hh"
 #include "DBAccess.hh"
+#include "Base64.hh"
 #include "Logging.hh"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
@@ -255,10 +256,7 @@ namespace litecore { namespace repl {
             writeValueOrNull(enc, docIDs);
         }
         enc.endArray();
-        const alloc_slice data = enc.finish();
-        SHA1 digest(data);
-        string finalProduct = string("cp-") + slice(&digest, sizeof(digest)).base64String();
-        return finalProduct;
+        return string("cp-") + SHA1(enc.finish()).asBase64();
     }
 
 

@@ -18,6 +18,7 @@
 
 #pragma once
 #include "fleece/slice.hh"
+#include <string>
 
 namespace litecore {
 
@@ -36,7 +37,10 @@ namespace litecore {
         bool setDigest(fleece::slice);
 
         /// The digest as a slice
-        operator fleece::slice() const        {return {bytes, sizeof(bytes)};}
+        fleece::slice asSlice() const         {return {bytes, sizeof(bytes)};}
+        operator fleece::slice() const        {return asSlice();}
+
+        std::string asBase64() const;
 
         bool operator==(const SHA1 &x) const  {return memcmp(&bytes, &x.bytes, sizeof(bytes)) == 0;}
         bool operator!= (const SHA1 &x) const {return !(*this == x);}

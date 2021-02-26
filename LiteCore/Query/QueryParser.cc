@@ -22,6 +22,7 @@
 #include "QueryParser+Private.hh"
 #include "QueryParserTables.hh"
 #include "Record.hh"
+#include "Base64.hh"
 #include "Error.hh"
 #include "FleeceImpl.hh"
 #include "DeepIterator.hh"
@@ -1586,7 +1587,7 @@ namespace litecore {
     // Constructs a unique identifier of an expression, from a digest of its JSON.
     string QueryParser::expressionIdentifier(const Array *expression, unsigned maxItems) const {
         require(expression, "Invalid expression to index");
-        SHA1Builder ctx;
+        SHA1Builder sha;
         unsigned item = 0;
         for (Array::iterator i(expression); i; ++i) {
             if (maxItems > 0 && ++item > maxItems)
@@ -1596,12 +1597,12 @@ namespace litecore {
                 // Strip ".doc" from property paths if necessary:
                 string s = json.asString();
                 replace(s, "[\"." + _dbAlias + ".", "[\".");
-                ctx << slice(s);
+                sha << slice(s);
             } else {
-                ctx << json;
+                sha << json;
             }
         }
-        return slice(ctx.finish()).base64String();
+        return sha.finish().asBase64();
     }
 
 

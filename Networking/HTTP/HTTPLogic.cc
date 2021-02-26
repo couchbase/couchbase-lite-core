@@ -20,6 +20,7 @@
 #include "TCPSocket.hh"
 #include "WebSocketInterface.hh"
 #include "c4Replicator.h"
+#include "Base64.hh"
 #include "Error.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
@@ -137,7 +138,7 @@ namespace litecore { namespace net {
                 uint8_t nonceBuf[16];
                 slice nonceBytes(nonceBuf, sizeof(nonceBuf));
                 SecureRandomize(nonceBytes);
-                _webSocketNonce = nonceBytes.base64String();
+                _webSocketNonce = base64::encode(nonceBytes);
                 rq << "Connection: Upgrade\r\n"
                       "Upgrade: websocket\r\n"
                       "Sec-WebSocket-Version: 13\r\n"
@@ -152,7 +153,7 @@ namespace litecore { namespace net {
 
 
     alloc_slice HTTPLogic::basicAuth(slice username, slice password) {
-        string credential = slice(string(username) + ':' + string(password)).base64String();
+        string credential = base64::encode(string(username) + ':' + string(password));
         return alloc_slice("Basic " + credential);
     }
 
@@ -333,7 +334,7 @@ namespace litecore { namespace net {
 
     string HTTPLogic::webSocketKeyResponse(const string &nonce) {
         SHA1 digest{slice(nonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
-        return slice(&digest, sizeof(digest)).base64String();
+        return digest.asBase64();
     }
 
 

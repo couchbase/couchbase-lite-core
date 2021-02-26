@@ -17,6 +17,7 @@
 //.
 
 #include "BlobStore.hh"
+#include "Base64.hh"
 #include "FilePath.hh"
 #include "Error.hh"
 #include "EncryptedStream.hh"
@@ -62,7 +63,7 @@ namespace litecore {
         if (data.size == kBlobKeyStringLength) {
             // Decoder always writes a multiple of 3 bytes, so round up:
             uint8_t buf[21];
-            slice result = data.readBase64Into(slice(buf, sizeof(buf)));
+            slice result = base64::decode(data, buf, sizeof(buf));
             return digest.setDigest(result);
         }
         return false;
@@ -70,12 +71,12 @@ namespace litecore {
 
 
     string blobKey::base64String() const {
-        return string("sha1-") + slice(digest).base64String();
+        return string("sha1-") + digest.asBase64();
     }
 
 
     string blobKey::filename() const {
-        string str = slice(digest).base64String();
+        string str = digest.asBase64();
         replace(str.begin(), str.end(), '/', '_');
         return str + ".blob";
     }
