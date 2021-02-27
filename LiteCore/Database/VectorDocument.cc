@@ -450,43 +450,70 @@ namespace c4Internal {
                              C4String losingRevID,
                              C4Slice mergedBody,
                              C4RevisionFlags mergedFlags,
-                             bool pruneLosingBranch =true) override
+                             bool /*pruneLosingBranch*/) override
         {
-            auto won = _findRemote(winningRevID);
-            auto lost = _findRemote(losingRevID);
+            optional<pair<RemoteID, Revision>> won = _findRemote(winningRevID),
+                                              lost = _findRemote(losingRevID);
             if (!won || !lost)
                 error::_throw(error::NotFound, "Revision not found");
             if (won->first == lost->first)
                 error::_throw(error::InvalidParameter, "That's the same revision");
-            // One has to be Local, the other has to be a conflict:
-            bool localWon = (won->first == RemoteID::Local);
-            auto localRev = localWon ? won->second : lost->second;
-            auto [remote, remoteRev] = localWon ? *lost : *won;
+
+            // One has to be Local, the other has to be remote and a conflict:
+            Revision localRev, remoteRev;
+            RemoteID remoteID;
+            bool localWon = won->first == RemoteID::Local;
+            if (localWon) {
+                localRev = won->second;
+                tie(remoteID, remoteRev) = *lost;
+            } else if (lost->first == RemoteID::Local) {
+                localRev = lost->second;
+                tie(remoteID, remoteRev) = *won;
+            } else {
+                error::_throw(error::Conflict, "Conflict must involve the local revision");
+            }
             if (!(remoteRev.flags & DocumentFlags::kConflicted))
                 error::_throw(error::Conflict, "Revisions are not in conflict");
 
             // Construct a merged version vector:
-            auto localVersion = localRev.versionVector();
-            auto remoteVersion = remoteRev.versionVector();
-            auto mergedVersion = localVersion.mergedWith(remoteVersion);
-            mergedVersion.incrementGen(kMePeerID);
+            VersionVector localVersion = localRev.versionVector(),
+                          remoteVersion = remoteRev.versionVector(),
+                          mergedVersion;
+            if (!localWon && !mergedBody.buf
+                                    && !localVersion.isNewerIgnoring(kMePeerID, remoteVersion)) {
+                // If there's no new merged body, and the local revision lost,
+                // and its only changes not in the remote version are by me, then
+                // just get rid of the local version and keep the remote one.
+                // TODO: This assumes the local rev hasn't been pushed anywhere yet.
+                //       If that's not true, then we should create a new version;
+                //       but currently there's no way of knowing.
+                mergedVersion = remoteVersion;
+            } else {
+                if (localWon)
+                    mergedVersion = localVersion.mergedWith(remoteVersion);
+                else
+                    mergedVersion = remoteVersion.mergedWith(localVersion);
+                // We have to increment something to get a genuinely new version vector.
+                mergedVersion.incrementGen(kMePeerID);
+            }
             alloc_slice mergedRevID = mergedVersion.asBinary();
 
             // Update the local/current revision with the resulting merge:
             Doc mergedDoc;
             localRev.revID = revid(mergedRevID);
-            localRev.flags = convertNewRevisionFlags(mergedFlags);
             if (mergedBody.buf) {
                 mergedDoc = _newProperties(alloc_slice(mergedBody));
                 localRev.properties = mergedDoc.asDict();
+                localRev.flags = convertNewRevisionFlags(mergedFlags);
             } else {
                 localRev.properties = won->second.properties;
+                localRev.flags = won->second.flags - DocumentFlags::kConflicted;
             }
             _doc.setCurrentRevision(localRev);
 
             // Remote rev is no longer a conflict:
             remoteRev.flags = remoteRev.flags - DocumentFlags::kConflicted;
-            _doc.setRemoteRevision(remote, remoteRev);
+            _doc.setRemoteRevision(remoteID, remoteRev);
 
             _updateDocFields();
             _selectRemote(RemoteID::Local);
