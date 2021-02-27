@@ -71,7 +71,7 @@ namespace litecore {
         bool empty() const                                  {return _vers.size() == 0;}
         const Version& operator[] (size_t i) const          {return _vers[i];}
         const Version& current() const                      {return _vers.get(0);}
-        const vec& versions() const        {return _vers;}
+        const vec& versions() const                         {return _vers;}
 
         /** Returns the generation count for the given author. */
         generation genOfAuthor(peerID) const;
@@ -81,6 +81,9 @@ namespace litecore {
 
         /** Compares this vector to another. */
         versionOrder compareTo(const VersionVector&) const;
+
+        /** Is this vector newer than the other vector, if you ignore the peerID `ignoring`? */
+        bool isNewerIgnoring(peerID ignoring, const VersionVector &other) const;
 
         bool operator == (const VersionVector& v) const     {return compareTo(v) == kSame;}
         bool operator != (const VersionVector& v) const     {return !(*this == v);}
@@ -109,6 +112,10 @@ namespace litecore {
 
         bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
         size_t maxASCIILen() const;
+
+#if DEBUG
+        std::string asString() const;
+#endif
 
         //---- Expanding "*":
 
