@@ -176,13 +176,13 @@ ExpectingExceptions::~ExpectingExceptions()   {
 }
 
 
-void WaitUntil(int timeoutMillis, function_ref<bool()> predicate) {
-    for (int remaining = timeoutMillis; remaining >= 0; remaining -= 100) {
+bool WaitUntil(chrono::milliseconds timeout, function_ref<bool()> predicate) {
+    auto deadline = chrono::steady_clock::now() + timeout;
+    do {
         if (predicate())
-            return;
-        this_thread::sleep_for(chrono::milliseconds(100));
-    }
-    FAIL("Wait timed out after " << timeoutMillis << "ms");
+            return true;
+        this_thread::sleep_for(50ms);
+    } while (chrono::steady_clock::now() < deadline);
+
+    return false;
 }
-
-

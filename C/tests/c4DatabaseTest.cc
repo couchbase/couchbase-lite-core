@@ -389,19 +389,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
 #pragma mark - DOCUMENT EXPIRATION:
 
 
-// sleep for `wait`, then poll for the `check` condition to return true, giving up after `timeout`
-template <class LAMBDA>
-static void waitAndCheck(chrono::milliseconds wait, chrono::milliseconds timeout, LAMBDA check) {
-    auto start = chrono::system_clock::now();
-    this_thread::sleep_for(wait);
-    while (!check()) {
-        CHECK( chrono::system_clock::now() - start < timeout);
-        C4Log("still waiting ...");
-        this_thread::sleep_for(100ms);
-    }
-}
-
-
 static constexpr int secs = 1000;
 static constexpr int ms = 1;
 
@@ -476,11 +463,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
-    waitAndCheck(1500ms, 10s, [&] {
-        C4Document *doc = c4doc_get(db, "expire_me_first"_sl, true, &err);
-        c4doc_release(doc);
-        return doc == nullptr;
-    });
+    this_thread::sleep_for(1500ms);
+    CHECK_BEFORE(15s, ! c4::make_ref(c4doc_get(db, "expire_me_first"_sl, true, &err)));
     CHECK(err == C4Error{LiteCoreDomain, kC4ErrorNotFound});
     C4Log("---- Done...");
 }
@@ -501,11 +485,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration After Reopen", 
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
-    waitAndCheck(1500ms, 10s, [&] {
-        C4Document *doc = c4doc_get(db, "expire_me_first"_sl, true, &err);
-        c4doc_release(doc);
-        return doc == nullptr;
-    });
+    this_thread::sleep_for(1500ms);
+    CHECK_BEFORE(10s, ! c4::make_ref(c4doc_get(db, "expire_me_first"_sl, true, &err)));
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorNotFound);
     C4Log("---- Done...");

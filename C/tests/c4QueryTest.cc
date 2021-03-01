@@ -904,7 +904,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     c4queryobs_setEnabled(state.obs, true);
 
     C4Log("---- Waiting for query observer...");
-    WaitUntil(2000, [&]{return state.count > 0;});
+    REQUIRE_BEFORE(2000ms, state.count > 0);
 
     C4Log("Checking query observer...");
     CHECK(state.count == 1);
@@ -918,7 +918,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     addPersonInState("after1", "AL");
 
     C4Log("---- Checking that query observer doesn't fire...");
-    this_thread::sleep_for(chrono::milliseconds(1000));
+    this_thread::sleep_for(1000ms);
     REQUIRE(state.count == 0);
 
     {
@@ -926,12 +926,12 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
         TransactionHelper t(db);
         addPersonInState("after2", "CA");
         // wait, to make sure the observer doesn't try to run the query before the commit
-        this_thread::sleep_for(chrono::milliseconds(1000));
+        this_thread::sleep_for(1000ms);
         C4Log("---- Commiting changes");
     }
 
     C4Log("---- Waiting for 2nd call of query observer...");
-    WaitUntil(2000, [&]{return state.count > 0;});
+    REQUIRE_BEFORE(2000ms, state.count > 0);
 
     C4Log("---- Checking query observer again...");
     CHECK(state.count == 1);
@@ -952,7 +952,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     }
 
     C4Log("---- Waiting for 3rd call of query observer...");
-    WaitUntil(2000, [&]{return state.count > 0;});
+    REQUIRE_BEFORE(2000ms, state.count > 0);
 
     C4Log("---- Checking query observer again...");
     CHECK(state.count == 1);

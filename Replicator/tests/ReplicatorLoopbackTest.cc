@@ -80,8 +80,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull
     t1.fireAt(at);
     t2.fireAt(at);
 
-    this_thread::sleep_for(chrono::milliseconds(600));
-    CHECK(counter == 2);
+    REQUIRE_BEFORE(2s, counter == 2);
 }
 
 

@@ -225,6 +225,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
 
      REQUIRE(startReplicator(kC4OneShot, kC4Disabled, WITH_ERROR()));
 
+    // Count the maximum number of connections while the replicator is running:
     unsigned maxConnections = 0, maxActiveConns = 0;
     C4ReplicatorStatus status;
     while ((status = c4repl_getStatus(_repl)).level != kC4Stopped) {
@@ -238,15 +239,11 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
     CHECK(maxActiveConns == 1);
 
     // It might take an instant for the counts to update:
-    Stopwatch st;
-    do {
+    (void)WaitUntil(2s, [&] {
         c4listener_getConnectionStatus(listener(), &connections, &activeConns);
-        if (connections > 0) {
-            C4Log("Waiting for connection count to reset to 0...");
-            REQUIRE(st.elapsed() < 2.0);
-            this_thread::sleep_for(10ms);
-        }
-    } while (connections > 0);
+        return connections == 0;
+    });
+    CHECK(connections == 0);
     CHECK(activeConns == 0);
 }
 

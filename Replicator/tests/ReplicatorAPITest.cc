@@ -407,9 +407,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
     c4slice_free(encodedDocIDs);
 
     c4repl_start(_repl, false);
-    while (c4repl_getStatus(_repl).level != kC4Stopped)
-           this_thread::sleep_for(chrono::milliseconds(100));
-
+    REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
     encodedDocIDs = c4repl_getPendingDocIDs(_repl, &err);
     CHECK(encodedDocIDs == nullslice);
 }
@@ -466,8 +464,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     CHECK(isPending == expectedIsPending);
 
     c4repl_start(_repl, false);
-    while (c4repl_getStatus(_repl).level != kC4Stopped)
-           this_thread::sleep_for(chrono::milliseconds(100));
+    REQUIRE_BEFORE(5s, c4repl_getStatus(_repl).level == kC4Stopped);
 
     isPending = c4repl_isDocumentPending(_repl, "0000005"_sl, ERROR_INFO(err));
     CHECK(!isPending);
@@ -586,8 +583,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop while connect timeout", "[C][Push][Pul
     C4Error err;
     importJSONLines(sFixturesDir + "names_100.json");
     REQUIRE(startReplicator(kC4Passive, kC4Continuous, WITH_ERROR(&err)));
-    this_thread::sleep_for(100ms);
-    CHECK(c4repl_getStatus(_repl).level == kC4Connecting);
+    CHECK_BEFORE(2s, c4repl_getStatus(_repl).level == kC4Connecting);
     
     c4repl_stop(_repl);
     
@@ -655,10 +651,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     }
 
     c4repl_start(repl, false);
-    do {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    } while(c4repl_getStatus(repl).level != kC4Stopped);
-
+    REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
+    
     REQUIRE(c4db_getLastSequence(db) == 50);
     CHECK(docIDs.empty());
     docIDs.clear();
@@ -676,10 +670,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     }
 
     c4repl_start(repl, false);
-    do {
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    } while(c4repl_getStatus(repl).level != kC4Stopped);
-    
+    REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
+
     REQUIRE(c4db_getLastSequence(db) == 100);
     REQUIRE(docIDs.size() == 50); 
     for(unsigned i = 0; i < 50; i++) {
