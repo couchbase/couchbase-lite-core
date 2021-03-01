@@ -34,10 +34,10 @@ namespace litecore {
     // we re-query after the short delay. Otherwise we use the long delay. This allows for very
     // low latency if changes are not too rapid, while also not flooding the app with notifications
     // if changes are rapid.
-    static constexpr delay_t kRapidChanges = chrono::milliseconds(250);
+    static constexpr delay_t kRapidChanges = 250ms;
 
     static constexpr delay_t kShortDelay   = chrono::milliseconds(  0);
-    static constexpr delay_t kLongDelay    = chrono::milliseconds(500);
+    static constexpr delay_t kLongDelay    = 500ms;
 
 
     LiveQuerier::LiveQuerier(c4Internal::Database *db,

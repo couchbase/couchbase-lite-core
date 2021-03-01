@@ -41,7 +41,7 @@ class ReplicatorLoopbackTest : public C4Test, Replicator::Delegate {
 public:
     using duration = std::chrono::nanoseconds;
 
-    static constexpr duration kLatency              = std::chrono::milliseconds(50);
+    static constexpr duration kLatency              = 50ms;
 
     slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
@@ -450,7 +450,7 @@ public:
     void addDocsInParallel(duration interval, int total) {
         _parallelThread.reset(runInParallel([=]() {
             _expectedDocumentCount = addDocs(db, interval, total);
-            sleepFor(std::chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            sleepFor(1s); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }));
     }
@@ -459,7 +459,7 @@ public:
                            bool useFakeRevIDs = true) {
         _parallelThread.reset( runInParallel([=]() {
             addRevs(db, interval, docID, firstRev, totalRevs, useFakeRevIDs);
-            sleepFor(std::chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            sleepFor(1s); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }));
     }

@@ -188,7 +188,7 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
         CHECK(out.str().empty());
     });
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1200));
+    std::this_thread::sleep_for(1200ms);
 
     string encoded;
     logger.withStream([&](ostream &s) {
@@ -225,7 +225,7 @@ TEST_CASE("Logging rollover", "[Log]") {
         if(i == 256) {
             // Otherwise the logging will happen to fast that
             // rollover won't have a chance to occur
-            this_thread::sleep_for(chrono::seconds(2));
+            this_thread::sleep_for(2s);
         }
     }
 

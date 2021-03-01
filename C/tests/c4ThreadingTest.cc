@@ -90,7 +90,7 @@ public:
             char docID[20];
             sprintf(docID, "doc-%05d", i);
             createRev(c4str(docID), kRevID, kFleeceBody);
-            //std::this_thread::sleep_for(std::chrono::microseconds(100));
+            //std::this_thread::sleep_for(100us);
         }
     }
 
@@ -166,7 +166,7 @@ public:
                 c4dbobs_releaseChanges(changes, nDocs);
             }
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(100ms);
         } while (lastSequence < kNumDocs);
         c4dbobs_free(observer);
         closeDB(database);

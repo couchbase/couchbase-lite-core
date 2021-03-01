@@ -233,7 +233,7 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync connection count", "[Listener][C]
         CHECK(activeConns <= connections);
         maxConnections = std::max(maxConnections, connections);
         maxActiveConns = std::max(maxActiveConns, activeConns);
-        this_thread::sleep_for(chrono::milliseconds(1));
+        this_thread::sleep_for(1ms);
     }
     CHECK(maxConnections == 1);
     CHECK(maxActiveConns == 1);

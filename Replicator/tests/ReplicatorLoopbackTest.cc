@@ -76,7 +76,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull
     Timer t2([&counter] {
         counter++;
     });
-    auto at = chrono::steady_clock::now() + chrono::milliseconds(500);
+    auto at = chrono::steady_clock::now() + 500ms;
     t1.fireAt(at);
     t2.fireAt(at);
 
@@ -593,7 +593,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][C
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][Continuous]") {
-    addDocsInParallel(chrono::milliseconds(1500), 6);
+    addDocsInParallel(1500ms, 6);
     runPushReplication(kC4Continuous);
 }
 
@@ -613,26 +613,26 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Emp
         C4Log("-------- Finished pre-existing push --------");
         createRev(db2, "other1"_sl, kRev1ID, kFleeceBody);
     }
-    addRevsInParallel(chrono::milliseconds(1000), alloc_slice("docko"), 1, 3);
+    addRevsInParallel(1000ms, alloc_slice("docko"), 1, 3);
     _expectedDocumentCount = 3; // only 1 doc, but we get notified about it 3 times...
     runReplicators(Replicator::Options::pushing(kC4Continuous), serverOpts);
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pull][Continuous]") {
-    addDocsInParallel(chrono::milliseconds(1500), 6);
+    addDocsInParallel(1500ms, 6);
     runPullReplication(kC4Continuous);
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push-Pull Starting Empty", "[Push][Pull][Continuous]") {
-    addDocsInParallel(chrono::milliseconds(1500), 100);
+    addDocsInParallel(1500ms, 100);
     runPushPullReplication(kC4Continuous);
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continuous]") {
-    addDocsInParallel(chrono::milliseconds(100), 5000);
+    addDocsInParallel(100ms, 5000);
     runPushReplication(kC4Continuous);
 
 	CHECK(c4db_getDocumentCount(db) == c4db_getDocumentCount(db2));
@@ -643,7 +643,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][C
     alloc_slice docID("dock");
     createRev(db, docID, kRev1ID, kFleeceBody);
     _expectedDocumentCount = -1;
-    addRevsInParallel(chrono::milliseconds(10), docID, 2, 200);
+    addRevsInParallel(10ms, docID, 2, 200);
     runPushReplication(kC4Continuous);
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":201}");
@@ -1320,14 +1320,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
     unique_ptr<thread> thread1( runInParallel([&]() {
         addRevs(db, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
         if (++completed == 2) {
-            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            sleepFor(1s); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }
     }));
     unique_ptr<thread> thread2( runInParallel([&]() {
         addRevs(db2, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
         if (++completed == 2) {
-            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            sleepFor(1s); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }
     }));
