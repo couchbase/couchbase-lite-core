@@ -38,6 +38,12 @@ namespace litecore {
     };
 
 
+    enum class ReadBy {
+        Key,
+        Sequence
+    };
+
+
     /** A container of key/value mappings. Keys and values are opaque blobs.
         The value is divided into 'meta' and 'body'; the body can optionally be omitted when
         reading, to save time/space. There is also a 'sequence' number that's assigned every time
@@ -72,16 +78,11 @@ namespace litecore {
 
         //////// Keys/values:
 
+        /** Reads the rest of a record whose key() or sequence() is already set. */
+        virtual bool read(Record &rec, ReadBy = ReadBy::Key, ContentOption = kEntireBody) const =0;
+
         Record get(slice key, ContentOption = kEntireBody) const;
-        virtual Record get(sequence_t, ContentOption = kEntireBody) const =0;
-
-        virtual void get(slice key, ContentOption, function_ref<void(const Record&)>);
-
-        /** Reads a record whose key() is already set. */
-        virtual bool read(Record &rec, ContentOption = kEntireBody) const =0;
-
-        /** Creates a database query object. */
-        virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
+        Record get(sequence_t, ContentOption = kEntireBody) const;
 
         using WithDocBodyCallback = function_ref<alloc_slice(const RecordUpdate&)>;
 
@@ -162,7 +163,10 @@ namespace litecore {
         virtual unsigned expireRecords(std::optional<ExpirationCallback> =std::nullopt) =0;
 
 
-        //////// Indexing:
+        //////// Queries & Indexing:
+
+        /** Creates a database query object. */
+        virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
 
         virtual bool supportsIndexes(IndexSpec::Type) const                   {return false;}
         virtual bool createIndex(const IndexSpec&) =0;

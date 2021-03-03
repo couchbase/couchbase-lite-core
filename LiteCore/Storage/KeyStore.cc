@@ -31,15 +31,16 @@ namespace litecore {
 
     Record KeyStore::get(slice key, ContentOption option) const {
         Record rec(key);
-        read(rec, option);
+        read(rec, ReadBy::Key, option);
         return rec;
     }
 
-    void KeyStore::get(slice key, ContentOption option, function_ref<void(const Record&)> fn) {
-        // Subclasses can implement this differently for better memory management.
-        Record rec(key);
-        read(rec, option);
-        fn(rec);
+    Record KeyStore::get(sequence_t seq, ContentOption option) const {
+        Record rec;
+        rec.updateSequence(seq);
+        if (!read(rec, ReadBy::Sequence, option))
+            /*rec.updateSequence(0)*/;
+        return rec;
     }
 
 #if ENABLE_DELETE_KEY_STORES

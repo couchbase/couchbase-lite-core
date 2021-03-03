@@ -209,6 +209,8 @@ namespace litecore {
         if (setSequence)
             rec.updateSequence((int64_t)stmt.getColumn(RecordColumn::Sequence));
 
+        // The subsequence is in the `flags` column, left-shifted so it doesn't interfere with the
+        // defined flag bits.
         int64_t rawFlags = stmt.getColumn(RecordColumn::RawFlags);
         rec.setFlags(DocumentFlags(rawFlags & 0xFFFF));
         rec.updateSubsequence(rawFlags >> 16);
@@ -227,51 +229,31 @@ namespace litecore {
     }
     
 
-    bool SQLiteKeyStore::read(Record &rec, ContentOption content) const {
+    bool SQLiteKeyStore::read(Record &rec, ReadBy by, ContentOption content) const {
         // Note: In this SELECT statement the result column order must match RecordColumn.
-        DebugAssert(rec.key());
-
         string sql;
         sql.reserve(100);
-        sql = "SELECT sequence, flags, null, version";
+        sql = (by == ReadBy::Key) ? "SELECT sequence, flags, null, version" : "SELECT null, flags, key, version";
         sql += (content >= kCurrentRevOnly) ? ", body" : ", length(body)";
         sql += (content >= kEntireBody) ? ", extra" : ", length(extra)";
-        sql += " FROM kv_@ WHERE key=?";
+        sql += " FROM kv_@ WHERE ";
+        sql += (by == ReadBy::Key) ? "key=?" : "sequence=?";
 
         lock_guard<mutex> lock(_stmtMutex);
         auto &stmt = compileCached(sql);
-        stmt.bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
+        if (by == ReadBy::Key) {
+            DebugAssert(rec.key());
+            stmt.bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
+        } else {
+            DebugAssert(rec.sequence());
+            stmt.bind(1, (long long)rec.sequence());
+        }
+
         UsingStatement u(stmt);
         if (!stmt.executeStep())
             return false;
-
-        setRecordMetaAndBody(rec, stmt, content, false, true);
+        setRecordMetaAndBody(rec, stmt, content, (by != ReadBy::Key), (by != ReadBy::Sequence));
         return true;
-    }
-
-
-    Record SQLiteKeyStore::get(sequence_t seq, ContentOption content) const {
-        // Note: In this SELECT statement the result column order must match RecordColumn.
-        DebugAssert(seq > 0);
-        DebugAssert(_capabilities.sequences);
-
-        string sql;
-        sql.reserve(100);
-        sql = "SELECT null, flags, key, version";
-        sql += (content >= kCurrentRevOnly) ? ", body" : ", length(body)";
-        sql += (content >= kEntireBody) ? ", extra" : ", length(extra)";
-        sql += " FROM kv_@ WHERE sequence=?";
-
-        lock_guard<mutex> lock(_stmtMutex);
-        auto &stmt = compileCached(sql);
-        Record rec;
-        UsingStatement u(stmt);
-        stmt.bind(1, (long long)seq);
-        if (stmt.executeStep()) {
-            rec.updateSequence(seq);
-            setRecordMetaAndBody(rec, stmt, content, true, false);
-        }
-        return rec;
     }
 
 

@@ -58,12 +58,10 @@ namespace litecore {
 
     bool RevTreeRecord::read(ContentOption content) {
         if (_rec.sequence() > 0) {
-            Record rec = _store.get(_rec.sequence(), content);
-            if (!rec.exists())
+            if (!_store.read(_rec, ReadBy::Sequence, content))
                 return false;
-            _rec = move(rec);
         } else {
-            _store.read(_rec, content);
+            _store.read(_rec, ReadBy::Key, content);
         }
         decode();
         return true;

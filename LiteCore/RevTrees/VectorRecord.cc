@@ -122,6 +122,7 @@ namespace litecore {
             readRecordExtra(rec.extra());
         } else {
             // ‘"Untitled" empty state. Create an empty local properties dict:
+            _sequence = 0;
             _whichContent = kEntireBody;
             (void)mutableProperties();
         }
