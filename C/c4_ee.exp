@@ -364,7 +364,6 @@ _c4db_setCookie
 _c4db_getDoc
 
 _c4doc_removeRevisionBody
-_c4doc_getForPut
 _c4doc_bodyAsJSON
 _c4doc_hasOldMetaProperties
 _c4doc_containingValue

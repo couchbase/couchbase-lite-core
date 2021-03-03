@@ -24,6 +24,7 @@
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
+#include "c4.hh"
 
 #include "TreeDocument.hh"
 #include "VectorDocument.hh"
@@ -399,54 +400,38 @@ static pair<Document*,int> putNewDoc(C4Database *database,
 }
 
 
-// Finds a document for a Put of a _new_ revision, and selects the existing parent revision.
-// After this succeeds, you can call c4doc_insertRevision and then c4doc_save.
-C4Document* c4doc_getForPut(C4Database *database,
-                            C4Slice docID,
-                            C4Slice parentRevID,
-                            bool deleting,
-                            bool allowConflict,
-                            C4Error *outError) noexcept
+static bool checkNewRev(Document *idoc,
+                        slice parentRevID,
+                        C4RevisionFlags flags,
+                        bool allowConflict,
+                        C4Error *outError) noexcept
 {
-    if (!database->mustBeInTransaction(outError))
-        return nullptr;
-    try {
-        alloc_slice newDocID;
-        if (!docID.buf) {
-            newDocID = createDocUUID();
-            docID = newDocID;
+    int code = 0;
+
+    if (parentRevID) {
+        // Updating an existing revision; make sure it exists and is a leaf:
+        if (!idoc->exists())
+            code = kC4ErrorNotFound;
+        else if (!idoc->selectRevision(parentRevID, false))
+            code = allowConflict ? kC4ErrorNotFound : kC4ErrorConflict;
+        else if (!allowConflict && !(idoc->selectedRev.flags & kRevLeaf))
+            code = kC4ErrorConflict;
+    } else {
+        // No parent revision given:
+        if (flags & kRevDeleted) {
+            // Didn't specify a revision to delete: NotFound or a Conflict, depending
+            code = ((idoc->flags & kDocExists) ?kC4ErrorConflict :kC4ErrorNotFound);
+        } else if ((idoc->flags & kDocExists) && !(idoc->selectedRev.flags & kDocDeleted)) {
+            // If doc exists, current rev must be a deletion or there will be a conflict:
+            code = kC4ErrorConflict;
         }
+    }
 
-        Retained<Document> idoc = database->documentFactory().newDocumentInstance(docID,
-                                                                                  kEntireBody);
-        int code = 0;
-
-        if (parentRevID.buf) {
-            // Updating an existing revision; make sure it exists and is a leaf:
-            if (!idoc->exists())
-                code = kC4ErrorNotFound;
-            else if (!idoc->selectRevision(parentRevID, false))
-                code = allowConflict ? kC4ErrorNotFound : kC4ErrorConflict;
-            else if (!allowConflict && !(idoc->selectedRev.flags & kRevLeaf))
-                code = kC4ErrorConflict;
-        } else {
-            // No parent revision given:
-            if (deleting) {
-                // Didn't specify a revision to delete: NotFound or a Conflict, depending
-                code = ((idoc->flags & kDocExists) ?kC4ErrorConflict :kC4ErrorNotFound);
-            } else if ((idoc->flags & kDocExists) && !(idoc->selectedRev.flags & kDocDeleted)) {
-                // If doc exists, current rev must be a deletion or there will be a conflict:
-                code = kC4ErrorConflict;
-            }
-        }
-
-        if (code)
-            c4error_return(LiteCoreDomain, code, {}, outError);
-        else
-            return retain(move(idoc));
-
-    } catchError(outError)
-    return nullptr;
+    if (code) {
+        c4error_return(LiteCoreDomain, code, {}, outError);
+        return false;
+    }
+    return true;
 }
 
 
@@ -479,7 +464,7 @@ C4Document* c4doc_put(C4Database *database,
     }
 
     int commonAncestorIndex = 0;
-    C4Document *doc = nullptr;
+    c4::ref<C4Document> doc;
     try {
         if (rq->save && isNewDocPutRequest(database, rq)) {
             // As an optimization, write the doc assuming there is no prior record in the db:
@@ -493,25 +478,25 @@ C4Document* c4doc_put(C4Database *database,
                 if (!doc)
                     return nullptr;
                 commonAncestorIndex = asInternal(doc)->putExistingRevision(*rq, outError);
-                if (commonAncestorIndex < 0) {
-                    c4doc_release(doc);
+                if (commonAncestorIndex < 0)
                     return nullptr;
-                }
 
             } else {
                 // Create new revision:
-                C4Slice parentRevID = kC4SliceNull;
-                if (rq->historyCount == 1)
+                slice docID = rq->docID;
+                alloc_slice newDocID;
+                if (!docID)
+                    docID = newDocID = createDocUUID();
+
+                slice parentRevID;
+                if (rq->historyCount > 0)
                     parentRevID = rq->history[0];
-                bool deletion = (rq->revFlags & kRevDeleted) != 0;
-                doc = c4doc_getForPut(database, rq->docID, parentRevID, deletion, rq->allowConflict,
-                                      outError);
-                if (!doc)
+
+                doc = c4db_getDoc(database, docID, false, kDocGetAll, outError);
+                if (!doc || !checkNewRev(asInternal(doc), parentRevID,
+                                         rq->revFlags, rq->allowConflict, outError)
+                         || !asInternal(doc)->putNewRevision(*rq, outError))
                     return nullptr;
-                if (!asInternal(doc)->putNewRevision(*rq, outError)) {
-                    c4doc_release(doc);
-                    return nullptr;
-                }
                 commonAncestorIndex = 0;
             }
         }
@@ -519,10 +504,9 @@ C4Document* c4doc_put(C4Database *database,
         Assert(commonAncestorIndex >= 0, "Unexpected conflict in c4doc_put");
         if (outCommonAncestorIndex)
             *outCommonAncestorIndex = commonAncestorIndex;
-        return doc;
+        return move(doc).detach();
 
     } catchError(outError) {
-        c4doc_release(doc);
         return nullptr;
     }
 }
@@ -548,50 +532,46 @@ C4Document* c4doc_update(C4Document *doc,
                          C4RevisionFlags revFlags,
                          C4Error *outError) noexcept
 {
-#if 1
-    // Disable the optimized path, because it overwrites the doc in the db using the sequence
-    // as MVCC. Unfortunately, the kSynced flag and the remote-rev properties are updated by the
-    // push replicator without changing the sequence, so they can be overwritten that way. (#478)
-    // Instead, for 2.0.0 we're going back to the safe path of read-modify-write used by c4doc_put.
-    C4String history[1] = {doc->selectedRev.revID};
-    C4DocPutRequest rq = {};
-    rq.body = revBody;
-    rq.docID = doc->docID;
-    rq.revFlags = revFlags;
-    rq.allowConflict = false;
-    rq.history = history;
-    rq.historyCount = 1;
-    rq.save = true;
-
-    auto savedDoc = c4doc_put(external(asInternal(doc)->database()), &rq, nullptr, outError);
-    if (!savedDoc) {
-        if (outError && outError->domain == LiteCoreDomain && outError->code == kC4ErrorNotFound)
-            outError->code = kC4ErrorConflict;  // This is what the logic below returns
-    }
-    return savedDoc;
-#else
-    auto idoc = asInternal(doc);
-    if (!idoc->mustBeInTransaction(outError))
-        return nullptr;
     try {
+        auto idoc = asInternal(doc);
+        if (!idoc->mustBeInTransaction(outError))
+            return nullptr;
         idoc->database()->validateRevisionBody(revBody);
 
-        // Why copy the document? Because if we modified it in place it would be too awkward to
-        // back out the changes if the save failed. Likewise, the caller may need to be able to
-        // back out this entire call if the transaction fails to commit, so having the original
-        // doc around helps it.
-        unique_ptr<Document> newDoc(idoc->copy());
+        alloc_slice parentRev = doc->selectedRev.revID;
         C4DocPutRequest rq = {};
+        rq.docID = doc->docID;
         rq.body = revBody;
         rq.revFlags = revFlags;
-        rq.allowConflict = true;
+        rq.allowConflict = false;
+        rq.history = (C4String*)&parentRev;
+        rq.historyCount = 1;
         rq.save = true;
-        if (newDoc->putNewRevision(rq))
-            return newDoc.release();
-        c4error_return(LiteCoreDomain, kC4ErrorConflict, C4STR("C4Document is out of date"), outError);
+
+        // First the fast path: try to save directly via putNewRevision:
+        if (idoc->loadRevisions()) {
+            C4Error myErr;
+            if (checkNewRev(idoc, parentRev, revFlags, false, &myErr)
+                    && idoc->putNewRevision(rq, &myErr)) {
+                // Fast path succeeded!
+                return retain(idoc);
+            } else if (myErr != C4Error{LiteCoreDomain, kC4ErrorConflict}) {
+                // Something other than a conflict happened, so give up:
+                if (outError) *outError = myErr;
+                return nullptr;
+            }
+            // on conflict, fall through...
+        }
+
+        // MVCC prevented us from writing directly to the document. So instead, read-modify-write:
+        C4Document *savedDoc = c4doc_put(external(idoc->database()), &rq, nullptr, outError);
+        if (savedDoc)
+            return savedDoc;
+
+        if (outError && *outError == C4Error{LiteCoreDomain, kC4ErrorNotFound})
+            outError->code = kC4ErrorConflict;  // It's a conflict if the doc's been purged
     } catchError(outError)
     return nullptr;
-#endif
 }
 
 
@@ -609,7 +589,10 @@ int32_t c4doc_purgeRevision(C4Document *doc,
     if (!idoc->mustBeInTransaction(outError))
         return -1;
     try {
-        idoc->loadRevisions();
+        if (!idoc->loadRevisions()) {
+            c4error_return(LiteCoreDomain, kC4ErrorConflict, C4STR("C4Document is out of date"), outError);
+            return -1;
+        }
         return idoc->purgeRevision(revID);
     } catchError(outError)
     return -1;

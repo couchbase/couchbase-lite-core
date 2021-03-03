@@ -325,7 +325,6 @@ CBL {
 		c4db_getDoc;
 
 		c4doc_removeRevisionBody;
-		c4doc_getForPut;
 		c4doc_bodyAsJSON;
 		c4doc_hasOldMetaProperties;
 		c4doc_containingValue;

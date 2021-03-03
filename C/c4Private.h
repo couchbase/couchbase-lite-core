@@ -58,15 +58,6 @@ void c4db_unlock(C4Database *db) C4API;
     and each result is an array of columns. */
 C4SliceResult c4db_rawQuery(C4Database *database, C4String query, C4Error* C4NULLABLE outError) C4API;
 
-/** Subroutine of c4doc_put that reads the current revision of the document.
-    Only exposed for testing; see the unit test "Document GetForPut". */
-C4Document* c4doc_getForPut(C4Database *database,
-                            C4Slice docID,
-                            C4Slice parentRevID,
-                            bool deleting,
-                            bool allowConflict,
-                            C4Error* C4NULLABLE outError) C4API;
-
 /** Converts C4DocumentFlags to the equivalent C4RevisionFlags. */
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) C4API;
 

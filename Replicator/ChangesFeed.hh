@@ -14,6 +14,10 @@
 
 struct C4DocumentInfo;
 
+namespace fleece {
+    class Array;
+}
+
 namespace litecore::repl {
     class DBAccess;
     struct Options;

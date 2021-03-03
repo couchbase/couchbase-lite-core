@@ -23,7 +23,6 @@
 #endif
 
 #include "fleece/slice.hh"
-#include "fleece/Fleece.hh"
 #include "c4Base.h"
 #include <assert.h>
 #include <utility>
@@ -93,6 +92,8 @@ namespace c4 {
         ref& operator=(std::nullptr_t) noexcept { replaceRef(nullptr); return *this; }
         ref& operator=(ref &&r) noexcept        { std::swap(_obj, r._obj); return *this;}
         ref& operator=(const ref &r) noexcept   { replaceRef(retainRef(r._obj)); return *this;}
+
+        T* detach() && noexcept                 {auto o = _obj; _obj = nullptr; return o;}
 
         // This operator is dangerous enough that it's prohibited.
         // For details, see the lengthy comment in RefCounted.hh, around line 153.
