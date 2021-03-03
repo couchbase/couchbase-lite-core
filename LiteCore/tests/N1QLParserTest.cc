@@ -122,6 +122,8 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("SELECT DISTINCT custId FROM orders where test_id = 'agg_func' ORDER BY custId") ==
           "{'DISTINCT':true,'FROM':[{'AS':'orders'}],'ORDER_BY':[['.custId']],"
           "'WHAT':[['.custId']],'WHERE':['=',['.test_id'],'agg_func']}");
+
+    ExpectingExceptions x;
     CHECK_THROWS_WITH(translate("SELECT custId, other.custId FROM orders JOIN orders other "
                                 "ON orders.test_id = other.test_id ORDER BY custId"),
                       "property 'custId.' does not begin with a declared 'AS' alias");
