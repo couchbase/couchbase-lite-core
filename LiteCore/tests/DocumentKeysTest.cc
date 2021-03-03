@@ -42,7 +42,7 @@ public:
     }
 
     void createDoc(const char *docID, const char *json, Transaction &t) {
-        store->set(slice(docID), convertJSON(json), t);
+        DataFileTestFixture::createDoc(slice(docID), convertJSON(json), t);
     }
 
 };

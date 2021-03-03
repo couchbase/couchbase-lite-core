@@ -35,7 +35,7 @@ namespace litecore {
     RevTreeRecord::RevTreeRecord(KeyStore& store, slice docID, ContentOption content)
     :_store(store), _rec(docID)
     {
-        read(content);
+        (void)read(content);
     }
 
     RevTreeRecord::RevTreeRecord(KeyStore& store, const Record& rec)
@@ -56,9 +56,17 @@ namespace litecore {
         _fleeceScopes.clear(); // do this before the memory is freed (by _rec)
     }
 
-    void RevTreeRecord::read(ContentOption content) {
-        _store.read(_rec, content);
+    bool RevTreeRecord::read(ContentOption content) {
+        if (_rec.sequence() > 0) {
+            Record rec = _store.get(_rec.sequence(), content);
+            if (!rec.exists())
+                return false;
+            _rec = move(rec);
+        } else {
+            _store.read(_rec, content);
+        }
         decode();
+        return true;
     }
 
     void RevTreeRecord::decode() {
@@ -85,24 +93,9 @@ namespace litecore {
                     if (!_rec.extra())
                         _changed = true;
                     break;
-                case kCurrentRevOnly: {
-#if 1
-                    _unknown = true;
-#else
-                    // Only the current revision body is loaded, not the tree. Create a fake Rev:
-                    Rev::Flags flags = {};
-                    int status;
-                    insert(revid(_rec.version()),
-                           _rec.body(),
-                           flags,
-                           revid(),
-                           false, false, status);
-                    Assert(status == 200);
-#endif
-                    break;
-                }
+                case kCurrentRevOnly:
                 case kMetaOnly:
-                    _unknown = true;        // i.e. rec was read as meta-only
+                    _unknown = true;
                     break;
             }
         } else {
@@ -209,40 +202,39 @@ namespace litecore {
         if (!_changed)
             return kNoNewSequence;
         updateMeta();
-        sequence_t seq = _rec.sequence();
+        sequence_t sequence = _rec.sequence();
         bool createSequence;
         if (auto cur = currentRevision(); cur) {
-            createSequence = (seq == 0 || hasNewRevisions());
+            createSequence = (sequence == 0 || hasNewRevisions());
             removeNonLeafBodies();
             slice newBody;
             alloc_slice newExtra;
             std::tie(newBody, newExtra) = encode();
 
-            RecordLite newRec;
-            newRec.key = _rec.key();
-            newRec.version = _rec.version();
-            newRec.flags = _rec.flags();
-            newRec.sequence = seq;
-            newRec.updateSequence = createSequence;
+            RecordUpdate newRec(_rec);
             newRec.body = newBody;
             newRec.extra = newExtra;
 
-            seq = _store.set(newRec, transaction);
-            if (!seq)
+            sequence = _store.set(newRec, createSequence, transaction);
+            if (!sequence)
                 return kConflict;               // Conflict
 
-            _rec.updateSequence(seq);
+            if (createSequence)
+                _rec.updateSequence(sequence);
+            else
+                _rec.updateSubsequence();
             _rec.setExists();
+            
             // (Don't update _rec body or extra, because it'd invalidate all the inner pointers from
             // Rev objects into the existing body/extra buffer.)
             LogToAt(DBLog, Verbose, "Saved doc '%.*s' #%s; body=%zu, extra=%zu",
                   SPLAT(newRec.key), revid(newRec.version).str().c_str(),
                   newRec.body.size, newRec.extra.size);
             if (createSequence)
-                saved(seq);
+                saved(sequence);
         } else {
             createSequence = false;
-            if (seq && !_store.del(_rec.key(), transaction, seq))
+            if (sequence && !_store.del(_rec.key(), transaction, sequence))
                 return kConflict;
         }
         _changed = false;

@@ -49,7 +49,6 @@ namespace litecore {
 
         virtual bool read(Record &rec) override {
             rec.updateSequence((int64_t)_stmt->getColumn(0));
-            rec.setFlags((DocumentFlags)(int)_stmt->getColumn(1));
             rec.setKey(SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)));
             rec.setExpiration(_stmt->getColumn(6));
             SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt, _content);

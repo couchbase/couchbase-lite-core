@@ -52,7 +52,8 @@ namespace litecore {
         Record get(sequence_t, ContentOption) const override;
         bool read(Record &rec, ContentOption) const override;
 
-        sequence_t set(const RecordLite&, Transaction&) override;
+        sequence_t set(const RecordUpdate&, bool updateSequence, Transaction&) override;
+        void setKV(slice key, slice version, slice value, Transaction&) override;
 
         bool del(slice key, Transaction&, sequence_t s) override;
 

@@ -40,7 +40,15 @@ public:
 
     vector<string> _stringsInDB;
 
-    FTSTest() {
+    static DataFile::Options* dbOptions() {
+        static DataFile::Options sOptions = DataFile::Options::defaults;
+        sOptions.keyStores.sequences = false;   // make it easier to overwrite docs in this test
+        return &sOptions;
+    }
+
+    FTSTest()
+    :DataFileTestFixture(0, dbOptions())
+    {
         Transaction t(store->dataFile());
         for (int i = 0; i < sizeof(kStrings)/sizeof(kStrings[0]); i++)
             createDoc(t, i, kStrings[i]);
@@ -57,7 +65,7 @@ public:
         enc.endDictionary();
         alloc_slice body = enc.finish();
 
-        store->set(slice(docID), body, t);
+        store->setKV(docID, body, t);
 
         if (_stringsInDB.size() <= i)
             _stringsInDB.resize(i + 1);

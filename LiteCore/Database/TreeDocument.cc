@@ -101,12 +101,15 @@ namespace c4Internal {
 
         // This method can throw exceptions, so should not be called from 'noexcept' overrides!
         // Such methods should call requireRevisions instead.
-        void loadRevisions() override {
+        bool loadRevisions() override {
             if (!_revTree.revsAvailable()) {
                 LogTo(DBLog, "Need to read rev-tree of doc '%.*s'", SPLAT(docID));
-                _revTree.read(kEntireBody);
-                selectRevision(_revTree.currentRevision());
+                alloc_slice curRev = selectedRev.revID;
+                if (!_revTree.read(kEntireBody))
+                    return false;
+                selectRevision(curRev, true);
             }
+            return true;
         }
 
         bool hasRevisionBody() noexcept override {
@@ -220,7 +223,8 @@ namespace c4Internal {
 
         bool selectRevision(C4Slice revID, bool withBody) override {
             if (revID.buf) {
-                loadRevisions();
+                if (!loadRevisions())
+                    return false;
                 const Rev *rev = _revTree[revidBuffer(revID)];
                 if (!selectRevision(rev))
                     return false;
@@ -577,12 +581,12 @@ namespace c4Internal {
             C4ErrorCode errorCode = {};
             int httpStatus;
             auto newRev = _revTree.insert(encodedNewRevID,
-                                               body,
-                                               (Rev::Flags)rq.revFlags,
-                                               _selectedRev,
-                                               rq.allowConflict,
-                                               false,
-                                               httpStatus);
+                                          body,
+                                          (Rev::Flags)rq.revFlags,
+                                          _selectedRev,
+                                          rq.allowConflict,
+                                          false,
+                                          httpStatus);
             if (newRev) {
                 if (!saveNewRev(rq, newRev))
                     errorCode = kC4ErrorConflict;
@@ -679,7 +683,7 @@ namespace c4Internal {
             revMap[docIDs[i]] = revIDs[i];
         stringstream result;
 
-        auto callback = [&](const RecordLite &rec) -> alloc_slice {
+        auto callback = [&](const RecordUpdate &rec) -> alloc_slice {
             // --- This callback runs inside the SQLite query ---
             // --- It will be called once for each docID in the vector ---
             // Convert revID to encoded binary form:

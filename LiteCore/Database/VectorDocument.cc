@@ -265,6 +265,16 @@ namespace c4Internal {
         }
 
 
+        bool loadRevisions() override {
+            return _doc.contentAvailable() >= kEntireBody || _doc.loadData(kEntireBody);
+        }
+
+
+        bool revisionsLoaded() const noexcept override {
+            return _doc.contentAvailable() >= kEntireBody;
+        }
+
+
         bool hasRevisionBody() noexcept override {
             return _doc.exists() && _remoteID;
         }
@@ -446,6 +456,15 @@ namespace c4Internal {
         }
 
 
+        bool _saveNewRev(const C4DocPutRequest &rq, const Revision &newRev, C4Error *outError) {
+            if (rq.save && !save()) {
+                c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
+                return false;
+            }
+            return true;
+        }
+
+
         void resolveConflict(C4String winningRevID,
                              C4String losingRevID,
                              C4Slice mergedBody,
@@ -495,15 +514,6 @@ namespace c4Internal {
                   string(localVersion.asASCII()).c_str(),
                   string(remoteVersion.asASCII()).c_str(),
                   string(mergedVersion.asASCII()).c_str() );
-        }
-
-
-        bool _saveNewRev(const C4DocPutRequest &rq, const Revision &newRev, C4Error *outError) {
-            if (rq.save && !save()) {
-                c4error_return(LiteCoreDomain, kC4ErrorConflict, nullslice, outError);
-                return false;
-            }
-            return true;
         }
 
 
@@ -586,7 +596,7 @@ namespace c4Internal {
             return localVec.compareTo(requestedVec);
         };
 
-        auto callback = [&](const RecordLite &rec) -> alloc_slice {
+        auto callback = [&](const RecordUpdate &rec) -> alloc_slice {
             // --- This callback runs inside the SQLite query ---
             // --- It will be called once for each existing requested docID, in arbitrary order ---
 

@@ -29,9 +29,6 @@ using namespace std;
 
 namespace litecore {
 
-    const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false};
-
-
     Record KeyStore::get(slice key, ContentOption option) const {
         Record rec(key);
         read(rec, option);
@@ -51,19 +48,21 @@ namespace litecore {
     }
 #endif
 
-    sequence_t KeyStore::set(Record &rec,
-                             Transaction &t,
-                             optional<sequence_t> replacingSequence,
-                             bool newSequence)
-    {
-        RecordLite r = {rec.key(), rec.version(), rec.body(), nullslice,
-                          replacingSequence, newSequence, rec.flags()};
-        auto seq = set(r, t);
-        if (seq > 0) {
+    void KeyStore::set(Record &rec, bool updateSequence, Transaction &t) {
+        if (auto seq = set(RecordUpdate(rec), updateSequence, t); seq > 0) {
             rec.setExists();
-            rec.updateSequence(seq);
+            if (updateSequence)
+                rec.updateSequence(seq);
+            else
+                rec.updateSubsequence();
+        } else {
+            error::_throw(error::Conflict);
         }
-        return seq;
+    }
+
+    void KeyStore::setKV(Record& rec, Transaction &t) {
+        setKV(rec.key(), rec.version(), rec.body(), t);
+        rec.setExists();
     }
 
     bool KeyStore::createIndex(slice name,

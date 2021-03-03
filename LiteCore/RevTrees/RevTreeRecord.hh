@@ -41,8 +41,9 @@ namespace litecore {
         RevTreeRecord(const RevTreeRecord&);
         ~RevTreeRecord();
 
-        /** Reads and parses the body of the record. Useful if doc was read as meta-only. */
-        void read(ContentOption);
+        /** Reads and parses the body of the record. Useful if doc was read as meta-only.
+            Returns false if the record has been updated on disk. */
+        bool read(ContentOption) MUST_USE_RESULT;
 
         /** Returns false if the record was loaded metadata-only. Revision accessors will fail. */
         bool revsAvailable() const          {return _contentLoaded == kEntireBody;}

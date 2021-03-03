@@ -140,7 +140,7 @@ protected:
             Record doc = store->get(docID);
             CHECK(doc.exists());
             doc.setFlag(DocumentFlags::kDeleted);
-            store->set(doc, t);
+            store->set(doc, true, t);
         }
         t.commit();
     }
@@ -150,7 +150,7 @@ protected:
         Record doc = store->get(docID);
         CHECK(doc.exists());
         doc.clearFlag(DocumentFlags::kDeleted);
-        store->set(doc, t);
+        store->set(doc, true, t);
         t.commit();
     }
 

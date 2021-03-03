@@ -290,11 +290,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
 #endif
 
     // Delete one of the docs in the query -- this does trigger a refresh:
-    {
-        Transaction t(db);
-        store->set("rec-030"_sl, "2-ffff"_sl, nullslice, DocumentFlags::kDeleted, t);
-        t.commit();
-    }
+    deleteDoc("rec-030"_sl, false);
 
     Retained<QueryEnumerator> e2(e->refresh(query));
     REQUIRE(e2 != nullptr);

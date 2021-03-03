@@ -214,7 +214,7 @@ namespace litecore {
         using ForAllRevIDsCallback = function_ref<void(RemoteID,revid,bool hasBody)>;
 
         /// Given only a record, find all the revision IDs and pass them to the callback.
-        static void forAllRevIDs(const RecordLite&, const ForAllRevIDsCallback&);
+        static void forAllRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
 
         //---- For testing:
 
@@ -250,7 +250,8 @@ namespace litecore {
         KeyStore&                    _store;                // The database KeyStore
         FLEncoder                    _encoder {nullptr};    // Database shared Fleece Encoder
         alloc_slice                  _docID;                // The docID
-        sequence_t                   _sequence;             // The sequence
+        sequence_t                   _sequence;             // The Record's sequence
+        sequence_t                   _subsequence;          // The Record's subsequence
         DocumentFlags                _docFlags;             // Document-level flags
         alloc_slice                  _revID;                // Current revision ID backing store
         Revision                     _current;              // Current revision

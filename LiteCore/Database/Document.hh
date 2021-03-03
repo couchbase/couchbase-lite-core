@@ -68,8 +68,8 @@ namespace c4Internal {
         const Database* database() const                                {return _db;}
 
         virtual bool exists() =0;
-        virtual void loadRevisions()                                    { }
-        virtual bool revisionsLoaded() const noexcept                   {return true;}
+        virtual bool loadRevisions() MUST_USE_RESULT =0;
+        virtual bool revisionsLoaded() const noexcept =0;
         virtual bool selectRevision(C4Slice revID, bool withBody) =0;   // returns false if not found
 
         static C4RevisionFlags currentRevFlagsFromDocFlags(C4DocumentFlags docFlags) {

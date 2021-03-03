@@ -135,16 +135,13 @@ namespace c4Internal {
         }
 
         // Now save:
-        RecordLite newRec;
-        newRec.key = revTree.docID();
-        newRec.flags = revTree.flags();
-        newRec.body = body;
+        RecordUpdate newRec(revTree.docID(), body, revTree.flags());
         newRec.extra = extra;
         newRec.version = binaryVersion;
         newRec.sequence = revTree.sequence();
-        newRec.updateSequence = false;
+        newRec.subsequence = revTree.record().subsequence();
         //TODO: Find conflicts and add them to newRec.extra
-        db->defaultKeyStore().set(newRec, t);
+        Assert(db->defaultKeyStore().set(newRec, false, t) > 0);
 
         LogToAt(DBLog, Verbose, "  - Upgraded doc '%.*s', %s -> [%s], %zu bytes body, %zu bytes extra",
                 SPLAT(rec.key()),

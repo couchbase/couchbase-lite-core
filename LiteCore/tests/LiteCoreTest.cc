@@ -225,6 +225,13 @@ DataFileTestFixture::~DataFileTestFixture() {
 }
 
 
+sequence_t DataFileTestFixture::createDoc(KeyStore &s, slice docID, slice body, Transaction &t) {
+    RecordUpdate rec(docID, body);
+    auto seq = s.set(rec, true, t);
+    CHECK(seq != 0);
+    return seq;
+}
+
 
 sequence_t DataFileTestFixture::writeDoc(slice docID,
                                          DocumentFlags flags,
@@ -236,7 +243,14 @@ sequence_t DataFileTestFixture::writeDoc(slice docID,
     writeProperties(enc);
     enc.endDictionary();
     alloc_slice body = enc.finish();
-    return store->set(docID, nullslice, body, flags, t);
+    
+    if (store->capabilities().sequences) {
+        RecordUpdate rec(docID, body, flags);
+        return store->set(rec, true, t);
+    } else {
+        store->setKV(docID, body, t);
+        return 0;
+    }
 }
 
 

@@ -32,17 +32,12 @@ namespace litecore {
     :_key(move(key))
     { }
 
-    void Record::clearMetaAndBody() noexcept {
-        _version = _body = _extra = nullslice;
-        _bodySize = _extraSize = _sequence = 0;
+    void Record::clear() noexcept {
+        _key = _version = _body = _extra = nullslice;
+        _bodySize = _extraSize = _sequence = _subsequence = 0;
         _flags = DocumentFlags::kNone;
         _contentLoaded = kMetaOnly;
         _exists = false;
-    }
-
-    void Record::clear() noexcept {
-        _key = nullslice;
-        clearMetaAndBody();
     }
 
     uint64_t Record::bodyAsUInt() const noexcept {
@@ -59,5 +54,20 @@ namespace litecore {
     }
 
 
+    RecordUpdate::RecordUpdate(slice key_, slice body_, DocumentFlags flags_)
+    :key(key_)
+    ,body(body_)
+    ,flags(flags_)
+    { }
+
+    
+    RecordUpdate::RecordUpdate(const Record &rec)
+    :RecordUpdate(rec.key(), rec.body(), rec.flags())
+    {
+        version = rec.version();
+        extra = rec.extra();
+        sequence = rec.sequence();
+        subsequence = rec.subsequence();
+    }
 
 }

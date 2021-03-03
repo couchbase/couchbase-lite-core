@@ -109,6 +109,7 @@ namespace litecore {
     :_store(store)
     ,_docID(rec.key())
     ,_sequence(rec.sequence())
+    ,_subsequence(rec.subsequence())
     ,_revID(rec.version())
     ,_docFlags(rec.flags())
     ,_whichContent(rec.contentLoaded())
@@ -486,15 +487,19 @@ namespace litecore {
         alloc_slice body, extra;
         tie(body, extra) = encodeBodyAndExtra();
 
-        auto seq = _sequence;
-        bool updateSequence = (seq == 0 || _revIDChanged);
+        bool updateSequence = (_sequence == 0 || _revIDChanged);
         Assert(revID);
-        RecordLite rec = {_docID, revID, body, extra, seq, updateSequence, _docFlags};
-        seq = _store.set(rec, transaction);
+        RecordUpdate rec(_docID, body, _docFlags);
+        rec.version = revID;
+        rec.extra = extra;
+        rec.sequence = _sequence;
+        rec.subsequence = _subsequence;
+        auto seq = _store.set(rec, updateSequence, transaction);
         if (seq == 0)
             return kConflict;
 
         _sequence = seq;
+        _subsequence = updateSequence ? 0 : _subsequence + 1;
         _changed = _revIDChanged = false;
 
         // Update Fleece Doc to newly saved data:
@@ -681,7 +686,7 @@ namespace litecore {
     }
 
 
-    /*static*/ void VectorRecord::forAllRevIDs(const RecordLite &rec,
+    /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate &rec,
                                                const ForAllRevIDsCallback &callback)
     {
         callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);

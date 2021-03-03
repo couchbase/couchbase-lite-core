@@ -196,7 +196,7 @@ namespace c4Internal {
     C4DocumentVersioning Database::checkDocumentVersioning() {
         //FIXME: This ought to be done _before_ the SQLite userVersion is updated
         // Compare existing versioning against runtime config:
-        auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
+        auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
         Record versDoc = info.get(slice("versioning"));
         auto curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
         auto newVersioning = _configV1.versioning;
@@ -225,7 +225,7 @@ namespace c4Internal {
 
         // Store new versioning:
         versDoc.setBodyAsUInt((uint64_t)newVersioning);
-        info.set(versDoc, t);
+        info.setKV(versDoc, t);
         t.commit();
         return newVersioning;
     }
@@ -393,7 +393,7 @@ namespace c4Internal {
 
     uint32_t Database::maxRevTreeDepth() {
         if (_maxRevTreeDepth == 0) {
-            auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
+            auto &info = getKeyStore(DataFile::kInfoKeyStoreName);
             _maxRevTreeDepth = (uint32_t)info.get(kMaxRevTreeDepthKey).bodyAsUInt();
             if (_maxRevTreeDepth == 0)
                 _maxRevTreeDepth = kDefaultMaxRevTreeDepth;
@@ -404,20 +404,26 @@ namespace c4Internal {
     void Database::setMaxRevTreeDepth(uint32_t depth) {
         if (depth == 0)
             depth = kDefaultMaxRevTreeDepth;
-        KeyStore &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
+        KeyStore &info = getKeyStore(DataFile::kInfoKeyStoreName);
         Record rec = info.get(kMaxRevTreeDepthKey);
         if (depth != rec.bodyAsUInt()) {
             rec.setBodyAsUInt(depth);
             Transaction t(*_dataFile);
-            info.set(rec, t);
+            info.setKV(rec, t);
             t.commit();
         }
         _maxRevTreeDepth = depth;
     }
 
 
-    KeyStore& Database::defaultKeyStore()                         {return _dataFile->defaultKeyStore();}
-    KeyStore& Database::getKeyStore(const string &nm) const       {return _dataFile->getKeyStore(nm);}
+    KeyStore& Database::defaultKeyStore() {
+        return _dataFile->defaultKeyStore();
+    }
+
+    
+    KeyStore& Database::getKeyStore(const string &nm) const {
+        return _dataFile->getKeyStore(nm, KeyStore::noSequences);
+    }
 
 
     BlobStore* Database::blobStore() const {
@@ -495,7 +501,7 @@ namespace c4Internal {
             auto &store = getKeyStore(toString(kC4InfoStore));
             slice uuidSlice{&uuid, sizeof(uuid)};
             GenerateUUID(uuidSlice);
-            store.set(key, uuidSlice, t);
+            store.setKV(key, uuidSlice, t);
         }
         return uuid;
     }
@@ -514,7 +520,9 @@ namespace c4Internal {
         TransactionHelper t(this);
         UUID previousPrivate = getUUID(kPrivateUUIDKey);
         auto &store = getKeyStore(toString(kC4InfoStore));
-        store.set(constants::kPreviousPrivateUUIDKey, {&previousPrivate, sizeof(UUID)}, transaction());
+        store.setKV(constants::kPreviousPrivateUUIDKey,
+                    {&previousPrivate, sizeof(UUID)},
+                    transaction());
         generateUUID(kPublicUUIDKey, t, true);
         generateUUID(kPrivateUUIDKey, t, true);
         t.commit();
@@ -638,7 +646,7 @@ namespace c4Internal {
         KeyStore &localDocs = getKeyStore(storeName);
         auto &t = transaction();
         if (body.buf || meta.buf)
-            localDocs.set(key, meta, body, DocumentFlags::kNone, t);
+            localDocs.setKV(key, meta, body, t);
         else
             localDocs.del(key, t);
     }

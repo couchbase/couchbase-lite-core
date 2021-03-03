@@ -245,7 +245,9 @@ namespace litecore {
     {
         rec.setExists();
         rec.setContentLoaded(content);
-        rec.setFlags((DocumentFlags)(int)stmt.getColumn(1));
+        int64_t rawFlags = stmt.getColumn(1);
+        rec.setFlags(DocumentFlags(rawFlags & 0xFFFF));
+        rec.updateSubsequence(rawFlags >> 16);
         rec.setVersion(columnAsSlice(stmt.getColumn(3)));
         if (content == kMetaOnly)
             rec.setUnloadedBodySize((ssize_t)stmt.getColumn(4));
@@ -325,19 +327,35 @@ namespace litecore {
     }
 
 
-    sequence_t SQLiteKeyStore::set(const RecordLite &rec, Transaction&) {
-        enum { VersionCol = 1, BodyCol, ExtraCol, FlagsCol, SequenceCol, KeyCol, OldSequenceCol };
+    void SQLiteKeyStore::setKV(slice key, slice version, slice value, Transaction &t) {
+        DebugAssert(key.size > 0);
+        DebugAssert(!_capabilities.sequences);
+        if (db().willLog(LogLevel::Verbose) && name() != "default")
+            db()._logVerbose("KeyStore(%-s) set '%.*s'", name().c_str(), SPLAT(key));
 
+        enum { KeyCol = 1, VersionCol, BodyCol };
+        compile(_setStmt,
+                "INSERT OR REPLACE INTO kv_@ (key, version, body) VALUES (?, ?, ?)");
+        UsingStatement u(*_setStmt);
+        _setStmt->bindNoCopy(KeyCol,     (const char*)key.buf, (int)key.size);
+        _setStmt->bindNoCopy(VersionCol, version.buf, (int)version.size);
+        _setStmt->bindNoCopy(BodyCol,    value.buf, (int)value.size);
+        _setStmt->exec();
+    }
+
+
+    sequence_t SQLiteKeyStore::set(const RecordUpdate &rec, bool updateSequence, Transaction&) {
+        DebugAssert(rec.key.size > 0);
+        DebugAssert(_capabilities.sequences);
+
+        // About subsequences: Rather than adding another column, we store the subsequence in the
+        // `flags` column, left-shifted so it doesn't interfere with the defined flag bits.
+
+        enum { VersionCol = 1, BodyCol, ExtraCol, FlagsCol, SequenceCol, KeyCol,
+               OldSequenceCol, OldSubsequenceCol };
         const char *opName;
         SQLite::Statement *stmt;
-        if (!rec.sequence) {
-            // Default:
-            compile(_setStmt,
-                    "INSERT OR REPLACE INTO kv_@ (version, body, extra, flags, sequence, key)"
-                    " VALUES (?, ?, ?, ?, ?, ?)");
-            stmt = _setStmt.get();
-            opName = "set";
-        } else if (*rec.sequence == 0) {
+        if (rec.sequence == 0) {
             // Insert only:
             compile(_insertStmt,
                     "INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key)"
@@ -346,42 +364,41 @@ namespace litecore {
             opName = "insert";
         } else {
             // Replace only:
-            Assert(_capabilities.sequences);
             compile(_replaceStmt,
                     "UPDATE kv_@ SET version=?, body=?, extra=?, flags=?, sequence=?"
-                    " WHERE key=? AND sequence=?");
+                    " WHERE key=? AND sequence=? AND (flags >> 16) = ?");
             stmt = _replaceStmt.get();
-            stmt->bind(OldSequenceCol, (long long)*rec.sequence);
+            stmt->bind(OldSequenceCol,    (long long)rec.sequence);
+            stmt->bind(OldSubsequenceCol, (long long)rec.subsequence);
             opName = "update";
         }
+
+        sequence_t seq = 0;
+        int64_t rawFlags = int(rec.flags);
+        if (updateSequence) {
+            seq = lastSequence() + 1;
+        } else {
+            Assert(rec.sequence > 0);
+            seq = rec.sequence;
+            // If we don't update the sequence, update the subsequence so MVCC can work:
+            rawFlags |= (rec.subsequence + 1) << 16;
+        }
+
         stmt->bindNoCopy(VersionCol, rec.version.buf, (int)rec.version.size);
         stmt->bindNoCopy(BodyCol,    rec.body.buf, (int)rec.body.size);
         stmt->bindNoCopy(ExtraCol,   rec.extra.buf, (int)rec.extra.size);
-        stmt->bind      (FlagsCol,   (int)rec.flags);
+        stmt->bind      (FlagsCol,   rawFlags);
         stmt->bindNoCopy(KeyCol,     (const char*)rec.key.buf, (int)rec.key.size);
-
-        sequence_t seq = 0;
-        if (_capabilities.sequences) {
-            if (rec.updateSequence) {
-                seq = lastSequence() + 1;
-            } else {
-                Assert(rec.sequence && *rec.sequence > 0);
-                seq = *rec.sequence;
-            }
-            stmt->bind(SequenceCol, (long long)seq);
-        } else {
-            stmt->bind(SequenceCol); // null
-            seq = 1;
-        }
+        stmt->bind      (SequenceCol,(long long)seq);
 
         if (db().willLog(LogLevel::Verbose) && name() != "default")
             db()._logVerbose("KeyStore(%-s) %s %.*s", name().c_str(), opName, SPLAT(rec.key));
 
         UsingStatement u(*stmt);
         if (stmt->exec() == 0)
-            return 0;               // condition wasn't met
+            return 0;               // condition wasn't met, i.e. conflict
 
-        if (_capabilities.sequences && rec.updateSequence)
+        if (updateSequence)
             setLastSequence(seq);
         return seq;
     }
@@ -411,7 +428,8 @@ namespace litecore {
     bool SQLiteKeyStore::setDocumentFlag(slice key, sequence_t seq, DocumentFlags flags,
                                          Transaction&)
     {
-        compile(_setFlagStmt, "UPDATE kv_@ SET flags=(flags | ?) WHERE key=? AND sequence=?");
+        // "flags + 0x10000" increments the subsequence stored in the upper bits, for MVCC.
+        compile(_setFlagStmt, "UPDATE kv_@ SET flags = ((flags + 0x10000) | ?) WHERE key=? AND sequence=?");
         UsingStatement u(*_setFlagStmt);
         _setFlagStmt->bind      (1, (unsigned)flags);
         _setFlagStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
