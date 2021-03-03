@@ -48,9 +48,9 @@ namespace litecore {
         }
 
         virtual bool read(Record &rec) override {
-            rec.updateSequence((int64_t)_stmt->getColumn(0));
-            rec.setKey(SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)));
-            rec.setExpiration(_stmt->getColumn(6));
+            rec.updateSequence((int64_t)_stmt->getColumn(RecordColumn::Sequence));
+            rec.setKey(SQLiteKeyStore::columnAsSlice(_stmt->getColumn(RecordColumn::Key)));
+            rec.setExpiration(_stmt->getColumn(RecordColumn::Expiration));
             SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt, _content);
             return true;
         }
@@ -74,6 +74,7 @@ namespace litecore {
                 createBlobsIndex();
         }
 
+        // Note: The result column order must match RecordColumn.
         stringstream sql;
         sql << "SELECT sequence, flags, key, version";
         sql << (options.contentOption >= kCurrentRevOnly ? ", body"  : ", length(body)");

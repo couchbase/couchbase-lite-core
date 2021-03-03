@@ -40,6 +40,15 @@ namespace litecore {
     class SQLiteDataFile;
     
 
+    namespace RecordColumn {
+        /// The order of result columns in a SELECT statement that returns a record.
+        /// SQLiteKeyStore::setRecordMetaAndBody assumes the statement adheres to this.
+        enum {
+            Sequence = 0, RawFlags, Key, Version, BodyOrSize, ExtraOrSize, Expiration
+        };
+    }
+
+
     /** SQLite implementation of KeyStore; corresponds to a SQL table. */
     class SQLiteKeyStore : public KeyStore, public QueryParser::delegate {
     public:
@@ -90,6 +99,7 @@ namespace litecore {
 
 
     protected:
+        virtual bool mayHaveExpiration() override;
         RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                   sequence_t since,
                                                   RecordEnumerator::Options) override;
@@ -105,10 +115,12 @@ namespace litecore {
         void reopen() override;
 
         static slice columnAsSlice(const SQLite::Column &col);
+
+        /// Updates a record's flags, version, body, extra from a statement whose column order
+        /// matches the RecordColumn enum.
         static void setRecordMetaAndBody(Record &rec,
                                          SQLite::Statement &stmt,
                                          ContentOption);
-        virtual bool mayHaveExpiration() override;
 
     private:
         friend class SQLiteDataFile;
