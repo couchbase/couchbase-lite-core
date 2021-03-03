@@ -142,6 +142,13 @@ namespace litecore {
     }
 
 
+    slice getColumnAsSlice(SQLite::Statement &stmt, int colIndex) {
+        auto col = stmt.getColumn(colIndex);
+        auto buf = col.getBlob();
+        return slice(buf, col.getBytes());
+    }
+
+
     SQLiteDataFile::Factory& SQLiteDataFile::sqliteFactory() {
         static SQLiteDataFile::Factory s;
         return s;
@@ -542,20 +549,25 @@ namespace litecore {
     }
 
 
-    SQLite::Statement& SQLiteDataFile::compile(const unique_ptr<SQLite::Statement>& ref,
-                                               const char *sql) const
-    {
+    unique_ptr<SQLite::Statement> SQLiteDataFile::compile(const char *sql) const {
         checkOpen();
-        if (ref == nullptr) {
-            try {
-                const_cast<unique_ptr<SQLite::Statement>&>(ref)
-                                            = make_unique<SQLite::Statement>(*_sqlDb, sql, true);
-            } catch (const SQLite::Exception &x) {
-                warn("SQLite error compiling statement \"%s\": %s", sql, x.what());
-                throw;
-            }
+        try {
+            LogTo(SQL, "Compiling SQL \"%s\"", sql);
+            return make_unique<SQLite::Statement>(*_sqlDb, sql, true);
+        } catch (const SQLite::Exception &x) {
+            warn("SQLite error compiling statement \"%s\": %s", sql, x.what());
+            throw;
         }
-        return *ref;
+    }
+
+
+    void SQLiteDataFile::compileCached(unique_ptr<SQLite::Statement>& ref,
+                                       const char *sql) const
+    {
+        if (ref == nullptr)
+            ref = compile(sql);
+        else
+            checkOpen();
     }
 
 
@@ -598,7 +610,7 @@ namespace litecore {
     
     sequence_t SQLiteDataFile::lastSequence(const string& keyStoreName) const {
         sequence_t seq = 0;
-        compile(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
+        compileCached(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
         UsingStatement u(_getLastSeqStmt);
         _getLastSeqStmt->bindNoCopy(1, keyStoreName);
         if (_getLastSeqStmt->executeStep())
@@ -607,7 +619,7 @@ namespace litecore {
     }
 
     void SQLiteDataFile::setLastSequence(SQLiteKeyStore &store, sequence_t seq) {
-        compile(_setLastSeqStmt,
+        compileCached(_setLastSeqStmt,
                 "INSERT INTO kvmeta (name, lastSeq) VALUES (?, ?) "
                 "ON CONFLICT (name) "
                 "DO UPDATE SET lastSeq = excluded.lastSeq");
@@ -621,7 +633,7 @@ namespace litecore {
     uint64_t SQLiteDataFile::purgeCount(const std::string& keyStoreName) const {
         uint64_t purgeCnt = 0;
         if (_schemaVersion >= SchemaVersion::WithPurgeCount) {
-            compile(_getPurgeCntStmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
+            compileCached(_getPurgeCntStmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
             UsingStatement u(_getPurgeCntStmt);
             _getPurgeCntStmt->bindNoCopy(1, keyStoreName);
             if(_getPurgeCntStmt->executeStep()) {
@@ -633,7 +645,7 @@ namespace litecore {
 
     void SQLiteDataFile::setPurgeCount(SQLiteKeyStore& store, uint64_t count) {
         Assert(_schemaVersion >= SchemaVersion::WithPurgeCount);
-        compile(_setPurgeCntStmt,
+        compileCached(_setPurgeCntStmt,
             "INSERT INTO kvmeta (name, purgeCnt) VALUES (?, ?) "
             "ON CONFLICT (name) "
             "DO UPDATE SET purgeCnt = excluded.purgeCnt");

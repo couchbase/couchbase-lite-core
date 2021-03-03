@@ -80,25 +80,7 @@ namespace litecore {
 
     void SQLiteKeyStore::close() {
         // If statements are left open, closing the database will fail with a "db busy" error...
-        _recCountStmt.reset();
-        _getByKeyStmt.reset();
-        _getCurByKeyStmt.reset();
-        _getMetaByKeyStmt.reset();
-        _getBySeqStmt.reset();
-        _getCurBySeqStmt.reset();
-        _getMetaBySeqStmt.reset();
-        _setStmt.reset();
-        _insertStmt.reset();
-        _replaceStmt.reset();
-        _delByKeyStmt.reset();
-        _delBySeqStmt.reset();
-        _delByBothStmt.reset();
-        _setFlagStmt.reset();
-        _setExpStmt.reset();
-        _getExpStmt.reset();
-        _nextExpStmt.reset();
-        _findExpStmt.reset();
-        _withDocBodiesStmt.reset();
+        _stmtCache.clear();
         KeyStore::close();
     }
 
@@ -118,39 +100,29 @@ namespace litecore {
     }
 
 
-    SQLite::Statement* SQLiteKeyStore::compile(const string &sql) const {
-        try {
-            return new SQLite::Statement(db(), sql, true);
-        } catch (const SQLite::Exception &x) {
-            db().warn("SQLite error compiling statement \"%s\": %s", sql.c_str(), x.what());
-            throw;
-        }
+    std::unique_ptr<SQLite::Statement> SQLiteKeyStore::compile(const char *sql) const {
+        return db().compile(sql);
     }
 
 
-    SQLite::Statement& SQLiteKeyStore::compile(const unique_ptr<SQLite::Statement>& ref,
-                                               const char *sqlTemplate) const
-    {
-        if (ref != nullptr) {
-            db().checkOpen();
-            return *ref;
+    SQLite::Statement& SQLiteKeyStore::compileCached(const string &sqlTemplate) const {
+        auto i = _stmtCache.find(sqlTemplate);
+        if (i == _stmtCache.end()) {
+            // Note: Substituting the store name for "@" in the SQL
+            auto stmt = db().compile(subst(sqlTemplate.c_str()).c_str());
+            i = _stmtCache.insert({sqlTemplate, move(stmt)}).first;
         } else {
-            return db().compile(ref, subst(sqlTemplate).c_str());
+            db().checkOpen();
         }
+        return *i->second;
     }
 
 
     uint64_t SQLiteKeyStore::recordCount() const {
-        if (!_recCountStmt) {
-            stringstream sql;
-            sql << "SELECT count(*) FROM kv_" << _name << " WHERE (flags & 1) != 1";
-            compile(_recCountStmt, sql.str().c_str());
-        }
-        UsingStatement u(_recCountStmt);
-        if (_recCountStmt->executeStep()) {
-            auto count = (int64_t)_recCountStmt->getColumn(0);
-            return count;
-        }
+        auto &stmt = compileCached("SELECT count(*) FROM kv_@ WHERE (flags & 1) != 1");
+        UsingStatement u(stmt);
+        if (stmt.executeStep())
+            return (int64_t)stmt.getColumn(0);
         return 0;
     }
 
@@ -223,101 +195,81 @@ namespace litecore {
     }
 
 
-    /*static*/ slice SQLiteKeyStore::columnAsSlice(const SQLite::Column &col) {
-        return slice(col.getBlob(), col.getBytes());
-    }
-
-    static slice textColumnAsSlice(const SQLite::Column &col) {
-        return slice(col.getText(nullptr), col.getBytes());
-    }
-
-
     // The columns in `stmt` must match RecordColumn.
     /*static*/ void SQLiteKeyStore::setRecordMetaAndBody(Record &rec,
                                                          SQLite::Statement &stmt,
-                                                         ContentOption content)
+                                                         ContentOption content,
+                                                         bool setKey,
+                                                         bool setSequence)
     {
         rec.setExists();
         rec.setContentLoaded(content);
+        if (setKey)
+            rec.setKey(getColumnAsSlice(stmt, RecordColumn::Key));
+        if (setSequence)
+            rec.updateSequence((int64_t)stmt.getColumn(RecordColumn::Sequence));
+
         int64_t rawFlags = stmt.getColumn(RecordColumn::RawFlags);
         rec.setFlags(DocumentFlags(rawFlags & 0xFFFF));
         rec.updateSubsequence(rawFlags >> 16);
-        rec.setVersion(columnAsSlice(stmt.getColumn(RecordColumn::Version)));
+
+        rec.setVersion(getColumnAsSlice(stmt, RecordColumn::Version));
+
         if (content == kMetaOnly)
             rec.setUnloadedBodySize((ssize_t)stmt.getColumn(RecordColumn::BodyOrSize));
         else
-            rec.setBody(columnAsSlice(stmt.getColumn(RecordColumn::BodyOrSize)));
+            rec.setBody(getColumnAsSlice(stmt, RecordColumn::BodyOrSize));
+
         if (content == kEntireBody)
-            rec.setExtra(columnAsSlice(stmt.getColumn(RecordColumn::ExtraOrSize)));
+            rec.setExtra(getColumnAsSlice(stmt, RecordColumn::ExtraOrSize));
         else
             rec.setUnloadedExtraSize((ssize_t)stmt.getColumn(RecordColumn::ExtraOrSize));
     }
     
 
     bool SQLiteKeyStore::read(Record &rec, ContentOption content) const {
-        // Note: In these SELECT statements the result column order must match RecordColumn.
-        SQLite::Statement *stmt;
-        switch (content) {
-            case kMetaOnly:
-                stmt = &compile(_getMetaByKeyStmt,
-                        "SELECT sequence, flags, null, version, length(body), length(extra) FROM kv_@ WHERE key=?");
-                break;
-            case kCurrentRevOnly:
-                stmt = &compile(_getCurByKeyStmt,
-                        "SELECT sequence, flags, null, version, body, length(extra) FROM kv_@ WHERE key=?");
-                break;
-            case kEntireBody:
-                stmt = &compile(_getByKeyStmt,
-                        "SELECT sequence, flags, null, version, body, extra FROM kv_@ WHERE key=?");
-                break;
-            default:
-                return false;
-        }
+        // Note: In this SELECT statement the result column order must match RecordColumn.
+        DebugAssert(rec.key());
 
-        {
-            lock_guard<mutex> lock(_stmtMutex);
-            stmt->bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
-            UsingStatement u(*stmt);
-            if (!stmt->executeStep()) {
-                return false;
-            }
+        string sql;
+        sql.reserve(100);
+        sql = "SELECT sequence, flags, null, version";
+        sql += (content >= kCurrentRevOnly) ? ", body" : ", length(body)";
+        sql += (content >= kEntireBody) ? ", extra" : ", length(extra)";
+        sql += " FROM kv_@ WHERE key=?";
 
-            sequence_t seq = (int64_t)stmt->getColumn(RecordColumn::Sequence);
-            rec.updateSequence(seq);
-            setRecordMetaAndBody(rec, *stmt, content);
-        }
+        lock_guard<mutex> lock(_stmtMutex);
+        auto &stmt = compileCached(sql);
+        stmt.bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
+        UsingStatement u(stmt);
+        if (!stmt.executeStep())
+            return false;
+
+        setRecordMetaAndBody(rec, stmt, content, false, true);
         return true;
     }
 
 
     Record SQLiteKeyStore::get(sequence_t seq, ContentOption content) const {
-        // Note: In these SELECT statements the result column order must match RecordColumn.
-        Assert(_capabilities.sequences);
-        Record rec;
-        SQLite::Statement *stmt;
-        switch (content) {
-            case kMetaOnly:
-                stmt = &compile(_getMetaBySeqStmt,
-                        "SELECT null, flags, key, version, length(body), length(extra) FROM kv_@ WHERE sequence=?");
-                break;
-            case kCurrentRevOnly:
-                stmt = &compile(_getCurBySeqStmt,
-                        "SELECT null, flags, key, version, body, length(extra) FROM kv_@ WHERE sequence=?");
-                break;
-            case kEntireBody:
-                stmt = &compile(_getBySeqStmt,
-                        "SELECT null, flags, key, version, body, extra FROM kv_@ WHERE sequence=?");
-                break;
-            default:
-                error::_throw(error::UnexpectedError);
-        }
+        // Note: In this SELECT statement the result column order must match RecordColumn.
+        DebugAssert(seq > 0);
+        DebugAssert(_capabilities.sequences);
 
-        UsingStatement u(*stmt);
-        stmt->bind(1, (long long)seq);
-        if (stmt->executeStep()) {
-            rec.setKey(columnAsSlice(stmt->getColumn(RecordColumn::Key)));
+        string sql;
+        sql.reserve(100);
+        sql = "SELECT null, flags, key, version";
+        sql += (content >= kCurrentRevOnly) ? ", body" : ", length(body)";
+        sql += (content >= kEntireBody) ? ", extra" : ", length(extra)";
+        sql += " FROM kv_@ WHERE sequence=?";
+
+        lock_guard<mutex> lock(_stmtMutex);
+        auto &stmt = compileCached(sql);
+        Record rec;
+        UsingStatement u(stmt);
+        stmt.bind(1, (long long)seq);
+        if (stmt.executeStep()) {
             rec.updateSequence(seq);
-            setRecordMetaAndBody(rec, *stmt, content);
+            setRecordMetaAndBody(rec, stmt, content, true, false);
         }
         return rec;
     }
@@ -330,13 +282,12 @@ namespace litecore {
             db()._logVerbose("KeyStore(%-s) set '%.*s'", name().c_str(), SPLAT(key));
 
         enum { KeyParam = 1, VersionParam, BodyParam };
-        compile(_setStmt,
-                "INSERT OR REPLACE INTO kv_@ (key, version, body) VALUES (?, ?, ?)");
-        UsingStatement u(*_setStmt);
-        _setStmt->bindNoCopy(KeyParam,     (const char*)key.buf, (int)key.size);
-        _setStmt->bindNoCopy(VersionParam, version.buf, (int)version.size);
-        _setStmt->bindNoCopy(BodyParam,    value.buf, (int)value.size);
-        _setStmt->exec();
+        auto &stmt = compileCached("INSERT OR REPLACE INTO kv_@ (key, version, body) VALUES (?, ?, ?)");
+        UsingStatement u(stmt);
+        stmt.bindNoCopy(KeyParam,     (const char*)key.buf, (int)key.size);
+        stmt.bindNoCopy(VersionParam, version.buf, (int)version.size);
+        stmt.bindNoCopy(BodyParam,    value.buf, (int)value.size);
+        stmt.exec();
     }
 
 
@@ -353,17 +304,15 @@ namespace litecore {
         SQLite::Statement *stmt;
         if (rec.sequence == 0) {
             // Insert only:
-            compile(_insertStmt,
+            stmt = &compileCached(
                     "INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key)"
                     " VALUES (?, ?, ?, ?, ?, ?)");
-            stmt = _insertStmt.get();
             opName = "insert";
         } else {
             // Replace only:
-            compile(_replaceStmt,
+            stmt = &compileCached(
                     "UPDATE kv_@ SET version=?, body=?, extra=?, flags=?, sequence=?"
                     " WHERE key=? AND sequence=? AND (flags >> 16) = ?");
-            stmt = _replaceStmt.get();
             stmt->bind(OldSequenceParam,    (long long)rec.sequence);
             stmt->bind(OldSubsequenceParam, (long long)rec.subsequence);
             opName = "update";
@@ -406,10 +355,10 @@ namespace litecore {
         db()._logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %" PRIu64,
                         _name.c_str(), SPLAT(key), seq);
         if (seq) {
-            stmt = &compile(_delByBothStmt, "DELETE FROM kv_@ WHERE key=? AND sequence=?");
+            stmt = &compileCached("DELETE FROM kv_@ WHERE key=? AND sequence=?");
             stmt->bind(2, (long long)seq);
         } else {
-            stmt = &compile(_delByKeyStmt, "DELETE FROM kv_@ WHERE key=?");
+            stmt = &compileCached("DELETE FROM kv_@ WHERE key=?");
         }
         stmt->bindNoCopy(1, (const char*)key.buf, (int)key.size);
         UsingStatement u(*stmt);
@@ -425,12 +374,13 @@ namespace litecore {
                                          Transaction&)
     {
         // "flags + 0x10000" increments the subsequence stored in the upper bits, for MVCC.
-        compile(_setFlagStmt, "UPDATE kv_@ SET flags = ((flags + 0x10000) | ?) WHERE key=? AND sequence=?");
-        UsingStatement u(*_setFlagStmt);
-        _setFlagStmt->bind      (1, (unsigned)flags);
-        _setFlagStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
-        _setFlagStmt->bind      (3, (long long)seq);
-        return _setFlagStmt->exec() > 0;
+        auto &stmt = compileCached(
+                    "UPDATE kv_@ SET flags = ((flags + 0x10000) | ?) WHERE key=? AND sequence=?");
+        UsingStatement u(stmt);
+        stmt.bind      (1, (unsigned)flags);
+        stmt.bindNoCopy(2, (const char*)key.buf, (int)key.size);
+        stmt.bind      (3, (long long)seq);
+        return stmt.exec() > 0;
     }
 
 
@@ -494,8 +444,8 @@ namespace litecore {
         alloc_slice empty(size_t(0));
         vector<alloc_slice> results(docIDs.size());
         while (stmt.executeStep()) {
-            slice docID = columnAsSlice(stmt.getColumn(0));
-            slice value = textColumnAsSlice(stmt.getColumn(1));
+            slice docID = getColumnAsSlice(stmt, 0);
+            slice value = getColumnAsSlice(stmt, 1);
             size_t i = docIndices[docID];
             //Log("    -- %zu: %.*s --> '%.*s'", i, SPLAT(docID), SPLAT(revs));
             if (value.size == 0 && value.buf != 0)
@@ -539,14 +489,14 @@ namespace litecore {
     bool SQLiteKeyStore::setExpiration(slice key, expiration_t expTime) {
         Assert(expTime >= 0, "Invalid (negative) expiration time");
         addExpiration();
-        compile(_setExpStmt, "UPDATE kv_@ SET expiration=? WHERE key=?");
-        UsingStatement u(*_setExpStmt);
+        auto &stmt = compileCached("UPDATE kv_@ SET expiration=? WHERE key=?");
+        UsingStatement u(stmt);
         if (expTime > 0)
-            _setExpStmt->bind(1, (long long)expTime);
+            stmt.bind(1, (long long)expTime);
         else
-            _setExpStmt->bind(1); // null
-        _setExpStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
-        bool ok = _setExpStmt->exec() > 0;
+            stmt.bind(1); // null
+        stmt.bindNoCopy(2, (const char*)key.buf, (int)key.size);
+        bool ok = stmt.exec() > 0;
         if (ok)
             db()._logVerbose("SQLiteKeyStore(%s) set expiration of '%.*s' to %" PRId64,
                             _name.c_str(), SPLAT(key), expTime);
@@ -557,23 +507,23 @@ namespace litecore {
     expiration_t SQLiteKeyStore::getExpiration(slice key) {
         if (!mayHaveExpiration())
             return 0;
-        compile(_getExpStmt, "SELECT expiration FROM kv_@ WHERE key=?");
-        UsingStatement u(*_getExpStmt);
-        _getExpStmt->bindNoCopy(1, (const char*)key.buf, (int)key.size);
-        if (!_getExpStmt->executeStep())
+        auto &stmt = compileCached("SELECT expiration FROM kv_@ WHERE key=?");
+        UsingStatement u(stmt);
+        stmt.bindNoCopy(1, (const char*)key.buf, (int)key.size);
+        if (!stmt.executeStep())
             return 0;
-        return _getExpStmt->getColumn(0);
+        return stmt.getColumn(0);
     }
 
 
     expiration_t SQLiteKeyStore::nextExpiration() {
         expiration_t next = 0;
         if (mayHaveExpiration()) {
-            compile(_nextExpStmt, "SELECT min(expiration) FROM kv_@");
-            UsingStatement u(*_nextExpStmt);
-            if (!_nextExpStmt->executeStep())
+            auto &stmt = compileCached("SELECT min(expiration) FROM kv_@");
+            UsingStatement u(stmt);
+            if (!stmt.executeStep())
                 return 0;
-            next = _nextExpStmt->getColumn(0);
+            next = stmt.getColumn(0);
         }
         db()._logVerbose("Next expiration time is %" PRId64, next);
         return next;
@@ -587,13 +537,13 @@ namespace litecore {
         unsigned expired = 0;
         bool none = false;
         if (callback) {
-            compile(_findExpStmt, "SELECT key FROM kv_@ WHERE expiration <= ?");
-            UsingStatement u(*_findExpStmt);
-            _findExpStmt->bind(1, (long long)t);
+            auto &stmt = compileCached("SELECT key FROM kv_@ WHERE expiration <= ?");
+            UsingStatement u(stmt);
+            stmt.bind(1, (long long)t);
             none = true;
-            while (_findExpStmt->executeStep()) {
+            while (stmt.executeStep()) {
                 none = false;
-                (*callback)(columnAsSlice(_findExpStmt->getColumn(0)));
+                (*callback)(getColumnAsSlice(stmt, 0));
             }
         }
         if (!none) {

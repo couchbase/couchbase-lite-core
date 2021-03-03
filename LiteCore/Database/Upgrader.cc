@@ -19,6 +19,7 @@
 #include "c4Internal.hh"
 #include "c4Document+Fleece.h"
 #include "Upgrader.hh"
+#include "SQLite_Internal.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "Database.hh"
 #include "Document.hh"
@@ -112,17 +113,12 @@ namespace litecore {
         }
 
 
-        static inline slice asSlice(const SQLite::Column &col) {
-            return slice(col.getBlob(), col.size());
-        }
-
-
         // Copies all documents to the new db.
         void copyDocs() {
             SQLite::Statement allDocs(_oldDB, "SELECT doc_id, docid FROM docs");
             while (allDocs.executeStep()) {
                 int64_t docKey = allDocs.getColumn(0);
-                slice docID = asSlice(allDocs.getColumn(1));
+                slice docID = getColumnAsSlice(allDocs, 1);
 
                 if (docID.hasPrefix("_"_sl)) {
                     Warn("Skipping doc '%.*s': Document ID starting with an underscore is not permitted.", SPLAT(docID));
@@ -167,7 +163,7 @@ namespace litecore {
                 return;     // huh, no revisions
 
             vector<alloc_slice> history;
-            alloc_slice revID(asSlice(_currentRev->getColumn(1)));
+            alloc_slice revID(getColumnAsSlice(*_currentRev, 1));
             history.push_back(revID);
             Log("        ...rev %.*s", SPLAT(revID));
 
@@ -185,7 +181,7 @@ namespace litecore {
             // Convert the JSON body to Fleece:
             alloc_slice body;
             {
-                Retained<Doc> doc = convertBody(asSlice(_currentRev->getColumn(4)));
+                Retained<Doc> doc = convertBody(getColumnAsSlice(*_currentRev, 4));
                 if (hasAttachments)
                     copyAttachments(doc);
                 body = doc->allocedData();
@@ -199,7 +195,7 @@ namespace litecore {
             _parentRevs->bind(1, (long long)oldDocKey);
             while (_parentRevs->executeStep()) {
                 if ((int64_t)_parentRevs->getColumn(0) == nextSequence) {
-                    alloc_slice parentID(asSlice(_parentRevs->getColumn(1)));
+                    alloc_slice parentID(getColumnAsSlice(*_parentRevs, 1));
                     history.push_back(parentID);
                     Log("        ...rev %.*s", SPLAT(parentID));
                     nextSequence = _parentRevs->getColumn(2);

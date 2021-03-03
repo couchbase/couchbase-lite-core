@@ -107,8 +107,8 @@ namespace litecore {
         uint64_t purgeCount(const std::string& keyStoreName) const;
         void setPurgeCount(SQLiteKeyStore&, uint64_t);
 
-        SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
-                                   const char *sql) const;
+        std::unique_ptr<SQLite::Statement> compile(const char *sql) const;
+        void compileCached(unique_ptr<SQLite::Statement>&, const char *sql) const;
         int exec(const std::string &sql);
         int execWithLock(const std::string &sql);
         int64_t intQuery(const char *query);
@@ -157,8 +157,8 @@ namespace litecore {
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore *store =nullptr);
 
         unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
-        unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
-        unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
+        mutable unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
+        mutable unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
         CollationContextVector          _collationContexts;
         SchemaVersion                   _schemaVersion {SchemaVersion::None};
     };

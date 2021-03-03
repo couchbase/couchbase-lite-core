@@ -23,6 +23,7 @@
 #include <mutex>
 #include <optional>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace fleece::impl {
@@ -105,22 +106,21 @@ namespace litecore {
                                                   RecordEnumerator::Options) override;
         Retained<Query> compileQuery(slice expression, QueryLanguage) override;
 
-        SQLite::Statement* compile(const std::string &sql) const;
-        SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
-                                   const char *sqlTemplate) const;
+        std::unique_ptr<SQLite::Statement> compile(const char *sql) const;
+        SQLite::Statement& compileCached(const std::string &sqlTemplate) const;
 
         void transactionWillEnd(bool commit);
 
         void close() override;
         void reopen() override;
 
-        static slice columnAsSlice(const SQLite::Column &col);
-
         /// Updates a record's flags, version, body, extra from a statement whose column order
         /// matches the RecordColumn enum.
         static void setRecordMetaAndBody(Record &rec,
                                          SQLite::Statement &stmt,
-                                         ContentOption);
+                                         ContentOption,
+                                         bool setKey,
+                                         bool setSequence);
 
     private:
         friend class SQLiteDataFile;
@@ -154,17 +154,12 @@ namespace litecore {
         void garbageCollectPredictiveIndexes();
 #endif
 
-        // All of these Statement pointers have to be reset in the close() method.
-        unique_ptr<SQLite::Statement> _recCountStmt;
-        unique_ptr<SQLite::Statement> _getByKeyStmt, _getCurByKeyStmt, _getMetaByKeyStmt;
-        unique_ptr<SQLite::Statement> _getBySeqStmt, _getCurBySeqStmt, _getMetaBySeqStmt;
-        unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
-        unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
-        unique_ptr<SQLite::Statement> _setFlagStmt, _withDocBodiesStmt;
-        unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
+        using StatementCache = std::unordered_map<std::string,std::unique_ptr<SQLite::Statement>>;
 
         enum Existence : uint8_t { kNonexistent, kUncommitted, kCommitted };
 
+        mutable std::mutex _stmtMutex;
+        mutable StatementCache _stmtCache;
         bool _createdSeqIndex {false}, _createdConflictsIndex {false}, _createdBlobsIndex {false};
         bool _lastSequenceChanged {false};
         bool _purgeCountChanged {false};
@@ -173,7 +168,6 @@ namespace litecore {
         mutable std::atomic<uint64_t> _purgeCount {0};
         bool _hasExpirationColumn {false};
         bool _uncommittedExpirationColumn {false};
-        mutable std::mutex _stmtMutex;
         Existence _existence;
     };
 

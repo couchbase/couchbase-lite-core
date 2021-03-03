@@ -99,7 +99,7 @@ namespace litecore {
             string sql = qp.SQL();
             logInfo("Compiled as %s", sql.c_str());
             LogTo(SQL, "Compiled {Query#%u}: %s", getObjectRef(), sql.c_str());
-            _statement.reset(keyStore.compile(sql));
+            _statement = keyStore.compile(sql.c_str());
             
             _1stCustomResultColumn = qp.firstCustomResultColumn();
             _columnTitles = qp.columnTitles();
@@ -139,7 +139,7 @@ namespace litecore {
             alloc_slice matchedText;
             _matchedTextStatement->bind(1, (long long)term.dataSource); // dataSource is docid
             if (_matchedTextStatement->executeStep())
-                matchedText = alloc_slice( dynamic_cast<SQLiteKeyStore&>(keyStore()).columnAsSlice(_matchedTextStatement->getColumn(term.keyIndex)) );
+                matchedText = alloc_slice( getColumnAsSlice(*_matchedTextStatement, term.keyIndex) );
             else
                 Warn("FTS index %s has no row for docid %" PRIu64, expr.c_str(), term.dataSource);
             _matchedTextStatement->reset();
