@@ -16,244 +16,275 @@
 // limitations under the License.
 //
 
-#include "c4Internal.hh"
-#include "c4BlobStore.h"
+#include "c4BlobStore.hh"
 #include "c4Database.hh"
+#include "c4Document+Fleece.h"
 #include "BlobStore.hh"
+#include "Database.hh"
+#include "Base64.hh"
+#include "Error.hh"
+#include "StringUtil.hh"
+#include "fleece/Fleece.hh"
+
 using namespace std;
+using namespace fleece;
+using namespace litecore;
 
 
-// This is a no-op class that just serves to make C4BlobStore type-compatible with BlobStore.
-struct C4BlobStore : public BlobStore {
-public:
-    C4BlobStore(const FilePath &dirPath, const Options *options)
-    :BlobStore(dirPath, options)
-    { }
-};
-
-
-static inline const blobKey& asInternal(const C4BlobKey &key) {return *(blobKey*)&key;}
-static inline const C4BlobKey& external(const blobKey &key) {return *(C4BlobKey*)&key;}
+static inline       blobKey& asInternal(      C4BlobKey &key) {return *(blobKey*)&key;}
+static inline const C4BlobKey& external(const blobKey &key)   {return *(C4BlobKey*)&key;}
 static inline const blobKey* asInternal(const C4BlobKey *key) {return (const blobKey*)key;}
-static SeekableReadStream* asInternal(C4ReadStream* s)        {return (SeekableReadStream*)s;}
-static inline C4ReadStream* external(SeekableReadStream* s) {return (C4ReadStream*)s;}
-static BlobWriteStream* asInternal(C4WriteStream* s)          {return (BlobWriteStream*)s;}
-static inline C4WriteStream* external(BlobWriteStream* s)   {return (C4WriteStream*)s;}
 
 
-bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
-    try {
-        if (!str.buf)
-            return false;
-        *outKey = external(blobKey::withBase64(str));
-        return true;
-    } catchExceptions()
-    return false;
+#pragma mark - C++ CLASS:
+
+
+C4BlobStore& C4Database::blobStore() {
+    if (!_blobStore)
+        _blobStore.reset(new C4BlobStore(_db->blobStore()));
+    return *_blobStore;
 }
 
 
-C4SliceResult c4blob_keyToString(C4BlobKey key) noexcept {
-    string str = asInternal(key).base64String();
-    return sliceResult(str);
-}
-
-
-
-C4BlobStore* c4blob_openStore(C4Slice dirPath,
-                              C4DatabaseFlags flags,
-                              const C4EncryptionKey *key,
-                              C4Error* outError) noexcept
+C4BlobStore::C4BlobStore(slice dirPath,
+                         C4DatabaseFlags flags,
+                         const C4EncryptionKey* key)
+:_impl(nullptr)
+,_ownsImpl(true)
 {
-    try {
-        BlobStore::Options options = {};
-        options.create = (flags & kC4DB_Create) != 0;
-        options.writeable = !(flags & kC4DB_ReadOnly);
-        if (key) {
-            options.encryptionAlgorithm = (EncryptionAlgorithm)key->algorithm;
-            options.encryptionKey = alloc_slice(key->bytes, sizeof(key->bytes));
-        }
-        return new C4BlobStore(FilePath(toString(dirPath)), &options);
-    } catchError(outError)
-    return nullptr;
+    BlobStore::Options options = {};
+    options.create = (flags & kC4DB_Create) != 0;
+    options.writeable = !(flags & kC4DB_ReadOnly);
+    if (key) {
+        options.encryptionAlgorithm = (EncryptionAlgorithm)key->algorithm;
+        options.encryptionKey = alloc_slice(key->bytes, sizeof(key->bytes));
+    }
+    _impl = new BlobStore(FilePath(dirPath), &options);
 }
 
 
-C4BlobStore* c4db_getBlobStore(C4Database *db, C4Error* outError) noexcept {
-    try {
-        return (C4BlobStore*) db->blobStore();
-    } catchError(outError)
-    return nullptr;
+C4BlobStore::~C4BlobStore() {
+    if (_ownsImpl)
+        delete _impl;
 }
 
 
-void c4blob_freeStore(C4BlobStore *store) noexcept {
-    delete store;
+void C4BlobStore::deleteStore() {
+    _impl->deleteStore();
 }
 
 
-bool c4blob_deleteStore(C4BlobStore* store, C4Error *outError) noexcept {
-    try {
-        store->deleteStore();
-        delete store;
-        return true;
-    } catchError(outError)
-    return false;
+int64_t C4BlobStore::getSize(C4BlobKey key) const {
+    return _impl->get(asInternal(key)).contentLength();
 }
 
 
-int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) noexcept {
-    try {
-        return store->get(asInternal(key)).contentLength();
-    } catchExceptions()
-    return -1;
+alloc_slice C4BlobStore::getContents(C4BlobKey key) const {
+    return _impl->get(asInternal(key)).contents();
 }
 
 
-C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
-    try {
-        return C4SliceResult(store->get(asInternal(key)).contents());
-    } catchError(outError)
-    return {nullptr, 0};
+alloc_slice C4BlobStore::getFilePath(C4BlobKey key) const {
+    auto path = _impl->get(asInternal(key)).path();
+    if (!path.exists())
+        return nullslice;
+    else if (_impl->isEncrypted())
+        error::_throw(error::WrongFormat);
+    else
+        return alloc_slice(string(path));
 }
 
 
-C4StringResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
-    try {
-        auto path = store->get(asInternal(key)).path();
-        if (!path.exists()) {
-            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
-            return {nullptr, 0};
-        } else if (store->isEncrypted()) {
-            c4error_return(LiteCoreDomain, kC4ErrorWrongFormat, {}, outError);
-            return {nullptr, 0};
-        }
-        return sliceResult((string)path);
-    } catchError(outError)
-    return {nullptr, 0};
-}
 
-
-C4BlobKey c4blob_computeKey(C4Slice contents) {
+C4BlobKey C4BlobStore::computeKey(slice contents) noexcept {
     return external(blobKey::computeFrom(contents));
 }
 
 
-bool c4blob_create(C4BlobStore* store,
-                   C4Slice contents,
-                   const C4BlobKey *expectedKey,
-                   C4BlobKey *outKey,
-                   C4Error* outError) noexcept
-{
+alloc_slice C4BlobStore::keyToString(C4BlobKey key) {
+    return alloc_slice(asInternal(key).base64String());
+}
+
+
+bool C4BlobStore::keyFromString(slice str, C4BlobKey* outKey) noexcept {
     try {
-        Blob blob = store->put(contents, asInternal(expectedKey));
-        if (outKey)
-            *outKey = external(blob.key());
-        return true;
-    } catchError(outError)
-    return false;
-}
-
-
-bool c4blob_delete(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
-    try {
-        store->get(asInternal(key)).del();
-        return true;
-    } catchError(outError)
-    return false;
-}
-
-
-#pragma mark - STREAMING READS:
-
-
-C4ReadStream* c4blob_openReadStream(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
-    try {
-        unique_ptr<SeekableReadStream> stream = store->get(asInternal(key)).read();
-        return external(stream.release());
-    } catchError(outError)
-    return nullptr;
-}
-
-
-size_t c4stream_read(C4ReadStream* stream, void *buffer, size_t maxBytes, C4Error* outError) noexcept {
-    try {
-        clearError(outError);
-        return asInternal(stream)->read(buffer, maxBytes);
-    } catchError(outError)
-    return 0;
-}
-
-
-int64_t c4stream_getLength(C4ReadStream* stream, C4Error* outError) noexcept {
-    try {
-        return asInternal(stream)->getLength();
-    } catchError(outError)
-    return -1;
-}
-
-
-bool c4stream_seek(C4ReadStream* stream, uint64_t position, C4Error* outError) noexcept {
-    try {
-        asInternal(stream)->seek(position);
-        return true;
-    } catchError(outError)
-    return false;
-}
-
-
-void c4stream_close(C4ReadStream* stream) noexcept {
-    delete asInternal(stream);
-}
-
-
-#pragma mark - STREAMING WRITES:
-
-
-C4WriteStream* c4blob_openWriteStream(C4BlobStore* store, C4Error* outError) noexcept {
-    try {
-        return external(new BlobWriteStream(*store));
-    } catchError(outError)
-    return nullptr;
-}
-
-
-bool c4stream_write(C4WriteStream* stream, const void *bytes, size_t length, C4Error* outError) noexcept {
-    if (length == 0)
-        return true;
-    try {
-        asInternal(stream)->write(slice(bytes, length));
-        return true;
-    } catchError(outError)
-    return false;
-}
-
-
-uint64_t c4stream_bytesWritten(C4WriteStream* stream) {
-    return asInternal(stream)->bytesWritten();
-}
-
-
-C4BlobKey c4stream_computeBlobKey(C4WriteStream* stream) noexcept {
-    return external( asInternal(stream)->computeKey() );
-}
-
-
-bool c4stream_install(C4WriteStream* stream,
-                      const C4BlobKey *expectedKey,
-                      C4Error *outError) noexcept {
-    try {
-        asInternal(stream)->install(asInternal(expectedKey));
-        return true;
-    } catchError(outError)
-    return false;
-}
-
-
-void c4stream_closeWriter(C4WriteStream* stream) noexcept {
-    if (!stream)
-        return;
-    try {
-        asInternal(stream)->close();
-        delete asInternal(stream);
+        if (str.buf) {
+            *outKey = external(blobKey::withBase64(str));
+            return true;
+        }
     } catchExceptions()
+    return false;
 }
+
+
+C4BlobKey C4BlobStore::createBlob(slice contents, const C4BlobKey *expectedKey) {
+    Blob blob = _impl->put(contents, asInternal(expectedKey));
+    return external(blob.key());
+}
+
+
+void C4BlobStore::deleteBlob(C4BlobKey key) {
+    _impl->get(asInternal(key)).del();
+}
+
+
+C4ReadStream::C4ReadStream(const C4BlobStore &store, C4BlobKey key)
+:_impl(store._impl->get(asInternal(key)).read())
+{ }
+
+C4ReadStream::~C4ReadStream() = default;
+size_t C4ReadStream::read(void *dst, size_t mx)     {return _impl->read(dst, mx);}
+int64_t C4ReadStream::length() const                {return _impl->getLength();}
+void C4ReadStream::seek(int64_t pos)                {_impl->seek(pos);}
+
+
+C4WriteStream::C4WriteStream(C4BlobStore &store)
+:_impl(new BlobWriteStream(*store._impl))
+{ }
+
+C4WriteStream::~C4WriteStream() {
+    try {
+        if (_impl)
+            _impl->close();
+    } catchExceptions();
+}
+
+void C4WriteStream::write(fleece::slice data)         {_impl->write(data);}
+uint64_t C4WriteStream::bytesWritten() const noexcept {return _impl->bytesWritten();}
+C4BlobKey C4WriteStream::computeBlobKey()             {return external(_impl->computeKey());}
+void C4WriteStream::install(const C4BlobKey *xk)      {_impl->install(asInternal(xk));}
+
+
+#pragma mark - BLOB DICT UTILITIES:
+
+
+bool C4BlobStore::getBlobKey(FLDict dict, C4BlobKey &outKey) {
+    FLValue digest = FLDict_Get(dict, slice(kC4BlobDigestProperty));
+    return digest && asInternal(outKey).readFromBase64(FLValue_AsString(digest));
+}
+
+
+bool C4BlobStore::dictIsBlob(FLDict dict) {
+    FLValue cbltype= FLDict_Get(dict, C4STR(kC4ObjectTypeProperty));
+    return cbltype && slice(FLValue_AsString(cbltype)) == slice(kC4ObjectType_Blob);
+}
+
+
+bool C4BlobStore::dictIsBlob(FLDict dict, C4BlobKey &outKey) {
+    return dictIsBlob(dict) && getBlobKey(dict, outKey);
+}
+
+
+alloc_slice C4BlobStore::getBlobData(FLDict flDict, BlobStore *store) {
+    Dict dict(flDict);
+    if (!dictIsBlob(dict))
+        error::_throw(error::InvalidParameter, "Not a blob");
+    auto dataProp = dict.get(slice(kC4BlobDataProperty));
+    if (dataProp) {
+        switch (dataProp.type()) {
+            case kFLData:
+                return alloc_slice(dataProp.asData());
+            case kFLString: {
+                alloc_slice data = base64::decode(dataProp.asString());
+                if (!data)
+                    error::_throw(error::CorruptData, "Blob data string is not valid Base64");
+                return data;
+            }
+            default:
+                error::_throw(error::CorruptData, "Blob data property has invalid type");
+        }
+    }
+    C4BlobKey key;
+    if (!getBlobKey(dict, key))
+        error::_throw(error::CorruptData, "Blob has invalid or missing digest property");
+    return store->get((blobKey&)key).contents();
+}
+
+
+alloc_slice C4BlobStore::getBlobData(FLDict flDict) {
+    return getBlobData(flDict, _impl);
+}
+
+
+// Heuristics for deciding whether a MIME type is compressible or not.
+// See <http://www.iana.org/assignments/media-types/media-types.xhtml>
+
+// These substrings in a MIME type mean it's definitely not compressible:
+static constexpr slice kCompressedTypeSubstrings[] = {
+    "zip"_sl,
+    "zlib"_sl,
+    "pkcs"_sl,
+    "mpeg"_sl,
+    "mp4"_sl,
+    "crypt"_sl,
+    ".rar"_sl,
+    "-rar"_sl,
+    {}
+};
+
+// These substrings mean it is compressible:
+static constexpr slice kGoodTypeSubstrings[] = {
+    "json"_sl,
+    "html"_sl,
+    "xml"_sl,
+    "yaml"_sl,
+    {}
+};
+
+// These prefixes mean it's not compressible, unless it matches the above good-types list
+// (like SVG (image/svg+xml), which is compressible.)
+static constexpr slice kBadTypePrefixes[] = {
+    "image/"_sl,
+    "audio/"_sl,
+    "video/"_sl,
+    {}
+};
+
+static bool containsAnyOf(slice type, const slice types[]) {
+    for (const slice *t = &types[0]; *t; ++t)
+        if (type.find(*t))
+            return true;
+    return false;
+}
+
+
+static bool startsWithAnyOf(slice type, const slice types[]) {
+    for (const slice *t = &types[0]; *t; ++t)
+        if (type.hasPrefix(*t))
+            return true;
+    return false;
+}
+
+bool C4BlobStore::blobIsCompressible(FLDict flMeta) {
+    Dict meta(flMeta);
+    // Don't compress an attachment with a compressed encoding:
+    auto encodingProp = meta.get("encoding"_sl);
+    if (encodingProp && containsAnyOf(encodingProp.asString(), kCompressedTypeSubstrings))
+        return false;
+
+    // Don't compress attachments with unknown MIME type:
+    auto typeProp = meta.get("content_type"_sl);
+    if (!typeProp)
+        return false;
+    slice type = typeProp.asString();
+    if (!type)
+        return false;
+
+    // Check the MIME type:
+    string lc = type.asString();
+    toLowercase(lc);
+    type = lc;
+    if (containsAnyOf(type, kCompressedTypeSubstrings))
+        return false;
+    else if (type.hasPrefix("text/"_sl) || containsAnyOf(type, kGoodTypeSubstrings))
+        return true;
+    else if (startsWithAnyOf(type, kBadTypePrefixes))
+        return false;
+    else
+        return true;
+}
+
+
+#pragma mark - C API:
+
+

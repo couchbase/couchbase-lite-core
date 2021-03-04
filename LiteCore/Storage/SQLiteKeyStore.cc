@@ -314,7 +314,7 @@ namespace litecore {
         stmt->bindNoCopy(VersionParam, rec.version.buf, (int)rec.version.size);
         stmt->bindNoCopy(BodyParam,    rec.body.buf, (int)rec.body.size);
         stmt->bindNoCopy(ExtraParam,   rec.extra.buf, (int)rec.extra.size);
-        stmt->bind      (FlagsParam,   rawFlags);
+        stmt->bind      (FlagsParam,   (long long)rawFlags);
         stmt->bindNoCopy(KeyParam,     (const char*)rec.key.buf, (int)rec.key.size);
         stmt->bind      (SequenceParam,(long long)seq);
 

@@ -38,8 +38,6 @@ _c4db_getPath
 _c4db_getConfig
 _c4db_getDocumentCount
 _c4db_getLastSequence
-_c4db_getMaxRevTreeDepth
-_c4db_setMaxRevTreeDepth
 _c4db_getUUIDs
 _c4db_getExtraInfo
 _c4db_setExtraInfo

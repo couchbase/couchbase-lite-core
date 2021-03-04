@@ -173,7 +173,7 @@ extern "C" {
                         C4Error* C4NULLABLE) C4API;
 
     /** Returns the number of bytes written to the stream. */
-    uint64_t c4stream_bytesWritten(C4WriteStream*);
+    uint64_t c4stream_bytesWritten(C4WriteStream*) C4API;
 
     /** Computes the blob-key (digest) of the data written to the stream. This should only be
         called after writing the entire data. No more data can be written after this call. */

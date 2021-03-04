@@ -273,10 +273,18 @@ typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
     * The error is filled in only if the function fails, as indicated by its return value
       (e.g. false or NULL.) If the function doesn't fail, it does NOT zero out the error, so its
       contents should be considered uninitialized garbage. */
-typedef struct {
+typedef struct C4Error {
     C4ErrorDomain domain        : 8;    // Domain of error (LiteCore, POSIX, SQLite, ...)
     int           code          :24;    // Error code. Domain-specific, except 0 is ALWAYS "none".
     unsigned      internal_info :32;    // No user-serviceable parts inside. Do not touch.
+
+#ifdef __cplusplus
+    bool operator== (const C4Error &b) const {return code == b.code
+                                                  && (code == 0 || domain == b.domain);}
+    bool operator!= (const C4Error &b) const {return !(*this == b);}
+    explicit operator bool() const  {return code != 0;}
+    bool operator!() const          {return code == 0;}
+#endif
 } C4Error;
 
 

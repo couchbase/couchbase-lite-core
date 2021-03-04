@@ -16,10 +16,10 @@ function(set_litecore_source_base)
         ${BASE_SSS_RESULT}
         C/c4Base.cc
         C/c4BlobStore.cc
+        C/c4CAPI.cc
         C/c4Certificate.cc
         C/c4Database.cc
         C/c4DocEnumerator.cc
-        C/c4DocExpiration.cc
         C/c4Document.cc
         C/c4Error.cc
         C/c4Observer.cc

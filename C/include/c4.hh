@@ -23,20 +23,8 @@
 #endif
 
 #include "fleece/slice.hh"
-#include "c4Base.h"
-#include <assert.h>
+#include "c4Base.hh"
 #include <utility>
-
-
-// C4Error equality tests:
-// (These have to be in the global namespace, because C4Error is...)
-static inline bool operator== (const C4Error &a, const C4Error &b) {
-    return a.code == b.code && (a.code == 0 || a.domain == b.domain);
-}
-
-static inline bool operator!= (const C4Error &a, C4Error b) {
-    return !(a == b);
-}
 
 
 namespace c4 {
@@ -107,10 +95,5 @@ namespace c4 {
         
         T* _obj;
     };
-
-    /// Returns a description of a C4Error as a _temporary_ C string, for use in logging.
-#ifndef c4error_descriptionStr
-    #define c4error_descriptionStr(ERR)     fleece::alloc_slice(c4error_getDescription(ERR)).asString().c_str()
-#endif
 
 }

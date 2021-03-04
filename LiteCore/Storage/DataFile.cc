@@ -243,7 +243,7 @@ namespace litecore {
             
             if (file)
                 file->close(true);
-            bool result = factory._deleteFile(shared->path, options);
+            bool result = factory._deleteFile(FilePath(shared->path), options);
             shared->condemn(false);
             return result;
         } catch (...) {

@@ -128,13 +128,14 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][Encryption][C]") {
     REQUIRE(gotBlob.size == blobToStore.size);
     CHECK(memcmp(gotBlob.buf, blobToStore.buf, gotBlob.size) == 0);
 
-    alloc_slice p = c4blob_getFilePath(store, key, &error);
     if (encrypted) {
-        CHECK(p.buf == nullptr);
-        CHECK(p.size == 0);
+        ExpectingExceptions x;
+        alloc_slice p = c4blob_getFilePath(store, key, &error);
+        CHECK(!p);
         CHECK(error.code == kC4ErrorWrongFormat);
     } else {
-        REQUIRE(p.buf != nullptr);
+        alloc_slice p = c4blob_getFilePath(store, key, &error);
+        REQUIRE(p);
         string path((char*)p.buf, p.size);
         string filename = "QneWo5IYIQ0ZrbCG0hXPGC6jy7E=.blob";
         CHECK(path.find(filename) == path.size() - filename.size());

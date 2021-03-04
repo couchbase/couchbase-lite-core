@@ -268,10 +268,6 @@ extern "C" {
                           C4Error* C4NULLABLE outError) C4API;
 
 
-    // DEPRECATED -- call c4db_maintenance instead
-    bool c4db_compact(C4Database* database, C4Error* C4NULLABLE outError) C4API;
-    
-
    /** @} */
     /** \name Transactions
         @{ */
@@ -372,6 +368,9 @@ extern "C" {
 
     C4_DEPRECATED("Use c4db_getConfig2")
     const C4DatabaseConfig* c4db_getConfig(C4Database*) C4API;
+
+    C4_DEPRECATED("Use c4db_maintenance")
+    bool c4db_compact(C4Database* database, C4Error* C4NULLABLE outError) C4API;
 
 #ifdef __cplusplus
 }

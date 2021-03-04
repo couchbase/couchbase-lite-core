@@ -52,6 +52,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Document][C]") {
         rq.body = C4Test::kFleeceBody;
         rq.save = true;
         rq.docID = docID;
+        ExpectingExceptions x;
         CHECK(c4doc_put(db, &rq, nullptr, &error) == nullptr);
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorBadDocID);
@@ -463,6 +464,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][Document][C]") {
     }
 }
 
+
+#if 0
 N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][Document][C]") {
     if (isRevTrees()) {
         CHECK(c4db_getMaxRevTreeDepth(db) == 20);
@@ -526,6 +529,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][Document]
         c4doc_release(doc);
     }
 }
+#endif
 
 
 #if 0

@@ -619,7 +619,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
 
     // Only reference to first blob is gone
     createRev(doc1ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, WITH_ERROR()));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key1) == -1);
     REQUIRE(c4blob_getSize(store, key2) > 0);
     REQUIRE(c4blob_getSize(store, key3) > 0);
@@ -627,20 +627,20 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
     // Two references exist to the second blob, so it should still
     // exist after deleting doc002
     createRev(doc2ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, WITH_ERROR()));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key1) == -1);
     REQUIRE(c4blob_getSize(store, key2) > 0);
     REQUIRE(c4blob_getSize(store, key3) > 0);
 
     // After deleting doc4 both blobs should be gone
     createRev(doc4ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, WITH_ERROR()));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key2) == -1);
     REQUIRE(c4blob_getSize(store, key3) > 0);
 
     // Delete doc with legacy attachment, and it too will be gone
     createRev(doc3ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, WITH_ERROR()));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key3) == -1);
 
     // Try an integrity check too

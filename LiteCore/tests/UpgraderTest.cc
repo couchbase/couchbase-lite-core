@@ -47,7 +47,7 @@ protected:
         config.versioning = versioning;
         _versioning = versioning;
 
-        UpgradeDatabase(oldPath, newPath, config);
+        UpgradeDatabase(FilePath(oldPath), newPath, config);
 
         db = new Database(newPath, config);
     }

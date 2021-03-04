@@ -42,6 +42,7 @@ target_include_directories(
     LiteCoreREST_Static PRIVATE
     .
     ../C/include
+    ../C/Cpp_include
     ../C
     ../LiteCore/Support
     ../Crypto

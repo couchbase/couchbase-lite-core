@@ -109,7 +109,7 @@ namespace c4Internal {
         /// Returns the ErrorInfo associated with a C4Error.
         /// (We have to return a copy; returning a reference would not be thread-safe.)
         __cold
-        optional<ErrorInfo> copy(C4Error &error) noexcept {
+        optional<ErrorInfo> copy(const C4Error &error) noexcept {
             if (error.internal_info == 0)
                 return nullopt;
             lock_guard<mutex> lock(_mutex);
@@ -125,6 +125,22 @@ namespace c4Internal {
         uint32_t         _tableStart = 1;    ///< internal_info of 1st item in sTable
         mutex            _mutex;             ///< mutex guarding the above
     };
+
+
+    __cold
+    static string getErrorMessage(C4Error err) {
+        if (err.code == 0) {
+            return "";
+        } else if (err.domain < 1 || err.domain >= (C4ErrorDomain)error::NumDomainsPlus1) {
+            return "invalid C4Error (unknown domain)";
+        } else if (auto info = ErrorTable::instance().copy(err); info && !info->message.empty()) {
+            // Custom message referenced in info field
+            return info->message;
+        } else {
+            // No; get the regular error message for this domain/code:
+            return error((error::Domain)err.domain, err.code).what();
+        }
+    }
 
 
 #pragma mark - INTERNAL API FOR CONVERTING EXCEPTIONS TO C4ERRORS:
@@ -159,6 +175,17 @@ namespace c4Internal {
             *outError = ErrorTable::instance().makeError(
                                   LiteCoreDomain, kC4ErrorUnexpectedError,
                                   {"Unknown C++ exception", Backtrace::capture(1)});
+        }
+    }
+
+
+    [[noreturn]] void throwError(const C4Error &err) {
+        if (auto info = ErrorTable::instance().copy(err); info) {
+            error e(error::Domain(err.domain), err.code, info->message);
+            e.backtrace = info->backtrace;
+            throw e;
+        } else {
+            error::_throw(error::Domain(err.domain), err.code);
         }
     }
 
@@ -203,22 +230,6 @@ void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *o
 
 
 #pragma mark - PUBLIC ERROR ACCESSORS:
-
-
-__cold
-static string getErrorMessage(C4Error err) {
-    if (err.code == 0) {
-        return "";
-    } else if (err.domain < 1 || err.domain >= (C4ErrorDomain)error::NumDomainsPlus1) {
-        return "invalid C4Error (unknown domain)";
-    } else if (auto info = ErrorTable::instance().copy(err); info && !info->message.empty()) {
-        // Custom message referenced in info field
-        return info->message;
-    } else {
-        // No; get the regular error message for this domain/code:
-        return error((error::Domain)err.domain, err.code).what();
-    }
-}
 
 
 __cold

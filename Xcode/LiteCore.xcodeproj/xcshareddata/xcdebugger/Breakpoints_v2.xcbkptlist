@@ -14,6 +14,14 @@
             continueAfterRunningActions = "No"
             symbolName = "__cxa_throw"
             moduleName = "">
+            <Actions>
+               <BreakpointActionProxy
+                  ActionExtensionID = "Xcode.BreakpointAction.Sound">
+                  <ActionContent
+                     soundName = "Sosumi">
+                  </ActionContent>
+               </BreakpointActionProxy>
+            </Actions>
             <Locations>
                <Location
                   uuid = "9123C3AE-2BA1-44B2-9916-5EDAF6321D77 - ce786678157addf5"

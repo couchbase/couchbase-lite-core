@@ -36,6 +36,9 @@ namespace c4Internal {
     /** Converts the _currently caught_ C++ exception to a C4Error. Use only in a `catch` block. */
     NOINLINE void recordException(C4Error* outError) noexcept;
 
+    /** Throws a C4Error as a litecore::error. */
+    [[noreturn]] void throwError(const C4Error&);
+
     /** Clears a C4Error back to empty. */
     static inline void clearError(C4Error* outError) noexcept {if (outError) outError->code = 0;}
 
@@ -52,6 +55,9 @@ namespace c4Internal {
         and returns false. */
     #define checkParam(TEST, MSG, OUTERROR) \
         ((TEST) || (c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR(MSG), OUTERROR), false))
+
+    #define AssertParam(TEST, MSG) \
+        ((TEST) || (error::_throw(error::InvalidParameter, MSG), false))
 
     // Calls the function, returning its return value. If an exception is thrown it catches it,
     // stores the error into `outError`, and returns a default 0/nullptr/false value.

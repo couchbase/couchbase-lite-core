@@ -56,7 +56,10 @@ using namespace litecore;
 #endif
 
 
+
 namespace c4Internal {
+
+    class Database;
 
     // ERRORS & EXCEPTIONS:
 
@@ -74,6 +77,8 @@ namespace c4Internal {
     std::string toString(C4Slice);
 
     void destructExtraInfo(C4ExtraInfo&) noexcept;
+
+    Database* asInternal(C4Database *db);
 }
 
 using namespace c4Internal;

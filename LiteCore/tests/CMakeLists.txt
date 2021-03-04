@@ -113,6 +113,7 @@ target_include_directories(
     ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}C
     ${TOP}C/include
+    ${TOP}C/Cpp_include
     ${TOP}C/tests
     ${TOP}Crypto
     ${TOP}Networking

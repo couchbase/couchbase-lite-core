@@ -7,7 +7,7 @@
 //
 
 #pragma once
-#include "c4Replicator.hh"
+#include "c4ReplicatorImpl.hh"
 #include "c4Socket+Internal.hh"
 #include "c4.hh"
 #include "Address.hh"
@@ -23,7 +23,7 @@ namespace c4Internal {
 
 
     /** A replicator with a remote database via WebSockets. */
-    class C4RemoteReplicator : public C4Replicator {
+    class C4RemoteReplicator : public C4ReplicatorImpl {
     public:
 
         // Default maximum number of retry attempts before replications give up.
@@ -40,7 +40,7 @@ namespace c4Internal {
                            const C4ReplicatorParameters &params,
                            const C4Address &serverAddress,
                            C4String remoteDatabaseName)
-        :C4Replicator(db, params)
+        :C4ReplicatorImpl(db, params)
         ,_url(effectiveURL(serverAddress, remoteDatabaseName))
         ,_retryTimer(std::bind(&C4RemoteReplicator::retry, this, false, nullptr))
         {
@@ -88,7 +88,7 @@ namespace c4Internal {
 
         virtual void stop() override {
             cancelScheduledRetry();
-            C4Replicator::stop();
+            C4ReplicatorImpl::stop();
         }
 
 
@@ -108,7 +108,7 @@ namespace c4Internal {
         virtual void _suspend() override {
             // called with _mutex locked
             cancelScheduledRetry();
-            C4Replicator::_suspend();
+            C4ReplicatorImpl::_suspend();
         }
 
 

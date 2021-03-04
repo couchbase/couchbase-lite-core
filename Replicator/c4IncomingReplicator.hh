@@ -7,19 +7,19 @@
 //
 
 #pragma once
-#include "c4Replicator.hh"
+#include "c4ReplicatorImpl.hh"
 #include "c4Socket+Internal.hh"
 
 namespace c4Internal {
     using namespace litecore::websocket;
 
     /** A passive replicator handling an incoming WebSocket connection, for P2P. */
-    class C4IncomingReplicator : public C4Replicator {
+    class C4IncomingReplicator : public C4ReplicatorImpl {
     public:
         C4IncomingReplicator(C4Database* db NONNULL,
                              const C4ReplicatorParameters &params,
                              WebSocket *openSocket NONNULL)
-        :C4Replicator(db, params)
+        :C4ReplicatorImpl(db, params)
         ,_openSocket(openSocket)
         { }
 

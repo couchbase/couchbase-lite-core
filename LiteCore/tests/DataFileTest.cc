@@ -479,7 +479,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
 
     // Now try to open a nonexistent db, read-only:
     ExpectException(error::LiteCore, error::CantOpenFile, [&]{
-        (void)newDatabase("/tmp/db_non_existent", &options);
+        (void)newDatabase(FilePath("/tmp/db_non_existent"), &options);
     });
 }
 

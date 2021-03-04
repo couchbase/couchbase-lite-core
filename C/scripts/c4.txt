@@ -29,8 +29,6 @@ c4error_mayBeNetworkDependent
 
 c4db_open
 c4db_openNamed
-#c4db_retain  INLINE
-#c4db_release  INLINE
 c4db_close
 c4db_copy
 c4db_delete
@@ -41,8 +39,6 @@ c4db_getPath
 c4db_getConfig
 c4db_getDocumentCount
 c4db_getLastSequence
-c4db_getMaxRevTreeDepth
-c4db_setMaxRevTreeDepth
 c4db_getUUIDs
 c4db_getExtraInfo
 c4db_setExtraInfo

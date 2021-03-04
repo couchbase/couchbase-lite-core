@@ -45,6 +45,135 @@ namespace c4Internal {
         Note: Its parent 'class' C4Document is the public struct declared in c4Document.h. */
     class Document : public RefCounted, public C4Document, public fleece::InstanceCountedIn<Document> {
     public:
+
+        // Static utility functions:
+
+        static char* generateID(char *outDocID, size_t bufferSize) noexcept;
+
+        static bool equalRevIDs(slice revID1, slice revID2) noexcept;
+        static unsigned getRevIDGeneration(slice revID) noexcept;
+
+        static C4RevisionFlags currentRevFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept {
+            C4RevisionFlags revFlags = 0;
+            if (docFlags & kDocExists) {
+                revFlags |= kRevLeaf;
+                // For stupid historical reasons C4DocumentFlags and C4RevisionFlags aren't compatible
+                if (docFlags & kDocDeleted)
+                    revFlags |= kRevDeleted;
+                if (docFlags & kDocHasAttachments)
+                    revFlags |= kRevHasAttachments;
+                if (docFlags & (C4DocumentFlags)DocumentFlags::kSynced)
+                    revFlags |= kRevKeepBody;
+            }
+            return revFlags;
+        }
+
+        /** Returns the Document instance, if any, that contains the given Fleece value. */
+        static Document* containing(FLValue) noexcept;
+
+        static bool isOldMetaProperty(slice propertyName) noexcept;
+        static bool hasOldMetaProperties(FLDict) noexcept;
+
+        static bool isValidDocID(slice) noexcept;
+
+        static alloc_slice encodeStrippingOldMetaProperties(FLDict properties, FLSharedKeys);
+
+        // Selecting revisions:
+
+        virtual bool selectCurrentRevision() noexcept {
+            // By default just fill in what we know about the current revision:
+            if (exists()) {
+                _selectedRevIDBuf = _revIDBuf;
+                selectedRev.revID = revID;
+                selectedRev.sequence = sequence;
+                selectedRev.flags = currentRevFlagsFromDocFlags(flags);
+            } else {
+                clearSelectedRevision();
+            }
+            return false;
+        }
+
+        virtual bool selectRevision(C4Slice revID, bool withBody) =0;   // returns false if not found
+
+        virtual bool selectParentRevision() noexcept    {failUnsupported();}
+        virtual bool selectNextRevision() =0;
+        virtual bool selectNextLeafRevision(bool includeDeleted) =0;
+        virtual bool selectCommonAncestorRevision(slice revID1, slice revID2) {
+            failUnsupported();
+        }
+
+        // Revision info:
+
+        virtual bool loadSelectedRevBody() =0; // can throw; returns false if compacted away
+
+        virtual bool hasRevisionBody() noexcept =0;
+
+        virtual slice getSelectedRevBody() noexcept =0;
+
+        alloc_slice bodyAsJSON(bool canonical =false);
+
+        virtual FLDict getSelectedRevRoot() noexcept {
+            if (slice body = getSelectedRevBody(); body)
+            return FLValue_AsDict(FLValue_FromData(body, kFLTrusted));
+            else
+                return nullptr;
+        }
+
+        virtual alloc_slice getSelectedRevIDGlobalForm() {
+            DebugAssert(_selectedRevIDBuf == slice(selectedRev.revID));
+            return _selectedRevIDBuf;
+        }
+
+        virtual alloc_slice getSelectedRevHistory(unsigned maxHistory,
+                                                  const C4String backToRevs[],
+                                                  unsigned backToRevsCount) {failUnsupported();}
+
+        // Remote database revision tracking:
+
+        virtual alloc_slice remoteAncestorRevID(C4RemoteID) =0;
+        virtual void setRemoteAncestorRevID(C4RemoteID, C4String revID) =0;
+
+        // Purging:
+
+        virtual bool removeSelectedRevBody() noexcept {
+            return false;
+        }
+
+        virtual int32_t purgeRevision(C4Slice revID) {
+            failUnsupported();
+        }
+
+        // Conflicts:
+
+        void resolveConflict(C4String winningRevID,
+                             C4String losingRevID,
+                             FLDict mergedProperties,
+                             C4RevisionFlags mergedFlags,
+                             bool pruneLosingBranch =true);
+
+
+        virtual void resolveConflict(C4String winningRevID,
+                                     C4String losingRevID,
+                                     C4Slice mergedBody,
+                                     C4RevisionFlags mergedFlags,
+                                     bool pruneLosingBranch =true)
+        {
+            failUnsupported();
+        }
+
+
+        // Updating & Saving:
+
+        /// Returns updated document (may be same instance), or nullptr on conflict.
+        Retained<Document> update(slice revBody, C4RevisionFlags);
+
+        // Returns false on conflict
+        virtual bool save(unsigned maxRevTreeDepth =0) =0;
+
+
+#pragma mark - INTERNALS:
+
+//TEMP    protected:
         alloc_slice const _docIDBuf;    // Backing store for C4Document::docID
         alloc_slice _revIDBuf;          // Backing store for C4Document::revID
         alloc_slice _selectedRevIDBuf;  // Backing store for C4Document::selectedRevision::revID
@@ -60,9 +189,19 @@ namespace c4Internal {
 
         Document(const Document&) =default;
 
-        bool mustBeInTransaction(C4Error *outError) {
-            return _db->mustBeInTransaction(outError);
-        }
+        /** Returns the contents of a blob referenced by a dict. Inline data will be decoded if
+             necessary, or the "digest" property will be looked up in the BlobStore if one is
+             provided.
+             Returns a null slice if the blob data is not inline but no BlobStore is given.
+             Otherwise throws an exception if it's unable to return data. */
+        static fleece::alloc_slice getBlobData(FLDict NONNULL, C4BlobStore*);
+
+        using FindBlobCallback = function_ref<bool(FLDict)>;
+
+        static bool findBlobReferences(FLDict, const FindBlobCallback&);
+
+        bool mustBeInTransaction(C4Error *err) noexcept {return _db->mustBeInTransaction(err);}
+        void mustBeInTransaction()                      {_db->mustBeInTransaction();}
 
         Database* database()                                            {return _db;}
         const Database* database() const                                {return _db;}
@@ -70,22 +209,6 @@ namespace c4Internal {
         virtual bool exists() =0;
         virtual bool loadRevisions() MUST_USE_RESULT =0;
         virtual bool revisionsLoaded() const noexcept =0;
-        virtual bool selectRevision(C4Slice revID, bool withBody) =0;   // returns false if not found
-
-        static C4RevisionFlags currentRevFlagsFromDocFlags(C4DocumentFlags docFlags) {
-            C4RevisionFlags revFlags = 0;
-            if (docFlags & kDocExists) {
-                revFlags |= kRevLeaf;
-                // For stupid historical reasons C4DocumentFlags and C4RevisionFlags aren't compatible
-                if (docFlags & kDocDeleted)
-                    revFlags |= kRevDeleted;
-                if (docFlags & kDocHasAttachments)
-                    revFlags |= kRevHasAttachments;
-                if (docFlags & (C4DocumentFlags)DocumentFlags::kSynced)
-                    revFlags |= kRevKeepBody;
-            }
-            return revFlags;
-        }
 
         static C4DocumentFlags docFlagsFromCurrentRevFlags(C4RevisionFlags revFlags) {
             C4DocumentFlags docFlags = kDocExists;
@@ -95,52 +218,9 @@ namespace c4Internal {
             return docFlags;
         }
 
-        virtual bool selectCurrentRevision() noexcept {
-            // By default just fill in what we know about the current revision:
-            if (exists()) {
-                _selectedRevIDBuf = _revIDBuf;
-                selectedRev.revID = revID;
-                selectedRev.sequence = sequence;
-                selectedRev.flags = currentRevFlagsFromDocFlags(flags);
-            } else {
-                clearSelectedRevision();
-            }
-            return false;
-        }
-
-        virtual bool selectParentRevision() noexcept    {failUnsupported();}
-        virtual bool selectNextRevision() =0;
-        virtual bool selectNextLeafRevision(bool includeDeleted) =0;
-        virtual bool selectCommonAncestorRevision(slice revID1, slice revID2) {
-            failUnsupported();
-        }
-        virtual alloc_slice remoteAncestorRevID(C4RemoteID) =0;
-        virtual void setRemoteAncestorRevID(C4RemoteID, C4String revID) =0;
-
-        virtual bool hasRevisionBody() noexcept =0;
-        virtual bool loadSelectedRevBody() =0; // can throw; returns false if compacted away
-        virtual slice getSelectedRevBody() noexcept =0;
         virtual alloc_slice detachSelectedRevBody() {
             return alloc_slice(getSelectedRevBody()); // will copy
         }
-
-        virtual FLDict getSelectedRevRoot() noexcept {
-            if (slice body = getSelectedRevBody(); body)
-                return FLValue_AsDict(FLValue_FromData(body, kFLTrusted));
-            else
-                return nullptr;
-        }
-
-        virtual alloc_slice getSelectedRevHistory(unsigned maxHistory,
-                                                  const C4String backToRevs[],
-                                                  unsigned backToRevsCount) {failUnsupported();}
-
-        virtual alloc_slice getSelectedRevIDGlobalForm() {
-            DebugAssert(_selectedRevIDBuf == slice(selectedRev.revID));
-            return _selectedRevIDBuf;
-        }
-
-        alloc_slice bodyAsJSON(bool canonical =false);
 
         // Returns the index (in rq.history) of the common ancestor; or -1 on error
         virtual int32_t putExistingRevision(const C4DocPutRequest&, C4Error*) =0;
@@ -148,57 +228,7 @@ namespace c4Internal {
         // Returns false on error
         virtual bool putNewRevision(const C4DocPutRequest&, C4Error*) =0;
 
-        virtual void resolveConflict(C4String winningRevID,
-                                     C4String losingRevID,
-                                     C4Slice mergedBody,
-                                     C4RevisionFlags mergedFlags,
-                                     bool pruneLosingBranch =true)
-        {
-            failUnsupported();
-        }
-
-        virtual int32_t purgeRevision(C4Slice revID) {
-            failUnsupported();
-        }
-
-        virtual bool removeSelectedRevBody() noexcept {
-            return false;
-        }
-
-        // Returns false on conflict
-        virtual bool save(unsigned maxRevTreeDepth =0) =0;
-
         void requireValidDocID();   // Throws if invalid
-
-        // STATIC UTILITY FUNCTIONS:
-
-        static bool isValidDocID(slice);
-
-        /** Returns the Document instance, if any, that contains the given Fleece value. */
-        static C4Document* containing(const fleece::impl::Value*);
-
-        /** Returns true if the given dictionary is a [reference to a] blob. */
-        static bool dictIsBlob(const fleece::impl::Dict *dict);
-
-        /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key. */
-        static bool dictIsBlob(const fleece::impl::Dict *dict, blobKey &outKey);
-
-        /** Returns the contents of a blob referenced by a dict. Inline data will be decoded if
-            necessary, or the "digest" property will be looked up in the BlobStore if one is
-            provided.
-            Returns a null slice if the blob data is not inline but no BlobStore is given.
-            Otherwise throws an exception if it's unable to return data. */
-        static fleece::alloc_slice getBlobData(const fleece::impl::Dict *dict NONNULL,
-                                               BlobStore*);
-
-        /** Returns the dict's "digest" property decoded into a blobKey. */
-        static bool getBlobKey(const fleece::impl::Dict*, blobKey &outKey);
-
-        using FindBlobCallback = function_ref<bool(const fleece::impl::Dict*)>;
-        static bool findBlobReferences(const fleece::impl::Dict*,
-                                       const FindBlobCallback&);
-
-        static bool blobIsCompressible(const fleece::impl::Dict *meta);
 
     protected:
         virtual ~Document() {
@@ -247,5 +277,10 @@ namespace c4Internal {
     private:
         Database* const _db;    // Unretained, to avoid ref-cycle with Database
     };
+
+
+    // for disambiguation with C4Document
+    static inline Document* retain(Document *doc)     {retain((RefCounted*)doc); return doc;}
+    static inline void release(Document *doc)         {release((RefCounted*)doc);}
 
 } // end namespace

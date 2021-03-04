@@ -164,6 +164,7 @@ public:
     // create, update, delete doc must fail
     void putDocMustFail(C4Database *db, C4Slice docID, C4Slice revID,
                         C4Slice body, C4RevisionFlags flags, C4Error expected) {
+        ExpectingExceptions x;
         C4Error error = {};
         C4Document* doc = putDoc(db, docID, revID, body, flags, &error);
         REQUIRE(doc == nullptr);

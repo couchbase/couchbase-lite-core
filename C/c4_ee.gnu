@@ -39,8 +39,6 @@ CBL {
 		c4db_getConfig;
 		c4db_getDocumentCount;
 		c4db_getLastSequence;
-		c4db_getMaxRevTreeDepth;
-		c4db_setMaxRevTreeDepth;
 		c4db_getUUIDs;
 		c4db_getExtraInfo;
 		c4db_setExtraInfo;

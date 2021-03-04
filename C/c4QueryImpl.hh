@@ -1,5 +1,5 @@
 //
-//  c4QueryEnumeratorImpl.hh
+//  c4QueryImpl.hh
 //  LiteCore
 //
 //  Created by Jens Alfke on 2/13/20.
@@ -7,18 +7,19 @@
 //
 
 #pragma once
+#include "c4Query.hh"
 #include "c4Internal.hh"
-#include "c4Query.h"
-#include "c4Database.hh"
 
+#include "Database.hh"
 #include "Query.hh"
 #include "InstanceCounted.hh"
 #include "RefCounted.hh"
 #include "Array.hh"
 
-using namespace litecore;
-using namespace fleece::impl;
 namespace c4Internal {
+
+    using namespace litecore;
+    using namespace fleece::impl;
 
     // Encapsulates C4QueryEnumerator struct. A C4QueryEnumerator* points inside this object.
     struct C4QueryEnumeratorImpl : public RefCounted,
@@ -34,18 +35,18 @@ namespace c4Internal {
             clearPublicFields();
         }
 
-        QueryEnumerator& enumerator() const {
+        QueryEnumerator* enumerator() const {
             if (!_enum)
                 error::_throw(error::InvalidParameter, "Query enumerator has been closed");
-            return *_enum;
+            return _enum;
         }
 
         int64_t getRowCount() const {
-            return enumerator().getRowCount();
+            return enumerator()->getRowCount();
         }
 
         bool next() {
-            if (!enumerator().next()) {
+            if (!enumerator()->next()) {
                 clearPublicFields();
                 return false;
             }
@@ -54,7 +55,7 @@ namespace c4Internal {
         }
 
         void seek(int64_t rowIndex) {
-            enumerator().seek(rowIndex);
+            enumerator()->seek(rowIndex);
             if (rowIndex >= 0)
                 populatePublicFields();
             else
@@ -78,7 +79,7 @@ namespace c4Internal {
         }
 
         C4QueryEnumeratorImpl* refresh() {
-            QueryEnumerator* newEnum = enumerator().refresh(_query);
+            QueryEnumerator* newEnum = enumerator()->refresh(_query);
             if (newEnum)
                 return retain(new C4QueryEnumeratorImpl(_database, _query, newEnum));
             else
@@ -103,6 +104,63 @@ namespace c4Internal {
     
     static inline C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator *e) {
         return (C4QueryEnumeratorImpl*)e;
+    }
+
+
+    // Internal implementation of C4QueryObserver
+    struct C4QueryObserverImpl : public C4QueryObserver {
+        C4QueryObserverImpl(C4Query *query, C4Query::ObserverCallback callback)
+        :C4QueryObserver(query)
+        ,_callback(move(callback))
+        { }
+
+        ~C4QueryObserverImpl() {
+            if (_query)
+                _query->enableObserver(this, false);
+        }
+
+        void setEnabled(bool enabled) override {
+            _query->enableObserver(this, enabled);
+        }
+
+        // called on a background thread
+        void notify(C4QueryEnumeratorImpl *e, C4Error err) noexcept {
+            {
+                LOCK(_mutex);
+                _currentEnumerator = e;
+                _currentError = err;
+            }
+            _callback(this);
+        }
+
+        Retained<C4QueryEnumeratorImpl> getEnumeratorImpl(bool forget, C4Error *outError) {
+            LOCK(_mutex);
+            if (outError)
+                *outError = _currentError;
+            if (forget)
+                return std::move(_currentEnumerator);
+            else
+                return _currentEnumerator;
+        }
+
+        C4Query::Enumerator getEnumerator(bool forget) override {
+            if (_currentError.code)
+                throwError(_currentError);
+            Retained<QueryEnumerator> e = _currentEnumerator->enumerator();
+            if (forget)
+                _currentEnumerator = nullptr;
+            return C4Query::Enumerator(move(e));
+        }
+
+    private:
+        C4Query::ObserverCallback const _callback;
+        mutable std::mutex              _mutex;
+        fleece::Retained<C4QueryEnumeratorImpl> _currentEnumerator;
+    };
+
+
+    static inline C4QueryObserverImpl* asInternal(C4QueryObserver *obs) {
+        return (C4QueryObserverImpl*)obs;
     }
 
 }

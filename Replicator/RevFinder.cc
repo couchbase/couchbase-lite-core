@@ -120,9 +120,15 @@ namespace litecore::repl {
 
             MessageBuilder response(req);
             response.compressed = true;
-            _db->use([&](C4Database *db) {
-                response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(db);
-            });
+            if (!_db->usingVersionVectors()) {
+#if 1
+                response["maxHistory"_sl] = 20;
+#else
+                _db->use([&](C4Database *db) {
+                    response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(db);
+                });
+#endif
+            }
             if (!_db->disableBlobSupport())
                 response["blobs"_sl] = "true"_sl;
             if ( !_announcedDeltaSupport && !_options.disableDeltaSupport()) {

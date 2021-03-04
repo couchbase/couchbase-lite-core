@@ -689,11 +689,11 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
 }
 
 
-#include "c4Replicator.hh"
+#include "c4ReplicatorImpl.hh"
 
-struct C4TestReplicator : public C4Replicator {
+struct C4TestReplicator : public C4ReplicatorImpl {
     C4TestReplicator(C4Database* db, C4ReplicatorParameters params)
-        : C4Replicator(db, params)
+        : C4ReplicatorImpl(db, params)
     {}
 
     alloc_slice propertiesMemory() const { return _options.properties.data(); }

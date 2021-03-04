@@ -20,7 +20,7 @@
 
 #include "c4Internal.hh"
 #include "c4Database.h"
-#include "c4Document.h"
+#include "c4DocumentTypes.h"
 #include "DataFile.hh"
 #include "FilePath.hh"
 #include "InstanceCounted.hh"
@@ -58,6 +58,7 @@ namespace c4Internal {
         static bool deleteDatabaseAtPath(const string &dbPath);
 
         DataFile* dataFile()                            {return _dataFile.get();}
+        const DataFile* dataFile() const                {return _dataFile.get();}
         const string& name() const                      {return _name;}
         FilePath path() const;
 
@@ -76,7 +77,7 @@ namespace c4Internal {
         UUID getUUID(slice key);
         void resetUUIDs();
 
-        uint64_t myPeerID();
+        uint64_t myPeerID() const;
 
         void rekey(const C4EncryptionKey *newKey);
         
@@ -91,6 +92,7 @@ namespace c4Internal {
         void endTransaction(bool commit);
 
         bool inTransaction() noexcept;
+        void mustBeInTransaction();
         bool mustBeInTransaction(C4Error *outError) noexcept;
         bool mustNotBeInTransaction(C4Error *outError) noexcept;
 
@@ -121,7 +123,7 @@ namespace c4Internal {
             Database* _db;
         };
 
-        KeyStore& defaultKeyStore();
+        KeyStore& defaultKeyStore() const;
         KeyStore& getKeyStore(const string &name) const;
 
         bool purgeDocument(slice docID);
@@ -131,22 +133,29 @@ namespace c4Internal {
 
         void validateRevisionBody(slice body);
 
-        Record getRawDocument(const std::string &storeName, slice key);
-        void putRawDocument(const string &storeName, slice key, slice meta, slice body);
+        Record getRawRecord(const std::string &storeName, slice key);
+        void putRawRecord(const string &storeName, slice key, slice meta, slice body);
 
-        DocumentFactory& documentFactory()                  {return *_documentFactory;}
+        DocumentFactory& documentFactory() const                {return *_documentFactory;}
 
-        fleece::impl::Encoder& sharedEncoder();
-        FLEncoder sharedFLEncoder();
+        Retained<Document> getDocument(slice docID,
+                                       bool mustExist,
+                                       C4DocContentLevel content) const;
+        Retained<Document> putDocument(const C4DocPutRequest &rq,
+                                       size_t *outCommonAncestorIndex,
+                                       C4Error *outError);
 
-        fleece::impl::SharedKeys* documentKeys()                  {return _dataFile->documentKeys();}
+        fleece::impl::Encoder& sharedEncoder() const;
+        FLEncoder sharedFLEncoder() const;
+
+        fleece::impl::SharedKeys* documentKeys() const          {return _dataFile->documentKeys();}
 
         access_lock<SequenceTracker>& sequenceTracker();
 
         BlobStore* blobStore() const;
 
-        void lockClientMutex()                              {_clientMutex.lock();}
-        void unlockClientMutex()                            {_clientMutex.unlock();}
+        void lockClientMutex() noexcept                         {_clientMutex.lock();}
+        void unlockClientMutex() noexcept                       {_clientMutex.unlock();}
 
         // DataFile::Delegate API:
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
@@ -154,10 +163,6 @@ namespace c4Internal {
 
         BackgroundDB* backgroundDatabase();
         void stopBackgroundTasks();
-
-#if 0 // unused
-        bool mustUseVersioning(C4DocumentVersioning, C4Error*) noexcept;
-#endif
 
     public:
         // should be private, but called from Document
@@ -193,15 +198,15 @@ namespace c4Internal {
         Transaction*                _transaction {nullptr}; // Current Transaction, or null
         int                         _transactionLevel {0};  // Nesting level of transaction
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
-        unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder
-        FLEncoder                   _flEncoder {nullptr};   // Ditto, for clients
+        mutable unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder
+        mutable FLEncoder           _flEncoder {nullptr};   // Ditto, for clients
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
         mutable unique_ptr<BlobStore> _blobStore;           // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
         std::recursive_mutex        _clientMutex;           // Mutex for c4db_lock/unlock
         unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
         Retained<Housekeeper>       _housekeeper;           // for expiration/cleanup tasks
-        uint64_t                    _myPeerID {0};          // My identifier in version vectors
+        mutable uint64_t            _myPeerID {0};          // My identifier in version vectors
     };
 
 }

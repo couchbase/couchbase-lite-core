@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "c4Document.h"
+#include "c4DocumentTypes.h"
 #include <stdarg.h>
 
 #ifdef __cplusplus

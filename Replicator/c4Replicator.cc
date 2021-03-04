@@ -16,20 +16,111 @@
 // limitations under the License.
 //
 
-#include "fleece/Fleece.hh"
+#include "c4Replicator.hh"
 #include "c4RemoteReplicator.hh"
 #ifdef COUCHBASE_ENTERPRISE
 #include "c4LocalReplicator.hh"
 #endif
 #include "c4IncomingReplicator.hh"
+#include "c4Database.hh"
 #include "c4ExceptionUtils.hh"
 #include "DatabaseCookies.hh"
 #include "StringUtil.hh"
-#include <atomic>
+#include "fleece/Fleece.hh"
 #include <errno.h>
 
 using namespace c4Internal;
 using namespace std;
+
+
+#pragma mark - C++ API:
+
+
+// All instances are subclasses of C4BaseReplicator.
+static C4ReplicatorImpl* asInternal(const C4Replicator *repl) {return (C4ReplicatorImpl*)repl;}
+
+
+Retained<C4Replicator> C4Database::newReplicator(C4Address serverAddress,
+                                                 slice remoteDatabaseName,
+                                                 const C4ReplicatorParameters &params)
+{
+    AssertParam(params.push != kC4Disabled || params.pull != kC4Disabled,
+                "Either push or pull must be enabled");
+    if (!params.socketFactory) {
+        C4Replicator::validateRemote(serverAddress, remoteDatabaseName);
+        if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
+            Warn("POSSIBLE SECURITY ISSUE: It looks like you're connecting to Sync Gateway's "
+                 "admin port (4985) -- this is usually a bad idea. By default this port is "
+                 "unreachable, but if opened, it would give anyone unlimited privileges.");
+        }
+    }
+    return new C4RemoteReplicator(this, params, serverAddress, remoteDatabaseName);
+}
+
+
+#ifdef COUCHBASE_ENTERPRISE
+Retained<C4Replicator> C4Database::newLocalReplicator(C4Database *otherLocalDB,
+                                                      const C4ReplicatorParameters &params)
+{
+    AssertParam(params.push != kC4Disabled || params.pull != kC4Disabled,
+                "Either push or pull must be enabled");
+    AssertParam(otherLocalDB != this, "Can't replicate a database to itself");
+    return new C4LocalReplicator(this, params, otherLocalDB);
+}
+#endif
+
+
+Retained<C4Replicator> C4Database::newReplicator(WebSocket *openSocket,
+                                                 const C4ReplicatorParameters &params)
+{
+    return new C4IncomingReplicator(this, params, openSocket);
+}
+
+
+Retained<C4Replicator> C4Database::newReplicator(C4Socket *openSocket,
+                                   const C4ReplicatorParameters &params)
+{
+    return newReplicator(WebSocketFrom(openSocket), params);
+}
+
+
+void C4Replicator::retry() {
+    C4Error error;
+    if (!asInternal(this)->retry(true, &error))
+        throwError(error);
+}
+
+void C4Replicator::setOptions(slice optionsDictFleece) {
+    asInternal(this)->setProperties(AllocedDict(optionsDictFleece));
+}
+
+alloc_slice C4Replicator::pendingDocIDs() const {
+    C4Error error;
+    alloc_slice ids = asInternal(this)->pendingDocumentIDs(&error);
+    if (!ids)
+        throwError(error);
+    return ids;
+}
+
+bool C4Replicator::isDocumentPending(slice docID) const {
+    C4Error error;
+    if (asInternal(this)->isDocumentPending(docID, &error))
+        return true;
+    else if (error.code == 0)
+        return false;
+    else
+        throwError(error);
+}
+
+#ifdef COUCHBASE_ENTERPRISE
+C4Cert* C4Replicator::peerTLSCertificate() const {
+    C4Error error;
+    auto cert = asInternal(this)->getPeerTLSCertificate(&error);
+    if (!cert && error.code)
+        throwError(error);
+    return cert;
+}
+#endif
 
 
 CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[6] = {
@@ -59,16 +150,15 @@ static uint16_t defaultPortForScheme(slice scheme) {
 }
 
 
-bool c4repl_isValidDatabaseName(C4String dbName) C4API {
-    slice name = dbName;
+bool C4Replicator::isValidDatabaseName(slice dbName) noexcept {
     // Same rules as Couchbase Lite 1.x and CouchDB
-    return name.size > 0 && name.size < 240
-        && islower(name[0])
-        && !slice(name).findByteNotIn("abcdefghijklmnopqrstuvwxyz0123456789_$()+-/"_sl);
+    return dbName.size > 0 && dbName.size < 240
+        && islower(dbName[0])
+        && !slice(dbName).findByteNotIn("abcdefghijklmnopqrstuvwxyz0123456789_$()+-/"_sl);
 }
 
 
-bool c4repl_isValidRemote(C4Address addr, C4String dbName, C4Error *outError) C4API {
+bool C4Replicator::isValidRemote(const C4Address &addr, slice dbName, C4Error *outError) noexcept {
     slice message;
     if (!isValidReplicatorScheme(addr.scheme))
         message = "Invalid replication URL scheme (use ws: or wss:)"_sl;
@@ -85,16 +175,23 @@ bool c4repl_isValidRemote(C4Address addr, C4String dbName, C4Error *outError) C4
 }
 
 
-bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API {
+void C4Replicator::validateRemote(const C4Address &addr, slice dbName) {
+    C4Error error;
+    if (!isValidRemote(addr, dbName, &error))
+        throwError(error);
+}
+
+
+bool C4Replicator::addressFromURL(slice url, C4Address &address, slice *dbName) {
     slice str = url;
 
     auto colon = str.findByteOrEnd(':');
     if (!colon)
         return false;
-    address->scheme = slice(str.buf, colon);
-    if (!isValidScheme(address->scheme))
+    address.scheme = slice(str.buf, colon);
+    if (!isValidScheme(address.scheme))
         return false;
-    address->port = defaultPortForScheme(address->scheme);
+    address.port = defaultPortForScheme(address.scheme);
     str.setStart(colon);
     if (!str.hasPrefix("://"_sl))
         return false;
@@ -105,12 +202,12 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
         auto endBr = str.findByte(']');
         if (!endBr)
             return false;
-        address->hostname = slice(&str[1], endBr);
-        if (address->hostname.size == 0)
+        address.hostname = slice(&str[1], endBr);
+        if (address.hostname.size == 0)
             return false;
         str.setStart(endBr + 1);
     } else {
-        address->hostname = nullslice;
+        address.hostname = nullslice;
     }
 
     colon = str.findByteOrEnd(':');
@@ -126,14 +223,14 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
         }
         if (port < 0 || port > 65535)
             return false;
-        address->port = (uint16_t)port;
+        address.port = (uint16_t)port;
     } else {
         colon = pathStart;
     }
-    if (!address->hostname.buf) {
-        address->hostname = slice(str.buf, colon);
-        if (address->hostname.size == 0)
-            address->port = 0;
+    if (!address.hostname.buf) {
+        address.hostname = slice(str.buf, colon);
+        if (address.hostname.size == 0)
+            address.port = 0;
     }
 
     if (dbName) {
@@ -148,31 +245,53 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
         while ((slash = str.findByte('/')) != nullptr)
             str.setStart(slash + 1);
 
-        address->path = slice(pathStart, str.buf);
+        address.path = slice(pathStart, str.buf);
         *dbName = str;
         return c4repl_isValidDatabaseName(slice(str));
     } else {
-        address->path = slice(pathStart, str.end());
+        address.path = slice(pathStart, str.end());
         return true;
     }
 }
 
 
+alloc_slice C4Replicator::addressToURL(const C4Address &address) {
+    stringstream s;
+    s << address.scheme << "://";
+    if (slice(address.hostname).findByte(':'))
+        s << '[' << address.hostname << ']';
+    else
+        s << address.hostname;
+    if (address.port)
+        s << ':' << address.port;
+    if (address.path.size == 0 || slice(address.path)[0] != '/')
+        s << '/';
+    s << address.path;
+    return alloc_slice(s.str());
+}
+
+
+#pragma mark - C API:
+
+
+bool c4repl_isValidDatabaseName(C4String dbName) C4API {
+    return C4Replicator::isValidDatabaseName(dbName);
+}
+
+
+bool c4repl_isValidRemote(C4Address addr, C4String dbName, C4Error *outError) C4API {
+    return C4Replicator::isValidRemote(addr, dbName, outError);
+}
+
+
+bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API {
+    return C4Replicator::addressFromURL(url, *address, (slice*)dbName);
+}
+
+
 C4StringResult c4address_toURL(C4Address address) C4API {
     try {
-        stringstream s;
-        s << address.scheme << "://";
-        if (slice(address.hostname).findByte(':'))
-            s << '[' << address.hostname << ']';
-        else
-            s << address.hostname;
-        if (address.port)
-            s << ':' << address.port;
-        if (address.path.size == 0 || slice(address.path)[0] != '/')
-            s << '/';
-        s << address.path;
-        auto str = s.str();
-        return c4slice_createResult({str.data(), str.size()});
+        return C4StringResult(C4Replicator::addressToURL(address));
     } catchError(nullptr);
     return {};
 }
@@ -255,7 +374,9 @@ void c4repl_stop(C4Replicator* repl) C4API {
 
 
 bool c4repl_retry(C4Replicator* repl, C4Error *outError) C4API {
-    return tryCatch<bool>(nullptr, std::bind(&C4Replicator::retry, repl, true, outError));
+    return tryCatch<bool>(nullptr, [&] {
+        return asInternal(repl)->retry(true, outError);
+    });
 }
 
 
@@ -270,14 +391,14 @@ void c4repl_setSuspended(C4Replicator* repl, bool suspended) C4API {
 
 
 void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) C4API {
-    repl->setProperties(AllocedDict(optionsDictFleece));
+    repl->setOptions(optionsDictFleece);
 }
 
 
 void c4repl_free(C4Replicator* repl) C4API {
     if (!repl)
         return;
-    repl->detach();
+    asInternal(repl)->detach();
     release(repl);
 }
 
@@ -294,25 +415,23 @@ C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
 
 C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) C4API {
     try {
-        return repl->pendingDocumentIDs(outErr);
+        return C4SliceResult( asInternal(repl)->pendingDocumentIDs(outErr) );
     } catchError(outErr);
-
-    return {nullptr, 0};
+    return {};
 }
 
 
 bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr) C4API {
     try {
-        return repl->isDocumentPending(docID, outErr);
+        return asInternal(repl)->isDocumentPending(docID, outErr);
     } catchError(outErr);
-
     return false;
 }
     
 C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) C4API {
 #ifdef COUCHBASE_ENTERPRISE
     outErr->code = 0;
-    return repl->getPeerTLSCertificate(outErr);
+    return asInternal(repl)->getPeerTLSCertificate(outErr);
 #else
     outErr->domain = LiteCoreDomain;
     outErr->code = kC4ErrorUnsupported;

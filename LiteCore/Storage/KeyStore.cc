@@ -38,8 +38,7 @@ namespace litecore {
     Record KeyStore::get(sequence_t seq, ContentOption option) const {
         Record rec;
         rec.updateSequence(seq);
-        if (!read(rec, ReadBy::Sequence, option))
-            /*rec.updateSequence(0)*/;
+        read(rec, ReadBy::Sequence, option);
         return rec;
     }
 

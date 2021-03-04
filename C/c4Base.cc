@@ -23,9 +23,9 @@
 #include "Actor.hh"
 #include "Backtrace.hh"
 #include "FilePath.hh"
+#include "KeyStore.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-
 #include "WebSocketInterface.hh"    // For websocket::WSLogDomain
 #include "InstanceCounted.hh"
 #include "sqlite3.h"
@@ -103,6 +103,11 @@ C4StringResult c4_getVersion() C4API {
     return sliceResult(vers);
 }
 // LCOV_EXCL_STOP
+
+
+C4Timestamp c4_now(void) C4API {
+    return KeyStore::now();
+}
 
 
 #pragma mark - SLICES:

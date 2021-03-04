@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "c4Document.h"
+#include "c4DocumentTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN
 

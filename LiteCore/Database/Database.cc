@@ -23,6 +23,7 @@
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
+#include "c4BlobStore.hh"
 #include "BackgroundDB.hh"
 #include "Housekeeper.hh"
 #include "DataFile.hh"
@@ -34,6 +35,7 @@
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
+#include "PrebuiltCopier.hh"
 #include <functional>
 
 namespace litecore { namespace constants
@@ -298,9 +300,9 @@ namespace c4Internal {
                 auto body = (const Dict*)doc->getSelectedRevRoot();
 
                 // Iterate over blobs:
-                Document::findBlobReferences(body, [&](const Dict *blob) {
+                Document::findBlobReferences(FLDict(body), [&](FLDict blob) {
                     blobKey key;
-                    if (Document::dictIsBlob(blob, key))    // get the key
+                    if (C4BlobStore::dictIsBlob(blob, (C4BlobKey&)key))    // get the key
                         usedDigests.insert(key.filename());
                     return true;
                 });
@@ -377,7 +379,7 @@ namespace c4Internal {
 
     // Callback that takes a base64 blob digest and returns the blob data
     alloc_slice Database::blobAccessor(const Dict *blobDict) const {
-        return Document::getBlobData(blobDict, blobStore());
+        return C4BlobStore::getBlobData(FLDict(blobDict), blobStore());
     }
 
 
@@ -416,7 +418,7 @@ namespace c4Internal {
     }
 
 
-    KeyStore& Database::defaultKeyStore() {
+    KeyStore& Database::defaultKeyStore() const {
         return _dataFile->defaultKeyStore();
     }
 
@@ -529,10 +531,10 @@ namespace c4Internal {
     }
 
 
-    uint64_t Database::myPeerID() {
+    uint64_t Database::myPeerID() const {
         if (_myPeerID == 0) {
             // Compute my peer ID from the first 64 bits of the public UUID.
-            auto uuid = getUUID(kPublicUUIDKey);
+            auto uuid = const_cast<Database*>(this)->getUUID(kPublicUUIDKey);
             memcpy(&_myPeerID, &uuid, sizeof(_myPeerID));
             _myPeerID = endian::dec64(_myPeerID);
             // Don't let it be zero:
@@ -561,6 +563,11 @@ namespace c4Internal {
         return _transactionLevel > 0;
     }
 
+
+    void Database::mustBeInTransaction() {
+        if (!inTransaction())
+            error::_throw(error::NotInTransaction);
+    }
 
     bool Database::mustBeInTransaction(C4Error *outError) noexcept {
         if (inTransaction())
@@ -637,12 +644,23 @@ namespace c4Internal {
 #pragma mark - DOCUMENTS:
 
     
-    Record Database::getRawDocument(const string &storeName, slice key) {
+    Retained<Document> Database::getDocument(slice docID,
+                                             bool mustExist,
+                                             C4DocContentLevel content) const
+    {
+        auto doc = documentFactory().newDocumentInstance(docID, ContentOption(content));
+        if (mustExist && doc && !doc->exists())
+            doc = nullptr;
+        return doc;
+    }
+
+
+    Record Database::getRawRecord(const string &storeName, slice key) {
         return getKeyStore(storeName).get(key);
     }
 
 
-    void Database::putRawDocument(const string &storeName, slice key, slice meta, slice body) {
+    void Database::putRawRecord(const string &storeName, slice key, slice meta, slice body) {
         KeyStore &localDocs = getKeyStore(storeName);
         auto &t = transaction();
         if (body.buf || meta.buf)
@@ -652,13 +670,13 @@ namespace c4Internal {
     }
 
 
-    fleece::impl::Encoder& Database::sharedEncoder() {
+    fleece::impl::Encoder& Database::sharedEncoder() const {
         _encoder->reset();
         return *_encoder.get();
     }
 
 
-    FLEncoder Database::sharedFLEncoder() {
+    FLEncoder Database::sharedFLEncoder() const {
         if (_flEncoder) {
             FLEncoder_Reset(_flEncoder);
         } else {
