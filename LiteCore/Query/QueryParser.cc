@@ -1343,10 +1343,22 @@ namespace litecore {
             iType = _aliases.find(alias);
         }
 
+        bool hasMultiDbAliases = false;
+        if (_aliases.size() > 1) {
+            int cnt = 0;
+            for (auto it = this->_aliases.begin(); it != this->_aliases.end(); ++it) {
+                if (it->second != kResultAlias) {
+                    if (++cnt == 2) {
+                        hasMultiDbAliases = true;
+                        break;
+                    }
+                }
+            }
+        }
         if (_propertiesUseSourcePrefix && !property.empty()) {
             // Interpret the first component of the property as a db alias:
             require(property[0].isKey(), "Property path can't start with array index");
-            if (_aliases.size() > 1 || alias == _dbAlias) {
+            if (hasMultiDbAliases || alias == _dbAlias) {
                 // With join (size > 1), properties must start with a keyspace alias to avoid ambiguity.
                 // Otherwise, we assume property[0] to be the alias if it coincides with the unique one.
                 // Otherwise, we consider that the property path starts in the document and, hence, do not drop.
