@@ -1003,10 +1003,48 @@ namespace litecore {
         writePropertyGetter(kValueFnName, propertyFromOperands(operands));
     }
 
+    bool QueryParser::optimizeMetaKeyExtraction(Array::iterator& operands) {
+        // Handle Meta().id - N1QL
+        // ["_.", ["meta" <db>], ".id"] - JSON
+
+        const Array* metaop = operands[0]->asArray();
+        if (metaop == nullptr || metaop->count() == 0 ||
+            metaop->begin().value()->asString() != "meta"_sl) {
+            return false;
+        }
+        slice dbAlias;
+        if (metaop->count() > 1) {
+            const Value* second = metaop->get(1);
+            if (second->type() == kString) {
+                dbAlias = second->asString();
+            }
+        }
+        slice meta_key = operands[1]->asString();
+        if (meta_key == nullptr) {
+            return false;
+        }
+        if (meta_key[0] == '.') {
+            meta_key.moveStart(1);
+        }
+        string dbAlias_s = dbAlias.asString();
+        Path path {slice(dbAlias_s +".id")};
+        const auto& dbIter = verifyDbAlias(path);
+        require(dbAlias_s.empty() || dbAlias_s == dbIter->first,
+                "database alias '%s' does not match a declared 'AS' alias", dbAlias_s.c_str());
+
+        writeMetaPropertyGetter(meta_key, dbIter->first);
+        return true;
+    }
+
 
     // Handles object (dict) property accessors, e.g. ["_.", [...], "prop"] --> fl_nested_value(..., "prop")
     void QueryParser::objectPropertyOp(slice op, Array::iterator& operands) {
         auto nOperands = operands.count();
+        
+        if (nOperands == 2 && optimizeMetaKeyExtraction(operands)) {
+            return;
+        }
+        
         _sql << kNestedValueFnName << '(';
         _context.push_back(&kArgListOperation);     // prevents extra parens around operands
         require(nOperands > 0, "Missing dictionary parameter for '%.*s'", SPLAT(op));
@@ -1130,6 +1168,91 @@ namespace litecore {
             nested.parse(dict);
             _sql << nested.SQL();
         }
+    }
+
+    namespace {
+        slice const kMetaKeys[] = {
+            "id"_sl,
+            "sequence"_sl,
+            "deleted"_sl,
+            "expiration"_sl,
+            "revisionID"_sl
+        };
+        enum {
+            mkId,
+            mkSequence,
+            mkDeleted,
+            mkExpiration,
+            mkRevisionId,
+            mkCount
+        };
+        static_assert(sizeof(kMetaKeys) / sizeof(kMetaKeys[0]) == mkCount);
+    }
+
+    // Handles ["meta", dbAlias_optional]
+    void QueryParser::metaOp(slice op, Array::iterator& operands) {
+        // Pre-conditions: op == "meta"
+        //                 operands.size() == 0 || operands[0]->type() == kString (dbAlias)
+
+        string arg;
+        if (operands.count() > 0 && operands[0]->type() == kString) {
+            arg = operands[0]->asString();
+        }
+        
+        Path path {slice(arg+".id")};
+        const auto& dbIter = verifyDbAlias(path);
+        require(arg.empty() || arg == dbIter->first,
+                "database alias '%s' does not match a declared 'AS' alias", arg.c_str());
+
+        _sql << kDictFnName << '(';
+        bool first = true;
+        for (slice k: kMetaKeys) {
+            if (!first) {
+                _sql << ", ";
+            } else {
+                first = false;
+            }
+            writeSQLString(k);
+            _sql << ", ";
+            writeMetaPropertyGetter(k, dbIter->first);
+        }
+        _sql << ')';
+    }
+
+    void QueryParser::writeMetaPropertyGetter(slice metaKey, const string& dbAlias) {
+        string tablePrefix;
+        if (!dbAlias.empty()) {
+            tablePrefix = quoteTableName(dbAlias) + ".";
+        }
+
+        auto b = &kMetaKeys[0];
+        auto it = find_if(b, b + mkCount, [metaKey](auto & p) {
+            return p == metaKey;
+        });
+        require(it != b + mkCount, "'%s' is not a valid Meta key", metaKey.asString().c_str());
+
+        switch (int i = (int)(it - b)) {
+            case mkId:
+                writeMetaProperty(kValueFnName, tablePrefix, "key");
+                break;
+            case mkDeleted:
+                writeDeletionTest(dbAlias, true);
+                _checkedDeleted = true;     // note that the query has tested _deleted
+                break;
+            case mkRevisionId:
+                _sql << kVersionFnName << "(" << tablePrefix << "version" << ")";
+                break;
+            case mkSequence:
+                writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i].cString());
+                _checkedExpiration = true;
+                break;
+            case mkExpiration:
+                writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i].cString());
+                break;
+            default:
+                Assert(false, "Internal logic error");
+                break;
+        };
     }
 
 
@@ -1331,10 +1454,10 @@ namespace litecore {
         _sql << tablePrefix << property;
     }
 
-
-    // Writes a call to a Fleece SQL function, including the closing ")".
-    void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
-        string tablePrefix;
+    // Return the iterator to _aliases based on the property.
+    // Post-condition: iterator != _aliases.end()
+    std::map<std::string, QueryParser::aliasType>::const_iterator
+    QueryParser::verifyDbAlias(fleece::impl::Path &property) {
         string alias;
         auto iType = _aliases.end();
         if(!property.empty()) {
@@ -1370,9 +1493,6 @@ namespace litecore {
             alias = _dbAlias;
         }
 
-        if (!alias.empty())
-            tablePrefix = quoteTableName(alias) + ".";
-
         if(iType == _aliases.end()) {
             iType = _aliases.find(alias);
         }
@@ -1380,6 +1500,16 @@ namespace litecore {
         require(iType != _aliases.end(),
                 "property '%s.%s' does not begin with a declared 'AS' alias",
                 alias.c_str(), string(property).c_str());
+
+        return iType;
+    }
+
+    // Writes a call to a Fleece SQL function, including the closing ")".
+    void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
+        auto &&iType = verifyDbAlias(property);
+        string alias = iType->first;
+        string tablePrefix = alias.empty() ? "" : quoteTableName(alias) + ".";
+        
         if (iType->second >= kUnnestVirtualTableAlias) {
             // The alias is to an UNNEST. This needs to be written specially:
             writeUnnestPropertyGetter(fn, property, alias, iType->second);

@@ -330,7 +330,10 @@ propertyName
 
 
 function =
-    f:functionName e:parenExprs         { $$ = insertAny(e, 0, f.as<string>() + "()");}
+    "meta"i _ '(' _                    { f = op("meta");}
+    (ds:dataSourceName _               { appendAny(f, ds.as<string>());}
+    )? ')' _                           { $$ = f;}
+  | f:functionName e:parenExprs        { $$ = insertAny(e, 0, f.as<string>() + "()");}
 
 functionName    =
     IDENTIFIER                         &{isFunction(yytext)}
