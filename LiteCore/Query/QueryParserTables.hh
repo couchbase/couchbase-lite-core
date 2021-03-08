@@ -109,6 +109,7 @@ namespace litecore {
     struct FunctionSpec {slice name; int minArgs; int maxArgs; slice sqlite_name; bool aggregate; bool wants_collation;};
     static const FunctionSpec kFunctionList[] = {
         // Array:
+        {"array_agg"_sl,        1, 1},
         {"array_avg"_sl,        1, 1},
         {"array_contains"_sl,   2, 2},
         {"array_count"_sl,      1, 1},
