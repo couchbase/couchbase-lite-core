@@ -255,8 +255,11 @@ namespace litecore {
                     error::_throw(error::CantUpgradeDatabase,
                                   "Database needs upgrade to newer document storage format");
                 for (string &name : allKeyStoreNames()) {
-                    _exec("ALTER TABLE kv_" + name + " ADD COLUMN extra BLOB; "
-                          "PRAGMA user_version=400; ");
+                    if(name.find("::") == string::npos) {
+                        // CBL-1741: Only update data tables, not FTS index tables
+                        _exec("ALTER TABLE kv_" + name + " ADD COLUMN extra BLOB; "
+                              "PRAGMA user_version=400; ");
+                    }
                 }
                 _schemaVersion = SchemaVersion::WithNewDocs;
             }
