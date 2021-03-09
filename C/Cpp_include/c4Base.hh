@@ -25,6 +25,11 @@
 #include "RefCounted.hh"
 #include "InstanceCounted.hh"
 #include "fleece/slice.hh"
+#include <exception>
+
+
+/// Converts an exception thrown from LiteCore's C++ API into a `C4Error`.
+C4Error C4ErrorFromException(const std::exception&) noexcept;
 
 
 /// Returns a description of a C4Error as a _temporary_ C string, for use in logging.

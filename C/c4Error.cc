@@ -17,6 +17,7 @@
 //
 
 #include "c4Base.h"
+#include "c4Base.hh"
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
 #include "Backtrace.hh"
@@ -326,6 +327,15 @@ C4StringResult c4error_getBacktrace(C4Error error) noexcept {
     if (auto info = ErrorTable::instance().copy(error); info && info->backtrace)
         return sliceResult(info->backtrace->toString());
     return {};
+}
+
+
+// (Declared in c4Base.hh)
+__cold
+C4Error C4ErrorFromException(const std::exception &x) noexcept {
+    C4Error result;
+    recordException(x, &result);
+    return result;
 }
 
 
