@@ -259,7 +259,7 @@ static const char* kReservedWords[] = {
 
 static const char* kFunctions[] = {         // (copied from LiteCore's QueryParserTables.hh)
     // Array:
-    "array_avg",  "array_contains",  "array_count",  "array_ifnull",  "array_length",  "array_max",
+    "array_agg", "array_avg",  "array_contains",  "array_count",  "array_ifnull",  "array_length",  "array_max",
     "array_min",  "array_of",  "array_sum",
     // Comparison:  (SQLite min and max are used in non-aggregate form here)
     "greatest",  "least",

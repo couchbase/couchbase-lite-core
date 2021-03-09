@@ -1918,3 +1918,37 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
     CHECK(e->columns()[0]->asString() == "Jean"_sl);
     REQUIRE(!e->next());
 }
+
+TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
+    Transaction t(store->dataFile());
+    writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("customerId");
+        enc.writeString("Jack");
+        enc.writeKey("test_id");
+        enc.writeString("agg_func");
+    });
+    writeDoc("doc-02"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("customerId");
+        enc.writeString("Jean");
+        enc.writeKey("test_id");
+        enc.writeString("alias_func");
+    });
+    writeDoc("doc-03"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("customerId");
+        enc.writeString("Scott");
+        enc.writeKey("test_id");
+        enc.writeString("agg_func");
+    });
+    t.commit();
+
+    const char* n1ql = "SELECT array_Agg(customerId) where test_id = \"agg_func\"";
+    Retained<Query> query = store->compileQuery(n1ql, QueryLanguage::kN1QL);
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    CHECK(e->columns().count() == 1);
+    CHECK(e->columns()[0]->type() == kArray);
+    const Array* agg = e->columns()[0]->asArray();
+    CHECK(agg->count() == 2);
+    CHECK(agg->get(0)->asString() == "Jack"_sl);
+    CHECK(agg->get(1)->asString() == "Scott"_sl);
+}
