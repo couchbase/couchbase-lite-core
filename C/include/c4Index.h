@@ -30,7 +30,7 @@ extern "C" {
 
 
     /** Types of indexes. */
-    typedef C4_ENUM(uint32_t, C4IndexType) {
+    C4_ENUM(uint32_t, C4IndexType) {
         kC4ValueIndex,         ///< Regular index of property value
         kC4FullTextIndex,      ///< Full-text index
         kC4ArrayIndex,         ///< Index of array values, for use with UNNEST

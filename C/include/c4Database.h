@@ -37,7 +37,7 @@ extern "C" {
 
 
     /** Boolean options for C4DatabaseConfig. */
-    typedef C4_OPTIONS(uint32_t, C4DatabaseFlags) {
+    C4_OPTIONS(uint32_t, C4DatabaseFlags) {
         kC4DB_Create        = 0x01, ///< Create the file if it doesn't exist
         kC4DB_ReadOnly      = 0x02, ///< Open file read-only
         kC4DB_AutoCompact   = 0x04, ///< Enable auto-compaction [UNIMPLEMENTED]
@@ -47,13 +47,13 @@ extern "C" {
     };
 
     /** Encryption algorithms. */
-    typedef C4_ENUM(uint32_t, C4EncryptionAlgorithm) {
+    C4_ENUM(uint32_t, C4EncryptionAlgorithm) {
         kC4EncryptionNone = 0,      ///< No encryption (default)
         kC4EncryptionAES256,        ///< AES with 256-bit key [ENTERPRISE EDITION ONLY]
     };
 
     /** Encryption key sizes (in bytes). */
-    typedef C4_ENUM(uint64_t, C4EncryptionKeySize) {
+    C4_ENUM(uint64_t, C4EncryptionKeySize) {
         kC4EncryptionKeySizeAES256 = 32,
     };
 
@@ -229,7 +229,7 @@ extern "C" {
 
 
     /** Types of maintenance that \ref c4db_maintenance can perform. */
-    typedef C4_ENUM(uint32_t, C4MaintenanceType) {
+    C4_ENUM(uint32_t, C4MaintenanceType) {
         /// Shrinks the database file by removing any empty pages,
         /// and deletes blobs that are no longer referenced by any documents.
         /// (Runs SQLite `PRAGMA incremental_vacuum; PRAGMA wal_checkpoint(TRUNCATE)`.)
@@ -340,7 +340,7 @@ extern "C" {
 
     //-------- DEPRECATED API --------
 
-    typedef C4_ENUM(uint32_t, C4DocumentVersioning) {
+    C4_ENUM(uint32_t, C4DocumentVersioning) {
         kC4TreeVersioning_v2,       ///< Revision trees, old v2.x schema
         kC4TreeVersioning,          ///< Revision trees, v3.x schema
         kC4VectorVersioning         ///< Version vectors

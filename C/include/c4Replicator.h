@@ -33,7 +33,7 @@ extern "C" {
 #define kC4Replicator2TLSScheme C4STR("wss")
 
     /** How to replicate, in either direction */
-    typedef C4_ENUM(int32_t, C4ReplicatorMode) {
+    C4_ENUM(int32_t, C4ReplicatorMode) {
         kC4Disabled,        // Do not allow this direction
         kC4Passive,         // Allow peer to initiate this direction
         kC4OneShot,         // Replicate, then stop
@@ -41,7 +41,7 @@ extern "C" {
     };
 
     /** The possible states of a replicator. */
-    typedef C4_ENUM(int32_t, C4ReplicatorActivityLevel) {
+    C4_ENUM(int32_t, C4ReplicatorActivityLevel) {
         /* EXTERNAL STATES */
         kC4Stopped,     ///< Finished, or got a fatal error.
         kC4Offline,     ///< Connection failed, but waiting to retry. */
@@ -76,7 +76,7 @@ extern "C" {
     } C4Progress;
 
     /** Flags relating to a replicator's connection state. */
-    typedef C4_OPTIONS(int32_t, C4ReplicatorStatusFlags) {
+    C4_OPTIONS(int32_t, C4ReplicatorStatusFlags) {
         kC4WillRetry     = 0x1,         ///< If true, will automatically reconnect when offline
         kC4HostReachable = 0x2,         ///< If false, it's not possible to connect to the host
         kC4Suspended     = 0x4          ///< If true, will not connect until unsuspended
@@ -87,7 +87,7 @@ extern "C" {
      *  notifications that the replicator has to send out, which has an impact on performance,
      *  since it takes up time in the execution queue.
      */
-    typedef C4_ENUM(int32_t, C4ReplicatorProgressLevel) {
+    C4_ENUM(int32_t, C4ReplicatorProgressLevel) {
         kC4ReplProgressOverall,         ///< Callback about completion and estimated total (C4ReplicatorStatusChangedCallback)
         kC4ReplProgressPerDocument,     ///< Callback for every document replicated (C4ReplicatorDocumentsEndedCallback)
         kC4ReplProgressPerAttachment,   ///< Callback for every document and attachment replicated (C4ReplicatorBlobProgressCallback)

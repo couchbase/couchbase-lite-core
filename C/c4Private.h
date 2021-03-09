@@ -90,7 +90,7 @@ bool c4db_markSynced(C4Database *database,
 
 /** Flags produced by \ref c4db_findDocAncestors, the result of comparing a local document's
     revision(s) against the requested revID. */
-typedef C4_OPTIONS(uint8_t, C4FindDocAncestorsResultFlags) {
+C4_OPTIONS(uint8_t, C4FindDocAncestorsResultFlags) {
     kRevsSame           = 0,    // Current revision is equal
     kRevsLocalIsOlder   = 1,    // Current revision is older
     kRevsLocalIsNewer   = 2,    // Current revision is newer

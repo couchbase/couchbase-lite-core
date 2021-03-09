@@ -193,7 +193,7 @@ void c4_dumpInstances(void) C4API;
 
 
 // (These are identical to the internal C++ error::Domain enum values.)
-typedef C4_ENUM(uint8_t, C4ErrorDomain) {
+C4_ENUM(uint8_t, C4ErrorDomain) {
     LiteCoreDomain = 1, // code is a Couchbase Lite Core error code (see below)
     POSIXDomain,        // code is an errno
     SQLiteDomain,       // code is a SQLite error; see "sqlite3.h"
@@ -208,7 +208,7 @@ typedef C4_ENUM(uint8_t, C4ErrorDomain) {
 
 // LiteCoreDomain error codes:
 // (These are identical to the internal C++ error::LiteCoreError enum values.)
-typedef C4_ENUM(int32_t, C4ErrorCode) {
+C4_ENUM(int32_t, C4ErrorCode) {
     kC4ErrorAssertionFailed = 1,    // Internal assertion failure
     kC4ErrorUnimplemented,          // Oops, an unimplemented API call
     kC4ErrorUnsupportedEncryption,  // Unsupported encryption algorithm
@@ -247,7 +247,7 @@ typedef C4_ENUM(int32_t, C4ErrorCode) {
 
 /** Network error codes (higher level than POSIX, lower level than HTTP.) */
 // (These are identical to the internal C++ NetworkError enum values in WebSocketInterface.hh.)
-typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
+C4_ENUM(int32_t, C4NetworkErrorCode) {
     kC4NetErrDNSFailure = 1,            // DNS lookup failed
     kC4NetErrUnknownHost,               // DNS server doesn't know the hostname
     kC4NetErrTimeout,                   // Connection timeout
@@ -348,7 +348,7 @@ bool c4error_mayBeNetworkDependent(C4Error err) C4API;
 
 
 /** Logging levels. */
-typedef C4_ENUM(int8_t, C4LogLevel) {
+C4_ENUM(int8_t, C4LogLevel) {
     kC4LogDebug,
     kC4LogVerbose,
     kC4LogInfo,

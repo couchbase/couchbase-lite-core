@@ -32,7 +32,7 @@ extern "C" {
 
 
     /** Flags describing a document. */
-    typedef C4_OPTIONS(uint32_t, C4DocumentFlags) {
+    C4_OPTIONS(uint32_t, C4DocumentFlags) {
         kDocDeleted         = 0x01,     ///< The document's current revision is deleted.
         kDocConflicted      = 0x02,     ///< The document is in conflict.
         kDocHasAttachments  = 0x04,     ///< The document's current revision has attachments.
@@ -40,7 +40,7 @@ extern "C" {
     }; // Note: Superset of DocumentFlags
 
     /** Flags that apply to a revision. */
-    typedef C4_OPTIONS(uint8_t, C4RevisionFlags) {
+    C4_OPTIONS(uint8_t, C4RevisionFlags) {
         kRevDeleted        = 0x01, ///< Is this revision a deletion/tombstone?
         kRevLeaf           = 0x02, ///< Is this revision a leaf (no children?)
         kRevNew            = 0x04, ///< Has this rev been inserted since the doc was read?
@@ -53,7 +53,7 @@ extern "C" {
 
 
     /** Specifies how much content to retrieve when getting a document. */
-    typedef C4_ENUM(uint8_t, C4DocContentLevel) {
+    C4_ENUM(uint8_t, C4DocContentLevel) {
         kDocGetMetadata,            ///< Only get revID and flags
         kDocGetCurrentRev,          ///< Get current revision body but not other revisions/remotes
         kDocGetAll,                 ///< Get everything

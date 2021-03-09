@@ -33,7 +33,7 @@ extern "C" {
         @{ */
 
     /** Certificate usage types. A certificate may have one or more of these. */
-    typedef C4_OPTIONS(uint8_t, C4CertUsage) { // Note: Same values as `MBEDTLS_X509_NS_CERT_TYPE_*`
+    C4_OPTIONS(uint8_t, C4CertUsage) { // Note: Same values as `MBEDTLS_X509_NS_CERT_TYPE_*`
         kC4CertUsage_NotSpecified      = 0x00, ///< No specified usage (not generally useful)
         kC4CertUsage_TLSClient         = 0x80, ///< TLS (SSL) client cert
         kC4CertUsage_TLSServer         = 0x40, ///< TLS (SSL) server cert
@@ -295,7 +295,7 @@ extern "C" {
      @{ */
 
     /** Supported key-pair algorithms. */
-    typedef C4_ENUM(uint8_t, C4KeyPairAlgorithm) {
+    C4_ENUM(uint8_t, C4KeyPairAlgorithm) {
         kC4RSA,
     };
 
@@ -386,7 +386,7 @@ extern "C" {
 
     /** Digest algorithms to be used when generating signatures.
         (Note: These enum values match mbedTLS's `mbedtls_md_type_t`.) */
-    typedef C4_ENUM(int, C4SignatureDigestAlgorithm) {
+    C4_ENUM(int, C4SignatureDigestAlgorithm) {
         kC4SignatureDigestNone = 0,  ///< No digest, just direct signature of input data.
         kC4SignatureDigestSHA1 = 4,  ///< SHA-1 message digest.
         kC4SignatureDigestSHA224,    ///< SHA-224 message digest.

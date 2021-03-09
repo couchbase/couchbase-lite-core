@@ -30,7 +30,7 @@ extern "C" {
     
     /** Standard WebSocket close status codes, for use in C4Errors with WebSocketDomain.
         These are defined at <http://tools.ietf.org/html/rfc6455#section-7.4.1> */
-    typedef C4_ENUM(int32_t, C4WebSocketCloseCode) {
+    C4_ENUM(int32_t, C4WebSocketCloseCode) {
         kWebSocketCloseNormal           = 1000,
         kWebSocketCloseGoingAway        = 1001, // Peer has to close, e.g. because host app is quitting
         kWebSocketCloseProtocolError    = 1002, // Protocol violation: invalid framing data
@@ -62,7 +62,7 @@ extern "C" {
 
     /** The type of message framing that should be applied to the socket's data (added to outgoing,
         parsed out of incoming.) */
-    typedef C4_ENUM(uint8_t, C4SocketFraming) {
+    C4_ENUM(uint8_t, C4SocketFraming) {
         kC4WebSocketClientFraming,  ///< Frame as WebSocket client messages (masked)
         kC4NoFraming,               ///< No framing; use messages as-is
         kC4WebSocketServerFraming,  ///< Frame as WebSocket server messages (not masked)

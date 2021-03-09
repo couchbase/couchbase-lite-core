@@ -33,7 +33,7 @@ extern "C" {
     //////// DOCUMENT ENUMERATION (ALL_DOCS):
 
 
-    typedef C4_OPTIONS(uint16_t, C4EnumeratorFlags) {
+    C4_OPTIONS(uint16_t, C4EnumeratorFlags) {
         kC4Descending           = 0x01, ///< If true, iteration goes by descending document IDs.
         kC4Unsorted             = 0x02, ///< If true, iteration order is undefined (may be faster!)
         kC4IncludeDeleted       = 0x08, ///< If true, include deleted documents.

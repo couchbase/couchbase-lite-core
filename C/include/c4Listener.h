@@ -31,14 +31,14 @@ extern "C" {
 
 
     /** Flags indicating which network API(s) to serve. */
-    typedef C4_OPTIONS(unsigned, C4ListenerAPIs) {
+    C4_OPTIONS(unsigned, C4ListenerAPIs) {
         kC4RESTAPI = 0x01,              ///< CouchDB-like REST API
         kC4SyncAPI = 0x02               ///< Replication server
     };
 
 
     /** Different ways to provide TLS private keys. */
-    typedef C4_ENUM(unsigned, C4PrivateKeyRepresentation) {
+    C4_ENUM(unsigned, C4PrivateKeyRepresentation) {
         kC4PrivateKeyFromCert,          ///< Key in secure storage, associated with certificate
         kC4PrivateKeyFromKey,           ///< Key from the provided key pair
     };
