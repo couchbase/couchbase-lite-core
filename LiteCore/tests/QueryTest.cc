@@ -1880,3 +1880,37 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
         CHECK(e->columns()[0]->asString() == "special"_sl);
     }
 }
+
+TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
+    Transaction t(store->dataFile());
+    writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("customerId");
+        enc.writeString("Jack");
+        enc.writeKey("test_id");
+        enc.writeString("alias_func");
+    });
+    writeDoc("doc-02"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("customerId");
+        enc.writeString("Jean");
+        enc.writeKey("test_id");
+        enc.writeString("alias_func");
+    });
+    writeDoc("doc-03"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("customerId");
+        enc.writeString("Scott");
+        enc.writeKey("test_id");
+        enc.writeString("alias_func");
+    });
+    t.commit();
+    
+    string queryStr = "SELECT customerId AS `$1` WHERE test_id='alias_func' ORDER BY `$1` LIMIT 2";
+    Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    CHECK(query->columnTitles() == vector<string>{"$1"});
+    
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "Jack"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "Jean"_sl);
+    REQUIRE(!e->next());
+}

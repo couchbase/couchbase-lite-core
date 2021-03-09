@@ -180,7 +180,7 @@ namespace litecore { namespace repl {
             }
         }
         if (code == 0) {
-            LogToAt(SyncLog, Warning, "Received unknown error {'%.*s' %d \"%.*s\"} from server",
+            LogWarn(SyncLog, "Received unknown error {'%.*s' %d \"%.*s\"} from server",
                     SPLAT(err.domain), err.code, SPLAT(err.message));
             code = kC4ErrorRemoteError;
         }

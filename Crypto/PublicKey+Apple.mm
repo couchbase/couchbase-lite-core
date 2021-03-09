@@ -67,7 +67,7 @@ namespace litecore { namespace crypto {
 
     [[noreturn]] __unused
     static void throwOSStatus(OSStatus err, const char *fnName, const char *what) {
-        LogToAt(TLSLogDomain, Error, "%s (%s returned %d)", what, fnName, int(err));
+        LogError(TLSLogDomain, "%s (%s returned %d)", what, fnName, int(err));
         error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, int(err));
     }
 
@@ -79,14 +79,14 @@ namespace litecore { namespace crypto {
     __unused
     static inline void warnOSStatusError(OSStatus err, const char *fnName, const char *what) {
         if (_usuallyFalse(err != noErr)) {
-            LogToAt(TLSLogDomain, Error, "%s (%s returned %d)", what, fnName, int(err));
+            LogError(TLSLogDomain, "%s (%s returned %d)", what, fnName, int(err));
         }
     }
 
     __unused static inline void warnCFError(CFErrorRef cfError, const char *fnName) {
         auto error = (__bridge NSError*)cfError;
         auto message = error.description;
-        LogToAt(TLSLogDomain, Error, "%s failed: %s", fnName, message.UTF8String);
+        LogError(TLSLogDomain, "%s failed: %s", fnName, message.UTF8String);
     }
 
 
@@ -186,7 +186,7 @@ namespace litecore { namespace crypto {
                 CFRelease(data);
                 return result;
             } else {
-               LogToAt(TLSLogDomain, Error, "Couldn't get the data of a public key: Not supported by macOS < 10.12 and iOS < 10.0");
+               LogError(TLSLogDomain, "Couldn't get the data of a public key: Not supported by macOS < 10.12 and iOS < 10.0");
                 error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.12 and iOS < 10.0");
             }
         }
@@ -237,7 +237,7 @@ namespace litecore { namespace crypto {
                         checkOSStatus(status, "SecItemDelete", "Couldn't remove a private key from the Keychain");
                 }
             } else {
-                LogToAt(TLSLogDomain, Error, "Couldn't remove keys: Not supported by macOS < 10.12 and iOS < 10.0");
+                LogError(TLSLogDomain, "Couldn't remove keys: Not supported by macOS < 10.12 and iOS < 10.0");
                 throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
             }
         }
@@ -270,7 +270,7 @@ namespace litecore { namespace crypto {
                     return 0;
                 }
             } else {
-                LogToAt(TLSLogDomain, Error, "Couldn't decrypt using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
+                LogError(TLSLogDomain, "Couldn't decrypt using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
                 return MBEDTLS_ERR_RSA_UNSUPPORTED_OPERATION;
             }
         }
@@ -300,7 +300,7 @@ namespace litecore { namespace crypto {
                     if (mbedDigestAlgorithm >= 0 && mbedDigestAlgorithm < 9)
                         digestAlgorithm = kDigestAlgorithmMap[mbedDigestAlgorithm];
                     if (!digestAlgorithm) {
-                        LogToAt(TLSLogDomain, Warning, "Keychain private key: unsupported mbedTLS digest algorithm %d",
+                        LogWarn(TLSLogDomain, "Keychain private key: unsupported mbedTLS digest algorithm %d",
                              mbedDigestAlgorithm);
                         return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
                     }
@@ -320,7 +320,7 @@ namespace litecore { namespace crypto {
                     return 0;
                 }
             } else {
-                LogToAt(TLSLogDomain, Error, "Couldn't sign using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
+                LogError(TLSLogDomain, "Couldn't sign using Keychain private key: Not supported by macOS < 10.12 and iOS < 10.0");
                 return MBEDTLS_ERR_RSA_UNSUPPORTED_OPERATION;
             }
         }
@@ -398,7 +398,7 @@ namespace litecore { namespace crypto {
                 return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
             }
         } else {
-            LogToAt(TLSLogDomain, Error, "Couldn't get private key using certificate: Not supported by macOS < 10.12 and iOS < 10.0");
+            LogError(TLSLogDomain, "Couldn't get private key using certificate: Not supported by macOS < 10.12 and iOS < 10.0");
             throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
         }
     }
@@ -440,7 +440,7 @@ namespace litecore { namespace crypto {
                 auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
                 return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
             } else {
-                LogToAt(TLSLogDomain, Error, "Couldn't get private key using public key: Not supported by macOS < 10.12 and iOS < 10.0");
+                LogError(TLSLogDomain, "Couldn't get private key using public key: Not supported by macOS < 10.12 and iOS < 10.0");
                 throwMbedTLSError(MBEDTLS_ERR_X509_FEATURE_UNAVAILABLE);
             }
         }
@@ -587,7 +587,7 @@ namespace litecore { namespace crypto {
                     warnCFError(cferr, "SecTrustEvaluateWithError");
                 err = SecTrustGetTrustResult(trustRef, &result);
             } else {
-                LogToAt(TLSLogDomain, Error, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
+                LogError(TLSLogDomain, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
                 error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
             }
 #else
@@ -643,7 +643,7 @@ namespace litecore { namespace crypto {
                     warnCFError(cferr, "SecTrustEvaluateWithError");
                 err = SecTrustGetTrustResult(trustRef, &result);
             } else {
-                LogToAt(TLSLogDomain, Error, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
+                LogError(TLSLogDomain, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
                 error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
             }
 #else
@@ -712,7 +712,7 @@ namespace litecore { namespace crypto {
                     warnCFError(cferr, "SecTrustEvaluateWithError");
                 err = SecTrustGetTrustResult(trust, &result);
             } else {
-                LogToAt(TLSLogDomain, Error, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
+                LogError(TLSLogDomain, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
                 error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
             }
 #else

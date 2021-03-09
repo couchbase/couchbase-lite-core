@@ -122,11 +122,12 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("SELECT DISTINCT custId FROM orders where test_id = 'agg_func' ORDER BY custId") ==
           "{'DISTINCT':true,'FROM':[{'AS':'orders'}],'ORDER_BY':[['.custId']],"
           "'WHAT':[['.custId']],'WHERE':['=',['.test_id'],'agg_func']}");
-
-    ExpectingExceptions x;
-    CHECK_THROWS_WITH(translate("SELECT custId, other.custId FROM orders JOIN orders other "
-                                "ON orders.test_id = other.test_id ORDER BY custId"),
-                      "property 'custId.' does not begin with a declared 'AS' alias");
+    {
+        ExpectingExceptions x;
+        CHECK_THROWS_WITH(translate("SELECT custId, other.custId FROM orders JOIN orders other "
+                                    "ON orders.test_id = other.test_id ORDER BY custId"),
+                          "property 'custId.' does not begin with a declared 'AS' alias");
+    }
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
@@ -264,6 +265,9 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
 //    CHECK(translate("SELECT 17 NOT IN (SELECT value WHERE type='prime')") == "{'WHAT':[['NOT IN',17,['SELECT',{'WHAT':[['.value']],'WHERE':['=',['.type'],'prime']}]]]}");
 
     CHECK(translate("SELECT productId, color, categories WHERE categories[0] LIKE 'Bed%' AND test_id='where_func' ORDER BY productId LIMIT 3") == "{'LIMIT':3,'ORDER_BY':[['.productId']],'WHAT':[['.productId'],['.color'],['.categories']],'WHERE':['AND',['LIKE',['.categories[0]'],'Bed%'],['=',['.test_id'],'where_func']]}");
+    CHECK(translate("SELECT FLOOR(unitPrice+0.5) as sc FROM product where test_id = \"numberfunc\" ORDER BY sc limit 5") ==
+          "{'FROM':[{'AS':'product'}],'LIMIT':5,'ORDER_BY':[['.sc']],"
+          "'WHAT':[['AS',['FLOOR()',['+',['.unitPrice'],0.5]],'sc']],'WHERE':['=',['.test_id'],'numberfunc']}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {

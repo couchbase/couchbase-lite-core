@@ -103,7 +103,7 @@ namespace litecore {
 
         void captureBacktrace(unsigned skipFrames =0);
 
-        [[noreturn]] void _throw();
+        [[noreturn]] void _throw(unsigned skipFrames =0);
 
         /** Returns an equivalent error in the LiteCore or POSIX domain. */
         error standardized() const;

@@ -103,7 +103,7 @@ namespace litecore { namespace crypto {
         Retained<PrivateKey> key = new PrivateKey();
         auto ctx = key->context();
         TRY( mbedtls_pk_setup(ctx, mbedtls_pk_info_from_type(MBEDTLS_PK_RSA)) );
-        LogToAt(TLSLogDomain, Info, "Generating %u-bit RSA key-pair...", keySizeInBits);
+        LogTo(TLSLogDomain, "Generating %u-bit RSA key-pair...", keySizeInBits);
         TRY( mbedtls_rsa_gen_key(mbedtls_pk_rsa(*ctx),
                                  mbedtls_ctr_drbg_random, RandomNumberContext(),
                                  keySizeInBits, 65537) );
@@ -167,7 +167,7 @@ namespace litecore { namespace crypto {
                 *p -= keyData.size;
                 return int(keyData.size);
             } catch (const std::exception &x) {
-                LogToAt(TLSLogDomain, Warning, "Unable to get data of public key: %s", x.what());
+                LogWarn(TLSLogDomain, "Unable to get data of public key: %s", x.what());
                 return MBEDTLS_ERR_PK_FILE_IO_ERROR;
             }
         };

@@ -225,7 +225,7 @@ namespace litecore {
             
             // (Don't update _rec body or extra, because it'd invalidate all the inner pointers from
             // Rev objects into the existing body/extra buffer.)
-            LogToAt(DBLog, Verbose, "Saved doc '%.*s' #%s; body=%zu, extra=%zu",
+            LogVerbose(DBLog, "Saved doc '%.*s' #%s; body=%zu, extra=%zu",
                   SPLAT(newRec.key), revid(newRec.version).str().c_str(),
                   newRec.body.size, newRec.extra.size);
             if (createSequence)

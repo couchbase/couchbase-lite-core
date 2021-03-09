@@ -454,7 +454,9 @@ namespace litecore {
     __cold
     error::error(error::Domain d, int c)
     :error(d, c, _what(d, c))
-    { }
+    {
+        DebugAssert(c != 0);
+    }
 
 
     __cold
@@ -594,11 +596,11 @@ namespace litecore {
 
 
     __cold
-    void error::_throw() {
+    void error::_throw(unsigned skipFrames) {
         if (sWarnOnError && !isUnremarkable()) {
             if (sNotableExceptionHook)
                 sNotableExceptionHook();
-            captureBacktrace(2);
+            captureBacktrace(2 + skipFrames);
             WarnError("LiteCore throwing %s error %d: %s\n%s",
                       nameOfDomain(domain), code, what(), backtrace->toString().c_str());
         }
@@ -607,20 +609,19 @@ namespace litecore {
 
     
     __cold
-    void error::_throw(Domain domain, int code ) {
-        DebugAssert(code != 0);
-        error{domain, code}._throw();
+    void error::_throw(Domain domain, int code) {
+        error{domain, code}._throw(1);
     }
 
     
     __cold
     void error::_throw(error::LiteCoreError err) {
-        _throw(LiteCore, err);
+        error{LiteCore, err}._throw(1);
     }
 
     __cold
     void error::_throwErrno() {
-        _throw(POSIX, errno);
+        error{POSIX, errno}._throw(1);
     }
 
 
@@ -630,7 +631,7 @@ namespace litecore {
         va_start(args, fmt);
         std::string message = vformat(fmt, args);
         va_end(args);
-        error{LiteCore, code, message}._throw();
+        error{LiteCore, code, message}._throw(1);
     }
 
 
@@ -643,7 +644,7 @@ namespace litecore {
         va_end(args);
         message += ": ";
         message += strerror(code);
-        error{POSIX, code, message}._throw();
+        error{POSIX, code, message}._throw(1);
     }
 
 

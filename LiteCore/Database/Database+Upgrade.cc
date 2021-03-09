@@ -87,7 +87,7 @@ namespace c4Internal {
                 // simply resave and RevTreeRecord will use the new schema:
                 auto result = revTree.save(t);
                 Assert(result == RevTreeRecord::kNoNewSequence);
-                LogToAt(DBLog, Verbose, "  - Upgraded doc '%.*s' #%s",
+                LogVerbose(DBLog, "  - Upgraded doc '%.*s' #%s",
                         SPLAT(rec.key()),
                         revid(rec.version()).str().c_str());
             }
@@ -143,7 +143,7 @@ namespace c4Internal {
         //TODO: Find conflicts and add them to newRec.extra
         Assert(db->defaultKeyStore().set(newRec, false, t) > 0);
 
-        LogToAt(DBLog, Verbose, "  - Upgraded doc '%.*s', %s -> [%s], %zu bytes body, %zu bytes extra",
+        LogVerbose(DBLog, "  - Upgraded doc '%.*s', %s -> [%s], %zu bytes body, %zu bytes extra",
                 SPLAT(rec.key()),
                 revid(rec.version()).str().c_str(),
                 string(vv.asASCII()).c_str(),

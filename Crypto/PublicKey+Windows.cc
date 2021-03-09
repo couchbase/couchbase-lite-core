@@ -49,13 +49,13 @@ namespace litecore::crypto {
 
     [[noreturn]]
     void throwSecurityStatus(SECURITY_STATUS err, const char *fnName, const char *what) {
-        LogToAt(TLSLogDomain, Error, "%s (%s returned %d)", what, fnName, static_cast<int>(err));
+        LogError(TLSLogDomain, "%s (%s returned %d)", what, fnName, static_cast<int>(err));
         error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, static_cast<int>(err));
     }
 
     [[noreturn]]
     void throwWincryptError(DWORD err, const char *fnName, const char *what) {
-        LogToAt(TLSLogDomain, Error, "%s (%s returned %d)", what, fnName, err);
+        LogError(TLSLogDomain, "%s (%s returned %d)", what, fnName, err);
         error::_throw(error::CryptoError, "%s (%s returned %d)", what, fnName, err);
     }
 
@@ -342,7 +342,7 @@ namespace litecore::crypto {
 
             // No exceptions allowed in this function
             if(result != ERROR_SUCCESS) {
-                LogToAt(TLSLogDomain, Error, "NCryptDecrypt failed to decrypt data (%d)", static_cast<int>(result));
+                LogError(TLSLogDomain, "NCryptDecrypt failed to decrypt data (%d)", static_cast<int>(result));
                 return result == NTE_BUFFER_TOO_SMALL
                     ? MBEDTLS_ERR_RSA_OUTPUT_TOO_LARGE
                     : MBEDTLS_ERR_RSA_PRIVATE_FAILED;
@@ -374,7 +374,7 @@ namespace litecore::crypto {
             if (mbedDigestAlgorithm >= 1 && mbedDigestAlgorithm < 9)
                 digestAlgorithm = kDigestAlgorithmMap[mbedDigestAlgorithm];
             if (mbedDigestAlgorithm != 0 && !digestAlgorithm) {
-                LogToAt(TLSLogDomain, Warning, "Keychain private key: unsupported mbedTLS digest algorithm %d",
+                LogWarn(TLSLogDomain, "Keychain private key: unsupported mbedTLS digest algorithm %d",
                      mbedDigestAlgorithm);
                 return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
             }
@@ -395,7 +395,7 @@ namespace litecore::crypto {
                 BCRYPT_PAD_PKCS1
             );
             if(result != ERROR_SUCCESS) {
-                LogToAt(TLSLogDomain, Error, "NCryptSignHash failed to sign data (%d)", static_cast<int>(result));
+                LogError(TLSLogDomain, "NCryptSignHash failed to sign data (%d)", static_cast<int>(result));
                 return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
             }
 
@@ -482,7 +482,7 @@ namespace litecore::crypto {
             try {
                 existingData = NCryptPrivateKey::publicKeyRawData(hKey);
             } catch(...) {
-                LogToAt(TLSLogDomain, Warning, "Skipping unreadable key...");
+                LogWarn(TLSLogDomain, "Skipping unreadable key...");
             }
 
             if(existingData == publicKey->data(KeyFormat::Raw)) {
@@ -494,7 +494,7 @@ namespace litecore::crypto {
         NCryptFreeObject(hProvider);
         if(retVal == nullptr) {
             if(result == NTE_NO_MORE_ITEMS) {
-                LogToAt(TLSLogDomain, Error, "Unable to find matching private key!");
+                LogError(TLSLogDomain, "Unable to find matching private key!");
                 error::_throw(error::CryptoError, "Unable to find matching private key!");
             }
 
