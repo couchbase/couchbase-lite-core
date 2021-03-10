@@ -17,6 +17,7 @@
 //
 
 #include "c4Observer.hh"
+#include "c4Observer.h"
 #include "c4Internal.hh"
 #include "Database.hh"
 #include "SequenceTracker.hh"
@@ -71,60 +72,12 @@ namespace c4Internal {
         bool _inCallback {false};
     };
 
-    static C4DatabaseObserverImpl* asInternal(C4DatabaseObserver *o) {
-        return (C4DatabaseObserverImpl*)o;
-    }
-
 }
 
 
 unique_ptr<C4DatabaseObserver>
 C4DatabaseObserver::create(C4Database *db, C4DatabaseObserver::Callback callback) {
     return make_unique<C4DatabaseObserverImpl>(db, UINT64_MAX, move(callback));
-}
-
-
-C4DatabaseObserver* c4dbobs_create(C4Database *db,
-                                   C4DatabaseObserverCallback callback,
-                                   void *context) noexcept
-{
-    return C4DatabaseObserver::create(db, [=](C4DatabaseObserver *obs) {
-        callback(obs, context);
-    }).release();
-}
-
-
-uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
-                            C4DatabaseChange outChanges[],
-                            uint32_t maxChanges,
-                            bool *outExternal) noexcept
-{
-    static_assert(sizeof(C4DatabaseChange) == sizeof(C4DatabaseObserver::Change),
-                  "C4DatabaseChange doesn't match C4DatabaseObserver::Change");
-    return tryCatch<uint32_t>(nullptr, [&]{
-        memset(outChanges, 0, maxChanges * sizeof(C4DatabaseChange));
-        return asInternal(obs)->getChanges((C4DatabaseObserver::Change*)outChanges,
-                                           maxChanges, outExternal);
-        // This is slightly sketchy because C4DatabaseObserver::Change contains alloc_slices, whereas
-        // C4DatabaseChange contains slices. The result is that the docID and revID memory will be
-        // temporarily leaked, since the alloc_slice destructors won't be called.
-        // For this purpose we have c4dbobs_releaseChanges(), which does the same sleight of hand
-        // on the array but explicitly destructs each Change object, ensuring its alloc_slices are
-        // destructed and the backing store's ref-count goes back to what it was originally.
-    });
-}
-
-
-void c4dbobs_releaseChanges(C4DatabaseChange changes[], uint32_t numChanges) noexcept {
-    for (uint32_t i = 0; i < numChanges; ++i) {
-        auto &change = (C4DatabaseObserver::Change&)changes[i];
-        change.~Change();
-    }
-}
-
-
-void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
-    delete obs;
 }
 
 
@@ -168,23 +121,4 @@ namespace c4Internal {
 unique_ptr<C4DocumentObserver>
 C4DocumentObserver::create(C4Database *db, slice docID, C4DocumentObserver::Callback callback) {
     return make_unique<C4DocumentObserverImpl>(db, docID, callback);
-}
-
-
-C4DocumentObserver* c4docobs_create(C4Database *db,
-                                    C4Slice docID,
-                                    C4DocumentObserverCallback callback,
-                                    void *context) noexcept
-{
-    return tryCatch<unique_ptr<C4DocumentObserver>>(nullptr, [&]{
-        auto fn = [=](C4DocumentObserver *obs, fleece::slice docID, C4SequenceNumber seq) {
-            callback(obs, docID, seq, context);
-        };
-        return C4DocumentObserverImpl::create(db, docID, fn);
-    }).release();
-}
-
-
-void c4docobs_free(C4DocumentObserver* obs) noexcept {
-    delete obs;
 }

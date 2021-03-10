@@ -19,7 +19,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4Database.hh"
-#include "c4Observer.h"
+#include "c4DocumentTypes.h"
 #include <memory>
 
 C4_ASSUME_NONNULL_BEGIN

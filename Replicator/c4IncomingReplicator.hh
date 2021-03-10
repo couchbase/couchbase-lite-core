@@ -29,17 +29,11 @@ namespace c4Internal {
         }
 
 
-        virtual bool createReplicator() override {
+        virtual void createReplicator() override {
             Assert(_openSocket);
             
-            C4Error err;
-            c4::ref<C4Database> dbCopy = c4db_openAgain(_database, &err);
-            if(!dbCopy) {
-                _status.error = err;
-                return false;
-            }
-            
-            _replicator = new Replicator(dbCopy, _openSocket, *this, _options);
+            _replicator = new Replicator(_database->openAgain().get(),
+                                         _openSocket, *this, _options);
             
             // Yes this line is disgusting, but the memory addresses that the logger logs
             // are not the _actual_ addresses of the object, but rather the pointer to
@@ -47,7 +41,6 @@ namespace c4Internal {
             // is known.
             _logVerbose("C4IncomingRepl %p created Repl %p", (Logging *)this, (Logging *)_replicator.get());
             _openSocket = nullptr;
-            return true;
         }
 
 

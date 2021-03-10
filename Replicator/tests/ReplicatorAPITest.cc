@@ -693,14 +693,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
 
 struct C4TestReplicator : public C4ReplicatorImpl {
     C4TestReplicator(C4Database* db, C4ReplicatorParameters params)
-        : C4ReplicatorImpl(db, params)
-    {}
-
+        : C4ReplicatorImpl(db, params)   { }
     alloc_slice propertiesMemory() const { return _options.properties.data(); }
-
-    bool createReplicator() override { return false; }
-
-    alloc_slice URL() const override { return nullslice; }
+    void createReplicator() override     { }
+    alloc_slice URL() const override     { return nullslice; }
 };
 
 TEST_CASE_METHOD(ReplicatorAPITest, "c4Replicator Zero Memory", "[Replicator]") {

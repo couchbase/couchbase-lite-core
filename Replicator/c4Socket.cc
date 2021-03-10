@@ -37,7 +37,7 @@ using namespace fleece;
 using namespace litecore;
 using namespace litecore::net;
 
-namespace litecore { namespace repl {
+namespace litecore::repl {
 
     using namespace websocket;
 
@@ -159,7 +159,7 @@ namespace litecore { namespace repl {
 
     void C4SocketImpl::closeWithException(const std::exception &x) {
         C4Error error;
-        recordException(x, &error);
+        C4Error::fromException(x, &error);
         alloc_slice message(c4error_getMessage(error));
         WarnError("Closing socket due to C++ exception: %.*s", SPLAT(message));
         close(kCodeUnexpectedCondition, "Internal exception"_sl);
@@ -173,81 +173,4 @@ namespace litecore { namespace repl {
         _factory.completedReceive(this, byteCount);
     }
 
-} }
-
-
-#pragma mark - PUBLIC C API:
-
-
-using namespace litecore::repl;
-
-static C4SocketImpl* internal(C4Socket *s)  {return (C4SocketImpl*)s;}
-
-#define catchForSocket(S) \
-    catch (const std::exception &x) {internal(S)->closeWithException(x);}
-
-
-void c4socket_registerFactory(C4SocketFactory factory) C4API {
-    C4SocketImpl::registerFactory(factory);
-    // the only exception this can throw is a fatal logic error, so no need to catch it
-}
-
-C4Socket* c4socket_fromNative(C4SocketFactory factory,
-                              void *nativeHandle,
-                              const C4Address *address) C4API
-{
-    return tryCatch<C4Socket*>(nullptr, [&]{
-        return new C4SocketImpl(Address(*address).url(), Role::Server, {}, &factory, nativeHandle);
-    });
-}
-
-void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) C4API {
-    try {
-        Headers headers(responseHeadersFleece);
-        internal(socket)->gotHTTPResponse(status, headers);
-    } catchForSocket(socket)
-}
-
-void c4socket_opened(C4Socket *socket) C4API {
-    try {
-        internal(socket)->onConnect();
-    } catchForSocket(socket)
-}
-
-void c4socket_closeRequested(C4Socket *socket, int status, C4String message) {
-    try {
-        internal(socket)->onCloseRequested(status, message);
-    } catchForSocket(socket)
-}
-
-void c4socket_closed(C4Socket *socket, C4Error error) C4API {
-    alloc_slice message = c4error_getMessage(error);
-    CloseStatus status {kUnknownError, error.code, message};
-    if (error.code == 0) {
-        status.reason = kWebSocketClose;
-        status.code = kCodeNormal;
-    } else if (error.domain == WebSocketDomain)
-        status.reason = kWebSocketClose;
-    else if (error.domain == POSIXDomain)
-        status.reason = kPOSIXError;
-    else if (error.domain == NetworkDomain)
-        status.reason = kNetworkError;
-
-    try {
-        internal(socket)->onClose(status);
-    } catch (const std::exception &x) {
-        WarnError("Exception caught in c4Socket_closed: %s", x.what());
-    }
-}
-
-void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API {
-    try{
-        internal(socket)->onWriteComplete(byteCount);
-    } catchForSocket(socket)
-}
-
-void c4socket_received(C4Socket *socket, C4Slice data) C4API {
-    try {
-        internal(socket)->onReceive(data);
-    } catchForSocket(socket)
 }

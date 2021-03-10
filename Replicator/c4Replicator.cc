@@ -87,7 +87,7 @@ Retained<C4Replicator> C4Database::newReplicator(C4Socket *openSocket,
 void C4Replicator::retry() {
     C4Error error;
     if (!asInternal(this)->retry(true, &error))
-        throwError(error);
+        C4ThrowError(error);
 }
 
 void C4Replicator::setOptions(slice optionsDictFleece) {
@@ -95,11 +95,7 @@ void C4Replicator::setOptions(slice optionsDictFleece) {
 }
 
 alloc_slice C4Replicator::pendingDocIDs() const {
-    C4Error error;
-    alloc_slice ids = asInternal(this)->pendingDocumentIDs(&error);
-    if (!ids)
-        throwError(error);
-    return ids;
+    return asInternal(this)->pendingDocumentIDs();
 }
 
 bool C4Replicator::isDocumentPending(slice docID) const {
@@ -109,7 +105,7 @@ bool C4Replicator::isDocumentPending(slice docID) const {
     else if (error.code == 0)
         return false;
     else
-        throwError(error);
+        C4ThrowError(error);
 }
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -117,7 +113,7 @@ C4Cert* C4Replicator::peerTLSCertificate() const {
     C4Error error;
     auto cert = asInternal(this)->getPeerTLSCertificate(&error);
     if (!cert && error.code)
-        throwError(error);
+        C4ThrowError(error);
     return cert;
 }
 #endif
@@ -178,7 +174,7 @@ bool C4Replicator::isValidRemote(const C4Address &addr, slice dbName, C4Error *o
 void C4Replicator::validateRemote(const C4Address &addr, slice dbName) {
     C4Error error;
     if (!isValidRemote(addr, dbName, &error))
-        throwError(error);
+        C4ThrowError(error);
 }
 
 
@@ -269,251 +265,3 @@ alloc_slice C4Replicator::addressToURL(const C4Address &address) {
     s << address.path;
     return alloc_slice(s.str());
 }
-
-
-#pragma mark - C API:
-
-
-bool c4repl_isValidDatabaseName(C4String dbName) C4API {
-    return C4Replicator::isValidDatabaseName(dbName);
-}
-
-
-bool c4repl_isValidRemote(C4Address addr, C4String dbName, C4Error *outError) C4API {
-    return C4Replicator::isValidRemote(addr, dbName, outError);
-}
-
-
-bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API {
-    return C4Replicator::addressFromURL(url, *address, (slice*)dbName);
-}
-
-
-C4StringResult c4address_toURL(C4Address address) C4API {
-    try {
-        return C4StringResult(C4Replicator::addressToURL(address));
-    } catchError(nullptr);
-    return {};
-}
-
-
-C4Replicator* c4repl_new(C4Database* db,
-                         C4Address serverAddress,
-                         C4String remoteDatabaseName,
-                         C4ReplicatorParameters params,
-                         C4Error *outError) C4API
-{
-    try {
-        if (!checkParam(params.push != kC4Disabled || params.pull != kC4Disabled,
-                        "Either push or pull must be enabled", outError))
-            return nullptr;
-
-        if (!params.socketFactory) {
-            if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError))
-                return nullptr;
-            if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
-                Warn("POSSIBLE SECURITY ISSUE: It looks like you're connecting to Sync Gateway's "
-                     "admin port (4985) -- this is usually a bad idea. By default this port is "
-                     "unreachable, but if opened, it would give anyone unlimited privileges.");
-            }
-        }
-        return retain(new C4RemoteReplicator(db, params, serverAddress, remoteDatabaseName));
-    } catchError(outError);
-    return nullptr;
-}
-
-
-#ifdef COUCHBASE_ENTERPRISE
-C4Replicator* c4repl_newLocal(C4Database* db,
-                              C4Database* otherLocalDB,
-                              C4ReplicatorParameters params,
-                              C4Error *outError) C4API
-{
-    try {
-        if (!checkParam(params.push != kC4Disabled || params.pull != kC4Disabled,
-                        "Either push or pull must be enabled", outError))
-            return nullptr;
-        if (!checkParam(otherLocalDB != db, "Can't replicate a database to itself", outError))
-            return nullptr;
-
-        return retain(new C4LocalReplicator(db, params, otherLocalDB));
-    } catchError(outError);
-    return nullptr;
-}
-#endif
-
-C4Replicator* c4repl_newWithWebSocket(C4Database* db,
-                                      WebSocket *openSocket,
-                                      C4ReplicatorParameters params,
-                                      C4Error *outError) C4API
-{
-    try {
-        return retain(new C4IncomingReplicator(db, params, openSocket));
-    } catchError(outError);
-    return nullptr;
-}
-
-
-C4Replicator* c4repl_newWithSocket(C4Database* db,
-                                   C4Socket *openSocket,
-                                   C4ReplicatorParameters params,
-                                   C4Error *outError) C4API
-{
-    return c4repl_newWithWebSocket(db, WebSocketFrom(openSocket), params, outError);
-}
-
-
-void c4repl_start(C4Replicator* repl, bool reset) C4API {
-    repl->start(reset);
-}
-
-
-void c4repl_stop(C4Replicator* repl) C4API {
-    repl->stop();
-}
-
-
-bool c4repl_retry(C4Replicator* repl, C4Error *outError) C4API {
-    return tryCatch<bool>(nullptr, [&] {
-        return asInternal(repl)->retry(true, outError);
-    });
-}
-
-
-void c4repl_setHostReachable(C4Replicator* repl, bool reachable) C4API {
-    repl->setHostReachable(reachable);
-}
-
-
-void c4repl_setSuspended(C4Replicator* repl, bool suspended) C4API {
-    repl->setSuspended(suspended);
-}
-
-
-void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) C4API {
-    repl->setOptions(optionsDictFleece);
-}
-
-
-void c4repl_free(C4Replicator* repl) C4API {
-    if (!repl)
-        return;
-    asInternal(repl)->detach();
-    release(repl);
-}
-
-
-C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
-    return repl->status();
-}
-
-
-C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
-    return repl->responseHeaders();
-}
-
-
-C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) C4API {
-    try {
-        return C4SliceResult( asInternal(repl)->pendingDocumentIDs(outErr) );
-    } catchError(outErr);
-    return {};
-}
-
-
-bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr) C4API {
-    try {
-        return asInternal(repl)->isDocumentPending(docID, outErr);
-    } catchError(outErr);
-    return false;
-}
-    
-C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) C4API {
-#ifdef COUCHBASE_ENTERPRISE
-    outErr->code = 0;
-    return asInternal(repl)->getPeerTLSCertificate(outErr);
-#else
-    outErr->domain = LiteCoreDomain;
-    outErr->code = kC4ErrorUnsupported;
-    return nullptr;
-#endif
-}
-
-
-bool c4repl_setProgressLevel(C4Replicator* repl, C4ReplicatorProgressLevel level, C4Error* outErr) C4API {
-    C4_START_WARNINGS_SUPPRESSION
-    C4_IGNORE_TAUTOLOGICAL
-    
-    if(_usuallyFalse(repl == nullptr)) {
-        if(outErr) {
-            *outErr = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("repl was null"));
-        }
-
-        return false;
-    }
-    
-    C4_STOP_WARNINGS_SUPPRESSION
-
-    if(_usuallyFalse(level < kC4ReplProgressOverall || level > kC4ReplProgressPerAttachment)) {
-        if(outErr) {
-            *outErr = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("level out of range"));
-        }
-
-        return false;
-    }
-
-    repl->setProgressLevel(level);
-    return true;
-}
-
-
-#pragma mark - COOKIES:
-
-#include "c4ExceptionUtils.hh"
-using namespace c4Internal;
-
-
-C4StringResult c4db_getCookies(C4Database *db,
-                               C4Address request,
-                               C4Error *outError) C4API
-{
-    return tryCatch<C4StringResult>(outError, [=]() {
-        DatabaseCookies cookies(db);
-        string result = cookies.cookiesForRequest(request);
-        if (result.empty()) {
-            clearError(outError);
-            return C4StringResult();
-        }
-        return FLSliceResult(alloc_slice(result));
-    });
-}
-
-
-bool c4db_setCookie(C4Database *db,
-                    C4String setCookieHeader,
-                    C4String fromHost,
-                    C4String fromPath,
-                    C4Error *outError) C4API
-{
-    return tryCatch<bool>(outError, [=]() {
-        DatabaseCookies cookies(db);
-        bool ok = cookies.setCookie(slice(setCookieHeader).asString(),
-                                    slice(fromHost).asString(),
-                                    slice(fromPath).asString());
-        if (ok)
-            cookies.saveChanges();
-        else
-            c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("Invalid cookie"), outError);
-        return ok;
-    });
-}
-
-
-void c4db_clearCookies(C4Database *db) C4API {
-    tryCatch(nullptr, [db]() {
-        DatabaseCookies cookies(db);
-        cookies.clearCookies();
-        cookies.saveChanges();
-    });
-}
-

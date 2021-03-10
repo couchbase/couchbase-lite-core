@@ -39,13 +39,13 @@ using namespace c4Internal;
 
 
 bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
-    return C4BlobStore::keyFromString(str, outKey);
+    return C4Blob::keyFromString(str, outKey);
 }
 
 
 C4SliceResult c4blob_keyToString(C4BlobKey key) noexcept {
     try {
-        return C4SliceResult(C4BlobStore::keyToString(key));
+        return C4SliceResult(C4Blob::keyToString(key));
     } catchError(nullptr);
     return {};
 }
@@ -112,7 +112,7 @@ C4StringResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* ou
 
 
 C4BlobKey c4blob_computeKey(C4Slice contents) {
-    return C4BlobStore::computeKey(contents);
+    return C4Blob::computeKey(contents);
 }
 
 
@@ -593,6 +593,38 @@ C4SliceResult c4db_getIndexRows(C4Database* database, C4String indexName, C4Erro
 }
 
 
+C4StringResult c4db_getCookies(C4Database *db,
+                               C4Address request,
+                               C4Error *outError) C4API
+{
+    return tryCatch<C4StringResult>(outError, [=]() {
+        return C4StringResult(db->getCookies(request));
+    });
+}
+
+
+bool c4db_setCookie(C4Database *db,
+                    C4String setCookieHeader,
+                    C4String fromHost,
+                    C4String fromPath,
+                    C4Error *outError) C4API
+{
+    return tryCatch<bool>(outError, [=]() {
+        if (db->setCookie(setCookieHeader, fromHost, fromPath))
+            return true;
+        c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("Invalid cookie"), outError);
+        return false;
+    });
+}
+
+
+void c4db_clearCookies(C4Database *db) C4API {
+    tryCatch(nullptr, [db]() {
+        db->clearCookies();
+    });
+}
+
+
 #pragma mark - DOCUMENT:
 
 
@@ -810,9 +842,6 @@ bool c4db_markSynced(C4Database *database,
 }
 
 
-#pragma mark - SAVING:
-
-
 char* c4doc_generateID(char *docID, size_t bufferSize) noexcept {
     return C4Document::generateID(docID, bufferSize);
 }
@@ -964,13 +993,13 @@ bool c4doc_hasOldMetaProperties(FLDict doc) noexcept {
 
 
 bool c4doc_getDictBlobKey(FLDict dict, C4BlobKey *outKey) {
-    return C4BlobStore::getBlobKey(dict, *outKey);
+    return C4Blob::getKey(dict, *outKey);
 }
 
 
 bool c4doc_dictIsBlob(FLDict dict, C4BlobKey *outKey) C4API {
     Assert(outKey);
-    return C4BlobStore::dictIsBlob(dict, *outKey);
+    return C4Blob::isBlob(dict, *outKey);
 }
 
 
@@ -987,7 +1016,7 @@ bool c4doc_dictContainsBlobs(FLDict dict) noexcept {
 
 
 bool c4doc_blobIsCompressible(FLDict blobDict) {
-    return C4BlobStore::blobIsCompressible(blobDict);
+    return C4Blob::isCompressible(blobDict);
 }
 
 
@@ -1056,6 +1085,72 @@ C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
             clearError(outError);      // end of iteration is not an error
         return move(doc).detach();
     });
+}
+
+
+#pragma mark - OBSERVERS:
+
+
+C4DatabaseObserver* c4dbobs_create(C4Database *db,
+                                   C4DatabaseObserverCallback callback,
+                                   void *context) noexcept
+{
+    return C4DatabaseObserver::create(db, [=](C4DatabaseObserver *obs) {
+        callback(obs, context);
+    }).release();
+}
+
+
+uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
+                            C4DatabaseChange outChanges[],
+                            uint32_t maxChanges,
+                            bool *outExternal) noexcept
+{
+    static_assert(sizeof(C4DatabaseChange) == sizeof(C4DatabaseObserver::Change),
+                  "C4DatabaseChange doesn't match C4DatabaseObserver::Change");
+    return tryCatch<uint32_t>(nullptr, [&]{
+        memset(outChanges, 0, maxChanges * sizeof(C4DatabaseChange));
+        return obs->getChanges((C4DatabaseObserver::Change*)outChanges,
+                               maxChanges, outExternal);
+        // This is slightly sketchy because C4DatabaseObserver::Change contains alloc_slices, whereas
+        // C4DatabaseChange contains slices. The result is that the docID and revID memory will be
+        // temporarily leaked, since the alloc_slice destructors won't be called.
+        // For this purpose we have c4dbobs_releaseChanges(), which does the same sleight of hand
+        // on the array but explicitly destructs each Change object, ensuring its alloc_slices are
+        // destructed and the backing store's ref-count goes back to what it was originally.
+    });
+}
+
+
+void c4dbobs_releaseChanges(C4DatabaseChange changes[], uint32_t numChanges) noexcept {
+    for (uint32_t i = 0; i < numChanges; ++i) {
+        auto &change = (C4DatabaseObserver::Change&)changes[i];
+        change.~Change();
+    }
+}
+
+
+void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
+    delete obs;
+}
+
+
+C4DocumentObserver* c4docobs_create(C4Database *db,
+                                    C4Slice docID,
+                                    C4DocumentObserverCallback callback,
+                                    void *context) noexcept
+{
+    return tryCatch<unique_ptr<C4DocumentObserver>>(nullptr, [&]{
+        auto fn = [=](C4DocumentObserver *obs, fleece::slice docID, C4SequenceNumber seq) {
+            callback(obs, docID, seq, context);
+        };
+        return C4DocumentObserver::create(db, docID, fn);
+    }).release();
+}
+
+
+void c4docobs_free(C4DocumentObserver* obs) noexcept {
+    delete obs;
 }
 
 

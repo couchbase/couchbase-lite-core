@@ -125,24 +125,15 @@ namespace c4Internal {
         }
 
 
-        virtual bool createReplicator() override {
+        virtual void createReplicator() override {
             auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _socketFactory);
-            
-            C4Error err;
-            c4::ref<C4Database> dbCopy = c4db_openAgain(_database, &err);
-            if(!dbCopy) {
-                _status.error = err;
-                return false;
-            }
-            
-            _replicator = new Replicator(dbCopy, webSocket, *this, _options);
+            _replicator = new Replicator(_database->openAgain().get(), webSocket, *this, _options);
             
             // Yes this line is disgusting, but the memory addresses that the logger logs
             // are not the _actual_ addresses of the object, but rather the pointer to
             // its Logging virtual table since inside of _logVerbose this is all that
             // is known.
             _logVerbose("C4RemoteRepl %p created Repl %p", (Logging *)this, (Logging *)_replicator.get());
-            return true;
         }
 
 

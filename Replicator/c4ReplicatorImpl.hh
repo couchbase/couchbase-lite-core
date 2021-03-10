@@ -20,10 +20,9 @@
 
 #include "c4Replicator.hh"
 #include "fleece/Fleece.hh"
-#include "c4.hh"
-#include "c4DocEnumerator.h"
+#include "c4DocEnumerator.hh"
 #include "c4Private.h"
-#include "c4Replicator.h"
+#include "c4Replicator.hh"
 #include "c4Database.hh"
 #include "c4Certificate.h"
 #include "c4Internal.hh"
@@ -191,7 +190,7 @@ namespace c4Internal {
         }
 
         // Prevents any future client callbacks (called by `c4repl_free`.)
-        void detach() {
+        void stopCallbacks() override {
             LOCK(_mutex);
             _onStatusChanged  = nullptr;
             _onDocumentsEnded = nullptr;
@@ -202,8 +201,8 @@ namespace c4Internal {
             return PendingDocuments(this).isDocumentPending(docID, outErr);
         }
 
-        alloc_slice pendingDocumentIDs(C4Error* outErr) const {
-            return PendingDocuments(this).pendingDocumentIDs(outErr);
+        alloc_slice pendingDocumentIDs() const {
+            return PendingDocuments(this).pendingDocumentIDs();
         }
 
         void setProgressLevel(C4ReplicatorProgressLevel level) override {
@@ -303,7 +302,7 @@ namespace c4Internal {
         }
 
 
-        virtual bool createReplicator() =0;
+        virtual void createReplicator() =0;
 
         virtual alloc_slice URL() const =0;
 
@@ -312,10 +311,13 @@ namespace c4Internal {
         // Subclass implementation of `start` must call this (with the mutex locked).
         virtual bool _start(bool reset) {
             if (!_replicator) {
-                if(!createReplicator()) {
+                try {
+                    createReplicator();
+                } catch (exception &x) {
+                    _status.error = C4ErrorFromException(x);
+                    _replicator = nullptr;
                     return false;
                 }
-
                 _replicator->setProgressNotificationLevel(static_cast<int>(_progressLevel));
             }
 
@@ -504,7 +506,7 @@ namespace c4Internal {
                 }
             }
 
-            C4SliceResult pendingDocumentIDs(C4Error* outErr) {
+            alloc_slice pendingDocumentIDs() {
                 Encoder enc;
                 enc.beginArray();
 
@@ -514,15 +516,17 @@ namespace c4Internal {
                     any = true;
                 };
                 bool ok;
+                C4Error error;
                 if (replicator)
-                    ok = replicator->pendingDocumentIDs(callback, outErr);
+                    ok = replicator->pendingDocumentIDs(callback, &error);
                 else
-                    ok = checkpointer->pendingDocumentIDs(database, callback, outErr);
+                    ok = checkpointer->pendingDocumentIDs(database, callback, &error);
                 if (!ok)
+                    C4ThrowError(error);
+                if (!any)
                     return {};
-
                 enc.endArray();
-                return any ? C4SliceResult(enc.finish()) : C4SliceResult{};
+                return enc.finish();
             }
 
             bool isDocumentPending(C4Slice docID, C4Error* outErr) {

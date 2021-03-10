@@ -33,14 +33,6 @@ extern "C" {
     /** \name Database Observer
         @{ */
 
-    /** Represents a change to a document in a database. */
-    typedef struct {
-        C4HeapString docID;         ///< The document's ID
-        C4HeapString revID;         ///< The latest revision ID (or null if doc was purged)
-        C4SequenceNumber sequence;  ///< The latest sequence number (or 0 if doc was purged)
-        C4RevisionFlags flags;
-    } C4DatabaseChange;
-
     /** Callback invoked by a database observer.
      
         CAUTION: This callback is called when a transaction is committed, even one made by a

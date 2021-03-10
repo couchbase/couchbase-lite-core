@@ -135,7 +135,7 @@ namespace c4Internal {
             return true;
         for (DeepIterator i((const Dict*)dict); i; ++i) {
             auto d = FLDict(i.value()->asDict());
-            if (d && C4BlobStore::dictIsBlob(d)) {
+            if (d && C4Blob::isBlob(d)) {
                 if (!callback(d))
                     return false;
                 i.skipChildren();
@@ -247,7 +247,7 @@ namespace c4Internal {
                     return; // don't throw these errors
             }
         }
-        throwError(inError);
+        C4Error::raise(inError);
     }
 
 
@@ -274,7 +274,7 @@ namespace c4Internal {
                 return this;
             } else if (myErr != C4Error{LiteCoreDomain, kC4ErrorConflict}) {
                 // Something other than a conflict happened, so give up:
-                throwError(myErr);
+                C4Error::raise(myErr);
             }
             // on conflict, fall through...
         }

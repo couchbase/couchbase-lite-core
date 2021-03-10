@@ -18,7 +18,7 @@
 
 #pragma once
 #include "c4Base.hh"
-#include "c4Replicator.h"
+#include "c4ReplicatorTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -44,6 +44,8 @@ struct C4Replicator : public fleece::RefCounted, public C4Base {
     virtual void start(bool reset =false) =0;
     virtual void stop() =0;
     void retry();
+
+    virtual void stopCallbacks() =0;
 
     virtual void setHostReachable(bool) { }
     virtual void setSuspended(bool) =0;

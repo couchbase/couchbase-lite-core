@@ -302,7 +302,7 @@ namespace c4Internal {
                 // Iterate over blobs:
                 Document::findBlobReferences(FLDict(body), [&](FLDict blob) {
                     blobKey key;
-                    if (C4BlobStore::dictIsBlob(blob, (C4BlobKey&)key))    // get the key
+                    if (C4Blob::isBlob(blob, (C4BlobKey&)key))    // get the key
                         usedDigests.insert(key.filename());
                     return true;
                 });

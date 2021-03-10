@@ -23,6 +23,7 @@
 #include "c4Private.h"
 
 #include "Database.hh"
+#include "DatabaseCookies.hh"
 #include "Document.hh"
 #include "KeyStore.hh"
 #include "PrebuiltCopier.hh"
@@ -43,7 +44,6 @@
 #include "JSONConverter.hh"
 #include <inttypes.h>
 
-using namespace fleece;
 using namespace std;
 
 
@@ -284,6 +284,144 @@ void C4Database::putRawDocument(slice storeName, const C4RawDocument &doc) {
 }
 
 
+alloc_slice C4Database::encodeJSON(slice jsonData) const {
+    using namespace fleece::impl;
+    Encoder &enc = _db->sharedEncoder();
+    JSONConverter jc(enc);
+    if (!jc.encodeJSON(jsonData)) {
+        enc.reset();
+        error(error::Fleece, jc.errorCode(), jc.errorMessage())._throw();
+    }
+    return enc.finish();
+}
+
+
+FLEncoder C4Database::createFleeceEncoder() const {
+    FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
+    FLEncoder_SetSharedKeys(enc, (FLSharedKeys)_db->documentKeys());
+    return enc;
+}
+
+
+FLEncoder C4Database::sharedFleeceEncoder() const   {return _db->sharedFLEncoder();}
+FLSharedKeys C4Database::sharedFleeceKeys() const   {return (FLSharedKeys)_db->documentKeys();}
+
+
+#pragma mark - OBSERVERS:
+
+
+std::unique_ptr<C4DatabaseObserver> C4Database::observe(DatabaseObserverCallback callback) {
+    return C4DatabaseObserver::create(this, callback);
+}
+
+std::unique_ptr<C4DocumentObserver> C4Database::observeDocument(slice docID,
+                                                                DocumentObserverCallback callback)
+{
+    return C4DocumentObserver::create(this, docID, callback);
+}
+
+
+#pragma mark - EXPIRATION:
+
+
+bool C4Database::mayHaveExpiration() const      {return _db->dataFile()->defaultKeyStore().mayHaveExpiration();}
+bool C4Database::startHousekeeping()            {return _db->startHousekeeping();}
+int64_t C4Database::purgeExpiredDocs()          {return _db->purgeExpiredDocs();}
+
+bool C4Database::setExpiration(slice docID, C4Timestamp timestamp) {return _db->setExpiration(docID, timestamp);}
+C4Timestamp C4Database::getExpiration(slice docID) const {return _db->defaultKeyStore().getExpiration(docID);}
+C4Timestamp C4Database::nextDocExpiration() const   {return _db->defaultKeyStore().nextExpiration();}
+
+
+#pragma mark - QUERIES & INDEXES:
+
+
+alloc_slice C4Database::rawQuery(slice query) {
+    return _db->dataFile()->rawQuery(query.asString());
+}
+
+
+void C4Database::createIndex(slice indexName,
+                             slice indexSpecJSON,
+                             C4IndexType indexType,
+                             const C4IndexOptions *indexOptions)
+{
+    static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options));
+
+    _db->defaultKeyStore().createIndex(indexName,
+                                       indexSpecJSON,
+                                       (IndexSpec::Type)indexType,
+                                       (const IndexSpec::Options*)indexOptions);
+}
+
+
+void C4Database::deleteIndex(slice indexName) {
+    _db->defaultKeyStore().deleteIndex(indexName);
+}
+
+
+alloc_slice C4Database::getIndexesInfo(bool fullInfo) const {
+    using namespace fleece::impl;
+
+    Encoder enc;
+    enc.beginArray();
+    for (const auto &spec : _db->defaultKeyStore().getIndexes()) {
+        if (fullInfo) {
+            enc.beginDictionary();
+            enc.writeKey("name"); enc.writeString(spec.name);
+            enc.writeKey("type"); enc.writeInt(spec.type);
+            enc.writeKey("expr"); enc.writeString(spec.expressionJSON);
+            enc.endDictionary();
+        } else {
+            enc.writeString(spec.name);
+        }
+    }
+    enc.endArray();
+    return enc.finish();
+}
+
+
+alloc_slice C4Database::getIndexRows(slice indexName) const {
+    int64_t rowCount;
+    alloc_slice rows;
+    ((SQLiteDataFile*)_db->dataFile())->inspectIndex(indexName, rowCount, &rows);
+    return rows;
+}
+
+
+#pragma mark - REPLICATION:
+
+
+alloc_slice C4Database::getCookies(const C4Address &request) {
+    litecore::repl::DatabaseCookies cookies(this);
+    string result = cookies.cookiesForRequest(request);
+    if (result.empty())
+        return {};
+    return alloc_slice(result);
+}
+
+
+bool C4Database::setCookie(slice setCookieHeader,
+                           slice fromHost,
+                           slice fromPath)
+{
+    litecore::repl::DatabaseCookies cookies(this);
+    bool ok = cookies.setCookie(slice(setCookieHeader).asString(),
+                                slice(fromHost).asString(),
+                                slice(fromPath).asString());
+    if (ok)
+        cookies.saveChanges();
+    return ok;
+}
+
+
+void C4Database::clearCookies() {
+    litecore::repl::DatabaseCookies cookies(this);
+    cookies.clearCookies();
+    cookies.saveChanges();
+}
+
+
 static const char * kRemoteDBURLsDoc = "remotes";
 
 
@@ -406,106 +544,3 @@ bool C4Database::markDocumentSynced(slice docID,
 }
 
 
-alloc_slice C4Database::encodeJSON(slice jsonData) const {
-    using namespace fleece::impl;
-    Encoder &enc = _db->sharedEncoder();
-    JSONConverter jc(enc);
-    if (!jc.encodeJSON(jsonData)) {
-        enc.reset();
-        error(error::Fleece, jc.errorCode(), jc.errorMessage())._throw();
-    }
-    return enc.finish();
-}
-
-
-FLEncoder C4Database::createFleeceEncoder() const {
-    FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
-    FLEncoder_SetSharedKeys(enc, (FLSharedKeys)_db->documentKeys());
-    return enc;
-}
-
-
-FLEncoder C4Database::sharedFleeceEncoder() const   {return _db->sharedFLEncoder();}
-FLSharedKeys C4Database::sharedFleeceKeys() const   {return (FLSharedKeys)_db->documentKeys();}
-
-
-#pragma mark - OBSERVERS:
-
-
-std::unique_ptr<C4DatabaseObserver> C4Database::observe(DatabaseObserverCallback callback) {
-    return C4DatabaseObserver::create(this, callback);
-}
-
-std::unique_ptr<C4DocumentObserver> C4Database::observeDocument(slice docID,
-                                                                DocumentObserverCallback callback)
-{
-    return C4DocumentObserver::create(this, docID, callback);
-}
-
-
-#pragma mark - EXPIRATION:
-
-
-bool C4Database::mayHaveExpiration() const      {return _db->dataFile()->defaultKeyStore().mayHaveExpiration();}
-bool C4Database::startHousekeeping()            {return _db->startHousekeeping();}
-int64_t C4Database::purgeExpiredDocs()          {return _db->purgeExpiredDocs();}
-
-bool C4Database::setExpiration(slice docID, C4Timestamp timestamp) {return _db->setExpiration(docID, timestamp);}
-C4Timestamp C4Database::getExpiration(slice docID) const {return _db->defaultKeyStore().getExpiration(docID);}
-C4Timestamp C4Database::nextDocExpiration() const   {return _db->defaultKeyStore().nextExpiration();}
-
-
-#pragma mark - QUERIES & INDEXES:
-
-
-alloc_slice C4Database::rawQuery(slice query) {
-    return _db->dataFile()->rawQuery(query.asString());
-}
-
-
-void C4Database::createIndex(slice indexName,
-                             slice indexSpecJSON,
-                             C4IndexType indexType,
-                             const C4IndexOptions *indexOptions)
-{
-    static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options));
-
-    _db->defaultKeyStore().createIndex(indexName,
-                                       indexSpecJSON,
-                                       (IndexSpec::Type)indexType,
-                                       (const IndexSpec::Options*)indexOptions);
-}
-
-
-void C4Database::deleteIndex(slice indexName) {
-    _db->defaultKeyStore().deleteIndex(indexName);
-}
-
-
-alloc_slice C4Database::getIndexesInfo(bool fullInfo) const {
-    using namespace fleece::impl;
-
-    Encoder enc;
-    enc.beginArray();
-    for (const auto &spec : _db->defaultKeyStore().getIndexes()) {
-        if (fullInfo) {
-            enc.beginDictionary();
-            enc.writeKey("name"); enc.writeString(spec.name);
-            enc.writeKey("type"); enc.writeInt(spec.type);
-            enc.writeKey("expr"); enc.writeString(spec.expressionJSON);
-            enc.endDictionary();
-        } else {
-            enc.writeString(spec.name);
-        }
-    }
-    enc.endArray();
-    return enc.finish();
-}
-
-
-alloc_slice C4Database::getIndexRows(slice indexName) const {
-    int64_t rowCount;
-    alloc_slice rows;
-    ((SQLiteDataFile*)_db->dataFile())->inspectIndex(indexName, rowCount, &rows);
-    return rows;
-}

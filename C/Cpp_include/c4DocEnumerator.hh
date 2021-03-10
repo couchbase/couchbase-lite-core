@@ -18,7 +18,7 @@
 
 #pragma once
 #include "c4Base.hh"
-#include "c4DocEnumerator.h"
+#include "c4DocEnumeratorTypes.h"
 #include <memory>
 
 C4_ASSUME_NONNULL_BEGIN

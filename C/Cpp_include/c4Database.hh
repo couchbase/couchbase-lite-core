@@ -18,10 +18,10 @@
 
 #pragma once
 #include "c4Base.hh"
-#include "c4Database.h"
+#include "c4DatabaseTypes.h"
 #include "c4DocumentTypes.h"
-#include "c4Query.h"
-#include "c4Index.h"
+#include "c4IndexTypes.h"
+#include "c4QueryTypes.h"
 #include "function_ref.hh"
 #include <functional>
 #include <memory>
@@ -94,6 +94,7 @@ public:
     class Transaction {
     public:
         explicit Transaction(C4Database* db):_db(db) {db->beginTransaction();}
+        Transaction(Transaction &&t)        :_db(t._db) {t._db = nullptr;}
         void commit()                       {auto db = _db; _db = nullptr; db->endTransaction(true);}
         ~Transaction()                      {if (_db) _db->endTransaction(false);}
     private:
@@ -119,11 +120,6 @@ public:
                                            unsigned maxAncestors,
                                            bool mustHaveBodies,
                                            C4RemoteID remoteDBID) const;
-
-    bool markDocumentSynced(slice docID,
-                            slice revID,
-                            C4SequenceNumber sequence,
-                            C4RemoteID remoteID);
 
     bool getRawDocument(slice storeName,
                         slice key,
@@ -185,10 +181,6 @@ public:
 
     // Replicator:
 
-    C4RemoteID getRemoteDBID(slice remoteAddress,
-                             bool canCreate);
-    alloc_slice getRemoteDBAddress(C4RemoteID remoteID);
-
     Retained<C4Replicator> newReplicator(C4Address serverAddress,
                                          slice remoteDatabaseName,
                                          const C4ReplicatorParameters &params);
@@ -202,6 +194,22 @@ public:
     Retained<C4Replicator> newLocalReplicator(C4Database *otherLocalDB,
                                               const C4ReplicatorParameters &params);
 #endif
+
+    alloc_slice getCookies(const C4Address&);
+
+    bool setCookie(slice setCookieHeader,
+                   slice fromHost,
+                   slice fromPath);
+    void clearCookies();
+
+    C4RemoteID getRemoteDBID(slice remoteAddress,
+                             bool canCreate);
+    alloc_slice getRemoteDBAddress(C4RemoteID remoteID);
+
+    bool markDocumentSynced(slice docID,
+                            slice revID,
+                            C4SequenceNumber sequence,
+                            C4RemoteID remoteID);
 
 // internal or deprecated:
     void beginTransaction();

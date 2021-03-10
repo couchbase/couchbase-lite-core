@@ -95,28 +95,6 @@ alloc_slice C4BlobStore::getFilePath(C4BlobKey key) const {
 }
 
 
-
-C4BlobKey C4BlobStore::computeKey(slice contents) noexcept {
-    return external(blobKey::computeFrom(contents));
-}
-
-
-alloc_slice C4BlobStore::keyToString(C4BlobKey key) {
-    return alloc_slice(asInternal(key).base64String());
-}
-
-
-bool C4BlobStore::keyFromString(slice str, C4BlobKey* outKey) noexcept {
-    try {
-        if (str.buf) {
-            *outKey = external(blobKey::withBase64(str));
-            return true;
-        }
-    } catchExceptions()
-    return false;
-}
-
-
 C4BlobKey C4BlobStore::createBlob(slice contents, const C4BlobKey *expectedKey) {
     Blob blob = _impl->put(contents, asInternal(expectedKey));
     return external(blob.key());
@@ -125,6 +103,37 @@ C4BlobKey C4BlobStore::createBlob(slice contents, const C4BlobKey *expectedKey) 
 
 void C4BlobStore::deleteBlob(C4BlobKey key) {
     _impl->get(asInternal(key)).del();
+}
+
+
+alloc_slice C4BlobStore::getBlobData(FLDict flDict, BlobStore *store) {
+    Dict dict(flDict);
+    if (!C4Blob::isBlob(dict))
+        error::_throw(error::InvalidParameter, "Not a blob");
+    auto dataProp = dict.get(slice(kC4BlobDataProperty));
+    if (dataProp) {
+        switch (dataProp.type()) {
+            case kFLData:
+                return alloc_slice(dataProp.asData());
+            case kFLString: {
+                alloc_slice data = base64::decode(dataProp.asString());
+                if (!data)
+                    error::_throw(error::CorruptData, "Blob data string is not valid Base64");
+                return data;
+            }
+            default:
+                error::_throw(error::CorruptData, "Blob data property has invalid type");
+        }
+    }
+    C4BlobKey key;
+    if (!C4Blob::getKey(dict, key))
+        error::_throw(error::CorruptData, "Blob has invalid or missing digest property");
+    return store->get((blobKey&)key).contents();
+}
+
+
+alloc_slice C4BlobStore::getBlobData(FLDict flDict) {
+    return getBlobData(flDict, _impl);
 }
 
 
@@ -155,54 +164,44 @@ C4BlobKey C4WriteStream::computeBlobKey()             {return external(_impl->co
 void C4WriteStream::install(const C4BlobKey *xk)      {_impl->install(asInternal(xk));}
 
 
-#pragma mark - BLOB DICT UTILITIES:
+#pragma mark - BLOB UTILITIES:
 
 
-bool C4BlobStore::getBlobKey(FLDict dict, C4BlobKey &outKey) {
+C4BlobKey C4Blob::computeKey(slice contents) noexcept {
+    return external(blobKey::computeFrom(contents));
+}
+
+
+alloc_slice C4Blob::keyToString(C4BlobKey key) {
+    return alloc_slice(asInternal(key).base64String());
+}
+
+
+bool C4Blob::keyFromString(slice str, C4BlobKey* outKey) noexcept {
+    try {
+        if (str.buf) {
+            *outKey = external(blobKey::withBase64(str));
+            return true;
+        }
+    } catchExceptions()
+    return false;
+}
+
+
+bool C4Blob::getKey(FLDict dict, C4BlobKey &outKey) {
     FLValue digest = FLDict_Get(dict, slice(kC4BlobDigestProperty));
     return digest && asInternal(outKey).readFromBase64(FLValue_AsString(digest));
 }
 
 
-bool C4BlobStore::dictIsBlob(FLDict dict) {
+bool C4Blob::isBlob(FLDict dict) {
     FLValue cbltype= FLDict_Get(dict, C4STR(kC4ObjectTypeProperty));
     return cbltype && slice(FLValue_AsString(cbltype)) == slice(kC4ObjectType_Blob);
 }
 
 
-bool C4BlobStore::dictIsBlob(FLDict dict, C4BlobKey &outKey) {
-    return dictIsBlob(dict) && getBlobKey(dict, outKey);
-}
-
-
-alloc_slice C4BlobStore::getBlobData(FLDict flDict, BlobStore *store) {
-    Dict dict(flDict);
-    if (!dictIsBlob(dict))
-        error::_throw(error::InvalidParameter, "Not a blob");
-    auto dataProp = dict.get(slice(kC4BlobDataProperty));
-    if (dataProp) {
-        switch (dataProp.type()) {
-            case kFLData:
-                return alloc_slice(dataProp.asData());
-            case kFLString: {
-                alloc_slice data = base64::decode(dataProp.asString());
-                if (!data)
-                    error::_throw(error::CorruptData, "Blob data string is not valid Base64");
-                return data;
-            }
-            default:
-                error::_throw(error::CorruptData, "Blob data property has invalid type");
-        }
-    }
-    C4BlobKey key;
-    if (!getBlobKey(dict, key))
-        error::_throw(error::CorruptData, "Blob has invalid or missing digest property");
-    return store->get((blobKey&)key).contents();
-}
-
-
-alloc_slice C4BlobStore::getBlobData(FLDict flDict) {
-    return getBlobData(flDict, _impl);
+bool C4Blob::isBlob(FLDict dict, C4BlobKey &outKey) {
+    return isBlob(dict) && getKey(dict, outKey);
 }
 
 
@@ -255,7 +254,7 @@ static bool startsWithAnyOf(slice type, const slice types[]) {
     return false;
 }
 
-bool C4BlobStore::blobIsCompressible(FLDict flMeta) {
+bool C4Blob::isCompressible(FLDict flMeta) {
     Dict meta(flMeta);
     // Don't compress an attachment with a compressed encoding:
     auto encodingProp = meta.get("encoding"_sl);
@@ -283,8 +282,3 @@ bool C4BlobStore::blobIsCompressible(FLDict flMeta) {
     else
         return true;
 }
-
-
-#pragma mark - C API:
-
-

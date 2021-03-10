@@ -18,7 +18,7 @@
 
 #pragma once
 #include "c4Base.hh"
-#include "c4Query.h"
+#include "c4QueryTypes.h"
 #include <functional>
 #include <memory>
 #include <mutex>

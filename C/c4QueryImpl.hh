@@ -145,7 +145,7 @@ namespace c4Internal {
 
         C4Query::Enumerator getEnumerator(bool forget) override {
             if (_currentError.code)
-                throwError(_currentError);
+                C4Error::raise(_currentError);
             Retained<QueryEnumerator> e = _currentEnumerator->enumerator();
             if (forget)
                 _currentEnumerator = nullptr;

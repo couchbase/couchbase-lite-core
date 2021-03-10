@@ -26,6 +26,9 @@
 
 
 #ifdef __cplusplus
+#include "fleece/slice.hh"
+#include <exception>
+#include <string>
 extern "C" {
 #endif
 
@@ -279,11 +282,27 @@ typedef struct C4Error {
     unsigned      internal_info :32;    // No user-serviceable parts inside. Do not touch.
 
 #ifdef __cplusplus
+    static C4Error fromException(const std::exception &e) noexcept;
+    static C4Error fromCurrentException() noexcept;
+    static void fromException(const std::exception &e, C4Error* C4NULLABLE outError) noexcept {
+        if (outError) *outError = fromException(e);
+    }
+    static void fromCurrentException(C4Error* C4NULLABLE outError) noexcept {
+        if (outError) *outError = fromCurrentException();
+    }
+
+    [[noreturn]] static void raise(C4ErrorDomain, int code, const char *format, ...) __printflike(3,4);
+    [[noreturn]] static void raise(const C4Error&);
+
     bool operator== (const C4Error &b) const {return code == b.code
                                                   && (code == 0 || domain == b.domain);}
     bool operator!= (const C4Error &b) const {return !(*this == b);}
     explicit operator bool() const  {return code != 0;}
     bool operator!() const          {return code == 0;}
+
+    std::string message() const;
+    std::string description() const;
+    std::string backtrace() const;
 #endif
 } C4Error;
 

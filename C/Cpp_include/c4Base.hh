@@ -27,14 +27,12 @@
 #include "fleece/slice.hh"
 #include <exception>
 
-
-/// Converts an exception thrown from LiteCore's C++ API into a `C4Error`.
-C4Error C4ErrorFromException(const std::exception&) noexcept;
+C4_ASSUME_NONNULL_BEGIN
 
 
 /// Returns a description of a C4Error as a _temporary_ C string, for use in logging.
 #ifndef c4error_descriptionStr
-    #define c4error_descriptionStr(ERR)     fleece::alloc_slice(c4error_getDescription(ERR)).asString().c_str()
+    #define c4error_descriptionStr(ERR)     (ERR).description().c_str()
 #endif
 
 
@@ -44,3 +42,5 @@ struct C4Base {
     using alloc_slice = fleece::alloc_slice;
     template <class T> using Retained = fleece::Retained<T>;
 };
+
+C4_ASSUME_NONNULL_END

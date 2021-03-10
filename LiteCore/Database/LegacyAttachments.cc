@@ -80,7 +80,7 @@ namespace litecore { namespace legacy_attachments {
                     blob = Value::asDict(Path::evalJSONPointer(key.from(5), root));
                 }
                 
-                if (attDigest && blob && C4BlobStore::dictIsBlob(FLDict(blob))) {
+                if (attDigest && blob && C4Blob::isBlob(FLDict(blob))) {
                     // OK, this is a stand-in; remove it. But has its digest changed?
                     removeThese.insert(attachment);
                     auto blobDigest = blob->get(slice(kC4BlobDigestProperty));

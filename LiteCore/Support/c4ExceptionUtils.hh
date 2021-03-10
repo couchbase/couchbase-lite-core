@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "c4Base.h"
+#include "c4Base.hh"
 #include "PlatformCompat.hh"    // for NOINLINE, ALWAYS_INLINE
 #include <exception>
 
@@ -30,32 +30,19 @@ namespace c4Internal {
     //
     // Implementation is in c4Error.cc.
 
-    /** Converts a C++ exception to a C4Error and stores it in `outError` if it's not NULL. */
-    NOINLINE void recordException(const std::exception &e, C4Error* outError) noexcept;
-
-    /** Converts the _currently caught_ C++ exception to a C4Error. Use only in a `catch` block. */
-    NOINLINE void recordException(C4Error* outError) noexcept;
-
-    /** Throws a C4Error as a litecore::error. */
-    [[noreturn]] void throwError(const C4Error&);
-
     /** Clears a C4Error back to empty. */
     static inline void clearError(C4Error* outError) noexcept {if (outError) outError->code = 0;}
 
     /** Macro to substitute for a regular 'catch' block, that saves any exception in OUTERR. */
     #define catchError(OUTERR) \
         catch (...) { \
-            c4Internal::recordException(OUTERR); \
+            C4Error::fromCurrentException(OUTERR); \
         }
 
     #define catchExceptions() \
         catch (...) { }
 
-    /** Precondition check. If `TEST` is not truthy, stores an invalid-parameter error in `OUTERROR`
-        and returns false. */
-    #define checkParam(TEST, MSG, OUTERROR) \
-        ((TEST) || (c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR(MSG), OUTERROR), false))
-
+    /** Precondition check. If `TEST` is not truthy, throws InvalidParameter. */
     #define AssertParam(TEST, MSG) \
         ((TEST) || (error::_throw(error::InvalidParameter, MSG), false))
 

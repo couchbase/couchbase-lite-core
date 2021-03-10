@@ -132,6 +132,7 @@
 		27431BC9258A8AB0009E3EC5 /* QuietReporter.hh in Sources */ = {isa = PBXBuildFile; fileRef = 27431BC6258A8AB0009E3EC5 /* QuietReporter.hh */; };
 		27431C2B258ADB27009E3EC5 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		2743E2BE25F80102006F696D /* c4CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2743E2BD25F80102006F696D /* c4CAPI.cc */; };
+		2743E35625F85F26006F696D /* c4Replicator_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2743E35525F85F26006F696D /* c4Replicator_CAPI.cc */; };
 		2744B34F241854F2005A194D /* Headers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B32F241854F2005A194D /* Headers.cc */; };
 		2744B350241854F2005A194D /* WebSocketInterface.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B330241854F2005A194D /* WebSocketInterface.cc */; };
 		2744B351241854F2005A194D /* WebSocketImpl.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B331241854F2005A194D /* WebSocketImpl.cc */; };
@@ -960,6 +961,12 @@
 		2743E20825F6BC88006F696D /* c4Observer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Observer.hh; sourceTree = "<group>"; };
 		2743E2BD25F80102006F696D /* c4CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4CAPI.cc; sourceTree = "<group>"; };
 		2743E31425F81406006F696D /* PublicKey+Windows.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "PublicKey+Windows.cc"; sourceTree = "<group>"; };
+		2743E32625F853D4006F696D /* c4DatabaseTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4DatabaseTypes.h; sourceTree = "<group>"; };
+		2743E33525F8554F006F696D /* c4QueryTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4QueryTypes.h; sourceTree = "<group>"; };
+		2743E34425F8563A006F696D /* c4IndexTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4IndexTypes.h; sourceTree = "<group>"; };
+		2743E34525F8570C006F696D /* c4DocEnumeratorTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4DocEnumeratorTypes.h; sourceTree = "<group>"; };
+		2743E34625F8583D006F696D /* c4ReplicatorTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4ReplicatorTypes.h; sourceTree = "<group>"; };
+		2743E35525F85F26006F696D /* c4Replicator_CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Replicator_CAPI.cc; sourceTree = "<group>"; };
 		2744B30C241854F2005A194D /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2744B316241854F2005A194D /* WebSocketInterface.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketInterface.hh; sourceTree = "<group>"; };
 		2744B317241854F2005A194D /* BLIPConnection.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIPConnection.hh; sourceTree = "<group>"; };
@@ -2515,6 +2522,7 @@
 				27491C9E1E7B2532001DC54B /* c4Socket.cc */,
 				27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
+				2743E35525F85F26006F696D /* c4Replicator_CAPI.cc */,
 				275A73BD1ED255AF008CB57B /* c4ReplicatorImpl.hh */,
 				27D965252330394C00F4A51C /* c4RemoteReplicator.hh */,
 				27D9652A23303A2B00F4A51C /* c4LocalReplicator.hh */,
@@ -2976,16 +2984,21 @@
 				2722504A1D7884110006D5A5 /* c4BlobStore.h */,
 				27469D03233D488C00A1EE1A /* c4Certificate.h */,
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
+				2743E32625F853D4006F696D /* c4DatabaseTypes.h */,
 				274A69881BED288D00D16D37 /* c4Document.h */,
 				2743E1DA25F69D58006F696D /* c4DocumentTypes.h */,
 				27F370821DC02C3D0096F717 /* c4Document+Fleece.h */,
 				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
+				2743E34525F8570C006F696D /* c4DocEnumeratorTypes.h */,
+				271AB00F2374A41E007B0319 /* c4Index.h */,
+				2743E34425F8563A006F696D /* c4IndexTypes.h */,
 				728EC54C1EC14611002C9A73 /* c4Listener.h */,
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
 				27098A96216C1D2E002751DA /* c4PredictiveQuery.h */,
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
-				271AB00F2374A41E007B0319 /* c4Index.h */,
+				2743E33525F8554F006F696D /* c4QueryTypes.h */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
+				2743E34625F8583D006F696D /* c4ReplicatorTypes.h */,
 				27491C9A1E7B1001001DC54B /* c4Socket.h */,
 				27B64936206971FC00FC12F7 /* LiteCore.h */,
 			);
@@ -4136,6 +4149,7 @@
 				27027CD2255F4A9B00A96D7D /* VersionVector.cc in Sources */,
 				27CCD4AE2315DB03003DEB99 /* CookieStore.cc in Sources */,
 				93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */,
+				2743E35625F85F26006F696D /* c4Replicator_CAPI.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
 				27E4872B1923F24D007D8940 /* RevTreeRecord.cc in Sources */,
 				276CE6832267991500B681AC /* n1ql.cc in Sources */,
