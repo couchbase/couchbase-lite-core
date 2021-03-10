@@ -84,10 +84,8 @@ Retained<C4Replicator> C4Database::newReplicator(C4Socket *openSocket,
 }
 
 
-void C4Replicator::retry() {
-    C4Error error;
-    if (!asInternal(this)->retry(true, &error))
-        C4ThrowError(error);
+bool C4Replicator::retry() {
+    return asInternal(this)->retry(true);
 }
 
 void C4Replicator::setOptions(slice optionsDictFleece) {
@@ -99,22 +97,12 @@ alloc_slice C4Replicator::pendingDocIDs() const {
 }
 
 bool C4Replicator::isDocumentPending(slice docID) const {
-    C4Error error;
-    if (asInternal(this)->isDocumentPending(docID, &error))
-        return true;
-    else if (error.code == 0)
-        return false;
-    else
-        C4ThrowError(error);
+    return asInternal(this)->isDocumentPending(docID);
 }
 
 #ifdef COUCHBASE_ENTERPRISE
-C4Cert* C4Replicator::peerTLSCertificate() const {
-    C4Error error;
-    auto cert = asInternal(this)->getPeerTLSCertificate(&error);
-    if (!cert && error.code)
-        C4ThrowError(error);
-    return cert;
+C4Cert* C4Replicator::getPeerTLSCertificate() const {
+    return asInternal(this)->getPeerTLSCertificate();
 }
 #endif
 
@@ -174,20 +162,20 @@ bool C4Replicator::isValidRemote(const C4Address &addr, slice dbName, C4Error *o
 void C4Replicator::validateRemote(const C4Address &addr, slice dbName) {
     C4Error error;
     if (!isValidRemote(addr, dbName, &error))
-        C4ThrowError(error);
+        C4Error::raise(error);
 }
 
 
-bool C4Replicator::addressFromURL(slice url, C4Address &address, slice *dbName) {
+bool C4Replicator::addressFromURL(slice url, C4Address *address, slice *dbName) {
     slice str = url;
 
     auto colon = str.findByteOrEnd(':');
     if (!colon)
         return false;
-    address.scheme = slice(str.buf, colon);
-    if (!isValidScheme(address.scheme))
+    address->scheme = slice(str.buf, colon);
+    if (!isValidScheme(address->scheme))
         return false;
-    address.port = defaultPortForScheme(address.scheme);
+    address->port = defaultPortForScheme(address->scheme);
     str.setStart(colon);
     if (!str.hasPrefix("://"_sl))
         return false;
@@ -198,12 +186,12 @@ bool C4Replicator::addressFromURL(slice url, C4Address &address, slice *dbName) 
         auto endBr = str.findByte(']');
         if (!endBr)
             return false;
-        address.hostname = slice(&str[1], endBr);
-        if (address.hostname.size == 0)
+        address->hostname = slice(&str[1], endBr);
+        if (address->hostname.size == 0)
             return false;
         str.setStart(endBr + 1);
     } else {
-        address.hostname = nullslice;
+        address->hostname = nullslice;
     }
 
     colon = str.findByteOrEnd(':');
@@ -219,14 +207,14 @@ bool C4Replicator::addressFromURL(slice url, C4Address &address, slice *dbName) 
         }
         if (port < 0 || port > 65535)
             return false;
-        address.port = (uint16_t)port;
+        address->port = (uint16_t)port;
     } else {
         colon = pathStart;
     }
-    if (!address.hostname.buf) {
-        address.hostname = slice(str.buf, colon);
-        if (address.hostname.size == 0)
-            address.port = 0;
+    if (!address->hostname.buf) {
+        address->hostname = slice(str.buf, colon);
+        if (address->hostname.size == 0)
+            address->port = 0;
     }
 
     if (dbName) {
@@ -241,11 +229,11 @@ bool C4Replicator::addressFromURL(slice url, C4Address &address, slice *dbName) 
         while ((slash = str.findByte('/')) != nullptr)
             str.setStart(slash + 1);
 
-        address.path = slice(pathStart, str.buf);
+        address->path = slice(pathStart, str.buf);
         *dbName = str;
         return c4repl_isValidDatabaseName(slice(str));
     } else {
-        address.path = slice(pathStart, str.end());
+        address->path = slice(pathStart, str.end());
         return true;
     }
 }

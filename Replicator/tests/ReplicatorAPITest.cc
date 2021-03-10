@@ -24,7 +24,7 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
                          ReplicatorAPITest::kImagesDBName;
 
 
-TEST_CASE("URL Parsing") {
+TEST_CASE("URL Parsing", "[C]][Replicator]") {
     C4Address address;
     C4String dbName;
 
@@ -125,13 +125,13 @@ TEST_CASE("URL Parsing") {
 }
 
 
-TEST_CASE("URL Generation") {
+TEST_CASE("URL Generation", "[C]][Replicator]") {
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 8888, "/bar"_sl})) == "ws://foo.com:8888/bar"_sl);
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 0,    "/"_sl}))    == "ws://foo.com/"_sl);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C][Push]") {
     // For CBL-524 "Lazy c4replicator initialize cause memory leak"
     C4Error err;
     C4ReplicatorParameters params = {};
@@ -355,7 +355,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]")
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -416,7 +416,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -699,7 +699,7 @@ struct C4TestReplicator : public C4ReplicatorImpl {
     alloc_slice URL() const override     { return nullslice; }
 };
 
-TEST_CASE_METHOD(ReplicatorAPITest, "c4Replicator Zero Memory", "[Replicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "c4Replicator Zero Memory", "[C][Replicator]") {
      {
          Encoder enc;
          enc.beginDict();

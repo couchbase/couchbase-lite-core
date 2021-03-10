@@ -655,16 +655,16 @@ namespace litecore { namespace repl {
     }
 
 
-    bool Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback, C4Error* outErr){
-        return _db->use<bool>([&](C4Database *db) {
-            return _checkpointer.pendingDocumentIDs(db, callback, outErr);
+    void Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback){
+        _db->use([&](C4Database *db) {
+            _checkpointer.pendingDocumentIDs(db, callback);
         });
     }
 
 
-    bool Replicator::isDocumentPending(slice docID, C4Error* outErr) {
+    bool Replicator::isDocumentPending(slice docID) {
         return _db->use<bool>([&](C4Database *db) {
-            return _checkpointer.isDocumentPending(db, docID, outErr);
+            return _checkpointer.isDocumentPending(db, docID);
         });
     }
 

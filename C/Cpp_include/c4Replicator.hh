@@ -30,37 +30,37 @@ struct C4Replicator : public fleece::RefCounted, public C4Base {
 
     static bool isValidRemote(const C4Address &addr,
                               slice dbName,
-                              C4Error* C4NULLABLE outError) noexcept;
+                              C4Error* C4NULLABLE outError =nullptr) noexcept;
 
     static void validateRemote(const C4Address &addr,
                                slice dbName);
 
     static bool addressFromURL(slice URL,
-                               C4Address &outAddress,
+                               C4Address *outAddress,
                                slice* C4NULLABLE outDBName);
 
     static alloc_slice addressToURL(const C4Address&);
 
-    virtual void start(bool reset =false) =0;
-    virtual void stop() =0;
-    void retry();
+    virtual void start(bool reset =false) noexcept =0;
+    virtual void stop() noexcept =0;
+    bool retry();
 
-    virtual void stopCallbacks() =0;
+    virtual void stopCallbacks() noexcept =0;
 
-    virtual void setHostReachable(bool) { }
-    virtual void setSuspended(bool) =0;
+    virtual void setHostReachable(bool) noexcept { }
+    virtual void setSuspended(bool) noexcept =0;
+
     void setOptions(slice optionsDictFleece);
-    virtual void setProgressLevel(C4ReplicatorProgressLevel) =0;
+    virtual void setProgressLevel(C4ReplicatorProgressLevel) noexcept =0;
 
-    virtual C4ReplicatorStatus status() const =0;
-
-    virtual alloc_slice responseHeaders() const =0;
+    virtual C4ReplicatorStatus getStatus() const noexcept =0;
+    virtual alloc_slice getResponseHeaders() const noexcept =0;
 
     alloc_slice pendingDocIDs() const;
     bool isDocumentPending(slice docID) const;
 
 #ifdef COUCHBASE_ENTERPRISE
-    C4Cert* C4NULLABLE peerTLSCertificate() const;
+    C4Cert* C4NULLABLE getPeerTLSCertificate() const;
 #endif
 };
 

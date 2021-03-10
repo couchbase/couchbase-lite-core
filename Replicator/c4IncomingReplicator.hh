@@ -24,7 +24,7 @@ namespace c4Internal {
         { }
 
         
-        virtual alloc_slice URL() const override {
+        virtual alloc_slice URL() const noexcept override {
             return _openSocket->url();
         }
 
@@ -44,7 +44,7 @@ namespace c4Internal {
         }
 
 
-        virtual bool _unsuspend() override {
+        virtual bool _unsuspend() noexcept override {
             // Restarting doesn't make sense; do nothing
             return true;
         }

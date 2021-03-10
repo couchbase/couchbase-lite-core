@@ -110,7 +110,7 @@ namespace c4Internal {
         /// Returns the ErrorInfo associated with a C4Error.
         /// (We have to return a copy; returning a reference would not be thread-safe.)
         __cold
-        optional<ErrorInfo> copy(const C4Error &error) noexcept {
+        optional<ErrorInfo> copy(C4Error error) noexcept {
             if (error.internal_info == 0)
                 return nullopt;
             lock_guard<mutex> lock(_mutex);
@@ -248,7 +248,7 @@ C4Error C4Error::fromCurrentException() noexcept {
 
 
 [[noreturn]] __cold
-void C4Error::raise(const C4Error &err) {
+void C4Error::raise(C4Error err) {
     if (auto info = ErrorTable::instance().copy(err); info) {
         error e(error::Domain(err.domain), err.code, info->message);
         e.backtrace = info->backtrace;

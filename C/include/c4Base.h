@@ -292,7 +292,8 @@ typedef struct C4Error {
     }
 
     [[noreturn]] static void raise(C4ErrorDomain, int code, const char *format, ...) __printflike(3,4);
-    [[noreturn]] static void raise(const C4Error&);
+    [[noreturn]] static void raise(C4ErrorDomain domain, int code) {raise(C4Error{domain, code});}
+    [[noreturn]] static void raise(C4Error);
 
     bool operator== (const C4Error &b) const {return code == b.code
                                                   && (code == 0 || domain == b.domain);}

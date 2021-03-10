@@ -46,7 +46,7 @@ bool c4repl_isValidRemote(C4Address addr, C4String dbName, C4Error *outError) C4
 
 
 bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API {
-    return C4Replicator::addressFromURL(url, *address, (slice*)dbName);
+    return C4Replicator::addressFromURL(url, address, (slice*)dbName);
 }
 
 
@@ -116,8 +116,11 @@ void c4repl_stop(C4Replicator* repl) C4API {
 
 
 bool c4repl_retry(C4Replicator* repl, C4Error *outError) C4API {
-    return tryCatch(nullptr, [&] {
-        repl->retry();
+    return tryCatch<bool>(nullptr, [&] {
+        if (repl->retry())
+            return true;
+        clearError(outError);
+        return false;
     });
 }
 
@@ -146,12 +149,12 @@ void c4repl_free(C4Replicator* repl) C4API {
 
 
 C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
-    return repl->status();
+    return repl->getStatus();
 }
 
 
 C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
-    return repl->responseHeaders();
+    return repl->getResponseHeaders();
 }
 
 
@@ -173,7 +176,7 @@ bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr
 C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) C4API {
 #ifdef COUCHBASE_ENTERPRISE
     outErr->code = 0;
-    return repl->peerTLSCertificate();
+    return repl->getPeerTLSCertificate();
 #else
     outErr->domain = LiteCoreDomain;
     outErr->code = kC4ErrorUnsupported;

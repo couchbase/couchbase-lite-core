@@ -44,7 +44,7 @@ namespace c4Internal {
     using namespace litecore;
     using namespace litecore::repl;
 
-    /** Glue between C4 API and internal LiteCore replicator. Abstract class. */
+    /** Abstract subclass of the public C4Replicator that implements common functionality. */
     struct C4ReplicatorImpl : public C4Replicator,
                               Logging,
                               Replicator::Delegate,
@@ -55,7 +55,7 @@ namespace c4Internal {
         // submodule relationship to this one, so it's possible for it to get out of sync.
         static constexpr int API_VERSION = 3;
 
-        virtual void start(bool reset = false) override {
+        virtual void start(bool reset = false) noexcept override {
             LOCK(_mutex);
             if(_status.level == kC4Stopping) {
                 logInfo("Rapid call to start() (stop() is not finished yet), scheduling a restart after stop() is done...");
@@ -75,13 +75,12 @@ namespace c4Internal {
 
 
         // Retry is not supported by default. C4RemoteReplicator overrides this.
-        virtual bool retry(bool resetCount, C4Error *outError) {
-            c4error_return(LiteCoreDomain, kC4ErrorUnsupported,
-                           "Can't retry this type of replication"_sl, outError);
-            return false;
+        virtual bool retry(bool resetCount) {
+            C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported,
+                           "Can't retry this type of replication");
         }
 
-        void setSuspended(bool suspended) override {
+        void setSuspended(bool suspended) noexcept override {
             LOCK(_mutex);
             if(_status.level == kC4Stopped) {
                 // Suspending a stopped replicator?  Get outta here...
@@ -133,12 +132,12 @@ namespace c4Internal {
             }
         }
 
-        alloc_slice responseHeaders() const override {
+        alloc_slice getResponseHeaders() const noexcept override {
             LOCK(_mutex);
             return _responseHeaders;
         }
 
-        C4ReplicatorStatus status() const override {
+        C4ReplicatorStatus getStatus() const noexcept override {
             LOCK(_mutex);
             switch (_status.level) {
             // CBL-1513: Any new approved statuses must be added to this list,
@@ -161,7 +160,7 @@ namespace c4Internal {
             }
         }
 
-        virtual void stop() override {
+        virtual void stop() noexcept override {
             LOCK(_mutex);
             _cancelStop = false;
             setStatusFlag(kC4Suspended, false);
@@ -190,22 +189,22 @@ namespace c4Internal {
         }
 
         // Prevents any future client callbacks (called by `c4repl_free`.)
-        void stopCallbacks() override {
+        void stopCallbacks() noexcept override {
             LOCK(_mutex);
             _onStatusChanged  = nullptr;
             _onDocumentsEnded = nullptr;
             _onBlobProgress   = nullptr;
         }
 
-        bool isDocumentPending(C4Slice docID, C4Error* outErr) const {
-            return PendingDocuments(this).isDocumentPending(docID, outErr);
+        bool isDocumentPending(C4Slice docID) const {
+            return PendingDocuments(this).isDocumentPending(docID);
         }
 
         alloc_slice pendingDocumentIDs() const {
             return PendingDocuments(this).pendingDocumentIDs();
         }
 
-        void setProgressLevel(C4ReplicatorProgressLevel level) override {
+        void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override {
             _progressLevel = level;
             if(_replicator) {
                 _replicator->setProgressNotificationLevel(static_cast<int>(level));
@@ -216,15 +215,14 @@ namespace c4Internal {
 
     #ifdef COUCHBASE_ENTERPRISE
 
-        C4Cert* getPeerTLSCertificate(C4Error* outErr) const {
+        C4Cert* getPeerTLSCertificate() const {
             LOCK(_mutex);
             if (!_peerTLSCertificate && _peerTLSCertificateData) {
-                _peerTLSCertificate = c4cert_fromData(_peerTLSCertificateData, outErr);
-                if (_peerTLSCertificate)
-                    _peerTLSCertificateData = nullptr;
-            } else {
-                if (outErr)
-                    *outErr = {};
+                C4Error error;
+                _peerTLSCertificate = c4cert_fromData(_peerTLSCertificateData, &error);
+                if (!_peerTLSCertificate)
+                    C4Error::raise(error);
+                _peerTLSCertificateData = nullptr;
             }
             return _peerTLSCertificate;
         }
@@ -264,16 +262,16 @@ namespace c4Internal {
         }
 
 
-        bool continuous() const {
+        bool continuous() const noexcept {
             return _options.push == kC4Continuous || _options.pull == kC4Continuous;
         }
 
-        inline bool statusFlag(C4ReplicatorStatusFlags flag) {
+        inline bool statusFlag(C4ReplicatorStatusFlags flag) noexcept {
             return (_status.flags & flag) != 0;
         }
 
 
-        bool setStatusFlag(C4ReplicatorStatusFlags flag, bool on) {
+        bool setStatusFlag(C4ReplicatorStatusFlags flag, bool on) noexcept {
             auto flags = _status.flags;
             if (on)
                 flags |= flag;
@@ -286,7 +284,7 @@ namespace c4Internal {
         }
 
 
-        void updateStatusFromReplicator(C4ReplicatorStatus status) {
+        void updateStatusFromReplicator(C4ReplicatorStatus status) noexcept {
             // The Replicator doesn't use the flags, so don't copy them:
             auto flags = _status.flags;
             _status = status;
@@ -294,7 +292,7 @@ namespace c4Internal {
         }
 
 
-        unsigned getIntProperty(slice key, unsigned defaultValue) const {
+        unsigned getIntProperty(slice key, unsigned defaultValue) const noexcept {
             if (auto val = _options.properties[key]; val.type() == kFLNumber)
                 return unsigned(std::max(int64_t(0), std::min(int64_t(UINT_MAX), val.asInt())) );
             else
@@ -309,12 +307,13 @@ namespace c4Internal {
 
         // Base implementation of starting the replicator.
         // Subclass implementation of `start` must call this (with the mutex locked).
-        virtual bool _start(bool reset) {
+        // Rather than throw exceptions, it stores errors in _status.error.
+        virtual bool _start(bool reset) noexcept {
             if (!_replicator) {
                 try {
                     createReplicator();
                 } catch (exception &x) {
-                    _status.error = C4ErrorFromException(x);
+                    _status.error = C4Error::fromException(x);
                     _replicator = nullptr;
                     return false;
                 }
@@ -330,7 +329,7 @@ namespace c4Internal {
             return true;
         }
 
-        virtual void _suspend() {
+        virtual void _suspend() noexcept {
             // called with _mutex locked
             if (_replicator) {
                 _status.level = kC4Stopping;
@@ -338,10 +337,11 @@ namespace c4Internal {
             }
         }
 
-        virtual bool _unsuspend() {
+        virtual bool _unsuspend() noexcept {
             // called with _mutex locked
             return _start(false);
         }
+
 
         // ---- ReplicatorDelegate API:
 
@@ -469,8 +469,8 @@ namespace c4Internal {
         // Posts a notification to the client.
         // The mutex MUST NOT be locked, else if the `onStatusChanged` function calls back into me
         // I will deadlock!
-        void notifyStateChanged() {
-            C4ReplicatorStatus status = this->status();
+        void notifyStateChanged() noexcept {
+            C4ReplicatorStatus status = this->getStatus();
 
             if (willLog()) {
                 double progress = 0.0;
@@ -515,25 +515,19 @@ namespace c4Internal {
                     enc.writeString(info.docID);
                     any = true;
                 };
-                bool ok;
-                C4Error error;
                 if (replicator)
-                    ok = replicator->pendingDocumentIDs(callback, &error);
+                    replicator->pendingDocumentIDs(callback);
                 else
-                    ok = checkpointer->pendingDocumentIDs(database, callback, &error);
-                if (!ok)
-                    C4ThrowError(error);
+                    checkpointer->pendingDocumentIDs(database, callback);
                 if (!any)
                     return {};
                 enc.endArray();
                 return enc.finish();
             }
 
-            bool isDocumentPending(C4Slice docID, C4Error* outErr) {
-                if (replicator)
-                    return replicator->isDocumentPending(docID, outErr);
-                else
-                    return checkpointer->isDocumentPending(database, docID, outErr);
+            bool isDocumentPending(C4Slice docID) {
+                return replicator ? replicator->isDocumentPending(docID)
+                                  : checkpointer->isDocumentPending(database, docID);
             }
 
         private:
