@@ -77,7 +77,7 @@ namespace c4Internal {
 
 unique_ptr<C4DatabaseObserver>
 C4DatabaseObserver::create(C4Database *db, C4DatabaseObserver::Callback callback) {
-    return make_unique<C4DatabaseObserverImpl>(db, UINT64_MAX, move(callback));
+    return make_unique<c4Internal::C4DatabaseObserverImpl>(db, UINT64_MAX, move(callback));
 }
 
 
@@ -120,5 +120,5 @@ namespace c4Internal {
 
 unique_ptr<C4DocumentObserver>
 C4DocumentObserver::create(C4Database *db, slice docID, C4DocumentObserver::Callback callback) {
-    return make_unique<C4DocumentObserverImpl>(db, docID, callback);
+    return make_unique<c4Internal::C4DocumentObserverImpl>(db, docID, callback);
 }

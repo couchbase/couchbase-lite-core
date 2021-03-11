@@ -40,8 +40,10 @@
 #endif
 
 
-using namespace litecore;
 using namespace std;
+using namespace litecore;
+using namespace c4Internal;
+
 
 extern "C" {
     CBL_CORE_API std::atomic_int gC4ExpectExceptions;

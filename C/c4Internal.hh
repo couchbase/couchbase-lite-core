@@ -80,5 +80,3 @@ namespace c4Internal {
 
     Database* asInternal(C4Database *db);
 }
-
-using namespace c4Internal;

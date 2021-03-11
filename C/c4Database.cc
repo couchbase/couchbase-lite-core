@@ -45,6 +45,7 @@
 #include <inttypes.h>
 
 using namespace std;
+using namespace c4Internal;
 
 
 CBL_CORE_API const char* const kC4DatabaseFilenameExtension = ".cblite2";

@@ -28,6 +28,9 @@
 using namespace std;
 using namespace fleece;
 
+using Database = c4Internal::Database;
+using Document = c4Internal::Document;
+
 
 class UpgradeTestFixture : public TestFixture {
 protected:

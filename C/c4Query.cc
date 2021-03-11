@@ -33,8 +33,10 @@
 
 
 using namespace std;
-using namespace litecore;
 using namespace fleece::impl;
+using namespace litecore;
+using namespace c4Internal;
+
 
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = { };
 

@@ -28,7 +28,7 @@ namespace litecore {
     using namespace std;
 
 
-    BackgroundDB::BackgroundDB(Database *db)
+    BackgroundDB::BackgroundDB(c4Internal::Database *db)
     :access_lock(db->dataFile()->openAnother(this))
     ,_database(db)
     { }

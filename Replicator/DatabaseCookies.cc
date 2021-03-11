@@ -34,7 +34,7 @@ namespace litecore { namespace repl {
     DatabaseCookies::DatabaseCookies(C4Database *db)
     :_db(db)
     {
-        auto dataFile = asInternal(db)->dataFile();
+        auto dataFile = c4Internal::asInternal(db)->dataFile();
         auto object = dataFile->sharedObject("CookieStore");
         if (!object) {
             alloc_slice data;

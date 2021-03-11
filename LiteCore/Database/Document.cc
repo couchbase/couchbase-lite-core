@@ -289,69 +289,69 @@ namespace c4Internal {
         return savedDoc;
     }
 
-} // end namespace c4Internal
 
-
-Retained<Document> Database::putDocument(const C4DocPutRequest &rq,
-                                           size_t *outCommonAncestorIndex,
-                                           C4Error *outError)
-{
-    mustBeInTransaction();
-    if (rq.docID.buf && !Document::isValidDocID(rq.docID))
-        error::_throw(error::BadDocID);
-    if (rq.existingRevision || rq.historyCount > 0)
-        AssertParam(rq.docID.buf, "Missing docID");
-    if (rq.existingRevision) {
-        AssertParam(rq.historyCount > 0, "No history");
-    } else {
-        AssertParam(rq.historyCount <= 1, "Too much history");
-        AssertParam(rq.historyCount > 0 || !(rq.revFlags & kRevDeleted),
-                    "Can't create a new already-deleted document");
-        AssertParam(rq.remoteDBID == 0, "remoteDBID cannot be used when existingRevision=false");
-    }
-
-    int commonAncestorIndex = 0;
-    Retained<Document> doc;
-    if (rq.save && isNewDocPutRequest(this, rq)) {
-        // As an optimization, write the doc assuming there is no prior record in the db:
-        tie(doc, commonAncestorIndex) = putNewDoc(this, rq);
-        // If there's already a record, doc will be null, so we'll continue down regular path.
-    }
-    if (!doc) {
+    Retained<Document> Database::putDocument(const C4DocPutRequest &rq,
+                                               size_t *outCommonAncestorIndex,
+                                               C4Error *outError)
+    {
+        mustBeInTransaction();
+        if (rq.docID.buf && !Document::isValidDocID(rq.docID))
+            error::_throw(error::BadDocID);
+        if (rq.existingRevision || rq.historyCount > 0)
+            AssertParam(rq.docID.buf, "Missing docID");
         if (rq.existingRevision) {
-            // Insert existing revision:
-            doc = getDocument(rq.docID, false, kDocGetAll);
-            C4Error err;
-            commonAncestorIndex = doc->putExistingRevision(rq, &err);
-            if (commonAncestorIndex < 0) {
-                throwIfUnexpected(err, outError);
-                doc = nullptr;
+            AssertParam(rq.historyCount > 0, "No history");
+        } else {
+            AssertParam(rq.historyCount <= 1, "Too much history");
+            AssertParam(rq.historyCount > 0 || !(rq.revFlags & kRevDeleted),
+                        "Can't create a new already-deleted document");
+            AssertParam(rq.remoteDBID == 0, "remoteDBID cannot be used when existingRevision=false");
+        }
+
+        int commonAncestorIndex = 0;
+        Retained<Document> doc;
+        if (rq.save && isNewDocPutRequest(this, rq)) {
+            // As an optimization, write the doc assuming there is no prior record in the db:
+            tie(doc, commonAncestorIndex) = putNewDoc(this, rq);
+            // If there's already a record, doc will be null, so we'll continue down regular path.
+        }
+        if (!doc) {
+            if (rq.existingRevision) {
+                // Insert existing revision:
+                doc = getDocument(rq.docID, false, kDocGetAll);
+                C4Error err;
+                commonAncestorIndex = doc->putExistingRevision(rq, &err);
+                if (commonAncestorIndex < 0) {
+                    throwIfUnexpected(err, outError);
+                    doc = nullptr;
+                    commonAncestorIndex = 0;
+                }
+            } else {
+                // Create new revision:
+                slice docID = rq.docID;
+                alloc_slice newDocID;
+                if (!docID)
+                    docID = newDocID = createDocUUID();
+
+                slice parentRevID;
+                if (rq.historyCount > 0)
+                    parentRevID = rq.history[0];
+
+                doc = getDocument(docID, false, kDocGetAll);
+                C4Error err;
+                if (!checkNewRev(doc, parentRevID, rq.revFlags, rq.allowConflict, &err)
+                        || !doc->putNewRevision(rq, &err)) {
+                    throwIfUnexpected(err, outError);
+                    doc = nullptr;
+                }
                 commonAncestorIndex = 0;
             }
-        } else {
-            // Create new revision:
-            slice docID = rq.docID;
-            alloc_slice newDocID;
-            if (!docID)
-                docID = newDocID = createDocUUID();
-
-            slice parentRevID;
-            if (rq.historyCount > 0)
-                parentRevID = rq.history[0];
-
-            doc = getDocument(docID, false, kDocGetAll);
-            C4Error err;
-            if (!checkNewRev(doc, parentRevID, rq.revFlags, rq.allowConflict, &err)
-                    || !doc->putNewRevision(rq, &err)) {
-                throwIfUnexpected(err, outError);
-                doc = nullptr;
-            }
-            commonAncestorIndex = 0;
         }
+
+        Assert(commonAncestorIndex >= 0, "Unexpected conflict in c4doc_put");
+        if (outCommonAncestorIndex)
+            *outCommonAncestorIndex = commonAncestorIndex;
+        return doc;
     }
 
-    Assert(commonAncestorIndex >= 0, "Unexpected conflict in c4doc_put");
-    if (outCommonAncestorIndex)
-        *outCommonAncestorIndex = commonAncestorIndex;
-    return doc;
-}
+} // end namespace c4Internal

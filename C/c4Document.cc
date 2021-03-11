@@ -38,6 +38,7 @@
 
 using namespace fleece::impl;
 using namespace std;
+using namespace c4Internal;
 
 
 #pragma mark - C++ API:

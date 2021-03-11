@@ -30,6 +30,8 @@
 #include "Logging.hh"
 #include "InstanceCounted.hh"
 
+using namespace c4Internal;
+
 
 #pragma mark - DOC ENUMERATION:
 

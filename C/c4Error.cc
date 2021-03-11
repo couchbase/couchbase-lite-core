@@ -180,6 +180,8 @@ static const char* getErrorName(C4Error err) {
         return nullptr;
 }
 
+using namespace c4Internal;
+
 
 __cold
 string C4Error::message() const {

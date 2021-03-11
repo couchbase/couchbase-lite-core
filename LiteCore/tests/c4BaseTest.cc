@@ -55,7 +55,7 @@ TEST_CASE("C4Error messages") {
         CHECK(errors[i].code == 1000+i);
         alloc_slice message = c4error_getMessage(errors[i]);
         string messageStr = string(message);
-        if (i >= (200 - kMaxErrorMessagesToSave)) {
+        if (i >= (200 - c4Internal::kMaxErrorMessagesToSave)) {
             // The latest C4Errors generated will have their custom messages:
             char expected[100];
             sprintf(expected, "Error number %d", 1000+i);
