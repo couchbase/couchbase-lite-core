@@ -200,8 +200,8 @@ namespace c4Internal {
                 if (rev->properties) {
                     SharedEncoder enc(_db->sharedFLEncoder());
                     enc << rev->properties;
-                    _latestBody = enc.finish();
-                    return _latestBody;
+                    _latestBody = enc.finishDoc();
+                    return _latestBody.data();;
                 }
             }
             return nullslice;
@@ -575,7 +575,7 @@ namespace c4Internal {
     private:
         VectorRecord        _doc;
         optional<RemoteID>  _remoteID;    // Identifies selected revision
-        alloc_slice         _latestBody;    // Holds onto latest Fleece body I created
+        fleece::Doc         _latestBody;  // Holds onto latest Fleece body I created
     };
 
 
