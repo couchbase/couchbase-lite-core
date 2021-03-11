@@ -52,19 +52,21 @@ struct C4Database final : public fleece::RefCounted, public C4Base {
 public:
     // Lifecycle:
 
-    static bool fileExists(slice name, slice inDirectory);
-    static void copyFile(slice sourcePath,
-                         slice destinationName,
-                         const C4DatabaseConfig2&);
-    static bool deleteFile(slice name, slice inDirectory);
-    static bool deleteFile(slice path);
+    using Config = C4DatabaseConfig2;
 
-    static Retained<C4Database> open(slice name,
-                                     const C4DatabaseConfig2&);
-    
-    static Retained<C4Database> open(slice path,
-                                     C4DatabaseFlags,
-                                     const C4EncryptionKey* C4NULLABLE = nullptr);
+    static bool exists(slice name, slice inDirectory);
+    static void copyNamed(slice sourcePath,
+                          slice destinationName,
+                          const Config&);
+    static bool deleteNamed(slice name, slice inDirectory);
+    static bool deleteAtPath(slice path);
+
+    static Retained<C4Database> openNamed(slice name,
+                                          const Config&);
+
+    static Retained<C4Database> openAtPath(slice path,
+                                           C4DatabaseFlags,
+                                           const C4EncryptionKey* C4NULLABLE = nullptr);
 
     static void shutdownLiteCore();
 
@@ -77,10 +79,10 @@ public:
 
     // Attributes:
 
-    slice name() const noexcept FLPURE;
+    slice getName() const noexcept FLPURE;
     alloc_slice path() const;
-    const C4DatabaseConfig2& config() const noexcept FLPURE;
-    alloc_slice peerIDString() const;
+    const Config& getConfig() const noexcept FLPURE;
+    alloc_slice getPeerID() const;
     C4UUID publicUUID() const;
     C4UUID privateUUID() const;
 
@@ -115,7 +117,12 @@ public:
                                      size_t* C4NULLABLE outCommonAncestorIndex,
                                      C4Error *outError);
 
-    std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs,
+    Retained<C4Document> createDocument(slice docID,
+                                        slice revBody,
+                                        C4RevisionFlags revFlags,
+                                        C4Error *outError);
+
+    std::vector<alloc_slice> findDocAncestors(const std::vector<slice> &docIDs,
                                            const std::vector<slice> &revIDs,
                                            unsigned maxAncestors,
                                            bool mustHaveBodies,
@@ -127,14 +134,14 @@ public:
 
     void putRawDocument(slice storeName, const C4RawDocument&);
 
-    bool purgeDocument(slice docID);
+    bool purgeDoc(slice docID);
 
     // Fleece-related utilities for document encoding:
 
     alloc_slice encodeJSON(slice jsonData) const;
     FLEncoder createFleeceEncoder() const;
-    FLEncoder sharedFleeceEncoder() const;
-    FLSharedKeys sharedFleeceKeys() const;
+    FLEncoder getSharedFleeceEncoder() const;
+    FLSharedKeys getFLSharedKeys() const;
 
     // Observers:
 
@@ -160,7 +167,7 @@ public:
 
     // Blobs:
 
-    C4BlobStore& blobStore();
+    C4BlobStore& getBlobStore();
 
     // Queries & Indexes:
 
@@ -176,6 +183,7 @@ public:
     void deleteIndex(slice name);
 
     alloc_slice getIndexesInfo(bool fullInfo = true) const;
+    alloc_slice getIndexes() const                          {return getIndexesInfo(false);}
 
     alloc_slice getIndexRows(slice name) const;
 
@@ -223,7 +231,7 @@ public:
     }
 
     static void copyFileToPath(slice sourcePath, slice destinationPath, const C4DatabaseConfig&);
-    const C4DatabaseConfig& configV1() const noexcept FLPURE;
+    const C4DatabaseConfig& getConfigV1() const noexcept FLPURE;
     void lockClientMutex() noexcept;
     void unlockClientMutex() noexcept;
 

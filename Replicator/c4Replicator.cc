@@ -142,13 +142,13 @@ bool C4Replicator::isValidDatabaseName(slice dbName) noexcept {
 }
 
 
-bool C4Replicator::isValidRemote(const C4Address &addr, slice dbName, C4Error *outError) noexcept {
+bool C4Address::isValidRemote(slice dbName, C4Error *outError) const noexcept {
     slice message;
-    if (!isValidReplicatorScheme(addr.scheme))
+    if (!isValidReplicatorScheme(scheme))
         message = "Invalid replication URL scheme (use ws: or wss:)"_sl;
     else if (!c4repl_isValidDatabaseName(dbName))
         message = "Invalid or missing remote database name"_sl;
-    else if (addr.hostname.size == 0 || addr.port == 0)
+    else if (hostname.size == 0 || port == 0)
         message = "Invalid replication URL (bad hostname or port)"_sl;
 
     if (message) {
@@ -161,12 +161,12 @@ bool C4Replicator::isValidRemote(const C4Address &addr, slice dbName, C4Error *o
 
 void C4Replicator::validateRemote(const C4Address &addr, slice dbName) {
     C4Error error;
-    if (!isValidRemote(addr, dbName, &error))
+    if (!addr.isValidRemote(dbName, &error))
         C4Error::raise(error);
 }
 
 
-bool C4Replicator::addressFromURL(slice url, C4Address *address, slice *dbName) {
+bool C4Address::fromURL(slice url, C4Address *address, slice *dbName) {
     slice str = url;
 
     auto colon = str.findByteOrEnd(':');
@@ -239,17 +239,17 @@ bool C4Replicator::addressFromURL(slice url, C4Address *address, slice *dbName) 
 }
 
 
-alloc_slice C4Replicator::addressToURL(const C4Address &address) {
+alloc_slice C4Address::toURL() const {
     stringstream s;
-    s << address.scheme << "://";
-    if (slice(address.hostname).findByte(':'))
-        s << '[' << address.hostname << ']';
+    s << scheme << "://";
+    if (slice(hostname).findByte(':'))
+        s << '[' << hostname << ']';
     else
-        s << address.hostname;
-    if (address.port)
-        s << ':' << address.port;
-    if (address.path.size == 0 || slice(address.path)[0] != '/')
+        s << hostname;
+    if (port)
+        s << ':' << port;
+    if (path.size == 0 || slice(path)[0] != '/')
         s << '/';
-    s << address.path;
+    s << path;
     return alloc_slice(s.str());
 }

@@ -82,7 +82,7 @@ struct C4ReadStream : public C4Base {
     C4ReadStream(const C4BlobStore&, C4BlobKey);
     ~C4ReadStream();
     size_t read(void *buffer, size_t maxBytes);
-    int64_t length() const;
+    int64_t getLength() const;
     void seek(int64_t pos);
 private:
     std::unique_ptr<litecore::SeekableReadStream> _impl;

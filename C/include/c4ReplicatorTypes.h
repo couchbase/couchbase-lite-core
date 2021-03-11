@@ -20,6 +20,10 @@
 #include "c4DocumentTypes.h"
 #include "fleece/Fleece.h"
 
+#ifdef __cplusplus
+#include "fleece/slice.hh"
+#endif
+
 C4_ASSUME_NONNULL_BEGIN
 
 #ifdef __cplusplus
@@ -63,6 +67,14 @@ extern "C" {
         C4String hostname;
         uint16_t port;
         C4String path;
+
+#if __cplusplus
+        bool isValidRemote(fleece::slice withDbName, C4Error *outError =nullptr) const noexcept;
+        fleece::alloc_slice toURL() const;
+        static bool fromURL(fleece::slice url,
+                            C4Address *outAddress,
+                            fleece::slice* C4NULLABLE outDBName);
+#endif
     };
 
 

@@ -49,10 +49,10 @@ namespace c4 {
                                 slice revID2) noexcept;
         static unsigned getRevIDGeneration(slice revID) noexcept;
 
-        static C4RevisionFlags currentRevFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept;
+        static C4RevisionFlags revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept;
 
         /// Returns the Document instance, if any, that contains the given Fleece value.
-        static C4Document* C4NULLABLE containing(FLValue) noexcept;
+        static C4Document* C4NULLABLE containingValue(FLValue) noexcept;
 
         static bool containsBlobs(FLDict) noexcept;
         static bool isOldMetaProperty(slice propertyName) noexcept;
@@ -76,31 +76,31 @@ namespace c4 {
 
         // Revision info:
 
-        bool loadSelectedRevBody(); // can throw; returns false if compacted away
+        bool loadRevisionBody(); // can throw; returns false if compacted away
 
         bool hasRevisionBody() noexcept;
 
-        slice getSelectedRevBody() noexcept;
+        slice getRevisionBody() noexcept;
 
         alloc_slice bodyAsJSON(bool canonical =false);
 
-        FLDict getSelectedRevRoot() noexcept;
+        FLDict getProperties() noexcept;
 
         alloc_slice getSelectedRevIDGlobalForm();
 
-        alloc_slice getSelectedRevHistory(unsigned maxHistory,
+        alloc_slice getRevisionHistory(unsigned maxHistory,
                                           const C4String backToRevs[C4NULLABLE], // only if count=0
                                           unsigned backToRevsCount);
 
         // Remote database revision tracking:
 
-        alloc_slice remoteAncestorRevID(C4RemoteID);
+        alloc_slice getRemoteAncestor(C4RemoteID);
 
-        void setRemoteAncestorRevID(C4RemoteID, C4String revID);
+        void setRemoteAncestor(C4RemoteID, C4String revID);
 
         // Purging:
 
-        bool removeSelectedRevBody() noexcept;
+        bool removeRevisionBody() noexcept;
 
         int32_t purgeRevision(C4Slice revID);
 

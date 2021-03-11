@@ -106,12 +106,12 @@ C4Database::~C4Database() {
 }
 
 
-bool C4Database::fileExists(slice name, slice inDirectory) {
+bool C4Database::exists(slice name, slice inDirectory) {
     return dbPath(name, inDirectory).exists();
 }
 
 
-Retained<C4Database> C4Database::open(slice name, const C4DatabaseConfig2 &config) {
+Retained<C4Database> C4Database::openNamed(slice name, const Config &config) {
     ensureConfigDirExists(config);
     FilePath path = dbPath(name, config.parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
@@ -119,9 +119,9 @@ Retained<C4Database> C4Database::open(slice name, const C4DatabaseConfig2 &confi
 }
 
 
-Retained<C4Database> C4Database::open(slice path,
-                                      C4DatabaseFlags flags,
-                                      const C4EncryptionKey *key)
+Retained<C4Database> C4Database::openAtPath(slice path,
+                                            C4DatabaseFlags flags,
+                                            const C4EncryptionKey *key)
 {
     C4DatabaseConfig config = {flags};
     if (key)
@@ -131,12 +131,12 @@ Retained<C4Database> C4Database::open(slice path,
 
 
 Retained<C4Database> C4Database::openAgain() {
-    return open(name(), config());
+    return openNamed(getName(), getConfig());
 }
 
 
 
-void C4Database::copyFile(slice sourcePath, slice destinationName, const C4DatabaseConfig2 &config) {
+void C4Database::copyNamed(slice sourcePath, slice destinationName, const Config &config) {
     ensureConfigDirExists(config);
     FilePath from(sourcePath);
     FilePath to = dbPath(destinationName, config.parentDirectory);
@@ -152,12 +152,12 @@ void C4Database::copyFileToPath(slice sourcePath, slice destinationPath,
 }
 
 
-bool C4Database::deleteFile(slice path) {
+bool C4Database::deleteAtPath(slice path) {
     return Database::deleteDatabaseAtPath(FilePath(path));
 }
 
 
-bool C4Database::deleteFile(slice name, slice inDirectory) {
+bool C4Database::deleteNamed(slice name, slice inDirectory) {
     return Database::deleteDatabaseAtPath(dbPath(name, inDirectory));
 }
 
@@ -185,13 +185,13 @@ void C4Database::unlockClientMutex() noexcept       {_db->unlockClientMutex();}
 uint64_t C4Database::getDocumentCount() const                {return _db->countDocuments();}
 C4SequenceNumber C4Database::getLastSequence() const         {return _db->lastSequence();}
 
-slice C4Database::name() const noexcept                      {return _db->name();}
+slice C4Database::getName() const noexcept                      {return _db->name();}
 alloc_slice C4Database::path() const                         {return alloc_slice(_db->path());}
-const C4DatabaseConfig2& C4Database::config() const noexcept {return *_db->config();}
-const C4DatabaseConfig& C4Database::configV1() const noexcept{return *_db->configV1();}
+const C4Database::Config& C4Database::getConfig() const noexcept {return *_db->config();}
+const C4DatabaseConfig& C4Database::getConfigV1() const noexcept {return *_db->configV1();}
 
 
-alloc_slice C4Database::peerIDString() const {
+alloc_slice C4Database::getPeerID() const {
     char buf[32];
     sprintf(buf, "%" PRIx64, _db->myPeerID());
     return alloc_slice(buf);
@@ -248,7 +248,21 @@ Retained<C4Document> C4Database::putDocument(const C4DocPutRequest &rq,
 }
 
 
-std::vector<alloc_slice> C4Database::findAncestors(const std::vector<slice> &docIDs,
+Retained<C4Document> C4Database::createDocument(slice docID,
+                                                slice revBody,
+                                                C4RevisionFlags revFlags,
+                                                C4Error *outError)
+{
+    C4DocPutRequest rq = {};
+    rq.docID = docID;
+    rq.body = revBody;
+    rq.revFlags = revFlags;
+    rq.save = true;
+    return putDocument(rq, nullptr, outError);
+}
+
+
+std::vector<alloc_slice> C4Database::findDocAncestors(const std::vector<slice> &docIDs,
                                                    const std::vector<slice> &revIDs,
                                                    unsigned maxAncestors,
                                                    bool mustHaveBodies,
@@ -259,7 +273,7 @@ std::vector<alloc_slice> C4Database::findAncestors(const std::vector<slice> &doc
 }
 
 
-bool C4Database::purgeDocument(slice docID) {
+bool C4Database::purgeDoc(slice docID) {
     return _db->purgeDocument(docID);
 }
 
@@ -303,8 +317,8 @@ FLEncoder C4Database::createFleeceEncoder() const {
 }
 
 
-FLEncoder C4Database::sharedFleeceEncoder() const   {return _db->sharedFLEncoder();}
-FLSharedKeys C4Database::sharedFleeceKeys() const   {return (FLSharedKeys)_db->documentKeys();}
+FLEncoder C4Database::getSharedFleeceEncoder() const   {return _db->sharedFLEncoder();}
+FLSharedKeys C4Database::getFLSharedKeys() const   {return (FLSharedKeys)_db->documentKeys();}
 
 
 #pragma mark - OBSERVERS:
@@ -538,7 +552,7 @@ bool C4Database::markDocumentSynced(slice docID,
         if (!revID)
             return false;
     }
-    doc->setRemoteAncestorRevID(remoteID, revID);
+    doc->setRemoteAncestor(remoteID, revID);
     doc->save();
     return true;
 }

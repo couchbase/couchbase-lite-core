@@ -28,18 +28,8 @@ struct C4Replicator : public fleece::RefCounted, public C4Base {
 
     static bool isValidDatabaseName(slice dbName) noexcept;
 
-    static bool isValidRemote(const C4Address &addr,
-                              slice dbName,
-                              C4Error* C4NULLABLE outError =nullptr) noexcept;
-
     static void validateRemote(const C4Address &addr,
                                slice dbName);
-
-    static bool addressFromURL(slice URL,
-                               C4Address *outAddress,
-                               slice* C4NULLABLE outDBName);
-
-    static alloc_slice addressToURL(const C4Address&);
 
     virtual void start(bool reset =false) noexcept =0;
     virtual void stop() noexcept =0;

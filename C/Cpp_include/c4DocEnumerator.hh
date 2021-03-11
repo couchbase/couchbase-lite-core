@@ -50,7 +50,7 @@ struct C4DocEnumerator : public C4Base {
     /// Returns the current document.
     /// \note If you use this, it's usually a good idea to set the `kC4IncludeBodies` option flag,
     /// so that the document bodies will be preloaded, saving a second database hit.
-    Retained<C4Document> document() const;
+    Retained<C4Document> getDocument() const;
 
     /// Steps to the next document. Returns false when it reaches the end.
     bool next();

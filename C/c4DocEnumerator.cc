@@ -128,7 +128,7 @@ C4DocumentInfo C4DocEnumerator::documentInfo() const {
     return i;
 }
 
-Retained<C4Document> C4DocEnumerator::document() const {
+Retained<C4Document> C4DocEnumerator::getDocument() const {
     return _impl ? _impl->getDoc() : nullptr;
 }
 

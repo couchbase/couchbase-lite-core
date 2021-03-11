@@ -427,13 +427,13 @@ namespace litecore { namespace repl {
 
             if (!hasDocIDs && _options.pushFilter) {
                 // If there is a push filter, we have to get the doc body for it to peruse:
-                Retained<C4Document> nextDoc = e.document();
+                Retained<C4Document> nextDoc = e.getDocument();
                 if(!nextDoc) {
                     Warn("Got non-existent document during pending document IDs, skipping...");
                     continue;
                 }
 
-                if(!nextDoc->loadSelectedRevBody()) {
+                if(!nextDoc->loadRevisionBody()) {
                     Warn("Error loading revision body in pending document IDs");
                     continue;
                 }

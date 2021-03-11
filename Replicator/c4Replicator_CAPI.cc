@@ -41,18 +41,18 @@ bool c4repl_isValidDatabaseName(C4String dbName) C4API {
 
 
 bool c4repl_isValidRemote(C4Address addr, C4String dbName, C4Error *outError) C4API {
-    return C4Replicator::isValidRemote(addr, dbName, outError);
+    return addr.isValidRemote(dbName, outError);
 }
 
 
 bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API {
-    return C4Replicator::addressFromURL(url, address, (slice*)dbName);
+    return C4Address::fromURL(url, address, (slice*)dbName);
 }
 
 
 C4StringResult c4address_toURL(C4Address address) C4API {
     try {
-        return C4StringResult(C4Replicator::addressToURL(address));
+        return C4StringResult(address.toURL());
     } catchError(nullptr);
     return {};
 }

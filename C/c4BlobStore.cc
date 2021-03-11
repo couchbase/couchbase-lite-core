@@ -39,7 +39,7 @@ static inline const blobKey* asInternal(const C4BlobKey *key) {return (const blo
 #pragma mark - C++ CLASS:
 
 
-C4BlobStore& C4Database::blobStore() {
+C4BlobStore& C4Database::getBlobStore() {
     if (!_blobStore)
         _blobStore.reset(new C4BlobStore(_db->blobStore()));
     return *_blobStore;
@@ -143,7 +143,7 @@ C4ReadStream::C4ReadStream(const C4BlobStore &store, C4BlobKey key)
 
 C4ReadStream::~C4ReadStream() = default;
 size_t C4ReadStream::read(void *dst, size_t mx)     {return _impl->read(dst, mx);}
-int64_t C4ReadStream::length() const                {return _impl->getLength();}
+int64_t C4ReadStream::getLength() const                {return _impl->getLength();}
 void C4ReadStream::seek(int64_t pos)                {_impl->seek(pos);}
 
 

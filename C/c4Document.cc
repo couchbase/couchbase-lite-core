@@ -49,21 +49,30 @@ void release(C4Document *doc)       {release(asInternal(doc));}
 
 namespace c4 {
 
-    // The inheritance is kind of weird.
-    //     c4Internal::Document : RefCounted,
-    //                            C4Document : c4::DocumentAPI
+    // The inheritance is kind of weird...
+    //       c4Internal::Document
+    //               /  \
+    //    RefCounted     C4Document
+    //                    \
+    //                     c4::DocumentAPI
     //
-    // - Document has to inherit from RefCounted first so it can function as a proper ref-counted object.
-    // - It also inherits from C4Document so it has the proper struct members, and to make it simple to
-    //   convert a C4Document* to a Document* by casting (C++ does the pointer arithmetic.)
+    // - Document has to inherit from RefCounted first so it can function as a proper
+    //   reference-counted object.
+    // - It also inherits from C4Document so it has the proper struct members, and to make it simple
+    //   to convert a C4Document* to a Document* by casting (C++ does the pointer arithmetic.)
     // - C4Document inherits from c4::DocumentAPI so that C++ clients can call methods on it.
     //
     // The result is that clients call methods on c4::DocumentAPI, which has to be upcast to Document
-    // to call into the actual implementations. That's what `asInternal()` is for.
+    // to call into the actual implementations. That's what `asInternal()` is for. Note that this
+    // is one of those funky C++ multiple-inheritance casts that actually offsets the pointer,
+    // since the `this` of a `DocumentAPI*` is actually 4 bytes into a `Document*`.
 
     static inline Document* asInternal(DocumentAPI *d) {
         return static_cast<Document*>(d);
     }
+
+
+#pragma mark - STATIC UTILITY FUNCTIONS:
 
 
     char* DocumentAPI::generateID(char *outDocID, size_t bufferSize) noexcept {
@@ -73,16 +82,16 @@ namespace c4 {
     bool DocumentAPI::equalRevIDs(slice revID1, slice revID2) noexcept {
         return Document::equalRevIDs(revID1, revID2);
     }
+
     unsigned DocumentAPI::getRevIDGeneration(slice revID) noexcept {
         return Document::getRevIDGeneration(revID);
     }
 
-    C4RevisionFlags DocumentAPI::currentRevFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept {
+    C4RevisionFlags DocumentAPI::revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept {
         return Document::currentRevFlagsFromDocFlags(docFlags);
     }
 
-    /** Returns the Document instance, if any, that contains the given Fleece value. */
-    C4Document* DocumentAPI::containing(FLValue value) noexcept {
+    C4Document* DocumentAPI::containingValue(FLValue value) noexcept {
         return Document::containing(value);
     }
 
@@ -94,9 +103,6 @@ namespace c4 {
         });
         return found;
     }
-
-
-
 
     bool DocumentAPI::isOldMetaProperty(slice propertyName) noexcept {
         return Document::isOldMetaProperty(propertyName);
@@ -113,6 +119,9 @@ namespace c4 {
     alloc_slice DocumentAPI::encodeStrippingOldMetaProperties(FLDict properties, FLSharedKeys sk) {
         return Document::encodeStrippingOldMetaProperties(properties, sk);
     }
+
+
+#pragma mark - REVISIONS:
 
 
     bool DocumentAPI::selectCurrentRevision() noexcept {
@@ -134,7 +143,7 @@ namespace c4 {
     bool DocumentAPI::selectNextLeafRevision(bool includeDeleted, bool withBody) {
         bool ok = asInternal(this)->selectNextLeafRevision(includeDeleted);
         if (ok && withBody)
-            loadSelectedRevBody();
+            loadRevisionBody();
         return ok;
     }
 
@@ -142,9 +151,11 @@ namespace c4 {
         return asInternal(this)->selectCommonAncestorRevision(revID1, revID2);
     }
 
-    // Revision info:
 
-    bool DocumentAPI::loadSelectedRevBody() {
+#pragma mark - REVISION INFO:
+
+
+    bool DocumentAPI::loadRevisionBody() {
         return asInternal(this)->loadSelectedRevBody();
     }
 
@@ -152,7 +163,7 @@ namespace c4 {
         return asInternal(this)->hasRevisionBody();
     }
 
-    slice DocumentAPI::getSelectedRevBody() noexcept {
+    slice DocumentAPI::getRevisionBody() noexcept {
         return asInternal(this)->getSelectedRevBody();
     }
 
@@ -160,7 +171,7 @@ namespace c4 {
         return asInternal(this)->bodyAsJSON(canonical);
     }
 
-    FLDict DocumentAPI::getSelectedRevRoot() noexcept {
+    FLDict DocumentAPI::getProperties() noexcept {
         return asInternal(this)->getSelectedRevRoot();
     }
 
@@ -168,23 +179,27 @@ namespace c4 {
         return asInternal(this)->getSelectedRevIDGlobalForm();
     }
 
-    alloc_slice DocumentAPI::getSelectedRevHistory(unsigned maxHistory,
-                                      const C4String backToRevs[],
-                                      unsigned backToRevsCount)
+    alloc_slice DocumentAPI::getRevisionHistory(unsigned maxHistory,
+                                                const C4String backToRevs[],
+                                                unsigned backToRevsCount)
     {
         return asInternal(this)->getSelectedRevHistory(maxHistory, backToRevs, backToRevsCount);
     }
 
-    alloc_slice DocumentAPI::remoteAncestorRevID(C4RemoteID remote) {
+    alloc_slice DocumentAPI::getRemoteAncestor(C4RemoteID remote) {
         return asInternal(this)->remoteAncestorRevID(remote);
 
     }
 
-    void DocumentAPI::setRemoteAncestorRevID(C4RemoteID remote, C4String revID) {
+    void DocumentAPI::setRemoteAncestor(C4RemoteID remote, C4String revID) {
         return asInternal(this)->setRemoteAncestorRevID(remote, revID);
     }
 
-    bool DocumentAPI::removeSelectedRevBody() noexcept {
+
+#pragma mark - UPDATING / PURGING / SAVING:
+
+
+    bool DocumentAPI::removeRevisionBody() noexcept {
         asInternal(this)->mustBeInTransaction();
         return asInternal(this)->removeSelectedRevBody();
 
@@ -199,10 +214,10 @@ namespace c4 {
     }
 
     void DocumentAPI::resolveConflict(C4String winningRevID,
-                         C4String losingRevID,
-                         FLDict mergedProperties,
-                         C4RevisionFlags mergedFlags,
-                         bool pruneLosingBranch)
+                                      C4String losingRevID,
+                                      FLDict mergedProperties,
+                                      C4RevisionFlags mergedFlags,
+                                      bool pruneLosingBranch)
     {
         return asInternal(this)->resolveConflict(winningRevID, losingRevID,
                                                  mergedProperties, mergedFlags, pruneLosingBranch);
@@ -210,10 +225,10 @@ namespace c4 {
     }
 
     void DocumentAPI::resolveConflict(C4String winningRevID,
-                         C4String losingRevID,
-                         C4Slice mergedBody,
-                         C4RevisionFlags mergedFlags,
-                         bool pruneLosingBranch)
+                                      C4String losingRevID,
+                                      C4Slice mergedBody,
+                                      C4RevisionFlags mergedFlags,
+                                      bool pruneLosingBranch)
     {
         return asInternal(this)->resolveConflict(winningRevID, losingRevID,
                                                  mergedBody, mergedFlags, pruneLosingBranch);
