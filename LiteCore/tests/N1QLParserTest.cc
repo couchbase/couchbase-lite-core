@@ -151,7 +151,9 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
     CHECK(translate("SELECT 6 IS 9") == "{'WHAT':[['IS',6,9]]}");
     CHECK(translate("SELECT 6 IS NOT 9") == "{'WHAT':[['IS NOT',6,9]]}");
     CHECK(translate("SELECT 6 NOT NULL") == "{'WHAT':[['IS NOT',6,null]]}");
-
+    CHECK(translate("SELECT 6 WHERE x IS   NOT   VALUED") == "{'WHAT':[6],'WHERE':['NOT',['IS_VALUED()',['.x']]]}");
+    CHECK(translate("SELECT 6 WHERE x  IS  VALUED") == "{'WHAT':[6],'WHERE':['IS_VALUED()',['.x']]}");
+    
     CHECK(translate("SELECT 'foo' LIKE 'f%'") == "{'WHAT':[['LIKE','foo','f%']]}");
     CHECK(translate("SELECT 'foo' NOT LIKE 'f%'") == "{'WHAT':[['NOT',['LIKE','foo','f%']]]}");
     CHECK(translate("SELECT 1 WHERE 'text' MATCH 'word'") == "{'WHAT':[1],'WHERE':['MATCH','text','word']}");

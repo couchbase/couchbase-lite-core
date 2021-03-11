@@ -1492,14 +1492,13 @@ TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // C
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
 	{
         Transaction t(store->dataFile());
-        string docID = "rec-00";
 
         for(int i = 0; i < 3; i++) {
-            stringstream ss(docID);
-            ss << i + 1;
+            stringstream ss;
+            ss << "rec-0" << i + 1;
             writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
                 if(i > 0) {
                     enc.writeKey("callsign");
@@ -1515,9 +1514,48 @@ TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
         t.commit();
     }
 
-	auto query = store->compileQuery(json5(
+    // SELECT meta.id WHERE callsign IS MISSING
+    auto query = store->compileQuery(json5(
+        "{'WHAT':[['._id']],'WHERE':['IS',['.callsign'],['MISSING']]}"));
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    CHECK(e->getRowCount() == 1);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-01"_sl);
+    
+    query = store->compileQuery(json5(
+        "{'WHAT':[['._id']],'WHERE':['IS',['.callsign'],null]}"));
+    e = query->createEnumerator();
+    CHECK(e->getRowCount() == 1);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-02"_sl);
+    
+    query = store->compileQuery("SELECT meta.id WHERE callsign IS 'ANA'"_sl, litecore::QueryLanguage::kN1QL);
+    e = query->createEnumerator();
+    CHECK(e->getRowCount() == 1);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-03"_sl);
+    
+    // SELECT meta.id WHERE callsign IS NOT VALUED
+    query = store->compileQuery(json5(
+        "{'WHAT':[['._id']],'WHERE':['NOT',['IS_VALUED()',['.callsign']]]}"));
+    e = query->createEnumerator();
+    CHECK(e->getRowCount() == 2);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-01"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-02"_sl);
+    
+    // SELECT meta.id WHERE callsign IS VALUED
+    query = store->compileQuery(json5(
+        "{'WHAT':[['._id']],'WHERE':['IS_VALUED()',['.callsign']]}"));
+    e = query->createEnumerator();
+    CHECK(e->getRowCount() == 1);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-03"_sl);
+    
+	query = store->compileQuery(json5(
         "{'WHAT': [['COUNT()','.'], ['.callsign']], 'WHERE':['IS NOT', ['.callsign'], null]}"));
-	Retained<QueryEnumerator> e(query->createEnumerator());
+	e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asInt() == 1);
