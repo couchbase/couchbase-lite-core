@@ -16,11 +16,12 @@
 // limitations under the License.
 //
 
-#ifndef __cplusplus
-#error "This is C++ only"
-#endif
-
 #pragma once
+#ifndef __cplusplus
+    #error "This is C++ only"
+#endif
+#define LITECORE_CPP_API
+
 #include "c4Base.h"
 #include "RefCounted.hh"
 #include "InstanceCounted.hh"

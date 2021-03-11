@@ -23,7 +23,7 @@
 #endif
 
 #include "fleece/slice.hh"
-#include "c4Base.hh"
+#include "c4Base.h"
 #include <utility>
 
 
@@ -95,5 +95,10 @@ namespace c4 {
         
         T* _obj;
     };
+
+    /// Returns a description of a C4Error as a _temporary_ C string, for use in logging.
+#ifndef c4error_descriptionStr
+    #define c4error_descriptionStr(ERR)     fleece::alloc_slice(c4error_getDescription(ERR)).asString().c_str()
+#endif
 
 }

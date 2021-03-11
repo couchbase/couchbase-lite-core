@@ -18,7 +18,7 @@
 
 #include "c4BlobStore.hh"
 #include "c4Database.hh"
-#include "c4Document.h"
+#include "c4Document.hh"
 #include "c4DocEnumerator.hh"
 #include "c4Observer.hh"
 #include "c4Query.hh"
@@ -123,7 +123,9 @@ bool c4blob_create(C4BlobStore* store,
                    C4Error* outError) noexcept
 {
     try {
-        *outKey = store->createBlob(contents, expectedKey);
+        auto key = store->createBlob(contents, expectedKey);
+        if (outKey)
+            *outKey = key;
         return true;
     } catchError(outError)
     return false;
@@ -1163,7 +1165,10 @@ C4Query* c4query_new2(C4Database *database,
     if (outErrorPos)
         *outErrorPos = -1;
     return tryCatch<C4Query*>(outError, [&]{
-        return database->newQuery(language, expression, outErrorPos).detach();
+        C4Query *query = database->newQuery(language, expression, outErrorPos).detach();
+        if (!query)
+            c4error_return(LiteCoreDomain, kC4ErrorInvalidQuery, {}, outError);
+        return query;
     });
 }
 

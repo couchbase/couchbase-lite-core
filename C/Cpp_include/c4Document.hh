@@ -24,18 +24,20 @@
 C4_ASSUME_NONNULL_BEGIN
 
 
-namespace c4 {
+    struct C4Document {
+        using slice = fleece::slice;
+        using alloc_slice = fleece::alloc_slice;
+        template <class T> using Retained = fleece::Retained<T>;
 
-    // This class declares the C++ API of C4Document.
-    // In c4Document.h, C4Document is declared as inheriting from c4::DocumentAPI,
-    // so it acquires this API.
-    //
-    // *** You should not refer to c4::DocumentAPI directly! Just use C4Document. ***
-    //
-    // (This convoluted setup is necessary to preserve the existing C API of C4Document, which
-    // exposes the struct definition publicly.)
-    class DocumentAPI : public C4Base {
-    public:
+        C4DocumentFlags flags;      ///< Document flags
+        C4HeapString docID;         ///< Document ID
+        C4HeapString revID;         ///< Revision ID of current revision
+        C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
+
+        C4Revision selectedRev;     ///< Describes the currently-selected revision
+
+        C4ExtraInfo extraInfo;      ///< For client use
+
         // NOTE: Instances are created with database->getDocument or database->putDocument.
 
         // Static utility functions:
@@ -132,16 +134,12 @@ namespace c4 {
         bool save(unsigned maxRevTreeDepth =0);
 
     protected:
-        DocumentAPI() = default;
-        ~DocumentAPI() = default;
+        C4Document() = default;
+        ~C4Document() = default;
     };
-
-}
 
 
 // These declarations allow `Retained<C4Document>` to work.
-c4::DocumentAPI* C4NULLABLE retain(c4::DocumentAPI* C4NULLABLE);
-void release(c4::DocumentAPI* C4NULLABLE);
 C4Document* C4NULLABLE retain(C4Document* C4NULLABLE);
 void release(C4Document* C4NULLABLE);
 

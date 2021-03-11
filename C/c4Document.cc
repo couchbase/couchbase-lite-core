@@ -47,55 +47,30 @@ C4Document* retain(C4Document *doc) {retain(asInternal(doc)); return doc;}
 void release(C4Document *doc)       {release(asInternal(doc));}
 
 
-namespace c4 {
-
-    // The inheritance is kind of weird...
-    //       c4Internal::Document
-    //               /  \
-    //    RefCounted     C4Document
-    //                    \
-    //                     c4::DocumentAPI
-    //
-    // - Document has to inherit from RefCounted first so it can function as a proper
-    //   reference-counted object.
-    // - It also inherits from C4Document so it has the proper struct members, and to make it simple
-    //   to convert a C4Document* to a Document* by casting (C++ does the pointer arithmetic.)
-    // - C4Document inherits from c4::DocumentAPI so that C++ clients can call methods on it.
-    //
-    // The result is that clients call methods on c4::DocumentAPI, which has to be upcast to Document
-    // to call into the actual implementations. That's what `asInternal()` is for. Note that this
-    // is one of those funky C++ multiple-inheritance casts that actually offsets the pointer,
-    // since the `this` of a `DocumentAPI*` is actually 4 bytes into a `Document*`.
-
-    static inline Document* asInternal(DocumentAPI *d) {
-        return static_cast<Document*>(d);
-    }
-
-
 #pragma mark - STATIC UTILITY FUNCTIONS:
 
 
-    char* DocumentAPI::generateID(char *outDocID, size_t bufferSize) noexcept {
+    char* C4Document::generateID(char *outDocID, size_t bufferSize) noexcept {
         return Document::generateID(outDocID, bufferSize);
     }
 
-    bool DocumentAPI::equalRevIDs(slice revID1, slice revID2) noexcept {
+    bool C4Document::equalRevIDs(slice revID1, slice revID2) noexcept {
         return Document::equalRevIDs(revID1, revID2);
     }
 
-    unsigned DocumentAPI::getRevIDGeneration(slice revID) noexcept {
+    unsigned C4Document::getRevIDGeneration(slice revID) noexcept {
         return Document::getRevIDGeneration(revID);
     }
 
-    C4RevisionFlags DocumentAPI::revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept {
+    C4RevisionFlags C4Document::revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept {
         return Document::currentRevFlagsFromDocFlags(docFlags);
     }
 
-    C4Document* DocumentAPI::containingValue(FLValue value) noexcept {
+    C4Document* C4Document::containingValue(FLValue value) noexcept {
         return Document::containing(value);
     }
 
-    bool DocumentAPI::containsBlobs(FLDict dict) noexcept {
+    bool C4Document::containsBlobs(FLDict dict) noexcept {
         bool found = false;
         Document::findBlobReferences(dict, [&](FLDict) {
             found = true;
@@ -104,19 +79,19 @@ namespace c4 {
         return found;
     }
 
-    bool DocumentAPI::isOldMetaProperty(slice propertyName) noexcept {
+    bool C4Document::isOldMetaProperty(slice propertyName) noexcept {
         return Document::isOldMetaProperty(propertyName);
     }
 
-    bool DocumentAPI::hasOldMetaProperties(FLDict dict) noexcept {
+    bool C4Document::hasOldMetaProperties(FLDict dict) noexcept {
         return Document::hasOldMetaProperties(dict);
     }
 
-    bool DocumentAPI::isValidDocID(slice docID) noexcept {
+    bool C4Document::isValidDocID(slice docID) noexcept {
         return Document::isValidDocID(docID);
     }
 
-    alloc_slice DocumentAPI::encodeStrippingOldMetaProperties(FLDict properties, FLSharedKeys sk) {
+    alloc_slice C4Document::encodeStrippingOldMetaProperties(FLDict properties, FLSharedKeys sk) {
         return Document::encodeStrippingOldMetaProperties(properties, sk);
     }
 
@@ -124,30 +99,30 @@ namespace c4 {
 #pragma mark - REVISIONS:
 
 
-    bool DocumentAPI::selectCurrentRevision() noexcept {
+    bool C4Document::selectCurrentRevision() noexcept {
         return asInternal(this)->selectCurrentRevision();
     }
 
-    bool DocumentAPI::selectRevision(C4Slice revID, bool withBody) {
-        return asInternal(this)->selectRevision(revID, withBody);
+    bool C4Document::selectRevision(C4Slice revid, bool withBody) {
+        return asInternal(this)->selectRevision(revid, withBody);
     }
 
-    bool DocumentAPI::selectParentRevision() noexcept {
+    bool C4Document::selectParentRevision() noexcept {
         return asInternal(this)->selectParentRevision();
     }
 
-    bool DocumentAPI::selectNextRevision() {
+    bool C4Document::selectNextRevision() {
         return asInternal(this)->selectNextRevision();
     }
 
-    bool DocumentAPI::selectNextLeafRevision(bool includeDeleted, bool withBody) {
+    bool C4Document::selectNextLeafRevision(bool includeDeleted, bool withBody) {
         bool ok = asInternal(this)->selectNextLeafRevision(includeDeleted);
         if (ok && withBody)
             loadRevisionBody();
         return ok;
     }
 
-    bool DocumentAPI::selectCommonAncestorRevision(slice revID1, slice revID2) {
+    bool C4Document::selectCommonAncestorRevision(slice revID1, slice revID2) {
         return asInternal(this)->selectCommonAncestorRevision(revID1, revID2);
     }
 
@@ -155,65 +130,65 @@ namespace c4 {
 #pragma mark - REVISION INFO:
 
 
-    bool DocumentAPI::loadRevisionBody() {
+    bool C4Document::loadRevisionBody() {
         return asInternal(this)->loadSelectedRevBody();
     }
 
-    bool DocumentAPI::hasRevisionBody() noexcept {
+    bool C4Document::hasRevisionBody() noexcept {
         return asInternal(this)->hasRevisionBody();
     }
 
-    slice DocumentAPI::getRevisionBody() noexcept {
+    slice C4Document::getRevisionBody() noexcept {
         return asInternal(this)->getSelectedRevBody();
     }
 
-    alloc_slice DocumentAPI::bodyAsJSON(bool canonical) {
+    alloc_slice C4Document::bodyAsJSON(bool canonical) {
         return asInternal(this)->bodyAsJSON(canonical);
     }
 
-    FLDict DocumentAPI::getProperties() noexcept {
+    FLDict C4Document::getProperties() noexcept {
         return asInternal(this)->getSelectedRevRoot();
     }
 
-    alloc_slice DocumentAPI::getSelectedRevIDGlobalForm() {
+    alloc_slice C4Document::getSelectedRevIDGlobalForm() {
         return asInternal(this)->getSelectedRevIDGlobalForm();
     }
 
-    alloc_slice DocumentAPI::getRevisionHistory(unsigned maxHistory,
+    alloc_slice C4Document::getRevisionHistory(unsigned maxHistory,
                                                 const C4String backToRevs[],
                                                 unsigned backToRevsCount)
     {
         return asInternal(this)->getSelectedRevHistory(maxHistory, backToRevs, backToRevsCount);
     }
 
-    alloc_slice DocumentAPI::getRemoteAncestor(C4RemoteID remote) {
+    alloc_slice C4Document::getRemoteAncestor(C4RemoteID remote) {
         return asInternal(this)->remoteAncestorRevID(remote);
 
     }
 
-    void DocumentAPI::setRemoteAncestor(C4RemoteID remote, C4String revID) {
-        return asInternal(this)->setRemoteAncestorRevID(remote, revID);
+    void C4Document::setRemoteAncestor(C4RemoteID remote, C4String revid) {
+        return asInternal(this)->setRemoteAncestorRevID(remote, revid);
     }
 
 
 #pragma mark - UPDATING / PURGING / SAVING:
 
 
-    bool DocumentAPI::removeRevisionBody() noexcept {
+    bool C4Document::removeRevisionBody() noexcept {
         asInternal(this)->mustBeInTransaction();
         return asInternal(this)->removeSelectedRevBody();
 
     }
 
-    int32_t DocumentAPI::purgeRevision(C4Slice revID) {
+    int32_t C4Document::purgeRevision(C4Slice revid) {
         auto doc = asInternal(this);
         doc->mustBeInTransaction();
         if (!doc->loadRevisions())
             error(error::LiteCore, error::Conflict, "C4Document is out of date")._throw();
-        return doc->purgeRevision(revID);
+        return doc->purgeRevision(revid);
     }
 
-    void DocumentAPI::resolveConflict(C4String winningRevID,
+    void C4Document::resolveConflict(C4String winningRevID,
                                       C4String losingRevID,
                                       FLDict mergedProperties,
                                       C4RevisionFlags mergedFlags,
@@ -224,7 +199,7 @@ namespace c4 {
 
     }
 
-    void DocumentAPI::resolveConflict(C4String winningRevID,
+    void C4Document::resolveConflict(C4String winningRevID,
                                       C4String losingRevID,
                                       C4Slice mergedBody,
                                       C4RevisionFlags mergedFlags,
@@ -234,16 +209,14 @@ namespace c4 {
                                                  mergedBody, mergedFlags, pruneLosingBranch);
     }
 
-    Retained<C4Document> DocumentAPI::update(slice revBody, C4RevisionFlags flags) {
-        return asInternal(this)->update(revBody, flags);
+    Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags) {
+        return asInternal(this)->update(revBody, revFlags);
     }
 
-    bool DocumentAPI::save(unsigned maxRevTreeDepth) {
+    bool C4Document::save(unsigned maxRevTreeDepth) {
         auto idoc = asInternal(this);
         idoc->mustBeInTransaction();
         if (maxRevTreeDepth == 0)
             maxRevTreeDepth = idoc->database()->maxRevTreeDepth();
         return idoc->save(maxRevTreeDepth);
     }
-
-} // end namespace c4

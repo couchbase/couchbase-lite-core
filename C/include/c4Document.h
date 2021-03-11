@@ -20,8 +20,8 @@
 #define __C4DOCUMENT_H__
 #include "c4DocumentTypes.h"
 
-#ifdef __cplusplus
-#include "c4Document.hh"   // defines c4::DocumentAPI, which contains the C++ methods
+#ifdef LITECORE_CPP_API
+#include "c4Document.hh"   // C++ version of C4Document struct
 #endif
 
 C4_ASSUME_NONNULL_BEGIN
@@ -31,12 +31,9 @@ C4_ASSUME_NONNULL_BEGIN
         @{ */
 
 
+#ifndef LITECORE_CPP_API
     /** Describes a version-controlled document. */
-    struct C4Document
-#ifdef __cplusplus
-                      : public c4::DocumentAPI
-#endif
-    {
+    struct C4Document {
         C4DocumentFlags flags;      ///< Document flags
         C4HeapString docID;         ///< Document ID
         C4HeapString revID;         ///< Revision ID of current revision
@@ -46,6 +43,7 @@ C4_ASSUME_NONNULL_BEGIN
 
         C4ExtraInfo extraInfo;      ///< For client use
     };
+#endif
 
 
     /** \name Lifecycle

@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 
+#include "c4Base.hh"
 #include "Checkpointer.hh"
 #include "Checkpoint.hh"
 #include "ReplicatorOptions.hh"
