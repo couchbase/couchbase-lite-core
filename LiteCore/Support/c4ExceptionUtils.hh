@@ -21,6 +21,9 @@
 #include "PlatformCompat.hh"    // for NOINLINE, ALWAYS_INLINE
 #include <exception>
 
+
+extern "C" CBL_CORE_API std::atomic_int gC4ExpectExceptions; 
+
 namespace c4Internal {
 
     // Utilities for handling C++ exceptions and mapping them to C4Errors.
@@ -73,5 +76,20 @@ namespace c4Internal {
     // (typically a LiteCore logging function) returns. Don't store it!
     #define c4error_descriptionStr(ERR)     fleece::alloc_slice(c4error_getDescription(ERR)).asString().c_str()
 #endif
+
+
+    // RAII utility to suppress reporting C++ exceptions (or breaking at them, in the Xcode debugger.)
+    // Declare an instance when testing something that's expected to throw an exception internally.
+    struct ExpectingExceptions {
+        ExpectingExceptions() {
+            ++gC4ExpectExceptions;
+            c4log_warnOnErrors(false);
+        }
+
+        ~ExpectingExceptions() {
+            if (--gC4ExpectExceptions == 0)
+                c4log_warnOnErrors(true);
+        }
+    };
 
 }
