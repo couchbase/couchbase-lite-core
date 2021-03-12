@@ -19,6 +19,7 @@
 #pragma once
 #include "c4Base.h"
 #include "PlatformCompat.hh"    // for NOINLINE, ALWAYS_INLINE
+#include <atomic>
 #include <exception>
 
 
