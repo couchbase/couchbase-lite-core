@@ -14,7 +14,7 @@ namespace c4Internal {
     using namespace litecore::websocket;
 
     /** A passive replicator handling an incoming WebSocket connection, for P2P. */
-    class C4IncomingReplicator : public C4ReplicatorImpl {
+    class C4IncomingReplicator final : public C4ReplicatorImpl {
     public:
         C4IncomingReplicator(C4Database* db NONNULL,
                              const C4ReplicatorParameters &params,

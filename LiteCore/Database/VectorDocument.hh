@@ -10,7 +10,7 @@
 
 namespace c4Internal {
 
-    class VectorDocumentFactory : public DocumentFactory {
+    class VectorDocumentFactory final : public DocumentFactory {
     public:
         VectorDocumentFactory(Database *db)   :DocumentFactory(db) { }
 

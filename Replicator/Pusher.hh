@@ -28,7 +28,7 @@
 namespace litecore { namespace repl {
 
     /** Top-level object managing the push side of replication (sending revisions.) */
-    class Pusher : public Worker, public ChangesFeed::Delegate {
+    class Pusher final : public Worker, public ChangesFeed::Delegate {
     public:
         Pusher(Replicator *replicator NONNULL, Checkpointer&);
 

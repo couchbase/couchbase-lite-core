@@ -39,7 +39,7 @@ namespace litecore {
 
 
     /** SQLite implementation of DataFile. */
-    class SQLiteDataFile : public DataFile {
+    class SQLiteDataFile final : public DataFile {
     public:
 
         SQLiteDataFile(const FilePath &path, Delegate *delegate, const Options*);
@@ -69,7 +69,7 @@ namespace litecore {
 
         fleece::alloc_slice rawQuery(const std::string &query) override;
 
-        class Factory : public DataFile::Factory {
+        class Factory final : public DataFile::Factory {
         public:
             Factory();
             virtual const char* cname() override {return "SQLite";}

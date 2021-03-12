@@ -30,7 +30,7 @@ namespace c4Internal {
     using namespace fleece;
 
 
-    class VectorDocument : public Document {
+    class VectorDocument final : public Document {
     public:
         VectorDocument(Database* database, C4Slice docID, ContentOption whichContent)
         :Document(database, docID)

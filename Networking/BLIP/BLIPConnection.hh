@@ -32,7 +32,7 @@ namespace litecore { namespace blip {
     /** A BLIP connection. Use this object to open and close connections and send requests.
         The connection notifies about events and messages by calling its delegate.
         The methods are thread-safe. */
-    class Connection : public RefCounted, Logging {
+    class Connection final : public RefCounted, Logging {
     public:
 
         enum State {

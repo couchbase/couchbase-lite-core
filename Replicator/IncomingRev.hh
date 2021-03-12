@@ -31,7 +31,7 @@ namespace litecore { namespace repl {
 
 
     /** Manages pulling a single document. */
-    class IncomingRev : public Worker {
+    class IncomingRev final : public Worker {
     public:
         IncomingRev(Puller* NONNULL);
 

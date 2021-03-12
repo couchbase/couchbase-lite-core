@@ -24,7 +24,7 @@ namespace c4Internal {
     class Document;
 
     /** DocumentFactory subclass for rev-tree document schema. */
-    class TreeDocumentFactory : public DocumentFactory {
+    class TreeDocumentFactory final : public DocumentFactory {
     public:
         TreeDocumentFactory(Database *db)   :DocumentFactory(db) { }
         Retained<Document> newDocumentInstance(C4Slice docID, ContentOption) override;

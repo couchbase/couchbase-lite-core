@@ -32,7 +32,7 @@ namespace litecore {
     class Transaction;
 
     /** Manages storage of a serialized RevTree in a Record. */
-    class RevTreeRecord : public RevTree {
+    class RevTreeRecord final : public RevTree {
     public:
 
         RevTreeRecord(KeyStore&, slice docID, ContentOption =kEntireBody);

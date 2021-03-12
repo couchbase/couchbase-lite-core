@@ -39,7 +39,7 @@ namespace c4Internal {
     using namespace fleece::impl;
     using namespace std;
 
-    class TreeDocument : public Document {
+    class TreeDocument final : public Document {
     public:
         TreeDocument(Database* database, C4Slice docID, ContentOption content)
         :Document(database, docID),

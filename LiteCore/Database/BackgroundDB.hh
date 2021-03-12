@@ -20,7 +20,7 @@ namespace litecore {
     class SequenceTracker;
 
 
-    class BackgroundDB : public access_lock<DataFile*>, private DataFile::Delegate {
+    class BackgroundDB final : public access_lock<DataFile*>, private DataFile::Delegate {
     public:
         BackgroundDB(c4Internal::Database*);
         ~BackgroundDB();

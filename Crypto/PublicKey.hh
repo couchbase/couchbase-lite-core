@@ -60,7 +60,7 @@ namespace litecore { namespace crypto {
 
 
     
-    class PublicKey : public Key {
+    class PublicKey final : public Key {
     public:
         /** Instantiates a PublicKey from data in DER (PKCS1) or PEM format. */
         explicit PublicKey(fleece::slice data);

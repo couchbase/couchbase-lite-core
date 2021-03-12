@@ -105,7 +105,7 @@ namespace litecore::repl {
     };
 
 
-    class ReplicatorChangesFeed : public ChangesFeed {
+    class ReplicatorChangesFeed final : public ChangesFeed {
     public:
         ReplicatorChangesFeed(Delegate &delegate, Options &options, DBAccess &db, Checkpointer *cp);
 

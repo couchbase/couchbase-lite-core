@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
 
 
     /** Implementation of C4Socket */
-    class C4SocketImpl : public websocket::WebSocketImpl, public C4Socket {
+    class C4SocketImpl final : public websocket::WebSocketImpl, public C4Socket {
     public:
         static void registerFactory(const C4SocketFactory&);
         static const C4SocketFactory& registeredFactory();

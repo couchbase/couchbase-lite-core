@@ -94,7 +94,7 @@ namespace litecore { namespace blip {
 
 
     /** Compressing codec that performs a zlib/gzip "deflate". */
-    class Deflater : public ZlibCodec {
+    class Deflater final : public ZlibCodec {
     public:
         enum CompressionLevel : int8_t {
             NoCompression       =  0,
@@ -114,7 +114,7 @@ namespace litecore { namespace blip {
 
 
     /** Decompressing codec that performs a zlib/gzip "inflate". */
-    class Inflater : public ZlibCodec {
+    class Inflater final : public ZlibCodec {
     public:
         Inflater();
         ~Inflater();

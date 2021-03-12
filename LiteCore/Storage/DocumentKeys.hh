@@ -27,7 +27,7 @@ namespace litecore {
 
 
     /** SharedKeys implementation that stores the keys in a DataFile. */
-    class DocumentKeys : public fleece::impl::PersistentSharedKeys {
+    class DocumentKeys final : public fleece::impl::PersistentSharedKeys {
     public:
         DocumentKeys(DataFile &db)
         :_db(db),

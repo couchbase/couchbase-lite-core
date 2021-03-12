@@ -31,7 +31,7 @@ namespace litecore { namespace repl {
     class Inserter;
 
     /** Top-level object managing the pull side of replication (receiving revisions.) */
-    class Puller : public RevFinder::Delegate {
+    class Puller final : public RevFinder::Delegate {
     public:
         Puller(Replicator* NONNULL);
 

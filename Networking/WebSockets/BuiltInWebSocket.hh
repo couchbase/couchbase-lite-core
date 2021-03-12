@@ -28,7 +28,7 @@ namespace litecore::crypto {
 namespace litecore { namespace websocket {
 
     /** WebSocket implementation using TCPSocket. */
-    class BuiltInWebSocket : public WebSocketImpl, public net::HTTPLogic::CookieProvider {
+    class BuiltInWebSocket final : public WebSocketImpl, public net::HTTPLogic::CookieProvider {
     public:
         /** This must be called once, for c4Replicator to use BuiltInWebSocket by default. */
         static void registerWithReplicator();

@@ -23,7 +23,7 @@ namespace c4Internal {
 
 
     /** A replicator with a remote database via WebSockets. */
-    class C4RemoteReplicator : public C4ReplicatorImpl {
+    class C4RemoteReplicator final : public C4ReplicatorImpl {
     public:
 
         // Default maximum number of retry attempts before replications give up.

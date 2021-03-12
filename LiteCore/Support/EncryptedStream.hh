@@ -46,7 +46,7 @@ namespace litecore {
 
 
     /** Encrypts data written to it, and writes it to a wrapped WriteStream. */
-    class EncryptedWriteStream : public virtual EncryptedStream, public virtual WriteStream {
+    class EncryptedWriteStream final : public virtual EncryptedStream, public virtual WriteStream {
     public:
         EncryptedWriteStream(std::shared_ptr<WriteStream> output,
                              EncryptionAlgorithm alg,
@@ -64,7 +64,7 @@ namespace litecore {
 
 
     /** Provides (random) access to a data stream encrypted by EncryptedWriteStream. */
-    class EncryptedReadStream : public EncryptedStream, public virtual SeekableReadStream {
+    class EncryptedReadStream final : public EncryptedStream, public virtual SeekableReadStream {
     public:
         EncryptedReadStream(std::shared_ptr<SeekableReadStream> input,
                             EncryptionAlgorithm alg,

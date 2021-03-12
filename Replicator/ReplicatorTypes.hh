@@ -56,7 +56,7 @@ namespace litecore { namespace repl {
 
 
     /** A request by the peer to send a revision. */
-    class RevToSend : public ReplicatedRev {
+    class RevToSend final : public ReplicatedRev {
     public:
         alloc_slice     remoteAncestorRevID;        // Known ancestor revID (no-conflicts mode)
         unsigned        maxHistory {0};             // Max depth of rev history to send
@@ -88,7 +88,7 @@ namespace litecore { namespace repl {
 
 
     /** A revision to be added to the database, complete with body. */
-    class RevToInsert : public ReplicatedRev {
+    class RevToInsert final : public ReplicatedRev {
     public:
         alloc_slice             historyBuf;             // Revision history (comma-delimited revIDs)
         fleece::Doc             doc;

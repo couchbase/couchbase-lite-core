@@ -38,7 +38,7 @@ namespace litecore { namespace websocket {
 
 
     /** A WebSocket connection that relays messages to another instance of LoopbackWebSocket. */
-    class LoopbackWebSocket : public WebSocket {
+    class LoopbackWebSocket final : public WebSocket {
     protected:
         class Driver;
     private:
@@ -142,7 +142,7 @@ namespace litecore { namespace websocket {
 
 
         // The internal Actor that does the real work
-        class Driver : public actor::Actor {
+        class Driver final : public actor::Actor {
         public:
 
             Driver(LoopbackWebSocket *ws, actor::delay_t latency)

@@ -39,8 +39,9 @@ namespace litecore { namespace repl {
     /** The top-level replicator object, which runs the BLIP connection.
         Pull and push operations are run by subidiary Puller and Pusher objects.
         The database will only be accessed by the DBAgent object. */
-    class Replicator : public Worker, private blip::ConnectionDelegate,
-                       public InstanceCountedIn<Replicator> {
+    class Replicator final : public Worker,
+                             private blip::ConnectionDelegate,
+                             public InstanceCountedIn<Replicator> {
     public:
 
         class Delegate;

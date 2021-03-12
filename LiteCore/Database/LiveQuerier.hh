@@ -23,9 +23,9 @@ namespace litecore {
 
     /** Runs a query in the background, and optionally watches for the query results to change
         as documents change. */
-    class LiveQuerier : public actor::Actor,
-                        BackgroundDB::TransactionObserver,
-                        fleece::InstanceCounted
+    class LiveQuerier final : public actor::Actor,
+                              BackgroundDB::TransactionObserver,
+                              fleece::InstanceCounted
     {
     public:
 

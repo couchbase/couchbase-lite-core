@@ -84,7 +84,7 @@ namespace litecore {
 
 
     /** A stream for writing a new Blob. */
-    class BlobWriteStream : public WriteStream {
+    class BlobWriteStream final : public WriteStream {
     public:
         BlobWriteStream(BlobStore&);
         ~BlobWriteStream();
