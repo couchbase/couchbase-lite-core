@@ -15,6 +15,8 @@
 #include "InstanceCounted.hh"
 #include "RefCounted.hh"
 #include "Array.hh"
+#include <mutex>
+#include <utility>
 
 namespace c4Internal {
 

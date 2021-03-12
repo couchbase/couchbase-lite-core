@@ -23,6 +23,7 @@
 #include <string>
 #include <tuple> // for std::tie
 #include <ctime>
+#include <string_view>
 #include <utility>
 
 namespace fleece {

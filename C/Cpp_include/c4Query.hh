@@ -23,6 +23,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <utility>
 
 namespace litecore {
     class LiveQuerier;

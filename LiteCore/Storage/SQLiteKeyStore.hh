@@ -20,6 +20,7 @@
 #include "KeyStore.hh"
 #include "QueryParser.hh"
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string_view>

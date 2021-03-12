@@ -21,6 +21,7 @@
 #include "DataFile.hh"
 #include "IndexSpec.hh"
 #include "UnicodeCollator.hh"
+#include <memory>
 #include <optional>
 #include <vector>
 

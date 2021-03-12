@@ -18,8 +18,10 @@
 
 #pragma once
 #include "RefCounted.hh"
+#include <atomic>
 #include <cassert>
 #include <functional>
+#include <utility>
 
 namespace litecore { namespace actor {
     class Actor;
