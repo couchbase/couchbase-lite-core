@@ -39,13 +39,6 @@ static inline const blobKey* asInternal(const C4BlobKey *key) {return (const blo
 #pragma mark - C++ CLASS:
 
 
-C4BlobStore& C4Database::getBlobStore() {
-    if (!_blobStore)
-        _blobStore.reset(new C4BlobStore(_db->blobStore()));
-    return *_blobStore;
-}
-
-
 C4BlobStore::C4BlobStore(slice dirPath,
                          C4DatabaseFlags flags,
                          const C4EncryptionKey* key)

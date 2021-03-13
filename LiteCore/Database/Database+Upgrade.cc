@@ -37,7 +37,7 @@ namespace c4Internal {
         "v2.x rev-trees", "v3.x rev-trees", "version vectors"};
 
 
-    static void upgradeToVersionVectors(Database*, const Record&, RevTreeRecord&, Transaction&);
+    static void upgradeToVersionVectors(Database*, const Record&, RevTreeRecord&, litecore::Transaction&);
     static pair<alloc_slice, alloc_slice>
     upgradeRemoteRevs(Database*, Record, RevTreeRecord&, alloc_slice currentVersion);
 
@@ -55,7 +55,7 @@ namespace c4Internal {
 
     void Database::upgradeDocumentVersioning(C4DocumentVersioning curVersioning,
                                              C4DocumentVersioning newVersioning,
-                                             Transaction &t)
+                                             litecore::Transaction &t)
     {
         if (newVersioning == curVersioning)
             return;
@@ -103,7 +103,7 @@ namespace c4Internal {
     static void upgradeToVersionVectors(Database *db,
                                         const Record &rec,
                                         RevTreeRecord &revTree,
-                                        Transaction &t)
+                                        litecore::Transaction &t)
     {
         // Upgrade from rev-trees (v2 or v3) to version-vectors:
         auto currentRev = revTree.currentRevision();

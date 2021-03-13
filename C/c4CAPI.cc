@@ -254,7 +254,7 @@ C4Database* c4db_open(C4Slice path,
                       C4Error *outError) noexcept
 {
     return tryCatch<C4Database*>(outError, [=] {
-        return C4Database::open(path, *configP).detach();
+        return C4Database::openAtPath(path, configP->flags, &configP->encryptionKey).detach();
     });
 }
 

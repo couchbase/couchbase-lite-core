@@ -206,7 +206,7 @@ namespace c4Internal {
             return curVersioning;
 
         // Mismatch -- could be a race condition. Open a transaction and recheck:
-        Transaction t(_dataFile);
+        litecore::Transaction t(_dataFile);
         versDoc = info.get(slice("versioning"));
         curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
         if (versDoc.exists() && curVersioning >= newVersioning)
@@ -410,7 +410,7 @@ namespace c4Internal {
         Record rec = info.get(kMaxRevTreeDepthKey);
         if (depth != rec.bodyAsUInt()) {
             rec.setBodyAsUInt(depth);
-            Transaction t(*_dataFile);
+            litecore::Transaction t(*_dataFile);
             info.setKV(rec, t);
             t.commit();
         }
@@ -487,18 +487,18 @@ namespace c4Internal {
 #pragma mark - UUIDS:
 
 
-    bool Database::getUUIDIfExists(slice key, UUID &uuid) {
+    bool Database::getUUIDIfExists(slice key, C4UUID &uuid) {
         auto &store = getKeyStore(toString(kC4InfoStore));
         Record r = store.get(key);
-        if (!r.exists() || r.body().size < sizeof(UUID))
+        if (!r.exists() || r.body().size < sizeof(C4UUID))
             return false;
-        uuid = *(UUID*)r.body().buf;
+        uuid = *(C4UUID*)r.body().buf;
         return true;
     }
 
     // must be called within a transaction
-    Database::UUID Database::generateUUID(slice key, Transaction &t, bool overwrite) {
-        UUID uuid;
+    C4UUID Database::generateUUID(slice key, litecore::Transaction &t, bool overwrite) {
+        C4UUID uuid;
         if (overwrite || !getUUIDIfExists(key, uuid)) {
             auto &store = getKeyStore(toString(kC4InfoStore));
             slice uuidSlice{&uuid, sizeof(uuid)};
@@ -508,8 +508,8 @@ namespace c4Internal {
         return uuid;
     }
 
-    Database::UUID Database::getUUID(slice key) {
-        UUID uuid;
+    C4UUID Database::getUUID(slice key) {
+        C4UUID uuid;
         if (!getUUIDIfExists(key, uuid)) {
             TransactionHelper t(this);
             uuid = generateUUID(key, t);
@@ -520,10 +520,10 @@ namespace c4Internal {
     
     void Database::resetUUIDs() {
         TransactionHelper t(this);
-        UUID previousPrivate = getUUID(kPrivateUUIDKey);
+        C4UUID previousPrivate = getUUID(kPrivateUUIDKey);
         auto &store = getKeyStore(toString(kC4InfoStore));
         store.setKV(constants::kPreviousPrivateUUIDKey,
-                    {&previousPrivate, sizeof(UUID)},
+                    {&previousPrivate, sizeof(C4UUID)},
                     transaction());
         generateUUID(kPublicUUIDKey, t, true);
         generateUUID(kPrivateUUIDKey, t, true);
@@ -550,7 +550,7 @@ namespace c4Internal {
 
     void Database::beginTransaction() {
         if (++_transactionLevel == 1) {
-            _transaction = new Transaction(_dataFile.get());
+            _transaction = new litecore::Transaction(_dataFile.get());
             if (_sequenceTracker) {
                 _sequenceTracker->use([](SequenceTracker &st) {
                     st.beginTransaction();
@@ -634,7 +634,7 @@ namespace c4Internal {
     }
 
 
-    Transaction& Database::transaction() const {
+    litecore::Transaction& Database::transaction() const {
         auto t = _transaction;
         if (!t) error::_throw(error::NotInTransaction);
         return *t;

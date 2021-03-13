@@ -46,6 +46,7 @@
 
 using namespace std;
 using namespace c4Internal;
+using namespace fleece;
 
 
 CBL_CORE_API const char* const kC4DatabaseFilenameExtension = ".cblite2";
@@ -55,9 +56,16 @@ CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 namespace c4Internal {
     Database* asInternal(C4Database *db) {
-        return db->_db;
+        // Every C4Database is a Database, so we can safely cast to it:
+        return (Database*)db;
+    }
+    static Database* asInternal(const C4Database *db) {
+        // Yeah, casting away constness, I know...
+        return (Database*)db;
     }
 }
+
+#define IMPL asInternal(this)
 
 
 static FilePath dbPath(slice name, slice parentDir) {
@@ -97,11 +105,6 @@ optional<C4EncryptionKey> C4EncryptionKeyFromPassword(slice password, C4Encrypti
 #pragma mark - C4DATABASE METHODS:
 
 
-C4Database::C4Database(slice path, C4DatabaseConfig config)
-:_db(new Database(FilePath(path), config))
-{ }
-
-
 C4Database::~C4Database() {
     destructExtraInfo(extraInfo);
 }
@@ -116,7 +119,7 @@ Retained<C4Database> C4Database::openNamed(slice name, const Config &config) {
     ensureConfigDirExists(config);
     FilePath path = dbPath(name, config.parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
-    return new C4Database(alloc_slice(path), oldConfig);
+    return new Database(path, oldConfig);
 }
 
 
@@ -127,7 +130,7 @@ Retained<C4Database> C4Database::openAtPath(slice path,
     C4DatabaseConfig config = {flags};
     if (key)
         config.encryptionKey = *key;
-    return new C4Database(path, config);
+    return new Database(FilePath(path), config);
 }
 
 
@@ -168,55 +171,60 @@ void C4Database::shutdownLiteCore() {
 }
 
 
-void C4Database::close()                            {_db->close();}
-void C4Database::closeAndDeleteFile()               {_db->deleteDatabase();}
-void C4Database::rekey(const C4EncryptionKey *key)  {_db->rekey(key);}
-void C4Database::maintenance(C4MaintenanceType t)   {_db->maintenance(DataFile::MaintenanceType(t));}
+void C4Database::close()                            {IMPL->close();}
+void C4Database::closeAndDeleteFile()               {IMPL->deleteDatabase();}
+void C4Database::rekey(const C4EncryptionKey *key)  {IMPL->rekey(key);}
+void C4Database::maintenance(C4MaintenanceType t)   {IMPL->maintenance(DataFile::MaintenanceType(t));}
 
 static_assert(int(kC4Compact) == int(DataFile::kCompact));
 static_assert(int(kC4FullOptimize) == int(DataFile::kFullOptimize));
 
-void C4Database::lockClientMutex() noexcept         {_db->lockClientMutex();}
-void C4Database::unlockClientMutex() noexcept       {_db->unlockClientMutex();}
+void C4Database::lockClientMutex() noexcept         {IMPL->lockClientMutex();}
+void C4Database::unlockClientMutex() noexcept       {IMPL->unlockClientMutex();}
 
 
 #pragma mark - ACCESSORS:
 
 
-uint64_t C4Database::getDocumentCount() const                {return _db->countDocuments();}
-C4SequenceNumber C4Database::getLastSequence() const         {return _db->lastSequence();}
+C4BlobStore& C4Database::getBlobStore() {
+    if (!_blobStore)
+        _blobStore.reset(new C4BlobStore(IMPL->blobStore()));
+    return *_blobStore;
+}
 
-slice C4Database::getName() const noexcept                      {return _db->name();}
-alloc_slice C4Database::path() const                         {return alloc_slice(_db->path());}
-const C4Database::Config& C4Database::getConfig() const noexcept {return *_db->config();}
-const C4DatabaseConfig& C4Database::getConfigV1() const noexcept {return *_db->configV1();}
+
+uint64_t C4Database::getDocumentCount() const                {return IMPL->countDocuments();}
+C4SequenceNumber C4Database::getLastSequence() const         {return IMPL->lastSequence();}
+
+slice C4Database::getName() const noexcept                      {return IMPL->name();}
+alloc_slice C4Database::path() const                         {return alloc_slice(IMPL->path());}
+const C4Database::Config& C4Database::getConfig() const noexcept {return *IMPL->config();}
+const C4DatabaseConfig& C4Database::getConfigV1() const noexcept {return *IMPL->configV1();}
 
 
 alloc_slice C4Database::getPeerID() const {
     char buf[32];
-    sprintf(buf, "%" PRIx64, _db->myPeerID());
+    sprintf(buf, "%" PRIx64, IMPL->myPeerID());
     return alloc_slice(buf);
 }
 
 
 C4UUID C4Database::publicUUID() const {
-    Database::UUID uuid = _db->getUUID(Database::kPublicUUIDKey);
-    return (C4UUID&)uuid;
+    return IMPL->getUUID(Database::kPublicUUIDKey);
 }
 
 
 C4UUID C4Database::privateUUID() const {
-    Database::UUID uuid = _db->getUUID(Database::kPrivateUUIDKey);
-    return (C4UUID&)uuid;
+    return IMPL->getUUID(Database::kPrivateUUIDKey);
 }
 
 
 #pragma mark - TRANSACTIONS:
 
 
-bool C4Database::isInTransaction() const noexcept   {return _db->inTransaction();}
-void C4Database::beginTransaction()                 {_db->beginTransaction();}
-void C4Database::endTransaction(bool commit)        {_db->endTransaction(commit);}
+bool C4Database::isInTransaction() const noexcept   {return IMPL->inTransaction();}
+void C4Database::beginTransaction()                 {IMPL->beginTransaction();}
+void C4Database::endTransaction(bool commit)        {IMPL->endTransaction(commit);}
 
 
 #pragma mark - DOCUMENTS:
@@ -226,7 +234,7 @@ Retained<C4Document> C4Database::getDocument(slice docID,
                                              bool mustExist,
                                              C4DocContentLevel content) const
 {
-    auto doc = _db->documentFactory().newDocumentInstance(docID, ContentOption(content));
+    auto doc = IMPL->documentFactory().newDocumentInstance(docID, ContentOption(content));
     if (mustExist && doc && !doc->exists())
         doc = nullptr;
     return doc;
@@ -234,8 +242,8 @@ Retained<C4Document> C4Database::getDocument(slice docID,
 
 
 Retained<C4Document> C4Database::getDocumentBySequence(C4SequenceNumber sequence) const {
-    if (Record rec = _db->defaultKeyStore().get(sequence, kEntireBody); rec.exists())
-        return _db->documentFactory().newDocumentInstance(move(rec));
+    if (Record rec = IMPL->defaultKeyStore().get(sequence, kEntireBody); rec.exists())
+        return IMPL->documentFactory().newDocumentInstance(move(rec));
     else
         return nullptr;
 }
@@ -245,7 +253,7 @@ Retained<C4Document> C4Database::putDocument(const C4DocPutRequest &rq,
                                            size_t *outCommonAncestorIndex,
                                            C4Error *outError)
 {
-    return _db->putDocument(rq, outCommonAncestorIndex, outError);
+    return IMPL->putDocument(rq, outCommonAncestorIndex, outError);
 }
 
 
@@ -269,18 +277,18 @@ std::vector<alloc_slice> C4Database::findDocAncestors(const std::vector<slice> &
                                                    bool mustHaveBodies,
                                                    C4RemoteID remoteDBID) const
 {
-    return _db->documentFactory().findAncestors(docIDs, revIDs, maxAncestors,
+    return IMPL->documentFactory().findAncestors(docIDs, revIDs, maxAncestors,
                                                 mustHaveBodies, remoteDBID);
 }
 
 
 bool C4Database::purgeDoc(slice docID) {
-    return _db->purgeDocument(docID);
+    return IMPL->purgeDocument(docID);
 }
 
 
 bool C4Database::getRawDocument(slice storeName, slice key, function_ref<void(C4RawDocument*)> cb) {
-    Record r = _db->getRawRecord(toString(storeName), key);
+    Record r = IMPL->getRawRecord(toString(storeName), key);
     if (r.exists()) {
         C4RawDocument rawDoc = {r.key(), r.version(), r.body()};
         cb(&rawDoc);
@@ -294,15 +302,14 @@ bool C4Database::getRawDocument(slice storeName, slice key, function_ref<void(C4
 
 void C4Database::putRawDocument(slice storeName, const C4RawDocument &doc) {
     Transaction t(this);
-    _db->putRawRecord(toString(storeName), doc.key, doc.meta, doc.body);
+    IMPL->putRawRecord(toString(storeName), doc.key, doc.meta, doc.body);
     t.commit();
 }
 
 
 alloc_slice C4Database::encodeJSON(slice jsonData) const {
-    using namespace fleece::impl;
-    Encoder &enc = _db->sharedEncoder();
-    JSONConverter jc(enc);
+    impl::Encoder &enc = IMPL->sharedEncoder();
+    impl::JSONConverter jc(enc);
     if (!jc.encodeJSON(jsonData)) {
         enc.reset();
         error(error::Fleece, jc.errorCode(), jc.errorMessage())._throw();
@@ -313,13 +320,13 @@ alloc_slice C4Database::encodeJSON(slice jsonData) const {
 
 FLEncoder C4Database::createFleeceEncoder() const {
     FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
-    FLEncoder_SetSharedKeys(enc, (FLSharedKeys)_db->documentKeys());
+    FLEncoder_SetSharedKeys(enc, (FLSharedKeys)IMPL->documentKeys());
     return enc;
 }
 
 
-FLEncoder C4Database::getSharedFleeceEncoder() const   {return _db->sharedFLEncoder();}
-FLSharedKeys C4Database::getFLSharedKeys() const   {return (FLSharedKeys)_db->documentKeys();}
+FLEncoder C4Database::getSharedFleeceEncoder() const   {return IMPL->sharedFLEncoder();}
+FLSharedKeys C4Database::getFLSharedKeys() const   {return (FLSharedKeys)IMPL->documentKeys();}
 
 
 #pragma mark - OBSERVERS:
@@ -339,20 +346,20 @@ std::unique_ptr<C4DocumentObserver> C4Database::observeDocument(slice docID,
 #pragma mark - EXPIRATION:
 
 
-bool C4Database::mayHaveExpiration() const      {return _db->dataFile()->defaultKeyStore().mayHaveExpiration();}
-bool C4Database::startHousekeeping()            {return _db->startHousekeeping();}
-int64_t C4Database::purgeExpiredDocs()          {return _db->purgeExpiredDocs();}
+bool C4Database::mayHaveExpiration() const      {return IMPL->dataFile()->defaultKeyStore().mayHaveExpiration();}
+bool C4Database::startHousekeeping()            {return IMPL->startHousekeeping();}
+int64_t C4Database::purgeExpiredDocs()          {return IMPL->purgeExpiredDocs();}
 
-bool C4Database::setExpiration(slice docID, C4Timestamp timestamp) {return _db->setExpiration(docID, timestamp);}
-C4Timestamp C4Database::getExpiration(slice docID) const {return _db->defaultKeyStore().getExpiration(docID);}
-C4Timestamp C4Database::nextDocExpiration() const   {return _db->defaultKeyStore().nextExpiration();}
+bool C4Database::setExpiration(slice docID, C4Timestamp timestamp) {return IMPL->setExpiration(docID, timestamp);}
+C4Timestamp C4Database::getExpiration(slice docID) const {return IMPL->defaultKeyStore().getExpiration(docID);}
+C4Timestamp C4Database::nextDocExpiration() const   {return IMPL->defaultKeyStore().nextExpiration();}
 
 
 #pragma mark - QUERIES & INDEXES:
 
 
 alloc_slice C4Database::rawQuery(slice query) {
-    return _db->dataFile()->rawQuery(query.asString());
+    return IMPL->dataFile()->rawQuery(query.asString());
 }
 
 
@@ -363,7 +370,7 @@ void C4Database::createIndex(slice indexName,
 {
     static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options));
 
-    _db->defaultKeyStore().createIndex(indexName,
+    IMPL->defaultKeyStore().createIndex(indexName,
                                        indexSpecJSON,
                                        (IndexSpec::Type)indexType,
                                        (const IndexSpec::Options*)indexOptions);
@@ -371,16 +378,14 @@ void C4Database::createIndex(slice indexName,
 
 
 void C4Database::deleteIndex(slice indexName) {
-    _db->defaultKeyStore().deleteIndex(indexName);
+    IMPL->defaultKeyStore().deleteIndex(indexName);
 }
 
 
 alloc_slice C4Database::getIndexesInfo(bool fullInfo) const {
-    using namespace fleece::impl;
-
-    Encoder enc;
+    impl::Encoder enc;
     enc.beginArray();
-    for (const auto &spec : _db->defaultKeyStore().getIndexes()) {
+    for (const auto &spec : IMPL->defaultKeyStore().getIndexes()) {
         if (fullInfo) {
             enc.beginDictionary();
             enc.writeKey("name"); enc.writeString(spec.name);
@@ -399,7 +404,7 @@ alloc_slice C4Database::getIndexesInfo(bool fullInfo) const {
 alloc_slice C4Database::getIndexRows(slice indexName) const {
     int64_t rowCount;
     alloc_slice rows;
-    ((SQLiteDataFile*)_db->dataFile())->inspectIndex(indexName, rowCount, &rows);
+    ((SQLiteDataFile*)IMPL->dataFile())->inspectIndex(indexName, rowCount, &rows);
     return rows;
 }
 
@@ -441,7 +446,6 @@ static const char * kRemoteDBURLsDoc = "remotes";
 
 
 C4RemoteID C4Database::getRemoteDBID(slice remoteAddress, bool canCreate) {
-    using namespace fleece::impl;
     bool inTransaction = false;
     C4RemoteID remoteID = 0;
 
@@ -450,16 +454,16 @@ C4RemoteID C4Database::getRemoteDBID(slice remoteAddress, bool canCreate) {
     // or create the doc from scratch, in a transaction.
     for (int creating = 0; creating <= 1; ++creating) {
         if (creating) {     // 2nd pass takes place in a transaction
-            _db->beginTransaction();
+            IMPL->beginTransaction();
             inTransaction = true;
         }
 
         // Look up the doc in the db, and the remote URL in the doc:
-        Record doc = _db->getRawRecord(toString(kC4InfoStore), slice(kRemoteDBURLsDoc));
-        const Dict *remotes = nullptr;
+        Record doc = IMPL->getRawRecord(string(kInfoStore), kRemoteDBURLsDoc);
+        const impl::Dict *remotes = nullptr;
         remoteID = 0;
         if (doc.exists()) {
-            auto body = Value::fromData(doc.body());
+            auto body = impl::Value::fromData(doc.body());
             if (body)
                 remotes = body->asDict();
             if (remotes) {
@@ -477,9 +481,9 @@ C4RemoteID C4Database::getRemoteDBID(slice remoteAddress, bool canCreate) {
         } else if (creating) {
             // Update or create the document, adding the identifier:
             remoteID = 1;
-            Encoder enc;
+            impl::Encoder enc;
             enc.beginDictionary();
-            for (Dict::iterator i(remotes); i; ++i) {
+            for (impl::Dict::iterator i(remotes); i; ++i) {
                 auto existingID = i.value()->asUnsigned();
                 if (existingID) {
                     enc.writeKey(i.keyString());            // Copy existing entry
@@ -493,25 +497,24 @@ C4RemoteID C4Database::getRemoteDBID(slice remoteAddress, bool canCreate) {
             alloc_slice body = enc.finish();
 
             // Save the doc:
-            _db->putRawRecord(toString(kC4InfoStore), slice(kRemoteDBURLsDoc), nullslice, body);
-            _db->endTransaction(true);
+            IMPL->putRawRecord(string(kInfoStore), kRemoteDBURLsDoc, nullslice, body);
+            IMPL->endTransaction(true);
             inTransaction = false;
             break;
         }
     }
     if (inTransaction)
-        _db->endTransaction(false);
+        IMPL->endTransaction(false);
     return remoteID;
 }
 
 
 alloc_slice C4Database::getRemoteDBAddress(C4RemoteID remoteID) {
-    using namespace fleece::impl;
-    Record doc = _db->getRawRecord(toString(kC4InfoStore), slice(kRemoteDBURLsDoc));
+    Record doc = IMPL->getRawRecord(toString(kInfoStore), kRemoteDBURLsDoc);
     if (doc.exists()) {
-        auto body = Value::fromData(doc.body());
+        auto body = impl::Value::fromData(doc.body());
         if (body) {
-            for (Dict::iterator i(body->asDict()); i; ++i) {
+            for (impl::Dict::iterator i(body->asDict()); i; ++i) {
                 if (i.value()->asInt() == remoteID)
                     return alloc_slice(i.keyString());
             }
@@ -530,9 +533,9 @@ bool C4Database::markDocumentSynced(slice docID,
         // Shortcut: can set kSynced flag on the record to mark that the current revision is
         // synced to remote #1. But the call will return false if the sequence no longer
         // matches, i.e this revision is no longer current. Then have to take the slow approach.
-        if (_db->defaultKeyStore().setDocumentFlag(docID, sequence,
+        if (IMPL->defaultKeyStore().setDocumentFlag(docID, sequence,
                                                    DocumentFlags::kSynced,
-                                                   _db->transaction())) {
+                                                   IMPL->transaction())) {
             return true;
         }
     }

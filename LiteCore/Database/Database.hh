@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include "c4Internal.hh"
-#include "c4Database.h"
+#include "c4Database.hh"
 #include "c4DocumentTypes.h"
+#include "c4Internal.hh"
 #include "DataFile.hh"
 #include "FilePath.hh"
 #include "InstanceCounted.hh"
@@ -48,10 +48,9 @@ namespace c4Internal {
     class DocumentFactory;
 
 
-    /** A top-level LiteCore database. */
-    class Database final : public RefCounted,
-                           public DataFile::Delegate,
-                           public fleece::InstanceCountedIn<Database> {
+    /** The implementation of the C4Database class. */
+    class Database final : public C4Database,
+                           public DataFile::Delegate {
     public:
         Database(const string &path, C4DatabaseConfig config);
 
@@ -70,13 +69,10 @@ namespace c4Internal {
         uint32_t maxRevTreeDepth();
         void setMaxRevTreeDepth(uint32_t depth);
 
-        struct UUID {
-            uint8_t bytes[16];
-        };
         static const slice kPublicUUIDKey;
         static const slice kPrivateUUIDKey;
 
-        UUID getUUID(slice key);
+        C4UUID getUUID(slice key);
         void resetUUIDs();
 
         uint64_t myPeerID() const;
@@ -88,7 +84,7 @@ namespace c4Internal {
         const C4DatabaseConfig2* config() const         {return &_config;}
         const C4DatabaseConfig* configV1() const        {return &_configV1;};   // TODO: DEPRECATED
 
-        Transaction& transaction() const;
+        litecore::Transaction& transaction() const;
 
         void beginTransaction();
         void endTransaction(bool commit);
@@ -112,7 +108,7 @@ namespace c4Internal {
                 db->endTransaction(true);
             }
 
-            operator Transaction& () {
+            operator litecore::Transaction& () {
                 return *_db->_transaction;
             }
 
@@ -180,8 +176,8 @@ namespace c4Internal {
                                            C4StorageEngine &outStorageEngine);
         static bool deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine);
         void _cleanupTransaction(bool committed);
-        bool getUUIDIfExists(slice key, UUID&);
-        UUID generateUUID(slice key, Transaction&, bool overwrite =false);
+        bool getUUIDIfExists(slice key, C4UUID&);
+        C4UUID generateUUID(slice key, litecore::Transaction&, bool overwrite =false);
 
         unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         std::unordered_set<std::string> collectBlobs();
@@ -189,7 +185,7 @@ namespace c4Internal {
 
         C4DocumentVersioning checkDocumentVersioning();
         void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,
-                                       Transaction&);
+                                       litecore::Transaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
         const string                _name;                  // Database filename (w/o extension)
@@ -197,7 +193,7 @@ namespace c4Internal {
         C4DatabaseConfig2           _config;                // Configuration
         C4DatabaseConfig            _configV1;              // TODO: DEPRECATED
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
-        Transaction*                _transaction {nullptr}; // Current Transaction, or null
+        litecore::Transaction*      _transaction {nullptr}; // Current Transaction, or null
         int                         _transactionLevel {0};  // Nesting level of transaction
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
         mutable unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder

@@ -48,7 +48,10 @@ std::optional<C4EncryptionKey> C4EncryptionKeyFromPassword(fleece::slice passwor
 
 
 /// A LiteCore database connection.
-struct C4Database final : public fleece::RefCounted, public C4Base {
+struct C4Database : public fleece::RefCounted,
+                    public C4Base,
+                    public fleece::InstanceCountedIn<C4Database>
+{
 public:
     // Lifecycle:
 
@@ -128,13 +131,17 @@ public:
                                            bool mustHaveBodies,
                                            C4RemoteID remoteDBID) const;
 
+    bool purgeDoc(slice docID);
+
+    // Raw Documents:
+
+    static constexpr slice kInfoStore = "info";    /// Raw-document store used for db metadata.
+
     bool getRawDocument(slice storeName,
                         slice key,
                         fleece::function_ref<void(C4RawDocument* C4NULLABLE)> callback);
 
     void putRawDocument(slice storeName, const C4RawDocument&);
-
-    bool purgeDoc(slice docID);
 
     // Fleece-related utilities for document encoding:
 
@@ -226,10 +233,6 @@ public:
     // Evaluates a SQLite (not N1QL!) query and returns the results. Used only by the `cblite` tool.
     alloc_slice rawQuery(slice sqliteQuery);
 
-    static Retained<C4Database> open(slice path, const C4DatabaseConfig &config) {
-        return new C4Database(path, config);
-    }
-
     static void copyFileToPath(slice sourcePath, slice destinationPath, const C4DatabaseConfig&);
     const C4DatabaseConfig& getConfigV1() const noexcept FLPURE;
     void lockClientMutex() noexcept;
@@ -237,13 +240,12 @@ public:
 
     C4ExtraInfo extraInfo { };
 
+protected:
+    virtual ~C4Database();
+
 private:
     friend c4Internal::Database* c4Internal::asInternal(C4Database *db);
-    
-    C4Database(slice path, C4DatabaseConfig config);
-    ~C4Database();
 
-    Retained<c4Internal::Database> _db;
     std::unique_ptr<C4BlobStore> _blobStore;
 };
 
