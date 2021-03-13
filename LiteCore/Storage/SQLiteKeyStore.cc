@@ -257,7 +257,7 @@ namespace litecore {
     }
 
 
-    void SQLiteKeyStore::setKV(slice key, slice version, slice value, Transaction &t) {
+    void SQLiteKeyStore::setKV(slice key, slice version, slice value, ExclusiveTransaction &t) {
         DebugAssert(key.size > 0);
         DebugAssert(!_capabilities.sequences);
         if (db().willLog(LogLevel::Verbose) && name() != "default")
@@ -273,7 +273,7 @@ namespace litecore {
     }
 
 
-    sequence_t SQLiteKeyStore::set(const RecordUpdate &rec, bool updateSequence, Transaction&) {
+    sequence_t SQLiteKeyStore::set(const RecordUpdate &rec, bool updateSequence, ExclusiveTransaction&) {
         DebugAssert(rec.key.size > 0);
         DebugAssert(_capabilities.sequences);
 
@@ -331,7 +331,7 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::del(slice key, Transaction&, sequence_t seq) {
+    bool SQLiteKeyStore::del(slice key, ExclusiveTransaction&, sequence_t seq) {
         Assert(key);
         SQLite::Statement *stmt;
         db()._logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %" PRIu64,
@@ -353,7 +353,7 @@ namespace litecore {
 
 
     bool SQLiteKeyStore::setDocumentFlag(slice key, sequence_t seq, DocumentFlags flags,
-                                         Transaction&)
+                                         ExclusiveTransaction&)
     {
         // "flags + 0x10000" increments the subsequence stored in the upper bits, for MVCC.
         auto &stmt = compileCached(
@@ -367,7 +367,7 @@ namespace litecore {
 
 
     void SQLiteKeyStore::erase() {
-        Transaction t(db());
+        ExclusiveTransaction t(db());
         db().exec(string("DELETE FROM kv_"+name()));
         setLastSequence(0);
         t.commit();

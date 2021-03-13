@@ -48,7 +48,7 @@ namespace litecore {
     }
 #endif
 
-    void KeyStore::set(Record &rec, bool updateSequence, Transaction &t) {
+    void KeyStore::set(Record &rec, bool updateSequence, ExclusiveTransaction &t) {
         if (auto seq = set(RecordUpdate(rec), updateSequence, t); seq > 0) {
             rec.setExists();
             if (updateSequence)
@@ -60,7 +60,7 @@ namespace litecore {
         }
     }
 
-    void KeyStore::setKV(Record& rec, Transaction &t) {
+    void KeyStore::setKV(Record& rec, ExclusiveTransaction &t) {
         setKV(rec.key(), rec.version(), rec.body(), t);
         rec.setExists();
     }

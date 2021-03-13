@@ -195,7 +195,7 @@ namespace litecore {
         return _rec.flags() != oldFlags || _rec.version() != oldRevID;
     }
 
-    RevTreeRecord::SaveResult RevTreeRecord::save(Transaction& transaction) {
+    RevTreeRecord::SaveResult RevTreeRecord::save(ExclusiveTransaction& transaction) {
         Assert(revsAvailable());
         if (!_changed)
             return kNoNewSequence;

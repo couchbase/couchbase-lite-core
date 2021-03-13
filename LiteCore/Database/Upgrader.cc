@@ -80,7 +80,7 @@ namespace litecore {
                 error::_throw(error::CantUpgradeDatabase,
                               "Database cannot be upgraded because its internal version number isn't recognized");
 
-            Database::TransactionHelper t(_newDB);
+            Database::Transaction t(_newDB);
             try {
                 copyDocs();
 #if 0

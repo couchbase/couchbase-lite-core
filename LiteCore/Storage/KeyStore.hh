@@ -28,7 +28,7 @@ namespace litecore {
 
     class DataFile;
     class Record;
-    class Transaction;
+    class ExclusiveTransaction;
     class Query;
 
 
@@ -107,14 +107,14 @@ namespace litecore {
             @return  The record's new sequence number, or 0 if there is a conflict. */
         virtual sequence_t set(const RecordUpdate &rec,
                                bool updateSequence,
-                               Transaction &transaction) MUST_USE_RESULT =0;
+                               ExclusiveTransaction &transaction) MUST_USE_RESULT =0;
 
         /** Alternative `set` that takes a `Record` directly.
             It updates the `sequence` property, instead of returning the new sequence.
             It throws a Conflict exception on conflict. */
         void set(Record &rec,
                  bool updateSequence,
-                 Transaction &transaction);
+                 ExclusiveTransaction &transaction);
 
         /** Core setter for KeyStores _without_ sequences.
             There is no MVCC; whatever's stored at that key is overwritten.
@@ -125,17 +125,17 @@ namespace litecore {
         virtual void setKV(slice key,
                            slice version,
                            slice value,
-                           Transaction &transaction) =0;
+                           ExclusiveTransaction &transaction) =0;
 
-        void setKV(slice key, slice value, Transaction &t)      {setKV(key, nullslice, value, t);}
+        void setKV(slice key, slice value, ExclusiveTransaction &t)      {setKV(key, nullslice, value, t);}
 
-        void setKV(Record&, Transaction&);
+        void setKV(Record&, ExclusiveTransaction&);
 
-        virtual bool del(slice key, Transaction&, sequence_t replacingSequence =0) =0;
-        bool del(const Record &rec, Transaction &t)                 {return del(rec.key(), t);}
+        virtual bool del(slice key, ExclusiveTransaction&, sequence_t replacingSequence =0) =0;
+        bool del(const Record &rec, ExclusiveTransaction &t)                 {return del(rec.key(), t);}
 
         /** Sets a flag of a record, without having to read/write the Record. */
-        virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&) =0;
+        virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction&) =0;
 
 
         //////// Expiration:

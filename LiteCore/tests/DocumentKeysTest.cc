@@ -41,7 +41,7 @@ public:
         return out;
     }
 
-    void createDoc(const char *docID, const char *json, Transaction &t) {
+    void createDoc(const char *docID, const char *json, ExclusiveTransaction &t) {
         DataFileTestFixture::createDoc(slice(docID), convertJSON(json), t);
     }
 
@@ -50,7 +50,7 @@ public:
 
 TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         createDoc("doc1", "{\"foo\": 1}", t);
         createDoc("doc2", "{\"foo\": 2, \"bar\": 1}", t);
         t.commit();
@@ -58,7 +58,7 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
 
     // Add "zog" as a key, but abort the transaction so it doesn't take effect:
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         createDoc("doc3", "{\"zog\": 17}", t);
         CHECK(db->documentKeys()->byKey() == (vector<slice>{slice("foo"), slice("bar"), slice("zog")}));
         t.abort();
@@ -99,7 +99,7 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
 
     // Now add a doc that uses "zog" as a key:
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         createDoc("doc3", "{\"zog\": 17}", t);
         t.commit();
     }

@@ -58,7 +58,7 @@ namespace litecore {
         spec.validateName();
 
         Stopwatch st;
-        Transaction t(db());
+        ExclusiveTransaction t(db());
         bool created;
         switch (spec.type) {
             case IndexSpec::kValue:      created = createValueIndex(spec); break;
@@ -98,7 +98,7 @@ namespace litecore {
 
 
     void SQLiteKeyStore::deleteIndex(slice name)  {
-        Transaction t(db());
+        ExclusiveTransaction t(db());
         auto spec = db().getIndex(name);
         if (spec) {
             db().deleteIndex(*spec);

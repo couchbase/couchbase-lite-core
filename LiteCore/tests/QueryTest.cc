@@ -203,7 +203,7 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
     SECTION("Just regular docs") {
     }
     SECTION("Ignore deleted docs") {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         for (int i = 201; i <= 300; i++)
             writeNumberedDoc(i, nullslice, t,
                              DocumentFlags::kDeleted | DocumentFlags::kHasAttachments);
@@ -235,7 +235,7 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc("null-and-void"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("n");
             enc.writeNull();
@@ -272,7 +272,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
 
     // Add a doc that doesn't alter the query:
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         writeNumberedDoc(-1, nullslice, t);
         t.commit();
     }
@@ -304,7 +304,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         for(int i = 0; i < 2; i++) {
             string docID = stringWithFormat("rec-%03d", i + 1);
             writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -353,7 +353,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc("tester"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("num");
             enc.writeInt(1);
@@ -414,7 +414,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
     // For <https://github.com/couchbase/couchbase-lite-core/issues/545>
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("$foo");    enc.writeInt(17);
             enc.writeKey("?foo");    enc.writeInt(18);
@@ -462,7 +462,7 @@ TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query object properties", "[Query]") {
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         writeMultipleTypeDocs(t);
         t.commit();
     }
@@ -523,7 +523,7 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
     // Create a doc with a blob property:
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc("goop"_sl, (DocumentFlags)0, t, [](Encoder &enc) {
             enc.writeKey("text");
             enc.beginDictionary();
@@ -551,7 +551,7 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         for(int i = 0; i < 2; i++) {
             string docID = stringWithFormat("rec-%03d", i + 1);
             writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -578,7 +578,7 @@ TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         string docID = "doc1";
         writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("value");
@@ -693,7 +693,7 @@ TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("value");
             enc.writeString("awesome value");
@@ -749,7 +749,7 @@ TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
         t.commit();
     }
@@ -815,7 +815,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
         writeFalselyDocs(t);
         t.commit();
@@ -846,7 +846,7 @@ TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
         writeFalselyDocs(t);
         t.commit();
@@ -877,7 +877,7 @@ TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
         writeDoc("doc6"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("value");
@@ -911,7 +911,7 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
         writeFalselyDocs(t);
         t.commit();
@@ -942,7 +942,7 @@ TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
 
         char docID[6];
         for(int i = 0; i < 20; i++) {
@@ -983,7 +983,7 @@ TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeNumberedDoc(1, nullslice, t);
 
         t.commit();
@@ -1159,7 +1159,7 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("num");
             enc.writeUInt(1);
@@ -1181,7 +1181,7 @@ TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
 // Test for #341, "kData fleece type unable to be queried"
 TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
      {
-         Transaction t(store->dataFile());
+         ExclusiveTransaction t(store->dataFile());
          writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
              enc.writeKey("num");
              enc.writeData("number one"_sl);
@@ -1207,7 +1207,7 @@ TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("num");
             enc.writeInt(1234);
@@ -1237,7 +1237,7 @@ TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("num");
             enc.writeInt(1234);
@@ -1289,7 +1289,7 @@ TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
      {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         string docID = "rec-00";
 
         for(int i = 0; i < 10; i++) {
@@ -1449,7 +1449,7 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
 }
 
 TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // CBL-1248
-    Transaction t(store->dataFile());
+    ExclusiveTransaction t(store->dataFile());
 
     for(int i = 0; i < 2; i++) {
         string docID = stringWithFormat("rec-%03d", i + 1);
@@ -1490,7 +1490,7 @@ TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // C
 
 TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
 	{
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         string docID = "rec-00";
 
         for(int i = 0; i < 3; i++) {
@@ -1560,7 +1560,7 @@ TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
     addNumberedDocs(1, 10);
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         for (int i = 11; i <= 20; i++)
             writeNumberedDoc(i, nullslice, t,
                              DocumentFlags::kDeleted | DocumentFlags::kHasAttachments);
@@ -1616,7 +1616,7 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         string docID = "rec-00";
         
         stringstream ss(docID);
@@ -1672,7 +1672,7 @@ TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
 }
 
 TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
-    Transaction t(store->dataFile());
+    ExclusiveTransaction t(store->dataFile());
     writeDoc("uber_doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         enc.writeKey("dict");
         enc.beginDictionary(2);
@@ -1855,7 +1855,7 @@ TEST_CASE_METHOD(QueryTest, "Query Math Precision", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
     vector<string> keys { "$Type", "Ty$pe", "Type$" };
-    Transaction t(store->dataFile());
+    ExclusiveTransaction t(store->dataFile());
     writeDoc("doc"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         for (const string& key : keys) {
             enc.writeKey(key);
@@ -1882,7 +1882,7 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
 }
 
 TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
-    Transaction t(store->dataFile());
+    ExclusiveTransaction t(store->dataFile());
     writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         enc.writeKey("customerId");
         enc.writeString("Jack");

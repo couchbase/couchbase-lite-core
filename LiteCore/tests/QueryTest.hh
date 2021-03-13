@@ -39,7 +39,7 @@ protected:
         return str;
     }
 
-    sequence_t writeNumberedDoc(int i, slice str, Transaction &t,
+    sequence_t writeNumberedDoc(int i, slice str, ExclusiveTransaction &t,
                                        DocumentFlags flags =DocumentFlags::kNone) {
         return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder &enc) {
             enc.writeKey("num");
@@ -55,13 +55,13 @@ protected:
 
     // Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
     void addNumberedDocs(int first =1, int n =100) {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         for (int i = first; i < first + n; i++)
             REQUIRE(writeNumberedDoc(i, nullslice, t) == (sequence_t)i);
         t.commit();
     }
 
-    sequence_t writeArrayDoc(int i, Transaction &t,
+    sequence_t writeArrayDoc(int i, ExclusiveTransaction &t,
                                     DocumentFlags flags =DocumentFlags::kNone) {
         return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder &enc) {
             enc.writeKey("numbers");
@@ -75,13 +75,13 @@ protected:
     }
 
     void addArrayDocs(int first =1, int n =100) {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         for (int i = first; i < first + n; i++)
             REQUIRE(writeArrayDoc(i, t) == (sequence_t)i);
         t.commit();
     }
 
-    void writeMultipleTypeDocs(Transaction &t) {
+    void writeMultipleTypeDocs(ExclusiveTransaction &t) {
         writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("value");
             enc.beginArray();
@@ -113,7 +113,7 @@ protected:
         });
     }
 
-    void writeFalselyDocs(Transaction &t) {
+    void writeFalselyDocs(ExclusiveTransaction &t) {
         writeDoc("doc6"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("value");
             enc.beginArray();
@@ -133,7 +133,7 @@ protected:
     }
 
     void deleteDoc(slice docID, bool hardDelete) {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         if (hardDelete) {
             store->del(docID, t);
         } else {
@@ -146,7 +146,7 @@ protected:
     }
 
     void undeleteDoc(slice docID) {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         Record doc = store->get(docID);
         CHECK(doc.exists());
         doc.clearFlag(DocumentFlags::kDeleted);
@@ -169,7 +169,7 @@ protected:
 
     void testExpressions(const std::vector<std::pair<std::string,std::string>> &tests) {
         {
-            Transaction t(store->dataFile());
+            ExclusiveTransaction t(store->dataFile());
             writeNumberedDoc(1, nullslice, t);
             t.commit();
         }

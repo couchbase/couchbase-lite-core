@@ -496,13 +496,13 @@ namespace litecore {
     }
 #endif
 
-    void SQLiteDataFile::_beginTransaction(Transaction*) {
+    void SQLiteDataFile::_beginTransaction(ExclusiveTransaction*) {
         checkOpen();
         _exec("BEGIN");
     }
 
 
-    void SQLiteDataFile::_endTransaction(Transaction *t, bool commit) {
+    void SQLiteDataFile::_endTransaction(ExclusiveTransaction *t, bool commit) {
         // Notify key-stores so they can save state:
         forOpenKeyStores([commit](KeyStore &ks) {
             ((SQLiteKeyStore&)ks).transactionWillEnd(commit);

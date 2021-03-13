@@ -94,8 +94,8 @@ namespace litecore {
         void _close(bool forDelete) override;
         void reopen() override;
         void rekey(EncryptionAlgorithm, slice newKey) override;
-        void _beginTransaction(Transaction*) override;
-        void _endTransaction(Transaction*, bool commit) override;
+        void _beginTransaction(ExclusiveTransaction*) override;
+        void _endTransaction(ExclusiveTransaction*, bool commit) override;
         void beginReadOnlyTransaction() override;
         void endReadOnlyTransaction() override;
         KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) override;

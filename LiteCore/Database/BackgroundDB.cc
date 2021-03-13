@@ -60,7 +60,7 @@ namespace litecore {
         use([=](DataFile* dataFile) {
             if (!dataFile)
                 return;
-            Transaction t(dataFile);
+            ExclusiveTransaction t(dataFile);
             SequenceTracker sequenceTracker;
             sequenceTracker.beginTransaction();
 

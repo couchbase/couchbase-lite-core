@@ -57,7 +57,7 @@ namespace litecore {
         const string path;                              // The filesystem path
 
 
-        Transaction* transaction() {
+        ExclusiveTransaction* transaction() {
             return _transaction;
         }
 
@@ -107,7 +107,7 @@ namespace litecore {
         }
 
 
-        void setTransaction(Transaction* t) {
+        void setTransaction(ExclusiveTransaction* t) {
             Assert(t);
             unique_lock<mutex> lock(_transactionMutex);
             while (_transaction != nullptr)
@@ -116,7 +116,7 @@ namespace litecore {
         }
 
 
-        void unsetTransaction(Transaction* t) {
+        void unsetTransaction(ExclusiveTransaction* t) {
             unique_lock<mutex> lock(_transactionMutex);
             Assert(t && _transaction == t);
             _transaction = nullptr;
@@ -163,7 +163,7 @@ namespace litecore {
     private:
         mutex              _transactionMutex;       // Mutex for transactions
         condition_variable _transactionCond;        // For waiting on the mutex
-        Transaction*       _transaction {nullptr};  // Currently active Transaction object
+        ExclusiveTransaction*       _transaction {nullptr};  // Currently active Transaction object
         vector<DataFile*>  _dataFiles;              // Open DataFiles on this File
         unordered_map<string, Retained<RefCounted>> _sharedObjects;
         bool               _condemned {false};      // Prevents db from being opened or deleted

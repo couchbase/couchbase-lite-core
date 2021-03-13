@@ -93,10 +93,10 @@ public:
     DataFile* newDatabase(const FilePath &path, const DataFile::Options* =nullptr);
     void reopenDatabase(const DataFile::Options *newOptions =nullptr);
 
-    static sequence_t createDoc(KeyStore&, slice docID, slice body, Transaction&);
-    sequence_t createDoc(slice docID, slice body, Transaction &t)  {return createDoc(*store, docID, body, t);};
+    static sequence_t createDoc(KeyStore&, slice docID, slice body, ExclusiveTransaction&);
+    sequence_t createDoc(slice docID, slice body, ExclusiveTransaction &t)  {return createDoc(*store, docID, body, t);};
 
-    sequence_t writeDoc(slice docID, DocumentFlags, Transaction&,
+    sequence_t writeDoc(slice docID, DocumentFlags, ExclusiveTransaction&,
                         std::function<void(fleece::impl::Encoder&)>);
 
     virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;

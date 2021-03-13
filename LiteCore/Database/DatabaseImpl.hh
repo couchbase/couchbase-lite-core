@@ -49,10 +49,11 @@ namespace c4Internal {
 
 
     /** The implementation of the C4Database class. */
-    class Database final : public C4Database,
-                           public DataFile::Delegate {
+    class DatabaseImpl final : public C4Database,
+                           public DataFile::Delegate
+    {
     public:
-        Database(const string &path, C4DatabaseConfig config);
+        DatabaseImpl(const string &path, C4DatabaseConfig config);
 
         void close();
         void deleteDatabase();
@@ -84,7 +85,7 @@ namespace c4Internal {
         const C4DatabaseConfig2* config() const         {return &_config;}
         const C4DatabaseConfig* configV1() const        {return &_configV1;};   // TODO: DEPRECATED
 
-        litecore::Transaction& transaction() const;
+        ExclusiveTransaction& transaction() const;
 
         void beginTransaction();
         void endTransaction(bool commit);
@@ -93,33 +94,6 @@ namespace c4Internal {
         void mustBeInTransaction();
         bool mustBeInTransaction(C4Error *outError) noexcept;
         bool mustNotBeInTransaction(C4Error *outError) noexcept;
-
-        class TransactionHelper {
-        public:
-            explicit TransactionHelper(Database* db)
-            :_db(db)
-            {
-                db->beginTransaction();
-            }
-
-            void commit() {
-                auto db = _db;
-                _db = nullptr;
-                db->endTransaction(true);
-            }
-
-            operator litecore::Transaction& () {
-                return *_db->_transaction;
-            }
-
-            ~TransactionHelper() {
-                if (_db)
-                    _db->endTransaction(false);
-            }
-
-        private:
-            Database* _db;
-        };
 
         KeyStore& defaultKeyStore() const;
         KeyStore& getKeyStore(const string &name) const;
@@ -167,17 +141,17 @@ namespace c4Internal {
         void documentSaved(Document* NONNULL);
 
     protected:
-        virtual ~Database();
+        virtual ~DatabaseImpl();
         void mustNotBeInTransaction();
 
     private:
-        Database(const string &bundlePath, const C4DatabaseConfig&, FilePath &&dataFilePath);
+        DatabaseImpl(const string &bundlePath, const C4DatabaseConfig&, FilePath &&dataFilePath);
         static FilePath findOrCreateBundle(const string &path, bool canCreate,
                                            C4StorageEngine &outStorageEngine);
         static bool deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine);
         void _cleanupTransaction(bool committed);
         bool getUUIDIfExists(slice key, C4UUID&);
-        C4UUID generateUUID(slice key, litecore::Transaction&, bool overwrite =false);
+        C4UUID generateUUID(slice key, bool overwrite =false);
 
         unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         std::unordered_set<std::string> collectBlobs();
@@ -185,7 +159,7 @@ namespace c4Internal {
 
         C4DocumentVersioning checkDocumentVersioning();
         void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,
-                                       litecore::Transaction&);
+                                       ExclusiveTransaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
         const string                _name;                  // Database filename (w/o extension)
@@ -193,7 +167,7 @@ namespace c4Internal {
         C4DatabaseConfig2           _config;                // Configuration
         C4DatabaseConfig            _configV1;              // TODO: DEPRECATED
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
-        litecore::Transaction*      _transaction {nullptr}; // Current Transaction, or null
+        ExclusiveTransaction*      _transaction {nullptr}; // Current Transaction, or null
         int                         _transactionLevel {0};  // Nesting level of transaction
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
         mutable unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder

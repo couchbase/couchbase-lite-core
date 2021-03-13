@@ -322,19 +322,19 @@ namespace litecore {
 #pragma mark - TRANSACTION:
 
     
-    void DataFile::beginTransactionScope(Transaction* t) {
+    void DataFile::beginTransactionScope(ExclusiveTransaction* t) {
         Assert(!_inTransaction);
         checkOpen();
         _shared->setTransaction(t);
         _inTransaction = true;
     }
 
-    void DataFile::transactionBegan(Transaction*) {
+    void DataFile::transactionBegan(ExclusiveTransaction*) {
         if (documentKeys())
             _documentKeys->transactionBegan();
     }
 
-    void DataFile::transactionEnding(Transaction*, bool committing) {
+    void DataFile::transactionEnding(ExclusiveTransaction*, bool committing) {
         if (_documentKeys) {
             if (committing)
                 _documentKeys->save();
@@ -343,7 +343,7 @@ namespace litecore {
         }
     }
     
-    void DataFile::endTransactionScope(Transaction* t) {
+    void DataFile::endTransactionScope(ExclusiveTransaction* t) {
         _shared->unsetTransaction(t);
         _inTransaction = false;
         if (_documentKeys)
@@ -351,7 +351,7 @@ namespace litecore {
     }
 
 
-    Transaction& DataFile::transaction() {
+    ExclusiveTransaction& DataFile::transaction() {
         Assert(_inTransaction);
         return *_shared->transaction();
     }
@@ -361,17 +361,17 @@ namespace litecore {
         if (_inTransaction) {
             fn();
         } else {
-            Transaction t(this, false);
+            ExclusiveTransaction t(this, false);
             fn();
         }
     }
 
 
-    Transaction::Transaction(DataFile* db)
-    :Transaction(db, true)
+    ExclusiveTransaction::ExclusiveTransaction(DataFile* db)
+    :ExclusiveTransaction(db, true)
     { }
 
-    Transaction::Transaction(DataFile* db, bool active)
+    ExclusiveTransaction::ExclusiveTransaction(DataFile* db, bool active)
     :_db(*db),
      _active(false)
     {
@@ -386,7 +386,7 @@ namespace litecore {
     }
 
 
-    void Transaction::commit() {
+    void ExclusiveTransaction::commit() {
         Assert(_active, "Transaction is not active");
         _db.transactionEnding(this, true);
         _active = false;
@@ -400,7 +400,7 @@ namespace litecore {
     }
 
 
-    void Transaction::abort() {
+    void ExclusiveTransaction::abort() {
         Assert(_active, "Transaction is not active");
         _db.transactionEnding(this, false);
         _active = false;
@@ -410,7 +410,7 @@ namespace litecore {
     }
 
 
-    void Transaction::notifyCommitted(SequenceTracker &sequenceTracker) {
+    void ExclusiveTransaction::notifyCommitted(SequenceTracker &sequenceTracker) {
         _db.forOtherDataFiles([&](DataFile *other) {
             if (other->delegate())
                 other->delegate()->externalTransactionCommitted(sequenceTracker);
@@ -418,7 +418,7 @@ namespace litecore {
     }
 
 
-    Transaction::~Transaction() {
+    ExclusiveTransaction::~ExclusiveTransaction() {
         if (_active) {
             _db._logInfo("Transaction exiting scope without explicit commit; aborting");
             abort();

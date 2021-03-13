@@ -39,7 +39,7 @@ namespace fleece { namespace impl {
 namespace litecore {
 
     class Query;
-    class Transaction;
+    class ExclusiveTransaction;
     class SequenceTracker;
 
 
@@ -206,10 +206,10 @@ namespace litecore {
         virtual KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) =0;
 
         /** Override to begin a database transaction. */
-        virtual void _beginTransaction(Transaction* t NONNULL) =0;
+        virtual void _beginTransaction(ExclusiveTransaction* t NONNULL) =0;
 
         /** Override to commit or abort a database transaction. */
-        virtual void _endTransaction(Transaction* t NONNULL, bool commit) =0;
+        virtual void _endTransaction(ExclusiveTransaction* t NONNULL, bool commit) =0;
 
         /** Is this DataFile object currently in a transaction? */
         bool inTransaction() const                      {return _inTransaction;}
@@ -234,7 +234,7 @@ namespace litecore {
     private:
         class Shared;
         friend class KeyStore;
-        friend class Transaction;
+        friend class ExclusiveTransaction;
         friend class ReadOnlyTransaction;
         friend class DocumentKeys;
 
@@ -242,11 +242,11 @@ namespace litecore {
                                    Shared *shared, Factory &factory);
         
         KeyStore& addKeyStore(const std::string &name, KeyStore::Capabilities);
-        void beginTransactionScope(Transaction*);
-        void transactionBegan(Transaction*);
-        void transactionEnding(Transaction*, bool committing);
-        void endTransactionScope(Transaction*);
-        Transaction& transaction();
+        void beginTransactionScope(ExclusiveTransaction*);
+        void transactionBegan(ExclusiveTransaction*);
+        void transactionEnding(ExclusiveTransaction*, bool committing);
+        void endTransactionScope(ExclusiveTransaction*);
+        ExclusiveTransaction& transaction();
 
         DataFile(const DataFile&) = delete;
         DataFile& operator=(const DataFile&) = delete;
@@ -267,13 +267,14 @@ namespace litecore {
     /** Grants exclusive write access to a DataFile while in scope.
         The transaction is committed when the object exits scope, unless abort() was called.
         Only one Transaction object can be created on a database file at a time.
-        Not just per DataFile object; per database _file_. */
-    class Transaction {
+        Not just per DataFile object; per database _file_.
+        That means THESE DO NOT NEST! (The higher level C4Database::Transaction does nest.) */
+    class ExclusiveTransaction {
     public:
-        explicit Transaction(DataFile*);
-        explicit Transaction(DataFile &db)  :Transaction(&db) { }
-        explicit Transaction(const unique_ptr<DataFile>& db)  :Transaction(db.get()) { }
-        ~Transaction();
+        explicit ExclusiveTransaction(DataFile*);
+        explicit ExclusiveTransaction(DataFile &db)  :ExclusiveTransaction(&db) { }
+        explicit ExclusiveTransaction(const unique_ptr<DataFile>& db)  :ExclusiveTransaction(db.get()) { }
+        ~ExclusiveTransaction();
 
         DataFile& dataFile() const          {return _db;}
 
@@ -286,8 +287,8 @@ namespace litecore {
         friend class DataFile;
         friend class KeyStore;
 
-        Transaction(DataFile*, bool begin);
-        Transaction(const Transaction&) = delete;
+        ExclusiveTransaction(DataFile*, bool begin);
+        ExclusiveTransaction(const ExclusiveTransaction&) = delete;
 
         DataFile&   _db;        // The DataFile
         bool _active;           // Is there an open transaction at the db level?

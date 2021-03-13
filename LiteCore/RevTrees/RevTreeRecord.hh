@@ -29,7 +29,7 @@ namespace fleece { namespace impl {
 
 namespace litecore {
     class KeyStore;
-    class Transaction;
+    class ExclusiveTransaction;
 
     /** Manages storage of a serialized RevTree in a Record. */
     class RevTreeRecord final : public RevTree {
@@ -66,7 +66,7 @@ namespace litecore {
         bool changed() const FLPURE        {return _changed;}
 
         enum SaveResult {kConflict, kNoNewSequence, kNewSequence};
-        SaveResult save(Transaction& transaction);
+        SaveResult save(ExclusiveTransaction& transaction);
 
         bool updateMeta();
 

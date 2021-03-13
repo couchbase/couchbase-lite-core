@@ -26,7 +26,7 @@
 
 namespace litecore {
     class KeyStore;
-    class Transaction;
+    class ExclusiveTransaction;
     class Version;
     class VersionVector;
 
@@ -186,7 +186,7 @@ namespace litecore {
 
         /// Saves changes, if any, back to the KeyStore.
         /// \note  Most errors are thrown as exceptions, but a conflict is returned as `kConflict`.
-        SaveResult save(Transaction &t);
+        SaveResult save(ExclusiveTransaction &t);
 
         /// Returns the `body` and `extra` Record values representing the current in-memory state.
         /// This is used by the \ref save method and the database upgrader. Shouldn't be needed elsewhere.

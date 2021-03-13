@@ -134,7 +134,7 @@ namespace litecore {
 
     private:
         friend class KeyStore;
-        friend class Transaction;
+        friend class ExclusiveTransaction;
         friend class RecordEnumerator;
 
         alloc_slice     _key, _version, _body, _extra;  // The key, metadata and body of the record

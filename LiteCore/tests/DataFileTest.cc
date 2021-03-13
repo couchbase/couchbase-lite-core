@@ -66,7 +66,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Delete DB", "[DataFile]") {
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]") {
     alloc_slice key("key");
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         RecordUpdate rec(key, "body"_sl);
         rec.version = "version"_sl;
         rec.extra = "extra"_sl;
@@ -118,7 +118,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]")
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") {
     {
         //WORKAROUND: Add a rec before the main transaction so it doesn't start at sequence 0
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         Record rec("a"_sl);
         rec.setBody("A"_sl);
         store->set(rec, true, t);
@@ -129,7 +129,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
     REQUIRE(aliased_db->defaultKeyStore().get("a"_sl).body() == alloc_slice("A"));
 
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         Record rec("rec"_sl);
         rec.setVersion("m-e-t-a"_sl);
         rec.setBody("THIS IS THE BODY"_sl);
@@ -161,7 +161,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
 
 
 static void createNumberedDocs(KeyStore *store, int n =100, bool withAssertions =true) {
-    Transaction t(store->dataFile());
+    ExclusiveTransaction t(store->dataFile());
     for (int i = 1; i <= n; i++) {
         string docID = stringWithFormat("rec-%03d", i);
         RecordUpdate rec(docID, docID);
@@ -233,12 +233,12 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[Data
     Record a("a");
     a.setBody("A");
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         store->set(a, true, t);
         t.commit();
     }
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         createDoc("x"_sl, "X"_sl, t);
         a.setBody("Z");
         store->set(a, true, t);
@@ -259,7 +259,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate",
     const unsigned kNDocs = 100;
 
     for (unsigned t = 1; t <= kNTransactions; t++) {
-        Transaction trans(db);
+        ExclusiveTransaction trans(db);
         for (unsigned d = 1; d <= kNDocs; d++) {
             string docID = stringWithFormat("%03lu.%03lu", (unsigned long)t, (unsigned long)d);
             createDoc(slice(docID), "some record content goes here"_sl, trans);
@@ -283,13 +283,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate",
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]") {
     slice key("a");
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         createDoc(key, "A"_sl, t);
         t.commit();
     }
     REQUIRE(store->lastSequence() == 1);
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         store->del(key, t);
         t.commit();
     }
@@ -302,13 +302,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]")
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]") {
     slice key("a");
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         createDoc(key, "A"_sl, t);
         t.commit();
     }
 
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         Record rec = store->get(key);
         store->del(rec, t);
         t.commit();
@@ -324,13 +324,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]")
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[DataFile]") {
     slice key("a");
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         createDoc(key, "A"_sl, t);
         t.commit();
     }
 
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         Record rec = store->get(key);
         store->del(rec, t);
         t.commit();
@@ -360,7 +360,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreInfo", "[DataFile
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStore Create-Then-Abort", "[DataFile]") {
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         KeyStore &s = db->getKeyStore("store", KeyStore::noSequences);
         s.setKV("key"_sl, "value"_sl, t);
         t.abort();
@@ -368,7 +368,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStore Create-Then-Abor
     // KeyStore's table `kv_store` doesn't exist on disk because the transaction was aborted.
     // Now try to write to it again -- the KeyStore should repeat the CREATE TABLE command.
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         KeyStore &s = db->getKeyStore("store", KeyStore::noSequences);
         s.setKV("key"_sl, "value"_sl, t);
         t.commit();
@@ -380,7 +380,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFil
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         createDoc(s, key, "value"_sl, t);
         t.commit();
     }
@@ -400,7 +400,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Conditional Write", "[Dat
     sequence_t oldSeq = 0;
     sequence_t newSeq;
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         RecordUpdate rec(key, "initialvalue"_sl);
         rec.sequence = oldSeq;
         newSeq = s.set(rec, true, t);
@@ -417,7 +417,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Conditional Write", "[Dat
     REQUIRE(s.get(key).body() == "initialvalue"_sl);
 
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         RecordUpdate rec(key, "updatedvalue"_sl);
         rec.sequence = newSeq;
         newSeq = s.set(rec, true, t);
@@ -457,7 +457,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[Da
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!throws]") {
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         createDoc("key"_sl, "value"_sl, t);
         t.commit();
     }
@@ -472,7 +472,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
 
     // Attempt to change a rec:
     ExpectException(error::LiteCore, error::NotWriteable, [&]{
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         createDoc("key"_sl, "somethingelse"_sl, t);
         t.commit();
     });
@@ -488,7 +488,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
     createNumberedDocs(store, 10000, false);
 
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         for (int i = 2000; i <= 7000; i++) {
             auto docID = stringWithFormat("rec-%03d", i);
             Record rec = store->get((slice)docID);
@@ -612,7 +612,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
         {
             // Create encrypted db:
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
-            Transaction t(*encryptedDB);
+            ExclusiveTransaction t(*encryptedDB);
             createDoc(encryptedDB->defaultKeyStore(), "k"_sl, "value"_sl, t);
             t.commit();
         }

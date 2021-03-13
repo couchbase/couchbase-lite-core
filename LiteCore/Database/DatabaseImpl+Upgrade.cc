@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "VectorRecord.hh"
 #include "RecordEnumerator.hh"
 #include "RevID.hh"
@@ -37,9 +37,9 @@ namespace c4Internal {
         "v2.x rev-trees", "v3.x rev-trees", "version vectors"};
 
 
-    static void upgradeToVersionVectors(Database*, const Record&, RevTreeRecord&, litecore::Transaction&);
+    static void upgradeToVersionVectors(DatabaseImpl*, const Record&, RevTreeRecord&, ExclusiveTransaction&);
     static pair<alloc_slice, alloc_slice>
-    upgradeRemoteRevs(Database*, Record, RevTreeRecord&, alloc_slice currentVersion);
+    upgradeRemoteRevs(DatabaseImpl*, Record, RevTreeRecord&, alloc_slice currentVersion);
 
 
     static const Rev* commonAncestor(const Rev *a, const Rev *b) {
@@ -53,9 +53,9 @@ namespace c4Internal {
     }
 
 
-    void Database::upgradeDocumentVersioning(C4DocumentVersioning curVersioning,
+    void DatabaseImpl::upgradeDocumentVersioning(C4DocumentVersioning curVersioning,
                                              C4DocumentVersioning newVersioning,
-                                             litecore::Transaction &t)
+                                             ExclusiveTransaction &t)
     {
         if (newVersioning == curVersioning)
             return;
@@ -100,10 +100,10 @@ namespace c4Internal {
 
 
     // Upgrades a Record from rev-trees to version vectors.
-    static void upgradeToVersionVectors(Database *db,
+    static void upgradeToVersionVectors(DatabaseImpl *db,
                                         const Record &rec,
                                         RevTreeRecord &revTree,
-                                        litecore::Transaction &t)
+                                        ExclusiveTransaction &t)
     {
         // Upgrade from rev-trees (v2 or v3) to version-vectors:
         auto currentRev = revTree.currentRevision();
@@ -152,7 +152,7 @@ namespace c4Internal {
 
 
     // Subroutine that does extra work to upgrade a doc with revs tagged as remote.
-    static pair<alloc_slice, alloc_slice> upgradeRemoteRevs(Database *db,
+    static pair<alloc_slice, alloc_slice> upgradeRemoteRevs(DatabaseImpl *db,
                                                             Record rec,
                                                             RevTreeRecord &revTree,
                                                             alloc_slice currentVersion)

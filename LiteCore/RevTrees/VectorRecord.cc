@@ -462,7 +462,7 @@ namespace litecore {
 #pragma mark - SAVING:
 
 
-    VectorRecord::SaveResult VectorRecord::save(Transaction& transaction) {
+    VectorRecord::SaveResult VectorRecord::save(ExclusiveTransaction& transaction) {
         requireRemotes();
         auto [props, revID, flags] = currentRevision();
         props = nullptr; // unused

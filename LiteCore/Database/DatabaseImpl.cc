@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "TreeDocument.hh"
 #include "VectorDocument.hh"
 #include "c4Internal.hh"
@@ -55,15 +55,15 @@ namespace c4Internal {
     static const slice kMaxRevTreeDepthKey = "maxRevTreeDepth"_sl;
     static uint32_t kDefaultMaxRevTreeDepth = 20;
 
-    const slice Database::kPublicUUIDKey = "publicUUID"_sl;
-    const slice Database::kPrivateUUIDKey = "privateUUID"_sl;
+    const slice DatabaseImpl::kPublicUUIDKey = "publicUUID"_sl;
+    const slice DatabaseImpl::kPrivateUUIDKey = "privateUUID"_sl;
 
 
 #pragma mark - LIFECYCLE:
 
 
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
-    /*static*/ FilePath Database::findOrCreateBundle(const string &path,
+    /*static*/ FilePath DatabaseImpl::findOrCreateBundle(const string &path,
                                                      bool canCreate,
                                                      C4StorageEngine &storageEngine)
     {
@@ -107,9 +107,9 @@ namespace c4Internal {
     }
 
 
-    Database::Database(const string &bundlePath,
+    DatabaseImpl::DatabaseImpl(const string &bundlePath,
                        C4DatabaseConfig inConfig)
-    :Database(bundlePath,
+    :DatabaseImpl(bundlePath,
               inConfig,
               findOrCreateBundle(bundlePath,
                                  (inConfig.flags & kC4DB_Create) != 0,
@@ -117,7 +117,7 @@ namespace c4Internal {
     { }
 
     
-    Database::Database(const string &bundlePath,
+    DatabaseImpl::DatabaseImpl(const string &bundlePath,
                        const C4DatabaseConfig &inConfig,
                        FilePath &&dataFilePath)
     :_name(dataFilePath.dir().unextendedName())
@@ -181,7 +181,7 @@ namespace c4Internal {
     }
 
 
-    Database::~Database() {
+    DatabaseImpl::~DatabaseImpl() {
         Assert(_transactionLevel == 0,
                "Database being destructed while in a transaction");
         FLEncoder_Free(_flEncoder);
@@ -195,7 +195,7 @@ namespace c4Internal {
 #pragma mark - HOUSEKEEPING:
 
 
-    C4DocumentVersioning Database::checkDocumentVersioning() {
+    C4DocumentVersioning DatabaseImpl::checkDocumentVersioning() {
         //FIXME: This ought to be done _before_ the SQLite userVersion is updated
         // Compare existing versioning against runtime config:
         auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
@@ -206,7 +206,7 @@ namespace c4Internal {
             return curVersioning;
 
         // Mismatch -- could be a race condition. Open a transaction and recheck:
-        litecore::Transaction t(_dataFile);
+        Transaction t(this);
         versDoc = info.get(slice("versioning"));
         curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
         if (versDoc.exists() && curVersioning >= newVersioning)
@@ -215,11 +215,11 @@ namespace c4Internal {
         // Yup, mismatch confirmed, so deal with it:
         if (versDoc.exists()) {
             // Existing db versioning does not match runtime config!
-            upgradeDocumentVersioning(curVersioning, newVersioning, t);
+            upgradeDocumentVersioning(curVersioning, newVersioning, transaction());
         } else if (_config.flags & kC4DB_Create) {
             // First-time initialization:
-            (void)generateUUID(kPublicUUIDKey, t);
-            (void)generateUUID(kPrivateUUIDKey, t);
+            (void)generateUUID(kPublicUUIDKey);
+            (void)generateUUID(kPrivateUUIDKey);
         } else {
             // Should never occur (existing db must have its versioning marked!)
             error::_throw(error::WrongFormat);
@@ -227,20 +227,20 @@ namespace c4Internal {
 
         // Store new versioning:
         versDoc.setBodyAsUInt((uint64_t)newVersioning);
-        info.setKV(versDoc, t);
+        info.setKV(versDoc, transaction());
         t.commit();
         return newVersioning;
     }
 
 
-    void Database::close() {
+    void DatabaseImpl::close() {
         mustNotBeInTransaction();
         stopBackgroundTasks();
         _dataFile->close();
     }
 
 
-    void Database::deleteDatabase() {
+    void DatabaseImpl::deleteDatabase() {
         mustNotBeInTransaction();
         stopBackgroundTasks();
         FilePath bundle = path().dir();
@@ -249,7 +249,7 @@ namespace c4Internal {
     }
 
 
-    /*static*/ bool Database::deleteDatabaseAtPath(const string &dbPath) {
+    /*static*/ bool DatabaseImpl::deleteDatabaseAtPath(const string &dbPath) {
         // Find the db file in the bundle:
         FilePath bundle {dbPath, ""};
         if (bundle.exists()) {
@@ -267,7 +267,7 @@ namespace c4Internal {
         return bundle.delRecursive();
     }
 
-    bool Database::deleteDatabaseFileAtPath(const string &dbPath,
+    bool DatabaseImpl::deleteDatabaseFileAtPath(const string &dbPath,
                                             C4StorageEngine storageEngine) {
         FilePath path(dbPath);
         DataFile::Factory *factory = nullptr;
@@ -283,7 +283,7 @@ namespace c4Internal {
         return factory->deleteFile(path);
     }
 
-    unordered_set<string> Database::collectBlobs() {
+    unordered_set<string> DatabaseImpl::collectBlobs() {
         RecordEnumerator::Options options;
         options.onlyBlobs = true;
         options.sortOption = kUnsorted;
@@ -327,7 +327,7 @@ namespace c4Internal {
         return usedDigests;
     }
 
-    void Database::maintenance(DataFile::MaintenanceType what) {
+    void DatabaseImpl::maintenance(DataFile::MaintenanceType what) {
         mustNotBeInTransaction();
         dataFile()->maintenance(what);
 
@@ -339,7 +339,7 @@ namespace c4Internal {
     }
 
 
-    void Database::rekey(const C4EncryptionKey *newKey) {
+    void DatabaseImpl::rekey(const C4EncryptionKey *newKey) {
         _dataFile->_logInfo("Rekeying database...");
         C4EncryptionKey keyBuf {kC4EncryptionNone, {}};
         if (!newKey)
@@ -378,22 +378,22 @@ namespace c4Internal {
 
 
     // Callback that takes a base64 blob digest and returns the blob data
-    alloc_slice Database::blobAccessor(const Dict *blobDict) const {
+    alloc_slice DatabaseImpl::blobAccessor(const Dict *blobDict) const {
         return C4BlobStore::getBlobData(FLDict(blobDict), blobStore());
     }
 
 
-    FilePath Database::path() const {
+    FilePath DatabaseImpl::path() const {
         return _dataFile->filePath().dir();
     }
 
 
-    uint64_t Database::countDocuments() {
+    uint64_t DatabaseImpl::countDocuments() {
         return defaultKeyStore().recordCount();
     }
 
 
-    uint32_t Database::maxRevTreeDepth() {
+    uint32_t DatabaseImpl::maxRevTreeDepth() {
         if (_maxRevTreeDepth == 0) {
             auto &info = getKeyStore(DataFile::kInfoKeyStoreName);
             _maxRevTreeDepth = (uint32_t)info.get(kMaxRevTreeDepthKey).bodyAsUInt();
@@ -403,14 +403,14 @@ namespace c4Internal {
         return _maxRevTreeDepth;
     }
 
-    void Database::setMaxRevTreeDepth(uint32_t depth) {
+    void DatabaseImpl::setMaxRevTreeDepth(uint32_t depth) {
         if (depth == 0)
             depth = kDefaultMaxRevTreeDepth;
         KeyStore &info = getKeyStore(DataFile::kInfoKeyStoreName);
         Record rec = info.get(kMaxRevTreeDepthKey);
         if (depth != rec.bodyAsUInt()) {
             rec.setBodyAsUInt(depth);
-            litecore::Transaction t(*_dataFile);
+            ExclusiveTransaction t(*_dataFile);
             info.setKV(rec, t);
             t.commit();
         }
@@ -418,24 +418,24 @@ namespace c4Internal {
     }
 
 
-    KeyStore& Database::defaultKeyStore() const {
+    KeyStore& DatabaseImpl::defaultKeyStore() const {
         return _dataFile->defaultKeyStore();
     }
 
     
-    KeyStore& Database::getKeyStore(const string &nm) const {
+    KeyStore& DatabaseImpl::getKeyStore(const string &nm) const {
         return _dataFile->getKeyStore(nm, KeyStore::noSequences);
     }
 
 
-    BlobStore* Database::blobStore() const {
+    BlobStore* DatabaseImpl::blobStore() const {
         if (!_blobStore)
             _blobStore = createBlobStore("Attachments", _config.encryptionKey);
         return _blobStore.get();
     }
 
 
-    unique_ptr<BlobStore> Database::createBlobStore(const string &dirname,
+    unique_ptr<BlobStore> DatabaseImpl::createBlobStore(const string &dirname,
                                                     C4EncryptionKey encryptionKey) const
     {
         FilePath blobStorePath = path().subdirectoryNamed(dirname);
@@ -449,21 +449,21 @@ namespace c4Internal {
     }
 
 
-    access_lock<SequenceTracker>& Database::sequenceTracker() {
+    access_lock<SequenceTracker>& DatabaseImpl::sequenceTracker() {
         if (!_sequenceTracker)
             error::_throw(error::UnsupportedOperation);
         return *_sequenceTracker;
     }
 
 
-    BackgroundDB* Database::backgroundDatabase() {
+    BackgroundDB* DatabaseImpl::backgroundDatabase() {
         if (!_backgroundDB)
             _backgroundDB.reset(new BackgroundDB(this));
         return _backgroundDB.get();
     }
 
 
-    void Database::stopBackgroundTasks() {
+    void DatabaseImpl::stopBackgroundTasks() {
         if (_housekeeper) {
             _housekeeper->stop();
             _housekeeper = nullptr;
@@ -473,7 +473,7 @@ namespace c4Internal {
     }
 
 
-    bool Database::startHousekeeping() {
+    bool DatabaseImpl::startHousekeeping() {
         if (!_housekeeper) {
             if (_config.flags & kC4DB_ReadOnly)
                 return false;
@@ -487,7 +487,7 @@ namespace c4Internal {
 #pragma mark - UUIDS:
 
 
-    bool Database::getUUIDIfExists(slice key, C4UUID &uuid) {
+    bool DatabaseImpl::getUUIDIfExists(slice key, C4UUID &uuid) {
         auto &store = getKeyStore(toString(kC4InfoStore));
         Record r = store.get(key);
         if (!r.exists() || r.body().size < sizeof(C4UUID))
@@ -497,44 +497,44 @@ namespace c4Internal {
     }
 
     // must be called within a transaction
-    C4UUID Database::generateUUID(slice key, litecore::Transaction &t, bool overwrite) {
+    C4UUID DatabaseImpl::generateUUID(slice key, bool overwrite) {
         C4UUID uuid;
         if (overwrite || !getUUIDIfExists(key, uuid)) {
             auto &store = getKeyStore(toString(kC4InfoStore));
             slice uuidSlice{&uuid, sizeof(uuid)};
             GenerateUUID(uuidSlice);
-            store.setKV(key, uuidSlice, t);
+            store.setKV(key, uuidSlice, transaction());
         }
         return uuid;
     }
 
-    C4UUID Database::getUUID(slice key) {
+    C4UUID DatabaseImpl::getUUID(slice key) {
         C4UUID uuid;
         if (!getUUIDIfExists(key, uuid)) {
-            TransactionHelper t(this);
-            uuid = generateUUID(key, t);
+            Transaction t(this);
+            uuid = generateUUID(key);
             t.commit();
         }
         return uuid;
     }
     
-    void Database::resetUUIDs() {
-        TransactionHelper t(this);
+    void DatabaseImpl::resetUUIDs() {
+        Transaction t(this);
         C4UUID previousPrivate = getUUID(kPrivateUUIDKey);
         auto &store = getKeyStore(toString(kC4InfoStore));
         store.setKV(constants::kPreviousPrivateUUIDKey,
                     {&previousPrivate, sizeof(C4UUID)},
                     transaction());
-        generateUUID(kPublicUUIDKey, t, true);
-        generateUUID(kPrivateUUIDKey, t, true);
+        generateUUID(kPublicUUIDKey, true);
+        generateUUID(kPrivateUUIDKey, true);
         t.commit();
     }
 
 
-    uint64_t Database::myPeerID() const {
+    uint64_t DatabaseImpl::myPeerID() const {
         if (_myPeerID == 0) {
             // Compute my peer ID from the first 64 bits of the public UUID.
-            auto uuid = const_cast<Database*>(this)->getUUID(kPublicUUIDKey);
+            auto uuid = const_cast<DatabaseImpl*>(this)->getUUID(kPublicUUIDKey);
             memcpy(&_myPeerID, &uuid, sizeof(_myPeerID));
             _myPeerID = endian::dec64(_myPeerID);
             // Don't let it be zero:
@@ -548,9 +548,9 @@ namespace c4Internal {
 #pragma mark - TRANSACTIONS:
 
 
-    void Database::beginTransaction() {
+    void DatabaseImpl::beginTransaction() {
         if (++_transactionLevel == 1) {
-            _transaction = new litecore::Transaction(_dataFile.get());
+            _transaction = new ExclusiveTransaction(_dataFile.get());
             if (_sequenceTracker) {
                 _sequenceTracker->use([](SequenceTracker &st) {
                     st.beginTransaction();
@@ -559,24 +559,24 @@ namespace c4Internal {
         }
     }
 
-    bool Database::inTransaction() noexcept {
+    bool DatabaseImpl::inTransaction() noexcept {
         return _transactionLevel > 0;
     }
 
 
-    void Database::mustBeInTransaction() {
+    void DatabaseImpl::mustBeInTransaction() {
         if (!inTransaction())
             error::_throw(error::NotInTransaction);
     }
 
-    bool Database::mustBeInTransaction(C4Error *outError) noexcept {
+    bool DatabaseImpl::mustBeInTransaction(C4Error *outError) noexcept {
         if (inTransaction())
             return true;
         c4error_return(LiteCoreDomain, kC4ErrorNotInTransaction, {}, outError);
         return false;
     }
 
-    bool Database::mustNotBeInTransaction(C4Error *outError) noexcept {
+    bool DatabaseImpl::mustNotBeInTransaction(C4Error *outError) noexcept {
         if (!inTransaction())
             return true;
         c4error_return(LiteCoreDomain, kC4ErrorTransactionNotClosed, {}, outError);
@@ -584,7 +584,7 @@ namespace c4Internal {
     }
 
 
-    void Database::endTransaction(bool commit) {
+    void DatabaseImpl::endTransaction(bool commit) {
         if (_transactionLevel == 0)
             error::_throw(error::NotInTransaction);
         if (--_transactionLevel == 0) {
@@ -604,7 +604,7 @@ namespace c4Internal {
 
 
     // The cleanup part of endTransaction
-    void Database::_cleanupTransaction(bool committed) {
+    void DatabaseImpl::_cleanupTransaction(bool committed) {
         if (_sequenceTracker) {
             _sequenceTracker->use([&](SequenceTracker &st) {
                 if (committed && st.changedDuringTransaction()) {
@@ -619,7 +619,7 @@ namespace c4Internal {
     }
 
 
-    void Database::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
+    void DatabaseImpl::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
         if (_sequenceTracker) {
             _sequenceTracker->use([&](SequenceTracker &st) {
                 st.addExternalTransaction(sourceTracker);
@@ -628,13 +628,13 @@ namespace c4Internal {
     }
 
 
-    void Database::mustNotBeInTransaction() {
+    void DatabaseImpl::mustNotBeInTransaction() {
         if (inTransaction())
             error::_throw(error::TransactionNotClosed);
     }
 
 
-    litecore::Transaction& Database::transaction() const {
+    ExclusiveTransaction& DatabaseImpl::transaction() const {
         auto t = _transaction;
         if (!t) error::_throw(error::NotInTransaction);
         return *t;
@@ -644,7 +644,7 @@ namespace c4Internal {
 #pragma mark - DOCUMENTS:
 
     
-    Retained<Document> Database::getDocument(slice docID,
+    Retained<Document> DatabaseImpl::getDocument(slice docID,
                                              bool mustExist,
                                              C4DocContentLevel content) const
     {
@@ -655,12 +655,12 @@ namespace c4Internal {
     }
 
 
-    Record Database::getRawRecord(const string &storeName, slice key) {
+    Record DatabaseImpl::getRawRecord(const string &storeName, slice key) {
         return getKeyStore(storeName).get(key);
     }
 
 
-    void Database::putRawRecord(const string &storeName, slice key, slice meta, slice body) {
+    void DatabaseImpl::putRawRecord(const string &storeName, slice key, slice meta, slice body) {
         KeyStore &localDocs = getKeyStore(storeName);
         auto &t = transaction();
         if (body.buf || meta.buf)
@@ -670,13 +670,13 @@ namespace c4Internal {
     }
 
 
-    fleece::impl::Encoder& Database::sharedEncoder() const {
+    fleece::impl::Encoder& DatabaseImpl::sharedEncoder() const {
         _encoder->reset();
         return *_encoder.get();
     }
 
 
-    FLEncoder Database::sharedFLEncoder() const {
+    FLEncoder DatabaseImpl::sharedFLEncoder() const {
         if (_flEncoder) {
             FLEncoder_Reset(_flEncoder);
         } else {
@@ -725,7 +725,7 @@ namespace c4Internal {
     }
 
 
-    void Database::validateRevisionBody(slice body) {
+    void DatabaseImpl::validateRevisionBody(slice body) {
         if (body.size > 0) {
             Scope scope(body, documentKeys());
             const Value *v = Value::fromData(body);
@@ -743,7 +743,7 @@ namespace c4Internal {
     }
 
 
-    void Database::documentSaved(Document* doc) {
+    void DatabaseImpl::documentSaved(Document* doc) {
         // CBL-1089
         // Conflicted documents are not eligible to be replicated,
         // so ignore them.  Later when the conflict is resolved
@@ -760,7 +760,7 @@ namespace c4Internal {
     }
 
 
-    bool Database::purgeDocument(slice docID) {
+    bool DatabaseImpl::purgeDocument(slice docID) {
         if (!defaultKeyStore().del(docID, transaction()))
             return false;
         if (_sequenceTracker) {
@@ -772,7 +772,7 @@ namespace c4Internal {
     }
 
 
-    int64_t Database::purgeExpiredDocs() {
+    int64_t DatabaseImpl::purgeExpiredDocs() {
         if (_sequenceTracker) {
             return _sequenceTracker->use<int64_t>([&](SequenceTracker &st) {
                 return _dataFile->defaultKeyStore().expireRecords([&](slice docID) {
@@ -785,9 +785,9 @@ namespace c4Internal {
     }
 
 
-    bool Database::setExpiration(slice docID, expiration_t expiration) {
+    bool DatabaseImpl::setExpiration(slice docID, expiration_t expiration) {
         {
-            TransactionHelper t(this);
+            Transaction t(this);
             if (!_dataFile->defaultKeyStore().setExpiration(docID, expiration))
                 return false;
             t.commit();

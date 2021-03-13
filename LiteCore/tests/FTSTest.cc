@@ -49,13 +49,13 @@ public:
     FTSTest()
     :DataFileTestFixture(0, dbOptions())
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         for (int i = 0; i < sizeof(kStrings)/sizeof(kStrings[0]); i++)
             createDoc(t, i, kStrings[i]);
         t.commit();
     }
 
-    void createDoc(Transaction &t, int i, string sentence) {
+    void createDoc(ExclusiveTransaction &t, int i, string sentence) {
         string docID = stringWithFormat("rec-%03d", i);
 
         fleece::impl::Encoder enc;
@@ -209,7 +209,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Partial Index", "[Query][FTS]") {
 
     // Now update docs so one is removed from the index and another added:
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         createDoc(t, 4, "The expression on the right must be a text value specifying the term to search for. For the table-valued function syntax, the term to search for is specified as the first table argument.");
         createDoc(t, 1, "Search, search");
         t.commit();
@@ -234,7 +234,7 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     }
 
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc(slice("movies"), DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("Title");
             enc.writeString("Top 100 movies");
@@ -359,7 +359,7 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
 
 TEST_CASE_METHOD(FTSTest, "Test with Dictionary Values", "[FTS][Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc(slice("dict"), DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("dict_value");
             enc.beginDictionary(2);
@@ -382,7 +382,7 @@ TEST_CASE_METHOD(FTSTest, "Test with Dictionary Values", "[FTS][Query]") {
 
 TEST_CASE_METHOD(FTSTest, "Test with non-string values", "[FTS][Query]") {
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc("1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("value");
             enc.writeBool(true);
@@ -467,7 +467,7 @@ TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
     CHECK(store->createIndex("ftsIndex"_sl, "[[\".key-fts\"]]"_sl, IndexSpec::kFullText, &options));
     
     {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("key-fts");
             enc.writeString("some terms to search against");
