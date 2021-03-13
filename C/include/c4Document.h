@@ -25,6 +25,7 @@
 #endif
 
 C4_ASSUME_NONNULL_BEGIN
+C4API_BEGIN_DECLS
 
 
     /** \defgroup Documents Documents
@@ -50,9 +51,6 @@ C4_ASSUME_NONNULL_BEGIN
         @{ */
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
     #define kC4GeneratedIDLength 23
 
@@ -343,8 +341,6 @@ extern "C" {
 
     /** @} */
     /** @} */
-#ifdef __cplusplus
-}
-#endif
 
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

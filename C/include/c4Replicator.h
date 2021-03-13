@@ -20,10 +20,7 @@
 #include "c4ReplicatorTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+C4API_BEGIN_DECLS
 
     /** \defgroup Replicator Replicator
         @{ */
@@ -214,8 +211,5 @@ extern "C" {
 
     /** @} */
 
-#ifdef __cplusplus
-}
-#endif
-
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

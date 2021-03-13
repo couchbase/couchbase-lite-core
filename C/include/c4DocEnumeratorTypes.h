@@ -21,6 +21,7 @@
 #include "c4DocumentTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN
+C4API_BEGIN_DECLS
 
 
 /** \defgroup DocEnumerator  Document Enumeration
@@ -67,4 +68,5 @@ typedef struct C4DocumentInfo {
 
 /** @} */
 
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

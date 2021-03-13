@@ -20,6 +20,7 @@
 #include "c4Base.h"
 
 C4_ASSUME_NONNULL_BEGIN
+C4API_BEGIN_DECLS
 
 
 /** \defgroup Documents Documents
@@ -127,4 +128,5 @@ typedef struct {
 /** @} */
 
 
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

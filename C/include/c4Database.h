@@ -20,10 +20,7 @@
 #include "c4DatabaseTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+C4API_BEGIN_DECLS
 
     /** \defgroup Database Databases
         @{ */
@@ -62,10 +59,6 @@ extern "C" {
     //////// DATABASE API:
 
     
-    /** Filename extension of databases -- ".cblite2". Includes the period. */
-    CBL_CORE_API extern const char* const kC4DatabaseFilenameExtension;
-
-
     /** \name Lifecycle
         @{ */
 
@@ -227,13 +220,6 @@ extern "C" {
         @{ */
 
 
-    /** Contents of a raw document. */
-    struct C4RawDocument {
-        C4String key;    ///< The key (document ID)
-        C4String meta;   ///< Metadata (usage is up to the caller)
-        C4String body;   ///< Body data
-    };
-
     /** Frees the storage occupied by a raw document. */
     void c4raw_free(C4RawDocument* C4NULLABLE rawDoc) C4API;
 
@@ -283,8 +269,5 @@ extern "C" {
     C4_DEPRECATED("Use c4db_maintenance")
     bool c4db_compact(C4Database* database, C4Error* C4NULLABLE outError) C4API;
 
-#ifdef __cplusplus
-}
-#endif
-
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

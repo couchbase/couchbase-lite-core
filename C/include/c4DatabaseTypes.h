@@ -22,6 +22,7 @@
 
 
 C4_ASSUME_NONNULL_BEGIN
+C4API_BEGIN_DECLS
 
 
 /** \defgroup Database Databases
@@ -71,6 +72,10 @@ typedef struct C4DatabaseConfig2 {
     C4DatabaseFlags flags;          ///< Flags for opening db, versioning, ...
     C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
 } C4DatabaseConfig2;
+
+
+/** Filename extension of databases -- ".cblite2". Includes the period. */
+CBL_CORE_API extern const char* const kC4DatabaseFilenameExtension;
 
 
 /** @} */
@@ -125,6 +130,21 @@ typedef C4_ENUM(uint32_t, C4MaintenanceType) {
 /** @} */
 
 
+/** \defgroup RawDocs Raw Documents
+    @{ */
+
+
+/** Contents of a raw document. */
+struct C4RawDocument {
+    C4String key;    ///< The key (document ID)
+    C4String meta;   ///< Metadata (usage is up to the caller)
+    C4String body;   ///< Body data
+};
+
+
+/** @} */
+
+
 //-------- DEPRECATED --------
 
 typedef C4_ENUM(uint32_t, C4DocumentVersioning) {
@@ -144,4 +164,5 @@ typedef struct C4DatabaseConfig {
 } C4DatabaseConfig;
 
 
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

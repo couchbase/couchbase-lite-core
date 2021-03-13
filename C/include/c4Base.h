@@ -29,11 +29,11 @@
 #include "fleece/slice.hh"
 #include <exception>
 #include <string>
-extern "C" {
 #endif
 
 
 C4_ASSUME_NONNULL_BEGIN
+C4API_BEGIN_DECLS
 
 
 /** \defgroup Base  Data Types and Base Functions
@@ -555,9 +555,5 @@ void c4_runAsyncTask(void (*task)(void*), void* C4NULLABLE context) C4API;
 /** @} */
 
 
-
-#ifdef __cplusplus
-}
-#endif
-
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

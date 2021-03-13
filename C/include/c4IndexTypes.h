@@ -20,6 +20,7 @@
 #include "c4Base.h"
 
 C4_ASSUME_NONNULL_BEGIN
+C4API_BEGIN_DECLS
 
 
 /** \defgroup Indexing  Database Indexes
@@ -72,4 +73,5 @@ typedef struct {
 
 /** @} */
 
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

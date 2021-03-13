@@ -23,8 +23,6 @@ FOUNDATION_EXPORT double LiteCoreVersionNumber;
 //! Project version string for LiteCore.
 FOUNDATION_EXPORT const unsigned char LiteCoreVersionString[];
 
-// In this header, you should import all the public headers of your framework using statements like #import <LiteCore/PublicHeader.h>
-
 
 #import <c4.h>
 
