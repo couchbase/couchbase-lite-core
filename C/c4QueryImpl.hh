@@ -10,7 +10,7 @@
 #include "c4Query.hh"
 #include "c4Internal.hh"
 
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "Query.hh"
 #include "InstanceCounted.hh"
 #include "RefCounted.hh"
@@ -28,7 +28,7 @@ namespace c4Internal {
                                    public C4QueryEnumerator,
                                    fleece::InstanceCountedIn<C4QueryEnumerator>
     {
-        C4QueryEnumeratorImpl(Database *database, Query *query, QueryEnumerator *e)
+        C4QueryEnumeratorImpl(DatabaseImpl *database, Query *query, QueryEnumerator *e)
         :_database(database)
         ,_query(query)
         ,_enum(e)
@@ -97,7 +97,7 @@ namespace c4Internal {
         }
 
     private:
-        Retained<Database> _database;
+        Retained<DatabaseImpl> _database;
         Retained<Query> _query;
         Retained<QueryEnumerator> _enum;
         bool _hasFullText;

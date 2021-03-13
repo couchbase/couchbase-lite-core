@@ -18,7 +18,7 @@
 
 #include "c4Database.hh"
 #include "c4Internal.hh"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "DatabaseCookies.hh"
 #include "CookieStore.hh"
 

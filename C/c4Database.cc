@@ -22,7 +22,7 @@
 #include "c4Observer.hh"
 #include "c4Private.h"
 
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "DatabaseCookies.hh"
 #include "Document.hh"
 #include "KeyStore.hh"
@@ -55,13 +55,13 @@ CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 
 namespace c4Internal {
-    Database* asInternal(C4Database *db) {
-        // Every C4Database is a Database, so we can safely cast to it:
-        return (Database*)db;
+    DatabaseImpl* asInternal(C4Database *db) {
+        // Every C4Database is a DatabaseImpl, so we can safely cast to it:
+        return (DatabaseImpl*)db;
     }
-    static Database* asInternal(const C4Database *db) {
+    static DatabaseImpl* asInternal(const C4Database *db) {
         // Yeah, casting away constness, I know...
-        return (Database*)db;
+        return (DatabaseImpl*)db;
     }
 }
 
@@ -119,7 +119,7 @@ Retained<C4Database> C4Database::openNamed(slice name, const Config &config) {
     ensureConfigDirExists(config);
     FilePath path = dbPath(name, config.parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
-    return new Database(path, oldConfig);
+    return new DatabaseImpl(path, oldConfig);
 }
 
 
@@ -130,7 +130,7 @@ Retained<C4Database> C4Database::openAtPath(slice path,
     C4DatabaseConfig config = {flags};
     if (key)
         config.encryptionKey = *key;
-    return new Database(FilePath(path), config);
+    return new DatabaseImpl(string(path), config);
 }
 
 
@@ -157,12 +157,12 @@ void C4Database::copyFileToPath(slice sourcePath, slice destinationPath,
 
 
 bool C4Database::deleteAtPath(slice path) {
-    return Database::deleteDatabaseAtPath(FilePath(path));
+    return DatabaseImpl::deleteDatabaseAtPath(FilePath(path));
 }
 
 
 bool C4Database::deleteNamed(slice name, slice inDirectory) {
-    return Database::deleteDatabaseAtPath(dbPath(name, inDirectory));
+    return DatabaseImpl::deleteDatabaseAtPath(dbPath(name, inDirectory));
 }
 
 
@@ -210,12 +210,12 @@ alloc_slice C4Database::getPeerID() const {
 
 
 C4UUID C4Database::publicUUID() const {
-    return IMPL->getUUID(Database::kPublicUUIDKey);
+    return IMPL->getUUID(DatabaseImpl::kPublicUUIDKey);
 }
 
 
 C4UUID C4Database::privateUUID() const {
-    return IMPL->getUUID(Database::kPrivateUUIDKey);
+    return IMPL->getUUID(DatabaseImpl::kPrivateUUIDKey);
 }
 
 

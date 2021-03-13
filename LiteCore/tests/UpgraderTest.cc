@@ -18,7 +18,7 @@
 
 #include "Upgrader.hh"
 #include "LiteCoreTest.hh"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "Document.hh"
 #include "BlobStore.hh"
 #include "Logging.hh"
@@ -28,7 +28,7 @@
 using namespace std;
 using namespace fleece;
 
-using Database = c4Internal::Database;
+using Database = c4Internal::DatabaseImpl;
 using Document = c4Internal::Document;
 
 

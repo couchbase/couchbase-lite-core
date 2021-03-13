@@ -26,7 +26,7 @@ namespace c4Internal {
     /** DocumentFactory subclass for rev-tree document schema. */
     class TreeDocumentFactory final : public DocumentFactory {
     public:
-        TreeDocumentFactory(Database *db)   :DocumentFactory(db) { }
+        TreeDocumentFactory(DatabaseImpl *db)   :DocumentFactory(db) { }
         Retained<Document> newDocumentInstance(C4Slice docID, ContentOption) override;
         Retained<Document> newDocumentInstance(const Record&) override;
         bool isFirstGenRevID(slice revID) const override;

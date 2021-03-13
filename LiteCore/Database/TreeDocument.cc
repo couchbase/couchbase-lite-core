@@ -19,7 +19,7 @@
 #include "TreeDocument.hh"
 #include "c4Private.h"
 
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "Record.hh"
 #include "RawRevTree.hh"
 #include "RevTreeRecord.hh"
@@ -41,7 +41,7 @@ namespace c4Internal {
 
     class TreeDocument final : public Document {
     public:
-        TreeDocument(Database* database, C4Slice docID, ContentOption content)
+        TreeDocument(DatabaseImpl* database, C4Slice docID, ContentOption content)
         :Document(database, docID),
          _revTree(database->defaultKeyStore(), docID, content),
          _selectedRev(nullptr)
@@ -50,7 +50,7 @@ namespace c4Internal {
         }
 
 
-        TreeDocument(Database *database, const Record &doc)
+        TreeDocument(DatabaseImpl *database, const Record &doc)
         :Document(database, doc.key()),
          _revTree(database->defaultKeyStore(), doc),
          _selectedRev(nullptr)

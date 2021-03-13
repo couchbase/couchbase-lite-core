@@ -19,7 +19,7 @@
 #include "LiveQuerier.hh"
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include <inttypes.h>
@@ -40,7 +40,7 @@ namespace litecore {
     static constexpr delay_t kLongDelay    = chrono::milliseconds(500);
 
 
-    LiveQuerier::LiveQuerier(c4Internal::Database *db,
+    LiveQuerier::LiveQuerier(c4Internal::DatabaseImpl *db,
                              Query *query,
                              bool continuous,
                              Delegate *delegate)

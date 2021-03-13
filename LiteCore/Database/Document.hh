@@ -19,7 +19,7 @@
 #pragma once
 #include "c4Internal.hh"
 #include "c4Document.h"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "BlobStore.hh"
 #include "InstanceCounted.hh"
 #include "RefCounted.hh"
@@ -179,7 +179,7 @@ namespace c4Internal {
         alloc_slice _selectedRevIDBuf;  // Backing store for C4Document::selectedRevision::revID
 
         template <class SLICE>
-        Document(Database *database, SLICE docID_)
+        Document(DatabaseImpl *database, SLICE docID_)
         :_db(database)
         ,_docIDBuf(move(docID_))
         {
@@ -203,8 +203,8 @@ namespace c4Internal {
         bool mustBeInTransaction(C4Error *err) noexcept {return _db->mustBeInTransaction(err);}
         void mustBeInTransaction()                      {_db->mustBeInTransaction();}
 
-        Database* database()                                            {return _db;}
-        const Database* database() const                                {return _db;}
+        DatabaseImpl* database()                                            {return _db;}
+        const DatabaseImpl* database() const                                {return _db;}
 
         virtual bool exists() =0;
         virtual bool loadRevisions() MUST_USE_RESULT =0;
@@ -248,7 +248,7 @@ namespace c4Internal {
             error::_throw(error::UnsupportedOperation);
         }
 
-        Retained<Database> _db;
+        Retained<DatabaseImpl> _db;
     };
 
 
@@ -260,9 +260,9 @@ namespace c4Internal {
     /** Abstract interface for creating Document instances; owned by a Database. */
     class DocumentFactory {
     public:
-        DocumentFactory(Database *db)                       :_db(db) { }
+        DocumentFactory(DatabaseImpl *db)                       :_db(db) { }
         virtual ~DocumentFactory()                          { }
-        Database* database() const                          {return _db;}
+        DatabaseImpl* database() const                          {return _db;}
 
         virtual bool isFirstGenRevID(slice revID) const     {return false;}
 
@@ -275,7 +275,7 @@ namespace c4Internal {
                                                        bool mustHaveBodies,
                                                        C4RemoteID remoteDBID) =0;
     private:
-        Database* const _db;    // Unretained, to avoid ref-cycle with Database
+        DatabaseImpl* const _db;    // Unretained, to avoid ref-cycle with Database
     };
 
 

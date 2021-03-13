@@ -1,5 +1,5 @@
 //
-// Database.hh
+// DatabaseImpl.hh
 //
 // Copyright (c) 2016 Couchbase, Inc All rights reserved.
 //
@@ -50,7 +50,7 @@ namespace c4Internal {
 
     /** The implementation of the C4Database class. */
     class DatabaseImpl final : public C4Database,
-                           public DataFile::Delegate
+                               public DataFile::Delegate
     {
     public:
         DatabaseImpl(const string &path, C4DatabaseConfig config);
@@ -167,10 +167,10 @@ namespace c4Internal {
         C4DatabaseConfig2           _config;                // Configuration
         C4DatabaseConfig            _configV1;              // TODO: DEPRECATED
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
-        ExclusiveTransaction*      _transaction {nullptr}; // Current Transaction, or null
-        int                         _transactionLevel {0};  // Nesting level of transaction
+        ExclusiveTransaction*       _transaction {nullptr}; // Current ExclusiveTransaction, or null
+        int                         _transactionLevel {0};  // Nesting level of transactions
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
-        mutable unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder
+        mutable unique_ptr<fleece::impl::Encoder> _encoder; // Shared Fleece Encoder
         mutable FLEncoder           _flEncoder {nullptr};   // Ditto, for clients
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
         mutable unique_ptr<BlobStore> _blobStore;           // Blob storage

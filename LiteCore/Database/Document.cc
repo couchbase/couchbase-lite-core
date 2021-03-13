@@ -166,7 +166,7 @@ namespace c4Internal {
 
 
     // Is this a PutRequest that doesn't require a Record to exist already?
-    static bool isNewDocPutRequest(Database *database, const C4DocPutRequest &rq) {
+    static bool isNewDocPutRequest(DatabaseImpl *database, const C4DocPutRequest &rq) {
         if (rq.deltaCB)
             return false;
         else if (rq.existingRevision)
@@ -177,7 +177,7 @@ namespace c4Internal {
 
 
     // Tries to fulfil a PutRequest by creating a new Record. Returns null if one already exists.
-    static pair<Retained<Document>,int> putNewDoc(Database *database,
+    static pair<Retained<Document>,int> putNewDoc(DatabaseImpl *database,
                                                   const C4DocPutRequest &rq)
     {
         DebugAssert(rq.save, "putNewDoc optimization works only if rq.save is true");
@@ -290,7 +290,7 @@ namespace c4Internal {
     }
 
 
-    Retained<Document> Database::putDocument(const C4DocPutRequest &rq,
+    Retained<Document> DatabaseImpl::putDocument(const C4DocPutRequest &rq,
                                                size_t *outCommonAncestorIndex,
                                                C4Error *outError)
     {

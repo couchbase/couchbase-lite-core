@@ -20,7 +20,7 @@
 #include "c4Database.hh"
 #include "c4Document+Fleece.h"
 #include "BlobStore.hh"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "Base64.hh"
 #include "Error.hh"
 #include "StringUtil.hh"

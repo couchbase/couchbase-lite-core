@@ -30,7 +30,7 @@
 #include "TreeDocument.hh"
 #include "VectorDocument.hh"
 #include "Document.hh"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "LegacyAttachments.hh"
 #include "RevTree.hh"   // only for kDefaultRemoteID
 #include "SecureRandomize.hh"

@@ -100,7 +100,7 @@ public:
     }
 
 private:
-    Retained<Database> _database;
+    Retained<DatabaseImpl> _database;
     C4EnumeratorOptions const _options;
     alloc_slice _docRevID;
 };

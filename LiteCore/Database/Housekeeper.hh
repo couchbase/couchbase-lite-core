@@ -11,7 +11,7 @@
 #include "Timer.hh"
 
 namespace c4Internal {
-    class Database;
+    class DatabaseImpl;
 }
 
 namespace litecore {
@@ -20,7 +20,7 @@ namespace litecore {
     class Housekeeper : public actor::Actor {
     public:
         /// Creates a Housekeeper for a Database.
-        explicit Housekeeper(c4Internal::Database* NONNULL);
+        explicit Housekeeper(c4Internal::DatabaseImpl* NONNULL);
 
         /// Asynchronously starts the Housekeeper task.
         void start();

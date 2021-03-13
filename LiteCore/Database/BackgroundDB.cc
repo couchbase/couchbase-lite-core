@@ -18,7 +18,7 @@
 
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "SequenceTracker.hh"
 #include "c4ExceptionUtils.hh"
 
@@ -28,7 +28,7 @@ namespace litecore {
     using namespace std;
 
 
-    BackgroundDB::BackgroundDB(c4Internal::Database *db)
+    BackgroundDB::BackgroundDB(c4Internal::DatabaseImpl *db)
     :access_lock(db->dataFile()->openAnother(this))
     ,_database(db)
     { }

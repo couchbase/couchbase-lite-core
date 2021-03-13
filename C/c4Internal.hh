@@ -59,7 +59,7 @@ using namespace litecore;
 
 namespace c4Internal {
 
-    class Database;
+    class DatabaseImpl;
 
     // ERRORS & EXCEPTIONS:
 
@@ -78,5 +78,5 @@ namespace c4Internal {
 
     void destructExtraInfo(C4ExtraInfo&) noexcept;
 
-    Database* asInternal(C4Database *db);
+    DatabaseImpl* asInternal(C4Database *db);
 }

@@ -26,7 +26,7 @@
 #include "c4QueryImpl.hh"
 #include "c4Internal.hh"
 
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "LiveQuerier.hh"
 #include "SQLiteDataFile.hh"
 #include "FleeceImpl.hh"

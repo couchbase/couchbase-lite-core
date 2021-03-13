@@ -19,7 +19,7 @@
 #include "PrebuiltCopier.hh"
 #include "Logging.hh"
 #include "FilePath.hh"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "StringUtil.hh"
 #include "Error.hh"
 #include "c4Database.h"
@@ -48,7 +48,7 @@ namespace litecore {
         from.copyTo(temp);
 
         {
-            auto db = retained(new c4Internal::Database(temp.path(), *config));
+            auto db = retained(new c4Internal::DatabaseImpl(temp.path(), *config));
             db->resetUUIDs();
             db->close();
         }

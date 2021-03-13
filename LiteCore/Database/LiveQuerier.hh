@@ -16,7 +16,7 @@
 #include <memory>
 
 namespace c4Internal {
-    class Database;
+    class DatabaseImpl;
 }
 
 namespace litecore {
@@ -35,7 +35,7 @@ namespace litecore {
             virtual ~Delegate() =default;
         };
 
-        LiveQuerier(c4Internal::Database* NONNULL,
+        LiveQuerier(c4Internal::DatabaseImpl* NONNULL,
                     Query* NONNULL,
                     bool continuous,
                     Delegate* NONNULL);
@@ -58,7 +58,7 @@ namespace litecore {
         void _stop();
         void _dbChanged(clock::time_point);
 
-        Retained<c4Internal::Database> _database;       // The database
+        Retained<c4Internal::DatabaseImpl> _database;       // The database
         BackgroundDB* _backgroundDB;                    // Shadow DB on background thread
         Delegate* _delegate;                            // Whom ya gonna call?
         alloc_slice _expression;                        // The query text

@@ -113,7 +113,7 @@
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
 		273407251DEE116600EA5532 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
 		2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2734F619206ABEB000C982FF /* ReplicatorTypes.cc */; };
-		273855AF25B790B1009D746E /* Database+Upgrade.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273855AE25B790B1009D746E /* Database+Upgrade.cc */; };
+		273855AF25B790B1009D746E /* DatabaseImpl+Upgrade.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273855AE25B790B1009D746E /* DatabaseImpl+Upgrade.cc */; };
 		27393A871C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		273D25F62564666A008643D2 /* VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273D25F52564666A008643D2 /* VectorDocument.cc */; };
 		273E55641F79B4BA000182F1 /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
@@ -356,7 +356,7 @@
 		27E3DD371DB450B300F2872D /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		27E3DD391DB450B300F2872D /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E3DD361DB450B300F2872D /* Logging.hh */; };
 		27E3DD511DB7CCF600F2872D /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
-		27E3DD581DB8524300F2872D /* Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD571DB8524300F2872D /* Database.cc */; };
+		27E3DD581DB8524300F2872D /* DatabaseImpl.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD571DB8524300F2872D /* DatabaseImpl.cc */; };
 		27E48713192171EA007D8940 /* DataFile.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E48711192171EA007D8940 /* DataFile.cc */; };
 		27E487231922A64F007D8940 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
 		27E4872B1923F24D007D8940 /* RevTreeRecord.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* RevTreeRecord.cc */; };
@@ -911,7 +911,7 @@
 		2734F619206ABEB000C982FF /* ReplicatorTypes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorTypes.cc; sourceTree = "<group>"; };
 		273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorLoopbackTest.hh; sourceTree = "<group>"; };
 		273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorAPITest.hh; sourceTree = "<group>"; };
-		273855AE25B790B1009D746E /* Database+Upgrade.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Database+Upgrade.cc"; sourceTree = "<group>"; };
+		273855AE25B790B1009D746E /* DatabaseImpl+Upgrade.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "DatabaseImpl+Upgrade.cc"; sourceTree = "<group>"; };
 		27393A861C8A353A00829C9B /* Error.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
 		273AD3CF18F4B23A007D8C23 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; wrapsLines = 1; };
 		273B541823037A8400E4FC19 /* unix_acceptor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = unix_acceptor.h; sourceTree = "<group>"; };
@@ -1370,7 +1370,7 @@
 		27E35AA01E8DD9AA00E103F9 /* IncomingRev.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = IncomingRev.hh; sourceTree = "<group>"; };
 		27E3DD351DB450B300F2872D /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27E3DD361DB450B300F2872D /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
-		27E3DD571DB8524300F2872D /* Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Database.cc; sourceTree = "<group>"; };
+		27E3DD571DB8524300F2872D /* DatabaseImpl.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseImpl.cc; sourceTree = "<group>"; };
 		27E48711192171EA007D8940 /* DataFile.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFile.cc; sourceTree = "<group>"; };
 		27E48712192171EA007D8940 /* DataFile.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DataFile.hh; sourceTree = "<group>"; };
 		27E487211922A64F007D8940 /* RevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevTree.cc; sourceTree = "<group>"; };
@@ -1477,7 +1477,7 @@
 		27F4F48323070C7F0075D7CB /* tls_context.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tls_context.h; sourceTree = "<group>"; };
 		27F6F51B1BAA0482003FD798 /* c4Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Test.cc; sourceTree = "<group>"; };
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
-		27F7A0BD1D5E2BAB00447BC6 /* Database.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Database.hh; sourceTree = "<group>"; };
+		27F7A0BD1D5E2BAB00447BC6 /* DatabaseImpl.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseImpl.hh; sourceTree = "<group>"; };
 		27FA09D31D70EDBF005888AA /* Catch_Tests.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = Catch_Tests.mm; sourceTree = "<group>"; };
 		27FA568324AD0E9300B2F1F8 /* Pusher+Attachments.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Pusher+Attachments.cc"; sourceTree = "<group>"; };
 		27FA568824AD0F8E00B2F1F8 /* Pusher+Revs.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Pusher+Revs.cc"; sourceTree = "<group>"; };
@@ -2392,9 +2392,9 @@
 		276683B31DC7DCBC00E3F187 /* Database */ = {
 			isa = PBXGroup;
 			children = (
-				27E3DD571DB8524300F2872D /* Database.cc */,
-				27F7A0BD1D5E2BAB00447BC6 /* Database.hh */,
-				273855AE25B790B1009D746E /* Database+Upgrade.cc */,
+				27E3DD571DB8524300F2872D /* DatabaseImpl.cc */,
+				27F7A0BD1D5E2BAB00447BC6 /* DatabaseImpl.hh */,
+				273855AE25B790B1009D746E /* DatabaseImpl+Upgrade.cc */,
 				272F00E9226FC15D00E62F72 /* BackgroundDB.cc */,
 				272F00E3226FC15D00E62F72 /* BackgroundDB.hh */,
 				275B35A4234E753800FE9CF0 /* Housekeeper.cc */,
@@ -4173,12 +4173,12 @@
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
-				273855AF25B790B1009D746E /* Database+Upgrade.cc in Sources */,
+				273855AF25B790B1009D746E /* DatabaseImpl+Upgrade.cc in Sources */,
 				2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */,
 				272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */,
-				27E3DD581DB8524300F2872D /* Database.cc in Sources */,
+				27E3DD581DB8524300F2872D /* DatabaseImpl.cc in Sources */,
 				2744B355241854F2005A194D /* ThreadedMailbox.cc in Sources */,
 				27FB0C3D205B18A500987D9C /* Instrumentation.cc in Sources */,
 				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,

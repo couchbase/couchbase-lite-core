@@ -25,7 +25,7 @@
 #include <functional>
 
 namespace c4Internal {
-    class Database;
+    class DatabaseImpl;
     class Document;
 }
 

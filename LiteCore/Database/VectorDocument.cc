@@ -32,7 +32,7 @@ namespace c4Internal {
 
     class VectorDocument final : public Document {
     public:
-        VectorDocument(Database* database, C4Slice docID, ContentOption whichContent)
+        VectorDocument(DatabaseImpl* database, C4Slice docID, ContentOption whichContent)
         :Document(database, docID)
         ,_doc(database->defaultKeyStore(), Versioning::Vectors, docID, whichContent)
         {
@@ -40,7 +40,7 @@ namespace c4Internal {
         }
 
 
-        VectorDocument(Database *database, const Record &doc)
+        VectorDocument(DatabaseImpl *database, const Record &doc)
         :Document(database, doc.key())
         ,_doc(database->defaultKeyStore(), Versioning::Vectors, doc)
         {

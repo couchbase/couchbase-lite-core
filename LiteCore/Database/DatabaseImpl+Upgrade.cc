@@ -1,5 +1,5 @@
 //
-// Database+Upgrade.cc
+// DatabaseImpl+Upgrade.cc
 //
 // Copyright © 2021 Couchbase. All rights reserved.
 //

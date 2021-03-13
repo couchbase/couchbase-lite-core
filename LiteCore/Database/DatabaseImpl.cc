@@ -1,5 +1,5 @@
 //
-// Database.cc
+// DatabaseImpl.cc
 //
 // Copyright (c) 2016 Couchbase, Inc All rights reserved.
 //
@@ -38,12 +38,11 @@
 #include "PrebuiltCopier.hh"
 #include <functional>
 
-namespace litecore { namespace constants
-{
+namespace litecore::constants {
     const C4Slice kLocalCheckpointStore   = C4STR("checkpoints");
     const C4Slice kPeerCheckpointStore    = C4STR("peerCheckpoints");
     const C4Slice kPreviousPrivateUUIDKey = C4STR("previousPrivateUUID");
-}}
+}
 
 namespace c4Internal {
     using namespace litecore;
@@ -64,8 +63,8 @@ namespace c4Internal {
 
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
     /*static*/ FilePath DatabaseImpl::findOrCreateBundle(const string &path,
-                                                     bool canCreate,
-                                                     C4StorageEngine &storageEngine)
+                                                         bool canCreate,
+                                                         C4StorageEngine &storageEngine)
     {
         FilePath bundle(path, "");
         bool createdDir = (canCreate && bundle.mkdir());
@@ -108,18 +107,18 @@ namespace c4Internal {
 
 
     DatabaseImpl::DatabaseImpl(const string &bundlePath,
-                       C4DatabaseConfig inConfig)
+                               C4DatabaseConfig inConfig)
     :DatabaseImpl(bundlePath,
-              inConfig,
-              findOrCreateBundle(bundlePath,
-                                 (inConfig.flags & kC4DB_Create) != 0,
-                                 inConfig.storageEngine))
+                  inConfig,
+                  findOrCreateBundle(bundlePath,
+                                     (inConfig.flags & kC4DB_Create) != 0,
+                                     inConfig.storageEngine))
     { }
 
     
     DatabaseImpl::DatabaseImpl(const string &bundlePath,
-                       const C4DatabaseConfig &inConfig,
-                       FilePath &&dataFilePath)
+                               const C4DatabaseConfig &inConfig,
+                               FilePath &&dataFilePath)
     :_name(dataFilePath.dir().unextendedName())
     ,_parentDirectory(dataFilePath.dir().parentDir())
     ,_config{slice(_parentDirectory), inConfig.flags, inConfig.encryptionKey}
@@ -268,7 +267,7 @@ namespace c4Internal {
     }
 
     bool DatabaseImpl::deleteDatabaseFileAtPath(const string &dbPath,
-                                            C4StorageEngine storageEngine) {
+                                                C4StorageEngine storageEngine) {
         FilePath path(dbPath);
         DataFile::Factory *factory = nullptr;
         if (storageEngine) {
@@ -436,7 +435,7 @@ namespace c4Internal {
 
 
     unique_ptr<BlobStore> DatabaseImpl::createBlobStore(const string &dirname,
-                                                    C4EncryptionKey encryptionKey) const
+                                                        C4EncryptionKey encryptionKey) const
     {
         FilePath blobStorePath = path().subdirectoryNamed(dirname);
         auto options = BlobStore::Options::defaults;
@@ -645,8 +644,8 @@ namespace c4Internal {
 
     
     Retained<Document> DatabaseImpl::getDocument(slice docID,
-                                             bool mustExist,
-                                             C4DocContentLevel content) const
+                                                 bool mustExist,
+                                                 C4DocContentLevel content) const
     {
         auto doc = documentFactory().newDocumentInstance(docID, ContentOption(content));
         if (mustExist && doc && !doc->exists())

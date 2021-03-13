@@ -21,7 +21,7 @@
 #include "Upgrader.hh"
 #include "SQLite_Internal.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "Document.hh"
 #include "BlobStore.hh"
 #include "FleeceImpl.hh"
@@ -45,11 +45,11 @@ namespace litecore {
     class Upgrader {
     public:
         Upgrader(const FilePath &oldPath, const FilePath &newPath, C4DatabaseConfig config)
-        :Upgrader(oldPath, new Database(newPath.path(), asTreeVersioning(config)))
+        :Upgrader(oldPath, new DatabaseImpl(newPath.path(), asTreeVersioning(config)))
         { }
 
 
-        Upgrader(const FilePath &oldPath, Database *newDB)
+        Upgrader(const FilePath &oldPath, DatabaseImpl *newDB)
         :_oldPath(oldPath)
         ,_oldDB(oldPath["db.sqlite3"].path(), SQLite::OPEN_READWRITE) // *
         ,_newDB(newDB)
@@ -80,7 +80,7 @@ namespace litecore {
                 error::_throw(error::CantUpgradeDatabase,
                               "Database cannot be upgraded because its internal version number isn't recognized");
 
-            Database::Transaction t(_newDB);
+            C4Database::Transaction t(_newDB);
             try {
                 copyDocs();
 #if 0
@@ -286,7 +286,7 @@ namespace litecore {
 
         FilePath _oldPath;
         SQLite::Database _oldDB;
-        Retained<Database> _newDB;
+        Retained<DatabaseImpl> _newDB;
         FilePath _attachments;
         unique_ptr<SQLite::Statement> _currentRev, _parentRevs;
     };

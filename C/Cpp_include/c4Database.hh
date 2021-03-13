@@ -34,8 +34,8 @@ C4_ASSUME_NONNULL_BEGIN
 struct C4ReplicatorParameters;
 
 namespace c4Internal {
-    class Database;
-    Database* asInternal(C4Database*);
+    class DatabaseImpl;
+    DatabaseImpl* asInternal(C4Database*);
 }
 namespace litecore::websocket {
     class WebSocket;
@@ -244,7 +244,7 @@ protected:
     virtual ~C4Database();
 
 private:
-    friend c4Internal::Database* c4Internal::asInternal(C4Database *db);
+    friend c4Internal::DatabaseImpl* c4Internal::asInternal(C4Database *db);
 
     std::unique_ptr<C4BlobStore> _blobStore;
 };

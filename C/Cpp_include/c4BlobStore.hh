@@ -28,7 +28,7 @@ namespace litecore {
     class SeekableReadStream;
 }
 namespace c4Internal {
-    class Database;
+    class DatabaseImpl;
 }
 
 C4_ASSUME_NONNULL_BEGIN
@@ -136,7 +136,7 @@ protected:
     friend struct C4ReadStream;
     friend struct C4WriteStream;
     friend struct C4Database;
-    friend class c4Internal::Database;
+    friend class c4Internal::DatabaseImpl;
 
     C4BlobStore(litecore::BlobStore *store) :_impl(store) { }
     static alloc_slice getBlobData(FLDict dict, litecore::BlobStore *store);

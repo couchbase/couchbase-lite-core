@@ -33,7 +33,7 @@ namespace litecore {
 namespace c4Internal {
     struct C4QueryEnumeratorImpl;
     struct C4QueryObserverImpl;
-    class Database;
+    class DatabaseImpl;
 }
 
 C4_ASSUME_NONNULL_BEGIN
@@ -114,7 +114,7 @@ private:
     Retained<c4Internal::C4QueryEnumeratorImpl> wrapEnumerator(litecore::QueryEnumerator*);
     void liveQuerierUpdated(litecore::QueryEnumerator *qe, C4Error err);
 
-    Retained<c4Internal::Database>              _database;
+    Retained<c4Internal::DatabaseImpl>              _database;
     Retained<litecore::Query>                   _query;
     alloc_slice                                 _parameters;
     Retained<litecore::LiveQuerier>             _bgQuerier;

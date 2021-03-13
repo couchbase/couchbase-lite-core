@@ -19,7 +19,7 @@
 #include "c4Observer.hh"
 #include "c4Observer.h"
 #include "c4Internal.hh"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "SequenceTracker.hh"
 #include <optional>
 
@@ -66,7 +66,7 @@ namespace c4Internal {
         }
 
     private:
-        Retained<Database> _db;
+        Retained<DatabaseImpl> _db;
         optional<DatabaseChangeNotifier> _notifier;
         Callback _callback;
         bool _inCallback {false};
@@ -110,7 +110,7 @@ namespace c4Internal {
             });
         }
 
-        Retained<Database> _db;
+        Retained<DatabaseImpl> _db;
         Callback _callback;
         optional<DocChangeNotifier> _notifier;
     };

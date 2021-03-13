@@ -17,7 +17,7 @@
 //
 
 #include "Housekeeper.hh"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "SequenceTracker.hh"
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
@@ -29,7 +29,7 @@ namespace litecore {
     using namespace actor;
     using namespace std;
 
-    Housekeeper::Housekeeper(Database *db)
+    Housekeeper::Housekeeper(DatabaseImpl *db)
     :Actor(DBLog, "Housekeeper")
     ,_bgdb(db->backgroundDatabase())
     ,_expiryTimer(std::bind(&Housekeeper::_doExpiration, this))

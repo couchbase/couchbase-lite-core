@@ -12,7 +12,7 @@ namespace c4Internal {
 
     class VectorDocumentFactory final : public DocumentFactory {
     public:
-        VectorDocumentFactory(Database *db)   :DocumentFactory(db) { }
+        VectorDocumentFactory(DatabaseImpl *db)   :DocumentFactory(db) { }
 
         Retained<Document> newDocumentInstance(C4Slice docID, ContentOption) override;
         Retained<Document> newDocumentInstance(const Record&) override;
