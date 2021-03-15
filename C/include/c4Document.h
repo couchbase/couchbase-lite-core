@@ -32,21 +32,6 @@ C4API_BEGIN_DECLS
         @{ */
 
 
-#ifndef LITECORE_CPP_API
-    /** Describes a version-controlled document. */
-    struct C4Document {
-        C4DocumentFlags flags;      ///< Document flags
-        C4HeapString docID;         ///< Document ID
-        C4HeapString revID;         ///< Revision ID of current revision
-        C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
-
-        C4Revision selectedRev;     ///< Describes the currently-selected revision
-
-        C4ExtraInfo extraInfo;      ///< For client use
-    };
-#endif
-
-
     /** \name Lifecycle
         @{ */
 

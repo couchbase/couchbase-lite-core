@@ -17,25 +17,24 @@
 //
 
 #pragma once
-#include "Document.hh"
-#include <vector>
+#include "DocumentFactory.hh"
+#include "fleece/Fleece.h"
 
 namespace c4Internal {
-    class Document;
 
     /** DocumentFactory subclass for rev-tree document schema. */
     class TreeDocumentFactory final : public DocumentFactory {
     public:
         TreeDocumentFactory(DatabaseImpl *db)   :DocumentFactory(db) { }
-        Retained<Document> newDocumentInstance(C4Slice docID, ContentOption) override;
-        Retained<Document> newDocumentInstance(const Record&) override;
+        Retained<C4Document> newDocumentInstance(C4Slice docID, ContentOption) override;
+        Retained<C4Document> newDocumentInstance(const Record&) override;
         bool isFirstGenRevID(slice revID) const override;
 
         std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs, const std::vector<slice> &revIDs,
                                                unsigned maxAncestors, bool mustHaveBodies,
                                                C4RemoteID remoteDBID) override;
 
-        static Document* documentContaining(FLValue value);
+        static C4Document* documentContaining(FLValue value);
     };
 
 }

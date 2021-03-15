@@ -16,14 +16,15 @@
 // limitations under the License.
 //
 
-#include "c4Internal.hh"
+#include "c4Base.hh"
 #include "c4Document+Fleece.h"
 #include "Upgrader.hh"
 #include "SQLite_Internal.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "DatabaseImpl.hh"
-#include "Document.hh"
+#include "c4Document.hh"
 #include "c4BlobStore.hh"
+#include "BlobStore.hh"
 #include "FleeceImpl.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -127,8 +128,7 @@ namespace litecore {
 
                 Log("Importing doc '%.*s'", SPLAT(docID));
                 try {
-                    Retained<Document> newDoc(
-                            _newDB->documentFactory().newDocumentInstance(docID, kEntireBody));
+                    auto newDoc = _newDB->getDocument(docID, false, kDocGetAll);
                     copyRevisions(docKey, newDoc);
                 } catch (const error &x) {
                     // Add docID to exception message:
@@ -143,7 +143,7 @@ namespace litecore {
 
 
         // Copies all revisions of a document.
-        void copyRevisions(int64_t oldDocKey, Document *newDoc) {
+        void copyRevisions(int64_t oldDocKey, C4Document *newDoc) {
             if (!_currentRev) {
                 // Gets the current revision of doc
                 _currentRev.reset(new SQLite::Statement(_oldDB,

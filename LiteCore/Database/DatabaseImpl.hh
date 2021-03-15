@@ -44,7 +44,6 @@ namespace litecore {
 
 
 namespace c4Internal {
-    class Document;
     class DocumentFactory;
 
 
@@ -110,12 +109,14 @@ namespace c4Internal {
 
         DocumentFactory& documentFactory() const                {return *_documentFactory;}
 
-        Retained<Document> getDocument(slice docID,
-                                       bool mustExist,
-                                       C4DocContentLevel content) const;
-        Retained<Document> putDocument(const C4DocPutRequest &rq,
-                                       size_t *outCommonAncestorIndex,
-                                       C4Error *outError);
+        Retained<C4Document> getDocument(slice docID,
+                                           bool mustExist,
+                                           C4DocContentLevel content) const;
+        Retained<C4Document> putDocument(const C4DocPutRequest &rq,
+                                           size_t *outCommonAncestorIndex,
+                                           C4Error *outError);
+
+        static C4Document* documentContainingValue(FLValue) noexcept;
 
         fleece::impl::Encoder& sharedEncoder() const;
         FLEncoder sharedFLEncoder() const;
@@ -138,7 +139,7 @@ namespace c4Internal {
 
     public:
         // should be private, but called from Document
-        void documentSaved(Document* NONNULL);
+        void documentSaved(C4Document* NONNULL);
 
     protected:
         virtual ~DatabaseImpl();
@@ -161,6 +162,9 @@ namespace c4Internal {
         void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,
                                        ExclusiveTransaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
+
+        bool isNewDocPutRequest(const C4DocPutRequest &rq);
+        std::pair<Retained<C4Document>,int> putNewDoc(const C4DocPutRequest &rq);
 
         const string                _name;                  // Database filename (w/o extension)
         const string                _parentDirectory;       // Path to parent directory

@@ -816,7 +816,7 @@ C4SliceResult c4db_getRemoteDBAddress(C4Database *db, C4RemoteID remoteID) C4API
 
 C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase) C4API {
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        return C4SliceResult(doc->getRemoteAncestor(remoteDatabase));
+        return C4SliceResult(doc->remoteAncestorRevID(remoteDatabase));
     });
 }
 
@@ -825,7 +825,7 @@ bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase, C4Strin
                              C4Error *outError) C4API
 {
     return tryCatch<bool>(outError, [&]{
-        doc->setRemoteAncestor(remoteDatabase, revID);
+        doc->setRemoteAncestorRevID(remoteDatabase, revID);
         return true;
     });
 }

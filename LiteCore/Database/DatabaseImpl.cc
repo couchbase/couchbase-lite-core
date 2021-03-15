@@ -17,6 +17,7 @@
 //
 
 #include "DatabaseImpl.hh"
+#include "c4Document.hh"
 #include "TreeDocument.hh"
 #include "VectorDocument.hh"
 #include "c4Internal.hh"
@@ -289,17 +290,17 @@ namespace c4Internal {
         RecordEnumerator e(defaultKeyStore(), options);
         unordered_set<string> usedDigests;
         while (e.next()) {
-            Retained<Document> doc = documentFactory().newDocumentInstance(*e);
+            Retained<C4Document> doc = documentFactory().newDocumentInstance(*e);
             doc->selectCurrentRevision();
             do {
-                if(!doc->loadSelectedRevBody()) {
+                if(!doc->loadRevisionBody()) {
                     continue;
                 }
 
-                auto body = (const Dict*)doc->getSelectedRevRoot();
+                auto body = (const Dict*)doc->getProperties();
 
                 // Iterate over blobs:
-                Document::findBlobReferences(FLDict(body), [&](FLDict blob) {
+                C4Document::findBlobReferences(FLDict(body), [&](FLDict blob) {
                     blobKey key;
                     if (C4Blob::isBlob(blob, (C4BlobKey&)key))    // get the key
                         usedDigests.insert(key.filename());
@@ -644,13 +645,21 @@ namespace c4Internal {
 #pragma mark - DOCUMENTS:
 
     
-    Retained<Document> DatabaseImpl::getDocument(slice docID,
-                                                 bool mustExist,
-                                                 C4DocContentLevel content) const
+    Retained<C4Document> DatabaseImpl::getDocument(slice docID,
+                                                     bool mustExist,
+                                                     C4DocContentLevel content) const
     {
         auto doc = documentFactory().newDocumentInstance(docID, ContentOption(content));
         if (mustExist && doc && !doc->exists())
             doc = nullptr;
+        return doc;
+    }
+
+
+    C4Document* DatabaseImpl::documentContainingValue(FLValue value) noexcept {
+        auto doc = VectorDocumentFactory::documentContaining(value);
+        if (!doc)
+            doc = TreeDocumentFactory::documentContaining(value);
         return doc;
     }
 
@@ -743,7 +752,7 @@ namespace c4Internal {
     }
 
 
-    void DatabaseImpl::documentSaved(Document* doc) {
+    void DatabaseImpl::documentSaved(C4Document* doc) {
         // CBL-1089
         // Conflicted documents are not eligible to be replicated,
         // so ignore them.  Later when the conflict is resolved
@@ -751,7 +760,7 @@ namespace c4Internal {
         if (_sequenceTracker && !(doc->selectedRev.flags & kRevIsConflict)) {
             _sequenceTracker->use([doc](SequenceTracker &st) {
                 Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
-                st.documentChanged(doc->_docIDBuf,
+                st.documentChanged(doc->docID,
                                    doc->getSelectedRevIDGlobalForm(), // entire version vector
                                    doc->selectedRev.sequence,
                                    SequenceTracker::RevisionFlags(doc->selectedRev.flags));

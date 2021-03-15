@@ -19,128 +19,172 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4DocumentTypes.h"
+#include "function_ref.hh"
 #include "fleece/Fleece.h"
+
+namespace litecore {
+    class revid;
+    class Upgrader;
+}
+
+namespace c4Internal {
+    class DatabaseImpl;
+}
 
 C4_ASSUME_NONNULL_BEGIN
 
 
-    struct C4Document {
-        using slice = fleece::slice;
-        using alloc_slice = fleece::alloc_slice;
-        template <class T> using Retained = fleece::Retained<T>;
+struct C4Document : public fleece::RefCounted,
+                    public C4DocumentPublicFields,  // <-- docID, revID, flags, selectedRevision
+                    public C4Base,
+                    public fleece::InstanceCounted
+{
+    // NOTE: Instances are created with database->getDocument or database->putDocument.
 
-        C4DocumentFlags flags;      ///< Document flags
-        C4HeapString docID;         ///< Document ID
-        C4HeapString revID;         ///< Revision ID of current revision
-        C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
+    // Accessors:
 
-        C4Revision selectedRev;     ///< Describes the currently-selected revision
+    C4Database* database() const                                            {return _db;}
 
-        C4ExtraInfo extraInfo;      ///< For client use
+    virtual bool exists() =0;
 
-        // NOTE: Instances are created with database->getDocument or database->putDocument.
+    virtual bool revisionsLoaded() const noexcept =0;
 
-        // Static utility functions:
+    virtual bool loadRevisions() MUST_USE_RESULT =0;
 
-        static constexpr size_t kGeneratedIDLength = 23;
+    virtual bool loadRevisionBody() =0; // can throw; returns false if compacted away
 
-        static char* generateID(char *outDocID,
-                                size_t bufferSize) noexcept;
+    virtual bool hasRevisionBody() noexcept =0;
 
-        static bool equalRevIDs(slice revID1,
-                                slice revID2) noexcept;
-        static unsigned getRevIDGeneration(slice revID) noexcept;
+    virtual slice getRevisionBody() noexcept =0;
 
-        static C4RevisionFlags revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept;
+    virtual FLDict getProperties() noexcept;
 
-        /// Returns the Document instance, if any, that contains the given Fleece value.
-        static C4Document* C4NULLABLE containingValue(FLValue) noexcept;
+    alloc_slice bodyAsJSON(bool canonical =false);
 
-        static bool containsBlobs(FLDict) noexcept;
-        static bool isOldMetaProperty(slice propertyName) noexcept;
-        static bool hasOldMetaProperties(FLDict) noexcept;
+    // Selecting revisions:
 
-        static bool isValidDocID(slice) noexcept;
+    virtual bool selectCurrentRevision() noexcept =0;
+    virtual bool selectRevision(C4Slice revID, bool withBody =true) =0;   // returns false if not found
+    virtual bool selectParentRevision() noexcept                            {failUnsupported();}
+    virtual bool selectNextRevision() =0;
+    virtual bool selectNextLeafRevision(bool includeDeleted, bool withBody =true) =0;
+    virtual bool selectCommonAncestorRevision(slice revID1, slice revID2)   {failUnsupported();}
 
-        static alloc_slice encodeStrippingOldMetaProperties(FLDict properties,
-                                                            FLSharedKeys);
+    // Revision info:
 
-        // Selecting revisions:
+    virtual alloc_slice getSelectedRevIDGlobalForm();
 
-        bool selectCurrentRevision() noexcept;
+    virtual alloc_slice getRevisionHistory(unsigned maxHistory,
+                                           const C4String backToRevs[C4NULLABLE], // nullable if count=0
+                                           unsigned backToRevsCount)        {failUnsupported();}
 
-        bool selectRevision(C4Slice revID, bool withBody =true);   // returns false if not found
+    // Remote database revision tracking:
 
-        bool selectParentRevision() noexcept;
-        bool selectNextRevision();
-        bool selectNextLeafRevision(bool includeDeleted, bool withBody =true);
-        bool selectCommonAncestorRevision(slice revID1, slice revID2);
+    virtual alloc_slice remoteAncestorRevID(C4RemoteID) =0;
+    virtual void setRemoteAncestorRevID(C4RemoteID, C4String revID) =0;
 
-        // Revision info:
+    // Purging:
 
-        bool loadRevisionBody(); // can throw; returns false if compacted away
+    virtual bool removeRevisionBody() noexcept                              {return false;}
 
-        bool hasRevisionBody() noexcept;
+    virtual int32_t purgeRevision(C4Slice revid)                            {failUnsupported();}
 
-        slice getRevisionBody() noexcept;
+    // Conflicts:
 
-        alloc_slice bodyAsJSON(bool canonical =false);
-
-        FLDict getProperties() noexcept;
-
-        alloc_slice getSelectedRevIDGlobalForm();
-
-        alloc_slice getRevisionHistory(unsigned maxHistory,
-                                          const C4String backToRevs[C4NULLABLE], // only if count=0
-                                          unsigned backToRevsCount);
-
-        // Remote database revision tracking:
-
-        alloc_slice getRemoteAncestor(C4RemoteID);
-
-        void setRemoteAncestor(C4RemoteID, C4String revID);
-
-        // Purging:
-
-        bool removeRevisionBody() noexcept;
-
-        int32_t purgeRevision(C4Slice revID);
-
-        // Conflicts:
-
-        void resolveConflict(C4String winningRevID,
-                             C4String losingRevID,
-                             FLDict C4NULLABLE mergedProperties,
-                             C4RevisionFlags mergedFlags,
-                             bool pruneLosingBranch =true);
+    void resolveConflict(C4String winningRevID,
+                         C4String losingRevID,
+                         FLDict C4NULLABLE mergedProperties,
+                         C4RevisionFlags mergedFlags,
+                         bool pruneLosingBranch =true);
 
 
-        void resolveConflict(C4String winningRevID,
-                             C4String losingRevID,
-                             C4Slice mergedBody,
-                             C4RevisionFlags mergedFlags,
-                             bool pruneLosingBranch =true);
+    virtual void resolveConflict(C4String winningRevID,
+                                 C4String losingRevID,
+                                 C4Slice mergedBody,
+                                 C4RevisionFlags mergedFlags,
+                                 bool pruneLosingBranch =true)              {failUnsupported();}
+
+    // Updating & Saving:
+
+    /** Adds a new revision to this document, saves it to the database, and returns a
+        document instance that knows the new revision -- it may or may not be the same instance
+        as this one.
+        If the database already contains a conflicting revision, returns nullptr. */
+    virtual Retained<C4Document> update(slice revBody, C4RevisionFlags);
+
+    /** Saves changes to the document. Returns false on conflict. */
+    virtual bool save(unsigned maxRevTreeDepth =0) =0;
 
 
-        // Updating & Saving:
+    // Static utility functions:
 
-        /** Adds a new revision to this document, saves it to the database, and returns a
-            document instance that knows the new revision -- it may or may not be the same instance
-            as this one.
-            If the database already contains a conflicting revision, returns nullptr. */
-        Retained<C4Document> update(slice revBody, C4RevisionFlags);
+    static constexpr size_t kGeneratedIDLength = 23;
 
-        /** Saves changes to the document. Returns false on conflict. */
-        bool save(unsigned maxRevTreeDepth =0);
+    static char* generateID(char *outDocID,
+                            size_t bufferSize) noexcept;
 
-    protected:
-        C4Document() = default;
-        ~C4Document() = default;
-    };
+    static bool isValidDocID(slice) noexcept;
 
+    static bool equalRevIDs(slice revID1,
+                            slice revID2) noexcept;
+    static unsigned getRevIDGeneration(slice revID) noexcept;
 
-// These declarations allow `Retained<C4Document>` to work.
-C4Document* C4NULLABLE retain(C4Document* C4NULLABLE);
-void release(C4Document* C4NULLABLE);
+    static C4RevisionFlags revisionFlagsFromDocFlags(C4DocumentFlags docFlags) noexcept;
+
+    /// Returns the Document instance, if any, that contains the given Fleece value.
+    static C4Document* C4NULLABLE containingValue(FLValue) noexcept;
+
+    static bool containsBlobs(FLDict) noexcept;
+
+    using FindBlobCallback = fleece::function_ref<bool(FLDict)>;
+
+    /// Finds blob references in a Fleece Dict, recursively.
+    static bool findBlobReferences(FLDict, const FindBlobCallback&);
+
+    static bool isOldMetaProperty(slice propertyName) noexcept;
+    static bool hasOldMetaProperties(FLDict) noexcept;
+
+    static alloc_slice encodeStrippingOldMetaProperties(FLDict properties,
+                                                        FLSharedKeys);
+
+protected:
+    friend class c4Internal::DatabaseImpl;
+    friend class litecore::Upgrader;
+
+    C4Document(c4Internal::DatabaseImpl*, alloc_slice docID_);
+    virtual ~C4Document();
+
+    [[noreturn]] static void failUnsupported();
+
+    c4Internal::DatabaseImpl* db();
+    const c4Internal::DatabaseImpl* db() const;
+
+    virtual alloc_slice detachSelectedRevBody() {
+        return alloc_slice(getRevisionBody()); // will copy
+    }
+
+    void requireValidDocID();   // Throws if invalid
+
+    void setRevID(litecore::revid);
+
+    void clearSelectedRevision() noexcept;
+
+    // Returns the index (in rq.history) of the common ancestor; or -1 on error
+    virtual int32_t putExistingRevision(const C4DocPutRequest&, C4Error* C4NULLABLE) =0;
+
+    // Returns false on error
+    virtual bool putNewRevision(const C4DocPutRequest&, C4Error* C4NULLABLE) =0;
+
+    bool checkNewRev(slice parentRevID,
+                     C4RevisionFlags flags,
+                     bool allowConflict,
+                     C4Error* C4NULLABLE) noexcept;
+protected:
+    Retained<C4Database> _db;
+    alloc_slice const    _docIDBuf;         // Backing store for docID
+    alloc_slice          _revIDBuf;         // Backing store for revID
+    alloc_slice          _selectedRevIDBuf; // Backing store for selectedRevision::revID
+};
+
 
 C4_ASSUME_NONNULL_END

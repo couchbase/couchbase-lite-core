@@ -24,7 +24,8 @@
 
 #include "DatabaseImpl.hh"
 #include "DatabaseCookies.hh"
-#include "Document.hh"
+#include "c4Document.hh"
+#include "DocumentFactory.hh"
 #include "KeyStore.hh"
 #include "PrebuiltCopier.hh"
 #include "Record.hh"
@@ -554,7 +555,7 @@ bool C4Database::markDocumentSynced(slice docID,
         if (!revID)
             return false;
     }
-    doc->setRemoteAncestor(remoteID, revID);
+    doc->setRemoteAncestorRevID(remoteID, revID);
     doc->save();
     return true;
 }

@@ -17,6 +17,7 @@
 //
 
 #include "TreeDocument.hh"
+#include "c4Document.hh"
 #include "c4Private.h"
 
 #include "DatabaseImpl.hh"
@@ -39,30 +40,27 @@ namespace c4Internal {
     using namespace fleece::impl;
     using namespace std;
 
-    class TreeDocument final : public Document {
+    class TreeDocument final : public C4Document {
     public:
-        TreeDocument(DatabaseImpl* database, C4Slice docID, ContentOption content)
-        :Document(database, docID),
-         _revTree(database->defaultKeyStore(), docID, content),
-         _selectedRev(nullptr)
+        TreeDocument(DatabaseImpl* database, slice docID, ContentOption content)
+        :C4Document(database, alloc_slice(docID))
+        ,_revTree(database->defaultKeyStore(), docID, content)
         {
             init();
         }
 
 
         TreeDocument(DatabaseImpl *database, const Record &doc)
-        :Document(database, doc.key()),
-         _revTree(database->defaultKeyStore(), doc),
-         _selectedRev(nullptr)
+        :C4Document(database, doc.key())
+        ,_revTree(database->defaultKeyStore(), doc)
         {
             init();
         }
 
 
         TreeDocument(const TreeDocument &other)
-        :Document(other)
+        :C4Document(other)
         ,_revTree(other._revTree)
-        ,_selectedRev(nullptr)
         {
             if (other._selectedRev)
                 _selectedRev = _revTree[other._selectedRev->revID];
@@ -71,7 +69,7 @@ namespace c4Internal {
 
         void init() {
             _revTree.owner = this;
-            _revTree.setPruneDepth(_db->maxRevTreeDepth());
+            _revTree.setPruneDepth(db()->maxRevTreeDepth());
             flags = (C4DocumentFlags)_revTree.flags();
             if (_revTree.exists())
                 flags = (C4DocumentFlags)(flags | kDocExists);
@@ -119,14 +117,14 @@ namespace c4Internal {
                 return _revTree.currentRevAvailable();
         }
 
-        bool loadSelectedRevBody() override {
+        bool loadRevisionBody() override {
             if (!_selectedRev && _revTree.currentRevAvailable())
                 return true;            // only the current rev is available, so return true
             loadRevisions();
             return _selectedRev &&_selectedRev->body();
         }
 
-        virtual slice getSelectedRevBody() noexcept override {
+        virtual slice getRevisionBody() noexcept override {
             if (_selectedRev)
                 return _selectedRev->body();
             else if (_revTree.currentRevAvailable())
@@ -136,7 +134,7 @@ namespace c4Internal {
         }
 
 
-        alloc_slice getSelectedRevHistory(unsigned maxRevs,
+        alloc_slice getRevisionHistory(unsigned maxRevs,
                                           const C4String backToRevs[],
                                           unsigned backToRevsCount) override
         {
@@ -175,10 +173,10 @@ namespace c4Internal {
             // revisions, but always write the rev known to the peer if there is one.
             // There may be gaps in the history (non-consecutive generations) if revs have been pruned.
             // If sending these, make up random revIDs for them since they don't matter.
-            unsigned lastGen = c4rev_getGeneration(selectedRev.revID) + 1;
+            unsigned lastGen = getRevIDGeneration(selectedRev.revID) + 1;
             do {
                 slice revID = selectedRev.revID;
-                unsigned gen = c4rev_getGeneration(revID);
+                unsigned gen = getRevIDGeneration(revID);
                 while (gen < --lastGen && revsWritten < maxRevs) {
                     // We don't have this revision (the history got deeper than the local db's
                     // maxRevTreeDepth), so make up a random revID. The server probably won't care.
@@ -229,7 +227,7 @@ namespace c4Internal {
                 if (!selectRevision(rev))
                     return false;
                 if (withBody)
-                    loadSelectedRevBody();
+                    loadRevisionBody();
             } else {
                 selectRevision(nullptr);
             }
@@ -242,7 +240,7 @@ namespace c4Internal {
                 return true;
             } else {
                 _selectedRev = nullptr;
-                Document::selectCurrentRevision();
+                C4Document::selectCurrentRevision();
                 return false;
             }
         }
@@ -261,7 +259,7 @@ namespace c4Internal {
             return _selectedRev != nullptr;
         }
 
-        bool selectNextLeafRevision(bool includeDeleted) noexcept override {
+        bool selectNextLeafRevision(bool includeDeleted, bool withBody) noexcept override {
             requireRevisions();
             auto rev = _selectedRev;
             if (!rev)
@@ -273,7 +271,7 @@ namespace c4Internal {
             } while (!rev->isLeaf() || rev->isClosed()
                                     || (!includeDeleted && rev->isDeleted()));
             selectRevision(rev);
-            return true;
+            return !withBody || loadRevisionBody();
         }
 
         bool selectCommonAncestorRevision(slice revID1, slice revID2) override {
@@ -314,7 +312,7 @@ namespace c4Internal {
             initRevID();
         }
 
-        bool removeSelectedRevBody() noexcept override {
+        bool removeRevisionBody() noexcept override {
             if (!_selectedRev)
                 return false;
             _revTree.removeBody(_selectedRev);
@@ -322,12 +320,13 @@ namespace c4Internal {
         }
 
         bool save(unsigned maxRevTreeDepth =0) override {
+            db()->mustBeInTransaction();
             requireValidDocID();
             if (maxRevTreeDepth > 0)
                 _revTree.prune(maxRevTreeDepth);
             else
                 _revTree.prune();
-            switch (_revTree.save(_db->transaction())) {
+            switch (_revTree.save(db()->transaction())) {
                 case litecore::RevTreeRecord::kConflict:
                     return false;
                 case litecore::RevTreeRecord::kNoNewSequence:
@@ -338,7 +337,7 @@ namespace c4Internal {
                         sequence = _revTree.sequence();
                         if (selectedRev.sequence == 0)
                             selectedRev.sequence = sequence;
-                        _db->documentSaved(this);
+                        db()->documentSaved(this);
                     }
                     return true;
                 default:
@@ -450,7 +449,7 @@ namespace c4Internal {
                         *outError = c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
                                                "Missing source revision '%.*s' for delta",
                                                SPLAT(rq.deltaSourceRevID));
-                } else if (!getSelectedRevBody()) {
+                } else if (!getRevisionBody()) {
                     if (outError)
                         *outError = c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
                                                "Missing body of source revision '%.*s' for delta",
@@ -463,7 +462,7 @@ namespace c4Internal {
 
             // Now validate that the body is OK:
             if (body)
-                database()->validateRevisionBody(body);
+                db()->validateRevisionBody(body);
             return body;
         }
 
@@ -614,9 +613,9 @@ namespace c4Internal {
             if (rq.save && reallySave) {
                 if (!save())
                     return false;
-                if (_db->dataFile()->willLog(LogLevel::Verbose)) {
+                if (db()->dataFile()->willLog(LogLevel::Verbose)) {
                     alloc_slice revID = newRev->revID.expanded();
-                    _db->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
+                    db()->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
                         ((rq.revFlags & kRevDeleted) ? "Deleted" : "Saved"),
                         SPLAT(rq.docID), SPLAT(revID), _revTree.sequence());
                 }
@@ -647,18 +646,18 @@ namespace c4Internal {
 
     private:
         RevTreeRecord _revTree;
-        const Rev *_selectedRev;
+        const Rev *_selectedRev {nullptr};
     };
 
 
 #pragma mark - FACTORY:
 
 
-    Retained<Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
+    Retained<C4Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
         return new TreeDocument(database(), docID, c);
     }
 
-    Retained<Document> TreeDocumentFactory::newDocumentInstance(const Record &rec) {
+    Retained<C4Document> TreeDocumentFactory::newDocumentInstance(const Record &rec) {
         return new TreeDocument(database(), rec);
     }
 
@@ -666,7 +665,7 @@ namespace c4Internal {
         return revID.hasPrefix(slice("1-", 2));
     }
 
-    Document* TreeDocumentFactory::documentContaining(FLValue value) {
+    C4Document* TreeDocumentFactory::documentContaining(FLValue value) {
         RevTreeRecord *vdoc = RevTreeRecord::containing((const Value*)value);
         return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
     }

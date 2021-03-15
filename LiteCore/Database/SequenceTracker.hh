@@ -26,7 +26,6 @@
 
 namespace c4Internal {
     class DatabaseImpl;
-    class Document;
 }
 
 namespace litecore {

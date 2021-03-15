@@ -20,7 +20,9 @@
 #include "c4DocEnumerator.hh"
 
 #include "c4Database.hh"
-#include "Document.hh"
+#include "c4Document.hh"
+#include "DatabaseImpl.hh"
+#include "DocumentFactory.hh"
 #include "DataFile.hh"
 #include "Record.hh"
 #include "RecordEnumerator.hh"
@@ -73,7 +75,7 @@ public:
         return options;
     }
 
-    Retained<Document> getDoc() {
+    Retained<C4Document> getDoc() {
         if (!hasRecord())
             return nullptr;
         return _database->documentFactory().newDocumentInstance(record());

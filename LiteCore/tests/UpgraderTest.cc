@@ -19,7 +19,7 @@
 #include "Upgrader.hh"
 #include "LiteCoreTest.hh"
 #include "DatabaseImpl.hh"
-#include "Document.hh"
+#include "c4Document.hh"
 #include "c4BlobStore.hh"
 #include "Logging.hh"
 #include "TempArray.hh"
@@ -28,14 +28,13 @@
 using namespace std;
 using namespace fleece;
 
-using Database = c4Internal::DatabaseImpl;
-using Document = c4Internal::Document;
+using DatabaseImpl = c4Internal::DatabaseImpl;
 
 
 class UpgradeTestFixture : public TestFixture {
 protected:
 
-    Retained<Database> db;
+    Retained<DatabaseImpl> db;
     C4DocumentVersioning _versioning;
 
     void upgrade(string oldPath, C4DocumentVersioning versioning) {
@@ -52,7 +51,7 @@ protected:
 
         UpgradeDatabase(FilePath(oldPath), newPath, config);
 
-        db = new Database(newPath, config);
+        db = new DatabaseImpl(newPath, config);
     }
 
     void upgradeInPlace(string fixturePath, C4DocumentVersioning versioning) {
@@ -71,17 +70,17 @@ protected:
 
         // First check that NoUpgrade flag correctly triggers an exception:
         ExpectException(error::LiteCore, error::DatabaseTooOld, [&]{
-            db = new Database(dbPath, config);
+            db = new DatabaseImpl(dbPath, config);
         });
 
         // Now allow the upgrade:
         ExpectingExceptions x;
         config.flags &= ~kC4DB_NoUpgrade;
-        db = new Database(dbPath, config);
+        db = new DatabaseImpl(dbPath, config);
     }
 
     void verifyDoc(slice docID, slice bodyJSON, vector<slice> revIDs) {
-        Retained<Document> doc1( db->documentFactory().newDocumentInstance(docID, kEntireBody) );
+        auto doc1 = db->getDocument(docID, false, kDocGetAll);
         CHECK(doc1->exists());
         CHECK(doc1->bodyAsJSON() == bodyJSON);
         if (_versioning != kC4VectorVersioning) {

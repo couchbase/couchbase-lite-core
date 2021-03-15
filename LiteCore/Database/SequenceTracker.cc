@@ -17,7 +17,7 @@
 //
 
 #include "SequenceTracker.hh"
-#include "Document.hh"
+#include "c4Document.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include <algorithm>

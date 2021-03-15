@@ -19,8 +19,10 @@
 #include "VectorDocument.hh"
 #include "VectorRecord.hh"
 #include "VersionVector.hh"
+#include "DatabaseImpl.hh"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
+#include "Error.hh"
 #include "Delimiter.hh"
 #include "StringUtil.hh"
 #include <set>
@@ -28,12 +30,13 @@
 namespace c4Internal {
     using namespace std;
     using namespace fleece;
+    using namespace litecore;
 
 
-    class VectorDocument final : public Document {
+    class VectorDocument final : public C4Document {
     public:
-        VectorDocument(DatabaseImpl* database, C4Slice docID, ContentOption whichContent)
-        :Document(database, docID)
+        VectorDocument(DatabaseImpl* database, slice docID, ContentOption whichContent)
+        :C4Document(database, alloc_slice(docID))
         ,_doc(database->defaultKeyStore(), Versioning::Vectors, docID, whichContent)
         {
             _initialize();
@@ -41,7 +44,7 @@ namespace c4Internal {
 
 
         VectorDocument(DatabaseImpl *database, const Record &doc)
-        :Document(database, doc.key())
+        :C4Document(database, doc.key())
         ,_doc(database->defaultKeyStore(), Versioning::Vectors, doc)
         {
             _initialize();
@@ -55,7 +58,7 @@ namespace c4Internal {
 
         void _initialize() {
             _doc.owner = this;
-            _doc.setEncoder(_db->sharedFLEncoder());
+            _doc.setEncoder(_db->getSharedFleeceEncoder());
             _updateDocFields();
             _selectRemote(RemoteID::Local);
         }
@@ -73,7 +76,7 @@ namespace c4Internal {
 
 
         peerID myPeerID() {
-            return peerID{database()->myPeerID()};
+            return peerID{db()->myPeerID()};
         }
 
 
@@ -178,10 +181,10 @@ namespace c4Internal {
         }
 
 
-        bool selectNextLeafRevision(bool includeDeleted) override {
+        bool selectNextLeafRevision(bool includeDeleted, bool withBody) override {
             while (selectNextRevision()) {
                 if (selectedRev.flags & kRevLeaf)
-                    return true;
+                    return !withBody || loadRevisionBody();
             }
             return false;
         }
@@ -190,7 +193,7 @@ namespace c4Internal {
 #pragma mark - ACCESSORS:
 
 
-        slice getSelectedRevBody() noexcept override {
+        slice getRevisionBody() noexcept override {
             if (auto rev = _selectedRevision()) {
                 // Current revision, or remote with the same version:
                 if (rev->revID == _doc.revID())
@@ -198,7 +201,7 @@ namespace c4Internal {
 
                 // Else the properties have to be re-encoded to a slice:
                 if (rev->properties) {
-                    SharedEncoder enc(_db->sharedFLEncoder());
+                    SharedEncoder enc(_db->getSharedFleeceEncoder());
                     enc << rev->properties;
                     _latestBody = enc.finishDoc();
                     return _latestBody.data();;
@@ -208,7 +211,7 @@ namespace c4Internal {
         }
 
 
-        FLDict getSelectedRevRoot() noexcept override {
+        FLDict getProperties() noexcept override {
             auto rev = _selectedRevision();
             return rev ? rev->properties : nullptr;
         }
@@ -222,9 +225,9 @@ namespace c4Internal {
         }
 
 
-        alloc_slice getSelectedRevHistory(unsigned maxRevs,
-                                          const C4String backToRevs[],
-                                          unsigned backToRevsCount) override
+        alloc_slice getRevisionHistory(unsigned maxRevs,
+                                       const C4String backToRevs[],
+                                       unsigned backToRevsCount) override
         {
             if (auto rev = _selectedRevision(); rev) {
                 VersionVector vers = rev->versionVector();
@@ -280,7 +283,7 @@ namespace c4Internal {
         }
 
 
-        bool loadSelectedRevBody() override {
+        bool loadRevisionBody() override {
             if (!_remoteID)
                 return false;
             auto which = (*_remoteID == RemoteID::Local) ? kCurrentRevOnly : kEntireBody;
@@ -318,7 +321,7 @@ namespace c4Internal {
                                         "Missing source revision '%.*s' for delta",
                                         SPLAT(rq.deltaSourceRevID));
                     return nullptr;
-                } else if (!getSelectedRevBody()) {
+                } else if (!getRevisionBody()) {
                     if (outError)
                         *outError = c4error_printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
                                         "Missing body of source revision '%.*s' for delta",
@@ -334,10 +337,10 @@ namespace c4Internal {
 
         fleece::Doc _newProperties(alloc_slice body) {
             if (body.size > 0)
-                database()->validateRevisionBody(body);
+                db()->validateRevisionBody(body);
             else
                 body = alloc_slice{(FLDict)Dict::emptyDict(), 2};
-            Doc fldoc = Doc(body, kFLUntrusted, (FLSharedKeys)database()->documentKeys());
+            Doc fldoc = Doc(body, kFLUntrusted, database()->getFLSharedKeys());
             Assert(fldoc.asDict());     // validateRevisionBody should have preflighted this
             return fldoc;
         }
@@ -363,7 +366,7 @@ namespace c4Internal {
                 return false;
             newRev.properties = fldoc.asDict();
 
-            _db->dataFile()->_logVerbose("putNewRevision '%.*s' %s ; currently %s",
+            db()->dataFile()->_logVerbose("putNewRevision '%.*s' %s ; currently %s",
                     SPLAT(docID),
                     string(newVers.asASCII()).c_str(),
                     string(_currentVersionVector().asASCII()).c_str());
@@ -406,16 +409,16 @@ namespace c4Internal {
                 alloc_slice newVersStr = newVers.asASCII();
                 alloc_slice oldVersStr = _currentVersionVector().asASCII();
                 if (order != kConflicting)
-                    _db->dataFile()->_logVerbose(
+                    db()->dataFile()->_logVerbose(
                         "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %s (remote %d)",
                         SPLAT(docID), SPLAT(newVersStr), SPLAT(oldVersStr),
                         kOrderName[order], rq.remoteDBID);
                 else if (remote != RemoteID::Local)
-                    _db->dataFile()->_logInfo(
+                    db()->dataFile()->_logInfo(
                         "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> conflict (remote %d)",
                         SPLAT(docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
                 else
-                    _db->dataFile()->_logWarning(
+                    db()->dataFile()->_logWarning(
                         "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> conflict (remote %d)",
                         SPLAT(docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
             }
@@ -544,9 +547,10 @@ namespace c4Internal {
         }
 
 
-        bool save(unsigned maxRevTreeDepth =0) override {
+        bool save(unsigned /*maxRevTreeDepth*/ =0) override {
             requireValidDocID();
-            switch (_doc.save(database()->transaction())) {
+            db()->mustBeInTransaction();
+            switch (_doc.save(db()->transaction())) {
                 case VectorRecord::kNoSave:
                     return true;
                 case VectorRecord::kNoNewSequence:
@@ -559,13 +563,13 @@ namespace c4Internal {
                     _selectRemote(RemoteID::Local);
                     if (_doc.sequence() > sequence)
                         sequence = selectedRev.sequence = _doc.sequence();
-                    if (_db->dataFile()->willLog(LogLevel::Verbose)) {
+                    if (db()->dataFile()->willLog(LogLevel::Verbose)) {
                         alloc_slice revID = _doc.revID().expanded();
-                        _db->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
+                        db()->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
                                                      ((flags & kRevDeleted) ? "Deleted" : "Saved"),
                                                      SPLAT(docID), SPLAT(revID), sequence);
                     }
-                    database()->documentSaved(this);
+                    db()->documentSaved(this);
                     return true;
             }
             return false; // unreachable
@@ -582,17 +586,17 @@ namespace c4Internal {
 #pragma mark - FACTORY:
 
 
-    Retained<Document> VectorDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
+    Retained<C4Document> VectorDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
         return new VectorDocument(database(), docID, c);
     }
 
 
-    Retained<Document> VectorDocumentFactory::newDocumentInstance(const Record &record) {
+    Retained<C4Document> VectorDocumentFactory::newDocumentInstance(const Record &record) {
         return new VectorDocument(database(), record);
     }
 
 
-    Document* VectorDocumentFactory::documentContaining(FLValue value) {
+    C4Document* VectorDocumentFactory::documentContaining(FLValue value) {
         if (auto nuDoc = VectorRecord::containing(value); nuDoc)
             return (VectorDocument*)nuDoc->owner;
         else
