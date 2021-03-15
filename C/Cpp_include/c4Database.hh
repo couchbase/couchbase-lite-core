@@ -217,6 +217,7 @@ public:
                    slice fromPath);
     void clearCookies();
 
+// only used internally:
     C4RemoteID getRemoteDBID(slice remoteAddress,
                              bool canCreate);
     alloc_slice getRemoteDBAddress(C4RemoteID remoteID);
@@ -226,13 +227,13 @@ public:
                             C4SequenceNumber sequence,
                             C4RemoteID remoteID);
 
-// internal or deprecated:
     void beginTransaction();
     void endTransaction(bool commit);
 
     // Evaluates a SQLite (not N1QL!) query and returns the results. Used only by the `cblite` tool.
     alloc_slice rawQuery(slice sqliteQuery);
 
+// old deprecated API:
     static void copyFileToPath(slice sourcePath, slice destinationPath, const C4DatabaseConfig&);
     const C4DatabaseConfig& getConfigV1() const noexcept FLPURE;
     void lockClientMutex() noexcept;
@@ -241,12 +242,8 @@ public:
     C4ExtraInfo extraInfo { };
 
 protected:
-    virtual ~C4Database();
-
-private:
     friend c4Internal::DatabaseImpl* c4Internal::asInternal(C4Database *db);
-
-    std::unique_ptr<C4BlobStore> _blobStore;
+    virtual ~C4Database();
 };
 
 C4_ASSUME_NONNULL_END

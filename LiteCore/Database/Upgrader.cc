@@ -23,7 +23,7 @@
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "DatabaseImpl.hh"
 #include "Document.hh"
-#include "BlobStore.hh"
+#include "c4BlobStore.hh"
 #include "FleeceImpl.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -252,13 +252,13 @@ namespace litecore {
                 return false;
 
             //OPT: Could move the attachment file instead of copying (to save disk space)
-            BlobWriteStream out(*_newDB->blobStore());
+            C4WriteStream out(_newDB->getBlobStore());
             char buf[32768];
             FileReadStream in(src);
             size_t bytesRead;
             while (0 != (bytesRead = in.read(buf, sizeof(buf))))
                 out.write({buf, bytesRead});
-            out.install(&key);
+            out.install((C4BlobKey*)&key);
             return true;
         }
 

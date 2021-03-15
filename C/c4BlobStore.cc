@@ -36,14 +36,12 @@ static inline const C4BlobKey& external(const blobKey &key)   {return *(C4BlobKe
 static inline const blobKey* asInternal(const C4BlobKey *key) {return (const blobKey*)key;}
 
 
-#pragma mark - C++ CLASS:
+#pragma mark - C4BLOBSTORE METHODS:
 
 
 C4BlobStore::C4BlobStore(slice dirPath,
                          C4DatabaseFlags flags,
                          const C4EncryptionKey* key)
-:_impl(nullptr)
-,_ownsImpl(true)
 {
     BlobStore::Options options = {};
     options.create = (flags & kC4DB_Create) != 0;
@@ -52,14 +50,16 @@ C4BlobStore::C4BlobStore(slice dirPath,
         options.encryptionAlgorithm = (EncryptionAlgorithm)key->algorithm;
         options.encryptionKey = alloc_slice(key->bytes, sizeof(key->bytes));
     }
-    _impl = new BlobStore(FilePath(dirPath), &options);
+    _impl = make_unique<BlobStore>(FilePath(dirPath), &options);
 }
 
 
-C4BlobStore::~C4BlobStore() {
-    if (_ownsImpl)
-        delete _impl;
-}
+C4BlobStore::C4BlobStore(std::unique_ptr<litecore::BlobStore> store)
+:_impl(std::move(store))
+{ }
+
+
+C4BlobStore::~C4BlobStore() = default;
 
 
 void C4BlobStore::deleteStore() {
@@ -126,13 +126,17 @@ alloc_slice C4BlobStore::getBlobData(FLDict flDict, BlobStore *store) {
 
 
 alloc_slice C4BlobStore::getBlobData(FLDict flDict) {
-    return getBlobData(flDict, _impl);
+    return getBlobData(flDict, _impl.get());
 }
+
+
+#pragma mark - STREAMS:
 
 
 C4ReadStream::C4ReadStream(const C4BlobStore &store, C4BlobKey key)
 :_impl(store._impl->get(asInternal(key)).read())
 { }
+
 
 C4ReadStream::~C4ReadStream() = default;
 size_t C4ReadStream::read(void *dst, size_t mx)     {return _impl->read(dst, mx);}
@@ -144,12 +148,14 @@ C4WriteStream::C4WriteStream(C4BlobStore &store)
 :_impl(new BlobWriteStream(*store._impl))
 { }
 
+
 C4WriteStream::~C4WriteStream() {
     try {
         if (_impl)
             _impl->close();
     } catchExceptions();
 }
+
 
 void C4WriteStream::write(fleece::slice data)         {_impl->write(data);}
 uint64_t C4WriteStream::bytesWritten() const noexcept {return _impl->bytesWritten();}
@@ -170,10 +176,15 @@ alloc_slice C4Blob::keyToString(C4BlobKey key) {
 }
 
 
+C4BlobKey C4Blob::keyFromString(slice str) {
+    return external(blobKey::withBase64(str));
+}
+
+
 bool C4Blob::keyFromString(slice str, C4BlobKey* outKey) noexcept {
     try {
         if (str.buf) {
-            *outKey = external(blobKey::withBase64(str));
+            *outKey = keyFromString(str);
             return true;
         }
     } catchExceptions()

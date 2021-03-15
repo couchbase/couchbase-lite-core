@@ -333,7 +333,7 @@ namespace c4Internal {
         if (what == DataFile::kCompact) {
             // After DB compaction, garbage-collect blobs:
             unordered_set<string> digestsInUse = collectBlobs();
-            blobStore()->deleteAllExcept(digestsInUse);
+            getBlobStore()._impl->deleteAllExcept(digestsInUse);
         }
     }
 
@@ -349,11 +349,11 @@ namespace c4Internal {
         stopBackgroundTasks();
 
         // Create a new BlobStore and copy/rekey the blobs into it:
-        BlobStore *realBlobStore = blobStore();
+        BlobStore *blobStoreImpl = getBlobStore()._impl.get();
         path().subdirectoryNamed("Attachments_temp").delRecursive();
         auto newStore = createBlobStore("Attachments_temp", *newKey);
         try {
-            realBlobStore->copyBlobsTo(*newStore);
+            blobStoreImpl->copyBlobsTo(*newStore);
 
             // Rekey the database itself:
             dataFile()->rekey((EncryptionAlgorithm)newKey->algorithm,
@@ -366,7 +366,7 @@ namespace c4Internal {
         const_cast<C4DatabaseConfig2&>(_config).encryptionKey = *newKey;
 
         // Finally replace the old BlobStore with the new one:
-        newStore->moveTo(*realBlobStore);
+        newStore->moveTo(*blobStoreImpl);
         if (housekeeping)
             startHousekeeping();
         _dataFile->_logInfo("Finished rekeying database!");
@@ -378,7 +378,7 @@ namespace c4Internal {
 
     // Callback that takes a base64 blob digest and returns the blob data
     alloc_slice DatabaseImpl::blobAccessor(const Dict *blobDict) const {
-        return C4BlobStore::getBlobData(FLDict(blobDict), blobStore());
+        return getBlobStore().getBlobData(FLDict(blobDict));
     }
 
 
@@ -427,10 +427,11 @@ namespace c4Internal {
     }
 
 
-    BlobStore* DatabaseImpl::blobStore() const {
+    C4BlobStore& DatabaseImpl::getBlobStore() const {
         if (!_blobStore)
-            _blobStore = createBlobStore("Attachments", _config.encryptionKey);
-        return _blobStore.get();
+            _blobStore.reset(new C4BlobStore(createBlobStore("Attachments",
+                                                             _config.encryptionKey)));
+        return *_blobStore;
     }
 
 

@@ -61,8 +61,11 @@ namespace C4Blob {
     /** Translates a C4BlobKey into ASCII form. */
     alloc_slice keyToString(C4BlobKey key);
 
-    /** Translates an ASCII blob key back to a C4BlobKey. */
-    bool keyFromString(slice str, C4BlobKey* C4NULLABLE outKey) noexcept; //?? return optional<C4BlobKey>?
+    /** Translates an ASCII blob key back to a C4BlobKey. Returns false if invalid. */
+    bool keyFromString(slice str, C4BlobKey* outKey) noexcept;
+
+    /** Translates an ASCII blob key back to a C4BlobKey. Throws kC4ErrorWrongFormat if invalid. */
+    C4BlobKey keyFromString(slice str);
 
     /** Returns the dict's "digest" property decoded into a blobKey. */
     bool getKey(FLDict dict, C4BlobKey &outKey);
@@ -102,13 +105,16 @@ private:
 
 
 struct C4BlobStore : public C4Base {
-    // NOTE: Usually accessed via database->blobStore().
+    // NOTE: Usually accessed via database->getBlobStore().
 
     ~C4BlobStore();
 
     void deleteStore();
 
+    /// The size of the blob in bytes. Returns -1 if there is no such blob.
     int64_t getSize(C4BlobKey) const;
+
+    /// The blob's data. Returns nullslice if there is no such blob.
     alloc_slice getContents(C4BlobKey) const;
 
     /// The filesystem path of a blob, or nullslice if no blob with that key exists.
@@ -135,15 +141,13 @@ struct C4BlobStore : public C4Base {
 protected:
     friend struct C4ReadStream;
     friend struct C4WriteStream;
-    friend struct C4Database;
     friend class c4Internal::DatabaseImpl;
 
-    C4BlobStore(litecore::BlobStore *store) :_impl(store) { }
+    C4BlobStore(std::unique_ptr<litecore::BlobStore> store);
     static alloc_slice getBlobData(FLDict dict, litecore::BlobStore *store);
 
 private:
-    litecore::BlobStore* C4NULLABLE _impl;
-    bool const _ownsImpl {false};
+    std::unique_ptr<litecore::BlobStore> _impl;
 };
 
 C4_ASSUME_NONNULL_END

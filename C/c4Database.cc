@@ -187,9 +187,7 @@ void C4Database::unlockClientMutex() noexcept       {IMPL->unlockClientMutex();}
 
 
 C4BlobStore& C4Database::getBlobStore() {
-    if (!_blobStore)
-        _blobStore.reset(new C4BlobStore(IMPL->blobStore()));
-    return *_blobStore;
+    return IMPL->getBlobStore();
 }
 
 

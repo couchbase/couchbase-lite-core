@@ -124,7 +124,7 @@ namespace c4Internal {
 
         access_lock<SequenceTracker>& sequenceTracker();
 
-        BlobStore* blobStore() const;
+        C4BlobStore& getBlobStore() const;
 
         void lockClientMutex() noexcept                         {_clientMutex.lock();}
         void unlockClientMutex() noexcept                       {_clientMutex.unlock();}
@@ -173,7 +173,7 @@ namespace c4Internal {
         mutable unique_ptr<fleece::impl::Encoder> _encoder; // Shared Fleece Encoder
         mutable FLEncoder           _flEncoder {nullptr};   // Ditto, for clients
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
-        mutable unique_ptr<BlobStore> _blobStore;           // Blob storage
+        mutable unique_ptr<C4BlobStore> _blobStore;         // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
         std::recursive_mutex        _clientMutex;           // Mutex for c4db_lock/unlock
         unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations

@@ -20,7 +20,7 @@
 #include "LiteCoreTest.hh"
 #include "DatabaseImpl.hh"
 #include "Document.hh"
-#include "BlobStore.hh"
+#include "c4BlobStore.hh"
 #include "Logging.hh"
 #include "TempArray.hh"
 #include "PlatformCompat.hh"
@@ -96,7 +96,7 @@ protected:
     }
 
     void verifyAttachment(string digest) {
-        CHECK(db->blobStore()->get(blobKey::withBase64(digest)).exists());
+        CHECK(db->getBlobStore().getSize(C4Blob::keyFromString(digest)) > 0);
     }
 
 };
