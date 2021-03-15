@@ -66,7 +66,8 @@ C4API_BEGIN_DECLS
         C4String path;
 
 #if __cplusplus
-        bool isValidRemote(fleece::slice withDbName, C4Error *outError =nullptr) const noexcept;
+        bool isValidRemote(fleece::slice withDbName,
+                           C4Error* C4NULLABLE =nullptr) const noexcept;
         fleece::alloc_slice toURL() const;
         static bool fromURL(fleece::slice url,
                             C4Address *outAddress,
