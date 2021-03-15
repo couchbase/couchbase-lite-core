@@ -49,10 +49,15 @@ selectStatement =
             )? )?
         (o:orderBy _                    { setAny(select, "ORDER_BY"_sl, o); }
             )?
-        (LIMIT l:expression             { setAny(select, "LIMIT"_sl, l); }
-            )?
-        (OFFSET off:expression          { setAny(select, "OFFSET"_sl, off); }
-            )?
+        (
+          LIMIT l:expression            { setAny(select, "LIMIT"_sl, l); }
+          (OFFSET off:expression        { setAny(select, "OFFSET"_sl, off); }
+             )?
+          |
+          OFFSET off:expression         { setAny(select, "OFFSET"_sl, off); }
+          (LIMIT l:expression           { setAny(select, "LIMIT"_sl, l); }
+             )?
+        )?
         (_ ';')?
                                         { $$ = select; }
 
