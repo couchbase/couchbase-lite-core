@@ -600,7 +600,10 @@ C4StringResult c4db_getCookies(C4Database *db,
                                C4Error *outError) C4API
 {
     return tryCatch<C4StringResult>(outError, [=]() {
-        return C4StringResult(db->getCookies(request));
+        C4StringResult result(db->getCookies(request));
+        if (!result.buf)
+            clearError(outError);
+        return result;
     });
 }
 
