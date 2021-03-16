@@ -780,6 +780,39 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Delete then Update", "[Document][C]") {
+    TransactionHelper t(db);
+    
+    // Create a doc:
+    C4Error error;
+    auto doc = c4doc_create(db, kDocID, kFleeceBody, 0, ERROR_INFO(error));
+    REQUIRE(doc);
+
+    // Update the doc:
+    auto updatedDoc = c4doc_update(doc, json2fleece("{'ok':'go'}"), 0, ERROR_INFO(error));
+    REQUIRE(updatedDoc);
+    REQUIRE(updatedDoc->flags == (C4DocumentFlags)(kDocExists));
+    c4doc_release(doc);
+    doc = updatedDoc;
+    
+    // Delete the doc:
+    updatedDoc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+    REQUIRE(updatedDoc);
+    REQUIRE(updatedDoc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    c4doc_release(doc);
+    doc = updatedDoc;
+    
+    // Update the doc again:
+    updatedDoc = c4doc_update(doc, json2fleece("{'ok':'go'}"), 0, ERROR_INFO(error));
+    REQUIRE(updatedDoc);
+    REQUIRE(updatedDoc->flags == (C4DocumentFlags)(kDocExists));
+    c4doc_release(doc);
+    doc = updatedDoc;
+    
+    c4doc_release(doc);
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
     C4Error err;
     slice kRev1ID, kRev2ID, kRev3ID, kRev3ConflictID, kRev4ConflictID;
