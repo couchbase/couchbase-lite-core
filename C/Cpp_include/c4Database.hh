@@ -214,25 +214,25 @@ public:
     bool setCookie(slice setCookieHeader,
                    slice fromHost,
                    slice fromPath);
+
     void clearCookies();
 
 // only used internally:
+    // These are used by the replicator:
     C4RemoteID getRemoteDBID(slice remoteAddress,
                              bool canCreate);
     alloc_slice getRemoteDBAddress(C4RemoteID remoteID);
-
     bool markDocumentSynced(slice docID,
                             slice revID,
                             C4SequenceNumber sequence,
                             C4RemoteID remoteID);
 
-    void beginTransaction();
-    void endTransaction(bool commit);
-
     // Evaluates a SQLite (not N1QL!) query and returns the results. Used only by the `cblite` tool.
     alloc_slice rawQuery(slice sqliteQuery);
 
-// old deprecated API:
+// Only for use by the C API -- internal or deprecated:
+    void beginTransaction();            // use Transaction class above instead
+    void endTransaction(bool commit);
     static void copyFileToPath(slice sourcePath, slice destinationPath, const C4DatabaseConfig&);
     const C4DatabaseConfig& getConfigV1() const noexcept FLPURE;
     void lockClientMutex() noexcept;

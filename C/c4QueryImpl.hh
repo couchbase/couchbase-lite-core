@@ -16,6 +16,8 @@
 #include <mutex>
 #include <utility>
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace litecore {
     using namespace fleece::impl;
     
@@ -23,6 +25,7 @@ namespace litecore {
     // Encapsulates C4QueryEnumerator struct. A C4QueryEnumerator* points inside this object.
     struct C4QueryEnumeratorImpl : public RefCounted,
                                    public C4QueryEnumerator,
+                                   public C4Base,
                                    fleece::InstanceCountedIn<C4QueryEnumerator>
     {
         C4QueryEnumeratorImpl(DatabaseImpl *database, Query *query, QueryEnumerator *e)
@@ -77,7 +80,7 @@ namespace litecore {
             }
         }
 
-        C4QueryEnumeratorImpl* refresh() {
+        C4QueryEnumeratorImpl* C4NULLABLE refresh() {
             QueryEnumerator* newEnum = enumerator()->refresh(_query);
             if (newEnum)
                 return retain(new C4QueryEnumeratorImpl(_database, _query, newEnum));
@@ -132,7 +135,7 @@ namespace litecore {
             _callback(this);
         }
 
-        Retained<C4QueryEnumeratorImpl> getEnumeratorImpl(bool forget, C4Error *outError) {
+        Retained<C4QueryEnumeratorImpl> getEnumeratorImpl(bool forget, C4Error* C4NULLABLE outError) {
             LOCK(_mutex);
             if (outError)
                 *outError = _currentError;
@@ -154,7 +157,7 @@ namespace litecore {
     private:
         C4Query::ObserverCallback const _callback;
         mutable std::mutex              _mutex;
-        fleece::Retained<C4QueryEnumeratorImpl> _currentEnumerator;
+        Retained<C4QueryEnumeratorImpl> _currentEnumerator;
     };
 
 
@@ -163,3 +166,5 @@ namespace litecore {
     }
 
 }
+
+C4_ASSUME_NONNULL_END

@@ -17,7 +17,10 @@
 //
 
 #pragma once
+#include "c4Compat.h"
 #include "fleece/slice.hh"
+
+C4_ASSUME_NONNULL_BEGIN
 
 namespace fleece::impl {
     class Dict;
@@ -39,7 +42,9 @@ namespace litecore {
             The _attachments property is treated specially, in that any entries in it that don't
             appear elsewhere in the dictionary as blobs are preserved. */
         fleece::alloc_slice encodeStrippingOldMetaProperties(const fleece::impl::Dict* root,
-                                                             fleece::impl::SharedKeys*);
+                                                             fleece::impl::SharedKeys* C4NULLABLE);
     }
 
 }
+
+C4_ASSUME_NONNULL_END

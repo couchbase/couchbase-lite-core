@@ -20,6 +20,8 @@
 #include "DocumentFactory.hh"
 #include "fleece/Fleece.h"
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace litecore {
 
     /** DocumentFactory subclass for rev-tree document schema. */
@@ -38,3 +40,5 @@ namespace litecore {
     };
 
 }
+
+C4_ASSUME_NONNULL_END

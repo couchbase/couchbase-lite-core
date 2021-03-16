@@ -10,6 +10,8 @@
 #include "Record.hh"
 #include <vector>
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace litecore {
     class DatabaseImpl;
 
@@ -40,3 +42,5 @@ namespace litecore {
     };
 
 }
+
+C4_ASSUME_NONNULL_END

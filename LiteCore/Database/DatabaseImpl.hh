@@ -27,6 +27,8 @@
 #include <mutex>
 #include <unordered_set>
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace fleece { namespace impl {
     class Dict;
     class Encoder;
@@ -73,7 +75,7 @@ namespace litecore {
 
         uint64_t myPeerID() const;
 
-        void rekey(const C4EncryptionKey *newKey);
+        void rekey(const C4EncryptionKey* C4NULLABLE newKey);
         
         void maintenance(DataFile::MaintenanceType what);
 
@@ -87,8 +89,8 @@ namespace litecore {
 
         bool inTransaction() noexcept;
         void mustBeInTransaction();
-        bool mustBeInTransaction(C4Error *outError) noexcept;
-        bool mustNotBeInTransaction(C4Error *outError) noexcept;
+        bool mustBeInTransaction(C4Error* C4NULLABLE outError) noexcept;
+        bool mustNotBeInTransaction(C4Error* C4NULLABLE outError) noexcept;
 
         KeyStore& defaultKeyStore() const;
         KeyStore& getKeyStore(const string &name) const;
@@ -109,8 +111,8 @@ namespace litecore {
                                            bool mustExist,
                                            C4DocContentLevel content) const;
         Retained<C4Document> putDocument(const C4DocPutRequest &rq,
-                                           size_t *outCommonAncestorIndex,
-                                           C4Error *outError);
+                                         size_t* C4NULLABLE outCommonAncestorIndex,
+                                         C4Error* C4NULLABLE outError);
 
         static C4Document* documentContainingValue(FLValue) noexcept;
 
@@ -135,7 +137,7 @@ namespace litecore {
 
     public:
         // should be private, but called from Document
-        void documentSaved(C4Document* NONNULL);
+        void documentSaved(C4Document*);
 
     protected:
         virtual ~DatabaseImpl();
@@ -144,7 +146,7 @@ namespace litecore {
     private:
         DatabaseImpl(const string &bundlePath, const C4DatabaseConfig&, FilePath &&dataFilePath);
         static FilePath findOrCreateBundle(const string &path, bool canCreate,
-                                           C4StorageEngine &outStorageEngine);
+                                           const char * C4NONNULL &outStorageEngine);
         static bool deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine);
         void _cleanupTransaction(bool committed);
         bool getUUIDIfExists(slice key, C4UUID&);
@@ -167,7 +169,7 @@ namespace litecore {
         C4DatabaseConfig2           _config;                // Configuration
         C4DatabaseConfig            _configV1;              // TODO: DEPRECATED
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
-        ExclusiveTransaction*       _transaction {nullptr}; // Current ExclusiveTransaction, or null
+        ExclusiveTransaction* C4NULLABLE _transaction {nullptr}; // Current ExclusiveTransaction, or null
         int                         _transactionLevel {0};  // Nesting level of transactions
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
         mutable unique_ptr<fleece::impl::Encoder> _encoder; // Shared Fleece Encoder
@@ -183,3 +185,4 @@ namespace litecore {
 
 }
 
+C4_ASSUME_NONNULL_END

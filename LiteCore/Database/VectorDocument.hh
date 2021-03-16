@@ -8,6 +8,8 @@
 #include "DocumentFactory.hh"
 #include "fleece/Fleece.h"
 
+C4_ASSUME_NONNULL_BEGIN
+
 namespace litecore {
 
     class VectorDocumentFactory final : public DocumentFactory {
@@ -28,3 +30,5 @@ namespace litecore {
     };
 
 }
+
+C4_ASSUME_NONNULL_END
