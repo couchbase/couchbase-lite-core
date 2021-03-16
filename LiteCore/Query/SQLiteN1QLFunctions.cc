@@ -59,6 +59,8 @@ namespace litecore {
         });
     }
 
+    static const string value_type(sqlite3_context* ctx, sqlite3_value *arg);
+    static       void   writeSQLiteArg(sqlite3_context* ctx, sqlite3_value *arg, Encoder& encoder);
 
 #pragma mark - ARRAY FUNCTIONS:
 
@@ -246,6 +248,31 @@ namespace litecore {
 
 #pragma mark - ARRAY AGGREGATE:
 
+    static void writeSQLiteArg(sqlite3_context* ctx, sqlite3_value *arg, Encoder& enc) {
+        // Pre-condition: arg != nullptr
+
+        switch (sqlite3_value_type(arg)) {
+            case SQLITE_INTEGER:
+                enc.writeInt(sqlite3_value_int(arg));
+                break;
+            case SQLITE_FLOAT:
+                enc.writeDouble(sqlite3_value_double(arg));
+                break;
+            case SQLITE_TEXT:
+                enc.writeString(slice(sqlite3_value_text(arg), (size_t)sqlite3_value_bytes(arg)));
+                break;
+            case SQLITE_BLOB: {
+                const Value *value = fleeceParam(ctx, arg);
+                if (!value)
+                    return; // error
+                enc.writeValue(value);
+                break;
+            }
+            case SQLITE_NULL:
+            default:
+                return;
+        }
+    }
 
     static void array_agg(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
         try {
@@ -258,29 +285,7 @@ namespace litecore {
 
             if (arg) {
                 // On step, write the arg to the encoder:
-                switch (sqlite3_value_type(arg)) {
-                    case SQLITE_INTEGER:
-                        enc->writeInt(sqlite3_value_int(arg));
-                        break;
-                    case SQLITE_FLOAT:
-                        enc->writeDouble(sqlite3_value_double(arg));
-                        break;
-                    case SQLITE_TEXT:
-                        enc->writeString(slice(sqlite3_value_text(arg),
-                                               (size_t)sqlite3_value_bytes(arg)));
-                        break;
-                    case SQLITE_BLOB: {
-                        const Value *value = fleeceParam(ctx, arg);
-                        if (!value)
-                            return; // error
-                        enc->writeValue(value);
-                        break;
-                    }
-                    case SQLITE_NULL:
-                    default:
-                        return;
-                }
-
+                writeSQLiteArg(ctx, arg, *enc);
             } else {
                 // On final call, finish encoding and set the result to the encoded data:
                 enc->endArray();
@@ -304,15 +309,24 @@ namespace litecore {
 
 
     // Test for N1QL MISSING value (which is a SQLite NULL)
-    static bool isMissing(sqlite3_value *arg) {
+    static inline bool isMissing(sqlite3_value *arg) {
         return sqlite3_value_type(arg) == SQLITE_NULL;
     }
 
     // Test for N1QL NULL value (which is an empty blob tagged with kFleeceNullSubtype)
-    static bool isNull(sqlite3_value *arg) {
+    static inline bool isNull(sqlite3_value *arg) {
         return sqlite3_value_type(arg) == SQLITE_BLOB
             && sqlite3_value_subtype(arg) == kFleeceNullSubtype;
     }
+
+    static inline bool isArray(sqlite3_context* ctx, sqlite3_value *arg) {
+        return value_type(ctx, arg) == "array";
+    }
+
+    static inline bool isObject(sqlite3_context* ctx, sqlite3_value *arg) {
+        return value_type(ctx, arg) == "object";
+    }
+
 
     // ifmissing() is transpiled to SQLite3 as coalesce().
 
@@ -1220,6 +1234,46 @@ namespace litecore {
         }
     }
 
+    // toarray(v) returns
+    //   MISSING              if v == MISSING,
+    //   NULL                 if v == NULL
+    //   v                    if v is an array
+    //   wrapp v in an array  otherwise
+    static void toarray(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        try {
+            if (isMissing(argv[0]) || isNull(argv[0]) || isArray(ctx, argv[0])) {
+                sqlite3_result_value(ctx, argv[0]);
+            } else {
+                Encoder enc;
+                enc.beginArray();
+                writeSQLiteArg(ctx, argv[0], enc);
+                enc.endArray();
+                setResultBlobFromFleeceData( ctx,  enc.finish() );
+            }
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "toarray: exception!", -1);
+        }
+    }
+
+    // toobject(v) returns
+    //   MISSING              if v == MISSING,
+    //   NULL                 if v == NULL
+    //   v                    if v is an object
+    //   {}                   (the empty object), otherwise
+    static void toobject(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        try {
+            if (isMissing(argv[0]) || isNull(argv[0]) || isObject(ctx, argv[0])) {
+                sqlite3_result_value(ctx, argv[0]);
+            } else {
+                Encoder enc;
+                enc.beginDictionary();
+                enc.endDictionary();
+                setResultBlobFromFleeceData(ctx, enc.finish());
+            }
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "toobject: exception!", -1);
+        }
+    }
 
 #pragma mark - REGISTRATION:
 
@@ -1325,11 +1379,11 @@ namespace litecore {
         { "isobject",          1, isobject },
         { "isstring",          1, isstring },
         { "type",              1, type },
-        { "toarray",           1, unimplemented },
+        { "toarray",           1, toarray },
         { "toatom",            1, toatom },
         { "toboolean",         1, toboolean },
         { "tonumber",          1, tonumber },
-        { "toobject",          1, unimplemented },
+        { "toobject",          1, toobject },
         { "tostring",          1, tostring },
         { "isvalued",          1, isvalued },
 
@@ -1363,7 +1417,7 @@ namespace litecore {
         { "str_to_millis",     1, str_to_millis },
         { "str_to_utc",        1, str_to_utc },
 
-        { }
+        {nullptr, 0, unimplemented }
     };
 
 }

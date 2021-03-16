@@ -943,6 +943,116 @@ TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
     CHECK(e->columns()[0]->asString() == "false"_sl);
 }
 
+TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            // [1]
+            enc.beginArray();
+            enc.writeInt(1);
+            enc.endArray();
+        });
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeString("string value");
+        });
+        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("num");
+            enc.writeDouble(4.5);
+        });
+        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            // { "subvalue": "FTW" }
+            enc.beginDictionary(1);
+            enc.writeKey("subvalue");
+            enc.writeString("FTW");
+            enc.endDictionary();
+        });
+        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeNull();
+        });
+
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': [['TOARRAY()', ['.value']]]}")) };
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 5);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kArray);
+    CHECK(e->columns()[0]->asArray()->count() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kArray);
+    CHECK(e->columns()[0]->asArray()->get(0)->asString() == "string value"_sl);
+    REQUIRE(e->next());
+    CHECK(e->missingColumns() == uint64_t(1));
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kArray);
+    CHECK(e->columns()[0]->asArray()->get(0)->asDict()->get("subvalue"_sl)->asString() == "FTW"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->missingColumns() == uint64_t(0));
+}
+
+TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            // [1]
+            enc.beginArray();
+            enc.writeInt(1);
+            enc.endArray();
+        });
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeString("string value");
+        });
+        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("num");
+            enc.writeDouble(4.5);
+        });
+        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            // { "subvalue": "FTW" }
+            enc.beginDictionary(1);
+            enc.writeKey("subvalue");
+            enc.writeString("FTW");
+            enc.endDictionary();
+        });
+        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeNull();
+        });
+
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': [['TOOBJECT()', ['.value']]]}")) };
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 5);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kDict);
+    CHECK(e->columns()[0]->asDict()->count() == 0);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kDict);
+    CHECK(e->columns()[0]->asDict()->count() == 0);
+    REQUIRE(e->next());
+    CHECK(e->missingColumns() == uint64_t(1));
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kDict);
+    CHECK(e->columns()[0]->asDict()->get("subvalue"_sl)->asString() == "FTW"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->missingColumns() == uint64_t(0));
+}
+
 
 TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
     {
