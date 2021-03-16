@@ -169,7 +169,7 @@ namespace litecore {
 
             // First row is the current revision:
             C4DocPutRequest put {};
-            put.docID = newDoc->docID;
+            put.docID = newDoc->docID();
             put.existingRevision = true;
             put.revFlags =0;
             if (_currentRev->getColumn(3).getInt() != 0)

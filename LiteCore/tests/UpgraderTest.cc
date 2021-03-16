@@ -88,7 +88,7 @@ protected:
             for (slice revID : revIDs) {
                 if (i++ > 0)
                     CHECK(doc1->selectNextRevision());
-                CHECK(slice(doc1->selectedRev.revID) == revID);
+                CHECK(slice(doc1->selectedRev().revID) == revID);
             }
             CHECK(!doc1->selectNextRevision());
         }

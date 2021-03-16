@@ -33,7 +33,7 @@ namespace c4Internal {
     using namespace litecore;
 
 
-    class VectorDocument final : public C4Document {
+    class VectorDocument final : public C4Document, public InstanceCountedIn<VectorDocument> {
     public:
         VectorDocument(DatabaseImpl* database, slice docID, ContentOption whichContent)
         :C4Document(database, alloc_slice(docID))
@@ -65,13 +65,12 @@ namespace c4Internal {
 
 
         void _updateDocFields() {
-            _revIDBuf = _expandRevID(_doc.revID());
-            revID = _revIDBuf;
+            _revID = _expandRevID(_doc.revID());
 
-            flags = C4DocumentFlags(_doc.flags());
+            _flags = C4DocumentFlags(_doc.flags());
             if (_doc.exists())
-                flags |= kDocExists;
-            sequence = _doc.sequence();
+                _flags |= kDocExists;
+            _sequence = _doc.sequence();
         }
 
 
@@ -142,15 +141,15 @@ namespace c4Internal {
 
         bool _selectRemote(RemoteID remote, Revision &rev) {
             _remoteID = remote;
-            _selectedRevIDBuf = _expandRevID(rev.revID);
-            selectedRev.revID = _selectedRevIDBuf;
-            selectedRev.sequence = _doc.sequence(); // VectorRecord doesn't have per-rev sequence
+            _selectedRevID = _expandRevID(rev.revID);
+            _selected.revID = _selectedRevID;
+            _selected.sequence = _doc.sequence(); // VectorRecord doesn't have per-rev sequence
 
-            selectedRev.flags = 0;
-            if (remote == RemoteID::Local)  selectedRev.flags |= kRevLeaf;
-            if (rev.isDeleted())            selectedRev.flags |= kRevDeleted;
-            if (rev.hasAttachments())       selectedRev.flags |= kRevHasAttachments;
-            if (rev.isConflicted())         selectedRev.flags |= kRevIsConflict | kRevLeaf;
+            _selected.flags = 0;
+            if (remote == RemoteID::Local)  _selected.flags |= kRevLeaf;
+            if (rev.isDeleted())            _selected.flags |= kRevDeleted;
+            if (rev.hasAttachments())       _selected.flags |= kRevHasAttachments;
+            if (rev.isConflicted())         _selected.flags |= kRevIsConflict | kRevLeaf;
             return true;
         }
 
@@ -183,7 +182,7 @@ namespace c4Internal {
 
         bool selectNextLeafRevision(bool includeDeleted, bool withBody) override {
             while (selectNextRevision()) {
-                if (selectedRev.flags & kRevLeaf)
+                if (_selected.flags & kRevLeaf)
                     return !withBody || loadRevisionBody();
             }
             return false;
@@ -367,7 +366,7 @@ namespace c4Internal {
             newRev.properties = fldoc.asDict();
 
             db()->dataFile()->_logVerbose("putNewRevision '%.*s' %s ; currently %s",
-                    SPLAT(docID),
+                    SPLAT(_docID),
                     string(newVers.asASCII()).c_str(),
                     string(_currentVersionVector().asASCII()).c_str());
 
@@ -411,16 +410,16 @@ namespace c4Internal {
                 if (order != kConflicting)
                     db()->dataFile()->_logVerbose(
                         "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %s (remote %d)",
-                        SPLAT(docID), SPLAT(newVersStr), SPLAT(oldVersStr),
+                        SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr),
                         kOrderName[order], rq.remoteDBID);
                 else if (remote != RemoteID::Local)
                     db()->dataFile()->_logInfo(
                         "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> conflict (remote %d)",
-                        SPLAT(docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
+                        SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
                 else
                     db()->dataFile()->_logWarning(
                         "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> conflict (remote %d)",
-                        SPLAT(docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
+                        SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
             }
 
             switch (order) {
@@ -540,7 +539,7 @@ namespace c4Internal {
             _updateDocFields();
             _selectRemote(RemoteID::Local);
             LogTo(DBLog, "Resolved conflict in '%.*s' between #%s and #%s -> #%s",
-                  SPLAT(docID),
+                  SPLAT(_docID),
                   string(localVersion.asASCII()).c_str(),
                   string(remoteVersion.asASCII()).c_str(),
                   string(mergedVersion.asASCII()).c_str() );
@@ -561,13 +560,13 @@ namespace c4Internal {
                 case VectorRecord::kNewSequence:
                     _updateDocFields();
                     _selectRemote(RemoteID::Local);
-                    if (_doc.sequence() > sequence)
-                        sequence = selectedRev.sequence = _doc.sequence();
+                    if (_doc.sequence() > _sequence)
+                        _sequence = _selected.sequence = _doc.sequence();
                     if (db()->dataFile()->willLog(LogLevel::Verbose)) {
                         alloc_slice revID = _doc.revID().expanded();
                         db()->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
-                                                     ((flags & kRevDeleted) ? "Deleted" : "Saved"),
-                                                     SPLAT(docID), SPLAT(revID), sequence);
+                                                     ((_flags & kRevDeleted) ? "Deleted" : "Saved"),
+                                                     SPLAT(_docID), SPLAT(revID), _sequence);
                     }
                     db()->documentSaved(this);
                     return true;

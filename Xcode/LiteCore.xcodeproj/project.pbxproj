@@ -2095,7 +2095,7 @@
 			children = (
 				273AD3CF18F4B23A007D8C23 /* README.md */,
 				275073581F4B5E13003D2CCE /* CMakeLists.txt */,
-				2757DE551B9FC34E002EE261 /* C API */,
+				2757DE551B9FC34E002EE261 /* API */,
 				27E4871019217187007D8940 /* LiteCore */,
 				27CCC7CA1E525E6D00CE1989 /* Replicator */,
 				271BA53122960DF900D49D13 /* Networking */,
@@ -2251,7 +2251,7 @@
 			name = tests;
 			sourceTree = "<group>";
 		};
-		2757DE551B9FC34E002EE261 /* C API */ = {
+		2757DE551B9FC34E002EE261 /* API */ = {
 			isa = PBXGroup;
 			children = (
 				27F7A0C11D5E5C3500447BC6 /* include */,
@@ -2277,7 +2277,7 @@
 				27B64937206971FC00FC12F7 /* Info.plist */,
 				274D03FF1BA7554700FF7C35 /* tests */,
 			);
-			name = "C API";
+			name = API;
 			path = ../C;
 			sourceTree = "<group>";
 		};

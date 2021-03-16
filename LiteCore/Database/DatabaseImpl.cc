@@ -757,13 +757,13 @@ namespace c4Internal {
         // Conflicted documents are not eligible to be replicated,
         // so ignore them.  Later when the conflict is resolved
         // there will be logic to replicate them (see TreeDocument::resolveConflict)
-        if (_sequenceTracker && !(doc->selectedRev.flags & kRevIsConflict)) {
+        if (_sequenceTracker && !(doc->selectedRev().flags & kRevIsConflict)) {
             _sequenceTracker->use([doc](SequenceTracker &st) {
-                Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
-                st.documentChanged(doc->docID,
+                Assert(doc->selectedRev().sequence == doc->sequence()); // The new revision must be selected
+                st.documentChanged(doc->docID(),
                                    doc->getSelectedRevIDGlobalForm(), // entire version vector
-                                   doc->selectedRev.sequence,
-                                   SequenceTracker::RevisionFlags(doc->selectedRev.flags));
+                                   doc->selectedRev().sequence,
+                                   SequenceTracker::RevisionFlags(doc->selectedRev().flags));
             });
         }
     }

@@ -40,7 +40,7 @@ namespace c4Internal {
     using namespace fleece::impl;
     using namespace std;
 
-    class TreeDocument final : public C4Document {
+    class TreeDocument final : public C4Document, public fleece::InstanceCountedIn<TreeDocument> {
     public:
         TreeDocument(DatabaseImpl* database, slice docID, ContentOption content)
         :C4Document(database, alloc_slice(docID))
@@ -70,9 +70,9 @@ namespace c4Internal {
         void init() {
             _revTree.owner = this;
             _revTree.setPruneDepth(db()->maxRevTreeDepth());
-            flags = (C4DocumentFlags)_revTree.flags();
+            _flags = (C4DocumentFlags)_revTree.flags();
             if (_revTree.exists())
-                flags = (C4DocumentFlags)(flags | kDocExists);
+                _flags = (C4DocumentFlags)(_flags | kDocExists);
 
             initRevID();
             selectCurrentRevision();
@@ -80,7 +80,7 @@ namespace c4Internal {
 
         void initRevID() {
             setRevID(_revTree.revID());
-            sequence = _revTree.sequence();
+            _sequence = _revTree.sequence();
         }
 
         bool exists() noexcept override {
@@ -101,8 +101,8 @@ namespace c4Internal {
         // Such methods should call requireRevisions instead.
         bool loadRevisions() override {
             if (!_revTree.revsAvailable()) {
-                LogTo(DBLog, "Need to read rev-tree of doc '%.*s'", SPLAT(docID));
-                alloc_slice curRev = selectedRev.revID;
+                LogTo(DBLog, "Need to read rev-tree of doc '%.*s'", SPLAT(_docID));
+                alloc_slice curRev = _selectedRevID;
                 if (!_revTree.read(kEntireBody))
                     return false;
                 selectRevision(curRev, true);
@@ -173,9 +173,9 @@ namespace c4Internal {
             // revisions, but always write the rev known to the peer if there is one.
             // There may be gaps in the history (non-consecutive generations) if revs have been pruned.
             // If sending these, make up random revIDs for them since they don't matter.
-            unsigned lastGen = getRevIDGeneration(selectedRev.revID) + 1;
+            unsigned lastGen = getRevIDGeneration(_selectedRevID) + 1;
             do {
-                slice revID = selectedRev.revID;
+                slice revID = _selected.revID;
                 unsigned gen = getRevIDGeneration(revID);
                 while (gen < --lastGen && revsWritten < maxRevs) {
                     // We don't have this revision (the history got deeper than the local db's
@@ -208,10 +208,10 @@ namespace c4Internal {
         bool selectRevision(const Rev *rev) noexcept {   // doesn't throw
             _selectedRev = rev;
             if (rev) {
-                _selectedRevIDBuf = rev->revID.expanded();
-                selectedRev.revID = _selectedRevIDBuf;
-                selectedRev.flags = (C4RevisionFlags)rev->flags;
-                selectedRev.sequence = rev->sequence;
+                _selectedRevID = rev->revID.expanded();
+                _selected.revID = _selectedRevID;
+                _selected.flags = (C4RevisionFlags)rev->flags;
+                _selected.sequence = rev->sequence;
                 return true;
             } else {
                 clearSelectedRevision();
@@ -308,7 +308,7 @@ namespace c4Internal {
         }
 
         void updateFlags() {
-            flags = (C4DocumentFlags)_revTree.flags() | kDocExists;
+            _flags = (C4DocumentFlags)_revTree.flags() | kDocExists;
             initRevID();
         }
 
@@ -332,11 +332,11 @@ namespace c4Internal {
                 case litecore::RevTreeRecord::kNoNewSequence:
                     return true;
                 case litecore::RevTreeRecord::kNewSequence:
-                    selectedRev.flags &= ~kRevNew;
-                    if (_revTree.sequence() > sequence) {
-                        sequence = _revTree.sequence();
-                        if (selectedRev.sequence == 0)
-                            selectedRev.sequence = sequence;
+                    _selected.flags &= ~kRevNew;
+                    if (_revTree.sequence() > _sequence) {
+                        _sequence = _revTree.sequence();
+                        if (_selected.sequence == 0)
+                            _selected.sequence = _sequence;
                         db()->documentSaved(this);
                     }
                     return true;
@@ -355,7 +355,7 @@ namespace c4Internal {
             if (total > 0) {
                 _revTree.updateMeta();
                 updateFlags();
-                if (_selectedRevIDBuf == slice(revID))
+                if (_selectedRevID == slice(revID))
                     selectRevision(_revTree.currentRevision());
             }
             return total;
@@ -413,8 +413,8 @@ namespace c4Internal {
                 rq.historyCount = 1;
                 Assert(putNewRevision(rq, nullptr));
                 LogTo(DBLog, "Resolved conflict, adding rev '%.*s' #%.*s",
-                      SPLAT(docID), SPLAT(selectedRev.revID));
-            } else if(winningRev->sequence == sequence) {
+                      SPLAT(_docID), SPLAT(_selected.revID));
+            } else if(winningRev->sequence == _sequence) {
                 // CBL-1089
                 // In this case the winning revision both had no body, meaning that it
                 // already existed in the database previous with the conflict flag,
@@ -508,7 +508,7 @@ namespace c4Internal {
                     alloc_slice current = _revTree.revID().expanded();
                     LogWarn(DBLog,
                            "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %d",
-                           SPLAT(docID), SPLAT(rq.history[0]), SPLAT(current), -commonAncestor);
+                           SPLAT(_docID), SPLAT(rq.history[0]), SPLAT(current), -commonAncestor);
                     if (commonAncestor == -409)
                         *outError = {LiteCoreDomain, kC4ErrorConflict};
                     else
@@ -529,7 +529,7 @@ namespace c4Internal {
                         // revs come in after newer ones.  In this case, we will just ignore the older
                         // rev that has come through
                         LogTo(DBLog, "Document \"%.*s\" received older revision %.*s after %.*s, ignoring...",
-                              SPLAT(docID), SPLAT(newRev->revID.expanded()), SPLAT(oldRev->revID.expanded()));
+                              SPLAT(_docID), SPLAT(newRev->revID.expanded()), SPLAT(oldRev->revID.expanded()));
                         return (int32_t)oldRev->revID.generation();
                     }
                     
@@ -550,7 +550,7 @@ namespace c4Internal {
                         effect = "doing nothing";
                     }
                     LogTo(DBLog, "c4doc_put detected server-side branch-switch: \"%.*s\" %.*s to %.*s; %s",
-                          SPLAT(docID), SPLAT(oldRev->revID.expanded()),
+                          SPLAT(_docID), SPLAT(oldRev->revID.expanded()),
                           SPLAT(newRev->revID.expanded()), effect);
                 }
                 _revTree.setLatestRevisionOnRemote(rq.remoteDBID, newRev);
@@ -575,7 +575,7 @@ namespace c4Internal {
             if (!body)
                 return false;
 
-            revidBuffer encodedNewRevID = generateDocRevID(body, selectedRev.revID, deletion);
+            revidBuffer encodedNewRevID = generateDocRevID(body, _selected.revID, deletion);
 
             C4ErrorCode errorCode = {};
             int httpStatus;

@@ -374,10 +374,10 @@ namespace litecore { namespace repl {
 
 
     bool Checkpointer::isDocumentAllowed(C4Document* doc) {
-        return isDocumentIDAllowed(doc->docID)
-            && (!_options.pushFilter || _options.pushFilter(doc->docID,
-                                                            doc->selectedRev.revID,
-                                                            doc->selectedRev.flags,
+        return isDocumentIDAllowed(doc->docID())
+            && (!_options.pushFilter || _options.pushFilter(doc->docID(),
+                                                            doc->selectedRev().revID,
+                                                            doc->selectedRev().flags,
                                                             DBAccess::getDocRoot(doc),
                                                             _options.callbackContext));
     }
@@ -459,7 +459,7 @@ namespace litecore { namespace repl {
             C4Error::raise(error);
 
         Retained<C4Document> doc = db->getDocument(docId, false, kDocGetCurrentRev);
-        return doc && !_checkpoint->isSequenceCompleted(doc->sequence) && isDocumentAllowed(doc);
+        return doc && !_checkpoint->isSequenceCompleted(doc->sequence()) && isDocumentAllowed(doc);
     }
 
 

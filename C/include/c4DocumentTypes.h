@@ -68,13 +68,15 @@ typedef struct C4Revision {
 } C4Revision;
 
 
-#ifndef LITECORE_CPP_API                        // C++ has a different declaration, in c4Document.hh
 /** Describes a version-controlled document. */
-struct C4Document {
-    void* _internal1, *_internal2;              // placeholders for vtable-ptr and refcount in C++
+struct
+#ifndef LITECORE_CPP_API                        // C++ has a different declaration, in c4Document.hh
+C4Document
 #else
-struct C4DocumentPublicFields {
+C4Document_C
 #endif
+{
+    void* _internal1, *_internal2;              // placeholders for vtable-ptr and refcount in C++
     C4DocumentFlags flags;      ///< Document flags
     C4HeapString docID;         ///< Document ID
     C4HeapString revID;         ///< Revision ID of current revision

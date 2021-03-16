@@ -42,20 +42,21 @@ using namespace c4Internal;
 
 C4Document::C4Document(DatabaseImpl *db, alloc_slice docID_)
 :_db(db)
-,_docIDBuf(move(docID_))
+,_docID(move(docID_))
 {
-    docID = _docIDBuf;
-    extraInfo = { };
+    DebugAssert(&_flags == &((C4Document_C*)this)->flags);
+    DebugAssert((void*)&_docID == (void*)&((C4Document_C*)this)->docID);
+    _extraInfo = { };
 }
 
 
 C4Document::~C4Document() {
-    destructExtraInfo(extraInfo);
+    destructExtraInfo(_extraInfo);
 }
 
 
-DatabaseImpl* C4Document::db()                              {return (DatabaseImpl*)_db.get();}
-const DatabaseImpl* C4Document::db() const                  {return (const DatabaseImpl*)_db.get();}
+DatabaseImpl* C4Document::db()                              {return asInternal(_db);}
+const DatabaseImpl* C4Document::db() const                  {return asInternal(_db);}
 
 
 FLDict C4Document::getProperties() noexcept {
@@ -76,20 +77,19 @@ alloc_slice C4Document::bodyAsJSON(bool canonical) {
 
 void C4Document::setRevID(revid id) {
     if (id.size > 0)
-        _revIDBuf = id.expanded();
+        _revID = id.expanded();
     else
-        _revIDBuf = nullslice;
-    revID = _revIDBuf;
+        _revID = nullslice;
 }
 
 
 bool C4Document::selectCurrentRevision() noexcept {
     // By default just fill in what we know about the current revision:
     if (exists()) {
-        _selectedRevIDBuf = _revIDBuf;
-        selectedRev.revID = revID;
-        selectedRev.sequence = sequence;
-        selectedRev.flags = revisionFlagsFromDocFlags(flags);
+        _selectedRevID = _revID;
+        _selected.revID = _selectedRevID;
+        _selected.sequence = _sequence;
+        _selected.flags = revisionFlagsFromDocFlags(_flags);
     } else {
         clearSelectedRevision();
     }
@@ -98,30 +98,30 @@ bool C4Document::selectCurrentRevision() noexcept {
 
 
 void C4Document::clearSelectedRevision() noexcept {
-    _selectedRevIDBuf = nullslice;
-    selectedRev.revID = {};
-    selectedRev.flags = (C4RevisionFlags)0;
-    selectedRev.sequence = 0;
+    _selectedRevID = nullslice;
+    _selected.revID = _selectedRevID;
+    _selected.flags = (C4RevisionFlags)0;
+    _selected.sequence = 0;
 }
 
 
 alloc_slice C4Document::getSelectedRevIDGlobalForm() {
     // By default just return the same revID
-    DebugAssert(_selectedRevIDBuf == slice(selectedRev.revID));
-    return _selectedRevIDBuf;
+    DebugAssert(_selectedRevID == slice(_selected.revID));
+    return _selectedRevID;
 }
 
 
 void C4Document::requireValidDocID() {
-    if (!C4Document::isValidDocID(docID))
-        error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(docID));
+    if (!C4Document::isValidDocID(_docID))
+        error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(_docID));
 }
 
 
 #pragma mark - SAVING:
 
 
-static alloc_slice createDocUUID() {
+alloc_slice C4Document::createDocID() {
     char docID[C4Document::kGeneratedIDLength + 1];
     return alloc_slice(C4Document::generateID(docID, sizeof(docID)));
 }
@@ -149,9 +149,9 @@ Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags)
     db()->mustBeInTransaction();
     db()->validateRevisionBody(revBody);
 
-    alloc_slice parentRev = selectedRev.revID;
+    alloc_slice parentRev = _selectedRevID;
     C4DocPutRequest rq = {};
-    rq.docID = docID;
+    rq.docID = _docID;
     rq.body = revBody;
     rq.revFlags = revFlags;
     rq.allowConflict = false;
@@ -196,14 +196,14 @@ bool C4Document::checkNewRev(slice parentRevID,
             code = kC4ErrorNotFound;
         else if (!selectRevision(parentRevID, false))
             code = allowConflict ? kC4ErrorNotFound : kC4ErrorConflict;
-        else if (!allowConflict && !(selectedRev.flags & kRevLeaf))
+        else if (!allowConflict && !(_selected.flags & kRevLeaf))
             code = kC4ErrorConflict;
     } else {
         // No parent revision given:
         if (rqFlags & kRevDeleted) {
             // Didn't specify a revision to delete: NotFound or a Conflict, depending
-            code = ((this->flags & kDocExists) ?kC4ErrorConflict :kC4ErrorNotFound);
-        } else if ((this->flags & kDocExists) && !(selectedRev.flags & kRevDeleted)) {
+            code = ((_flags & kDocExists) ?kC4ErrorConflict :kC4ErrorNotFound);
+        } else if ((_flags & kDocExists) && !(_selected.flags & kRevDeleted)) {
             // If doc exists, current rev must be a deletion or there will be a conflict:
             code = kC4ErrorConflict;
         }
@@ -261,7 +261,7 @@ Retained<C4Document> DatabaseImpl::putDocument(const C4DocPutRequest &rq,
             slice docID = rq.docID;
             alloc_slice newDocID;
             if (!docID)
-                docID = newDocID = createDocUUID();
+                docID = newDocID = C4Document::createDocID();
 
             slice parentRevID;
             if (rq.historyCount > 0)
@@ -302,7 +302,7 @@ pair<Retained<C4Document>,int> DatabaseImpl::putNewDoc(const C4DocPutRequest &rq
     DebugAssert(rq.save, "putNewDoc optimization works only if rq.save is true");
     Record record(rq.docID);
     if (!rq.docID.buf)
-        record.setKey(createDocUUID());
+        record.setKey(C4Document::createDocID());
     Retained<C4Document> doc = documentFactory().newDocumentInstance(record);
     int commonAncestorIndex;
     if (rq.existingRevision)

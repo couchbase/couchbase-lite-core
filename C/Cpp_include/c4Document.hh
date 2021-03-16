@@ -35,15 +35,22 @@ C4_ASSUME_NONNULL_BEGIN
 
 
 struct C4Document : public fleece::RefCounted,
-                    public C4DocumentPublicFields,  // <-- docID, revID, flags, selectedRevision
-                    public C4Base,
-                    public fleece::InstanceCounted
+                    public C4Base
 {
     // NOTE: Instances are created with database->getDocument or database->putDocument.
 
     // Accessors:
 
-    C4Database* database() const                                            {return _db;}
+    C4DocumentFlags     flags() const noexcept FLPURE       {return _flags;}
+    const alloc_slice&  docID() const noexcept FLPURE       {return _docID;}
+    const alloc_slice&  revID() const noexcept FLPURE       {return _revID;}
+    C4SequenceNumber    sequence() const noexcept FLPURE    {return _sequence;}
+    const C4Revision&   selectedRev() const noexcept FLPURE {return _selected;}
+
+    /// The C C4Document struct. Using the accessors above is preferred.
+    const C4Document_C& pub()                               {return *(C4Document_C*)&_flags;}
+
+    C4Database* database() const                            {return _db;}
 
     virtual bool exists() =0;
 
@@ -118,10 +125,10 @@ struct C4Document : public fleece::RefCounted,
 
     // Static utility functions:
 
-    static constexpr size_t kGeneratedIDLength = 23;
+    static alloc_slice createDocID();
 
-    static char* generateID(char *outDocID,
-                            size_t bufferSize) noexcept;
+    static constexpr size_t kGeneratedIDLength = 23;
+    static char* generateID(char *outDocID, size_t bufferSize) noexcept;
 
     static bool isValidDocID(slice) noexcept;
 
@@ -180,10 +187,17 @@ protected:
                      bool allowConflict,
                      C4Error* C4NULLABLE) noexcept;
 protected:
-    Retained<C4Database> _db;
-    alloc_slice const    _docIDBuf;         // Backing store for docID
-    alloc_slice          _revIDBuf;         // Backing store for revID
-    alloc_slice          _selectedRevIDBuf; // Backing store for selectedRevision::revID
+    // These have the same offset and layout as the corresponding fields in the C C4Document:
+    alignas(void*)
+    C4DocumentFlags      _flags;        // Document flags
+    alloc_slice          _docID;        // Document ID
+    alloc_slice          _revID;        // Revision ID of current revision
+    C4SequenceNumber     _sequence;     // Sequence at which doc was last updated
+    C4Revision           _selected;     // Describes the currently-selected revision
+    C4ExtraInfo          _extraInfo;    // For client use
+
+    alloc_slice          _selectedRevID;// Same as _selected::revID
+    Retained<C4Database> _db;           // Owning database
 };
 
 

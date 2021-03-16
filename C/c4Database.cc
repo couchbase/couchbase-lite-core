@@ -18,13 +18,13 @@
 
 #include "c4Database.hh"
 #include "c4BlobStore.hh"
+#include "c4Document.hh"
 #include "c4Internal.hh"
 #include "c4Observer.hh"
 #include "c4Private.h"
 
 #include "DatabaseImpl.hh"
 #include "DatabaseCookies.hh"
-#include "c4Document.hh"
 #include "DocumentFactory.hh"
 #include "KeyStore.hh"
 #include "PrebuiltCopier.hh"
@@ -187,16 +187,13 @@ void C4Database::unlockClientMutex() noexcept       {IMPL->unlockClientMutex();}
 #pragma mark - ACCESSORS:
 
 
-C4BlobStore& C4Database::getBlobStore() {
-    return IMPL->getBlobStore();
-}
+C4BlobStore& C4Database::getBlobStore()                          {return IMPL->getBlobStore();}
 
+uint64_t C4Database::getDocumentCount() const                    {return IMPL->countDocuments();}
+C4SequenceNumber C4Database::getLastSequence() const             {return IMPL->lastSequence();}
 
-uint64_t C4Database::getDocumentCount() const                {return IMPL->countDocuments();}
-C4SequenceNumber C4Database::getLastSequence() const         {return IMPL->lastSequence();}
-
-slice C4Database::getName() const noexcept                      {return IMPL->name();}
-alloc_slice C4Database::path() const                         {return alloc_slice(IMPL->path());}
+slice C4Database::getName() const noexcept                       {return IMPL->name();}
+alloc_slice C4Database::path() const                             {return alloc_slice(IMPL->path());}
 const C4Database::Config& C4Database::getConfig() const noexcept {return *IMPL->config();}
 const C4DatabaseConfig& C4Database::getConfigV1() const noexcept {return *IMPL->configV1();}
 
@@ -208,14 +205,8 @@ alloc_slice C4Database::getPeerID() const {
 }
 
 
-C4UUID C4Database::publicUUID() const {
-    return IMPL->getUUID(DatabaseImpl::kPublicUUIDKey);
-}
-
-
-C4UUID C4Database::privateUUID() const {
-    return IMPL->getUUID(DatabaseImpl::kPrivateUUIDKey);
-}
+C4UUID C4Database::publicUUID() const   {return IMPL->getUUID(DatabaseImpl::kPublicUUIDKey);}
+C4UUID C4Database::privateUUID() const  {return IMPL->getUUID(DatabaseImpl::kPrivateUUIDKey);}
 
 
 #pragma mark - TRANSACTIONS:
@@ -349,9 +340,17 @@ bool C4Database::mayHaveExpiration() const      {return IMPL->dataFile()->defaul
 bool C4Database::startHousekeeping()            {return IMPL->startHousekeeping();}
 int64_t C4Database::purgeExpiredDocs()          {return IMPL->purgeExpiredDocs();}
 
-bool C4Database::setExpiration(slice docID, C4Timestamp timestamp) {return IMPL->setExpiration(docID, timestamp);}
-C4Timestamp C4Database::getExpiration(slice docID) const {return IMPL->defaultKeyStore().getExpiration(docID);}
-C4Timestamp C4Database::nextDocExpiration() const   {return IMPL->defaultKeyStore().nextExpiration();}
+C4Timestamp C4Database::getExpiration(slice docID) const {
+    return IMPL->defaultKeyStore().getExpiration(docID);
+}
+
+bool C4Database::setExpiration(slice docID, C4Timestamp ts) {
+    return IMPL->setExpiration(docID, ts);
+}
+
+C4Timestamp C4Database::nextDocExpiration() const {
+    return IMPL->defaultKeyStore().nextExpiration();
+}
 
 
 #pragma mark - QUERIES & INDEXES:
@@ -547,8 +546,8 @@ bool C4Database::markDocumentSynced(slice docID,
         // Look up revID by sequence, if it wasn't given:
         Assert(sequence != 0);
         do {
-            if (doc->selectedRev.sequence == sequence) {
-                revID = slice(doc->selectedRev.revID);
+            if (doc->selectedRev().sequence == sequence) {
+                revID = slice(doc->selectedRev().revID);
                 break;
             }
         } while (doc->selectNextRevision());
