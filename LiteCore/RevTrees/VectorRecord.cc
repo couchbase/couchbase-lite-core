@@ -404,7 +404,8 @@ namespace litecore {
     void VectorRecord::updateDocFlags() {
         // Take the local revision's flags, and add the Conflicted and Attachments flags
         // if any remote rev has them.
-        auto newDocFlags = _docFlags - DocumentFlags::kConflicted - DocumentFlags::kHasAttachments;
+        auto newDocFlags = _docFlags - DocumentFlags::kDeleted -
+            DocumentFlags::kConflicted - DocumentFlags::kHasAttachments;
         newDocFlags = newDocFlags | _current.flags;
         for (Array::iterator i(_revisions); i; ++i) {
             Dict revDict = i.value().asDict();
