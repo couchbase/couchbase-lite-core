@@ -171,6 +171,16 @@ expr7 =
              )*                         { $$ = x}
 expr6 =
     x:expr5 NOT NULL                    { $$ = op("IS NOT", x, nullValue); }
+  | x:expr5 IS (
+        NULL                            { $$ = binaryOp(x, "IS", nullValue); }
+      | MISSING                         { $$ = binaryOp(x, "IS", op("MISSING")); }
+      | VALUED                          { $$ = op("IS_VALUED()", x); }
+    )
+  | x:expr5 IS NOT (
+        NULL                            { $$ = binaryOp(x, "IS NOT", nullValue); }
+      | MISSING                         { $$ = op(x, "IS NOT", op("MISSING")); }
+      | VALUED                          { $$ = op("NOT", op("IS_VALUED()", x)); }
+    )
   | inExpression
   | likeOrMatchExpression
   | betweenExpression
@@ -387,6 +397,7 @@ SELECT    = "SELECT"i      WB
 SOME      = "SOME"i        WB
 THEN      = "THEN"i        WB
 TRUE      = "TRUE"i        WB
+VALUED    = "VALUED"i      WB
 WHEN      = "WHEN"i        WB
 WHERE     = "WHERE"i       WB
 

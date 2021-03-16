@@ -423,6 +423,14 @@ namespace litecore {
         }
     }
 
+    static void isvalued(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        if ( isMissing(argv[0]) || isNull(argv[0]) ) {
+            sqlite3_result_int(ctx, 0);
+        } else {
+            sqlite3_result_int(ctx, 1);
+        }
+    }
+
 #if 0
     static void ifinf(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         double num = 0.0;
@@ -1323,6 +1331,7 @@ namespace litecore {
         { "tonumber",          1, tonumber },
         { "toobject",          1, unimplemented },
         { "tostring",          1, tostring },
+        { "isvalued",          1, isvalued },
 
         { "abs",               1, fl_abs },
         { "acos",              1, fl_acos },

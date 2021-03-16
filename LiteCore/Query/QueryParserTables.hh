@@ -192,6 +192,7 @@ namespace litecore {
         {"tonumber"_sl,         1, 1},
         {"toobject"_sl,         1, 1},
         {"tostring"_sl,         1, 1},
+        {"is_valued"_sl,        1, 1, "isvalued"_sl},
 
         // FTS (not standard N1QL):
         {"rank"_sl,             1, 1},
