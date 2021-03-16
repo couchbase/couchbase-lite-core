@@ -184,7 +184,7 @@ namespace litecore {
             /** Deletes a non-open file. Returns false if it doesn't exist. */
             virtual bool _deleteFile(const FilePath &path, const Options* =nullptr) =0;
 
-            virtual ~Factory() { }
+            virtual ~Factory() =default;
             friend class DataFile;
         };
 

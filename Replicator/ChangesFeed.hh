@@ -30,7 +30,7 @@ namespace litecore::repl {
     public:
         class Delegate {
         public:
-            virtual ~Delegate() { };
+            virtual ~Delegate() =default;;
             /** Callback when new changes are available. Only called in continuous mode, after catching
                 up, and then only after `getMoreChanges` has returned less than the limit. It will only
                 be called once until the next call to `getMoreChanges`.

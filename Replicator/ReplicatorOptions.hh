@@ -39,8 +39,7 @@ namespace litecore { namespace repl {
 
         //---- Constructors/factories:
 
-        Options()
-        { }
+        Options() =default;
 
         Options(Mode push_, Mode pull_)
         :push(push_), pull(pull_)

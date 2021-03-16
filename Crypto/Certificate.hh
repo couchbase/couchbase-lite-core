@@ -77,7 +77,7 @@ namespace litecore { namespace crypto {
         static std::optional<Tag> tagNamed(fleece::slice name);
         static fleece::slice nameOfTag(Tag);
 
-        SubjectAltNames() { }
+        SubjectAltNames() =default;
         explicit SubjectAltNames(::mbedtls_asn1_sequence*);
 
         fleece::alloc_slice encode() const;

@@ -263,9 +263,7 @@ private:
     OpCode opCode[2];
 
 public:
-    WebSocketProtocol() {
-
-    }
+    WebSocketProtocol() =default;
 
     // Based on utf8_check.c by Markus Kuhn, 2005
     // https://www.cl.cam.ac.uk/~mgk25/ucs/utf8_check.c

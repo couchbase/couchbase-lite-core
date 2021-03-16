@@ -31,7 +31,7 @@ namespace litecore { namespace blip {
         using slice = fleece::slice;
 
         Codec();
-        virtual ~Codec() { }
+        virtual ~Codec() =default;
 
         // See https://zlib.net/manual.html#Basic for info about modes
         enum class Mode : int {

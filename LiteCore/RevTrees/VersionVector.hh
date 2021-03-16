@@ -35,7 +35,7 @@ namespace litecore {
         }
 
         /** Constructs an empty vector. */
-        VersionVector() { }
+        VersionVector() =default;
 
         /** Parses textual form from ASCII data. Overwrites any existing state.
             Throws BadRevisionID if the string's not valid.

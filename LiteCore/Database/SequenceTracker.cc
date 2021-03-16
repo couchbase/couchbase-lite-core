@@ -111,8 +111,7 @@ namespace litecore {
     { }
 
 
-    SequenceTracker::~SequenceTracker()
-    { }
+    SequenceTracker::~SequenceTracker() =default;
 
 
     void SequenceTracker::beginTransaction() {

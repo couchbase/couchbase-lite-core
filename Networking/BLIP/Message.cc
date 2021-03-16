@@ -133,8 +133,7 @@ namespace litecore { namespace blip {
 #pragma mark - MESSAGEIN:
     
 
-    MessageIn::~MessageIn()
-    { }
+    MessageIn::~MessageIn() =default;
 
 
     MessageIn::MessageIn(Connection *connection, FrameFlags flags, MessageNo n,

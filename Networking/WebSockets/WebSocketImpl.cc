@@ -83,8 +83,7 @@ namespace litecore { namespace websocket {
         }
     }
 
-    WebSocketImpl::~WebSocketImpl()
-    { }
+    WebSocketImpl::~WebSocketImpl() =default;
 
 
     string WebSocketImpl::loggingIdentifier() const {

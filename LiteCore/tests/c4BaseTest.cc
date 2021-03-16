@@ -161,7 +161,7 @@ namespace {
     class Virt {
     public:
         int64_t foo;
-        virtual ~Virt() { }
+        virtual ~Virt() =default;
     };
 
     class NonVirtCounty : public NonVirt, public fleece::InstanceCountedIn<NonVirtCounty> {

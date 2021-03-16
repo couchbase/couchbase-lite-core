@@ -63,7 +63,7 @@ namespace litecore { namespace blip {
         const int code {0};
         const fleece::slice message;
 
-        Error()  { }
+        Error()  =default;
         Error(fleece::slice domain_, int code_, fleece::slice msg =fleece::nullslice)
         :domain(domain_), code(code_), message(msg)
         { }
@@ -71,7 +71,7 @@ namespace litecore { namespace blip {
 
     // Like Error but with an allocated message string
     struct ErrorBuf : public Error {
-        ErrorBuf()  { }
+        ErrorBuf()  =default;
 
         ErrorBuf(fleece::slice domain, int code, fleece::alloc_slice msg)
         :Error(domain, code, msg)

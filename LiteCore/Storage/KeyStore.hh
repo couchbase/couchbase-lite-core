@@ -178,7 +178,7 @@ namespace litecore {
         virtual std::vector<IndexSpec> getIndexes() const =0;
 
         // public for complicated reasons; clients should never call it
-        virtual ~KeyStore()                             { }
+        virtual ~KeyStore()                             =default;
 
     protected:
         KeyStore(DataFile &db, const std::string &name, Capabilities capabilities)

@@ -23,7 +23,7 @@ namespace cbl {
     /** An abstract adapter class for LiteCore predictive model implementations. */
     class PredictiveModel {
     public:
-        PredictiveModel()                                           { }
+        PredictiveModel()                                           =default;
         virtual ~PredictiveModel()                                  {unregister();}
 
         /** Registers this instance under the given name. */

@@ -85,8 +85,7 @@ namespace litecore { namespace REST {
     { }
 
 
-    Response::~Response()
-    { }
+    Response::~Response() =default;
 
 
     Response& Response::setHeaders(const websocket::Headers &headers) {

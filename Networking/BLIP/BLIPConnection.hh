@@ -116,7 +116,7 @@ namespace litecore { namespace blip {
         The delegate methods are called on undefined threads, and should not block. */
     class ConnectionDelegate {
     public:
-        virtual ~ConnectionDelegate()                           { }
+        virtual ~ConnectionDelegate()                           =default;
 
         /** Called when the HTTP response arrives (just before onConnect or onClose). */
         virtual void onHTTPResponse(int status, const websocket::Headers &headers) { }

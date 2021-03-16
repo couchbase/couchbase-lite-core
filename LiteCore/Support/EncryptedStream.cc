@@ -72,8 +72,7 @@ namespace litecore {
     }
 
 
-    EncryptedStream::~EncryptedStream() {
-    }
+    EncryptedStream::~EncryptedStream() =default;
 
 
 #pragma mark - WRITER:

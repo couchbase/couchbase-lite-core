@@ -44,8 +44,7 @@ namespace litecore { namespace websocket {
     { }
 
 
-    WebSocket::~WebSocket()
-    { }
+    WebSocket::~WebSocket() =default;
 
 
     Delegate& WebSocket::delegate() const {

@@ -103,7 +103,7 @@ namespace litecore {
         static void throwBadASCII(fleece::slice string = fleece::nullslice);
 
     private:
-        Version() { }
+        Version() =default;
         bool _readASCII(slice ascii) noexcept;
         void validate() const;
 

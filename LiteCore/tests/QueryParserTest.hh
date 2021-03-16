@@ -25,7 +25,7 @@
 
 class QueryParserTest : public TestFixture, protected QueryParser::delegate {
 public:
-    QueryParserTest() { }
+    QueryParserTest() =default;
 
     string parse(FLValue val);
     string parse(string json);

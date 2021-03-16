@@ -30,7 +30,7 @@ namespace litecore {
         static const unsigned kFileBlockSize = 4096;
 
     protected:
-        EncryptedStream() { }
+        EncryptedStream() =default;
         void initEncryptor(EncryptionAlgorithm alg,
                            slice encryptionKey,
                            slice nonce);

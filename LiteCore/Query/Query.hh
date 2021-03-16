@@ -68,7 +68,7 @@ namespace litecore {
         virtual void close()                                            {_keyStore = nullptr;}
 
         struct Options {
-            Options() { }
+            Options() =default;
             
             Options(const Options &o)
             :paramBindings(o.paramBindings), afterSequence(o.afterSequence) { }

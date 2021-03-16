@@ -40,7 +40,7 @@ namespace litecore { namespace repl {
         class Delegate : public Worker {
         public:
             Delegate(Worker *parent, const char *namePrefix) :Worker(parent, namePrefix) { }
-            virtual ~Delegate() { }
+            virtual ~Delegate() =default;
             /** Tells the Delegate the peer has finished sending historical changes. */
             virtual void caughtUp() =0;
             /** Tells the Delegate about the "rev" messages it will be receiving. */

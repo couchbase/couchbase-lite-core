@@ -73,7 +73,7 @@ namespace litecore {
         and some extra metadata like flags and a sequence number. */
     class Record {
     public:
-        Record()                                  { }
+        Record()                                  =default;
         explicit Record(slice key);
         explicit Record(alloc_slice key);
 

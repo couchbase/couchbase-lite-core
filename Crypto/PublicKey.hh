@@ -72,7 +72,7 @@ namespace litecore { namespace crypto {
     protected:
         friend class CertBase;
         
-        PublicKey()                             { }
+        PublicKey()                             =default;
         explicit PublicKey(KeyOwner *owner)     :Key(owner) { }
     };
 
@@ -109,7 +109,7 @@ namespace litecore { namespace crypto {
         }
 
     protected:
-        PrivateKey()                                    { }
+        PrivateKey()                                    =default;
     };
 
 

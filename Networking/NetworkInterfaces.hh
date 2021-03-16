@@ -54,7 +54,7 @@ namespace litecore::net {
         bool operator== (const IPAddress&) const;
 
     private:
-        IPAddress() { }
+        IPAddress() =default;
         in_addr&  _addr4();
         in6_addr& _addr6();
 

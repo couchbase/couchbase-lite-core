@@ -138,7 +138,7 @@ namespace litecore {
 
     private:
         struct Base {
-            virtual ~Base() {};
+            virtual ~Base() =default;;
             virtual Base* clone() const = 0;
         };
 

@@ -89,10 +89,10 @@ namespace litecore {
     /** A serializable tree of Revisions. */
     class RevTree {
     public:
-        RevTree() { }
+        RevTree() =default;
         RevTree(slice body, slice extra, sequence_t seq);
         RevTree(const RevTree&);
-        virtual ~RevTree() { }
+        virtual ~RevTree() =default;
 
         void decode(slice body, slice extra, sequence_t seq);
 

@@ -58,8 +58,7 @@ namespace litecore { namespace net {
     }
 
 
-    HTTPLogic::~HTTPLogic()
-    { }
+    HTTPLogic::~HTTPLogic() =default;
 
 
     void HTTPLogic::setHeaders(const websocket::Headers &requestHeaders) {

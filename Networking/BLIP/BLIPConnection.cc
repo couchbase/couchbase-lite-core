@@ -58,7 +58,7 @@ namespace litecore { namespace blip {
     /** Queue of outgoing messages; each message gets to send one frame in turn. */
     class MessageQueue : public vector<Retained<MessageOut>> {
     public:
-        MessageQueue()                          { }
+        MessageQueue()                          =default;
         MessageQueue(size_t rsrv)               {reserve(rsrv);}
 
         bool contains(MessageOut *msg) const    {return find(begin(), end(), msg) != end();}

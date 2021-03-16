@@ -51,8 +51,7 @@ namespace litecore { namespace repl {
     { }
 
 
-    Checkpointer::~Checkpointer()
-    { }
+    Checkpointer::~Checkpointer() =default;
 
 
     string Checkpointer::to_string() const {

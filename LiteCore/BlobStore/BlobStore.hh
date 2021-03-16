@@ -32,7 +32,7 @@ namespace litecore {
     struct blobKey {
         SHA1 digest;
 
-        blobKey() { }
+        blobKey() =default;
         blobKey(slice rawBytes);
 
         static blobKey withBase64(slice base64, bool prefixed =true);

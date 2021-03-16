@@ -96,8 +96,7 @@ namespace litecore { namespace repl {
 #pragma mark - REVTOINSERT:
 
 
-    RevToInsert::~RevToInsert()
-    { }
+    RevToInsert::~RevToInsert() =default;
 
 
     RevToInsert::RevToInsert(IncomingRev* owner_,
