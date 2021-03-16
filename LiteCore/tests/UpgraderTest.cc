@@ -28,7 +28,7 @@
 using namespace std;
 using namespace fleece;
 
-using DatabaseImpl = c4Internal::DatabaseImpl;
+using DatabaseImpl = litecore::DatabaseImpl;
 
 
 class UpgradeTestFixture : public TestFixture {

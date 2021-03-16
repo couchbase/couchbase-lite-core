@@ -8,13 +8,13 @@
 #include "DocumentFactory.hh"
 #include "fleece/Fleece.h"
 
-namespace c4Internal {
+namespace litecore {
 
     class VectorDocumentFactory final : public DocumentFactory {
     public:
         VectorDocumentFactory(DatabaseImpl *db)   :DocumentFactory(db) { }
 
-        Retained<C4Document> newDocumentInstance(C4Slice docID, ContentOption) override;
+        Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
         Retained<C4Document> newDocumentInstance(const Record&) override;
 
         std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs,

@@ -7,8 +7,8 @@
 #pragma once
 #include "RefCounted.hh"
 #include "fleece/slice.hh"
-#include "c4Document.h"
-#include "c4Replicator.h"
+#include "c4DocumentTypes.h"
+#include "c4ReplicatorTypes.h"
 
 namespace litecore { namespace repl {
 

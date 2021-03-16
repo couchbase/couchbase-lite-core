@@ -36,7 +36,7 @@ using namespace litecore;
 using Backtrace = fleece::Backtrace;
 
 
-namespace c4Internal {
+namespace litecore {
 
     static_assert((int)kC4MaxErrorDomainPlus1 == (int)error::NumDomainsPlus1,
                   "C4 error domains are not in sync with C++ ones");
@@ -180,8 +180,6 @@ static const char* getErrorName(C4Error err) {
         return nullptr;
 }
 
-using namespace c4Internal;
-
 
 __cold
 string C4Error::message() const {
@@ -274,9 +272,6 @@ void C4Error::raise(C4ErrorDomain domain, int code, const char *format, ...) {
 #pragma mark - PUBLIC API FOR CREATING C4ERRORS:
 
 
-using namespace c4Internal;
-
-
 __cold
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) noexcept {
     ErrorInfo info;
@@ -317,13 +312,13 @@ C4SliceResult c4error_getMessage(C4Error err) noexcept {
     if (string msg = err.message(); msg.empty())
         return {};
     else
-        return sliceResult(msg);
+        return toSliceResult(msg);
 }
 
 
 __cold
 C4SliceResult c4error_getDescription(C4Error error) noexcept {
-    return sliceResult(error.description());
+    return toSliceResult(error.description());
 }
 
 
@@ -346,7 +341,7 @@ C4StringResult c4error_getBacktrace(C4Error error) noexcept {
     if (string bt = error.backtrace(); bt.empty())
         return {};
     else
-        return sliceResult(bt);
+        return toSliceResult(bt);
 }
 
 

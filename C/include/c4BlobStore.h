@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "c4Database.h"
+#include "c4DatabaseTypes.h"
 #include <stdio.h>
 
 C4_ASSUME_NONNULL_BEGIN

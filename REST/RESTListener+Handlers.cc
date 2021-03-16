@@ -22,7 +22,7 @@
 #include "c4Private.h"
 #include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
-#include "c4Replicator.h"
+#include "c4ReplicatorTypes.h"
 #include "Server.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"

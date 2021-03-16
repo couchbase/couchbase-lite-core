@@ -24,14 +24,12 @@
 #include <unordered_map>
 #include <functional>
 
-namespace c4Internal {
-    class DatabaseImpl;
-}
-
 namespace litecore {
     class DatabaseChangeNotifier;
+    class DatabaseImpl;
     class DocChangeNotifier;
 
+    
     extern LogDomain ChangesLog; // "Changes"
     
 

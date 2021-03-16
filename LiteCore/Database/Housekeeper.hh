@@ -10,17 +10,15 @@
 #include "Actor.hh"
 #include "Timer.hh"
 
-namespace c4Internal {
-    class DatabaseImpl;
-}
-
 namespace litecore {
     class BackgroundDB;
+    class DatabaseImpl;
+
 
     class Housekeeper : public actor::Actor {
     public:
         /// Creates a Housekeeper for a Database.
-        explicit Housekeeper(c4Internal::DatabaseImpl* NONNULL);
+        explicit Housekeeper(DatabaseImpl* NONNULL);
 
         /// Asynchronously starts the Housekeeper task.
         void start();

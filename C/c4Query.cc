@@ -35,19 +35,18 @@
 using namespace std;
 using namespace fleece::impl;
 using namespace litecore;
-using namespace c4Internal;
 
 
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = { };
 
 
-C4Query::C4Query(C4Database *db, C4QueryLanguage language, C4Slice queryExpression)
-:_database(c4Internal::asInternal(db))
+C4Query::C4Query(C4Database *db, C4QueryLanguage language, slice queryExpression)
+:_database(asInternal(db))
 ,_query(_database->defaultKeyStore().compileQuery(queryExpression, (QueryLanguage)language))
 { }
 
 
-Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, C4Slice queryExpression,
+Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice queryExpression,
                                        int *outErrorPos) {
     try {
         return retained(new C4Query(this, language, queryExpression));
@@ -69,7 +68,7 @@ unsigned C4Query::columnCount() const noexcept {
 
 slice C4Query::columnTitle(unsigned column) const {
     auto &titles = _query->columnTitles();
-    return (column < titles.size()) ? slice(titles[column]) : slice{};
+    return (column < titles.size()) ? titles[column] : slice{};
 }
 
 

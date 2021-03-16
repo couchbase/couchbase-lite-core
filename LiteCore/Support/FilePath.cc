@@ -158,8 +158,8 @@ namespace litecore {
     }
 
 
-    FilePath::FilePath(const string &dirName, const string &fileName)
-    :_dir(dirName), _file(fileName)
+    FilePath::FilePath(string &&dirName, string &&fileName)
+    :_dir(move(dirName)), _file(move(fileName))
     {
         if (_dir.empty())
             _dir = kCurrentDir;
@@ -168,6 +168,9 @@ namespace litecore {
         else
             appendSeparatorTo(_dir);
     }
+
+    FilePath::FilePath(string_view dir, string_view file) :FilePath(string(dir), string(file)) { }
+    FilePath::FilePath(const char *dir, const char *file) :FilePath(string(dir), string(file)) { }
 
 
     FilePath::FilePath()

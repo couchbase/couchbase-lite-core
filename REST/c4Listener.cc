@@ -18,7 +18,6 @@
 
 #include "c4.hh"
 #include "c4Listener.h"
-#include "c4Internal.hh"
 #include "c4ListenerInternal.hh"
 #include "c4ExceptionUtils.hh"
 #include "Listener.hh"
@@ -73,7 +72,7 @@ C4StringResult c4db_URINameFromPath(C4String pathSlice) C4API {
         if (name.empty())
             return {};
         return FLSliceResult(alloc_slice(name));
-    } catchExceptions()
+    } catchAndIgnore()
     return {};
 }
 
@@ -108,7 +107,7 @@ bool c4listener_unshareDB(C4Listener *listener, C4Database *db,
 uint16_t c4listener_getPort(C4Listener *listener) C4API {
     try {
         return internal(listener)->port();
-    } catchExceptions()
+    } catchAndIgnore()
     return 0;
 }
 

@@ -18,7 +18,6 @@
 
 #include "LegacyAttachments.hh"
 #include "c4BlobStore.hh"
-#include "c4Document+Fleece.h"
 #include "FleeceImpl.hh"
 #include "Path.hh"
 #include <unordered_map>
@@ -59,14 +58,14 @@ namespace litecore { namespace legacy_attachments {
         }
 
         // Scan all legacy attachments and look for ones that are stand-ins for blobs:
-        auto attachments = Value::asDict(root->get(C4STR(kC4LegacyAttachmentsProperty)));
+        auto attachments = Value::asDict(root->get(C4Blob::kLegacyAttachmentsProperty));
         if (attachments) {
             for (Dict::iterator i(attachments); i; ++i) {
                 slice key = i.keyString();
                 auto attachment = Value::asDict(i.value());
                 if (!attachment)
                     continue;
-                auto attDigest = attachment->get(slice(kC4BlobDigestProperty));
+                auto attDigest = attachment->get(C4Blob::kDigestProperty);
                 const Dict *blob = nullptr;
 
                 if (key.hasPrefix("blob_"_sl) && attachment) {
@@ -83,7 +82,7 @@ namespace litecore { namespace legacy_attachments {
                 if (attDigest && blob && C4Blob::isBlob(FLDict(blob))) {
                     // OK, this is a stand-in; remove it. But has its digest changed?
                     removeThese.insert(attachment);
-                    auto blobDigest = blob->get(slice(kC4BlobDigestProperty));
+                    auto blobDigest = blob->get(C4Blob::kDigestProperty);
                     if (blobDigest && blobDigest->asString() != attDigest->asString()) {
                         // The digest is different, so remember to copy that to the blob:
                         fixBlobs.insert({blob, attachment});

@@ -27,6 +27,7 @@
 #include <utility>
 
 namespace fleece {
+    struct slice;
     struct alloc_slice;
 }
 
@@ -44,8 +45,10 @@ namespace litecore {
         FilePath();
 
         /** Constructs a FilePath from a directory name and a filename in that directory. */
-        FilePath(const std::string &dirName, const std::string &fileName);
-        
+        FilePath(std::string &&dirName, std::string &&fileName);
+        FilePath(std::string_view dirName, std::string_view fileName);
+        FilePath(const char *dirName, const char *fileName);
+
         /** Returns a folder with a predefined name that serves as a location for temporary
             files.  
          */

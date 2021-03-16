@@ -12,16 +12,13 @@
 
 #include "DatabaseImpl.hh"
 #include "Query.hh"
-#include "InstanceCounted.hh"
-#include "RefCounted.hh"
 #include "Array.hh"
 #include <mutex>
 #include <utility>
 
-namespace c4Internal {
-
-    using namespace litecore;
+namespace litecore {
     using namespace fleece::impl;
+    
 
     // Encapsulates C4QueryEnumerator struct. A C4QueryEnumerator* points inside this object.
     struct C4QueryEnumeratorImpl : public RefCounted,

@@ -19,6 +19,7 @@
 #include "c4BlobStore.hh"
 #include "c4Database.hh"
 #include "c4Document+Fleece.h"
+#include "c4ExceptionUtils.hh"
 #include "BlobStore.hh"
 #include "DatabaseImpl.hh"
 #include "Base64.hh"
@@ -78,13 +79,13 @@ alloc_slice C4BlobStore::getContents(C4BlobKey key) const {
 
 
 alloc_slice C4BlobStore::getFilePath(C4BlobKey key) const {
-    auto path = _impl->get(asInternal(key)).path();
+    FilePath path = _impl->get(asInternal(key)).path();
     if (!path.exists())
         return nullslice;
     else if (_impl->isEncrypted())
         error::_throw(error::WrongFormat);
     else
-        return alloc_slice(string(path));
+        return alloc_slice(path);
 }
 
 
@@ -103,7 +104,7 @@ alloc_slice C4BlobStore::getBlobData(FLDict flDict, BlobStore *store) {
     Dict dict(flDict);
     if (!C4Blob::isBlob(dict))
         error::_throw(error::InvalidParameter, "Not a blob");
-    auto dataProp = dict.get(slice(kC4BlobDataProperty));
+    auto dataProp = dict.get(C4Blob::kDataProperty);
     if (dataProp) {
         switch (dataProp.type()) {
             case kFLData:
@@ -140,7 +141,7 @@ C4ReadStream::C4ReadStream(const C4BlobStore &store, C4BlobKey key)
 
 C4ReadStream::~C4ReadStream() = default;
 size_t C4ReadStream::read(void *dst, size_t mx)     {return _impl->read(dst, mx);}
-int64_t C4ReadStream::getLength() const                {return _impl->getLength();}
+int64_t C4ReadStream::getLength() const             {return _impl->getLength();}
 void C4ReadStream::seek(int64_t pos)                {_impl->seek(pos);}
 
 
@@ -153,7 +154,7 @@ C4WriteStream::~C4WriteStream() {
     try {
         if (_impl)
             _impl->close();
-    } catchExceptions();
+    } catchAndIgnore();
 }
 
 
@@ -187,20 +188,20 @@ bool C4Blob::keyFromString(slice str, C4BlobKey* outKey) noexcept {
             *outKey = keyFromString(str);
             return true;
         }
-    } catchExceptions()
+    } catchAndIgnore()
     return false;
 }
 
 
 bool C4Blob::getKey(FLDict dict, C4BlobKey &outKey) {
-    FLValue digest = FLDict_Get(dict, slice(kC4BlobDigestProperty));
+    FLValue digest = FLDict_Get(dict, C4Blob::kDigestProperty);
     return digest && asInternal(outKey).readFromBase64(FLValue_AsString(digest));
 }
 
 
 bool C4Blob::isBlob(FLDict dict) {
-    FLValue cbltype= FLDict_Get(dict, C4STR(kC4ObjectTypeProperty));
-    return cbltype && slice(FLValue_AsString(cbltype)) == slice(kC4ObjectType_Blob);
+    FLValue cbltype= FLDict_Get(dict, C4Blob::kObjectTypeProperty);
+    return cbltype && slice(FLValue_AsString(cbltype)) == C4Blob::kObjectType_Blob;
 }
 
 

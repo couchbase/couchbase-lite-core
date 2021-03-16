@@ -40,7 +40,7 @@ namespace litecore {
     static constexpr delay_t kLongDelay    = chrono::milliseconds(500);
 
 
-    LiveQuerier::LiveQuerier(c4Internal::DatabaseImpl *db,
+    LiveQuerier::LiveQuerier(DatabaseImpl *db,
                              Query *query,
                              bool continuous,
                              Delegate *delegate)

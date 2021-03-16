@@ -93,7 +93,7 @@ namespace litecore {
         virtual uint64_t fileSize();
 
         /** Types of things \ref maintenance() can do.
-            NOTE: If you update this, you must update C4MaintenanceType in c4Database.h too! */
+            NOTE: If you update this, you must update C4MaintenanceType in c4DatabaseTypes.h too! */
         enum MaintenanceType {
             kCompact,
             kReindex,

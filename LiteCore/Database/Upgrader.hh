@@ -19,7 +19,7 @@
 #pragma once
 #include "FilePath.hh"
 #include "DatabaseImpl.hh"
-#include "c4Database.h"
+#include "c4DatabaseTypes.h"
 
 namespace litecore {
 

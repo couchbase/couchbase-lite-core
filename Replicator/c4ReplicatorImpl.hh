@@ -38,7 +38,7 @@
 #include <optional>
 #include <vector>
 
-namespace c4Internal {
+namespace litecore {
 
     using namespace fleece;
     using namespace litecore;

@@ -11,8 +11,8 @@
 #include "StringUtil.hh"
 #include "c4Socket.h"
 #include "c4Socket+Internal.hh"
-#include "fleece/Fleece.hh"
 #include "c4Internal.hh"
+#include "fleece/Fleece.hh"
 
 using namespace fleece;
 using namespace std;
@@ -691,7 +691,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
 
 #include "c4ReplicatorImpl.hh"
 
-struct C4TestReplicator : public c4Internal::C4ReplicatorImpl {
+struct C4TestReplicator : public litecore::C4ReplicatorImpl {
     C4TestReplicator(C4Database* db, C4ReplicatorParameters params)
         : C4ReplicatorImpl(db, params)   { }
     alloc_slice propertiesMemory() const { return _options.properties.data(); }

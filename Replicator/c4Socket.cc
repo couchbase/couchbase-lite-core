@@ -32,7 +32,6 @@
 #include <exception>
 
 using namespace std;
-using namespace c4Internal;
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::net;

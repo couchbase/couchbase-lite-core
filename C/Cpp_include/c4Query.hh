@@ -26,14 +26,12 @@
 #include <utility>
 
 namespace litecore {
-    class LiveQuerier;
-    class Query;
-    class QueryEnumerator;
-}
-namespace c4Internal {
     struct C4QueryEnumeratorImpl;
     struct C4QueryObserverImpl;
     class DatabaseImpl;
+    class LiveQuerier;
+    class Query;
+    class QueryEnumerator;
 }
 
 C4_ASSUME_NONNULL_BEGIN
@@ -73,7 +71,7 @@ public:
 
     private:
         friend struct C4Query;
-        friend struct c4Internal::C4QueryObserverImpl;
+        friend struct litecore::C4QueryObserverImpl;
         explicit Enumerator(C4Query*, const C4QueryOptions* C4NULLABLE =nullptr,
                             slice encodedParameters =fleece::nullslice);
         explicit Enumerator(Retained<litecore::QueryEnumerator> e) :_enum(std::move(e)) { }
@@ -102,24 +100,24 @@ public:
 
 protected:
     friend struct C4Database;
-    friend struct c4Internal::C4QueryObserverImpl;
+    friend struct litecore::C4QueryObserverImpl;
 
-    C4Query(C4Database *db, C4QueryLanguage language, C4Slice queryExpression);
-    void enableObserver(c4Internal::C4QueryObserverImpl *obs, bool enable);
+    C4Query(C4Database *db, C4QueryLanguage language, slice queryExpression);
+    void enableObserver(litecore::C4QueryObserverImpl *obs, bool enable);
 
 private:
     class LiveQuerierDelegate;
     
     Retained<litecore::QueryEnumerator> _createEnumerator(const C4QueryOptions* C4NULLABLE, slice params);
-    Retained<c4Internal::C4QueryEnumeratorImpl> wrapEnumerator(litecore::QueryEnumerator*);
+    Retained<litecore::C4QueryEnumeratorImpl> wrapEnumerator(litecore::QueryEnumerator*);
     void liveQuerierUpdated(litecore::QueryEnumerator *qe, C4Error err);
 
-    Retained<c4Internal::DatabaseImpl>              _database;
+    Retained<litecore::DatabaseImpl>              _database;
     Retained<litecore::Query>                   _query;
     alloc_slice                                 _parameters;
     Retained<litecore::LiveQuerier>             _bgQuerier;
     std::unique_ptr<LiveQuerierDelegate>        _bgQuerierDelegate;
-    std::set<c4Internal::C4QueryObserverImpl*>  _observers;
+    std::set<litecore::C4QueryObserverImpl*>  _observers;
     mutable std::mutex                          _mutex;
 };
 

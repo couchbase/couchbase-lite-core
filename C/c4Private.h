@@ -44,9 +44,6 @@ extern "C" {
 #endif
 
 
-/** Allocates a C4SliceResult by copying the memory of a slice. */
-C4SliceResult c4slice_createResult(C4Slice slice);
-
 /** Locks a recursive mutex associated with the C4Database instance.
     Blocks if it's already locked. */
 void c4db_lock(C4Database *db) C4API;

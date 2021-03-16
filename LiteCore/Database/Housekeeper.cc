@@ -25,7 +25,6 @@
 #include <inttypes.h>
 
 namespace litecore {
-    using namespace c4Internal;
     using namespace actor;
     using namespace std;
 

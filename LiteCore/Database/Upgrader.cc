@@ -25,17 +25,17 @@
 #include "c4Document.hh"
 #include "c4BlobStore.hh"
 #include "BlobStore.hh"
-#include "FleeceImpl.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "RevID.hh"
+#include "FleeceImpl.hh"
 #include <sqlite3.h>
 #include <thread>
 
 using namespace std;
 using namespace fleece;
 using namespace fleece::impl;
-using namespace c4Internal;
 
 
 namespace litecore {

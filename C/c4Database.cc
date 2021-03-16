@@ -19,9 +19,9 @@
 #include "c4Database.hh"
 #include "c4BlobStore.hh"
 #include "c4Document.hh"
-#include "c4Internal.hh"
 #include "c4Observer.hh"
 #include "c4Private.h"
+#include "c4Internal.hh"
 
 #include "DatabaseImpl.hh"
 #include "DatabaseCookies.hh"
@@ -46,8 +46,8 @@
 #include <inttypes.h>
 
 using namespace std;
-using namespace c4Internal;
 using namespace fleece;
+using namespace litecore;
 
 
 CBL_CORE_API const char* const kC4DatabaseFilenameExtension = ".cblite2";
@@ -55,7 +55,7 @@ CBL_CORE_API const char* const kC4DatabaseFilenameExtension = ".cblite2";
 CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 
-namespace c4Internal {
+namespace litecore {
     DatabaseImpl* asInternal(C4Database *db) {
         // Every C4Database is a DatabaseImpl, so we can safely cast to it:
         return (DatabaseImpl*)db;
@@ -77,7 +77,7 @@ static FilePath dbPath(slice name, slice parentDir) {
 
 static void ensureConfigDirExists(const C4DatabaseConfig2 &config) {
     if (!(config.flags & kC4DB_ReadOnly))
-        (void)FilePath(string(slice(config.parentDirectory)), "").mkdir();
+        (void)FilePath(slice(config.parentDirectory), "").mkdir();
 }
 
 
@@ -278,7 +278,7 @@ bool C4Database::purgeDoc(slice docID) {
 
 
 bool C4Database::getRawDocument(slice storeName, slice key, function_ref<void(C4RawDocument*)> cb) {
-    Record r = IMPL->getRawRecord(toString(storeName), key);
+    Record r = IMPL->getRawRecord(string(storeName), key);
     if (r.exists()) {
         C4RawDocument rawDoc = {r.key(), r.version(), r.body()};
         cb(&rawDoc);
@@ -292,7 +292,7 @@ bool C4Database::getRawDocument(slice storeName, slice key, function_ref<void(C4
 
 void C4Database::putRawDocument(slice storeName, const C4RawDocument &doc) {
     Transaction t(this);
-    IMPL->putRawRecord(toString(storeName), doc.key, doc.meta, doc.body);
+    IMPL->putRawRecord(string(storeName), doc.key, doc.meta, doc.body);
     t.commit();
 }
 
@@ -424,9 +424,9 @@ bool C4Database::setCookie(slice setCookieHeader,
                            slice fromPath)
 {
     litecore::repl::DatabaseCookies cookies(this);
-    bool ok = cookies.setCookie(slice(setCookieHeader).asString(),
-                                slice(fromHost).asString(),
-                                slice(fromPath).asString());
+    bool ok = cookies.setCookie(setCookieHeader.asString(),
+                                fromHost.asString(),
+                                fromPath.asString());
     if (ok)
         cookies.saveChanges();
     return ok;
@@ -508,7 +508,7 @@ C4RemoteID C4Database::getRemoteDBID(slice remoteAddress, bool canCreate) {
 
 
 alloc_slice C4Database::getRemoteDBAddress(C4RemoteID remoteID) {
-    Record doc = IMPL->getRawRecord(toString(kInfoStore), kRemoteDBURLsDoc);
+    Record doc = IMPL->getRawRecord(string(kInfoStore), kRemoteDBURLsDoc);
     if (doc.exists()) {
         auto body = impl::Value::fromData(doc.body());
         if (body) {
@@ -547,7 +547,7 @@ bool C4Database::markDocumentSynced(slice docID,
         Assert(sequence != 0);
         do {
             if (doc->selectedRev().sequence == sequence) {
-                revID = slice(doc->selectedRev().revID);
+                revID = doc->selectedRev().revID;
                 break;
             }
         } while (doc->selectNextRevision());

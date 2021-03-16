@@ -16,11 +16,11 @@
 // limitations under the License.
 //
 
-#include "c4Internal.hh"
-#include "c4ExceptionUtils.hh"
 #include "c4Database.h"
 #include "c4Certificate.h"
-#include "c4Replicator.h"
+#include "c4ReplicatorTypes.h"
+#include "c4Internal.hh"
+#include "c4ExceptionUtils.hh"
 #include "Certificate.hh"
 #include "PublicKey.hh"
 #include "Logging.hh"
@@ -41,10 +41,10 @@
 
 #ifdef COUCHBASE_ENTERPRISE
 
-using namespace fleece;
-using namespace litecore::crypto;
-using namespace c4Internal;
 using namespace std;
+using namespace fleece;
+using namespace litecore;
+using namespace litecore::crypto;
 
 
 static inline CertBase* internal(C4Cert *cert)    {return (CertBase*)cert;}
@@ -375,12 +375,12 @@ bool c4cert_save(C4Cert *cert,
     return tryCatch<bool>(outError, [&]() {
         if (cert) {
             if (auto signedCert = asSignedCert(cert, outError); signedCert) {
-                signedCert->save(toString(name), entireChain);
+                signedCert->save(string(name), entireChain);
                 return true;
             }
             return false;
         } else {
-            Cert::deleteCert(toString(name));
+            Cert::deleteCert(string(name));
             return true;
         }
     });
@@ -396,7 +396,7 @@ C4Cert* c4cert_load(C4String name,
 {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     return tryCatch<C4Cert*>(outError, [&]() {
-        return retainedExternal(Cert::loadCert(toString(name)));
+        return retainedExternal(Cert::loadCert(string(name)));
     });
 #else
     c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
@@ -483,7 +483,7 @@ bool c4keypair_isPersistent(C4KeyPair* key) C4API {
 
 
 C4SliceResult c4keypair_publicKeyDigest(C4KeyPair* key) C4API {
-    return sliceResult(internal(key)->digestString());
+    return toSliceResult(internal(key)->digestString());
 }
 
 
@@ -522,7 +522,7 @@ bool c4keypair_removePersistent(C4KeyPair* key, C4Error *outError) C4API {
 #pragma mark - EXTERNAL KEYPAIR:
 
 
-namespace c4Internal {
+namespace litecore {
 
     class ExternalKeyPair : public ExternalPrivateKey {
     public:

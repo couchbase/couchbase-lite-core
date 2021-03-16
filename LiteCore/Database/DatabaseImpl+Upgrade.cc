@@ -22,14 +22,15 @@
 #include "RevID.hh"
 #include "RevTreeRecord.hh"
 #include "VersionVector.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include <inttypes.h>
 #include <vector>
 
-namespace c4Internal {
+namespace litecore {
     using namespace std;
-    using namespace litecore;
 
+    
     // The fake peer/source ID used for versions migrated from revIDs.
     static constexpr peerID kLegacyPeerID {0x7777777};
 

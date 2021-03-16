@@ -20,9 +20,7 @@
 #include "c4Document.hh"
 #include "TreeDocument.hh"
 #include "VectorDocument.hh"
-#include "c4Internal.hh"
 #include "c4Document.h"
-#include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "c4BlobStore.hh"
 #include "BackgroundDB.hh"
@@ -45,8 +43,7 @@ namespace litecore::constants {
     const C4Slice kPreviousPrivateUUIDKey = C4STR("previousPrivateUUID");
 }
 
-namespace c4Internal {
-    using namespace litecore;
+namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
     using namespace std;
@@ -199,7 +196,7 @@ namespace c4Internal {
         //FIXME: This ought to be done _before_ the SQLite userVersion is updated
         // Compare existing versioning against runtime config:
         auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
-        Record versDoc = info.get(slice("versioning"));
+        Record versDoc = info.get("versioning");
         auto curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
         auto newVersioning = _configV1.versioning;
         if (versDoc.exists() && curVersioning >= newVersioning)
@@ -207,7 +204,7 @@ namespace c4Internal {
 
         // Mismatch -- could be a race condition. Open a transaction and recheck:
         Transaction t(this);
-        versDoc = info.get(slice("versioning"));
+        versDoc = info.get("versioning");
         curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
         if (versDoc.exists() && curVersioning >= newVersioning)
             return curVersioning;
@@ -308,13 +305,13 @@ namespace c4Internal {
                 });
 
                 // Now look for old-style _attachments:
-                auto attachments = body->get(slice(kC4LegacyAttachmentsProperty));
+                auto attachments = body->get(C4Blob::kLegacyAttachmentsProperty);
                 if (attachments) {
                     blobKey key;
                     for (Dict::iterator i(attachments->asDict()); i; ++i) {
                         auto att = i.value()->asDict();
                         if (att) {
-                            const Value* digest = att->get(slice(kC4BlobDigestProperty));
+                            const Value* digest = att->get(C4Blob::kDigestProperty);
                             if (digest && key.readFromBase64(digest->asString())) {
                                 usedDigests.insert(key.filename());
                             }
@@ -489,7 +486,7 @@ namespace c4Internal {
 
 
     bool DatabaseImpl::getUUIDIfExists(slice key, C4UUID &uuid) {
-        auto &store = getKeyStore(toString(kC4InfoStore));
+        auto &store = getKeyStore(string(kInfoStore));
         Record r = store.get(key);
         if (!r.exists() || r.body().size < sizeof(C4UUID))
             return false;
@@ -501,7 +498,7 @@ namespace c4Internal {
     C4UUID DatabaseImpl::generateUUID(slice key, bool overwrite) {
         C4UUID uuid;
         if (overwrite || !getUUIDIfExists(key, uuid)) {
-            auto &store = getKeyStore(toString(kC4InfoStore));
+            auto &store = getKeyStore(string(kInfoStore));
             slice uuidSlice{&uuid, sizeof(uuid)};
             GenerateUUID(uuidSlice);
             store.setKV(key, uuidSlice, transaction());
@@ -522,7 +519,7 @@ namespace c4Internal {
     void DatabaseImpl::resetUUIDs() {
         Transaction t(this);
         C4UUID previousPrivate = getUUID(kPrivateUUIDKey);
-        auto &store = getKeyStore(toString(kC4InfoStore));
+        auto &store = getKeyStore(string(kInfoStore));
         store.setKV(constants::kPreviousPrivateUUIDKey,
                     {&previousPrivate, sizeof(C4UUID)},
                     transaction());

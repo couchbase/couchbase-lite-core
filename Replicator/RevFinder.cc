@@ -28,8 +28,7 @@
 #include "c4.hh"
 #include "c4Transaction.hh"
 #include "c4Private.h"
-#include "c4Document+Fleece.h"
-#include "c4Replicator.h"
+#include "c4ReplicatorTypes.h"
 #include "BLIP.hh"
 #include "fleece/Fleece.hh"
 

@@ -29,7 +29,7 @@
 
 using namespace std;
 using namespace fleece;
-using namespace c4Internal;
+using namespace litecore;
 
 
 #pragma mark - REPLICATOR:

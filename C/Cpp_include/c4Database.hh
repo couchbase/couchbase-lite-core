@@ -33,9 +33,8 @@ C4_ASSUME_NONNULL_BEGIN
 
 struct C4ReplicatorParameters;
 
-namespace c4Internal {
+namespace litecore {
     class DatabaseImpl;
-    DatabaseImpl* asInternal(C4Database*);
 }
 namespace litecore::websocket {
     class WebSocket;
@@ -179,7 +178,7 @@ public:
     // Queries & Indexes:
 
     Retained<C4Query> newQuery(C4QueryLanguage language,
-                               C4Slice queryExpression,
+                               slice queryExpression,
                                int* C4NULLABLE outErrorPos = nullptr);
 
     void createIndex(slice name,
@@ -242,7 +241,6 @@ public:
     C4ExtraInfo extraInfo { };
 
 protected:
-    friend c4Internal::DatabaseImpl* c4Internal::asInternal(C4Database *db);
     virtual ~C4Database();
 };
 

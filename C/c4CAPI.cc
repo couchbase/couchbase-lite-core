@@ -25,14 +25,13 @@
 #include "c4Replicator.hh"
 
 #include "c4.h"
-#include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4Private.h"
 #include "c4QueryImpl.hh"
 
 using namespace std;
 using namespace fleece;
-using namespace c4Internal;
+using namespace litecore;
 
 
 #pragma mark - BLOBS:
@@ -90,7 +89,7 @@ bool c4blob_deleteStore(C4BlobStore* store, C4Error *outError) noexcept {
 int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) noexcept {
     try {
         return store->getSize(key);
-    } catchExceptions()
+    } catchAndIgnore()
     return -1;
 }
 
@@ -749,7 +748,9 @@ C4SliceResult c4doc_getRevisionHistory(C4Document* doc,
                                        unsigned maxRevs,
                                        const C4String backToRevs[],
                                        unsigned backToRevsCount) C4API {
-    return C4SliceResult(doc->getRevisionHistory(maxRevs, backToRevs, backToRevsCount));
+    return C4SliceResult(doc->getRevisionHistory(maxRevs,
+                                                 (const slice*)backToRevs,
+                                                 backToRevsCount));
 }
 
 

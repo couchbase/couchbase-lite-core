@@ -27,7 +27,7 @@
 #include "StringUtil.hh"
 #include <set>
 
-namespace c4Internal {
+namespace litecore {
     using namespace std;
     using namespace fleece;
     using namespace litecore;
@@ -154,7 +154,7 @@ namespace c4Internal {
         }
 
 
-        bool selectRevision(C4Slice revID, bool withBody) override {
+        bool selectRevision(slice revID, bool withBody) override {
             if (auto r = _findRemote(revID); r) {
                 return _selectRemote(r->first, r->second);
             } else {
@@ -225,7 +225,7 @@ namespace c4Internal {
 
 
         alloc_slice getRevisionHistory(unsigned maxRevs,
-                                       const C4String backToRevs[],
+                                       const slice backToRevs[],
                                        unsigned backToRevsCount) override
         {
             if (auto rev = _selectedRevision(); rev) {
@@ -247,7 +247,7 @@ namespace c4Internal {
         }
 
 
-        void setRemoteAncestorRevID(C4RemoteID remote, C4String revID) override {
+        void setRemoteAncestorRevID(C4RemoteID remote, slice revID) override {
             Assert(RemoteID(remote) != RemoteID::Local);
             Revision revision;
             revidBuffer vers(revID);
@@ -467,9 +467,9 @@ namespace c4Internal {
         }
 
 
-        void resolveConflict(C4String winningRevID,
-                             C4String losingRevID,
-                             C4Slice mergedBody,
+        void resolveConflict(slice winningRevID,
+                             slice losingRevID,
+                             slice mergedBody,
                              C4RevisionFlags mergedFlags,
                              bool /*pruneLosingBranch*/) override
         {
@@ -585,7 +585,7 @@ namespace c4Internal {
 #pragma mark - FACTORY:
 
 
-    Retained<C4Document> VectorDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
+    Retained<C4Document> VectorDocumentFactory::newDocumentInstance(slice docID, ContentOption c) {
         return new VectorDocument(database(), docID, c);
     }
 

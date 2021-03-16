@@ -48,7 +48,7 @@ namespace litecore {
         from.copyTo(temp);
 
         {
-            auto db = retained(new c4Internal::DatabaseImpl(temp.path(), *config));
+            auto db = retained(new DatabaseImpl(temp.path(), *config));
             db->resetUUIDs();
             db->close();
         }

@@ -22,12 +22,15 @@
 
 #include "c4Document.hh"
 #include "c4BlobStore.hh"
+#include "c4Internal.hh"
+#include "c4ExceptionUtils.hh"
 #include "DatabaseImpl.hh"
 #include "DocumentFactory.hh"
 #include "LegacyAttachments.hh"
 #include "RevID.hh"
 #include "RevTree.hh"   // only for kDefaultRemoteID
 #include "Base64.hh"
+#include "Error.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
 #include "Doc.hh"
@@ -37,7 +40,7 @@
 using namespace std;
 using namespace fleece;
 using namespace fleece::impl;
-using namespace c4Internal;
+using namespace litecore;
 
 
 C4Document::C4Document(DatabaseImpl *db, alloc_slice docID_)
@@ -107,7 +110,7 @@ void C4Document::clearSelectedRevision() noexcept {
 
 alloc_slice C4Document::getSelectedRevIDGlobalForm() {
     // By default just return the same revID
-    DebugAssert(_selectedRevID == slice(_selected.revID));
+    DebugAssert(_selectedRevID == _selected.revID);
     return _selectedRevID;
 }
 
@@ -318,8 +321,8 @@ pair<Retained<C4Document>,int> DatabaseImpl::putNewDoc(const C4DocPutRequest &rq
 #pragma mark - CONFLICTS:
 
 
-void C4Document::resolveConflict(C4String winningRevID,
-                                 C4String losingRevID,
+void C4Document::resolveConflict(slice winningRevID,
+                                 slice losingRevID,
                                  FLDict mergedProperties,
                                  C4RevisionFlags mergedFlags,
                                  bool pruneLosingBranch)
@@ -368,11 +371,11 @@ char* C4Document::generateID(char *outDocID, size_t bufferSize) noexcept {
 
 bool C4Document::equalRevIDs(slice rev1, slice rev2) noexcept {
     try {
-        if (slice(rev1) == slice(rev2))
+        if (rev1 == rev2)
             return true;
         revidBuffer buf1, buf2;
         return buf1.tryParse(rev1) && buf2.tryParse(rev2) && buf1.isEquivalentTo(buf2);
-    }catchExceptions()
+    }catchAndIgnore()
     return false;
 }
 
@@ -380,7 +383,7 @@ bool C4Document::equalRevIDs(slice rev1, slice rev2) noexcept {
 unsigned C4Document::getRevIDGeneration(slice revID) noexcept {
     try {
         return revidBuffer(revID).generation();
-    }catchExceptions()
+    }catchAndIgnore()
     return 0;
 }
 

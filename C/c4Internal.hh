@@ -17,18 +17,8 @@
 //
 
 #pragma once
-
-#include "Base.hh"
-#include "Error.hh"
-#include "RefCounted.hh"
-#include "PlatformCompat.hh"
-#include "fleece/Fleece.h"
 #include "c4Base.h"
-#include "c4ExceptionUtils.hh"
-#include <mutex>
-#include <string_view>
 
-using namespace litecore;
 
 #define LOCK(MUTEX)     std::unique_lock<std::mutex> _lock(MUTEX)
 #define UNLOCK()        _lock.unlock();
@@ -56,9 +46,10 @@ using namespace litecore;
 #endif
 
 
+struct C4Database;
+struct C4ExtraInfo;
 
-namespace c4Internal {
-
+namespace litecore {
     class DatabaseImpl;
 
     // ERRORS & EXCEPTIONS:
@@ -69,14 +60,13 @@ namespace c4Internal {
     static constexpr size_t kMaxErrorMessagesToSave = 10;
 #endif
 
-    // SLICES:
+    // UTILITIES:
 
-    C4SliceResult sliceResult(const char *str);
-    C4SliceResult sliceResult(const std::string&);
-
-    std::string toString(C4Slice);
+    C4SliceResult toSliceResult(const std::string&);
 
     void destructExtraInfo(C4ExtraInfo&) noexcept;
+
+    // CONVERSIONS:
 
     DatabaseImpl* asInternal(C4Database *db);
 }

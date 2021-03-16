@@ -11,6 +11,7 @@
 #include "fleece/Fleece.hh"
 #include "c4.hh"
 #include "c4Certificate.h"
+#include "c4Replicator.h"
 #include "Address.hh"
 #include "Response.hh"
 #include "ReplicatorTuning.hh"

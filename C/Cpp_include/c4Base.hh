@@ -26,7 +26,6 @@
 #include "RefCounted.hh"
 #include "InstanceCounted.hh"
 #include "fleece/slice.hh"
-#include <exception>
 
 C4_ASSUME_NONNULL_BEGIN
 

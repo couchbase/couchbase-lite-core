@@ -23,14 +23,15 @@
 #endif
 #include "c4IncomingReplicator.hh"
 #include "c4Database.hh"
+#include "c4Replicator.h"
 #include "c4ExceptionUtils.hh"
 #include "DatabaseCookies.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include <errno.h>
 
-using namespace c4Internal;
 using namespace std;
+using namespace litecore;
 
 
 #pragma mark - C++ API:
@@ -138,7 +139,7 @@ bool C4Replicator::isValidDatabaseName(slice dbName) noexcept {
     // Same rules as Couchbase Lite 1.x and CouchDB
     return dbName.size > 0 && dbName.size < 240
         && islower(dbName[0])
-        && !slice(dbName).findByteNotIn("abcdefghijklmnopqrstuvwxyz0123456789_$()+-/"_sl);
+        && !dbName.findByteNotIn("abcdefghijklmnopqrstuvwxyz0123456789_$()+-/"_sl);
 }
 
 
@@ -231,7 +232,7 @@ bool C4Address::fromURL(slice url, C4Address *address, slice *dbName) {
 
         address->path = slice(pathStart, str.buf);
         *dbName = str;
-        return c4repl_isValidDatabaseName(slice(str));
+        return c4repl_isValidDatabaseName(str);
     } else {
         address->path = slice(pathStart, str.end());
         return true;

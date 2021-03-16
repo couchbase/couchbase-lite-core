@@ -17,10 +17,11 @@
 //
 
 #include "BackgroundDB.hh"
-#include "DataFile.hh"
-#include "DatabaseImpl.hh"
-#include "SequenceTracker.hh"
 #include "c4ExceptionUtils.hh"
+#include "c4Internal.hh"
+#include "DatabaseImpl.hh"
+#include "DataFile.hh"
+#include "SequenceTracker.hh"
 
 namespace litecore {
     using namespace actor;
@@ -28,7 +29,7 @@ namespace litecore {
     using namespace std;
 
 
-    BackgroundDB::BackgroundDB(c4Internal::DatabaseImpl *db)
+    BackgroundDB::BackgroundDB(DatabaseImpl *db)
     :access_lock(db->dataFile()->openAnother(this))
     ,_database(db)
     { }

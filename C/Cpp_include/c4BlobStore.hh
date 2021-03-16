@@ -25,10 +25,8 @@
 namespace litecore {
     class BlobStore;
     class BlobWriteStream;
-    class SeekableReadStream;
-}
-namespace c4Internal {
     class DatabaseImpl;
+    class SeekableReadStream;
 }
 
 C4_ASSUME_NONNULL_BEGIN
@@ -141,7 +139,7 @@ struct C4BlobStore : public C4Base {
 protected:
     friend struct C4ReadStream;
     friend struct C4WriteStream;
-    friend class c4Internal::DatabaseImpl;
+    friend class litecore::DatabaseImpl;
 
     C4BlobStore(std::unique_ptr<litecore::BlobStore> store);
     static alloc_slice getBlobData(FLDict dict, litecore::BlobStore *store);

@@ -26,7 +26,7 @@
 using namespace std;
 
 
-namespace c4Internal {
+namespace litecore {
 
     struct C4DatabaseObserverImpl : public C4DatabaseObserver {
         C4DatabaseObserverImpl(C4Database *db,
@@ -77,19 +77,19 @@ namespace c4Internal {
 
 unique_ptr<C4DatabaseObserver>
 C4DatabaseObserver::create(C4Database *db, C4DatabaseObserver::Callback callback) {
-    return make_unique<c4Internal::C4DatabaseObserverImpl>(db, UINT64_MAX, move(callback));
+    return make_unique<litecore::C4DatabaseObserverImpl>(db, UINT64_MAX, move(callback));
 }
 
 
 #pragma mark - DOCUMENT OBSERVER:
 
 
-namespace c4Internal {
+namespace litecore {
 
     struct C4DocumentObserverImpl : public C4DocumentObserver {
         C4DocumentObserverImpl(C4Database *db,
-                            C4Slice docID,
-                            Callback callback)
+                               slice docID,
+                               Callback callback)
         :_db(asInternal(db))
         ,_callback(callback)
         {
@@ -120,5 +120,5 @@ namespace c4Internal {
 
 unique_ptr<C4DocumentObserver>
 C4DocumentObserver::create(C4Database *db, slice docID, C4DocumentObserver::Callback callback) {
-    return make_unique<c4Internal::C4DocumentObserverImpl>(db, docID, callback);
+    return make_unique<litecore::C4DocumentObserverImpl>(db, docID, callback);
 }

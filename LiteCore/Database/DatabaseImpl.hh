@@ -20,7 +20,6 @@
 
 #include "c4Database.hh"
 #include "c4DocumentTypes.h"
-#include "c4Internal.hh"
 #include "DataFile.hh"
 #include "FilePath.hh"
 #include "InstanceCounted.hh"
@@ -34,17 +33,14 @@ namespace fleece { namespace impl {
     class SharedKeys;
     class Value;
 } }
+
 namespace litecore {
-    class SequenceTracker;
-    class BlobStore;
     class BackgroundDB;
+    class BlobStore;
+    class DocumentFactory;
     class Housekeeper;
     class RevTreeRecord;
-}
-
-
-namespace c4Internal {
-    class DocumentFactory;
+    class SequenceTracker;
 
 
     /** The implementation of the C4Database class. */

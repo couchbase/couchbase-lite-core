@@ -16,11 +16,10 @@
 // limitations under the License.
 //
 
-#include "c4Internal.hh"
 #include "c4DocEnumerator.hh"
-
 #include "c4Database.hh"
 #include "c4Document.hh"
+#include "c4Internal.hh"
 #include "DatabaseImpl.hh"
 #include "DocumentFactory.hh"
 #include "DataFile.hh"
@@ -32,7 +31,7 @@
 #include "Logging.hh"
 #include "InstanceCounted.hh"
 
-using namespace c4Internal;
+using namespace litecore;
 
 
 #pragma mark - DOC ENUMERATION:

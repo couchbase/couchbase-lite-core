@@ -18,7 +18,7 @@
 
 #pragma once
 #include "c4.hh"
-#include "c4Database.h"
+#include "c4DatabaseTypes.h"
 #include "c4Listener.h"
 #include "Listener.hh"
 #include "Server.hh"

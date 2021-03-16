@@ -16,9 +16,11 @@
 // limitations under the License.
 //
 
-#include "c4Internal.hh"
-#include "c4Private.h"
+#include "c4Base.h"
 #include "c4Socket.h"
+#include "c4Private.h"
+#include "c4Internal.hh"
+#include "c4ExceptionUtils.hh"
 
 #include "Actor.hh"
 #include "Backtrace.hh"
@@ -42,7 +44,6 @@
 
 using namespace std;
 using namespace litecore;
-using namespace c4Internal;
 
 
 extern "C" {
@@ -81,7 +82,7 @@ static string getBuildInfo() {
 
 
 C4StringResult c4_getBuildInfo() C4API {
-    return sliceResult(getBuildInfo());
+    return toSliceResult(getBuildInfo());
 }
 
 
@@ -102,7 +103,7 @@ C4StringResult c4_getVersion() C4API {
     else
         vers = format("%s%s (%s:%s%.1s)", LiteCoreVersion, ee, GitBranch, commit.c_str(), GitDirty);
 #endif
-    return sliceResult(vers);
+    return toSliceResult(vers);
 }
 // LCOV_EXCL_STOP
 
@@ -115,28 +116,10 @@ C4Timestamp c4_now(void) C4API {
 #pragma mark - SLICES:
 
 
-C4SliceResult c4slice_createResult(C4Slice slice) {
-    alloc_slice result(slice);
-    result.retain();
-    return {(void*)result.buf, result.size};
-}
+namespace litecore {
 
-
-namespace c4Internal {
-
-    C4SliceResult sliceResult(const char *str) {
-        if (str)
-            return C4SliceResult(slice(str));
-        else
-            return {nullptr, 0};
-    }
-
-    C4SliceResult sliceResult(const string &str) {
+    C4SliceResult toSliceResult(const string &str) {
         return C4SliceResult(alloc_slice(str));
-    }
-
-    string toString(C4Slice s) {
-        return slice(s).asString();
     }
 
     void destructExtraInfo(C4ExtraInfo &x) noexcept {

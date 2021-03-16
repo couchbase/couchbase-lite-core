@@ -17,10 +17,11 @@
 //
 
 #include "fleece/Fleece.hh"
+#include "c4Database.h"
+#include "c4Replicator.h"
 #include "Address.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "c4Database.h"
 
 using namespace std;
 using namespace fleece;

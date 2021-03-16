@@ -10,7 +10,7 @@
 #include "Record.hh"
 #include <vector>
 
-namespace c4Internal {
+namespace litecore {
     class DatabaseImpl;
 
 
@@ -26,7 +26,7 @@ namespace c4Internal {
 
         virtual bool isFirstGenRevID(slice revID) const         {return false;}
 
-        virtual Retained<C4Document> newDocumentInstance(C4Slice docID, ContentOption) =0;
+        virtual Retained<C4Document> newDocumentInstance(slice docID, ContentOption) =0;
         virtual Retained<C4Document> newDocumentInstance(const Record&) =0;
 
         virtual std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs,

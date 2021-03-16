@@ -12,17 +12,14 @@
 #include <mutex>
 #include <vector>
 
-namespace c4Internal {
-    class DatabaseImpl;
-}
-
 namespace litecore {
+    class DatabaseImpl;
     class SequenceTracker;
 
 
     class BackgroundDB final : public access_lock<DataFile*>, private DataFile::Delegate {
     public:
-        BackgroundDB(c4Internal::DatabaseImpl*);
+        BackgroundDB(DatabaseImpl*);
         ~BackgroundDB();
 
         void close();
@@ -48,7 +45,7 @@ namespace litecore {
         void externalTransactionCommitted(const SequenceTracker &sourceTracker) override;
         void notifyTransactionObservers();
 
-        c4Internal::DatabaseImpl* _database;
+        DatabaseImpl* _database;
         std::vector<TransactionObserver*> _transactionObservers;
         std::mutex _transactionObserversMutex;
     };

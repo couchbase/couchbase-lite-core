@@ -170,7 +170,7 @@ namespace litecore { namespace net {
         unique_ptr<connector> socket;
         try {
             // sockpp constructors can throw exceptions.
-            c4Internal::ExpectingExceptions x;
+            ExpectingExceptions x;
             unique_ptr<sock_address> sockAddr;
             if (ipAddr) {
                 // hostname is numeric, either IPv4 or IPv6:

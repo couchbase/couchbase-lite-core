@@ -23,12 +23,9 @@
 #include "fleece/Fleece.h"
 
 namespace litecore {
+    class DatabaseImpl;
     class revid;
     class Upgrader;
-}
-
-namespace c4Internal {
-    class DatabaseImpl;
 }
 
 C4_ASSUME_NONNULL_BEGIN
@@ -71,7 +68,7 @@ struct C4Document : public fleece::RefCounted,
     // Selecting revisions:
 
     virtual bool selectCurrentRevision() noexcept =0;
-    virtual bool selectRevision(C4Slice revID, bool withBody =true) =0;   // returns false if not found
+    virtual bool selectRevision(slice revID, bool withBody =true) =0;   // returns false if not found
     virtual bool selectParentRevision() noexcept                            {failUnsupported();}
     virtual bool selectNextRevision() =0;
     virtual bool selectNextLeafRevision(bool includeDeleted, bool withBody =true) =0;
@@ -82,32 +79,32 @@ struct C4Document : public fleece::RefCounted,
     virtual alloc_slice getSelectedRevIDGlobalForm();
 
     virtual alloc_slice getRevisionHistory(unsigned maxHistory,
-                                           const C4String backToRevs[C4NULLABLE], // nullable if count=0
+                                           const slice backToRevs[C4NULLABLE], // nullable if count=0
                                            unsigned backToRevsCount)        {failUnsupported();}
 
     // Remote database revision tracking:
 
     virtual alloc_slice remoteAncestorRevID(C4RemoteID) =0;
-    virtual void setRemoteAncestorRevID(C4RemoteID, C4String revID) =0;
+    virtual void setRemoteAncestorRevID(C4RemoteID, slice revID) =0;
 
     // Purging:
 
     virtual bool removeRevisionBody() noexcept                              {return false;}
 
-    virtual int32_t purgeRevision(C4Slice revid)                            {failUnsupported();}
+    virtual int32_t purgeRevision(slice revid)                            {failUnsupported();}
 
     // Conflicts:
 
-    void resolveConflict(C4String winningRevID,
-                         C4String losingRevID,
+    void resolveConflict(slice winningRevID,
+                         slice losingRevID,
                          FLDict C4NULLABLE mergedProperties,
                          C4RevisionFlags mergedFlags,
                          bool pruneLosingBranch =true);
 
 
-    virtual void resolveConflict(C4String winningRevID,
-                                 C4String losingRevID,
-                                 C4Slice mergedBody,
+    virtual void resolveConflict(slice winningRevID,
+                                 slice losingRevID,
+                                 slice mergedBody,
                                  C4RevisionFlags mergedFlags,
                                  bool pruneLosingBranch =true)              {failUnsupported();}
 
@@ -155,16 +152,16 @@ struct C4Document : public fleece::RefCounted,
                                                         FLSharedKeys);
 
 protected:
-    friend class c4Internal::DatabaseImpl;
+    friend class litecore::DatabaseImpl;
     friend class litecore::Upgrader;
 
-    C4Document(c4Internal::DatabaseImpl*, alloc_slice docID_);
+    C4Document(litecore::DatabaseImpl*, alloc_slice docID_);
     virtual ~C4Document();
 
     [[noreturn]] static void failUnsupported();
 
-    c4Internal::DatabaseImpl* db();
-    const c4Internal::DatabaseImpl* db() const;
+    litecore::DatabaseImpl* db();
+    const litecore::DatabaseImpl* db() const;
 
     virtual alloc_slice detachSelectedRevBody() {
         return alloc_slice(getRevisionBody()); // will copy

@@ -25,6 +25,7 @@
 #include "RawRevTree.hh"
 #include "RevTreeRecord.hh"
 #include "Delimiter.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
@@ -34,7 +35,7 @@
 #include <algorithm>
 
 
-namespace c4Internal {
+namespace litecore {
 
     using namespace fleece;
     using namespace fleece::impl;
@@ -135,8 +136,8 @@ namespace c4Internal {
 
 
         alloc_slice getRevisionHistory(unsigned maxRevs,
-                                          const C4String backToRevs[],
-                                          unsigned backToRevsCount) override
+                                       const slice backToRevs[],
+                                       unsigned backToRevsCount) override
         {
             auto selRev = _selectedRev;
             int revsWritten = 0;
@@ -153,9 +154,9 @@ namespace c4Internal {
                 historyStream.write((const char*)revID.buf, revID.size);
             };
 
-            auto hasRemoteAncestor = [&](C4String revID) {
+            auto hasRemoteAncestor = [&](slice revID) {
                 for (unsigned i = 0; i < backToRevsCount; ++i)
-                    if (slice(backToRevs[i]) == slice(revID))
+                    if (backToRevs[i] == revID)
                         return true;
                 return false;
             };
@@ -180,8 +181,7 @@ namespace c4Internal {
                 while (gen < --lastGen && revsWritten < maxRevs) {
                     // We don't have this revision (the history got deeper than the local db's
                     // maxRevTreeDepth), so make up a random revID. The server probably won't care.
-                    append(slice(format("%u-faded000%.08x%.08x",
-                                        lastGen, RandomNumber(), RandomNumber())));
+                    append(format("%u-faded000%.08x%.08x", lastGen, RandomNumber(), RandomNumber()));
                 }
                 lastGen = gen;
 
@@ -219,7 +219,7 @@ namespace c4Internal {
             }
         }
 
-        bool selectRevision(C4Slice revID, bool withBody) override {
+        bool selectRevision(slice revID, bool withBody) override {
             if (revID.buf) {
                 if (!loadRevisions())
                     return false;
@@ -299,7 +299,7 @@ namespace c4Internal {
             return rev ? rev->revID.expanded() : alloc_slice();
         }
 
-        void setRemoteAncestorRevID(C4RemoteID remote, C4String revID) override {
+        void setRemoteAncestorRevID(C4RemoteID remote, slice revID) override {
             loadRevisions();
             const Rev *rev = _revTree[revidBuffer(revID)];
             if (!rev)
@@ -345,7 +345,7 @@ namespace c4Internal {
             }
         }
 
-        int32_t purgeRevision(C4Slice revID) override {
+        int32_t purgeRevision(slice revID) override {
             loadRevisions();
             int32_t total;
             if (revID.buf)
@@ -355,14 +355,14 @@ namespace c4Internal {
             if (total > 0) {
                 _revTree.updateMeta();
                 updateFlags();
-                if (_selectedRevID == slice(revID))
+                if (_selectedRevID == revID)
                     selectRevision(_revTree.currentRevision());
             }
             return total;
         }
 
-        void resolveConflict(C4String winningRevID, C4String losingRevID,
-                             C4Slice mergedBody, C4RevisionFlags mergedFlags,
+        void resolveConflict(slice winningRevID, slice losingRevID,
+                             slice mergedBody, C4RevisionFlags mergedFlags,
                              bool pruneLosingBranch =true) override
         {
             loadRevisions();
@@ -388,7 +388,7 @@ namespace c4Internal {
                 selectRevision(losingRev);
                 C4DocPutRequest rq = { };
                 rq.revFlags = kRevDeleted | kRevClosed;
-                rq.history = &losingRevID;
+                rq.history = (C4String*)&losingRevID;
                 rq.historyCount = 1;
                 Assert(putNewRevision(rq, nullptr));
             }
@@ -409,7 +409,7 @@ namespace c4Internal {
                 C4DocPutRequest rq = { };
                 rq.revFlags = mergedFlags & (kRevDeleted | kRevHasAttachments);
                 rq.body = mergedBody;
-                rq.history = &winningRevID;
+                rq.history = (C4String*)&winningRevID;
                 rq.historyCount = 1;
                 Assert(putNewRevision(rq, nullptr));
                 LogTo(DBLog, "Resolved conflict, adding rev '%.*s' #%.*s",
@@ -627,7 +627,7 @@ namespace c4Internal {
         }
 
 
-        static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
+        static revidBuffer generateDocRevID(slice body, slice parentRevID, bool deleted) {
             // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
             uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
             uint8_t delByte = deleted;
@@ -653,7 +653,7 @@ namespace c4Internal {
 #pragma mark - FACTORY:
 
 
-    Retained<C4Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID, ContentOption c) {
+    Retained<C4Document> TreeDocumentFactory::newDocumentInstance(slice docID, ContentOption c) {
         return new TreeDocument(database(), docID, c);
     }
 
@@ -662,7 +662,7 @@ namespace c4Internal {
     }
 
     bool TreeDocumentFactory::isFirstGenRevID(slice revID) const {
-        return revID.hasPrefix(slice("1-", 2));
+        return revID.hasPrefix("1-");
     }
 
     C4Document* TreeDocumentFactory::documentContaining(FLValue value) {
@@ -740,4 +740,4 @@ namespace c4Internal {
     }
 
 
-} // end namespace c4Internal
+} // end namespace litecore

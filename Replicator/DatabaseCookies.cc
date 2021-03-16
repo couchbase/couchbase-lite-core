@@ -20,6 +20,7 @@
 #include "c4Internal.hh"
 #include "DatabaseImpl.hh"
 #include "DatabaseCookies.hh"
+#include "Error.hh"
 #include "CookieStore.hh"
 
 using namespace std;
@@ -34,7 +35,7 @@ namespace litecore { namespace repl {
     DatabaseCookies::DatabaseCookies(C4Database *db)
     :_db(db)
     {
-        auto dataFile = c4Internal::asInternal(db)->dataFile();
+        auto dataFile = asInternal(db)->dataFile();
         auto object = dataFile->sharedObject("CookieStore");
         if (!object) {
             alloc_slice data;

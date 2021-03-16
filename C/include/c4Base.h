@@ -52,7 +52,7 @@ typedef int64_t C4Timestamp;
 C4Timestamp c4_now(void) C4API;
 
 
-typedef struct {
+typedef struct C4ExtraInfo {
     void* C4NULLABLE pointer;
     void (*C4NULLABLE destructor)(void*);
 } C4ExtraInfo;
