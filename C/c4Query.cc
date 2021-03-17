@@ -46,6 +46,9 @@ C4Query::C4Query(C4Database *db, C4QueryLanguage language, slice queryExpression
 { }
 
 
+C4Query::~C4Query() = default;
+
+
 Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice queryExpression,
                                        int *outErrorPos) {
     try {
@@ -98,6 +101,11 @@ Retained<C4QueryEnumeratorImpl> C4Query::wrapEnumerator(QueryEnumerator *e) {
 }
 
 
+C4Query::Enumerator C4Query::run(const C4QueryOptions* C4NULLABLE opt, slice params) {
+    return Enumerator(this, opt, params);
+}
+
+
 C4QueryEnumerator* C4Query::createEnumerator(const C4QueryOptions *c4options,
                                              slice encodedParameters)
 {
@@ -114,6 +122,17 @@ C4Query::Enumerator::Enumerator(C4Query *query,
 { }
 
 
+C4Query::Enumerator::Enumerator(Retained<litecore::QueryEnumerator> e)
+:_enum(std::move(e))
+{ }
+
+
+C4Query::Enumerator::Enumerator(Enumerator &&c4e)
+:_enum(std::move(c4e._enum))
+,_query(std::move(c4e._query))
+{ }
+
+
 C4Query::Enumerator::~Enumerator() = default;
 
 void C4Query::Enumerator::close() noexcept          {_enum = nullptr; _query = nullptr;}
@@ -123,6 +142,7 @@ void C4Query::Enumerator::seek(int64_t rowIndex)    {_enum->seek(rowIndex);}
 
 
 bool C4Query::Enumerator::restart() {
+    Assert(_query);
     auto newEnum = _enum->refresh(_query);
     if (!newEnum)
         return false;
