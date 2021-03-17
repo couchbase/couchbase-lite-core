@@ -165,6 +165,7 @@ namespace litecore {
         void missingOp(slice, fleece::impl::ArrayIterator&);
         void caseOp(slice, fleece::impl::ArrayIterator&);
         void selectOp(slice, fleece::impl::ArrayIterator&);
+        void metaOp(slice, fleece::impl::ArrayIterator&);
         void fallbackOp(slice, fleece::impl::ArrayIterator&);
 
         void functionOp(slice, fleece::impl::ArrayIterator&);
@@ -198,6 +199,10 @@ namespace litecore {
         std::string expressionIdentifier(const fleece::impl::Array *expression, unsigned maxItems =0) const;
         void findPredictiveJoins(const fleece::impl::Value *node, std::vector<std::string> &joins);
         bool writeIndexedPrediction(const fleece::impl::Array *node);
+
+        void writeMetaPropertyGetter(slice metaKey, const string& dbAlias);
+        std::map<std::string, aliasType>::const_iterator verifyDbAlias(fleece::impl::Path &property);
+        bool optimizeMetaKeyExtraction(fleece::impl::ArrayIterator&);
 
         const delegate& _delegate;                  // delegate object (SQLiteKeyStore)
         std::string _tableName;                     // Name of the table containing documents

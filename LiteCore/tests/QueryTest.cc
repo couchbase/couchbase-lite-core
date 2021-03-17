@@ -1990,3 +1990,63 @@ TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
     CHECK(agg->get(0)->asString() == "Jack"_sl);
     CHECK(agg->get(1)->asString() == "Scott"_sl);
 }
+
+TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        string docID = "doc1";
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeNull();
+            enc.writeKey("real_value");
+            enc.writeInt(1);
+        });
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeNull();
+            enc.writeKey("atai");
+            enc.writeInt(1);
+        });
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery("SELECT meta()"_sl, QueryLanguage::kN1QL) };
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    const Value* dict = e->columns()[0];
+    REQUIRE(dict->type() == kDict);
+    string dictJson = dict->toJSON().asString();
+    transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) {
+        return c == '"' ? '\'' : c;
+    });
+    CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
+    
+    query = store->compileQuery("SELECT meta(db) from db"_sl, QueryLanguage::kN1QL);
+    e = query->createEnumerator();
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    dict = e->columns()[0];
+    REQUIRE(dict->type() == kDict);
+    dictJson = dict->toJSON().asString();
+    transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) {
+        return c == '"' ? '\'' : c;
+    });
+    CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
+    
+    query = store->compileQuery("SELECT meta().id"_sl, QueryLanguage::kN1QL);
+    e = query->createEnumerator();
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "doc1"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "doc2"_sl);
+    
+    query = store->compileQuery("SELECT meta(db).id from db"_sl, QueryLanguage::kN1QL);
+    e = query->createEnumerator();
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "doc1"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "doc2"_sl);
+}
