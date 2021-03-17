@@ -116,7 +116,7 @@ namespace litecore {
     ,_versioning(versioning)
     {
         _current.revID = revid(_revID);
-        _current.flags = rec.flags() - DocumentFlags::kConflicted - DocumentFlags::kSynced;
+        _current.flags = _docFlags - (DocumentFlags::kConflicted | DocumentFlags::kSynced);
         if (rec.exists()) {
             readRecordBody(rec.body());
             readRecordExtra(rec.extra());
@@ -169,7 +169,7 @@ namespace litecore {
         // the document, detect that flag and belatedly update remote #1's state.
         if (_docFlags & DocumentFlags::kSynced) {
             setRemoteRevision(RemoteID(1), currentRevision());
-            _docFlags = _docFlags - DocumentFlags::kSynced;
+            _docFlags -= DocumentFlags::kSynced;
             _changed = false;
         }
     }
@@ -406,8 +406,9 @@ namespace litecore {
     void VectorRecord::updateDocFlags() {
         // Take the local revision's flags, and add the Conflicted and Attachments flags
         // if any remote rev has them.
-        auto newDocFlags = _docFlags - DocumentFlags::kConflicted - DocumentFlags::kHasAttachments;
-        newDocFlags = newDocFlags | _current.flags;
+        auto newDocFlags = _docFlags - (DocumentFlags::kDeleted | DocumentFlags::kConflicted
+                                                                | DocumentFlags::kHasAttachments);
+        newDocFlags |= _current.flags;
         for (Array::iterator i(_revisions); i; ++i) {
             Dict revDict = i.value().asDict();
             if (revDict) {

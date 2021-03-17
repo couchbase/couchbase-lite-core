@@ -620,74 +620,116 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document GetForPut", "[Document][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Document][C]") {
     C4Error error;
+    C4Document *doc = nullptr;
+    size_t commonAncestorIndex;
+    alloc_slice revID;
+
     TransactionHelper t(db);
 
-    // Creating doc given ID:
-    C4DocPutRequest rq = {};
-    rq.docID = kDocID;
-    rq.body = kFleeceBody;
-    rq.save = true;
-    auto doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
-    REQUIRE(doc != nullptr);
-    REQUIRE(doc->docID == kDocID);
-    C4Slice kExpectedRevID;
-	if(isRevTrees()) {
-		kExpectedRevID = C4STR("1-042ca1d3a1d16fd5ab2f87efc7ebbf50b7498032");
-	} else {
+    C4Slice kExpectedRevID, kExpectedRev2ID, kConflictRevID;
+    if(isRevTrees()) {
+        kExpectedRevID = C4STR("1-042ca1d3a1d16fd5ab2f87efc7ebbf50b7498032");
+    } else {
         kExpectedRevID = C4STR("1@*");
-	}
+    }
 
-    CHECK(doc->revID == kExpectedRevID);
-    CHECK(doc->flags == kDocExists);
-    CHECK(doc->selectedRev.revID == kExpectedRevID);
-    c4doc_release(doc);
+    C4DocPutRequest rqTemplate = {};
+    rqTemplate.docID = kDocID;
+    rqTemplate.body = kFleeceBody;
+    rqTemplate.save = true;
+
+    // Creating doc given ID:
+    {
+        C4DocPutRequest rq = rqTemplate;
+        rq.docID = kDocID;
+        rq.body = kFleeceBody;
+        rq.save = true;
+        doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
+        REQUIRE(doc != nullptr);
+        REQUIRE(doc->docID == kDocID);
+
+        CHECK(doc->revID == kExpectedRevID);
+        CHECK(doc->flags == kDocExists);
+        CHECK(doc->selectedRev.revID == kExpectedRevID);
+        c4doc_release(doc);
+    }
 
     // Update doc:
-    auto body = json2fleece("{'ok':'go'}");
-    rq.body = body;
-    rq.history = &kExpectedRevID;
-    rq.historyCount = 1;
-    size_t commonAncestorIndex;
-    doc = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
-    REQUIRE(doc != nullptr);
-    CHECK((unsigned long)commonAncestorIndex == 0ul);
-    C4Slice kExpectedRev2ID;
-	if(isRevTrees()) {
-		kExpectedRev2ID = C4STR("2-201796aeeaa6ddbb746d6cab141440f23412ac51");
-	} else {
-        kExpectedRev2ID = C4STR("2@*");
-	}
+    {
+        auto body = json2fleece("{'ok':'go'}");
+        C4DocPutRequest rq = rqTemplate;
+        rq.body = body;
+        rq.history = &kExpectedRevID;
+        rq.historyCount = 1;
+        doc = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
+        REQUIRE(doc != nullptr);
+        CHECK((unsigned long)commonAncestorIndex == 0ul);
+        if(isRevTrees()) {
+            kExpectedRev2ID = C4STR("2-201796aeeaa6ddbb746d6cab141440f23412ac51");
+        } else {
+            kExpectedRev2ID = C4STR("2@*");
+        }
 
-    CHECK(doc->revID == kExpectedRev2ID);
-    CHECK(doc->flags == kDocExists);
-    CHECK(doc->selectedRev.revID == kExpectedRev2ID);
-    c4doc_release(doc);
+        CHECK(doc->revID == kExpectedRev2ID);
+        CHECK(doc->flags == kDocExists);
+        CHECK(doc->selectedRev.revID == kExpectedRev2ID);
+        c4doc_release(doc);
+    }
 
     // Insert existing rev that conflicts:
-    body = json2fleece("{'from':'elsewhere'}");
-    rq.body = body;
-    rq.existingRevision = true;
-    rq.remoteDBID = 1;
-    C4Slice kConflictRevID;
-	if(isRevTrees()) {
-		kConflictRevID = C4STR("2-deadbeef");
-	} else {
-        kConflictRevID = C4STR("1@cafebabe");
-	}
+    {
+        C4DocPutRequest rq = rqTemplate;
+        auto body = json2fleece("{'from':'elsewhere'}");
+        rq.body = body;
+        rq.existingRevision = true;
+        rq.remoteDBID = 1;
+        if(isRevTrees()) {
+            kConflictRevID = C4STR("2-deadbeef");
+        } else {
+            kConflictRevID = C4STR("1@cafebabe");
+        }
 
-    C4Slice history[2] = {kConflictRevID, kExpectedRevID};
-    rq.history = history;
-    rq.historyCount = 2;
-    rq.allowConflict = true;
-    doc = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
-    REQUIRE(doc != nullptr);
-    CHECK((unsigned long)commonAncestorIndex == 1ul);
-    CHECK(doc->selectedRev.revID == kConflictRevID);
-    CHECK(doc->flags == (kDocExists | kDocConflicted));
-    // The conflicting rev will now never be the default, even with rev-trees.
-    CHECK(doc->revID == kExpectedRev2ID);
+        C4Slice history[2] = {kConflictRevID, kExpectedRevID};
+        rq.history = history;
+        rq.historyCount = 2;
+        rq.allowConflict = true;
+        doc = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
 
-    c4doc_release(doc);
+        REQUIRE(doc != nullptr);
+        CHECK((unsigned long)commonAncestorIndex == 1ul);
+        CHECK(doc->selectedRev.revID == kConflictRevID);
+        CHECK(doc->flags == (kDocExists | kDocConflicted));
+        // The conflicting rev will now never be the default, even with rev-trees.
+        CHECK(doc->revID == kExpectedRev2ID);
+        c4doc_release(doc);
+    }
+
+    // Delete the document:
+    {
+        C4DocPutRequest rq = rqTemplate;
+        rq.body = nullslice;
+        rq.revFlags = kRevDeleted;
+        rq.history = &kExpectedRev2ID;
+        rq.historyCount = 1;
+        doc = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
+        REQUIRE(doc != nullptr);
+        CHECK(doc->flags == (kDocExists | kDocDeleted | kDocConflicted));
+        revID = doc->revID;
+        c4doc_release(doc);
+    }
+
+    // Resurrect it:
+    {
+        C4DocPutRequest rq = rqTemplate;
+        auto body = json2fleece("{'ok':'again'}");
+        rq.body = body;
+        rq.history = (C4Slice*)&revID;
+        rq.historyCount = 1;
+        doc = c4doc_put(db, &rq, &commonAncestorIndex, ERROR_INFO(error));
+        REQUIRE(doc != nullptr);
+        CHECK(doc->flags == (kDocExists | kDocConflicted));
+        c4doc_release(doc);
+    }
 }
 
 
