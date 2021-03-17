@@ -47,6 +47,9 @@ struct C4Document : public fleece::RefCounted,
     /// The C C4Document struct. Using the accessors above is preferred.
     const C4Document_C& pub()                               {return *(C4Document_C*)&_flags;}
 
+    C4ExtraInfo& extraInfo()                                {return _extraInfo;}
+    const C4ExtraInfo& extraInfo() const                    {return _extraInfo;}
+
     C4Database* database() const                            {return _db;}
 
     virtual bool exists() =0;

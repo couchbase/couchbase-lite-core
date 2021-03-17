@@ -173,7 +173,7 @@ namespace litecore {
         int                         _transactionLevel {0};  // Nesting level of transactions
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
         mutable unique_ptr<fleece::impl::Encoder> _encoder; // Shared Fleece Encoder
-        mutable FLEncoder           _flEncoder {nullptr};   // Ditto, for clients
+        mutable FLEncoder C4NULLABLE _flEncoder {nullptr};  // Ditto, for clients
         unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
         mutable unique_ptr<C4BlobStore> _blobStore;         // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth

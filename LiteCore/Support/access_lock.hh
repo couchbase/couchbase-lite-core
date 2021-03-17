@@ -49,7 +49,7 @@ namespace litecore {
 
         template <class LAMBDA>
         void use(LAMBDA callback) const {
-            LOCK lock(_mutex);
+            LOCK lock(getMutex());
             callback(_contents);
         }
 

@@ -238,12 +238,9 @@ bool c4db_exists(C4String name, C4String inDirectory) C4API {
 
 
 bool c4key_setPassword(C4EncryptionKey *outKey, C4String password, C4EncryptionAlgorithm alg) C4API {
-    if (auto key = C4EncryptionKeyFromPassword(password, alg); key) {
-        *outKey = *key;
-        return true;
-    } else {
-        return false;
-    }
+    return tryCatch(nullptr, [=] {
+        *outKey = C4EncryptionKeyFromPassword(password, alg);
+    });
 }
 
 

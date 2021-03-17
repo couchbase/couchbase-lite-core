@@ -49,9 +49,11 @@ public:
 
 TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
     C4EncryptionKey key = {};
-    REQUIRE(!c4key_setPassword(&key, nullslice, kC4EncryptionAES256));
-    REQUIRE(!c4key_setPassword(&key, "password123"_sl, kC4EncryptionNone));
-
+    {
+        ExpectingExceptions x;
+        REQUIRE(!c4key_setPassword(&key, nullslice, kC4EncryptionAES256));
+        REQUIRE(!c4key_setPassword(&key, "password123"_sl, kC4EncryptionNone));
+    }
     REQUIRE(c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256));
     CHECK(key.algorithm == kC4EncryptionAES256);
     CHECK(slice(key.bytes, sizeof(key.bytes)).hexString() ==

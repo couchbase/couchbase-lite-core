@@ -42,8 +42,8 @@ namespace litecore::websocket {
 
 
 /// Derives an encryption key from a user-entered password.
-std::optional<C4EncryptionKey> C4EncryptionKeyFromPassword(fleece::slice password,
-                                                           C4EncryptionAlgorithm = kC4EncryptionAES256);
+C4EncryptionKey C4EncryptionKeyFromPassword(fleece::slice password,
+                                            C4EncryptionAlgorithm = kC4EncryptionAES256);
 
 
 /// A LiteCore database connection.

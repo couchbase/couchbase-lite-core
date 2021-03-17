@@ -22,6 +22,7 @@
 #include "c4Observer.hh"
 #include "c4Private.h"
 #include "c4Internal.hh"
+#include "c4ExceptionUtils.hh"
 
 #include "DatabaseImpl.hh"
 #include "DatabaseCookies.hh"
@@ -91,15 +92,14 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
 }
 
 
-optional<C4EncryptionKey> C4EncryptionKeyFromPassword(slice password, C4EncryptionAlgorithm alg) {
+C4EncryptionKey C4EncryptionKeyFromPassword(slice password, C4EncryptionAlgorithm alg) {
     C4EncryptionKey key;
-    if (password && alg != kC4EncryptionNone
-                 && litecore::DeriveKeyFromPassword(password, key.bytes, kEncryptionKeySize[alg])) {
-        key.algorithm = alg;
-        return key;
-    } else {
-        return nullopt;
-    }
+    AssertParam(password.size > 0, "Password is empty");
+    AssertParam(alg == kC4EncryptionAES256, "Invalid encryption algorithm");
+    if (!litecore::DeriveKeyFromPassword(password, key.bytes, kEncryptionKeySize[alg]))
+        C4Error::raise(LiteCoreDomain, kC4ErrorCrypto, "Key derivation failed");
+    key.algorithm = alg;
+    return key;
 }
 
 
