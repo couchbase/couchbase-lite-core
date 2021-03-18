@@ -24,6 +24,7 @@
 #include "fleece/Mutable.hh"
 #include "Any.hh"
 #include "PlatformIO.hh"
+#include "betterassert.hh"
 #include <sstream>
 #include <typeinfo>
 
