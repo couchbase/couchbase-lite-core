@@ -1529,7 +1529,7 @@ TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
     CHECK(e->next());
     CHECK(e->columns()[0]->asString() == "rec-02"_sl);
     
-    query = store->compileQuery("SELECT meta.id WHERE callsign IS 'ANA'"_sl, litecore::QueryLanguage::kN1QL);
+    query = store->compileQuery("SELECT meta().id WHERE callsign IS 'ANA'"_sl, litecore::QueryLanguage::kN1QL);
     e = query->createEnumerator();
     CHECK(e->getRowCount() == 1);
     CHECK(e->next());
@@ -1546,8 +1546,7 @@ TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
     CHECK(e->columns()[0]->asString() == "rec-02"_sl);
     
     // SELECT meta.id WHERE callsign IS VALUED
-    query = store->compileQuery(json5(
-        "{'WHAT':[['._id']],'WHERE':['IS_VALUED()',['.callsign']]}"));
+    query = store->compileQuery("SELECT META().id WHERE callsign IS VALUED"_sl, litecore::QueryLanguage::kN1QL);
     e = query->createEnumerator();
     CHECK(e->getRowCount() == 1);
     CHECK(e->next());

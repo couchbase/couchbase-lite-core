@@ -288,7 +288,6 @@ _baseExpr =
   | anyEveryExpression
   | '$' IDENTIFIER                      { $$ = op(string("$") + yytext); }
   | function
-  | meta
   | property
   | '(' _ expression _ ')'
 baseExpr = _baseExpr _                  # baseExpr to absorb all trailing white space
@@ -299,15 +298,6 @@ OP_PREFIX =
 
 ######## PROPERTIES:
 
-
-meta =
-    ds:dataSourceName _ '.' _ META '.' _ <metaProperty>
-                                        { $$ = op(string(".") + ds.as<string>()
-                                                + "._" + yytext);}
-  | META '.' _ <metaProperty>           { $$ = op(string("._") + yytext);}
-
-metaProperty =
-    "id" | "sequence" | "deleted" | "expiration"
 
 property =
     '*'                                 { $$ = op(".");}
@@ -323,7 +313,7 @@ propertyPath =
         )*                              { $$ = p;}
 
 propertyName
-    = !META IDENTIFIER
+    = IDENTIFIER
 
 
 ######## FUNCTIONS:
@@ -386,7 +376,6 @@ LEFT      = "LEFT"i        WB
 LIKE      = "LIKE"i        WB
 LIMIT     = "LIMIT"i       WB
 MATCH     = "MATCH"i       WB
-META      = "META"i        WB
 MISSING   = "MISSING"i     WB
 NOT       = "NOT"i         WB
 NULL      = "NULL"i        WB
