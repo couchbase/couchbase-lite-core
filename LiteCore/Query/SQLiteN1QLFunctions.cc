@@ -1256,19 +1256,16 @@ namespace litecore {
     }
 
     // toobject(v) returns
-    //   MISSING              if v == MISSING,
-    //   NULL                 if v == NULL
-    //   v                    if v is an object
-    //   {}                   (the empty object), otherwise
+    //   MISSING                if v == MISSING,
+    //   NULL                   if v == NULL
+    //   v                      if v is an object
+    //   {} (the empty object), otherwise
     static void toobject(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             if (isMissing(argv[0]) || isNull(argv[0]) || isObject(ctx, argv[0])) {
                 sqlite3_result_value(ctx, argv[0]);
             } else {
-                Encoder enc;
-                enc.beginDictionary();
-                enc.endDictionary();
-                setResultBlobFromFleeceData(ctx, enc.finish());
+                setResultBlobFromFleeceData(ctx, Encoder::kPreEncodedEmptyDict);
             }
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "toobject: exception!", -1);
