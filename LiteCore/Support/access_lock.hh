@@ -32,39 +32,72 @@ namespace litecore {
         ,_mutex(mutex)
         { }
 
+        using LOCK_GUARD = std::lock_guard<std::remove_reference_t<MUTEX>>;
+
+
+        template <class REF>
+        class access {
+        public:
+            access(MUTEX &mut, REF ref)     :_lock(mut), _ref(ref) { }
+            access(const access&) =delete;  // I cannot be copied
+            access(access&&) =delete;       // I cannot be moved
+
+            operator REF ()                 {return _ref;}
+            auto operator * ()              {return _ref.operator*();}
+            auto operator -> ()             {return _ref.operator->();}
+            REF get() {return _ref;}
+
+        private:
+            access_lock::LOCK_GUARD _lock;
+            REF                     _ref;
+        };
+
+        /// Locks my mutex and returns an `access` object that acts as a proxy for my contents.
+        /// My mutex is unlocked in the `access` object's destructor.
+        /// If you use a `use()` call as a function parameter, this will do the right thing and
+        /// unlock the mutex after that function returns.
+        /// You can assign the result of `use()` to a local variable and use it multiple times
+        /// within the same lock scope; just make sure that variable has as brief a lifetime as
+        /// possible.
+        auto use()        {return access<T&>(_mutex, _contents);}
+
+        /// Locks my mutex and passes a refence to my contents to the callback.
         template <class LAMBDA>
         void use(LAMBDA callback) {
-            LOCK lock(_mutex);
+            LOCK_GUARD lock(_mutex);
             callback(_contents);
         }
 
-        // Returns result. Has to be called as `use<actualResultClass>(...)`
+        /// Locks my mutex and passes a refence to my contents to the callback.
+        /// The callback's return value will be passed along and returned from this call.
+        /// Due to C++'s limited type inference, the RESULT type has to be specified explicitly,
+        /// e.g. `use<actualResultClass>(...)`
         template <class RESULT, class LAMBDA>
         RESULT use(LAMBDA callback) {
-            LOCK lock(_mutex);
+            LOCK_GUARD lock(_mutex);
             return callback(_contents);
         }
 
         // const versions:
 
+        auto use() const  {return access<const T&>(getMutex(), _contents);}
+
         template <class LAMBDA>
         void use(LAMBDA callback) const {
-            LOCK lock(getMutex());
+            LOCK_GUARD lock(getMutex());
             callback(_contents);
         }
 
-        // Returns result. Has to be called as `use<actualResultClass>(...)`
         template <class RESULT, class LAMBDA>
         RESULT use(LAMBDA callback) const {
-            LOCK lock(getMutex());
+            LOCK_GUARD lock(getMutex());
             return callback(_contents);
         }
+
 
         MUTEX& getMutex() const {return const_cast<MUTEX&>(_mutex);}
 
     private:
-        using LOCK = std::lock_guard<std::remove_reference_t<MUTEX>>;
-
         T _contents;
         MUTEX _mutex;
     };
