@@ -409,7 +409,7 @@ C4Document* C4Document::containingValue(FLValue value) noexcept {
 }
 
 
-bool C4Document::containsBlobs(FLDict dict) noexcept {
+bool C4Document::dictContainsBlobs(FLDict dict) noexcept {
     bool found = false;
     C4Document::findBlobReferences(dict, [&](FLDict) {
         found = true;

@@ -767,6 +767,7 @@ namespace litecore {
 
 
     bool DatabaseImpl::purgeDocument(slice docID) {
+        Transaction t(this);
         if (!defaultKeyStore().del(docID, transaction()))
             return false;
         if (_sequenceTracker) {
@@ -774,6 +775,7 @@ namespace litecore {
                 st.documentPurged(docID);
             });
         }
+        t.commit();
         return true;
     }
 
