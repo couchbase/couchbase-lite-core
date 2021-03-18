@@ -250,7 +250,7 @@ static void substituteVariable(const string &var, MutableArray expr) {
 static const char* kReservedWords[] = {
     "AND",  "ANY",  "AS",  "ASC",  "BETWEEN",  "BY",  "CASE",  "CROSS",  "DESC",  "DISTINCT",
     "ELSE",  "END",  "EVERY",  "FALSE",  "FROM",  "GROUP",  "HAVING",  "IN",  "INNER",  "IS",
-    "JOIN",  "LEFT",  "LIKE",  "LIMIT",  "MATCH",  "META",  "MISSING",  "NATURAL",  "NOT",
+    "JOIN",  "LEFT",  "LIKE",  "LIMIT",  "MATCH",  "MISSING",  "NATURAL",  "NOT",
     "NULL",  "MISSING",  "OFFSET",  "ON",  "OR",  "ORDER",  "OUTER",  "REGEX",  "RIGHT",
     "SATISFIES",  "SELECT",  "THEN",  "TRUE",  "USING",  "VALUED", "WHEN",  "WHERE",
     "COLLATE",

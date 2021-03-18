@@ -103,13 +103,15 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("select `mr.grieves`.`hey`") == "{'WHAT':[['.mr\\\\.grieves.hey']]}");
     CHECK(translate("select `$type`") == "{'WHAT':[['.\\\\$type']]}");
 
-    CHECK(translate("select meta.id") == "{'WHAT':[['._id']]}");
-    CHECK(translate("select meta.sequence") == "{'WHAT':[['._sequence']]}");
-    CHECK(translate("select meta.deleted") == "{'WHAT':[['._deleted']]}");
-    CHECK(translate("select db.meta.id") == "{'WHAT':[['.db._id']]}");
-    CHECK(translate("select meta.bogus") == "");    // only specific meta properties allowed
-    CHECK(translate("select db.meta.bogus") == "");
-
+    CHECK(translate("select meta().id") == "{'WHAT':[['_.',['meta'],'.id']]}");
+    CHECK(translate("select meta().sequence") == "{'WHAT':[['_.',['meta'],'.sequence']]}");
+    CHECK(translate("select meta().deleted") == "{'WHAT':[['_.',['meta'],'.deleted']]}");
+    CHECK(translate("select meta(db).id from db") == "{'FROM':[{'AS':'db'}],'WHAT':[['_.',['meta','db'],'.id']]}");
+    {
+        ExpectingExceptions x;
+        CHECK_THROWS_WITH(translate("select meta().bogus"), "'bogus' is not a valid Meta key");
+        CHECK_THROWS_WITH(translate("select meta(db).bogus from db"), "'bogus' is not a valid Meta key");
+    }
     CHECK(translate("select foo[17]") == "{'WHAT':[['.foo[17]']]}");
     CHECK(translate("select foo.bar[-1].baz") == "{'WHAT':[['.foo.bar[-1].baz']]}");
 
@@ -288,11 +290,12 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
           == "{'FROM':[{'AS':'db'},{'AS':'other','JOIN':'INNER','ON':['=',['.other.key'],['.db.key']]}],'WHAT':[['.db.name']]}");
     CHECK(translate("SELECT db.name FROM db JOIN db AS other ON other.key = db.key CROSS JOIN x")
           == "{'FROM':[{'AS':'db'},{'AS':'other','JOIN':'INNER','ON':['=',['.other.key'],['.db.key']]},{'AS':'x','JOIN':'CROSS'}],'WHAT':[['.db.name']]}");
-    CHECK(translate("SELECT rec, dss, dem FROM db rec LEFT JOIN db dss ON rec.sessionId = dss.meta.id "
-                    "LEFT JOIN db dem ON rec.demId = dem.meta.id WHERE rec.meta.id LIKE 'rec:%'")
-          == "{'FROM':[{'AS':'rec'},{'AS':'dss','JOIN':'LEFT','ON':['=',['.rec.sessionId'],['.dss._id']]},"
-             "{'AS':'dem','JOIN':'LEFT','ON':['=',['.rec.demId'],['.dem._id']]}],'WHAT':[['.rec'],['.dss'],['.dem']],"
-             "'WHERE':['LIKE',['.rec._id'],'rec:%']}");
+    CHECK(translate("SELECT rec, dss, dem FROM db rec LEFT JOIN db dss ON rec.sessionId = meta(dss).id "
+                    "LEFT JOIN db dem ON rec.demId = meta(dem).id WHERE meta(rec).id LIKE 'rec:%'")
+          == "{'FROM':[{'AS':'rec'},{'AS':'dss','JOIN':'LEFT','ON':['=',['.rec.sessionId'],"
+             "['_.',['meta','dss'],'.id']]},{'AS':'dem','JOIN':'LEFT','ON':['=',['.rec.demId'],"
+             "['_.',['meta','dem'],'.id']]}],'WHAT':[['.rec'],['.dss'],['.dem']],"
+             "'WHERE':['LIKE',['_.',['meta','rec'],'.id'],'rec:%']}");
     CHECK(translate("SELECT a, b, c FROM db a JOIN db b ON (a.n = b.n) JOIN db c ON (b.m = c.m) WHERE a.type = b.type AND b.type = c.type")
           == "{'FROM':[{'AS':'a'},{'AS':'b','JOIN':'INNER','ON':['=',['.a.n'],['.b.n']]},{'AS':'c','JOIN':'INNER','ON':['=',['.b.m'],['.c.m']]}],"
              "'WHAT':[['.a'],['.b'],['.c']],'WHERE':['AND',['=',['.a.type'],['.b.type']],['=',['.b.type'],['.c.type']]]}");
