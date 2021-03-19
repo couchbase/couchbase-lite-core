@@ -81,6 +81,7 @@ namespace C4Blob {
 
 struct C4ReadStream : public C4Base {
     C4ReadStream(const C4BlobStore&, C4BlobKey);
+    C4ReadStream(C4ReadStream&&);
     ~C4ReadStream();
     size_t read(void *buffer, size_t maxBytes);
     int64_t getLength() const;
@@ -92,6 +93,7 @@ private:
 
 struct C4WriteStream : public C4Base {
     explicit C4WriteStream(C4BlobStore&);
+    C4WriteStream(C4WriteStream&&);
     ~C4WriteStream();
     void write(slice);
     uint64_t bytesWritten() const noexcept;
@@ -122,7 +124,7 @@ struct C4BlobStore : public C4Base {
     void deleteBlob(C4BlobKey);
 
     C4ReadStream openReadStream(C4BlobKey key) const    {return C4ReadStream(*this, key);}
-    C4WriteStream openWriteStream(C4BlobKey key)        {return C4WriteStream(*this);}
+    C4WriteStream openWriteStream()                     {return C4WriteStream(*this);}
 
     /** Returns the contents of a blob referenced by a dict. Inline data will be decoded if
          necessary, or the "digest" property will be looked up in the BlobStore if one is

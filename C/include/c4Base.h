@@ -282,6 +282,14 @@ typedef struct C4Error {
     unsigned      internal_info :32;    // No user-serviceable parts inside. Do not touch.
 
 #ifdef __cplusplus
+    static C4Error make(C4ErrorDomain, int code, fleece::slice message ={});
+    static C4Error printf(C4ErrorDomain, int code, const char *format, ...) __printflike(3,4);
+    static C4Error vprintf(C4ErrorDomain, int code, const char *format, va_list args);
+    static void set(C4Error* C4NULLABLE, C4ErrorDomain, int code, const char *format =nullptr, ...) __printflike(4,5);
+    static void set(C4ErrorDomain domain, int code, fleece::slice message, C4Error* C4NULLABLE outError) {
+        if (outError) *outError = make(domain, code, message);
+    }
+
     static C4Error fromException(const std::exception &e) noexcept;
     static C4Error fromCurrentException() noexcept;
     static void fromException(const std::exception &e, C4Error* C4NULLABLE outError) noexcept {
@@ -291,19 +299,24 @@ typedef struct C4Error {
         if (outError) *outError = fromCurrentException();
     }
 
-    [[noreturn]] static void raise(C4ErrorDomain, int code, const char *format, ...) __printflike(3,4);
-    [[noreturn]] static void raise(C4ErrorDomain domain, int code) {raise(C4Error{domain, code});}
+    [[noreturn]] static void raise(C4ErrorDomain, int code, const char *format =nullptr, ...) __printflike(3,4);
     [[noreturn]] static void raise(C4Error);
+
+    static void setCaptureBacktraces(bool) noexcept;
+    static bool getCaptureBacktraces() noexcept;
 
     bool operator== (const C4Error &b) const {return code == b.code
                                                   && (code == 0 || domain == b.domain);}
     bool operator!= (const C4Error &b) const {return !(*this == b);}
-    explicit operator bool() const  {return code != 0;}
-    bool operator!() const          {return code == 0;}
+    explicit operator bool() const           {return code != 0;}
+    bool operator!() const                   {return code == 0;}
 
     std::string message() const;
     std::string description() const;
     std::string backtrace() const;
+
+    bool mayBeTransient() const noexcept;
+    bool mayBeNetworkDependent() const noexcept;
 #endif
 } C4Error;
 

@@ -138,6 +138,9 @@ C4ReadStream::C4ReadStream(const C4BlobStore &store, C4BlobKey key)
 :_impl(store._impl->get(asInternal(key)).read())
 { }
 
+C4ReadStream::C4ReadStream( C4ReadStream &&other)
+:_impl(move(other._impl))
+{ }
 
 C4ReadStream::~C4ReadStream() = default;
 size_t C4ReadStream::read(void *dst, size_t mx)     {return _impl->read(dst, mx);}
@@ -149,6 +152,9 @@ C4WriteStream::C4WriteStream(C4BlobStore &store)
 :_impl(new BlobWriteStream(*store._impl))
 { }
 
+C4WriteStream::C4WriteStream( C4WriteStream &&other)
+:_impl(move(other._impl))
+{ }
 
 C4WriteStream::~C4WriteStream() {
     try {
@@ -156,7 +162,6 @@ C4WriteStream::~C4WriteStream() {
             _impl->close();
     } catchAndIgnore();
 }
-
 
 void C4WriteStream::write(fleece::slice data)         {_impl->write(data);}
 uint64_t C4WriteStream::bytesWritten() const noexcept {return _impl->bytesWritten();}
