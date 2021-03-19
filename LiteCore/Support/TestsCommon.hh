@@ -8,6 +8,7 @@
 #include "fleece/slice.hh"
 #include "JSON5.hh"
 #include "function_ref.hh"
+#include <chrono>
 #include <iostream>
 #include <set>
 #include <string>
@@ -18,6 +19,10 @@
 #error "This header must be included before Catch.hpp"
 #endif
 
+
+// Enables use of suffixed numeric literals, like `500ms` or `2s`, for std::chrono::time_interval,
+// as well as `"..."s` for std::string literals.
+using namespace std::literals;
 
 namespace litecore {
     class FilePath;
@@ -94,7 +99,29 @@ struct ExpectingExceptions {
 #pragma mark - MISC.:
 
 
-// Waits for the predicate to return true, blocking the current thread and checking every 100ms.
-// If the timeout (given in **milliseconds**) elapses, calls FAIL.
-void WaitUntil(int timeoutMillis, fleece::function_ref<bool()> predicate);
+// Waits for the predicate to return true, blocking the current thread and checking every 50ms
+// until the timeout expires.
+// (You can express the timeout as a decimal literal followed by `ms`, e.g. `500ms`.)
+// The predicate is guaranteed to be checked at least once, immediately when WaitUntil is called.
+// Returns true if the predicate became true; or false if the timeout expired.
+MUST_USE_RESULT
+bool WaitUntil(std::chrono::milliseconds, fleece::function_ref<bool()> predicate);
 
+
+// CHECK that CONDITION will become true before TIMEOUT expires.
+// (You can express the timeout as a decimal literal followed by `s` or `ms`, e.g. `2s`.)
+#define CHECK_BEFORE(TIMEOUT, CONDITION) \
+    do { \
+        auto _ms = std::chrono::duration_cast<std::chrono::milliseconds>(TIMEOUT); \
+        if(!WaitUntil(_ms, [&]{return (CONDITION);})) \
+            FAIL_CHECK(#CONDITION << " did not occur within " << _ms.count() << "ms"); \
+    } while (false)
+
+// REQUIRE that CONDITION will become true before TIMEOUT expires.
+// (You can express the timeout as a decimal literal followed by `s` or `ms`, e.g. `2s`.)
+#define REQUIRE_BEFORE(TIMEOUT, CONDITION) \
+    do { \
+        auto _ms = std::chrono::duration_cast<std::chrono::milliseconds>(TIMEOUT); \
+        if(!WaitUntil(_ms, [&]{return (CONDITION);})) \
+            FAIL(#CONDITION << " did not occur within " << _ms.count() << "ms"); \
+    } while (false)

@@ -93,7 +93,7 @@ namespace litecore::repl {
             }
             if (progressNotificationLevel() >= 2) {
                 auto now = actor::Timer::clock::now();
-                if (done || now - lastNotifyTime > std::chrono::milliseconds(250)) {
+                if (done || now - lastNotifyTime > 250ms) {
                     lastNotifyTime = now;
                     repl->onBlobProgress(progress);
                 }

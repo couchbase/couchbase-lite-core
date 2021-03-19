@@ -250,16 +250,16 @@ static void substituteVariable(const string &var, MutableArray expr) {
 static const char* kReservedWords[] = {
     "AND",  "ANY",  "AS",  "ASC",  "BETWEEN",  "BY",  "CASE",  "CROSS",  "DESC",  "DISTINCT",
     "ELSE",  "END",  "EVERY",  "FALSE",  "FROM",  "GROUP",  "HAVING",  "IN",  "INNER",  "IS",
-    "JOIN",  "LEFT",  "LIKE",  "LIMIT",  "MATCH",  "META",  "MISSING",  "NATURAL",  "NOT",
+    "JOIN",  "LEFT",  "LIKE",  "LIMIT",  "MATCH",  "MISSING",  "NATURAL",  "NOT",
     "NULL",  "MISSING",  "OFFSET",  "ON",  "OR",  "ORDER",  "OUTER",  "REGEX",  "RIGHT",
-    "SATISFIES",  "SELECT",  "THEN",  "TRUE",  "USING",  "WHEN",  "WHERE",
+    "SATISFIES",  "SELECT",  "THEN",  "TRUE",  "USING",  "VALUED", "WHEN",  "WHERE",
     "COLLATE",
     nullptr
 };
 
 static const char* kFunctions[] = {         // (copied from LiteCore's QueryParserTables.hh)
     // Array:
-    "array_avg",  "array_contains",  "array_count",  "array_ifnull",  "array_length",  "array_max",
+    "array_agg", "array_avg",  "array_contains",  "array_count",  "array_ifnull",  "array_length",  "array_max",
     "array_min",  "array_of",  "array_sum",
     // Comparison:  (SQLite min and max are used in non-aggregate form here)
     "greatest",  "least",

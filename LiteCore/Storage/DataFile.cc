@@ -238,7 +238,7 @@ namespace litecore {
                 if (st.elapsed() > kOtherDBCloseTimeoutSecs)
                     error::_throw(error::Busy, "Can't delete db file while other connections are open");
                 else
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                    std::this_thread::sleep_for(100ms);
             }
             
             if (file)

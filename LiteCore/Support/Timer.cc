@@ -100,7 +100,7 @@ namespace litecore { namespace actor {
             lock.unlock();
             // Wait for timer to exit the triggered state (i.e. wait for its callback to complete):
             while (timer->_triggered)
-                this_thread::sleep_for(chrono::microseconds(100));
+                this_thread::sleep_for(100us);
         }
     }
 

@@ -532,8 +532,7 @@ TEST_CASE_METHOD(C4Test, "Send CSR to CA failure", "[Certs][.SyncServer]") {
         finished = true;
     });
 
-    while (!finished)
-        this_thread::sleep_for(chrono::milliseconds(100));
+    REQUIRE_BEFORE(5s, finished);
 
     CHECK(cert == nullptr);
     CHECK(error.domain == WebSocketDomain);

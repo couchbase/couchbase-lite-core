@@ -321,7 +321,7 @@ public:
         return true;
     }
 
-    static constexpr auto kDefaultWaitTimeout = repl::tuning::kDefaultCheckpointSaveDelay + std::chrono::seconds(2);
+    static constexpr auto kDefaultWaitTimeout = repl::tuning::kDefaultCheckpointSaveDelay + 2s;
 
     void waitForStatus(C4ReplicatorActivityLevel level, std::chrono::milliseconds timeout =kDefaultWaitTimeout) {
         std::unique_lock<std::mutex> lock(_mutex);

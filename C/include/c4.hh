@@ -96,6 +96,12 @@ namespace c4 {
         T* _obj;
     };
 
+
+    /// Convenience function for wrapping a new C4 object in a ref:
+    template <class T>
+    ref<T> make_ref(T *t) { return ref<T>(t); }
+
+
     /// Returns a description of a C4Error as a _temporary_ C string, for use in logging.
 #ifndef c4error_descriptionStr
     #define c4error_descriptionStr(ERR)     fleece::alloc_slice(c4error_getDescription(ERR)).asString().c_str()

@@ -151,7 +151,7 @@ namespace litecore { namespace repl {
         if (progressNotificationLevel() < 2)
             return;
         auto now = actor::Timer::clock::now();
-        if (always || now - _lastNotifyTime > std::chrono::milliseconds(250)) {
+        if (always || now - _lastNotifyTime > 250ms) {
             _lastNotifyTime = now;
             Replicator::BlobProgress prog {
                 Dir::kPulling,

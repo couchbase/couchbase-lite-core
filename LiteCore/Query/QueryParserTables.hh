@@ -85,6 +85,8 @@ namespace litecore {
 
         {"ASC"_sl,     1, 1,  2,  &QueryParser::postfixOp},
         {"DESC"_sl,    1, 1,  2,  &QueryParser::postfixOp},
+        
+        {"META"_sl,    0, 1,  99, &QueryParser::metaOp},
 
         {nullslice,    0, 0, 99,  &QueryParser::fallbackOp} // fallback; must come last in list
     };
@@ -109,6 +111,7 @@ namespace litecore {
     struct FunctionSpec {slice name; int minArgs; int maxArgs; slice sqlite_name; bool aggregate; bool wants_collation;};
     static const FunctionSpec kFunctionList[] = {
         // Array:
+        {"array_agg"_sl,        1, 1},
         {"array_avg"_sl,        1, 1},
         {"array_contains"_sl,   2, 2},
         {"array_count"_sl,      1, 1},
@@ -191,6 +194,7 @@ namespace litecore {
         {"tonumber"_sl,         1, 1},
         {"toobject"_sl,         1, 1},
         {"tostring"_sl,         1, 1},
+        {"is_valued"_sl,        1, 1, "isvalued"_sl},
 
         // FTS (not standard N1QL):
         {"rank"_sl,             1, 1},
