@@ -409,31 +409,6 @@ C4Document* C4Document::containingValue(FLValue value) noexcept {
 }
 
 
-bool C4Document::dictContainsBlobs(FLDict dict) noexcept {
-    bool found = false;
-    C4Document::findBlobReferences(dict, [&](FLDict) {
-        found = true;
-        return false; // to stop search
-    });
-    return found;
-}
-
-
-bool C4Document::findBlobReferences(FLDict dict, const FindBlobCallback &callback) {
-    if (!dict)
-        return true;
-    for (DeepIterator i((const Dict*)dict); i; ++i) {
-        auto d = FLDict(i.value()->asDict());
-        if (d && C4Blob::isBlob(d)) {
-            if (!callback(d))
-                return false;
-            i.skipChildren();
-        }
-    }
-    return true;
-}
-
-
 bool C4Document::isOldMetaProperty(slice propertyName) noexcept {
     return legacy_attachments::isOldMetaProperty(propertyName);
 }

@@ -141,13 +141,6 @@ struct C4Document : public fleece::RefCounted,
     /// Returns the Document instance, if any, that contains the given Fleece value.
     static C4Document* C4NULLABLE containingValue(FLValue) noexcept;
 
-    static bool dictContainsBlobs(FLDict) noexcept;
-
-    using FindBlobCallback = fleece::function_ref<bool(FLDict)>;
-
-    /// Finds blob references in a Fleece Dict, recursively.
-    static bool findBlobReferences(FLDict, const FindBlobCallback&);
-
     static bool isOldMetaProperty(slice propertyName) noexcept;
     static bool hasOldMetaProperties(FLDict) noexcept;
 

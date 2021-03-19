@@ -1011,7 +1011,7 @@ C4SliceResult c4doc_getBlobData(FLDict flDict, C4BlobStore *blobStore, C4Error *
 
 
 bool c4doc_dictContainsBlobs(FLDict dict) noexcept {
-    return C4Document::dictContainsBlobs(dict);
+    return C4Blob::dictContainsBlobs(dict);
 }
 
 

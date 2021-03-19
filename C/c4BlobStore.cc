@@ -215,6 +215,31 @@ bool C4Blob::isBlob(FLDict dict, C4BlobKey &outKey) {
 }
 
 
+bool C4Blob::dictContainsBlobs(FLDict dict) noexcept {
+    bool found = false;
+    C4Blob::findBlobReferences(dict, [&](FLDict) {
+        found = true;
+        return false; // to stop search
+    });
+    return found;
+}
+
+
+bool C4Blob::findBlobReferences(FLDict dict, const FindBlobCallback &callback) {
+    if (!dict)
+        return true;
+    for (DeepIterator i((FLValue)dict); i; ++i) {
+        auto d = FLDict(i.value().asDict());
+        if (d && C4Blob::isBlob(d)) {
+            if (!callback(d))
+                return false;
+            i.skipChildren();
+        }
+    }
+    return true;
+}
+
+
 // Heuristics for deciding whether a MIME type is compressible or not.
 // See <http://www.iana.org/assignments/media-types/media-types.xhtml>
 

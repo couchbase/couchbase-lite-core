@@ -297,7 +297,7 @@ namespace litecore {
                 auto body = (const Dict*)doc->getProperties();
 
                 // Iterate over blobs:
-                C4Document::findBlobReferences(FLDict(body), [&](FLDict blob) {
+                C4Blob::findBlobReferences(FLDict(body), [&](FLDict blob) {
                     blobKey key;
                     if (C4Blob::isBlob(blob, (C4BlobKey&)key))    // get the key
                         usedDigests.insert(key.filename());

@@ -19,6 +19,7 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4DatabaseTypes.h"
+#include "function_ref.hh"
 #include "fleece/Fleece.h"
 #include <memory>
 
@@ -43,11 +44,19 @@ namespace C4Blob {
     /** Value of kbjectTypeProperty that denotes a blob. */
     static constexpr slice kObjectType_Blob = "blob";
 
-    /** Blob dict property containing a digest of the data. (Required if "data" is absent) */
+    /** Blob dict property containing a digest of the contents. (Required if "data" is absent) */
     static constexpr slice kDigestProperty = "digest";
 
-    /** Blob dict property containing the data itself. (Required if "digest" is absent) */
+    /** Blob dict property containing the contents,
+        as a Fleece data value (preferred) or a base64-encoded string.
+        (Required if "digest" is absent) */
     static constexpr slice kDataProperty = "data";
+
+    /** Blob dict property containing the length in bytes of the contents. (Required.) */
+    static constexpr slice kLengthProperty = "length";
+
+    /** Blob dict property containing the MIME type of the contents (optional). */
+    static constexpr slice kContentTypeProperty = "content_type";
 
     /** Top-level document property whose value is a CBL 1.x / CouchDB attachments container. */
     static constexpr slice kLegacyAttachmentsProperty = "_attachments";
@@ -76,6 +85,15 @@ namespace C4Blob {
 
     /** Returns true if the blob dictionary's data type appears to be compressible. */
     bool isCompressible(FLDict);
+
+    /** Returns true if this dict (usually the root of a document) contains any blobs within. */
+    bool dictContainsBlobs(FLDict) noexcept;
+
+    using FindBlobCallback = fleece::function_ref<bool(FLDict)>;
+
+    /** Finds blob references in a Fleece Dict, recursively. */
+    bool findBlobReferences(FLDict, const FindBlobCallback&);
+
 };
 
 
