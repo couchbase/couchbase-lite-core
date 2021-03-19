@@ -32,7 +32,6 @@
 
 using namespace std;
 using namespace litecore;
-using namespace c4Internal;
 
 #pragma mark - C++ API:
 
@@ -66,7 +65,7 @@ Retained<C4Replicator> C4Database::newLocalReplicator(C4Database *otherLocalDB,
     AssertParam(params.push != kC4Disabled || params.pull != kC4Disabled,
                 "Either push or pull must be enabled");
     AssertParam(otherLocalDB != this, "Can't replicate a database to itself");
-    return new C4LocalReplicator(this, params, otherLocalDB);
+    return new c4Internal::C4LocalReplicator(this, params, otherLocalDB);
 }
 #endif
 
