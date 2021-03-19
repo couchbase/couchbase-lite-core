@@ -2158,5 +2158,5 @@ TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "doc1"_sl);
     REQUIRE(e->next());
-    CHECK(e->columns()[0]->asString() == "doc2"_sl);
+    CHECK(e->columns()[0]->asString() == "doc2"_sl); 
 }
