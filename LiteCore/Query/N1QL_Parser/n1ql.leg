@@ -49,10 +49,15 @@ selectStatement =
             )? )?
         (o:orderBy _                    { setAny(select, "ORDER_BY"_sl, o); }
             )?
-        (LIMIT l:expression             { setAny(select, "LIMIT"_sl, l); }
-            )?
-        (OFFSET off:expression          { setAny(select, "OFFSET"_sl, off); }
-            )?
+        (
+          LIMIT l:expression            { setAny(select, "LIMIT"_sl, l); }
+          (OFFSET off:expression        { setAny(select, "OFFSET"_sl, off); }
+             )?
+          |
+          OFFSET off:expression         { setAny(select, "OFFSET"_sl, off); }
+          (LIMIT l:expression           { setAny(select, "LIMIT"_sl, l); }
+             )?
+        )?
         (_ ';')?
                                         { $$ = select; }
 
@@ -166,6 +171,16 @@ expr7 =
              )*                         { $$ = x}
 expr6 =
     x:expr5 NOT NULL                    { $$ = op("IS NOT", x, nullValue); }
+  | x:expr5 IS (
+        NULL                            { $$ = binaryOp(x, "IS", nullValue); }
+      | MISSING                         { $$ = binaryOp(x, "IS", op("MISSING")); }
+      | VALUED                          { $$ = op("IS_VALUED()", x); }
+    )
+  | x:expr5 IS NOT (
+        NULL                            { $$ = binaryOp(x, "IS NOT", nullValue); }
+      | MISSING                         { $$ = op(x, "IS NOT", op("MISSING")); }
+      | VALUED                          { $$ = op("NOT", op("IS_VALUED()", x)); }
+    )
   | inExpression
   | likeOrMatchExpression
   | betweenExpression
@@ -273,7 +288,6 @@ _baseExpr =
   | anyEveryExpression
   | '$' IDENTIFIER                      { $$ = op(string("$") + yytext); }
   | function
-  | meta
   | property
   | '(' _ expression _ ')'
 baseExpr = _baseExpr _                  # baseExpr to absorb all trailing white space
@@ -284,15 +298,6 @@ OP_PREFIX =
 
 ######## PROPERTIES:
 
-
-meta =
-    ds:dataSourceName _ '.' _ META '.' _ <metaProperty>
-                                        { $$ = op(string(".") + ds.as<string>()
-                                                + "._" + yytext);}
-  | META '.' _ <metaProperty>           { $$ = op(string("._") + yytext);}
-
-metaProperty =
-    "id" | "sequence" | "deleted" | "expiration"
 
 property =
     '*'                                 { $$ = op(".");}
@@ -308,14 +313,17 @@ propertyPath =
         )*                              { $$ = p;}
 
 propertyName
-    = !META IDENTIFIER
+    = IDENTIFIER
 
 
 ######## FUNCTIONS:
 
 
 function =
-    f:functionName e:parenExprs         { $$ = insertAny(e, 0, f.as<string>() + "()");}
+    "meta"i _ '(' _                    { f = op("meta");}
+    (ds:dataSourceName _               { appendAny(f, ds.as<string>());}
+    )? ')' _                           { $$ = f;}
+  | f:functionName e:parenExprs        { $$ = insertAny(e, 0, f.as<string>() + "()");}
 
 functionName    =
     IDENTIFIER                         &{isFunction(yytext)}
@@ -368,7 +376,6 @@ LEFT      = "LEFT"i        WB
 LIKE      = "LIKE"i        WB
 LIMIT     = "LIMIT"i       WB
 MATCH     = "MATCH"i       WB
-META      = "META"i        WB
 MISSING   = "MISSING"i     WB
 NOT       = "NOT"i         WB
 NULL      = "NULL"i        WB
@@ -382,6 +389,7 @@ SELECT    = "SELECT"i      WB
 SOME      = "SOME"i        WB
 THEN      = "THEN"i        WB
 TRUE      = "TRUE"i        WB
+VALUED    = "VALUED"i      WB
 WHEN      = "WHEN"i        WB
 WHERE     = "WHERE"i       WB
 

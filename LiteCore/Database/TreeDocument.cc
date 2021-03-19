@@ -438,7 +438,7 @@ namespace c4Internal {
             if (rq.deltaCB == nullptr) {
                 body = (rq.allocedBody.buf)? rq.allocedBody : alloc_slice(rq.body);
                 if (!body)
-                    body = alloc_slice{Dict::kEmpty, 2};
+                    body = Encoder::kPreEncodedEmptyDict;
             } else {
                 // Apply a delta via a callback:
                 if (!rq.deltaSourceRevID.buf || !selectRevision(rq.deltaSourceRevID, true)) {

@@ -943,6 +943,116 @@ TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
     CHECK(e->columns()[0]->asString() == "false"_sl);
 }
 
+TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            // [1]
+            enc.beginArray();
+            enc.writeInt(1);
+            enc.endArray();
+        });
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeString("string value");
+        });
+        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("num");
+            enc.writeDouble(4.5);
+        });
+        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            // { "subvalue": "FTW" }
+            enc.beginDictionary(1);
+            enc.writeKey("subvalue");
+            enc.writeString("FTW");
+            enc.endDictionary();
+        });
+        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeNull();
+        });
+
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': [['TOARRAY()', ['.value']]]}")) };
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 5);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kArray);
+    CHECK(e->columns()[0]->asArray()->count() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kArray);
+    CHECK(e->columns()[0]->asArray()->get(0)->asString() == "string value"_sl);
+    REQUIRE(e->next());
+    CHECK(e->missingColumns() == uint64_t(1));
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kArray);
+    CHECK(e->columns()[0]->asArray()->get(0)->asDict()->get("subvalue"_sl)->asString() == "FTW"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->missingColumns() == uint64_t(0));
+}
+
+TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            // [1]
+            enc.beginArray();
+            enc.writeInt(1);
+            enc.endArray();
+        });
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeString("string value");
+        });
+        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("num");
+            enc.writeDouble(4.5);
+        });
+        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            // { "subvalue": "FTW" }
+            enc.beginDictionary(1);
+            enc.writeKey("subvalue");
+            enc.writeString("FTW");
+            enc.endDictionary();
+        });
+        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeNull();
+        });
+
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': [['TOOBJECT()', ['.value']]]}")) };
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 5);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kDict);
+    CHECK(e->columns()[0]->asDict()->count() == 0);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kDict);
+    CHECK(e->columns()[0]->asDict()->count() == 0);
+    REQUIRE(e->next());
+    CHECK(e->missingColumns() == uint64_t(1));
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kDict);
+    CHECK(e->columns()[0]->asDict()->get("subvalue"_sl)->asString() == "FTW"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->missingColumns() == uint64_t(0));
+}
+
 
 TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
     {
@@ -1492,14 +1602,13 @@ TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // C
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
 	{
         Transaction t(store->dataFile());
-        string docID = "rec-00";
 
         for(int i = 0; i < 3; i++) {
-            stringstream ss(docID);
-            ss << i + 1;
+            stringstream ss;
+            ss << "rec-0" << i + 1;
             writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
                 if(i > 0) {
                     enc.writeKey("callsign");
@@ -1515,9 +1624,47 @@ TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
         t.commit();
     }
 
-	auto query = store->compileQuery(json5(
+    // SELECT meta.id WHERE callsign IS MISSING
+    auto query = store->compileQuery(json5(
+        "{'WHAT':[['._id']],'WHERE':['IS',['.callsign'],['MISSING']]}"));
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    CHECK(e->getRowCount() == 1);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-01"_sl);
+    
+    query = store->compileQuery(json5(
+        "{'WHAT':[['._id']],'WHERE':['IS',['.callsign'],null]}"));
+    e = query->createEnumerator();
+    CHECK(e->getRowCount() == 1);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-02"_sl);
+    
+    query = store->compileQuery("SELECT meta().id WHERE callsign IS 'ANA'"_sl, litecore::QueryLanguage::kN1QL);
+    e = query->createEnumerator();
+    CHECK(e->getRowCount() == 1);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-03"_sl);
+    
+    // SELECT meta.id WHERE callsign IS NOT VALUED
+    query = store->compileQuery(json5(
+        "{'WHAT':[['._id']],'WHERE':['NOT',['IS_VALUED()',['.callsign']]]}"));
+    e = query->createEnumerator();
+    CHECK(e->getRowCount() == 2);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-01"_sl);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-02"_sl);
+    
+    // SELECT meta.id WHERE callsign IS VALUED
+    query = store->compileQuery("SELECT META().id WHERE callsign IS VALUED"_sl, litecore::QueryLanguage::kN1QL);
+    e = query->createEnumerator();
+    CHECK(e->getRowCount() == 1);
+    CHECK(e->next());
+    CHECK(e->columns()[0]->asString() == "rec-03"_sl);
+    
+	query = store->compileQuery(json5(
         "{'WHAT': [['COUNT()','.'], ['.callsign']], 'WHERE':['IS NOT', ['.callsign'], null]}"));
-	Retained<QueryEnumerator> e(query->createEnumerator());
+	e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asInt() == 1);
@@ -1917,4 +2064,98 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "Jean"_sl);
     REQUIRE(!e->next());
+}
+
+TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
+    Transaction t(store->dataFile());
+    writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("customerId");
+        enc.writeString("Jack");
+        enc.writeKey("test_id");
+        enc.writeString("agg_func");
+    });
+    writeDoc("doc-02"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("customerId");
+        enc.writeString("Jean");
+        enc.writeKey("test_id");
+        enc.writeString("alias_func");
+    });
+    writeDoc("doc-03"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("customerId");
+        enc.writeString("Scott");
+        enc.writeKey("test_id");
+        enc.writeString("agg_func");
+    });
+    t.commit();
+
+    const char* n1ql = "SELECT array_Agg(customerId) where test_id = \"agg_func\"";
+    Retained<Query> query = store->compileQuery(n1ql, QueryLanguage::kN1QL);
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    CHECK(e->columns().count() == 1);
+    CHECK(e->columns()[0]->type() == kArray);
+    const Array* agg = e->columns()[0]->asArray();
+    CHECK(agg->count() == 2);
+    CHECK(agg->get(0)->asString() == "Jack"_sl);
+    CHECK(agg->get(1)->asString() == "Scott"_sl);
+}
+
+TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        string docID = "doc1";
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeNull();
+            enc.writeKey("real_value");
+            enc.writeInt(1);
+        });
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeNull();
+            enc.writeKey("atai");
+            enc.writeInt(1);
+        });
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery("SELECT meta()"_sl, QueryLanguage::kN1QL) };
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    const Value* dict = e->columns()[0];
+    REQUIRE(dict->type() == kDict);
+    string dictJson = dict->toJSON().asString();
+    transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) {
+        return c == '"' ? '\'' : c;
+    });
+    CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
+    
+    query = store->compileQuery("SELECT meta(db) from db"_sl, QueryLanguage::kN1QL);
+    e = query->createEnumerator();
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    dict = e->columns()[0];
+    REQUIRE(dict->type() == kDict);
+    dictJson = dict->toJSON().asString();
+    transform(dictJson.begin(), dictJson.end(), dictJson.begin(), [](char c) {
+        return c == '"' ? '\'' : c;
+    });
+    CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
+    
+    query = store->compileQuery("SELECT meta().id"_sl, QueryLanguage::kN1QL);
+    e = query->createEnumerator();
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "doc1"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "doc2"_sl);
+    
+    query = store->compileQuery("SELECT meta(db).id from db"_sl, QueryLanguage::kN1QL);
+    e = query->createEnumerator();
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "doc1"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "doc2"_sl); 
 }

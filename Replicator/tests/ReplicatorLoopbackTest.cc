@@ -1202,7 +1202,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     if (isRevTrees())
         CHECK(mergedID == "2-2b2b2b2b,1-abcd"_sl);
     else
-        CHECK(mergedID == "2@*,1@babe1,1@babe2"_sl);
+        CHECK(mergedID == "2@*,1@babe2,1@babe1"_sl);
 
     // Update the doc and push it to db2:
     createNewRev(db, docID, kFleeceBody);

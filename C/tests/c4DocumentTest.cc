@@ -780,7 +780,41 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Delete then Update", "[Document][C]") {
+    TransactionHelper t(db);
+    
+    // Create a doc:
+    C4Error error;
+    auto doc = c4doc_create(db, kDocID, kFleeceBody, 0, ERROR_INFO(error));
+    REQUIRE(doc);
+
+    // Update the doc:
+    auto updatedDoc = c4doc_update(doc, json2fleece("{'ok':'go'}"), 0, ERROR_INFO(error));
+    REQUIRE(updatedDoc);
+    REQUIRE(updatedDoc->flags == (C4DocumentFlags)(kDocExists));
+    c4doc_release(doc);
+    doc = updatedDoc;
+    
+    // Delete the doc:
+    updatedDoc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+    REQUIRE(updatedDoc);
+    REQUIRE(updatedDoc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    c4doc_release(doc);
+    doc = updatedDoc;
+    
+    // Update the doc again:
+    updatedDoc = c4doc_update(doc, json2fleece("{'ok':'go'}"), 0, ERROR_INFO(error));
+    REQUIRE(updatedDoc);
+    REQUIRE(updatedDoc->flags == (C4DocumentFlags)(kDocExists));
+    c4doc_release(doc);
+    doc = updatedDoc;
+    
+    c4doc_release(doc);
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
+    C4Error err;
     slice kRev1ID, kRev2ID, kRev3ID, kRev3ConflictID, kRev4ConflictID;
     if (isRevTrees()) {
         kRev1ID = "1-aaaaaa";
@@ -798,6 +832,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
 
     const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
     const auto kFleeceBody3 = json2fleece("{'ubu':'roi'}");
+    const auto kFleeceBody4 = json2fleece("{'four':'four'}");
 
     createRev(kDocID, kRev1ID, kFleeceBody);
     createRev(kDocID, kRev2ID, kFleeceBody2, kRevKeepBody);
@@ -805,78 +840,138 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
 
     TransactionHelper t(db);
 
-    // "Pull" a conflicting revision:
-    C4Slice history[3] = {kRev4ConflictID, kRev3ConflictID, kRev2ID};
-    C4DocPutRequest rq = {};
-    rq.existingRevision = true;
-    rq.docID = kDocID;
-    rq.history = history;
-    rq.historyCount = 3;
-    rq.allowConflict = true;
-    rq.body = kFleeceBody3;
-    rq.revFlags = kRevKeepBody;
-    rq.save = true;
-    rq.remoteDBID = 1;
-    C4Error err;
-    auto doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(err));
-    REQUIRE(doc);
-    CHECK(doc->selectedRev.revID == kRev4ConflictID);
+    {
+        // "Pull" a conflicting revision:
+        C4Slice history[3] = {kRev4ConflictID, kRev3ConflictID, kRev2ID};
+        C4DocPutRequest rq = {};
+        rq.existingRevision = true;
+        rq.docID = kDocID;
+        rq.history = history;
+        rq.historyCount = 3;
+        rq.allowConflict = true;
+        rq.body = kFleeceBody4;
+        rq.revFlags = kRevKeepBody;
+        rq.save = true;
+        rq.remoteDBID = 1;
 
-    // Check that the local revision is still current:
-    CHECK(doc->revID == kRev3ID);
-    REQUIRE(c4doc_selectCurrentRevision(doc));
-    CHECK(doc->selectedRev.revID == kRev3ID);
-    CHECK((int)doc->selectedRev.flags == kRevLeaf);
+        c4::ref<C4Document> doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(err));
+        REQUIRE(doc);
+        CHECK(doc->selectedRev.revID == kRev4ConflictID);
 
-    if (isRevTrees()) {
-        // kRevID -- [kRev2ID] -- kRev3ID
-        //                      \ kRev3ConflictID -- [kRev4ConflictID]    [] = remote rev, keep body
+        // Check that the local revision is still current:
+        CHECK(doc->revID == kRev3ID);
+        REQUIRE(c4doc_selectCurrentRevision(doc));
+        CHECK(doc->selectedRev.revID == kRev3ID);
+        CHECK((int)doc->selectedRev.flags == kRevLeaf);
 
-        // Check that the pulled revision is treated as a conflict:
-        REQUIRE(c4doc_selectRevision(doc, kRev4ConflictID, true, nullptr));
-        CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict | kRevKeepBody));
-        REQUIRE(c4doc_selectParentRevision(doc));
-        CHECK((int)doc->selectedRev.flags == kRevIsConflict);
+        if (isRevTrees()) {
+            // kRevID -- [kRev2ID] -- kRev3ID
+            //                      \ kRev3ConflictID -- [kRev4ConflictID]    [] = remote rev, keep body
 
-        // Now check the common ancestor algorithm:
-        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev4ConflictID));
-        CHECK(doc->selectedRev.revID == kRev2ID);
+            // Check that the pulled revision is treated as a conflict:
+            REQUIRE(c4doc_selectRevision(doc, kRev4ConflictID, true, nullptr));
+            CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict | kRevKeepBody));
+            REQUIRE(c4doc_selectParentRevision(doc));
+            CHECK((int)doc->selectedRev.flags == kRevIsConflict);
 
-        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev4ConflictID, kRev3ID));
-        CHECK(doc->selectedRev.revID == kRev2ID);
+            // Now check the common ancestor algorithm:
+            REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev4ConflictID));
+            CHECK(doc->selectedRev.revID == kRev2ID);
 
-        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ConflictID, kRev3ID));
-        CHECK(doc->selectedRev.revID == kRev2ID);
-        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev3ConflictID));
-        CHECK(doc->selectedRev.revID == kRev2ID);
+            REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev4ConflictID, kRev3ID));
+            CHECK(doc->selectedRev.revID == kRev2ID);
 
-        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev3ID));
-        CHECK(doc->selectedRev.revID == kRev2ID);
-        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev2ID));
-        CHECK(doc->selectedRev.revID == kRev2ID);
+            REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ConflictID, kRev3ID));
+            CHECK(doc->selectedRev.revID == kRev2ID);
+            REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev3ConflictID));
+            CHECK(doc->selectedRev.revID == kRev2ID);
 
-        REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev2ID));
-        CHECK(doc->selectedRev.revID == kRev2ID);
-    } else {
-        // Check that the pulled revision is treated as a conflict:
-        REQUIRE(c4doc_selectRevision(doc, kRev4ConflictID, true, nullptr));
-        CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict));
+            REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev3ID));
+            CHECK(doc->selectedRev.revID == kRev2ID);
+            REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev3ID, kRev2ID));
+            CHECK(doc->selectedRev.revID == kRev2ID);
+
+            REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev2ID));
+            CHECK(doc->selectedRev.revID == kRev2ID);
+        } else {
+            // Check that the pulled revision is treated as a conflict:
+            REQUIRE(c4doc_selectRevision(doc, kRev4ConflictID, true, nullptr));
+            CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict));
+        }
     }
 
     auto mergedBody = json2fleece("{\"merged\":true}");
 
-    //SECTION("Merge, 4 wins")
     {
-        C4Log("--- Merge, 4 wins");
+        C4Log("--- Resolve, remote wins");
+        c4::ref<C4Document> doc = c4doc_get(db, kDocID, true, ERROR_INFO(err));
+        REQUIRE(c4doc_resolveConflict(doc, kRev4ConflictID, kRev3ID, nullslice, 0, WITH_ERROR(&err)));
+        c4doc_selectCurrentRevision(doc);
+        CHECK(docBodyEquals(doc, kFleeceBody4));
+        if (isRevTrees()) {
+            // kRevID -- kRev2ID -- kRev3ConflictID -- kMergedRevID
+            CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevKeepBody));
+            CHECK(doc->selectedRev.revID == kRev4ConflictID);
+            alloc_slice revHistory(c4doc_getRevisionHistory(doc, 99, nullptr, 0));
+            CHECK(revHistory == "4-dddd,3-ababab,2-aaaaaa,1-aaaaaa"_sl);
+
+            c4doc_selectParentRevision(doc);
+            CHECK(doc->selectedRev.revID == kRev3ConflictID);
+            CHECK((int)doc->selectedRev.flags == 0);
+
+            c4doc_selectParentRevision(doc);
+            CHECK(doc->selectedRev.revID == kRev2ID);
+            CHECK((int)doc->selectedRev.flags == 0);
+        } else {
+            CHECK((int)doc->selectedRev.flags == kRevLeaf);
+            CHECK(doc->selectedRev.revID == "4@cafe"_sl);
+            alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
+            CHECK(vector == "4@cafe,2@*"_sl);
+        }
+
+        CHECK(c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
+        CHECK(! c4doc_selectRevision(doc, kRev3ID, false, nullptr));
+    }
+
+    if (!isRevTrees()) {
+        C4Log("--- Resolve, remote wins but merge vectors");
+        // We have to update the local revision to get into this state.
+        // Note we are NOT saving the doc, so we don't mess up the following test block.
+        slice kSomeoneElsesVersion = "7@1a1a";
+        C4Slice history[] = {kSomeoneElsesVersion, kRev3ID};
+        C4DocPutRequest rq = {};
+        rq.existingRevision = true;
+        rq.docID = kDocID;
+        rq.history = history;
+        rq.historyCount = 2;
+        rq.body = kFleeceBody2;
+        c4::ref<C4Document> doc = c4doc_put(db, &rq, nullptr, ERROR_INFO(err));
+        REQUIRE(doc);
+
+        REQUIRE(c4doc_resolveConflict(doc, kRev4ConflictID, kSomeoneElsesVersion, nullslice, 0, WITH_ERROR(&err)));
+        c4doc_selectCurrentRevision(doc);
+        CHECK(docBodyEquals(doc, kFleeceBody4));
+
+        CHECK((int)doc->selectedRev.flags == kRevLeaf);
+        CHECK(doc->selectedRev.revID == "4@*"_sl);
+        alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
+        CHECK(vector == "4@*,4@cafe,7@1a1a"_sl);
+        CHECK(c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
+        CHECK(! c4doc_selectRevision(doc, kRev3ID, false, nullptr));
+    }
+
+    {
+        C4Log("--- Merge onto remote");
+        c4::ref<C4Document> doc = c4doc_get(db, kDocID, true, ERROR_INFO(err));
         REQUIRE(c4doc_resolveConflict(doc, kRev4ConflictID, kRev3ID, mergedBody, 0, WITH_ERROR(&err)));
         c4doc_selectCurrentRevision(doc);
         CHECK(docBodyEquals(doc, mergedBody));
         if (isRevTrees()) {
             // kRevID -- kRev2ID -- kRev3ConflictID -- [kRev4ConflictID] -- kMergedRevID
             CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
-            CHECK(doc->selectedRev.revID == "5-79b2ecd897d65887a18c46cc39db6f0a3f7b38c4"_sl);
+            CHECK(doc->selectedRev.revID == "5-40c76a18ad61e00aa6372396a8d03a023c401fe3"_sl);
             alloc_slice revHistory(c4doc_getRevisionHistory(doc, 99, nullptr, 0));
-            CHECK(revHistory == "5-79b2ecd897d65887a18c46cc39db6f0a3f7b38c4,4-dddd,3-ababab,2-aaaaaa,1-aaaaaa"_sl);
+            CHECK(revHistory == "5-40c76a18ad61e00aa6372396a8d03a023c401fe3,4-dddd,3-ababab,2-aaaaaa,1-aaaaaa"_sl);
 
             c4doc_selectParentRevision(doc);
             CHECK(doc->selectedRev.revID == kRev4ConflictID);
@@ -899,20 +994,43 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         CHECK(! c4doc_selectRevision(doc, kRev3ID, false, nullptr));
     }
 
-    c4doc_release(doc);
-    doc = c4doc_get(db, kDocID, true, ERROR_INFO(err));
-    REQUIRE(doc);
-
-    //SECTION("Merge, 3 wins")
     {
-        C4Log("--- Merge, 3 wins");
+        C4Log("--- Resolve, local wins");
+        c4::ref<C4Document> doc = c4doc_get(db, kDocID, true, ERROR_INFO(err));
+        REQUIRE(doc);
+        REQUIRE(c4doc_resolveConflict(doc, kRev3ID, kRev4ConflictID, nullslice, 0, WITH_ERROR(&err)));
+        // kRevID -- [kRev2ID] -- kRev3ID
+        c4doc_selectCurrentRevision(doc);
+        CHECK(docBodyEquals(doc, kFleeceBody3));
+        if (isRevTrees()) {
+            CHECK((int)doc->selectedRev.flags == kRevLeaf);
+            CHECK(doc->selectedRev.revID == kRev3ID);
+
+            c4doc_selectParentRevision(doc);
+            CHECK(doc->selectedRev.revID == kRev2ID);
+            CHECK((int)doc->selectedRev.flags == kRevKeepBody);
+
+            CHECK(! c4doc_selectRevision(doc, kRev4ConflictID, false, nullptr));
+            CHECK(! c4doc_selectRevision(doc, kRev3ConflictID, false, nullptr));
+        } else {
+            CHECK((int)doc->selectedRev.flags == kRevLeaf);
+            CHECK(doc->selectedRev.revID == "4@*"_sl);
+            alloc_slice vector(c4doc_getRevisionHistory(doc, 0, nullptr, 0));
+            CHECK(vector == "4@*,4@cafe"_sl);
+        }
+    }
+
+    {
+        C4Log("--- Merge onto local");
+        c4::ref<C4Document> doc = c4doc_get(db, kDocID, true, ERROR_INFO(err));
+        REQUIRE(doc);
         REQUIRE(c4doc_resolveConflict(doc, kRev3ID, kRev4ConflictID, mergedBody, 0, WITH_ERROR(&err)));
         // kRevID -- [kRev2ID] -- kRev3ID -- kMergedRevID
         c4doc_selectCurrentRevision(doc);
         CHECK(docBodyEquals(doc, mergedBody));
         if (isRevTrees()) {
             CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
-            CHECK(doc->selectedRev.revID == "4-1fa2dbcb66b5e0456f6d6fc4a90918d42f3dd302"_sl);
+            CHECK(doc->selectedRev.revID == "4-41cdb6e71647962c281333ceac7b36c46b65b41f"_sl);
 
             c4doc_selectParentRevision(doc);
             CHECK(doc->selectedRev.revID == kRev3ID);
@@ -932,7 +1050,6 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
         }
     }
 
-    c4doc_release(doc);
 }
 
 

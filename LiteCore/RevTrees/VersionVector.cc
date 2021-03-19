@@ -104,6 +104,13 @@ namespace litecore {
     }
 
 
+#if DEBUG
+    string VersionVector::asString() const    {
+        return std::string(asASCII());
+    }
+#endif
+
+
     Version VersionVector::readCurrentVersionFromBinary(slice data) {
         if (data.size < 1 || data.readByte() != 0)
             Version::throwBadBinary();
@@ -209,6 +216,14 @@ namespace litecore {
                 break;
         }
         return o;
+    }
+
+    bool VersionVector::isNewerIgnoring(peerID ignoring, const VersionVector &other) const {
+        for (const Version &v : _vers) {
+            if (v.author() != ignoring && v.gen() > other[v.author()])
+                return true;
+        }
+        return false;
     }
 
     vec::iterator VersionVector::findPeerIter(peerID author) const {

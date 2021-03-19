@@ -292,9 +292,9 @@ namespace litecore { namespace net {
                     }
                 } else {
                     LogDebug(WSLog, "Poller: fd %d got event 0x%02x", fd, entry.revents);
-                    if (entry.revents & (POLLIN | POLLERR | POLLHUP | POLLNVAL))
+                    if (entry.revents & (POLLIN | POLLERR | POLLHUP))
                         callAndRemoveListener(fd, kReadable);
-                    if (entry.revents & (POLLOUT | POLLERR | POLLHUP | POLLNVAL))
+                    if (entry.revents & (POLLOUT | POLLERR | POLLHUP))
                         callAndRemoveListener(fd, kWriteable);
                     if (entry.revents & POLLNVAL) {
                         removeListeners(fd);
