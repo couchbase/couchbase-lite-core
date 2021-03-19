@@ -32,7 +32,7 @@
 
 using namespace std;
 using namespace litecore;
-
+using namespace c4Internal;
 
 #pragma mark - C++ API:
 
