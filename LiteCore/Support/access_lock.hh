@@ -7,6 +7,7 @@
 //
 
 #pragma once
+#include "RefCounted.hh"
 #include <mutex>
 #include <type_traits>
 #include <utility>
@@ -42,14 +43,48 @@ namespace litecore {
             access(const access&) =delete;  // I cannot be copied
             access(access&&) =delete;       // I cannot be moved
 
+            REF get()                       {return _ref;}
             operator REF ()                 {return _ref;}
-            auto operator * ()              {return _ref.operator*();}
-            auto operator -> ()             {return _ref.operator->();}
-            REF get() {return _ref;}
+            auto operator -> ()             {return &_ref;}
 
         private:
             access_lock::LOCK_GUARD _lock;
             REF                     _ref;
+        };
+
+        template <class R> using Retained = fleece::Retained<R>;
+
+        template <class R>
+        class access<Retained<R>&> {
+        public:
+            access(MUTEX &mut, Retained<R> &ref)     :_lock(mut), _ref(ref) { }
+            access(const access&) =delete;  // I cannot be copied
+            access(access&&) =delete;       // I cannot be moved
+
+            Retained<R>& get()              {return _ref;}
+            operator R* ()                  {return _ref;}
+            R* operator -> ()               {return _ref;}
+
+        private:
+            access_lock::LOCK_GUARD _lock;
+            Retained<R>&            _ref;
+        };
+
+        template <class R>
+        class access<const Retained<R>&> {
+        public:
+            access(MUTEX &mut, const R* ref):_lock(mut), _ref(ref) { }
+            access(const access&) =delete;  // I cannot be copied
+            access(access&&) =delete;       // I cannot be moved
+
+            auto get()                      {return _ref;}
+            operator const R* ()            {return _ref;}
+            auto operator * ()              {return _ref;}
+            auto operator -> ()             {return _ref;}
+
+        private:
+            access_lock::LOCK_GUARD _lock;
+            const R*                _ref;
         };
 
         /// Locks my mutex and returns an `access` object that acts as a proxy for my contents.
