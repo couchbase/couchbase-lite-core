@@ -49,7 +49,7 @@ namespace litecore {
         bool revsAvailable() const          {return _contentLoaded == kEntireBody;}
         bool currentRevAvailable() const    {return _contentLoaded >= kCurrentRevOnly;}
 
-        slice currentRevBody();
+        slice currentRevBody() const;
 
         const alloc_slice& docID() const FLPURE {return _rec.key();}
         revid revID() const FLPURE         {return revid(_rec.version());}

@@ -38,7 +38,12 @@ using namespace litecore;
 
 
 bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
-    return C4Blob::keyFromString(str, outKey);
+    if (auto key = C4Blob::keyFromString(str); key) {
+        *outKey = *key;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 
@@ -993,13 +998,24 @@ bool c4doc_hasOldMetaProperties(FLDict doc) noexcept {
 
 
 bool c4doc_getDictBlobKey(FLDict dict, C4BlobKey *outKey) {
-    return C4Blob::getKey(dict, *outKey);
+    if (auto key = C4Blob::getKey(dict); key) {
+        if (outKey)
+            *outKey = *key;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 
 bool c4doc_dictIsBlob(FLDict dict, C4BlobKey *outKey) C4API {
     Assert(outKey);
-    return C4Blob::isBlob(dict, *outKey);
+    if (auto key = C4Blob::getKey(dict); key) {
+        *outKey = *key;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 

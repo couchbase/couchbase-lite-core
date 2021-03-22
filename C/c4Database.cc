@@ -57,11 +57,7 @@ CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 
 namespace litecore {
-    DatabaseImpl* asInternal(C4Database *db) {
-        // Every C4Database is a DatabaseImpl, so we can safely cast to it:
-        return (DatabaseImpl*)db;
-    }
-    static DatabaseImpl* asInternal(const C4Database *db) {
+    DatabaseImpl* asInternal(const C4Database *db) {
         // Yeah, casting away constness, I know...
         return (DatabaseImpl*)db;
     }

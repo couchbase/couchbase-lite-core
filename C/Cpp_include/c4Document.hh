@@ -45,28 +45,28 @@ struct C4Document : public fleece::RefCounted,
     const C4Revision&   selectedRev() const noexcept FLPURE {return _selected;}
 
     /// The C C4Document struct. Using the accessors above is preferred.
-    const C4Document_C& pub()                               {return *(C4Document_C*)&_flags;}
+    const C4Document_C& pub() const                         {return *(C4Document_C*)&_flags;}
 
     C4ExtraInfo& extraInfo()                                {return _extraInfo;}
     const C4ExtraInfo& extraInfo() const                    {return _extraInfo;}
 
     C4Database* database() const                            {return _db;}
 
-    virtual bool exists() =0;
+    virtual bool exists() const =0;
 
     virtual bool revisionsLoaded() const noexcept =0;
 
-    virtual bool loadRevisions() MUST_USE_RESULT =0;
+    virtual bool loadRevisions() const MUST_USE_RESULT =0;
 
-    virtual bool loadRevisionBody() =0; // can throw; returns false if compacted away
+    virtual bool loadRevisionBody() const =0; // can throw; returns false if compacted away
 
-    virtual bool hasRevisionBody() noexcept =0;
+    virtual bool hasRevisionBody() const noexcept =0;
 
-    virtual slice getRevisionBody() noexcept =0;
+    virtual slice getRevisionBody() const noexcept =0;
 
-    virtual FLDict getProperties() noexcept;
+    virtual FLDict getProperties() const noexcept;
 
-    alloc_slice bodyAsJSON(bool canonical =false);
+    alloc_slice bodyAsJSON(bool canonical =false) const;
 
     // Selecting revisions:
 
@@ -79,11 +79,11 @@ struct C4Document : public fleece::RefCounted,
 
     // Revision info:
 
-    virtual alloc_slice getSelectedRevIDGlobalForm();
+    virtual alloc_slice getSelectedRevIDGlobalForm() const;
 
     virtual alloc_slice getRevisionHistory(unsigned maxHistory,
                                            const slice backToRevs[C4NULLABLE], // nullable if count=0
-                                           unsigned backToRevsCount)        {failUnsupported();}
+                                           unsigned backToRevsCount) const        {failUnsupported();}
 
     // Remote database revision tracking:
 
@@ -163,7 +163,7 @@ protected:
         return alloc_slice(getRevisionBody()); // will copy
     }
 
-    void requireValidDocID();   // Throws if invalid
+    void requireValidDocID() const;   // Throws if invalid
 
     void setRevID(litecore::revid);
 

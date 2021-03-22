@@ -125,10 +125,10 @@ public:
                                         C4Error *outError);
 
     std::vector<alloc_slice> findDocAncestors(const std::vector<slice> &docIDs,
-                                           const std::vector<slice> &revIDs,
-                                           unsigned maxAncestors,
-                                           bool mustHaveBodies,
-                                           C4RemoteID remoteDBID) const;
+                                              const std::vector<slice> &revIDs,
+                                              unsigned maxAncestors,
+                                              bool mustHaveBodies,
+                                              C4RemoteID remoteDBID) const;
 
     bool purgeDoc(slice docID);
 
@@ -179,12 +179,12 @@ public:
 
     Retained<C4Query> newQuery(C4QueryLanguage language,
                                slice queryExpression,
-                               int* C4NULLABLE outErrorPos = nullptr);
+                               int* C4NULLABLE outErrorPos = nullptr) const;
 
     void createIndex(slice name,
                      slice indexSpecJSON,
                      C4IndexType indexType,
-                     const C4IndexOptions* C4NULLABLE indexOptions);
+                     const C4IndexOptions* C4NULLABLE indexOptions =nullptr);
 
     void deleteIndex(slice name);
 
@@ -198,7 +198,6 @@ public:
     Retained<C4Replicator> newReplicator(C4Address serverAddress,
                                          slice remoteDatabaseName,
                                          const C4ReplicatorParameters &params);
-
     Retained<C4Replicator> newReplicator(C4Socket *openSocket,
                                          const C4ReplicatorParameters &params);
     Retained<C4Replicator> newReplicator(litecore::websocket::WebSocket *openSocket,

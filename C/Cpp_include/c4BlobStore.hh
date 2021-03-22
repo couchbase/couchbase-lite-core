@@ -22,6 +22,7 @@
 #include "function_ref.hh"
 #include "fleece/Fleece.h"
 #include <memory>
+#include <optional>
 
 namespace litecore {
     class BlobStore;
@@ -68,20 +69,15 @@ namespace C4Blob {
     /** Translates a C4BlobKey into ASCII form. */
     alloc_slice keyToString(C4BlobKey key);
 
-    /** Translates an ASCII blob key back to a C4BlobKey. Returns false if invalid. */
-    bool keyFromString(slice str, C4BlobKey* outKey) noexcept;
-
-    /** Translates an ASCII blob key back to a C4BlobKey. Throws kC4ErrorWrongFormat if invalid. */
-    C4BlobKey keyFromString(slice str);
-
-    /** Returns the dict's "digest" property decoded into a blobKey. */
-    bool getKey(FLDict dict, C4BlobKey &outKey);
+    /** Translates an ASCII blob key back to a C4BlobKey. Returns `nullopt` if invalid. */
+    std::optional<C4BlobKey> keyFromString(slice str) noexcept;
 
     /** Returns true if the given dictionary is a [reference to a] blob. */
     bool isBlob(FLDict dict);
 
-    /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key. */
-    bool isBlob(FLDict dict, C4BlobKey &outKey);
+    /** Returns the dict's "digest" property decoded into a blobKey.
+        Returns `nullopt` if the dict is not a blob, or its digest is missing or invalid. */
+    std::optional<C4BlobKey> getKey(FLDict dict);
 
     /** Returns true if the blob dictionary's data type appears to be compressible. */
     bool isCompressible(FLDict);
@@ -93,8 +89,12 @@ namespace C4Blob {
 
     /** Finds blob references in a Fleece Dict, recursively. */
     bool findBlobReferences(FLDict, const FindBlobCallback&);
-
 };
+
+
+static inline bool operator==(const C4BlobKey &a, const C4BlobKey &b) {
+    return ::memcmp(a.bytes, b.bytes, sizeof(a.bytes)) == 0;
+}
 
 
 struct C4ReadStream : public C4Base {
@@ -113,12 +113,14 @@ struct C4WriteStream : public C4Base {
     explicit C4WriteStream(C4BlobStore&);
     C4WriteStream(C4WriteStream&&);
     ~C4WriteStream();
+    C4BlobStore& blobStore() const                          {return _store;}
     void write(slice);
     uint64_t bytesWritten() const noexcept;
     C4BlobKey computeBlobKey();
-    void install(const C4BlobKey* C4NULLABLE expectedKey =nullptr);
+    C4BlobKey install(const C4BlobKey* C4NULLABLE expectedKey =nullptr);
 private:
     std::unique_ptr<litecore::BlobWriteStream> _impl;
+    C4BlobStore& _store;
 };
 
 

@@ -21,6 +21,7 @@
 #include "TreeDocument.hh"
 #include "VectorDocument.hh"
 #include "c4Document.h"
+#include "c4Internal.hh"
 #include "c4Private.h"
 #include "c4BlobStore.hh"
 #include "BackgroundDB.hh"
@@ -298,9 +299,8 @@ namespace litecore {
 
                 // Iterate over blobs:
                 C4Blob::findBlobReferences(FLDict(body), [&](FLDict blob) {
-                    blobKey key;
-                    if (C4Blob::isBlob(blob, (C4BlobKey&)key))    // get the key
-                        usedDigests.insert(key.filename());
+                    if (auto key = C4Blob::getKey(blob); key)
+                        usedDigests.insert(asInternal(*key).filename());
                     return true;
                 });
 

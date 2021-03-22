@@ -84,7 +84,7 @@ namespace litecore {
             _sequence = _revTree.sequence();
         }
 
-        bool exists() noexcept override {
+        bool exists() const noexcept override {
             return _revTree.exists();
         }
 
@@ -100,32 +100,32 @@ namespace litecore {
 
         // This method can throw exceptions, so should not be called from 'noexcept' overrides!
         // Such methods should call requireRevisions instead.
-        bool loadRevisions() override {
+        bool loadRevisions() const override {
             if (!_revTree.revsAvailable()) {
                 LogTo(DBLog, "Need to read rev-tree of doc '%.*s'", SPLAT(_docID));
                 alloc_slice curRev = _selectedRevID;
-                if (!_revTree.read(kEntireBody))
+                if (!const_cast<TreeDocument*>(this)->_revTree.read(kEntireBody))
                     return false;
-                selectRevision(curRev, true);
+                const_cast<TreeDocument*>(this)->selectRevision(curRev, true);
             }
             return true;
         }
 
-        bool hasRevisionBody() noexcept override {
+        bool hasRevisionBody() const noexcept override {
             if (_revTree.revsAvailable())
                 return _selectedRev && _selectedRev->isBodyAvailable();
             else
                 return _revTree.currentRevAvailable();
         }
 
-        bool loadRevisionBody() override {
+        bool loadRevisionBody() const override {
             if (!_selectedRev && _revTree.currentRevAvailable())
                 return true;            // only the current rev is available, so return true
             loadRevisions();
             return _selectedRev &&_selectedRev->body();
         }
 
-        virtual slice getRevisionBody() noexcept override {
+        virtual slice getRevisionBody() const noexcept override {
             if (_selectedRev)
                 return _selectedRev->body();
             else if (_revTree.currentRevAvailable())
@@ -137,7 +137,14 @@ namespace litecore {
 
         alloc_slice getRevisionHistory(unsigned maxRevs,
                                        const slice backToRevs[],
-                                       unsigned backToRevsCount) override
+                                       unsigned backToRevsCount) const override
+        {
+            return const_cast<TreeDocument*>(this)->_getRevisionHistory(maxRevs, backToRevs, backToRevsCount);
+        }
+
+        alloc_slice _getRevisionHistory(unsigned maxRevs,
+                                       const slice backToRevs[],
+                                       unsigned backToRevsCount)
         {
             auto selRev = _selectedRev;
             int revsWritten = 0;

@@ -62,14 +62,14 @@ DatabaseImpl* C4Document::db()                              {return asInternal(_
 const DatabaseImpl* C4Document::db() const                  {return asInternal(_db);}
 
 
-FLDict C4Document::getProperties() noexcept {
+FLDict C4Document::getProperties() const noexcept {
     if (slice body = getRevisionBody(); body)
     return FLValue_AsDict(FLValue_FromData(body, kFLTrusted));
     else
         return nullptr;
 }
 
-alloc_slice C4Document::bodyAsJSON(bool canonical) {
+alloc_slice C4Document::bodyAsJSON(bool canonical) const {
     if (!loadRevisionBody())
         error::_throw(error::NotFound);
     if (FLDict root = getProperties())
@@ -108,14 +108,14 @@ void C4Document::clearSelectedRevision() noexcept {
 }
 
 
-alloc_slice C4Document::getSelectedRevIDGlobalForm() {
+alloc_slice C4Document::getSelectedRevIDGlobalForm() const {
     // By default just return the same revID
     DebugAssert(_selectedRevID == _selected.revID);
     return _selectedRevID;
 }
 
 
-void C4Document::requireValidDocID() {
+void C4Document::requireValidDocID() const {
     if (!C4Document::isValidDocID(_docID))
         error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(_docID));
 }

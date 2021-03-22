@@ -101,7 +101,7 @@ namespace litecore {
         }
     }
 
-    slice RevTreeRecord::currentRevBody() {
+    slice RevTreeRecord::currentRevBody() const {
         if (revsAvailable())
             return currentRevision()->body();
         else {

@@ -106,7 +106,7 @@ namespace litecore {
         const Rev* getBySequence(sequence_t) const FLPURE;
 
         const std::vector<Rev*>& allRevisions() const FLPURE   {return _revs;}
-        const Rev* currentRevision();
+        const Rev* currentRevision() const;
         bool hasConflict() const FLPURE;
         bool hasNewRevisions() const FLPURE;
 

@@ -40,7 +40,7 @@ using namespace litecore;
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = { };
 
 
-C4Query::C4Query(C4Database *db, C4QueryLanguage language, slice queryExpression)
+C4Query::C4Query(const C4Database *db, C4QueryLanguage language, slice queryExpression)
 :_database(asInternal(db))
 ,_query(_database->defaultKeyStore().compileQuery(queryExpression, (QueryLanguage)language))
 { }
@@ -50,7 +50,7 @@ C4Query::~C4Query() = default;
 
 
 Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice queryExpression,
-                                       int *outErrorPos) {
+                                       int *outErrorPos) const {
     try {
         return retained(new C4Query(this, language, queryExpression));
     } catch (Query::parseError &x) {

@@ -20,6 +20,7 @@
 #include "c4Database.hh"
 #include "c4Document+Fleece.h"
 #include "c4ExceptionUtils.hh"
+#include "c4Internal.hh"
 #include "BlobStore.hh"
 #include "DatabaseImpl.hh"
 #include "Base64.hh"
@@ -30,11 +31,6 @@
 using namespace std;
 using namespace fleece;
 using namespace litecore;
-
-
-static inline       blobKey& asInternal(      C4BlobKey &key) {return *(blobKey*)&key;}
-static inline const C4BlobKey& external(const blobKey &key)   {return *(C4BlobKey*)&key;}
-static inline const blobKey* asInternal(const C4BlobKey *key) {return (const blobKey*)key;}
 
 
 #pragma mark - C4BLOBSTORE METHODS:
@@ -119,10 +115,10 @@ alloc_slice C4BlobStore::getBlobData(FLDict flDict, BlobStore *store) {
                 error::_throw(error::CorruptData, "Blob data property has invalid type");
         }
     }
-    C4BlobKey key;
-    if (!C4Blob::getKey(dict, key))
+    if (auto key = C4Blob::getKey(dict); key)
+        return store->get((blobKey&)*key).contents();
+    else
         error::_throw(error::CorruptData, "Blob has invalid or missing digest property");
-    return store->get((blobKey&)key).contents();
 }
 
 
@@ -150,10 +146,12 @@ void C4ReadStream::seek(int64_t pos)                {_impl->seek(pos);}
 
 C4WriteStream::C4WriteStream(C4BlobStore &store)
 :_impl(new BlobWriteStream(*store._impl))
+,_store(store)
 { }
 
 C4WriteStream::C4WriteStream( C4WriteStream &&other)
 :_impl(move(other._impl))
+,_store(other._store)
 { }
 
 C4WriteStream::~C4WriteStream() {
@@ -166,7 +164,8 @@ C4WriteStream::~C4WriteStream() {
 void C4WriteStream::write(fleece::slice data)         {_impl->write(data);}
 uint64_t C4WriteStream::bytesWritten() const noexcept {return _impl->bytesWritten();}
 C4BlobKey C4WriteStream::computeBlobKey()             {return external(_impl->computeKey());}
-void C4WriteStream::install(const C4BlobKey *xk)      {_impl->install(asInternal(xk));}
+C4BlobKey C4WriteStream::install(const C4BlobKey *xk) {_impl->install(asInternal(xk));
+                                                       return computeBlobKey();}
 
 
 #pragma mark - BLOB UTILITIES:
@@ -182,36 +181,30 @@ alloc_slice C4Blob::keyToString(C4BlobKey key) {
 }
 
 
-C4BlobKey C4Blob::keyFromString(slice str) {
-    return external(blobKey::withBase64(str));
-}
-
-
-bool C4Blob::keyFromString(slice str, C4BlobKey* outKey) noexcept {
+std::optional<C4BlobKey> C4Blob::keyFromString(slice str) noexcept {
     try {
-        if (str.buf) {
-            *outKey = keyFromString(str);
-            return true;
-        }
+        if (str.buf)
+            return external(blobKey::withBase64(str));
     } catchAndIgnore()
-    return false;
+    return nullopt;
 }
 
 
-bool C4Blob::getKey(FLDict dict, C4BlobKey &outKey) {
-    FLValue digest = FLDict_Get(dict, C4Blob::kDigestProperty);
-    return digest && asInternal(outKey).readFromBase64(FLValue_AsString(digest));
+optional<C4BlobKey> C4Blob::getKey(FLDict dict) {
+    if (isBlob(dict)) {
+        if (FLValue digest = FLDict_Get(dict, C4Blob::kDigestProperty); digest) {
+            blobKey key;
+            if (key.readFromBase64(FLValue_AsString(digest)))
+                return external(key);
+        }
+    }
+    return nullopt;
 }
 
 
 bool C4Blob::isBlob(FLDict dict) {
     FLValue cbltype= FLDict_Get(dict, C4Blob::kObjectTypeProperty);
     return cbltype && slice(FLValue_AsString(cbltype)) == C4Blob::kObjectType_Blob;
-}
-
-
-bool C4Blob::isBlob(FLDict dict, C4BlobKey &outKey) {
-    return isBlob(dict) && getKey(dict, outKey);
 }
 
 

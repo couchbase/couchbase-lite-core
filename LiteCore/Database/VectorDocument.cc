@@ -74,19 +74,19 @@ namespace litecore {
         }
 
 
-        peerID myPeerID() {
+        peerID myPeerID() const {
             return peerID{db()->myPeerID()};
         }
 
 
-        alloc_slice _expandRevID(revid rev, peerID myID =kMePeerID) {
+        alloc_slice _expandRevID(revid rev, peerID myID =kMePeerID) const {
             if (!rev)
                 return nullslice;
             return rev.asVersion().asASCII(myID);
         }
 
 
-        revidBuffer _parseRevID(slice revID) {
+        revidBuffer _parseRevID(slice revID) const {
             if (revID) {
                 if (revidBuffer binaryID(revID); binaryID.isVersion()) {
                     // If it's a version in global form, convert it to local form:
@@ -165,7 +165,7 @@ namespace litecore {
         }
 
 
-        optional<Revision> _selectedRevision() {
+        optional<Revision> _selectedRevision() const {
             return _remoteID ? _doc.remoteRevision(*_remoteID) : nullopt;
         }
 
@@ -192,7 +192,7 @@ namespace litecore {
 #pragma mark - ACCESSORS:
 
 
-        slice getRevisionBody() noexcept override {
+        slice getRevisionBody() const noexcept override {
             if (auto rev = _selectedRevision()) {
                 // Current revision, or remote with the same version:
                 if (rev->revID == _doc.revID())
@@ -210,13 +210,13 @@ namespace litecore {
         }
 
 
-        FLDict getProperties() noexcept override {
+        FLDict getProperties() const noexcept override {
             auto rev = _selectedRevision();
             return rev ? rev->properties : nullptr;
         }
 
 
-        alloc_slice getSelectedRevIDGlobalForm() override {
+        alloc_slice getSelectedRevIDGlobalForm() const override {
             if (auto rev = _selectedRevision(); rev)
                 return rev->versionVector().asASCII(myPeerID());
             else
@@ -226,7 +226,7 @@ namespace litecore {
 
         alloc_slice getRevisionHistory(unsigned maxRevs,
                                        const slice backToRevs[],
-                                       unsigned backToRevsCount) override
+                                       unsigned backToRevsCount) const override
         {
             if (auto rev = _selectedRevision(); rev) {
                 VersionVector vers = rev->versionVector();
@@ -262,13 +262,13 @@ namespace litecore {
 #pragma mark - EXISTENCE / LOADING:
 
 
-        bool exists() override {
+        bool exists() const override {
             return _doc.exists();
         }
 
 
-        bool loadRevisions() override {
-            return _doc.contentAvailable() >= kEntireBody || _doc.loadData(kEntireBody);
+        bool loadRevisions() const override {
+            return _doc.contentAvailable() >= kEntireBody || const_cast<VectorRecord&>(_doc).loadData(kEntireBody);
         }
 
 
@@ -277,16 +277,16 @@ namespace litecore {
         }
 
 
-        bool hasRevisionBody() noexcept override {
+        bool hasRevisionBody() const noexcept override {
             return _doc.exists() && _remoteID;
         }
 
 
-        bool loadRevisionBody() override {
+        bool loadRevisionBody() const override {
             if (!_remoteID)
                 return false;
             auto which = (*_remoteID == RemoteID::Local) ? kCurrentRevOnly : kEntireBody;
-            return _doc.loadData(which);
+            return const_cast<VectorRecord&>(_doc).loadData(which);
         }
 
 
@@ -578,7 +578,7 @@ namespace litecore {
     private:
         VectorRecord        _doc;
         optional<RemoteID>  _remoteID;    // Identifies selected revision
-        fleece::Doc         _latestBody;  // Holds onto latest Fleece body I created
+        mutable fleece::Doc _latestBody;  // Holds onto latest Fleece body I created
     };
 
 

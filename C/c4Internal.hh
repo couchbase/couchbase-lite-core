@@ -50,6 +50,7 @@ struct C4Database;
 struct C4ExtraInfo;
 
 namespace litecore {
+    struct blobKey;
     class DatabaseImpl;
 
     // ERRORS & EXCEPTIONS:
@@ -68,5 +69,10 @@ namespace litecore {
 
     // CONVERSIONS:
 
-    DatabaseImpl* asInternal(C4Database *db);
+    DatabaseImpl* asInternal(const C4Database *db);
+
+    static inline       blobKey& asInternal(      C4BlobKey &key) {return *(blobKey*)&key;}
+    static inline const C4BlobKey& external(const blobKey &key)   {return *(C4BlobKey*)&key;}
+    static inline const blobKey* asInternal(const C4BlobKey *key) {return (const blobKey*)key;}
+
 }

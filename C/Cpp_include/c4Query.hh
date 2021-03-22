@@ -104,7 +104,7 @@ protected:
     friend struct C4Database;
     friend struct litecore::C4QueryObserverImpl;
 
-    C4Query(C4Database *db, C4QueryLanguage language, slice queryExpression);
+    C4Query(const C4Database *db, C4QueryLanguage language, slice queryExpression);
     ~C4Query();
     void enableObserver(litecore::C4QueryObserverImpl *obs, bool enable);
 
