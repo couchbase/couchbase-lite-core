@@ -36,8 +36,13 @@ namespace litecore {
 
 #pragma mark - BLOBKEY:
 
+    static constexpr slice
+        kBlobDigestStringPrefix = "sha1-",  // prefix of ASCII form of blob key ("digest" property)
+        kBlobFilenameSuffix = ".blob";      // suffix of blob files in the store
 
-    static constexpr size_t kBlobKeyStringLength = ((sizeof(blobKey::digest) + 2) / 3) * 4;
+    static constexpr size_t
+        kBlobDigestStringLength = ((sizeof(blobKey::digest) + 2) / 3) * 4, // Length of base64 w/o prefix
+        kBlobFilenameLength = kBlobDigestStringLength + kBlobFilenameSuffix.size;
 
 
     blobKey::blobKey(slice s) {
@@ -55,14 +60,14 @@ namespace litecore {
 
     bool blobKey::readFromBase64(slice data, bool prefixed) {
         if (prefixed) {
-            if (data.hasPrefix("sha1-"_sl))
-                data.moveStart(5);
+            if (data.hasPrefix(kBlobDigestStringPrefix))
+                data.moveStart(kBlobDigestStringPrefix.size);
             else
                 return false;
         }
-        if (data.size == kBlobKeyStringLength) {
+        if (data.size == kBlobDigestStringLength) {
             // Decoder always writes a multiple of 3 bytes, so round up:
-            uint8_t buf[21];
+            uint8_t buf[sizeof(digest) + 2];
             slice result = base64::decode(data, buf, sizeof(buf));
             return digest.setDigest(result);
         }
@@ -71,23 +76,30 @@ namespace litecore {
 
 
     string blobKey::base64String() const {
-        return string("sha1-") + digest.asBase64();
+        return string(kBlobDigestStringPrefix) + digest.asBase64();
     }
 
 
     string blobKey::filename() const {
+        // Change '/' characters in the base64 into '_':
         string str = digest.asBase64();
         replace(str.begin(), str.end(), '/', '_');
-        return str + ".blob";
+        str.append(kBlobFilenameSuffix);
+        return str;
     }
 
 
-    bool blobKey::readFromFilename(string filename) {
-        if (!hasSuffix(filename, ".blob"))
+    bool blobKey::readFromFilename(slice filename) {
+        if (filename.size != kBlobFilenameLength
+                || !filename.hasSuffix(kBlobFilenameSuffix))
             return false;
-        filename.resize(filename.size() - 5);
-        replace(filename.begin(), filename.end(), '_', '/');
-        return readFromBase64(slice(filename), false);
+
+        // Change '_' back into '/' for base64:
+        char base64buf[kBlobDigestStringLength];
+        memcpy(base64buf, filename.buf, sizeof(base64buf));
+        std::replace(&base64buf[0], &base64buf[sizeof(base64buf)], '_', '/');
+
+        return readFromBase64(slice(base64buf, sizeof(base64buf)), false);
     }
 
 
@@ -207,12 +219,21 @@ namespace litecore {
     
 #pragma mark - DELETING:
     
-    void BlobStore::deleteAllExcept(const unordered_set<string> &inUse) {
-        _dir.forEachFile([&inUse](const FilePath &path) {
-            if(find(inUse.cbegin(), inUse.cend(), path.fileName()) == inUse.cend()) {
-                path.del();
+    unsigned BlobStore::deleteAllExcept(const unordered_set<blobKey> &inUse) {
+        unsigned numDeleted = 0;
+        _dir.forEachFile([&](const FilePath &path) {
+            const string &filename = path.fileName();
+            if (blobKey key; key.readFromFilename(filename)) {
+                if (find(inUse.cbegin(), inUse.cend(), key) == inUse.cend()) {
+                    ++numDeleted;
+                    LogToAt(DBLog, Verbose, "Deleting unused blob '%s", filename.c_str());
+                    path.del();
+                }
+            } else {
+                Warn("Skipping unknown file '%s' in Attachments directory", filename.c_str());
             }
         });
+        return numDeleted;
     }
 
 
@@ -246,8 +267,10 @@ namespace litecore {
     void BlobStore::copyBlobsTo(BlobStore &toStore) {
         _dir.forEachFile([&](const FilePath &path) {
             blobKey key;
-            if (!key.readFromFilename(path.fileName()))
+            if (!key.readFromFilename(path.fileName())) {
+                Warn("Skipping unknown file '%s' in Attachments directory", path.fileName().c_str());
                 return;
+            }
             Blob srcBlob(*this, key);
             auto src = srcBlob.read();
             BlobWriteStream dst(toStore);

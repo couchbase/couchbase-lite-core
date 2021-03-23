@@ -169,25 +169,27 @@ namespace litecore { namespace repl {
 
 
     static bool containsAttachmentsProperty(slice json) {
-        if (!json.find("\"_attachments\":"_sl))
+        if (!json.find("\"" kC4LegacyAttachmentsProperty "\":"_sl))
             return false;
         Doc doc = Doc::fromJSON(json);
-        return doc.root().asDict()["_attachments"] != nullptr;
+        return doc.root().asDict()[kC4LegacyAttachmentsProperty].asDict() != nullptr;
     }
 
 
-    static inline bool isAttachment(FLDeepIterator i, C4BlobKey *blobKey, bool noBlobs) {
+    static inline bool isBlobOrAttachment(FLDeepIterator i, C4BlobKey *blobKey, bool noBlobs) {
         auto dict = FLValue_AsDict(FLDeepIterator_GetValue(i));
         if (!dict)
             return false;
+        // Check if it's a blob:
         if (!noBlobs && c4doc_dictIsBlob(dict, blobKey))
             return true;
+        // Check if it's an old-school attachment, i.e. in a top level "_attachments" dict:
         FLPathComponent* path;
         size_t depth;
         FLDeepIterator_GetPath(i, &path, &depth);
         return depth == 2
-        && FLSlice_Equal(path[0].key, FLSTR(kC4LegacyAttachmentsProperty))
-        && c4doc_getDictBlobKey(dict, blobKey);
+            && FLSlice_Equal(path[0].key, FLSTR(kC4LegacyAttachmentsProperty))
+            && c4doc_getDictBlobKey(dict, blobKey);
     }
 
 
@@ -198,7 +200,7 @@ namespace litecore { namespace repl {
         FLDeepIterator i = FLDeepIterator_New(root);
         for (; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i)) {
             C4BlobKey blobKey;
-            if (isAttachment(i, &blobKey, _disableBlobSupport)) {
+            if (isBlobOrAttachment(i, &blobKey, _disableBlobSupport)) {
                 if (!unique || found.emplace((const char*)&blobKey, sizeof(blobKey)).second) {
                     auto blob = Value(FLDeepIterator_GetValue(i)).asDict();
                     callback(i, blob, blobKey);

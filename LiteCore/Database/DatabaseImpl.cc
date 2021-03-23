@@ -281,58 +281,52 @@ namespace litecore {
         return factory->deleteFile(path);
     }
 
-    unordered_set<string> DatabaseImpl::collectBlobs() {
+    void DatabaseImpl::garbageCollectBlobs() {
+        unordered_set<blobKey> usedDigests;
+        auto blobCallback = [&](FLDict blob) {
+            if (auto key = C4Blob::getKey(blob); key)
+                usedDigests.insert(asInternal(*key));
+            return true;
+        };
+
+        // Lock the database to avoid any other thread creating a new blob, since if it did
+        // I might end up deleting it during the sweep phase (deleteAllExcept).
+        mustNotBeInTransaction();
+        ExclusiveTransaction t(dataFile());
+
+        // First find all blob keys referenced in revisions of docs with the 'attachments' flag:
+        uint64_t numRevisions = 0;
         RecordEnumerator::Options options;
         options.onlyBlobs = true;
         options.sortOption = kUnsorted;
         RecordEnumerator e(defaultKeyStore(), options);
-        unordered_set<string> usedDigests;
         while (e.next()) {
             Retained<C4Document> doc = documentFactory().newDocumentInstance(*e);
             doc->selectCurrentRevision();
             do {
-                if(!doc->loadRevisionBody()) {
-                    continue;
-                }
-
-                auto body = (const Dict*)doc->getProperties();
-
-                // Iterate over blobs:
-                C4Blob::findBlobReferences(FLDict(body), [&](FLDict blob) {
-                    if (auto key = C4Blob::getKey(blob); key)
-                        usedDigests.insert(asInternal(*key).filename());
-                    return true;
-                });
-
-                // Now look for old-style _attachments:
-                auto attachments = body->get(C4Blob::kLegacyAttachmentsProperty);
-                if (attachments) {
-                    blobKey key;
-                    for (Dict::iterator i(attachments->asDict()); i; ++i) {
-                        auto att = i.value()->asDict();
-                        if (att) {
-                            const Value* digest = att->get(C4Blob::kDigestProperty);
-                            if (digest && key.readFromBase64(digest->asString())) {
-                                usedDigests.insert(key.filename());
-                            }
-                        }
-                    }
+                if (doc->loadRevisionBody()) {
+                    FLDict body = doc->getProperties();
+                    C4Blob::findBlobReferences(body, blobCallback);
+                    C4Blob::findAttachmentReferences(body, blobCallback);
+                    ++numRevisions;
                 }
             } while(doc->selectNextRevision());
         }
-        
-        return usedDigests;
+
+        // Now delete all blobs that don't have one of the referenced keys:
+        auto numDeleted = getBlobStore()._impl->deleteAllExcept(usedDigests);
+
+        if (numDeleted > 0 || !usedDigests.empty()) {
+            LogTo(DBLog, "    ...deleted %u blobs (%zu remaining) after scanning %llu doc revisions",
+                  numDeleted, usedDigests.size(), numRevisions);
+        }
     }
 
     void DatabaseImpl::maintenance(DataFile::MaintenanceType what) {
         mustNotBeInTransaction();
         dataFile()->maintenance(what);
-
-        if (what == DataFile::kCompact) {
-            // After DB compaction, garbage-collect blobs:
-            unordered_set<string> digestsInUse = collectBlobs();
-            getBlobStore()._impl->deleteAllExcept(digestsInUse);
-        }
+        if (what == DataFile::kCompact)
+            garbageCollectBlobs();
     }
 
 

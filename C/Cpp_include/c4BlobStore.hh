@@ -75,8 +75,13 @@ namespace C4Blob {
     /** Returns true if the given dictionary is a [reference to a] blob. */
     bool isBlob(FLDict dict);
 
+    /** Returns true if the given dictionary is an old-style attachment in the document,
+        i.e. is an item in the document's "_attachments" dictionary. */
+    bool isAttachmentIn(FLDict dict, FLDict inDocument);
+
     /** Returns the dict's "digest" property decoded into a blobKey.
-        Returns `nullopt` if the dict is not a blob, or its digest is missing or invalid. */
+        Returns `nullopt` if the digest is missing or invalid.
+        \note This does not check if the dict itself is a blob, just reads the "digest" prop. */
     std::optional<C4BlobKey> getKey(FLDict dict);
 
     /** Returns true if the blob dictionary's data type appears to be compressible. */
@@ -89,6 +94,9 @@ namespace C4Blob {
 
     /** Finds blob references in a Fleece Dict, recursively. */
     bool findBlobReferences(FLDict, const FindBlobCallback&);
+
+    /** Finds old-style attachment references, i.e. sub-dictionaries of "_attachments". */
+    bool findAttachmentReferences(FLDict docRoot, const FindBlobCallback &callback);
 };
 
 

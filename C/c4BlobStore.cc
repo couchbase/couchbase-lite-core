@@ -191,12 +191,10 @@ std::optional<C4BlobKey> C4Blob::keyFromString(slice str) noexcept {
 
 
 optional<C4BlobKey> C4Blob::getKey(FLDict dict) {
-    if (isBlob(dict)) {
-        if (FLValue digest = FLDict_Get(dict, C4Blob::kDigestProperty); digest) {
-            blobKey key;
-            if (key.readFromBase64(FLValue_AsString(digest)))
-                return external(key);
-        }
+    if (FLValue digest = FLDict_Get(dict, C4Blob::kDigestProperty); digest) {
+        blobKey key;
+        if (key.readFromBase64(FLValue_AsString(digest)))
+            return external(key);
     }
     return nullopt;
 }
@@ -205,6 +203,16 @@ optional<C4BlobKey> C4Blob::getKey(FLDict dict) {
 bool C4Blob::isBlob(FLDict dict) {
     FLValue cbltype= FLDict_Get(dict, C4Blob::kObjectTypeProperty);
     return cbltype && slice(FLValue_AsString(cbltype)) == C4Blob::kObjectType_Blob;
+}
+
+
+bool C4Blob::isAttachmentIn(FLDict dict, FLDict inDocument) {
+    FLDict attachments = FLValue_AsDict(FLDict_Get(inDocument, kLegacyAttachmentsProperty));
+    for (Dict::iterator i(attachments); i; ++i) {
+        if (FLValue(i.value()) == FLValue(dict))
+            return true;
+    }
+    return false;
 }
 
 
@@ -219,14 +227,27 @@ bool C4Blob::dictContainsBlobs(FLDict dict) noexcept {
 
 
 bool C4Blob::findBlobReferences(FLDict dict, const FindBlobCallback &callback) {
-    if (!dict)
-        return true;
-    for (DeepIterator i((FLValue)dict); i; ++i) {
-        auto d = FLDict(i.value().asDict());
-        if (d && C4Blob::isBlob(d)) {
-            if (!callback(d))
-                return false;
-            i.skipChildren();
+    if (dict) {
+        for (DeepIterator i = Dict(dict); i; ++i) {
+            auto d = FLDict(i.value().asDict());
+            if (d && C4Blob::isBlob(d)) {
+                if (!callback(d))
+                    return false;
+                i.skipChildren();
+            }
+        }
+    }
+    return true;
+}
+
+
+bool C4Blob::findAttachmentReferences(FLDict docRoot, const FindBlobCallback &callback) {
+    if (auto atts = Dict(docRoot).get(C4Blob::kLegacyAttachmentsProperty).asDict(); atts) {
+        for (Dict::iterator i(atts); i; ++i) {
+            if (auto d = i.value().asDict(); d) {
+                if (!callback(d))
+                    return false;
+            }
         }
     }
     return true;

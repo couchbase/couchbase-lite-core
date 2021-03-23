@@ -1144,7 +1144,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Leaf Document from Fleece", "[Document][C]") {
     CHECK(c4doc_containingValue(root) == nullptr);
 }
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Document][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Document][C][Blob]") {
     CHECK(c4doc_isOldMetaProperty(C4STR("_attachments")));
     CHECK(!c4doc_isOldMetaProperty(C4STR("@type")));
     
@@ -1203,7 +1203,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 2", "[Document][C]") 
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Document][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Document][Blob][C]") {
     // Check that _attachments isn't removed if there are non-translated attachments in it,
     // but that the translated-from-blob attachments are removed:
     TransactionHelper t(db);
@@ -1218,7 +1218,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Document][C]") 
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Document][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Document][Blob][C]") {
     // Check that a translated attachment whose digest is different than its blob (i.e. the
     // attachment was probably modified by a non-blob-aware system) has its digest transferred to
     // the blob before being deleted. See #507. (Also, the _attachments property should be deleted.)
@@ -1233,7 +1233,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Document][C]") 
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Document][C]") {
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Document][Blob][C]") {
     // Check that the 2.0.0 blob_<number> gets removed:
     TransactionHelper t(db);
     auto sk = c4db_getFLSharedKeys(db);

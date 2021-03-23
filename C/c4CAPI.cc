@@ -1010,7 +1010,7 @@ bool c4doc_getDictBlobKey(FLDict dict, C4BlobKey *outKey) {
 
 bool c4doc_dictIsBlob(FLDict dict, C4BlobKey *outKey) C4API {
     Assert(outKey);
-    if (auto key = C4Blob::getKey(dict); key) {
+    if (auto key = C4Blob::getKey(dict); key && C4Blob::isBlob(dict)) {
         *outKey = *key;
         return true;
     } else {

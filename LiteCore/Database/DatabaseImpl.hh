@@ -153,8 +153,7 @@ namespace litecore {
         C4UUID generateUUID(slice key, bool overwrite =false);
 
         unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
-        std::unordered_set<std::string> collectBlobs();
-        void removeUnusedBlobs(const std::unordered_set<std::string> &used);
+        void garbageCollectBlobs();
 
         C4DocumentVersioning checkDocumentVersioning();
         void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,

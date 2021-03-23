@@ -38,7 +38,7 @@ namespace litecore {
         static blobKey withBase64(slice base64, bool prefixed =true);
 
         bool readFromBase64(slice base64, bool prefixed =true);
-        bool readFromFilename(std::string filename);
+        bool readFromFilename(slice filename);
 
         operator slice() const          {return slice(digest);}
         std::string hexString() const   {return operator slice().hexString();}
@@ -139,7 +139,8 @@ namespace litecore {
         uint64_t totalSize() const;
 
         void deleteStore()                          {_dir.delRecursive();}
-        void deleteAllExcept(const std::unordered_set<std::string>& inUse);
+        
+        unsigned deleteAllExcept(const std::unordered_set<blobKey>& inUse);
 
         bool has(const blobKey &key) const          {return get(key).exists();}
 
@@ -156,4 +157,13 @@ namespace litecore {
         Options         _options;                       // Option/capability flags
     };
 
+}
+
+
+
+namespace std {
+    // Declare the default hash function for `blobKey`
+    template<> struct hash<litecore::blobKey> {
+        std::size_t operator() (litecore::blobKey const& k) const {return fleece::slice(k).hash();}
+    };
 }

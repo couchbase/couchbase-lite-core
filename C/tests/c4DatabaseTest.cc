@@ -566,13 +566,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BackgroundDB torture test", "[D
     c4log_setLevel(kC4DatabaseLog, oldLevel);
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C]")
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C][Blob]")
 {
     C4BlobStore *blobs = c4db_getBlobStore(db, ERROR_INFO());
     REQUIRE(blobs != nullptr);
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C][Blob]")
 {
     C4Slice doc1ID = C4STR("doc001");
     C4Slice doc2ID = C4STR("doc002");

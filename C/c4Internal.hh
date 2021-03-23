@@ -71,8 +71,8 @@ namespace litecore {
 
     DatabaseImpl* asInternal(const C4Database *db);
 
-    static inline       blobKey& asInternal(      C4BlobKey &key) {return *(blobKey*)&key;}
-    static inline const C4BlobKey& external(const blobKey &key)   {return *(C4BlobKey*)&key;}
+    static inline const blobKey& asInternal(const C4BlobKey &key) {return (const blobKey&)key;}
     static inline const blobKey* asInternal(const C4BlobKey *key) {return (const blobKey*)key;}
+    static inline const C4BlobKey& external(const blobKey &key)   {return (C4BlobKey&)key;}
 
 }
