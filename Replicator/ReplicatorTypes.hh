@@ -21,7 +21,6 @@
 #include "fleece/Fleece.hh"
 #include "c4.hh"
 #include "c4Private.h"
-#include "access_lock.hh"
 #include <memory>
 #include <vector>
 

@@ -36,6 +36,9 @@ namespace litecore {
         using LOCK_GUARD = std::lock_guard<std::remove_reference_t<MUTEX>>;
 
 
+        /** Temporary access token returned by the `useLocked()` method. You can pass it as a parameter
+            as though it were that object, call the object via `->`, or access the object
+            explicitly via `get()`. */
         template <class REF>
         class access {
         public:
@@ -87,18 +90,19 @@ namespace litecore {
             const R*                _ref;
         };
 
+        
         /// Locks my mutex and returns an `access` object that acts as a proxy for my contents.
         /// My mutex is unlocked in the `access` object's destructor.
-        /// If you use a `use()` call as a function parameter, this will do the right thing and
+        /// If you use a `useLocked()` call as a function parameter, this will do the right thing and
         /// unlock the mutex after that function returns.
-        /// You can assign the result of `use()` to a local variable and use it multiple times
+        /// You can assign the result of `useLocked()` to a local variable and use it multiple times
         /// within the same lock scope; just make sure that variable has as brief a lifetime as
         /// possible.
-        auto use()        {return access<T&>(_mutex, _contents);}
+        auto useLocked()        {return access<T&>(_mutex, _contents);}
 
         /// Locks my mutex and passes a refence to my contents to the callback.
         template <class LAMBDA>
-        void use(LAMBDA callback) {
+        void useLocked(LAMBDA callback) {
             LOCK_GUARD lock(_mutex);
             callback(_contents);
         }
@@ -106,25 +110,25 @@ namespace litecore {
         /// Locks my mutex and passes a refence to my contents to the callback.
         /// The callback's return value will be passed along and returned from this call.
         /// Due to C++'s limited type inference, the RESULT type has to be specified explicitly,
-        /// e.g. `use<actualResultClass>(...)`
+        /// e.g. `useLocked<actualResultClass>(...)`
         template <class RESULT, class LAMBDA>
-        RESULT use(LAMBDA callback) {
+        RESULT useLocked(LAMBDA callback) {
             LOCK_GUARD lock(_mutex);
             return callback(_contents);
         }
 
         // const versions:
 
-        auto use() const  {return access<const T&>(getMutex(), _contents);}
+        auto useLocked() const  {return access<const T&>(getMutex(), _contents);}
 
         template <class LAMBDA>
-        void use(LAMBDA callback) const {
+        void useLocked(LAMBDA callback) const {
             LOCK_GUARD lock(getMutex());
             callback(_contents);
         }
 
         template <class RESULT, class LAMBDA>
-        RESULT use(LAMBDA callback) const {
+        RESULT useLocked(LAMBDA callback) const {
             LOCK_GUARD lock(getMutex());
             return callback(_contents);
         }

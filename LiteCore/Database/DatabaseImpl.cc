@@ -543,11 +543,8 @@ namespace litecore {
     void DatabaseImpl::beginTransaction() {
         if (++_transactionLevel == 1) {
             _transaction = new ExclusiveTransaction(_dataFile.get());
-            if (_sequenceTracker) {
-                _sequenceTracker->use([](SequenceTracker &st) {
-                    st.beginTransaction();
-                });
-            }
+            if (_sequenceTracker)
+                _sequenceTracker->useLocked()->beginTransaction();
         }
     }
 
@@ -598,13 +595,11 @@ namespace litecore {
     // The cleanup part of endTransaction
     void DatabaseImpl::_cleanupTransaction(bool committed) {
         if (_sequenceTracker) {
-            _sequenceTracker->use([&](SequenceTracker &st) {
-                if (committed && st.changedDuringTransaction()) {
-                    // Notify other Database instances on this file:
-                    _transaction->notifyCommitted(st);
-                }
-                st.endTransaction(committed);
-            });
+            auto st = _sequenceTracker->useLocked();
+            // Notify other Database instances on this file:
+            if (committed && st->changedDuringTransaction())
+                _transaction->notifyCommitted(st);
+            st->endTransaction(committed);
         }
         delete _transaction;
         _transaction = nullptr;
@@ -612,11 +607,8 @@ namespace litecore {
 
 
     void DatabaseImpl::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
-        if (_sequenceTracker) {
-            _sequenceTracker->use([&](SequenceTracker &st) {
-                st.addExternalTransaction(sourceTracker);
-            });
-        }
+        if (_sequenceTracker)
+            _sequenceTracker->useLocked()->addExternalTransaction(sourceTracker);
     }
 
 
@@ -749,13 +741,12 @@ namespace litecore {
         // so ignore them.  Later when the conflict is resolved
         // there will be logic to replicate them (see TreeDocument::resolveConflict)
         if (_sequenceTracker && !(doc->selectedRev().flags & kRevIsConflict)) {
-            _sequenceTracker->use([doc](SequenceTracker &st) {
-                Assert(doc->selectedRev().sequence == doc->sequence()); // The new revision must be selected
-                st.documentChanged(doc->docID(),
-                                   doc->getSelectedRevIDGlobalForm(), // entire version vector
-                                   doc->selectedRev().sequence,
-                                   SequenceTracker::RevisionFlags(doc->selectedRev().flags));
-            });
+            Assert(doc->selectedRev().sequence == doc->sequence()); // The new revision must be selected
+            auto st = _sequenceTracker->useLocked();
+            st->documentChanged(doc->docID(),
+                                doc->getSelectedRevIDGlobalForm(), // entire version vector
+                                doc->selectedRev().sequence,
+                                SequenceTracker::RevisionFlags(doc->selectedRev().flags));
         }
     }
 
@@ -764,11 +755,8 @@ namespace litecore {
         Transaction t(this);
         if (!defaultKeyStore().del(docID, transaction()))
             return false;
-        if (_sequenceTracker) {
-            _sequenceTracker->use([&](SequenceTracker &st) {
-                st.documentPurged(docID);
-            });
-        }
+        if (_sequenceTracker)
+            _sequenceTracker->useLocked()->documentPurged(docID);
         t.commit();
         return true;
     }
@@ -776,10 +764,9 @@ namespace litecore {
 
     int64_t DatabaseImpl::purgeExpiredDocs() {
         if (_sequenceTracker) {
-            return _sequenceTracker->use<int64_t>([&](SequenceTracker &st) {
-                return _dataFile->defaultKeyStore().expireRecords([&](slice docID) {
-                    st.documentPurged(docID);
-                });
+            auto st = _sequenceTracker->useLocked();
+            return _dataFile->defaultKeyStore().expireRecords([&](slice docID) {
+                st->documentPurged(docID);
             });
         } else {
             return _dataFile->defaultKeyStore().expireRecords();

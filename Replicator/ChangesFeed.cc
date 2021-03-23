@@ -85,13 +85,11 @@ namespace litecore { namespace repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
-            _db.use([&](C4Database* db) {
-                _changeObserver = c4dbobs_create(db,
-                                                 [](C4DatabaseObserver* observer, void *context) {
-                                                     ((ChangesFeed*)context)->_dbChanged();
-                                                 },
-                                                 this);
-            });
+            _changeObserver = c4dbobs_create(_db.useLocked(),
+                                             [](C4DatabaseObserver* observer, void *context) {
+                                                 ((ChangesFeed*)context)->_dbChanged();
+                                             },
+                                             this);
         }
 
         Changes changes = {};
@@ -122,7 +120,7 @@ namespace litecore { namespace repl {
         if (_db.usingVersionVectors())
             options.flags |= kC4IncludeRevHistory;
 
-        _db.use([&](C4Database* db) {
+        _db.useLocked([&](C4Database* db) {
             c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _maxSequence, &options, &changes.err);
             if (e) {
                 changes.revs.reserve(limit);
@@ -173,7 +171,7 @@ namespace litecore { namespace repl {
 
             // Copy the changes into a vector of RevToSend:
             C4DatabaseChange *c4change = c4changes;
-            _db.use([&](C4Database *db) {
+            _db.useLocked([&](C4Database *db) {
                 auto oldChangesCount = changes.revs.size();
                 for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
                     if (c4change->sequence <= startingMaxSequence)
@@ -246,9 +244,7 @@ namespace litecore { namespace repl {
 
 
     bool ChangesFeed::shouldPushRev(RevToSend *rev) const {
-        return _db.use<bool>([&](C4Database *db) {
-            return shouldPushRev(rev, nullptr, db);
-        });
+        return shouldPushRev(rev, nullptr, _db.useLocked());
     }
 
 

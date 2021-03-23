@@ -499,7 +499,7 @@ namespace litecore { namespace repl {
 
     // Start off by getting the local checkpoint, if this is an active replicator:
     bool Replicator::getLocalCheckpoint(bool reset) {
-        return _db->use<bool>([&](C4Database *db) {
+        return _db->useLocked<bool>([&](C4Database *db) {
             C4Error error;
             if (_checkpointer.read(db, reset, &error)) {
                 auto remote = _checkpointer.remoteMinSequence();
@@ -640,7 +640,7 @@ namespace litecore { namespace repl {
                     SPLAT(_remoteCheckpointDocID), SPLAT(_remoteCheckpointRevID));
 
                 C4Error err;
-                bool ok = _db->use<bool>([&](C4Database *db) {
+                bool ok = _db->useLocked<bool>([&](C4Database *db) {
                     _db->markRevsSyncedNow();
                     return _checkpointer.write(db, json, &err);
                 });
@@ -656,16 +656,12 @@ namespace litecore { namespace repl {
 
 
     void Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback){
-        _db->use([&](C4Database *db) {
-            _checkpointer.pendingDocumentIDs(db, callback);
-        });
+        _checkpointer.pendingDocumentIDs(_db->useLocked(), callback);
     }
 
 
     bool Replicator::isDocumentPending(slice docID) {
-        return _db->use<bool>([&](C4Database *db) {
-            return _checkpointer.isDocumentPending(db, docID);
-        });
+        return _checkpointer.isDocumentPending(_db->useLocked(), docID);
     }
 
 
@@ -691,10 +687,7 @@ namespace litecore { namespace repl {
         
         alloc_slice body, revID;
         C4Error err;
-        bool ok = _db->use<bool>([&](C4Database *db) {
-            return Checkpointer::getPeerCheckpoint(db, checkpointID, body, revID, &err);
-        });
-        if (!ok) {
+        if (!Checkpointer::getPeerCheckpoint(_db->useLocked(), checkpointID, body, revID, &err)) {
             const int status = isNotFoundError(err) ? 404 : 502;
             request->respondWithError({"HTTP"_sl, status});
             return;
@@ -715,12 +708,11 @@ namespace litecore { namespace repl {
 
         alloc_slice newRevID;
         C4Error err;
-        bool ok = _db->use<bool>([&](C4Database *db) {
-            return Checkpointer::savePeerCheckpoint(db, checkpointID,
-                                                    request->body(),
-                                                    request->property("rev"_sl),
-                                                    newRevID, &err);
-        });
+        bool ok = Checkpointer::savePeerCheckpoint(_db->useLocked(),
+                                                   checkpointID,
+                                                   request->body(),
+                                                   request->property("rev"_sl),
+                                                   newRevID, &err);
         if (!ok) {
             if (err.domain == LiteCoreDomain && err.code == kC4ErrorConflict)
                 request->respondWithError({"HTTP"_sl, 409, alloc_slice("revision ID mismatch"_sl)});

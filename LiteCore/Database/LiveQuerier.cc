@@ -95,7 +95,7 @@ namespace litecore {
 
     void LiveQuerier::_stop() {
         if (_query) {
-            _backgroundDB->use([&](DataFile *df) {
+            _backgroundDB->dataFile().useLocked([&](DataFile *df) {
                 _query = nullptr;
                 _currentEnumerator = nullptr;
                 if (_continuous)
@@ -133,7 +133,7 @@ namespace litecore {
         Retained<QueryEnumerator> newQE;
         C4Error error = {};
         fleece::Stopwatch st;
-        _backgroundDB->use([&](DataFile *df) {
+        _backgroundDB->dataFile().useLocked([&](DataFile *df) {
             try {
                 // Create my own Query object associated with the Backgrounder's DataFile:
                 if (!_query) {

@@ -123,9 +123,7 @@ namespace litecore::repl {
 #if 1
                 response["maxHistory"_sl] = 20;
 #else
-                _db->use([&](C4Database *db) {
-                    response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(db);
-                });
+                response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db->useLocked());
 #endif
             }
             if (!_db->disableBlobSupport())
@@ -215,13 +213,12 @@ namespace litecore::repl {
 
         // Ask the database to look up the ancestors:
         vector<C4StringResult> ancestors(nChanges);
-        bool ok = _db->use<bool>([&](C4Database *db) {
-            return c4db_findDocAncestors(db, nChanges, kMaxPossibleAncestors,
-                                         !_options.disableDeltaSupport(),  // requireBodies
-                                         _db->remoteDBID(),
-                                         (C4String*)docIDs.data(), (C4String*)revIDs.data(),
-                                         ancestors.data(), outError);
-        });
+        bool ok = c4db_findDocAncestors(_db->useLocked(),
+                                        nChanges, kMaxPossibleAncestors,
+                                        !_options.disableDeltaSupport(),  // requireBodies
+                                        _db->remoteDBID(),
+                                        (C4String*)docIDs.data(), (C4String*)revIDs.data(),
+                                        ancestors.data(), outError);
         if (!ok) {
             return -1;
         } else {

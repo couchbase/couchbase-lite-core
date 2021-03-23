@@ -294,6 +294,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
             CHECK(c4doc_removeRevisionBody(doc));
             CHECK(c4doc_selectCurrentRevision(doc));
         }
+        CHECK(c4doc_getRevisionBody(doc) == nullslice);
         CHECK(c4doc_getProperties(doc) == nullptr);
     }
     c4doc_release(doc);
@@ -313,10 +314,13 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
         CHECK(doc->revID == kRevID);
         CHECK(doc->selectedRev.revID == kRevID);
         CHECK(doc->selectedRev.sequence == 1);
-        if (content == kDocGetMetadata)
+        if (content == kDocGetMetadata) {
+            CHECK(c4doc_getRevisionBody(doc) == nullslice);
             CHECK(c4doc_getProperties(doc) == nullptr);
-        else
+        } else {
+            CHECK(c4doc_getRevisionBody(doc) == kFleeceBody);
             CHECK(docBodyEquals(doc, kFleeceBody));
+        }
         c4doc_release(doc);
     }
 }

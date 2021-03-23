@@ -17,12 +17,14 @@ namespace litecore {
     class SequenceTracker;
 
 
-    class BackgroundDB final : public access_lock<DataFile*>, private DataFile::Delegate {
+    class BackgroundDB final : private DataFile::Delegate {
     public:
         BackgroundDB(DatabaseImpl*);
         ~BackgroundDB();
 
         void close();
+
+        access_lock<DataFile*>& dataFile()              {return _dataFile;}
 
         using TransactionTask = function_ref<bool(DataFile*, SequenceTracker*)>;
 
@@ -46,6 +48,7 @@ namespace litecore {
         void notifyTransactionObservers();
 
         DatabaseImpl* _database;
+        access_lock<DataFile*> _dataFile;
         std::vector<TransactionObserver*> _transactionObservers;
         std::mutex _transactionObserversMutex;
     };

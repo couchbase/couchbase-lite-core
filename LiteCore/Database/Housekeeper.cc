@@ -53,7 +53,7 @@ namespace litecore {
 
 
     void Housekeeper::_scheduleExpiration() {
-        expiration_t nextExp = _bgdb->use<expiration_t>([&](DataFile *df) {
+        expiration_t nextExp = _bgdb->dataFile().useLocked<expiration_t>([&](DataFile *df) {
             return df ? df->defaultKeyStore().nextExpiration() : 0;
         });
         if (nextExp == 0) {

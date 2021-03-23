@@ -60,16 +60,12 @@ namespace litecore { namespace repl {
 
         /** Gets a document by ID */
         C4Document* getDoc(slice docID, C4DocContentLevel content, C4Error *outError) const {
-            return use<C4Document*>([&](C4Database *db) {
-                return c4db_getDoc(db, docID, true, content, outError);
-            });
+            return c4db_getDoc(useLocked(), docID, true, content, outError);
         }
 
         /** Gets a RawDocument. */
         C4RawDocument* getRawDoc(slice storeID, slice docID, C4Error *outError) const {
-            return use<C4RawDocument*>([&](C4Database *db) {
-                return c4raw_get(db, storeID, docID, outError);
-            });
+            return c4raw_get(useLocked(), storeID, docID, outError);
         }
 
         /** Gets the Fleece root dict, and flags, of the current rev of a document. */
@@ -146,16 +142,16 @@ namespace litecore { namespace repl {
             inside a transaction. */
         alloc_slice reEncodeForDatabase(fleece::Doc);
 
-        /** Equivalent of "use()", but accesses the database handle used for insertion. */
+        /** Equivalent of "useLocked()", but accesses the database handle used for insertion. */
         template <class LAMBDA>
         void useForInsert(LAMBDA callback) {
-            insertionDB().use(callback);
+            insertionDB().useLocked(callback);
         }
 
-        /** Equivalent of "use()", but accesses the database handle used for insertion. */
+        /** Equivalent of "useLocked()", but accesses the database handle used for insertion. */
         template <class RESULT, class LAMBDA>
         RESULT useForInsert(LAMBDA callback) {
-            return insertionDB().use<RESULT>(callback);
+            return insertionDB().useLocked<RESULT>(callback);
         }
 
         /** Manages a transaction safely. The begin() method calls beginTransaction, then commit()

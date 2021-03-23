@@ -195,11 +195,11 @@ namespace litecore {
         slice getRevisionBody() const noexcept override {
             if (auto rev = _selectedRevision()) {
                 // Current revision, or remote with the same version:
-                if (rev->revID == _doc.revID())
-                    return _doc.currentRevisionData();
-
-                // Else the properties have to be re-encoded to a slice:
-                if (rev->properties) {
+                if (rev->revID == _doc.revID()) {
+                    if (_doc.contentAvailable() >= kCurrentRevOnly)
+                        return _doc.currentRevisionData();
+                } else if (rev->properties) {
+                    // Else the properties have to be re-encoded to a slice:
                     SharedEncoder enc(_db->getSharedFleeceEncoder());
                     enc << rev->properties;
                     _latestBody = enc.finishDoc();

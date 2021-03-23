@@ -35,7 +35,7 @@ namespace litecore {
         :_db(asInternal(db))
         ,_callback(move(callback))
         {
-            _db->sequenceTracker().use<>([&](SequenceTracker &st) {
+            _db->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
                 _notifier.emplace(st,
                                   [this](DatabaseChangeNotifier&) {_callback(this);},
                                   since);
@@ -44,7 +44,7 @@ namespace litecore {
 
 
         ~C4DatabaseObserverImpl() {
-            _db->sequenceTracker().use([&](SequenceTracker &st) {
+            _db->sequenceTracker().useLocked([&](SequenceTracker &st) {
                 // Clearing (destructing) the notifier stops me from getting calls.
                 // I do this explicitly, synchronized with the SequenceTracker.
                 _notifier = nullopt;
@@ -58,7 +58,7 @@ namespace litecore {
         {
             static_assert(sizeof(Change) == sizeof(SequenceTracker::Change),
                           "C4DatabaseObserver::Change doesn't match SequenceTracker::Change");
-            return _db->sequenceTracker().use<uint32_t>([&](SequenceTracker &st) {
+            return _db->sequenceTracker().useLocked<uint32_t>([&](SequenceTracker &st) {
                 return (uint32_t) _notifier->readChanges((SequenceTracker::Change*)outChanges,
                                                           maxChanges,
                                                           *outExternal);
@@ -93,7 +93,7 @@ namespace litecore {
         :_db(asInternal(db))
         ,_callback(callback)
         {
-            _db->sequenceTracker().use<>([&](SequenceTracker &st) {
+            _db->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
                 _notifier.emplace(st,
                                   docID,
                                   [this](DocChangeNotifier&, slice docID, sequence_t sequence) {
@@ -103,7 +103,7 @@ namespace litecore {
         }
 
         ~C4DocumentObserverImpl() {
-            _db->sequenceTracker().use([&](SequenceTracker &st) {
+            _db->sequenceTracker().useLocked([&](SequenceTracker &st) {
                 // Clearing (destructing) the notifier stops me from getting calls.
                 // I do this explicitly, synchronized with the SequenceTracker.
                 _notifier = nullopt;

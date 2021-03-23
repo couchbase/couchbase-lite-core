@@ -30,13 +30,13 @@ namespace litecore {
 
 
     BackgroundDB::BackgroundDB(DatabaseImpl *db)
-    :access_lock(db->dataFile()->openAnother(this))
+    :_dataFile(db->dataFile()->openAnother(this))
     ,_database(db)
     { }
 
 
     void BackgroundDB::close() {
-        use([this](DataFile* &df) {
+        _dataFile.useLocked([this](DataFile* &df) {
             delete df;
             df = nullptr;
         });
@@ -58,7 +58,7 @@ namespace litecore {
 
 
     void BackgroundDB::useInTransaction(TransactionTask task) {
-        use([=](DataFile* dataFile) {
+        _dataFile.useLocked([=](DataFile* dataFile) {
             if (!dataFile)
                 return;
             ExclusiveTransaction t(dataFile);

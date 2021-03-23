@@ -57,7 +57,7 @@ namespace litecore { namespace repl {
 
     access_lock<C4Database*>& DBAccess::insertionDB() {
         if (!_insertionDB) {
-            use([&](C4Database *db) {
+            useLocked([&](C4Database *db) {
                 if (!_insertionDB) {
                     C4Error error;
                     C4Database *idb = c4db_openAgain(db, &error);
@@ -75,14 +75,9 @@ namespace litecore { namespace repl {
 
     DBAccess::~DBAccess() {
         _timer.stop();
-        use([&](C4Database *db) {
-            c4db_release(db);
-        });
-        if (_insertionDB) {
-            _insertionDB->use([&](C4Database *idb) {
-                c4db_release(idb);
-            });
-        }
+        c4db_release(useLocked());
+        if (_insertionDB)
+            c4db_release(_insertionDB->useLocked());
     }
 
 
@@ -90,7 +85,7 @@ namespace litecore { namespace repl {
         string version(revID);
         if (_usingVersionVectors) {
             if (_myPeerID.empty()) {
-                use([&](C4Database *c4db) {
+                useLocked([&](C4Database *c4db) {
                     if (_myPeerID.empty())
                         _myPeerID = string(alloc_slice(c4db_getPeerID(c4db)));
                 });
@@ -103,7 +98,7 @@ namespace litecore { namespace repl {
 
     C4RemoteID DBAccess::lookUpRemoteDBID(slice key, C4Error *outError) {
         Assert(_remoteDBID == 0);
-        use([&](C4Database *db) {
+        useLocked([&](C4Database *db) {
             _remoteDBID = c4db_getRemoteDBID(db, key, true, outError);
         });
         return _remoteDBID;
@@ -137,7 +132,7 @@ namespace litecore { namespace repl {
         logInfo("Updating remote #%u's rev of '%.*s' to %.*s",
                 _remoteDBID, SPLAT(docID), SPLAT(revID));
         C4Error error;
-        bool ok = use<bool>([&](C4Database *db) {
+        bool ok = useLocked<bool>([&](C4Database *db) {
             c4::Transaction t(db);
             c4::ref<C4Document> doc = c4db_getDoc(db, docID, true, kDocGetAll, &error);
             return doc
@@ -154,17 +149,13 @@ namespace litecore { namespace repl {
     }
 
     C4DocEnumerator* DBAccess::unresolvedDocsEnumerator(bool orderByID, C4Error *outError) {
-        C4DocEnumerator* e;
-        use([&](C4Database *db) {
-            C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-            options.flags &= ~kC4IncludeBodies;
-            options.flags &= ~kC4IncludeNonConflicted;
-            options.flags |= kC4IncludeDeleted;
-            if (!orderByID)
-                options.flags |= kC4Unsorted;
-            e = c4db_enumerateAllDocs(db, &options, outError);
-        });
-        return e;
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        options.flags &= ~kC4IncludeBodies;
+        options.flags &= ~kC4IncludeNonConflicted;
+        options.flags |= kC4IncludeDeleted;
+        if (!orderByID)
+            options.flags |= kC4Unsorted;
+        return c4db_enumerateAllDocs(useLocked(), &options, outError);
     }
 
 
@@ -285,7 +276,7 @@ namespace litecore { namespace repl {
         auto db = _insertionDB.get();
         if (!db) db = this;
         SharedKeys result;
-        return db->use<SharedKeys>([&](C4Database *idb) {
+        return db->useLocked<SharedKeys>([&](C4Database *idb) {
             SharedKeys dbsk = c4db_getFLSharedKeys(idb);
             lock_guard<mutex> lock(_tempSharedKeysMutex);
             if (!_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count()) {
