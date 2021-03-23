@@ -70,6 +70,7 @@ function(setup_litecore_build_unix)
 
     set(LITECORE_CXX_WARNINGS
         -Wnon-virtual-dtor
+        -Wno-unknown-warning-option
         -Werror=overloaded-virtual
     )
 
