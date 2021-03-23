@@ -374,8 +374,9 @@ _c4doc_setRemoteAncestor
 _c4doc_getBlobData
 _c4doc_generateID
 _c4doc_getProperties
-_c4doc_getSelectedRevIDGlobalForm
+_c4doc_getRevisionBody
 _c4doc_getRevisionHistory
+_c4doc_getSelectedRevIDGlobalForm
 
 _c4db_getIndexesInfo
 

@@ -58,11 +58,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-r quiet"
-            isEnabled = "YES">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "--break"
+            argument = "-r quiet --break"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
