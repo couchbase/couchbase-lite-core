@@ -374,8 +374,9 @@ CBL {
 		c4doc_getBlobData;
 		c4doc_generateID;
 		c4doc_getProperties;
-		c4doc_getSelectedRevIDGlobalForm;
+		c4doc_getRevisionBody;
 		c4doc_getRevisionHistory;
+		c4doc_getSelectedRevIDGlobalForm;
 
 		c4db_getIndexesInfo;
 
