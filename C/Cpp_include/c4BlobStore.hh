@@ -169,7 +169,6 @@ struct C4BlobStore : public C4Base {
 protected:
     friend struct C4ReadStream;
     friend struct C4WriteStream;
-    friend class litecore::DatabaseImpl;
 
     litecore::FilePath dir() const;
     litecore::FilePath pathForKey(C4BlobKey) const;
@@ -178,9 +177,6 @@ protected:
     C4BlobKey install(litecore::BlobWriteStream*, const C4BlobKey* C4NULLABLE expectedKey);
 
 private:
-    friend class BlobWriteStream;
-    friend class C4BlobReader;
-
     std::string const   _dirPath;
     C4DatabaseFlags     _flags;
     C4EncryptionKey     _encryptionKey;

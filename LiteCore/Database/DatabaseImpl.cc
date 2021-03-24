@@ -36,6 +36,7 @@
 #include "StringUtil.hh"
 #include "PrebuiltCopier.hh"
 #include <functional>
+#include <inttypes.h>
 
 namespace litecore::constants {
     const C4Slice kLocalCheckpointStore   = C4STR("checkpoints");
@@ -316,7 +317,8 @@ namespace litecore {
         auto numDeleted = getBlobStore().deleteAllExcept(usedDigests);
 
         if (numDeleted > 0 || !usedDigests.empty()) {
-            LogTo(DBLog, "    ...deleted %u blobs (%zu remaining) after scanning %llu doc revisions",
+            LogTo(DBLog,
+                  "    ...deleted %u blobs (%zu remaining) after scanning %" PRIu64 " doc revisions",
                   numDeleted, usedDigests.size(), numRevisions);
         }
     }

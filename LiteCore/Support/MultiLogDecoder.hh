@@ -13,6 +13,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "betterassert.hh"
 
 namespace litecore {
 
