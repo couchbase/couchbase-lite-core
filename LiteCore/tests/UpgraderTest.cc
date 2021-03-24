@@ -95,7 +95,7 @@ protected:
     }
 
     void verifyAttachment(string digest) {
-        auto key = C4Blob::keyFromString(digest);
+        auto key = C4BlobKey::withDigestString(digest);
         REQUIRE(key);
         CHECK(db->getBlobStore().getSize(*key) > 0);
     }

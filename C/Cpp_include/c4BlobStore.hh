@@ -18,6 +18,7 @@
 
 #pragma once
 #include "c4Base.hh"
+#include "c4BlobStore.h"
 #include "c4DatabaseTypes.h"
 #include "function_ref.hh"
 #include "fleece/Fleece.h"
@@ -65,49 +66,36 @@ namespace C4Blob {
     static constexpr slice kLegacyAttachmentsProperty = "_attachments";
 
 
-    /** Computes the blob-key (digest) of a blob with the given contents. */
-    C4BlobKey computeKey(slice contents) noexcept;
+    /** Returns true if the given dictionary is a [reference to a] blob.
+        This tests whether it contains a "@type" property whose value is "blob". */
+    bool isBlob(FLDict C4NULLABLE dict);
 
-    /** Translates a C4BlobKey into ASCII form. */
-    alloc_slice keyToString(C4BlobKey key);
-
-    /** Translates an ASCII blob key back to a C4BlobKey. Returns `nullopt` if invalid. */
-    std::optional<C4BlobKey> keyFromString(slice str) noexcept;
-
-    /** Returns true if the given dictionary is a [reference to a] blob. */
-    bool isBlob(FLDict dict);
-
-    /** Returns true if the given dictionary is an old-style attachment in the document,
-        i.e. is an item in the document's "_attachments" dictionary. */
+    /** Returns true if the given dictionary is an old-style attachment in the document.
+        This tests whether `inDocument` contains an `_attachments` property, whose value is a Dict,
+        and that one of that Dict's values is the given `dict`. */
     bool isAttachmentIn(FLDict dict, FLDict inDocument);
 
-    /** Returns the dict's "digest" property decoded into a blobKey.
+    /** Returns the dict's "digest" property decoded into a C4BlobKey.
         Returns `nullopt` if the digest is missing or invalid.
         \note This does not check if the dict itself is a blob, just reads the "digest" prop. */
-    std::optional<C4BlobKey> getKey(FLDict dict);
+    std::optional<C4BlobKey> keyFromDigestProperty(FLDict dict);
 
-    /** Returns true if the blob dictionary's data type appears to be compressible. */
-    bool isCompressible(FLDict);
+    /** Guesses whether the blob's content is likely to be compressible,
+        based on the MIME type in the Dict's "content_type" property.
+        (Returns false if that property is not present.) */
+    bool isLikelyCompressible(FLDict C4NULLABLE);
 
     /** Returns true if this dict (usually the root of a document) contains any blobs within. */
-    bool dictContainsBlobs(FLDict) noexcept;
+    bool dictContainsBlobs(FLDict C4NULLABLE) noexcept;
 
     using FindBlobCallback = fleece::function_ref<bool(FLDict)>;
 
     /** Finds blob references in a Fleece Dict, recursively. */
-    bool findBlobReferences(FLDict, const FindBlobCallback&);
+    bool findBlobReferences(FLDict C4NULLABLE, const FindBlobCallback&);
 
     /** Finds old-style attachment references, i.e. sub-dictionaries of "_attachments". */
-    bool findAttachmentReferences(FLDict docRoot, const FindBlobCallback &callback);
+    bool findAttachmentReferences(FLDict C4NULLABLE docRoot, const FindBlobCallback &callback);
 };
-
-
-static inline bool operator==(const C4BlobKey &a, const C4BlobKey &b) {
-    return ::memcmp(a.bytes, b.bytes, sizeof(a.bytes)) == 0;
-}
-static inline bool operator!=(const C4BlobKey &a, const C4BlobKey &b) {
-    return !(a == b);
-}
 
 
 struct C4ReadStream : public C4Base {
@@ -142,7 +130,7 @@ struct C4BlobStore : public C4Base {
 
     ~C4BlobStore();
 
-    bool isEncrypted() const                            {return _key.algorithm != kC4EncryptionNone;}
+    bool isEncrypted() const                 {return _encryptionKey.algorithm != kC4EncryptionNone;}
 
     void deleteStore();
 
@@ -195,7 +183,7 @@ private:
 
     std::string const   _dirPath;
     C4DatabaseFlags     _flags;
-    C4EncryptionKey     _key;
+    C4EncryptionKey     _encryptionKey;
 };
 
 
@@ -203,7 +191,7 @@ namespace std {
     // Declare the default hash function for `C4BlobKey`
     template<> struct hash<C4BlobKey> {
         std::size_t operator() (C4BlobKey const& key) const {
-            return fleece::slice(&key, sizeof(key)).hash();
+            return fleece::slice(key).hash();
         }
     };
 }

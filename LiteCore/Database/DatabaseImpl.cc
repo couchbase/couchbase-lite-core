@@ -283,7 +283,7 @@ namespace litecore {
     void DatabaseImpl::garbageCollectBlobs() {
         unordered_set<C4BlobKey> usedDigests;
         auto blobCallback = [&](FLDict blob) {
-            if (auto key = C4Blob::getKey(blob); key)
+            if (auto key = C4Blob::keyFromDigestProperty(blob); key)
                 usedDigests.insert(*key);
             return true;
         };

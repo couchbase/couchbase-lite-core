@@ -19,9 +19,9 @@
 
 #include "BlobStreams.hh"
 #include "EncryptedStream.hh"
-#include "Base64.hh"
 #include "Error.hh"
 #include "Logging.hh"
+
 
 namespace litecore {
     using namespace std;
@@ -31,110 +31,44 @@ namespace litecore {
     LogDomain BlobLog("Blob");
 
 
-#pragma mark - BLOB KEY:
-
-    static constexpr slice
-        kBlobDigestStringPrefix = "sha1-",  // prefix of ASCII form of blob key ("digest" property)
-        kBlobFilenameSuffix = ".blob";      // suffix of blob files in the store
-
-    static constexpr size_t
-        kBlobDigestStringLength = ((sizeof(blobKey::digest) + 2) / 3) * 4, // Length of base64 w/o prefix
-        kBlobFilenameLength = kBlobDigestStringLength + kBlobFilenameSuffix.size;
+#pragma mark - BLOB READ STREAM:
 
 
-    blobKey::blobKey(slice s) {
-        if (!digest.setDigest(s))
-            error::_throw(error::WrongFormat);
-    }
-
-    blobKey blobKey::withBase64(slice base64, bool prefixed) {
-        blobKey key;
-        if (!key.readFromBase64(base64, prefixed))
-            error::_throw(error::WrongFormat);
-        return key;
-    }
-
-
-    bool blobKey::readFromBase64(slice data, bool prefixed) {
-        if (prefixed) {
-            if (data.hasPrefix(kBlobDigestStringPrefix))
-                data.moveStart(kBlobDigestStringPrefix.size);
-            else
-                return false;
-        }
-        if (data.size == kBlobDigestStringLength) {
-            // Decoder always writes a multiple of 3 bytes, so round up:
-            uint8_t buf[sizeof(digest) + 2];
-            slice result = base64::decode(data, buf, sizeof(buf));
-            return digest.setDigest(result);
-        }
-        return false;
-    }
-
-
-    string blobKey::base64String() const {
-        return string(kBlobDigestStringPrefix) + digest.asBase64();
-    }
-
-
-    string blobKey::filename() const {
-        // Change '/' characters in the base64 into '_':
-        string str = digest.asBase64();
-        replace(str.begin(), str.end(), '/', '_');
-        str.append(kBlobFilenameSuffix);
-        return str;
-    }
-
-
-    bool blobKey::readFromFilename(slice filename) {
-        if (filename.size != kBlobFilenameLength
-            || !filename.hasSuffix(kBlobFilenameSuffix))
-            return false;
-
-        // Change '_' back into '/' for base64:
-        char base64buf[kBlobDigestStringLength];
-        memcpy(base64buf, filename.buf, sizeof(base64buf));
-        std::replace(&base64buf[0], &base64buf[sizeof(base64buf)], '_', '/');
-
-        return readFromBase64(slice(base64buf, sizeof(base64buf)), false);
-    }
-
-
-    /*static*/ blobKey blobKey::computeFrom(slice data) {
-        blobKey key;
-        key.digest.computeFrom(data);
-        return key;
+    unique_ptr<SeekableReadStream> OpenBlobReadStream(const FilePath &blobFile,
+                                                      EncryptionAlgorithm algorithm,
+                                                      slice encryptionKey)
+    {
+        SeekableReadStream *reader = new FileReadStream(blobFile);
+        if (algorithm != EncryptionAlgorithm::kNoEncryption)
+            reader = new EncryptedReadStream(shared_ptr<SeekableReadStream>(reader),
+                                             algorithm, encryptionKey);
+        return unique_ptr<SeekableReadStream>{reader};
     }
 
 
 #pragma mark - BLOB WRITE STREAM:
 
 
-    BlobWriteStream::BlobWriteStream(const string &dir, EncryptionAlgorithm alg, slice key)
+    BlobWriteStream::BlobWriteStream(const string &blobsDir,
+                                     EncryptionAlgorithm algorithm,
+                                     slice encryptionKey)
     {
         FILE *file;
-        _tmpPath = FilePath(dir, "incoming_").mkTempFile(&file);
+        _tmpPath = FilePath(blobsDir, "incoming_").mkTempFile(&file);
         _writer = shared_ptr<WriteStream> {new FileWriteStream(file)};
-        if (alg != EncryptionAlgorithm::kNoEncryption)
-            _writer = make_shared<EncryptedWriteStream>(_writer, alg, key);
+        if (algorithm != EncryptionAlgorithm::kNoEncryption)
+            _writer = make_shared<EncryptedWriteStream>(_writer, algorithm, encryptionKey);
     }
 
 
     BlobWriteStream::~BlobWriteStream() {
-        if (!_installed) {
-            try {
-                _tmpPath.del();
-            } catch (...) {
-                // destructor is not allowed to throw exceptions
-                Warn("BlobWriteStream: unable to delete temporary file %s",
-                     _tmpPath.path().c_str());
-            }
-        }
+        if (!_installed)
+            deleteTempFile();
     }
 
 
     void BlobWriteStream::write(slice data) {
-        Assert(!_computedKey, "Attempted to write after computing digest");
+        Assert(!_blobKey, "Attempted to write after computing digest");
         _writer->write(data);
         _bytesWritten += data.size;
         _sha1ctx << data;
@@ -147,12 +81,12 @@ namespace litecore {
         }
     }
 
-    blobKey BlobWriteStream::computeKey() noexcept {
-        if (!_computedKey) {
-            _key.digest = _sha1ctx.finish();
-            _computedKey = true;
+    C4BlobKey BlobWriteStream::computeKey() noexcept {
+        if (!_blobKey) {
+            _blobKey.emplace();
+            _sha1ctx.finish(&_blobKey->bytes, sizeof(_blobKey->bytes));
         }
-        return _key;
+        return *_blobKey;
     }
 
 
@@ -164,14 +98,21 @@ namespace litecore {
         } else {
             // If the destination already exists, then this blob
             // already exists and doesn't need to be written again
-            if(!_tmpPath.del()) {
-                string tmpPath = _tmpPath.path();
-                Warn("Unable to delete temporary blob %s", tmpPath.c_str());
-            }
+            deleteTempFile();
         }
         _installed = true;
     }
 
 
+    bool BlobWriteStream::deleteTempFile() {
+        bool ok = false;
+        try {
+            ok = _tmpPath.del();
+        } catch (...) { }
+        if (!ok)
+            Warn("BlobWriteStream: unable to delete temporary file %s",
+                 _tmpPath.path().c_str());
+        return ok;
+    }
 
 }

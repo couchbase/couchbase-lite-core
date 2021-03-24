@@ -80,9 +80,7 @@ static inline void c4slice_free(C4SliceResult s)            {FLSliceResult_Relea
 //////// COMMON TYPES
 
 /** A raw SHA-1 digest used as the unique identifier of a blob. */
-typedef struct C4BlobKey {
-    uint8_t bytes[20];
-} C4BlobKey;
+typedef struct C4BlobKey C4BlobKey;
 
 
 /** A simple parsed-URL type. */

@@ -17,70 +17,55 @@
 //
 
 #pragma once
-#pragma once
+#include "c4BlobStore.h"
 #include "c4DatabaseTypes.h"
 #include "FilePath.hh"
 #include "SecureDigest.hh"
 #include "Stream.hh"
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace litecore {
 
-    /** A raw SHA-1 digest used as the unique identifier of a blob. Equivalent to C4BlobKey. */
-    struct blobKey {
-        SHA1 digest;
+    /** Returns a stream for reading a blob from the given file in the BlobStore. */
+    unique_ptr<SeekableReadStream> OpenBlobReadStream(const FilePath &blobFile,
+                                                      EncryptionAlgorithm,
+                                                      slice encryptionKey);
 
-        blobKey() =default;
-        blobKey(slice rawBytes);
-
-        static blobKey withBase64(slice base64, bool prefixed =true);
-
-        bool readFromBase64(slice base64, bool prefixed =true);
-        bool readFromFilename(slice filename);
-
-        operator slice() const          {return slice(digest);}
-        std::string hexString() const   {return operator slice().hexString();}
-        std::string base64String() const;
-        std::string filename() const;
-
-        bool operator== (const blobKey &k) const {
-            return digest == k.digest;
-        }
-        bool operator!= (const blobKey &k) const {
-            return !(*this == k);
-        }
-
-        static blobKey computeFrom(slice data);
-    };
-
-
-    /** A stream for writing a new Blob. */
+    /** A stream for writing a new blob. */
     class BlobWriteStream final : public WriteStream {
     public:
-        BlobWriteStream(const std::string &dir, EncryptionAlgorithm alg, slice encryptionKey);
+        BlobWriteStream(const std::string &blobStoreDirectory,
+                        EncryptionAlgorithm,
+                        slice encryptionKey);
+
         ~BlobWriteStream();
 
         void write(slice) override;
         void close() override;
 
-        uint64_t bytesWritten() const                       {return _bytesWritten;}
+        uint64_t bytesWritten() const {
+            return _bytesWritten;
+        }
 
         /** Derives the blobKey from the digest of the file data.
             No more data can be written after this is called. */
-        blobKey computeKey() noexcept;
+        C4BlobKey computeKey() noexcept;
 
-        /** Moves the temporary file to the given path.
-            If a file already exists there, it just deletes the temporary. */
+        /** Moves the temporary file to the given path,
+            or if a file already exists there, just deletes the temporary (since the existing
+            file must have the same contents.) */
         void install(const FilePath &dstPath);
 
     private:
+        bool deleteTempFile();
+        
         FilePath _tmpPath;
         shared_ptr<WriteStream> _writer;
         uint64_t _bytesWritten {0};
         SHA1Builder _sha1ctx;
-        blobKey _key;
-        bool _computedKey {false};
+        std::optional<C4BlobKey> _blobKey;
         bool _installed {false};
     };
 

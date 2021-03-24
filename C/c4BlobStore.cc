@@ -35,6 +35,75 @@ using namespace fleece;
 using namespace litecore;
 
 
+#pragma mark - C4BLOBKEY:
+
+
+static constexpr slice
+    kBlobDigestStringPrefix = "sha1-",  // prefix of ASCII form of blob key ("digest" property)
+    kBlobFilenameSuffix = ".blob";      // suffix of blob files in the store
+
+static constexpr size_t
+    kBlobDigestStringLength = ((sizeof(C4BlobKey::bytes) + 2) / 3) * 4, // Length of base64 w/o prefix
+    kBlobFilenameLength = kBlobDigestStringLength + kBlobFilenameSuffix.size;
+
+
+static SHA1& digest(C4BlobKey& key)               {return (SHA1&)key.bytes;}
+static const SHA1& digest(const C4BlobKey& key)   {return (const SHA1&)key.bytes;}
+
+
+C4BlobKey C4BlobKey::computeDigestOfContent(slice content) {
+    C4BlobKey key;
+    digest(key).computeFrom(content);
+    return key;
+}
+
+
+string C4BlobKey::digestString() const {
+    return string(kBlobDigestStringPrefix) + digest(*this).asBase64();
+}
+
+
+static std::optional<C4BlobKey> BlobKeyFromBase64(slice data) {
+    if (data.size != kBlobDigestStringLength)
+        return nullopt;
+    // Decoder always writes a multiple of 3 bytes, so round up:
+    uint8_t buf[sizeof(C4BlobKey) + 2];
+    C4BlobKey key;
+    if (!digest(key).setDigest(fleece::base64::decode(data, buf, sizeof(buf))))
+        return nullopt;
+    return key;
+}
+
+
+std::optional<C4BlobKey> C4BlobKey::withDigestString(slice base64String) {
+    if (base64String.hasPrefix(kBlobDigestStringPrefix))
+        base64String.moveStart(kBlobDigestStringPrefix.size);
+    else
+        return nullopt;
+    return BlobKeyFromBase64(base64String);
+}
+
+
+static string BlobKeyToFilename(const C4BlobKey &key) {
+    // Change '/' characters in the base64 into '_':
+    string str = digest(key).asBase64();
+    replace(str.begin(), str.end(), '/', '_');
+    str.append(kBlobFilenameSuffix);
+    return str;
+}
+
+
+static optional<C4BlobKey> BlobKeyFromFilename(slice filename) {
+    if (filename.size != kBlobFilenameLength || !filename.hasSuffix(kBlobFilenameSuffix))
+        return nullopt;
+    // Change '_' back into '/' for base64:
+    char base64buf[kBlobDigestStringLength];
+    memcpy(base64buf, filename.buf, sizeof(base64buf));
+    std::replace(&base64buf[0], &base64buf[sizeof(base64buf)], '_', '/');
+    return BlobKeyFromBase64({base64buf, sizeof(base64buf)});
+}
+
+
 #pragma mark - C4BLOBSTORE METHODS:
 
 
@@ -43,7 +112,7 @@ C4BlobStore::C4BlobStore(slice dirPath,
                          const C4EncryptionKey &key)
 :_dirPath(dirPath)
 ,_flags(flags)
-,_key(key)
+,_encryptionKey(key)
 {
     FilePath dir(_dirPath, "");
     if (dir.exists()) {
@@ -69,7 +138,7 @@ FilePath C4BlobStore::dir() const {
 }
 
 FilePath C4BlobStore::pathForKey(C4BlobKey key) const {
-    return FilePath(_dirPath, asInternal(key).filename());
+    return FilePath(_dirPath, BlobKeyToFilename(key));
 }
 
 
@@ -99,13 +168,9 @@ alloc_slice C4BlobStore::getContents(C4BlobKey key) const {
 
 
 unique_ptr<SeekableReadStream> C4BlobStore::getReadStream(C4BlobKey key) const {
-    SeekableReadStream *reader = new FileReadStream(pathForKey(key));
-    if (isEncrypted()) {
-        reader = new EncryptedReadStream(shared_ptr<SeekableReadStream>(reader),
-                                         litecore::EncryptionAlgorithm(_key.algorithm),
-                                         slice(&_key.bytes, sizeof(_key.bytes)));
-    }
-    return unique_ptr<SeekableReadStream>{reader};
+    return OpenBlobReadStream(pathForKey(key),
+                              litecore::EncryptionAlgorithm(_encryptionKey.algorithm),
+                              slice(&_encryptionKey.bytes, sizeof(_encryptionKey.bytes)));
 }
 
 
@@ -126,7 +191,7 @@ alloc_slice C4BlobStore::getBlobData(FLDict flDict) {
             default:
                 error::_throw(error::CorruptData, "Blob data property has invalid type");
         }
-    } else if (auto key = C4Blob::getKey(dict); key) {
+    } else if (auto key = C4Blob::keyFromDigestProperty(dict); key) {
         return getContents(*key);
     } else {
         error::_throw(error::CorruptData, "Blob has invalid or missing digest property");
@@ -146,14 +211,14 @@ C4BlobKey C4BlobStore::createBlob(slice contents, const C4BlobKey *expectedKey) 
 
 unique_ptr<BlobWriteStream> C4BlobStore::getWriteStream() {
     return make_unique<BlobWriteStream>(_dirPath,
-                                        litecore::EncryptionAlgorithm(_key.algorithm),
-                                        slice(&_key.bytes, sizeof(_key.bytes)));
+                                        litecore::EncryptionAlgorithm(_encryptionKey.algorithm),
+                                        slice(&_encryptionKey.bytes, sizeof(_encryptionKey.bytes)));
 }
 
 
 C4BlobKey C4BlobStore::install(BlobWriteStream *writer, const C4BlobKey* expectedKey) {
     writer->close();
-    C4BlobKey key = external(writer->computeKey());
+    C4BlobKey key = writer->computeKey();
     if (expectedKey && *expectedKey != key)
         error::_throw(error::CorruptData);
     writer->install(pathForKey(key));
@@ -173,8 +238,8 @@ unsigned C4BlobStore::deleteAllExcept(const unordered_set<C4BlobKey> &inUse) {
     unsigned numDeleted = 0;
     dir().forEachFile([&](const FilePath &path) {
         const string &filename = path.fileName();
-        if (blobKey key; key.readFromFilename(filename)) {
-            if (find(inUse.cbegin(), inUse.cend(), external(key)) == inUse.cend()) {
+        if (auto key = BlobKeyFromFilename(filename); key) {
+            if (find(inUse.cbegin(), inUse.cend(), *key) == inUse.cend()) {
                 ++numDeleted;
                 LogToAt(DBLog, Verbose, "Deleting unused blob '%s", filename.c_str());
                 path.del();
@@ -190,15 +255,15 @@ unsigned C4BlobStore::deleteAllExcept(const unordered_set<C4BlobKey> &inUse) {
 void C4BlobStore::copyBlobsTo(C4BlobStore &toStore) {
     dir().forEachFile([&](const FilePath &path) {
         const string &filename = path.fileName();
-        if (blobKey key; key.readFromFilename(filename)) {
-            auto src = getReadStream(external(key));
+        if (auto key = BlobKeyFromFilename(filename); key) {
+            auto src = getReadStream(*key);
             auto dst = toStore.getWriteStream();
             uint8_t buffer[4096];
             size_t bytesRead;
             while ((bytesRead = src->read(buffer, sizeof(buffer))) > 0) {
                 dst->write(slice(buffer, bytesRead));
             }
-            toStore.install(dst.get(), &external(key));
+            toStore.install(dst.get(), &*key);
         } else {
             Warn("Skipping unknown file '%s' in Attachments directory", filename.c_str());
         }
@@ -209,7 +274,7 @@ void C4BlobStore::copyBlobsTo(C4BlobStore &toStore) {
 void C4BlobStore::replaceWith(C4BlobStore &other) {
     other.dir().moveToReplacingDir(dir(), true);
     _flags = other._flags;
-    _key = other._key;
+    _encryptionKey = other._encryptionKey;
 }
 
 
@@ -249,39 +314,16 @@ C4WriteStream::~C4WriteStream() {
 
 void C4WriteStream::write(fleece::slice data)         {_impl->write(data);}
 uint64_t C4WriteStream::bytesWritten() const noexcept {return _impl->bytesWritten();}
-C4BlobKey C4WriteStream::computeBlobKey()             {return external(_impl->computeKey());}
+C4BlobKey C4WriteStream::computeBlobKey()             {return _impl->computeKey();}
 C4BlobKey C4WriteStream::install(const C4BlobKey *xk) {return _store.install(_impl.get(), xk);}
 
 
 #pragma mark - BLOB UTILITIES:
 
 
-C4BlobKey C4Blob::computeKey(slice contents) noexcept {
-    return external(blobKey::computeFrom(contents));
-}
-
-
-alloc_slice C4Blob::keyToString(C4BlobKey key) {
-    return alloc_slice(asInternal(key).base64String());
-}
-
-
-std::optional<C4BlobKey> C4Blob::keyFromString(slice str) noexcept {
-    try {
-        if (str.buf)
-            return external(blobKey::withBase64(str));
-    } catchAndIgnore()
-    return nullopt;
-}
-
-
-optional<C4BlobKey> C4Blob::getKey(FLDict dict) {
-    if (FLValue digest = FLDict_Get(dict, C4Blob::kDigestProperty); digest) {
-        blobKey key;
-        if (key.readFromBase64(FLValue_AsString(digest)))
-            return external(key);
-    }
-    return nullopt;
+optional<C4BlobKey> C4Blob::keyFromDigestProperty(FLDict dict) {
+    FLValue digest = FLDict_Get(dict, C4Blob::kDigestProperty);
+    return C4BlobKey::withDigestString(FLValue_AsString(digest));
 }
 
 
@@ -364,7 +406,7 @@ static constexpr slice kGoodTypeSubstrings[] = {
     {}
 };
 
-// These prefixes mean it's not compressible, unless it matches the above good-types list
+// These prefixes mean it's not compressible, *unless* it matches the above good-types list
 // (like SVG (image/svg+xml), which is compressible.)
 static constexpr slice kBadTypePrefixes[] = {
     "image/"_sl,
@@ -388,7 +430,7 @@ static bool startsWithAnyOf(slice type, const slice types[]) {
     return false;
 }
 
-bool C4Blob::isCompressible(FLDict flMeta) {
+bool C4Blob::isLikelyCompressible(FLDict flMeta) {
     Dict meta(flMeta);
     // Don't compress an attachment with a compressed encoding:
     auto encodingProp = meta.get("encoding"_sl);
@@ -396,17 +438,16 @@ bool C4Blob::isCompressible(FLDict flMeta) {
         return false;
 
     // Don't compress attachments with unknown MIME type:
-    auto typeProp = meta.get("content_type"_sl);
-    if (!typeProp)
-        return false;
-    slice type = typeProp.asString();
+    slice type = meta.get("content_type"_sl).asString();
     if (!type)
         return false;
 
-    // Check the MIME type:
+    // Convert type to canonical lowercase form:
     string lc = type.asString();
     toLowercase(lc);
     type = lc;
+
+    // Check the MIME type:
     if (containsAnyOf(type, kCompressedTypeSubstrings))
         return false;
     else if (type.hasPrefix("text/"_sl) || containsAnyOf(type, kGoodTypeSubstrings))

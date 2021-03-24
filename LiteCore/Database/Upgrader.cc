@@ -243,8 +243,10 @@ namespace litecore {
         // Copies a blob to the new database if it exists in the old one.
         bool copyAttachment(slice digest) {
             Log("        ...attachment '%.*s'", SPLAT(digest));
-            blobKey key = blobKey::withBase64(digest);
-            string hex = key.hexString();
+            optional<C4BlobKey> key = C4BlobKey::withDigestString(digest);
+            if (!key)
+                return false;
+            string hex = slice(*key).hexString();
             for (char &c : hex)
                 c = (char)toupper(c);
             FilePath src = _attachments[hex + ".blob"];

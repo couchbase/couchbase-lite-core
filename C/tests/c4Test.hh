@@ -18,6 +18,7 @@
 
 #pragma once
 #include "fleece/Fleece.hh"
+#include "c4BlobStore.h"
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"

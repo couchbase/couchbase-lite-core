@@ -38,7 +38,7 @@ using namespace litecore;
 
 
 bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
-    if (auto key = C4Blob::keyFromString(str); key) {
+    if (auto key = C4BlobKey::withDigestString(str); key) {
         *outKey = *key;
         return true;
     } else {
@@ -49,7 +49,7 @@ bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
 
 C4SliceResult c4blob_keyToString(C4BlobKey key) noexcept {
     try {
-        return C4SliceResult(C4Blob::keyToString(key));
+        return C4SliceResult(alloc_slice(key.digestString()));
     } catchError(nullptr);
     return {};
 }
@@ -116,7 +116,7 @@ C4StringResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* ou
 
 
 C4BlobKey c4blob_computeKey(C4Slice contents) {
-    return C4Blob::computeKey(contents);
+    return C4BlobKey::computeDigestOfContent(contents);
 }
 
 
@@ -998,7 +998,7 @@ bool c4doc_hasOldMetaProperties(FLDict doc) noexcept {
 
 
 bool c4doc_getDictBlobKey(FLDict dict, C4BlobKey *outKey) {
-    if (auto key = C4Blob::getKey(dict); key) {
+    if (auto key = C4Blob::keyFromDigestProperty(dict); key) {
         if (outKey)
             *outKey = *key;
         return true;
@@ -1010,7 +1010,7 @@ bool c4doc_getDictBlobKey(FLDict dict, C4BlobKey *outKey) {
 
 bool c4doc_dictIsBlob(FLDict dict, C4BlobKey *outKey) C4API {
     Assert(outKey);
-    if (auto key = C4Blob::getKey(dict); key && C4Blob::isBlob(dict)) {
+    if (auto key = C4Blob::keyFromDigestProperty(dict); key && C4Blob::isBlob(dict)) {
         *outKey = *key;
         return true;
     } else {
@@ -1032,7 +1032,7 @@ bool c4doc_dictContainsBlobs(FLDict dict) noexcept {
 
 
 bool c4doc_blobIsCompressible(FLDict blobDict) {
-    return C4Blob::isCompressible(blobDict);
+    return C4Blob::isLikelyCompressible(blobDict);
 }
 
 
