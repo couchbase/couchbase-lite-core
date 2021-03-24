@@ -152,7 +152,7 @@ namespace litecore {
         bool getUUIDIfExists(slice key, C4UUID&);
         C4UUID generateUUID(slice key, bool overwrite =false);
 
-        unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
+        unique_ptr<C4BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         void garbageCollectBlobs();
 
         C4DocumentVersioning checkDocumentVersioning();

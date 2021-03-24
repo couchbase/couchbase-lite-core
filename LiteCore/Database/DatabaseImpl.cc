@@ -31,7 +31,6 @@
 #include "Record.hh"
 #include "SequenceTracker.hh"
 #include "FleeceImpl.hh"
-#include "BlobStore.hh"
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
@@ -282,10 +281,10 @@ namespace litecore {
     }
 
     void DatabaseImpl::garbageCollectBlobs() {
-        unordered_set<blobKey> usedDigests;
+        unordered_set<C4BlobKey> usedDigests;
         auto blobCallback = [&](FLDict blob) {
             if (auto key = C4Blob::getKey(blob); key)
-                usedDigests.insert(asInternal(*key));
+                usedDigests.insert(*key);
             return true;
         };
 
@@ -314,7 +313,7 @@ namespace litecore {
         }
 
         // Now delete all blobs that don't have one of the referenced keys:
-        auto numDeleted = getBlobStore()._impl->deleteAllExcept(usedDigests);
+        auto numDeleted = getBlobStore().deleteAllExcept(usedDigests);
 
         if (numDeleted > 0 || !usedDigests.empty()) {
             LogTo(DBLog, "    ...deleted %u blobs (%zu remaining) after scanning %llu doc revisions",
@@ -341,11 +340,11 @@ namespace litecore {
         stopBackgroundTasks();
 
         // Create a new BlobStore and copy/rekey the blobs into it:
-        BlobStore *blobStoreImpl = getBlobStore()._impl.get();
         path().subdirectoryNamed("Attachments_temp").delRecursive();
+        auto &blobStore = getBlobStore();
         auto newStore = createBlobStore("Attachments_temp", *newKey);
         try {
-            blobStoreImpl->copyBlobsTo(*newStore);
+            blobStore.copyBlobsTo(*newStore);
 
             // Rekey the database itself:
             dataFile()->rekey((EncryptionAlgorithm)newKey->algorithm,
@@ -358,7 +357,7 @@ namespace litecore {
         const_cast<C4DatabaseConfig2&>(_config).encryptionKey = *newKey;
 
         // Finally replace the old BlobStore with the new one:
-        newStore->moveTo(*blobStoreImpl);
+        blobStore.replaceWith(*newStore);
         if (housekeeping)
             startHousekeeping();
         _dataFile->_logInfo("Finished rekeying database!");
@@ -421,23 +420,16 @@ namespace litecore {
 
     C4BlobStore& DatabaseImpl::getBlobStore() const {
         if (!_blobStore)
-            _blobStore.reset(new C4BlobStore(createBlobStore("Attachments",
-                                                             _config.encryptionKey)));
+            _blobStore = createBlobStore("Attachments", _config.encryptionKey);
         return *_blobStore;
     }
 
 
-    unique_ptr<BlobStore> DatabaseImpl::createBlobStore(const string &dirname,
-                                                        C4EncryptionKey encryptionKey) const
+    unique_ptr<C4BlobStore> DatabaseImpl::createBlobStore(const string &dirname,
+                                                          C4EncryptionKey encryptionKey) const
     {
-        FilePath blobStorePath = path().subdirectoryNamed(dirname);
-        auto options = BlobStore::Options::defaults;
-        options.create = options.writeable = (_config.flags & kC4DB_ReadOnly) == 0;
-        options.encryptionAlgorithm =(EncryptionAlgorithm)encryptionKey.algorithm;
-        if (options.encryptionAlgorithm != kNoEncryption) {
-            options.encryptionKey = alloc_slice(encryptionKey.bytes, sizeof(encryptionKey.bytes));
-        }
-        return make_unique<BlobStore>(blobStorePath, &options);
+        return make_unique<C4BlobStore>(alloc_slice(path().subdirectoryNamed(dirname)),
+                                        _config.flags, encryptionKey);
     }
 
 

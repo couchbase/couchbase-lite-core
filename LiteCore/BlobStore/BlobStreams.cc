@@ -1,7 +1,7 @@
 //
-//  BlobStore.cc
+// BlobStreams.hh
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright © 2021 Couchbase. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,27 +14,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//.
+//
 
-#include "BlobStore.hh"
-#include "Base64.hh"
-#include "FilePath.hh"
-#include "Error.hh"
+
+#include "BlobStreams.hh"
 #include "EncryptedStream.hh"
+#include "Base64.hh"
+#include "Error.hh"
 #include "Logging.hh"
-#include "StringUtil.hh"
-#include <stdint.h>
-#include <stdio.h>
-#include <algorithm>
 
 namespace litecore {
     using namespace std;
     using namespace fleece;
 
+
     LogDomain BlobLog("Blob");
 
 
-#pragma mark - BLOBKEY:
+#pragma mark - BLOB KEY:
 
     static constexpr slice
         kBlobDigestStringPrefix = "sha1-",  // prefix of ASCII form of blob key ("digest" property)
@@ -91,7 +88,7 @@ namespace litecore {
 
     bool blobKey::readFromFilename(slice filename) {
         if (filename.size != kBlobFilenameLength
-                || !filename.hasSuffix(kBlobFilenameSuffix))
+            || !filename.hasSuffix(kBlobFilenameSuffix))
             return false;
 
         // Change '_' back into '/' for base64:
@@ -110,52 +107,16 @@ namespace litecore {
     }
 
 
-#pragma mark - BLOB READING:
-    
-    
-    Blob::Blob(const BlobStore &store, const blobKey &key)
-    :_path(store.dir(), key.filename()),
-     _key(key),
-     _store(store)
-    { }
+#pragma mark - BLOB WRITE STREAM:
 
 
-    int64_t Blob::contentLength() const {
-        int64_t length = path().dataSize();
-        if (length >= 0 && _store.options().encryptionAlgorithm != kNoEncryption)
-            length -= EncryptedReadStream::kFileSizeOverhead;
-        return length;
-    }
-
-
-
-    unique_ptr<SeekableReadStream> Blob::read() const {
-        SeekableReadStream *reader = new FileReadStream(_path);
-        auto &options = _store.options();
-        if (options.encryptionAlgorithm != kNoEncryption) {
-            reader = new EncryptedReadStream(shared_ptr<SeekableReadStream>(reader),
-                                             options.encryptionAlgorithm,
-                                             options.encryptionKey);
-        }
-        return unique_ptr<SeekableReadStream>{reader};
-    }
-
-
-#pragma mark - BLOB WRITING:
-
-
-    BlobWriteStream::BlobWriteStream(BlobStore &store)
-    :_store(store)
+    BlobWriteStream::BlobWriteStream(const string &dir, EncryptionAlgorithm alg, slice key)
     {
         FILE *file;
-        _tmpPath = store.dir()["incoming_"].mkTempFile(&file);
+        _tmpPath = FilePath(dir, "incoming_").mkTempFile(&file);
         _writer = shared_ptr<WriteStream> {new FileWriteStream(file)};
-        auto &options = _store.options();
-        if (options.encryptionAlgorithm != kNoEncryption) {
-            _writer = make_shared<EncryptedWriteStream>(_writer,
-                                                        options.encryptionAlgorithm,
-                                                        options.encryptionKey);
-        }
+        if (alg != EncryptionAlgorithm::kNoEncryption)
+            _writer = make_shared<EncryptedWriteStream>(_writer, alg, key);
     }
 
 
@@ -195,15 +156,11 @@ namespace litecore {
     }
 
 
-    Blob BlobWriteStream::install(const blobKey *expectedKey) {
+    void BlobWriteStream::install(const FilePath &dstPath) {
         close();
-        auto key = computeKey();
-        if (expectedKey && *expectedKey != key)
-            error::_throw(error::CorruptData);
-        Blob blob(_store, key);
-        if(!blob.path().exists()) {
+        if (!dstPath.exists()) {
             _tmpPath.setReadOnly(true);
-            _tmpPath.moveTo(blob.path());
+            _tmpPath.moveTo(dstPath);
         } else {
             // If the destination already exists, then this blob
             // already exists and doesn't need to be written again
@@ -212,81 +169,9 @@ namespace litecore {
                 Warn("Unable to delete temporary blob %s", tmpPath.c_str());
             }
         }
-
         _installed = true;
-        return blob;
-    }
-    
-#pragma mark - DELETING:
-    
-    unsigned BlobStore::deleteAllExcept(const unordered_set<blobKey> &inUse) {
-        unsigned numDeleted = 0;
-        _dir.forEachFile([&](const FilePath &path) {
-            const string &filename = path.fileName();
-            if (blobKey key; key.readFromFilename(filename)) {
-                if (find(inUse.cbegin(), inUse.cend(), key) == inUse.cend()) {
-                    ++numDeleted;
-                    LogToAt(DBLog, Verbose, "Deleting unused blob '%s", filename.c_str());
-                    path.del();
-                }
-            } else {
-                Warn("Skipping unknown file '%s' in Attachments directory", filename.c_str());
-            }
-        });
-        return numDeleted;
     }
 
 
-#pragma mark - BLOBSTORE:
-
-
-    const BlobStore::Options BlobStore::Options::defaults = {true, true};
-
-
-    BlobStore::BlobStore(const FilePath &dir, const Options *options)
-    :_dir(dir),
-     _options(options ? *options : Options::defaults)
-    {
-        if (_dir.exists()) {
-            _dir.mustExistAsDir();
-        } else {
-            if (!_options.create)
-                error::_throw(error::NotFound);
-            _dir.mkdir();
-        }
-    }
-
-
-    Blob BlobStore::put(slice data, const blobKey *expectedKey) {
-        BlobWriteStream stream(*this);
-        stream.write(data);
-        return stream.install(expectedKey);
-    }
-
-
-    void BlobStore::copyBlobsTo(BlobStore &toStore) {
-        _dir.forEachFile([&](const FilePath &path) {
-            blobKey key;
-            if (!key.readFromFilename(path.fileName())) {
-                Warn("Skipping unknown file '%s' in Attachments directory", path.fileName().c_str());
-                return;
-            }
-            Blob srcBlob(*this, key);
-            auto src = srcBlob.read();
-            BlobWriteStream dst(toStore);
-            uint8_t buffer[4096];
-            size_t bytesRead;
-            while ((bytesRead = src->read(buffer, sizeof(buffer))) > 0) {
-                dst.write(slice(buffer, bytesRead));
-            }
-            dst.install(&key);
-        });
-    }
-
-
-    void BlobStore::moveTo(BlobStore &toStore) {
-        _dir.moveToReplacingDir(toStore.dir(), true);
-        toStore._options = _options;
-    }
 
 }

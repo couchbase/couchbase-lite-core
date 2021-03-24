@@ -62,7 +62,7 @@ C4BlobStore* c4blob_openStore(C4Slice dirPath,
                               C4Error* outError) noexcept
 {
     try {
-        return new C4BlobStore(dirPath, flags, key);
+        return new C4BlobStore(dirPath, flags, (key ? *key : C4EncryptionKey{}));
     } catchError(outError)
     return nullptr;
 }

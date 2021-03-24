@@ -21,10 +21,12 @@
 #include "c4Document+Fleece.h"
 #include "c4ExceptionUtils.hh"
 #include "c4Internal.hh"
-#include "BlobStore.hh"
+#include "BlobStreams.hh"
 #include "DatabaseImpl.hh"
 #include "Base64.hh"
+#include "EncryptedStream.hh"
 #include "Error.hh"
+#include "FilePath.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 
@@ -38,70 +40,80 @@ using namespace litecore;
 
 C4BlobStore::C4BlobStore(slice dirPath,
                          C4DatabaseFlags flags,
-                         const C4EncryptionKey* key)
+                         const C4EncryptionKey &key)
+:_dirPath(dirPath)
+,_flags(flags)
+,_key(key)
 {
-    BlobStore::Options options = {};
-    options.create = (flags & kC4DB_Create) != 0;
-    options.writeable = !(flags & kC4DB_ReadOnly);
-    if (key) {
-        options.encryptionAlgorithm = (EncryptionAlgorithm)key->algorithm;
-        options.encryptionKey = alloc_slice(key->bytes, sizeof(key->bytes));
+    FilePath dir(_dirPath, "");
+    if (dir.exists()) {
+        dir.mustExistAsDir();
+    } else {
+        if (!(flags & kC4DB_Create))
+            error::_throw(error::NotFound);
+        dir.mkdir();
     }
-    _impl = make_unique<BlobStore>(FilePath(dirPath), &options);
 }
-
-
-C4BlobStore::C4BlobStore(std::unique_ptr<litecore::BlobStore> store)
-:_impl(std::move(store))
-{ }
 
 
 C4BlobStore::~C4BlobStore() = default;
 
 
 void C4BlobStore::deleteStore() {
-    _impl->deleteStore();
+    dir().delRecursive();
 }
 
 
-int64_t C4BlobStore::getSize(C4BlobKey key) const {
-    return _impl->get(asInternal(key)).contentLength();
+FilePath C4BlobStore::dir() const {
+    return FilePath(_dirPath, "");
 }
 
-
-alloc_slice C4BlobStore::getContents(C4BlobKey key) const {
-    return _impl->get(asInternal(key)).contents();
+FilePath C4BlobStore::pathForKey(C4BlobKey key) const {
+    return FilePath(_dirPath, asInternal(key).filename());
 }
 
 
 alloc_slice C4BlobStore::getFilePath(C4BlobKey key) const {
-    FilePath path = _impl->get(asInternal(key)).path();
+    FilePath path = pathForKey(key);
     if (!path.exists())
         return nullslice;
-    else if (_impl->isEncrypted())
+    else if (isEncrypted())
         error::_throw(error::WrongFormat);
     else
         return alloc_slice(path);
 }
 
 
-C4BlobKey C4BlobStore::createBlob(slice contents, const C4BlobKey *expectedKey) {
-    Blob blob = _impl->put(contents, asInternal(expectedKey));
-    return external(blob.key());
+int64_t C4BlobStore::getSize(C4BlobKey key) const {
+    int64_t length = pathForKey(key).dataSize();
+    if (length >= 0 && isEncrypted())
+        length -= EncryptedReadStream::kFileSizeOverhead;
+    return length;
 }
 
 
-void C4BlobStore::deleteBlob(C4BlobKey key) {
-    _impl->get(asInternal(key)).del();
+alloc_slice C4BlobStore::getContents(C4BlobKey key) const {
+    auto reader = getReadStream(key);
+    return reader->readAll();
 }
 
 
-alloc_slice C4BlobStore::getBlobData(FLDict flDict, BlobStore *store) {
+unique_ptr<SeekableReadStream> C4BlobStore::getReadStream(C4BlobKey key) const {
+    SeekableReadStream *reader = new FileReadStream(pathForKey(key));
+    if (isEncrypted()) {
+        reader = new EncryptedReadStream(shared_ptr<SeekableReadStream>(reader),
+                                         litecore::EncryptionAlgorithm(_key.algorithm),
+                                         slice(&_key.bytes, sizeof(_key.bytes)));
+    }
+    return unique_ptr<SeekableReadStream>{reader};
+}
+
+
+alloc_slice C4BlobStore::getBlobData(FLDict flDict) {
     Dict dict(flDict);
-    if (!C4Blob::isBlob(dict))
+    if (!C4Blob::isBlob(dict)) {
         error::_throw(error::InvalidParameter, "Not a blob");
-    auto dataProp = dict.get(C4Blob::kDataProperty);
-    if (dataProp) {
+    } else if (auto dataProp = dict.get(C4Blob::kDataProperty); dataProp) {
         switch (dataProp.type()) {
             case kFLData:
                 return alloc_slice(dataProp.asData());
@@ -114,16 +126,90 @@ alloc_slice C4BlobStore::getBlobData(FLDict flDict, BlobStore *store) {
             default:
                 error::_throw(error::CorruptData, "Blob data property has invalid type");
         }
-    }
-    if (auto key = C4Blob::getKey(dict); key)
-        return store->get((blobKey&)*key).contents();
-    else
+    } else if (auto key = C4Blob::getKey(dict); key) {
+        return getContents(*key);
+    } else {
         error::_throw(error::CorruptData, "Blob has invalid or missing digest property");
+    }
 }
 
 
-alloc_slice C4BlobStore::getBlobData(FLDict flDict) {
-    return getBlobData(flDict, _impl.get());
+#pragma mark - CREATING / DELETING BLOBS:
+
+
+C4BlobKey C4BlobStore::createBlob(slice contents, const C4BlobKey *expectedKey) {
+    auto stream = getWriteStream();
+    stream->write(contents);
+    return install(stream.get(), expectedKey);
+}
+
+
+unique_ptr<BlobWriteStream> C4BlobStore::getWriteStream() {
+    return make_unique<BlobWriteStream>(_dirPath,
+                                        litecore::EncryptionAlgorithm(_key.algorithm),
+                                        slice(&_key.bytes, sizeof(_key.bytes)));
+}
+
+
+C4BlobKey C4BlobStore::install(BlobWriteStream *writer, const C4BlobKey* expectedKey) {
+    writer->close();
+    C4BlobKey key = external(writer->computeKey());
+    if (expectedKey && *expectedKey != key)
+        error::_throw(error::CorruptData);
+    writer->install(pathForKey(key));
+    return key;
+}
+
+
+void C4BlobStore::deleteBlob(C4BlobKey key) {
+    pathForKey(key).del();
+}
+
+
+#pragma mark - HOUSEKEEPING:
+
+
+unsigned C4BlobStore::deleteAllExcept(const unordered_set<C4BlobKey> &inUse) {
+    unsigned numDeleted = 0;
+    dir().forEachFile([&](const FilePath &path) {
+        const string &filename = path.fileName();
+        if (blobKey key; key.readFromFilename(filename)) {
+            if (find(inUse.cbegin(), inUse.cend(), external(key)) == inUse.cend()) {
+                ++numDeleted;
+                LogToAt(DBLog, Verbose, "Deleting unused blob '%s", filename.c_str());
+                path.del();
+            }
+        } else {
+            Warn("Skipping unknown file '%s' in Attachments directory", filename.c_str());
+        }
+    });
+    return numDeleted;
+}
+
+
+void C4BlobStore::copyBlobsTo(C4BlobStore &toStore) {
+    dir().forEachFile([&](const FilePath &path) {
+        const string &filename = path.fileName();
+        if (blobKey key; key.readFromFilename(filename)) {
+            auto src = getReadStream(external(key));
+            auto dst = toStore.getWriteStream();
+            uint8_t buffer[4096];
+            size_t bytesRead;
+            while ((bytesRead = src->read(buffer, sizeof(buffer))) > 0) {
+                dst->write(slice(buffer, bytesRead));
+            }
+            toStore.install(dst.get(), &external(key));
+        } else {
+            Warn("Skipping unknown file '%s' in Attachments directory", filename.c_str());
+        }
+    });
+}
+
+
+void C4BlobStore::replaceWith(C4BlobStore &other) {
+    other.dir().moveToReplacingDir(dir(), true);
+    _flags = other._flags;
+    _key = other._key;
 }
 
 
@@ -131,7 +217,7 @@ alloc_slice C4BlobStore::getBlobData(FLDict flDict) {
 
 
 C4ReadStream::C4ReadStream(const C4BlobStore &store, C4BlobKey key)
-:_impl(store._impl->get(asInternal(key)).read())
+:_impl(store.getReadStream(key))
 { }
 
 C4ReadStream::C4ReadStream( C4ReadStream &&other)
@@ -145,7 +231,7 @@ void C4ReadStream::seek(int64_t pos)                {_impl->seek(pos);}
 
 
 C4WriteStream::C4WriteStream(C4BlobStore &store)
-:_impl(new BlobWriteStream(*store._impl))
+:_impl(store.getWriteStream())
 ,_store(store)
 { }
 
@@ -164,8 +250,7 @@ C4WriteStream::~C4WriteStream() {
 void C4WriteStream::write(fleece::slice data)         {_impl->write(data);}
 uint64_t C4WriteStream::bytesWritten() const noexcept {return _impl->bytesWritten();}
 C4BlobKey C4WriteStream::computeBlobKey()             {return external(_impl->computeKey());}
-C4BlobKey C4WriteStream::install(const C4BlobKey *xk) {_impl->install(asInternal(xk));
-                                                       return computeBlobKey();}
+C4BlobKey C4WriteStream::install(const C4BlobKey *xk) {return _store.install(_impl.get(), xk);}
 
 
 #pragma mark - BLOB UTILITIES:

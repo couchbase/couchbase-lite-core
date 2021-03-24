@@ -94,6 +94,7 @@
 		271BA454227B691500D49D13 /* c4DatabaseEncryptionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */; };
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
+		27229215260AB89900A3A41F /* BlobStreams.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27229214260AB89900A3A41F /* BlobStreams.cc */; };
 		272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850A91E9AF53B009CA22F /* Upgrader.cc */; };
 		272850AD1E9AF53B009CA22F /* Upgrader.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850AA1E9AF53B009CA22F /* Upgrader.hh */; };
 		272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850B41E9BE361009CA22F /* UpgraderTest.cc */; };
@@ -197,8 +198,6 @@
 		2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438B1DCD502A00DB2555 /* c4Observer.cc */; };
 		2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
 		276993E625390C3300FDF699 /* VectorRecord.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276993E525390C3300FDF699 /* VectorRecord.cc */; };
-		276CD4281D77E92E001346A3 /* BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CD4261D77E92E001346A3 /* BlobStore.cc */; };
-		276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276CD4271D77E92E001346A3 /* BlobStore.hh */; };
 		276CE6832267991500B681AC /* n1ql.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE67C2267991400B681AC /* n1ql.cc */; settings = {COMPILER_FLAGS = "-Wno-unreachable-code"; }; };
 		276D152B1DFB878800543B1B /* c4DocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */; };
 		276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
@@ -876,6 +875,8 @@
 		2722504A1D7884110006D5A5 /* c4BlobStore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStore.h; sourceTree = "<group>"; };
 		2722504D1D7892610006D5A5 /* c4BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStore.cc; sourceTree = "<group>"; };
 		272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStoreTest.cc; sourceTree = "<group>"; };
+		27229213260AB89900A3A41F /* BlobStreams.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BlobStreams.hh; sourceTree = "<group>"; };
+		27229214260AB89900A3A41F /* BlobStreams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BlobStreams.cc; sourceTree = "<group>"; };
 		27234104211516C000DA9437 /* c4QueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4QueryTest.hh; sourceTree = "<group>"; };
 		2723410F211B5FC400DA9437 /* QueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryTest.hh; sourceTree = "<group>"; };
 		2726F630207ED137007F2D02 /* ReplicatorTuning.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTuning.hh; sourceTree = "<group>"; };
@@ -1120,8 +1121,6 @@
 		2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ObserverTest.cc; sourceTree = "<group>"; };
 		276993E125390C3300FDF699 /* VectorRecord.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VectorRecord.hh; sourceTree = "<group>"; };
 		276993E525390C3300FDF699 /* VectorRecord.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectorRecord.cc; sourceTree = "<group>"; };
-		276CD4261D77E92E001346A3 /* BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BlobStore.cc; sourceTree = "<group>"; };
-		276CD4271D77E92E001346A3 /* BlobStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BlobStore.hh; sourceTree = "<group>"; };
 		276CE67C2267991400B681AC /* n1ql.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = n1ql.cc; sourceTree = "<group>"; };
 		276CE67D2267991400B681AC /* Any.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Any.hh; sourceTree = "<group>"; };
 		276CE67E2267991500B681AC /* n1ql.leg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = n1ql.leg; sourceTree = "<group>"; };
@@ -2411,8 +2410,8 @@
 		276CD4251D77E8F7001346A3 /* Blobs */ = {
 			isa = PBXGroup;
 			children = (
-				276CD4261D77E92E001346A3 /* BlobStore.cc */,
-				276CD4271D77E92E001346A3 /* BlobStore.hh */,
+				27229214260AB89900A3A41F /* BlobStreams.cc */,
+				27229213260AB89900A3A41F /* BlobStreams.hh */,
 				278963601D7A376900493096 /* EncryptedStream.cc */,
 				278963611D7A376900493096 /* EncryptedStream.hh */,
 				278963661D7B7E7D00493096 /* Stream.cc */,
@@ -3249,7 +3248,6 @@
 				72A3AF8D1F425134001E16D4 /* PrebuiltCopier.hh in Headers */,
 				2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */,
 				27D74A951D4D3F3400D806E0 /* Statement.h in Headers */,
-				276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */,
 				27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */,
 				27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */,
 				273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */,
@@ -4151,7 +4149,6 @@
 				27E4872B1923F24D007D8940 /* RevTreeRecord.cc in Sources */,
 				276CE6832267991500B681AC /* n1ql.cc in Sources */,
 				93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */,
-				276CD4281D77E92E001346A3 /* BlobStore.cc in Sources */,
 				2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */,
 				27469D06233D719800A1EE1A /* Certificate.cc in Sources */,
 				27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */,
@@ -4172,6 +4169,7 @@
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
 				273855AF25B790B1009D746E /* DatabaseImpl+Upgrade.cc in Sources */,
 				2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */,
+				27229215260AB89900A3A41F /* BlobStreams.cc in Sources */,
 				272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */,

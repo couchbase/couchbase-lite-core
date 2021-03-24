@@ -24,7 +24,7 @@
 #include "DatabaseImpl.hh"
 #include "c4Document.hh"
 #include "c4BlobStore.hh"
-#include "BlobStore.hh"
+#include "BlobStreams.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
