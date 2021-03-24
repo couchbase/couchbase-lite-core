@@ -300,3 +300,18 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
           == "{'FROM':[{'AS':'a'},{'AS':'b','JOIN':'INNER','ON':['=',['.a.n'],['.b.n']]},{'AS':'c','JOIN':'INNER','ON':['=',['.b.m'],['.c.m']]}],"
              "'WHAT':[['.a'],['.b'],['.c']],'WHERE':['AND',['=',['.a.type'],['.b.type']],['=',['.b.type'],['.c.type']]]}");
 }
+
+TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Query][N1QL][C]") {
+    CHECK(translate("SELECT isarray(x),  isatom(x),  isboolean(x),  isnumber(x),  isobject(x),  isstring(x),  type(x)")
+          == "{'WHAT':[['isarray()',['.x']],['isatom()',['.x']],['isboolean()',['.x']],['isnumber()',['.x']],"
+             "['isobject()',['.x']],['isstring()',['.x']],['type()',['.x']]]}");
+    CHECK(translate("SELECT is_array(x),  is_atom(x),  is_boolean(x),  is_number(x),  is_object(x),  is_string(x),  typename(x)")
+          == "{'WHAT':[['is_array()',['.x']],['is_atom()',['.x']],['is_boolean()',['.x']],['is_number()',['.x']],"
+             "['is_object()',['.x']],['is_string()',['.x']],['typename()',['.x']]]}");
+    CHECK(translate("SELECT toarray(x),  toatom(x),  toboolean(x),  tonumber(x),  toobject(x),  tostring(x)")
+          == "{'WHAT':[['toarray()',['.x']],['toatom()',['.x']],['toboolean()',['.x']],['tonumber()',['.x']],"
+             "['toobject()',['.x']],['tostring()',['.x']]]}");
+    CHECK(translate("SELECT to_array(x),  to_atom(x),  to_boolean(x),  to_number(x),  to_object(x),  to_string(x)")
+          == "{'WHAT':[['to_array()',['.x']],['to_atom()',['.x']],['to_boolean()',['.x']],['to_number()',['.x']],"
+             "['to_object()',['.x']],['to_string()',['.x']]]}");
+}

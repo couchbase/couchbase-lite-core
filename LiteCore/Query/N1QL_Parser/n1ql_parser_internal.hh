@@ -278,6 +278,8 @@ static const char* kFunctions[] = {         // (copied from LiteCore's QueryPars
     // Types:
     "isarray",  "isatom",  "isboolean",  "isnumber",  "isobject",  "isstring",  "type",  "toarray",
     "toatom",  "toboolean",  "tonumber",  "toobject",  "tostring",
+    "is_array",  "is_atom",  "is_boolean",  "is_number",  "is_object",  "is_string",  "typename",  "to_array",
+    "to_atom",  "to_boolean",  "to_number",  "to_object",  "to_string",
     // FTS (not standard N1QL):
     "rank",
     // Aggregate functions:
