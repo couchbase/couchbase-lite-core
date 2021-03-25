@@ -183,7 +183,7 @@ void C4Database::unlockClientMutex() noexcept       {IMPL->unlockClientMutex();}
 #pragma mark - ACCESSORS:
 
 
-C4BlobStore& C4Database::getBlobStore()                          {return IMPL->getBlobStore();}
+C4BlobStore& C4Database::getBlobStore() const                    {return IMPL->getBlobStore();}
 
 uint64_t C4Database::getDocumentCount() const                    {return IMPL->countDocuments();}
 C4SequenceNumber C4Database::getLastSequence() const             {return IMPL->lastSequence();}

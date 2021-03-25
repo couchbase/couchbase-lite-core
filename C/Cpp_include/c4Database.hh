@@ -173,7 +173,7 @@ public:
 
     // Blobs:
 
-    C4BlobStore& getBlobStore();
+    C4BlobStore& getBlobStore() const;
 
     // Queries & Indexes:
 
