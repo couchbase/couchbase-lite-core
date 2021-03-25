@@ -272,7 +272,7 @@ Retained<C4Document> DatabaseImpl::putDocument(const C4DocPutRequest &rq,
 
             doc = getDocument(docID, false, kDocGetAll);
             C4Error err;
-            if (!doc || !doc->checkNewRev(parentRevID, rq.revFlags, rq.allowConflict, &err)
+            if (!doc->checkNewRev(parentRevID, rq.revFlags, rq.allowConflict, &err)
                      || !doc->putNewRevision(rq, &err)) {
                 throwIfUnexpected(err, outError);
                 doc = nullptr;

@@ -623,11 +623,11 @@ namespace litecore {
 
     
     Retained<C4Document> DatabaseImpl::getDocument(slice docID,
-                                                     bool mustExist,
-                                                     C4DocContentLevel content) const
+                                                   bool mustExist,
+                                                   C4DocContentLevel content) const
     {
         auto doc = documentFactory().newDocumentInstance(docID, ContentOption(content));
-        if (mustExist && doc && !doc->exists())
+        if (mustExist && !doc->exists())
             doc = nullptr;
         return doc;
     }
