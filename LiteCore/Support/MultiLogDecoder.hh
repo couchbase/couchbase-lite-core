@@ -6,7 +6,6 @@
 
 #pragma once
 #include "LogDecoder.hh"
-#include "betterassert.hh"
 #include <algorithm>
 #include <climits>
 #include <fstream>
