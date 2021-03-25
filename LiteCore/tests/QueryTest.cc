@@ -759,7 +759,8 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     }
     
     Retained<Query> query{ store->compileQuery(json5(
-        "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: ['ISARRAY()', ['.value']]}")) };
+        "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: "
+        "['AND', ['ISARRAY()', ['.value']], ['IS_ARRAY()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
@@ -767,7 +768,8 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     CHECK(e->columns()[1]->asString() == "doc1"_sl);
     
     query = store->compileQuery(json5(
-        "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: ['ISNUMBER()', ['.value']]}"));
+        "{'WHAT': [['TYPENAME()', ['.value']], ['._id'], ['.value']], WHERE: "
+        "['AND', ['ISNUMBER()', ['.value']], ['IS_NUMBER()', ['.value']]]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
@@ -776,7 +778,8 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     CHECK(e->columns()[2]->asDouble() == 4.5);
     
     query = store->compileQuery(json5(
-        "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: ['ISSTRING()', ['.value']]}"));
+        "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: "
+        "['AND', ['ISSTRING()', ['.value']], ['IS_STRING()', ['.value']]]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
@@ -785,7 +788,8 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     CHECK(e->columns()[2]->asString() == "cool value"_sl);
     
     query = store->compileQuery(json5(
-        "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: ['ISOBJECT()', ['.value']]}"));
+        "{'WHAT': [['TYPENAME()', ['.value']], ['._id']], WHERE: "
+        "['AND', ['ISOBJECT()', ['.value']], ['IS_OBJECT()', ['.value']]]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
@@ -793,7 +797,8 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     CHECK(e->columns()[1]->asString() == "doc4"_sl);
     
     query = store->compileQuery(json5(
-        "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: ['ISBOOLEAN()', ['.value']]}"));
+        "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: "
+        "['AND', ['ISBOOLEAN()', ['.value']], ['IS_BOOLEAN()', ['.value']]]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
@@ -802,7 +807,8 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     CHECK(e->columns()[2]->asBool());
     
     query = store->compileQuery(json5(
-        "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: ['ISATOM()', ['.value']]}"));
+        "{'WHAT': [['TYPENAME()', ['.value']], ['._id']], WHERE: "
+        "['AND', ['ISATOM()', ['.value']], ['IS_ATOM()', ['.value']]]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 3);
     REQUIRE(e->next());
@@ -826,25 +832,33 @@ TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
     }
     
     Retained<Query> query{ store->compileQuery(json5(
-        "{'WHAT': [['TOBOOLEAN()', ['.value']]]}")) };
+        "{'WHAT': [['TOBOOLEAN()', ['.value']], ['TO_BOOLEAN()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 8);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asBool());
+    CHECK(e->columns()[1]->asBool());
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asBool());
+    CHECK(e->columns()[1]->asBool());
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asBool());
+    CHECK(e->columns()[1]->asBool());
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asBool());
+    CHECK(e->columns()[1]->asBool());
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asBool());
+    CHECK(e->columns()[1]->asBool());
     REQUIRE(e->next());
     CHECK(!e->columns()[0]->asBool());
+    CHECK(!e->columns()[1]->asBool());
     REQUIRE(e->next());
     CHECK(!e->columns()[0]->asBool());
+    CHECK(!e->columns()[1]->asBool());
     REQUIRE(e->next());
     CHECK(!e->columns()[0]->asBool());
+    CHECK(!e->columns()[1]->asBool());
 }
 
 
@@ -857,25 +871,33 @@ TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
     }
     
     Retained<Query> query{ store->compileQuery(json5(
-        "{'WHAT': [['TOATOM()', ['.value']]]}")) };
+        "{'WHAT': [['TOATOM()', ['.value']], ['TO_ATOM()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 8);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asInt() == 1);
+    CHECK(e->columns()[1]->asInt() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "cool value"_sl);
+    CHECK(e->columns()[1]->asString() == "cool value"_sl);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 4.5);
+    CHECK(e->columns()[1]->asDouble() == 4.5);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "FTW"_sl);
+    CHECK(e->columns()[1]->asString() == "FTW"_sl);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asBool());
+    CHECK(e->columns()[1]->asBool());
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->columns()[1]->type() == kNull);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->columns()[1]->type() == kNull);
     REQUIRE(e->next());
     CHECK(!e->columns()[0]->asBool());
+    CHECK(!e->columns()[1]->asBool());
 }
 
 
@@ -891,7 +913,7 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     }
 
     Retained<Query> query{ store->compileQuery(json5(
-    "{'WHAT': [['TONUMBER()', ['.value']]]}")) };
+    "{'WHAT': [['TONUMBER()', ['.value']], ['TO_NUMBER()', ['.value']]]}")) };
     Retained<QueryEnumerator> e;
     {
         ExpectingExceptions x;      // tonumber() will internally throw/catch an exception while indexing
@@ -900,16 +922,22 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     REQUIRE(e->getRowCount() == 6);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 0.0);
+    CHECK(e->columns()[1]->asDouble() == 0.0);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 0.0);
+    CHECK(e->columns()[1]->asDouble() == 0.0);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 4.5);
+    CHECK(e->columns()[1]->asDouble() == 4.5);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 0.0);
+    CHECK(e->columns()[1]->asDouble() == 0.0);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 1.0);
+    CHECK(e->columns()[1]->asDouble() == 1.0);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 6.02214076e23);
+    CHECK(e->columns()[1]->asDouble() == 6.02214076e23);
 }
 
 
@@ -922,25 +950,33 @@ TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
     }
     
     Retained<Query> query{ store->compileQuery(json5(
-        "{'WHAT': [['TOSTRING()', ['.value']]]}")) };
+        "{'WHAT': [['TOSTRING()', ['.value']], ['TO_STRING()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 8);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->columns()[1]->type() == kNull);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "cool value"_sl);
+    CHECK(e->columns()[1]->asString() == "cool value"_sl);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString().asString().substr(0, 3) == "4.5");
+    CHECK(e->columns()[1]->asString().asString().substr(0, 3) == "4.5");
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->columns()[1]->type() == kNull);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "true"_sl);
+    CHECK(e->columns()[1]->asString() == "true"_sl);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->columns()[1]->type() == kNull);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->columns()[1]->type() == kNull);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "false"_sl);
+    CHECK(e->columns()[1]->asString() == "false"_sl);
 }
 
 TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
@@ -979,22 +1015,29 @@ TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
     }
 
     Retained<Query> query{ store->compileQuery(json5(
-        "{'WHAT': [['TOARRAY()', ['.value']]]}")) };
+        "{'WHAT': [['TOARRAY()', ['.value']], ['TO_ARRAY()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 5);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kArray);
     CHECK(e->columns()[0]->asArray()->count() == 1);
+    CHECK(e->columns()[1]->type() == kArray);
+    CHECK(e->columns()[1]->asArray()->count() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kArray);
     CHECK(e->columns()[0]->asArray()->get(0)->asString() == "string value"_sl);
+    CHECK(e->columns()[1]->type() == kArray);
+    CHECK(e->columns()[1]->asArray()->get(0)->asString() == "string value"_sl);
     REQUIRE(e->next());
-    CHECK(e->missingColumns() == uint64_t(1));
+    CHECK(e->missingColumns() == uint64_t(3));
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kArray);
     CHECK(e->columns()[0]->asArray()->get(0)->asDict()->get("subvalue"_sl)->asString() == "FTW"_sl);
+    CHECK(e->columns()[1]->type() == kArray);
+    CHECK(e->columns()[1]->asArray()->get(0)->asDict()->get("subvalue"_sl)->asString() == "FTW"_sl);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->columns()[1]->type() == kNull);
     CHECK(e->missingColumns() == uint64_t(0));
 }
 
@@ -1034,22 +1077,29 @@ TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
     }
 
     Retained<Query> query{ store->compileQuery(json5(
-        "{'WHAT': [['TOOBJECT()', ['.value']]]}")) };
+        "{'WHAT': [['TOOBJECT()', ['.value']], ['TO_OBJECT()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 5);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kDict);
     CHECK(e->columns()[0]->asDict()->count() == 0);
+    CHECK(e->columns()[1]->type() == kDict);
+    CHECK(e->columns()[1]->asDict()->count() == 0);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kDict);
     CHECK(e->columns()[0]->asDict()->count() == 0);
+    CHECK(e->columns()[1]->type() == kDict);
+    CHECK(e->columns()[1]->asDict()->count() == 0);
     REQUIRE(e->next());
-    CHECK(e->missingColumns() == uint64_t(1));
+    CHECK(e->missingColumns() == uint64_t(3));
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kDict);
     CHECK(e->columns()[0]->asDict()->get("subvalue"_sl)->asString() == "FTW"_sl);
+    CHECK(e->columns()[1]->type() == kDict);
+    CHECK(e->columns()[1]->asDict()->get("subvalue"_sl)->asString() == "FTW"_sl);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kNull);
+    CHECK(e->columns()[1]->type() == kNull);
     CHECK(e->missingColumns() == uint64_t(0));
 }
 
