@@ -434,7 +434,7 @@ FLOAT_LITERAL =
                                           sscanf(yytext, "%lf", &d);
                                           $$ = d; }
 INT_LITERAL =
-    <'-'? DIGIT+> WB                    { $$ = (long long)atoi(yytext);}
+    <'-'? DIGIT+> WB                    { $$ = (long long)atoll(yytext);}
 
 DIGIT = [0-9]
 

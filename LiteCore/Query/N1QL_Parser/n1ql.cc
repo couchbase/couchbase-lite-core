@@ -481,7 +481,7 @@ YY_ACTION(void) yy_1_INT_LITERAL(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_1_INT_LITERAL\n"));
   {
 #line 437
-   __ = (long long)atoi(yytext);;
+   __ = (long long)atoll(yytext);;
   }
 #undef yythunkpos
 #undef yypos
