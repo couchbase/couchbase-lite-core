@@ -20,6 +20,7 @@
 #include "Logging.hh"
 #include "FilePath.hh"
 #include "DatabaseImpl.hh"
+#include "c4Internal.hh"
 #include "StringUtil.hh"
 #include "Error.hh"
 #include "c4Database.h"
@@ -48,8 +49,8 @@ namespace litecore {
         from.copyTo(temp);
 
         {
-            auto db = retained(new DatabaseImpl(temp.path(), *config));
-            db->resetUUIDs();
+            auto db = DatabaseImpl::open(temp, *config);
+            asInternal(db)->resetUUIDs();
             db->close();
         }
         

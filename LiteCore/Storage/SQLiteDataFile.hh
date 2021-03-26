@@ -59,8 +59,9 @@ namespace litecore {
 
         operator SQLite::Database&() {return *_sqlDb;}
 
-        std::vector<std::string> allKeyStoreNames() /*override*/;
-        bool keyStoreExists(const std::string &name);
+        std::vector<std::string> allKeyStoreNames() const override;
+        bool keyStoreExists(const std::string &name) const override;
+        void deleteKeyStore(const std::string &name) override;
         bool tableExists(const std::string &name) const;
         bool getSchema(const std::string &name, const std::string &type,
                        const std::string &tableName, std::string &outSQL) const;

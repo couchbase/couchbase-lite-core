@@ -24,6 +24,7 @@
 #include "c4BlobStore.hh"
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
+#include "c4Collection.hh"
 #include "DatabaseImpl.hh"
 #include "DocumentFactory.hh"
 #include "LegacyAttachments.hh"
@@ -43,8 +44,8 @@ using namespace fleece::impl;
 using namespace litecore;
 
 
-C4Document::C4Document(DatabaseImpl *db, alloc_slice docID_)
-:_db(db)
+C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
+:_collection(collection)
 ,_docID(move(docID_))
 {
     DebugAssert(&_flags == &((C4Document_C*)this)->flags);
@@ -58,8 +59,9 @@ C4Document::~C4Document() {
 }
 
 
-DatabaseImpl* C4Document::db()                              {return asInternal(_db);}
-const DatabaseImpl* C4Document::db() const                  {return asInternal(_db);}
+C4Collection* C4Document::collection() const                {return _collection;}
+C4Database* C4Document::database() const                    {return _collection->database();}
+KeyStore& C4Document::keyStore() const                      {return _collection->keyStore();}
 
 
 FLDict C4Document::getProperties() const noexcept {
@@ -144,13 +146,14 @@ static void throwIfUnexpected(const C4Error &inError, C4Error *outError) {
                 return; // don't throw these errors
         }
     }
-    C4Error::raise(inError);
+    inError.raise();
 }
 
 
 Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags) {
-    db()->mustBeInTransaction();
-    db()->validateRevisionBody(revBody);
+    auto db = asInternal(database());
+    db->mustBeInTransaction();
+    db->validateRevisionBody(revBody);
 
     alloc_slice parentRev = _selectedRevID;
     C4DocPutRequest rq = {};
@@ -171,14 +174,14 @@ Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags)
             return this;
         } else if (myErr != C4Error{LiteCoreDomain, kC4ErrorConflict}) {
             // Something other than a conflict happened, so give up:
-            C4Error::raise(myErr);
+            myErr.raise();
         }
         // on conflict, fall through...
     }
 
     // MVCC prevented us from writing directly to the document. So instead, read-modify-write:
     C4Error myErr;
-    Retained<C4Document> savedDoc = database()->putDocument(rq, nullptr, &myErr);
+    Retained<C4Document> savedDoc = _collection->putDocument(rq, nullptr, &myErr);
     if (!savedDoc) {
         throwIfUnexpected(myErr, nullptr);
         savedDoc = nullptr;
@@ -217,104 +220,6 @@ bool C4Document::checkNewRev(slice parentRevID,
         return false;
     }
     return true;
-}
-
-
-// DatabaseImpl methods for saving documents:
-
-
-Retained<C4Document> DatabaseImpl::putDocument(const C4DocPutRequest &rq,
-                                               size_t *outCommonAncestorIndex,
-                                               C4Error *outError)
-{
-    mustBeInTransaction();
-    if (rq.docID.buf && !C4Document::isValidDocID(rq.docID))
-        error::_throw(error::BadDocID);
-    if (rq.existingRevision || rq.historyCount > 0)
-        AssertParam(rq.docID.buf, "Missing docID");
-    if (rq.existingRevision) {
-        AssertParam(rq.historyCount > 0, "No history");
-    } else {
-        AssertParam(rq.historyCount <= 1, "Too much history");
-        AssertParam(rq.historyCount > 0 || !(rq.revFlags & kRevDeleted),
-                    "Can't create a new already-deleted document");
-        AssertParam(rq.remoteDBID == 0, "remoteDBID cannot be used when existingRevision=false");
-    }
-
-    int commonAncestorIndex = 0;
-    Retained<C4Document> doc;
-    if (rq.save && isNewDocPutRequest(rq)) {
-        // As an optimization, write the doc assuming there is no prior record in the db:
-        tie(doc, commonAncestorIndex) = putNewDoc(rq);
-        // If there's already a record, doc will be null, so we'll continue down regular path.
-    }
-    if (!doc) {
-        if (rq.existingRevision) {
-            // Insert existing revision:
-            doc = getDocument(rq.docID, false, kDocGetAll);
-            C4Error err;
-            commonAncestorIndex = doc->putExistingRevision(rq, &err);
-            if (commonAncestorIndex < 0) {
-                throwIfUnexpected(err, outError);
-                doc = nullptr;
-                commonAncestorIndex = 0;
-            }
-        } else {
-            // Create new revision:
-            slice docID = rq.docID;
-            alloc_slice newDocID;
-            if (!docID)
-                docID = newDocID = C4Document::createDocID();
-
-            slice parentRevID;
-            if (rq.historyCount > 0)
-                parentRevID = rq.history[0];
-
-            doc = getDocument(docID, false, kDocGetAll);
-            C4Error err;
-            if (!doc->checkNewRev(parentRevID, rq.revFlags, rq.allowConflict, &err)
-                     || !doc->putNewRevision(rq, &err)) {
-                throwIfUnexpected(err, outError);
-                doc = nullptr;
-            }
-            commonAncestorIndex = 0;
-        }
-    }
-
-    Assert(commonAncestorIndex >= 0, "Unexpected conflict in c4doc_put");
-    if (outCommonAncestorIndex)
-        *outCommonAncestorIndex = commonAncestorIndex;
-    return doc;
-}
-
-
-// Is this a PutRequest that doesn't require a Record to exist already?
-bool DatabaseImpl::isNewDocPutRequest(const C4DocPutRequest &rq) {
-    if (rq.deltaCB)
-        return false;
-    else if (rq.existingRevision)
-        return documentFactory().isFirstGenRevID(rq.history[rq.historyCount-1]);
-    else
-        return rq.historyCount == 0;
-}
-
-
-// Tries to fulfil a PutRequest by creating a new Record. Returns null if one already exists.
-pair<Retained<C4Document>,int> DatabaseImpl::putNewDoc(const C4DocPutRequest &rq)
-{
-    DebugAssert(rq.save, "putNewDoc optimization works only if rq.save is true");
-    Record record(rq.docID);
-    if (!rq.docID.buf)
-        record.setKey(C4Document::createDocID());
-    Retained<C4Document> doc = documentFactory().newDocumentInstance(record);
-    int commonAncestorIndex;
-    if (rq.existingRevision)
-        commonAncestorIndex = doc->putExistingRevision(rq, nullptr);
-    else
-        commonAncestorIndex = doc->putNewRevision(rq, nullptr) ? 0 : -1;
-    if (commonAncestorIndex < 0)
-        doc = nullptr;
-    return {doc, commonAncestorIndex};
 }
 
 
@@ -405,7 +310,7 @@ C4RevisionFlags C4Document::revisionFlagsFromDocFlags(C4DocumentFlags docFlags) 
 
 
 C4Document* C4Document::containingValue(FLValue value) noexcept {
-    return DatabaseImpl::documentContainingValue(value);
+    return C4Collection::documentContainingValue(value);
 }
 
 

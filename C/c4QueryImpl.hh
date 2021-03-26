@@ -147,7 +147,7 @@ namespace litecore {
 
         C4Query::Enumerator getEnumerator(bool forget) override {
             if (_currentError.code)
-                C4Error::raise(_currentError);
+                _currentError.raise();
             Retained<QueryEnumerator> e = _currentEnumerator->enumerator();
             if (forget)
                 _currentEnumerator = nullptr;

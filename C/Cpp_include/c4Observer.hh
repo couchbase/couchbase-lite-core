@@ -18,7 +18,7 @@
 
 #pragma once
 #include "c4Base.hh"
-#include "c4Database.hh"
+#include "c4Collection.hh"
 #include "c4DocumentTypes.h"
 #include <memory>
 
@@ -27,15 +27,15 @@ C4_ASSUME_NONNULL_BEGIN
 
 /** A registration for callbacks whenever any document in a database changes.
     The registration lasts until this object is destructed. */
-struct C4DatabaseObserver : public fleece::InstanceCounted, public C4Base {
+struct C4CollectionObserver : public fleece::InstanceCounted, public C4Base {
 
-    using Callback = C4Database::DatabaseObserverCallback;
+    using Callback = C4Collection::CollectionObserverCallback;
 
-    static std::unique_ptr<C4DatabaseObserver> create(C4Database*, Callback);
+    static std::unique_ptr<C4CollectionObserver> create(C4Collection*, Callback);
 
-    virtual ~C4DatabaseObserver() =default;
+    virtual ~C4CollectionObserver() =default;
 
-    /// Metadata of a change recorded by C4DatabaseObserver.
+    /// Metadata of a change recorded by C4CollectionObserver.
     struct Change {
         alloc_slice docID;              ///< Document ID
         alloc_slice revID;              ///< Revision ID
@@ -55,12 +55,12 @@ struct C4DatabaseObserver : public fleece::InstanceCounted, public C4Base {
 };
 
 
-/** A registration for callbacks whenever a specific document in a database changes.
+/** A registration for callbacks whenever a specific document in a collection changes.
     The registration lasts until this object is destructed. */
 struct C4DocumentObserver : public fleece::InstanceCounted, public C4Base {
-    using Callback = C4Database::DocumentObserverCallback;
+    using Callback = C4Collection::DocumentObserverCallback;
 
-    static std::unique_ptr<C4DocumentObserver> create(C4Database*,
+    static std::unique_ptr<C4DocumentObserver> create(C4Collection*,
                                                       slice docID,
                                                       Callback);
     virtual ~C4DocumentObserver() =default;

@@ -116,7 +116,7 @@ Retained<C4Database> C4Database::openNamed(slice name, const Config &config) {
     ensureConfigDirExists(config);
     FilePath path = dbPath(name, config.parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
-    return new DatabaseImpl(path, oldConfig);
+    return DatabaseImpl::open(path, oldConfig);
 }
 
 
@@ -127,7 +127,7 @@ Retained<C4Database> C4Database::openAtPath(slice path,
     C4DatabaseConfig config = {flags};
     if (key)
         config.encryptionKey = *key;
-    return new DatabaseImpl(string(path), config);
+    return DatabaseImpl::open(FilePath(path, ""), config);
 }
 
 
@@ -185,9 +185,6 @@ void C4Database::unlockClientMutex() noexcept       {IMPL->unlockClientMutex();}
 
 C4BlobStore& C4Database::getBlobStore() const                    {return IMPL->getBlobStore();}
 
-uint64_t C4Database::getDocumentCount() const                    {return IMPL->countDocuments();}
-C4SequenceNumber C4Database::getLastSequence() const             {return IMPL->lastSequence();}
-
 slice C4Database::getName() const noexcept                       {return IMPL->name();}
 alloc_slice C4Database::path() const                             {return alloc_slice(IMPL->path());}
 const C4Database::Config& C4Database::getConfig() const noexcept {return *IMPL->config();}
@@ -205,6 +202,19 @@ C4UUID C4Database::publicUUID() const   {return IMPL->getUUID(DatabaseImpl::kPub
 C4UUID C4Database::privateUUID() const  {return IMPL->getUUID(DatabaseImpl::kPrivateUUIDKey);}
 
 
+std::vector<std::string> C4Database::collectionNames() const{return IMPL->collectionNames();}
+bool C4Database::hasCollection(slice name) const            {return IMPL->hasCollection(name);}
+Retained<C4Collection> C4Database::getCollection(slice name) const   {return IMPL->getCollection(name);}
+C4Collection* C4Database::getDefaultCollection() const      {return IMPL->getDefaultCollection();}
+Retained<C4Collection> C4Database::createCollection(slice name)      {return IMPL->createCollection(name);}
+void C4Database::deleteCollection(slice name)               {return IMPL->deleteCollection(name);}
+
+void C4Database::forEachCollection(const function_ref<void(C4Collection*)> &cb) {
+    IMPL->forEachCollection(cb);
+}
+
+
+
 #pragma mark - TRANSACTIONS:
 
 
@@ -214,63 +224,6 @@ void C4Database::endTransaction(bool commit)        {IMPL->endTransaction(commit
 
 
 #pragma mark - DOCUMENTS:
-
-
-Retained<C4Document> C4Database::getDocument(slice docID,
-                                             bool mustExist,
-                                             C4DocContentLevel content) const
-{
-    auto doc = IMPL->documentFactory().newDocumentInstance(docID, ContentOption(content));
-    if (mustExist && doc && !doc->exists())
-        doc = nullptr;
-    return doc;
-}
-
-
-Retained<C4Document> C4Database::getDocumentBySequence(C4SequenceNumber sequence) const {
-    if (Record rec = IMPL->defaultKeyStore().get(sequence, kEntireBody); rec.exists())
-        return IMPL->documentFactory().newDocumentInstance(move(rec));
-    else
-        return nullptr;
-}
-
-
-Retained<C4Document> C4Database::putDocument(const C4DocPutRequest &rq,
-                                           size_t *outCommonAncestorIndex,
-                                           C4Error *outError)
-{
-    return IMPL->putDocument(rq, outCommonAncestorIndex, outError);
-}
-
-
-Retained<C4Document> C4Database::createDocument(slice docID,
-                                                slice revBody,
-                                                C4RevisionFlags revFlags,
-                                                C4Error *outError)
-{
-    C4DocPutRequest rq = {};
-    rq.docID = docID;
-    rq.body = revBody;
-    rq.revFlags = revFlags;
-    rq.save = true;
-    return putDocument(rq, nullptr, outError);
-}
-
-
-std::vector<alloc_slice> C4Database::findDocAncestors(const std::vector<slice> &docIDs,
-                                                   const std::vector<slice> &revIDs,
-                                                   unsigned maxAncestors,
-                                                   bool mustHaveBodies,
-                                                   C4RemoteID remoteDBID) const
-{
-    return IMPL->documentFactory().findAncestors(docIDs, revIDs, maxAncestors,
-                                                mustHaveBodies, remoteDBID);
-}
-
-
-bool C4Database::purgeDoc(slice docID) {
-    return IMPL->purgeDocument(docID);
-}
 
 
 bool C4Database::getRawDocument(slice storeName, slice key, function_ref<void(C4RawDocument*)> cb) {
@@ -315,38 +268,11 @@ FLEncoder C4Database::getSharedFleeceEncoder() const   {return IMPL->sharedFLEnc
 FLSharedKeys C4Database::getFLSharedKeys() const   {return (FLSharedKeys)IMPL->documentKeys();}
 
 
-#pragma mark - OBSERVERS:
-
-
-std::unique_ptr<C4DatabaseObserver> C4Database::observe(DatabaseObserverCallback callback) {
-    return C4DatabaseObserver::create(this, callback);
-}
-
-std::unique_ptr<C4DocumentObserver> C4Database::observeDocument(slice docID,
-                                                                DocumentObserverCallback callback)
-{
-    return C4DocumentObserver::create(this, docID, callback);
-}
-
-
 #pragma mark - EXPIRATION:
 
 
 bool C4Database::mayHaveExpiration() const      {return IMPL->dataFile()->defaultKeyStore().mayHaveExpiration();}
-bool C4Database::startHousekeeping()            {return IMPL->startHousekeeping();}
-int64_t C4Database::purgeExpiredDocs()          {return IMPL->purgeExpiredDocs();}
-
-C4Timestamp C4Database::getExpiration(slice docID) const {
-    return IMPL->defaultKeyStore().getExpiration(docID);
-}
-
-bool C4Database::setExpiration(slice docID, C4Timestamp ts) {
-    return IMPL->setExpiration(docID, ts);
-}
-
-C4Timestamp C4Database::nextDocExpiration() const {
-    return IMPL->defaultKeyStore().nextExpiration();
-}
+C4Timestamp C4Database::nextDocExpiration() const {return IMPL->nextDocExpiration();}
 
 
 #pragma mark - QUERIES & INDEXES:
@@ -515,44 +441,6 @@ alloc_slice C4Database::getRemoteDBAddress(C4RemoteID remoteID) {
         }
     }
     return nullslice;
-}
-
-
-bool C4Database::markDocumentSynced(slice docID,
-                                    slice revID,
-                                    C4SequenceNumber sequence,
-                                    C4RemoteID remoteID)
-{
-    if (remoteID == RevTree::kDefaultRemoteID) {
-        // Shortcut: can set kSynced flag on the record to mark that the current revision is
-        // synced to remote #1. But the call will return false if the sequence no longer
-        // matches, i.e this revision is no longer current. Then have to take the slow approach.
-        if (IMPL->defaultKeyStore().setDocumentFlag(docID, sequence,
-                                                   DocumentFlags::kSynced,
-                                                   IMPL->transaction())) {
-            return true;
-        }
-    }
-
-    // Slow path: Load the doc and update the remote-ancestor info in the rev tree:
-    Retained<C4Document> doc = getDocument(docID, true, kDocGetAll);
-    if (!doc)
-        return false;
-    if (!revID) {
-        // Look up revID by sequence, if it wasn't given:
-        Assert(sequence != 0);
-        do {
-            if (doc->selectedRev().sequence == sequence) {
-                revID = doc->selectedRev().revID;
-                break;
-            }
-        } while (doc->selectNextRevision());
-        if (!revID)
-            return false;
-    }
-    doc->setRemoteAncestorRevID(remoteID, revID);
-    doc->save();
-    return true;
 }
 
 

@@ -17,13 +17,14 @@
 //
 
 #include "DatabaseImpl.hh"
+#include "c4Collection.hh"
 #include "c4Document.hh"
-#include "TreeDocument.hh"
-#include "VectorDocument.hh"
 #include "c4Document.h"
 #include "c4Internal.hh"
 #include "c4Private.h"
 #include "c4BlobStore.hh"
+#include "TreeDocument.hh"
+#include "VectorDocument.hh"
 #include "BackgroundDB.hh"
 #include "Housekeeper.hh"
 #include "DataFile.hh"
@@ -57,7 +58,27 @@ namespace litecore {
     const slice DatabaseImpl::kPrivateUUIDKey = "privateUUID"_sl;
 
 
+    static string collectionNameToKeyStoreName(slice collectionName);
+    static slice keyStoreNameToCollectionName(slice name);
+
+
 #pragma mark - LIFECYCLE:
+
+
+    Retained<DatabaseImpl> DatabaseImpl::open(const FilePath &path, C4DatabaseConfig config) {
+        Retained<DatabaseImpl> db = new DatabaseImpl(path, config);
+        db->open(path);
+        return db;
+    }
+
+
+    DatabaseImpl::DatabaseImpl(const FilePath &path, C4DatabaseConfig inConfig)
+    :_name(path.unextendedName())
+    ,_parentDirectory(path.parentDir())
+    ,_config{slice(_parentDirectory), inConfig.flags, inConfig.encryptionKey}
+    ,_configV1(inConfig)
+    ,_encoder(new fleece::impl::Encoder())
+    { }
 
 
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
@@ -105,25 +126,10 @@ namespace litecore {
     }
 
 
-    DatabaseImpl::DatabaseImpl(const string &bundlePath,
-                               C4DatabaseConfig inConfig)
-    :DatabaseImpl(bundlePath,
-                  inConfig,
-                  findOrCreateBundle(bundlePath,
-                                     (inConfig.flags & kC4DB_Create) != 0,
-                                     inConfig.storageEngine))
-    { }
-
-    
-    DatabaseImpl::DatabaseImpl(const string &bundlePath,
-                               const C4DatabaseConfig &inConfig,
-                               FilePath &&dataFilePath)
-    :_name(dataFilePath.dir().unextendedName())
-    ,_parentDirectory(dataFilePath.dir().parentDir())
-    ,_config{slice(_parentDirectory), inConfig.flags, inConfig.encryptionKey}
-    ,_configV1(inConfig)
-    ,_encoder(new fleece::impl::Encoder())
-    {
+    void DatabaseImpl::open(const FilePath &bundlePath) {
+        FilePath dataFilePath = findOrCreateBundle(bundlePath,
+                                                   (_configV1.flags & kC4DB_Create) != 0,
+                                                   _configV1.storageEngine);
         // Set up DataFile options:
         DataFile::Options options { };
         options.keyStores.sequences = true;
@@ -141,8 +147,9 @@ namespace litecore {
 #endif
         }
 
+
         // Determine the storage type and its Factory object:
-        const char *storageEngine = inConfig.storageEngine ? inConfig.storageEngine : "";
+        const char *storageEngine = _configV1.storageEngine ? _configV1.storageEngine : "";
         DataFile::Factory *storageFactory = DataFile::factoryNamed((string)(storageEngine));
         if (!storageFactory)
             error::_throw(error::Unimplemented);
@@ -152,7 +159,7 @@ namespace litecore {
             _dataFile.reset( storageFactory->openFile(dataFilePath, this, &options) );
         } catch (const error &x) {
             if (x.domain == error::LiteCore && x.code == error::DatabaseTooOld
-                    && UpgradeDatabaseInPlace(dataFilePath.dir(), inConfig)) {
+                    && UpgradeDatabaseInPlace(dataFilePath.dir(), _configV1)) {
                 // This is an old 1.x database; upgrade it in place, then open:
                 _dataFile.reset( storageFactory->openFile(dataFilePath, this, &options) );
             } else {
@@ -163,30 +170,33 @@ namespace litecore {
         if (options.useDocumentKeys)
             _encoder->setSharedKeys(documentKeys());
 
-        if (!(_config.flags & kC4DB_NonObservable))
-            _sequenceTracker.reset(new access_lock<SequenceTracker>());
-
         // Validate or upgrade the database's document schema/versioning:
         _configV1.versioning = checkDocumentVersioning();
 
-        if (_configV1.versioning == kC4VectorVersioning) {
+        if (_configV1.versioning == kC4VectorVersioning)
             _config.flags |= kC4DB_VersionVectors;
-            _documentFactory = make_unique<VectorDocumentFactory>(this);
-        } else {
+        else
             _config.flags &= ~kC4DB_VersionVectors;
-            _documentFactory = make_unique<TreeDocumentFactory>(this);
-        }
+
+        // Start document-expiration tasks for all Collections that need them:
+        initCollections();
+        startBackgroundTasks();
     }
 
 
     DatabaseImpl::~DatabaseImpl() {
         Assert(_transactionLevel == 0,
                "Database being destructed while in a transaction");
+
+        for (auto &entry : _collections)
+            entry.second->close();
+
         FLEncoder_Free(_flEncoder);
         // Eagerly close the data file to ensure that no other instances will
         // be trying to use me as a delegate (for example in externalTransactionCommitted)
         // after I'm already in an invalid state
-        _dataFile->close();
+        if (_dataFile)
+            _dataFile->close();
     }
 
 
@@ -281,56 +291,6 @@ namespace litecore {
         return factory->deleteFile(path);
     }
 
-    void DatabaseImpl::garbageCollectBlobs() {
-        unordered_set<C4BlobKey> usedDigests;
-        auto blobCallback = [&](FLDict blob) {
-            if (auto key = C4Blob::keyFromDigestProperty(blob); key)
-                usedDigests.insert(*key);
-            return true;
-        };
-
-        // Lock the database to avoid any other thread creating a new blob, since if it did
-        // I might end up deleting it during the sweep phase (deleteAllExcept).
-        mustNotBeInTransaction();
-        ExclusiveTransaction t(dataFile());
-
-        // First find all blob keys referenced in revisions of docs with the 'attachments' flag:
-        uint64_t numRevisions = 0;
-        RecordEnumerator::Options options;
-        options.onlyBlobs = true;
-        options.sortOption = kUnsorted;
-        RecordEnumerator e(defaultKeyStore(), options);
-        while (e.next()) {
-            Retained<C4Document> doc = documentFactory().newDocumentInstance(*e);
-            doc->selectCurrentRevision();
-            do {
-                if (doc->loadRevisionBody()) {
-                    FLDict body = doc->getProperties();
-                    C4Blob::findBlobReferences(body, blobCallback);
-                    C4Blob::findAttachmentReferences(body, blobCallback);
-                    ++numRevisions;
-                }
-            } while(doc->selectNextRevision());
-        }
-
-        // Now delete all blobs that don't have one of the referenced keys:
-        auto numDeleted = getBlobStore().deleteAllExcept(usedDigests);
-
-        if (numDeleted > 0 || !usedDigests.empty()) {
-            LogTo(DBLog,
-                  "    ...deleted %u blobs (%zu remaining) after scanning %" PRIu64 " doc revisions",
-                  numDeleted, usedDigests.size(), numRevisions);
-        }
-    }
-
-    void DatabaseImpl::maintenance(DataFile::MaintenanceType what) {
-        mustNotBeInTransaction();
-        dataFile()->maintenance(what);
-        if (what == DataFile::kCompact)
-            garbageCollectBlobs();
-    }
-
-
     void DatabaseImpl::rekey(const C4EncryptionKey *newKey) {
         _dataFile->_logInfo("Rekeying database...");
         C4EncryptionKey keyBuf {kC4EncryptionNone, {}};
@@ -338,7 +298,6 @@ namespace litecore {
             newKey = &keyBuf;
 
         mustNotBeInTransaction();
-        bool housekeeping = (_housekeeper != nullptr);
         stopBackgroundTasks();
 
         // Create a new BlobStore and copy/rekey the blobs into it:
@@ -360,8 +319,7 @@ namespace litecore {
 
         // Finally replace the old BlobStore with the new one:
         blobStore.replaceWith(*newStore);
-        if (housekeeping)
-            startHousekeeping();
+        startBackgroundTasks();
         _dataFile->_logInfo("Finished rekeying database!");
     }
 
@@ -377,11 +335,6 @@ namespace litecore {
 
     FilePath DatabaseImpl::path() const {
         return _dataFile->filePath().dir();
-    }
-
-
-    uint64_t DatabaseImpl::countDocuments() {
-        return defaultKeyStore().recordCount();
     }
 
 
@@ -435,12 +388,41 @@ namespace litecore {
     }
 
 
-    access_lock<SequenceTracker>& DatabaseImpl::sequenceTracker() {
-        if (!_sequenceTracker)
-            error::_throw(error::UnsupportedOperation);
-        return *_sequenceTracker;
+#pragma mark - HOUSEKEEPING:
+
+
+    void DatabaseImpl::maintenance(DataFile::MaintenanceType what) {
+        mustNotBeInTransaction();
+        dataFile()->maintenance(what);
+        if (what == DataFile::kCompact)
+            garbageCollectBlobs();
     }
 
+
+    void DatabaseImpl::garbageCollectBlobs() {
+        // Lock the database to avoid any other thread creating a new blob, since if it did
+        // I might end up deleting it during the sweep phase (deleteAllExcept).
+        mustNotBeInTransaction();
+        ExclusiveTransaction t(dataFile());
+
+        unordered_set<C4BlobKey> usedDigests;
+        auto blobCallback = [&](FLDict blob) {
+            if (auto key = C4Blob::keyFromDigestProperty(blob); key)
+            usedDigests.insert(*key);
+            return true;
+        };
+
+        forEachCollection([&](C4Collection *coll) {
+            coll->findBlobReferences(blobCallback);
+        });
+
+        // Now delete all blobs that don't have one of the referenced keys:
+        auto numDeleted = getBlobStore().deleteAllExcept(usedDigests);
+        if (numDeleted > 0 || !usedDigests.empty()) {
+            LogTo(DBLog, "    ...deleted %u blobs (%zu remaining)",
+                  numDeleted, usedDigests.size());
+        }
+    }
 
     BackgroundDB* DatabaseImpl::backgroundDatabase() {
         if (!_backgroundDB)
@@ -450,23 +432,41 @@ namespace litecore {
 
 
     void DatabaseImpl::stopBackgroundTasks() {
-        if (_housekeeper) {
-            _housekeeper->stop();
-            _housekeeper = nullptr;
+        // We can't hold the _collectionsMutex while calling stopHousekeeping(), or a deadlock may
+        // result. So first enumerate the collections, then make the calls:
+        vector<Retained<C4Collection>> collections;
+        {
+            LOCK(_collectionsMutex);
+            for (auto &entry : _collections)
+                collections.emplace_back(entry.second);
         }
+        for (auto &coll : collections)
+            coll->stopHousekeeping();
+
         if (_backgroundDB)
             _backgroundDB->close();
     }
 
 
-    bool DatabaseImpl::startHousekeeping() {
-        if (!_housekeeper) {
-            if (_config.flags & kC4DB_ReadOnly)
-                return false;
-            _housekeeper = new Housekeeper(this);
-            _housekeeper->start();
+    void DatabaseImpl::startBackgroundTasks() {
+        for (const string &name : _dataFile->allKeyStoreNames()) {
+            if (slice collName = keyStoreNameToCollectionName(name); collName) {
+                if (_dataFile->getKeyStore(name).nextExpiration() > 0) {
+                    getCollection(collName)->startHousekeeping();
+                }
+            }
         }
-        return true;
+    }
+
+
+    C4Timestamp DatabaseImpl::nextDocExpiration() const {
+        C4Timestamp minTime = 0;
+        forEachCollection([&](C4Collection *coll) {
+            auto time = coll->nextDocExpiration();
+            if (time > minTime || minTime == 0)
+                minTime = time;
+        });
+        return minTime;
     }
 
 
@@ -529,7 +529,141 @@ namespace litecore {
         }
         return _myPeerID;
     }
-    
+
+
+#pragma mark - COLLECTIONS:
+
+
+    static constexpr const char* kDefaultCollectionName = "_default";
+
+    static constexpr slice kCollectionNameCharacterSet
+                            = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_-%";
+
+    static constexpr const char* kCollectionKeyStorePrefix = "coll_";
+
+
+    MUST_USE_RESULT
+    static bool validateCollectionName(slice name) {
+        // Enforce CBServer collection name restrictions:
+        return name.size >= 1 && name.size <= 30
+            && !name.findByteNotIn(kCollectionNameCharacterSet)
+            && name[0] != '_' && name[0] != '%';
+    }
+
+
+    static string collectionNameToKeyStoreName(slice collectionName) {
+        if (collectionName == kDefaultCollectionName) {
+            return DataFile::kDefaultKeyStoreName;
+        } else if (validateCollectionName(collectionName)) {
+            // KeyStore name is "coll_" + name; SQLite table name will be "kv_coll_" + name
+            string result = kCollectionKeyStorePrefix;
+            result.append(collectionName);
+            return result;
+        } else {
+            return {};
+        }
+    }
+
+
+    static slice keyStoreNameToCollectionName(slice name) {
+        if (name == DataFile::kDefaultKeyStoreName)
+            return kDefaultCollectionName;
+        else if (hasPrefix(name, kCollectionKeyStorePrefix)) {
+            name.moveStart(strlen(kCollectionKeyStorePrefix));
+            return name;
+        } else {
+            return nullslice;
+        }
+    }
+
+
+    void DatabaseImpl::initCollections() {
+        LOCK(_collectionsMutex);
+        _defaultCollection = getCollection(kDefaultCollectionName);
+    }
+
+
+    bool DatabaseImpl::hasCollection(slice name) const {
+        LOCK(_collectionsMutex);
+        string keyStoreName = collectionNameToKeyStoreName(name);
+        return !keyStoreName.empty()
+            && (_collections.find(string(name)) != _collections.end()
+                || _dataFile->keyStoreExists(keyStoreName));
+    }
+
+
+    Retained<C4Collection> DatabaseImpl::getCollection(slice name) const {
+        LOCK(_collectionsMutex);
+        string nameStr(name);
+        if (auto i = _collections.find(nameStr); i != _collections.end()) {
+            return i->second;
+        } else {
+            string keyStoreName = collectionNameToKeyStoreName(name);
+            if (keyStoreName.empty())
+                C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
+                               "Invalid collection name '%.*s'", SPLAT(name));
+            // getKeyStore() will create it if it doesn't exist...
+            KeyStore &store = _dataFile->getKeyStore(keyStoreName);
+            auto collection = C4Collection::newCollection(const_cast<DatabaseImpl*>(this),
+                                                          name, store);
+            if (isInTransaction())
+                collection->transactionBegan();
+            _collections.insert({nameStr, collection});
+            return collection;
+        }
+    }
+
+
+    Retained<C4Collection> DatabaseImpl::createCollection(slice name) {
+        return getCollection(name);
+    }
+
+
+    void DatabaseImpl::deleteCollection(slice name) {
+        LOCK(_collectionsMutex);
+        if (auto i = _collections.find(string(name)); i != _collections.end()) {
+            i->second->close();
+            _collections.erase(i);
+        }
+        _dataFile->deleteKeyStore(collectionNameToKeyStoreName(name));
+    }
+
+
+    void DatabaseImpl::forgetCollection(C4Collection* coll) { // only called by ~C4Collection
+        LOCK(_collectionsMutex);
+        for (auto i = _collections.begin(); i != _collections.end(); ++i) {
+            if (i->second == coll) {
+                _collections.erase(i);
+                return;
+            }
+        }
+        postcondition(false);
+    }
+
+
+    vector<string> DatabaseImpl::collectionNames() const {
+        vector<string> names;
+        for (const string &name : _dataFile->allKeyStoreNames()) {
+             if (slice collName = keyStoreNameToCollectionName(name); collName)
+                names.emplace_back(collName);
+        }
+        return names;
+    }
+
+
+    void DatabaseImpl::forEachCollection(const function_ref<void(C4Collection*)> &callback) const {
+        for (const auto &name : collectionNames()) {
+            callback(getCollection(name).get());
+        }
+    }
+
+
+    void DatabaseImpl::forEachOpenCollection(const function_ref<void(C4Collection*)> &callback) const {
+        LOCK(_collectionsMutex);
+        for (auto &entry : _collections)
+            callback(entry.second);
+    }
+
     
 #pragma mark - TRANSACTIONS:
 
@@ -537,8 +671,9 @@ namespace litecore {
     void DatabaseImpl::beginTransaction() {
         if (++_transactionLevel == 1) {
             _transaction = new ExclusiveTransaction(_dataFile.get());
-            if (_sequenceTracker)
-                _sequenceTracker->useLocked()->beginTransaction();
+            forEachOpenCollection([&](C4Collection *coll) {
+                coll->transactionBegan();
+            });
         }
     }
 
@@ -588,21 +723,21 @@ namespace litecore {
 
     // The cleanup part of endTransaction
     void DatabaseImpl::_cleanupTransaction(bool committed) {
-        if (_sequenceTracker) {
-            auto st = _sequenceTracker->useLocked();
-            // Notify other Database instances on this file:
-            if (committed && st->changedDuringTransaction())
-                _transaction->notifyCommitted(st);
-            st->endTransaction(committed);
-        }
+        forEachOpenCollection([&](C4Collection *coll) {
+            coll->transactionEnding(_transaction, committed);
+        });
         delete _transaction;
         _transaction = nullptr;
     }
 
 
-    void DatabaseImpl::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
-        if (_sequenceTracker)
-            _sequenceTracker->useLocked()->addExternalTransaction(sourceTracker);
+    void DatabaseImpl::externalTransactionCommitted(const SequenceTracker &srcTracker) {
+        // CAREFUL: This may be called on an arbitrary thread
+        LOCK(_collectionsMutex);
+        forEachOpenCollection([&](C4Collection *coll) {
+            if (slice(coll->keyStore().name()) == srcTracker.name())
+                coll->externalTransactionCommitted(srcTracker);
+        });
     }
 
 
@@ -622,25 +757,6 @@ namespace litecore {
 #pragma mark - DOCUMENTS:
 
     
-    Retained<C4Document> DatabaseImpl::getDocument(slice docID,
-                                                   bool mustExist,
-                                                   C4DocContentLevel content) const
-    {
-        auto doc = documentFactory().newDocumentInstance(docID, ContentOption(content));
-        if (mustExist && !doc->exists())
-            doc = nullptr;
-        return doc;
-    }
-
-
-    C4Document* DatabaseImpl::documentContainingValue(FLValue value) noexcept {
-        auto doc = VectorDocumentFactory::documentContaining(value);
-        if (!doc)
-            doc = TreeDocumentFactory::documentContaining(value);
-        return doc;
-    }
-
-
     Record DatabaseImpl::getRawRecord(const string &storeName, slice key) {
         return getKeyStore(storeName).get(key);
     }
@@ -726,58 +842,6 @@ namespace litecore {
                               root->sharedKeys(), documentKeys());
             validateKeys(v);
         }
-    }
-
-
-    void DatabaseImpl::documentSaved(C4Document* doc) {
-        // CBL-1089
-        // Conflicted documents are not eligible to be replicated,
-        // so ignore them.  Later when the conflict is resolved
-        // there will be logic to replicate them (see TreeDocument::resolveConflict)
-        if (_sequenceTracker && !(doc->selectedRev().flags & kRevIsConflict)) {
-            Assert(doc->selectedRev().sequence == doc->sequence()); // The new revision must be selected
-            auto st = _sequenceTracker->useLocked();
-            st->documentChanged(doc->docID(),
-                                doc->getSelectedRevIDGlobalForm(), // entire version vector
-                                doc->selectedRev().sequence,
-                                SequenceTracker::RevisionFlags(doc->selectedRev().flags));
-        }
-    }
-
-
-    bool DatabaseImpl::purgeDocument(slice docID) {
-        Transaction t(this);
-        if (!defaultKeyStore().del(docID, transaction()))
-            return false;
-        if (_sequenceTracker)
-            _sequenceTracker->useLocked()->documentPurged(docID);
-        t.commit();
-        return true;
-    }
-
-
-    int64_t DatabaseImpl::purgeExpiredDocs() {
-        if (_sequenceTracker) {
-            auto st = _sequenceTracker->useLocked();
-            return _dataFile->defaultKeyStore().expireRecords([&](slice docID) {
-                st->documentPurged(docID);
-            });
-        } else {
-            return _dataFile->defaultKeyStore().expireRecords();
-        }
-    }
-
-
-    bool DatabaseImpl::setExpiration(slice docID, expiration_t expiration) {
-        {
-            Transaction t(this);
-            if (!_dataFile->defaultKeyStore().setExpiration(docID, expiration))
-                return false;
-            t.commit();
-        }
-        if (_housekeeper)
-            _housekeeper->documentExpirationChanged(expiration);
-        return true;
     }
 
 }

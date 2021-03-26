@@ -19,7 +19,7 @@
 #include "c4Observer.hh"
 #include "c4Observer.h"
 #include "c4Internal.hh"
-#include "DatabaseImpl.hh"
+#include "c4Collection.hh"
 #include "SequenceTracker.hh"
 #include <optional>
 
@@ -28,23 +28,23 @@ using namespace std;
 
 namespace litecore {
 
-    struct C4DatabaseObserverImpl : public C4DatabaseObserver {
-        C4DatabaseObserverImpl(C4Database *db,
-                               C4SequenceNumber since,
-                               Callback callback)
-        :_db(asInternal(db))
+    struct C4CollectionObserverImpl : public C4CollectionObserver {
+        C4CollectionObserverImpl(C4Collection *collection,
+                                 C4SequenceNumber since,
+                                 Callback callback)
+        :_collection(collection)
         ,_callback(move(callback))
         {
-            _db->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
+            _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
                 _notifier.emplace(st,
-                                  [this](DatabaseChangeNotifier&) {_callback(this);},
+                                  [this](CollectionChangeNotifier&) {_callback(this);},
                                   since);
             });
         }
 
 
-        ~C4DatabaseObserverImpl() {
-            _db->sequenceTracker().useLocked([&](SequenceTracker &st) {
+        ~C4CollectionObserverImpl() {
+            _collection->sequenceTracker().useLocked([&](SequenceTracker &st) {
                 // Clearing (destructing) the notifier stops me from getting calls.
                 // I do this explicitly, synchronized with the SequenceTracker.
                 _notifier = nullopt;
@@ -57,8 +57,8 @@ namespace litecore {
                             bool *outExternal) override
         {
             static_assert(sizeof(Change) == sizeof(SequenceTracker::Change),
-                          "C4DatabaseObserver::Change doesn't match SequenceTracker::Change");
-            return _db->sequenceTracker().useLocked<uint32_t>([&](SequenceTracker &st) {
+                          "C4CollectionObserver::Change doesn't match SequenceTracker::Change");
+            return _collection->sequenceTracker().useLocked<uint32_t>([&](SequenceTracker &st) {
                 return (uint32_t) _notifier->readChanges((SequenceTracker::Change*)outChanges,
                                                           maxChanges,
                                                           *outExternal);
@@ -66,8 +66,8 @@ namespace litecore {
         }
 
     private:
-        Retained<DatabaseImpl> _db;
-        optional<DatabaseChangeNotifier> _notifier;
+        Retained<C4Collection> _collection;
+        optional<CollectionChangeNotifier> _notifier;
         Callback _callback;
         bool _inCallback {false};
     };
@@ -75,9 +75,9 @@ namespace litecore {
 }
 
 
-unique_ptr<C4DatabaseObserver>
-C4DatabaseObserver::create(C4Database *db, C4DatabaseObserver::Callback callback) {
-    return make_unique<litecore::C4DatabaseObserverImpl>(db, UINT64_MAX, move(callback));
+unique_ptr<C4CollectionObserver>
+C4CollectionObserver::create(C4Collection *db, C4CollectionObserver::Callback callback) {
+    return make_unique<litecore::C4CollectionObserverImpl>(db, UINT64_MAX, move(callback));
 }
 
 
@@ -87,13 +87,13 @@ C4DatabaseObserver::create(C4Database *db, C4DatabaseObserver::Callback callback
 namespace litecore {
 
     struct C4DocumentObserverImpl : public C4DocumentObserver {
-        C4DocumentObserverImpl(C4Database *db,
+        C4DocumentObserverImpl(C4Collection *collection,
                                slice docID,
                                Callback callback)
-        :_db(asInternal(db))
+        :_collection(collection)
         ,_callback(callback)
         {
-            _db->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
+            _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
                 _notifier.emplace(st,
                                   docID,
                                   [this](DocChangeNotifier&, slice docID, sequence_t sequence) {
@@ -103,14 +103,14 @@ namespace litecore {
         }
 
         ~C4DocumentObserverImpl() {
-            _db->sequenceTracker().useLocked([&](SequenceTracker &st) {
+            _collection->sequenceTracker().useLocked([&](SequenceTracker &st) {
                 // Clearing (destructing) the notifier stops me from getting calls.
                 // I do this explicitly, synchronized with the SequenceTracker.
                 _notifier = nullopt;
             });
         }
 
-        Retained<DatabaseImpl> _db;
+        Retained<C4Collection> _collection;
         Callback _callback;
         optional<DocChangeNotifier> _notifier;
     };
@@ -119,6 +119,6 @@ namespace litecore {
 
 
 unique_ptr<C4DocumentObserver>
-C4DocumentObserver::create(C4Database *db, slice docID, C4DocumentObserver::Callback callback) {
+C4DocumentObserver::create(C4Collection *db, slice docID, C4DocumentObserver::Callback callback) {
     return make_unique<litecore::C4DocumentObserverImpl>(db, docID, callback);
 }

@@ -248,13 +248,13 @@ C4Error C4Error::fromCurrentException() noexcept {
 
 
 [[noreturn]] __cold
-void C4Error::raise(C4Error err) {
-    if (auto info = ErrorTable::instance().copy(err); info) {
-        error e(error::Domain(err.domain), err.code, info->message);
+void C4Error::raise() const {
+    if (auto info = ErrorTable::instance().copy(*this); info) {
+        error e(error::Domain(domain), code, info->message);
         e.backtrace = info->backtrace;
         throw e;
     } else {
-        error::_throw(error::Domain(err.domain), err.code);
+        error::_throw(error::Domain(domain), code);
     }
 }
 

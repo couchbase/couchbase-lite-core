@@ -17,7 +17,7 @@
 //
 
 #include "c4DocEnumerator.hh"
-#include "c4Database.hh"
+#include "C4Collection.hh"
 #include "c4Document.hh"
 #include "c4Internal.hh"
 #include "DatabaseImpl.hh"
@@ -43,18 +43,18 @@ CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
 
 class C4DocEnumerator::Impl : public RecordEnumerator, public fleece::InstanceCounted {
 public:
-    Impl(C4Database *database,
+    Impl(C4Collection *collection,
          sequence_t since,
          const C4EnumeratorOptions &options)
-    :RecordEnumerator(asInternal(database)->defaultKeyStore(), since, recordOptions(options))
-    ,_database(asInternal(database))
+    :RecordEnumerator(collection->keyStore(), since, recordOptions(options))
+    ,_collection(collection)
     ,_options(options)
     { }
 
-    Impl(C4Database *database,
+    Impl(C4Collection *collection,
          const C4EnumeratorOptions &options)
-    :RecordEnumerator(asInternal(database)->defaultKeyStore(), recordOptions(options))
-    ,_database(asInternal(database))
+    :RecordEnumerator(collection->keyStore(), recordOptions(options))
+    ,_collection(collection)
     ,_options(options)
     { }
 
@@ -77,7 +77,7 @@ public:
     Retained<C4Document> getDoc() {
         if (!hasRecord())
             return nullptr;
-        return _database->documentFactory().newDocumentInstance(record());
+        return _collection->newDocumentInstance(record());
     }
 
     bool getDocInfo(C4DocumentInfo *outInfo) noexcept {
@@ -101,21 +101,21 @@ public:
     }
 
 private:
-    Retained<DatabaseImpl> _database;
+    Retained<C4Collection> _collection;
     C4EnumeratorOptions const _options;
     alloc_slice _docRevID;
 };
 
 
-C4DocEnumerator::C4DocEnumerator(C4Database *database,
+C4DocEnumerator::C4DocEnumerator(C4Collection *collection,
                                  C4SequenceNumber since,
                                  const C4EnumeratorOptions &options)
-:_impl(new Impl(database, since, options))
+:_impl(new Impl(collection, since, options))
 { }
 
-C4DocEnumerator::C4DocEnumerator(C4Database *database,
+C4DocEnumerator::C4DocEnumerator(C4Collection *collection,
                                  const C4EnumeratorOptions &options)
-:_impl(new Impl(database, options))
+:_impl(new Impl(collection, options))
 { }
 
 C4DocEnumerator::~C4DocEnumerator() = default;

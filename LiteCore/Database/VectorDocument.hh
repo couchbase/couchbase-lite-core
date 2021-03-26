@@ -14,7 +14,7 @@ namespace litecore {
 
     class VectorDocumentFactory final : public DocumentFactory {
     public:
-        VectorDocumentFactory(DatabaseImpl *db)   :DocumentFactory(db) { }
+        VectorDocumentFactory(C4Collection *db)   :DocumentFactory(db) { }
 
         Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
         Retained<C4Document> newDocumentInstance(const Record&) override;

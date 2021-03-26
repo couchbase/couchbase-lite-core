@@ -655,13 +655,13 @@ namespace litecore { namespace repl {
     }
 
 
-    void Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback){
-        _checkpointer.pendingDocumentIDs(_db->useLocked(), callback);
+    bool Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback, C4Error* outErr){
+        return _checkpointer.pendingDocumentIDs(_db->useLocked(), callback, outErr);
     }
 
 
-    bool Replicator::isDocumentPending(slice docID) {
-        return _checkpointer.isDocumentPending(_db->useLocked(), docID);
+    bool Replicator::isDocumentPending(slice docID, C4Error* outErr) {
+        return _checkpointer.isDocumentPending(_db->useLocked(), docID, outErr);
     }
 
 

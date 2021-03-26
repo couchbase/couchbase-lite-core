@@ -132,12 +132,14 @@ namespace litecore {
         KeyStore& getKeyStore(const std::string &name) const;
         KeyStore& getKeyStore(const std::string &name, KeyStore::Capabilities) const;
 
-#if 0 //UNUSED:
+        virtual bool keyStoreExists(const std::string &name) const =0;
+
         /** The names of all existing KeyStores (whether opened yet or not) */
-        virtual std::vector<std::string> allKeyStoreNames() =0;
-#endif
-        
+        virtual std::vector<std::string> allKeyStoreNames() const =0;
+
         void closeKeyStore(const std::string &name);
+
+        virtual void deleteKeyStore(const std::string &name) =0;
 
 #if ENABLE_DELETE_KEY_STORES
         /** Permanently deletes a KeyStore. */

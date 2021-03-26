@@ -132,11 +132,11 @@ namespace litecore { namespace repl {
 
         using PendingDocCallback = function_ref<void(const C4DocumentInfo&)>;
 
-        /** Calls the callback for each document that has revisions pending push */
-        void pendingDocumentIDs(C4Database* NONNULL, PendingDocCallback);
+        /** Returns a fleece encoded list of the IDs of documents which have revisions pending push */
+        bool pendingDocumentIDs(C4Database* NONNULL, PendingDocCallback, C4Error* outErr);
 
         /** Checks if the document with the given ID has any pending revisions to push*/
-        bool isDocumentPending(C4Database* NONNULL, slice docId);
+        bool isDocumentPending(C4Database* NONNULL, slice docId, C4Error* outErr);
 
         bool isDocumentAllowed(C4Document* doc NONNULL);
         bool isDocumentIDAllowed(slice docID);

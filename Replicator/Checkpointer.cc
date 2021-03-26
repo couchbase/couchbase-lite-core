@@ -16,7 +16,6 @@
 // limitations under the License.
 //
 
-#include "c4Base.hh"
 #include "Checkpointer.hh"
 #include "Checkpoint.hh"
 #include "ReplicatorOptions.hh"
@@ -26,14 +25,11 @@
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
 #include "c4Database.h"
+#include "c4DocEnumerator.h"
 #include "c4Private.h"
 #include "c4.hh"
 #include "c4Transaction.hh"
 #include <inttypes.h>
-
-#include "c4Database.hh"
-#include "c4Document.hh"
-#include "c4DocEnumerator.hh"
 
 #define LOCK()  lock_guard<mutex> lock(_mutex)
 
@@ -51,7 +47,8 @@ namespace litecore { namespace repl {
     { }
 
 
-    Checkpointer::~Checkpointer() =default;
+    Checkpointer::~Checkpointer()
+    { }
 
 
     string Checkpointer::to_string() const {
@@ -373,10 +370,10 @@ namespace litecore { namespace repl {
 
 
     bool Checkpointer::isDocumentAllowed(C4Document* doc) {
-        return isDocumentIDAllowed(doc->docID())
-            && (!_options.pushFilter || _options.pushFilter(doc->docID(),
-                                                            doc->selectedRev().revID,
-                                                            doc->selectedRev().flags,
+        return isDocumentIDAllowed(doc->docID)
+            && (!_options.pushFilter || _options.pushFilter(doc->docID,
+                                                            doc->selectedRev.revID,
+                                                            doc->selectedRev.flags,
                                                             DBAccess::getDocRoot(doc),
                                                             _options.callbackContext));
     }
@@ -391,21 +388,24 @@ namespace litecore { namespace repl {
 #pragma mark - PENDING DOCUMENTS:
 
 
-    void Checkpointer::pendingDocumentIDs(C4Database* db, PendingDocCallback callback) {
+    bool Checkpointer::pendingDocumentIDs(C4Database* db, PendingDocCallback callback,
+                                          C4Error* outErr)
+    {
         if(_options.push < kC4OneShot) {
             // Couchbase Lite should not allow this case
-            C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported);
+            outErr->code = kC4ErrorUnsupported;
+            outErr->domain = LiteCoreDomain;
+            return false;
         }
 
-        C4Error error;
-        if(!read(db, false, &error) && error)
-            C4Error::raise(error);
+        if(!read(db, false, outErr) && outErr->code != 0)
+            return false;
 
         const auto dbLastSequence = c4db_getLastSequence(db);
         const auto replLastSequence = this->localMinSequence();
         if(replLastSequence >= dbLastSequence) {
             // No changes since the last checkpoint
-            return;
+            return true;
         }
 
         C4EnumeratorOptions opts { kC4IncludeNonConflicted | kC4IncludeDeleted };
@@ -415,9 +415,16 @@ namespace litecore { namespace repl {
             opts.flags |= kC4IncludeBodies;
         }
 
-        C4DocEnumerator e(db, replLastSequence, opts);
-        while(e.next()) {
-            C4DocumentInfo info = e.documentInfo();
+        c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, replLastSequence, &opts, outErr);
+        if(!e) {
+            WarnError("Unable to enumerate changes for pending document IDs (%d / %d)", outErr->domain, outErr->code);
+            return false;
+        }
+
+        C4DocumentInfo info;
+        outErr->code = 0;
+        while(c4enum_next(e, outErr)) {
+            c4enum_getDocumentInfo(e, &info);
 
             if (_checkpoint->isSequenceCompleted(info.sequence))
                 continue;
@@ -427,14 +434,19 @@ namespace litecore { namespace repl {
 
             if (!hasDocIDs && _options.pushFilter) {
                 // If there is a push filter, we have to get the doc body for it to peruse:
-                Retained<C4Document> nextDoc = e.getDocument();
+                c4::ref<C4Document> nextDoc = c4enum_getDocument(e, outErr);
                 if(!nextDoc) {
-                    Warn("Got non-existent document during pending document IDs, skipping...");
+                    if(outErr->code != 0)
+                        Warn("Error getting document during pending document IDs (%d / %d)",
+                             outErr->domain, outErr->code);
+                    else
+                        Warn("Got non-existent document during pending document IDs, skipping...");
                     continue;
                 }
 
-                if(!nextDoc->loadRevisionBody()) {
-                    Warn("Error loading revision body in pending document IDs");
+                if(!c4doc_loadRevisionBody(nextDoc, outErr)) {
+                    Warn("Error loading revision body in pending document IDs (%d / %d)",
+                         outErr->domain, outErr->code);
                     continue;
                 }
 
@@ -444,21 +456,27 @@ namespace litecore { namespace repl {
 
             callback(info);
         }
+        return true;
     }
 
 
-    bool Checkpointer::isDocumentPending(C4Database* db, slice docId) {
+    bool Checkpointer::isDocumentPending(C4Database* db, slice docId, C4Error* outErr) {
         if(_options.push < kC4OneShot) {
             // Couchbase Lite should not allow this case
-            C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported);
+            outErr->code = kC4ErrorUnsupported;
+            outErr->domain = LiteCoreDomain;
+            return false;
         }
 
-        C4Error error;
-        if(!read(db, false, &error) && error)
-            C4Error::raise(error);
+        if(!read(db, false, outErr) && outErr->code != 0)
+            return false;
 
-        Retained<C4Document> doc = db->getDocument(docId, false, kDocGetCurrentRev);
-        return doc && !_checkpoint->isSequenceCompleted(doc->sequence()) && isDocumentAllowed(doc);
+        c4::ref<C4Document> doc = c4db_getDoc(db, docId, false, kDocGetCurrentRev, outErr);
+        if (!doc)
+            return false;
+
+        outErr->code = 0;
+        return !_checkpoint->isSequenceCompleted(doc->sequence) && isDocumentAllowed(doc);
     }
 
 

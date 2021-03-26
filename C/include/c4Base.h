@@ -96,7 +96,12 @@ typedef struct C4Cert C4Cert;
 typedef struct C4Database C4Database;
 
 /** A database-observer reference. */
-typedef struct C4DatabaseObserver C4DatabaseObserver;
+typedef struct C4CollectionObserver C4CollectionObserver;
+
+typedef C4CollectionObserver C4DatabaseObserver;    // TODO: Remove ASAP
+
+/** A namespace of documents in a database. */
+typedef struct C4Collection C4Collection;
 
 /** Describes a version-controlled document. */
 typedef struct C4Document C4Document;
@@ -156,6 +161,8 @@ static inline C4KeyPair* C4NULLABLE c4keypair_retain(C4KeyPair* C4NULLABLE r) C4
 static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API {c4base_release(r);}
 static inline C4Database* C4NULLABLE c4db_retain(C4Database* C4NULLABLE r) C4API {return (C4Database*)c4base_retain(r);}
 static inline void c4db_release(C4Database* C4NULLABLE r) C4API {c4base_release(r);}
+static inline C4Collection* C4NULLABLE c4coll_retain(C4Collection* C4NULLABLE r) C4API {return (C4Collection*)c4base_retain(r);}
+static inline void c4coll_release(C4Collection* C4NULLABLE r) C4API {c4base_release(r);}
 static inline C4Query* C4NULLABLE c4query_retain(C4Query* C4NULLABLE r) C4API {return (C4Query*)c4base_retain(r);}
 static inline void c4query_release(C4Query* C4NULLABLE r) C4API {c4base_release(r);}
 
@@ -298,10 +305,12 @@ typedef struct C4Error {
     }
 
     [[noreturn]] static void raise(C4ErrorDomain, int code, const char *format =nullptr, ...) __printflike(3,4);
-    [[noreturn]] static void raise(C4Error);
+    [[noreturn]] static void raise(C4Error e)   {e.raise();}
 
     static void setCaptureBacktraces(bool) noexcept;
     static bool getCaptureBacktraces() noexcept;
+
+    [[noreturn]] void raise() const;
 
     bool operator== (const C4Error &b) const {return code == b.code
                                                   && (code == 0 || domain == b.domain);}

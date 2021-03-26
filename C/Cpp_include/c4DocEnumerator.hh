@@ -24,17 +24,17 @@
 C4_ASSUME_NONNULL_BEGIN
 
 
-/** Iterates the documents in the database, by docID or by sequence or unsorted. */
+/** Iterates the documents in the collection, by docID or by sequence or unsorted. */
 struct C4DocEnumerator : public C4Base {
-    /// Creates an enumerator on a database, ordered by docID (unless the `kC4Unsorted` flag
+    /// Creates an enumerator on a collection, ordered by docID (unless the `kC4Unsorted` flag
     /// is set.)
     /// You must first call \ref next to step to the first document.
-    explicit C4DocEnumerator(C4Database *database,
+    explicit C4DocEnumerator(C4Collection *collection,
                              const C4EnumeratorOptions &options = kC4DefaultEnumeratorOptions);
 
-    /// Creates an enumerator on a database, ordered by sequence.
+    /// Creates an enumerator on a collection, ordered by sequence.
     /// You must first call \ref next to step to the first document.
-    explicit C4DocEnumerator(C4Database *database,
+    explicit C4DocEnumerator(C4Collection *collection,
                              C4SequenceNumber since,
                              const C4EnumeratorOptions &options = kC4DefaultEnumeratorOptions);
 

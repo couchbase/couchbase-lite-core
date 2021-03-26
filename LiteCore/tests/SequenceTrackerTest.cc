@@ -33,7 +33,9 @@ namespace litecore {
 
     class SequenceTrackerTest : public TestFixture {     // SequenceTracker declares this class a friend
     public:
-        SequenceTrackerTest() {
+        SequenceTrackerTest()
+        :tracker("SequenceTrackerTest")
+        {
             oldMinChanges = SequenceTracker::kMinChangesToKeep;
             SequenceTracker::kMinChangesToKeep = 2;
         }
@@ -115,10 +117,10 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
     tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, Flag3);
 
     int count1=0, count2=0, count3=0;
-    DatabaseChangeNotifier cn1(tracker, [&](DatabaseChangeNotifier&) {++count1;});
-    DatabaseChangeNotifier cn2(tracker, [&](DatabaseChangeNotifier&) {++count2;});
+    CollectionChangeNotifier cn1(tracker, [&](CollectionChangeNotifier&) {++count1;});
+    CollectionChangeNotifier cn2(tracker, [&](CollectionChangeNotifier&) {++count2;});
     {
-        DatabaseChangeNotifier cn3(tracker, [&](DatabaseChangeNotifier&) {++count3;}, 1);
+        CollectionChangeNotifier cn3(tracker, [&](CollectionChangeNotifier&) {++count3;}, 1);
         REQUIRE_IF_DEBUG(dump() == "[(A@1, *, B@2, C@3, *, *)]");
 
         SequenceTracker::Change changes[5];
@@ -170,10 +172,10 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifier", "[notification]") {
     tracker.beginTransaction();
     
-    std::unique_ptr<DatabaseChangeNotifier> cn;
+    std::unique_ptr<CollectionChangeNotifier> cn;
 
     SECTION("With db change notifier") {
-        cn = make_unique<DatabaseChangeNotifier>(tracker, nullptr);
+        cn = make_unique<CollectionChangeNotifier>(tracker, nullptr);
     }
     SECTION("Without db change notifier") {
         // don't initialize cn. Now the tracker isn't recording document changes...
@@ -237,12 +239,12 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
 
 
 TEST_CASE("SequenceTracker Transaction", "[notification]") {
-    SequenceTracker tracker;
+    SequenceTracker tracker("test");
 
     SequenceTracker::Change changes[10];
     size_t numChanges;
     bool external;
-    DatabaseChangeNotifier cn(tracker, nullptr);
+    CollectionChangeNotifier cn(tracker, nullptr);
 
     // First create some docs:
     sequence_t seq = 0;
@@ -355,7 +357,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
 
 
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Ignores ExternalChanges", "[notification]") {
-    SequenceTracker track2;
+    SequenceTracker track2("track2");
     track2.beginTransaction();
     track2.documentChanged("B"_asl, "2-bb"_asl, ++seq, Flag4);
     track2.documentChanged("Z"_asl, "1-ff"_asl, ++seq, Flag5);
@@ -372,7 +374,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Ignores Externa
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges", "[notification]") {
     // Add a change notifier:
     int count1 = 0;
-    DatabaseChangeNotifier cn(tracker, [&](DatabaseChangeNotifier&) {++count1;}, 0);
+    CollectionChangeNotifier cn(tracker, [&](CollectionChangeNotifier&) {++count1;}, 0);
 
     // Add some docs:
     tracker.beginTransaction();
@@ -384,7 +386,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges
     // notifier was notified:
     CHECK(count1 == 1);
 
-    SequenceTracker track2;
+    SequenceTracker track2("track2");
     track2.beginTransaction();
     track2.documentChanged("B"_asl, "2-bb"_asl, ++seq, Flag4);
     track2.documentChanged("Z"_asl, "1-ff"_asl, ++seq, Flag5);
@@ -416,7 +418,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges
 
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Purge", "[notification]") {
     int count1=0;
-    DatabaseChangeNotifier cn1(tracker, [&](DatabaseChangeNotifier&) {++count1;});
+    CollectionChangeNotifier cn1(tracker, [&](CollectionChangeNotifier&) {++count1;});
 
     tracker.beginTransaction();
     tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, Flag1);

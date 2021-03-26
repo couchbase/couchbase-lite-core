@@ -23,7 +23,9 @@
 #include "fleece/Fleece.h"
 
 namespace litecore {
+    class CollectionImpl;
     class DatabaseImpl;
+    class KeyStore;
     class revid;
     class Upgrader;
 }
@@ -50,7 +52,8 @@ struct C4Document : public fleece::RefCounted,
     C4ExtraInfo& extraInfo()                                {return _extraInfo;}
     const C4ExtraInfo& extraInfo() const                    {return _extraInfo;}
 
-    C4Database* database() const                            {return _db;}
+    C4Collection* collection() const;
+    C4Database* database() const;
 
     virtual bool exists() const =0;
 
@@ -149,19 +152,15 @@ struct C4Document : public fleece::RefCounted,
 
 protected:
     friend class litecore::DatabaseImpl;
+    friend class litecore::CollectionImpl;
     friend class litecore::Upgrader;
 
-    C4Document(litecore::DatabaseImpl*, alloc_slice docID_);
+    C4Document(C4Collection*, alloc_slice docID_);
     virtual ~C4Document();
 
+    litecore::KeyStore& keyStore() const;
+
     [[noreturn]] static void failUnsupported();
-
-    litecore::DatabaseImpl* db();
-    const litecore::DatabaseImpl* db() const;
-
-    virtual alloc_slice detachSelectedRevBody() {
-        return alloc_slice(getRevisionBody()); // will copy
-    }
 
     void requireValidDocID() const;   // Throws if invalid
 
@@ -190,7 +189,7 @@ protected:
     C4ExtraInfo          _extraInfo;    // For client use
 
     alloc_slice          _selectedRevID;// Same as _selected::revID
-    Retained<C4Database> _db;           // Owning database
+    Retained<C4Collection> _collection; // Owning collection
 };
 
 

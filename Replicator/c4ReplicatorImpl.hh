@@ -515,10 +515,13 @@ namespace litecore {
                     enc.writeString(info.docID);
                     any = true;
                 };
-                if (replicator)
-                    replicator->pendingDocumentIDs(callback);
-                else
-                    checkpointer->pendingDocumentIDs(database, callback);
+
+                C4Error error;
+                bool ok = replicator ? replicator->pendingDocumentIDs(callback, &error)
+                                     : checkpointer->pendingDocumentIDs(database, callback, &error);
+                if (!ok && error.code)
+                    C4Error::raise(error);
+
                 if (!any)
                     return {};
                 enc.endArray();
@@ -526,8 +529,12 @@ namespace litecore {
             }
 
             bool isDocumentPending(C4Slice docID) {
-                return replicator ? replicator->isDocumentPending(docID)
-                                  : checkpointer->isDocumentPending(database, docID);
+                C4Error error;
+                bool pending = replicator ? replicator->isDocumentPending(docID, &error)
+                                          : checkpointer->isDocumentPending(database, docID, &error);
+                if (!pending && error.code)
+                    C4Error::raise(error);
+                return pending;
             }
 
         private:

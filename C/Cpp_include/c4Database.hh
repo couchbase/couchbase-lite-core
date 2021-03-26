@@ -88,8 +88,18 @@ public:
     C4UUID publicUUID() const;
     C4UUID privateUUID() const;
 
-    uint64_t getDocumentCount() const;
-    C4SequenceNumber getLastSequence() const;
+    // Collections:
+
+    std::vector<std::string> collectionNames() const;
+    void forEachCollection(const fleece::function_ref<void(C4Collection*)>&);
+
+    bool hasCollection(slice name) const;
+    
+    C4Collection* getDefaultCollection() const;
+
+    Retained<C4Collection> getCollection(slice name) const;
+    Retained<C4Collection> createCollection(slice name);
+    void deleteCollection(slice name);
 
     // Transactions:
 
@@ -106,31 +116,6 @@ public:
     };
 
     bool isInTransaction() const noexcept FLPURE;
-
-    // Documents:
-
-    Retained<C4Document> getDocument(slice docID,
-                                     bool mustExist = true,
-                                     C4DocContentLevel content = kDocGetCurrentRev) const;
-
-    Retained<C4Document> getDocumentBySequence(C4SequenceNumber sequence) const;
-
-    Retained<C4Document> putDocument(const C4DocPutRequest &rq,
-                                     size_t* C4NULLABLE outCommonAncestorIndex,
-                                     C4Error *outError);
-
-    Retained<C4Document> createDocument(slice docID,
-                                        slice revBody,
-                                        C4RevisionFlags revFlags,
-                                        C4Error *outError);
-
-    std::vector<alloc_slice> findDocAncestors(const std::vector<slice> &docIDs,
-                                              const std::vector<slice> &revIDs,
-                                              unsigned maxAncestors,
-                                              bool mustHaveBodies,
-                                              C4RemoteID remoteDBID) const;
-
-    bool purgeDoc(slice docID);
 
     // Raw Documents:
 
@@ -149,26 +134,9 @@ public:
     FLEncoder getSharedFleeceEncoder() const;
     FLSharedKeys getFLSharedKeys() const;
 
-    // Observers:
-
-    using DatabaseObserverCallback = std::function<void(C4DatabaseObserver*)>;
-    using DocumentObserverCallback = std::function<void(C4DocumentObserver*,
-                                                        slice docID,
-                                                        C4SequenceNumber)>;
-
-    std::unique_ptr<C4DatabaseObserver> observe(DatabaseObserverCallback);
-
-    std::unique_ptr<C4DocumentObserver> observeDocument(slice docID,
-                                                        DocumentObserverCallback);
-
     // Expiration:
 
     bool mayHaveExpiration() const;
-    bool startHousekeeping();
-    int64_t purgeExpiredDocs();
-
-    bool setExpiration(slice docID, C4Timestamp timestamp);
-    C4Timestamp getExpiration(slice docID) const;
     C4Timestamp nextDocExpiration() const;
 
     // Blobs:
@@ -221,10 +189,6 @@ public:
     C4RemoteID getRemoteDBID(slice remoteAddress,
                              bool canCreate);
     alloc_slice getRemoteDBAddress(C4RemoteID remoteID);
-    bool markDocumentSynced(slice docID,
-                            slice revID,
-                            C4SequenceNumber sequence,
-                            C4RemoteID remoteID);
 
     // Evaluates a SQLite (not N1QL!) query and returns the results. Used only by the `cblite` tool.
     alloc_slice rawQuery(slice sqliteQuery);

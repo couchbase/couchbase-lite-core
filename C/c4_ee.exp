@@ -353,10 +353,8 @@ _c4db_getConfig2
 _c4db_getName
 _c4db_getRemoteDBID
 _c4db_exists
-_c4db_startHousekeeping
 _c4db_findDocAncestors
 _c4db_maintenance
-_c4db_mayHaveExpiration
 _c4db_getCookies
 _c4db_setCookie
 _c4db_getDoc

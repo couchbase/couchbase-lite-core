@@ -32,7 +32,7 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    vector<string> SQLiteDataFile::allKeyStoreNames() {
+    vector<string> SQLiteDataFile::allKeyStoreNames() const {
         checkOpen();
         vector<string> names;
         SQLite::Statement allStores(*_sqlDb, string("SELECT substr(name,4) FROM sqlite_master"
@@ -47,7 +47,14 @@ namespace litecore {
     }
 
 
-    bool SQLiteDataFile::keyStoreExists(const string &name) {
+    void SQLiteDataFile::deleteKeyStore(const std::string &name) {
+        exec("DROP TABLE IF EXISTS kv_" + name);
+        // TODO: Do I need to drop indexes, triggers?
+    }
+
+
+
+    bool SQLiteDataFile::keyStoreExists(const string &name) const {
         return tableExists(string("kv_") + name);
     }
 

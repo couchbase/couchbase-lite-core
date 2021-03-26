@@ -20,7 +20,7 @@
 #include "c4Base.h"
 
 
-#define LOCK(MUTEX)     std::unique_lock<std::mutex> _lock(MUTEX)
+#define LOCK(MUTEX)     std::unique_lock<decltype(MUTEX)> _lock(MUTEX)
 #define UNLOCK()        _lock.unlock();
 
 #if defined(__clang__)
@@ -50,6 +50,7 @@ struct C4Database;
 struct C4ExtraInfo;
 
 namespace litecore {
+    class CollectionImpl;
     class DatabaseImpl;
 
     // ERRORS & EXCEPTIONS:
@@ -68,6 +69,7 @@ namespace litecore {
 
     // CONVERSIONS:
 
-    DatabaseImpl* asInternal(const C4Database *db);
+    DatabaseImpl* asInternal(const C4Database*);
+    CollectionImpl* asInternal(const C4Collection*);
 
 }

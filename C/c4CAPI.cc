@@ -17,6 +17,7 @@
 //
 
 #include "c4BlobStore.hh"
+#include "c4Collection.hh"
 #include "c4Database.hh"
 #include "c4Document.hh"
 #include "c4DocEnumerator.hh"
@@ -338,18 +339,6 @@ bool c4db_maintenance(C4Database* database, C4MaintenanceType type, C4Error *out
 }
 
 
-bool c4db_startHousekeeping(C4Database *db) C4API {
-    return tryCatch<bool>(nullptr, [=]{
-        return db->startHousekeeping();
-    });
-}
-
-
-bool c4db_mayHaveExpiration(C4Database *db) C4API {
-    return db->mayHaveExpiration();
-}
-
-
 C4Timestamp c4db_nextDocExpiration(C4Database *db) C4API {
     return tryCatch<uint64_t>(nullptr, [=]{
         return db->nextDocExpiration();
@@ -361,7 +350,7 @@ int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error *outError) C4API {
     int64_t count = -1;
     if (c4db_beginTransaction(db, outError)) {
         try {
-            count = db->purgeExpiredDocs();
+            count = db->getDefaultCollection()->purgeExpiredDocs();
         } catchError(outError);
         if (!c4db_endTransaction(db, (count > 0), outError))
             count = -1;
@@ -395,12 +384,12 @@ const C4DatabaseConfig2* c4db_getConfig2(C4Database *database) noexcept {
 
 
 uint64_t c4db_getDocumentCount(C4Database* database) noexcept {
-    return tryCatch<uint64_t>(nullptr, [=]{return database->getDocumentCount();});
+    return tryCatch<uint64_t>(nullptr, [=]{return database->getDefaultCollection()->getDocumentCount();});
 }
 
 
 C4SequenceNumber c4db_getLastSequence(C4Database* database) noexcept {
-    return tryCatch<sequence_t>(nullptr, [=]{return database->getLastSequence();});
+    return tryCatch<sequence_t>(nullptr, [=]{return database->getDefaultCollection()->getLastSequence();});
 }
 
 
@@ -463,7 +452,7 @@ void c4db_unlock(C4Database *db) C4API {
 
 bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexcept {
     try {
-        if (database->purgeDoc(docID))
+        if (database->getDefaultCollection()->purgeDoc(docID))
             return true;
         else
             c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
@@ -500,7 +489,7 @@ bool c4db_findDocAncestors(C4Database *database,
     return tryCatch(outError, [&]{
         vector<slice> vecDocIDs((const slice*)&docIDs[0], (const slice*)&docIDs[numDocs]);
         vector<slice> vecRevIDs((const slice*)&revIDs[0], (const slice*)&revIDs[numDocs]);
-        auto vecAncestors = database->findDocAncestors(vecDocIDs, vecRevIDs,
+        auto vecAncestors = database->getDefaultCollection()->findDocAncestors(vecDocIDs, vecRevIDs,
                                                        maxAncestors, requireBodies,
                                                        remoteDBID);
         for (unsigned i = 0; i < numDocs; ++i)
@@ -653,7 +642,7 @@ C4Document* c4db_getDoc(C4Database *database,
                        C4Error *outError) noexcept
 {
     return tryCatch<C4Document*>(outError, [&]{
-        Retained<C4Document> doc = database->getDocument(docID, mustExist, content);
+        Retained<C4Document> doc = database->getDefaultCollection()->getDocument(docID, mustExist, content);
         if (!doc)
             c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
         return move(doc).detach();
@@ -675,7 +664,7 @@ C4Document* c4doc_getBySequence(C4Database *database,
                                 C4Error *outError) noexcept
 {
     return tryCatch<C4Document*>(outError, [&]{
-        auto doc = database->getDocumentBySequence(sequence);
+        auto doc = database->getDefaultCollection()->getDocumentBySequence(sequence);
         if (!doc)
             c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
         return move(doc).detach();
@@ -685,7 +674,7 @@ C4Document* c4doc_getBySequence(C4Database *database,
 
 bool c4doc_setExpiration(C4Database *db, C4Slice docId, C4Timestamp timestamp, C4Error *outError) C4API {
     return tryCatch<bool>(outError, [=]{
-        if (db->setExpiration(docId, timestamp))
+        if (db->getDefaultCollection()->setExpiration(docId, timestamp))
             return true;
         c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
         return false;
@@ -696,7 +685,7 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, C4Timestamp timestamp, C
 C4Timestamp c4doc_getExpiration(C4Database *db, C4Slice docID, C4Error *outError) C4API {
     C4Timestamp expiration = -1;
     tryCatch(outError, [&]{
-        expiration = db->getExpiration(docID);
+        expiration = db->getDefaultCollection()->getExpiration(docID);
     });
     return expiration;
 }
@@ -845,7 +834,7 @@ bool c4db_markSynced(C4Database *database,
                      C4Error *outError) noexcept
 {
     return tryCatch<bool>(outError, [&]{
-        return database->markDocumentSynced(docID, revID, sequence, remoteID);
+        return database->getDefaultCollection()->markDocumentSynced(docID, revID, sequence, remoteID);
     });
 }
 
@@ -861,7 +850,7 @@ C4Document* c4doc_put(C4Database *database,
                       C4Error *outError) noexcept
 {
     return tryCatch<C4Document*>(outError, [&]{
-        return database->putDocument(*rq, outCommonAncestorIndex, outError).detach();
+        return database->getDefaultCollection()->putDocument(*rq, outCommonAncestorIndex, outError).detach();
     });
 }
 
@@ -873,7 +862,7 @@ C4Document* c4doc_create(C4Database *database,
                          C4Error *outError) noexcept
 {
     return tryCatch<C4Document*>(outError, [&]{
-        return database->createDocument(docID, revBody, revFlags, outError).detach();
+        return database->getDefaultCollection()->createDocument(docID, revBody, revFlags, outError).detach();
     });
 }
 
@@ -1062,7 +1051,7 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        C4Error *outError) noexcept
 {
     return tryCatch<C4DocEnumerator*>(outError, [&]{
-        return new C4DocEnumerator(database, since,
+        return new C4DocEnumerator(database->getDefaultCollection(), since,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     });
 }
@@ -1073,7 +1062,7 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                        C4Error *outError) noexcept
 {
     return tryCatch<C4DocEnumerator*>(outError, [&]{
-        return new C4DocEnumerator(database,
+        return new C4DocEnumerator(database->getDefaultCollection(),
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     });
 }
@@ -1111,7 +1100,7 @@ C4DatabaseObserver* c4dbobs_create(C4Database *db,
                                    C4DatabaseObserverCallback callback,
                                    void *context) noexcept
 {
-    return C4DatabaseObserver::create(db, [=](C4DatabaseObserver *obs) {
+    return C4CollectionObserver::create(db->getDefaultCollection(), [=](C4DatabaseObserver *obs) {
         callback(obs, context);
     }).release();
 }
@@ -1160,7 +1149,7 @@ C4DocumentObserver* c4docobs_create(C4Database *db,
         auto fn = [=](C4DocumentObserver *obs, fleece::slice docID, C4SequenceNumber seq) {
             callback(obs, docID, seq, context);
         };
-        return C4DocumentObserver::create(db, docID, fn);
+        return C4DocumentObserver::create(db->getDefaultCollection(), docID, fn);
     }).release();
 }
 
