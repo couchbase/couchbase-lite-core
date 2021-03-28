@@ -160,7 +160,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
     
     CHECK(translate("SELECT 'foo' LIKE 'f%'") == "{'WHAT':[['LIKE','foo','f%']]}");
     CHECK(translate("SELECT 'foo' NOT LIKE 'f%'") == "{'WHAT':[['NOT',['LIKE','foo','f%']]]}");
-    CHECK(translate("SELECT 1 WHERE 'text' MATCH 'word'") == "{'WHAT':[1],'WHERE':['MATCH','text','word']}");
+    CHECK(translate("SELECT 1 WHERE MATCH('text', 'word')") == "{'WHAT':[1],'WHERE':['MATCH()','text','word']}");
 //    CHECK(translate("SELECT 1 WHERE 'text' NOT MATCH 'word'") == "{'WHAT':[['NOT',['MATCH',['.text'],'word']]]}");
 
     CHECK(translate("SELECT 2 BETWEEN 1 AND 4") == "{'WHAT':[['BETWEEN',2,1,4]]}");

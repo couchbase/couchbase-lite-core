@@ -250,7 +250,7 @@ static void substituteVariable(const string &var, MutableArray expr) {
 static const char* kReservedWords[] = {
     "AND",  "ANY",  "AS",  "ASC",  "BETWEEN",  "BY",  "CASE",  "CROSS",  "DESC",  "DISTINCT",
     "ELSE",  "END",  "EVERY",  "FALSE",  "FROM",  "GROUP",  "HAVING",  "IN",  "INNER",  "IS",
-    "JOIN",  "LEFT",  "LIKE",  "LIMIT",  "MATCH",  "MISSING",  "NATURAL",  "NOT",
+    "JOIN",  "LEFT",  "LIKE",  "LIMIT",  "MISSING",  "NATURAL",  "NOT",
     "NULL",  "MISSING",  "OFFSET",  "ON",  "OR",  "ORDER",  "OUTER",  "REGEX",  "RIGHT",
     "SATISFIES",  "SELECT",  "THEN",  "TRUE",  "USING",  "VALUED", "WHEN",  "WHERE",
     "COLLATE",
@@ -281,7 +281,7 @@ static const char* kFunctions[] = {         // (copied from LiteCore's QueryPars
     "is_array",  "is_atom",  "is_boolean",  "is_number",  "is_object",  "is_string",  "typename",  "to_array",
     "to_atom",  "to_boolean",  "to_number",  "to_object",  "to_string",
     // FTS (not standard N1QL):
-    "rank",
+    "match", "rank",
     // Aggregate functions:
     "avg",  "count",  "max",  "min",  "sum",
     // Predictive query:
