@@ -46,12 +46,9 @@
 #endif
 
 
-struct C4Database;
 struct C4ExtraInfo;
 
 namespace litecore {
-    class CollectionImpl;
-    class DatabaseImpl;
 
     // ERRORS & EXCEPTIONS:
 
@@ -66,10 +63,5 @@ namespace litecore {
     C4SliceResult toSliceResult(const std::string&);
 
     void destructExtraInfo(C4ExtraInfo&) noexcept;
-
-    // CONVERSIONS:
-
-    DatabaseImpl* asInternal(const C4Database*);
-    CollectionImpl* asInternal(const C4Collection*);
 
 }

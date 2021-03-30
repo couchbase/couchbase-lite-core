@@ -166,7 +166,7 @@ namespace litecore {
 
         // Instantiate a VectorRecord for this document, without reading the database:
         VectorRecord nuDoc(db->defaultKeyStore(), Versioning::RevTrees, rec);
-        nuDoc.setEncoder(db->sharedFLEncoder());
+        nuDoc.setEncoder(db->sharedFleeceEncoder());
 
         // Add each remote revision:
         for (auto i = revTree.remoteRevisions().begin(); i != revTree.remoteRevisions().end(); ++i) {

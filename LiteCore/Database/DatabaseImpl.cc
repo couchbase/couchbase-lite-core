@@ -38,6 +38,9 @@
 #include "PrebuiltCopier.hh"
 #include <functional>
 #include <inttypes.h>
+#include <unordered_set>
+
+
 
 namespace litecore::constants {
     const C4Slice kLocalCheckpointStore   = C4STR("checkpoints");
@@ -46,23 +49,20 @@ namespace litecore::constants {
 }
 
 namespace litecore {
+    using namespace std;
     using namespace fleece;
     using namespace fleece::impl;
-    using namespace std;
 
 
-    static const slice kMaxRevTreeDepthKey = "maxRevTreeDepth"_sl;
-    static uint32_t kDefaultMaxRevTreeDepth = 20;
-
-    const slice DatabaseImpl::kPublicUUIDKey = "publicUUID"_sl;
-    const slice DatabaseImpl::kPrivateUUIDKey = "privateUUID"_sl;
+    static constexpr slice kMaxRevTreeDepthKey = "maxRevTreeDepth";
+    static constexpr uint32_t kDefaultMaxRevTreeDepth = 20;
 
 
     static string collectionNameToKeyStoreName(slice collectionName);
     static slice keyStoreNameToCollectionName(slice name);
 
 
-#pragma mark - LIFECYCLE:
+#pragma mark - OPENING / CLOSING:
 
 
     Retained<DatabaseImpl> DatabaseImpl::open(const FilePath &path, C4DatabaseConfig config) {
@@ -73,10 +73,7 @@ namespace litecore {
 
 
     DatabaseImpl::DatabaseImpl(const FilePath &path, C4DatabaseConfig inConfig)
-    :_name(path.unextendedName())
-    ,_parentDirectory(path.parentDir())
-    ,_config{slice(_parentDirectory), inConfig.flags, inConfig.encryptionKey}
-    ,_configV1(inConfig)
+    :C4Database(path.unextendedName(), path.parentDir(), inConfig)
     ,_encoder(new fleece::impl::Encoder())
     { }
 
@@ -168,7 +165,7 @@ namespace litecore {
         }
 
         if (options.useDocumentKeys)
-            _encoder->setSharedKeys(documentKeys());
+            _encoder->setSharedKeys(_dataFile->documentKeys());
 
         // Validate or upgrade the database's document schema/versioning:
         _configV1.versioning = checkDocumentVersioning();
@@ -182,25 +179,6 @@ namespace litecore {
         initCollections();
         startBackgroundTasks();
     }
-
-
-    DatabaseImpl::~DatabaseImpl() {
-        Assert(_transactionLevel == 0,
-               "Database being destructed while in a transaction");
-
-        for (auto &entry : _collections)
-            entry.second->close();
-
-        FLEncoder_Free(_flEncoder);
-        // Eagerly close the data file to ensure that no other instances will
-        // be trying to use me as a delegate (for example in externalTransactionCommitted)
-        // after I'm already in an invalid state
-        if (_dataFile)
-            _dataFile->close();
-    }
-
-
-#pragma mark - HOUSEKEEPING:
 
 
     C4DocumentVersioning DatabaseImpl::checkDocumentVersioning() {
@@ -241,56 +219,6 @@ namespace litecore {
     }
 
 
-    void DatabaseImpl::close() {
-        mustNotBeInTransaction();
-        stopBackgroundTasks();
-        _dataFile->close();
-    }
-
-
-    void DatabaseImpl::deleteDatabase() {
-        mustNotBeInTransaction();
-        stopBackgroundTasks();
-        FilePath bundle = path().dir();
-        _dataFile->deleteDataFile();
-        bundle.delRecursive();
-    }
-
-
-    /*static*/ bool DatabaseImpl::deleteDatabaseAtPath(const string &dbPath) {
-        // Find the db file in the bundle:
-        FilePath bundle {dbPath, ""};
-        if (bundle.exists()) {
-            try {
-                C4StorageEngine storageEngine = nullptr;
-                auto dbFilePath = findOrCreateBundle(dbPath, false, storageEngine);
-                // Delete it:
-                deleteDatabaseFileAtPath(dbFilePath, storageEngine);
-            } catch (const error &x) {
-                if (x.code != error::WrongFormat)   // ignore exception if db file isn't found
-                    throw;
-            }
-        }
-        // Delete the rest of the bundle:
-        return bundle.delRecursive();
-    }
-
-    bool DatabaseImpl::deleteDatabaseFileAtPath(const string &dbPath,
-                                                C4StorageEngine storageEngine) {
-        FilePath path(dbPath);
-        DataFile::Factory *factory = nullptr;
-        if (storageEngine) {
-            factory = DataFile::factoryNamed(storageEngine);
-            if (!factory)
-                Warn("c4db_deleteAtPath: unknown storage engine '%s'", storageEngine);
-        } else {
-            factory = DataFile::factoryForFile(path);
-        }
-        if (!factory)
-            error::_throw(error::WrongFormat);
-        return factory->deleteFile(path);
-    }
-
     void DatabaseImpl::rekey(const C4EncryptionKey *newKey) {
         _dataFile->_logInfo("Rekeying database...");
         C4EncryptionKey keyBuf {kC4EncryptionNone, {}};
@@ -301,7 +229,7 @@ namespace litecore {
         stopBackgroundTasks();
 
         // Create a new BlobStore and copy/rekey the blobs into it:
-        path().subdirectoryNamed("Attachments_temp").delRecursive();
+        filePath().subdirectoryNamed("Attachments_temp").delRecursive();
         auto &blobStore = getBlobStore();
         auto newStore = createBlobStore("Attachments_temp", *newKey);
         try {
@@ -324,17 +252,46 @@ namespace litecore {
     }
 
 
+    void DatabaseImpl::close() {
+        mustNotBeInTransaction();
+        stopBackgroundTasks();
+        _dataFile->close();
+    }
+
+
+    void DatabaseImpl::closeAndDeleteFile() {
+        mustNotBeInTransaction();
+        stopBackgroundTasks();
+        FilePath bundle = filePath().dir();
+        _dataFile->deleteDataFile();
+        bundle.delRecursive();
+    }
+
+
+    DatabaseImpl::~DatabaseImpl() {
+        Assert(_transactionLevel == 0,
+               "Database being destructed while in a transaction");
+
+        destructExtraInfo(extraInfo);
+
+        for (auto &entry : _collections)
+            entry.second->close();
+
+        FLEncoder_Free(_flEncoder);
+        // Eagerly close the data file to ensure that no other instances will
+        // be trying to use me as a delegate (for example in externalTransactionCommitted)
+        // after I'm already in an invalid state
+        if (_dataFile)
+            _dataFile->close();
+    }
+
+
 #pragma mark - ACCESSORS:
 
 
     // Callback that takes a base64 blob digest and returns the blob data
     alloc_slice DatabaseImpl::blobAccessor(const Dict *blobDict) const {
         return getBlobStore().getBlobData(FLDict(blobDict));
-    }
-
-
-    FilePath DatabaseImpl::path() const {
-        return _dataFile->filePath().dir();
     }
 
 
@@ -363,11 +320,6 @@ namespace litecore {
     }
 
 
-    KeyStore& DatabaseImpl::defaultKeyStore() const {
-        return _dataFile->defaultKeyStore();
-    }
-
-    
     KeyStore& DatabaseImpl::getKeyStore(const string &nm) const {
         return _dataFile->getKeyStore(nm, KeyStore::noSequences);
     }
@@ -383,7 +335,7 @@ namespace litecore {
     unique_ptr<C4BlobStore> DatabaseImpl::createBlobStore(const string &dirname,
                                                           C4EncryptionKey encryptionKey) const
     {
-        return make_unique<C4BlobStore>(alloc_slice(path().subdirectoryNamed(dirname)),
+        return make_unique<C4BlobStore>(alloc_slice(filePath().subdirectoryNamed(dirname)),
                                         _config.flags, encryptionKey);
     }
 
@@ -391,10 +343,14 @@ namespace litecore {
 #pragma mark - HOUSEKEEPING:
 
 
-    void DatabaseImpl::maintenance(DataFile::MaintenanceType what) {
+    static_assert(int(kC4Compact)      == int(DataFile::kCompact));
+    static_assert(int(kC4FullOptimize) == int(DataFile::kFullOptimize));
+
+
+    void DatabaseImpl::maintenance(C4MaintenanceType what) {
         mustNotBeInTransaction();
-        dataFile()->maintenance(what);
-        if (what == DataFile::kCompact)
+        dataFile()->maintenance(DataFile::MaintenanceType(what));
+        if (what == kC4Compact)
             garbageCollectBlobs();
     }
 
@@ -423,6 +379,7 @@ namespace litecore {
                   numDeleted, usedDigests.size());
         }
     }
+
 
     BackgroundDB* DatabaseImpl::backgroundDatabase() {
         if (!_backgroundDB)
@@ -473,7 +430,7 @@ namespace litecore {
 #pragma mark - UUIDS:
 
 
-    bool DatabaseImpl::getUUIDIfExists(slice key, C4UUID &uuid) {
+    bool DatabaseImpl::getUUIDIfExists(slice key, C4UUID &uuid) const {
         auto &store = getKeyStore(string(kInfoStore));
         Record r = store.get(key);
         if (!r.exists() || r.body().size < sizeof(C4UUID))
@@ -481,6 +438,7 @@ namespace litecore {
         uuid = *(C4UUID*)r.body().buf;
         return true;
     }
+
 
     // must be called within a transaction
     C4UUID DatabaseImpl::generateUUID(slice key, bool overwrite) {
@@ -494,16 +452,19 @@ namespace litecore {
         return uuid;
     }
 
-    C4UUID DatabaseImpl::getUUID(slice key) {
+
+    C4UUID DatabaseImpl::getUUID(slice key) const {
         C4UUID uuid;
         if (!getUUIDIfExists(key, uuid)) {
-            Transaction t(this);
-            uuid = generateUUID(key);
+            auto self = const_cast<DatabaseImpl*>(this);
+            Transaction t(self);
+            uuid = self->generateUUID(key);
             t.commit();
         }
         return uuid;
     }
-    
+
+
     void DatabaseImpl::resetUUIDs() {
         Transaction t(this);
         C4UUID previousPrivate = getUUID(kPrivateUUIDKey);
@@ -531,19 +492,25 @@ namespace litecore {
     }
 
 
+    alloc_slice DatabaseImpl::getPeerID() const {
+        char buf[32];
+        sprintf(buf, "%" PRIx64, myPeerID());
+        return alloc_slice(buf);
+    }
+
+
 #pragma mark - COLLECTIONS:
 
+
+    static constexpr const char* kCollectionKeyStorePrefix = "coll_";
 
     static constexpr const char* kDefaultCollectionName = "_default";
 
     static constexpr slice kCollectionNameCharacterSet
                             = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_-%";
 
-    static constexpr const char* kCollectionKeyStorePrefix = "coll_";
-
-
     MUST_USE_RESULT
-    static bool validateCollectionName(slice name) {
+    static bool collectionNameIsValid(slice name) {
         // Enforce CBServer collection name restrictions:
         return name.size >= 1 && name.size <= 30
             && !name.findByteNotIn(kCollectionNameCharacterSet)
@@ -554,7 +521,7 @@ namespace litecore {
     static string collectionNameToKeyStoreName(slice collectionName) {
         if (collectionName == kDefaultCollectionName) {
             return DataFile::kDefaultKeyStoreName;
-        } else if (validateCollectionName(collectionName)) {
+        } else if (collectionNameIsValid(collectionName)) {
             // KeyStore name is "coll_" + name; SQLite table name will be "kv_coll_" + name
             string result = kCollectionKeyStorePrefix;
             result.append(collectionName);
@@ -579,7 +546,7 @@ namespace litecore {
 
     void DatabaseImpl::initCollections() {
         LOCK(_collectionsMutex);
-        _defaultCollection = getCollection(kDefaultCollectionName, true);
+        _defaultCollection = createCollection(kDefaultCollectionName);
     }
 
 
@@ -592,8 +559,16 @@ namespace litecore {
     }
 
 
+    Retained<C4Collection> DatabaseImpl::getCollection(slice name) const {
+        return const_cast<DatabaseImpl*>(this)->getOrCreateCollection(name, false);
+    }
+
+    Retained<C4Collection> DatabaseImpl::createCollection(slice name) {
+        return getOrCreateCollection(name, true);
+    }
+
     // This implements both the public getCollection() and createCollection()
-    Retained<C4Collection> DatabaseImpl::getCollection(slice name, bool canCreate) const {
+    Retained<C4Collection> DatabaseImpl::getOrCreateCollection(slice name, bool canCreate) {
         LOCK(_collectionsMutex);
         // Is there already a C4Collection object for it in _collections?
         if (auto i = _collections.find(name); i != _collections.end())
@@ -611,8 +586,7 @@ namespace litecore {
 
         // Instantiate it, creating the KeyStore on-disk if necessary:
         KeyStore &store = _dataFile->getKeyStore(keyStoreName);
-        auto collection = C4Collection::newCollection(const_cast<DatabaseImpl*>(this),
-                                                      name, store);
+        auto collection = C4Collection::newCollection(this, name, store);
         // Update its state & add it to _collections:
         if (isInTransaction())
             collection->transactionBegan();
@@ -671,28 +645,14 @@ namespace litecore {
         }
     }
 
-    bool DatabaseImpl::inTransaction() noexcept {
+    bool DatabaseImpl::isInTransaction() const noexcept {
         return _transactionLevel > 0;
     }
 
 
     void DatabaseImpl::mustBeInTransaction() {
-        if (!inTransaction())
+        if (!isInTransaction())
             error::_throw(error::NotInTransaction);
-    }
-
-    bool DatabaseImpl::mustBeInTransaction(C4Error *outError) noexcept {
-        if (inTransaction())
-            return true;
-        c4error_return(LiteCoreDomain, kC4ErrorNotInTransaction, {}, outError);
-        return false;
-    }
-
-    bool DatabaseImpl::mustNotBeInTransaction(C4Error *outError) noexcept {
-        if (!inTransaction())
-            return true;
-        c4error_return(LiteCoreDomain, kC4ErrorTransactionNotClosed, {}, outError);
-        return false;
     }
 
 
@@ -736,7 +696,7 @@ namespace litecore {
 
 
     void DatabaseImpl::mustNotBeInTransaction() {
-        if (inTransaction())
+        if (isInTransaction())
             error::_throw(error::TransactionNotClosed);
     }
 
@@ -748,7 +708,27 @@ namespace litecore {
     }
 
 
-#pragma mark - DOCUMENTS:
+#pragma mark - RAW DOCUMENTS:
+
+
+    bool DatabaseImpl::getRawDocument(slice storeName, slice key, function_ref<void(C4RawDocument*)> cb) {
+        Record r = getRawRecord(string(storeName), key);
+        if (r.exists()) {
+            C4RawDocument rawDoc = {r.key(), r.version(), r.body()};
+            cb(&rawDoc);
+            return true;
+        } else {
+            cb(nullptr);
+            return false;
+        }
+    }
+
+
+    void DatabaseImpl::putRawDocument(slice storeName, const C4RawDocument &doc) {
+        Transaction t(this);
+        putRawRecord(string(storeName), doc.key, doc.meta, doc.body);
+        t.commit();
+    }
 
     
     Record DatabaseImpl::getRawRecord(const string &storeName, slice key) {
@@ -758,11 +738,18 @@ namespace litecore {
 
     void DatabaseImpl::putRawRecord(const string &storeName, slice key, slice meta, slice body) {
         KeyStore &localDocs = getKeyStore(storeName);
-        auto &t = transaction();
         if (body.buf || meta.buf)
-            localDocs.setKV(key, meta, body, t);
+            localDocs.setKV(key, meta, body, transaction());
         else
-            localDocs.del(key, t);
+            localDocs.del(key, transaction());
+    }
+
+
+#pragma mark - DOCUMENTS:
+
+
+    FLSharedKeys DatabaseImpl::getFleeceSharedKeys() const {
+        return (FLSharedKeys)_dataFile->documentKeys();
     }
 
 
@@ -772,14 +759,32 @@ namespace litecore {
     }
 
 
-    FLEncoder DatabaseImpl::sharedFLEncoder() const {
+    FLEncoder DatabaseImpl::sharedFleeceEncoder() const {
         if (_flEncoder) {
             FLEncoder_Reset(_flEncoder);
         } else {
             _flEncoder = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
-            FLEncoder_SetSharedKeys(_flEncoder, (FLSharedKeys)documentKeys());
+            FLEncoder_SetSharedKeys(_flEncoder, getFleeceSharedKeys());
         }
         return _flEncoder;
+    }
+
+
+    alloc_slice DatabaseImpl::encodeJSON(slice jsonData) const {
+        impl::Encoder &enc = sharedEncoder();
+        impl::JSONConverter jc(enc);
+        if (!jc.encodeJSON(jsonData)) {
+            enc.reset();
+            error(error::Fleece, jc.errorCode(), jc.errorMessage())._throw();
+        }
+        return enc.finish();
+    }
+
+
+    FLEncoder DatabaseImpl::createFleeceEncoder() const {
+        FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
+        FLEncoder_SetSharedKeys(enc, getFleeceSharedKeys());
+        return enc;
     }
 
 
@@ -823,19 +828,154 @@ namespace litecore {
 
     void DatabaseImpl::validateRevisionBody(slice body) {
         if (body.size > 0) {
-            Scope scope(body, documentKeys());
+            auto documentKeys = _dataFile->documentKeys();
+            Scope scope(body, documentKeys);
             const Value *v = Value::fromData(body);
             if (!v)
                 error::_throw(error::CorruptRevisionData, "Revision body is not parseable as Fleece");
             const Dict *root = v->asDict();
             if (!root)
                 error::_throw(error::CorruptRevisionData, "Revision body is not a Dict");
-            if (root->sharedKeys() != documentKeys())
+            if (root->sharedKeys() != documentKeys)
                 error::_throw(error::CorruptRevisionData,
                               "Revision uses wrong SharedKeys %p (db's is %p)",
-                              root->sharedKeys(), documentKeys());
+                              root->sharedKeys(), documentKeys);
             validateKeys(v);
         }
+    }
+
+
+#pragma mark - INDEXES:
+
+
+    void DatabaseImpl::createIndex(slice indexName,
+                                 slice indexSpecJSON,
+                                 C4IndexType indexType,
+                                 const C4IndexOptions *indexOptions)
+    {
+        static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options));
+
+        defaultKeyStore().createIndex(indexName,
+                                            indexSpecJSON,
+                                            (IndexSpec::Type)indexType,
+                                            (const IndexSpec::Options*)indexOptions);
+    }
+
+
+    void DatabaseImpl::deleteIndex(slice indexName) {
+        defaultKeyStore().deleteIndex(indexName);
+    }
+
+
+    alloc_slice DatabaseImpl::getIndexesInfo(bool fullInfo) const {
+        impl::Encoder enc;
+        enc.beginArray();
+        for (const auto &spec : defaultKeyStore().getIndexes()) {
+            if (fullInfo) {
+                enc.beginDictionary();
+                enc.writeKey("name"); enc.writeString(spec.name);
+                enc.writeKey("type"); enc.writeInt(spec.type);
+                enc.writeKey("expr"); enc.writeString(spec.expressionJSON);
+                enc.endDictionary();
+            } else {
+                enc.writeString(spec.name);
+            }
+        }
+        enc.endArray();
+        return enc.finish();
+    }
+
+
+    alloc_slice DatabaseImpl::getIndexRows(slice indexName) const {
+        int64_t rowCount;
+        alloc_slice rows;
+        ((SQLiteDataFile*)dataFile())->inspectIndex(indexName, rowCount, &rows);
+        return rows;
+    }
+
+
+#pragma mark - REPLICATION:
+
+
+    static const char * kRemoteDBURLsDoc = "remotes";
+
+
+    C4RemoteID DatabaseImpl::getRemoteDBID(slice remoteAddress, bool canCreate) {
+        bool inTransaction = false;
+        C4RemoteID remoteID = 0;
+
+        // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
+        // If the ID isn't found, then do a second pass where we either add the remote URL
+        // or create the doc from scratch, in a transaction.
+        for (int creating = 0; creating <= 1; ++creating) {
+            if (creating) {     // 2nd pass takes place in a transaction
+                beginTransaction();
+                inTransaction = true;
+            }
+
+            // Look up the doc in the db, and the remote URL in the doc:
+            Record doc = getRawRecord(string(kInfoStore), kRemoteDBURLsDoc);
+            const impl::Dict *remotes = nullptr;
+            remoteID = 0;
+            if (doc.exists()) {
+                auto body = impl::Value::fromData(doc.body());
+                if (body)
+                    remotes = body->asDict();
+                if (remotes) {
+                    auto idObj = remotes->get(remoteAddress);
+                    if (idObj)
+                        remoteID = C4RemoteID(idObj->asUnsigned());
+                }
+            }
+
+            if (remoteID > 0) {
+                // Found the remote ID!
+                return remoteID;
+            } else if (!canCreate) {
+                break;
+            } else if (creating) {
+                // Update or create the document, adding the identifier:
+                remoteID = 1;
+                impl::Encoder enc;
+                enc.beginDictionary();
+                for (impl::Dict::iterator i(remotes); i; ++i) {
+                    auto existingID = i.value()->asUnsigned();
+                    if (existingID) {
+                        enc.writeKey(i.keyString());            // Copy existing entry
+                        enc.writeUInt(existingID);
+                        remoteID = max(remoteID, 1 + C4RemoteID(existingID));   // make sure new ID is unique
+                    }
+                }
+                enc.writeKey(remoteAddress);                       // Add new entry
+                enc.writeUInt(remoteID);
+                enc.endDictionary();
+                alloc_slice body = enc.finish();
+
+                // Save the doc:
+                putRawRecord(string(kInfoStore), kRemoteDBURLsDoc, nullslice, body);
+                endTransaction(true);
+                inTransaction = false;
+                break;
+            }
+        }
+        if (inTransaction)
+            endTransaction(false);
+        return remoteID;
+    }
+
+
+    alloc_slice DatabaseImpl::getRemoteDBAddress(C4RemoteID remoteID) {
+        Record doc = getRawRecord(string(kInfoStore), kRemoteDBURLsDoc);
+        if (doc.exists()) {
+            auto body = impl::Value::fromData(doc.body());
+            if (body) {
+                for (impl::Dict::iterator i(body->asDict()); i; ++i) {
+                    if (i.value()->asInt() == remoteID)
+                        return alloc_slice(i.keyString());
+                }
+            }
+        }
+        return nullslice;
     }
 
 }

@@ -61,7 +61,7 @@ namespace litecore {
 
         void _initialize() {
             _doc.owner = this;
-            _doc.setEncoder(database()->getSharedFleeceEncoder());
+            _doc.setEncoder(database()->sharedFleeceEncoder());
             _updateDocFields();
             _selectRemote(RemoteID::Local);
         }
@@ -203,7 +203,7 @@ namespace litecore {
                         return _doc.currentRevisionData();
                 } else if (rev->properties) {
                     // Else the properties have to be re-encoded to a slice:
-                    SharedEncoder enc(database()->getSharedFleeceEncoder());
+                    SharedEncoder enc(database()->sharedFleeceEncoder());
                     enc << rev->properties;
                     _latestBody = enc.finishDoc();
                     return _latestBody.data();;
@@ -342,7 +342,7 @@ namespace litecore {
                 asInternal(database())->validateRevisionBody(body);
             else
                 body = alloc_slice{(FLDict)Dict::emptyDict(), 2};
-            Doc fldoc = Doc(body, kFLUntrusted, database()->getFLSharedKeys());
+            Doc fldoc = Doc(body, kFLUntrusted, database()->getFleeceSharedKeys());
             Assert(fldoc.asDict());     // validateRevisionBody should have preflighted this
             return fldoc;
         }

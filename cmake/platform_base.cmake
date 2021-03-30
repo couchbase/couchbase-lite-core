@@ -18,6 +18,7 @@ function(set_litecore_source_base)
         C/c4BlobStore.cc
         C/c4CAPI.cc
         C/c4Certificate.cc
+        C/c4Collection.cc
         C/c4Database.cc
         C/c4DocEnumerator.cc
         C/c4Document.cc

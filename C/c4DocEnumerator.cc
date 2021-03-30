@@ -17,7 +17,7 @@
 //
 
 #include "c4DocEnumerator.hh"
-#include "C4Collection.hh"
+#include "c4Collection.hh"
 #include "c4Document.hh"
 #include "c4Internal.hh"
 #include "DatabaseImpl.hh"

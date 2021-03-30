@@ -50,13 +50,13 @@ namespace litecore {
         ,Logging(DBLog)
         ,_keyStore(&store)
         {
-            auto flags = _database->getConfig().flags;
+            auto flags = _database->configuration().flags;
             if (flags & kC4DB_VersionVectors)
                 _documentFactory = make_unique<VectorDocumentFactory>(this);
             else
                 _documentFactory = make_unique<TreeDocumentFactory>(this);
 
-            if (!(_database->getConfig().flags & kC4DB_NonObservable))
+            if (!(_database->configuration().flags & kC4DB_NonObservable))
                 _sequenceTracker = make_unique<access_lock<SequenceTracker>>(
                                                                     SequenceTracker(store.name()));
 
@@ -78,7 +78,7 @@ namespace litecore {
 
 
         std::string loggingIdentifier() const override {  // Logging API
-            auto dbName = _database->getName();
+            auto dbName = _database->name();
             return format("%.*s/%.*s", SPLAT(dbName), SPLAT(_name));
         }
 
@@ -431,7 +431,7 @@ namespace litecore {
 
         void startHousekeeping() override {
             if (!_housekeeper) {
-                if ((database()->getConfig().flags & kC4DB_ReadOnly) == 0) {
+                if ((database()->configuration().flags & kC4DB_ReadOnly) == 0) {
                     _housekeeper = new Housekeeper(this);
                     _housekeeper->start();
                 }

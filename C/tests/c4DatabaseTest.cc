@@ -446,7 +446,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C][Expira
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
-    this_thread::sleep_for(2000ms);
+    this_thread::sleep_for(2500ms);
     REQUIRE(c4_now() >= expire);
 
     CHECK(!docExists(db, docID));

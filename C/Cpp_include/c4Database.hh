@@ -33,9 +33,6 @@ C4_ASSUME_NONNULL_BEGIN
 
 struct C4ReplicatorParameters;
 
-namespace litecore {
-    class DatabaseImpl;
-}
 namespace litecore::websocket {
     class WebSocket;
 }
@@ -56,11 +53,13 @@ public:
 
     using Config = C4DatabaseConfig2;
 
-    static bool exists(slice name, slice inDirectory);
+    static bool exists(slice name,
+                       slice inDirectory);
     static void copyNamed(slice sourcePath,
                           slice destinationName,
                           const Config&);
-    static bool deleteNamed(slice name, slice inDirectory);
+    static bool deleteNamed(slice name,
+                            slice inDirectory);
     static bool deleteAtPath(slice path);
 
     static Retained<C4Database> openNamed(slice name,
@@ -72,21 +71,21 @@ public:
 
     static void shutdownLiteCore();
 
-    Retained<C4Database> openAgain();
+    Retained<C4Database> openAgain()                    {return openNamed(name(), configuration());}
 
-    void close();
-    void closeAndDeleteFile();
-    void rekey(const C4EncryptionKey* C4NULLABLE key);
-    void maintenance(C4MaintenanceType t);
+    virtual void close() =0;
+    virtual void closeAndDeleteFile() =0;
+    virtual void rekey(const C4EncryptionKey* C4NULLABLE key) =0;
+    virtual void maintenance(C4MaintenanceType) =0;
 
     // Attributes:
 
-    slice getName() const noexcept FLPURE;
-    alloc_slice path() const;
-    const Config& getConfig() const noexcept FLPURE;
-    alloc_slice getPeerID() const;
-    C4UUID publicUUID() const;
-    C4UUID privateUUID() const;
+    slice name() const noexcept FLPURE                      {return _name;}
+    virtual alloc_slice path() const =0;
+    const Config& configuration() const noexcept FLPURE     {return _config;}
+    virtual alloc_slice getPeerID() const =0;
+    virtual C4UUID publicUUID() const =0;
+    virtual C4UUID privateUUID() const =0;
 
     // Collections:
 
@@ -94,26 +93,28 @@ public:
     /// In a pre-existing database, this collection contains all docs that were added to
     /// "the database" before collections existed.
     /// Its name is "_default".
-    C4Collection* getDefaultCollection() const;
+    C4Collection* getDefaultCollection() const              {return _defaultCollection;}
 
     /// Returns true if the collection exists.
-    bool hasCollection(slice name) const;
+    virtual bool hasCollection(slice name) const =0;
 
     /// Returns the existing collection with the given name, or nullptr if it doesn't exist.
-    Retained<C4Collection> getCollection(slice name) const;
+    virtual Retained<C4Collection> getCollection(slice name) const =0;
 
     /// Creates and returns an empty collection with the given name,
     /// or returns an existing collection by that name.
-    Retained<C4Collection> createCollection(slice name);
+    virtual Retained<C4Collection> createCollection(slice name) =0;
 
     /// Deletes the collection with the given name.
-    void deleteCollection(slice name);
+    virtual void deleteCollection(slice name) =0;
 
     /// Returns the names of all existing collections, in the order in which they were created.
-    std::vector<std::string> collectionNames() const;
+    virtual std::vector<std::string> collectionNames() const =0;
+
+    using CollectionCallback = fleece::function_ref<void(C4Collection*)>;
 
     /// Calls the callback function for each collection, in the same order as collectionNames().
-    void forEachCollection(const fleece::function_ref<void(C4Collection*)>&);
+    virtual void forEachCollection(const CollectionCallback&) const =0;
 
     // Transactions:
 
@@ -130,33 +131,33 @@ public:
         C4Database* C4NULLABLE _db;
     };
 
-    bool isInTransaction() const noexcept FLPURE;
+    virtual bool isInTransaction() const noexcept FLPURE =0;
 
     // Raw Documents:
 
     static constexpr slice kInfoStore = "info";    /// Raw-document store used for db metadata.
 
-    bool getRawDocument(slice storeName,
-                        slice key,
-                        fleece::function_ref<void(C4RawDocument* C4NULLABLE)> callback);
+    virtual bool getRawDocument(slice storeName,
+                                slice key,
+                                fleece::function_ref<void(C4RawDocument* C4NULLABLE)> callback) =0;
 
-    void putRawDocument(slice storeName, const C4RawDocument&);
+    virtual void putRawDocument(slice storeName,
+                                const C4RawDocument&) =0;
 
     // Fleece-related utilities for document encoding:
 
-    alloc_slice encodeJSON(slice jsonData) const;
-    FLEncoder createFleeceEncoder() const;
-    FLEncoder getSharedFleeceEncoder() const;
-    FLSharedKeys getFLSharedKeys() const;
+    virtual alloc_slice encodeJSON(slice jsonData) const =0;
+    virtual FLEncoder createFleeceEncoder() const =0;
+    virtual FLEncoder sharedFleeceEncoder() const =0;
+    virtual FLSharedKeys getFleeceSharedKeys() const =0;
 
     // Expiration:
 
-    bool mayHaveExpiration() const;
-    C4Timestamp nextDocExpiration() const;
+    virtual C4Timestamp nextDocExpiration() const =0;
 
     // Blobs:
 
-    C4BlobStore& getBlobStore() const;
+    virtual C4BlobStore& getBlobStore() const =0;
 
     // Queries & Indexes:
 
@@ -164,17 +165,16 @@ public:
                                slice queryExpression,
                                int* C4NULLABLE outErrorPos = nullptr) const;
 
-    void createIndex(slice name,
-                     slice indexSpecJSON,
-                     C4IndexType indexType,
-                     const C4IndexOptions* C4NULLABLE indexOptions =nullptr);
+    virtual void createIndex(slice name,
+                             slice indexSpecJSON,
+                             C4IndexType indexType,
+                             const C4IndexOptions* C4NULLABLE indexOptions =nullptr) =0;
 
-    void deleteIndex(slice name);
+    virtual void deleteIndex(slice name) =0;
 
-    alloc_slice getIndexesInfo(bool fullInfo = true) const;
-    alloc_slice getIndexes() const                          {return getIndexesInfo(false);}
+    virtual alloc_slice getIndexesInfo(bool fullInfo = true) const =0;
 
-    alloc_slice getIndexRows(slice name) const;
+    virtual alloc_slice getIndexRows(slice name) const =0;
 
     // Replicator:
 
@@ -201,25 +201,31 @@ public:
 
 // only used internally:
     // These are used by the replicator:
-    C4RemoteID getRemoteDBID(slice remoteAddress,
-                             bool canCreate);
-    alloc_slice getRemoteDBAddress(C4RemoteID remoteID);
+    virtual C4RemoteID getRemoteDBID(slice remoteAddress, bool canCreate) =0;
+    virtual alloc_slice getRemoteDBAddress(C4RemoteID remoteID) =0;
 
-    // Evaluates a SQLite (not N1QL!) query and returns the results. Used only by the `cblite` tool.
-    alloc_slice rawQuery(slice sqliteQuery);
+    // Used only by the `cblite` tool:
+    virtual alloc_slice rawQuery(slice sqliteQuery) =0;
 
-// Only for use by the C API -- internal or deprecated:
-    void beginTransaction();            // use Transaction class above instead
-    void endTransaction(bool commit);
+    // Only for use by the C API -- internal or deprecated:
+    virtual void beginTransaction() =0;            // use Transaction class above instead
+    virtual void endTransaction(bool commit) =0;
     static void copyFileToPath(slice sourcePath, slice destinationPath, const C4DatabaseConfig&);
-    const C4DatabaseConfig& getConfigV1() const noexcept FLPURE;
-    void lockClientMutex() noexcept;
-    void unlockClientMutex() noexcept;
+    const C4DatabaseConfig& configV1() const noexcept FLPURE {return _configV1;}
+    virtual void lockClientMutex() noexcept =0;
+    virtual void unlockClientMutex() noexcept =0;
 
     C4ExtraInfo extraInfo { };
 
 protected:
-    virtual ~C4Database();
+    C4Database(std::string name, std::string dir, const C4DatabaseConfig&);
+    static bool deleteDatabaseFileAtPath(const std::string &dbPath, C4StorageEngine);
+
+    std::string const           _name;                  // Database filename (w/o extension)
+    std::string const           _parentDirectory;
+    C4DatabaseConfig2           _config;                // Configuration
+    C4DatabaseConfig            _configV1;              // TODO: DEPRECATED
+    mutable Retained<C4Collection> _defaultCollection;
 };
 
 C4_ASSUME_NONNULL_END

@@ -538,7 +538,7 @@ bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *ou
 
 
 C4String c4db_getName(C4Database *database) noexcept {
-    return slice(database->getName());
+    return slice(database->name());
 }
 
 C4SliceResult c4db_getPath(C4Database *database) noexcept {
@@ -547,12 +547,12 @@ C4SliceResult c4db_getPath(C4Database *database) noexcept {
 
 
 const C4DatabaseConfig* c4db_getConfig(C4Database *database) noexcept {
-    return &database->getConfigV1();
+    return &database->configV1();
 }
 
 
 const C4DatabaseConfig2* c4db_getConfig2(C4Database *database) noexcept {
-    return &database->getConfig();
+    return &database->configuration();
 }
 
 
@@ -729,7 +729,7 @@ bool c4db_deleteIndex(C4Database *database,
 
 C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&]{
-        return C4SliceResult(database->getIndexes());
+        return C4SliceResult(database->getIndexesInfo(false));
     });
 }
 
@@ -1096,7 +1096,7 @@ FLEncoder c4db_createFleeceEncoder(C4Database* db) noexcept {
 
 
 FLEncoder c4db_getSharedFleeceEncoder(C4Database* db) noexcept {
-    return db->getSharedFleeceEncoder();
+    return db->sharedFleeceEncoder();
 }
 
 
@@ -1115,7 +1115,7 @@ C4SliceResult c4doc_bodyAsJSON(C4Document *doc, bool canonical, C4Error *outErro
 
 
 FLSharedKeys c4db_getFLSharedKeys(C4Database *db) noexcept {
-    return db->getFLSharedKeys();
+    return db->getFleeceSharedKeys();
 }
 
 

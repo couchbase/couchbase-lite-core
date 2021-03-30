@@ -234,7 +234,7 @@ void C4Document::resolveConflict(slice winningRevID,
 {
     alloc_slice mergedBody;
     if (mergedProperties) {
-        auto enc = database()->getSharedFleeceEncoder();
+        auto enc = database()->sharedFleeceEncoder();
         FLEncoder_WriteValue(enc, (FLValue)mergedProperties);
         FLError flErr;
         mergedBody = FLEncoder_Finish(enc, &flErr);
