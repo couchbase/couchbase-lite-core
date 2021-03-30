@@ -76,25 +76,25 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a5d007c63db3e71548b611d49013bd362"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___errors.html#ga6cbe7be44f2f63425404284687e6861c">C4ErrorDomain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_error.html#a5d007c63db3e71548b611d49013bd362">domain</a></td></tr>
+<tr class="memitem:a5d007c63db3e71548b611d49013bd362"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___errors.html#gabb4faf1bef1be6c39f496e0ffdf8cdd0">C4ErrorDomain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_error.html#a5d007c63db3e71548b611d49013bd362">domain</a>: 8</td></tr>
 <tr class="separator:a5d007c63db3e71548b611d49013bd362"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab0c43df2658bd401e9109527cffe4c92"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_error.html#ab0c43df2658bd401e9109527cffe4c92">code</a></td></tr>
-<tr class="separator:ab0c43df2658bd401e9109527cffe4c92"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ca60bbcacc411ab41f52c00f63defd2"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_error.html#a4ca60bbcacc411ab41f52c00f63defd2">internal_info</a></td></tr>
-<tr class="separator:a4ca60bbcacc411ab41f52c00f63defd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5eb77d32d3c979d1c26c4f8042e58a4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_error.html#ad5eb77d32d3c979d1c26c4f8042e58a4">code</a>:24</td></tr>
+<tr class="separator:ad5eb77d32d3c979d1c26c4f8042e58a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2a56aa7e3d439c92ee34c4028e4b345"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_error.html#ab2a56aa7e3d439c92ee34c4028e4b345">internal_info</a>:32</td></tr>
+<tr class="separator:ab2a56aa7e3d439c92ee34c4028e4b345"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>An error value. </p>
 <p>These are returned by reference from API calls whose last parameter is a C4Error*. The semantics are based on Cocoa's usage of NSError: A caller can pass NULL if it doesn't care about the error. The error is filled in only if the function fails, as indicated by its return value (e.g. false or NULL.) If the function doesn't fail, it does NOT zero out the error, so its contents should be considered uninitialized garbage. </p>
 </div><h2 class="groupheader">Field Documentation</h2>
-<a id="ab0c43df2658bd401e9109527cffe4c92"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab0c43df2658bd401e9109527cffe4c92">&#9670;&nbsp;</a></span>code</h2>
+<a id="ad5eb77d32d3c979d1c26c4f8042e58a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5eb77d32d3c979d1c26c4f8042e58a4">&#9670;&nbsp;</a></span>code</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int32_t C4Error::code</td>
+          <td class="memname">int C4Error::code</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -108,21 +108,21 @@ Data Fields</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___errors.html#ga6cbe7be44f2f63425404284687e6861c">C4ErrorDomain</a> C4Error::domain</td>
+          <td class="memname"><a class="el" href="group___errors.html#gabb4faf1bef1be6c39f496e0ffdf8cdd0">C4ErrorDomain</a> C4Error::domain</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a4ca60bbcacc411ab41f52c00f63defd2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ca60bbcacc411ab41f52c00f63defd2">&#9670;&nbsp;</a></span>internal_info</h2>
+<a id="ab2a56aa7e3d439c92ee34c4028e4b345"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2a56aa7e3d439c92ee34c4028e4b345">&#9670;&nbsp;</a></span>internal_info</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int32_t C4Error::internal_info</td>
+          <td class="memname">unsigned C4Error::internal_info</td>
         </tr>
       </table>
 </div><div class="memdoc">

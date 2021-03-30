@@ -63,32 +63,98 @@ $(function() {
 
 <div class="header">
   <div class="summary">
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">Shared Keys</div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p>FLSharedKeys represents a mapping from short strings to small integers in the range [0...2047].  
+<a href="#details">More...</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:gaa196e79d90512aff11133491eaa53464"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#gaa196e79d90512aff11133491eaa53464">FLSharedKeysReadCallback</a>) (void *context, <a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>)</td></tr>
+<tr class="separator:gaa196e79d90512aff11133491eaa53464"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga170f671f7083341403f7530024ec5cfb"><td class="memItemLeft" align="right" valign="top">typedef struct _FLSharedKeyScope *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga170f671f7083341403f7530024ec5cfb">FLSharedKeyScope</a></td></tr>
+<tr class="separator:ga170f671f7083341403f7530024ec5cfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga7a6a6fc6cf143af3fc9a269f7790a620"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga7a6a6fc6cf143af3fc9a269f7790a620">FLSharedKeys_Create</a> (void)</td></tr>
-<tr class="separator:ga7a6a6fc6cf143af3fc9a269f7790a620"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga56c7f1cb23f7a5582d13e776a46bc414"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga56c7f1cb23f7a5582d13e776a46bc414">FLSharedKeys_Retain</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>)</td></tr>
-<tr class="separator:ga56c7f1cb23f7a5582d13e776a46bc414"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2c956196c3fad27c62dfa9e6aa16d1c9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga2c956196c3fad27c62dfa9e6aa16d1c9">FLSharedKeys_Release</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>)</td></tr>
-<tr class="separator:ga2c956196c3fad27c62dfa9e6aa16d1c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa0ae52b6b1c7f6b9e20c0d1f500b2572"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#gaa0ae52b6b1c7f6b9e20c0d1f500b2572">FLSharedKeys_CreateFromStateData</a> (<a class="el" href="struct_f_l_slice.html">FLSlice</a>)</td></tr>
-<tr class="separator:gaa0ae52b6b1c7f6b9e20c0d1f500b2572"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga92dbd791b612bbd3da753e222ba34c8b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga92dbd791b612bbd3da753e222ba34c8b">FLSharedKeys_New</a> (void)</td></tr>
+<tr class="memdesc:ga92dbd791b612bbd3da753e222ba34c8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new empty FLSharedKeys object, which must eventually be released.  <a href="#ga92dbd791b612bbd3da753e222ba34c8b">More...</a><br /></td></tr>
+<tr class="separator:ga92dbd791b612bbd3da753e222ba34c8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf34837e86c989f44b2d04efe3221d951"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#gaf34837e86c989f44b2d04efe3221d951">FLSharedKeys_NewWithRead</a> (<a class="el" href="group___f_l_shared_keys.html#gaa196e79d90512aff11133491eaa53464">FLSharedKeysReadCallback</a>, void *context)</td></tr>
+<tr class="separator:gaf34837e86c989f44b2d04efe3221d951"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3af2bf8c617d005d649cdfb5b5357bbf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga3af2bf8c617d005d649cdfb5b5357bbf">FLSharedKeys_GetStateData</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>)</td></tr>
+<tr class="memdesc:ga3af2bf8c617d005d649cdfb5b5357bbf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a data blob containing the current state (all the keys and their integers.)  <a href="#ga3af2bf8c617d005d649cdfb5b5357bbf">More...</a><br /></td></tr>
 <tr class="separator:ga3af2bf8c617d005d649cdfb5b5357bbf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadac536212a8d1f9d2e0e790a0c0bb4e2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#gadac536212a8d1f9d2e0e790a0c0bb4e2">FLSharedKeys_LoadStateData</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>, <a class="el" href="struct_f_l_slice.html">FLSlice</a>)</td></tr>
+<tr class="memdesc:gadac536212a8d1f9d2e0e790a0c0bb4e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates an FLSharedKeys with saved state data created by <a class="el" href="group___f_l_shared_keys.html#ga3af2bf8c617d005d649cdfb5b5357bbf">FLSharedKeys_GetStateData</a>.  <a href="#gadac536212a8d1f9d2e0e790a0c0bb4e2">More...</a><br /></td></tr>
+<tr class="separator:gadac536212a8d1f9d2e0e790a0c0bb4e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4dc5040795d46282e8a4d61ab81ec265"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga4dc5040795d46282e8a4d61ab81ec265">FLSharedKeys_WriteState</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>, <a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>)</td></tr>
+<tr class="memdesc:ga4dc5040795d46282e8a4d61ab81ec265"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes the current state to a Fleece encoder as a single value, which can later be decoded and passed to <a class="el" href="group___f_l_shared_keys.html#ga64448aed21802b035702148eeb649058">FLSharedKeys_LoadState</a>.  <a href="#ga4dc5040795d46282e8a4d61ab81ec265">More...</a><br /></td></tr>
+<tr class="separator:ga4dc5040795d46282e8a4d61ab81ec265"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga64448aed21802b035702148eeb649058"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga64448aed21802b035702148eeb649058">FLSharedKeys_LoadState</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
+<tr class="memdesc:ga64448aed21802b035702148eeb649058"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates an FLSharedKeys object with saved state, a Fleece value previously written by <a class="el" href="group___f_l_shared_keys.html#ga4dc5040795d46282e8a4d61ab81ec265">FLSharedKeys_WriteState</a>.  <a href="#ga64448aed21802b035702148eeb649058">More...</a><br /></td></tr>
+<tr class="separator:ga64448aed21802b035702148eeb649058"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga25df65bb4cfa1850664909e5e99c521e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga25df65bb4cfa1850664909e5e99c521e">FLSharedKeys_Encode</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>, bool add)</td></tr>
+<tr class="memdesc:ga25df65bb4cfa1850664909e5e99c521e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maps a key string to a number in the range [0...2047], or returns -1 if it isn't mapped.  <a href="#ga25df65bb4cfa1850664909e5e99c521e">More...</a><br /></td></tr>
 <tr class="separator:ga25df65bb4cfa1850664909e5e99c521e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0326a22bac7ce4137ecda64d1a6c7813"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga0326a22bac7ce4137ecda64d1a6c7813">FLSharedKeys_Decode</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>, int key)</td></tr>
+<tr class="memdesc:ga0326a22bac7ce4137ecda64d1a6c7813"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the key string that maps to the given integer <code>key</code>, else NULL.  <a href="#ga0326a22bac7ce4137ecda64d1a6c7813">More...</a><br /></td></tr>
 <tr class="separator:ga0326a22bac7ce4137ecda64d1a6c7813"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gacaf741df1f7ff88af01446e108d8f761"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#gacaf741df1f7ff88af01446e108d8f761">FLSharedKeys_Count</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>)</td></tr>
+<tr class="memdesc:gacaf741df1f7ff88af01446e108d8f761"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of keys in the mapping.  <a href="#gacaf741df1f7ff88af01446e108d8f761">More...</a><br /></td></tr>
 <tr class="separator:gacaf741df1f7ff88af01446e108d8f761"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8c2a62a8c3ef7ff60b65e9c6e8287810"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga8c2a62a8c3ef7ff60b65e9c6e8287810">FLSharedKeys_RevertToCount</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>, unsigned oldCount)</td></tr>
+<tr class="memdesc:ga8c2a62a8c3ef7ff60b65e9c6e8287810"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reverts an FLSharedKeys by "forgetting" any keys added since it had the count <code>oldCount</code>.  <a href="#ga8c2a62a8c3ef7ff60b65e9c6e8287810">More...</a><br /></td></tr>
+<tr class="separator:ga8c2a62a8c3ef7ff60b65e9c6e8287810"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga56c7f1cb23f7a5582d13e776a46bc414"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga56c7f1cb23f7a5582d13e776a46bc414">FLSharedKeys_Retain</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>)</td></tr>
+<tr class="memdesc:ga56c7f1cb23f7a5582d13e776a46bc414"><td class="mdescLeft">&#160;</td><td class="mdescRight">Increments the reference count of an FLSharedKeys.  <a href="#ga56c7f1cb23f7a5582d13e776a46bc414">More...</a><br /></td></tr>
+<tr class="separator:ga56c7f1cb23f7a5582d13e776a46bc414"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2c956196c3fad27c62dfa9e6aa16d1c9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga2c956196c3fad27c62dfa9e6aa16d1c9">FLSharedKeys_Release</a> (<a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>)</td></tr>
+<tr class="memdesc:ga2c956196c3fad27c62dfa9e6aa16d1c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decrements the reference count of an FLSharedKeys, freeing it when it reaches zero.  <a href="#ga2c956196c3fad27c62dfa9e6aa16d1c9">More...</a><br /></td></tr>
+<tr class="separator:ga2c956196c3fad27c62dfa9e6aa16d1c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga10d040bf783cee9861ac79f928d51215"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_shared_keys.html#ga170f671f7083341403f7530024ec5cfb">FLSharedKeyScope</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga10d040bf783cee9861ac79f928d51215">FLSharedKeyScope_WithRange</a> (<a class="el" href="struct_f_l_slice.html">FLSlice</a> range, <a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>)</td></tr>
+<tr class="separator:ga10d040bf783cee9861ac79f928d51215"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7687292f74abccc4b209a155a457281d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_shared_keys.html#ga7687292f74abccc4b209a155a457281d">FLSharedKeyScope_Free</a> (<a class="el" href="group___f_l_shared_keys.html#ga170f671f7083341403f7530024ec5cfb">FLSharedKeyScope</a>)</td></tr>
+<tr class="separator:ga7687292f74abccc4b209a155a457281d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p>FLSharedKeys represents a mapping from short strings to small integers in the range [0...2047]. </p>
+<p>It's used by FLDict to abbreviate dictionary keys. A shared key can be stored in a fixed two bytes and is faster to compare against. However, the same mapping has to be used when encoding and when accessing the Dict.</p>
+<p>To use shared keys: Call <a class="el" href="group___f_l_shared_keys.html#ga92dbd791b612bbd3da753e222ba34c8b">FLSharedKeys_New</a> to create a new empty mapping. After creating an FLEncoder, call <a class="el" href="group___f_l_encoder.html#ga1d7d7c3c763f689fb414e366dacc73bc">FLEncoder_SetSharedKeys</a> so dictionary keys will be added to the mapping and written in integer form. When loading Fleece data, use <a class="el" href="group__reading.html#ga247cdef0fabb423f3ceee2db13e22df7">FLDoc_FromResultData</a> and pass the FLSharedKeys as a parameter. Save the mapping somewhere by calling <a class="el" href="group___f_l_shared_keys.html#ga3af2bf8c617d005d649cdfb5b5357bbf">FLSharedKeys_GetStateData</a> or <a class="el" href="group___f_l_shared_keys.html#ga4dc5040795d46282e8a4d61ab81ec265">FLSharedKeys_WriteState</a>. You can later reconstitute the mapping by calling <a class="el" href="group___f_l_shared_keys.html#gadac536212a8d1f9d2e0e790a0c0bb4e2">FLSharedKeys_LoadStateData</a> or <a class="el" href="group___f_l_shared_keys.html#ga64448aed21802b035702148eeb649058">FLSharedKeys_LoadState</a> on a new empty instance. </p>
+<h2 class="groupheader">Typedef Documentation</h2>
+<a id="ga170f671f7083341403f7530024ec5cfb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga170f671f7083341403f7530024ec5cfb">&#9670;&nbsp;</a></span>FLSharedKeyScope</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct _FLSharedKeyScope* <a class="el" href="group___f_l_shared_keys.html#ga170f671f7083341403f7530024ec5cfb">FLSharedKeyScope</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="gaa196e79d90512aff11133491eaa53464"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa196e79d90512aff11133491eaa53464">&#9670;&nbsp;</a></span>FLSharedKeysReadCallback</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef bool(* FLSharedKeysReadCallback) (void *context, <a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="gacaf741df1f7ff88af01446e108d8f761"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gacaf741df1f7ff88af01446e108d8f761">&#9670;&nbsp;</a></span>FLSharedKeys_Count()</h2>
@@ -106,41 +172,8 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-</div>
-</div>
-<a id="ga7a6a6fc6cf143af3fc9a269f7790a620"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7a6a6fc6cf143af3fc9a269f7790a620">&#9670;&nbsp;</a></span>FLSharedKeys_Create()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a> FLSharedKeys_Create </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="gaa0ae52b6b1c7f6b9e20c0d1f500b2572"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa0ae52b6b1c7f6b9e20c0d1f500b2572">&#9670;&nbsp;</a></span>FLSharedKeys_CreateFromStateData()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a> FLSharedKeys_CreateFromStateData </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
+<p>Returns the number of keys in the mapping. </p>
+<p>This number increases whenever the mapping is changed, and never decreases. </p>
 
 </div>
 </div>
@@ -169,6 +202,8 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Returns the key string that maps to the given integer <code>key</code>, else NULL. </p>
 
 </div>
 </div>
@@ -204,6 +239,9 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Maps a key string to a number in the range [0...2047], or returns -1 if it isn't mapped. </p>
+<p>If the key doesn't already have a mapping, and the <code>add</code> flag is true, a new mapping is assigned and returned. However, the <code>add</code> flag has no effect if the key is unmappable (is longer than 16 bytes or contains non-identifier characters), or if all available integers have been assigned. </p>
+
 </div>
 </div>
 <a id="ga3af2bf8c617d005d649cdfb5b5357bbf"></a>
@@ -218,6 +256,116 @@ Functions</h2></td></tr>
           <td class="paramtype"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns a data blob containing the current state (all the keys and their integers.) </p>
+
+</div>
+</div>
+<a id="ga64448aed21802b035702148eeb649058"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga64448aed21802b035702148eeb649058">&#9670;&nbsp;</a></span>FLSharedKeys_LoadState()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool FLSharedKeys_LoadState </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Updates an FLSharedKeys object with saved state, a Fleece value previously written by <a class="el" href="group___f_l_shared_keys.html#ga4dc5040795d46282e8a4d61ab81ec265">FLSharedKeys_WriteState</a>. </p>
+
+</div>
+</div>
+<a id="gadac536212a8d1f9d2e0e790a0c0bb4e2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadac536212a8d1f9d2e0e790a0c0bb4e2">&#9670;&nbsp;</a></span>FLSharedKeys_LoadStateData()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool FLSharedKeys_LoadStateData </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Updates an FLSharedKeys with saved state data created by <a class="el" href="group___f_l_shared_keys.html#ga3af2bf8c617d005d649cdfb5b5357bbf">FLSharedKeys_GetStateData</a>. </p>
+
+</div>
+</div>
+<a id="ga92dbd791b612bbd3da753e222ba34c8b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga92dbd791b612bbd3da753e222ba34c8b">&#9670;&nbsp;</a></span>FLSharedKeys_New()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a> FLSharedKeys_New </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Creates a new empty FLSharedKeys object, which must eventually be released. </p>
+
+</div>
+</div>
+<a id="gaf34837e86c989f44b2d04efe3221d951"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf34837e86c989f44b2d04efe3221d951">&#9670;&nbsp;</a></span>FLSharedKeys_NewWithRead()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a> FLSharedKeys_NewWithRead </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___f_l_shared_keys.html#gaa196e79d90512aff11133491eaa53464">FLSharedKeysReadCallback</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>context</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -240,6 +388,8 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Decrements the reference count of an FLSharedKeys, freeing it when it reaches zero. </p>
+
 </div>
 </div>
 <a id="ga56c7f1cb23f7a5582d13e776a46bc414"></a>
@@ -254,6 +404,114 @@ Functions</h2></td></tr>
           <td class="paramtype"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Increments the reference count of an FLSharedKeys. </p>
+
+</div>
+</div>
+<a id="ga8c2a62a8c3ef7ff60b65e9c6e8287810"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8c2a62a8c3ef7ff60b65e9c6e8287810">&#9670;&nbsp;</a></span>FLSharedKeys_RevertToCount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void FLSharedKeys_RevertToCount </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>oldCount</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Reverts an FLSharedKeys by "forgetting" any keys added since it had the count <code>oldCount</code>. </p>
+
+</div>
+</div>
+<a id="ga4dc5040795d46282e8a4d61ab81ec265"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4dc5040795d46282e8a4d61ab81ec265">&#9670;&nbsp;</a></span>FLSharedKeys_WriteState()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void FLSharedKeys_WriteState </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Writes the current state to a Fleece encoder as a single value, which can later be decoded and passed to <a class="el" href="group___f_l_shared_keys.html#ga64448aed21802b035702148eeb649058">FLSharedKeys_LoadState</a>. </p>
+
+</div>
+</div>
+<a id="ga7687292f74abccc4b209a155a457281d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7687292f74abccc4b209a155a457281d">&#9670;&nbsp;</a></span>FLSharedKeyScope_Free()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void FLSharedKeyScope_Free </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___f_l_shared_keys.html#ga170f671f7083341403f7530024ec5cfb">FLSharedKeyScope</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ga10d040bf783cee9861ac79f928d51215"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga10d040bf783cee9861ac79f928d51215">&#9670;&nbsp;</a></span>FLSharedKeyScope_WithRange()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___f_l_shared_keys.html#ga170f671f7083341403f7530024ec5cfb">FLSharedKeyScope</a> FLSharedKeyScope_WithRange </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td>
+          <td class="paramname"><em>range</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__reading.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">

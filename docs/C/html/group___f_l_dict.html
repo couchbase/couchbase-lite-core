@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.15"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: Dictionaries</title>
+<title>LiteCore: Fleece Dictionaries</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -67,7 +67,7 @@ $(function() {
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
-<div class="title">Dictionaries</div>  </div>
+<div class="title">Fleece Dictionaries</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
@@ -158,6 +158,9 @@ Mutable dictionaries</h2></td></tr>
 <tr class="memitem:ga087e3f7732ca67e16dc5f343d57935e2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga087e3f7732ca67e16dc5f343d57935e2">FLMutableDict_IsChanged</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>)</td></tr>
 <tr class="memdesc:ga087e3f7732ca67e16dc5f343d57935e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the Dict has been changed from the source it was copied from.  <a href="#ga087e3f7732ca67e16dc5f343d57935e2">More...</a><br /></td></tr>
 <tr class="separator:ga087e3f7732ca67e16dc5f343d57935e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5b788fbe95138da6100314c25199ed12"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga5b788fbe95138da6100314c25199ed12">FLMutableDict_SetChanged</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, bool)</td></tr>
+<tr class="memdesc:ga5b788fbe95138da6100314c25199ed12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets or clears the mutable Dict's "changed" flag.  <a href="#ga5b788fbe95138da6100314c25199ed12">More...</a><br /></td></tr>
+<tr class="separator:ga5b788fbe95138da6100314c25199ed12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5e4aaaf5d5492bb1c875e08608fceb6a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga5e4aaaf5d5492bb1c875e08608fceb6a">FLMutableDict_Set</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a> FL_NONNULL, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key)</td></tr>
 <tr class="memdesc:ga5e4aaaf5d5492bb1c875e08608fceb6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the Slot storing the key's value, adding a new one if needed (with a null value.) To set the value itself, call one of the FLSlot functions, e.g.  <a href="#ga5e4aaaf5d5492bb1c875e08608fceb6a">More...</a><br /></td></tr>
 <tr class="separator:ga5e4aaaf5d5492bb1c875e08608fceb6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -798,7 +801,37 @@ Mutable dictionaries</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the Slot storing the key's value, adding a new one if needed (with a null value.) To set the value itself, call one of the FLSlot functions, e.g. </p>
-<p><a class="el" href="group___f_l_value.html#ga6e2f352363451aa1ca1cbd5102cec63c">FLSlot_SetInt</a>. </p>
+<p><a class="el" href="group___slots.html#ga6e2f352363451aa1ca1cbd5102cec63c">FLSlot_SetInt</a>. </p>
+
+</div>
+</div>
+<a id="ga5b788fbe95138da6100314c25199ed12"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5b788fbe95138da6100314c25199ed12">&#9670;&nbsp;</a></span>FLMutableDict_SetChanged()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void FLMutableDict_SetChanged </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets or clears the mutable Dict's "changed" flag. </p>
 
 </div>
 </div>

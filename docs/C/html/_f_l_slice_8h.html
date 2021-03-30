@@ -89,17 +89,20 @@ Data Structures</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A simple reference to a block of memory.  <a href="struct_f_l_slice.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A block of memory returned from an API call.  <a href="struct_f_l_slice_result.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A heap-allocated block of memory returned from an API call.  <a href="struct_f_l_slice_result.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:a05ee7d664be70b152a43f900c309f7e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_f_l_slice_8h.html#a05ee7d664be70b152a43f900c309f7e5">_FLSLICE_H</a></td></tr>
+<tr class="separator:a05ee7d664be70b152a43f900c309f7e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afde725198ae6fc34b4e286e4858b6eae"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="_f_l_slice_8h.html#afde725198ae6fc34b4e286e4858b6eae">FLAPI</a></td></tr>
 <tr class="separator:afde725198ae6fc34b4e286e4858b6eae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5445a97beaea63c3eadb1427c3a717d8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#ga5445a97beaea63c3eadb1427c3a717d8">kFLSliceNull</a>&#160;&#160;&#160;((<a class="el" href="struct_f_l_slice.html">FLSlice</a>){NULL, 0})</td></tr>
 <tr class="memdesc:ga5445a97beaea63c3eadb1427c3a717d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">A convenient constant denoting a null slice.  <a href="group___f_l_slice.html#ga5445a97beaea63c3eadb1427c3a717d8">More...</a><br /></td></tr>
 <tr class="separator:ga5445a97beaea63c3eadb1427c3a717d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0e82def46e214a706216353705768453"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#ga0e82def46e214a706216353705768453">FLSTR</a>(STR)&#160;&#160;&#160;((<a class="el" href="struct_f_l_slice.html">FLSlice</a>){(&quot;&quot; STR), sizeof((&quot;&quot; STR))-1})</td></tr>
+<tr class="memdesc:ga0e82def46e214a706216353705768453"><td class="mdescLeft">&#160;</td><td class="mdescRight">Macro version of <a class="el" href="group___f_l_slice.html#gae9d0af13963246fd37fbf16c4b237f53">FLStr</a>, for use in initializing compile-time constants.  <a href="group___f_l_slice.html#ga0e82def46e214a706216353705768453">More...</a><br /></td></tr>
 <tr class="separator:ga0e82def46e214a706216353705768453"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
@@ -123,24 +126,44 @@ Functions</h2></td></tr>
 <tr class="memitem:gaa284d9d65b1d25e3284c33ce451e555c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#gaa284d9d65b1d25e3284c33ce451e555c">FLSlice_Compare</a> (<a class="el" href="struct_f_l_slice.html">FLSlice</a>, <a class="el" href="struct_f_l_slice.html">FLSlice</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
 <tr class="memdesc:gaa284d9d65b1d25e3284c33ce451e555c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lexicographic comparison of two slices; basically like memcmp(), but taking into account differences in length.  <a href="group___f_l_slice.html#gaa284d9d65b1d25e3284c33ce451e555c">More...</a><br /></td></tr>
 <tr class="separator:gaa284d9d65b1d25e3284c33ce451e555c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacb3991fac92ad55de3e3cf02bcc76f06"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#gacb3991fac92ad55de3e3cf02bcc76f06">FLSlice_Hash</a> (<a class="el" href="struct_f_l_slice.html">FLSlice</a> s) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:gacb3991fac92ad55de3e3cf02bcc76f06"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes a 32-bit hash of a slice's data, suitable for use in hash tables.  <a href="group___f_l_slice.html#gacb3991fac92ad55de3e3cf02bcc76f06">More...</a><br /></td></tr>
+<tr class="separator:gacb3991fac92ad55de3e3cf02bcc76f06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacdffe2bb52311b91bf998fa714b7a838"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#gacdffe2bb52311b91bf998fa714b7a838">FLSlice_ToCString</a> (<a class="el" href="struct_f_l_slice.html">FLSlice</a> s, char *buffer, size_t capacity)</td></tr>
+<tr class="memdesc:gacdffe2bb52311b91bf998fa714b7a838"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies a slice to a buffer, adding a trailing zero byte to make it a valid C string.  <a href="group___f_l_slice.html#gacdffe2bb52311b91bf998fa714b7a838">More...</a><br /></td></tr>
+<tr class="separator:gacdffe2bb52311b91bf998fa714b7a838"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga66524dad4fc30818a3f18ac7a6b7ca28"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#ga66524dad4fc30818a3f18ac7a6b7ca28">FLSliceResult_New</a> (size_t)</td></tr>
-<tr class="memdesc:ga66524dad4fc30818a3f18ac7a6b7ca28"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates an <a class="el" href="struct_f_l_slice_result.html" title="A block of memory returned from an API call.">FLSliceResult</a> of the given size, without initializing the buffer.  <a href="group___f_l_slice.html#ga66524dad4fc30818a3f18ac7a6b7ca28">More...</a><br /></td></tr>
+<tr class="memdesc:ga66524dad4fc30818a3f18ac7a6b7ca28"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates an <a class="el" href="struct_f_l_slice_result.html" title="A heap-allocated block of memory returned from an API call.">FLSliceResult</a> of the given size, without initializing the buffer.  <a href="group___f_l_slice.html#ga66524dad4fc30818a3f18ac7a6b7ca28">More...</a><br /></td></tr>
 <tr class="separator:ga66524dad4fc30818a3f18ac7a6b7ca28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gada5e7e094a1a827337a4ac019b4ae663"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#gada5e7e094a1a827337a4ac019b4ae663">FLSlice_Copy</a> (<a class="el" href="struct_f_l_slice.html">FLSlice</a>)</td></tr>
-<tr class="memdesc:gada5e7e094a1a827337a4ac019b4ae663"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates an <a class="el" href="struct_f_l_slice_result.html" title="A block of memory returned from an API call.">FLSliceResult</a>, copying the given slice.  <a href="group___f_l_slice.html#gada5e7e094a1a827337a4ac019b4ae663">More...</a><br /></td></tr>
+<tr class="memdesc:gada5e7e094a1a827337a4ac019b4ae663"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates an <a class="el" href="struct_f_l_slice_result.html" title="A heap-allocated block of memory returned from an API call.">FLSliceResult</a>, copying the given slice.  <a href="group___f_l_slice.html#gada5e7e094a1a827337a4ac019b4ae663">More...</a><br /></td></tr>
 <tr class="separator:gada5e7e094a1a827337a4ac019b4ae663"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga699348717114834d5280c66d40d483de"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#ga699348717114834d5280c66d40d483de">_FLBuf_Retain</a> (const void *)</td></tr>
 <tr class="separator:ga699348717114834d5280c66d40d483de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga975449fbf4e5662333feb4ed746f8487"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#ga975449fbf4e5662333feb4ed746f8487">_FLBuf_Release</a> (const void *)</td></tr>
 <tr class="separator:ga975449fbf4e5662333feb4ed746f8487"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9ce70f8e3d12d27fb0de3290a0307d18"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#ga9ce70f8e3d12d27fb0de3290a0307d18">FLSliceResult_Retain</a> (<a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a> s)</td></tr>
-<tr class="memdesc:ga9ce70f8e3d12d27fb0de3290a0307d18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Increments the ref-count of a <a class="el" href="struct_f_l_slice_result.html" title="A block of memory returned from an API call.">FLSliceResult</a>.  <a href="group___f_l_slice.html#ga9ce70f8e3d12d27fb0de3290a0307d18">More...</a><br /></td></tr>
+<tr class="memdesc:ga9ce70f8e3d12d27fb0de3290a0307d18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Increments the ref-count of a <a class="el" href="struct_f_l_slice_result.html" title="A heap-allocated block of memory returned from an API call.">FLSliceResult</a>.  <a href="group___f_l_slice.html#ga9ce70f8e3d12d27fb0de3290a0307d18">More...</a><br /></td></tr>
 <tr class="separator:ga9ce70f8e3d12d27fb0de3290a0307d18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga254cef250e1fb2b3cc8668c30373af04"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_slice.html#ga254cef250e1fb2b3cc8668c30373af04">FLSliceResult_Release</a> (<a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a> s)</td></tr>
-<tr class="memdesc:ga254cef250e1fb2b3cc8668c30373af04"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decrements the ref-count of a <a class="el" href="struct_f_l_slice_result.html" title="A block of memory returned from an API call.">FLSliceResult</a>, freeing its memory if it reached zero.  <a href="group___f_l_slice.html#ga254cef250e1fb2b3cc8668c30373af04">More...</a><br /></td></tr>
+<tr class="memdesc:ga254cef250e1fb2b3cc8668c30373af04"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decrements the ref-count of a <a class="el" href="struct_f_l_slice_result.html" title="A heap-allocated block of memory returned from an API call.">FLSliceResult</a>, freeing its memory if it reached zero.  <a href="group___f_l_slice.html#ga254cef250e1fb2b3cc8668c30373af04">More...</a><br /></td></tr>
 <tr class="separator:ga254cef250e1fb2b3cc8668c30373af04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="a05ee7d664be70b152a43f900c309f7e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a05ee7d664be70b152a43f900c309f7e5">&#9670;&nbsp;</a></span>_FLSLICE_H</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define _FLSLICE_H</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="afde725198ae6fc34b4e286e4858b6eae"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afde725198ae6fc34b4e286e4858b6eae">&#9670;&nbsp;</a></span>FLAPI</h2>
 

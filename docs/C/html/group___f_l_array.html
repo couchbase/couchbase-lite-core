@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.15"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: Arrays</title>
+<title>LiteCore: Fleece Arrays</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -67,7 +67,7 @@ $(function() {
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
-<div class="title">Arrays</div>  </div>
+<div class="title">Fleece Arrays</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -146,8 +146,11 @@ Mutable Arrays</h2></td></tr>
 <tr class="memitem:ga05bc3b70100bea84501ae092e5fe70c6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga05bc3b70100bea84501ae092e5fe70c6">FLMutableArray_IsChanged</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>)</td></tr>
 <tr class="memdesc:ga05bc3b70100bea84501ae092e5fe70c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the Array has been changed from the source it was copied from.  <a href="#ga05bc3b70100bea84501ae092e5fe70c6">More...</a><br /></td></tr>
 <tr class="separator:ga05bc3b70100bea84501ae092e5fe70c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5c29a7bc8f2c44aadbf16df99a0e0b7e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga5c29a7bc8f2c44aadbf16df99a0e0b7e">FLMutableArray_SetChanged</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, bool)</td></tr>
+<tr class="memdesc:ga5c29a7bc8f2c44aadbf16df99a0e0b7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets or clears the mutable Array's "changed" flag.  <a href="#ga5c29a7bc8f2c44aadbf16df99a0e0b7e">More...</a><br /></td></tr>
+<tr class="separator:ga5c29a7bc8f2c44aadbf16df99a0e0b7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga61dd8874b4999d3c22b86cf56c371682"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga61dd8874b4999d3c22b86cf56c371682">FLMutableArray_Set</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index)</td></tr>
-<tr class="memdesc:ga61dd8874b4999d3c22b86cf56c371682"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lets you store a value into a MutableArray, by returning a <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a> that you can call a function like <a class="el" href="group___f_l_value.html#ga6e2f352363451aa1ca1cbd5102cec63c">FLSlot_SetInt</a> on.  <a href="#ga61dd8874b4999d3c22b86cf56c371682">More...</a><br /></td></tr>
+<tr class="memdesc:ga61dd8874b4999d3c22b86cf56c371682"><td class="mdescLeft">&#160;</td><td class="mdescRight">Lets you store a value into a MutableArray, by returning a <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a> that you can call a function like <a class="el" href="group___slots.html#ga6e2f352363451aa1ca1cbd5102cec63c">FLSlot_SetInt</a> on.  <a href="#ga61dd8874b4999d3c22b86cf56c371682">More...</a><br /></td></tr>
 <tr class="separator:ga61dd8874b4999d3c22b86cf56c371682"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7c7d1682f5b21187cfad64b97f9c2b1a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_array.html#ga7c7d1682f5b21187cfad64b97f9c2b1a">FLMutableArray_Append</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>)</td></tr>
 <tr class="memdesc:ga7c7d1682f5b21187cfad64b97f9c2b1a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a null value to a MutableArray and returns a <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a> that you can call to store something else in the new value.  <a href="#ga7c7d1682f5b21187cfad64b97f9c2b1a">More...</a><br /></td></tr>
@@ -791,7 +794,37 @@ Mutable Arrays</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Lets you store a value into a MutableArray, by returning a <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a> that you can call a function like <a class="el" href="group___f_l_value.html#ga6e2f352363451aa1ca1cbd5102cec63c">FLSlot_SetInt</a> on. </p>
+<p>Lets you store a value into a MutableArray, by returning a <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a> that you can call a function like <a class="el" href="group___slots.html#ga6e2f352363451aa1ca1cbd5102cec63c">FLSlot_SetInt</a> on. </p>
+
+</div>
+</div>
+<a id="ga5c29a7bc8f2c44aadbf16df99a0e0b7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5c29a7bc8f2c44aadbf16df99a0e0b7e">&#9670;&nbsp;</a></span>FLMutableArray_SetChanged()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void FLMutableArray_SetChanged </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets or clears the mutable Array's "changed" flag. </p>
 
 </div>
 </div>

@@ -1,11 +1,8 @@
 var searchData=
 [
-  ['callbackcontext',['callbackContext',['../struct_c4_listener_config.html#a06e5fb9c6ff5c0dbdb097de04b5bd695',1,'C4ListenerConfig::callbackContext()'],['../struct_c4_replicator_parameters.html#a8eba26a34452e36508d93004f856f882',1,'C4ReplicatorParameters::callbackContext()']]],
-  ['certauthcallback',['certAuthCallback',['../struct_c4_t_l_s_config.html#a06aae7a7e629387c40a6e0852e03ba2c',1,'C4TLSConfig']]],
-  ['certificate',['certificate',['../struct_c4_t_l_s_config.html#a293df2300b81d98152e85c26c4891df9',1,'C4TLSConfig']]],
-  ['close',['close',['../struct_c4_socket_factory.html#a5292df8c6bdae3a87011e565c4a09ff2',1,'C4SocketFactory']]],
-  ['code',['code',['../struct_c4_error.html#ab0c43df2658bd401e9109527cffe4c92',1,'C4Error']]],
-  ['columns',['columns',['../struct_c4_query_enumerator.html#a15a13ce942164de297319895e7cf944e',1,'C4QueryEnumerator']]],
-  ['completedreceive',['completedReceive',['../struct_c4_socket_factory.html#a102507568c0639da02a1efd730c9fd1b',1,'C4SocketFactory']]],
-  ['context',['context',['../struct_c4_predictive_model.html#a40b30811ae6a54410e9ca578eb4929e8',1,'C4PredictiveModel::context()'],['../struct_c4_socket_factory.html#ae4b2c029e9555277d759c3b44cf4a53d',1,'C4SocketFactory::context()']]]
+  ['base_5fpath',['base_path',['../struct_c4_log_file_options.html#af77026bcd572b8b0de374077dc597999',1,'C4LogFileOptions']]],
+  ['body',['body',['../struct_c4_raw_document.html#a96e469a6ba0a216369041b840384ee0d',1,'C4RawDocument::body()'],['../struct_c4_doc_put_request.html#acb5327a03c23c53f09a7679e250f8e8b',1,'C4DocPutRequest::body()']]],
+  ['bodysize',['bodySize',['../struct_c4_document_info.html#a78f698ad44aec5b764bba97b2cbb23f2',1,'C4DocumentInfo']]],
+  ['buf',['buf',['../struct_f_l_slice.html#a6a1891b6d6c6ee0ae348c6419f90d797',1,'FLSlice::buf()'],['../struct_f_l_slice_result.html#a25ceb6212b3de8d0e0e012817c810ed2',1,'FLSliceResult::buf()']]],
+  ['bytes',['bytes',['../struct_c4_blob_key.html#a6062028e46f163bd973cb202cde3af0a',1,'C4BlobKey::bytes()'],['../struct_c4_encryption_key.html#afbc9aead6482fb1e594d740471317d23',1,'C4EncryptionKey::bytes()'],['../struct_c4_u_u_i_d.html#a560028f485e0e63ef6b3b879cea90745',1,'C4UUID::bytes()']]]
 ];

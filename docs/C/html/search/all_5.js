@@ -7,6 +7,5 @@ var searchData=
   ['error_20codes_20and_20error_20handling',['Error Codes and Error Handling',['../group___errors.html',1,'']]],
   ['existingrevision',['existingRevision',['../struct_c4_doc_put_request.html#aa1c51c6e41d11e28a52adf5c562ae005',1,'C4DocPutRequest']]],
   ['expiration',['expiration',['../struct_c4_document_info.html#a9256df84f237625f072034c718d30f7e',1,'C4DocumentInfo']]],
-  ['extrainfo',['extraInfo',['../struct_c4_document.html#a641f885d9db6f0e91cb1d090ee3fe879',1,'C4Document']]],
-  ['encoder',['Encoder',['../group___f_l_encoder.html',1,'']]]
+  ['extrainfo',['extraInfo',['../struct_c4_document.html#a641f885d9db6f0e91cb1d090ee3fe879',1,'C4Document']]]
 ];

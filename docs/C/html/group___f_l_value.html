@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.15"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: Value Accessors</title>
+<title>LiteCore: Fleece Value Accessors</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -66,9 +66,10 @@ $(function() {
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
-<div class="title">Value Accessors</div>  </div>
+<div class="title">Fleece Value Accessors</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -154,38 +155,24 @@ Functions</h2></td></tr>
 <tr class="memitem:ga8245f0fa404b45fe3f56420ab58f2555"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga8245f0fa404b45fe3f56420ab58f2555">FLValue_IsEqual</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> v1, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> v2) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
 <tr class="memdesc:ga8245f0fa404b45fe3f56420ab58f2555"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compares two values for equality.  <a href="#ga8245f0fa404b45fe3f56420ab58f2555">More...</a><br /></td></tr>
 <tr class="separator:ga8245f0fa404b45fe3f56420ab58f2555"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga34d16d2ea0fe09b8fde6e005968dfa80"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga34d16d2ea0fe09b8fde6e005968dfa80">FLSlot_SetNull</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>)</td></tr>
-<tr class="memdesc:ga34d16d2ea0fe09b8fde6e005968dfa80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a JSON null into a slot.  <a href="#ga34d16d2ea0fe09b8fde6e005968dfa80">More...</a><br /></td></tr>
-<tr class="separator:ga34d16d2ea0fe09b8fde6e005968dfa80"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga68bafe1ddb72a33b304aa9f841bf24ae"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga68bafe1ddb72a33b304aa9f841bf24ae">FLSlot_SetBool</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, bool)</td></tr>
-<tr class="memdesc:ga68bafe1ddb72a33b304aa9f841bf24ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a boolean into a slot.  <a href="#ga68bafe1ddb72a33b304aa9f841bf24ae">More...</a><br /></td></tr>
-<tr class="separator:ga68bafe1ddb72a33b304aa9f841bf24ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6e2f352363451aa1ca1cbd5102cec63c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga6e2f352363451aa1ca1cbd5102cec63c">FLSlot_SetInt</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, int64_t)</td></tr>
-<tr class="memdesc:ga6e2f352363451aa1ca1cbd5102cec63c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores an integer into a slot.  <a href="#ga6e2f352363451aa1ca1cbd5102cec63c">More...</a><br /></td></tr>
-<tr class="separator:ga6e2f352363451aa1ca1cbd5102cec63c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga87bf66ca2647a6df2cdb4fa5db5f3c5a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga87bf66ca2647a6df2cdb4fa5db5f3c5a">FLSlot_SetUInt</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, uint64_t)</td></tr>
-<tr class="memdesc:ga87bf66ca2647a6df2cdb4fa5db5f3c5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores an unsigned integer into a slot.  <a href="#ga87bf66ca2647a6df2cdb4fa5db5f3c5a">More...</a><br /></td></tr>
-<tr class="separator:ga87bf66ca2647a6df2cdb4fa5db5f3c5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad4a46c9707d67790835eb69941363cf3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gad4a46c9707d67790835eb69941363cf3">FLSlot_SetFloat</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, float)</td></tr>
-<tr class="memdesc:gad4a46c9707d67790835eb69941363cf3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a float into a slot.  <a href="#gad4a46c9707d67790835eb69941363cf3">More...</a><br /></td></tr>
-<tr class="separator:gad4a46c9707d67790835eb69941363cf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae500e245c5dfd0ae1a0ad0e2f4607ab1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gae500e245c5dfd0ae1a0ad0e2f4607ab1">FLSlot_SetDouble</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, double)</td></tr>
-<tr class="memdesc:gae500e245c5dfd0ae1a0ad0e2f4607ab1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a double into a slot.  <a href="#gae500e245c5dfd0ae1a0ad0e2f4607ab1">More...</a><br /></td></tr>
-<tr class="separator:gae500e245c5dfd0ae1a0ad0e2f4607ab1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa5985ea283cf483b7b66dfc2ac3e7d23"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaa5985ea283cf483b7b66dfc2ac3e7d23">FLSlot_SetString</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>)</td></tr>
-<tr class="memdesc:gaa5985ea283cf483b7b66dfc2ac3e7d23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a string into a slot.  <a href="#gaa5985ea283cf483b7b66dfc2ac3e7d23">More...</a><br /></td></tr>
-<tr class="separator:gaa5985ea283cf483b7b66dfc2ac3e7d23"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabca109af50775df2c95a7fc37e1e9802"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gabca109af50775df2c95a7fc37e1e9802">FLSlot_SetData</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, <a class="el" href="struct_f_l_slice.html">FLSlice</a>)</td></tr>
-<tr class="memdesc:gabca109af50775df2c95a7fc37e1e9802"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a data blob into a slot.  <a href="#gabca109af50775df2c95a7fc37e1e9802">More...</a><br /></td></tr>
-<tr class="separator:gabca109af50775df2c95a7fc37e1e9802"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga33b10e12e20e7b0bec1bbb0bd98ad36d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga33b10e12e20e7b0bec1bbb0bd98ad36d">FLSlot_SetValue</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
-<tr class="memdesc:ga33b10e12e20e7b0bec1bbb0bd98ad36d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores an FLValue into a slot.  <a href="#ga33b10e12e20e7b0bec1bbb0bd98ad36d">More...</a><br /></td></tr>
-<tr class="separator:ga33b10e12e20e7b0bec1bbb0bd98ad36d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga36121dc7d66de32aadb2dbd1dd437ee0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga36121dc7d66de32aadb2dbd1dd437ee0">FLValue_IsMutable</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>) <a class="el" href="_base_8h.html#aaf76422cb887897c286992499106254d">FLPURE</a></td></tr>
+<tr class="memdesc:ga36121dc7d66de32aadb2dbd1dd437ee0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the value is mutable.  <a href="#ga36121dc7d66de32aadb2dbd1dd437ee0">More...</a><br /></td></tr>
+<tr class="separator:ga36121dc7d66de32aadb2dbd1dd437ee0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga616f1402c801430fd85c22a5a5b615b6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#ga616f1402c801430fd85c22a5a5b615b6">FLValue_NewString</a> (<a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>)</td></tr>
+<tr class="memdesc:ga616f1402c801430fd85c22a5a5b615b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a string value on the heap.  <a href="#ga616f1402c801430fd85c22a5a5b615b6">More...</a><br /></td></tr>
+<tr class="separator:ga616f1402c801430fd85c22a5a5b615b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafe94f44e9423d550628cc6a1a4f110ee"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gafe94f44e9423d550628cc6a1a4f110ee">FLValue_NewData</a> (<a class="el" href="struct_f_l_slice.html">FLSlice</a>)</td></tr>
+<tr class="memdesc:gafe94f44e9423d550628cc6a1a4f110ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a data/blob value on the heap.  <a href="#gafe94f44e9423d550628cc6a1a4f110ee">More...</a><br /></td></tr>
+<tr class="separator:gafe94f44e9423d550628cc6a1a4f110ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:gaeef39ddda39c325fe22eb7090707110a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaeef39ddda39c325fe22eb7090707110a">kFLNullValue</a></td></tr>
+<tr class="memdesc:gaeef39ddda39c325fe22eb7090707110a"><td class="mdescLeft">&#160;</td><td class="mdescRight">A constant null value (not a NULL pointer!)  <a href="#gaeef39ddda39c325fe22eb7090707110a">More...</a><br /></td></tr>
+<tr class="separator:gaeef39ddda39c325fe22eb7090707110a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Ref-counting (mutable values only)</h2></td></tr>
-<tr class="memitem:gaeef39ddda39c325fe22eb7090707110a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gaeef39ddda39c325fe22eb7090707110a">kFLNullValue</a></td></tr>
-<tr class="separator:gaeef39ddda39c325fe22eb7090707110a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad4be845483cb5d8d5728d0681f00e50d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_value.html#gad4be845483cb5d8d5728d0681f00e50d">FLValue_Retain</a> (<a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
 <tr class="memdesc:gad4be845483cb5d8d5728d0681f00e50d"><td class="mdescLeft">&#160;</td><td class="mdescRight">If this value is mutable (and thus heap-based) its ref-count is incremented.  <a href="#gad4be845483cb5d8d5728d0681f00e50d">More...</a><br /></td></tr>
 <tr class="separator:gad4be845483cb5d8d5728d0681f00e50d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -381,266 +368,6 @@ Ref-counting (mutable values only)</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-</div>
-</div>
-<a id="ga68bafe1ddb72a33b304aa9f841bf24ae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga68bafe1ddb72a33b304aa9f841bf24ae">&#9670;&nbsp;</a></span>FLSlot_SetBool()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLSlot_SetBool </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stores a boolean into a slot. </p>
-
-</div>
-</div>
-<a id="gabca109af50775df2c95a7fc37e1e9802"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabca109af50775df2c95a7fc37e1e9802">&#9670;&nbsp;</a></span>FLSlot_SetData()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLSlot_SetData </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stores a data blob into a slot. </p>
-
-</div>
-</div>
-<a id="gae500e245c5dfd0ae1a0ad0e2f4607ab1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae500e245c5dfd0ae1a0ad0e2f4607ab1">&#9670;&nbsp;</a></span>FLSlot_SetDouble()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLSlot_SetDouble </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stores a double into a slot. </p>
-
-</div>
-</div>
-<a id="gad4a46c9707d67790835eb69941363cf3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad4a46c9707d67790835eb69941363cf3">&#9670;&nbsp;</a></span>FLSlot_SetFloat()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLSlot_SetFloat </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">float&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stores a float into a slot. </p>
-
-</div>
-</div>
-<a id="ga6e2f352363451aa1ca1cbd5102cec63c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6e2f352363451aa1ca1cbd5102cec63c">&#9670;&nbsp;</a></span>FLSlot_SetInt()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLSlot_SetInt </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int64_t&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stores an integer into a slot. </p>
-
-</div>
-</div>
-<a id="ga34d16d2ea0fe09b8fde6e005968dfa80"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga34d16d2ea0fe09b8fde6e005968dfa80">&#9670;&nbsp;</a></span>FLSlot_SetNull()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLSlot_SetNull </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stores a JSON null into a slot. </p>
-
-</div>
-</div>
-<a id="gaa5985ea283cf483b7b66dfc2ac3e7d23"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa5985ea283cf483b7b66dfc2ac3e7d23">&#9670;&nbsp;</a></span>FLSlot_SetString()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLSlot_SetString </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stores a string into a slot. </p>
-
-</div>
-</div>
-<a id="ga87bf66ca2647a6df2cdb4fa5db5f3c5a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga87bf66ca2647a6df2cdb4fa5db5f3c5a">&#9670;&nbsp;</a></span>FLSlot_SetUInt()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLSlot_SetUInt </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stores an unsigned integer into a slot. </p>
-
-</div>
-</div>
-<a id="ga33b10e12e20e7b0bec1bbb0bd98ad36d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga33b10e12e20e7b0bec1bbb0bd98ad36d">&#9670;&nbsp;</a></span>FLSlot_SetValue()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void FLSlot_SetValue </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Stores an FLValue into a slot. </p>
 
 </div>
 </div>
@@ -945,6 +672,26 @@ Ref-counting (mutable values only)</h2></td></tr>
 
 </div>
 </div>
+<a id="ga36121dc7d66de32aadb2dbd1dd437ee0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga36121dc7d66de32aadb2dbd1dd437ee0">&#9670;&nbsp;</a></span>FLValue_IsMutable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool FLValue_IsMutable </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns true if the value is mutable. </p>
+
+</div>
+</div>
 <a id="gaca6cb5060aa001d2aef5a79470187732"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gaca6cb5060aa001d2aef5a79470187732">&#9670;&nbsp;</a></span>FLValue_IsUnsigned()</h2>
 
@@ -963,6 +710,48 @@ Ref-counting (mutable values only)</h2></td></tr>
 
 <p>Returns true if the value is non-NULL and represents an integer &gt;= 2^63. </p>
 <p>Such a value can't be represented in C as an <code>int64_t</code>, only a <code>uint64_t</code>, so you should access it by calling <code>FLValueAsUnsigned</code>, <em>not</em> FLValueAsInt, which would return an incorrect (negative) value. </p>
+
+</div>
+</div>
+<a id="gafe94f44e9423d550628cc6a1a4f110ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafe94f44e9423d550628cc6a1a4f110ee">&#9670;&nbsp;</a></span>FLValue_NewData()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> FLValue_NewData </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Allocates a data/blob value on the heap. </p>
+<p>This is rarely needed &ndash; usually you'd just add data to a mutable Array or Dict directly using <a class="el" href="group___slots.html#gabca109af50775df2c95a7fc37e1e9802">FLSlot_SetData</a>. </p>
+
+</div>
+</div>
+<a id="ga616f1402c801430fd85c22a5a5b615b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga616f1402c801430fd85c22a5a5b615b6">&#9670;&nbsp;</a></span>FLValue_NewString()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> FLValue_NewString </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Allocates a string value on the heap. </p>
+<p>This is rarely needed &ndash; usually you'd just add a string to a mutable Array or Dict directly using <a class="el" href="group___slots.html#gaa5985ea283cf483b7b66dfc2ac3e7d23">FLSlot_SetString</a>. </p>
 
 </div>
 </div>
@@ -1041,6 +830,8 @@ Ref-counting (mutable values only)</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>A constant null value (not a NULL pointer!) </p>
 
 </div>
 </div>

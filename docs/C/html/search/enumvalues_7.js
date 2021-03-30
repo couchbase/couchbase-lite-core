@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['websocketdomain',['WebSocketDomain',['../group___errors.html#gga6cbe7be44f2f63425404284687e6861ca0302b37e37e11311e3cd992f9373b048',1,'c4Base.h']]]
+  ['websocketdomain',['WebSocketDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0a0302b37e37e11311e3cd992f9373b048',1,'c4Base.h']]]
 ];

@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['ignorediacritics',['ignoreDiacritics',['../struct_c4_index_options.html#a1fdb9dc59f932cfea7b48331298fd8ae',1,'C4IndexOptions']]],
-  ['index',['index',['../struct_f_l_path_component.html#a960feda464a7d4e499111a82efc13081',1,'FLPathComponent']]],
-  ['internal_5finfo',['internal_info',['../struct_c4_error.html#a4ca60bbcacc411ab41f52c00f63defd2',1,'C4Error']]]
+  ['header',['header',['../struct_c4_log_file_options.html#adbd3c5ea185419aa9caadc33a1fc9bf7',1,'C4LogFileOptions']]],
+  ['history',['history',['../struct_c4_doc_put_request.html#a05a8f2c9fae2487dd165a28a940cd135',1,'C4DocPutRequest']]],
+  ['historycount',['historyCount',['../struct_c4_doc_put_request.html#a6cd19a75d5c72485f9490ae112e20413',1,'C4DocPutRequest']]],
+  ['hostname',['hostname',['../struct_c4_address.html#a3873e737f8abbbd16be9e9593bccba43',1,'C4Address']]],
+  ['httpauthcallback',['httpAuthCallback',['../struct_c4_listener_config.html#a0ffb4271c1680b1909b9f3634e80fb73',1,'C4ListenerConfig']]]
 ];

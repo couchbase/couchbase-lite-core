@@ -284,6 +284,9 @@ $(function() {
 <li>FLEncoder_GetNextWritePos()
 : <a class="el" href="group___f_l_encoder.html#ga77b105dc3adc62cfcc1e57bdfc194f92">Fleece.h</a>
 </li>
+<li>FLEncoder_LastValueWritten()
+: <a class="el" href="group___f_l_encoder.html#ga20e452e821095e15184942f5d0e2bc75">Fleece.h</a>
+</li>
 <li>FLEncoder_New()
 : <a class="el" href="group___f_l_encoder.html#ga4b437f028d236086520565285d3645c1">Fleece.h</a>
 </li>
@@ -301,6 +304,9 @@ $(function() {
 </li>
 <li>FLEncoder_SetSharedKeys()
 : <a class="el" href="group___f_l_encoder.html#ga1d7d7c3c763f689fb414e366dacc73bc">Fleece.h</a>
+</li>
+<li>FLEncoder_Snip()
+: <a class="el" href="group___f_l_encoder.html#ga1802bf2140d6c3e99e64039926029815">Fleece.h</a>
 </li>
 <li>FLEncoder_SuppressTrailer()
 : <a class="el" href="group___f_l_encoder.html#ga3cc1df46ed5d1c79ff9865047a5b3fa1">Fleece.h</a>
@@ -350,8 +356,14 @@ $(function() {
 <li>FLEncoder_WriteValue()
 : <a class="el" href="group___f_l_encoder.html#ga9f3b2ee2fb101cf71787f23cb8b2086b">Fleece.h</a>
 </li>
+<li>FLEncoder_WriteValueAgain()
+: <a class="el" href="group___f_l_encoder.html#ga583ff7f776a54a4f3c5258f334ec33d7">Fleece.h</a>
+</li>
 <li>FLJSON5_ToJSON()
 : <a class="el" href="group__json.html#ga24e916803eaf8f0fceab5faf9c01b77b">Fleece.h</a>
+</li>
+<li>FLKeyPath_Equals()
+: <a class="el" href="group___f_l_key_path.html#ga7c322d14c39dc6e8aae3d87253452a85">Fleece.h</a>
 </li>
 <li>FLKeyPath_Eval()
 : <a class="el" href="group___f_l_key_path.html#gafcad708088b3ef5ead878c0465fd60a0">Fleece.h</a>
@@ -362,8 +374,14 @@ $(function() {
 <li>FLKeyPath_Free()
 : <a class="el" href="group___f_l_key_path.html#gab5be37a1e37584d7de34201b8c2023ef">Fleece.h</a>
 </li>
+<li>FLKeyPath_GetElement()
+: <a class="el" href="group___f_l_key_path.html#ga152e7ebaa6a62d6a7dbad0caaae4f3a2">Fleece.h</a>
+</li>
 <li>FLKeyPath_New()
 : <a class="el" href="group___f_l_key_path.html#gaf999161bf98bcbc6d72a566567c8ce40">Fleece.h</a>
+</li>
+<li>FLKeyPath_ToString()
+: <a class="el" href="group___f_l_key_path.html#gaa23928adf555020ef136faadbf177590">Fleece.h</a>
 </li>
 <li>FLMutableArray_Append()
 : <a class="el" href="group___f_l_array.html#ga7c7d1682f5b21187cfad64b97f9c2b1a">Fleece.h</a>
@@ -401,6 +419,9 @@ $(function() {
 <li>FLMutableArray_Set()
 : <a class="el" href="group___f_l_array.html#ga61dd8874b4999d3c22b86cf56c371682">Fleece.h</a>
 </li>
+<li>FLMutableArray_SetChanged()
+: <a class="el" href="group___f_l_array.html#ga5c29a7bc8f2c44aadbf16df99a0e0b7e">Fleece.h</a>
+</li>
 <li>FLMutableDict_GetMutableArray()
 : <a class="el" href="group___f_l_dict.html#ga60c960e117388295bb28fa30e4bbee3d">Fleece.h</a>
 </li>
@@ -431,14 +452,11 @@ $(function() {
 <li>FLMutableDict_Set()
 : <a class="el" href="group___f_l_dict.html#ga5e4aaaf5d5492bb1c875e08608fceb6a">Fleece.h</a>
 </li>
+<li>FLMutableDict_SetChanged()
+: <a class="el" href="group___f_l_dict.html#ga5b788fbe95138da6100314c25199ed12">Fleece.h</a>
+</li>
 <li>FLSharedKeys_Count()
 : <a class="el" href="group___f_l_shared_keys.html#gacaf741df1f7ff88af01446e108d8f761">Fleece.h</a>
-</li>
-<li>FLSharedKeys_Create()
-: <a class="el" href="group___f_l_shared_keys.html#ga7a6a6fc6cf143af3fc9a269f7790a620">Fleece.h</a>
-</li>
-<li>FLSharedKeys_CreateFromStateData()
-: <a class="el" href="group___f_l_shared_keys.html#gaa0ae52b6b1c7f6b9e20c0d1f500b2572">Fleece.h</a>
 </li>
 <li>FLSharedKeys_Decode()
 : <a class="el" href="group___f_l_shared_keys.html#ga0326a22bac7ce4137ecda64d1a6c7813">Fleece.h</a>
@@ -449,11 +467,35 @@ $(function() {
 <li>FLSharedKeys_GetStateData()
 : <a class="el" href="group___f_l_shared_keys.html#ga3af2bf8c617d005d649cdfb5b5357bbf">Fleece.h</a>
 </li>
+<li>FLSharedKeys_LoadState()
+: <a class="el" href="group___f_l_shared_keys.html#ga64448aed21802b035702148eeb649058">Fleece.h</a>
+</li>
+<li>FLSharedKeys_LoadStateData()
+: <a class="el" href="group___f_l_shared_keys.html#gadac536212a8d1f9d2e0e790a0c0bb4e2">Fleece.h</a>
+</li>
+<li>FLSharedKeys_New()
+: <a class="el" href="group___f_l_shared_keys.html#ga92dbd791b612bbd3da753e222ba34c8b">Fleece.h</a>
+</li>
+<li>FLSharedKeys_NewWithRead()
+: <a class="el" href="group___f_l_shared_keys.html#gaf34837e86c989f44b2d04efe3221d951">Fleece.h</a>
+</li>
 <li>FLSharedKeys_Release()
 : <a class="el" href="group___f_l_shared_keys.html#ga2c956196c3fad27c62dfa9e6aa16d1c9">Fleece.h</a>
 </li>
 <li>FLSharedKeys_Retain()
 : <a class="el" href="group___f_l_shared_keys.html#ga56c7f1cb23f7a5582d13e776a46bc414">Fleece.h</a>
+</li>
+<li>FLSharedKeys_RevertToCount()
+: <a class="el" href="group___f_l_shared_keys.html#ga8c2a62a8c3ef7ff60b65e9c6e8287810">Fleece.h</a>
+</li>
+<li>FLSharedKeys_WriteState()
+: <a class="el" href="group___f_l_shared_keys.html#ga4dc5040795d46282e8a4d61ab81ec265">Fleece.h</a>
+</li>
+<li>FLSharedKeyScope_Free()
+: <a class="el" href="group___f_l_shared_keys.html#ga7687292f74abccc4b209a155a457281d">Fleece.h</a>
+</li>
+<li>FLSharedKeyScope_WithRange()
+: <a class="el" href="group___f_l_shared_keys.html#ga10d040bf783cee9861ac79f928d51215">Fleece.h</a>
 </li>
 <li>FLSlice_Compare()
 : <a class="el" href="group___f_l_slice.html#gaa284d9d65b1d25e3284c33ce451e555c">FLSlice.h</a>
@@ -463,6 +505,12 @@ $(function() {
 </li>
 <li>FLSlice_Equal()
 : <a class="el" href="group___f_l_slice.html#ga23b5777450a091e1cecb4d1ff36c0a23">FLSlice.h</a>
+</li>
+<li>FLSlice_Hash()
+: <a class="el" href="group___f_l_slice.html#gacb3991fac92ad55de3e3cf02bcc76f06">FLSlice.h</a>
+</li>
+<li>FLSlice_ToCString()
+: <a class="el" href="group___f_l_slice.html#gacdffe2bb52311b91bf998fa714b7a838">FLSlice.h</a>
 </li>
 <li>FLSliceResult_New()
 : <a class="el" href="group___f_l_slice.html#ga66524dad4fc30818a3f18ac7a6b7ca28">FLSlice.h</a>
@@ -474,31 +522,31 @@ $(function() {
 : <a class="el" href="group___f_l_slice.html#ga9ce70f8e3d12d27fb0de3290a0307d18">FLSlice.h</a>
 </li>
 <li>FLSlot_SetBool()
-: <a class="el" href="group___f_l_value.html#ga68bafe1ddb72a33b304aa9f841bf24ae">Fleece.h</a>
+: <a class="el" href="group___slots.html#ga68bafe1ddb72a33b304aa9f841bf24ae">Fleece.h</a>
 </li>
 <li>FLSlot_SetData()
-: <a class="el" href="group___f_l_value.html#gabca109af50775df2c95a7fc37e1e9802">Fleece.h</a>
+: <a class="el" href="group___slots.html#gabca109af50775df2c95a7fc37e1e9802">Fleece.h</a>
 </li>
 <li>FLSlot_SetDouble()
-: <a class="el" href="group___f_l_value.html#gae500e245c5dfd0ae1a0ad0e2f4607ab1">Fleece.h</a>
+: <a class="el" href="group___slots.html#gae500e245c5dfd0ae1a0ad0e2f4607ab1">Fleece.h</a>
 </li>
 <li>FLSlot_SetFloat()
-: <a class="el" href="group___f_l_value.html#gad4a46c9707d67790835eb69941363cf3">Fleece.h</a>
+: <a class="el" href="group___slots.html#gad4a46c9707d67790835eb69941363cf3">Fleece.h</a>
 </li>
 <li>FLSlot_SetInt()
-: <a class="el" href="group___f_l_value.html#ga6e2f352363451aa1ca1cbd5102cec63c">Fleece.h</a>
+: <a class="el" href="group___slots.html#ga6e2f352363451aa1ca1cbd5102cec63c">Fleece.h</a>
 </li>
 <li>FLSlot_SetNull()
-: <a class="el" href="group___f_l_value.html#ga34d16d2ea0fe09b8fde6e005968dfa80">Fleece.h</a>
+: <a class="el" href="group___slots.html#ga34d16d2ea0fe09b8fde6e005968dfa80">Fleece.h</a>
 </li>
 <li>FLSlot_SetString()
-: <a class="el" href="group___f_l_value.html#gaa5985ea283cf483b7b66dfc2ac3e7d23">Fleece.h</a>
+: <a class="el" href="group___slots.html#gaa5985ea283cf483b7b66dfc2ac3e7d23">Fleece.h</a>
 </li>
 <li>FLSlot_SetUInt()
-: <a class="el" href="group___f_l_value.html#ga87bf66ca2647a6df2cdb4fa5db5f3c5a">Fleece.h</a>
+: <a class="el" href="group___slots.html#ga87bf66ca2647a6df2cdb4fa5db5f3c5a">Fleece.h</a>
 </li>
 <li>FLSlot_SetValue()
-: <a class="el" href="group___f_l_value.html#ga33b10e12e20e7b0bec1bbb0bd98ad36d">Fleece.h</a>
+: <a class="el" href="group___slots.html#ga33b10e12e20e7b0bec1bbb0bd98ad36d">Fleece.h</a>
 </li>
 <li>FLStr()
 : <a class="el" href="group___f_l_slice.html#gae9d0af13963246fd37fbf16c4b237f53">FLSlice.h</a>
@@ -554,8 +602,17 @@ $(function() {
 <li>FLValue_IsInteger()
 : <a class="el" href="group___f_l_value.html#ga9ae43e49d403ae5cec5ed634cdc85574">Fleece.h</a>
 </li>
+<li>FLValue_IsMutable()
+: <a class="el" href="group___f_l_value.html#ga36121dc7d66de32aadb2dbd1dd437ee0">Fleece.h</a>
+</li>
 <li>FLValue_IsUnsigned()
 : <a class="el" href="group___f_l_value.html#gaca6cb5060aa001d2aef5a79470187732">Fleece.h</a>
+</li>
+<li>FLValue_NewData()
+: <a class="el" href="group___f_l_value.html#gafe94f44e9423d550628cc6a1a4f110ee">Fleece.h</a>
+</li>
+<li>FLValue_NewString()
+: <a class="el" href="group___f_l_value.html#ga616f1402c801430fd85c22a5a5b615b6">Fleece.h</a>
 </li>
 <li>FLValue_Release()
 : <a class="el" href="group___f_l_value.html#gad9722234a46fa70152469c2499e9246c">Fleece.h</a>

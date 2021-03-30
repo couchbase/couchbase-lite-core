@@ -1,12 +1,10 @@
 var searchData=
 [
-  ['save',['save',['../struct_c4_doc_put_request.html#ad2fc7c1ff26b20c387bdb6c7ee8f24e8',1,'C4DocPutRequest']]],
-  ['scheme',['scheme',['../struct_c4_address.html#ae4e57a571b29486d9629b1209a8a374d',1,'C4Address']]],
-  ['selectedrev',['selectedRev',['../struct_c4_document.html#a786f2fafe6221939119f97d91587e96d',1,'C4Document']]],
-  ['sequence',['sequence',['../struct_c4_document_info.html#afabd4bff5f16dad26ec8ffa0889642b1',1,'C4DocumentInfo::sequence()'],['../struct_c4_revision.html#a62bb8ff181a95903dd74a99c53e476b6',1,'C4Revision::sequence()'],['../struct_c4_document.html#ab6d7b7f75bf2b684b5bfd325f9a41037',1,'C4Document::sequence()'],['../struct_c4_database_change.html#aa8e203ed64d903b7a0a6f070de701dec',1,'C4DatabaseChange::sequence()'],['../struct_c4_document_ended.html#a0c5a6f068cbca1186d88d26d9b662d2c',1,'C4DocumentEnded::sequence()']]],
-  ['size',['size',['../struct_f_l_slice.html#a8fb4c8187bdd5a8d645809d5d0a72c90',1,'FLSlice::size()'],['../struct_f_l_slice_result.html#a622d35e8c1031bb88d0fe89cfaca12e1',1,'FLSliceResult::size()']]],
-  ['socketfactory',['socketFactory',['../struct_c4_replicator_parameters.html#af962ba02b775d3bb0e2a52b6ce3345b3',1,'C4ReplicatorParameters']]],
-  ['start',['start',['../struct_c4_full_text_match.html#ac2514656fd432684c916955e8385c731',1,'C4FullTextMatch']]],
-  ['stopwords',['stopWords',['../struct_c4_index_options.html#abebf72c4814f14eba754882429d2d661',1,'C4IndexOptions']]],
-  ['storageengine',['storageEngine',['../struct_c4_database_config.html#a312a3524d12a83cf51e44b28d54a9a32',1,'C4DatabaseConfig']]]
+  ['rankfulltext_5fdeprecated',['rankFullText_DEPRECATED',['../struct_c4_query_options.html#a7d0a806d31ac8cd06243fef1b05e7b08',1,'C4QueryOptions']]],
+  ['remotedbid',['remoteDBID',['../struct_c4_doc_put_request.html#af410fb7af767819092c166b1abf535dc',1,'C4DocPutRequest']]],
+  ['requestclose',['requestClose',['../struct_c4_socket_factory.html#ab3a2bbe301941260e172bbd477db10d7',1,'C4SocketFactory']]],
+  ['requireclientcerts',['requireClientCerts',['../struct_c4_t_l_s_config.html#aad8354541adea6073d792306b4591f07',1,'C4TLSConfig']]],
+  ['revflags',['revFlags',['../struct_c4_doc_put_request.html#aa1673083f7a825c698dfa1267d952704',1,'C4DocPutRequest']]],
+  ['revid',['revID',['../struct_c4_document_info.html#a832117e4d9ad7f2bf29da0c16325f1af',1,'C4DocumentInfo::revID()'],['../struct_c4_revision.html#ae07fd2dcb6c4f2e161f22bba91280db4',1,'C4Revision::revID()'],['../struct_c4_document.html#afcf8e0de04396aced602e3997ed752cf',1,'C4Document::revID()'],['../struct_c4_collection_change.html#aec3caf4b2f01381ed0a02e40719ab205',1,'C4CollectionChange::revID()'],['../struct_c4_document_ended.html#a495dd085ba363d5d178b318a415121f4',1,'C4DocumentEnded::revID()']]],
+  ['rootclientcerts',['rootClientCerts',['../struct_c4_t_l_s_config.html#a34f77a103f6a786bca5e848f77ddebc0',1,'C4TLSConfig']]]
 ];

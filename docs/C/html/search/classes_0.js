@@ -2,7 +2,7 @@ var searchData=
 [
   ['c4address',['C4Address',['../struct_c4_address.html',1,'']]],
   ['c4blobkey',['C4BlobKey',['../struct_c4_blob_key.html',1,'']]],
-  ['c4databasechange',['C4DatabaseChange',['../struct_c4_database_change.html',1,'']]],
+  ['c4collectionchange',['C4CollectionChange',['../struct_c4_collection_change.html',1,'']]],
   ['c4databaseconfig',['C4DatabaseConfig',['../struct_c4_database_config.html',1,'']]],
   ['c4databaseconfig2',['C4DatabaseConfig2',['../struct_c4_database_config2.html',1,'']]],
   ['c4docputrequest',['C4DocPutRequest',['../struct_c4_doc_put_request.html',1,'']]],

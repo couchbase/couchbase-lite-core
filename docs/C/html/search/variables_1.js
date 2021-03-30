@@ -1,8 +1,11 @@
 var searchData=
 [
-  ['base_5fpath',['base_path',['../struct_c4_log_file_options.html#af77026bcd572b8b0de374077dc597999',1,'C4LogFileOptions']]],
-  ['body',['body',['../struct_c4_raw_document.html#a96e469a6ba0a216369041b840384ee0d',1,'C4RawDocument::body()'],['../struct_c4_revision.html#a1533d9ed4e5507aabca4186cb2e331e7',1,'C4Revision::body()'],['../struct_c4_doc_put_request.html#acb5327a03c23c53f09a7679e250f8e8b',1,'C4DocPutRequest::body()']]],
-  ['bodysize',['bodySize',['../struct_c4_document_info.html#a78f698ad44aec5b764bba97b2cbb23f2',1,'C4DocumentInfo::bodySize()'],['../struct_c4_database_change.html#aa5740497cc98f3197e013cf9184a26c7',1,'C4DatabaseChange::bodySize()']]],
-  ['buf',['buf',['../struct_f_l_slice.html#a6a1891b6d6c6ee0ae348c6419f90d797',1,'FLSlice::buf()'],['../struct_f_l_slice_result.html#a25ceb6212b3de8d0e0e012817c810ed2',1,'FLSliceResult::buf()']]],
-  ['bytes',['bytes',['../struct_c4_blob_key.html#a6062028e46f163bd973cb202cde3af0a',1,'C4BlobKey::bytes()'],['../struct_c4_encryption_key.html#afbc9aead6482fb1e594d740471317d23',1,'C4EncryptionKey::bytes()'],['../struct_c4_u_u_i_d.html#a560028f485e0e63ef6b3b879cea90745',1,'C4UUID::bytes()']]]
+  ['algorithm',['algorithm',['../struct_c4_encryption_key.html#a19316cf599a0b9a42d0ac036b5c60240',1,'C4EncryptionKey']]],
+  ['allocedbody',['allocedBody',['../struct_c4_doc_put_request.html#acacba5e638d6ac6cd27ac05a4c3f6685',1,'C4DocPutRequest']]],
+  ['allowconflict',['allowConflict',['../struct_c4_doc_put_request.html#afdaa1520bd3cd7b4a142edae85eab95f',1,'C4DocPutRequest']]],
+  ['allowcreatedbs',['allowCreateDBs',['../struct_c4_listener_config.html#a7a5fca3dde2bba8ecc09193cb8ee4d0b',1,'C4ListenerConfig']]],
+  ['allowdeletedbs',['allowDeleteDBs',['../struct_c4_listener_config.html#a5073aad3011a63a52773383dffb1a0df',1,'C4ListenerConfig']]],
+  ['allowpull',['allowPull',['../struct_c4_listener_config.html#ac1bbb70e1a22d33eb49c4d5e6ed3022d',1,'C4ListenerConfig']]],
+  ['allowpush',['allowPush',['../struct_c4_listener_config.html#a64f41e25edbf75b77c63df717095bb59',1,'C4ListenerConfig']]],
+  ['apis',['apis',['../struct_c4_listener_config.html#a17aec9cbe7ff02868256f066f526d67e',1,'C4ListenerConfig']]]
 ];
