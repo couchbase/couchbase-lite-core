@@ -342,6 +342,31 @@ _c4error_getDescriptionC
 
 _c4key_setPassword
 
+_c4db_getDefaultCollection
+_c4db_hasCollection
+_c4db_getCollection
+_c4db_createCollection
+_c4db_deleteCollection
+_c4db_collectionNames
+_c4dbobs_createOnCollection
+_c4docobs_createWithCollection
+_c4coll_getName
+_c4coll_getDatabase
+_c4coll_getDocumentCount
+_c4coll_getLastSequence
+_c4coll_getDoc
+_c4coll_getDocBySequence
+_c4coll_putDoc
+_c4coll_createDoc
+_c4coll_purgeDoc
+_c4coll_setDocExpiration
+_c4coll_getDocExpiration
+_c4coll_nextDocExpiration
+_c4coll_purgeExpiredDocs
+_c4coll_createIndex
+_c4coll_deleteIndex
+_c4coll_getIndexesInfo
+
 _c4db_copyNamed
 _c4db_deleteNamed
 _c4db_openAgain

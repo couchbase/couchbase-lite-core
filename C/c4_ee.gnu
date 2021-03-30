@@ -342,6 +342,31 @@ CBL {
 
 		c4key_setPassword;
 
+		c4db_getDefaultCollection;
+		c4db_hasCollection;
+		c4db_getCollection;
+		c4db_createCollection;
+		c4db_deleteCollection;
+		c4db_collectionNames;
+		c4dbobs_createOnCollection;
+		c4docobs_createWithCollection;
+		c4coll_getName;
+		c4coll_getDatabase;
+		c4coll_getDocumentCount;
+		c4coll_getLastSequence;
+		c4coll_getDoc;
+		c4coll_getDocBySequence;
+		c4coll_putDoc;
+		c4coll_createDoc;
+		c4coll_purgeDoc;
+		c4coll_setDocExpiration;
+		c4coll_getDocExpiration;
+		c4coll_nextDocExpiration;
+		c4coll_purgeExpiredDocs;
+		c4coll_createIndex;
+		c4coll_deleteIndex;
+		c4coll_getIndexesInfo;
+
 		c4db_copyNamed;
 		c4db_deleteNamed;
 		c4db_openAgain;

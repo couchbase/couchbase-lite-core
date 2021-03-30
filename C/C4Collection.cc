@@ -64,12 +64,7 @@ namespace litecore {
         }
 
 
-        ~CollectionImpl() {
-            // Clean up the weak link to me from the Database:
-            logInfo("deleted");
-            if (_database)
-                asInternal(_database)->forgetCollection(this);
-        }
+        ~CollectionImpl() = default;
 
 
         void close() override {
@@ -419,14 +414,18 @@ namespace litecore {
 
 
         int64_t purgeExpiredDocs() override {
+            C4Database::Transaction t(database());
+            int64_t count;
             if (_sequenceTracker) {
                 auto st = _sequenceTracker->useLocked();
-                return keyStore().expireRecords([&](slice docID) {
+                count = keyStore().expireRecords([&](slice docID) {
                     st->documentPurged(docID);
                 });
             } else {
-                return keyStore().expireRecords();
+                count = keyStore().expireRecords();
             }
+            t.commit();
+            return count;
         }
 
 

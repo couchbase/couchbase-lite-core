@@ -531,7 +531,8 @@ namespace litecore {
     }
 
     int SQLiteDataFile::exec(const string &sql) {
-        Assert(inTransaction());
+        if (!inTransaction())
+            error::_throw(error::NotInTransaction);
         return _exec(sql);
     }
 

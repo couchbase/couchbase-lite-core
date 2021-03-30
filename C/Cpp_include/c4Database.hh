@@ -90,16 +90,30 @@ public:
 
     // Collections:
 
-    std::vector<std::string> collectionNames() const;
-    void forEachCollection(const fleece::function_ref<void(C4Collection*)>&);
-
-    bool hasCollection(slice name) const;
-    
+    /// Returns the default collection that exists in every database.
+    /// In a pre-existing database, this collection contains all docs that were added to
+    /// "the database" before collections existed.
+    /// Its name is "_default".
     C4Collection* getDefaultCollection() const;
 
+    /// Returns true if the collection exists.
+    bool hasCollection(slice name) const;
+
+    /// Returns the existing collection with the given name, or nullptr if it doesn't exist.
     Retained<C4Collection> getCollection(slice name) const;
+
+    /// Creates and returns an empty collection with the given name,
+    /// or returns an existing collection by that name.
     Retained<C4Collection> createCollection(slice name);
+
+    /// Deletes the collection with the given name.
     void deleteCollection(slice name);
+
+    /// Returns the names of all existing collections, in the order in which they were created.
+    std::vector<std::string> collectionNames() const;
+
+    /// Calls the callback function for each collection, in the same order as collectionNames().
+    void forEachCollection(const fleece::function_ref<void(C4Collection*)>&);
 
     // Transactions:
 
@@ -110,6 +124,7 @@ public:
         explicit Transaction(C4Database* db):_db(db) {db->beginTransaction();}
         Transaction(Transaction &&t)        :_db(t._db) {t._db = nullptr;}
         void commit()                       {auto db = _db; _db = nullptr; db->endTransaction(true);}
+        void abort()                        {auto db = _db; _db = nullptr; db->endTransaction(false);}
         ~Transaction()                      {if (_db) _db->endTransaction(false);}
     private:
         C4Database* C4NULLABLE _db;

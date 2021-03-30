@@ -46,6 +46,18 @@ C4API_BEGIN_DECLS
                                            const C4EnumeratorOptions* C4NULLABLE options,
                                            C4Error* C4NULLABLE outError) C4API;
 
+    /** Creates an enumerator ordered by sequence.
+        Caller is responsible for freeing the enumerator when finished with it.
+        @param collection  The collection.
+        @param since  The sequence number to start _after_. Pass 0 to start from the beginning.
+        @param options  Enumeration options (NULL for defaults).
+        @param outError  Error will be stored here on failure.
+        @return  A new enumerator, or NULL on failure. */
+    C4DocEnumerator* c4coll_enumerateChanges(C4Collection *collection,
+                                             C4SequenceNumber since,
+                                             const C4EnumeratorOptions* C4NULLABLE options,
+                                             C4Error* C4NULLABLE outError) C4API;
+
     /** Creates an enumerator ordered by docID.
         Options have the same meanings as in Couchbase Lite.
         There's no 'limit' option; just stop enumerating when you're done.
@@ -57,6 +69,18 @@ C4API_BEGIN_DECLS
     C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                            const C4EnumeratorOptions* C4NULLABLE options,
                                            C4Error* C4NULLABLE outError) C4API;
+
+    /** Creates an enumerator ordered by docID.
+        Options have the same meanings as in Couchbase Lite.
+        There's no 'limit' option; just stop enumerating when you're done.
+        Caller is responsible for freeing the enumerator when finished with it.
+        @param collection  The collection.
+        @param options  Enumeration options (NULL for defaults).
+        @param outError  Error will be stored here on failure.
+        @return  A new enumerator, or NULL on failure. */
+    C4DocEnumerator* c4coll_enumerateAllDocs(C4Collection *collection,
+                                             const C4EnumeratorOptions* C4NULLABLE options,
+                                             C4Error* C4NULLABLE outError) C4API;
 
     /** Advances the enumerator to the next document.
         Returns false at the end, or on error; look at the C4Error to determine which occurred,

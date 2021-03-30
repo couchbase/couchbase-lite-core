@@ -120,11 +120,13 @@ C4API_BEGIN_DECLS
         in reverse chronological order.
         In a version-vector database this is of course the revision's version vector. It will be in
         global form (real peerID instead of "*") unless the `maxRevs` parameter is 0.
+        @param doc  The document.
         @param maxRevs  The maximum number of revisions to include in the result; or 0 for unlimited.
         @param backToRevs  An array of revision IDs: the history should stop when it gets to any of
                             these, and _must_ go back to one of these if possible, even if it means
                             skipping some revisions.
-        @param backToRevsCount  The number of revisions in the `backToRevs` array. */
+        @param backToRevsCount  The number of revisions in the `backToRevs` array.
+        @return  A string of comma-separate revision/version IDs in reverse chronological order. */
     C4SliceResult c4doc_getRevisionHistory(C4Document* doc,
                                            unsigned maxRevs,
                                            const C4String backToRevs[C4NULLABLE],

@@ -92,16 +92,16 @@ typedef struct C4BlobStore C4BlobStore;
 /** An X.509 certificate, or certificate signing request (CSR). */
 typedef struct C4Cert C4Cert;
 
+/** Opaque handle to a namespace of documents in an opened database. */
+typedef struct C4Collection C4Collection;
+
 /** Opaque handle to an opened database. */
 typedef struct C4Database C4Database;
 
-/** A database-observer reference. */
+/** A collection-observer reference. */
 typedef struct C4CollectionObserver C4CollectionObserver;
 
 typedef C4CollectionObserver C4DatabaseObserver;    // TODO: Remove ASAP
-
-/** A namespace of documents in a database. */
-typedef struct C4Collection C4Collection;
 
 /** Describes a version-controlled document. */
 typedef struct C4Document C4Document;

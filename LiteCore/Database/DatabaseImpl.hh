@@ -84,12 +84,9 @@ namespace litecore {
         void forEachCollection(const function_ref<void(C4Collection*)>&) const;
         void forEachOpenCollection(const function_ref<void(C4Collection*)>&) const;
         bool hasCollection(slice name) const;
-        Retained<C4Collection> getCollection(slice name) const;
+        Retained<C4Collection> getCollection(slice name, bool canCreate =false) const;
         C4Collection* getDefaultCollection() const      {return _defaultCollection;}
-        Retained<C4Collection> createCollection(slice name);
         void deleteCollection(slice name);
-
-        void forgetCollection(C4Collection*); // only called by ~C4Collection
 
         ExclusiveTransaction& transaction() const;
 
@@ -155,7 +152,7 @@ namespace litecore {
                                        ExclusiveTransaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
-        using CollectionsMap = std::unordered_map<std::string,Retained<C4Collection>>;
+        using CollectionsMap = std::unordered_map<slice,Retained<C4Collection>>;
 
         string const                _name;                  // Database filename (w/o extension)
         string const                _parentDirectory;       // Path to parent directory

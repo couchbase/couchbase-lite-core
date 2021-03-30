@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 47;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -163,6 +163,7 @@
 		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
+		274D165D261250220018D39C /* c4CollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D163C26124A030018D39C /* c4CollectionTest.cc */; };
 		274D17822177ECCC007FD01A /* QueryParser+Prediction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */; };
 		274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */; };
 		274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */; };
@@ -1036,6 +1037,9 @@
 		274D04081BA75E1C00FF7C35 /* C4Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = C4Tests; sourceTree = BUILT_PRODUCTS_DIR; };
 		274D040A1BA75E1C00FF7C35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		274D04261BA8A5BC00FF7C35 /* c4Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Internal.hh; sourceTree = "<group>"; };
+		274D163C26124A030018D39C /* c4CollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4CollectionTest.cc; sourceTree = "<group>"; };
+		274D166C2612906B0018D39C /* c4Collection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Collection.h; sourceTree = "<group>"; };
+		274D16D026138DCD0018D39C /* DoxygenDependencies.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = DoxygenDependencies.txt; sourceTree = "<group>"; };
 		274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "QueryParser+Prediction.cc"; sourceTree = "<group>"; };
 		274D17842177F212007FD01A /* QueryParser+Private.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "QueryParser+Private.hh"; sourceTree = "<group>"; };
 		274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SecureRandomize.cc; sourceTree = "<group>"; };
@@ -2065,6 +2069,7 @@
 				27F6F51B1BAA0482003FD798 /* c4Test.cc */,
 				27F6F51C1BAA0482003FD798 /* c4Test.hh */,
 				274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */,
+				274D163C26124A030018D39C /* c4CollectionTest.cc */,
 				275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */,
 				27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */,
 				2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */,
@@ -2278,6 +2283,7 @@
 				2764ED3723873B9E007F020F /* c4.txt */,
 				279DE3DD24788A030059AE4E /* c4_ee.txt */,
 				2764ED3823873B9E007F020F /* c4_exp.txt */,
+				274D16D026138DCD0018D39C /* DoxygenDependencies.txt */,
 				27B64937206971FC00FC12F7 /* Info.plist */,
 				274D03FF1BA7554700FF7C35 /* tests */,
 			);
@@ -2984,6 +2990,7 @@
 				271507F1212259DE005FE6E8 /* c4Compat.h */,
 				2722504A1D7884110006D5A5 /* c4BlobStore.h */,
 				27469D03233D488C00A1EE1A /* c4Certificate.h */,
+				274D166C2612906B0018D39C /* c4Collection.h */,
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
 				2743E32625F853D4006F696D /* c4DatabaseTypes.h */,
 				274A69881BED288D00D16D37 /* c4Document.h */,
@@ -3524,6 +3531,7 @@
 				720EA3DE1BA7EAD9002B8416 /* Sources */,
 				720EA3E91BA7EAD9002B8416 /* Frameworks */,
 				720EA3EF1BA7EAD9002B8416 /* Headers */,
+				274D1689261389D60018D39C /* Build Documentation (Doxygen) */,
 			);
 			buildRules = (
 				720EA3F11BA7EAD9002B8416 /* PBXBuildRule */,
@@ -3727,6 +3735,26 @@
 			shellPath = "/bin/sh -e";
 			shellScript = "ditto -v \"$PROJECT_DIR/../C/tests/data\"          \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/C/tests/data\"\nditto -v \"$PROJECT_DIR/../LiteCore/tests/data\"   \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/LiteCore/tests/data\"\nditto -v \"$PROJECT_DIR/../Replicator/tests/data\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/Replicator/tests/data\"\n";
 		};
+		274D1689261389D60018D39C /* Build Documentation (Doxygen) */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"$(SRCROOT)/../C/DoxygenDependencies.txt",
+			);
+			inputPaths = (
+			);
+			name = "Build Documentation (Doxygen)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/../docs/index.html",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "if which doxygen >/dev/null\nthen\n  cd $SRCROOT/../C\n  doxygen\nfi\n";
+		};
 		275BF36C1F5F67940051374A /* Generate repo_version.h */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -3841,6 +3869,7 @@
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
+				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
 				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
@@ -4790,7 +4819,11 @@
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4811,7 +4844,11 @@
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4832,7 +4869,11 @@
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -4853,7 +4894,11 @@
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -4952,7 +4997,11 @@
 					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
 				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
 				PRODUCT_NAME = "LiteCore-iOS";
@@ -5004,7 +5053,12 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks @executable_path/../..";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
@@ -5109,7 +5163,11 @@
 					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
 				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
 				PRODUCT_NAME = "LiteCore-iOS";
 				SDKROOT = iphoneos;
@@ -5155,7 +5213,12 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks @executable_path/../..";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -5190,7 +5253,11 @@
 					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
 				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
 				PRODUCT_NAME = "LiteCore-iOS";
@@ -5219,7 +5286,11 @@
 					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
 				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
 				PRODUCT_NAME = "LiteCore-iOS";
 				SDKROOT = iphoneos;
@@ -5271,7 +5342,12 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks @executable_path/../..";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
@@ -5317,7 +5393,12 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks @executable_path/../..";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -45,6 +45,8 @@ struct C4Collection : public fleece::RefCounted,
                       public C4Base,
                       public fleece::InstanceCountedIn<C4Collection>
 {
+    // Accessors:
+    
     slice name() const                          {return _name;}
 
     C4Database* database();
@@ -73,9 +75,9 @@ struct C4Collection : public fleece::RefCounted,
                                                 C4RevisionFlags revFlags,
                                                 C4Error *outError) =0;
 
-    virtual bool purgeDoc(slice docID) =0;
+    // Purging & Expiration:
 
-    // Expiration:
+    virtual bool purgeDoc(slice docID) =0;
 
     virtual bool setExpiration(slice docID, C4Timestamp timestamp) =0;
     virtual C4Timestamp getExpiration(slice docID) const =0;
@@ -83,7 +85,7 @@ struct C4Collection : public fleece::RefCounted,
     virtual C4Timestamp nextDocExpiration() const =0;
     virtual int64_t purgeExpiredDocs() =0;
 
-    // Queries & Indexes:
+    // Indexes:
 
     virtual void createIndex(slice name,
                              slice indexSpecJSON,

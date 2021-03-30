@@ -579,7 +579,7 @@ namespace litecore {
 
     void DatabaseImpl::initCollections() {
         LOCK(_collectionsMutex);
-        _defaultCollection = getCollection(kDefaultCollectionName);
+        _defaultCollection = getCollection(kDefaultCollectionName, true);
     }
 
 
@@ -587,57 +587,51 @@ namespace litecore {
         LOCK(_collectionsMutex);
         string keyStoreName = collectionNameToKeyStoreName(name);
         return !keyStoreName.empty()
-            && (_collections.find(string(name)) != _collections.end()
+            && (_collections.find(name) != _collections.end()
                 || _dataFile->keyStoreExists(keyStoreName));
     }
 
 
-    Retained<C4Collection> DatabaseImpl::getCollection(slice name) const {
+    // This implements both the public getCollection() and createCollection()
+    Retained<C4Collection> DatabaseImpl::getCollection(slice name, bool canCreate) const {
         LOCK(_collectionsMutex);
-        string nameStr(name);
-        if (auto i = _collections.find(nameStr); i != _collections.end()) {
-            return i->second;
-        } else {
-            string keyStoreName = collectionNameToKeyStoreName(name);
-            if (keyStoreName.empty())
-                C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
-                               "Invalid collection name '%.*s'", SPLAT(name));
-            // getKeyStore() will create it if it doesn't exist...
-            KeyStore &store = _dataFile->getKeyStore(keyStoreName);
-            auto collection = C4Collection::newCollection(const_cast<DatabaseImpl*>(this),
-                                                          name, store);
-            if (isInTransaction())
-                collection->transactionBegan();
-            _collections.insert({nameStr, collection});
-            return collection;
-        }
-    }
+        // Is there already a C4Collection object for it in _collections?
+        if (auto i = _collections.find(name); i != _collections.end())
+            return i->second;                                               // -> Existing object
 
+        // Validate the name:
+        string keyStoreName = collectionNameToKeyStoreName(name);
+        if (keyStoreName.empty())
+            C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
+                           "Invalid collection name '%.*s'", SPLAT(name));  //-> THROW
 
-    Retained<C4Collection> DatabaseImpl::createCollection(slice name) {
-        return getCollection(name);
+        // Validate its existence, if canCreate is false:
+        if (!canCreate && !_dataFile->keyStoreExists(keyStoreName))
+            return nullptr;                                                 //-> NULL
+
+        // Instantiate it, creating the KeyStore on-disk if necessary:
+        KeyStore &store = _dataFile->getKeyStore(keyStoreName);
+        auto collection = C4Collection::newCollection(const_cast<DatabaseImpl*>(this),
+                                                      name, store);
+        // Update its state & add it to _collections:
+        if (isInTransaction())
+            collection->transactionBegan();
+        _collections.insert({collection->name(), collection});
+        return collection;                                                  //-> New object
     }
 
 
     void DatabaseImpl::deleteCollection(slice name) {
+        Transaction t(this);
+
         LOCK(_collectionsMutex);
-        if (auto i = _collections.find(string(name)); i != _collections.end()) {
+        if (auto i = _collections.find(name); i != _collections.end()) {
             i->second->close();
             _collections.erase(i);
         }
         _dataFile->deleteKeyStore(collectionNameToKeyStoreName(name));
-    }
 
-
-    void DatabaseImpl::forgetCollection(C4Collection* coll) { // only called by ~C4Collection
-        LOCK(_collectionsMutex);
-        for (auto i = _collections.begin(); i != _collections.end(); ++i) {
-            if (i->second == coll) {
-                _collections.erase(i);
-                return;
-            }
-        }
-        postcondition(false);
+        t.commit();
     }
 
 

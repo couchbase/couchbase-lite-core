@@ -204,9 +204,9 @@ C4UUID C4Database::privateUUID() const  {return IMPL->getUUID(DatabaseImpl::kPri
 
 std::vector<std::string> C4Database::collectionNames() const{return IMPL->collectionNames();}
 bool C4Database::hasCollection(slice name) const            {return IMPL->hasCollection(name);}
-Retained<C4Collection> C4Database::getCollection(slice name) const   {return IMPL->getCollection(name);}
 C4Collection* C4Database::getDefaultCollection() const      {return IMPL->getDefaultCollection();}
-Retained<C4Collection> C4Database::createCollection(slice name)      {return IMPL->createCollection(name);}
+Retained<C4Collection> C4Database::getCollection(slice name) const   {return IMPL->getCollection(name, false);}
+Retained<C4Collection> C4Database::createCollection(slice name)      {return IMPL->getCollection(name, true);}
 void C4Database::deleteCollection(slice name)               {return IMPL->deleteCollection(name);}
 
 void C4Database::forEachCollection(const function_ref<void(C4Collection*)> &cb) {
