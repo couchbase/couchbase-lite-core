@@ -65,7 +65,6 @@ namespace litecore {
         {"IN"_sl,      2, 9,  3,  &QueryParser::inOp},
         {"LIKE"_sl,    2, 3,  3,  &QueryParser::likeOp},
         {"NOT IN"_sl,  2, 9,  3,  &QueryParser::inOp},
-        {"MATCH"_sl,   2, 2,  3,  &QueryParser::matchOp},
         {"BETWEEN"_sl, 3, 3,  3,  &QueryParser::betweenOp},
         {"EXISTS"_sl,  1, 1,  8,  &QueryParser::existsOp},
 
@@ -210,6 +209,7 @@ namespace litecore {
         {"is_valued"_sl,        1, 1, "isvalued"_sl},
 
         // FTS (not standard N1QL):
+        {"match"_sl,            2, 2},
         {"rank"_sl,             1, 1},
 
         // Aggregate functions:

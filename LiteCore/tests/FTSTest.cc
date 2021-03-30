@@ -70,8 +70,11 @@ public:
 
     void testQuery(const char *queryStr,
                    vector<int> expectedOrder,
-                   vector<int> expectedTerms) {
-        Retained<Query> query{ store->compileQuery(json5(queryStr)) };
+                   vector<int> expectedTerms,
+                   QueryLanguage language =QueryLanguage::kJSON) {
+        Retained<Query> query{ store->compileQuery(language == QueryLanguage::kJSON
+                                                   ? json5(queryStr)
+                                                   : slice(queryStr), language) };
         REQUIRE(query != nullptr);
         unsigned row = 0;
         Retained<QueryEnumerator> e(query->createEnumerator());
@@ -100,12 +103,23 @@ constexpr const char* const FTSTest::kStrings[5];
 
 TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
     createIndex({"english", true});
+    const char* queryStr = nullptr;
+    QueryLanguage lang = QueryLanguage::kJSON;
+    SECTION("JSON query") {
+        queryStr = "['SELECT', {'WHERE': ['MATCH()', 'sentence', 'search'],\
+                               ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
+                                   WHAT: [['.sentence']]}]";
+        lang = QueryLanguage::kJSON;
+    }
+    SECTION("N1QL query") {
+        queryStr = "SELECT sentence WHERE MATCH('sentence', 'search') ORDER BY rank('sentence') DESC";
+        lang = QueryLanguage::kN1QL;
+    }
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
-                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
-                        WHAT: [['.sentence']]}]",
+          queryStr,
               {1, 2, 0, 4},
-              {3, 3, 1, 1});
+              {3, 3, 1, 1},
+              lang);
 }
 
 
@@ -113,7 +127,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text English_US", "[Query][FTS]") {
     // Check that language+country code is allowed:
     createIndex({"en_US", true});
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+        "['SELECT', {'WHERE': ['MATCH()', 'sentence', 'search'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                         WHAT: [['.sentence']]}]",
               {1, 2, 0, 4},
@@ -124,7 +138,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text English_US", "[Query][FTS]") {
 TEST_CASE_METHOD(FTSTest, "Query Full-Text Unsupported Language", "[Query][FTS]") {
     createIndex({"elbonian", true});
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+        "['SELECT', {'WHERE': ['MATCH()', 'sentence', 'search'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                         WHAT: [['.sentence']]}]",
               {1, 2, 0},
@@ -136,7 +150,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words", "[Query][FTS]") {
     // Check that English stop-words like "the" and "is" are being ignored by FTS.
     createIndex({"en", true});
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'the search is'],\
+        "['SELECT', {'WHERE': ['MATCH()', 'sentence', 'the search is'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                         WHAT: [['.sentence']]}]",
               {1, 2, 0, 4},
@@ -153,7 +167,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text No stop-words", "[Query][FTS]") {
     }
     createIndex({"en", true, false, ""});
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'the search is'],\
+        "['SELECT', {'WHERE': ['MATCH()', 'sentence', 'the search is'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                         WHAT: [['.sentence']]}]",
               {2},
@@ -164,7 +178,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text No stop-words", "[Query][FTS]") {
 TEST_CASE_METHOD(FTSTest, "Query Full-Text Custom stop-words", "[Query][FTS]") {
     createIndex({"en", true, false, "the a an"});
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'the search is'],\
+        "['SELECT', {'WHERE': ['MATCH()', 'sentence', 'the search is'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                         WHAT: [['.sentence']]}]",
               {2, 0},
@@ -178,7 +192,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words In Target", "[Query][FTS]"
     // https://github.com/couchbase/couchbase-lite-core/issues/626
     createIndex({"en", true});
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'f* AND on*'],\
+        "['SELECT', {'WHERE': ['MATCH()', 'sentence', 'f* AND on*'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                         WHAT: [['.sentence']]}]",
               {1, 3},
@@ -193,7 +207,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Partial Index", "[Query][FTS]") {
                        R"-({"WHAT": [[".sentence"]], "WHERE": [">", ["length()", [".sentence"]], 70]})-",
                        IndexSpec::kFullText, &options);
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+        "['SELECT', {'WHERE': ['MATCH()', 'sentence', 'search'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                         WHAT: [['.sentence']]}]",
               {1, 2, 0},
@@ -208,7 +222,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Partial Index", "[Query][FTS]") {
     }
 
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+        "['SELECT', {'WHERE': ['MATCH()', 'sentence', 'search'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                         WHAT: [['.sentence']]}]",
               {2, 4, 0},
@@ -220,9 +234,16 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     // Tests fix for <https://issues.couchbase.com/browse/CBL-218>
 
     store->deleteIndex("List"_sl);
+    const char* const jsonQuery = "{WHAT: [ '._id'], WHERE: ['MATCH()', 'List', ['$title']]}";
+    const char* const n1qlQuery = "SELECT META().id WHERE MATCH('List', $title)";
+    const char* queryStr = nullptr;
+    QueryLanguage lang = QueryLanguage::kJSON;
+    
     SECTION("Create Index First") {
         IndexSpec::Options options { "en", false, true };
         CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, IndexSpec::kFullText, &options));
+        queryStr = jsonQuery;
+        lang = QueryLanguage::kJSON;
     }
 
     {
@@ -304,9 +325,12 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     SECTION("Create Index After") {
         IndexSpec::Options options { "en", false, true };
         CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, IndexSpec::kFullText, &options));
+        queryStr = n1qlQuery;
+        lang = QueryLanguage::kN1QL;
     }
 
-    Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH', 'List', ['$title']]}"));
+    Retained<Query> query = store->compileQuery(lang == QueryLanguage::kJSON ?
+                                                json5(queryStr) : slice(queryStr), lang);
     vector<slice> titles { "the"_sl, "shawshank"_sl, "redemption"_sl, "(1994)"_sl, "godfather"_sl, "(1972)"_sl,
         "part"_sl, "ii"_sl, "(1974)"_sl, "dark"_sl, "knight"_sl, "(2008)"_sl, "12"_sl, "angry"_sl, "men"_sl,
         "(1957)"_sl, "schindler's"_sl, "list"_sl, "(1993)"_sl, "lord"_sl, "of"_sl, "rings"_sl, "return"_sl,
@@ -367,7 +391,7 @@ TEST_CASE_METHOD(FTSTest, "Test with Dictionary Values", "[FTS][Query]") {
 
     IndexSpec::Options options { "en", false, false };
     CHECK(store->createIndex("fts"_sl, "[[\".dict_value\"]]"_sl, IndexSpec::kFullText, &options));
-    Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH', 'fts', 'bar']}"));
+    Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH()', 'fts', 'bar']}"));
     Retained<QueryEnumerator> results(query->createEnumerator(nullptr));        
     CHECK(results->getRowCount() == 1);
 }
@@ -440,7 +464,7 @@ TEST_CASE_METHOD(FTSTest, "Test with non-string values", "[FTS][Query]") {
 
     IndexSpec::Options options { "en", false, true };
     CHECK(store->createIndex("fts"_sl, "[[\".value\"]]"_sl, IndexSpec::kFullText, &options));
-    Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH', 'fts', ['$value']]}"));
+    Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH()', 'fts', ['$value']]}"));
     Encoder e;
     e.beginDictionary(1);
     e.writeKey("value");
@@ -480,8 +504,8 @@ TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
     }
         
     string queries[] = {
-        json5("{WHAT: [['.key-2'],['.key-used-once'],['.key-unused']], WHERE: ['MATCH', 'ftsIndex', 'against']}"),
-        json5("{WHAT: [['.key-unused'],['.key-used-once'],['.key-2']], WHERE: ['MATCH', 'ftsIndex', 'against']}")
+        json5("{WHAT: [['.key-2'],['.key-used-once'],['.key-unused']], WHERE: ['MATCH()', 'ftsIndex', 'against']}"),
+        json5("{WHAT: [['.key-unused'],['.key-used-once'],['.key-2']], WHERE: ['MATCH()', 'ftsIndex', 'against']}")
     };
     
     int expectedMissing = 2;

@@ -223,7 +223,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT", "[Query]") {
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT FTS", "[Query][FTS]") {
     CHECK(parseWhere("['SELECT', {\
-                     WHERE: ['MATCH', 'bio', 'mobile']}]")
+                     WHERE: ['MATCH()', 'bio', 'mobile']}]")
           == "SELECT _doc.rowid, offsets(fts1.\"kv_default::bio\"), key, sequence FROM kv_default AS _doc JOIN \"kv_default::bio\" AS fts1 ON fts1.docid = _doc.rowid WHERE (fts1.\"kv_default::bio\" MATCH 'mobile') AND (_doc.flags & 1 = 0)");
 }
 

@@ -1307,6 +1307,11 @@ namespace litecore {
         require(arity <= spec->maxArgs || spec->maxArgs >= 9,
                 "Too many arguments for function '%.*s'", SPLAT(op));
 
+        if (spec->name == "match"_sl) {
+            matchOp(op, operands);
+            return;
+        }
+
         if (spec->sqlite_name)
             op = spec->sqlite_name;
         else
@@ -1687,7 +1692,7 @@ namespace litecore {
     // Recursively looks for MATCH expressions and adds the properties being matched to
     // _indexJoinTables. Returns the number of expressions found.
     unsigned QueryParser::findFTSProperties(const Value *root) {
-        return findNodes(root, "MATCH"_sl, 1, [this](const Array *match) {
+        return findNodes(root, "MATCH()"_sl, 1, [this](const Array *match) {
             FTSJoinTableAlias(match->get(1), true); // add LHS
         });
     }
