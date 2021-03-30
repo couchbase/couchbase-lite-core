@@ -58,13 +58,13 @@ C4Database::~C4Database() {
 
 
 static FilePath dbPath(C4String name, C4String parentDir) {
-    Assert(name.buf != nullptr && parentDir.buf != nullptr);
+    Assert(name.buf != nullptr && parentDir.buf != nullptr);        // throws!
     return FilePath(string(slice(parentDir)), string(slice(name)))
                 .addingExtension(kC4DatabaseFilenameExtension);
 }
 
 
-static bool ensureConfigDirExists(const C4DatabaseConfig2 *config, C4Error *outError) {
+static bool ensureConfigDirExists(const C4DatabaseConfig2 *config, C4Error *outError) noexcept {
     if (config->flags & kC4DB_ReadOnly)
         return true;
     try {
@@ -77,7 +77,7 @@ static bool ensureConfigDirExists(const C4DatabaseConfig2 *config, C4Error *outE
 }
 
 
-static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 *config2) {
+static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 *config2) noexcept {
     return C4DatabaseConfig {
         config2->flags | kC4DB_AutoCompact,
         NULL,
@@ -88,7 +88,9 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 *config2) {
 
 
 bool c4db_exists(C4String name, C4String inDirectory) C4API {
-    return dbPath(name, inDirectory).exists();
+    return tryCatch<bool>(nullptr, [=] {
+        return dbPath(name, inDirectory).exists();
+    });
 }
 
 
@@ -115,11 +117,11 @@ C4Database* c4db_openNamed(C4String name,
                            const C4DatabaseConfig2 *config,
                            C4Error *outError) C4API
 {
-    if (!ensureConfigDirExists(config, outError))
-        return nullptr;
-    FilePath path = dbPath(name, config->parentDirectory);
-    C4DatabaseConfig oldConfig = newToOldConfig(config);
-    return tryCatch<C4Database*>(outError, [=] {
+    return tryCatch<C4Database*>(outError, [=]() -> C4Database* {
+        if (!ensureConfigDirExists(config, outError))
+            return nullptr;
+        FilePath path = dbPath(name, config->parentDirectory);
+        C4DatabaseConfig oldConfig = newToOldConfig(config);
         return retain(new C4Database(path, oldConfig));
     });
 }
@@ -148,13 +150,14 @@ bool c4db_copyNamed(C4String sourcePath,
                     const C4DatabaseConfig2* config,
                     C4Error* error) C4API
 {
-    if (!ensureConfigDirExists(config, error))
-        return false;
-    return tryCatch(error, [=] {
+    return tryCatch<bool>(error, [=] {
+        if (!ensureConfigDirExists(config, error))
+            return false;
         FilePath from(slice(sourcePath).asString());
         FilePath to = dbPath(destinationName, config->parentDirectory);
         C4DatabaseConfig oldConfig = newToOldConfig(config);
         CopyPrebuiltDB(from, to, &oldConfig);
+        return true;
     });
 }
 
@@ -175,7 +178,9 @@ bool c4db_delete(C4Database* database, C4Error *outError) noexcept {
 bool c4db_deleteAtPath(C4Slice dbPath, C4Error *outError) noexcept {
     if (outError)
         *outError = {};     // deleteDatabaseAtPath may return false w/o throwing an exception
-    return tryCatch<bool>(outError, [=]{return Database::deleteDatabaseAtPath(toString(dbPath));});
+    return tryCatch<bool>(outError, [=]{
+        return Database::deleteDatabaseAtPath(toString(dbPath));
+    });
 }
 
 
@@ -185,8 +190,9 @@ bool c4db_deleteNamed(C4String dbName,
 {
     if (outError)
         *outError = {};     // deleteDatabaseAtPath may return false w/o throwing an exception
-    FilePath path = dbPath(dbName, inDirectory);
-    return tryCatch<bool>(outError, bind(&Database::deleteDatabaseAtPath, path));
+    return tryCatch<bool>(outError, [=]{
+        return Database::deleteDatabaseAtPath(dbPath(dbName, inDirectory));
+    });
 }
 
 
