@@ -127,7 +127,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Read-Only UUIDs", "[Database][C
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!throws]") {
     auto config = *c4db_getConfig2(db);
 
     static constexpr slice kTestBundleName = "cbl_core_test_bundle";
@@ -156,6 +156,27 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
         // Open nonexistent bundle:
         REQUIRE(!c4db_openNamed("no_such_bundle"_sl, &config, &error));
     }
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed Bad Path", "[Database][C][!throws]") {
+    auto badOpen = [&](slice parentDirectory) {
+        C4Error error;
+        C4DatabaseConfig2 config = {};
+        config.parentDirectory = parentDirectory;
+        ExpectingExceptions x;
+        c4::ref<C4Database> badDB = c4db_openNamed("foo"_sl, &config, ERROR_INFO(error));
+        REQUIRE(badDB == nullptr);
+    };
+
+    badOpen(nullslice); // this will log an assertion failure
+    badOpen("");
+    badOpen("zzzzzzzzzzzzzzzz");
+#ifdef WIN32
+    badOpen("\\obviously\\bad\\path");
+#else
+    badOpen("/obviously/bad/path");
+#endif
 }
 
 
