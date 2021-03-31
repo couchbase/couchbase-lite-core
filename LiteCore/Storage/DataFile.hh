@@ -129,8 +129,8 @@ namespace litecore {
         KeyStore& defaultKeyStore() const           {return defaultKeyStore(_options.keyStores);}
         KeyStore& defaultKeyStore(KeyStore::Capabilities) const;
 
-        KeyStore& getKeyStore(const std::string &name) const;
-        KeyStore& getKeyStore(const std::string &name, KeyStore::Capabilities) const;
+        KeyStore& getKeyStore(slice name) const;
+        KeyStore& getKeyStore(slice name, KeyStore::Capabilities) const;
 
         virtual bool keyStoreExists(const std::string &name) const =0;
 

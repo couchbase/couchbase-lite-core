@@ -139,9 +139,11 @@ namespace litecore {
         bool getUUIDIfExists(slice key, C4UUID&) const;
         C4UUID generateUUID(slice key, bool overwrite =false);
 
-        KeyStore& getKeyStore(const string &name) const;
-        Record getRawRecord(const std::string &storeName, slice key);
-        void putRawRecord(const string &storeName, slice key, slice meta, slice body);
+        KeyStore& infoKeyStore() const;
+        Record getInfo(slice key) const;
+        void setInfo(slice key, slice body);
+        void setInfo(Record&);
+        KeyStore& rawDocStore(slice storeName);
 
         C4UUID getUUID(slice key) const;
         static constexpr slice kPublicUUIDKey = "publicUUID";

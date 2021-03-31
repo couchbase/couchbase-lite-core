@@ -20,6 +20,7 @@
 #include "c4Collection.hh"
 #include "c4Document.hh"
 #include "c4Document.h"
+#include "c4ExceptionUtils.hh"
 #include "c4Internal.hh"
 #include "c4Private.h"
 #include "c4BlobStore.hh"
@@ -184,8 +185,7 @@ namespace litecore {
     C4DocumentVersioning DatabaseImpl::checkDocumentVersioning() {
         //FIXME: This ought to be done _before_ the SQLite userVersion is updated
         // Compare existing versioning against runtime config:
-        auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences);
-        Record versDoc = info.get("versioning");
+        Record versDoc = getInfo("versioning");
         auto curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
         auto newVersioning = _configV1.versioning;
         if (versDoc.exists() && curVersioning >= newVersioning)
@@ -193,7 +193,7 @@ namespace litecore {
 
         // Mismatch -- could be a race condition. Open a transaction and recheck:
         Transaction t(this);
-        versDoc = info.get("versioning");
+        versDoc = getInfo("versioning");
         curVersioning = C4DocumentVersioning(versDoc.bodyAsUInt());
         if (versDoc.exists() && curVersioning >= newVersioning)
             return curVersioning;
@@ -213,7 +213,7 @@ namespace litecore {
 
         // Store new versioning:
         versDoc.setBodyAsUInt((uint64_t)newVersioning);
-        info.setKV(versDoc, transaction());
+        setInfo(versDoc);
         t.commit();
         return newVersioning;
     }
@@ -297,8 +297,7 @@ namespace litecore {
 
     uint32_t DatabaseImpl::maxRevTreeDepth() {
         if (_maxRevTreeDepth == 0) {
-            auto &info = getKeyStore(DataFile::kInfoKeyStoreName);
-            _maxRevTreeDepth = (uint32_t)info.get(kMaxRevTreeDepthKey).bodyAsUInt();
+            _maxRevTreeDepth = uint32_t(getInfo(kMaxRevTreeDepthKey).bodyAsUInt());
             if (_maxRevTreeDepth == 0)
                 _maxRevTreeDepth = kDefaultMaxRevTreeDepth;
         }
@@ -308,20 +307,14 @@ namespace litecore {
     void DatabaseImpl::setMaxRevTreeDepth(uint32_t depth) {
         if (depth == 0)
             depth = kDefaultMaxRevTreeDepth;
-        KeyStore &info = getKeyStore(DataFile::kInfoKeyStoreName);
-        Record rec = info.get(kMaxRevTreeDepthKey);
+        Record rec = getInfo(kMaxRevTreeDepthKey);
         if (depth != rec.bodyAsUInt()) {
+            Transaction t(this);
             rec.setBodyAsUInt(depth);
-            ExclusiveTransaction t(*_dataFile);
-            info.setKV(rec, t);
+            setInfo(rec);
             t.commit();
         }
         _maxRevTreeDepth = depth;
-    }
-
-
-    KeyStore& DatabaseImpl::getKeyStore(const string &nm) const {
-        return _dataFile->getKeyStore(nm, KeyStore::noSequences);
     }
 
 
@@ -431,8 +424,7 @@ namespace litecore {
 
 
     bool DatabaseImpl::getUUIDIfExists(slice key, C4UUID &uuid) const {
-        auto &store = getKeyStore(string(kInfoStore));
-        Record r = store.get(key);
+        Record r = getInfo(key);
         if (!r.exists() || r.body().size < sizeof(C4UUID))
             return false;
         uuid = *(C4UUID*)r.body().buf;
@@ -444,10 +436,9 @@ namespace litecore {
     C4UUID DatabaseImpl::generateUUID(slice key, bool overwrite) {
         C4UUID uuid;
         if (overwrite || !getUUIDIfExists(key, uuid)) {
-            auto &store = getKeyStore(string(kInfoStore));
             slice uuidSlice{&uuid, sizeof(uuid)};
             GenerateUUID(uuidSlice);
-            store.setKV(key, uuidSlice, transaction());
+            setInfo(key, uuidSlice);
         }
         return uuid;
     }
@@ -468,10 +459,8 @@ namespace litecore {
     void DatabaseImpl::resetUUIDs() {
         Transaction t(this);
         C4UUID previousPrivate = getUUID(kPrivateUUIDKey);
-        auto &store = getKeyStore(string(kInfoStore));
-        store.setKV(constants::kPreviousPrivateUUIDKey,
-                    {&previousPrivate, sizeof(C4UUID)},
-                    transaction());
+        setInfo(constants::kPreviousPrivateUUIDKey,
+                {&previousPrivate, sizeof(C4UUID)});
         generateUUID(kPublicUUIDKey, true);
         generateUUID(kPrivateUUIDKey, true);
         t.commit();
@@ -708,12 +697,37 @@ namespace litecore {
     }
 
 
-#pragma mark - RAW DOCUMENTS:
+#pragma mark - INFO / RAW DOCUMENTS:
 
 
-    bool DatabaseImpl::getRawDocument(slice storeName, slice key, function_ref<void(C4RawDocument*)> cb) {
-        Record r = getRawRecord(string(storeName), key);
-        if (r.exists()) {
+    KeyStore& DatabaseImpl::infoKeyStore() const {
+        return _dataFile->getKeyStore(kInfoStore, KeyStore::noSequences);
+    }
+
+    Record DatabaseImpl::getInfo(slice key) const {
+        return infoKeyStore().get(key);
+    }
+
+    void DatabaseImpl::setInfo(slice key, slice body) {
+        infoKeyStore().setKV(key, nullslice, body, transaction());
+    }
+
+    void DatabaseImpl::setInfo(Record &rec) {
+        infoKeyStore().setKV(rec, transaction());
+    }
+
+
+    KeyStore& DatabaseImpl::rawDocStore(slice storeName) {
+        AssertParam(!keyStoreNameToCollectionName(storeName), "Invalid raw-doc store name");
+        return _dataFile->getKeyStore(storeName, KeyStore::noSequences);
+    }
+
+
+    bool DatabaseImpl::getRawDocument(slice storeName,
+                                      slice key,
+                                      function_ref<void(C4RawDocument*)> cb)
+    {
+        if (Record r = rawDocStore(storeName).get(key); r.exists()) {
             C4RawDocument rawDoc = {r.key(), r.version(), r.body()};
             cb(&rawDoc);
             return true;
@@ -725,23 +739,13 @@ namespace litecore {
 
 
     void DatabaseImpl::putRawDocument(slice storeName, const C4RawDocument &doc) {
+        KeyStore &store = rawDocStore(storeName);
         Transaction t(this);
-        putRawRecord(string(storeName), doc.key, doc.meta, doc.body);
-        t.commit();
-    }
-
-    
-    Record DatabaseImpl::getRawRecord(const string &storeName, slice key) {
-        return getKeyStore(storeName).get(key);
-    }
-
-
-    void DatabaseImpl::putRawRecord(const string &storeName, slice key, slice meta, slice body) {
-        KeyStore &localDocs = getKeyStore(storeName);
-        if (body.buf || meta.buf)
-            localDocs.setKV(key, meta, body, transaction());
+        if (doc.body.buf || doc.meta.buf)
+            store.setKV(doc.key, doc.meta, doc.body, transaction());
         else
-            localDocs.del(key, transaction());
+            store.del(doc.key, transaction());
+        t.commit();
     }
 
 
@@ -914,7 +918,7 @@ namespace litecore {
             }
 
             // Look up the doc in the db, and the remote URL in the doc:
-            Record doc = getRawRecord(string(kInfoStore), kRemoteDBURLsDoc);
+            Record doc = getInfo(kRemoteDBURLsDoc);
             const impl::Dict *remotes = nullptr;
             remoteID = 0;
             if (doc.exists()) {
@@ -952,7 +956,7 @@ namespace litecore {
                 alloc_slice body = enc.finish();
 
                 // Save the doc:
-                putRawRecord(string(kInfoStore), kRemoteDBURLsDoc, nullslice, body);
+                setInfo(kRemoteDBURLsDoc, body);
                 endTransaction(true);
                 inTransaction = false;
                 break;
@@ -965,8 +969,7 @@ namespace litecore {
 
 
     alloc_slice DatabaseImpl::getRemoteDBAddress(C4RemoteID remoteID) {
-        Record doc = getRawRecord(string(kInfoStore), kRemoteDBURLsDoc);
-        if (doc.exists()) {
+        if (Record doc = getInfo(kRemoteDBURLsDoc); doc.exists()) {
             auto body = impl::Value::fromData(doc.body());
             if (body) {
                 for (impl::Dict::iterator i(body->asDict()); i; ++i) {

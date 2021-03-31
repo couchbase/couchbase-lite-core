@@ -62,7 +62,7 @@ namespace litecore {
             if (!dataFile)
                 return;
             ExclusiveTransaction t(dataFile);
-            KeyStore &keyStore = dataFile->getKeyStore(string(keyStoreName));
+            KeyStore &keyStore = dataFile->getKeyStore(keyStoreName);
             SequenceTracker sequenceTracker(keyStoreName);
             sequenceTracker.beginTransaction();
 
