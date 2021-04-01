@@ -16,8 +16,7 @@
 // limitations under the License.
 //
 
-#include "c4CppUtils.hh"
-#include "c4Listener.h"
+#include "c4Listener.hh"
 #include "c4ListenerInternal.hh"
 #include "c4ExceptionUtils.hh"
 #include "Listener.hh"
@@ -36,117 +35,81 @@ namespace litecore { namespace REST {
 } }
 
 
-static inline RESTListener* internal(C4Listener* r) {return (RESTListener*)r;}
-static inline C4Listener* external(Listener* r) {return (C4Listener*)r;}
-
-
-C4ListenerAPIs c4listener_availableAPIs(void) C4API {
+C4ListenerAPIs C4Listener::availableAPIs() {
     return kListenerAPIs;
 }
 
 
-C4Listener* c4listener_start(const C4ListenerConfig *config, C4Error *outError) C4API {
-    C4Listener* c4Listener = nullptr;
-    try {
-        c4Listener = external(retain(NewListener(config)));
-        if (!c4Listener)
-            c4error_return(LiteCoreDomain, kC4ErrorUnsupported,
-                           "Unsupported listener API"_sl, outError);
-    } catchError(outError)
-    return c4Listener;
+string C4Listener::URLNameFromPath(slice pathSlice) {
+    return Listener::databaseNameFromPath(FilePath(pathSlice, ""));
 }
 
 
-void c4listener_free(C4Listener *listener) C4API {
-    if (!listener)
-        return;
-    internal(listener)->stop();
-    release(internal(listener));
-}
-
-
-C4StringResult c4db_URINameFromPath(C4String pathSlice) C4API {
-    try {
-        auto pathStr = slice(pathSlice).asString();
-        string name = Listener::databaseNameFromPath(FilePath(pathStr, ""));
-        if (name.empty())
-            return {};
-        return FLSliceResult(alloc_slice(name));
-    } catchAndWarn()
-    return {};
-}
-
-
-bool c4listener_shareDB(C4Listener *listener, C4String name, C4Database *db,
-                        C4Error *outError) C4API
+C4Listener::C4Listener(C4ListenerConfig config)
+:_httpAuthCallback(config.httpAuthCallback)
+,_callbackContext(config.callbackContext)
 {
-    try {
-        optional<string> nameStr;
-        if (name.buf)
-            nameStr = slice(name);
-        if (internal(listener)->registerDatabase(db, nameStr))
-            return true;
-        c4error_return(LiteCoreDomain, kC4ErrorConflict, "Database already shared"_sl, outError);
-    } catchError(outError);
-    return false;
+    // Replace the callback, if any, with one to myself. This allows me to pass the correct
+    // C4Listener* to the client's callback.
+    if (config.httpAuthCallback) {
+        config.callbackContext = this;
+        config.httpAuthCallback = [](C4Listener*, C4Slice authHeader, void *context) {
+            auto listener = (C4Listener*)context;
+            return listener->_httpAuthCallback(listener, authHeader, listener->_callbackContext);
+        };
+    }
+
+    _impl = NewListener(&config);
+    if (!_impl)
+        C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported, "Unsupported listener API");
 }
 
 
-bool c4listener_unshareDB(C4Listener *listener, C4Database *db,
-                          C4Error *outError) C4API
-{
-    try {
-        if (internal(listener)->unregisterDatabase(db))
-            return true;
-        c4error_return(LiteCoreDomain, kC4ErrorNotOpen, "Database not shared"_sl, outError);
-    } catchError(outError);
-    return false;
+C4Listener::C4Listener(C4Listener&&) = default;
+
+
+C4Listener::~C4Listener() {
+    if (_impl)
+        ((RESTListener*)_impl.get())->stop();
 }
 
 
-uint16_t c4listener_getPort(C4Listener *listener) C4API {
-    try {
-        return internal(listener)->port();
-    } catchAndWarn()
-    return 0;
+RESTListener* C4Listener::restImpl() {
+    return dynamic_cast<RESTListener*>(_impl.get());
 }
 
 
-FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db,
-                                  C4ListenerAPIs api, C4Error* err) C4API {
-    try {
-        switch(api) {
-            case kC4RESTAPI:
-            case kC4SyncAPI:
-                break;
-            default:
-                if(err != nullptr) {
-                    *err = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
-                                        C4STR("The provided API must be one of the following:  REST, Sync."));
-                }
-                
-                return nullptr;
-        }
-        
-        MutableArray urls = MutableArray::newArray();
-        for (net::Address &address : internal(listener)->addresses(db, api))
-            urls.append(address.url());
-        return (FLMutableArray)FLValue_Retain(urls);
-    } catchError(err);
-    return nullptr;
+bool C4Listener::shareDB(slice name, C4Database *db) {
+    optional<string> nameStr;
+    if (name.buf)
+        nameStr = name;
+    return _impl->registerDatabase(db, nameStr);
 }
 
 
-void c4listener_getConnectionStatus(C4Listener *listener,
-                                    unsigned *connectionCount,
-                                    unsigned *activeConnectionCount) C4API
-{
-    auto active = internal(listener)->activeConnectionCount();
-    if (connectionCount)
-        *connectionCount = std::max(internal(listener)->connectionCount(), active);
-    if (activeConnectionCount)
-        *activeConnectionCount = active;
-    // Ensure activeConnectionCount ≤ connectionCount because logically it should be;
-    // sometimes it isn't, because the TCP connection has closed but the Replicator instance
-    // is still finishing up. In that case, bump the connectionCount accordingly.
+bool C4Listener::unshareDB(C4Database *db) {
+    return _impl->unregisterDatabase(db);
+}
+
+
+std::vector<std::string> C4Listener::URLs(C4Database* C4NULLABLE db, C4ListenerAPIs api) {
+    AssertParam(api == kC4RESTAPI || api == kC4SyncAPI,
+                "The provided API must be one of the following:  REST, Sync.");
+    vector<string> urls;
+    for (net::Address &address : restImpl()->addresses(db, api))
+        urls.push_back(string(address.url()));
+    return urls;
+}
+
+
+uint16_t C4Listener::port() {
+    return restImpl()->port();
+}
+
+
+std::pair<unsigned, unsigned> C4Listener::connectionStatus() {
+    auto active = _impl->activeConnectionCount();
+    auto connectionCount = std::max(_impl->connectionCount(), active);
+    auto activeConnectionCount = active;
+    return {connectionCount, activeConnectionCount};
 }

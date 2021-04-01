@@ -113,7 +113,6 @@ public:
     }
     
     void stop() {
-        c4listener_free(_listener);
         _listener = nullptr;
     }
 

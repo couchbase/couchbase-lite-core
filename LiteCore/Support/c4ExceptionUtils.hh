@@ -50,7 +50,7 @@ namespace litecore {
 
     /** Precondition check. If `TEST` is not truthy, throws InvalidParameter. */
     #define AssertParam(TEST, MSG) \
-        ((TEST) || (error::_throw(error::InvalidParameter, MSG), false))
+        ((TEST) || (C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter, MSG), false))
 
 
     // Calls the function `fn`, returning its return value.

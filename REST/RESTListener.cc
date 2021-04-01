@@ -18,7 +18,7 @@
 
 #include "RESTListener.hh"
 #include "c4CppUtils.hh"
-#include "c4Certificate.h"
+#include "c4Certificate.hh"
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
@@ -152,18 +152,11 @@ namespace litecore { namespace REST {
     Retained<Identity> RESTListener::loadTLSIdentity(const C4TLSConfig *config) {
         if (!config)
             return nullptr;
-        Retained<Cert> cert;
-        try {
-            cert = (Cert*)config->certificate;
-        } catch (const error &) {
-            error::_throw(error::InvalidParameter, "Can't parse certificate data");
-        }
-
+        Retained<Cert> cert = config->certificate->assertSignedCert();
         Retained<PrivateKey> privateKey;
         switch (config->privateKeyRepresentation) {
             case kC4PrivateKeyFromKey:
-                Assert(c4keypair_hasPrivateKey(config->key));
-                privateKey = (PrivateKey*)config->key;
+                privateKey = config->key->privateKey();
                 break;
             case kC4PrivateKeyFromCert:
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
@@ -192,7 +185,7 @@ namespace litecore { namespace REST {
         if (tlsConfig->requireClientCerts)
             tlsContext->requirePeerCert(true);
         if (tlsConfig->rootClientCerts)
-            tlsContext->setRootCerts((Cert*)tlsConfig->rootClientCerts);
+            tlsContext->setRootCerts(tlsConfig->rootClientCerts->assertSignedCert());
         if (auto callback = tlsConfig->certAuthCallback; callback) {
             auto context = tlsConfig->tlsCallbackContext;
             tlsContext->setCertAuthCallback([=](slice certData) {

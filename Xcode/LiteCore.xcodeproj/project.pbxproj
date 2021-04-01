@@ -1043,6 +1043,8 @@
 		274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DBAccessTestWrapper.cc; sourceTree = "<group>"; };
 		274D181826165AFB0018D39C /* c4Certificate.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Certificate.hh; sourceTree = "<group>"; };
 		274D181C26165BDA0018D39C /* c4CertificateTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4CertificateTypes.h; sourceTree = "<group>"; };
+		274D183A261683680018D39C /* c4ListenerTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4ListenerTypes.h; sourceTree = "<group>"; };
+		274D184C261683F40018D39C /* c4Listener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Listener.hh; sourceTree = "<group>"; };
 		274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SecureRandomize.cc; sourceTree = "<group>"; };
 		274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteKeyStore.cc; sourceTree = "<group>"; };
 		274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteKeyStore.hh; sourceTree = "<group>"; };
@@ -1968,6 +1970,7 @@
 				2764ED3623870F15007F020F /* c4Database.hh */,
 				2758DFE425F197B9007C7487 /* c4Document.hh */,
 				2758E09825F3026F007C7487 /* c4DocEnumerator.hh */,
+				274D184C261683F40018D39C /* c4Listener.hh */,
 				2743E20825F6BC88006F696D /* c4Observer.hh */,
 				272BA50A23F61591000EB6E8 /* c4Query.hh */,
 				2758E0A725F30A37007C7487 /* c4Replicator.hh */,
@@ -3003,6 +3006,7 @@
 				271AB00F2374A41E007B0319 /* c4Index.h */,
 				2743E34425F8563A006F696D /* c4IndexTypes.h */,
 				728EC54C1EC14611002C9A73 /* c4Listener.h */,
+				274D183A261683680018D39C /* c4ListenerTypes.h */,
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
 				27098A96216C1D2E002751DA /* c4PredictiveQuery.h */,
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
