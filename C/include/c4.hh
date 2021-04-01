@@ -29,3 +29,9 @@
 #include "c4Observer.hh"
 #include "c4Query.hh"
 #include "c4Replicator.hh"
+
+#include "c4Socket.h"
+
+#ifdef COUCHBASE_ENTERPRISE
+#include "c4Certificate.hh"
+#endif

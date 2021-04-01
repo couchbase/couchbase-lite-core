@@ -21,9 +21,9 @@
 #include "HTTPLogic.hh"
 #include "Certificate.hh"
 #include "CookieStore.hh"
+#include "c4Database.hh"
 #include "c4Replicator.h"
 #include "c4Socket+Internal.hh"
-#include "c4CppUtils.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
@@ -74,7 +74,7 @@ namespace litecore { namespace websocket {
                                        C4Database *database)
     :BuiltInWebSocket(url, Role::Client, parameters)
     {
-        _database = c4db_retain(database);
+        _database = database;
     }
 
 
@@ -325,7 +325,7 @@ namespace litecore { namespace websocket {
 
 
     alloc_slice BuiltInWebSocket::cookiesForRequest(const Address &addr) {
-        alloc_slice cookies(c4db_getCookies(_database, addr, nullptr));
+        alloc_slice cookies(_database->getCookies(addr));
 
         slice cookiesOption = options()[kC4ReplicatorOptionCookies].asString();
         if (cookiesOption) {
@@ -343,7 +343,7 @@ namespace litecore { namespace websocket {
 
 
     void BuiltInWebSocket::setCookie(const Address &addr, slice cookieHeader) {
-        c4db_setCookie(_database, cookieHeader, addr.hostname, addr.path, nullptr);
+        _database->setCookie(cookieHeader, addr.hostname, addr.path);
     }
 
 

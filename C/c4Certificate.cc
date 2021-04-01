@@ -16,19 +16,22 @@
 // limitations under the License.
 //
 
-#include "c4Database.h"
-#include "c4Certificate.h"
+#include "c4Database.hh"
+#include "c4Certificate.hh"
 #include "c4ReplicatorTypes.h"
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
 #include "Certificate.hh"
 #include "PublicKey.hh"
 #include "Logging.hh"
-#include "c4CppUtils.hh"
 #include "NumConversion.hh"
 #include <vector>
 
-#undef ENABLE_SENDING_CERT_REQUESTS
+#if DEBUG
+#    define ENABLE_CERT_REQUEST
+#    define ENABLE_SENDING_CERT_REQUESTS
+#endif
+
 #ifdef ENABLE_SENDING_CERT_REQUESTS
 #include "CertRequest.hh"
 #endif
@@ -47,55 +50,6 @@ using namespace litecore;
 using namespace litecore::crypto;
 
 
-static inline CertBase* internal(C4Cert *cert)    {return (CertBase*)cert;}
-static inline C4Cert* external(CertBase *cert)    {return (C4Cert*)cert;}
-
-static CertSigningRequest* asUnsignedCert(C4Cert *cert NONNULL, C4Error *outError =nullptr) {
-    if (internal(cert)->isSigned()) {
-        c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Cert already signed"_sl, outError);
-        return nullptr;
-    }
-    return (CertSigningRequest*)cert;
-}
-
-static Cert* asSignedCert(C4Cert *cert NONNULL, C4Error *outError =nullptr) {
-    if (!internal(cert)->isSigned()) {
-        c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Cert not signed"_sl, outError);
-        return nullptr;
-    }
-    return (Cert*)cert;
-}
-
-
-static inline Key* internal(C4KeyPair *key)    {return (Key*)key;}
-static inline C4KeyPair* external(Key *key)    {return (C4KeyPair*)key;}
-
-LITECORE_UNUSED static PublicKey* publicKey(C4KeyPair *c4key NONNULL) {
-    auto key = internal(c4key);
-    return key->isPrivate() ? ((PrivateKey*)key)->publicKey().get() : (PublicKey*)key;
-}
-
-static PrivateKey* privateKey(C4KeyPair *c4key NONNULL) {
-    auto key = internal(c4key);
-    return key->isPrivate() ? (PrivateKey*)key : nullptr;
-}
-
-#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-static PersistentPrivateKey* persistentPrivateKey(C4KeyPair *c4key NONNULL) {
-    if (PrivateKey *priv = privateKey(c4key); priv)
-        return priv->asPersistent();
-    return nullptr;
-}
-#endif
-
-
-template <class T>
-static auto retainedExternal(T *ref)            {return external(retain(ref));}
-
-template <class T>
-static auto retainedExternal(Retained<T> &&ref) {return external(retain(std::move(ref)));}
-
-
 CBL_CORE_API const C4CertIssuerParameters kDefaultCertIssuerParameters = {
     CertSigningRequest::kOneYear,
     C4STR("1"),
@@ -110,297 +64,229 @@ CBL_CORE_API const C4CertIssuerParameters kDefaultCertIssuerParameters = {
 #pragma mark - C4CERT:
 
 
-C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
-                             size_t nameCount,
-                             C4CertUsage certUsages,
-                             C4KeyPair *subjectKey,
-                             C4Error *outError) C4API
-{
-    return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
-        vector<DistinguishedName::Entry> name;
-        SubjectAltNames altNames;
-        for (size_t i = 0; i < nameCount; ++i) {
-            auto attributeID = nameComponents[i].attributeID;
-            if (auto tag = SubjectAltNames::tagNamed(attributeID); tag)
-                altNames.emplace_back(*tag, nameComponents[i].value);
-            else
-                name.push_back({attributeID, nameComponents[i].value});
-        }
-        Cert::SubjectParameters params(name);
-        params.subjectAltNames = move(altNames);
-        params.nsCertType = NSCertType(certUsages);
-        return retainedExternal(new CertSigningRequest(params, privateKey(subjectKey)));
-    });
+C4Cert::C4Cert(CertBase *impl)
+:_impl(impl)
+{ }
+
+
+C4Cert::~C4Cert() = default;
+
+
+Cert* C4Cert::asSignedCert() {
+    return _impl->isSigned() ? (Cert*)_impl.get() : nullptr;
 }
 
 
-C4Cert* c4cert_fromData(C4Slice certData, C4Error *outError) C4API {
-    return tryCatch<C4Cert*>(outError, [&]() {
-        return retainedExternal(new Cert(certData));
-    });
+Cert* C4Cert::assertSignedCert() {
+    AssertParam(_impl->isSigned(), "C4Certificate is not signed");
+    return (Cert*)_impl.get();
 }
 
 
-C4Cert* c4cert_requestFromData(C4Slice certRequestData, C4Error *outError) C4API {
-#ifdef ENABLE_CERT_REQUEST
-    return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
-        return retainedExternal(new CertSigningRequest(certRequestData));
-    });
-#else
-    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented,
-                   "Certificate requests are disabled"_sl, outError);
-    return nullptr;
-#endif
+CertSigningRequest* C4Cert::assertUnsignedCert() {
+    AssertParam(!_impl->isSigned(), "C4Certificate is not a signing-request");
+    return (CertSigningRequest*)_impl.get();
 }
 
 
-C4SliceResult c4cert_copyData(C4Cert* cert, bool pemEncoded) C4API {
-    return tryCatch<C4SliceResult>(nullptr, [&]() {
-        return C4SliceResult(internal(cert)->data(pemEncoded ? KeyFormat::PEM : KeyFormat::DER));
-    });
+Retained<C4Cert> C4Cert::fromData(slice certData) {
+    return new C4Cert(new Cert(certData));
 }
 
 
-C4StringResult c4cert_subjectName(C4Cert* cert) C4API {
-    return tryCatch<C4StringResult>(nullptr, [&]() {
-        return C4StringResult(internal(cert)->subjectName());
-    });
+alloc_slice C4Cert::data(bool pemEncoded) {
+    return _impl->data(pemEncoded ? KeyFormat::PEM : KeyFormat::DER);
 }
 
 
-C4StringResult c4cert_subjectNameComponent(C4Cert* cert, C4CertNameAttributeID attrID) C4API {
-    return tryCatch<C4StringResult>(nullptr, [&]() {
-        if (auto tag = SubjectAltNames::tagNamed(attrID); tag)
-            return C4StringResult(internal(cert)->subjectAltNames()[*tag]);
-        else
-            return C4StringResult(internal(cert)->subjectName()[attrID]);
-    });
+alloc_slice C4Cert::chainData() {
+    if (auto signedCert = asSignedCert(); signedCert)
+        return C4SliceResult(signedCert->dataOfChain());
+    else
+        return _impl->data(KeyFormat::PEM);
 }
 
 
-bool c4cert_subjectNameAtIndex(C4Cert* cert,
-                               unsigned index,
-                               C4CertNameInfo *outInfo) C4API
-{
-    outInfo->id = {};
-    outInfo->value = {};
+alloc_slice C4Cert::summary()       {return _impl->summary();}
+alloc_slice C4Cert::subjectName()   {return _impl->subjectName();}
+C4CertUsage C4Cert::usages()        {return _impl->nsCertType();}
 
+
+alloc_slice C4Cert::subjectNameComponent(C4CertNameAttributeID attrID) {
+    if (auto tag = SubjectAltNames::tagNamed(attrID); tag)
+        return _impl->subjectAltNames()[*tag];
+    else
+        return _impl->subjectName()[attrID];
+}
+
+
+C4Cert::NameInfo C4Cert::subjectNameAtIndex(unsigned index) {
     // First go through the DistinguishedNames:
-    auto subjectName = internal(cert)->subjectName();
-    if (auto dn = subjectName.asVector(); index < dn.size()) {
-        outInfo->id = FLSlice_Copy(dn[index].first);
-        outInfo->value = C4StringResult(dn[index].second);
-        return true;
-    } else {
+    auto subjectName = _impl->subjectName();
+    if (auto dn = subjectName.asVector(); index < dn.size())
+        return {alloc_slice(dn[index].first), alloc_slice(dn[index].second)};
+    else
         index -= narrow_cast<unsigned>(dn.size());
-    }
 
     // Then look in SubjectAlternativeName:
-    if (auto san = internal(cert)->subjectAltNames(); index < san.size()) {
-        outInfo->id = FLSlice_Copy(SubjectAltNames::nameOfTag(san[index].first));
-        outInfo->value = C4StringResult(alloc_slice(san[index].second));
-        return true;
+    if (auto san = _impl->subjectAltNames(); index < san.size()) {
+        return {alloc_slice(SubjectAltNames::nameOfTag(san[index].first)),
+                alloc_slice(san[index].second)};
     }
 
-    return false;
+    return {};
 }
 
 
-C4CertUsage c4cert_usages(C4Cert* cert) C4API {
-    return internal(cert)->nsCertType();
+std::pair<C4Timestamp,C4Timestamp> C4Cert::validTimespan() {
+    C4Timestamp created = 0, expires = 0;
+    if (Cert *signedCert = asSignedCert(); signedCert) {
+        time_t tCreated, tExpires;
+        tie(tCreated, tExpires) = signedCert->validTimespan();
+        created = C4Timestamp(difftime(tCreated, 0) * 1000.0);
+        expires = C4Timestamp(difftime(tExpires, 0) * 1000.0);
+    }
+    return {created, expires};
 }
 
 
-C4StringResult c4cert_summary(C4Cert* cert) C4API {
-    return tryCatch<C4SliceResult>(nullptr, [&]() {
-        return C4StringResult(internal(cert)->summary());
-    });
-}
-
-
-void c4cert_getValidTimespan(C4Cert* cert,
-                             C4Timestamp *outCreated,
-                             C4Timestamp *outExpires)
-{
-    try {
-        if (Cert *signedCert = asSignedCert(cert); signedCert) {
-            time_t tCreated, tExpires;
-            tie(tCreated, tExpires) = signedCert->validTimespan();
-            if (outCreated)
-                *outCreated = C4Timestamp(difftime(tCreated, 0) * 1000.0);
-            if (outExpires)
-                *outExpires = C4Timestamp(difftime(tExpires, 0) * 1000.0);
-            return;
-        }
-    } catch (...) { }
-    
-    if (outCreated)
-        *outCreated = 0;
-    if (outExpires)
-        *outExpires = 0;
-}
-
-
-bool c4cert_isSigned(C4Cert* cert) C4API {
-    return internal(cert)->isSigned();
-}
-
-
-bool c4cert_isSelfSigned(C4Cert* cert) C4API {
-    Cert *signedCert = asSignedCert(cert);
+bool C4Cert::isSelfSigned() {
+    Cert *signedCert = asSignedCert();
     return signedCert && signedCert->isSelfSigned();
 }
 
 
-C4Cert* c4cert_signRequest(C4Cert *c4Cert,
-                           const C4CertIssuerParameters *c4Params,
-                           C4KeyPair *issuerPrivateKey,
-                           C4Cert *issuerC4Cert,
-                           C4Error *outError) C4API
-{
-    return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
-        auto csr = asUnsignedCert(c4Cert, outError);
-        if (!csr)
-            return nullptr;
-        if (!privateKey(issuerPrivateKey)) {
-            c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "No private key"_sl, outError);
-            return nullptr;
-        }
+Retained<C4KeyPair> C4Cert::publicKey() {
+    if (auto signedCert = asSignedCert(); signedCert)
+        return new C4KeyPair(signedCert->subjectPublicKey().get());
+    return nullptr;
+}
 
-        // Construct the issuer parameters:
-        if (!c4Params)
-            c4Params = &kDefaultCertIssuerParameters;
-        CertSigningRequest::IssuerParameters params;
-        params.validity_secs = c4Params->validityInSeconds;
-        params.serial = c4Params->serialNumber;
-        params.max_pathlen = c4Params->maxPathLen;
-        params.is_ca = c4Params->isCA;
-        params.add_authority_identifier = c4Params->addAuthorityIdentifier;
-        params.add_subject_identifier = c4Params->addSubjectIdentifier;
-        params.add_basic_constraints = c4Params->addBasicConstraints;
-
-        // Get the issuer cert:
-        Cert *issuerCert = nullptr;
-        if (issuerC4Cert) {
-            issuerCert = asSignedCert(issuerC4Cert);
-            if (!issuerCert) {
-                c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter,
-                               "issuerCert is not signed"_sl, outError);
-                return nullptr;
-            }
-        }
-
-        // Sign!
-        return retainedExternal(csr->sign(params, privateKey(issuerPrivateKey), issuerCert));
-    });
+Retained<C4KeyPair> C4Cert::loadPersistentPrivateKey() {
+    if (auto key = assertSignedCert()->loadPrivateKey(); key)
+        return new C4KeyPair(key);
+    return nullptr;
 }
 
 
-bool c4cert_sendSigningRequest(C4Cert *c4Cert,
-                               C4Address address,
-                               C4Slice optionsDictFleece,
-                               C4CertSigningCallback callback,
-                               void *context,
-                               C4Error *outError) C4API
+Retained<C4Cert> C4Cert::nextInChain() {
+    if (auto signedCert = asSignedCert(); signedCert)
+        return new C4Cert(signedCert->next().get());
+    return nullptr;
+}
+
+
+// Certificate signing requests:
+
+
+Retained<C4Cert> C4Cert::createRequest(std::vector<C4CertNameComponent> nameComponents,
+                                      C4CertUsage certUsages,
+                                      C4KeyPair *subjectKey)
+{
+    vector<DistinguishedName::Entry> name;
+    SubjectAltNames altNames;
+    for (auto &component : nameComponents) {
+        auto attributeID = component.attributeID;
+        if (auto tag = SubjectAltNames::tagNamed(attributeID); tag)
+        altNames.emplace_back(*tag, component.value);
+        else
+            name.push_back({attributeID, component.value});
+    }
+    Cert::SubjectParameters params(name);
+    params.subjectAltNames = move(altNames);
+    params.nsCertType = NSCertType(certUsages);
+    return new C4Cert(new CertSigningRequest(params, subjectKey->privateKey()));
+}
+
+Retained<C4Cert> C4Cert::requestFromData(slice certRequestData) {
+#ifdef ENABLE_CERT_REQUEST
+    return new C4Cert(new CertSigningRequest(certRequestData));
+#else
+    C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "Certificate requests are disabled");
+#endif
+}
+
+
+bool C4Cert::isSigned() {
+    return _impl->isSigned();
+}
+
+
+void C4Cert::sendSigningRequest(const C4Address &address,
+                        slice optionsDictFleece,
+                        const SigningCallback &callback)
 {
 #ifdef ENABLE_SENDING_CERT_REQUESTS
-    auto csr = asUnsignedCert(c4Cert, outError);
-    if (!csr)
-        return false;
-    return tryCatch(outError, [&] {
-        auto request = retained(new litecore::REST::CertRequest());
-        request->start(csr,
-                       net::Address(address),
-                       AllocedDict(optionsDictFleece),
-                       [=](crypto::Cert *cert, C4Error error) {
-                           callback(context, external(cert), error);
-                       });
-    });
+    auto internalCallback = [=](crypto::Cert *cert, C4Error error) {
+        Retained<C4Cert> c4cert;
+        if (cert)
+            c4cert = new C4Cert(cert);
+        callback(c4cert, error);
+    };
+    auto request = retained(new litecore::REST::CertRequest());
+    request->start(assertUnsignedCert(),
+                   net::Address(address),
+                   AllocedDict(optionsDictFleece),
+                   internalCallback);
 #else
-    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "Sending CSRs is disabled"_sl, outError);
-    return false;
+    C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "Sending CSRs is disabled");
 #endif
 }
 
 
-C4KeyPair* c4cert_getPublicKey(C4Cert* cert) C4API {
-    return tryCatch<C4KeyPair*>(nullptr, [&]() -> C4KeyPair* {
-        if (auto signedCert = asSignedCert(cert); signedCert)
-            return retainedExternal(signedCert->subjectPublicKey());
-        return nullptr;
-    });
-}
-
-
-C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert* cert, C4Error *outError) C4API {
-#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
-        if (auto signedCert = asSignedCert(cert, outError); signedCert) {
-            if (auto key = signedCert->loadPrivateKey(); key)
-                return retainedExternal(std::move(key));
-        }
-        return nullptr;
-    });
-#else
-    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
-    return nullptr;
-#endif
-}
-
-
-C4Cert* c4cert_nextInChain(C4Cert* cert) C4API {
-    return tryCatch<C4Cert*>(nullptr, [&]() -> C4Cert* {
-        if (auto signedCert = asSignedCert(cert); signedCert)
-            return retainedExternal(signedCert->next());
-        return nullptr;
-    });
-}
-
-C4SliceResult c4cert_copyChainData(C4Cert* cert) C4API {
-    return tryCatch<C4SliceResult>(nullptr, [&]() {
-        if (auto signedCert = asSignedCert(cert); signedCert)
-            return C4SliceResult(signedCert->dataOfChain());
-        else
-            return c4cert_copyData(cert, true);
-    });
-}
-
-
-bool c4cert_save(C4Cert *cert,
-                 bool entireChain,
-                 C4String name,
-                 C4Error *outError)
+Retained<C4Cert> C4Cert::signRequest(const C4CertIssuerParameters &c4Params,
+                                     C4KeyPair *issuerPrivateKey,
+                                     C4Cert* C4NULLABLE issuerC4Cert)
 {
+    auto csr = assertUnsignedCert();
+    auto privateKey = issuerPrivateKey->privateKey();
+    AssertParam(privateKey != nullptr, "No private key");
+
+    // Get the issuer cert:
+    Cert *issuerCert = nullptr;
+    if (issuerC4Cert) {
+        issuerCert = issuerC4Cert->asSignedCert();
+        AssertParam(issuerCert != nullptr,  "issuerCert is not signed");
+    }
+
+    // Construct the issuer parameters:
+    CertSigningRequest::IssuerParameters params;
+    params.validity_secs            = c4Params.validityInSeconds;
+    params.serial                   = c4Params.serialNumber;
+    params.max_pathlen              = c4Params.maxPathLen;
+    params.is_ca                    = c4Params.isCA;
+    params.add_authority_identifier = c4Params.addAuthorityIdentifier;
+    params.add_subject_identifier   = c4Params.addSubjectIdentifier;
+    params.add_basic_constraints    = c4Params.addBasicConstraints;
+
+    // Sign!
+    return new C4Cert(csr->sign(params, privateKey, issuerCert).get());
+}
+
+
+// Persistence:
+
+
+void C4Cert::save(bool entireChain, slice name) {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    return tryCatch<bool>(outError, [&]() {
-        if (cert) {
-            if (auto signedCert = asSignedCert(cert, outError); signedCert) {
-                signedCert->save(string(name), entireChain);
-                return true;
-            }
-            return false;
-        } else {
-            Cert::deleteCert(string(name));
-            return true;
-        }
-    });
+    assertSignedCert()->save(string(name), entireChain);
 #else
-    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
-    return false;
+    C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support");
 #endif
 }
 
 
-C4Cert* c4cert_load(C4String name,
-                    C4Error *outError)
-{
+void C4Cert::deleteNamed(slice name) {
+    Cert::deleteCert(string(name));
+
+}
+
+
+Retained<C4Cert> C4Cert::load(slice name) {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    return tryCatch<C4Cert*>(outError, [&]() {
-        return retainedExternal(Cert::loadCert(string(name)));
-    });
+        return new C4Cert(Cert::loadCert(string(name)).get());
 #else
-    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
-    return nullptr;
+    C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support");
 #endif
 }
 
@@ -408,113 +294,117 @@ C4Cert* c4cert_load(C4String name,
 #pragma mark - C4KEYPAIR:
 
 
-C4KeyPair* c4keypair_generate(C4KeyPairAlgorithm algorithm,
-                              unsigned sizeInBits,
-                              bool persistent,
-                              C4Error *outError) C4API
-{
-    return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
-        if (algorithm != kC4RSA) {
-            c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Invalid algorithm"_sl, outError);
-            return nullptr;
-        }
-        Retained<PrivateKey> privateKey;
-        if (persistent) {
-#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-            privateKey = PersistentPrivateKey::generateRSA(sizeInBits);
-#else
-            c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
-            return nullptr;
-#endif
-        } else {
-            privateKey = PrivateKey::generateTemporaryRSA(sizeInBits);
-        }
-        return retainedExternal(std::move(privateKey));
-    });
+C4KeyPair::C4KeyPair(Key *key)
+:_impl(key)
+{ }
+
+
+C4KeyPair::~C4KeyPair() = default;
+
+
+Retained<PublicKey> C4KeyPair::publicKey() {
+    if (PrivateKey *priv = privateKey(); priv)
+        return priv->publicKey();
+    else
+        return (PublicKey*)_impl.get();
 }
 
 
-C4KeyPair* c4keypair_fromPublicKeyData(C4Slice publicKeyData, C4Error *outError) C4API {
-    return tryCatch<C4KeyPair*>(outError, [&]() {
-        return retainedExternal(new PublicKey(publicKeyData));
-    });
+PrivateKey* C4NULLABLE C4KeyPair::privateKey() {
+    return _impl->isPrivate() ? (PrivateKey*)_impl.get() : nullptr;
 }
 
 
-C4KeyPair* c4keypair_fromPrivateKeyData(C4Slice data, C4Slice password, C4Error *outError) C4API
-{
-    return tryCatch<C4KeyPair*>(outError, [&]() {
-        return retainedExternal(new PrivateKey(data, password));
-    });
-}
-
-
-C4KeyPair* c4keypair_persistentWithPublicKey(C4KeyPair* key, C4Error *outError) C4API {
-#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
-        if (auto persistent = persistentPrivateKey(key); persistent != nullptr)
-            return retainedExternal(persistent);
-        auto privKey = PersistentPrivateKey::withPublicKey(publicKey(key));
-        if (!privKey) {
-            clearError(outError);
-            return nullptr;
-        }
-        return retainedExternal(std::move(privKey));
-    });
-#else
-    c4error_return(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support"_sl, outError);
+PersistentPrivateKey* C4KeyPair::persistentPrivateKey() {
+    if (PrivateKey *priv = privateKey(); priv)
+        return priv->asPersistent();
     return nullptr;
-#endif
 }
 
 
-bool c4keypair_hasPrivateKey(C4KeyPair* key) C4API {
-    return privateKey(key) != nullptr;
-}
-
-
-bool c4keypair_isPersistent(C4KeyPair* key) C4API {
+Retained<C4KeyPair> C4KeyPair::generate(C4KeyPairAlgorithm algorithm,
+                                        unsigned sizeInBits,
+                                        bool persistent)
+{
+    AssertParam(algorithm == kC4RSA, "Invalid algorithm");
+    Retained<PrivateKey> privateKey;
+    if (persistent) {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    return persistentPrivateKey(key) != nullptr;
+        privateKey = PersistentPrivateKey::generateRSA(sizeInBits);
+#else
+        C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support");
+#endif
+    } else {
+        privateKey = PrivateKey::generateTemporaryRSA(sizeInBits);
+    }
+    return new C4KeyPair(privateKey);
+}
+
+
+Retained<C4KeyPair> C4KeyPair::fromPublicKeyData(slice publicKeyData) {
+    return new C4KeyPair(new PublicKey(publicKeyData));
+}
+
+
+Retained<C4KeyPair> C4KeyPair::fromPrivateKeyData(slice privateKeyData, slice passwordOrNull) {
+    return new C4KeyPair(new PrivateKey(privateKeyData, passwordOrNull));
+}
+
+
+bool C4KeyPair::hasPrivateKey() {
+    return privateKey() != nullptr;
+}
+
+
+alloc_slice C4KeyPair::publicKeyDigest() {
+    return alloc_slice(_impl->digestString());
+}
+
+
+alloc_slice C4KeyPair::publicKeyData() {
+    return _impl->publicKeyData();
+}
+
+
+alloc_slice C4KeyPair::privateKeyData() {
+    if (auto priv = privateKey(); priv && priv->isPrivateKeyDataAvailable())
+        return priv->privateKeyData();
+    return nullslice;
+}
+
+
+// Persistence:
+
+
+bool C4KeyPair::isPersistent() {
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    return persistentPrivateKey() != nullptr;
 #else
     return false;
 #endif
 }
 
 
-C4SliceResult c4keypair_publicKeyDigest(C4KeyPair* key) C4API {
-    return toSliceResult(internal(key)->digestString());
-}
-
-
-C4SliceResult c4keypair_publicKeyData(C4KeyPair* key) C4API {
-    return tryCatch<C4SliceResult>(nullptr, [&]() {
-        return C4SliceResult(internal(key)->publicKeyData());
-    });
-}
-
-
-C4SliceResult c4keypair_privateKeyData(C4KeyPair* key) C4API {
-    return tryCatch<C4SliceResult>(nullptr, [&]() {
-        if (auto priv = privateKey(key); priv && priv->isPrivateKeyDataAvailable())
-            return C4SliceResult(priv->privateKeyData());
-        return C4SliceResult{};
-    });
-}
-
-
-bool c4keypair_removePersistent(C4KeyPair* key, C4Error *outError) C4API {
-    if (!privateKey(key)) {
-        c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "No private key"_sl, outError);
-        return false;
-    }
+Retained<C4KeyPair> C4KeyPair::persistentWithPublicKey(C4KeyPair *c4Key) {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    return tryCatch(outError, [&]() {
-        if (auto persistentKey = persistentPrivateKey(key); persistentKey)
-            persistentKey->remove();
-    });
+    if (auto persistent = c4Key->persistentPrivateKey(); persistent)
+        return new C4KeyPair(persistent);
+    else if (auto privKey = PersistentPrivateKey::withPublicKey(c4Key->publicKey().get()); privKey)
+        return new C4KeyPair(privKey.get());
+    else
+        return nullptr;
 #else
-    return true;
+    C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support");
+#endif
+}
+
+
+void C4KeyPair::removePersistent() {
+    auto priv = privateKey();
+    AssertParam(priv, "No private key");
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    if (auto persistentKey = priv->asPersistent(); persistentKey)
+        persistentKey->remove();
 #endif
 }
 
@@ -591,21 +481,14 @@ namespace litecore {
 }
 
 
-C4KeyPair* c4keypair_fromExternal(C4KeyPairAlgorithm algorithm,
-                                  size_t keySizeInBits,
-                                  void *externalKey,
-                                  C4ExternalKeyCallbacks callbacks,
-                                  C4Error *outError)
+Retained<C4KeyPair> C4KeyPair::fromExternal(C4KeyPairAlgorithm algorithm,
+                                            size_t keySizeInBits,
+                                            void *externalKey,
+                                            const C4ExternalKeyCallbacks &callbacks)
 {
-    return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
-        if (algorithm != kC4RSA) {
-            c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Invalid algorithm"_sl, outError);
-            return nullptr;
-        }
-        return retainedExternal(new ExternalKeyPair(keySizeInBits, externalKey, callbacks));
-    });
+    AssertParam(algorithm == kC4RSA, "Invalid algorithm");
+    return new C4KeyPair(new ExternalKeyPair(keySizeInBits, externalKey, callbacks));
 }
-
 
 
 #endif // COUCHBASE_ENTERPRISE

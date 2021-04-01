@@ -17,6 +17,7 @@
 //
 
 #include "c4BlobStore.hh"
+#include "c4Certificate.hh"
 #include "c4Database.hh"
 #include "c4Document.hh"
 #include "c4DocEnumerator.hh"
@@ -1327,3 +1328,274 @@ C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs,
     return asInternal(obs)->getEnumeratorImpl(forget, outError).detach();
 }
 
+
+#pragma mark - C4CERT API: (EE)
+
+
+#ifdef COUCHBASE_ENTERPRISE
+
+
+C4Cert* c4cert_createRequest(const C4CertNameComponent *nameComponents,
+                             size_t nameCount,
+                             C4CertUsage certUsages,
+                             C4KeyPair *subjectKey,
+                             C4Error *outError) noexcept
+{
+    return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
+        vector<C4CertNameComponent> components(&nameComponents[0], &nameComponents[nameCount]);
+        return C4Cert::createRequest(components, certUsages, subjectKey).detach();
+    });
+}
+
+
+C4Cert* c4cert_fromData(C4Slice certData, C4Error *outError) noexcept {
+    return tryCatch<C4Cert*>(outError, [&]() {
+        return C4Cert::fromData(certData).detach();
+    });
+}
+
+
+C4Cert* c4cert_requestFromData(C4Slice certRequestData, C4Error *outError) noexcept {
+    return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
+        return C4Cert::requestFromData(certRequestData).detach();
+    });
+}
+
+
+C4SliceResult c4cert_copyData(C4Cert* cert, bool pemEncoded) noexcept {
+    return tryCatch<C4SliceResult>(nullptr, [&]() {
+        return C4SliceResult(cert->data(pemEncoded));
+    });
+}
+
+
+C4StringResult c4cert_subjectName(C4Cert* cert) noexcept {
+    return tryCatch<C4StringResult>(nullptr, [&]() {
+        return C4StringResult(cert->subjectName());
+    });
+}
+
+
+C4StringResult c4cert_subjectNameComponent(C4Cert* cert, C4CertNameAttributeID attrID) noexcept {
+    return tryCatch<C4StringResult>(nullptr, [&]() {
+        return C4StringResult(cert->subjectNameComponent(attrID));
+    });
+}
+
+
+bool c4cert_subjectNameAtIndex(C4Cert* cert,
+                               unsigned index,
+                               C4CertNameInfo *outInfo) noexcept
+{
+    auto info = cert->subjectNameAtIndex(index);
+    if (!info.id)
+        return false;
+    outInfo->id = FLSliceResult(move(info.id));
+    outInfo->value = FLSliceResult(move(info.value));
+    return true;
+}
+
+
+C4CertUsage c4cert_usages(C4Cert* cert) noexcept {
+    return cert->usages();
+}
+
+
+C4StringResult c4cert_summary(C4Cert* cert) noexcept {
+    return tryCatch<C4SliceResult>(nullptr, [&]() {
+        return C4StringResult(cert->summary());
+    });
+}
+
+
+void c4cert_getValidTimespan(C4Cert* cert,
+                             C4Timestamp *outCreated,
+                             C4Timestamp *outExpires)
+{
+    pair<C4Timestamp,C4Timestamp> ts;
+    try {
+        ts = cert->validTimespan();
+    } catch (...) {
+        ts.first = ts.second = 0;
+    }
+    if (outCreated)
+        *outCreated = ts.first;
+    if (outExpires)
+        *outExpires = ts.second;
+}
+
+
+bool c4cert_isSigned(C4Cert* cert) noexcept {
+    return cert->isSigned();
+}
+
+
+bool c4cert_isSelfSigned(C4Cert* cert) noexcept {
+    return cert->isSelfSigned();
+}
+
+
+C4Cert* c4cert_signRequest(C4Cert *c4Cert,
+                           const C4CertIssuerParameters* C4NULLABLE c4Params,
+                           C4KeyPair *issuerPrivateKey,
+                           C4Cert *issuerC4Cert,
+                           C4Error *outError) noexcept
+{
+    return tryCatch<C4Cert*>(outError, [&]() -> C4Cert* {
+        if (!c4Params)
+            c4Params = &kDefaultCertIssuerParameters;
+        return c4Cert->signRequest(*c4Params, issuerPrivateKey, issuerC4Cert).detach();
+    });
+}
+
+
+bool c4cert_sendSigningRequest(C4Cert *c4Cert,
+                               C4Address address,
+                               C4Slice optionsDictFleece,
+                               C4CertSigningCallback callback,
+                               void *context,
+                               C4Error *outError) noexcept
+{
+    return tryCatch(outError, [&] {
+        c4Cert->sendSigningRequest(address, optionsDictFleece, [=](C4Cert *cert, C4Error error) {
+            callback(context, cert, error);
+        });
+    });
+}
+
+
+C4KeyPair* c4cert_getPublicKey(C4Cert* cert) noexcept {
+    return tryCatch<C4KeyPair*>(nullptr, [&]() -> C4KeyPair* {
+        return cert->publicKey().detach();
+    });
+}
+
+
+C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert* cert, C4Error *outError) noexcept {
+    return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
+        return cert->loadPersistentPrivateKey().detach();
+    });
+}
+
+
+C4Cert* c4cert_nextInChain(C4Cert* cert) noexcept {
+    return tryCatch<C4Cert*>(nullptr, [&]() -> C4Cert* {
+        return cert->nextInChain().detach();
+    });
+}
+
+C4SliceResult c4cert_copyChainData(C4Cert* cert) noexcept {
+    return tryCatch<C4SliceResult>(nullptr, [&]() {
+        return C4SliceResult(cert->chainData());
+    });
+}
+
+
+bool c4cert_save(C4Cert *cert,
+                 bool entireChain,
+                 C4String name,
+                 C4Error *outError)
+{
+    return tryCatch(outError, [&]() {
+        if (cert)
+            cert->save(entireChain, name);
+        else
+            C4Cert::deleteNamed(name);
+    });
+}
+
+
+C4Cert* c4cert_load(C4String name,
+                    C4Error *outError)
+{
+    return tryCatch<C4Cert*>(outError, [&]() {
+        return C4Cert::load(name).detach();
+    });
+}
+
+
+#pragma mark - C4KEYPAIR API: (EE)
+
+
+C4KeyPair* c4keypair_generate(C4KeyPairAlgorithm algorithm,
+                              unsigned sizeInBits,
+                              bool persistent,
+                              C4Error *outError) noexcept
+{
+    return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
+        return C4KeyPair::generate(algorithm, sizeInBits, persistent).detach();
+    });
+}
+
+
+C4KeyPair* c4keypair_fromPublicKeyData(C4Slice publicKeyData, C4Error *outError) noexcept {
+    return tryCatch<C4KeyPair*>(outError, [&]() {
+        return C4KeyPair::fromPublicKeyData(publicKeyData).detach();
+    });
+}
+
+
+C4KeyPair* c4keypair_fromPrivateKeyData(C4Slice data, C4Slice password, C4Error *outError) noexcept
+{
+    return tryCatch<C4KeyPair*>(outError, [&]() {
+        return C4KeyPair::fromPrivateKeyData(data, password).detach();
+    });
+}
+
+
+C4KeyPair* c4keypair_persistentWithPublicKey(C4KeyPair* key, C4Error *outError) noexcept {
+    return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
+        return C4KeyPair::persistentWithPublicKey(key).detach();
+    });
+}
+
+
+bool c4keypair_hasPrivateKey(C4KeyPair* key) noexcept {
+    return key->hasPrivateKey();
+}
+
+
+bool c4keypair_isPersistent(C4KeyPair* key) noexcept {
+    return key->isPersistent();
+}
+
+
+C4SliceResult c4keypair_publicKeyDigest(C4KeyPair* key) noexcept {
+    return C4SliceResult(key->publicKeyDigest());
+}
+
+
+C4SliceResult c4keypair_publicKeyData(C4KeyPair* key) noexcept {
+    return tryCatch<C4SliceResult>(nullptr, [&]() {
+        return C4SliceResult(key->publicKeyData());
+    });
+}
+
+
+C4SliceResult c4keypair_privateKeyData(C4KeyPair* key) noexcept {
+    return tryCatch<C4SliceResult>(nullptr, [&]() {
+        return C4SliceResult(key->privateKeyData());
+    });
+}
+
+
+bool c4keypair_removePersistent(C4KeyPair* key, C4Error *outError) noexcept {
+    return tryCatch(outError, [&]() {
+        key->removePersistent();
+    });
+}
+
+
+C4KeyPair* c4keypair_fromExternal(C4KeyPairAlgorithm algorithm,
+                                  size_t keySizeInBits,
+                                  void *externalKey,
+                                  C4ExternalKeyCallbacks callbacks,
+                                  C4Error *outError)
+{
+    return tryCatch<C4KeyPair*>(outError, [&]() -> C4KeyPair* {
+        return C4KeyPair::fromExternal(algorithm, keySizeInBits, externalKey, callbacks).detach();
+    });
+}
+
+
+#endif // COUCHBASE_ENTERPRISE

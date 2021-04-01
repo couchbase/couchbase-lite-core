@@ -8,7 +8,7 @@
 #include "WebSocketImpl.hh"
 #include "TCPSocket.hh"
 #include "HTTPLogic.hh"
-#include "c4CppUtils.hh"
+#include "c4Base.hh"
 #include <atomic>
 #include <exception>
 #include <memory>
@@ -82,7 +82,7 @@ namespace litecore { namespace websocket {
         // Size of the buffer allocated for reading from the socket.
         static constexpr size_t kReadBufferSize = 32 * 1024;
 
-        c4::ref<C4Database> _database;                      // The database (used only for cookies)
+        Retained<C4Database> _database;                     // The database (used only for cookies)
         std::unique_ptr<net::TCPSocket> _socket;            // The TCP socket
         Retained<BuiltInWebSocket> _selfRetain;             // Keeps me alive while connected
         Retained<net::TLSContext> _tlsContext;              // TLS settings
