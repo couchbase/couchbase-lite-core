@@ -269,12 +269,17 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT WHAT", "[Query]") {
 
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser CASE", "[Query]") {
-    CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2]")
-          == "CASE fl_value(body, 'color') WHEN 'red' THEN 1 WHEN 'green' THEN 2 END");
+    const char* target = "CASE fl_value(body, 'color') WHEN 'red' THEN 1 WHEN 'green' THEN 2 ELSE fl_null() END";
+    CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2      ]") == target);
+    CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2, null]") == target);
+
     CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2, 0]")
           == "CASE fl_value(body, 'color') WHEN 'red' THEN 1 WHEN 'green' THEN 2 ELSE 0 END");
-    CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right']")
-          == "CASE WHEN 2 = 3 THEN 'wtf' WHEN 2 = 2 THEN 'right' END");
+
+    target = "CASE WHEN 2 = 3 THEN 'wtf' WHEN 2 = 2 THEN 'right' ELSE fl_null() END";
+    CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right'      ]") == target);
+    CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right', null]") == target);
+
     CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right', 'whatever']")
           == "CASE WHEN 2 = 3 THEN 'wtf' WHEN 2 = 2 THEN 'right' ELSE 'whatever' END");
 }

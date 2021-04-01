@@ -1137,6 +1137,7 @@ namespace litecore {
             parseNode(operands[0]);
         }
         ++operands;
+        bool hasElse = false;
         while(operands) {
             auto test = operands.value();
             ++operands;
@@ -1149,7 +1150,13 @@ namespace litecore {
             } else {
                 _sql << " ELSE ";
                 parseNode(test);
+                hasElse = true;
             }
+        }
+        // Fill up the vaccum due to the absense of ELSE, or SQLite will fill it with SQLite's NULL but we want
+        // the JSON null.
+        if (!hasElse) {
+            _sql << " ELSE " << kNullFnName << "()";
         }
         _sql << " END";
     }
