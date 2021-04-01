@@ -23,7 +23,7 @@
 #include "PlatformIO.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include "netUtils.hh"
 #include "TCPSocket.hh"
 #include "date/date.h"

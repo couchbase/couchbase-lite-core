@@ -309,7 +309,7 @@ C4WriteStream::~C4WriteStream() {
     try {
         if (_impl)
             _impl->close();
-    } catchAndIgnore();
+    } catchAndWarn();
 }
 
 void C4WriteStream::write(fleece::slice data)         {_impl->write(data);}

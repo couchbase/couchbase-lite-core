@@ -19,7 +19,7 @@
 #pragma once
 #include "RefCounted.hh"
 #include "InstanceCounted.hh"
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include "c4Listener.h"
 #include "FilePath.hh"
 #include <map>

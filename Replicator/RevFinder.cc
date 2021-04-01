@@ -25,8 +25,6 @@
 #include "VersionVector.hh"
 #include "StringUtil.hh"
 #include "Instrumentation.hh"
-#include "c4.hh"
-#include "c4Transaction.hh"
 #include "c4Private.h"
 #include "c4ReplicatorTypes.h"
 #include "BLIP.hh"
@@ -83,92 +81,89 @@ namespace litecore::repl {
 
     // Actually handle a "changes" (or "proposeChanges") message:
     void RevFinder::handleChangesNow(MessageIn *req) {
-        slice reqType = req->property("Profile"_sl);
-        bool proposed = (reqType == "proposeChanges"_sl);
-        logVerbose("Handling '%.*s' REQ#%" PRIu64, SPLAT(reqType), req->number());
+        try {
+            slice reqType = req->property("Profile"_sl);
+            bool proposed = (reqType == "proposeChanges"_sl);
+            logVerbose("Handling '%.*s' REQ#%" PRIu64, SPLAT(reqType), req->number());
 
-        auto changes = req->JSONBody().asArray();
-        auto nChanges = changes.count();
-        if (!changes && req->body() != "null"_sl) {
-            warn("Invalid body of 'changes' message");
-            req->respondWithError({"BLIP"_sl, 400, "Invalid JSON body"_sl});
-        } else if ((!proposed && _mustBeProposed) || (proposed && _db->usingVersionVectors())) {
-            // In conflict-free mode plus rev-trees the protocol requires the pusher send
-            // "proposeChanges" instead. But with version vectors, always use "changes".
-            req->respondWithError({"BLIP"_sl, 409});
-        } else if (nChanges == 0) {
-            // Empty array indicates we've caught up. (This may have been sent no-reply)
-            logInfo("Caught up with remote changes");
-            _delegate->caughtUp();
-            req->respond();
-        } else if (req->noReply()) {
-            warn("Got pointless noreply 'changes' message");
-        } else {
-            // Alright, let's look at the changes:
-            if (proposed) {
-                logInfo("Received %u changes", nChanges);
-            } else if (willLog()) {
-                alloc_slice firstSeq(changes[0].asArray()[0].toString());
-                alloc_slice lastSeq (changes[nChanges-1].asArray()[0].toString());
-                logInfo("Received %u changes (seq '%.*s'..'%.*s')",
-                        nChanges, SPLAT(firstSeq), SPLAT(lastSeq));
-            }
+            auto changes = req->JSONBody().asArray();
+            auto nChanges = changes.count();
+            if (!changes && req->body() != "null"_sl) {
+                warn("Invalid body of 'changes' message");
+                req->respondWithError({"BLIP"_sl, 400, "Invalid JSON body"_sl});
+            } else if ((!proposed && _mustBeProposed) || (proposed && _db->usingVersionVectors())) {
+                // In conflict-free mode plus rev-trees the protocol requires the pusher send
+                // "proposeChanges" instead. But with version vectors, always use "changes".
+                req->respondWithError({"BLIP"_sl, 409});
+            } else if (nChanges == 0) {
+                // Empty array indicates we've caught up. (This may have been sent no-reply)
+                logInfo("Caught up with remote changes");
+                _delegate->caughtUp();
+                req->respond();
+            } else if (req->noReply()) {
+                warn("Got pointless noreply 'changes' message");
+            } else {
+                // Alright, let's look at the changes:
+                if (proposed) {
+                    logInfo("Received %u changes", nChanges);
+                } else if (willLog()) {
+                    alloc_slice firstSeq(changes[0].asArray()[0].toString());
+                    alloc_slice lastSeq (changes[nChanges-1].asArray()[0].toString());
+                    logInfo("Received %u changes (seq '%.*s'..'%.*s')",
+                            nChanges, SPLAT(firstSeq), SPLAT(lastSeq));
+                }
 
-            if (!proposed)
-                _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
+                if (!proposed)
+                    _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
 
-            MessageBuilder response(req);
-            response.compressed = true;
-            if (!_db->usingVersionVectors()) {
+                MessageBuilder response(req);
+                response.compressed = true;
+                if (!_db->usingVersionVectors()) {
 #if 1
-                response["maxHistory"_sl] = 20;
+                    response["maxHistory"_sl] = 20;
 #else
-                response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db->useLocked());
+                    response["maxHistory"_sl] = _db->useLocked()->getMaxRevTreeDepth();
 #endif
+                }
+                if (!_db->disableBlobSupport())
+                    response["blobs"_sl] = "true"_sl;
+                if ( !_announcedDeltaSupport && !_options.disableDeltaSupport()) {
+                    response["deltas"_sl] = "true"_sl;
+                    _announcedDeltaSupport = true;
+                }
+
+                Stopwatch st;
+
+                vector<ChangeSequence> sequences; // the vector I will send to the delegate
+                sequences.reserve(nChanges);
+
+                auto &encoder = response.jsonBody();
+                encoder.beginArray();
+                int requested = proposed ? findProposedRevs(changes, encoder, sequences)
+                                         : findRevs(changes, encoder, sequences);
+                encoder.endArray();
+
+                // CBL-1399: Important that the order be call expectSequences and *then* respond
+                // to avoid rev messages comes in before the Puller knows about them (mostly
+                // applies to local to local replication where things can come back over the wire
+                // very quickly)
+                _numRevsBeingRequested += requested;
+                _delegate->expectSequences(move(sequences));
+                req->respond(response);
+
+                logInfo("Responded to '%.*s' REQ#%" PRIu64 " w/request for %u revs in %.6f sec",
+                        SPLAT(req->property("Profile"_sl)), req->number(), requested, st.elapsed());
             }
-            if (!_db->disableBlobSupport())
-                response["blobs"_sl] = "true"_sl;
-            if ( !_announcedDeltaSupport && !_options.disableDeltaSupport()) {
-                response["deltas"_sl] = "true"_sl;
-                _announcedDeltaSupport = true;
-            }
-
-            Stopwatch st;
-
-            vector<ChangeSequence> sequences; // the vector I will send to the delegate
-            sequences.reserve(nChanges);
-
-            C4Error error;
-            auto &encoder = response.jsonBody();
-            encoder.beginArray();
-            int requested = proposed ? findProposedRevs(changes, encoder, sequences, &error)
-                                     : findRevs(changes, encoder, sequences, &error);
-            encoder.endArray();
-
-            if (requested < 0) {
-                gotError(error);
-                req->respondWithError(c4ToBLIPError(error));
-                return;
-            }
-            
-            // CBL-1399: Important that the order be call expectSequences and *then* respond
-            // to avoid rev messages comes in before the Puller knows about them (mostly 
-            // applies to local to local replication where things can come back over the wire
-            // very quickly)
-            _numRevsBeingRequested += requested;
-            _delegate->expectSequences(move(sequences));
-            req->respond(response);
-
-            logInfo("Responded to '%.*s' REQ#%" PRIu64 " w/request for %u revs in %.6f sec",
-                    SPLAT(req->property("Profile"_sl)), req->number(), requested, st.elapsed());
-
+        } catch (...) {
+            auto error = C4Error::fromCurrentException();
+            gotError(error);
+            req->respondWithError(c4ToBLIPError(error));
         }
-
         Signpost::end(Signpost::handlingChanges, (uintptr_t)req->number());
     }
 
 
-    bool RevFinder::checkDocAndRevID(slice docID, slice revID, C4Error *outError) {
+    void RevFinder::checkDocAndRevID(slice docID, slice revID) {
         bool valid;
         if (docID.size < 1 || docID.size > 255)
             valid = false;
@@ -177,11 +172,10 @@ namespace litecore::repl {
         else
             valid = revID.findByte('-');
         if (!valid) {
-            *outError = c4error_printf(LiteCoreDomain, kC4ErrorRemoteError,
+            C4Error::raise(LiteCoreDomain, kC4ErrorRemoteError,
                                        "Invalid docID/revID '%.*s' #%.*s in incoming change list",
                                        SPLAT(docID), SPLAT(revID));
         }
-        return valid;
     }
 
 
@@ -189,11 +183,9 @@ namespace litecore::repl {
     // adds each entry to `sequences`, and returns the number of new revs.
     int RevFinder::findRevs(Array changes,
                             Encoder &encoder,
-                            vector<ChangeSequence> &sequences,
-                            C4Error *outError)
+                            vector<ChangeSequence> &sequences)
     {
         // Compile the docIDs/revIDs into parallel vectors:
-        unsigned itemsWritten = 0, requested = 0;
         vector<slice> docIDs, revIDs;
         auto nChanges = changes.count();
         docIDs.reserve(nChanges);
@@ -203,8 +195,7 @@ namespace litecore::repl {
             auto change = item.asArray();
             slice docID = change[1].asString();
             slice revID = change[2].asString();
-            if (!checkDocAndRevID(docID, revID, outError))
-                return -1;
+            checkDocAndRevID(docID, revID);
             docIDs.push_back(docID);
             revIDs.push_back(revID);
             sequences.push_back({RemoteSequence(change[0]),
@@ -212,63 +203,58 @@ namespace litecore::repl {
         }
 
         // Ask the database to look up the ancestors:
-        vector<C4StringResult> ancestors(nChanges);
-        bool ok = c4db_findDocAncestors(_db->useLocked(),
-                                        nChanges, kMaxPossibleAncestors,
-                                        !_options.disableDeltaSupport(),  // requireBodies
-                                        _db->remoteDBID(),
-                                        (C4String*)docIDs.data(), (C4String*)revIDs.data(),
-                                        ancestors.data(), outError);
-        if (!ok) {
-            return -1;
-        } else {
-            // Look through the database response:
-            for (unsigned i = 0; i < nChanges; ++i) {
-                slice docID = docIDs[i], revID = revIDs[i];
-                alloc_slice anc(std::move(ancestors[i]));
-                C4FindDocAncestorsResultFlags status = anc ? (anc[0] - '0') : kRevsLocalIsOlder;
+        vector<alloc_slice> ancestors = _db->useLocked()->findDocAncestors(
+                                                docIDs, revIDs,
+                                                kMaxPossibleAncestors,
+                                                !_options.disableDeltaSupport(),  // requireBodies
+                                                _db->remoteDBID());
+        // Look through the database response:
+        unsigned itemsWritten = 0, requested = 0;
+        for (unsigned i = 0; i < nChanges; ++i) {
+            slice docID = docIDs[i], revID = revIDs[i];
+            alloc_slice anc(std::move(ancestors[i]));
+            C4FindDocAncestorsResultFlags status = anc ? (anc[0] - '0') : kRevsLocalIsOlder;
 
-                if (status & kRevsLocalIsOlder) {
-                    // I have an older revision or a conflict:
-                    // First, append zeros for any items I skipped:
-                    // [use only writeRaw to avoid confusing JSONEncoder's comma mechanism, CBL-1208]
-                    if (itemsWritten > 0)
-                        encoder.writeRaw(",");      // comma after previous array item
-                    while (itemsWritten++ < i)
-                        encoder.writeRaw("0,");
+            if (status & kRevsLocalIsOlder) {
+                // I have an older revision or a conflict:
+                // First, append zeros for any items I skipped:
+                // [use only writeRaw to avoid confusing JSONEncoder's comma mechanism, CBL-1208]
+                if (itemsWritten > 0)
+                    encoder.writeRaw(",");      // comma after previous array item
+                while (itemsWritten++ < i)
+                    encoder.writeRaw("0,");
 
-                    if ((status & kRevsConflict) == kRevsConflict && passive()) {
-                        // Passive puller refuses conflicts:
-                        encoder.writeRaw("409");
-                        sequences[i].bodySize = 0;
-                        logDebug("    - '%.*s' #%.*s conflicts with local revision, rejecting",
-                                 SPLAT(docID), SPLAT(revID));
-                    } else {
-                        // OK, I want it!
-                        // Append array of ancestor revs I do have (it's already a JSON array):
-                        ++requested;
-                        slice jsonArray = (anc ? anc.from(1) : "[]"_sl);
-                        encoder.writeRaw(jsonArray);
-                        logDebug("    - Requesting '%.*s' #%.*s, I have ancestors %.*s",
-                                 SPLAT(docID), SPLAT(revID), SPLAT(jsonArray));
-                    }
-                } else {
-                    // I have an equal or newer revision; ignore this one:
-                    // [Implicitly this appends a 0, but we're skipping trailing zeroes.]
+                if ((status & kRevsConflict) == kRevsConflict && passive()) {
+                    // Passive puller refuses conflicts:
+                    encoder.writeRaw("409");
                     sequences[i].bodySize = 0;
-                    if (status & kRevsAtThisRemote) {
-                        logDebug("    - Already have '%.*s' %.*s",
-                                 SPLAT(docID), SPLAT(revID));
-                    } else {
-                        // This means the rev exists but is not marked as the latest from the
-                        // remote server, so I better make it so:
-                        logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
-                                 SPLAT(docID), SPLAT(revID));
-                        _db->setDocRemoteAncestor(docID, revID);
-                        if (!_passive && !_db->usingVersionVectors())
-                            replicator()->docRemoteAncestorChanged(alloc_slice(docID),
-                                                                   alloc_slice(revID));
-                    }
+                    logDebug("    - '%.*s' #%.*s conflicts with local revision, rejecting",
+                             SPLAT(docID), SPLAT(revID));
+                } else {
+                    // OK, I want it!
+                    // Append array of ancestor revs I do have (it's already a JSON array):
+                    ++requested;
+                    slice jsonArray = (anc ? anc.from(1) : "[]"_sl);
+                    encoder.writeRaw(jsonArray);
+                    logDebug("    - Requesting '%.*s' #%.*s, I have ancestors %.*s",
+                             SPLAT(docID), SPLAT(revID), SPLAT(jsonArray));
+                }
+            } else {
+                // I have an equal or newer revision; ignore this one:
+                // [Implicitly this appends a 0, but we're skipping trailing zeroes.]
+                sequences[i].bodySize = 0;
+                if (status & kRevsAtThisRemote) {
+                    logDebug("    - Already have '%.*s' %.*s",
+                             SPLAT(docID), SPLAT(revID));
+                } else {
+                    // This means the rev exists but is not marked as the latest from the
+                    // remote server, so I better make it so:
+                    logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
+                             SPLAT(docID), SPLAT(revID));
+                    _db->setDocRemoteAncestor(docID, revID);
+                    if (!_passive && !_db->usingVersionVectors())
+                        replicator()->docRemoteAncestorChanged(alloc_slice(docID),
+                                                               alloc_slice(revID));
                 }
             }
         }
@@ -279,8 +265,7 @@ namespace litecore::repl {
     // Same as `findOrRequestRevs`, but for "proposeChanges" messages.
     int RevFinder::findProposedRevs(Array changes,
                                     Encoder &encoder,
-                                    vector<ChangeSequence> &sequences,
-                                    C4Error *outError)
+                                    vector<ChangeSequence> &sequences)
     {
         unsigned itemsWritten = 0, requested = 0;
         int i = -1;
@@ -291,8 +276,7 @@ namespace litecore::repl {
             auto change = item.asArray();
             alloc_slice docID( change[0].asString() );
             slice revID = change[1].asString();
-            if (!checkDocAndRevID(docID, revID, outError))
-                return -1;
+            checkDocAndRevID(docID, revID);
 
             slice parentRevID = change[2].asString();
             if (parentRevID.size == 0)
@@ -328,12 +312,13 @@ namespace litecore::repl {
         {
             // Get the local doc's current revID/vector and flags:
             outCurrentRevID = nullslice;
-            C4Error err;
-            if (c4::ref<C4Document> doc = _db->getDoc(docID, kDocGetMetadata, &err); doc) {
-                flags = doc->flags;
-                outCurrentRevID = c4doc_getSelectedRevIDGlobalForm(doc);
-            } else if (!isNotFoundError(err)) {
-                gotError(err);
+            try {
+                if (Retained<C4Document> doc = _db->getDoc(docID, kDocGetMetadata); doc) {
+                    flags = doc->flags();
+                    outCurrentRevID = doc->getSelectedRevIDGlobalForm();
+                }
+            } catch (...) {
+                gotError(C4Error::fromCurrentException());
                 return 500;
             }
         }

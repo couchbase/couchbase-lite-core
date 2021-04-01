@@ -8,7 +8,7 @@
 #include "WebSocketImpl.hh"
 #include "TCPSocket.hh"
 #include "HTTPLogic.hh"
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include <atomic>
 #include <exception>
 #include <memory>

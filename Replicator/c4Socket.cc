@@ -17,7 +17,6 @@
 //
 
 #include "fleece/Fleece.hh"
-#include "c4.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4Private.h"
 #include "c4Socket.h"
@@ -157,10 +156,8 @@ namespace litecore::repl {
     }
 
     void C4SocketImpl::closeWithException(const std::exception &x) {
-        C4Error error;
-        C4Error::fromException(x, &error);
-        alloc_slice message(c4error_getMessage(error));
-        WarnError("Closing socket due to C++ exception: %.*s", SPLAT(message));
+        C4Error error = C4Error::fromException(x);
+        WarnError("Closing socket due to C++ exception: %s", error.description().c_str());
         close(kCodeUnexpectedCondition, "Internal exception"_sl);
     }
 

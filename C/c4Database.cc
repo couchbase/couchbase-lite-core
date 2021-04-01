@@ -440,17 +440,15 @@ static const char * kRemoteDBURLsDoc = "remotes";
 
 
 C4RemoteID C4Database::getRemoteDBID(slice remoteAddress, bool canCreate) {
-    bool inTransaction = false;
+    optional<Transaction> transaction;
     C4RemoteID remoteID = 0;
 
     // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
     // If the ID isn't found, then do a second pass where we either add the remote URL
     // or create the doc from scratch, in a transaction.
     for (int creating = 0; creating <= 1; ++creating) {
-        if (creating) {     // 2nd pass takes place in a transaction
-            IMPL->beginTransaction();
-            inTransaction = true;
-        }
+        if (creating)      // 2nd pass takes place in a transaction
+            transaction.emplace(this);
 
         // Look up the doc in the db, and the remote URL in the doc:
         Record doc = IMPL->getRawRecord(string(kInfoStore), kRemoteDBURLsDoc);
@@ -492,14 +490,11 @@ C4RemoteID C4Database::getRemoteDBID(slice remoteAddress, bool canCreate) {
 
             // Save the doc:
             IMPL->putRawRecord(string(kInfoStore), kRemoteDBURLsDoc, nullslice, body);
-            IMPL->endTransaction(true);
-            inTransaction = false;
-            break;
+            transaction->commit();
+            return remoteID;
         }
     }
-    if (inTransaction)
-        IMPL->endTransaction(false);
-    return remoteID;
+    C4Error::raise(LiteCoreDomain, kC4ErrorNotFound);
 }
 
 

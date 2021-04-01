@@ -20,7 +20,6 @@
 #include "c4Base.h"
 #include "PlatformCompat.hh"    // for NOINLINE, ALWAYS_INLINE
 #include <atomic>
-#include <exception>
 
 
 extern "C" CBL_CORE_API std::atomic_int gC4ExpectExceptions; 
@@ -40,9 +39,14 @@ namespace litecore {
             C4Error::fromCurrentException(OUTERR); \
         }
 
-    /** Macro to substitute for a regular 'catch' block, that completely ignores exceptions. */
-    #define catchAndIgnore() \
-        catch (...) { }
+    /** Macro to substitute for a regular 'catch' block, that just logs a warning. */
+#ifdef _MSC_VER
+    #define catchAndWarn() \
+        catch (...) { C4Error::warnCurrentException(__FUNCSIG__); }
+#else
+    #define catchAndWarn() \
+        catch (...) { C4Error::warnCurrentException(__PRETTY_FUNCTION__); }
+#endif
 
     /** Precondition check. If `TEST` is not truthy, throws InvalidParameter. */
     #define AssertParam(TEST, MSG) \

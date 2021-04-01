@@ -23,7 +23,7 @@
 #include "CookieStore.hh"
 #include "c4Replicator.h"
 #include "c4Socket+Internal.hh"
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"

@@ -17,7 +17,7 @@
 //
 
 #include "RESTListener.hh"
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include "c4Replicator.h"
 #include "c4Private.h"
 #include "c4Document+Fleece.h"

@@ -16,10 +16,10 @@
 // limitations under the License.
 //
 
-#include "c4Replicator.h"
 #include "c4Replicator.hh"
 #include "c4Database.hh"
 #include "c4Private.h"
+#include "c4Replicator.h"
 #include "c4Socket+Internal.hh"
 #include "c4ExceptionUtils.hh"
 #include "Address.hh"

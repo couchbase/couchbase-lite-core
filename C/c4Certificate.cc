@@ -24,7 +24,7 @@
 #include "Certificate.hh"
 #include "PublicKey.hh"
 #include "Logging.hh"
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include "NumConversion.hh"
 #include <vector>
 

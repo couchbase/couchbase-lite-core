@@ -23,7 +23,7 @@
 #include "HTTPTypes.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
-#include "c4Document+Fleece.h"
+#include "c4Document.hh"
 #include <cinttypes>
 
 using namespace std;
@@ -58,21 +58,18 @@ namespace litecore::repl {
                    _revisionsInFlight, tuning::kMaxRevsInFlight);
 
         // Get the document & revision:
-        C4Error c4err;
+        C4Error c4err = {};
         Dict root;
-        c4::ref<C4Document> doc = _db->getDoc(request->docID, kDocGetAll, &c4err);
+        Retained<C4Document> doc = _db->getDoc(request->docID, kDocGetAll);
         if (doc) {
-            if (c4doc_selectRevision(doc, request->revID, true, &c4err)) {
-                root = c4doc_getProperties(doc);
-                if (!root)
-                    c4err = {LiteCoreDomain, kC4ErrorNotFound};
-            }
-            if (root) {
-                request->flags = doc->selectedRev.flags;
-            } else {
-                if (c4err.code == kC4ErrorNotFound && c4err.domain == LiteCoreDomain)
-                    revToSendIsObsolete(*request, &c4err);
-            }
+            if (doc->selectRevision(request->revID, true))
+                root = doc->getProperties();
+            if (root)
+                request->flags = doc->selectedRev().flags;
+            else
+                revToSendIsObsolete(*request, &c4err);
+        } else {
+            c4err = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
         }
 
         auto fullRevID = alloc_slice(_db->convertVersionToAbsolute(request->revID));
@@ -87,7 +84,7 @@ namespace litecore::repl {
         if (root) {
             if (request->noConflicts)
                 msg["noconflicts"_sl] = true;
-            auto revisionFlags = doc->selectedRev.flags;
+            auto revisionFlags = doc->selectedRev().flags;
             if (revisionFlags & kRevDeleted)
                 msg["deleted"_sl] = "1"_sl;
 
@@ -102,10 +99,10 @@ namespace litecore::repl {
 
             // Delta compression:
             alloc_slice delta = createRevisionDelta(doc, request, root,
-                                                    c4doc_getRevisionBody(doc).size,
+                                                    doc->getRevisionBody().size,
                                                     sendLegacyAttachments);
             if (delta) {
-                msg["deltaSrc"_sl] = _db->convertVersionToAbsolute(doc->selectedRev.revID);
+                msg["deltaSrc"_sl] = _db->convertVersionToAbsolute(doc->selectedRev().revID);
                 msg.jsonBody().writeRaw(delta);
             } else if (root.empty()) {
                 msg.write("{}"_sl);
@@ -113,7 +110,7 @@ namespace litecore::repl {
                 auto &bodyEncoder = msg.jsonBody();
                 if (sendLegacyAttachments)
                     _db->encodeRevWithLegacyAttachments(bodyEncoder, root,
-                                                       c4rev_getGeneration(request->revID));
+                                                    C4Document::getRevIDGeneration(request->revID));
                 else
                     bodyEncoder.writeValue(root);
             }
@@ -173,7 +170,7 @@ namespace litecore::repl {
                     auto err = progress.reply->getError();
                     auto c4err = blipToC4Error(err);
 
-                    if (c4error_mayBeTransient(c4err)) {
+                    if (c4err.mayBeTransient()) {
                         completed = false;
                     } else if (c4err == C4Error{WebSocketDomain, 403}) {
                         // CBL-123: Retry HTTP forbidden once
@@ -223,7 +220,8 @@ namespace litecore::repl {
                 SPLAT(request.docID), SPLAT(request.revID));
         if (!passive())
             _checkpointer.completedSequence(request.sequence);
-        *c4err = {WebSocketDomain, 410}; // Gone
+        if (c4err)
+            *c4err = {WebSocketDomain, 410}; // Gone
     }
 
 
@@ -240,17 +238,21 @@ namespace litecore::repl {
         // Find an ancestor revision known to the server:
         C4RevisionFlags ancestorFlags = 0;
         Dict ancestor;
-        if (request->remoteAncestorRevID)
-            ancestor = DBAccess::getDocRoot(doc, request->remoteAncestorRevID, &ancestorFlags);
+        if (request->remoteAncestorRevID && doc->selectRevision(request->remoteAncestorRevID, true)) {
+            ancestor = doc->getProperties();
+            ancestorFlags = doc->selectedRev().flags;
+        }
 
         if(ancestorFlags & kRevDeleted)
             return delta;
 
         if (!ancestor && request->ancestorRevIDs) {
             for (auto revID : *request->ancestorRevIDs) {
-                ancestor = DBAccess::getDocRoot(doc, revID, &ancestorFlags);
-                if (ancestor)
+                if (doc->selectRevision(revID, true)) {
+                    ancestor = doc->getProperties();
+                    ancestorFlags = doc->selectedRev().flags;
                     break;
+                }
             }
         }
         if (ancestor.empty())
@@ -260,7 +262,7 @@ namespace litecore::repl {
         if (sendLegacyAttachments) {
             // If server needs legacy attachment layout, transform the bodies:
             Encoder enc;
-            auto revPos = c4rev_getGeneration(request->revID);
+            auto revPos = C4Document::getRevIDGeneration(request->revID);
             _db->encodeRevWithLegacyAttachments(enc, root, revPos);
             legacyNew = enc.finishDoc();
             root = legacyNew.root().asDict();
@@ -318,7 +320,7 @@ namespace litecore::repl {
                        SPLAT(newRev->remoteAncestorRevID));
             bool ok = false;
             if (synced && getForeignAncestors()
-                && c4rev_getGeneration(newRev->revID) <= c4rev_getGeneration(rev->revID)) {
+                && C4Document::getRevIDGeneration(newRev->revID) <= C4Document::getRevIDGeneration(rev->revID)) {
                 // Don't send; it'll conflict with what's on the server
             } else {
                 // Send newRev as though it had just arrived:

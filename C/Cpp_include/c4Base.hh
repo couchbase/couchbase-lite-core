@@ -18,9 +18,11 @@
 
 #pragma once
 #ifndef __cplusplus
-    #error "This is C++ only"
+#    error "This is C++ only"
 #endif
-#define LITECORE_CPP_API
+#if !defined(LITECORE_CPP_API)
+#    define LITECORE_CPP_API 1
+#endif
 
 #include "c4Base.h"
 #include "RefCounted.hh"

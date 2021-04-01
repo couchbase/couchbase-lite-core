@@ -21,7 +21,6 @@
 #include "ReplicatorTypes.hh"
 #include "RemoteSequence.hh"
 #include "Timer.hh"
-#include "c4.hh"
 #include <atomic>
 #include <vector>
 
@@ -84,7 +83,7 @@ namespace litecore { namespace repl {
         // blob stuff:
         std::vector<PendingBlob>    _pendingBlobs;
         std::vector<PendingBlob>::const_iterator _blob;
-        c4::ref<C4WriteStream>      _writer;
+        std::unique_ptr<C4WriteStream> _writer;
         uint64_t                    _blobBytesWritten;
         actor::Timer::time          _lastNotifyTime;
     };

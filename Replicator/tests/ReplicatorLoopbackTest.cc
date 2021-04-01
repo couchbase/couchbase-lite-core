@@ -8,7 +8,7 @@
 
 #include "ReplicatorLoopbackTest.hh"
 #include "Worker.hh"
-#include "DBAccess.hh"
+#include "DBAccessTestWrapper.hh"
 #include "Timer.hh"
 #include "c4Database.hh"
 #include "PrebuiltCopier.hh"
@@ -1392,9 +1392,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
     validateCheckpoints(db, db2, "{\"local\":4,\"remote\":7}");
     
-    C4Error err = {};
-    std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(db, false);
-    C4DocEnumerator* e = acc->unresolvedDocsEnumerator(true, ERROR_INFO(err));
+    auto e = DBAccessTestWrapper::unresolvedDocsEnumerator(db);
     REQUIRE(e);
     
     // verify only returns the conflicted documents, including the deleted ones.
@@ -1406,6 +1404,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
                               revOrVersID("2-41414141", "1@cafe")};
     vector<bool> deleteds =  {false, true, false};
 
+    C4Error err;
     for (int count = 0; count < 3; ++count) {
         REQUIRE(c4enum_next(e, WITH_ERROR(&err)));
         C4DocumentInfo info;
@@ -1498,10 +1497,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     }
 
     _expectedDocumentCount = (100+6)/7;
-    auto before = DBAccess::gNumDeltasApplied.load();
+    auto before = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
     compareDatabases();
-    CHECK(DBAccess::gNumDeltasApplied - before == 15);
+    CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 15);
 }
 
 
@@ -1551,10 +1550,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
 
     Log("-------- Second Push --------");
     _expectedDocumentCount = kNumDocs;
-    auto before = DBAccess::gNumDeltasApplied.load();
+    auto before = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
     compareDatabases();
-    CHECK(DBAccess::gNumDeltasApplied - before == kNumDocs);
+    CHECK(DBAccessTestWrapper::numDeltasApplied() - before == kNumDocs);
 }
 
 
@@ -1573,11 +1572,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
 
     Log("-------- Pull From db2 --------");
     _expectedDocumentCount = (100+6)/7;
-    auto before = DBAccess::gNumDeltasApplied.load();
+    auto before = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
     compareDatabases();
     if (isRevTrees())       // VV does not currently send deltas from a passive replicator
-        CHECK(DBAccess::gNumDeltasApplied - before == 15);
+        CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 15);
 }
 
 
@@ -1622,9 +1621,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
 
     Log("-------- Push To db2 Again --------");
     _expectedDocumentCount = 1;
-    auto before = DBAccess::gNumDeltasApplied.load();
+    auto before = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
-    CHECK(DBAccess::gNumDeltasApplied - before == 1);
+    CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
 
     c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
@@ -1692,10 +1691,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Pull+Pull", "[Pull][
 
     Log("-------- Pull To db2 Again --------");
     _expectedDocumentCount = 1;
-    auto before = DBAccess::gNumDeltasApplied.load();
+    auto before = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
     if (isRevTrees())       // VV does not currently send deltas from a passive replicator
-        CHECK(DBAccess::gNumDeltasApplied - before == 1);
+        CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
 
     c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
@@ -1740,10 +1739,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
 
     Log("-------- Pull From db2 --------");
     _expectedDocumentCount = 1;
-    auto before = DBAccess::gNumDeltasApplied.load();
+    auto before = DBAccessTestWrapper::numDeltasApplied();
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
     if (isRevTrees())       // VV does not currently send deltas from a passive replicator
-        CHECK(DBAccess::gNumDeltasApplied - before == 1);
+        CHECK(DBAccessTestWrapper::numDeltasApplied() - before == 1);
 
     c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc, true, nullptr);

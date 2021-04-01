@@ -21,8 +21,8 @@
 #include "DBAccess.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
-#include "c4BlobStore.h"
-#include "c4Document+Fleece.h"
+#include "c4BlobStore.hh"
+#include "c4Document.hh"
 #include "Instrumentation.hh"
 #include "BLIP.hh"
 #include <atomic>
@@ -95,7 +95,7 @@ namespace litecore { namespace repl {
             return;
         }
 
-        auto gen = c4rev_getGeneration(_rev->revID);  // returns 0 if revID is invalid
+        auto gen = C4Document::getRevIDGeneration(_rev->revID);  // returns 0 if revID is invalid
         bool valid = (gen > 0);
         if (valid) {
             if (_db->usingVersionVectors()) {
@@ -140,19 +140,23 @@ namespace litecore { namespace repl {
             FLError encodeErr;
             fleeceDoc = _db->tempEncodeJSON(jsonBody, &encodeErr);
             if (!fleeceDoc)
-                err = c4error_make(FleeceDomain, (int)encodeErr, "Incoming rev failed to encode"_sl);
+                err = C4Error::make(FleeceDomain, (int)encodeErr, "Incoming rev failed to encode"_sl);
 
         } else if (_options.pullValidator || jsonMightContainBlobs(jsonBody)) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, or it may contain new blobs to download.
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
                        SPLAT(_rev->docID), SPLAT(_rev->revID));
-            fleeceDoc = _db->applyDelta(_rev->docID, _rev->deltaSrcRevID, jsonBody, &err);
-            if (!fleeceDoc && err.domain==LiteCoreDomain && err.code==kC4ErrorDeltaBaseUnknown) {
+            fleeceDoc = _db->applyDelta(_rev->docID, _rev->deltaSrcRevID, jsonBody);
+            if (!fleeceDoc) {
                 // Don't have the body of the source revision. This might be because I'm in
                 // no-conflict mode and the peer is trying to push me a now-obsolete revision.
                 if (_options.noIncomingConflicts())
                     err = {WebSocketDomain, 409};
+                else
+                    err = C4Error::printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                          "Couldn't apply delta: Don't have body of '%.*s' #%.*s",
+                                          SPLAT(_rev->docID), SPLAT(_rev->deltaSrcRevID));
             }
             _rev->deltaSrcRevID = nullslice;
 
@@ -180,9 +184,9 @@ namespace litecore { namespace repl {
 
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
-        if (c4doc_hasOldMetaProperties(root) && !_db->disableBlobSupport()) {
+        if (C4Document::hasOldMetaProperties(root) && !_db->disableBlobSupport()) {
             auto sk = fleeceDoc.sharedKeys();
-            alloc_slice body = c4doc_encodeStrippingOldMetaProperties(root, sk, nullptr);
+            alloc_slice body = C4Document::encodeStrippingOldMetaProperties(root, sk);
             if (!body) {
                 failWithError(WebSocketDomain, 500, "invalid legacy attachments"_sl);
                 return;
@@ -200,7 +204,7 @@ namespace litecore { namespace repl {
                                      alloc_slice(FLDeepIterator_GetPathString(i)),
                                      key,
                                      blob["length"_sl].asUnsigned(),
-                                     c4doc_blobIsCompressible(blob)});
+                                     C4Blob::isLikelyCompressible(blob)});
             _blob = _pendingBlobs.begin();
         });
 
@@ -254,11 +258,11 @@ namespace litecore { namespace repl {
 
 
     void IncomingRev::failWithError(C4ErrorDomain domain, int code, slice message) {
-        failWithError(c4error_make(domain, code, message));
+        failWithError(C4Error::make(domain, code, message));
     }
 
     void IncomingRev::failWithError(C4Error err) {
-        warn("failed with error: %s", c4error_descriptionStr(err));
+        warn("failed with error: %s", err.description().c_str());
         Assert(err.code != 0);
         _rev->error = err;
         finish();
@@ -286,7 +290,7 @@ namespace litecore { namespace repl {
         Signpost::end(Signpost::handlingRev, _serialNumber);
 
         if (_rev->error.code == 0 && _peerError)
-            _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
+            _rev->error = C4Error::make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
 
         // Free up memory now that I'm done:
         Assert(_pendingCallbacks == 0);

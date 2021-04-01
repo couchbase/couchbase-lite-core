@@ -19,8 +19,13 @@
 #pragma once
 #include "c4Base.hh"
 #include "c4DocumentTypes.h"
+#include "c4DocumentStruct.h"
 #include "function_ref.hh"
 #include "fleece/Fleece.h"
+
+#if ! LITECORE_CPP_API
+#    error "c4DocumentTypes.h was included before Base.hh"
+#endif
 
 namespace litecore {
     class DatabaseImpl;

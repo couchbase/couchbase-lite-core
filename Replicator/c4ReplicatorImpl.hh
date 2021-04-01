@@ -26,6 +26,7 @@
 #include "c4Database.hh"
 #include "c4Certificate.h"
 #include "c4Internal.hh"
+#include "c4CppUtils.hh"        //TODO: Remove once C4Cert is C++ified
 #include "Replicator.hh"
 #include "Checkpointer.hh"
 #include "Headers.hh"
@@ -480,7 +481,7 @@ namespace litecore {
                 if (status.error.code) {
                     logError("State: %-s, progress=%.2f%%, error=%s",
                             kC4ReplicatorActivityLevelNames[status.level], progress,
-                            c4error_descriptionStr(status.error));
+                            status.error.description().c_str());
                 } else {
                     logInfo("State: %-s, progress=%.2f%%",
                           kC4ReplicatorActivityLevelNames[status.level], progress);

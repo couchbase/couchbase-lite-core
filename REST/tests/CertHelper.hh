@@ -12,7 +12,7 @@
 
 #include "c4Test.hh"
 
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include "StringUtil.hh"
 using namespace fleece;
 

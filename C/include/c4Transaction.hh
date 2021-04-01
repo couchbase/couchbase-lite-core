@@ -1,5 +1,5 @@
 //
-//  c4+Database.hh
+//  c4Transaction.hh
 //  LiteCore
 //
 //  Created by Jens Alfke on 10/2/19.

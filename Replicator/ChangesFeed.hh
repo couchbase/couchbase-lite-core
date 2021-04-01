@@ -42,6 +42,7 @@ namespace litecore::repl {
         };
 
         ChangesFeed(Delegate&, Options&, DBAccess &db, Checkpointer*);
+        ~ChangesFeed();
 
         // Setup:
         void setContinuous(bool continuous)         {_continuous = continuous;}
@@ -82,8 +83,8 @@ namespace litecore::repl {
         void getHistoricalChanges(Changes&, unsigned limit);
         void getObservedChanges(Changes&, unsigned limit);
         void _dbChanged();
-        Retained<RevToSend> makeRevToSend(C4DocumentInfo&, C4DocEnumerator*, C4Database* NONNULL);
-        bool shouldPushRev(RevToSend*, C4DocEnumerator*, C4Database* NONNULL) const;
+        Retained<RevToSend> makeRevToSend(C4DocumentInfo&, C4DocEnumerator*);
+        bool shouldPushRev(RevToSend*, C4DocEnumerator*) const;
 
     protected:
         Delegate& _delegate;
@@ -93,7 +94,7 @@ namespace litecore::repl {
     private:
         Checkpointer* _checkpointer;
         DocIDSet _docIDs;                                   // Doc IDs to filter to, or null
-        c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
+        std::unique_ptr<C4DatabaseObserver> _changeObserver;// Used in continuous push mode
         C4SequenceNumber _maxSequence {0};                  // Latest sequence I've read
         bool _continuous;                                   // Continuous mode
         bool _passive;                                      // True if replicator is passive

@@ -20,6 +20,7 @@
 #include "Message.hh"
 #include <functional>
 #include <initializer_list>
+#include <memory>
 #include <utility>
 #include <sstream>
 
@@ -28,7 +29,15 @@ namespace litecore { namespace blip {
     /** A callback to provide data for an outgoing message. When called, it should copy data
         to the location in the `buf` parameter, with a maximum length of `capacity`. It should
         return the number of bytes written, or 0 on EOF, or a negative number on error. */
-    using MessageDataSource = std::function<int(void* buf, size_t capacity)>;
+    //using MessageDataSource = std::function<int(void* buf, size_t capacity)>;
+    class IMessageDataSource {
+    public:
+        virtual int operator() (void *buf, size_t capacity) =0;
+        virtual ~IMessageDataSource() = default;
+    };
+
+    using MessageDataSource = std::unique_ptr<IMessageDataSource>;
+
 
     /** A temporary object used to construct an outgoing message (request or response).
         The message is sent by calling Connection::sendRequest() or MessageIn::respond(). */

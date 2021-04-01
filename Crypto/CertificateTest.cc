@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include "PublicKey.hh"
 #include "Certificate.hh"
 #include "CertRequest.hh"

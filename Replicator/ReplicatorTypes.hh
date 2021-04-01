@@ -19,8 +19,8 @@
 #pragma once
 #include "ReplicatedRev.hh"
 #include "fleece/Fleece.hh"
-#include "c4.hh"
-#include "c4BlobStore.h"
+#include "c4Base.hh"
+#include "c4BlobStore.hh"
 #include "c4Private.h"
 #include <memory>
 #include <vector>

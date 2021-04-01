@@ -1,7 +1,7 @@
 //
-// c4.hh
+// DBAccessTestWrapper.cc
 //
-// Copyright (c) 2021 Couchbase, Inc All rights reserved.
+// Copyright (C) 2020 Jens Alfke. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,16 +16,19 @@
 // limitations under the License.
 //
 
-#pragma once
-
-#ifndef __cplusplus
-#error "This is C++ only"
-#endif
-
-#include "c4BlobStore.hh"
-#include "c4Database.hh"
-#include "c4Document.hh"
+#include "DBAccessTestWrapper.hh"
+#include "DBAccess.hh"
 #include "c4DocEnumerator.hh"
-#include "c4Observer.hh"
-#include "c4Query.hh"
-#include "c4Replicator.hh"
+
+using namespace std;
+using namespace litecore::repl;
+
+C4DocEnumerator* DBAccessTestWrapper::unresolvedDocsEnumerator(C4Database *db) {
+    std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(db, false);
+    return acc->unresolvedDocsEnumerator(true).release();
+}
+
+
+unsigned DBAccessTestWrapper::numDeltasApplied() {
+    return DBAccess::gNumDeltasApplied;
+}

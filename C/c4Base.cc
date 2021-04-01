@@ -265,6 +265,13 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
 // LCOV_EXCL_STOP
 
 
+__cold
+void C4Error::warnCurrentException(const char *inFunction) noexcept {
+    C4WarnError("Caught & ignored exception %s in %s",
+                C4Error::fromCurrentException().description().c_str(), inFunction);
+}
+
+
 #pragma mark - REFERENCE COUNTED:
 
 

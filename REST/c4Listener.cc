@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include "c4Listener.h"
 #include "c4ListenerInternal.hh"
 #include "c4ExceptionUtils.hh"
@@ -72,7 +72,7 @@ C4StringResult c4db_URINameFromPath(C4String pathSlice) C4API {
         if (name.empty())
             return {};
         return FLSliceResult(alloc_slice(name));
-    } catchAndIgnore()
+    } catchAndWarn()
     return {};
 }
 
@@ -107,7 +107,7 @@ bool c4listener_unshareDB(C4Listener *listener, C4Database *db,
 uint16_t c4listener_getPort(C4Listener *listener) C4API {
     try {
         return internal(listener)->port();
-    } catchAndIgnore()
+    } catchAndWarn()
     return 0;
 }
 

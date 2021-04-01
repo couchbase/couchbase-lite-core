@@ -8,9 +8,9 @@
 
 #pragma once
 #include "fleece/Fleece.hh"
-#include "c4.hh"
-#include "c4BlobStore.h"
+#include "c4CppUtils.hh"
 #include "c4Transaction.hh"
+#include "c4BlobStore.h"
 #include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
 #include "Replicator.hh"
@@ -257,12 +257,10 @@ public:
                         Log(">> Replicator pull conflict for '%.*s'", SPLAT(rev->docID));
                         _conflictHandler(rev);
                     } else {
-                        char message[256];
-                        c4error_getDescriptionC(rev->error, message, sizeof(message));
                         Log(">> Replicator %serror %s '%.*s' #%.*s: %s",
                             (rev->errorIsTransient ? "transient " : ""),
                             (dir == Dir::kPushing ? "pushing" : "pulling"),
-                            SPLAT(rev->docID), SPLAT(rev->revID), message);
+                            SPLAT(rev->docID), SPLAT(rev->revID), rev->error.description().c_str());
                         if (!rev->errorIsTransient || !_ignoreTransientErrors) {
                             if (dir == Dir::kPushing)
                                 _docPushErrors.emplace(rev->docID);

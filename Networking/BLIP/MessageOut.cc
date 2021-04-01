@@ -34,11 +34,11 @@ namespace litecore { namespace blip {
     MessageOut::MessageOut(Connection *connection,
                            FrameFlags flags,
                            alloc_slice payload,
-                           MessageDataSource dataSource,
+                           MessageDataSource &&dataSource,
                            MessageNo number)
     :Message(flags, number)
     ,_connection(connection)
-    ,_contents(payload, dataSource)
+    ,_contents(payload, move(dataSource))
     { }
 
 
@@ -157,7 +157,7 @@ namespace litecore { namespace blip {
     MessageOut::Contents::Contents(alloc_slice payload, MessageDataSource dataSource)
     :_payload(payload)
     ,_unsentPayload(payload.buf, payload.size)
-    ,_dataSource(dataSource)
+    ,_dataSource(move(dataSource))
     {
         DebugAssert(payload.size <= UINT32_MAX);
     }
@@ -189,7 +189,7 @@ namespace litecore { namespace blip {
     void MessageOut::Contents::readFromDataSource() {
         if (!_dataBuffer)
             _dataBuffer.reset(kDataBufferSize);
-        auto bytesWritten = _dataSource((void*)_dataBuffer.buf, _dataBuffer.size);
+        auto bytesWritten = (*_dataSource)((void*)_dataBuffer.buf, _dataBuffer.size);
         _unsentDataBuffer = _dataBuffer.upTo(bytesWritten);
         if (bytesWritten < _dataBuffer.size) {
             // End of data source

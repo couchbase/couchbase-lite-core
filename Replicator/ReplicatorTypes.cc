@@ -17,8 +17,8 @@
 //
 
 #include "ReplicatorTypes.hh"
-#include "c4Document.h"
-#include "c4DocEnumerator.h"
+#include "c4Document.hh"
+#include "c4DocEnumerator.hh"
 #include "IncomingRev.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
@@ -83,9 +83,9 @@ namespace litecore { namespace repl {
             ancestors = &remoteAncestorRevID;
             ancestorCount = 1;
         }
-        auto result = alloc_slice(c4doc_getRevisionHistory(doc, maxHistory,
-                                                           (const C4String*)ancestors,
-                                                           unsigned(ancestorCount)));
+        alloc_slice result = doc->getRevisionHistory(maxHistory,
+                                                     (const slice*)ancestors,
+                                                     unsigned(ancestorCount));
         if (ancestorRevIDs && remoteAncestorRevID) {
             // Undo the push_back above
             ancestorRevIDs->resize(ancestorCount - 1);

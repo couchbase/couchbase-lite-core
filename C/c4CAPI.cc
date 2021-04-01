@@ -94,7 +94,7 @@ bool c4blob_deleteStore(C4BlobStore* store, C4Error *outError) noexcept {
 int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) noexcept {
     try {
         return store->getSize(key);
-    } catchAndIgnore()
+    } catchAndWarn()
     return -1;
 }
 

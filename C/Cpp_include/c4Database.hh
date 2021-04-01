@@ -100,6 +100,7 @@ public:
         explicit Transaction(C4Database* db):_db(db) {db->beginTransaction();}
         Transaction(Transaction &&t)        :_db(t._db) {t._db = nullptr;}
         void commit()                       {auto db = _db; _db = nullptr; db->endTransaction(true);}
+        void abort()                        {auto db = _db; _db = nullptr; db->endTransaction(false);}
         ~Transaction()                      {if (_db) _db->endTransaction(false);}
     private:
         C4Database* C4NULLABLE _db;
