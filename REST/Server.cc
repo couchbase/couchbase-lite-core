@@ -25,7 +25,6 @@
 #include "Certificate.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "c4CppUtils.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4ListenerInternal.hh"
 #include "PlatformCompat.hh"

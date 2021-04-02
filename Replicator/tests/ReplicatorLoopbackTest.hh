@@ -9,7 +9,6 @@
 #pragma once
 #include "fleece/Fleece.hh"
 #include "c4CppUtils.hh"
-#include "c4Transaction.hh"
 #include "c4BlobStore.h"
 #include "c4DocEnumerator.h"
 #include "c4Document+Fleece.h"
@@ -399,15 +398,12 @@ public:
         for (int i = 1; docNo <= total; i++) {
             sleepFor(interval);
             Log("-------- Creating %d docs --------", 2*i);
-            c4::Transaction t(db);
-            C4Error err;
-            Assert(t.begin(&err));
+            TransactionHelper t(db);
             for (int j = 0; j < 2*i; j++) {
                 char docID[20];
                 sprintf(docID, "newdoc%d", docNo++);
                 createRev(db, c4str(docID), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
             }
-            Assert(t.commit(&err));
         }
         Log("-------- Done creating docs --------");
         return docNo - 1;
@@ -422,9 +418,7 @@ public:
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
             int revNo = firstRev + i;
             sleepFor(interval);
-            c4::Transaction t(db);
-            C4Error err;
-            Assert(t.begin(&err));
+            TransactionHelper t(db);
             string revID;
             if (useFakeRevIDs) {
                 revID = isRevTrees() ? format("%d-ffff", revNo) : format("%d@*", revNo);
@@ -434,7 +428,6 @@ public:
                 revID = createFleeceRev(db, docID, nullslice, slice(json));
             }
             Log("-------- %s %d: Created rev '%.*s' #%s --------", name, revNo, SPLAT(docID), revID.c_str());
-            Assert(t.commit(&err));
         }
         Log("-------- %s: Done creating revs --------", name);
     }

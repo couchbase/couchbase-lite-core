@@ -19,14 +19,10 @@
 #pragma once
 
 #include "c4Replicator.hh"
-#include "fleece/Fleece.hh"
 #include "c4DocEnumerator.hh"
-#include "c4Private.h"
-#include "c4Replicator.hh"
 #include "c4Database.hh"
-#include "c4Certificate.h"
+#include "c4Certificate.hh"
 #include "c4Internal.hh"
-#include "c4CppUtils.hh"        //TODO: Remove once C4Cert is C++ified
 #include "Replicator.hh"
 #include "Checkpointer.hh"
 #include "Headers.hh"
@@ -54,7 +50,7 @@ namespace litecore {
         // Bump this when incompatible changes are made to API or implementation.
         // Subclass c4LocalReplicator is in the couchbase-lite-core-EE repo, which doesn not have a
         // submodule relationship to this one, so it's possible for it to get out of sync.
-        static constexpr int API_VERSION = 3;
+        static constexpr int API_VERSION = 4;
 
         virtual void start(bool reset = false) noexcept override {
             LOCK(_mutex);
@@ -219,10 +215,7 @@ namespace litecore {
         C4Cert* getPeerTLSCertificate() const {
             LOCK(_mutex);
             if (!_peerTLSCertificate && _peerTLSCertificateData) {
-                C4Error error;
-                _peerTLSCertificate = c4cert_fromData(_peerTLSCertificateData, &error);
-                if (!_peerTLSCertificate)
-                    C4Error::raise(error);
+                _peerTLSCertificate = C4Cert::fromData(_peerTLSCertificateData);
                 _peerTLSCertificateData = nullptr;
             }
             return _peerTLSCertificate;
@@ -360,9 +353,11 @@ namespace litecore {
 
 
         virtual void replicatorGotTLSCertificate(slice certData) override {
+#ifdef COUCHBASE_ENTERPRISE
             LOCK(_mutex);
             _peerTLSCertificateData = certData;
             _peerTLSCertificate = nullptr;
+#endif
         }
 
         // Replicator::Delegate method, notifying that the status level or progress have changed.
@@ -551,8 +546,10 @@ namespace litecore {
 
     private:
         alloc_slice                 _responseHeaders;
+#ifdef COUCHBASE_ENTERPRISE
         mutable alloc_slice         _peerTLSCertificateData;
-        mutable c4::ref<C4Cert>     _peerTLSCertificate;
+        mutable Retained<C4Cert>     _peerTLSCertificate;
+#endif
         Retained<C4ReplicatorImpl>  _selfRetain;            // Keeps me from being deleted
         std::atomic<C4ReplicatorStatusChangedCallback>   _onStatusChanged;
         std::atomic<C4ReplicatorDocumentsEndedCallback>  _onDocumentsEnded;

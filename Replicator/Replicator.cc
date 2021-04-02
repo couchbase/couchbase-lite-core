@@ -25,6 +25,7 @@
 #include "DBAccess.hh"
 #include "c4Database.hh"
 #include "c4DocEnumerator.hh"
+#include "c4SocketTypes.h"           // for error codes
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "Logging.hh"
@@ -32,7 +33,6 @@
 #include "BLIP.hh"
 #include "Address.hh"
 #include "Instrumentation.hh"
-#include "c4Socket.h"           // for error codes
 
 using namespace std;
 using namespace std::placeholders;

@@ -199,10 +199,11 @@ public:
     Retained<C4Replicator> newReplicator(C4Address serverAddress,
                                          slice remoteDatabaseName,
                                          const C4ReplicatorParameters &params);
-    Retained<C4Replicator> newReplicator(C4Socket *openSocket,
-                                         const C4ReplicatorParameters &params);
-    Retained<C4Replicator> newReplicator(litecore::websocket::WebSocket *openSocket,
-                                         const C4ReplicatorParameters &params);
+    
+    Retained<C4Replicator> newIncomingReplicator(C4Socket *openSocket,
+                                                 const C4ReplicatorParameters &params);
+    Retained<C4Replicator> newIncomingReplicator(litecore::websocket::WebSocket *openSocket,
+                                                 const C4ReplicatorParameters &params);
 
 #ifdef COUCHBASE_ENTERPRISE
     Retained<C4Replicator> newLocalReplicator(C4Database *otherLocalDB,

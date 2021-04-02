@@ -23,7 +23,6 @@
 #endif
 #include "c4IncomingReplicator.hh"
 #include "c4Database.hh"
-#include "c4Replicator.h"
 #include "c4ExceptionUtils.hh"
 #include "DatabaseCookies.hh"
 #include "StringUtil.hh"
@@ -71,17 +70,17 @@ Retained<C4Replicator> C4Database::newLocalReplicator(C4Database *otherLocalDB,
 #endif
 
 
-Retained<C4Replicator> C4Database::newReplicator(WebSocket *openSocket,
-                                                 const C4ReplicatorParameters &params)
+Retained<C4Replicator> C4Database::newIncomingReplicator(WebSocket *openSocket,
+                                                         const C4ReplicatorParameters &params)
 {
     return new C4IncomingReplicator(this, params, openSocket);
 }
 
 
-Retained<C4Replicator> C4Database::newReplicator(C4Socket *openSocket,
-                                   const C4ReplicatorParameters &params)
+Retained<C4Replicator> C4Database::newIncomingReplicator(C4Socket *openSocket,
+                                                         const C4ReplicatorParameters &params)
 {
-    return newReplicator(WebSocketFrom(openSocket), params);
+    return newIncomingReplicator(WebSocketFrom(openSocket), params);
 }
 
 
@@ -147,7 +146,7 @@ bool C4Address::isValidRemote(slice dbName, C4Error *outError) const noexcept {
     slice message;
     if (!isValidReplicatorScheme(scheme))
         message = "Invalid replication URL scheme (use ws: or wss:)"_sl;
-    else if (!c4repl_isValidDatabaseName(dbName))
+    else if (!C4Replicator::isValidDatabaseName(dbName))
         message = "Invalid or missing remote database name"_sl;
     else if (hostname.size == 0 || port == 0)
         message = "Invalid replication URL (bad hostname or port)"_sl;
@@ -232,7 +231,7 @@ bool C4Address::fromURL(slice url, C4Address *address, slice *dbName) {
 
         address->path = slice(pathStart, str.buf);
         *dbName = str;
-        return c4repl_isValidDatabaseName(str);
+        return C4Replicator::isValidDatabaseName(str);
     } else {
         address->path = slice(pathStart, str.end());
         return true;

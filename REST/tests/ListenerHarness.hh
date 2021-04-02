@@ -8,6 +8,7 @@
 
 #pragma once
 #include "CertHelper.hh"
+#include "c4Listener.h"
 
 using namespace fleece;
 

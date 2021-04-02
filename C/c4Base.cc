@@ -17,7 +17,6 @@
 //
 
 #include "c4Base.h"
-#include "c4Socket.h"
 #include "c4Private.h"
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
@@ -290,7 +289,7 @@ void c4base_release(void *obj) C4API {
 
 
 int c4_getObjectCount() noexcept {
-    return fleece::InstanceCounted::count();
+    return fleece::InstanceCounted::liveInstanceCount();
 }
 
 // LCOV_EXCL_START

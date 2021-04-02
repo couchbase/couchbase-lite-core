@@ -17,9 +17,8 @@
 //
 
 #pragma once
-#include "c4CppUtils.hh"
 #include "c4DatabaseTypes.h"
-#include "c4Listener.h"
+#include "c4Listener.hh"
 #include "Listener.hh"
 #include "Server.hh"
 #include "FilePath.hh"
@@ -55,13 +54,6 @@ namespace litecore { namespace REST {
 
         /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string &name, FilePath &outPath);
-
-        /** Opens a database and makes it visible via the REST API.
-            If the name is an empty string, a default name will be used based on the filename. */
-        bool openDatabase(std::string name,
-                          const FilePath&,
-                          C4DatabaseFlags,
-                          C4Error*);
 
         /** An asynchronous task (like a replication). */
         class Task : public RefCounted {
@@ -101,7 +93,7 @@ namespace litecore { namespace REST {
         Server* server() const              {return _server.get();}
 
         /** Returns the database for this request, or null on error. */
-        c4::ref<C4Database> databaseFor(RequestResponse&);
+        Retained<C4Database> databaseFor(RequestResponse&);
         unsigned registerTask(Task*);
         void unregisterTask(Task*);
 
@@ -141,7 +133,7 @@ namespace litecore { namespace REST {
                        bool newEdits,
                        C4Database *db,
                        fleece::JSONEncoder& json,
-                       C4Error *outError);
+                       C4Error *outError) noexcept;
 
         std::unique_ptr<FilePath> _directory;
         const bool _allowCreateDB, _allowDeleteDB;

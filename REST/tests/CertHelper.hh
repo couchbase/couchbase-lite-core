@@ -5,7 +5,6 @@
 //
 
 #pragma once
-#include "c4Listener.h"
 #include "c4Certificate.h"
 #include "c4Private.h"
 #include "PublicKey.hh"     // just for PERSISTENT_PRIVATE_KEY_AVAILABLE

@@ -17,10 +17,9 @@
 //
 
 #include "RESTListener.hh"
-#include "c4CppUtils.hh"
 #include "c4Certificate.hh"
-#include "c4Database.h"
-#include "c4Document+Fleece.h"
+#include "c4Database.hh"
+#include "c4Document.hh"
 #include "c4Private.h"
 #include "Server.hh"
 #include "TLSContext.hh"
@@ -214,15 +213,6 @@ namespace litecore { namespace REST {
     }
 
 
-    static bool returnError(C4Error* outError,
-                            C4ErrorDomain domain, int code, const char *message =nullptr)
-    {
-        if (outError)
-            *outError = c4error_make(domain, code, c4str(message));
-        return false;
-    }
-
-
     bool RESTListener::pathFromDatabaseName(const string &name, FilePath &path) {
         if (!_directory || !isValidDatabaseName(name))
             return false;
@@ -230,31 +220,6 @@ namespace litecore { namespace REST {
         replace(filename, '/', ':');
         path = (*_directory)[filename + kC4DatabaseFilenameExtension + "/"];
         return true;
-    }
-
-
-    bool RESTListener::openDatabase(std::string name,
-                                    const FilePath &path,
-                                    C4DatabaseFlags flags,
-                                    C4Error *outError)
-    {
-        if (name.empty()) {
-            name = databaseNameFromPath(path);
-            if (name.empty())
-                return returnError(outError, LiteCoreDomain, kC4ErrorInvalidParameter,
-                                   "Invalid database name");
-        }
-        if (auto db = databaseNamed(name); db != nullptr)
-            return returnError(outError, LiteCoreDomain, kC4ErrorConflict, "Database exists");
-        C4DatabaseConfig2 config = {slice(path.dirName()), flags};
-        c4::ref<C4Database> db = c4db_openNamed(slice(name), &config, outError);
-        if (!db)
-            return false;
-        if (!registerDatabase(db, name)) {
-            //FIX: If db didn't exist before the c4db_open call, should delete it
-            return returnError(outError, LiteCoreDomain, kC4ErrorConflict, "Database exists");
-        }
-        return db;
     }
 
 
@@ -326,22 +291,22 @@ namespace litecore { namespace REST {
 
     void RESTListener::addDBHandler(Method method, const char *uri, DBHandlerMethod handler) {
         _server->addHandler(method, uri, [this,handler](RequestResponse &rq) {
-            c4::ref<C4Database> db = databaseFor(rq);
+            Retained<C4Database> db = databaseFor(rq);
             if (db) {
-                c4db_lock(db);
+                db->lockClientMutex();
                 try {
                     (this->*handler)(rq, db);
                 } catch (...) {
-                    c4db_unlock(db);
+                    db->unlockClientMutex();
                     throw;
                 }
-                c4db_unlock(db);
+                db->unlockClientMutex();
             }
         });
     }
 
     
-    c4::ref<C4Database> RESTListener::databaseFor(RequestResponse &rq) {
+    Retained<C4Database> RESTListener::databaseFor(RequestResponse &rq) {
         string dbName = rq.path(0);
         if (dbName.empty()) {
             rq.respondWithStatus(HTTPStatus::BadRequest);

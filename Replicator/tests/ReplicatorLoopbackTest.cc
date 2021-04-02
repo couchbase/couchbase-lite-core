@@ -1138,13 +1138,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][C
 
     // Resolve the conflict in favor of the remote revision:
     {
-        c4::Transaction t(db);
-        REQUIRE(t.begin(nullptr));
+        TransactionHelper t(db);
         C4Error error;
         CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID,
                                     kC4SliceNull, kRevDeleted, WITH_ERROR(&error)));
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
-        REQUIRE(t.commit(nullptr));
     }
     
     doc = c4doc_get(db, docID, true, nullptr);
@@ -1188,13 +1186,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
 
     // Resolve the conflict in favor of the remote revision:
     {
-        c4::Transaction t(db);
-        REQUIRE(t.begin(nullptr));
+        TransactionHelper t(db);
         C4Error error;
         CHECK(c4doc_resolveConflict(doc, kConflictRev2BID, kConflictRev2AID,
                                     kC4SliceNull, kRevDeleted, WITH_ERROR(&error)));
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
-        REQUIRE(t.commit(nullptr));
     }
 
     doc = c4db_getDoc(db, docID, true, kDocGetAll, nullptr);
@@ -1807,13 +1803,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     CHECK(doc->selectedRev.revID == kDoc1Rev2B);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     {
-        c4::Transaction t(db);
-        REQUIRE(t.begin(nullptr));
+        TransactionHelper t(db);
         C4Error error;
         CHECK(c4doc_resolveConflict(doc, kDoc1Rev2B, kDoc1Rev2A,
                                     json2fleece("{\"merged\":true}"), 0, WITH_ERROR(&error)));
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
-        REQUIRE(t.commit(nullptr));
     }
     doc = c4doc_get(db, C4STR("doc1"), true, nullptr);
     C4SequenceNumber seq = isRevTrees() ? 7 : 5;
@@ -1830,13 +1824,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     {
-        c4::Transaction t(db);
-        REQUIRE(t.begin(nullptr));
+        TransactionHelper t(db);
         C4Error error;
         CHECK(c4doc_resolveConflict(doc, kDoc2Rev2B, kDoc2Rev2A,
                                     kC4SliceNull, kRevDeleted, ERROR_INFO(&error)));
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
-        REQUIRE(t.commit(nullptr));
     }
     
     doc = c4doc_get(db, C4STR("doc2"), true, nullptr);

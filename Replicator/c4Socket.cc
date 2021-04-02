@@ -19,7 +19,7 @@
 #include "fleece/Fleece.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4Private.h"
-#include "c4Socket.h"
+#include "c4Socket.hh"
 #include "c4Socket+Internal.hh"
 #include "Address.hh"
 #include "Error.hh"
@@ -34,14 +34,42 @@ using namespace std;
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::net;
+using namespace litecore::repl;
+using namespace websocket;
+
+
+static C4SocketFactory* sRegisteredFactory;
+static C4SocketImpl::InternalFactory sRegisteredInternalFactory;
+
+
+C4Socket::~C4Socket() = default;
+
+
+void C4Socket::registerFactory(const C4SocketFactory &factory) {
+    Assert(factory.write != nullptr && factory.completedReceive != nullptr);
+    if (factory.framing == kC4NoFraming)
+        Assert(factory.close == nullptr && factory.requestClose != nullptr);
+    else
+        Assert(factory.close != nullptr && factory.requestClose == nullptr);
+
+    if (sRegisteredFactory)
+        throw std::logic_error("c4socket_registerFactory can only be called once");
+    sRegisteredFactory = new C4SocketFactory(factory);
+}
+
+
+C4Socket* C4Socket::fromNative(const C4SocketFactory &factory,
+                               void *nativeHandle,
+                               const C4Address &address)
+{
+    return new C4SocketImpl(address.toURL(), Role::Server, {}, &factory, nativeHandle);
+}
+
+
+#pragma mark - C4SOCKETIMPL:
+
 
 namespace litecore::repl {
-
-    using namespace websocket;
-
-
-    static C4SocketFactory* sRegisteredFactory;
-    static C4SocketImpl::InternalFactory sRegisteredInternalFactory;
 
 
     void C4SocketImpl::registerInternalFactory(C4SocketImpl::InternalFactory f) {
@@ -69,7 +97,7 @@ namespace litecore::repl {
     }
 
 
-    static const C4SocketFactory& fac(const C4SocketFactory *f) {
+    static const C4SocketFactory& effectiveFactory(const C4SocketFactory *f) {
         return f ? *f : C4SocketImpl::registeredFactory();
     }
 
@@ -83,7 +111,6 @@ namespace litecore::repl {
     }
 
 
-    /** Implementation of C4Socket */
     C4SocketImpl::C4SocketImpl(websocket::URL url,
                                Role role,
                                alloc_slice options,
@@ -91,9 +118,9 @@ namespace litecore::repl {
                                void *nativeHandle_)
     :WebSocketImpl(url,
                    role,
-                   fac(factory_).framing != kC4NoFraming,
+                   effectiveFactory(factory_).framing != kC4NoFraming,
                    convertParams(options))
-    ,_factory(fac(factory_))
+    ,_factory(effectiveFactory(factory_))
     {
         nativeHandle = nativeHandle_;
     }
@@ -109,34 +136,14 @@ namespace litecore::repl {
     }
 
 
-    void C4SocketImpl::validateFactory(const C4SocketFactory &f) {
-#if DEBUG
-        Assert(f.write != nullptr);
-        Assert(f.completedReceive != nullptr);
-        if (f.framing == kC4NoFraming) {
-            Assert(f.close == nullptr);
-            Assert(f.requestClose != nullptr);
-        } else {
-            Assert(f.close != nullptr);
-            Assert(f.requestClose == nullptr);
-        }
-#endif
-    }
-
-
-    void C4SocketImpl::registerFactory(const C4SocketFactory &factory) {
-        if (sRegisteredFactory)
-            throw std::logic_error("c4socket_registerFactory can only be called once");
-        validateFactory(factory);
-        sRegisteredFactory = new C4SocketFactory(factory);
-    }
-
-
     const C4SocketFactory& C4SocketImpl::registeredFactory() {
         if (!sRegisteredFactory)
             throw std::logic_error("No default C4SocketFactory registered; call c4socket_registerFactory())");
         return *sRegisteredFactory;
     }
+
+
+#pragma mark - WEBSOCKETIMPL OVERRIDES:
 
 
     void C4SocketImpl::connect() {
@@ -155,9 +162,10 @@ namespace litecore::repl {
         _factory.close(this);
     }
 
-    void C4SocketImpl::closeWithException(const std::exception &x) {
-        C4Error error = C4Error::fromException(x);
-        WarnError("Closing socket due to C++ exception: %s", error.description().c_str());
+    void C4SocketImpl::closeWithException() {
+        C4Error error = C4Error::fromCurrentException();
+        WarnError("Closing socket due to C++ exception: %s\n%s",
+                  error.description().c_str(), error.backtrace().c_str());
         close(kCodeUnexpectedCondition, "Internal exception"_sl);
     }
 
@@ -167,6 +175,64 @@ namespace litecore::repl {
 
     void C4SocketImpl::receiveComplete(size_t byteCount) {
         _factory.completedReceive(this, byteCount);
+    }
+
+
+#pragma mark - C4SOCKET C++ API:
+
+
+    void C4SocketImpl::gotHTTPResponse(int status, slice responseHeadersFleece) {
+        try {
+            Headers headers(responseHeadersFleece);
+            WebSocketImpl::gotHTTPResponse(status, headers);
+        } catch (...) {closeWithException();}
+    }
+
+
+    void C4SocketImpl::opened() {
+        try {
+            WebSocketImpl::onConnect();
+        } catch (...) {closeWithException();}
+    }
+
+
+    void C4SocketImpl::closeRequested(int status, slice message) {
+        try {
+            WebSocketImpl::onCloseRequested(status, message);
+        } catch (...) {closeWithException();}
+    }
+
+
+    void C4SocketImpl::closed(C4Error error) {
+        try {
+            alloc_slice message = c4error_getMessage(error);
+            CloseStatus status {kUnknownError, error.code, message};
+            if (error.code == 0) {
+                status.reason = kWebSocketClose;
+                status.code = kCodeNormal;
+            } else if (error.domain == WebSocketDomain)
+                status.reason = kWebSocketClose;
+            else if (error.domain == POSIXDomain)
+                status.reason = kPOSIXError;
+            else if (error.domain == NetworkDomain)
+                status.reason = kNetworkError;
+
+            WebSocketImpl::onClose(status);
+        } catch (...) {closeWithException();}
+    }
+
+
+    void C4SocketImpl::completedWrite(size_t byteCount) {
+        try {
+            WebSocketImpl::onWriteComplete(byteCount);
+        } catch (...) {closeWithException();}
+    }
+
+
+    void C4SocketImpl::received(slice data) {
+        try {
+            WebSocketImpl::onReceive(data);
+        } catch (...) {closeWithException();}
     }
 
 }

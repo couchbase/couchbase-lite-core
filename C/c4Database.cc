@@ -56,13 +56,6 @@ CBL_CORE_API const char* const kC4DatabaseFilenameExtension = ".cblite2";
 CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 
-namespace litecore {
-    DatabaseImpl* asInternal(const C4Database *db) {
-        // Yeah, casting away constness, I know...
-        return (DatabaseImpl*)db;
-    }
-}
-
 #define IMPL asInternal(this)
 
 

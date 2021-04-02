@@ -66,8 +66,4 @@ namespace litecore {
 
     void destructExtraInfo(C4ExtraInfo&) noexcept;
 
-    // CONVERSIONS:
-
-    DatabaseImpl* asInternal(const C4Database *db);
-
 }

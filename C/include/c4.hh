@@ -23,15 +23,12 @@
 #endif
 
 #include "c4BlobStore.hh"
+#include "c4Certificate.hh"
 #include "c4Database.hh"
 #include "c4Document.hh"
 #include "c4DocEnumerator.hh"
+#include "c4Listener.hh"
 #include "c4Observer.hh"
 #include "c4Query.hh"
 #include "c4Replicator.hh"
-
-#include "c4Socket.h"
-
-#ifdef COUCHBASE_ENTERPRISE
-#include "c4Certificate.hh"
-#endif
+#include "c4Socket.hh"

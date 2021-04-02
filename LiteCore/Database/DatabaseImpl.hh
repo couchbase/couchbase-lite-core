@@ -182,6 +182,12 @@ namespace litecore {
         mutable uint64_t            _myPeerID {0};          // My identifier in version vectors
     };
 
+
+    static inline DatabaseImpl* asInternal(const C4Database *db) {
+        // Yeah, casting away constness, I know...
+        return (DatabaseImpl*)db;
+    }
+
 }
 
 C4_ASSUME_NONNULL_END

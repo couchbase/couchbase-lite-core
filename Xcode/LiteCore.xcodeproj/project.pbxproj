@@ -1045,6 +1045,8 @@
 		274D181C26165BDA0018D39C /* c4CertificateTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4CertificateTypes.h; sourceTree = "<group>"; };
 		274D183A261683680018D39C /* c4ListenerTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4ListenerTypes.h; sourceTree = "<group>"; };
 		274D184C261683F40018D39C /* c4Listener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Listener.hh; sourceTree = "<group>"; };
+		274D18852617B3660018D39C /* c4SocketTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4SocketTypes.h; sourceTree = "<group>"; };
+		274D18862617B4300018D39C /* c4Socket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Socket.hh; sourceTree = "<group>"; };
 		274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SecureRandomize.cc; sourceTree = "<group>"; };
 		274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteKeyStore.cc; sourceTree = "<group>"; };
 		274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteKeyStore.hh; sourceTree = "<group>"; };
@@ -1304,7 +1306,6 @@
 		27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "LibC++Debug.cc"; sourceTree = "<group>"; };
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
-		27C44C5C2345795500AF4265 /* c4Transaction.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Transaction.hh; sourceTree = "<group>"; };
 		27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "c4PredictiveQueryTest+CoreML.mm"; sourceTree = "<group>"; };
 		27CCC7D61E52613C00CE1989 /* Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Replicator.cc; sourceTree = "<group>"; };
 		27CCC7D71E52613C00CE1989 /* Replicator.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Replicator.hh; sourceTree = "<group>"; };
@@ -1974,6 +1975,7 @@
 				2743E20825F6BC88006F696D /* c4Observer.hh */,
 				272BA50A23F61591000EB6E8 /* c4Query.hh */,
 				2758E0A725F30A37007C7487 /* c4Replicator.hh */,
+				274D18862617B4300018D39C /* c4Socket.hh */,
 			);
 			path = Cpp_include;
 			sourceTree = "<group>";
@@ -2070,6 +2072,7 @@
 			isa = PBXGroup;
 			children = (
 				2757DE5A1B9FC5C7002EE261 /* c4.c */,
+				27B8425B1E5BC8380094903E /* c4CppUtils.hh */,
 				27F6F51B1BAA0482003FD798 /* c4Test.cc */,
 				27F6F51C1BAA0482003FD798 /* c4Test.hh */,
 				274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */,
@@ -2988,32 +2991,31 @@
 			children = (
 				273E9F7D1C518793003115A6 /* c4.h */,
 				274D1793261401320018D39C /* c4.hh */,
-				27B8425B1E5BC8380094903E /* c4CppUtils.hh */,
-				27C44C5C2345795500AF4265 /* c4Transaction.hh */,
 				2757DE591B9FC3F1002EE261 /* c4Base.h */,
 				271507F1212259DE005FE6E8 /* c4Compat.h */,
 				2722504A1D7884110006D5A5 /* c4BlobStore.h */,
 				27469D03233D488C00A1EE1A /* c4Certificate.h */,
-				274D181C26165BDA0018D39C /* c4CertificateTypes.h */,
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
-				2743E32625F853D4006F696D /* c4DatabaseTypes.h */,
 				274A69881BED288D00D16D37 /* c4Document.h */,
-				2743E1DA25F69D58006F696D /* c4DocumentTypes.h */,
-				274D17A22614E7220018D39C /* c4DocumentStruct.h */,
 				27F370821DC02C3D0096F717 /* c4Document+Fleece.h */,
 				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
-				2743E34525F8570C006F696D /* c4DocEnumeratorTypes.h */,
 				271AB00F2374A41E007B0319 /* c4Index.h */,
-				2743E34425F8563A006F696D /* c4IndexTypes.h */,
 				728EC54C1EC14611002C9A73 /* c4Listener.h */,
-				274D183A261683680018D39C /* c4ListenerTypes.h */,
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
 				27098A96216C1D2E002751DA /* c4PredictiveQuery.h */,
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
-				2743E33525F8554F006F696D /* c4QueryTypes.h */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
-				2743E34625F8583D006F696D /* c4ReplicatorTypes.h */,
 				27491C9A1E7B1001001DC54B /* c4Socket.h */,
+				274D181C26165BDA0018D39C /* c4CertificateTypes.h */,
+				2743E32625F853D4006F696D /* c4DatabaseTypes.h */,
+				2743E1DA25F69D58006F696D /* c4DocumentTypes.h */,
+				274D17A22614E7220018D39C /* c4DocumentStruct.h */,
+				2743E34525F8570C006F696D /* c4DocEnumeratorTypes.h */,
+				2743E34425F8563A006F696D /* c4IndexTypes.h */,
+				274D183A261683680018D39C /* c4ListenerTypes.h */,
+				2743E33525F8554F006F696D /* c4QueryTypes.h */,
+				2743E34625F8583D006F696D /* c4ReplicatorTypes.h */,
+				274D18852617B3660018D39C /* c4SocketTypes.h */,
 				27B64936206971FC00FC12F7 /* LiteCore.h */,
 			);
 			path = include;

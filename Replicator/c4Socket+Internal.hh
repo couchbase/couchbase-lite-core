@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "c4Socket.h"
+#include "c4Socket.hh"
 #include "WebSocketImpl.hh"
 
 struct c4Database;
@@ -39,7 +39,6 @@ namespace litecore { namespace repl {
     /** Implementation of C4Socket */
     class C4SocketImpl final : public websocket::WebSocketImpl, public C4Socket {
     public:
-        static void registerFactory(const C4SocketFactory&);
         static const C4SocketFactory& registeredFactory();
 
         using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL,
@@ -57,11 +56,21 @@ namespace litecore { namespace repl {
 
         ~C4SocketImpl();
 
+        void closeWithException();
+
+        // WebSocket publiv API:
         void connect() override;
 
-        void closeWithException(const std::exception&);
+        // C4Socket API:
+        void gotHTTPResponse(int httpStatus, slice responseHeadersFleece) override;
+        void opened() override;
+        void closed(C4Error errorIfAny) override;
+        void closeRequested(int status, slice message) override;
+        void completedWrite(size_t byteCount) override;
+        void received(slice data) override;
 
     protected:
+        // WebSocket protected API:
         virtual void requestClose(int status, fleece::slice message) override;
         virtual void closeSocket() override;
         virtual void sendBytes(fleece::alloc_slice bytes) override;
@@ -69,8 +78,6 @@ namespace litecore { namespace repl {
 
     private:
         C4SocketFactory const _factory;
-
-        static void validateFactory(const C4SocketFactory&);
     };
 
 } }

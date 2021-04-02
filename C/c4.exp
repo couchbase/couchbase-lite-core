@@ -158,6 +158,8 @@ _c4socket_closed
 _c4socket_completedWrite
 _c4socket_received
 _c4socket_gotHTTPResponse
+_c4Socket_getNativeHandle
+_c4Socket_setNativeHandle
 
 _c4pred_registerModel
 _c4pred_unregisterModel

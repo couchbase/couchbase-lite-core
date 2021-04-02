@@ -40,7 +40,7 @@ namespace litecore { namespace repl {
     ,bodySize(info.bodySize)
     ,expiration(info.expiration)
     {
-        flags = c4rev_flagsFromDocFlags(info.flags);
+        flags = C4Document::revisionFlagsFromDocFlags(info.flags);
     }
 
 

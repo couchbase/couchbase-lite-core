@@ -19,8 +19,7 @@
 #pragma once
 #include "RefCounted.hh"
 #include "InstanceCounted.hh"
-#include "c4CppUtils.hh"
-#include "c4Listener.h"
+#include "c4Listener.hh"
 #include "FilePath.hh"
 #include <map>
 #include <mutex>
@@ -62,7 +61,7 @@ namespace litecore { namespace REST {
         bool unregisterDatabase(C4Database *db);
 
         /** Returns the database registered under the given name. */
-        c4::ref<C4Database> databaseNamed(const std::string &name) const;
+        fleece::Retained<C4Database> databaseNamed(const std::string &name) const;
 
         /** Returns the name a database is registered under. */
         std::optional<std::string> nameOfDatabase(C4Database* NONNULL) const;
@@ -79,7 +78,7 @@ namespace litecore { namespace REST {
     protected:
         mutable std::mutex _mutex;
         Config _config;
-        std::map<std::string, c4::ref<C4Database>> _databases;
+        std::map<std::string, fleece::Retained<C4Database>> _databases;
     };
 
 } }

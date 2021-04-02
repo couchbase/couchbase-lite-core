@@ -22,7 +22,7 @@
 #include "Certificate.hh"
 #include "CookieStore.hh"
 #include "c4Database.hh"
-#include "c4Replicator.h"
+#include "c4ReplicatorTypes.h"
 #include "c4Socket+Internal.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
