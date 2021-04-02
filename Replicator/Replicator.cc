@@ -511,7 +511,7 @@ namespace litecore { namespace repl {
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
                 // revisions as an optimization.
                 if (_options.pull > kC4Passive && _puller
-                        && _db->useLocked()->getLastSequence() == 0)
+                        && _db->useLocked()->getDefaultCollection()->getLastSequence() == 0)
                     _puller->setSkipDeleted();
             }
             return true;

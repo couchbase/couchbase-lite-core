@@ -86,7 +86,7 @@ namespace litecore { namespace repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
-            _changeObserver = C4DatabaseObserver::create(_db.useLocked(),
+            _changeObserver = C4DatabaseObserver::create(_db.useLocked()->getDefaultCollection(),
                                                          [this](C4DatabaseObserver*) {
                                                              this->_dbChanged();
                                                          });
@@ -122,7 +122,7 @@ namespace litecore { namespace repl {
 
         try {
             _db.useLocked([&](C4Database* db) {
-                C4DocEnumerator e(db, _maxSequence, options);
+                C4DocEnumerator e(db->getDefaultCollection(), _maxSequence, options);
                 changes.revs.reserve(limit);
                 while (e.next() && limit > 0) {
                     C4DocumentInfo info = e.documentInfo();
@@ -257,7 +257,7 @@ namespace litecore { namespace repl {
                     if (e)
                         doc = e->getDocument();
                     else
-                        doc = db->getDocument(rev->docID, true,
+                        doc = db->getDefaultCollection()->getDocument(rev->docID, true,
                                               (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
                     if (!doc)
                         error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);

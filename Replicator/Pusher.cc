@@ -477,7 +477,8 @@ namespace litecore { namespace repl {
             // See if the doc is unchanged, by getting it by sequence:
             Retained<RevToSend> rev = i->second;
             _conflictsIMightRetry.erase(i);
-            Retained<C4Document> doc = _db->useLocked()->getDocumentBySequence(rev->sequence);
+            Retained<C4Document> doc = _db->useLocked()->getDefaultCollection()
+                                                       ->getDocumentBySequence(rev->sequence);
             if (!doc || !C4Document::equalRevIDs(doc->revID(), rev->revID)) {
                 // Local document has changed, so stop working on this revision:
                 logVerbose("Notified that remote rev of '%.*s' is now #%.*s, but local doc has changed",
