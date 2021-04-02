@@ -338,27 +338,6 @@ bool c4coll_purgeDoc(C4Collection *coll,
     return false;
 }
 
-bool c4coll_findDocAncestors(C4Collection *collection,
-                             unsigned numDocs,
-                             unsigned maxAncestors,
-                             bool requireBodies,
-                             C4RemoteID remoteDBID,
-                             const C4String docIDs[C4NONNULL],
-                             const C4String revIDs[C4NONNULL],
-                             C4StringResult ancestors[C4NONNULL],
-                             C4Error* C4NULLABLE outError) C4API
-{
-    return tryCatch(outError, [&]{
-        vector<slice> vecDocIDs((const slice*)&docIDs[0], (const slice*)&docIDs[numDocs]);
-        vector<slice> vecRevIDs((const slice*)&revIDs[0], (const slice*)&revIDs[numDocs]);
-        auto vecAncestors = collection->findDocAncestors(vecDocIDs, vecRevIDs,
-                                                         maxAncestors, requireBodies,
-                                                         remoteDBID);
-        for (unsigned i = 0; i < numDocs; ++i)
-        ancestors[i] = C4SliceResult(vecAncestors[i]);
-    });
-}
-
 bool c4coll_setDocExpiration(C4Collection *coll,
                              C4String docID,
                              C4Timestamp timestamp,
@@ -619,16 +598,6 @@ bool c4db_endTransaction(C4Database* database,
 }
 
 
-void c4db_lock(C4Database *db) noexcept {
-    db->lockClientMutex();
-}
-
-
-void c4db_unlock(C4Database *db) noexcept {
-    db->unlockClientMutex();
-}
-
-
 // semi-deprecated
 bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexcept {
     return c4coll_purgeDoc(database->getDefaultCollection(), docID, outError);
@@ -651,7 +620,7 @@ C4SliceResult c4db_rawQuery(C4Database *database, C4String query, C4Error *outEr
 // LCOV_EXCL_STOP
 
 
-// semi-deprecated
+// only used by tests
 bool c4db_findDocAncestors(C4Database *database,
                            unsigned numDocs,
                            unsigned maxAncestors,
@@ -661,9 +630,18 @@ bool c4db_findDocAncestors(C4Database *database,
                            C4StringResult ancestors[],
                            C4Error *outError) noexcept
 {
-    return c4coll_findDocAncestors(database->getDefaultCollection(), numDocs, maxAncestors,
-                                   requireBodies, remoteDBID, docIDs, revIDs, ancestors, outError);
+    return tryCatch(outError, [&]{
+        vector<slice> vecDocIDs((const slice*)&docIDs[0], (const slice*)&docIDs[numDocs]);
+        vector<slice> vecRevIDs((const slice*)&revIDs[0], (const slice*)&revIDs[numDocs]);
+        auto vecAncestors = database->getDefaultCollection()
+                                    ->findDocAncestors(vecDocIDs, vecRevIDs,
+                                                       maxAncestors, requireBodies,
+                                                       remoteDBID);
+        for (unsigned i = 0; i < numDocs; ++i)
+        ancestors[i] = C4SliceResult(vecAncestors[i]);
+    });
 }
+
 
 
 void c4raw_free(C4RawDocument* rawDoc) noexcept {
@@ -975,6 +953,7 @@ bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase, C4Strin
 }
 
 
+// this wrapper is only used by tests
 bool c4db_markSynced(C4Database *database,
                      C4String docID,
                      C4String revID,

@@ -43,6 +43,12 @@ namespace litecore {
     class RevTreeRecord;
     class SequenceTracker;
 
+    // Stores and keys for raw documents:
+    namespace constants {
+        extern const C4Slice kLocalCheckpointStore;
+        extern const C4Slice kPeerCheckpointStore;
+        extern const C4Slice kPreviousPrivateUUIDKey;
+    }
 
     /** The concrete subclass of C4Database that implements its functionality.
         It also has some internal methods used by other components of LiteCore. */

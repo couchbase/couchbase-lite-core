@@ -374,13 +374,10 @@ _c4db_deleteNamed
 _c4db_openAgain
 _c4db_openNamed
 _c4db_createFleeceEncoder
-_c4db_lock
-_c4db_unlock
 _c4db_getConfig2
 _c4db_getName
 _c4db_getRemoteDBID
 _c4db_exists
-_c4db_findDocAncestors
 _c4db_maintenance
 _c4db_getCookies
 _c4db_setCookie
@@ -434,7 +431,6 @@ _c4address_fromURL
 _c4address_toURL
 
 _c4error_return
-_c4db_markSynced
 _c4_dumpInstances
 _gC4ExpectExceptions
 

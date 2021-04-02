@@ -52,6 +52,7 @@ file(COPY ${FLEECE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/vendor/fleece/
 add_executable(
     CppTests
     c4BaseTest.cc
+    c4DocumentTest_Internal.cc
     DataFileTest.cc
     DocumentKeysTest.cc
     FTSTest.cc

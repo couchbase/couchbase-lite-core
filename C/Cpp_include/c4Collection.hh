@@ -152,4 +152,17 @@ protected:
     alloc_slice             _name;
 };
 
+
+/** Flags produced by \ref C4Collection::findDocAncestors, the result of comparing a local document's
+    revision(s) against the requested revID. */
+typedef C4_OPTIONS(uint8_t, C4FindDocAncestorsResultFlags) {
+    kRevsSame           = 0,    // Current revision is equal
+    kRevsLocalIsOlder   = 1,    // Current revision is older
+    kRevsLocalIsNewer   = 2,    // Current revision is newer
+    kRevsConflict       = 3,    // Current revision conflicts (== LocalIsOlder | LocalIsNewer)
+    kRevsAtThisRemote   = 4,    // The given C4RemoteID has this revID
+    kRevsHaveLocal      = 8,    // Local doc has this revID with its body
+};
+
+
 C4_ASSUME_NONNULL_END

@@ -335,13 +335,10 @@ CBL {
 		c4db_openAgain;
 		c4db_openNamed;
 		c4db_createFleeceEncoder;
-		c4db_lock;
-		c4db_unlock;
 		c4db_getConfig2;
 		c4db_getName;
 		c4db_getRemoteDBID;
 		c4db_exists;
-		c4db_findDocAncestors;
 		c4db_maintenance;
 		c4db_getCookies;
 		c4db_setCookie;
@@ -395,7 +392,6 @@ CBL {
 		c4address_toURL;
 
 		c4error_return;
-		c4db_markSynced;
 		c4_dumpInstances;
 		gC4ExpectExceptions;
 

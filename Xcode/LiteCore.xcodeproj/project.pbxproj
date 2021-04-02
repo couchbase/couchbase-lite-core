@@ -167,6 +167,7 @@
 		274D17822177ECCC007FD01A /* QueryParser+Prediction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */; };
 		274D17A32614E7220018D39C /* c4DocumentStruct.h in Headers */ = {isa = PBXBuildFile; fileRef = 274D17A22614E7220018D39C /* c4DocumentStruct.h */; };
 		274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */; };
+		274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */; };
 		274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */; };
 		274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */; };
 		274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF41DA30B43003AD158 /* QueryParser.cc */; };
@@ -1054,6 +1055,7 @@
 		274D184C261683F40018D39C /* c4Listener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Listener.hh; sourceTree = "<group>"; };
 		274D18852617B3660018D39C /* c4SocketTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4SocketTypes.h; sourceTree = "<group>"; };
 		274D18862617B4300018D39C /* c4Socket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Socket.hh; sourceTree = "<group>"; };
+		274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocumentTest_Internal.cc; sourceTree = "<group>"; };
 		274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SecureRandomize.cc; sourceTree = "<group>"; };
 		274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteKeyStore.cc; sourceTree = "<group>"; };
 		274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteKeyStore.hh; sourceTree = "<group>"; };
@@ -1795,6 +1797,7 @@
 			isa = PBXGroup;
 			children = (
 				275FF6D11E4947E1005F90DD /* c4BaseTest.cc */,
+				274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */,
 				277015081D523E2E008BADD7 /* DataFileTest.cc */,
 				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
 				272B1BEA1FB1513100F56620 /* FTSTest.cc */,
@@ -3908,6 +3911,7 @@
 				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
 				27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */,
+				274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
