@@ -8,6 +8,7 @@
 
 #pragma once
 #include "CertHelper.hh"
+#include "c4Listener.h"
 
 using namespace fleece;
 
@@ -113,7 +114,6 @@ public:
     }
     
     void stop() {
-        c4listener_free(_listener);
         _listener = nullptr;
     }
 

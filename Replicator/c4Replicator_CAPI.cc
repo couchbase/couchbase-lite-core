@@ -16,12 +16,14 @@
 // limitations under the License.
 //
 
-#include "c4Replicator.h"
 #include "c4Replicator.hh"
 #include "c4Database.hh"
-#include "c4Private.h"
+#include "c4Socket.hh"
 #include "c4Socket+Internal.hh"
 #include "c4ExceptionUtils.hh"
+#include "c4Private.h"
+#include "c4Replicator.h"
+#include "c4Socket.h"
 #include "Address.hh"
 #include "Headers.hh"
 #include "Logging.hh"
@@ -35,22 +37,22 @@ using namespace litecore;
 #pragma mark - REPLICATOR:
 
 
-bool c4repl_isValidDatabaseName(C4String dbName) C4API {
+bool c4repl_isValidDatabaseName(C4String dbName) noexcept {
     return C4Replicator::isValidDatabaseName(dbName);
 }
 
 
-bool c4repl_isValidRemote(C4Address addr, C4String dbName, C4Error *outError) C4API {
+bool c4repl_isValidRemote(C4Address addr, C4String dbName, C4Error *outError) noexcept {
     return addr.isValidRemote(dbName, outError);
 }
 
 
-bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API {
+bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) noexcept {
     return C4Address::fromURL(url, address, (slice*)dbName);
 }
 
 
-C4StringResult c4address_toURL(C4Address address) C4API {
+C4StringResult c4address_toURL(C4Address address) noexcept {
     try {
         return C4StringResult(address.toURL());
     } catchError(nullptr);
@@ -62,7 +64,7 @@ C4Replicator* c4repl_new(C4Database* db,
                          C4Address serverAddress,
                          C4String remoteDatabaseName,
                          C4ReplicatorParameters params,
-                         C4Error *outError) C4API
+                         C4Error *outError) noexcept
 {
     try {
         return db->newReplicator(serverAddress, remoteDatabaseName, params).detach();
@@ -75,7 +77,7 @@ C4Replicator* c4repl_new(C4Database* db,
 C4Replicator* c4repl_newLocal(C4Database* db,
                               C4Database* otherLocalDB,
                               C4ReplicatorParameters params,
-                              C4Error *outError) C4API
+                              C4Error *outError) noexcept
 {
     try {
         return db->newLocalReplicator(otherLocalDB, params).detach();
@@ -87,10 +89,10 @@ C4Replicator* c4repl_newLocal(C4Database* db,
 C4Replicator* c4repl_newWithWebSocket(C4Database* db,
                                       litecore::websocket::WebSocket *openSocket,
                                       C4ReplicatorParameters params,
-                                      C4Error *outError) C4API
+                                      C4Error *outError) noexcept
 {
     try {
-        return db->newReplicator(openSocket, params).detach();
+        return db->newIncomingReplicator(openSocket, params).detach();
     } catchError(outError);
     return nullptr;
 }
@@ -99,23 +101,23 @@ C4Replicator* c4repl_newWithWebSocket(C4Database* db,
 C4Replicator* c4repl_newWithSocket(C4Database* db,
                                    C4Socket *openSocket,
                                    C4ReplicatorParameters params,
-                                   C4Error *outError) C4API
+                                   C4Error *outError) noexcept
 {
     return c4repl_newWithWebSocket(db, litecore::repl::WebSocketFrom(openSocket), params, outError);
 }
 
 
-void c4repl_start(C4Replicator* repl, bool reset) C4API {
+void c4repl_start(C4Replicator* repl, bool reset) noexcept {
     repl->start(reset);
 }
 
 
-void c4repl_stop(C4Replicator* repl) C4API {
+void c4repl_stop(C4Replicator* repl) noexcept {
     repl->stop();
 }
 
 
-bool c4repl_retry(C4Replicator* repl, C4Error *outError) C4API {
+bool c4repl_retry(C4Replicator* repl, C4Error *outError) noexcept {
     return tryCatch<bool>(nullptr, [&] {
         if (repl->retry())
             return true;
@@ -125,22 +127,22 @@ bool c4repl_retry(C4Replicator* repl, C4Error *outError) C4API {
 }
 
 
-void c4repl_setHostReachable(C4Replicator* repl, bool reachable) C4API {
+void c4repl_setHostReachable(C4Replicator* repl, bool reachable) noexcept {
     repl->setHostReachable(reachable);
 }
 
 
-void c4repl_setSuspended(C4Replicator* repl, bool suspended) C4API {
+void c4repl_setSuspended(C4Replicator* repl, bool suspended) noexcept {
     repl->setSuspended(suspended);
 }
 
 
-void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) C4API {
+void c4repl_setOptions(C4Replicator* repl, C4Slice optionsDictFleece) noexcept {
     repl->setOptions(optionsDictFleece);
 }
 
 
-void c4repl_free(C4Replicator* repl) C4API {
+void c4repl_free(C4Replicator* repl) noexcept {
     if (!repl)
         return;
     repl->stopCallbacks();
@@ -148,17 +150,17 @@ void c4repl_free(C4Replicator* repl) C4API {
 }
 
 
-C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
+C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) noexcept {
     return repl->getStatus();
 }
 
 
-C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
+C4Slice c4repl_getResponseHeaders(C4Replicator *repl) noexcept {
     return repl->getResponseHeaders();
 }
 
 
-C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) C4API {
+C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) noexcept {
     try {
         return C4SliceResult( repl->pendingDocIDs() );
     } catchError(outErr);
@@ -166,14 +168,14 @@ C4SliceResult c4repl_getPendingDocIDs(C4Replicator* repl, C4Error* outErr) C4API
 }
 
 
-bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr) C4API {
+bool c4repl_isDocumentPending(C4Replicator* repl, C4Slice docID, C4Error* outErr) noexcept {
     try {
         return repl->isDocumentPending(docID);
     } catchError(outErr);
     return false;
 }
 
-C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) C4API {
+C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) noexcept {
 #ifdef COUCHBASE_ENTERPRISE
     outErr->code = 0;
     return repl->getPeerTLSCertificate();
@@ -185,7 +187,7 @@ C4Cert* c4repl_getPeerTLSCertificate(C4Replicator* repl, C4Error* outErr) C4API 
 }
 
 
-bool c4repl_setProgressLevel(C4Replicator* repl, C4ReplicatorProgressLevel level, C4Error* outErr) C4API {
+bool c4repl_setProgressLevel(C4Replicator* repl, C4ReplicatorProgressLevel level, C4Error* outErr) noexcept {
     if(_usuallyFalse(repl == nullptr)) {
         c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("repl was null"), outErr);
         return false;
@@ -204,81 +206,52 @@ bool c4repl_setProgressLevel(C4Replicator* repl, C4ReplicatorProgressLevel level
 #pragma mark - SOCKET:
 
 
-//TODO: Create a C++ API from this
-
-
-using namespace litecore::net;
-using namespace litecore::repl;
-using namespace litecore::websocket;
-
-
-static C4SocketImpl* internal(C4Socket *s)  {return (C4SocketImpl*)s;}
-
 #define catchForSocket(S) \
     catch (const std::exception &x) {internal(S)->closeWithException(x);}
 
 
-void c4socket_registerFactory(C4SocketFactory factory) C4API {
-    C4SocketImpl::registerFactory(factory);
+void c4socket_registerFactory(C4SocketFactory factory) noexcept {
+    C4Socket::registerFactory(factory);
     // the only exception this can throw is a fatal logic error, so no need to catch it
 }
 
 C4Socket* c4socket_fromNative(C4SocketFactory factory,
                               void *nativeHandle,
-                              const C4Address *address) C4API
+                              const C4Address *address) noexcept
 {
     return tryCatch<C4Socket*>(nullptr, [&]{
-        return new C4SocketImpl(Address(*address).url(), Role::Server, {}, &factory, nativeHandle);
+        return C4Socket::fromNative(factory, nativeHandle, *address);
     });
 }
 
-void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) C4API {
-    try {
-        Headers headers(responseHeadersFleece);
-        internal(socket)->gotHTTPResponse(status, headers);
-    } catchForSocket(socket)
+void c4Socket_setNativeHandle(C4Socket *socket, void* handle) noexcept {
+    socket->setNativeHandle(handle);
 }
 
-void c4socket_opened(C4Socket *socket) C4API {
-    try {
-        internal(socket)->onConnect();
-    } catchForSocket(socket)
+void* C4NULLABLE c4Socket_getNativeHandle(C4Socket *socket) noexcept {
+    return socket->getNativeHandle();
 }
 
-void c4socket_closeRequested(C4Socket *socket, int status, C4String message) {
-    try {
-        internal(socket)->onCloseRequested(status, message);
-    } catchForSocket(socket)
+void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) noexcept {
+    socket->gotHTTPResponse(status, responseHeadersFleece);
 }
 
-void c4socket_closed(C4Socket *socket, C4Error error) C4API {
-    alloc_slice message = c4error_getMessage(error);
-    CloseStatus status {kUnknownError, error.code, message};
-    if (error.code == 0) {
-        status.reason = kWebSocketClose;
-        status.code = kCodeNormal;
-    } else if (error.domain == WebSocketDomain)
-        status.reason = kWebSocketClose;
-    else if (error.domain == POSIXDomain)
-        status.reason = kPOSIXError;
-    else if (error.domain == NetworkDomain)
-        status.reason = kNetworkError;
-
-    try {
-        internal(socket)->onClose(status);
-    } catch (const std::exception &x) {
-        WarnError("Exception caught in c4Socket_closed: %s", x.what());
-    }
+void c4socket_opened(C4Socket *socket) noexcept {
+    socket->opened();
 }
 
-void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API {
-    try{
-        internal(socket)->onWriteComplete(byteCount);
-    } catchForSocket(socket)
+void c4socket_closeRequested(C4Socket *socket, int status, C4String message) noexcept {
+    socket->closeRequested(status, message);
 }
 
-void c4socket_received(C4Socket *socket, C4Slice data) C4API {
-    try {
-        internal(socket)->onReceive(data);
-    } catchForSocket(socket)
+void c4socket_closed(C4Socket *socket, C4Error error) noexcept {
+    socket->closed(error);
+}
+
+void c4socket_completedWrite(C4Socket *socket, size_t byteCount) noexcept {
+    socket->completedWrite(byteCount);
+}
+
+void c4socket_received(C4Socket *socket, C4Slice data) noexcept {
+    socket->received(data);
 }

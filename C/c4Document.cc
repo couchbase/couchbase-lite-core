@@ -280,7 +280,7 @@ bool C4Document::equalRevIDs(slice rev1, slice rev2) noexcept {
             return true;
         revidBuffer buf1, buf2;
         return buf1.tryParse(rev1) && buf2.tryParse(rev2) && buf1.isEquivalentTo(buf2);
-    }catchAndIgnore()
+    }catchAndWarn()
     return false;
 }
 
@@ -288,7 +288,7 @@ bool C4Document::equalRevIDs(slice rev1, slice rev2) noexcept {
 unsigned C4Document::getRevIDGeneration(slice revID) noexcept {
     try {
         return revidBuffer(revID).generation();
-    }catchAndIgnore()
+    }catchAndWarn()
     return 0;
 }
 

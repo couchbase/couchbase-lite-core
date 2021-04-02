@@ -19,7 +19,7 @@
 #include "HTTPLogic.hh"
 #include "TCPSocket.hh"
 #include "WebSocketInterface.hh"
-#include "c4Replicator.h"
+#include "c4ReplicatorTypes.h"
 #include "Base64.hh"
 #include "Error.hh"
 #include "SecureRandomize.hh"
@@ -267,7 +267,7 @@ namespace litecore { namespace net {
             newAddr = _address;
             newAddr.path = location;
         } else {
-            if (!c4address_fromURL(location, &newAddr, nullptr)
+            if (!C4Address::fromURL(location, &newAddr, nullptr)
                     || (newAddr.scheme != "http"_sl && newAddr.scheme != "https"_sl))
                 return failure(NetworkDomain, kC4NetErrInvalidRedirect);
         }

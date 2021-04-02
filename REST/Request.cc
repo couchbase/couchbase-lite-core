@@ -23,7 +23,6 @@
 #include "PlatformIO.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#include "c4.hh"
 #include "netUtils.hh"
 #include "TCPSocket.hh"
 #include "date/date.h"
@@ -263,7 +262,7 @@ namespace litecore { namespace REST {
 
     void RequestResponse::handleSocketError() {
         C4Error err = _socket->error();
-        WarnError("Socket error sending response: %s", c4error_descriptionStr(err));
+        WarnError("Socket error sending response: %s", err.description().c_str());
     }
 
 

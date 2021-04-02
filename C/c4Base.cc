@@ -17,7 +17,6 @@
 //
 
 #include "c4Base.h"
-#include "c4Socket.h"
 #include "c4Private.h"
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
@@ -265,6 +264,13 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
 // LCOV_EXCL_STOP
 
 
+__cold
+void C4Error::warnCurrentException(const char *inFunction) noexcept {
+    C4WarnError("Caught & ignored exception %s in %s",
+                C4Error::fromCurrentException().description().c_str(), inFunction);
+}
+
+
 #pragma mark - REFERENCE COUNTED:
 
 
@@ -283,7 +289,7 @@ void c4base_release(void *obj) C4API {
 
 
 int c4_getObjectCount() noexcept {
-    return fleece::InstanceCounted::count();
+    return fleece::InstanceCounted::liveInstanceCount();
 }
 
 // LCOV_EXCL_START

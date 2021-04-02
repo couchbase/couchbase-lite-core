@@ -10,7 +10,7 @@
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
 #include "c4Socket.h"
-#include "c4Socket+Internal.hh"
+//#include "c4Socket+Internal.hh"
 #include "c4Internal.hh"
 #include "fleece/Fleece.hh"
 

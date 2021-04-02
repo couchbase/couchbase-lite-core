@@ -225,16 +225,16 @@ namespace {
     };
 
     TEST_CASE("fleece::InstanceCounted") {
-        auto baseInstances = InstanceCounted::count();
+        auto baseInstances = InstanceCounted::liveInstanceCount();
         auto n = new NonVirtCounty(12);
         auto v = new VirtCounty(34);
         C4Log("NonVirtCounty instance at %p; IC at %p", n, (fleece::InstanceCounted*)n);
         C4Log("VirtCounty instance at %p; IC at %p", v, (fleece::InstanceCountedIn<Virt>*)v);
-        REQUIRE(InstanceCounted::count() == baseInstances + 2);
+        REQUIRE(InstanceCounted::liveInstanceCount() == baseInstances + 2);
         c4_dumpInstances();
         delete n;
         delete v;
-        REQUIRE(InstanceCounted::count() == baseInstances);
+        REQUIRE(InstanceCounted::liveInstanceCount() == baseInstances);
     }
 
     TEST_CASE("Narrow Cast") {

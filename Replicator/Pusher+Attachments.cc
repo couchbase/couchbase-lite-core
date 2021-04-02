@@ -20,7 +20,7 @@
 #include "DBAccess.hh"
 #include "BLIP.hh"
 #include "Increment.hh"
-#include "c4BlobStore.h"
+#include "c4BlobStore.hh"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
 
@@ -29,26 +29,78 @@ using namespace litecore::blip;
 
 namespace litecore::repl {
 
+    class BlobDataSource : public IMessageDataSource {
+    public:
+        BlobDataSource(Pusher *pusher,
+                       unique_ptr<C4ReadStream> &&blob,
+                       const Replicator::BlobProgress &progress)
+        :_pusher(pusher)
+        ,_repl(pusher->replicator())
+        ,_blob(move(blob))
+        ,_progress(progress)
+        { }
+
+        int operator() (void *buf, size_t capacity) override {
+            // Callback to read bytes from the blob into the BLIP message:
+            // For performance reasons this is NOT run on my actor thread, so it can't access
+            // my state directly; instead it calls _attachmentSent() at the end.
+            bool done = false;
+            ssize_t bytesRead = -1;
+            try {
+                bytesRead = _blob->read(buf, capacity);
+                _progress.bytesCompleted += bytesRead;
+            } catch (...) {
+                _progress.error = C4Error::fromCurrentException();
+                _pusher->warn("Error reading from blob: %d/%d",
+                              _progress.error.domain, _progress.error.code);
+                bytesRead = -1;
+            }
+            if (bytesRead < capacity) {
+                _blob = nullptr;
+                _pusher->enqueue(FUNCTION_TO_QUEUE(Pusher::_attachmentSent));
+                done = true;
+            }
+            if (_pusher->progressNotificationLevel() >= 2) {
+                auto now = actor::Timer::clock::now();
+                if (done || now - _lastNotifyTime > 250ms) {
+                    _lastNotifyTime = now;
+                    _repl->onBlobProgress(_progress);
+                }
+            }
+            return (int)bytesRead;
+        }
+
+    private:
+        Pusher* _pusher;
+        Retained<Replicator> _repl;
+        unique_ptr<C4ReadStream> _blob;
+        Replicator::BlobProgress _progress;
+        actor::Timer::clock::time_point _lastNotifyTime = actor::Timer::clock::now();
+    };
+
+
     // Reads the "digest" property from a BLIP message and opens a read stream on that blob.
-    C4ReadStream* Pusher::readBlobFromRequest(MessageIn *req,
-                                              slice &digestStr,
-                                              Replicator::BlobProgress &progress,
-                                              C4Error *outError)
+    unique_ptr<C4ReadStream> Pusher::readBlobFromRequest(MessageIn *req,
+                                                         slice &digestStr,
+                                                         Replicator::BlobProgress &progress)
     {
-        auto blobStore = _db->blobStore();
-        digestStr = req->property("digest"_sl);
-        progress = {Dir::kPushing};
-        if (!c4blob_keyFromString(digestStr, &progress.key)) {
-            c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Missing or invalid 'digest'"_sl, outError);
+        try {
+            digestStr = req->property("digest"_sl);
+            progress = {Dir::kPushing};
+            if (auto key = C4BlobKey::withDigestString(digestStr); key)
+                progress.key = *key;
+            else
+                C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter, "Missing or invalid 'digest'");
+            auto blobStore = _db->blobStore();
+            if (int64_t size = blobStore->getSize(progress.key); size >= 0)
+                progress.bytesTotal = size;
+            else
+                C4Error::raise(LiteCoreDomain, kC4ErrorNotFound, "No such blob");
+            return make_unique<C4ReadStream>(*blobStore, progress.key);
+        } catch (...) {
+            req->respondWithError(c4ToBLIPError(C4Error::fromCurrentException()));
             return nullptr;
         }
-        int64_t size = c4blob_getSize(blobStore, progress.key);
-        if (size < 0) {
-            c4error_return(LiteCoreDomain, kC4ErrorNotFound, "No such blob"_sl, outError);
-            return nullptr;
-        }
-        progress.bytesTotal = size;
-        return c4blob_openReadStream(blobStore, progress.key, outError);
     }
 
 
@@ -56,50 +108,20 @@ namespace litecore::repl {
     void Pusher::handleGetAttachment(Retained<MessageIn> req) {
         slice digest;
         Replicator::BlobProgress progress;
-        C4Error err;
-        C4ReadStream* blob = readBlobFromRequest(req, digest, progress, &err);
-        if (!blob) {
-            req->respondWithError(c4ToBLIPError(err));
+        unique_ptr<C4ReadStream> blob = readBlobFromRequest(req, digest, progress);
+        if (!blob)
             return;
-        }
 
         increment(_blobsInFlight);
         MessageBuilder reply(req);
         reply.compressed = req->boolProperty("compress"_sl);
         logVerbose("Sending blob %.*s (length=%" PRId64 ", compress=%d)",
-                   SPLAT(digest), c4stream_getLength(blob, nullptr), reply.compressed);
+                   SPLAT(digest), blob->getLength(), reply.compressed);
         Retained<Replicator> repl = replicator();
-        auto lastNotifyTime = actor::Timer::clock::now();
         if (progressNotificationLevel() >= 2)
             repl->onBlobProgress(progress);
-        reply.dataSource = [=](void *buf, size_t capacity) mutable {
-            // Callback to read bytes from the blob into the BLIP message:
-            // For performance reasons this is NOT run on my actor thread, so it can't access
-            // my state directly; instead it calls _attachmentSent() at the end.
-            C4Error err;
-            bool done = false;
-            ssize_t bytesRead = c4stream_read(blob, buf, capacity, &err);
-            progress.bytesCompleted += bytesRead;
-            if (bytesRead < capacity) {
-                c4stream_close(blob);
-                this->enqueue(FUNCTION_TO_QUEUE(Pusher::_attachmentSent));
-                done = true;
-            }
-            if (err.code) {
-                this->warn("Error reading from blob: %d/%d", err.domain, err.code);
-                progress.error = {err.domain, err.code};
-                bytesRead = -1;
-                done = true;
-            }
-            if (progressNotificationLevel() >= 2) {
-                auto now = actor::Timer::clock::now();
-                if (done || now - lastNotifyTime > 250ms) {
-                    lastNotifyTime = now;
-                    repl->onBlobProgress(progress);
-                }
-            }
-            return (int)bytesRead;
-        };
+
+        reply.dataSource = make_unique<BlobDataSource>(this, move(blob), progress);
         req->respond(reply);
     }
 
@@ -113,44 +135,38 @@ namespace litecore::repl {
     void Pusher::handleProveAttachment(Retained<MessageIn> request) {
         slice digest;
         Replicator::BlobProgress progress;
-        C4Error err;
-        c4::ref<C4ReadStream> blob = readBlobFromRequest(request, digest, progress, &err);
-        if (blob) {
-            logVerbose("Sending proof of attachment %.*s", SPLAT(digest));
-            SHA1Builder sha;
+        unique_ptr<C4ReadStream> blob = readBlobFromRequest(request, digest, progress);
+        if (!blob)
+            return;
 
-            // First digest the length-prefixed nonce:
-            slice nonce = request->body();
-            if (nonce.size == 0 || nonce.size > 255) {
-                request->respondWithError({"BLIP"_sl, 400, "Missing nonce"_sl});
-                return;
-            }
-            sha << (nonce.size & 0xFF) << nonce;
+        logVerbose("Sending proof of attachment %.*s", SPLAT(digest));
+        SHA1Builder sha;
 
-            // Now digest the attachment itself:
-            static constexpr size_t kBufSize = 8192;
-            auto buf = make_unique<uint8_t[]>(kBufSize);
-            size_t bytesRead;
-            while ((bytesRead = c4stream_read(blob, buf.get(), kBufSize, &err)) > 0)
-                sha << slice(buf.get(), bytesRead);
-            buf.reset();
-            blob = nullptr;
-
-            if (err.code == 0) {
-                // Respond with the base64-encoded digest:
-                C4BlobKey proofDigest;
-                sha.finish(proofDigest.bytes, sizeof(proofDigest.bytes));
-                alloc_slice proofStr = c4blob_keyToString(proofDigest);
-
-                MessageBuilder reply(request);
-                reply.write(proofStr);
-                request->respond(reply);
-                return;
-            }
+        // First digest the length-prefixed nonce:
+        slice nonce = request->body();
+        if (nonce.size == 0 || nonce.size > 255) {
+            request->respondWithError({"BLIP"_sl, 400, "Missing nonce"_sl});
+            return;
         }
+        sha << (nonce.size & 0xFF) << nonce;
 
-        // If we got here, we failed:
-        request->respondWithError(c4ToBLIPError(err));
+        // Now digest the attachment itself:
+        static constexpr size_t kBufSize = 8192;
+        auto buf = make_unique<uint8_t[]>(kBufSize);
+        size_t bytesRead;
+        while ((bytesRead = blob->read(buf.get(), kBufSize)) > 0)
+            sha << slice(buf.get(), bytesRead);
+        buf.reset();
+        blob = nullptr;
+
+        // Respond with the base64-encoded digest:
+        C4BlobKey proofDigest;
+        sha.finish(proofDigest.bytes, sizeof(proofDigest.bytes));
+        string proofStr = proofDigest.digestString();
+
+        MessageBuilder reply(request);
+        reply.write(proofStr);
+        request->respond(reply);
     }
 
 }

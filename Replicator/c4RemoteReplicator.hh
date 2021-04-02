@@ -9,7 +9,6 @@
 #pragma once
 #include "c4ReplicatorImpl.hh"
 #include "c4Socket+Internal.hh"
-#include "c4.hh"
 #include "Address.hh"
 #include "StringUtil.hh"
 #include "Timer.hh"
@@ -177,8 +176,8 @@ namespace litecore {
 
             // If this is a transient error, or if I'm continuous and the error might go away with
             // a change in network (i.e. network down, hostname unknown), then go offline.
-            bool transient = c4error_mayBeTransient(c4err);
-            if (transient || (continuous() && c4error_mayBeNetworkDependent(c4err))) {
+            bool transient = c4err.mayBeTransient();
+            if (transient || (continuous() && c4err.mayBeNetworkDependent())) {
                 if (_retryCount >= maxRetryCount()) {
                     logError("Will not retry; max retry count (%u) reached", _retryCount);
                     return;
@@ -187,17 +186,18 @@ namespace litecore {
                 // OK, we are going offline, to retry later:
                 _status.level = kC4Offline;
 
+                string desc = c4err.description();
                 if (transient || statusFlag(kC4HostReachable)) {
                     // On transient error, retry periodically, with exponential backoff:
                     unsigned delay = retryDelay(++_retryCount);
                     logError("Transient error (%s); attempt #%u in %u sec...",
-                             c4error_descriptionStr(c4err), _retryCount+1, delay);
+                             desc.c_str(), _retryCount+1, delay);
                     scheduleRetry(delay);
                 } else {
                     // On other network error, don't retry automatically. The client should await
                     // a network change and call c4repl_retry.
                     logError("Network error (%s); will retry when host becomes reachable...",
-                             c4error_descriptionStr(c4err));
+                             desc.c_str());
                 }
             }
         }

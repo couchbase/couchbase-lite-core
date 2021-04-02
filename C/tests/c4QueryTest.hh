@@ -11,7 +11,7 @@
 #include "c4Test.hh"
 #include "c4Query.h"
 #include "c4Index.h"
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
 #include <functional>

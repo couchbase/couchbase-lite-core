@@ -22,7 +22,7 @@
 #include "c4PredictiveQuery.h"
 #include "CoreMLPredictiveModel.hh"
 #include "c4QueryTest.hh"
-#include "c4.hh"
+#include "c4CppUtils.hh"
 #include "fleece/Fleece.hh"
 #include <CoreML/CoreML.h>
 #include <array>

@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "c4Listener.h"
+#include "c4Listener.hh"
 #include "RefCounted.hh"
 
 namespace litecore { namespace REST {

@@ -23,6 +23,9 @@
 #include "Puller.hh"
 #include "Checkpoint.hh"
 #include "DBAccess.hh"
+#include "c4Database.hh"
+#include "c4DocEnumerator.hh"
+#include "c4SocketTypes.h"           // for error codes
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "Logging.hh"
@@ -30,9 +33,6 @@
 #include "BLIP.hh"
 #include "Address.hh"
 #include "Instrumentation.hh"
-#include "c4DocEnumerator.h"
-#include "c4Socket.h"           // for error codes
-#include "c4Transaction.hh"
 
 using namespace std;
 using namespace std::placeholders;
@@ -72,7 +72,7 @@ namespace litecore { namespace repl {
     ,_docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     ,_checkpointer(_options, webSocket->url())
     {
-        _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
+        _loggingID = string(db->path()) + " " + _loggingID;
         _passive = _options.pull <= kC4Passive && _options.push <= kC4Passive;
         _important = 2;
 
@@ -111,32 +111,31 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_start(bool reset) {
-        Assert(_connectionState == Connection::kClosed);
-        Signpost::begin(Signpost::replication, uintptr_t(this));
-        _connectionState = Connection::kConnecting;
-        connection().start();
-        // Now wait for _onConnect or _onClose...
-        
-        _findExistingConflicts();
+        try {
+            Assert(_connectionState == Connection::kClosed);
+            Signpost::begin(Signpost::replication, uintptr_t(this));
+            _connectionState = Connection::kConnecting;
+            connection().start();
+            // Now wait for _onConnect or _onClose...
 
-        if (_options.push > kC4Passive || _options.pull > kC4Passive) {
-            // Get the remote DB ID:
-            slice key = _checkpointer.remoteDBIDString();
-            C4Error err;
-            C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key, &err);
-            if (remoteDBID) {
+            _findExistingConflicts();
+
+            if (_options.push > kC4Passive || _options.pull > kC4Passive) {
+                // Get the remote DB ID:
+                slice key = _checkpointer.remoteDBIDString();
+                C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key);
                 logVerbose("Remote-DB ID %u found for target <%.*s>", remoteDBID, SPLAT(key));
-            } else {
-                warn("Couldn't get remote-DB ID for target <%.*s>: error %d/%d",
-                     SPLAT(key), err.domain, err.code);
-                gotError(err);
-                stop();
-            }
 
-            // Get the checkpoints:
-            if (getLocalCheckpoint(reset)) {
-                getRemoteCheckpoint(false);
+                // Get the checkpoints:
+                if (getLocalCheckpoint(reset)) {
+                    getRemoteCheckpoint(false);
+                }
             }
+        } catch (...) {
+            C4Error err = C4Error::fromCurrentException();
+            logError("Failed to start replicator: %s", err.description().c_str());
+            gotError(err);
+            stop();
         }
     }
 
@@ -146,26 +145,25 @@ namespace litecore { namespace repl {
             return;
 
         Stopwatch st;
-        C4Error err;
-        c4::ref<C4DocEnumerator> e = _db->unresolvedDocsEnumerator(false, &err);
-        if (e) {
+        try {
+            unique_ptr<C4DocEnumerator> e = _db->unresolvedDocsEnumerator(false);
             logInfo("Scanning for pre-existing conflicts...");
             unsigned nConflicts = 0;
-            while (c4enum_next(e, &err)) {
-                C4DocumentInfo info;
-                c4enum_getDocumentInfo(e, &info);
+            while (e->next()) {
+                C4DocumentInfo info = e->documentInfo();
                 auto rev = retained(new RevToInsert(nullptr,        /* incoming rev */
                                                     info.docID,
                                                     info.revID,
                                                     nullslice,      /* history buf */
                                                     info.flags & kDocDeleted,
                                                     false));
-                rev->error = c4error_make(LiteCoreDomain, kC4ErrorConflict, {});
+                rev->error = C4Error::make(LiteCoreDomain, kC4ErrorConflict);
                 _docsEnded.push(rev);
                 ++nConflicts;
             }
             logInfo("Found %u conflicted docs in %.3f sec", nConflicts, st.elapsed());
-        } else {
+        } catch (...) {
+            C4Error err = C4Error::fromCurrentException();
             warn("Couldn't get unresolved docs enumerator: error %d/%d", err.domain, err.code);
             gotError(err);
         }
@@ -328,12 +326,12 @@ namespace litecore { namespace repl {
         Worker::onError(error);
         for (const StoppingErrorEntry& stoppingErr : StoppingErrors) {
             if (stoppingErr.err == error) {
-                alloc_slice message( c4error_getDescription(error) );
+                string message = error.description().c_str();
                 if (stoppingErr.isFatal) {
-                    logError("Stopping due to fatal error: %.*s", SPLAT(message));
+                    logError("Stopping due to fatal error: %s", message.c_str());
                     _disconnect(websocket::kCloseAppPermanent, stoppingErr.msg);
                 } else {
-                    logError("Stopping due to error: %.*s", SPLAT(message));
+                    logError("Stopping due to error: %s", message.c_str());
                     _disconnect(websocket::kCloseAppTransient, stoppingErr.msg);
                 }
                 return;
@@ -383,7 +381,7 @@ namespace litecore { namespace repl {
             if (d->isWarning && (d->flags & kRevIsConflict)) {
                 // Inserter::insertRevisionNow set this flag to indicate that the rev caused a
                 // conflict (though it did get inserted), so notify the delegate of the conflict:
-                d->error = c4error_make(LiteCoreDomain, kC4ErrorConflict, nullslice);
+                d->error = C4Error::make(LiteCoreDomain, kC4ErrorConflict, nullslice);
                 d->errorIsTransient = true;
             }
             _docsEnded.push(d);
@@ -420,7 +418,7 @@ namespace litecore { namespace repl {
 
     void Replicator::_onHTTPResponse(int status, websocket::Headers headers) {
         if (status == 101 && !headers["Sec-WebSocket-Protocol"_sl]) {
-            gotError(c4error_make(WebSocketDomain, kWebSocketCloseProtocolError,
+            gotError(C4Error::make(WebSocketDomain, kWebSocketCloseProtocolError,
                                   "Incompatible replication protocol "
                                   "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
@@ -476,7 +474,7 @@ namespace litecore { namespace repl {
                 domain = LiteCoreDomain;
                 code = kC4ErrorRemoteError;
             }
-            gotError(c4error_make(domain, code, status.message));
+            gotError(C4Error::make(domain, code, status.message));
         }
 
         if (_delegate) {
@@ -499,30 +497,30 @@ namespace litecore { namespace repl {
 
     // Start off by getting the local checkpoint, if this is an active replicator:
     bool Replicator::getLocalCheckpoint(bool reset) {
-        return _db->useLocked<bool>([&](C4Database *db) {
-            C4Error error;
-            if (_checkpointer.read(db, reset, &error)) {
+        try {
+            if (_checkpointer.read(_db->useLocked(), reset)) {
                 auto remote = _checkpointer.remoteMinSequence();
                 logInfo("Read local checkpoint '%.*s': %.*s",
                         SPLAT(_checkpointer.initialCheckpointID()),
                         SPLAT(_checkpointer.checkpointJSON()));
                 _hadLocalCheckpoint = true;
-            } else if (error.code != 0) {
-                logInfo("Fatal error getting local checkpoint");
-                gotError(error);
-                stop();
-                return false;
             } else if (reset) {
                 logInfo("Ignoring local checkpoint ('reset' option is set)");
             } else {
                 logInfo("No local checkpoint '%.*s'", SPLAT(_checkpointer.initialCheckpointID()));
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
                 // revisions as an optimization.
-                if (_options.pull > kC4Passive && _puller && c4db_getLastSequence(db) == 0)
+                if (_options.pull > kC4Passive && _puller
+                        && _db->useLocked()->getLastSequence() == 0)
                     _puller->setSkipDeleted();
             }
             return true;
-        });
+        } catch (...) {
+            logInfo("Fatal error getting local checkpoint");
+            gotError(C4Error::fromCurrentException());
+            stop();
+            return false;
+        }
     }
 
 
@@ -639,29 +637,29 @@ namespace litecore { namespace repl {
                 logInfo("Saved remote checkpoint '%.*s' as rev='%.*s'",
                     SPLAT(_remoteCheckpointDocID), SPLAT(_remoteCheckpointRevID));
 
-                C4Error err;
-                bool ok = _db->useLocked<bool>([&](C4Database *db) {
-                    _db->markRevsSyncedNow();
-                    return _checkpointer.write(db, json, &err);
-                });
-                if (ok)
+                try {
+                    _db->useLocked([&](C4Database *db) {
+                        _db->markRevsSyncedNow();
+                        _checkpointer.write(db, json);
+                    });
                     logInfo("Saved local checkpoint '%.*s': %.*s",
                             SPLAT(_remoteCheckpointDocID), SPLAT(json));
-                else
-                    gotError(err);
+                } catch (...) {
+                    gotError(C4Error::fromCurrentException());
+                }
                 _checkpointer.saveCompleted();
             }
         });
     }
 
 
-    bool Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback, C4Error* outErr){
-        return _checkpointer.pendingDocumentIDs(_db->useLocked(), callback, outErr);
+    void Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback){
+        _checkpointer.pendingDocumentIDs(_db->useLocked(), callback);
     }
 
 
-    bool Replicator::isDocumentPending(slice docID, C4Error* outErr) {
-        return _checkpointer.isDocumentPending(_db->useLocked(), docID, outErr);
+    bool Replicator::isDocumentPending(slice docID) {
+        return _checkpointer.isDocumentPending(_db->useLocked(), docID);
     }
 
 
@@ -686,9 +684,16 @@ namespace litecore { namespace repl {
             return;
         
         alloc_slice body, revID;
-        C4Error err;
-        if (!Checkpointer::getPeerCheckpoint(_db->useLocked(), checkpointID, body, revID, &err)) {
-            const int status = isNotFoundError(err) ? 404 : 502;
+        int status = 0;
+        try {
+            if (!Checkpointer::getPeerCheckpoint(_db->useLocked(), checkpointID, body, revID))
+                status = 404;
+        } catch (...) {
+            C4Error::warnCurrentException("Replicator::handleGetCheckpoint");
+            status = 502;
+        }
+
+        if (status != 0) {
             request->respondWithError({"HTTP"_sl, status});
             return;
         }
@@ -706,18 +711,21 @@ namespace litecore { namespace repl {
         if (!checkpointID)
             return;
 
+        bool ok;
         alloc_slice newRevID;
-        C4Error err;
-        bool ok = Checkpointer::savePeerCheckpoint(_db->useLocked(),
-                                                   checkpointID,
-                                                   request->body(),
-                                                   request->property("rev"_sl),
-                                                   newRevID, &err);
+        try {
+            ok = Checkpointer::savePeerCheckpoint(_db->useLocked(),
+                                                  checkpointID,
+                                                  request->body(),
+                                                  request->property("rev"_sl),
+                                                  newRevID);
+        } catch (...) {
+            request->respondWithError(c4ToBLIPError(C4Error::fromCurrentException()));
+            return;
+        }
+
         if (!ok) {
-            if (err.domain == LiteCoreDomain && err.code == kC4ErrorConflict)
-                request->respondWithError({"HTTP"_sl, 409, alloc_slice("revision ID mismatch"_sl)});
-            else
-                request->respondWithError(c4ToBLIPError(err));
+            request->respondWithError({"HTTP"_sl, 409, alloc_slice("revision ID mismatch"_sl)});
             return;
         }
 

@@ -8,7 +8,7 @@
 #include "ReplicatorTypes.hh"
 #include "Error.hh"
 #include "Timer.hh"
-#include "c4Base.h"
+#include "c4Base.hh"
 #include "fleece/slice.hh"
 #include "URLTransformer.hh"
 #include <chrono>
@@ -93,15 +93,14 @@ namespace litecore { namespace repl {
 
         /** Reads the checkpoint state from the local database. This needs to happen first.
             If the checkpoint has already been read, this is a no-op.
-            Returns false if the checkpoint wasn't read; if this was due to an error, not just
-            because it's missing, `outError` will be set. */
-        bool read(C4Database *db NONNULL, bool reset, C4Error *outError);
+            Returns false if the checkpoint wasn't read. Other errors are thrown as exceptions. */
+        bool read(C4Database *db NONNULL, bool reset);
 
         /** Writes serialized checkpoint state to the local database.
             Does not write the current checkpoint state, because it may have changed since the
             remote save. It's important that the saved data be the same as what was saved on
             the remote peer. */
-        bool write(C4Database *db NONNULL, slice checkpointData, C4Error *outError);
+        void write(C4Database *db NONNULL, slice checkpointData);
 
         // Autosave:
 
@@ -132,35 +131,35 @@ namespace litecore { namespace repl {
 
         using PendingDocCallback = function_ref<void(const C4DocumentInfo&)>;
 
-        /** Returns a fleece encoded list of the IDs of documents which have revisions pending push */
-        bool pendingDocumentIDs(C4Database* NONNULL, PendingDocCallback, C4Error* outErr);
+        /** Calls the callback for each document that has revisions pending push */
+        void pendingDocumentIDs(C4Database* NONNULL, PendingDocCallback);
 
         /** Checks if the document with the given ID has any pending revisions to push*/
-        bool isDocumentPending(C4Database* NONNULL, slice docId, C4Error* outErr);
+        bool isDocumentPending(C4Database* NONNULL, slice docId);
 
         bool isDocumentAllowed(C4Document* doc NONNULL);
         bool isDocumentIDAllowed(slice docID);
 
         // Peer checkpoint access (for passive replicator):
 
+        /// Returns false if no checkpoint exists.
         static bool getPeerCheckpoint(C4Database* NONNULL,
                                       slice checkpointID,
                                       alloc_slice &outBody,
-                                      alloc_slice &outRevID,
-                                      C4Error *outError);
+                                      alloc_slice &outRevID);
 
+        /// Returns false if revID conflicts.
         static bool savePeerCheckpoint(C4Database* NONNULL,
                                        slice checkpointID,
                                        slice body,
                                        slice revID,
-                                       alloc_slice &newRevID,
-                                       C4Error* outError);
+                                       alloc_slice &newRevID);
 
     private:
         void checkpointIsInvalid();
         std::string docIDForUUID(const C4UUID&, URLTransformStrategy strategy);
-        slice remoteDocID(C4Database *db NONNULL, C4Error* err);
-        alloc_slice _read(C4Database *db NONNULL, slice, C4Error*);
+        slice remoteDocID(C4Database *db NONNULL);
+        alloc_slice _read(C4Database *db NONNULL, slice);
         void initializeDocIDs();
         void saveSoon();
 

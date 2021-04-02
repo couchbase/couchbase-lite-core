@@ -95,10 +95,10 @@ namespace litecore { namespace repl {
         void terminate();
 
         /** Invokes the callback for each document which has revisions pending push */
-        bool pendingDocumentIDs(Checkpointer::PendingDocCallback, C4Error* outErr);
+        void pendingDocumentIDs(Checkpointer::PendingDocCallback);
 
         /** Checks if the document with the given ID has any pending revisions to push */
-        bool isDocumentPending(slice docID, C4Error* outErr);
+        bool isDocumentPending(slice docID);
 
         Checkpointer& checkpointer()            {return _checkpointer;}
 

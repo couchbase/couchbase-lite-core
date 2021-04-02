@@ -20,8 +20,10 @@
 #define __C4DOCUMENT_H__
 #include "c4DocumentTypes.h"
 
-#ifdef LITECORE_CPP_API
+#if LITECORE_CPP_API
 #include "c4Document.hh"   // C++ version of C4Document struct
+#else
+#include "c4DocumentStruct.h"   // C version of C4Document struct
 #endif
 
 C4_ASSUME_NONNULL_BEGIN
