@@ -70,7 +70,7 @@ namespace litecore { namespace REST {
 
     bool Listener::registerDatabase(C4Database* db, optional<string> name) {
         if (!name) {
-            alloc_slice path(db->path());
+            alloc_slice path(db->getPath());
             name = databaseNameFromPath(FilePath(string(path)));
         } else if (!isValidDatabaseName(*name)) {
             error::_throw(error::InvalidParameter, "Invalid name for sharing a database");

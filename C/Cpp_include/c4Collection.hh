@@ -47,10 +47,10 @@ struct C4Collection : public fleece::RefCounted,
 {
     // Accessors:
     
-    slice name() const                          {return _name;}
+    slice getName() const                          {return _name;}
 
-    C4Database* database();
-    const C4Database* database() const          {return const_cast<C4Collection*>(this)->database();}
+    C4Database* getDatabase();
+    const C4Database* getDatabase() const;
 
     virtual uint64_t getDocumentCount() const =0;
 
@@ -77,7 +77,7 @@ struct C4Collection : public fleece::RefCounted,
 
     // Purging & Expiration:
 
-    virtual bool purgeDoc(slice docID) =0;
+    virtual bool purgeDocument(slice docID) =0;
 
     virtual bool setExpiration(slice docID, C4Timestamp timestamp) =0;
     virtual C4Timestamp getExpiration(slice docID) const =0;

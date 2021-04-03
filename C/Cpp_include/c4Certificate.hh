@@ -42,34 +42,34 @@ struct C4Cert final : public fleece::RefCounted, C4Base {
 
     static Retained<C4Cert> fromData(slice certData);
 
-    alloc_slice data(bool pemEncoded);
+    alloc_slice getData(bool pemEncoded);
 
-    alloc_slice chainData();
+    alloc_slice getChainData();
 
-    alloc_slice summary();
+    alloc_slice getSummary();
 
-    alloc_slice subjectName();
+    alloc_slice getSubjectName();
 
-    alloc_slice subjectNameComponent(C4CertNameAttributeID);
+    alloc_slice getSubjectNameComponent(C4CertNameAttributeID);
 
     struct NameInfo {
         alloc_slice id;   ///< X.509 attribute name (e.g. "CN" or "O"), like a C4CertNameAttributeID
         alloc_slice value;///< The value of the name component, i.e. the name.
     };
 
-    NameInfo subjectNameAtIndex(unsigned index);
+    NameInfo getSubjectNameAtIndex(unsigned index);
 
-    std::pair<C4Timestamp,C4Timestamp> validTimespan();
+    std::pair<C4Timestamp,C4Timestamp> getValidTimespan();
 
-    C4CertUsage usages();
+    C4CertUsage getUsages();
 
     bool isSelfSigned();
 
-    Retained<C4KeyPair> publicKey();
+    Retained<C4KeyPair> getPublicKey();
 
     Retained<C4KeyPair> loadPersistentPrivateKey();
 
-    Retained<C4Cert> nextInChain();
+    Retained<C4Cert> getNextInChain();
 
     // Certificate signing requests:
 
@@ -129,11 +129,11 @@ struct C4KeyPair final : public fleece::RefCounted, C4Base {
 
     bool hasPrivateKey();
 
-    alloc_slice publicKeyDigest();
+    alloc_slice getPublicKeyDigest();
 
-    alloc_slice publicKeyData();
+    alloc_slice getPublicKeyData();
 
-    alloc_slice privateKeyData();
+    alloc_slice getPrivateKeyData();
 
     // Persistence:
 
@@ -151,15 +151,15 @@ struct C4KeyPair final : public fleece::RefCounted, C4Base {
                                             const C4ExternalKeyCallbacks &callbacks);
 
     // Internal:
-    litecore::crypto::PrivateKey* C4NULLABLE privateKey();
+    litecore::crypto::PrivateKey* C4NULLABLE getPrivateKey();
 
 private:
     friend class C4Cert;
 
     explicit C4KeyPair(litecore::crypto::Key*);
     ~C4KeyPair();
-    Retained<litecore::crypto::PublicKey> publicKey();
-    litecore::crypto::PersistentPrivateKey* persistentPrivateKey();
+    Retained<litecore::crypto::PublicKey> getPublicKey();
+    litecore::crypto::PersistentPrivateKey* getPersistentPrivateKey();
 
     Retained<litecore::crypto::Key> _impl;
 };

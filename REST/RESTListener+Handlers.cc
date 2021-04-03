@@ -84,7 +84,7 @@ namespace litecore { namespace REST {
     void RESTListener::handleGetDatabase(RequestResponse &rq, C4Database *db) {
         auto docCount = db->getDefaultCollection()->getDocumentCount();  // TODO: Collection-aware
         auto lastSequence = db->getDefaultCollection()->getLastSequence();
-        C4UUID uuid = db->publicUUID();
+        C4UUID uuid = db->getPublicUUID();
         auto uuidStr = slice(&uuid, sizeof(uuid)).hexString();
 
         auto &json = rq.jsonEncoder();

@@ -10,17 +10,17 @@ var searchData=
   ['c4errorcode',['C4ErrorCode',['../group___errors.html#gabc1eabfb65d7e55ac9efb8a95db4647f',1,'c4Base.h']]],
   ['c4errordomain',['C4ErrorDomain',['../group___errors.html#gabb4faf1bef1be6c39f496e0ffdf8cdd0',1,'c4Base.h']]],
   ['c4indextype',['C4IndexType',['../group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb',1,'c4IndexTypes.h']]],
-  ['c4listenerapis',['C4ListenerAPIs',['../group___listener.html#ga49d05e191b69d6e99d05c1e9ee8d3b79',1,'c4Listener.h']]],
+  ['c4listenerapis',['C4ListenerAPIs',['../group___listener.html#ga49d05e191b69d6e99d05c1e9ee8d3b79',1,'c4ListenerTypes.h']]],
   ['c4loglevel',['C4LogLevel',['../group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace',1,'c4Base.h']]],
   ['c4maintenancetype',['C4MaintenanceType',['../group___database.html#ga7bfa7da5d827fee0633ff0bbd949d361',1,'c4DatabaseTypes.h']]],
   ['c4networkerrorcode',['C4NetworkErrorCode',['../group___errors.html#ga5153e11176806637d6354f57957ce803',1,'c4Base.h']]],
-  ['c4privatekeyrepresentation',['C4PrivateKeyRepresentation',['../group___listener.html#ga86032450ec2ae6d6696789ba33c7e511',1,'c4Listener.h']]],
+  ['c4privatekeyrepresentation',['C4PrivateKeyRepresentation',['../group___listener.html#ga86032450ec2ae6d6696789ba33c7e511',1,'c4ListenerTypes.h']]],
   ['c4querylanguage',['C4QueryLanguage',['../group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84',1,'c4QueryTypes.h']]],
   ['c4replicatoractivitylevel',['C4ReplicatorActivityLevel',['../group___replicator.html#ga84e7c156325748d20e598524a4108c2e',1,'c4ReplicatorTypes.h']]],
   ['c4replicatormode',['C4ReplicatorMode',['../group___replicator.html#gac16315e5cd43eec17ce31ad7a4bb429a',1,'c4ReplicatorTypes.h']]],
   ['c4replicatorprogresslevel',['C4ReplicatorProgressLevel',['../group___replicator.html#ga2b625cd3bf1b8d1c3a2546693a823bd5',1,'c4ReplicatorTypes.h']]],
   ['c4replicatorstatusflags',['C4ReplicatorStatusFlags',['../group___replicator.html#ga1fbd60bfab5a12304512fe8464a2ad05',1,'c4ReplicatorTypes.h']]],
   ['c4revisionflags',['C4RevisionFlags',['../group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0',1,'c4DocumentTypes.h']]],
-  ['c4socketframing',['C4SocketFraming',['../group___socket.html#ga4fd4a7216b3eec47914dc868c81dea01',1,'c4Socket.h']]],
-  ['c4websocketclosecode',['C4WebSocketCloseCode',['../group___socket.html#gae841435a1dff329c3851655a240fdadb',1,'c4Socket.h']]]
+  ['c4socketframing',['C4SocketFraming',['../group___socket.html#ga4fd4a7216b3eec47914dc868c81dea01',1,'c4SocketTypes.h']]],
+  ['c4websocketclosecode',['C4WebSocketCloseCode',['../group___socket.html#gae841435a1dff329c3851655a240fdadb',1,'c4SocketTypes.h']]]
 ];

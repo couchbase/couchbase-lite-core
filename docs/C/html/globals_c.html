@@ -727,13 +727,13 @@ $(function() {
 : <a class="el" href="group___listener.html#ga3e3703d45997de86d62c9871a49212bb">c4Listener.h</a>
 </li>
 <li>C4ListenerAPIs
-: <a class="el" href="group___listener.html#ga49d05e191b69d6e99d05c1e9ee8d3b79">c4Listener.h</a>
+: <a class="el" href="group___listener.html#ga49d05e191b69d6e99d05c1e9ee8d3b79">c4ListenerTypes.h</a>
 </li>
 <li>C4ListenerCertAuthCallback
-: <a class="el" href="group___listener.html#gaf0da0563dd9593449dd4700a314771b3">c4Listener.h</a>
+: <a class="el" href="group___listener.html#gaf0da0563dd9593449dd4700a314771b3">c4ListenerTypes.h</a>
 </li>
 <li>C4ListenerHTTPAuthCallback
-: <a class="el" href="group___listener.html#gade7c7cc627bcbd73b774fc287595362d">c4Listener.h</a>
+: <a class="el" href="group___listener.html#gade7c7cc627bcbd73b774fc287595362d">c4ListenerTypes.h</a>
 </li>
 <li>C4Log
 : <a class="el" href="group___logging.html#ga0ad43e3afdc4edbfc5811e2ebd0eaff4">c4Base.h</a>
@@ -826,7 +826,7 @@ $(function() {
 : <a class="el" href="group___predictive_query.html#gaab44d11fb3f29b9a12c956b9cd331777">c4PredictiveQuery.h</a>
 </li>
 <li>C4PrivateKeyRepresentation
-: <a class="el" href="group___listener.html#ga86032450ec2ae6d6696789ba33c7e511">c4Listener.h</a>
+: <a class="el" href="group___listener.html#ga86032450ec2ae6d6696789ba33c7e511">c4ListenerTypes.h</a>
 </li>
 <li>C4Query
 : <a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">c4Base.h</a>
@@ -908,8 +908,8 @@ $(function() {
 : <a class="el" href="group___observer.html#gad4ae536243b44f5e79c0de373318c22d">c4Observer.h</a>
 </li>
 <li>c4raw_free()
-: <a class="el" href="group___base.html#ga27bca0ebc4fa272b0a7684cea0603509">c4Base.h</a>
-, <a class="el" href="group___raw_docs.html#ga712cc9ac2e82b308d06cff0e5b2bd85c">c4Database.h</a>
+: <a class="el" href="group___raw_docs.html#ga712cc9ac2e82b308d06cff0e5b2bd85c">c4Database.h</a>
+, <a class="el" href="group___base.html#ga27bca0ebc4fa272b0a7684cea0603509">c4Base.h</a>
 </li>
 <li>c4raw_get()
 : <a class="el" href="group___raw_docs.html#ga9e50e76fe35c6e3b9f506b6621ca366a">c4Database.h</a>
@@ -1029,6 +1029,9 @@ $(function() {
 <li>c4slog()
 : <a class="el" href="group___logging.html#gad537b6f0baea4183e86bd812aa3786f7">c4Base.h</a>
 </li>
+<li>C4Socket
+: <a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">c4Base.h</a>
+</li>
 <li>c4socket_closed()
 : <a class="el" href="group___socket.html#ga322960ea95270309dce56f4415c11240">c4Socket.h</a>
 </li>
@@ -1040,6 +1043,9 @@ $(function() {
 </li>
 <li>c4socket_fromNative()
 : <a class="el" href="group___socket.html#ga42632bdac8ee35b6c7c8890c5ac7da8f">c4Socket.h</a>
+</li>
+<li>c4Socket_getNativeHandle()
+: <a class="el" href="group___socket.html#ga533643fe442ca0308ff535ab1f491434">c4Socket.h</a>
 </li>
 <li>c4socket_gotHTTPResponse()
 : <a class="el" href="group___socket.html#ga91a21c0e1dabf8f0d3c5a835f1b4e8f9">c4Socket.h</a>
@@ -1053,17 +1059,20 @@ $(function() {
 <li>c4socket_registerFactory()
 : <a class="el" href="group___socket.html#gaee208cc2aedf57c8dc0549a707f25026">c4Socket.h</a>
 </li>
+<li>c4Socket_setNativeHandle()
+: <a class="el" href="group___socket.html#ga1f32cd1f7b53429a069d01b87333d641">c4Socket.h</a>
+</li>
 <li>C4SocketFraming
-: <a class="el" href="group___socket.html#ga4fd4a7216b3eec47914dc868c81dea01">c4Socket.h</a>
+: <a class="el" href="group___socket.html#ga4fd4a7216b3eec47914dc868c81dea01">c4SocketTypes.h</a>
 </li>
 <li>C4StorageEngine
 : <a class="el" href="c4_database_types_8h.html#a150841cc47a5fdc1c7c2e9d56ae83d5a">c4DatabaseTypes.h</a>
 </li>
-<li>C4STR
-: <a class="el" href="group___base.html#ga1d36740f0ebef62e2a53e9f8ae772819">c4Base.h</a>
-</li>
 <li>c4str()
 : <a class="el" href="group___base.html#gae0419d888a0524b718da8c06fabe5a21">c4Base.h</a>
+</li>
+<li>C4STR
+: <a class="el" href="group___base.html#ga1d36740f0ebef62e2a53e9f8ae772819">c4Base.h</a>
 </li>
 <li>c4stream_bytesWritten()
 : <a class="el" href="group___blobs.html#gad2402569d396bc5fa884c87f2a526939">c4BlobStore.h</a>
@@ -1073,8 +1082,8 @@ $(function() {
 , <a class="el" href="group___blobs.html#gac1f167a51625c67900a4bd112450d8ca">c4BlobStore.h</a>
 </li>
 <li>c4stream_closeWriter()
-: <a class="el" href="group___base.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4Base.h</a>
-, <a class="el" href="group___blobs.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4BlobStore.h</a>
+: <a class="el" href="group___blobs.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4BlobStore.h</a>
+, <a class="el" href="group___base.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4Base.h</a>
 </li>
 <li>c4stream_computeBlobKey()
 : <a class="el" href="group___blobs.html#ga44187546106566d114996a035025d43d">c4BlobStore.h</a>
@@ -1113,7 +1122,7 @@ $(function() {
 : <a class="el" href="group___logging.html#gaf4b74b787c81e9c7c9819fe657273f18">c4Base.h</a>
 </li>
 <li>C4WebSocketCloseCode
-: <a class="el" href="group___socket.html#gae841435a1dff329c3851655a240fdadb">c4Socket.h</a>
+: <a class="el" href="group___socket.html#gae841435a1dff329c3851655a240fdadb">c4SocketTypes.h</a>
 </li>
 <li>C4WriteStream
 : <a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">c4Base.h</a>

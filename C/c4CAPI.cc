@@ -208,7 +208,7 @@ bool c4stream_write(C4WriteStream* stream, const void *bytes, size_t length, C4E
 
 
 uint64_t c4stream_bytesWritten(C4WriteStream* stream) noexcept {
-    return stream->bytesWritten();
+    return stream->getBytesWritten();
 }
 
 
@@ -256,18 +256,18 @@ bool c4db_deleteCollection(C4Database *db, C4String name, C4Error* C4NULLABLE ou
 C4StringResult c4db_collectionNames(C4Database *db) noexcept {
     stringstream result;
     delimiter delim(",");
-    for (auto &name : db->collectionNames())
+    for (auto &name : db->getCollectionNames())
         result << delim << name;
     return C4StringResult(alloc_slice(result.str()));
 }
 
 
 C4String c4coll_getName(C4Collection *coll) noexcept {
-    return coll->name();
+    return coll->getName();
 }
 
 C4Database* c4coll_getDatabase(C4Collection *coll) noexcept {
-    return coll->database();
+    return coll->getDatabase();
 }
 
 uint64_t c4coll_getDocumentCount(C4Collection *coll) noexcept {
@@ -330,7 +330,7 @@ bool c4coll_purgeDoc(C4Collection *coll,
                      C4Error* C4NULLABLE outError) noexcept
 {
     try {
-        if (coll->purgeDoc(docID))
+        if (coll->purgeDocument(docID))
             return true;
         else
             c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
@@ -521,11 +521,11 @@ bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *ou
 
 
 C4String c4db_getName(C4Database *database) noexcept {
-    return slice(database->name());
+    return slice(database->getName());
 }
 
 C4SliceResult c4db_getPath(C4Database *database) noexcept {
-    return C4SliceResult(database->path());
+    return C4SliceResult(database->getPath());
 }
 
 
@@ -535,7 +535,7 @@ const C4DatabaseConfig* c4db_getConfig(C4Database *database) noexcept {
 
 
 const C4DatabaseConfig2* c4db_getConfig2(C4Database *database) noexcept {
-    return &database->configuration();
+    return &database->getConfiguration();
 }
 
 
@@ -556,9 +556,9 @@ bool c4db_getUUIDs(C4Database* database, C4UUID *publicUUID, C4UUID *privateUUID
 {
     return tryCatch(outError, [&]{
         if (publicUUID)
-            *publicUUID = database->publicUUID();
+            *publicUUID = database->getPublicUUID();
         if (privateUUID)
-            *privateUUID = database->privateUUID();
+            *privateUUID = database->getPrivateUUID();
     });
 }
 
@@ -1516,21 +1516,21 @@ C4Cert* c4cert_requestFromData(C4Slice certRequestData, C4Error *outError) noexc
 
 C4SliceResult c4cert_copyData(C4Cert* cert, bool pemEncoded) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]() {
-        return C4SliceResult(cert->data(pemEncoded));
+        return C4SliceResult(cert->getData(pemEncoded));
     });
 }
 
 
 C4StringResult c4cert_subjectName(C4Cert* cert) noexcept {
     return tryCatch<C4StringResult>(nullptr, [&]() {
-        return C4StringResult(cert->subjectName());
+        return C4StringResult(cert->getSubjectName());
     });
 }
 
 
 C4StringResult c4cert_subjectNameComponent(C4Cert* cert, C4CertNameAttributeID attrID) noexcept {
     return tryCatch<C4StringResult>(nullptr, [&]() {
-        return C4StringResult(cert->subjectNameComponent(attrID));
+        return C4StringResult(cert->getSubjectNameComponent(attrID));
     });
 }
 
@@ -1539,7 +1539,7 @@ bool c4cert_subjectNameAtIndex(C4Cert* cert,
                                unsigned index,
                                C4CertNameInfo *outInfo) noexcept
 {
-    auto info = cert->subjectNameAtIndex(index);
+    auto info = cert->getSubjectNameAtIndex(index);
     if (!info.id)
         return false;
     outInfo->id = FLSliceResult(move(info.id));
@@ -1549,13 +1549,13 @@ bool c4cert_subjectNameAtIndex(C4Cert* cert,
 
 
 C4CertUsage c4cert_usages(C4Cert* cert) noexcept {
-    return cert->usages();
+    return cert->getUsages();
 }
 
 
 C4StringResult c4cert_summary(C4Cert* cert) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]() {
-        return C4StringResult(cert->summary());
+        return C4StringResult(cert->getSummary());
     });
 }
 
@@ -1566,7 +1566,7 @@ void c4cert_getValidTimespan(C4Cert* cert,
 {
     pair<C4Timestamp,C4Timestamp> ts;
     try {
-        ts = cert->validTimespan();
+        ts = cert->getValidTimespan();
     } catch (...) {
         ts.first = ts.second = 0;
     }
@@ -1618,7 +1618,7 @@ bool c4cert_sendSigningRequest(C4Cert *c4Cert,
 
 C4KeyPair* c4cert_getPublicKey(C4Cert* cert) noexcept {
     return tryCatch<C4KeyPair*>(nullptr, [&]() -> C4KeyPair* {
-        return cert->publicKey().detach();
+        return cert->getPublicKey().detach();
     });
 }
 
@@ -1632,13 +1632,13 @@ C4KeyPair* c4cert_loadPersistentPrivateKey(C4Cert* cert, C4Error *outError) noex
 
 C4Cert* c4cert_nextInChain(C4Cert* cert) noexcept {
     return tryCatch<C4Cert*>(nullptr, [&]() -> C4Cert* {
-        return cert->nextInChain().detach();
+        return cert->getNextInChain().detach();
     });
 }
 
 C4SliceResult c4cert_copyChainData(C4Cert* cert) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]() {
-        return C4SliceResult(cert->chainData());
+        return C4SliceResult(cert->getChainData());
     });
 }
 
@@ -1713,20 +1713,20 @@ bool c4keypair_isPersistent(C4KeyPair* key) noexcept {
 
 
 C4SliceResult c4keypair_publicKeyDigest(C4KeyPair* key) noexcept {
-    return C4SliceResult(key->publicKeyDigest());
+    return C4SliceResult(key->getPublicKeyDigest());
 }
 
 
 C4SliceResult c4keypair_publicKeyData(C4KeyPair* key) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]() {
-        return C4SliceResult(key->publicKeyData());
+        return C4SliceResult(key->getPublicKeyData());
     });
 }
 
 
 C4SliceResult c4keypair_privateKeyData(C4KeyPair* key) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]() {
-        return C4SliceResult(key->privateKeyData());
+        return C4SliceResult(key->getPrivateKeyData());
     });
 }
 

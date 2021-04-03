@@ -579,7 +579,7 @@ namespace litecore {
         // Update its state & add it to _collections:
         if (isInTransaction())
             collection->transactionBegan();
-        _collections.insert({collection->name(), collection});
+        _collections.insert({collection->getName(), collection});
         return collection;                                                  //-> New object
     }
 
@@ -598,7 +598,7 @@ namespace litecore {
     }
 
 
-    vector<string> DatabaseImpl::collectionNames() const {
+    vector<string> DatabaseImpl::getCollectionNames() const {
         vector<string> names;
         for (const string &name : _dataFile->allKeyStoreNames()) {
              if (slice collName = keyStoreNameToCollectionName(name); collName)
@@ -609,7 +609,7 @@ namespace litecore {
 
 
     void DatabaseImpl::forEachCollection(const function_ref<void(C4Collection*)> &callback) const {
-        for (const auto &name : collectionNames()) {
+        for (const auto &name : getCollectionNames()) {
             callback(getCollection(name).get());
         }
     }

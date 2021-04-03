@@ -71,7 +71,7 @@ public:
 
     static void shutdownLiteCore();
 
-    Retained<C4Database> openAgain()                    {return openNamed(name(), configuration());}
+    Retained<C4Database> openAgain()                    {return openNamed(getName(), getConfiguration());}
 
     virtual void close() =0;
     virtual void closeAndDeleteFile() =0;
@@ -80,12 +80,12 @@ public:
 
     // Attributes:
 
-    slice name() const noexcept FLPURE                      {return _name;}
-    virtual alloc_slice path() const =0;
-    const Config& configuration() const noexcept FLPURE     {return _config;}
+    slice getName() const noexcept FLPURE                      {return _name;}
+    virtual alloc_slice getPath() const =0;
+    const Config& getConfiguration() const noexcept FLPURE     {return _config;}
     virtual alloc_slice getPeerID() const =0;
-    virtual C4UUID publicUUID() const =0;
-    virtual C4UUID privateUUID() const =0;
+    virtual C4UUID getPublicUUID() const =0;
+    virtual C4UUID getPrivateUUID() const =0;
 
     // Collections:
 
@@ -109,7 +109,7 @@ public:
     virtual void deleteCollection(slice name) =0;
 
     /// Returns the names of all existing collections, in the order in which they were created.
-    virtual std::vector<std::string> collectionNames() const =0;
+    virtual std::vector<std::string> getCollectionNames() const =0;
 
     using CollectionCallback = fleece::function_ref<void(C4Collection*)>;
 

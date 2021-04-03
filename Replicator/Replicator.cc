@@ -72,7 +72,7 @@ namespace litecore { namespace repl {
     ,_docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     ,_checkpointer(_options, webSocket->url())
     {
-        _loggingID = string(db->path()) + " " + _loggingID;
+        _loggingID = string(db->getPath()) + " " + _loggingID;
         _passive = _options.pull <= kC4Passive && _options.push <= kC4Passive;
         _important = 2;
 

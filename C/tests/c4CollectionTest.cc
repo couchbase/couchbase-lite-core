@@ -54,7 +54,7 @@ public:
 
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Collection][C]") {
-    CHECK(db->collectionNames() == (vector<string>{"_default"}));
+    CHECK(db->getCollectionNames() == (vector<string>{"_default"}));
     CHECK(db->hasCollection("_default"));
 
     Retained<C4Collection> dflt = db->getDefaultCollection();
@@ -62,8 +62,8 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     CHECK(dflt == db->getDefaultCollection());              // Must be idempotent!
     CHECK(dflt == db->getCollection("_default").get());
 
-    CHECK(dflt->name() == "_default");
-    CHECK(dflt->database() == db);
+    CHECK(dflt->getName() == "_default");
+    CHECK(dflt->getDatabase() == db);
     CHECK(dflt->getDocumentCount() == 0);
     CHECK(dflt->getLastSequence() == 0);
     // The existing c4Database tests exercise the C4Collection API for the default collection,
@@ -85,7 +85,7 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
     Retained<C4Collection> guitars = db->createCollection("guitars");
     CHECK(guitars == db->getCollection("guitars").get());
 
-    CHECK(db->collectionNames() == (vector<string>{"_default", "guitars"}));
+    CHECK(db->getCollectionNames() == (vector<string>{"_default", "guitars"}));
 
     Retained<C4Collection> dflt = db->getDefaultCollection();
     CHECK(dflt != guitars);
@@ -102,15 +102,15 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
     CHECK(dflt->getLastSequence() == 100);
 
     // Verify "guitars" is empty:
-    CHECK(guitars->name() == "guitars");
-    CHECK(guitars->database() == db);
+    CHECK(guitars->getName() == "guitars");
+    CHECK(guitars->getDatabase() == db);
     CHECK(guitars->getDocumentCount() == 0);
     CHECK(guitars->getLastSequence() == 0);
 
     db->deleteCollection("guitars");
     CHECK(!db->hasCollection("guitars"));
     CHECK(db->getCollection("guitars").get() == nullptr);
-    CHECK(db->collectionNames() == (vector<string>{"_default"}));
+    CHECK(db->getCollectionNames() == (vector<string>{"_default"}));
 }
 
 

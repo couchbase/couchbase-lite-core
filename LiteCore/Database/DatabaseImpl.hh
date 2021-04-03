@@ -87,13 +87,13 @@ namespace litecore {
 
         void close() override;
         void closeAndDeleteFile() override;
-        alloc_slice path() const override               {return alloc_slice(filePath());}
+        alloc_slice getPath() const override               {return alloc_slice(filePath());}
         alloc_slice getPeerID() const override;
-        C4UUID publicUUID() const override              {return getUUID(kPublicUUIDKey);}
-        C4UUID privateUUID() const override             {return getUUID(kPrivateUUIDKey);}
+        C4UUID getPublicUUID() const override              {return getUUID(kPublicUUIDKey);}
+        C4UUID getPrivateUUID() const override             {return getUUID(kPrivateUUIDKey);}
         void rekey(const C4EncryptionKey* C4NULLABLE newKey) override;
         void maintenance(C4MaintenanceType) override;
-        std::vector<std::string> collectionNames() const override;
+        std::vector<std::string> getCollectionNames() const override;
         void forEachCollection(const CollectionCallback&) const override;
         void forEachOpenCollection(const CollectionCallback&) const;
         bool hasCollection(slice name) const override;

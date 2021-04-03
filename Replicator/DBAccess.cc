@@ -46,7 +46,7 @@ namespace litecore { namespace repl {
                        bind(&DBAccess::markRevsSyncedLater, this),
                        tuning::kInsertionDelay)
     ,_timer(bind(&DBAccess::markRevsSyncedNow, this))
-    ,_usingVersionVectors((db->configuration().flags & kC4DB_VersionVectors) != 0)
+    ,_usingVersionVectors((db->getConfiguration().flags & kC4DB_VersionVectors) != 0)
     {
         // Copy database's sharedKeys:
         SharedKeys dbsk = db->getFleeceSharedKeys();

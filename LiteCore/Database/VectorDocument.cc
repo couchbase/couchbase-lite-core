@@ -551,7 +551,7 @@ namespace litecore {
 
         bool save(unsigned /*maxRevTreeDepth*/ =0) override {
             requireValidDocID();
-            auto db = asInternal(collection()->database());
+            auto db = asInternal(collection()->getDatabase());
             db->mustBeInTransaction();
             switch (_doc.save(db->transaction())) {
                 case VectorRecord::kNoSave:
@@ -617,7 +617,7 @@ namespace litecore {
         unordered_map<slice,slice> revMap(docIDs.size());
         for (ssize_t i = docIDs.size() - 1; i >= 0; --i)
             revMap[docIDs[i]] = revIDs[i];
-        const peerID myPeerID {asInternal(collection()->database())->myPeerID()};
+        const peerID myPeerID {asInternal(collection()->getDatabase())->myPeerID()};
 
         // These variables get reused in every call to the callback but are declared outside to
         // avoid multiple construct/destruct calls:

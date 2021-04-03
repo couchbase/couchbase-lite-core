@@ -50,13 +50,13 @@ namespace litecore {
         ,Logging(DBLog)
         ,_keyStore(&store)
         {
-            auto flags = _database->configuration().flags;
+            auto flags = _database->getConfiguration().flags;
             if (flags & kC4DB_VersionVectors)
                 _documentFactory = make_unique<VectorDocumentFactory>(this);
             else
                 _documentFactory = make_unique<TreeDocumentFactory>(this);
 
-            if (!(_database->configuration().flags & kC4DB_NonObservable))
+            if (!(_database->getConfiguration().flags & kC4DB_NonObservable))
                 _sequenceTracker = make_unique<access_lock<SequenceTracker>>(
                                                                     SequenceTracker(store.name()));
 
@@ -78,7 +78,7 @@ namespace litecore {
 
 
         std::string loggingIdentifier() const override {  // Logging API
-            auto dbName = _database->name();
+            auto dbName = _database->getName();
             return format("%.*s/%.*s", SPLAT(dbName), SPLAT(_name));
         }
 
@@ -87,8 +87,8 @@ namespace litecore {
         sequence_t getLastSequence() const override {return keyStore().lastSequence();}
         KeyStore& keyStore() const override         {precondition(_keyStore); return *_keyStore;}
 
-        DatabaseImpl* dbImpl()                      {return asInternal(database());}
-        const DatabaseImpl* dbImpl() const          {return asInternal(database());}
+        DatabaseImpl* dbImpl()                      {return asInternal(getDatabase());}
+        const DatabaseImpl* dbImpl() const          {return asInternal(getDatabase());}
 
 
         access_lock<SequenceTracker>& sequenceTracker() override {
@@ -397,7 +397,7 @@ namespace litecore {
         }
 
 
-        bool purgeDoc(slice docID) override {
+        bool purgeDocument(slice docID) override {
             C4Database::Transaction t(dbImpl());
             if (!keyStore().del(docID, dbImpl()->transaction()))
                 return false;
@@ -414,7 +414,7 @@ namespace litecore {
 
 
         int64_t purgeExpiredDocs() override {
-            C4Database::Transaction t(database());
+            C4Database::Transaction t(getDatabase());
             int64_t count;
             if (_sequenceTracker) {
                 auto st = _sequenceTracker->useLocked();
@@ -431,7 +431,7 @@ namespace litecore {
 
         void startHousekeeping() override {
             if (!_housekeeper) {
-                if ((database()->configuration().flags & kC4DB_ReadOnly) == 0) {
+                if ((getDatabase()->getConfiguration().flags & kC4DB_ReadOnly) == 0) {
                     _housekeeper = new Housekeeper(this);
                     _housekeeper->start();
                 }
@@ -523,7 +523,13 @@ using namespace fleece;
 using namespace litecore;
 
 
-C4Database* C4Collection::database() {
+C4Database* C4Collection::getDatabase() {
+    precondition(_database != nullptr);
+    return _database;
+}
+
+
+const C4Database* C4Collection::getDatabase() const {
     precondition(_database != nullptr);
     return _database;
 }

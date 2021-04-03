@@ -60,7 +60,7 @@ C4Document::~C4Document() {
 
 
 C4Collection* C4Document::collection() const                {return _collection;}
-C4Database* C4Document::database() const                    {return _collection->database();}
+C4Database* C4Document::database() const                    {return _collection->getDatabase();}
 KeyStore& C4Document::keyStore() const                      {return _collection->keyStore();}
 
 

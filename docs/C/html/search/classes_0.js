@@ -25,7 +25,6 @@ var searchData=
   ['c4replicatorparameters',['C4ReplicatorParameters',['../struct_c4_replicator_parameters.html',1,'']]],
   ['c4replicatorstatus',['C4ReplicatorStatus',['../struct_c4_replicator_status.html',1,'']]],
   ['c4revision',['C4Revision',['../struct_c4_revision.html',1,'']]],
-  ['c4socket',['C4Socket',['../struct_c4_socket.html',1,'']]],
   ['c4socketfactory',['C4SocketFactory',['../struct_c4_socket_factory.html',1,'']]],
   ['c4tlsconfig',['C4TLSConfig',['../struct_c4_t_l_s_config.html',1,'']]],
   ['c4uuid',['C4UUID',['../struct_c4_u_u_i_d.html',1,'']]]

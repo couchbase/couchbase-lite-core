@@ -32,9 +32,9 @@ namespace litecore {
     using namespace std;
 
     Housekeeper::Housekeeper(C4Collection *coll)
-    :Actor(DBLog, format("Housekeeper for %.*s", SPLAT(coll->name())))
+    :Actor(DBLog, format("Housekeeper for %.*s", SPLAT(coll->getName())))
     ,_keyStoreName(coll->keyStore().name())
-    ,_bgdb(asInternal(coll->database())->backgroundDatabase())
+    ,_bgdb(asInternal(coll->getDatabase())->backgroundDatabase())
     ,_expiryTimer(std::bind(&Housekeeper::_doExpiration, this))
     { }
 

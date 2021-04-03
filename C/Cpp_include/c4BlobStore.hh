@@ -116,7 +116,7 @@ struct C4WriteStream : public C4Base {
     ~C4WriteStream();
     C4BlobStore& blobStore() const                          {return _store;}
     void write(slice);
-    uint64_t bytesWritten() const noexcept;
+    uint64_t getBytesWritten() const noexcept;
     C4BlobKey computeBlobKey();
     C4BlobKey install(const C4BlobKey* C4NULLABLE expectedKey =nullptr);
 private:

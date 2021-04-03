@@ -204,7 +204,7 @@ namespace litecore { namespace repl {
 
     slice Checkpointer::remoteDocID(C4Database *db) {
         if(!_docID)
-            _docID = docIDForUUID(db->privateUUID(), URLTransformStrategy::AsIs);
+            _docID = docIDForUUID(db->getPrivateUUID(), URLTransformStrategy::AsIs);
         return _docID;
     }
 

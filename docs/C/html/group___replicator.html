@@ -288,8 +288,8 @@ Functions</h2></td></tr>
 <tr class="memitem:gaee627071896221b393a54f441f4f5def"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gaee627071896221b393a54f441f4f5def">c4repl_new</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_address.html">C4Address</a> remoteAddress, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> remoteDatabaseName, <a class="el" href="struct_c4_replicator_parameters.html">C4ReplicatorParameters</a> params, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:gaee627071896221b393a54f441f4f5def"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new networked replicator.  <a href="#gaee627071896221b393a54f441f4f5def">More...</a><br /></td></tr>
 <tr class="separator:gaee627071896221b393a54f441f4f5def"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad8e26ddef72ceb7e3a45cfeec2410c31"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gad8e26ddef72ceb7e3a45cfeec2410c31">c4repl_newWithSocket</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_socket.html">C4Socket</a> *openSocket, <a class="el" href="struct_c4_replicator_parameters.html">C4ReplicatorParameters</a> params, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gad8e26ddef72ceb7e3a45cfeec2410c31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new replicator from an already-open <a class="el" href="struct_c4_socket.html" title="Represents an open bidirectional stream of bytes or messages (typically a TCP socket....">C4Socket</a>.  <a href="#gad8e26ddef72ceb7e3a45cfeec2410c31">More...</a><br /></td></tr>
+<tr class="memitem:gad8e26ddef72ceb7e3a45cfeec2410c31"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gad8e26ddef72ceb7e3a45cfeec2410c31">c4repl_newWithSocket</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">C4Socket</a> *openSocket, <a class="el" href="struct_c4_replicator_parameters.html">C4ReplicatorParameters</a> params, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gad8e26ddef72ceb7e3a45cfeec2410c31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new replicator from an already-open C4Socket.  <a href="#gad8e26ddef72ceb7e3a45cfeec2410c31">More...</a><br /></td></tr>
 <tr class="separator:gad8e26ddef72ceb7e3a45cfeec2410c31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gade69de3543d564b24abfedb2360ac1b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___replicator.html#gade69de3543d564b24abfedb2360ac1b4">c4repl_free</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *repl)</td></tr>
 <tr class="memdesc:gade69de3543d564b24abfedb2360ac1b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a replicator reference.  <a href="#gade69de3543d564b24abfedb2360ac1b4">More...</a><br /></td></tr>
@@ -1682,7 +1682,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">C4Socket</a> *&#160;</td>
           <td class="paramname"><em>openSocket</em>, </td>
         </tr>
         <tr>
@@ -1705,11 +1705,11 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Creates a new replicator from an already-open <a class="el" href="struct_c4_socket.html" title="Represents an open bidirectional stream of bytes or messages (typically a TCP socket....">C4Socket</a>. </p>
+<p>Creates a new replicator from an already-open C4Socket. </p>
 <p>This is for use by listeners that accept incoming connections, wrap them by calling <code><a class="el" href="group___socket.html#ga42632bdac8ee35b6c7c8890c5ac7da8f" title="Constructs a C4Socket from a &quot;native handle&quot;, whose interpretation is up to the C4SocketFactory.">c4socket_fromNative()</a></code>, then start a passive replication to service them. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">db</td><td>The local database. </td></tr>
-    <tr><td class="paramname">openSocket</td><td>An already-created <a class="el" href="struct_c4_socket.html" title="Represents an open bidirectional stream of bytes or messages (typically a TCP socket....">C4Socket</a>. </td></tr>
+    <tr><td class="paramname">openSocket</td><td>An already-created C4Socket. </td></tr>
     <tr><td class="paramname">params</td><td>Replication parameters. Will usually use kC4Passive modes. </td></tr>
     <tr><td class="paramname">outError</td><td>Error, if replication can't be created. </td></tr>
   </table>
