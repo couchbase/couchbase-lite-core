@@ -17,7 +17,7 @@
 //
 
 #include "c4Observer.hh"
-#include "c4Observer.h"
+#include "c4Database.hh"
 #include "c4Internal.hh"
 #include "c4Collection.hh"
 #include "SequenceTracker.hh"
@@ -76,9 +76,17 @@ namespace litecore {
 
 
 unique_ptr<C4CollectionObserver>
-C4CollectionObserver::create(C4Collection *db, C4CollectionObserver::Callback callback) {
-    return make_unique<litecore::C4CollectionObserverImpl>(db, UINT64_MAX, move(callback));
+C4CollectionObserver::create(C4Collection *coll, C4CollectionObserver::Callback callback) {
+    return make_unique<litecore::C4CollectionObserverImpl>(coll, UINT64_MAX, move(callback));
 }
+
+
+#ifndef C4_STRICT_DATABASE_API
+unique_ptr<C4CollectionObserver>
+C4CollectionObserver::create(C4Database *db, Callback callback) {
+    return create(db->getDefaultCollection(), callback);
+}
+#endif
 
 
 #pragma mark - DOCUMENT OBSERVER:

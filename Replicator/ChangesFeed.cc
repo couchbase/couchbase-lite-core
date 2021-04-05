@@ -122,7 +122,7 @@ namespace litecore { namespace repl {
 
         try {
             _db.useLocked([&](C4Database* db) {
-                C4DocEnumerator e(db->getDefaultCollection(), _maxSequence, options);
+                C4DocEnumerator e(db, _maxSequence, options);
                 changes.revs.reserve(limit);
                 while (e.next() && limit > 0) {
                     C4DocumentInfo info = e.documentInfo();
@@ -257,7 +257,7 @@ namespace litecore { namespace repl {
                     if (e)
                         doc = e->getDocument();
                     else
-                        doc = db->getDefaultCollection()->getDocument(rev->docID, true,
+                        doc = db->getDocument(rev->docID, true,
                                               (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
                     if (!doc)
                         error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);

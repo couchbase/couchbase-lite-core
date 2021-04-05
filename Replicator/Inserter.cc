@@ -120,7 +120,7 @@ namespace litecore { namespace repl {
             if (rev->flags & kRevPurged) {
                 // Server says the document is no longer accessible, i.e. it's been
                 // removed from all channels the client has access to. Purge it.
-                if (_db->insertionDB().useLocked()->getDefaultCollection()->purgeDoc(rev->docID))
+                if (_db->insertionDB().useLocked()->purgeDocument(rev->docID))
                     logVerbose("    {'%.*s' removed (purged)}", SPLAT(rev->docID));
                 return true;
 
@@ -166,8 +166,7 @@ namespace litecore { namespace repl {
                 put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
                 // The save!!
-                auto doc = _db->insertionDB().useLocked()->getDefaultCollection()
-                                                         ->putDocument(put, nullptr, outError);
+                auto doc = _db->insertionDB().useLocked()->putDocument(put, nullptr, outError);
                 if (!doc)
                     return false;
                 logVerbose("    {'%.*s' #%.*s <- %.*s} seq %" PRIu64,

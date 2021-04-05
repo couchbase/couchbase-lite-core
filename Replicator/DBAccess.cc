@@ -115,7 +115,7 @@ namespace litecore { namespace repl {
         try {
             useLocked([&](C4Database *db) {
                 C4Database::Transaction t(db);
-                Retained<C4Document> doc = db->getDefaultCollection()->getDocument(docID, true, kDocGetAll);
+                Retained<C4Document> doc = db->getDocument(docID, true, kDocGetAll);
                 if (!doc)
                     error::_throw(error::NotFound);
                 doc->setRemoteAncestorRevID(_remoteDBID, revID);
@@ -136,7 +136,7 @@ namespace litecore { namespace repl {
         options.flags |= kC4IncludeDeleted;
         if (!orderByID)
             options.flags |= kC4Unsorted;
-        return make_unique<C4DocEnumerator>(useLocked()->getDefaultCollection(), options);
+        return make_unique<C4DocEnumerator>(useLocked(), options);
     }
 
 

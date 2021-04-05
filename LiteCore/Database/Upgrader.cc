@@ -130,7 +130,7 @@ namespace litecore {
 
                 Log("Importing doc '%.*s'", SPLAT(docID));
                 try {
-                    auto newDoc = _newDB->getDefaultCollection()->getDocument(docID, false, kDocGetAll);
+                    auto newDoc = _newDB->getDocument(docID, false, kDocGetAll);
                     copyRevisions(docKey, newDoc);
                 } catch (const error &x) {
                     // Add docID to exception message:

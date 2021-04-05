@@ -38,6 +38,11 @@ struct C4DocEnumerator : public C4Base {
                              C4SequenceNumber since,
                              const C4EnumeratorOptions &options = kC4DefaultEnumeratorOptions);
 
+#ifndef C4_STRICT_DATABASE_API
+    explicit C4DocEnumerator(C4Database*, const C4EnumeratorOptions& = kC4DefaultEnumeratorOptions);
+    explicit C4DocEnumerator(C4Database*, C4SequenceNumber, const C4EnumeratorOptions& = kC4DefaultEnumeratorOptions);
+#endif
+
     ~C4DocEnumerator();
 
     /// Stores the current document's metadata into a struct,

@@ -116,6 +116,20 @@ public:
     /// Calls the callback function for each collection, in the same order as collectionNames().
     virtual void forEachCollection(const CollectionCallback&) const =0;
 
+#ifndef C4_STRICT_DATABASE_API
+    // Shims to ease the pain of converting to collections. These delegate to the default collection.
+    uint64_t getDocumentCount() const;
+    C4SequenceNumber getLastSequence() const;
+    Retained<C4Document> getDocument(slice docID,
+                                     bool mustExist = true,
+                                     C4DocContentLevel content = kDocGetCurrentRev) const;
+    Retained<C4Document> getDocumentBySequence(C4SequenceNumber sequence) const;
+    Retained<C4Document> putDocument(const C4DocPutRequest &rq,
+                                     size_t* C4NULLABLE outCommonAncestorIndex,
+                                     C4Error *outError);
+    bool purgeDocument(slice docID);
+#endif
+
     // Transactions:
 
     /** Manages a transaction safely. The constructor begins a transaction, and \ref commit

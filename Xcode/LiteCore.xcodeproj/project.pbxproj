@@ -1975,6 +1975,7 @@
 		2743E2A025F7022D006F696D /* Cpp_include */ = {
 			isa = PBXGroup;
 			children = (
+				274D1793261401320018D39C /* c4.hh */,
 				2758DFF325F2A476007C7487 /* c4Base.hh */,
 				2758DFD225F161CD007C7487 /* c4BlobStore.hh */,
 				274D181826165AFB0018D39C /* c4Certificate.hh */,
@@ -3004,7 +3005,6 @@
 			isa = PBXGroup;
 			children = (
 				273E9F7D1C518793003115A6 /* c4.h */,
-				274D1793261401320018D39C /* c4.hh */,
 				2757DE591B9FC3F1002EE261 /* c4Base.h */,
 				271507F1212259DE005FE6E8 /* c4Compat.h */,
 				2722504A1D7884110006D5A5 /* c4BlobStore.h */,

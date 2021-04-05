@@ -211,3 +211,45 @@ void C4Database::clearCookies() {
     cookies.clearCookies();
     cookies.saveChanges();
 }
+
+
+#pragma mark - COLLECTIONS:
+
+
+#ifndef C4_STRICT_DATABASE_API
+
+#include "c4Document.hh"
+
+// Shims to ease the pain of converting to collections. These delegate to the default collection.
+
+uint64_t C4Database::getDocumentCount() const {
+    return getDefaultCollection()->getDocumentCount();
+}
+
+C4SequenceNumber C4Database::getLastSequence() const {
+    return getDefaultCollection()->getLastSequence();
+}
+
+Retained<C4Document> C4Database::getDocument(slice docID,
+                                 bool mustExist,
+                                 C4DocContentLevel content) const {
+    return getDefaultCollection()->getDocument(docID, mustExist, content);
+}
+
+Retained<C4Document> C4Database::getDocumentBySequence(C4SequenceNumber sequence) const {
+    return getDefaultCollection()->getDocumentBySequence(sequence);
+}
+
+Retained<C4Document> C4Database::putDocument(const C4DocPutRequest &rq,
+                                 size_t* C4NULLABLE outCommonAncestorIndex,
+                                 C4Error *outError) {
+    return getDefaultCollection()->putDocument(rq, outCommonAncestorIndex, outError);
+}
+
+bool C4Database::purgeDocument(slice docID) {
+    return getDefaultCollection()->purgeDocument(docID);
+}
+
+
+#endif
+

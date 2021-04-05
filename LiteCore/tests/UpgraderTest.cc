@@ -81,7 +81,7 @@ protected:
     }
 
     void verifyDoc(slice docID, slice bodyJSON, vector<slice> revIDs) {
-        auto doc1 = db->getDefaultCollection()->getDocument(docID, false, kDocGetAll);
+        auto doc1 = db->getDocument(docID, false, kDocGetAll);
         CHECK(doc1->exists());
         CHECK(doc1->bodyAsJSON() == bodyJSON);
         if (_versioning != kC4VectorVersioning) {

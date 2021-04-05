@@ -82,8 +82,8 @@ namespace litecore { namespace REST {
 
     
     void RESTListener::handleGetDatabase(RequestResponse &rq, C4Database *db) {
-        auto docCount = db->getDefaultCollection()->getDocumentCount();  // TODO: Collection-aware
-        auto lastSequence = db->getDefaultCollection()->getLastSequence();
+        auto docCount = db->getDocumentCount();  // TODO: Collection-aware
+        auto lastSequence = db->getLastSequence();
         C4UUID uuid = db->getPublicUUID();
         auto uuidStr = slice(&uuid, sizeof(uuid)).hexString();
 
@@ -152,7 +152,7 @@ namespace litecore { namespace REST {
         // TODO: Implement startkey, endkey, etc.
 
         // Create enumerator:
-        C4DocEnumerator e(db->getDefaultCollection(), options);
+        C4DocEnumerator e(db, options);
 
         // Enumerate, building JSON:
         auto &json = rq.jsonEncoder();
@@ -190,7 +190,7 @@ namespace litecore { namespace REST {
     void RESTListener::handleGetDoc(RequestResponse &rq, C4Database *db) {
         string docID = rq.path(1);
         string revID = rq.query("rev");
-        Retained<C4Document> doc = db->getDefaultCollection()->getDocument(docID, true,
+        Retained<C4Document> doc = db->getDocument(docID, true,
                                                   (revID.empty() ? kDocGetCurrentRev : kDocGetAll));
         if (doc) {
             if (revID.empty()) {
@@ -299,7 +299,7 @@ namespace litecore { namespace REST {
                 put.historyCount = revID ? 1 : 0;
                 put.save = true;
 
-                doc = db->getDefaultCollection()->putDocument(put, nullptr, outError);
+                doc = db->putDocument(put, nullptr, outError);
                 if (!doc)
                     return false;
                 t.commit();

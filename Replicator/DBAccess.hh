@@ -63,7 +63,7 @@ namespace litecore { namespace repl {
 
         /** Gets a document by ID */
         Retained<C4Document> getDoc(slice docID, C4DocContentLevel content) const {
-            return useLocked()->getDefaultCollection()->getDocument(docID, true, content);
+            return useLocked()->getDocument(docID, true, content);
         }
 
         /** Returns the remote ancestor revision ID of a document. */
