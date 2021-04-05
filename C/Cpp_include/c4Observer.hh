@@ -25,15 +25,22 @@
 C4_ASSUME_NONNULL_BEGIN
 
 
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
+
+
 /** A registration for callbacks whenever any document in a database changes.
     The registration lasts until this object is destructed. */
-struct C4CollectionObserver : public fleece::InstanceCounted, public C4Base {
+struct C4CollectionObserver : public fleece::InstanceCounted, C4Base {
 
     using Callback = C4Collection::CollectionObserverCallback;
 
     static std::unique_ptr<C4CollectionObserver> create(C4Collection*, Callback);
 
-#ifndef C4_STRICT_DATABASE_API
+#ifndef C4_STRICT_COLLECTION_API
     static std::unique_ptr<C4CollectionObserver> create(C4Database*, Callback);
 #endif
     
@@ -61,7 +68,7 @@ struct C4CollectionObserver : public fleece::InstanceCounted, public C4Base {
 
 /** A registration for callbacks whenever a specific document in a collection changes.
     The registration lasts until this object is destructed. */
-struct C4DocumentObserver : public fleece::InstanceCounted, public C4Base {
+struct C4DocumentObserver : public fleece::InstanceCounted, C4Base {
     using Callback = C4Collection::DocumentObserverCallback;
 
     static std::unique_ptr<C4DocumentObserver> create(C4Collection*,

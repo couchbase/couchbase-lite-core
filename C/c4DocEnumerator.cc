@@ -118,7 +118,7 @@ C4DocEnumerator::C4DocEnumerator(C4Collection *collection,
 :_impl(new Impl(collection, options))
 { }
 
-#ifndef C4_STRICT_DATABASE_API
+#ifndef C4_STRICT_COLLECTION_API
 C4DocEnumerator::C4DocEnumerator(C4Database *database, const C4EnumeratorOptions &options)
 :C4DocEnumerator(database->getDefaultCollection(), options) { }
 C4DocEnumerator::C4DocEnumerator(C4Database *database, C4SequenceNumber since,

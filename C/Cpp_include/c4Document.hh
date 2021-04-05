@@ -27,19 +27,19 @@
 #    error "c4DocumentTypes.h was included before Base.hh"
 #endif
 
-namespace litecore {
-    class CollectionImpl;
-    class DatabaseImpl;
-    class KeyStore;
-    class revid;
-    class Upgrader;
-}
-
 C4_ASSUME_NONNULL_BEGIN
 
 
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
+
+
 struct C4Document : public fleece::RefCounted,
-                    public C4Base
+                    public fleece::InstanceCountedIn<C4Document>,
+                    C4Base
 {
     // NOTE: Instances are created with database->getDocument or database->putDocument.
 

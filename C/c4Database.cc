@@ -216,7 +216,7 @@ void C4Database::clearCookies() {
 #pragma mark - COLLECTIONS:
 
 
-#ifndef C4_STRICT_DATABASE_API
+#ifndef C4_STRICT_COLLECTION_API
 
 #include "c4Document.hh"
 

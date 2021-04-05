@@ -25,21 +25,22 @@
 #include <set>
 #include <utility>
 
-namespace litecore {
-    struct C4QueryEnumeratorImpl;
-    struct C4QueryObserverImpl;
-    class DatabaseImpl;
-    class LiveQuerier;
-    class Query;
-    class QueryEnumerator;
-}
-
 C4_ASSUME_NONNULL_BEGIN
+
+
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
 
 
 /** A compiled database query.
     Instances are created by calling \ref C4Database::newQuery. */
-struct C4Query final : public fleece::RefCounted, public fleece::InstanceCountedIn<C4Query>, public C4Base {
+struct C4Query final : public fleece::RefCounted,
+                       public fleece::InstanceCountedIn<C4Query>,
+                       C4Base
+{
 public:
     unsigned columnCount() const noexcept;
     slice columnTitle(unsigned col) const;
@@ -128,7 +129,7 @@ private:
 
 /** A registration for callbacks whenever a query's result set changes.
     The registration lasts until this object is destructed. */
-struct C4QueryObserver : public fleece::InstanceCounted, public C4Base {
+struct C4QueryObserver : public fleece::InstanceCounted, C4Base {
 public:
     virtual ~C4QueryObserver() = default;
 
@@ -146,8 +147,9 @@ public:
 
 protected:
     C4QueryObserver(C4Query *query) :_query(query) { }
-    Retained<C4Query> _query;
-    C4Error                   _currentError {};
+    
+    Retained<C4Query>                           _query;
+    C4Error                                     _currentError {};
 };
 
 

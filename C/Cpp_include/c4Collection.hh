@@ -30,20 +30,17 @@
 
 C4_ASSUME_NONNULL_BEGIN
 
-namespace litecore {
-    class C4CollectionObserverImpl;
-    class C4DocumentObserverImpl;
-    class DatabaseImpl;
-    class ExclusiveTransaction;
-    class KeyStore;
-    class Record;
-    class SequenceTracker;
-}
+
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
 
 
 struct C4Collection : public fleece::RefCounted,
-                      public C4Base,
-                      public fleece::InstanceCountedIn<C4Collection>
+                      public fleece::InstanceCountedIn<C4Collection>,
+                      C4Base
 {
     // Accessors:
     

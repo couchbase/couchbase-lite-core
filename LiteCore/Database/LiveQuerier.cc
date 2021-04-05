@@ -148,7 +148,7 @@ namespace litecore {
         auto time = st.elapsedMS();
 
         if (!newQE)
-            logError("Query failed with error %s", c4error_descriptionStr(error));
+            logError("Query failed with error %s", error.description().c_str());
 
         if (_continuous) {
             if (newQE) {

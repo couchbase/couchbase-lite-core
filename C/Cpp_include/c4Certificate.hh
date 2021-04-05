@@ -27,19 +27,17 @@
 
 C4_ASSUME_NONNULL_BEGIN
 
-namespace litecore::crypto {
-    class Cert;
-    class CertBase;
-    class CertSigningRequest;
-    class Key;
-    class PersistentPrivateKey;
-    class PublicKey;
-    class PrivateKey;
-}
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
 
 
-struct C4Cert final : public fleece::RefCounted, C4Base {
-
+struct C4Cert final : public fleece::RefCounted,
+                      public fleece::InstanceCountedIn<C4Cert>,
+                      C4Base
+{
     static Retained<C4Cert> fromData(slice certData);
 
     alloc_slice getData(bool pemEncoded);

@@ -28,14 +28,16 @@
 #include <optional>
 #include <vector>
 
+struct C4ReplicatorParameters;
+
 C4_ASSUME_NONNULL_BEGIN
 
 
-struct C4ReplicatorParameters;
-
-namespace litecore::websocket {
-    class WebSocket;
-}
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
 
 
 /// Derives an encryption key from a user-entered password.
@@ -45,8 +47,8 @@ C4EncryptionKey C4EncryptionKeyFromPassword(fleece::slice password,
 
 /// A LiteCore database connection.
 struct C4Database : public fleece::RefCounted,
-                    public C4Base,
-                    public fleece::InstanceCountedIn<C4Database>
+                    public fleece::InstanceCountedIn<C4Database>,
+                    C4Base
 {
 public:
     // Lifecycle:
@@ -116,7 +118,7 @@ public:
     /// Calls the callback function for each collection, in the same order as collectionNames().
     virtual void forEachCollection(const CollectionCallback&) const =0;
 
-#ifndef C4_STRICT_DATABASE_API
+#ifndef C4_STRICT_COLLECTION_API
     // Shims to ease the pain of converting to collections. These delegate to the default collection.
     uint64_t getDocumentCount() const;
     C4SequenceNumber getLastSequence() const;
@@ -142,6 +144,8 @@ public:
         void abort()                        {auto db = _db; _db = nullptr; db->endTransaction(false);}
         ~Transaction()                      {if (_db) _db->endTransaction(false);}
     private:
+        Transaction(const Transaction&) = delete;
+        Transaction& operator=(const Transaction&) = delete;
         C4Database* C4NULLABLE _db;
     };
 

@@ -81,7 +81,7 @@ C4CollectionObserver::create(C4Collection *coll, C4CollectionObserver::Callback 
 }
 
 
-#ifndef C4_STRICT_DATABASE_API
+#ifndef C4_STRICT_COLLECTION_API
 unique_ptr<C4CollectionObserver>
 C4CollectionObserver::create(C4Database *db, Callback callback) {
     return create(db->getDefaultCollection(), callback);

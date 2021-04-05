@@ -24,8 +24,15 @@
 C4_ASSUME_NONNULL_BEGIN
 
 
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
+
+
 /** Iterates the documents in the collection, by docID or by sequence or unsorted. */
-struct C4DocEnumerator : public C4Base {
+struct C4DocEnumerator : public fleece::InstanceCounted, C4Base {
     /// Creates an enumerator on a collection, ordered by docID (unless the `kC4Unsorted` flag
     /// is set.)
     /// You must first call \ref next to step to the first document.
@@ -38,7 +45,7 @@ struct C4DocEnumerator : public C4Base {
                              C4SequenceNumber since,
                              const C4EnumeratorOptions &options = kC4DefaultEnumeratorOptions);
 
-#ifndef C4_STRICT_DATABASE_API
+#ifndef C4_STRICT_COLLECTION_API
     explicit C4DocEnumerator(C4Database*, const C4EnumeratorOptions& = kC4DefaultEnumeratorOptions);
     explicit C4DocEnumerator(C4Database*, C4SequenceNumber, const C4EnumeratorOptions& = kC4DefaultEnumeratorOptions);
 #endif
@@ -66,6 +73,8 @@ struct C4DocEnumerator : public C4Base {
     void close() noexcept;
 
 private:
+    C4DocEnumerator(const C4DocEnumerator&) = delete;
+    
     class Impl;
     std::unique_ptr<Impl> _impl;
 };

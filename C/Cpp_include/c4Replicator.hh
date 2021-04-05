@@ -23,7 +23,17 @@
 C4_ASSUME_NONNULL_BEGIN
 
 
-struct C4Replicator : public fleece::RefCounted, public C4Base {
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
+
+
+struct C4Replicator : public fleece::RefCounted,
+                      public fleece::InstanceCountedIn<C4Replicator>,
+                      C4Base
+{
     // NOTE: Instances are created with database->newReplicator(...).
 
     static bool isValidDatabaseName(slice dbName) noexcept;

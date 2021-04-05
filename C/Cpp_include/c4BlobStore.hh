@@ -18,7 +18,7 @@
 
 #pragma once
 #include "c4Base.hh"
-#include "c4BlobStore.h"
+#include "c4BlobStoreTypes.h"
 #include "c4DatabaseTypes.h"
 #include "function_ref.hh"
 #include "fleece/Fleece.h"
@@ -26,15 +26,14 @@
 #include <optional>
 #include <unordered_set>
 
-namespace litecore {
-    class BlobStore;
-    class BlobWriteStream;
-    class DatabaseImpl;
-    class FilePath;
-    class SeekableReadStream;
-}
-
 C4_ASSUME_NONNULL_BEGIN
+
+
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
 
 
 namespace C4Blob {
@@ -98,7 +97,7 @@ namespace C4Blob {
 };
 
 
-struct C4ReadStream : public C4Base {
+struct C4ReadStream : public fleece::InstanceCounted, C4Base {
     C4ReadStream(const C4BlobStore&, C4BlobKey);
     C4ReadStream(C4ReadStream&&);
     ~C4ReadStream();
@@ -110,7 +109,7 @@ private:
 };
 
 
-struct C4WriteStream : public C4Base {
+struct C4WriteStream : public fleece::InstanceCounted, C4Base {
     explicit C4WriteStream(C4BlobStore&);
     C4WriteStream(C4WriteStream&&);
     ~C4WriteStream();
@@ -125,7 +124,7 @@ private:
 };
 
 
-struct C4BlobStore : public C4Base {
+struct C4BlobStore : C4Base {
     // NOTE: Usually accessed via database->getBlobStore().
 
     ~C4BlobStore();
@@ -170,6 +169,7 @@ protected:
     friend struct C4ReadStream;
     friend struct C4WriteStream;
 
+    C4BlobStore(const C4BlobStore&) = delete;
     litecore::FilePath dir() const;
     litecore::FilePath pathForKey(C4BlobKey) const;
     std::unique_ptr<litecore::SeekableReadStream> getReadStream(C4BlobKey) const;
@@ -184,7 +184,7 @@ private:
 
 
 namespace std {
-    // Declare the default hash function for `C4BlobKey`
+    // Declares the default hash function for `C4BlobKey`
     template<> struct hash<C4BlobKey> {
         std::size_t operator() (C4BlobKey const& key) const {
             return fleece::slice(key).hash();

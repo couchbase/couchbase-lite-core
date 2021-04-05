@@ -23,11 +23,12 @@ namespace litecore {
     
 
     // Encapsulates C4QueryEnumerator struct. A C4QueryEnumerator* points inside this object.
-    struct C4QueryEnumeratorImpl : public RefCounted,
-                                   public C4QueryEnumerator,
-                                   public C4Base,
-                                   fleece::InstanceCountedIn<C4QueryEnumerator>
+    class C4QueryEnumeratorImpl : public RefCounted,
+                                  public C4QueryEnumerator,
+                                  public fleece::InstanceCountedIn<C4QueryEnumerator>,
+                                  C4Base
     {
+    public:
         C4QueryEnumeratorImpl(DatabaseImpl *database, Query *query, QueryEnumerator *e)
         :_database(database)
         ,_query(query)
@@ -110,7 +111,8 @@ namespace litecore {
 
 
     // Internal implementation of C4QueryObserver
-    struct C4QueryObserverImpl : public C4QueryObserver {
+    class C4QueryObserverImpl : public C4QueryObserver {
+    public:
         C4QueryObserverImpl(C4Query *query, C4Query::ObserverCallback callback)
         :C4QueryObserver(query)
         ,_callback(move(callback))
