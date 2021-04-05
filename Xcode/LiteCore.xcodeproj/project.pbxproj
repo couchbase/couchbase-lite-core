@@ -60,6 +60,7 @@
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F91E248578D000BE21D9 /* mbedSnippets.cc */; };
 		2716F9BF249AD3CB00BE21D9 /* c4CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */; };
+		27175B12261B91170045F3AC /* REST_CAPI.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27175B11261B91170045F3AC /* REST_CAPI.cc */; };
 		271925132396FE160053DDA6 /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
 		271925142396FE1E0053DDA6 /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
 		271925152396FE260053DDA6 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
@@ -866,6 +867,7 @@
 		2716F91D248578D000BE21D9 /* mbedSnippets.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = mbedSnippets.hh; sourceTree = "<group>"; };
 		2716F91E248578D000BE21D9 /* mbedSnippets.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mbedSnippets.cc; sourceTree = "<group>"; };
 		2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4CertificateTest.cc; sourceTree = "<group>"; };
+		27175B11261B91170045F3AC /* REST_CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = REST_CAPI.cc; sourceTree = "<group>"; };
 		27175AF1261B80E70045F3AC /* c4BlobStoreTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStoreTypes.h; sourceTree = "<group>"; };
 		2719253323970C7F0053DDA6 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = data; sourceTree = "<group>"; };
 		2719253B23970F4E0053DDA6 /* replacedb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = replacedb; path = data/replacedb; sourceTree = "<group>"; };
@@ -1875,6 +1877,7 @@
 				27DDC54A236B56D000580B2B /* CertRequest.cc */,
 				279D40F51EA533D900D8DD9D /* netUtils.cc */,
 				279D40F61EA533D900D8DD9D /* netUtils.hh */,
+				27175B11261B91170045F3AC /* REST_CAPI.cc */,
 				270BEE1C20647E8A005E8BE8 /* EE */,
 				276E020F1EA9712700FEFE8A /* tests */,
 				2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */,
@@ -4288,6 +4291,7 @@
 				270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */,
 				2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */,
 				27FC81F91EAAB7C60028E38E /* Request.cc in Sources */,
+				27175B12261B91170045F3AC /* REST_CAPI.cc in Sources */,
 				2796A28423072F7000774850 /* Server.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
