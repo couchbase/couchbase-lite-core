@@ -31,6 +31,7 @@ set(
     RESTListener+Handlers.cc
     RESTListener+Replicate.cc
     RESTListener.cc
+    REST_CAPI.cc
     Server.cc
     EE/RESTSyncListener_stub.cc
 )
