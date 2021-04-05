@@ -868,6 +868,7 @@
 		2716F91E248578D000BE21D9 /* mbedSnippets.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mbedSnippets.cc; sourceTree = "<group>"; };
 		2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4CertificateTest.cc; sourceTree = "<group>"; };
 		27175B11261B91170045F3AC /* REST_CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = REST_CAPI.cc; sourceTree = "<group>"; };
+		27175B73261BC3030045F3AC /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		27175AF1261B80E70045F3AC /* c4BlobStoreTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStoreTypes.h; sourceTree = "<group>"; };
 		2719253323970C7F0053DDA6 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = data; sourceTree = "<group>"; };
 		2719253B23970F4E0053DDA6 /* replacedb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = replacedb; path = data/replacedb; sourceTree = "<group>"; };
@@ -1979,6 +1980,7 @@
 		2743E2A025F7022D006F696D /* Cpp_include */ = {
 			isa = PBXGroup;
 			children = (
+				27175B73261BC3030045F3AC /* README.md */,
 				274D1793261401320018D39C /* c4.hh */,
 				2758DFF325F2A476007C7487 /* c4Base.hh */,
 				2758DFD225F161CD007C7487 /* c4BlobStore.hh */,

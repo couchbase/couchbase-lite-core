@@ -25,7 +25,6 @@
 #include "function_ref.hh"
 #include <functional>
 #include <memory>
-#include <optional>
 #include <vector>
 
 struct C4ReplicatorParameters;

@@ -33,6 +33,7 @@
 #include "SecureSymmetricCrypto.hh"
 #include "StringUtil.hh"
 #include <inttypes.h>
+#include <optional>
 
 
 // NOTE: Most of C4Database is implemented in its concrete subclass DatabaseImpl.

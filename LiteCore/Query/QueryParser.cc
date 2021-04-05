@@ -1138,6 +1138,7 @@ namespace litecore {
             parseNode(operands[0]);
         }
         ++operands;
+        bool hasElse = false;
         while(operands) {
             auto test = operands.value();
             ++operands;
@@ -1150,7 +1151,13 @@ namespace litecore {
             } else {
                 _sql << " ELSE ";
                 parseNode(test);
+                hasElse = true;
             }
+        }
+        // Fill up the vaccum due to the absense of ELSE, or SQLite will fill it with SQLite's NULL but we want
+        // the JSON null.
+        if (!hasElse) {
+            _sql << " ELSE " << kNullFnName << "()";
         }
         _sql << " END";
     }
@@ -1307,6 +1314,11 @@ namespace litecore {
                 "Too few arguments for function '%.*s'", SPLAT(op));
         require(arity <= spec->maxArgs || spec->maxArgs >= 9,
                 "Too many arguments for function '%.*s'", SPLAT(op));
+
+        if (spec->name == "match"_sl) {
+            matchOp(op, operands);
+            return;
+        }
 
         if (spec->sqlite_name)
             op = spec->sqlite_name;
@@ -1688,7 +1700,7 @@ namespace litecore {
     // Recursively looks for MATCH expressions and adds the properties being matched to
     // _indexJoinTables. Returns the number of expressions found.
     unsigned QueryParser::findFTSProperties(const Value *root) {
-        return findNodes(root, "MATCH"_sl, 1, [this](const Array *match) {
+        return findNodes(root, "MATCH()"_sl, 1, [this](const Array *match) {
             FTSJoinTableAlias(match->get(1), true); // add LHS
         });
     }

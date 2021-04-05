@@ -417,7 +417,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query dict literal", "[Query][C]") {
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
-    compile(json5("['MATCH', 'byStreet', 'Hwy']"));
+    compile(json5("['MATCH()', 'byStreet', 'Hwy']"));
     auto results = runFTS();
     CHECK(results == (vector<vector<C4FullTextMatch>>{
         {{13, 0, 0, 10, 3}},
@@ -439,7 +439,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple properties", "[Query][
     REQUIRE(c4db_createIndex(db, C4STR("byAddress"),
                              C4STR("[[\".contact.address.street\"], [\".contact.address.city\"], [\".contact.address.state\"]]"), kC4FullTextIndex, nullptr, ERROR_INFO(err)));
     // Some docs match 'Santa' in the street name, some in the city name
-    compile(json5("['MATCH', 'byAddress', 'Santa']"));
+    compile(json5("['MATCH()', 'byAddress', 'Santa']"));
     CHECK(runFTS() == (vector<vector<C4FullTextMatch>>{
         { {15, 1, 0, 0, 5} },
         { {44, 0, 0, 3, 5} },
@@ -448,20 +448,20 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple properties", "[Query][
     }));
 
     // Search only the street name:
-    compile(json5("['MATCH', 'byAddress', 'contact.address.street:Santa']"));
+    compile(json5("['MATCH()', 'byAddress', 'contact.address.street:Santa']"));
     CHECK(runFTS() == (vector<vector<C4FullTextMatch>>{
         { {44, 0, 0, 3, 5} },
         { {68, 0, 0, 3, 5} }
     }));
 
     // Search for 'Santa' in the street name, and 'Saint' in either:
-    compile(json5("['MATCH', 'byAddress', 'contact.address.street:Santa Saint']"));
+    compile(json5("['MATCH()', 'byAddress', 'contact.address.street:Santa Saint']"));
     CHECK(runFTS() == (vector<vector<C4FullTextMatch>>{
         { {68, 0, 0, 3, 5}, {68, 1, 1, 0, 5} }
     }));
 
     // Search for 'Santa' in the street name, _or_ 'Saint' in either:
-    compile(json5("['MATCH', 'byAddress', 'contact.address.street:Santa OR Saint']"));
+    compile(json5("['MATCH()', 'byAddress', 'contact.address.street:Santa OR Saint']"));
     CHECK(runFTS() == (vector<vector<C4FullTextMatch>>{
         { {20, 1, 1, 0, 5} },
         { {44, 0, 0, 3, 5} },
@@ -475,8 +475,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple indexes", "[Query][C][
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
-    compile(json5("['AND', ['MATCH', 'byStreet', 'Hwy'],\
-                           ['MATCH', 'byCity',   'Santa']]"));
+    compile(json5("['AND', ['MATCH()', 'byStreet', 'Hwy'],\
+                           ['MATCH()', 'byCity',   'Santa']]"));
     CHECK(run() == (vector<string>{"0000015"}));
     CHECK(runFTS() == (vector<vector<C4FullTextMatch>>{
         { {15, 0, 0, 11, 3} }
@@ -489,7 +489,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS multiple ANDs", "[Query][C][FTS
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     compile(json5("['AND', ['AND', ['=', ['.gender'], 'male'],\
-                                   ['MATCH', 'byCity', 'Santa']],\
+                                   ['MATCH()', 'byCity', 'Santa']],\
                            ['=', ['.name.first'], 'Cleveland']]"));
     CHECK(run() == (vector<string>{"0000015"}));
     CHECK(runFTS() == (vector<vector<C4FullTextMatch>>{
@@ -504,8 +504,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple queries", "[Query][C][
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     query = c4query_new(db,
-                        json5slice("['AND', ['MATCH', 'byStreet', 'Hwy'],\
-                                            ['MATCH', 'byStreet', 'Blvd']]"),
+                        json5slice("['AND', ['MATCH()', 'byStreet', 'Hwy'],\
+                                            ['MATCH()', 'byStreet', 'Blvd']]"),
                         &err);
     REQUIRE(query == nullptr);
     CheckError(err, LiteCoreDomain, kC4ErrorInvalidQuery,
@@ -519,7 +519,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Buried", "[Query][C][FTS][!thro
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
     query = c4query_new(db,
-                        json5slice("['OR', ['MATCH', 'byStreet', 'Hwy'],\
+                        json5slice("['OR', ['MATCH()', 'byStreet', 'Hwy'],\
                                            ['=', ['.', 'contact', 'address', 'state'], 'CA']]"),
                         &err);
     REQUIRE(query == nullptr);
@@ -535,7 +535,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Aggregate", "[Query][C][FTS]") 
     query = c4query_new(db,
             json5slice("['SELECT', { 'WHAT': [ [ 'count()', [ '.', 'uuid' ] ] ],"
                        " 'WHERE': [ 'AND', [ 'AND', [ '=', [ '.', 'doc_type' ], 'rec' ],"
-                                                  " [ 'MATCH', 'byStreet', 'keyword' ] ],"
+                                                  " [ 'MATCH()', 'byStreet', 'keyword' ] ],"
                                          "[ '=', [ '.', 'pId' ], 'bfe2970b-9be6-46f6-b9a7-38c5947c27b1' ] ] } ]"),
                         ERROR_INFO(err));
     REQUIRE(query);
@@ -553,7 +553,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with alias", "[Query][C][FTS]")
             json5slice("['SELECT', { 'WHAT': [ [ '.db.uuid' ] ],"
                        " 'FROM': [{ 'AS' : 'db'}],"
                        " 'WHERE': [ 'AND', [ 'AND', [ '=', [ '.db.doc_type' ], 'rec' ],"
-                                                  " [ 'MATCH', 'byStreet', 'keyword' ] ],"
+                                                  " [ 'MATCH()', 'byStreet', 'keyword' ] ],"
                                          "[ '=', [ '.db.pId' ], 'bfe2970b-9be6-46f6-b9a7-38c5947c27b1' ] ] } ]"),
                         ERROR_INFO(err));
     REQUIRE(query);
@@ -592,7 +592,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with accents", "[Query][C][FTS]
         c4slice_free(bodyContent);
     }
 
-    C4Slice queryStr = C4STR("{\"WHERE\": [\"MATCH\",\"nameFTSIndex\",\"'hâkimler'\"], \"WHAT\": [[\".\"]]}");
+    C4Slice queryStr = C4STR("{\"WHERE\": [\"MATCH()\",\"nameFTSIndex\",\"'hâkimler'\"], \"WHAT\": [[\".\"]]}");
     query = c4query_new(db, queryStr, ERROR_INFO(err));
     REQUIRE(query);
     auto e = c4query_run(query, nullptr, nullslice, ERROR_INFO(err));

@@ -182,7 +182,7 @@ expr6 =
       | VALUED                          { $$ = op("NOT", op("IS_VALUED()", x)); }
     )
   | inExpression
-  | likeOrMatchExpression
+  | likeExpression
   | betweenExpression
   | x:expr5 (_ o:OP_PREC_6 _ r:expr5    { x = binaryOp(x, o, r);}
              )*                         { $$ = x}
@@ -202,11 +202,10 @@ expr1 =
     x:expr0 (_ op:OP_PREC_1 _ r:expr0   { x = binaryOp(x, op, r);}
              )*                         { $$ = x}
 
-likeOrMatchExpression =
-    x:expr5 _ (n:NOT)? o:likeOrMatch r:expr5 { auto b = binaryOp(x, o, r);
+likeExpression =
+    x:expr5 _ (n:NOT)? LIKE r:expr5     { auto b = binaryOp(x, "LIKE", r);
                                           if (n.isNotNull())  b = op("NOT", b);
                                           $$ = b; }
-likeOrMatch = <(LIKE | MATCH)>          { $$ = trim(yytext);}
 
 betweenExpression =
     x:expr5 (n:NOT)? BETWEEN min:expr5 AND max:expr5
@@ -375,7 +374,6 @@ JOIN      = "JOIN"i        WB
 LEFT      = "LEFT"i        WB
 LIKE      = "LIKE"i        WB
 LIMIT     = "LIMIT"i       WB
-MATCH     = "MATCH"i       WB
 MISSING   = "MISSING"i     WB
 NOT       = "NOT"i         WB
 NULL      = "NULL"i        WB
@@ -434,7 +432,7 @@ FLOAT_LITERAL =
                                           sscanf(yytext, "%lf", &d);
                                           $$ = d; }
 INT_LITERAL =
-    <'-'? DIGIT+> WB                    { $$ = (long long)atoi(yytext);}
+    <'-'? DIGIT+> WB                    { $$ = (long long)atoll(yytext);}
 
 DIGIT = [0-9]
 

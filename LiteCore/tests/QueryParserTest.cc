@@ -223,7 +223,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT", "[Query]") {
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT FTS", "[Query][FTS]") {
     CHECK(parseWhere("['SELECT', {\
-                     WHERE: ['MATCH', 'bio', 'mobile']}]")
+                     WHERE: ['MATCH()', 'bio', 'mobile']}]")
           == "SELECT _doc.rowid, offsets(fts1.\"kv_default::bio\"), key, sequence FROM kv_default AS _doc JOIN \"kv_default::bio\" AS fts1 ON fts1.docid = _doc.rowid WHERE (fts1.\"kv_default::bio\" MATCH 'mobile') AND (_doc.flags & 1 = 0)");
 }
 
@@ -269,12 +269,17 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT WHAT", "[Query]") {
 
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser CASE", "[Query]") {
-    CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2]")
-          == "CASE fl_value(body, 'color') WHEN 'red' THEN 1 WHEN 'green' THEN 2 END");
+    const char* target = "CASE fl_value(body, 'color') WHEN 'red' THEN 1 WHEN 'green' THEN 2 ELSE fl_null() END";
+    CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2      ]") == target);
+    CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2, null]") == target);
+
     CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2, 0]")
           == "CASE fl_value(body, 'color') WHEN 'red' THEN 1 WHEN 'green' THEN 2 ELSE 0 END");
-    CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right']")
-          == "CASE WHEN 2 = 3 THEN 'wtf' WHEN 2 = 2 THEN 'right' END");
+
+    target = "CASE WHEN 2 = 3 THEN 'wtf' WHEN 2 = 2 THEN 'right' ELSE fl_null() END";
+    CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right'      ]") == target);
+    CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right', null]") == target);
+
     CHECK(parseWhere("['CASE', null, ['=', 2, 3], 'wtf', ['=', 2, 2], 'right', 'whatever']")
           == "CASE WHEN 2 = 3 THEN 'wtf' WHEN 2 = 2 THEN 'right' ELSE 'whatever' END");
 }
