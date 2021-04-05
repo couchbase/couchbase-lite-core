@@ -850,7 +850,7 @@ YY_ACTION(void) yy_1_function(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_1_function\n"));
   {
 #line 322
-   f = op("meta");;
+   f = op("meta()");;
   }
 #undef yythunkpos
 #undef yypos
@@ -1744,7 +1744,7 @@ YY_ACTION(void) yy_7_expr6(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_7_expr6\n"));
   {
 #line 182
-   __ = op("NOT", op("IS_VALUED()", x)); ;
+   __ = op("NOT", op("IS VALUED", x)); ;
   }
 #undef yythunkpos
 #undef yypos
@@ -1804,7 +1804,7 @@ YY_ACTION(void) yy_4_expr6(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_4_expr6\n"));
   {
 #line 177
-   __ = op("IS_VALUED()", x); ;
+   __ = op("IS VALUED", x); ;
   }
 #undef yythunkpos
 #undef yypos

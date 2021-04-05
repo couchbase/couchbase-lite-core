@@ -1005,11 +1005,11 @@ namespace litecore {
 
     bool QueryParser::optimizeMetaKeyExtraction(Array::iterator& operands) {
         // Handle Meta().id - N1QL
-        // ["_.", ["meta" <db>], ".id"] - JSON
+        // ["_.", ["meta()", <db>], ".id"] - JSON
 
         const Array* metaop = operands[0]->asArray();
         if (metaop == nullptr || metaop->count() == 0 ||
-            metaop->begin().value()->asString() != "meta"_sl) {
+            ! metaop->begin().value()->asString().caseEquivalent("meta()")) {
             return false;
         }
         slice dbAlias;
@@ -1295,7 +1295,9 @@ namespace litecore {
     // Handles function calls, where the op ends with "()"
     void QueryParser::functionOp(slice op, Array::iterator& operands) {
         // Look up the function name:
-        op.shorten(op.size - 2);
+        if (op.hasSuffix("()"_sl)) {
+            op.shorten(op.size - 2);
+        }
         string fnName = op.asString();
         const FunctionSpec *spec;
         for (spec = kFunctionList; spec->name; ++spec) {

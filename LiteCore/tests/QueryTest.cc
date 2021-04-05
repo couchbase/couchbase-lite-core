@@ -1697,7 +1697,7 @@ TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
     
     // SELECT meta.id WHERE callsign IS NOT VALUED
     query = store->compileQuery(json5(
-        "{'WHAT':[['._id']],'WHERE':['NOT',['IS_VALUED()',['.callsign']]]}"));
+        "{'WHAT':[['._id']],'WHERE':['NOT',['IS VALUED',['.callsign']]]}"));
     e = query->createEnumerator();
     CHECK(e->getRowCount() == 2);
     CHECK(e->next());
