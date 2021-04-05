@@ -45,6 +45,7 @@
 #include "Encoder.hh"
 #include "JSONConverter.hh"
 #include <inttypes.h>
+#include <optional>
 
 using namespace std;
 using namespace fleece;

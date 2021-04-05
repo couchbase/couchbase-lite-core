@@ -25,7 +25,6 @@
 #include "function_ref.hh"
 #include <functional>
 #include <memory>
-#include <optional>
 #include <vector>
 
 C4_ASSUME_NONNULL_BEGIN
