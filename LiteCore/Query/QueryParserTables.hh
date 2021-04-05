@@ -65,7 +65,6 @@ namespace litecore {
         {"IN"_sl,      2, 9,  3,  &QueryParser::inOp},
         {"LIKE"_sl,    2, 3,  3,  &QueryParser::likeOp},
         {"NOT IN"_sl,  2, 9,  3,  &QueryParser::inOp},
-        {"MATCH"_sl,   2, 2,  3,  &QueryParser::matchOp},
         {"BETWEEN"_sl, 3, 3,  3,  &QueryParser::betweenOp},
         {"EXISTS"_sl,  1, 1,  8,  &QueryParser::existsOp},
 
@@ -182,21 +181,35 @@ namespace litecore {
 
         // Types:
         {"isarray"_sl,          1, 1},
+        {"is_array"_sl,         1, 1, "isarray"_sl},
         {"isatom"_sl,           1, 1},
+        {"is_atom"_sl,          1, 1, "isatom"_sl},
         {"isboolean"_sl,        1, 1},
+        {"is_boolean"_sl,       1, 1, "isboolean"_sl},        
         {"isnumber"_sl,         1, 1},
+        {"is_number"_sl,        1, 1, "isnumber"_sl},        
         {"isobject"_sl,         1, 1},
+        {"is_object"_sl,        1, 1, "isobject"_sl},        
         {"isstring"_sl,         1, 1},
+        {"is_string"_sl,        1, 1, "isstring"_sl},
         {"type"_sl,             1, 1},
+        {"typename"_sl,         1, 1, "type"_sl},
         {"toarray"_sl,          1, 1},
+        {"to_array"_sl,         1, 1, "toarray"_sl},
         {"toatom"_sl,           1, 1},
+        {"to_atom"_sl,          1, 1, "toatom"_sl},
         {"toboolean"_sl,        1, 1},
+        {"to_boolean"_sl,       1, 1, "toboolean"_sl},        
         {"tonumber"_sl,         1, 1},
+        {"to_number"_sl,        1, 1, "tonumber"_sl},
         {"toobject"_sl,         1, 1},
+        {"to_object"_sl,        1, 1, "toobject"_sl},        
         {"tostring"_sl,         1, 1},
+        {"to_string"_sl,        1, 1, "tostring"_sl},
         {"is_valued"_sl,        1, 1, "isvalued"_sl},
 
         // FTS (not standard N1QL):
+        {"match"_sl,            2, 2},
         {"rank"_sl,             1, 1},
 
         // Aggregate functions:
