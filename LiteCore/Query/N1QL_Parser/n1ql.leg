@@ -174,12 +174,12 @@ expr6 =
   | x:expr5 IS (
         NULL                            { $$ = binaryOp(x, "IS", nullValue); }
       | MISSING                         { $$ = binaryOp(x, "IS", op("MISSING")); }
-      | VALUED                          { $$ = op("IS_VALUED()", x); }
+      | VALUED                          { $$ = op("IS VALUED", x); }
     )
   | x:expr5 IS NOT (
         NULL                            { $$ = binaryOp(x, "IS NOT", nullValue); }
       | MISSING                         { $$ = op(x, "IS NOT", op("MISSING")); }
-      | VALUED                          { $$ = op("NOT", op("IS_VALUED()", x)); }
+      | VALUED                          { $$ = op("NOT", op("IS VALUED", x)); }
     )
   | inExpression
   | likeExpression
@@ -319,7 +319,7 @@ propertyName
 
 
 function =
-    "meta"i _ '(' _                    { f = op("meta");}
+    "meta"i _ '(' _                    { f = op("meta()");}
     (ds:dataSourceName _               { appendAny(f, ds.as<string>());}
     )? ')' _                           { $$ = f;}
   | f:functionName e:parenExprs        { $$ = insertAny(e, 0, f.as<string>() + "()");}
