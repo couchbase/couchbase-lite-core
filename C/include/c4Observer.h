@@ -49,10 +49,14 @@ C4API_BEGIN_DECLS
 
     typedef C4CollectionObserverCallback C4DatabaseObserverCallback;
 
+#ifndef C4_STRICT_COLLECTION_API
+
     /** Creates a collection observer on the database's default collection. */
     C4CollectionObserver* c4dbobs_create(C4Database* database,
                                          C4CollectionObserverCallback callback,
                                          void* C4NULLABLE context) C4API;
+
+#endif
 
     /** Creates a new collection observer, with a callback that will be invoked after one or more
         documents in the collection have changed.
@@ -118,11 +122,15 @@ C4API_BEGIN_DECLS
                                                C4SequenceNumber sequence,
                                                void * C4NULLABLE context);
 
-    /** Creates a new document observer, on a document in the database's default collection. */
+#ifndef C4_STRICT_COLLECTION_API
+
+/** Creates a new document observer, on a document in the database's default collection. */
     C4DocumentObserver* c4docobs_create(C4Database* database,
                                         C4String docID,
                                         C4DocumentObserverCallback callback,
                                         void* C4NULLABLE context) C4API;
+
+#endif
 
     /** Creates a new document observer, with a callback that will be invoked when the document
         changes.

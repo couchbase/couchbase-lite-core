@@ -34,6 +34,7 @@ C4API_BEGIN_DECLS
     /** Frees a C4DocEnumerator handle. */
     void c4enum_free(C4DocEnumerator* C4NULLABLE e) C4API;
 
+#ifndef C4_STRICT_COLLECTION_API
     /** Creates an enumerator ordered by sequence.
         Caller is responsible for freeing the enumerator when finished with it.
         @param database  The database.
@@ -46,18 +47,6 @@ C4API_BEGIN_DECLS
                                            const C4EnumeratorOptions* C4NULLABLE options,
                                            C4Error* C4NULLABLE outError) C4API;
 
-    /** Creates an enumerator ordered by sequence.
-        Caller is responsible for freeing the enumerator when finished with it.
-        @param collection  The collection.
-        @param since  The sequence number to start _after_. Pass 0 to start from the beginning.
-        @param options  Enumeration options (NULL for defaults).
-        @param outError  Error will be stored here on failure.
-        @return  A new enumerator, or NULL on failure. */
-    C4DocEnumerator* c4coll_enumerateChanges(C4Collection *collection,
-                                             C4SequenceNumber since,
-                                             const C4EnumeratorOptions* C4NULLABLE options,
-                                             C4Error* C4NULLABLE outError) C4API;
-
     /** Creates an enumerator ordered by docID.
         Options have the same meanings as in Couchbase Lite.
         There's no 'limit' option; just stop enumerating when you're done.
@@ -69,6 +58,19 @@ C4API_BEGIN_DECLS
     C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                            const C4EnumeratorOptions* C4NULLABLE options,
                                            C4Error* C4NULLABLE outError) C4API;
+#endif
+
+    /** Creates an enumerator ordered by sequence.
+        Caller is responsible for freeing the enumerator when finished with it.
+        @param collection  The collection.
+        @param since  The sequence number to start _after_. Pass 0 to start from the beginning.
+        @param options  Enumeration options (NULL for defaults).
+        @param outError  Error will be stored here on failure.
+        @return  A new enumerator, or NULL on failure. */
+    C4DocEnumerator* c4coll_enumerateChanges(C4Collection *collection,
+                                             C4SequenceNumber since,
+                                             const C4EnumeratorOptions* C4NULLABLE options,
+                                             C4Error* C4NULLABLE outError) C4API;
 
     /** Creates an enumerator ordered by docID.
         Options have the same meanings as in Couchbase Lite.
