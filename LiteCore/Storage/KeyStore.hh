@@ -167,10 +167,7 @@ namespace litecore {
         virtual unsigned expireRecords(std::optional<ExpirationCallback> =std::nullopt) =0;
 
 
-        //////// Queries & Indexing:
-
-        /** Creates a database query object. */
-        virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
+        //////// Indexing:
 
         virtual bool supportsIndexes(IndexSpec::Type) const                   {return false;}
         virtual bool createIndex(const IndexSpec&) =0;

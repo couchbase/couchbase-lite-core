@@ -52,25 +52,27 @@ namespace litecore {
 
 
         /** Delegate knows about the naming & existence of tables. */
-        class delegate {
+        class Delegate {
         public:
-            virtual ~delegate() =default;
-            virtual string tableName() const =0;
-            virtual string bodyColumnName() const               {return "body";}
-            virtual string FTSTableName(const string &property) const =0;
-            virtual string unnestedTableName(const string &property) const =0;
-#ifdef COUCHBASE_ENTERPRISE
-            virtual string predictiveTableName(const string &property) const =0;
-#endif
+            virtual ~Delegate() =default;
             virtual bool tableExists(const string &tableName) const =0;
+            virtual string defaultCollectionName() const =0;
+            virtual string collectionTableName(const string &collection) const =0;
+            virtual string bodyColumnName() const               {return "body";}
+            virtual string FTSTableName(const string &onTable, const string &property) const =0;
+            virtual string unnestedTableName(const string &onTable, const string &property) const =0;
+#ifdef COUCHBASE_ENTERPRISE
+            virtual string predictiveTableName(const string &onTable, const string &property) const =0;
+#endif
+            string defaultTableName() const { return collectionTableName(defaultCollectionName());}
         };
 
 
-        QueryParser(const delegate &delegate)
-        :QueryParser(delegate, delegate.tableName(), delegate.bodyColumnName())
+        QueryParser(const Delegate &delegate)
+        :QueryParser(delegate, delegate.defaultTableName(), delegate.bodyColumnName())
         { }
 
-        void setTableName(const string &name)                   {_tableName = name;}
+        void setTableName(const string &name)                   {_mainTableName = name;}
         void setBodyColumnName(const string &name)              {_bodyColumnName = name;}
 
         void parse(const Value*);
@@ -79,6 +81,7 @@ namespace litecore {
         void parseJustExpression(const Value *expression);
 
         void writeCreateIndex(const string &name,
+                              const string &onTableName,
                               ArrayIterator &whatExpressions,
                               const Array *whereClause,
                               bool isUnnestedTable);
@@ -116,14 +119,14 @@ namespace litecore {
             kUnnestTableAlias
         };
 
-        QueryParser(const delegate &delegate, const string& tableName, const string& bodyColumnName)
+        QueryParser(const Delegate &delegate, const string& tableName, const string& bodyColumnName)
         :_delegate(delegate)
-        ,_tableName(tableName)
+        ,_mainTableName(tableName)
         ,_bodyColumnName(bodyColumnName)
         { }
 
         QueryParser(const QueryParser *qp)
-        :QueryParser(qp->_delegate, qp->_tableName, qp->_bodyColumnName)
+        :QueryParser(qp->_delegate, qp->_mainTableName, qp->_bodyColumnName)
         { }
 
         struct Operation;
@@ -213,8 +216,8 @@ namespace litecore {
         map<string, aliasType>::const_iterator verifyDbAlias(Path &property);
         bool optimizeMetaKeyExtraction(ArrayIterator&);
 
-        const delegate& _delegate;               // delegate object (SQLiteKeyStore)
-        string _tableName;                       // Name of the table containing documents
+        const Delegate& _delegate;               // delegate object (SQLiteKeyStore)
+        string _mainTableName;                       // Name of the table containing documents
         string _bodyColumnName;                  // Column holding doc bodies
         map<string, aliasType> _aliases;         // "AS..." aliases for db/joins/unnests
         string _dbAlias;                         // Alias of the db itself, "_doc" by default

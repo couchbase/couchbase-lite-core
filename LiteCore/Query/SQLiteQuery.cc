@@ -55,8 +55,8 @@ namespace litecore {
 
     class SQLiteQuery : public Query {
     public:
-        SQLiteQuery(SQLiteKeyStore &keyStore, slice queryStr, QueryLanguage language)
-        :Query(keyStore, queryStr, language)
+        SQLiteQuery(SQLiteDataFile &dataFile, slice queryStr, QueryLanguage language)
+        :Query(dataFile, queryStr, language)
         {
             static constexpr const char* kLanguageName[] = {"JSON", "N1QL"};
             logInfo("Compiling %s query: %.*s", kLanguageName[(int)language], SPLAT(queryStr));
@@ -76,7 +76,7 @@ namespace litecore {
                 }
             }
 
-            QueryParser qp(keyStore);
+            QueryParser qp(dataFile);
             qp.parseJSON(_json);
 
             _parameters = qp.parameters();
@@ -89,17 +89,18 @@ namespace litecore {
 
             _ftsTables = qp.ftsTablesUsed();
             for (auto &ftsTable : _ftsTables) {
-                if (!keyStore.db().tableExists(ftsTable))
+                if (!dataFile.tableExists(ftsTable))
                     error::_throw(error::NoSuchIndex, "'match' test requires a full-text index");
             }
 
-            if (qp.usesExpiration())
-                keyStore.addExpiration();
+            if (qp.usesExpiration()) {
+                ((SQLiteKeyStore&)dataFile.defaultKeyStore()).addExpiration();   //TEMP: Tell the correct KeyStore(s)
+            }
 
             string sql = qp.SQL();
             logInfo("Compiled as %s", sql.c_str());
             LogTo(SQL, "Compiled {Query#%u}: %s", getObjectRef(), sql.c_str());
-            _statement = keyStore.compile(sql.c_str());
+            _statement = dataFile.compile(sql.c_str());
             
             _1stCustomResultColumn = qp.firstCustomResultColumn();
             _columnTitles = qp.columnTitles();
@@ -115,12 +116,14 @@ namespace litecore {
 
 
         sequence_t lastSequence() const {
-            return keyStore().lastSequence();
+            // TEMP: Check _each_ KeyStore the query uses
+            return dataFile().defaultKeyStore().lastSequence();
         }
 
 
         uint64_t purgeCount() const {
-            return keyStore().purgeCount();
+            // TEMP: Check _each_ KeyStore the query uses
+            return dataFile().defaultKeyStore().purgeCount();
         }
 
 
@@ -131,7 +134,7 @@ namespace litecore {
             string expr = _ftsTables[0];    // TODO: Support for multiple matches in a query
 
             if (!_matchedTextStatement) {
-                auto &df = (SQLiteDataFile&) keyStore().dataFile();
+                auto &df = (SQLiteDataFile&)dataFile();
                 string sql = "SELECT * FROM \"" + expr + "\" WHERE docid=?";
                 _matchedTextStatement.reset(new SQLite::Statement(df, sql, true));
             }
@@ -164,7 +167,7 @@ namespace litecore {
             result << query << "\n\n";
 
             string sql = "EXPLAIN QUERY PLAN " + query;
-            auto &df = (SQLiteDataFile&) keyStore().dataFile();
+            auto &df = (SQLiteDataFile&)dataFile();
             SQLite::Statement x(df, sql);
             while (x.executeStep()) {
                 for (int i = 0; i < 3; ++i)
@@ -356,7 +359,7 @@ namespace litecore {
         ,_lastSequence(lastSequence)
         ,_purgeCount(purgeCount)
         ,_statement(query->statement())
-        ,_sk(query->keyStore().dataFile().documentKeys())
+        ,_sk(query->dataFile().documentKeys())
         ,_options(options ? *options : Query::Options())
         {
             _statement->clearBindings();
@@ -513,7 +516,7 @@ namespace litecore {
 
 
     // The factory method that creates a SQLite Query.
-    Retained<Query> SQLiteKeyStore::compileQuery(slice selectorExpression, QueryLanguage language) {
+    Retained<Query> SQLiteDataFile::compileQuery(slice selectorExpression, QueryLanguage language) {
         return new SQLiteQuery(*this, selectorExpression, language);
     }
 
@@ -523,7 +526,7 @@ namespace litecore {
     QueryEnumerator* SQLiteQuery::createEnumerator(const Options *options) {
         // Start a read-only transaction, to ensure that the result of lastSequence() and purgeCount() will be
         // consistent with the query results.
-        ReadOnlyTransaction t(keyStore().dataFile());
+        ReadOnlyTransaction t(dataFile());
 
         sequence_t curSeq = lastSequence();
         uint64_t purgeCnt = purgeCount();

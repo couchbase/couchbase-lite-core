@@ -18,7 +18,6 @@
 
 #pragma once
 #include "KeyStore.hh"
-#include "QueryParser.hh"
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -52,13 +51,15 @@ namespace litecore {
 
 
     /** SQLite implementation of KeyStore; corresponds to a SQL table. */
-    class SQLiteKeyStore final : public KeyStore, public QueryParser::delegate {
+    class SQLiteKeyStore final : public KeyStore {
     public:
         using KeyStore::get; // GCC gets confused by the overloaded virtual functions in KeyStore
 
         uint64_t recordCount() const override;
         sequence_t lastSequence() const override;
         uint64_t purgeCount() const override;
+
+        std::string tableName() const                                       {return "kv_" + name();}
 
         bool read(Record &rec, ReadBy, ContentOption) const override;
 
@@ -91,22 +92,14 @@ namespace litecore {
         void createConflictsIndex();
         void createBlobsIndex();
 
-        // QueryParser::delegate:
-        virtual std::string tableName() const override  {return std::string("kv_") + name();}
-        virtual std::string FTSTableName(const std::string &property) const override;
-        virtual std::string unnestedTableName(const std::string &property) const override;
-#ifdef COUCHBASE_ENTERPRISE
-        virtual std::string predictiveTableName(const std::string &property) const override;
-#endif
-        virtual bool tableExists(const std::string &tableName) const override;
-
+        /// Adds the `expiration` column to the table. Called only by SQLiteQuery.
+        void addExpiration();
 
     protected:
         virtual bool mayHaveExpiration() override;
         RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                   sequence_t since,
                                                   RecordEnumerator::Options) override;
-        Retained<Query> compileQuery(slice expression, QueryLanguage) override;
 
         std::unique_ptr<SQLite::Statement> compile(const char *sql) const;
         SQLite::Statement& compileCached(const std::string &sqlTemplate) const;
@@ -127,7 +120,6 @@ namespace litecore {
     private:
         friend class SQLiteDataFile;
         friend class SQLiteEnumerator;
-        friend class SQLiteQuery;
         
         SQLiteKeyStore(SQLiteDataFile&, const std::string &name, KeyStore::Capabilities options);
         void createTable();
@@ -148,7 +140,6 @@ namespace litecore {
         bool createFTSIndex(const IndexSpec&);
         bool createArrayIndex(const IndexSpec&);
         std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexSpec::Options*);
-        void addExpiration();
 
 #ifdef COUCHBASE_ENTERPRISE
         bool createPredictiveIndex(const IndexSpec&);

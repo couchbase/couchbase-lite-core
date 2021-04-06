@@ -137,7 +137,7 @@ namespace litecore {
             try {
                 // Create my own Query object associated with the Backgrounder's DataFile:
                 if (!_query) {
-                    _query = df->defaultKeyStore().compileQuery(_expression, _language);
+                    _query = df->compileQuery(_expression, _language);
                     if (_continuous)
                         _backgroundDB->addTransactionObserver(this);
                 }

@@ -42,7 +42,7 @@ CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = { };
 
 C4Query::C4Query(const C4Database *db, C4QueryLanguage language, slice queryExpression)
 :_database(asInternal(db))
-,_query(_database->defaultKeyStore().compileQuery(queryExpression, (QueryLanguage)language))
+,_query(_database->dataFile()->compileQuery(queryExpression, (QueryLanguage)language))
 { }
 
 

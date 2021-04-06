@@ -489,7 +489,7 @@ namespace litecore {
     bool SQLiteKeyStore::mayHaveExpiration() {
         if (!_hasExpirationColumn) {
             string sql;
-            string tableName = "kv_" + name();
+            string tableName = this->tableName();
             db().getSchema(tableName, "table", tableName, sql);
             if (sql.find("expiration") != string::npos)
                 _hasExpirationColumn = true;

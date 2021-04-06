@@ -69,7 +69,7 @@ namespace litecore {
                                                  const IndexSpec::Options *options)
     {
         // Derive the table name from the expression (path) it unnests:
-        QueryParser qp(*this);
+        QueryParser qp(db());
         auto kvTableName = tableName();
         auto predTableName = qp.predictiveTableName(expression);
 
@@ -120,11 +120,6 @@ namespace litecore {
                           insertTriggerExpr);
         }
         return predTableName;
-    }
-
-
-    string SQLiteKeyStore::predictiveTableName(const std::string &property) const {
-        return tableName() + ":predict:" + property;
     }
 
 }

@@ -382,7 +382,8 @@ namespace litecore {
     }
 
 
-    void QueryParser::writeCreateIndex(const string &name,
+    void QueryParser::writeCreateIndex(const string &indexName,
+                                       const string &onTableName,
                                        Array::iterator &expressionsIter,
                                        const Array *whereClause,
                                        bool isUnnestedTable)
@@ -391,8 +392,8 @@ namespace litecore {
         try {
             if (isUnnestedTable)
                 _aliases[_dbAlias] = kUnnestTableAlias;
-            _sql << "CREATE INDEX " << sqlIdentifier(name)
-                 << " ON " << sqlIdentifier(_tableName) << " ";
+            _sql << "CREATE INDEX " << sqlIdentifier(indexName)
+                 << " ON " << sqlIdentifier(onTableName) << " ";
             if (expressionsIter.count() > 0) {
                 writeColumnList(expressionsIter);
             } else {
@@ -474,7 +475,7 @@ namespace litecore {
     void QueryParser::writeFromClause(const Value *from) {
         auto fromArray = (const Array*)from;    // already type-checked by parseFromClause
 
-        _sql << " FROM " << sqlIdentifier(_tableName);
+        _sql << " FROM " << sqlIdentifier(_mainTableName);
 
         if (fromArray && !fromArray->empty()) {
             for (Array::iterator i(fromArray); i; ++i) {
@@ -521,7 +522,7 @@ namespace litecore {
                         }
 
                         _sql << " " << kJoinTypeNames[ joinType ] << " JOIN "
-                             << sqlIdentifier(_tableName) << " AS " << sqlIdentifier(alias);
+                             << sqlIdentifier(_mainTableName) << " AS " << sqlIdentifier(alias);
 
                         _sql << " ON ";
                         _checkedDeleted = false;
@@ -1681,7 +1682,8 @@ namespace litecore {
         string ftsName( requiredString(key, "left-hand side of MATCH expression") );
         require(!ftsName.empty() && ftsName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");
-        return _delegate.FTSTableName(ftsName);
+        string table = _delegate.collectionTableName(_delegate.defaultCollectionName()); //TEMP
+        return _delegate.FTSTableName(table, ftsName);
     }
 
     // Returns or creates the FTS join alias given the LHS of a MATCH expression.
@@ -1747,7 +1749,8 @@ namespace litecore {
             // It's some other expression; make a unique digest of it:
             path = expressionIdentifier(arrayExpr->asArray());
         }
-        return _delegate.unnestedTableName(path);
+        string table = _delegate.collectionTableName(_delegate.defaultCollectionName()); //TEMP
+        return _delegate.unnestedTableName(table, path);
     }
 
 

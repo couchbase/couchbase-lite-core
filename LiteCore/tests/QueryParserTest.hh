@@ -23,7 +23,7 @@
 #include "LiteCoreTest.hh"
 
 
-class QueryParserTest : public TestFixture, protected QueryParser::delegate {
+class QueryParserTest : public TestFixture, protected QueryParser::Delegate {
 public:
     QueryParserTest() =default;
 
@@ -33,21 +33,27 @@ public:
     void mustFail(string json);
 
 protected:
-    virtual std::string tableName() const override {
-        return "kv_default";
+    virtual std::string defaultCollectionName() const override {
+        return "_default";
     }
-    virtual std::string FTSTableName(const std::string &property) const override {
-        return tableName() + "::" + property;
+    virtual string collectionTableName(const string &collection) const override {
+        if (collection == "_default")
+            return "kv_default";
+        else
+            return "kv_coll_" + collection;
     }
-    virtual std::string unnestedTableName(const std::string &property) const override {
-        return tableName() + ":unnest:" + property;
+    virtual std::string FTSTableName(const string &onTable, const std::string &property) const override {
+        return onTable + "::" + property;
+    }
+    virtual std::string unnestedTableName(const string &onTable, const std::string &property) const override {
+        return onTable + ":unnest:" + property;
     }
     virtual bool tableExists(const string &tableName) const override {
         return tablesExist;
     }
 #ifdef COUCHBASE_ENTERPRISE
-    virtual std::string predictiveTableName(const std::string &property) const override {
-        return tableName() + ":predict:" + property;
+    virtual std::string predictiveTableName(const string &onTable, const std::string &property) const override {
+        return onTable + ":predict:" + property;
     }
 #endif
 

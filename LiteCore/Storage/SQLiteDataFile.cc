@@ -177,7 +177,10 @@ namespace litecore {
     }
 
 
-    SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath &path, Delegate *delegate, const Options *options) {
+    SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath &path,
+                                                      DataFile::Delegate *delegate,
+                                                      const Options *options)
+    {
         return new SQLiteDataFile(path, delegate, options);
     }
 
@@ -192,7 +195,9 @@ namespace litecore {
     }
 
 
-    SQLiteDataFile::SQLiteDataFile(const FilePath &path, Delegate *delegate, const Options *options)
+    SQLiteDataFile::SQLiteDataFile(const FilePath &path,
+                                   DataFile::Delegate *delegate,
+                                   const Options *options)
     :DataFile(path, delegate, options)
     {
         reopen();
@@ -665,6 +670,35 @@ namespace litecore {
         _exec("PRAGMA wal_checkpoint(FULL)");
         return DataFile::fileSize();
     }
+
+
+#pragma mark - QUERIES:
+
+
+    string SQLiteDataFile::defaultCollectionName() const {
+        return "_default";
+    }
+
+    string SQLiteDataFile::collectionTableName(const string &collection) const {
+        if (collection == "_default")
+            return "kv_default";
+        else
+            return "kv_coll_" + collection;
+    }
+
+    string SQLiteDataFile::FTSTableName(const string &onTable, const string &property) const {
+        return onTable + "::" + property;
+    }
+
+    string SQLiteDataFile::unnestedTableName(const string &onTable, const string &property) const {
+        return onTable + ":unnest:" + property;
+    }
+
+#ifdef COUCHBASE_ENTERPRISE
+    string SQLiteDataFile::predictiveTableName(const string &onTable, const std::string &property) const {
+        return onTable + ":predict:" + property;
+    }
+#endif
 
 
 #pragma mark - MAINTENANCE:

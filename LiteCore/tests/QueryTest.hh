@@ -162,7 +162,7 @@ protected:
     }
 
     int64_t rowsInQuery(string json) {
-        Retained<Query> query = store->compileQuery(json);
+        Retained<Query> query = db->compileQuery(json);
         Retained<QueryEnumerator> e(query->createEnumerator());
         return e->getRowCount();
     }
@@ -175,7 +175,7 @@ protected:
         }
         for(auto &test : tests) {
             INFO("Testing " << test.first);
-            auto query = store->compileQuery(json5("{'WHAT': [" + test.first + "]}"));
+            auto query = db->compileQuery(json5("{'WHAT': [" + test.first + "]}"));
             Retained<QueryEnumerator> e(query->createEnumerator());
             REQUIRE(e->getRowCount() == 1);
             REQUIRE(e->next());
@@ -191,7 +191,7 @@ protected:
     }
 
     string queryWhat(const char *what) {
-        auto query = store->compileQuery(json5(CONCAT("{'WHAT': [" << what << "]}")));
+        auto query = db->compileQuery(json5(CONCAT("{'WHAT': [" << what << "]}")));
         Retained<QueryEnumerator> e(query->createEnumerator());
         REQUIRE(e->next());
         return e->columns()[0]->toJSONString();
