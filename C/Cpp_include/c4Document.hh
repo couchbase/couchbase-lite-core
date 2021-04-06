@@ -38,7 +38,6 @@ C4_ASSUME_NONNULL_BEGIN
 
 
 struct C4Document : public fleece::RefCounted,
-                    public fleece::InstanceCountedIn<C4Document>,
                     C4Base
 {
     // NOTE: Instances are created with database->getDocument or database->putDocument.
@@ -184,7 +183,6 @@ protected:
                      C4Error* C4NULLABLE) noexcept;
 protected:
     // These have the same offset and layout as the corresponding fields in the C C4Document:
-    alignas(void*)
     C4DocumentFlags      _flags;        // Document flags
     alloc_slice          _docID;        // Document ID
     alloc_slice          _revID;        // Revision ID of current revision
