@@ -117,12 +117,6 @@ alloc_slice C4Document::getSelectedRevIDGlobalForm() const {
 }
 
 
-void C4Document::requireValidDocID() const {
-    if (!C4Document::isValidDocID(_docID))
-        error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(_docID));
-}
-
-
 #pragma mark - SAVING:
 
 
@@ -255,7 +249,13 @@ void C4Document::resolveConflict(slice winningRevID,
 
 bool C4Document::isValidDocID(slice docID) noexcept {
     return docID.size >= 1 && docID.size <= 240 && docID[0] != '_'
-    && isValidUTF8(docID) && hasNoControlCharacters(docID);
+        && isValidUTF8(docID) && hasNoControlCharacters(docID);
+}
+
+
+void C4Document::requireValidDocID(slice docID) {
+    if (!C4Document::isValidDocID(docID))
+        error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(docID));
 }
 
 

@@ -24,6 +24,7 @@
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "FleeceImpl.hh"
+#include "sqlite3.h"
 #include <sstream>
 
 using namespace std;
@@ -356,6 +357,41 @@ namespace litecore {
 
         incrementPurgeCount();
         return true;
+    }
+
+
+    void SQLiteKeyStore::moveTo(slice key, KeyStore &dst, ExclusiveTransaction &t, slice newKey) {
+        if (&dst == this || &dst.dataFile() != &dataFile())
+            error::_throw(error::InvalidParameter);
+        auto dstStore = dynamic_cast<SQLiteKeyStore*>(&dst);
+
+        if (newKey == nullslice)
+            newKey = key;
+        sequence_t seq = dstStore->lastSequence() + 1;
+
+        // ???? Should the version be reset since it's in a new collection?
+        auto &stmt = compileCached(
+            "INSERT INTO kv_" + dst.name() + " (key, version, body, extra, flags, sequence)"
+            "  SELECT ?, version, body, extra, flags, ? FROM kv_@ WHERE key=?");
+        stmt.bindNoCopy(1, (const char*)newKey.buf, (int)newKey.size);
+        stmt.bind      (2, (long long)seq);
+        stmt.bindNoCopy(3, (const char*)key.buf, (int)key.size);
+        UsingStatement u(stmt);
+
+        try {
+            if (stmt.exec() == 0)
+                error::_throw(error::NotFound);
+        } catch (SQLite::Exception &x) {
+            if (x.getErrorCode() == SQLITE_CONSTRAINT)      // duplicate key!
+                error::_throw(error::Conflict);
+            else
+                throw;
+        }
+
+        dstStore->setLastSequence(seq);
+
+        // Finally delete the old record:
+        del(key, t);
     }
 
 

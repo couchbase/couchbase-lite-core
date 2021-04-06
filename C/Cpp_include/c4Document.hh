@@ -139,6 +139,7 @@ struct C4Document : public fleece::RefCounted,
     static char* generateID(char *outDocID, size_t bufferSize) noexcept;
 
     static bool isValidDocID(slice) noexcept;
+    static void requireValidDocID(slice);       // throws kC4ErrorBadDocID
 
     static bool equalRevIDs(slice revID1,
                             slice revID2) noexcept;
@@ -166,8 +167,6 @@ protected:
     litecore::KeyStore& keyStore() const;
 
     [[noreturn]] static void failUnsupported();
-
-    void requireValidDocID() const;   // Throws if invalid
 
     void setRevID(litecore::revid);
 

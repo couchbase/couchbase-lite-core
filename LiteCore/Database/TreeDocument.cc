@@ -330,7 +330,7 @@ namespace litecore {
 
         bool save(unsigned maxRevTreeDepth =0) override {
             asInternal(database())->mustBeInTransaction();
-            requireValidDocID();
+            requireValidDocID(_docID);
             if (maxRevTreeDepth > 0)
                 _revTree.prune(maxRevTreeDepth);
             else

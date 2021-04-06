@@ -355,6 +355,14 @@ namespace litecore {
         }
 
 
+        void moveDocument(slice docID, C4Collection *toCollection, slice newDocID) override {
+            if (newDocID)
+                C4Document::requireValidDocID(newDocID);
+            keyStore().moveTo(docID, toCollection->keyStore(), dbImpl()->transaction(), newDocID);
+            // DOES NOT NOTIFY SEQUENCE TRACKER! (should it?)
+        }
+
+
         void documentSaved(C4Document* doc) override {
             // CBL-1089
             // Conflicted documents are not eligible to be replicated,

@@ -550,7 +550,7 @@ namespace litecore {
 
 
         bool save(unsigned /*maxRevTreeDepth*/ =0) override {
-            requireValidDocID();
+            requireValidDocID(_docID);
             auto db = asInternal(collection()->getDatabase());
             db->mustBeInTransaction();
             switch (_doc.save(db->transaction())) {

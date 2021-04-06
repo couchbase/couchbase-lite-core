@@ -72,6 +72,11 @@ struct C4Collection : public fleece::RefCounted,
                                                 C4RevisionFlags revFlags,
                                                 C4Error *outError) =0;
 
+    // Moves a document to another collection
+    virtual void moveDocument(slice docID,
+                              C4Collection *toCollection,
+                              slice newDocID = fleece::nullslice) =0;
+
     // Purging & Expiration:
 
     virtual bool purgeDocument(slice docID) =0;

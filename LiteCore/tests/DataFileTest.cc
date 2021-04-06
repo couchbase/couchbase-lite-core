@@ -430,6 +430,71 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Conditional Write", "[Dat
 }
 
 
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Move Record", "[DataFile]") {
+    {
+        ExclusiveTransaction t(db);
+        createDoc("xxx", "x", t);
+
+        RecordUpdate rec("key", "value", DocumentFlags::kHasAttachments);
+        rec.version = "version";
+        rec.extra = "extra";
+        sequence_t seq = store->set(rec, true, t);
+        CHECK(seq == 2);
+        t.commit();
+    }
+    CHECK(store->lastSequence() == 2);
+    CHECK(store->purgeCount() == 0);
+
+    KeyStore& otherStore = db->getKeyStore("other");
+    CHECK(otherStore.lastSequence() == 0);
+    CHECK(otherStore.purgeCount() == 0);
+
+    {
+        ExclusiveTransaction t(db);
+        store->moveTo("key", otherStore, t, "newKey");
+        t.commit();
+    }
+
+    Record rec = otherStore.get("newKey");
+    REQUIRE(rec.exists());
+    CHECK(rec.key() == "newKey");
+    CHECK(rec.body() == "value");
+    CHECK(rec.version() == "version");
+    CHECK(rec.extra() == "extra");
+    CHECK(rec.flags() == DocumentFlags::kHasAttachments);
+    CHECK(rec.sequence() == 1);
+    CHECK(otherStore.lastSequence() == 1);
+
+    rec = store->get("key");
+    CHECK_FALSE(rec.exists());
+    CHECK(store->lastSequence() == 2);
+    CHECK(store->purgeCount() == 1);
+
+    {
+        ExclusiveTransaction t(db);
+
+        // Moving a nonexistent record:
+        try {
+            ExpectingExceptions x;
+            store->moveTo("key", otherStore, t, "bogus");
+            FAIL_CHECK("Moving nonexistent record didn't throw");
+        } catch (const error &x) {
+            CHECK(x.domain == error::LiteCore);
+            CHECK(x.code == error::NotFound);
+        }
+
+        // Moving onto an existing record:
+        try {
+            ExpectingExceptions x;
+            store->moveTo("xxx", otherStore, t, "newKey");
+        } catch (const error &x) {
+            CHECK(x.domain == error::LiteCore);
+            CHECK(x.code == error::Conflict);
+        }
+    }
+}
+
+
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
