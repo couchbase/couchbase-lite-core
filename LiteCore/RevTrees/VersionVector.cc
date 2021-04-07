@@ -28,16 +28,6 @@ namespace litecore {
     using vec = VersionVector::vec;
 
 
-    // Utility that allocates a buffer, lets the callback write into it, then trims the buffer.
-    static inline alloc_slice writeAlloced(size_t maxSize, function_ref<bool(slice*)> writer) {
-        alloc_slice buf(maxSize);
-        slice out = buf;
-        Assert( writer(&out) );
-        buf.shorten(buf.size - out.size);
-        return buf;
-    }
-
-
 #pragma mark - CONVERSION:
 
 
@@ -67,14 +57,17 @@ namespace litecore {
 
 
     alloc_slice VersionVector::asBinary(peerID myID) const {
-        return writeAlloced(1 + _vers.size() * 2 * kMaxVarintLen64, [&](slice *out) {
-            if (!out->writeByte(0))           // leading 0 byte distinguishes it from a `revid`
+        auto result = slice_stream::alloced(1 + _vers.size() * 2 * kMaxVarintLen64,
+                                            [&](slice_stream &out) {
+            if (!out.writeByte(0))           // leading 0 byte distinguishes it from a `revid`
                 return false;
             for (auto &v : _vers)
                 if (!v.writeBinary(out, myID))
                     return false;
             return true;
         });
+        Assert(result);
+        return result;
     }
 
 
@@ -83,10 +76,10 @@ namespace litecore {
     }
 
 
-    bool VersionVector::writeASCII(slice *out, peerID myID) const {
+    bool VersionVector::writeASCII(slice_stream &out, peerID myID) const {
         int n = 0;
         for (auto &v : _vers) {
-            if (n++ && !out->writeByte(','))
+            if (n++ && !out.writeByte(','))
                 return false;
             if (!v.writeASCII(out, myID))
                 return false;
@@ -98,9 +91,11 @@ namespace litecore {
     alloc_slice VersionVector::asASCII(peerID myID) const {
         if (empty())
             return nullslice;
-        return writeAlloced(maxASCIILen(), [&](slice *out) {
+        auto result = slice_stream::alloced(maxASCIILen(), [&](slice_stream &out) {
             return writeASCII(out, myID);
         });
+        Assert(result);
+        return result;
     }
 
 

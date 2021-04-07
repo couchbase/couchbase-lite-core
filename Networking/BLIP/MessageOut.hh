@@ -18,6 +18,7 @@
 
 #pragma once
 #include "MessageBuilder.hh"
+#include "fleece/slice_stream.hh"
 #include <ostream>
 #include <utility>
 
@@ -47,7 +48,7 @@ namespace litecore { namespace blip {
         }
 
         void dontCompress()                     {_flags = (FrameFlags)(_flags & ~kCompressed);}
-        void nextFrameToSend(Codec &codec, slice &dst, FrameFlags &outFlags);
+        void nextFrameToSend(Codec &codec, fleece::slice_stream &dst, FrameFlags &outFlags);
         void receivedAck(uint32_t byteCount);
         bool needsAck()                         {return _unackedBytes >= kMaxUnackedBytes;}
         MessageIn* createResponse();

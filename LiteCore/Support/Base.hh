@@ -28,6 +28,10 @@
 #include <string>
 #include <utility>
 
+namespace fleece {
+    class slice_stream;
+}
+
 namespace litecore {
     // For types #included above, add them to the `litecore` namespace so headers don't have to
     // use their full names. (This also keeps usages in those headers from being flagged by the
@@ -39,6 +43,7 @@ namespace litecore {
     using std::unique_ptr;
 
     using fleece::slice;
+    using fleece::slice_stream;
     using fleece::alloc_slice;
     using fleece::nullslice;
     using fleece::function_ref;

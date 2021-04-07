@@ -24,6 +24,7 @@
 #include "StringUtil.hh"
 #include "TempArray.hh"
 #include "Writer.hh"
+#include "fleece/slice_stream.hh"
 
 #include "mbedSnippets.hh"
 #include "mbedUtils.hh"
@@ -501,12 +502,10 @@ namespace litecore { namespace crypto {
 
         // Concatenate the data:
         alloc_slice result(totalSize);
-        void *dst = (void*) result.buf;
-        for (alloc_slice &pem : pems) {
-            memcpy(dst, pem.buf, pem.size);
-            dst = offsetby(dst, pem.size);
-        }
-        DebugAssert(dst == result.end());
+        slice_stream dst(result);
+        for (alloc_slice &pem : pems)
+            dst.write(pem);
+        DebugAssert(dst.bytesWritten() == result.size);
         return result;
     }
 

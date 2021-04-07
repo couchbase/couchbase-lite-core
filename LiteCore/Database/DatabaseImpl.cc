@@ -436,7 +436,7 @@ namespace litecore {
     C4UUID DatabaseImpl::generateUUID(slice key, bool overwrite) {
         C4UUID uuid;
         if (overwrite || !getUUIDIfExists(key, uuid)) {
-            slice uuidSlice{&uuid, sizeof(uuid)};
+            mutable_slice uuidSlice{&uuid, sizeof(uuid)};
             GenerateUUID(uuidSlice);
             setInfo(key, uuidSlice);
         }

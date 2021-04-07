@@ -20,6 +20,7 @@
 #include "BLIPProtocol.hh"
 #include "RefCounted.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/slice_stream.hh"
 #include <functional>
 #include <ostream>
 #include <memory>
@@ -207,7 +208,7 @@ namespace litecore { namespace blip {
         MessageSize _rawBytesReceived {0};
         std::unique_ptr<fleece::JSONEncoder> _in; // Accumulates body data (not JSON)
         uint32_t _propertiesSize {0};           // Length of properties in bytes
-        slice _propertiesRemaining;             // Subrange of _properties still to be read
+        fleece::slice_stream _propertiesRemaining; // Subrange of _properties still to be read
         uint32_t _unackedBytes {0};             // # bytes received that haven't been ACKed yet
         alloc_slice _properties;                // Just the (still encoded) properties
         alloc_slice _body;                      // Just the body

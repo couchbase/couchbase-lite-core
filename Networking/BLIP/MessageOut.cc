@@ -42,50 +42,52 @@ namespace litecore { namespace blip {
     { }
 
 
-    void MessageOut::nextFrameToSend(Codec &codec, slice &dst, FrameFlags &outFlags) {
+    void MessageOut::nextFrameToSend(Codec &codec, slice_stream &dst, FrameFlags &outFlags) {
         outFlags = flags();
         if (isAck()) {
             // Acks have no checksum and don't go through the codec
             slice &data = _contents.dataToSend();
-            dst.writeFrom(data);
+            dst.write(data);
             _bytesSent += (uint32_t)data.size;
             return;
         }
 
-        size_t frameSize = dst.size;
-        dst.setSize(dst.size - Codec::kChecksumSize);          // Reserve room for checksum at end
-
         // Write the frame:
-        auto mode = hasFlag(kCompressed) ? Codec::Mode::SyncFlush : Codec::Mode::Raw;
-        do {
-            slice &data = _contents.dataToSend();
-            if (data.size == 0)
-                break;
-            _uncompressedBytesSent += (uint32_t)data.size;
-            codec.write(data, dst, mode);
-            _uncompressedBytesSent -= (uint32_t)data.size;
-        } while (dst.size >= 1024);
+        size_t frameSize = dst.capacity();
+        {
+            // `frame` is the same as `dst` but 4 bytes shorter, to leave space for the checksum
+            slice_stream frame(dst.next(), frameSize - Codec::kChecksumSize);
+            auto mode = hasFlag(kCompressed) ? Codec::Mode::SyncFlush : Codec::Mode::Raw;
+            do {
+                slice &data = _contents.dataToSend();
+                if (data.size == 0)
+                    break;
+                _uncompressedBytesSent += (uint32_t)data.size;
+                codec.write(data, frame, mode);
+                _uncompressedBytesSent -= (uint32_t)data.size;
+            } while (frame.capacity() >= 1024);
 
-        if (codec.unflushedBytes() > 0)
-            throw runtime_error("Compression buffer overflow");
+            if (codec.unflushedBytes() > 0)
+                throw runtime_error("Compression buffer overflow");
 
-        if (mode == Codec::Mode::SyncFlush) {
-            size_t bytesWritten = (frameSize - Codec::kChecksumSize) - dst.size;
-            if (bytesWritten > 0) {
-                // SyncFlush always ends the output with the 4 bytes 00 00 FF FF.
-                // We can remove those, then add them when reading the data back in.
-                Assert(bytesWritten >= 4 &&
-                       memcmp((const char*)dst.buf - 4, "\x00\x00\xFF\xFF", 4) == 0);
-                dst.moveStart(-4);
+            if (mode == Codec::Mode::SyncFlush) {
+                size_t bytesWritten = (frameSize - Codec::kChecksumSize) - frame.capacity();
+                if (bytesWritten > 0) {
+                    // SyncFlush always ends the output with the 4 bytes 00 00 FF FF.
+                    // We can remove those, then add them when reading the data back in.
+                    Assert(bytesWritten >= 4 &&
+                           memcmp((const char*)frame.next() - 4, "\x00\x00\xFF\xFF", 4) == 0);
+                    frame.retreat(4);
+                }
             }
+
+            // Write the checksum:
+            dst.advanceTo(frame.next());           // Catch `dst` up to where `frame` is
+            codec.writeChecksum(dst);
         }
 
-        // Write the checksum:
-        dst.setSize(dst.size + Codec::kChecksumSize);           // Undo "Reserve room..." above
-        codec.writeChecksum(dst);
-
         // Compute the (compressed) frame size, and update running totals:
-        frameSize -= dst.size;
+        frameSize -= dst.capacity();
         _bytesSent += (uint32_t)frameSize;
         _unackedBytes += (uint32_t)frameSize;
 

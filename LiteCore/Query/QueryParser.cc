@@ -182,8 +182,9 @@ namespace litecore {
     static alloc_slice escapedPath(slice inputPath) {
         Assert(inputPath.peekByte() == '$');
         alloc_slice escaped(inputPath.size + 1);
-        memcpy((void *)escaped.buf, "\\", 1);
-        inputPath.readInto(escaped.from(1));
+        auto dst = (char*)escaped.buf;
+        dst[0] = '\\';
+        inputPath.readInto(dst + 1, escaped.size - 1);
         return escaped;
     }
 

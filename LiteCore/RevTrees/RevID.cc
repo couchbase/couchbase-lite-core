@@ -92,17 +92,17 @@ namespace litecore {
             return isVersion() && other.isVersion() && asVersion() == other.asVersion();
     }
 
-    bool revid::expandInto(slice &result) const noexcept {
-        slice out = result;
+    bool revid::expandInto(slice_stream &result) const noexcept {
+        slice_stream out = result;
         if (isVersion()) {
-            if (!asVersion().writeASCII(&out))
+            if (!asVersion().writeASCII(out))
                 return false;
         } else {
             auto [gen, digest] = generationAndDigest();
             if (!out.writeDecimal(gen) || !out.writeByte('-') || !out.writeHex(digest))
                 return false;
         }
-        result.setEnd(out.buf);
+        result = out;
         return true;
     }
 
@@ -115,9 +115,9 @@ namespace litecore {
             auto [gen, digest] = generationAndDigest();
             size_t expandedSize = 2 + size_t(::floor(::log10(gen))) + 2*digest.size;
             alloc_slice resultBuf(expandedSize);
-            slice result(resultBuf);
-            Assert(expandInto(result));
-            resultBuf.shorten(result.size);
+            slice_stream out(resultBuf);
+            Assert(expandInto(out));
+            resultBuf.shorten(out.bytesWritten());
             return resultBuf;
         }
     }
@@ -165,11 +165,10 @@ namespace litecore {
 
 
     revidBuffer& revidBuffer::operator= (const Version &vers) noexcept {
-        slice out(_buffer, sizeof(_buffer));
+        slice_stream out(_buffer, sizeof(_buffer));
         out.writeByte(0);
-        vers.writeBinary(&out);
-        set(&_buffer, 0);
-        setEnd(out.buf);
+        vers.writeBinary(out);
+        *(slice*)this = out.output();
         return *this;
     }
 

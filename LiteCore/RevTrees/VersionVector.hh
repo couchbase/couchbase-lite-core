@@ -110,7 +110,7 @@ namespace litecore {
             Otherwise they're written as '*'. */
         fleece::alloc_slice asASCII(peerID myID = kMePeerID) const;
 
-        bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
+        bool writeASCII(slice_stream&, peerID myID =kMePeerID) const;
         size_t maxASCIILen() const;
 
 #if DEBUG

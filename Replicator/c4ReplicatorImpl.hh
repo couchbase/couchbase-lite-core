@@ -247,7 +247,7 @@ namespace litecore {
                 _replicator->terminate();
 
             // The below contains sensitive information, so zero it before destruction
-            _options.properties.wipe();
+            mutable_slice(_options.properties.data()).wipe();
         }
 
 

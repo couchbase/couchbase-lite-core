@@ -56,9 +56,9 @@ namespace litecore { namespace blip {
         _checksum = (uint32_t)crc32(_checksum, (const Bytef*)data.buf, (int)data.size);
     }
 
-    void Codec::writeChecksum(slice &output) const {
+    void Codec::writeChecksum(slicestream &output) const {
         uint32_t chk = endian::enc32(_checksum);
-        Assert(output.writeFrom(slice(&chk, sizeof(chk))));
+        Assert(output.write(&chk, sizeof(chk)));
     }
 
 
@@ -67,7 +67,7 @@ namespace litecore { namespace blip {
             error::_throw(error::CorruptData, "BLIP message ends before checksum");
         uint32_t chk;
         static_assert(kChecksumSize == sizeof(chk), "kChecksumSize is wrong");
-        input.readInto(slice(&chk, sizeof(chk)));
+        input.readInto(&chk, sizeof(chk));
         chk = endian::dec32(chk);
         if (chk != _checksum)
             error::_throw(error::CorruptData, "BLIP message invalid checksum");
@@ -75,14 +75,13 @@ namespace litecore { namespace blip {
 
 
     // Uncompressed write: just copies input bytes to output (updating checksum)
-    void Codec::_writeRaw(slice &input, slice &output) {
-        logInfo("Copying %zu bytes into %zu-byte buf (no compression)", input.size, output.size);
-        Assert(output.size > 0);
-        size_t count = std::min(input.size, output.size);
+    void Codec::_writeRaw(slice &input, slicestream &output) {
+        logInfo("Copying %zu bytes into %zu-byte buf (no compression)", input.size, output.capacity());
+        Assert(output.capacity() > 0);
+        size_t count = std::min(input.size, output.capacity());
         addToChecksum({input.buf, count});
-        memcpy((void*)output.buf, input.buf, count);
+        output.write(input.buf, count);
         input.moveStart(count);
-        output.moveStart(count);
     }
 
 
@@ -94,25 +93,25 @@ namespace litecore { namespace blip {
 
 
     void ZlibCodec::_write(const char *operation,
-                           slice &input, slice &output,
+                           slice &input, slicestream &output,
                            Mode mode,
                            size_t maxInput)
     {
         _z.next_in = (Bytef*)input.buf;
         auto inSize = _z.avail_in = (unsigned)std::min(input.size, maxInput);
-        _z.next_out = (Bytef*)output.buf;
-        auto outSize = _z.avail_out = (unsigned)output.size;
+        _z.next_out = (Bytef*)output.next();
+        auto outSize = _z.avail_out = (unsigned)output.capacity();
         Assert(outSize > 0);
         Assert(mode > Mode::Raw);
         int result = _flate(&_z, (int)mode);
         logInfo("    %s(in %u, out %u, mode %d)-> %d; read %ld bytes, wrote %ld bytes",
             operation, inSize, outSize, (int)mode, result,
             (long)(_z.next_in - (uint8_t*)input.buf),
-            (long)(_z.next_out - (uint8_t*)output.buf));
+            (long)(_z.next_out - (uint8_t*)output.next()));
         if (!kZlibRawDeflate)
             _checksum = (uint32_t)_z.adler;
         input.setStart(_z.next_in);
-        output.setStart(_z.next_out);
+        output.advanceTo(_z.next_out);
         check(result);
     }
 
@@ -137,12 +136,12 @@ namespace litecore { namespace blip {
     }
 
 
-    void Deflater::write(slice &input, slice &output, Mode mode) {
+    void Deflater::write(slice &input, slicestream &output, Mode mode) {
         if (mode == Mode::Raw)
             return _writeRaw(input, output);
 
         slice origInput = input;
-        size_t origOutputSize = output.size;
+        size_t origOutputSize = output.capacity();
         logInfo("Compressing %zu bytes into %zu-byte buf", input.size, origOutputSize);
 
         switch (mode) {
@@ -155,13 +154,13 @@ namespace litecore { namespace blip {
             addToChecksum({origInput.buf, input.buf});
 
         logInfo("    compressed %zu bytes to %zu (%.0f%%), %u unflushed",
-            (origInput.size-input.size), (origOutputSize-output.size),
-            (origOutputSize-output.size) * 100.0 / (origInput.size-input.size),
+            (origInput.size-input.size), (origOutputSize-output.capacity()),
+            (origOutputSize-output.capacity()) * 100.0 / (origInput.size-input.size),
             unflushedBytes());
     }
 
 
-    void Deflater::_writeAndFlush(slice &input, slice &output) {
+    void Deflater::_writeAndFlush(slice &input, slicestream &output) {
         // If we try to write all of the input, and there isn't room in the output, the zlib
         // codec might end up with buffered data that hasn't been output yet (even though we
         // told it to flush.) To work around this, write the data gradually and stop before
@@ -171,16 +170,16 @@ namespace litecore { namespace blip {
 
         Mode curMode = Mode::PartialFlush;
         while (input.size > 0) {
-            if (output.size >= deflateBound(&_z, (unsigned)input.size)) {
+            if (output.capacity() >= deflateBound(&_z, (unsigned)input.size)) {
                 // Entire input is guaranteed to fit, so write it & flush:
                 curMode = Mode::SyncFlush;
                 _write("deflate", input, output, Mode::SyncFlush);
             } else {
                 // Limit input size to what we know can be compressed into output.
                 // Don't flush, because we may try to write again if there's still room.
-                _write("deflate", input, output, curMode, output.size - kHeadroomForFlush);
+                _write("deflate", input, output, curMode, output.capacity() - kHeadroomForFlush);
             }
-            if (output.size <= kStopAtOutputSize)
+            if (output.capacity() <= kStopAtOutputSize)
                 break;
         }
 
@@ -224,19 +223,19 @@ namespace litecore { namespace blip {
     }
 
 
-    void Inflater::write(slice &input, slice &output, Mode mode) {
+    void Inflater::write(slice &input, slicestream &output, Mode mode) {
         if (mode == Mode::Raw)
             return _writeRaw(input, output);
 
-        logInfo("Decompressing %zu bytes into %zu-byte buf", input.size, output.size);
-        auto outStart = (uint8_t*)output.buf;
+        logInfo("Decompressing %zu bytes into %zu-byte buf", input.size, output.capacity());
+        auto outStart = (uint8_t*)output.next();
         _write("inflate", input, output, mode);
         if (kZlibRawDeflate)
-            addToChecksum({outStart, output.buf});
+            addToChecksum({outStart, output.next()});
 
         logDebug("    decompressed %ld bytes: %.*s",
-                   (long)((uint8_t*)output.buf - outStart),
-                   (int)((uint8_t*)output.buf - outStart), outStart);
+                   (long)((uint8_t*)output.next() - outStart),
+                   (int)((uint8_t*)output.next() - outStart), outStart);
     }
 
 } }

@@ -734,9 +734,9 @@ namespace litecore {
             for (auto rev : tree.allRevisions()) {
                 if (rev->revID.generation() < revGeneration
                             && !(mustHaveBodies && !rev->isBodyAvailable())) {
-                    slice expanded(expandedBuf, sizeof(expandedBuf));
+                    slice_stream expanded(expandedBuf, sizeof(expandedBuf));
                     if (rev->revID.expandInto(expanded)) {
-                        result << delim << '"' << expanded << '"';
+                        result << delim << '"' << expanded.output() << '"';
                         if (delim.count() >= maxAncestors)
                             break;
                     }

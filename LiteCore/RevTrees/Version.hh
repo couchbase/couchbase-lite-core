@@ -79,8 +79,8 @@ namespace litecore {
             Otherwise it's written as '*'. */
         alloc_slice asASCII(peerID myID =kMePeerID) const;
 
-        bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
-        bool writeBinary(slice *buf, peerID myID =kMePeerID) const;
+        bool writeASCII(slice_stream&, peerID myID =kMePeerID) const;
+        bool writeBinary(slice_stream&, peerID myID =kMePeerID) const;
 
         /** Convenience to compare two generations and return a versionOrder. */
         static versionOrder compareGen(generation a, generation b);

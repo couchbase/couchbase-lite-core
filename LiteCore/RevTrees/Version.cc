@@ -28,16 +28,6 @@ namespace litecore {
     using namespace fleece;
 
 
-    // Utility that allocates a buffer, lets the callback write into it, then trims the buffer.
-    static inline alloc_slice writeAlloced(size_t maxSize, function_ref<bool(slice*)> writer) {
-        alloc_slice buf(maxSize);
-        slice out = buf;
-        Assert( writer(&out) );
-        buf.shorten(buf.size - out.size);
-        return buf;
-    }
-
-
 #pragma mark - VERSION:
 
 
@@ -89,27 +79,29 @@ namespace litecore {
     }
 
 
-    bool Version::writeBinary(slice *out, peerID myID) const {
+    bool Version::writeBinary(slice_stream &out, peerID myID) const {
         uint64_t id = (_author == kMePeerID) ? myID.id : _author.id;
         return WriteUVarInt(out, _gen) && WriteUVarInt(out, id);
     }
 
 
-    bool Version::writeASCII(slice *out, peerID myID) const {
-        if (!out->writeHex(_gen) || !out->writeByte('@'))
+    bool Version::writeASCII(slice_stream &out, peerID myID) const {
+        if (!out.writeHex(_gen) || !out.writeByte('@'))
             return false;
         auto author = (_author != kMePeerID) ? _author : myID;
         if (author != kMePeerID)
-            return out->writeHex(author.id);
+            return out.writeHex(author.id);
         else
-            return out->writeByte('*');
+            return out.writeByte('*');
     }
 
 
     alloc_slice Version::asASCII(peerID myID) const {
-        return writeAlloced(kMaxASCIILength, [&](slice *out) {
+        auto result = slice_stream::alloced(kMaxASCIILength, [&](slice_stream &out) {
             return writeASCII(out, myID);
         });
+        Assert(result);
+        return result;
     }
 
 

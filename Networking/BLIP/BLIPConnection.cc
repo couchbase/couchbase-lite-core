@@ -354,16 +354,16 @@ namespace litecore { namespace blip {
 
                     if (!_frameBuf)
                         _frameBuf.reset(new uint8_t[kMaxVarintLen64 + 1 + 4 + kBigFrameSize]);
-                    slice out(_frameBuf.get(), maxSize);
-                    WriteUVarInt(&out, msg->_number);
-                    auto flagsPos = (FrameFlags*)out.buf;
-                    out.moveStart(1);
+                    slice_stream out(_frameBuf.get(), maxSize);
+                    WriteUVarInt(out, msg->_number);
+                    auto flagsPos = (FrameFlags*)out.next();
+                    out.advance(1);
 
                     // Ask the MessageOut to write data to fill the buffer:
                     auto prevBytesSent = msg->_bytesSent;
                     msg->nextFrameToSend(_outputCodec, out, frameFlags);
                     *flagsPos = frameFlags;
-                    slice frame(_frameBuf.get(), out.buf);
+                    slice frame = out.output();
                     bytesWritten += frame.size;
 
                     logVerbose("    Sending frame: %s #%" PRIu64 " %c%c%c%c, bytes %u--%u",

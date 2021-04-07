@@ -678,12 +678,12 @@ namespace litecore {
         stringstream out;
         if (_bodyDoc) {
             slice data = _bodyDoc.allocedData();
-            out << "---BODY: " << data.size << " bytes at " << (void*)data.buf << ":\n";
+            out << "---BODY: " << data.size << " bytes at " << (const void*)data.buf << ":\n";
             fleece::impl::Value::dump(data, out);
         }
         if (_extraDoc) {
             slice data = _extraDoc.allocedData();
-            out << "---EXTRA: " << data.size << " bytes at " << (void*)data.buf << ":\n";
+            out << "---EXTRA: " << data.size << " bytes at " << (const void*)data.buf << ":\n";
             fleece::impl::Value::dump(data, out);
         }
         return out.str();

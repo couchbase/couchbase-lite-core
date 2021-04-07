@@ -135,7 +135,7 @@ namespace litecore { namespace net {
             if (_isWebSocket) {
                 // WebSocket handshake headers:
                 uint8_t nonceBuf[16];
-                slice nonceBytes(nonceBuf, sizeof(nonceBuf));
+                mutable_slice nonceBytes(nonceBuf, sizeof(nonceBuf));
                 SecureRandomize(nonceBytes);
                 _webSocketNonce = base64::encode(nonceBytes);
                 rq << "Connection: Upgrade\r\n"

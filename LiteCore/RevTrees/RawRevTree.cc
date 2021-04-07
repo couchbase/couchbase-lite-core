@@ -57,7 +57,7 @@ namespace litecore {
         }
 
         auto entry = (const RemoteEntry*)offsetby(rawRev, sizeof(uint32_t));
-        while (entry < raw_tree.end()) {
+        while (entry < (const void*)raw_tree.end()) {
             RevTree::RemoteID remoteID = endian::dec16(entry->remoteDBID_BE);
             auto revIndex = endian::dec16(entry->revIndex_BE);
             if (remoteID == 0 || revIndex >= count)
@@ -98,7 +98,7 @@ namespace litecore {
             ++entry;
         }
 
-        Assert(entry == result.end());
+        Assert(entry == (const void*)result.end());
         return result;
     }
 

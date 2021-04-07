@@ -85,7 +85,7 @@ namespace litecore {
     {
         // Derive a random nonce with which to scramble the key, and write it to the file:
         uint8_t buf[kAES256KeySize];
-        slice nonce(buf, sizeof(buf));
+        mutable_slice nonce(buf, sizeof(buf));
         SecureRandomize(nonce);
         initEncryptor(alg, encryptionKey, nonce);
     }
@@ -103,12 +103,12 @@ namespace litecore {
         uint64_t iv[2] = {0, endian::enc64(_blockID)};
         ++_blockID;
         uint8_t cipherBuf[kFileBlockSize + kAESBlockSize];
-        slice ciphertext(cipherBuf, sizeof(cipherBuf));
-        ciphertext.shorten(AES256(true,
-                                  slice(&_key, sizeof(_key)), slice(iv, sizeof(iv)),
-                                  finalBlock,
-                                  ciphertext,
-                                  plaintext));
+        mutable_slice ciphertext(cipherBuf, sizeof(cipherBuf));
+        ciphertext.size = AES256(true,
+                                 slice(&_key, sizeof(_key)), slice(iv, sizeof(iv)),
+                                 finalBlock,
+                                 ciphertext,
+                                 plaintext);
         _output->write(ciphertext);
         LogVerbose(BlobLog, "WRITE #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
             (unsigned long long)(_blockID-1), (unsigned long long)plaintext.size, finalBlock, (unsigned long long)ciphertext.size);
@@ -179,7 +179,7 @@ namespace litecore {
 
 
     // Reads & decrypts the next block from the file into `output`
-    size_t EncryptedReadStream::readBlockFromFile(slice output) {
+    size_t EncryptedReadStream::readBlockFromFile(mutable_slice output) {
         if (_blockID > _finalBlockID)
             return 0; // at EOF already
         uint8_t blockBuf[kFileBlockSize + kAESBlockSize];
@@ -192,10 +192,10 @@ namespace litecore {
         uint64_t iv[2] = {0, endian::enc64(_blockID)};
         ++_blockID;
         size_t outputSize = AES256(false,
-                      slice(_key, sizeof(_key)),
-                      slice(iv, sizeof(iv)),
-                      finalBlock,
-                      output, slice(blockBuf, bytesRead));
+                                   slice(_key, sizeof(_key)),
+                                   slice(iv, sizeof(iv)),
+                                   finalBlock,
+                                   output, slice(blockBuf, bytesRead));
         LogVerbose(BlobLog, "READ  #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
             (unsigned long long)(_blockID-1), (unsigned long long)bytesRead, finalBlock, (unsigned long long)outputSize);
         return outputSize;
@@ -205,38 +205,38 @@ namespace litecore {
     // Reads the next block from the file into _buffer
     void EncryptedReadStream::fillBuffer() {
         _bufferBlockID = _blockID;
-        _bufferSize = readBlockFromFile(slice(_buffer, kFileBlockSize));
+        _bufferSize = readBlockFromFile({_buffer, kFileBlockSize});
         _bufferPos = 0;
     }
 
 
     // Reads as many bytes as possible from _buffer into `remaining`.
-    void EncryptedReadStream::readFromBuffer(slice &remaining) {
-        size_t nFromBuffer = min(_bufferSize - _bufferPos, remaining.size);
+    void EncryptedReadStream::readFromBuffer(slice_stream &remaining) {
+        size_t nFromBuffer = min(_bufferSize - _bufferPos, remaining.capacity());
         if (nFromBuffer > 0) {
-            remaining.writeFrom(slice(&_buffer[_bufferPos], nFromBuffer));
+            remaining.write(&_buffer[_bufferPos], nFromBuffer);
             _bufferPos += nFromBuffer;
         }
     }
 
 
     size_t EncryptedReadStream::read(void *dst, size_t count) {
-        slice remaining(dst, count);
+        slice_stream remaining(dst, count);
         // If there's decrypted data in the buffer, copy it to the output:
         readFromBuffer(remaining);
-        if (remaining.size > 0 && _blockID <= _finalBlockID) {
+        if (remaining.capacity() > 0 && _blockID <= _finalBlockID) {
             // Read & decrypt as many blocks as possible from the file to the output:
-            while (remaining.size >= kFileBlockSize && _blockID <= _finalBlockID) {
-                remaining.moveStart(readBlockFromFile(remaining));
+            while (remaining.capacity() >= kFileBlockSize && _blockID <= _finalBlockID) {
+                remaining.advance(readBlockFromFile(remaining.buffer()));
             }
 
-            if (remaining.size > 0) {
+            if (remaining.capacity() > 0) {
                 // Partial block: decrypt entire block to buffer, then copy part to the output:
                 fillBuffer();
                 readFromBuffer(remaining);
             }
         }
-        return (uint8_t*)remaining.buf - (uint8_t*)dst;
+        return (uint8_t*)remaining.next() - (uint8_t*)dst;
     }
 
 

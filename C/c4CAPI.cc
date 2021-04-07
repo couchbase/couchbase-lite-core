@@ -654,9 +654,9 @@ bool c4db_findDocAncestors(C4Database *database,
 
 void c4raw_free(C4RawDocument* rawDoc) noexcept {
     if (rawDoc) {
-        ((slice)rawDoc->key).free();
-        ((slice)rawDoc->meta).free();
-        ((slice)rawDoc->body).free();
+        ::free((void*)rawDoc->key.buf);
+        ::free((void*)rawDoc->meta.buf);
+        ::free((void*)rawDoc->body.buf);
         delete rawDoc;
     }
 }

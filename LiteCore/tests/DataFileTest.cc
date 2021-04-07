@@ -710,7 +710,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encry
 
     options.encryptionAlgorithm = kAES256;
     options.encryptionKey = alloc_slice(kEncryptionKeySize[kAES256]);
-    SecureRandomize(options.encryptionKey);
+    SecureRandomize(mutable_slice(options.encryptionKey));
 
     db->rekey(options.encryptionAlgorithm, options.encryptionKey);
 
@@ -720,7 +720,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encry
     REQUIRE(rec.exists());
     
     // Change encryption key
-    SecureRandomize(options.encryptionKey);
+    SecureRandomize(mutable_slice(options.encryptionKey));
     db->rekey(options.encryptionAlgorithm, options.encryptionKey);
     
     reopenDatabase(&options);
