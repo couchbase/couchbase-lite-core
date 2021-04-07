@@ -174,6 +174,19 @@ C4Document* c4coll_createDoc(C4Collection *collection,
                              C4RevisionFlags revisionFlags,
                              C4Error* C4NULLABLE error) C4API;
 
+/** Moves a document to another collection, possibly with a different ID.
+    @param collection  The document's original collection.
+    @param docID  The ID of the document to move.
+    @param toCollection  The collection to move to.
+    @param newDocID  The docID in the new collection, or a NULL slice to keep the original ID.
+    @param error Information about any error that occurred
+    @return  True on success, false on failure. */
+bool c4coll_moveDoc(C4Collection *collection,
+                    C4String docID,
+                    C4Collection *toCollection,
+                    C4String newDocID,
+                    C4Error* C4NULLABLE error) C4API;
+
 
 //////// PURGING & EXPIRATION:
 

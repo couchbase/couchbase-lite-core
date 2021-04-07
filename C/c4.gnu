@@ -321,6 +321,7 @@ CBL {
 		c4coll_getDocBySequence;
 		c4coll_putDoc;
 		c4coll_createDoc;
+		c4coll_moveDoc;
 		c4coll_purgeDoc;
 		c4coll_setDocExpiration;
 		c4coll_getDocExpiration;

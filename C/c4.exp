@@ -321,6 +321,7 @@ _c4coll_getDoc
 _c4coll_getDocBySequence
 _c4coll_putDoc
 _c4coll_createDoc
+_c4coll_moveDoc
 _c4coll_purgeDoc
 _c4coll_setDocExpiration
 _c4coll_getDocExpiration

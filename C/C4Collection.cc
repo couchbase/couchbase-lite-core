@@ -356,10 +356,12 @@ namespace litecore {
 
 
         void moveDocument(slice docID, C4Collection *toCollection, slice newDocID) override {
+            C4Database::Transaction t(getDatabase());
             if (newDocID)
                 C4Document::requireValidDocID(newDocID);
             keyStore().moveTo(docID, toCollection->keyStore(), dbImpl()->transaction(), newDocID);
             // DOES NOT NOTIFY SEQUENCE TRACKER! (should it?)
+            t.commit();
         }
 
 

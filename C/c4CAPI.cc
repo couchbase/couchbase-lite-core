@@ -322,6 +322,17 @@ C4Document* c4coll_createDoc(C4Collection *coll,
     });
 }
 
+bool c4coll_moveDoc(C4Collection *coll,
+                    C4String docID,
+                    C4Collection *toCollection,
+                    C4String newDocID,
+                    C4Error* C4NULLABLE outError) noexcept
+{
+    return tryCatch(outError, [&]{
+        coll->moveDocument(docID, toCollection, newDocID);
+    });
+}
+
 bool c4coll_purgeDoc(C4Collection *coll,
                      C4String docID,
                      C4Error* C4NULLABLE outError) noexcept
