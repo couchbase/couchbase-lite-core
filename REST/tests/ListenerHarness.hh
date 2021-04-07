@@ -67,26 +67,26 @@ public:
 
 
     alloc_slice useServerTLSWithTemporaryKey() {
-        auto cert = useServerIdentity( CertHelper::instance().temporaryServerIdentity );
+        auto cert = useServerIdentity( _certHelper.temporaryServerIdentity );
         return alloc_slice(c4cert_copyData(cert, false));
     }
 
 
     C4Cert* useClientTLSWithTemporaryKey() {
-        return useClientIdentity( CertHelper::instance().temporaryClientIdentity );
+        return useClientIdentity( _certHelper.temporaryClientIdentity );
     }
 
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     alloc_slice useServerTLSWithPersistentKey() {
         C4Log("Using server TLS w/persistent key for this test");
-        auto cert = useServerIdentity( CertHelper::instance().persistentServerIdentity() );
+        auto cert = useServerIdentity( _certHelper.persistentServerIdentity() );
         return alloc_slice(c4cert_copyData(cert, false));
     }
 
 
     C4Cert* useClientTLSWithPersistentKey() {
-        return useClientIdentity(CertHelper::instance().persistentClientIdentity());
+        return useClientIdentity(_certHelper.persistentClientIdentity());
     }
 
 
@@ -126,5 +126,6 @@ public:
 private:
     c4::ref<C4Listener> _listener;
     C4TLSConfig _tlsConfig = { };
+    CertHelper _certHelper;
 };
 
