@@ -126,6 +126,8 @@ public:
 private:
     c4::ref<C4Listener> _listener;
     C4TLSConfig _tlsConfig = { };
+#ifdef COUCHBASE_ENTERPRISE
     CertHelper _certHelper;
+#endif
 };
 
