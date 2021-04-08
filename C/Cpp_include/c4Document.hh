@@ -188,7 +188,7 @@ protected:
     alloc_slice          _revID;        // Revision ID of current revision
     C4SequenceNumber     _sequence;     // Sequence at which doc was last updated
     C4Revision           _selected;     // Describes the currently-selected revision
-    C4ExtraInfo          _extraInfo;    // For client use
+    C4ExtraInfo          _extraInfo = {}; // For client use
 
     alloc_slice          _selectedRevID;// Same as _selected::revID
     Retained<C4Collection> _collection; // Owning collection

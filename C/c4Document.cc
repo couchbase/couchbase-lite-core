@@ -50,7 +50,6 @@ C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
 {
     DebugAssert(&_flags == &((C4Document_C*)this)->flags);
     DebugAssert((void*)&_docID == (void*)&((C4Document_C*)this)->docID);
-    _extraInfo = { };
 }
 
 

@@ -53,6 +53,9 @@ struct C4Collection : public fleece::RefCounted,
 
     virtual C4SequenceNumber getLastSequence() const =0;
 
+    C4ExtraInfo& extraInfo()                                {return _extraInfo;}
+    const C4ExtraInfo& extraInfo() const                    {return _extraInfo;}
+
     // Documents:
 
     static C4Document* documentContainingValue(FLValue) noexcept;
@@ -152,6 +155,7 @@ protected:
 
     C4Database* C4NULLABLE  _database;
     alloc_slice             _name;
+    C4ExtraInfo             _extraInfo = {};
 };
 
 

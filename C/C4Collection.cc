@@ -64,7 +64,9 @@ namespace litecore {
         }
 
 
-        ~CollectionImpl() = default;
+        ~CollectionImpl() {
+            destructExtraInfo(_extraInfo);
+        }
 
 
         void close() override {
