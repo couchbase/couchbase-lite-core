@@ -559,6 +559,9 @@ namespace litecore {
     // This implements both the public getCollection() and createCollection()
     Retained<C4Collection> DatabaseImpl::getOrCreateCollection(slice name, bool canCreate) {
         LOCK(_collectionsMutex);
+        if (!name)
+            return _defaultCollection;                                      // -> Default coll.
+
         // Is there already a C4Collection object for it in _collections?
         if (auto i = _collections.find(name); i != _collections.end())
             return i->second;                                               // -> Existing object
