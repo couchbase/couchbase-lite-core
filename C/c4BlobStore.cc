@@ -300,8 +300,9 @@ C4WriteStream::C4WriteStream(C4BlobStore &store)
 ,_store(store)
 { }
 
-C4WriteStream::C4WriteStream( C4WriteStream &&other)
-:_impl(move(other._impl))
+C4WriteStream::C4WriteStream(C4WriteStream &&other)
+:InstanceCounted(move(other))
+,_impl(move(other._impl))
 ,_store(other._store)
 { }
 
