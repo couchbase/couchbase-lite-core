@@ -55,6 +55,7 @@ namespace litecore { namespace repl {
 
         struct BlobProgress {
             Dir         dir;
+            alloc_slice collectionName;
             alloc_slice docID;
             alloc_slice docProperty;
             C4BlobKey   key;

@@ -440,9 +440,11 @@ namespace litecore {
                 return;
             auto onBlob = _onBlobProgress.load();
             if (onBlob)
-                onBlob(this, (p.dir == Dir::kPushing),
-                       {p.docID.buf, p.docID.size},
-                       {p.docProperty.buf, p.docProperty.size},
+                onBlob(this,
+                       (p.dir == Dir::kPushing),
+                       nullslice,     // TODO: Collection support
+                       p.docID,
+                       p.docProperty,
                        p.key,
                        p.bytesCompleted, p.bytesTotal,
                        p.error,
