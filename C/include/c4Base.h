@@ -286,12 +286,17 @@ typedef struct {
 } C4Error;
 
 
-/** Returns an error message describing a C4Error. Remember to free the result. */
+/** Returns an error message describing a C4Error.
+    \note As a convenience, a zero byte has been placed after the end of the message, so it is
+          safe to cast the result's `buf` to `const char*` and use it as a C string.
+    \note Remember to free the result. */
 C4StringResult c4error_getMessage(C4Error error) C4API;
 
 /** Returns a description of an error, including the domain and code as well as the message.
-    Remember to free the result. */
-C4SliceResult c4error_getDescription(C4Error error) C4API;
+    \note As a convenience, a zero byte has been placed after the end of the message, so it is
+          safe to cast the result's `buf` to `const char*` and use it as a C string.
+    \note Remember to free the result. */
+C4StringResult c4error_getDescription(C4Error error) C4API;
 
 /** Returns a description of an error, including the domain and code as well as the message.
     The description is copied to the buffer as a C string.
@@ -310,7 +315,10 @@ void c4error_setCaptureBacktraces(bool) C4API;
 bool c4error_getCaptureBacktraces(void) C4API;
 
 /** Returns the stack backtrace, if any, associated with a C4Error.
-    This is formatted in human-readable form similar to a debugger or crash log. */
+    This is formatted in human-readable form similar to a debugger or crash log.
+    \note As a convenience, a zero byte has been placed after the end of the string, so it is
+          safe to cast the result's `buf` to `const char*` and use it as a C string.
+    \note Remember to free the result. */
 C4StringResult c4error_getBacktrace(C4Error error) C4API;
 
 

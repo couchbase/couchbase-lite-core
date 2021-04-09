@@ -68,8 +68,10 @@ namespace c4Internal {
 
     // SLICES:
 
-    C4SliceResult sliceResult(const char *str);
-    C4SliceResult sliceResult(const std::string&);
+    C4StringResult stringResult(const char *str);
+    C4StringResult stringResult(const std::string&);
+    C4StringResult nullPaddedStringResult(const char *str);
+    C4StringResult nullPaddedStringResult(const std::string&);
 
     std::string toString(C4Slice);
 

@@ -99,7 +99,7 @@ C4StringResult c4query_explain(C4Query *query) noexcept {
         string result = query->query()->explain();
         if (result.empty())
             return C4StringResult{};
-        return sliceResult(result);
+        return stringResult(result);
     });
 }
 

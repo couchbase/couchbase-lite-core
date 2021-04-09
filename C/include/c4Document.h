@@ -177,7 +177,7 @@ extern "C" {
                             these, and _must_ go back to one of these if possible, even if it means
                             skipping some revisions.
         @param backToRevsCount  The number of revisions in the `backToRevs` array. */
-    C4SliceResult c4doc_getRevisionHistory(C4Document* doc,
+    C4StringResult c4doc_getRevisionHistory(C4Document* doc,
                                            unsigned maxRevs,
                                            const C4String backToRevs[C4NULLABLE],
                                            unsigned backToRevsCount) C4API;
@@ -185,7 +185,7 @@ extern "C" {
     /** Returns the selected revision's ID in a form that will make sense to another peer/server.
         (This doesn't affect tree-based revIDs. In vector-based version IDs it uses the database's actual
         peer ID instead of the shorthand "*" character.) */
-    C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API;
+    C4StringResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API;
 
     /** Selects the parent of the selected revision, if it's known, else returns NULL. */
     bool c4doc_selectParentRevision(C4Document* doc) C4API;
@@ -223,11 +223,11 @@ extern "C" {
         @param db  The database.
         @param remoteID  The ID assigned to the remote database.
         @return  The URL/identifier, or a null slice if not found. */
-    C4SliceResult c4db_getRemoteDBAddress(C4Database *db,
+    C4StringResult c4db_getRemoteDBAddress(C4Database *db,
                                           C4RemoteID remoteID) C4API;
 
     /** Returns the revision ID that has been marked as current for the given remote database. */
-    C4SliceResult c4doc_getRemoteAncestor(C4Document *doc,
+    C4StringResult c4doc_getRemoteAncestor(C4Document *doc,
                                           C4RemoteID remoteDatabase) C4API;
 
     /** Marks a revision as current for the given remote database. */

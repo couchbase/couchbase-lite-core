@@ -218,7 +218,7 @@ C4String c4db_getName(C4Database *database) C4API {
 }
 
 C4SliceResult c4db_getPath(C4Database *database) noexcept {
-    return sliceResult(database->path().path());
+    return nullPaddedStringResult(database->path().path());
 }
 
 

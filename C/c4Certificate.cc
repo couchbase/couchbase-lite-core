@@ -483,7 +483,7 @@ bool c4keypair_isPersistent(C4KeyPair* key) C4API {
 
 
 C4SliceResult c4keypair_publicKeyDigest(C4KeyPair* key) C4API {
-    return sliceResult(internal(key)->digestString());
+    return stringResult(internal(key)->digestString());
 }
 
 
