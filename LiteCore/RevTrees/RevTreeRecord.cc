@@ -36,6 +36,8 @@ namespace litecore {
     :_store(store), _rec(docID)
     {
         read(content);
+        _store.read(_rec, content);
+        decode();
     }
 
     RevTreeRecord::RevTreeRecord(KeyStore& store, const Record& rec)
@@ -57,8 +59,10 @@ namespace litecore {
     }
 
     void RevTreeRecord::read(ContentOption content) {
-        _store.read(_rec, content);
-        decode();
+        if (_store.read(_rec, content))
+            decode();
+        else if (_rec.exists())
+            error::_throw(error::NotFound);  // it's been purged...
     }
 
     void RevTreeRecord::decode() {
