@@ -38,13 +38,10 @@ C4_ASSUME_NONNULL_BEGIN
 // ************************************************************************
 
 
-struct C4Collection : public fleece::RefCounted,
-                      public fleece::InstanceCountedIn<C4Collection>,
-                      C4Base
-{
+struct C4Collection : public fleece::InstanceCountedIn<C4Collection>, C4Base {
     // Accessors:
     
-    slice getName() const                          {return _name;}
+    slice getName() const                                   {return _name;}
 
     C4Database* getDatabase();
     const C4Database* getDatabase() const;
@@ -117,19 +114,7 @@ struct C4Collection : public fleece::RefCounted,
 
     // Internal use only:
 
-    static Retained<C4Collection> newCollection(C4Database*, slice name, litecore::KeyStore&);
-    virtual void close() =0;
-
-    virtual litecore::KeyStore& keyStore() const =0;
-    virtual litecore::access_lock<litecore::SequenceTracker>& sequenceTracker() =0;
-
-    virtual void transactionBegan() =0;
-    virtual bool changedDuringTransaction() =0;
-    virtual void transactionEnding(litecore::ExclusiveTransaction*, bool committing) =0;
-    virtual void externalTransactionCommitted(const litecore::SequenceTracker &sourceTracker) =0;
-    
-    virtual Retained<C4Document> newDocumentInstance(const litecore::Record&) =0;
-    virtual void documentSaved(C4Document*) =0;
+    virtual ~C4Collection() = default;
 
     virtual std::vector<alloc_slice> findDocAncestors(const std::vector<slice> &docIDs,
                                                       const std::vector<slice> &revIDs,
@@ -143,14 +128,7 @@ struct C4Collection : public fleece::RefCounted,
 
     virtual void findBlobReferences(const fleece::function_ref<bool(FLDict)>&) =0;
 
-    virtual void startHousekeeping() =0;
-    virtual bool stopHousekeeping() =0;
-
 protected:
-    friend class litecore::DatabaseImpl;
-    friend class litecore::C4CollectionObserverImpl;
-    friend class litecore::C4DocumentObserverImpl;
-
     C4Collection(C4Database*, slice name);
 
     C4Database* C4NULLABLE  _database;

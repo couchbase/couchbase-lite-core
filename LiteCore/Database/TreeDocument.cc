@@ -18,7 +18,7 @@
 
 #include "TreeDocument.hh"
 #include "c4Document.hh"
-#include "c4Collection.hh"
+#include "CollectionImpl.hh"
 #include "c4Internal.hh"
 #include "c4Private.h"
 
@@ -346,7 +346,7 @@ namespace litecore {
                         _sequence = _revTree.sequence();
                         if (_selected.sequence == 0)
                             _selected.sequence = _sequence;
-                        collection()->documentSaved(this);
+                        asInternal(collection())->documentSaved(this);
                     }
                     return true;
                 default:
@@ -407,10 +407,7 @@ namespace litecore {
                 alloc_slice emptyDictBody;
                 if (mergedBody.size == 0) {
                     // An empty body isn't legal, so replace it with an encoded empty Dict:
-                    Encoder enc;
-                    enc.beginDictionary();
-                    enc.endDictionary();
-                    emptyDictBody = enc.finish();
+                    emptyDictBody = alloc_slice(fleece::impl::Encoder::kPreEncodedEmptyDict);
                     mergedBody = emptyDictBody;
                 }
 
@@ -450,7 +447,7 @@ namespace litecore {
             if (rq.deltaCB == nullptr) {
                 body = (rq.allocedBody.buf)? rq.allocedBody : alloc_slice(rq.body);
                 if (!body)
-                    body = Encoder::kPreEncodedEmptyDict;
+                    body = fleece::impl::Encoder::kPreEncodedEmptyDict;
             } else {
                 // Apply a delta via a callback:
                 if (!rq.deltaSourceRevID.buf || !selectRevision(rq.deltaSourceRevID, true)) {
@@ -675,7 +672,7 @@ namespace litecore {
     }
 
     C4Document* TreeDocumentFactory::documentContaining(FLValue value) {
-        RevTreeRecord *vdoc = RevTreeRecord::containing((const Value*)value);
+        RevTreeRecord *vdoc = RevTreeRecord::containing((const fleece::impl::Value*)value);
         return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
     }
 
@@ -745,7 +742,7 @@ namespace litecore {
             result << ']';
             return alloc_slice(result.str());
         };
-        return collection()->keyStore().withDocBodies(docIDs, callback);
+        return asInternal(collection())->keyStore().withDocBodies(docIDs, callback);
     }
 
 

@@ -239,11 +239,11 @@ bool c4db_hasCollection(C4Database *db, C4String name) noexcept {
 }
 
 C4Collection* C4NULLABLE c4db_getCollection(C4Database *db, C4String name) noexcept {
-    return tryCatch<C4Collection*>(nullptr, [&]{ return db->getCollection(name).detach(); });
+    return tryCatch<C4Collection*>(nullptr, [&]{ return db->getCollection(name); });
 }
 
 C4Collection* c4db_createCollection(C4Database *db, C4String name, C4Error* C4NULLABLE outError) noexcept {
-    return tryCatch<C4Collection*>(outError, [&]{ return db->createCollection(name).detach(); });
+    return tryCatch<C4Collection*>(outError, [&]{ return db->createCollection(name); });
 }
 
 bool c4db_deleteCollection(C4Database *db, C4String name, C4Error* C4NULLABLE outError) noexcept {

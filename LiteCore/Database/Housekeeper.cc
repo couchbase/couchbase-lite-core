@@ -17,7 +17,7 @@
 //
 
 #include "Housekeeper.hh"
-#include "c4Collection.hh"
+#include "CollectionImpl.hh"
 #include "c4Internal.hh"
 #include "DatabaseImpl.hh"
 #include "SequenceTracker.hh"
@@ -33,7 +33,7 @@ namespace litecore {
 
     Housekeeper::Housekeeper(C4Collection *coll)
     :Actor(DBLog, format("Housekeeper for %.*s", SPLAT(coll->getName())))
-    ,_keyStoreName(coll->keyStore().name())
+    ,_keyStoreName(asInternal(coll)->keyStore().name())
     ,_bgdb(asInternal(coll->getDatabase())->backgroundDatabase())
     ,_expiryTimer(std::bind(&Housekeeper::_doExpiration, this))
     { }

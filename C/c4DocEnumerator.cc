@@ -17,7 +17,7 @@
 //
 
 #include "c4DocEnumerator.hh"
-#include "c4Collection.hh"
+#include "CollectionImpl.hh"
 #include "c4Document.hh"
 #include "c4Internal.hh"
 #include "DatabaseImpl.hh"
@@ -46,15 +46,15 @@ public:
     Impl(C4Collection *collection,
          sequence_t since,
          const C4EnumeratorOptions &options)
-    :RecordEnumerator(collection->keyStore(), since, recordOptions(options))
-    ,_collection(collection)
+    :RecordEnumerator(asInternal(collection)->keyStore(), since, recordOptions(options))
+    ,_collection(asInternal(collection))
     ,_options(options)
     { }
 
     Impl(C4Collection *collection,
          const C4EnumeratorOptions &options)
-    :RecordEnumerator(collection->keyStore(), recordOptions(options))
-    ,_collection(collection)
+    :RecordEnumerator(asInternal(collection)->keyStore(), recordOptions(options))
+    ,_collection(asInternal(collection))
     ,_options(options)
     { }
 
@@ -101,7 +101,7 @@ public:
     }
 
 private:
-    Retained<C4Collection> _collection;
+    litecore::CollectionImpl* _collection;
     C4EnumeratorOptions const _options;
     alloc_slice _docRevID;
 };

@@ -19,7 +19,7 @@
 #include "c4Observer.hh"
 #include "c4Database.hh"
 #include "c4Internal.hh"
-#include "c4Collection.hh"
+#include "CollectionImpl.hh"
 #include "SequenceTracker.hh"
 #include <optional>
 
@@ -32,7 +32,7 @@ namespace litecore {
         C4CollectionObserverImpl(C4Collection *collection,
                                  C4SequenceNumber since,
                                  Callback callback)
-        :_collection(collection)
+        :_collection(asInternal(collection))
         ,_callback(move(callback))
         {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
@@ -66,7 +66,7 @@ namespace litecore {
         }
 
     private:
-        Retained<C4Collection> _collection;
+        CollectionImpl* _collection;
         optional<CollectionChangeNotifier> _notifier;
         Callback _callback;
         bool _inCallback {false};
@@ -98,7 +98,7 @@ namespace litecore {
         C4DocumentObserverImpl(C4Collection *collection,
                                slice docID,
                                Callback callback)
-        :_collection(collection)
+        :_collection(asInternal(collection))
         ,_callback(callback)
         {
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
@@ -118,7 +118,7 @@ namespace litecore {
             });
         }
 
-        Retained<C4Collection> _collection;
+        CollectionImpl* _collection;
         Callback _callback;
         optional<DocChangeNotifier> _notifier;
     };

@@ -19,7 +19,7 @@
 #include "VectorDocument.hh"
 #include "VectorRecord.hh"
 #include "VersionVector.hh"
-#include "c4Collection.hh"
+#include "CollectionImpl.hh"
 #include "c4Database.hh"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
@@ -572,7 +572,7 @@ namespace litecore {
                                                      ((_flags & kRevDeleted) ? "Deleted" : "Saved"),
                                                      SPLAT(_docID), SPLAT(revID), _sequence);
                     }
-                    collection()->documentSaved(this);
+                    asInternal(collection())->documentSaved(this);
                     return true;
             }
             return false; // unreachable
@@ -679,7 +679,7 @@ namespace litecore {
             result << ']';
             return alloc_slice(result.str());                       // --> Done!
         };
-        return collection()->keyStore().withDocBodies(docIDs, callback);
+        return asInternal(collection())->keyStore().withDocBodies(docIDs, callback);
     }
 
 

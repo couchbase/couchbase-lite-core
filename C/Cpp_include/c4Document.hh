@@ -191,7 +191,7 @@ protected:
     C4ExtraInfo          _extraInfo = {}; // For client use
 
     alloc_slice          _selectedRevID;// Same as _selected::revID
-    Retained<C4Collection> _collection; // Owning collection
+    litecore::CollectionImpl* _collection;   // Owning collection
 };
 
 

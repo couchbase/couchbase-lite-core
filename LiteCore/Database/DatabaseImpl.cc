@@ -17,7 +17,7 @@
 //
 
 #include "DatabaseImpl.hh"
-#include "c4Collection.hh"
+#include "CollectionImpl.hh"
 #include "c4Document.hh"
 #include "c4Document.h"
 #include "c4ExceptionUtils.hh"
@@ -75,7 +75,7 @@ namespace litecore {
 
     DatabaseImpl::DatabaseImpl(const FilePath &path, C4DatabaseConfig inConfig)
     :C4Database(path.unextendedName(), path.parentDir(), inConfig)
-    ,_encoder(new fleece::impl::Encoder())
+    ,_encoder(new Encoder())
     { }
 
 
@@ -275,7 +275,7 @@ namespace litecore {
         destructExtraInfo(extraInfo);
 
         for (auto &entry : _collections)
-            entry.second->close();
+            asInternal(entry.second.get())->close();
 
         FLEncoder_Free(_flEncoder);
         // Eagerly close the data file to ensure that no other instances will
@@ -362,7 +362,7 @@ namespace litecore {
         };
 
         forEachCollection([&](C4Collection *coll) {
-            coll->findBlobReferences(blobCallback);
+            asInternal(coll)->findBlobReferences(blobCallback);
         });
 
         // Now delete all blobs that don't have one of the referenced keys:
@@ -384,14 +384,14 @@ namespace litecore {
     void DatabaseImpl::stopBackgroundTasks() {
         // We can't hold the _collectionsMutex while calling stopHousekeeping(), or a deadlock may
         // result. So first enumerate the collections, then make the calls:
-        vector<Retained<C4Collection>> collections;
+        vector<C4Collection*> collections;
         {
             LOCK(_collectionsMutex);
             for (auto &entry : _collections)
-                collections.emplace_back(entry.second);
+                collections.emplace_back(entry.second.get());
         }
         for (auto &coll : collections)
-            coll->stopHousekeeping();
+            asInternal(coll)->stopHousekeeping();
 
         if (_backgroundDB)
             _backgroundDB->close();
@@ -402,7 +402,7 @@ namespace litecore {
         for (const string &name : _dataFile->allKeyStoreNames()) {
             if (slice collName = keyStoreNameToCollectionName(name); collName) {
                 if (_dataFile->getKeyStore(name).nextExpiration() > 0) {
-                    getCollection(collName)->startHousekeeping();
+                    asInternal(getCollection(collName))->startHousekeeping();
                 }
             }
         }
@@ -548,23 +548,23 @@ namespace litecore {
     }
 
 
-    Retained<C4Collection> DatabaseImpl::getCollection(slice name) const {
+    C4Collection* DatabaseImpl::getCollection(slice name) const {
         return const_cast<DatabaseImpl*>(this)->getOrCreateCollection(name, false);
     }
 
-    Retained<C4Collection> DatabaseImpl::createCollection(slice name) {
+    C4Collection* DatabaseImpl::createCollection(slice name) {
         return getOrCreateCollection(name, true);
     }
 
     // This implements both the public getCollection() and createCollection()
-    Retained<C4Collection> DatabaseImpl::getOrCreateCollection(slice name, bool canCreate) {
+    C4Collection* DatabaseImpl::getOrCreateCollection(slice name, bool canCreate) {
         LOCK(_collectionsMutex);
         if (!name)
             return _defaultCollection;                                      // -> Default coll.
 
         // Is there already a C4Collection object for it in _collections?
         if (auto i = _collections.find(name); i != _collections.end())
-            return i->second;                                               // -> Existing object
+            return i->second.get();                                         // -> Existing object
 
         // Validate the name:
         string keyStoreName = collectionNameToKeyStoreName(name);
@@ -578,12 +578,13 @@ namespace litecore {
 
         // Instantiate it, creating the KeyStore on-disk if necessary:
         KeyStore &store = _dataFile->getKeyStore(keyStoreName);
-        auto collection = C4Collection::newCollection(this, name, store);
+        auto collection = make_unique<CollectionImpl>(this, name, store);
         // Update its state & add it to _collections:
+        auto collectionPtr = collection.get();
+        _collections.insert({collection->getName(), move(collection)});
         if (isInTransaction())
-            collection->transactionBegan();
-        _collections.insert({collection->getName(), collection});
-        return collection;                                                  //-> New object
+            collectionPtr->transactionBegan();
+        return collectionPtr;                                               //-> New object
     }
 
 
@@ -592,7 +593,7 @@ namespace litecore {
 
         LOCK(_collectionsMutex);
         if (auto i = _collections.find(name); i != _collections.end()) {
-            i->second->close();
+            asInternal(i->second.get())->close();
             _collections.erase(i);
         }
         _dataFile->deleteKeyStore(collectionNameToKeyStoreName(name));
@@ -613,7 +614,7 @@ namespace litecore {
 
     void DatabaseImpl::forEachCollection(const function_ref<void(C4Collection*)> &callback) const {
         for (const auto &name : getCollectionNames()) {
-            callback(getCollection(name).get());
+            callback(getCollection(name));
         }
     }
 
@@ -621,7 +622,7 @@ namespace litecore {
     void DatabaseImpl::forEachOpenCollection(const function_ref<void(C4Collection*)> &callback) const {
         LOCK(_collectionsMutex);
         for (auto &entry : _collections)
-            callback(entry.second);
+            callback(entry.second.get());
     }
 
     
@@ -632,7 +633,7 @@ namespace litecore {
         if (++_transactionLevel == 1) {
             _transaction = new ExclusiveTransaction(_dataFile.get());
             forEachOpenCollection([&](C4Collection *coll) {
-                coll->transactionBegan();
+                asInternal(coll)->transactionBegan();
             });
         }
     }
@@ -670,7 +671,7 @@ namespace litecore {
     // The cleanup part of endTransaction
     void DatabaseImpl::_cleanupTransaction(bool committed) {
         forEachOpenCollection([&](C4Collection *coll) {
-            coll->transactionEnding(_transaction, committed);
+            asInternal(coll)->transactionEnding(_transaction, committed);
         });
         delete _transaction;
         _transaction = nullptr;
@@ -681,8 +682,8 @@ namespace litecore {
         // CAREFUL: This may be called on an arbitrary thread
         LOCK(_collectionsMutex);
         forEachOpenCollection([&](C4Collection *coll) {
-            if (slice(coll->keyStore().name()) == srcTracker.name())
-                coll->externalTransactionCommitted(srcTracker);
+            if (slice(asInternal(coll)->keyStore().name()) == srcTracker.name())
+                asInternal(coll)->externalTransactionCommitted(srcTracker);
         });
     }
 

@@ -24,7 +24,7 @@
 #include "c4BlobStore.hh"
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
-#include "c4Collection.hh"
+#include "CollectionImpl.hh"
 #include "DatabaseImpl.hh"
 #include "DocumentFactory.hh"
 #include "LegacyAttachments.hh"
@@ -40,12 +40,11 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleece::impl;
 using namespace litecore;
 
 
 C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
-:_collection(collection)
+:_collection(asInternal(collection))
 ,_docID(move(docID_))
 {
     DebugAssert(&_flags == &((C4Document_C*)this)->flags);
@@ -74,7 +73,7 @@ alloc_slice C4Document::bodyAsJSON(bool canonical) const {
     if (!loadRevisionBody())
         error::_throw(error::NotFound);
     if (FLDict root = getProperties())
-        return ((const Dict*)root)->toJSON(canonical);
+        return ((const fleece::impl::Dict*)root)->toJSON(canonical);
     error::_throw(error::CorruptRevisionData);
 }
 
@@ -319,11 +318,11 @@ bool C4Document::isOldMetaProperty(slice propertyName) noexcept {
 
 
 bool C4Document::hasOldMetaProperties(FLDict dict) noexcept {
-    return legacy_attachments::hasOldMetaProperties((const Dict*)dict);
+    return legacy_attachments::hasOldMetaProperties((const fleece::impl::Dict*)dict);
 }
 
 
 alloc_slice C4Document::encodeStrippingOldMetaProperties(FLDict properties, FLSharedKeys sk) {
-    return legacy_attachments::encodeStrippingOldMetaProperties((const Dict*)properties,
-                                                                (SharedKeys*)sk);
+    return legacy_attachments::encodeStrippingOldMetaProperties((const fleece::impl::Dict*)properties,
+                                                                (fleece::impl::SharedKeys*)sk);
 }

@@ -57,10 +57,10 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     CHECK(db->getCollectionNames() == (vector<string>{"_default"}));
     CHECK(db->hasCollection("_default"));
 
-    Retained<C4Collection> dflt = db->getDefaultCollection();
+    C4Collection* dflt = db->getDefaultCollection();
     REQUIRE(dflt);
     CHECK(dflt == db->getDefaultCollection());              // Must be idempotent!
-    CHECK(dflt == db->getCollection("_default").get());
+    CHECK(dflt == db->getCollection("_default"));
 
     CHECK(dflt->getName() == "_default");
     CHECK(dflt->getDatabase() == db);
@@ -79,15 +79,15 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Collection][C]") {
     CHECK(!db->hasCollection("guitars"));
-    CHECK(db->getCollection("guitars").get() == nullptr);
+    CHECK(db->getCollection("guitars") == nullptr);
 
     // Create "guitars" collection:
-    Retained<C4Collection> guitars = db->createCollection("guitars");
-    CHECK(guitars == db->getCollection("guitars").get());
+    C4Collection* guitars = db->createCollection("guitars");
+    CHECK(guitars == db->getCollection("guitars"));
 
     CHECK(db->getCollectionNames() == (vector<string>{"_default", "guitars"}));
 
-    Retained<C4Collection> dflt = db->getDefaultCollection();
+    C4Collection* dflt = db->getDefaultCollection();
     CHECK(dflt != guitars);
 
     vector<C4Collection*> eachCollection;
@@ -109,15 +109,15 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
 
     db->deleteCollection("guitars");
     CHECK(!db->hasCollection("guitars"));
-    CHECK(db->getCollection("guitars").get() == nullptr);
+    CHECK(db->getCollection("guitars") == nullptr);
     CHECK(db->getCollectionNames() == (vector<string>{"_default"}));
 }
 
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][Collection][C]") {
     // Create "guitars" collection:
-    Retained<C4Collection> guitars = db->createCollection("guitars");
-    Retained<C4Collection> dflt = db->getDefaultCollection();
+    C4Collection* guitars = db->createCollection("guitars");
+    C4Collection* dflt = db->getDefaultCollection();
 
     // Add 100 documents to it:
     {

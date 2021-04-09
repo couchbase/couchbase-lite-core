@@ -97,8 +97,8 @@ namespace litecore {
         void forEachCollection(const CollectionCallback&) const override;
         void forEachOpenCollection(const CollectionCallback&) const;
         bool hasCollection(slice name) const override;
-        Retained<C4Collection> getCollection(slice name) const override;
-        Retained<C4Collection> createCollection(slice name) override;
+        C4Collection* getCollection(slice name) const override;
+        C4Collection* createCollection(slice name) override;
         void deleteCollection(slice name) override;
         void beginTransaction() override;
         void endTransaction(bool commit) override;
@@ -161,14 +161,14 @@ namespace litecore {
         unique_ptr<C4BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         void garbageCollectBlobs();
 
-        Retained<C4Collection> getOrCreateCollection(slice name, bool canCreate);
+        C4Collection* getOrCreateCollection(slice name, bool canCreate);
 
         C4DocumentVersioning checkDocumentVersioning();
         void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,
                                        ExclusiveTransaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
-        using CollectionsMap = std::unordered_map<slice,Retained<C4Collection>>;
+        using CollectionsMap = std::unordered_map<slice,std::unique_ptr<C4Collection>>;
 
         std::string const           _parentDirectory;       // Path to parent directory
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile

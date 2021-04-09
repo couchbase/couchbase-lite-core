@@ -100,11 +100,11 @@ public:
     virtual bool hasCollection(slice name) const =0;
 
     /// Returns the existing collection with the given name, or nullptr if it doesn't exist.
-    virtual Retained<C4Collection> getCollection(slice name) const =0;
+    virtual C4Collection* getCollection(slice name) const =0;
 
     /// Creates and returns an empty collection with the given name,
     /// or returns an existing collection by that name.
-    virtual Retained<C4Collection> createCollection(slice name) =0;
+    virtual C4Collection* createCollection(slice name) =0;
 
     /// Deletes the collection with the given name.
     virtual void deleteCollection(slice name) =0;
@@ -243,7 +243,7 @@ protected:
     std::string const           _parentDirectory;
     C4DatabaseConfig2           _config;                // Configuration
     C4DatabaseConfig            _configV1;              // TODO: DEPRECATED
-    mutable Retained<C4Collection> _defaultCollection;
+    mutable C4Collection* C4NULLABLE _defaultCollection = nullptr;
 };
 
 C4_ASSUME_NONNULL_END
