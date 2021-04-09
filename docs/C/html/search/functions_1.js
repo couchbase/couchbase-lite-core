@@ -40,6 +40,7 @@ var searchData=
   ['c4coll_5fgetindexesinfo',['c4coll_getIndexesInfo',['../group___collection.html#gabc8329cff36f77270115e7b6872fbf75',1,'c4Collection.h']]],
   ['c4coll_5fgetlastsequence',['c4coll_getLastSequence',['../group___collection.html#gaabfc41193c77a1883a585df211f05b70',1,'c4Collection.h']]],
   ['c4coll_5fgetname',['c4coll_getName',['../group___collection.html#ga25314b65e10491d6f11bbcafefb2a217',1,'c4Collection.h']]],
+  ['c4coll_5fmovedoc',['c4coll_moveDoc',['../group___collection.html#ga636ba0c110ab9c3c9e6d57d40b5556ed',1,'c4Collection.h']]],
   ['c4coll_5fnextdocexpiration',['c4coll_nextDocExpiration',['../group___collection.html#ga5a3e4e6e318f5e676a9bef828242fe01',1,'c4Collection.h']]],
   ['c4coll_5fpurgedoc',['c4coll_purgeDoc',['../group___collection.html#ga4186c6dd0af1be62a57160b711cd435d',1,'c4Collection.h']]],
   ['c4coll_5fpurgeexpireddocs',['c4coll_purgeExpiredDocs',['../group___collection.html#gac57775c66221bca5b08ed157ab138fcd',1,'c4Collection.h']]],

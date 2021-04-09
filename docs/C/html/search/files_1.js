@@ -3,6 +3,7 @@ var searchData=
   ['c4_2eh',['c4.h',['../c4_8h.html',1,'']]],
   ['c4base_2eh',['c4Base.h',['../c4_base_8h.html',1,'']]],
   ['c4blobstore_2eh',['c4BlobStore.h',['../c4_blob_store_8h.html',1,'']]],
+  ['c4blobstoretypes_2eh',['c4BlobStoreTypes.h',['../c4_blob_store_types_8h.html',1,'']]],
   ['c4certificate_2eh',['c4Certificate.h',['../c4_certificate_8h.html',1,'']]],
   ['c4certificatetypes_2eh',['c4CertificateTypes.h',['../c4_certificate_types_8h.html',1,'']]],
   ['c4collection_2eh',['c4Collection.h',['../c4_collection_8h.html',1,'']]],

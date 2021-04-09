@@ -1,5 +1,7 @@
 var searchData=
 [
+  ['_5f_5fc4_5fenum_5fattributes',['__C4_ENUM_ATTRIBUTES',['../c4_compat_8h.html#a42b894ee4daa77314010583ae6558785',1,'c4Compat.h']]],
+  ['_5f_5fc4_5foptions_5fattributes',['__C4_OPTIONS_ATTRIBUTES',['../c4_compat_8h.html#a4fae366df4c55deea2f289ef29fd0316',1,'c4Compat.h']]],
   ['_5f_5fc4document_5fh_5f_5f',['__C4DOCUMENT_H__',['../c4_document_8h.html#add1ad1ca116728eae59fad7cd5a567a8',1,'c4Document.h']]],
   ['_5f_5fcold',['__cold',['../_base_8h.html#af74f8ba1e24b5ef7ab220682dd106e37',1,'Base.h']]],
   ['_5f_5fhas_5fattribute',['__has_attribute',['../_base_8h.html#a54d2d7742701f3f112afbcd8d4f9ccdb',1,'Base.h']]],

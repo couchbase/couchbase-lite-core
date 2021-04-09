@@ -120,6 +120,9 @@ Documents</h2></td></tr>
 <tr class="memitem:gae7ff4d349420d35a2e41ea68d6c33bb6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gae7ff4d349420d35a2e41ea68d6c33bb6">c4coll_createDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> body, <a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a> revisionFlags, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
 <tr class="memdesc:gae7ff4d349420d35a2e41ea68d6c33bb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function to create a new document.  <a href="#gae7ff4d349420d35a2e41ea68d6c33bb6">More...</a><br /></td></tr>
 <tr class="separator:gae7ff4d349420d35a2e41ea68d6c33bb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga636ba0c110ab9c3c9e6d57d40b5556ed"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga636ba0c110ab9c3c9e6d57d40b5556ed">c4coll_moveDoc</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *toCollection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> newDocID, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
+<tr class="memdesc:ga636ba0c110ab9c3c9e6d57d40b5556ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Moves a document to another collection, possibly with a different ID.  <a href="#ga636ba0c110ab9c3c9e6d57d40b5556ed">More...</a><br /></td></tr>
+<tr class="separator:ga636ba0c110ab9c3c9e6d57d40b5556ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Purging and Expiration</h2></td></tr>
@@ -606,6 +609,65 @@ Indexes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the name of the collection. </p>
+
+</div>
+</div>
+<a id="ga636ba0c110ab9c3c9e6d57d40b5556ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga636ba0c110ab9c3c9e6d57d40b5556ed">&#9670;&nbsp;</a></span>c4coll_moveDoc()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool c4coll_moveDoc </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
+          <td class="paramname"><em>collection</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
+          <td class="paramname"><em>docID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
+          <td class="paramname"><em>toCollection</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
+          <td class="paramname"><em>newDocID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Moves a document to another collection, possibly with a different ID. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">collection</td><td>The document's original collection. </td></tr>
+    <tr><td class="paramname">docID</td><td>The ID of the document to move. </td></tr>
+    <tr><td class="paramname">toCollection</td><td>The collection to move to. </td></tr>
+    <tr><td class="paramname">newDocID</td><td>The docID in the new collection, or a NULL slice to keep the original ID. </td></tr>
+    <tr><td class="paramname">error</td><td>Information about any error that occurred </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True on success, false on failure. </dd></dl>
 
 </div>
 </div>
