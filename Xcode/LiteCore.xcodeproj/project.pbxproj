@@ -967,6 +967,8 @@
 		273F481425A68588005D4FE2 /* TestsCommon.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TestsCommon.hh; sourceTree = "<group>"; };
 		273F481525A68588005D4FE2 /* TestsCommon.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestsCommon.cc; sourceTree = "<group>"; };
 		27416E291E0494DF00F10F65 /* c4QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4QueryTest.cc; sourceTree = "<group>"; };
+		274281772624B4B300862700 /* c4Error.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Error.h; sourceTree = "<group>"; };
+		2742817B2624B74E00862700 /* c4Log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Log.h; sourceTree = "<group>"; };
 		27431BC6258A8AB0009E3EC5 /* QuietReporter.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QuietReporter.hh; sourceTree = "<group>"; };
 		2743E1DA25F69D58006F696D /* c4DocumentTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4DocumentTypes.h; sourceTree = "<group>"; };
 		2743E20825F6BC88006F696D /* c4Observer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Observer.hh; sourceTree = "<group>"; };
@@ -3022,6 +3024,8 @@
 				274A69881BED288D00D16D37 /* c4Document.h */,
 				27F370821DC02C3D0096F717 /* c4Document+Fleece.h */,
 				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
+				274281772624B4B300862700 /* c4Error.h */,
+				2742817B2624B74E00862700 /* c4Log.h */,
 				271AB00F2374A41E007B0319 /* c4Index.h */,
 				728EC54C1EC14611002C9A73 /* c4Listener.h */,
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
