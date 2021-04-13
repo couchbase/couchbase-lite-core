@@ -72,8 +72,8 @@ namespace litecore {
             return false;
         if (node->count() >= 4) {
             slice property = requiredString(node->get(3), "PREDICTION() property name");
-            _sql << kUnnestedValueFnName << "(" << alias << ".body, ";
-            writeSQLString(_sql, string(Path(property)));
+            _sql << kUnnestedValueFnName << "(" << alias << ".body, "
+                 << sqlString(string(Path(property)));
             _sql << ")";
         } else {
             _sql << kRootFnName << "(" << alias << ".body)";
