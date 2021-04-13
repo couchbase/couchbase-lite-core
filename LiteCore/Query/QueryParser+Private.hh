@@ -7,10 +7,12 @@
 
 #pragma once
 #include "QueryParser.hh"
+#include "StringUtil.hh"
 #include "fleece/slice.hh"
 #include "function_ref.hh"
+#include <iomanip>
 
-namespace litecore { namespace qp {
+namespace litecore::qp {
 
     using namespace std;
     using namespace fleece; // enables ""_sl syntax
@@ -83,4 +85,39 @@ namespace litecore { namespace qp {
     unsigned findNodes(const Value *root, fleece::slice op, unsigned argCount,
                        function_ref<void(const Array*)> callback);
 
-} }
+#pragma mark - FORMATTING:
+
+    bool isAlphanumericOrUnderscore(slice str);
+    bool isValidIdentifier(slice str);
+
+    // Temporary wrapper for a slice/string, which adds quotes/escapes when written to an ostream.
+    template <char Q, char E>
+    struct quotedSlice {
+        explicit quotedSlice(slice s) :_raw(s) { }
+        quotedSlice(const quotedSlice&) = delete;
+        quotedSlice(quotedSlice&&) = delete;
+
+        slice const _raw;
+    };
+
+    template <char Q, char E>
+    std::ostream& operator<< (std::ostream &out, const quotedSlice<Q,E> &str)  {
+        // SQL strings ('') are always quoted; identifiers ("") only when necessary.
+        if (Q == '"' && isValidIdentifier(str._raw))
+            out.write((const char*)str._raw.buf, str._raw.size);
+        else
+            out << std::quoted(string_view(str._raw), Q, E);
+        return out;
+    }
+
+    // Wrap around a string when writing to a stream, to single-quote it as a SQL string literal.
+    static inline auto sqlString(slice str) {
+        return quotedSlice<'\'','\''>(str);
+    }
+
+    // Wrap around a SQL identifier when writing to a stream, to double-quote it if necessary.
+    static inline auto sqlIdentifier(slice name) {
+        return quotedSlice<'"','"'>(name);
+    }
+
+}

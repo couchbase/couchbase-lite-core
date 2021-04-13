@@ -83,8 +83,6 @@ namespace litecore {
                               const Array *whereClause,
                               bool isUnnestedTable);
 
-        static void writeSQLString(std::ostream &out, slice str, char quote ='\'');
-
         string SQL()  const                                     {return _sql.str();}
 
         const set<string>& parameters()                         {return _parameters;}
@@ -192,7 +190,6 @@ namespace litecore {
         void writeUnnestPropertyGetter(slice fn, Path &property, const string &alias, aliasType);
         void writeEachExpression(Path &&property);
         void writeEachExpression(const Value *arrayExpr);
-        void writeSQLString(slice str)              {writeSQLString(_sql, str);}
         void writeArgList(ArrayIterator& operands);
         void writeColumnList(ArrayIterator& operands);
         void writeResultColumn(const Value*);
