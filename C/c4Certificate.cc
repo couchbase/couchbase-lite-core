@@ -163,9 +163,13 @@ Retained<C4KeyPair> C4Cert::publicKey() {
 }
 
 Retained<C4KeyPair> C4Cert::loadPersistentPrivateKey() {
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     if (auto key = assertSignedCert()->loadPrivateKey(); key)
         return new C4KeyPair(key);
     return nullptr;
+#else
+    C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support");
+#endif
 }
 
 
@@ -277,8 +281,11 @@ void C4Cert::save(bool entireChain, slice name) {
 
 
 void C4Cert::deleteNamed(slice name) {
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     Cert::deleteCert(string(name));
-
+#else
+    C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support");
+#endif
 }
 
 
