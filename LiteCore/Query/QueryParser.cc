@@ -745,12 +745,14 @@ namespace litecore {
 
     static string columnTitleFromProperty(const Path &property, bool useAlias) {
         if (property.empty())
-            return "*";
+            return "*"; // for the property ".", i.e. the entire doc
         string first(property[0].keyStr());
         if (first[0] == '_') {
             return first.substr(1);         // meta property
-        } else {
+        } else if (property[property.size()-1].keyStr()) {
             return string(property[property.size()-1].keyStr());
+        } else {
+            return {};
         }
     }
 
@@ -792,11 +794,9 @@ namespace litecore {
                     title = columnTitleFromProperty(Path(result->asString()), _propertiesUseSourcePrefix);
                 } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
                     title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
-                } else {
-                    title = format("$%u", ++anonCount); // default for non-properties
                 }
                 if (title.empty())
-                    title = "*";        // for the property ".", i.e. the entire doc
+                    title = format("$%u", ++anonCount); // default for non-properties
             }
 
             // Make the title unique:
