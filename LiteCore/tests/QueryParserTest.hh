@@ -20,6 +20,7 @@
 #include "QueryParser.hh"
 #include "fleece/Fleece.h"
 #include <string>
+#include <set>
 #include "LiteCoreTest.hh"
 
 
@@ -49,7 +50,7 @@ protected:
         return onTable + ":unnest:" + property;
     }
     virtual bool tableExists(const string &tableName) const override {
-        return tablesExist;
+        return tableNames.count(tableName) > 0;
     }
 #ifdef COUCHBASE_ENTERPRISE
     virtual std::string predictiveTableName(const string &onTable, const std::string &property) const override {
@@ -57,5 +58,5 @@ protected:
     }
 #endif
 
-    bool tablesExist {false};
+    std::set<string> tableNames {"kv_default"};
 };

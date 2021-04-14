@@ -101,6 +101,15 @@ namespace litecore {
             return str;
         }
 
+        slice optionalString(const Value *v, const char *what) {
+            slice str;
+            if (v) {
+                str = required(v->asString(), what, "must be a string");
+                require(str.size > 0, what, "must be non-empty");
+            }
+            return str;
+        }
+
         const Value* getCaseInsensitive(const Dict *dict, slice key) {
             for (Dict::iterator i(dict); i; ++i)
                 if (i.key()->asString().caseEquivalent(key))
@@ -423,11 +432,35 @@ namespace litecore {
 #pragma mark - "FROM" / "JOIN" clauses:
 
 
+    // Collects the attributes of a dict in the FROM clause
+    struct FromAttributes {
+        const Dict* const   dict;
+        string              collectionName, alias;
+        const Value* const  unnest, *on;
+
+        FromAttributes(const Value *value, const QueryParser::Delegate &delegate)
+        :dict(requiredDict(value, "FROM item"))
+        ,collectionName(optionalString(getCaseInsensitive(dict, "COLLECTION"_sl),
+                                       "COLLECTION in FROM item"))
+        ,alias(optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item"))
+        ,on(getCaseInsensitive(dict, "ON"_sl))
+        ,unnest(getCaseInsensitive(dict, "UNNEST"_sl))
+        {
+            if (collectionName.empty())
+                collectionName = delegate.defaultCollectionName();
+            else
+                require(delegate.tableExists(delegate.collectionTableName(collectionName)),
+                        "no such collection \"%s\"", collectionName.c_str());
+            if (alias.empty())
+                alias = collectionName;
+        }
+    };
+
+
     void QueryParser::addAlias(const string &alias, aliasType type) {
-        require(isValidAlias(alias),
-                "Invalid AS identifier '%s'", alias.c_str());
+        require(isValidAlias(alias), "Invalid AS identifier '%s'", alias.c_str());
         require(_aliases.find(alias) == _aliases.end(),
-                "duplicate AS identifier '%s'", alias.c_str());
+                "duplicate collection alias '%s'", alias.c_str());
         _aliases.insert({alias, type});
         if (type == kDBAlias)
             _dbAlias = alias;
@@ -441,100 +474,90 @@ namespace litecore {
             for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
                 if (first)
                     _propertiesUseSourcePrefix = true;
-                auto entry = requiredDict(i.value(), "FROM item");
-                string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
-                                              "AS in FROM item").asString();
-
-                // Determine the alias type:
-                auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
-                auto on = getCaseInsensitive(entry, "ON"_sl);
-
+                FromAttributes entry(i.value(), _delegate);
                 aliasType type;
                 if (first) {
-                    require(!on && !unnest, "first FROM item cannot have an ON or UNNEST clause");
+                    require(!entry.on && !entry.unnest, "first FROM item cannot have an ON or UNNEST clause");
                     type = kDBAlias;
-                } else if (!unnest) {
+                } else if (!entry.unnest) {
                     type = kJoinAlias;
                 } else {
-                    require (!on, "cannot use ON and UNNEST together");
-                    string unnestTable = unnestedTableName(unnest);
+                    require (!entry.on, "cannot use ON and UNNEST together");
+                    string unnestTable = unnestedTableName(entry.unnest);
                     if (_delegate.tableExists(unnestTable))
                         type = kUnnestTableAlias;
                     else
                         type = kUnnestVirtualTableAlias;
                 }
-                addAlias(alias, type);
+                addAlias(entry.alias, type);
                 first = false;
             }
         }
-        if (first)
+        if (first) {
+            // Default alias if there is no FROM clause:
             addAlias(kDefaultTableAlias, kDBAlias);
+        }
     }
 
 
     void QueryParser::writeFromClause(const Value *from) {
         auto fromArray = (const Array*)from;    // already type-checked by parseFromClause
 
-        _sql << " FROM " << sqlIdentifier(_mainTableName);
-
         if (fromArray && !fromArray->empty()) {
             for (Array::iterator i(fromArray); i; ++i) {
-                auto entry = requiredDict(i.value(), "FROM item");
-                string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
-                                              "AS in FROM item").asString();
-                auto on = getCaseInsensitive(entry, "ON"_sl);
-                auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
-                switch (_aliases[alias]) {
+                FromAttributes entry(i.value(), _delegate);
+                switch (_aliases[entry.alias]) {
                     case kDBAlias:
                         // The first item is the database alias:
-                        _sql << " AS " << sqlIdentifier(alias);
+                        _mainTableName = _delegate.collectionTableName(string(entry.collectionName));
+                        _sql << " FROM " << sqlIdentifier(_mainTableName);
+                        _sql << " AS " << sqlIdentifier(entry.alias);
                         break;
                     case kUnnestVirtualTableAlias:
                         // UNNEST: Use fl_each() to make a virtual table:
                         _sql << " JOIN ";
-                        writeEachExpression(unnest);
-                        _sql << " AS " << sqlIdentifier(alias);
+                        writeEachExpression(entry.unnest);
+                        _sql << " AS " << sqlIdentifier(entry.alias);
                         break;
                     case kUnnestTableAlias: {
                         // UNNEST: Optimize query by using the unnest table as a join source:
-                        string unnestTable = unnestedTableName(unnest);
+                        string unnestTable = unnestedTableName(entry.unnest);
                         _sql << " JOIN " << sqlIdentifier(unnestTable)
-                             << " AS " << sqlIdentifier(alias)
-                             << " ON " << sqlIdentifier(alias) << ".docid="
+                             << " AS " << sqlIdentifier(entry.alias)
+                             << " ON " << sqlIdentifier(entry.alias) << ".docid="
                              << sqlIdentifier(_dbAlias) << ".rowid";
                         break;
                     }
                     case kJoinAlias: {
                         // A join:
                         JoinType joinType = kInner;
-                        const Value* joinTypeVal = getCaseInsensitive(entry, "JOIN"_sl);
-                        if (joinTypeVal) {
-                            slice joinTypeStr = requiredString(joinTypeVal, "JOIN value");
+                        slice joinTypeStr = optionalString(getCaseInsensitive(entry.dict, "JOIN"),
+                                                           "JOIN value");
+                        if (joinTypeStr) {
                             joinType = JoinType(parseJoinType(joinTypeStr));
                             require(joinType != kInvalidJoin, "Unknown JOIN type '%.*s'",
                                     SPLAT(joinTypeStr));
                         }
 
                         if (joinType == kCross) {
-                            require(!on, "CROSS JOIN cannot accept an ON clause");
+                            require(!entry.on, "CROSS JOIN cannot accept an ON clause");
                         } else {
-                            require(on, "FROM item needs an ON clause to be a join");
+                            require(entry.on, "FROM item needs an ON clause to be a join");
                         }
 
                         _sql << " " << kJoinTypeNames[ joinType ] << " JOIN "
-                             << sqlIdentifier(_mainTableName) << " AS " << sqlIdentifier(alias);
-
-                        _sql << " ON ";
+                             << sqlIdentifier(_delegate.collectionTableName(entry.collectionName))
+                             << " AS " << sqlIdentifier(entry.alias) << " ON ";
                         _checkedDeleted = false;
-                        if (on) {
+                        if (entry.on) {
                             _sql << "(";
-                            parseNode(on);
+                            parseNode(entry.on);
                             _sql << ")";
                         }
                         if (!_checkedDeleted) {
-                            if (on)
+                            if (entry.on)
                                 _sql << " AND ";
-                            writeDeletionTest(alias);
+                            writeDeletionTest(entry.alias);
                         }
                         break;
                     }
@@ -544,7 +567,7 @@ namespace litecore {
                 }
             }
         } else {
-            _sql << " AS " << sqlIdentifier(_dbAlias);
+            _sql << " FROM " << sqlIdentifier(_mainTableName) << " AS " << sqlIdentifier(_dbAlias);
         }
 
         // Add joins to index tables (FTS, predictive):

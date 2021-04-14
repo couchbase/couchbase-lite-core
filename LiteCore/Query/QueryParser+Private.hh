@@ -78,6 +78,7 @@ namespace litecore::qp {
     const Array* requiredArray(const Value *v, const char *what);
     const Dict* requiredDict(const Value *v, const char *what);
     slice requiredString(const Value *v, const char *what);
+    slice optionalString(const Value *v, const char *what);
 
     Path propertyFromOperands(ArrayIterator &operands, bool skipDot =false);
     Path propertyFromNode(const Value *node, char prefix ='.');
