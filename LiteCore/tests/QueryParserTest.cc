@@ -43,6 +43,7 @@ string QueryParserTest::parseWhere(string json) {
     QueryParser qp(*this, kDefaultTableName);
     alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
     qp.parseJustExpression(fleece::impl::Value::fromTrustedData(fleece));
+    usedTableNames = qp.collectionTablesUsed();
     return qp.SQL();
 }
 
@@ -227,8 +228,15 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT", "[Query][QueryParser]") 
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT FTS", "[Query][QueryParser][FTS]") {
     CHECK(parseWhere("['SELECT', {\
-                     WHERE: ['MATCH()', 'bio', 'mobile']}]")
+                         WHERE: ['MATCH()', 'bio', 'mobile']}]")
           == "SELECT _doc.rowid, offsets(fts1.\"kv_default::bio\"), key, sequence FROM kv_default AS _doc JOIN \"kv_default::bio\" AS fts1 ON fts1.docid = _doc.rowid WHERE (fts1.\"kv_default::bio\" MATCH 'mobile') AND (_doc.flags & 1 = 0)");
+
+    // Non-default collection:
+    tableNames.insert("kv_coll_employees");
+    CHECK(parseWhere("['SELECT', {\
+                         FROM: [{collection: 'employees'}],\
+                         WHERE: ['MATCH()', 'employees.bio', 'mobile']}]")
+          == "SELECT employees.rowid, offsets(fts1.\"kv_coll_employees::bio\"), employees.key, employees.sequence FROM kv_coll_employees AS employees JOIN \"kv_coll_employees::bio\" AS fts1 ON fts1.docid = employees.rowid WHERE (fts1.\"kv_coll_employees::bio\" MATCH 'mobile') AND (employees.flags & 1 = 0)");
 }
 
 
@@ -247,6 +255,26 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT prediction", "[Query][Quer
           == "SELECT key, sequence FROM kv_default AS _doc JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_unnested_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1 = 0)");
     CHECK(parseWhere(query2)
           == "SELECT fl_result(fl_unnested_value(pred1.body, 'bias')) FROM kv_default AS _doc JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_unnested_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1 = 0)");
+}
+
+
+TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT prediction non-default collection", "[Query][QueryParser][Predict]") {
+    tableNames.insert("kv_coll_stuff");
+    string pred = "['PREDICTION()', 'bias', {text: ['.stuff.text']}, '.bias']";
+    auto query1 = "['SELECT', {FROM: [{collection: 'stuff'}], WHERE: ['>', " + pred + ", 0] }]";
+    auto query2 = "['SELECT', {FROM: [{collection: 'stuff'}], WHERE: ['>', " + pred + ", 0], WHAT: [" + pred + "] }]";
+    CHECK(parseWhere(query1)
+          == "SELECT stuff.key, stuff.sequence FROM kv_coll_stuff AS stuff WHERE (prediction('bias', dict_of('text', fl_value(stuff.body, 'text')), '.bias') > 0) AND (stuff.flags & 1 = 0)");
+    CHECK(parseWhere(query2)
+          == "SELECT fl_result(prediction('bias', dict_of('text', fl_value(stuff.body, 'text')), '.bias')) FROM kv_coll_stuff AS stuff WHERE (prediction('bias', dict_of('text', fl_value(stuff.body, 'text')), '.bias') > 0) AND (stuff.flags & 1 = 0)");
+
+#if 0 // FIX: Not working yet
+    tableNames.insert("kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=");
+    CHECK(parseWhere(query1)
+          == "SELECT key, sequence FROM kv_default AS _doc JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_unnested_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1 = 0)");
+    CHECK(parseWhere(query2)
+          == "SELECT fl_result(fl_unnested_value(pred1.body, 'bias')) FROM kv_default AS _doc JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_unnested_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1 = 0)");
+#endif
 }
 #endif
 
@@ -324,7 +352,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Join", "[Query][QueryParser]") {
 }
 
 
-TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST", "[Query][QueryParser][FTS]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST", "[Query][QueryParser]") {
     CHECK(parseWhere("['SELECT', {\
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
@@ -345,7 +373,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST", "[Query][QueryPar
 }
 
 
-TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST optimized", "[Query][QueryParser][FTS]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST optimized", "[Query][QueryParser]") {
     tableNames.insert("kv_default:unnest:notes");
     
     CHECK(parseWhere("['SELECT', {\
@@ -359,6 +387,25 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST optimized", "[Query
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['>', ['.notes.page'], 100]}]")
           == "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS book JOIN \"kv_default:unnest:notes\" AS notes ON notes.docid=book.rowid WHERE (fl_unnested_value(notes.body, 'page') > 100) AND (book.flags & 1 = 0)");
+}
+
+
+TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST with collections", "[Query][QueryParser]") {
+    string str = "['SELECT', {\
+                      WHAT: ['.notes'], \
+                      FROM: [{as: 'library'}, \
+                             {collection: 'books', as: 'book', 'on': ['=', ['.book.library'], ['.library._id']]}, \
+                             {as: 'notes', 'unnest': ['.book.notes']}],\
+                     WHERE: ['>', ['.notes.page'], 100]}]";
+    // Non-default collection gets unnested:
+    tableNames.insert("kv_coll_books");
+    CHECK(parseWhere(str)
+          == "SELECT fl_result(notes.value) FROM kv_default AS library INNER JOIN kv_coll_books AS book ON (fl_value(book.body, 'library') = library.key) AND (book.flags & 1 = 0) JOIN fl_each(book.body, 'notes') AS notes WHERE (fl_nested_value(notes.body, 'page') > 100) AND (library.flags & 1 = 0)");
+
+    // Same, but optimized:
+    tableNames.insert("kv_coll_books:unnest:notes");
+    CHECK(parseWhere(str)
+          == "SELECT fl_result(fl_unnested_value(notes.body)) FROM kv_default AS library INNER JOIN kv_coll_books AS book ON (fl_value(book.body, 'library') = library.key) AND (book.flags & 1 = 0) JOIN \"kv_coll_books:unnest:notes\" AS notes ON notes.docid=library.rowid WHERE (fl_unnested_value(notes.body, 'page') > 100) AND (library.flags & 1 = 0)");
 }
 
 
@@ -399,8 +446,16 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser weird property names", "[Query][Q
 
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM collection", "[Query][QueryParser]") {
-    // Query a non-default collection:
+    // Query a nonexistent collection:
+    ExpectException(error::LiteCore, error::InvalidQuery, [&]{
+        parse("{WHAT: ['.books.title'], \
+                   FROM: [{collection: 'books'}],\
+                  WHERE: ['=', ['.books.author'], ['$AUTHOR']]}");
+    });
+
     tableNames.insert("kv_coll_books");
+
+    // Query a non-default collection:
     CHECK(parse("{WHAT: ['.books.title'], \
                   FROM: [{collection: 'books'}],\
                  WHERE: ['=', ['.books.author'], ['$AUTHOR']]}")
@@ -418,10 +473,18 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM collection", "[Query][QueryP
               "WHERE (fl_value(book.body, 'author') = $_AUTHOR) AND (book.flags & 1 = 0)");
     CHECK(usedTableNames == set<string>{"kv_coll_books"});
 
-    // Join with the default collection:
+    // Join with itself:
     CHECK(parse("{WHAT: ['.book.title', '.library.name', '.library'], \
                   FROM: [{collection: 'books', as: 'book'}, \
                          {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
+                 WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
+          == "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), fl_result(fl_root(library.body)) FROM kv_coll_books AS book INNER JOIN kv_coll_books AS library ON (fl_value(book.body, 'library') = library.key) AND (library.flags & 1 = 0) WHERE (fl_value(book.body, 'author') = $_AUTHOR) AND (book.flags & 1 = 0)");
+    CHECK(usedTableNames == set<string>{"kv_coll_books"});
+
+    // Join with the default collection:
+    CHECK(parse("{WHAT: ['.book.title', '.library.name', '.library'], \
+                  FROM: [{collection: 'books', as: 'book'}, \
+                         {collection: '_default', as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
           == "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), fl_result(fl_root(library.body)) FROM kv_coll_books AS book INNER JOIN kv_default AS library ON (fl_value(book.body, 'library') = library.key) AND (library.flags & 1 = 0) WHERE (fl_value(book.body, 'author') = $_AUTHOR) AND (book.flags & 1 = 0)");
     CHECK(usedTableNames == set<string>{"kv_default", "kv_coll_books"});
@@ -434,4 +497,12 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM collection", "[Query][QueryP
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
           == "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), fl_result(fl_root(library.body)) FROM kv_coll_books AS book INNER JOIN kv_coll_library AS library ON (fl_value(book.body, 'library') = library.key) AND (library.flags & 1 = 0) WHERE (fl_value(book.body, 'author') = $_AUTHOR) AND (book.flags & 1 = 0)");
     CHECK(usedTableNames == set<string>{"kv_coll_books", "kv_coll_library"});
+
+    // Default collection with non-default join:
+    CHECK(parse("{WHAT: ['.book.title', '.library.name', '.library'], \
+                  FROM: [{as: 'book'}, \
+                         {collection: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
+                 WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
+          == "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), fl_result(fl_root(library.body)) FROM kv_default AS book INNER JOIN kv_coll_library AS library ON (fl_value(book.body, 'library') = library.key) AND (library.flags & 1 = 0) WHERE (fl_value(book.body, 'author') = $_AUTHOR) AND (book.flags & 1 = 0)");
+    CHECK(usedTableNames == set<string>{"kv_default", "kv_coll_library"});
 }

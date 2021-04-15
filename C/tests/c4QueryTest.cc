@@ -553,7 +553,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with alias", "[Query][C][FTS]")
             json5slice("['SELECT', { 'WHAT': [ [ '.db.uuid' ] ],"
                        " 'FROM': [{ 'AS' : 'db'}],"
                        " 'WHERE': [ 'AND', [ 'AND', [ '=', [ '.db.doc_type' ], 'rec' ],"
-                                                  " [ 'MATCH()', 'byStreet', 'keyword' ] ],"
+                                                  " [ 'MATCH()', 'db.byStreet', 'keyword' ] ],"
                                          "[ '=', [ '.db.pId' ], 'bfe2970b-9be6-46f6-b9a7-38c5947c27b1' ] ] } ]"),
                         ERROR_INFO(err));
     REQUIRE(query);

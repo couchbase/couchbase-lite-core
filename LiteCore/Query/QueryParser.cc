@@ -447,7 +447,7 @@ namespace litecore {
                                           "COLLECTION in FROM item");
         FromAttributes from = {
             dict,
-            "",
+            {},
             string(optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")),
             getCaseInsensitive(dict, "ON"_sl),
             getCaseInsensitive(dict, "UNNEST"_sl),
@@ -489,6 +489,7 @@ namespace litecore {
                     require(!entry.on && !entry.unnest, "first FROM item cannot have an ON or UNNEST clause");
                     type = kDBAlias;
                     _kvTables.insert(entry.tableName);
+                    _defaultTableName = entry.tableName;
                 } else if (!entry.unnest) {
                     type = kJoinAlias;
                     _kvTables.insert(entry.tableName);
@@ -1717,11 +1718,22 @@ namespace litecore {
 
     // Returns the FTS table name given the LHS of a MATCH expression.
     string QueryParser::FTSTableName(const Value *key) const {
-        string ftsName( requiredString(key, "left-hand side of MATCH expression") );
-        require(!ftsName.empty() && ftsName.find('"') == string::npos,
+        slice ftsName = requiredString(key, "left-hand side of MATCH expression");
+        string table;
+        slice alias;
+        if (auto dot = ftsName.findByte('.'); dot) {
+            alias = slice(ftsName.buf, dot);
+            ftsName = ftsName.from(dot + 1);
+            auto i = _aliases.find(string(alias));
+            require(i != _aliases.end() && i->second.type <= kJoinAlias, "Invalid alias in MATCH");
+            table = i->second.tableName;
+        } else {
+            require(!_propertiesUseSourcePrefix, "Missing collection alias in MATCH");
+            table = _defaultTableName;
+        }
+        require(!ftsName.empty() && !ftsName.findByte('"'),
                 "FTS index name may not contain double-quotes nor be empty");
-        string table = _defaultTableName; //TEMP
-        return _delegate.FTSTableName(table, ftsName);
+        return _delegate.FTSTableName(table, string(ftsName));
     }
 
     // Returns or creates the FTS join alias given the LHS of a MATCH expression.
