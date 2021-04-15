@@ -661,7 +661,7 @@ namespace litecore {
 
     // length() returns the length in characters of a string.
     static void length(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -810,7 +810,7 @@ namespace litecore {
 
 
     static void regexp_like(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(2, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -828,7 +828,7 @@ namespace litecore {
     }
 
     static void regexp_position(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(2, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -850,7 +850,7 @@ namespace litecore {
     }
 
     static void regexp_replace(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(3, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -1096,7 +1096,7 @@ namespace litecore {
 
     // isarray(v) returns true if `v` is an array.
     static void isarray(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -1108,7 +1108,7 @@ namespace litecore {
 
     // isatom(v) returns true if `v` is a boolean, number or string.
     static void isatom(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -1122,7 +1122,7 @@ namespace litecore {
     // isboolean(v) returns true if `v` is a boolean. (Since SQLite doesn't distinguish between
     // booleans and integers, this will return false if a boolean value has gone through SQLite.)
     static void isboolean(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -1134,7 +1134,7 @@ namespace litecore {
 
     // isnumber(v) returns true if `v` is a number.
     static void isnumber(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -1146,7 +1146,7 @@ namespace litecore {
 
     // isobject(v) returns true if `v` is a dictionary.
     static void isobject(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -1158,7 +1158,7 @@ namespace litecore {
 
     // isatom(v) returns true if `v` is a string.
     static void isstring(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -1170,7 +1170,7 @@ namespace litecore {
 
     // type(v) returns a string naming the type of `v`.
     static void type(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -1187,7 +1187,7 @@ namespace litecore {
     // Booleans, numbers, and strings are themselves.
     // All other values are NULL.
     static void toatom(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
