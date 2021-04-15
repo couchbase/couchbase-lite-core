@@ -54,6 +54,11 @@ namespace litecore {
     }
 
 
+    SQLiteKeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
+        Assert(tableName == "kv_default" || tableName.hasPrefix("kv_coll_"));
+        return (SQLiteKeyStore&)getKeyStore(tableName.from(3));
+    }
+
 
     bool SQLiteDataFile::keyStoreExists(const string &name) const {
         return tableExists(string("kv_") + name);

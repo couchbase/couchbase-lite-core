@@ -116,7 +116,9 @@ namespace litecore {
         //////// QUERIES:
         
         /** Creates a database query object. */
-        virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
+        virtual Retained<Query> compileQuery(slice expr,
+                                             QueryLanguage =QueryLanguage::kJSON,
+                                             KeyStore* defaultKeyStore =nullptr) =0;
 
         /** Private API to run a raw (e.g. SQL) query, for diagnostic purposes only */
         virtual fleece::alloc_slice rawQuery(const std::string &query) =0;

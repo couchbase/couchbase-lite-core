@@ -167,6 +167,11 @@ namespace litecore {
         virtual unsigned expireRecords(std::optional<ExpirationCallback> =std::nullopt) =0;
 
 
+        //////// Queries:
+
+        /** A convenience that delegates to the DataFile, passing this as the defaultKeyStore. */
+        Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON);
+
         //////// Indexing:
 
         virtual bool supportsIndexes(IndexSpec::Type) const                   {return false;}

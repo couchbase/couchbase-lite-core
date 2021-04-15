@@ -675,10 +675,6 @@ namespace litecore {
 #pragma mark - QUERIES:
 
 
-    string SQLiteDataFile::defaultCollectionName() const {
-        return "_default";
-    }
-
     string SQLiteDataFile::collectionTableName(const string &collection) const {
         if (collection == "_default")
             return "kv_default";

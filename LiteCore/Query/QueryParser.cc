@@ -181,6 +181,7 @@ namespace litecore {
         _context.push_back(&kOuterOperation);
         _parameters.clear();
         _variables.clear();
+        _kvTables.clear();
         _ftsTables.clear();
         _indexJoinTables.clear();
         _aliases.clear();
@@ -189,7 +190,7 @@ namespace litecore {
         _1stCustomResultCol = 0;
         _isAggregateQuery = _aggregatesOK = _propertiesUseSourcePrefix = _checkedExpiration = false;
 
-        _aliases.insert({_dbAlias, kDBAlias});
+        _aliases.insert({_dbAlias, {kDBAlias, defaultTableName()}});
     }
 
 
@@ -397,10 +398,11 @@ namespace litecore {
                                        const Array *whereClause,
                                        bool isUnnestedTable)
     {
+        _defaultTableName = onTableName;
         reset();
         try {
             if (isUnnestedTable)
-                _aliases[_dbAlias] = kUnnestTableAlias;
+                _aliases[_dbAlias] = {kUnnestTableAlias, onTableName};
             _sql << "CREATE INDEX " << sqlIdentifier(indexName)
                  << " ON " << sqlIdentifier(onTableName) << " ";
             if (expressionsIter.count() > 0) {
@@ -432,36 +434,51 @@ namespace litecore {
 #pragma mark - "FROM" / "JOIN" clauses:
 
 
-    // Collects the attributes of a dict in the FROM clause
-    struct FromAttributes {
-        const Dict* const   dict;
-        string              collectionName, alias;
-        const Value* const  unnest, *on;
+    string QueryParser::defaultTableName() const {
+        if (_defaultTableName.empty())
+            return _delegate.defaultTableName();
+        else
+            return _defaultTableName;
+    }
 
-        FromAttributes(const Value *value, const QueryParser::Delegate &delegate)
-        :dict(requiredDict(value, "FROM item"))
-        ,collectionName(optionalString(getCaseInsensitive(dict, "COLLECTION"_sl),
-                                       "COLLECTION in FROM item"))
-        ,alias(optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item"))
-        ,on(getCaseInsensitive(dict, "ON"_sl))
-        ,unnest(getCaseInsensitive(dict, "UNNEST"_sl))
-        {
-            if (collectionName.empty())
-                collectionName = delegate.defaultCollectionName();
-            else
-                require(delegate.tableExists(delegate.collectionTableName(collectionName)),
-                        "no such collection \"%s\"", collectionName.c_str());
-            if (alias.empty())
-                alias = collectionName;
-        }
+
+    // Collects the attributes of a dict in the FROM clause
+    struct QueryParser::FromAttributes {
+        const Dict  *dict;
+        string      tableName, alias;
+        const Value *on, *unnest;
     };
 
+    QueryParser::FromAttributes QueryParser::parseFromEntry(const Value *value) {
+        auto dict = requiredDict(value, "FROM item");
+        slice collection = optionalString(getCaseInsensitive(dict, "COLLECTION"_sl),
+                                          "COLLECTION in FROM item");
+        FromAttributes from = {
+            dict,
+            "",
+            string(optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")),
+            getCaseInsensitive(dict, "ON"_sl),
+            getCaseInsensitive(dict, "UNNEST"_sl),
+        };
+        if (collection) {
+            from.tableName = _delegate.collectionTableName(string(collection));
+            require(_delegate.tableExists(from.tableName),
+                    "no such collection \"%.*s\"", SPLAT(collection));
+        } else {
+            from.tableName = defaultTableName();
+            DebugAssert(_delegate.tableExists(from.tableName));
+        }
+        if (from.alias.empty())
+            from.alias = collection ? string(collection) : "_default";
+        return from;
+    }
 
-    void QueryParser::addAlias(const string &alias, aliasType type) {
+
+    void QueryParser::addAlias(const string &alias, aliasType type, const string &tableName) {
         require(isValidAlias(alias), "Invalid AS identifier '%s'", alias.c_str());
         require(_aliases.find(alias) == _aliases.end(),
                 "duplicate collection alias '%s'", alias.c_str());
-        _aliases.insert({alias, type});
+        _aliases.insert({alias, {type, tableName}});
         if (type == kDBAlias)
             _dbAlias = alias;
     }
@@ -474,13 +491,15 @@ namespace litecore {
             for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
                 if (first)
                     _propertiesUseSourcePrefix = true;
-                FromAttributes entry(i.value(), _delegate);
+                FromAttributes entry = parseFromEntry(i.value());
                 aliasType type;
                 if (first) {
                     require(!entry.on && !entry.unnest, "first FROM item cannot have an ON or UNNEST clause");
                     type = kDBAlias;
+                    _kvTables.insert(entry.tableName);
                 } else if (!entry.unnest) {
                     type = kJoinAlias;
+                    _kvTables.insert(entry.tableName);
                 } else {
                     require (!entry.on, "cannot use ON and UNNEST together");
                     string unnestTable = unnestedTableName(entry.unnest);
@@ -488,14 +507,16 @@ namespace litecore {
                         type = kUnnestTableAlias;
                     else
                         type = kUnnestVirtualTableAlias;
+                    entry.tableName = "";
                 }
-                addAlias(entry.alias, type);
+                addAlias(entry.alias, type, entry.tableName);
                 first = false;
             }
         }
         if (first) {
             // Default alias if there is no FROM clause:
-            addAlias(kDefaultTableAlias, kDBAlias);
+            addAlias(kDefaultTableAlias, kDBAlias, defaultTableName());
+            _kvTables.insert(defaultTableName());
         }
     }
 
@@ -505,14 +526,14 @@ namespace litecore {
 
         if (fromArray && !fromArray->empty()) {
             for (Array::iterator i(fromArray); i; ++i) {
-                FromAttributes entry(i.value(), _delegate);
-                switch (_aliases[entry.alias]) {
-                    case kDBAlias:
+                FromAttributes entry = parseFromEntry(i.value());
+                switch (_aliases[entry.alias].type) {
+                    case kDBAlias: {
                         // The first item is the database alias:
-                        _mainTableName = _delegate.collectionTableName(string(entry.collectionName));
-                        _sql << " FROM " << sqlIdentifier(_mainTableName);
-                        _sql << " AS " << sqlIdentifier(entry.alias);
+                        _sql << " FROM " << sqlIdentifier(entry.tableName)
+                             << " AS " << sqlIdentifier(entry.alias);
                         break;
+                    }
                     case kUnnestVirtualTableAlias:
                         // UNNEST: Use fl_each() to make a virtual table:
                         _sql << " JOIN ";
@@ -546,7 +567,7 @@ namespace litecore {
                         }
 
                         _sql << " " << kJoinTypeNames[ joinType ] << " JOIN "
-                             << sqlIdentifier(_delegate.collectionTableName(entry.collectionName))
+                             << sqlIdentifier(entry.tableName)
                              << " AS " << sqlIdentifier(entry.alias) << " ON ";
                         _checkedDeleted = false;
                         if (entry.on) {
@@ -567,7 +588,7 @@ namespace litecore {
                 }
             }
         } else {
-            _sql << " FROM " << sqlIdentifier(_mainTableName) << " AS " << sqlIdentifier(_dbAlias);
+            _sql << " FROM " << sqlIdentifier(defaultTableName()) << " AS " << sqlIdentifier(_dbAlias);
         }
 
         // Add joins to index tables (FTS, predictive):
@@ -779,7 +800,7 @@ namespace litecore {
                 _sql << kResultFnName << "(";
                 parseCollatableNode(result);
                 _sql << ") AS " << sqlIdentifier(title);
-                addAlias(title, kResultAlias);
+                addAlias(title, kResultAlias, "");
             } else {
                 _sql << (isImplicitBool(expr[0]) ? kBoolResultFnName : kResultFnName) << "(";
                 if (result->type() == kString) {
@@ -1174,6 +1195,7 @@ namespace litecore {
             QueryParser nested(this);
             nested.parse(dict);
             _sql << nested.SQL();
+            _kvTables.insert(nested._kvTables.begin(), nested._kvTables.end());
         }
     }
 
@@ -1466,7 +1488,7 @@ namespace litecore {
 
     // Return the iterator to _aliases based on the property.
     // Post-condition: iterator != _aliases.end()
-    std::map<std::string, QueryParser::aliasType>::const_iterator
+    QueryParser::AliasMap::const_iterator
     QueryParser::verifyDbAlias(fleece::impl::Path &property) {
         string alias;
         auto iType = _aliases.end();
@@ -1480,7 +1502,7 @@ namespace litecore {
         if (_aliases.size() > 1) {
             int cnt = 0;
             for (auto it = this->_aliases.begin(); it != this->_aliases.end(); ++it) {
-                if (it->second != kResultAlias) {
+                if (it->second.type != kResultAlias) {
                     if (++cnt == 2) {
                         hasMultiDbAliases = true;
                         break;
@@ -1517,22 +1539,23 @@ namespace litecore {
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
         auto &&iType = verifyDbAlias(property);
-        string alias = iType->first;
+        const string &alias = iType->first;
+        aliasType type = iType->second.type;
         string tablePrefix = alias.empty() ? "" : quotedIdentifierString(alias) + ".";
         
-        if (iType->second >= kUnnestVirtualTableAlias) {
+        if (type >= kUnnestVirtualTableAlias) {
             // The alias is to an UNNEST. This needs to be written specially:
-            writeUnnestPropertyGetter(fn, property, alias, iType->second);
+            writeUnnestPropertyGetter(fn, property, alias, type);
             return;
         }
 
-        if(iType->second == kResultAlias && property[0].keyStr().asString() == iType->first) {
+        if (type == kResultAlias && property[0].keyStr().asString() == alias) {
             // If the property in question is identified as an alias, emit that instead of
             // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
             // vs alias -> doc["path"]["to"]["value"])
             if(property.size() == 1) {
                 // Simple case, the alias is being used as-is
-                _sql << sqlIdentifier(iType->first);
+                _sql << sqlIdentifier(alias);
                 return;
             }
 
@@ -1540,7 +1563,7 @@ namespace litecore {
             // a collection type (e.g. alias = {"foo": "bar"}, and want to
             // ORDER BY alias.foo
             property.drop(1);
-            _sql << kNestedValueFnName << "(" << sqlIdentifier(iType->first)
+            _sql << kNestedValueFnName << "(" << sqlIdentifier(alias)
                  << ", " << sqlString(string(property)) << ")";
             return;
         } 
@@ -1651,7 +1674,7 @@ namespace litecore {
     {
         reset();
         if (!dbAlias.empty())
-            addAlias(string(dbAlias), kDBAlias);
+            addAlias(string(dbAlias), kDBAlias, defaultTableName());
         writeWhereClause(arrayExpr);
         string sql = SQL();
         if (sql[0] == ' ')
@@ -1705,7 +1728,7 @@ namespace litecore {
         string ftsName( requiredString(key, "left-hand side of MATCH expression") );
         require(!ftsName.empty() && ftsName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");
-        string table = _delegate.collectionTableName(_delegate.defaultCollectionName()); //TEMP
+        string table = defaultTableName(); //TEMP
         return _delegate.FTSTableName(table, ftsName);
     }
 
@@ -1758,22 +1781,29 @@ namespace litecore {
 
     // Returns the index table name for an unnested array property.
     string QueryParser::unnestedTableName(const Value *arrayExpr) const {
-        string path(propertyFromNode(arrayExpr));
+        string table = defaultTableName();
+        Path path = propertyFromNode(arrayExpr);
+        string propertyStr;
         if (!path.empty()) {
             // It's a property path
-            require(path.find('"') == string::npos,
-                    "invalid property path for array index");
             if (_propertiesUseSourcePrefix) {
-                string dbAliasPrefix = _dbAlias + ".";
-                if (hasPrefix(path, dbAliasPrefix))
-                    path = path.substr(dbAliasPrefix.size());
+                if (const auto &first = path[0]; first.isKey()) {
+                    if (string keyStr(first.keyStr()); keyStr != _dbAlias) {
+                        if (auto i = _aliases.find(keyStr); i != _aliases.end()) {
+                            table = i->second.tableName;
+                        }
+                    }
+                }
+                path.drop(1);
             }
+            propertyStr = string(path);
+            require(propertyStr.find('"') == string::npos,
+                    "invalid property path for array index");
         } else {
             // It's some other expression; make a unique digest of it:
-            path = expressionIdentifier(arrayExpr->asArray());
+            propertyStr = expressionIdentifier(arrayExpr->asArray());
         }
-        string table = _delegate.collectionTableName(_delegate.defaultCollectionName()); //TEMP
-        return _delegate.unnestedTableName(table, path);
+        return _delegate.unnestedTableName(table, propertyStr);
     }
 
 

@@ -38,8 +38,10 @@ namespace litecore {
 
     string SQLiteKeyStore::createUnnestedTable(const Value *expression, const IndexSpec::Options *options) {
         // Derive the table name from the expression it unnests:
-        auto kvTableName = tableName();
-        auto unnestTableName = QueryParser(db()).unnestedTableName(expression);
+        string kvTableName = tableName();
+        QueryParser qp(db());
+        qp.setDefaultTableName(kvTableName);
+        string unnestTableName = qp.unnestedTableName(expression);
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE \"" << unnestTableName << "\" "
@@ -53,7 +55,6 @@ namespace litecore {
                   expression->toJSON(true).asString().c_str());
             db().exec(sql);
 
-            QueryParser qp(db());
             qp.setBodyColumnName("new.body");
             string eachExpr = qp.eachExpressionSQL(expression);
 

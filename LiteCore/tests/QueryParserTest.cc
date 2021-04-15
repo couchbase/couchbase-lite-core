@@ -27,6 +27,7 @@ using namespace std;
 string QueryParserTest::parse(FLValue val) {
     QueryParser qp(*this);
     qp.parse((const fleece::impl::Value*)val);
+    usedTableNames = qp.collectionTablesUsed();
     return qp.SQL();
 }
 
@@ -308,6 +309,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Join", "[Query][QueryParser]") {
                          {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
           == "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), fl_result(fl_root(library.body)) FROM kv_default AS book INNER JOIN kv_default AS library ON (fl_value(book.body, 'library') = library.key) AND (library.flags & 1 = 0) WHERE (fl_value(book.body, 'author') = $_AUTHOR) AND (book.flags & 1 = 0)");
+    CHECK(usedTableNames == set<string>{"kv_default"});
 
     // Multiple JOINs (#363):
     CHECK(parse("{'WHAT':[['.','session','appId'],['.','user','username'],['.','session','emoId']],\
@@ -387,6 +389,12 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser errors", "[Query][QueryParser][!t
 }
 
 
+TEST_CASE_METHOD(QueryParserTest, "QueryParser weird property names", "[Query][QueryParser]") {
+    CHECK(parseWhere("['=', ['.', '$foo'], 17]")
+          == "fl_value(body, '\\$foo') = 17");
+}
+
+
 TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM collection", "[Query][QueryParser]") {
     // Query a non-default collection:
     tableNames.insert("kv_coll_books");
@@ -396,6 +404,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM collection", "[Query][QueryP
           == "SELECT fl_result(fl_value(books.body, 'title')) "
                "FROM kv_coll_books AS books "
               "WHERE (fl_value(books.body, 'author') = $_AUTHOR) AND (books.flags & 1 = 0)");
+    CHECK(usedTableNames == set<string>{"kv_coll_books"});
 
     // Add an "AS" alias for the collection:
     CHECK(parse("{WHAT: ['.book.title'], \
@@ -404,6 +413,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM collection", "[Query][QueryP
           == "SELECT fl_result(fl_value(book.body, 'title')) "
                "FROM kv_coll_books AS book "
               "WHERE (fl_value(book.body, 'author') = $_AUTHOR) AND (book.flags & 1 = 0)");
+    CHECK(usedTableNames == set<string>{"kv_coll_books"});
 
     // Join with the default collection:
     CHECK(parse("{WHAT: ['.book.title', '.library.name', '.library'], \
@@ -411,6 +421,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM collection", "[Query][QueryP
                          {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
           == "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), fl_result(fl_root(library.body)) FROM kv_coll_books AS book INNER JOIN kv_default AS library ON (fl_value(book.body, 'library') = library.key) AND (library.flags & 1 = 0) WHERE (fl_value(book.body, 'author') = $_AUTHOR) AND (book.flags & 1 = 0)");
+    CHECK(usedTableNames == set<string>{"kv_default", "kv_coll_books"});
 
     // Join with a non-default collection:
     tableNames.insert("kv_coll_library");
@@ -419,4 +430,5 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM collection", "[Query][QueryP
                          {collection: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
           == "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), fl_result(fl_root(library.body)) FROM kv_coll_books AS book INNER JOIN kv_coll_library AS library ON (fl_value(book.body, 'library') = library.key) AND (library.flags & 1 = 0) WHERE (fl_value(book.body, 'author') = $_AUTHOR) AND (book.flags & 1 = 0)");
+    CHECK(usedTableNames == set<string>{"kv_coll_books", "kv_coll_library"});
 }

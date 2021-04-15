@@ -31,6 +31,7 @@
 #include "Stopwatch.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sqlite3.h>
+#include <numeric>      // std::accumulate
 #include <sstream>
 #include <iostream>
 
@@ -55,7 +56,10 @@ namespace litecore {
 
     class SQLiteQuery : public Query {
     public:
-        SQLiteQuery(SQLiteDataFile &dataFile, slice queryStr, QueryLanguage language)
+        SQLiteQuery(SQLiteDataFile &dataFile,
+                    slice queryStr,
+                    QueryLanguage language,
+                    SQLiteKeyStore* defaultKeyStore =nullptr)
         :Query(dataFile, queryStr, language)
         {
             static constexpr const char* kLanguageName[] = {"JSON", "N1QL"};
@@ -77,8 +81,15 @@ namespace litecore {
             }
 
             QueryParser qp(dataFile);
+            if (defaultKeyStore)
+                qp.setDefaultTableName(defaultKeyStore->tableName());
             qp.parseJSON(_json);
 
+            // Collect the KeyStores read by this query:
+            for (const string &table : qp.collectionTablesUsed())
+                _keyStores.push_back(&dataFile.keyStoreFromTable(table));
+
+            // Collect the (required) query parameters:
             _parameters = qp.parameters();
             for (auto p = _parameters.begin(); p != _parameters.end();) {
                 if (hasPrefix(*p, "opt_"))
@@ -87,14 +98,17 @@ namespace litecore {
                     ++p;
             }
 
+            // Collect the FTS tables used:
             _ftsTables = qp.ftsTablesUsed();
             for (auto &ftsTable : _ftsTables) {
                 if (!dataFile.tableExists(ftsTable))
                     error::_throw(error::NoSuchIndex, "'match' test requires a full-text index");
             }
 
+            // If expiration is queried, ensure the table(s) have the expiration column:
             if (qp.usesExpiration()) {
-                ((SQLiteKeyStore&)dataFile.defaultKeyStore()).addExpiration();   //TEMP: Tell the correct KeyStore(s)
+                for (auto ks : _keyStores)
+                    ks->addExpiration();
             }
 
             string sql = qp.SQL();
@@ -116,14 +130,22 @@ namespace litecore {
 
 
         sequence_t lastSequence() const {
-            // TEMP: Check _each_ KeyStore the query uses
-            return dataFile().defaultKeyStore().lastSequence();
+            // This number is just used for before/after comparisons, so
+            // return the total last-sequence of all used KeyStores
+            return std::accumulate(_keyStores.begin(), _keyStores.end(), 0,
+                                   [](sequence_t total, const SQLiteKeyStore *ks) {
+                return total + ks->lastSequence();
+            });
         }
 
 
         uint64_t purgeCount() const {
-            // TEMP: Check _each_ KeyStore the query uses
-            return dataFile().defaultKeyStore().purgeCount();
+            // This number is just used for before/after comparisons, so
+            // return the total purge-count of all used KeyStores
+            return std::accumulate(_keyStores.begin(), _keyStores.end(), 0,
+                                   [](uint64_t total, const SQLiteKeyStore *ks) {
+                return total + ks->purgeCount();
+            });
         }
 
 
@@ -202,6 +224,7 @@ namespace litecore {
         shared_ptr<SQLite::Statement> _statement;           // Compiled SQLite statement
         unique_ptr<SQLite::Statement> _matchedTextStatement;// Gets the matched text
         vector<string> _columnTitles;                       // Titles of columns
+        vector<SQLiteKeyStore*> _keyStores;
     };
 
 
@@ -516,8 +539,12 @@ namespace litecore {
 
 
     // The factory method that creates a SQLite Query.
-    Retained<Query> SQLiteDataFile::compileQuery(slice selectorExpression, QueryLanguage language) {
-        return new SQLiteQuery(*this, selectorExpression, language);
+    Retained<Query> SQLiteDataFile::compileQuery(slice selectorExpression,
+                                                 QueryLanguage language,
+                                                 KeyStore* defaultKeyStore)
+    {
+        return new SQLiteQuery(*this, selectorExpression, language,
+                               (SQLiteKeyStore*)defaultKeyStore);
     }
 
 

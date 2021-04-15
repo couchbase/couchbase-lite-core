@@ -69,9 +69,9 @@ public:
 };
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Predict]") {
     addNumberedDocs(1, 10);
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
                                 "{'WHAT': [['PREDICTION()', '8ball', {number: ['.num']}]]}")) };
     ExpectException(error::SQLite, 1, [&]{
         Retained<QueryEnumerator> e(query->createEnumerator());
@@ -99,7 +99,7 @@ static void testResults(Query *query) {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
         ExclusiveTransaction t(db);
@@ -110,7 +110,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
     Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['._id'], ['PREDICTION()', '8ball', {number: ['.num']}]]}")) };
     testResults(query);
 
@@ -118,7 +118,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]") {
     {
         ExclusiveTransaction t(db);
         writeMultipleTypeDocs(t);
@@ -128,7 +128,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]"
     Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
                                 "{'WHAT': [['.value'], ['PREDICTION()', '8ball', ['.value']]]}")) };
     ExpectException(error::SQLite, 1, [&]() {
         Retained<QueryEnumerator> e(query->createEnumerator());
@@ -138,7 +138,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]"
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]") {
     Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
@@ -150,7 +150,7 @@ TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]"
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
         ExclusiveTransaction t(db);
@@ -174,7 +174,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
         }
 
         // Query numbers in descending order of square-ness:
-        Retained<Query> query{ db->compileQuery(json5(
+        Retained<Query> query{ store->compileQuery(json5(
             "{'WHAT': [['.num'], "+prediction+"],"
             " 'ORDER_BY': [['DESC', "+prediction+"],"
                           "['DESC', ['.num']]] }")) };
@@ -201,7 +201,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
         ExclusiveTransaction t(db);
@@ -227,7 +227,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predic
         }
         
         // Query numbers in descending order of square-ness:
-        Retained<Query> query{ db->compileQuery(json5(
+        Retained<Query> query{ store->compileQuery(json5(
             "{'WHAT': [['.num'], "+square+"],"
             " 'WHERE': ['AND', ['>=', "+square+", 1], ['>=', "+even+", 1]],"
             " 'ORDER_BY': [['DESC', ['.num']]] }" )) };
@@ -251,7 +251,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predic
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
         ExclusiveTransaction t(db);
@@ -277,7 +277,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") 
         }
         
         // Query numbers in descending order of square-ness:
-        Retained<Query> query{ db->compileQuery(json5(
+        Retained<Query> query{ store->compileQuery(json5(
             "{'WHAT': [['.num'], "+square+"],"
             " 'WHERE': ['AND', ['>=', "+square+", 1], ['>=', "+even+", 1]],"
             " 'ORDER_BY': [['DESC', ['.num']]] }" )) };

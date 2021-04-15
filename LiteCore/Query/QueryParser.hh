@@ -56,7 +56,7 @@ namespace litecore {
         public:
             virtual ~Delegate() =default;
             virtual bool tableExists(const string &tableName) const =0;
-            virtual string defaultCollectionName() const =0;
+            virtual string defaultTableName() const             {return "kv_default";}
             virtual string collectionTableName(const string &collection) const =0;
             virtual string bodyColumnName() const               {return "body";}
             virtual string FTSTableName(const string &onTable, const string &property) const =0;
@@ -64,15 +64,15 @@ namespace litecore {
 #ifdef COUCHBASE_ENTERPRISE
             virtual string predictiveTableName(const string &onTable, const string &property) const =0;
 #endif
-            string defaultTableName() const { return collectionTableName(defaultCollectionName());}
         };
 
 
         QueryParser(const Delegate &delegate)
-        :QueryParser(delegate, delegate.defaultTableName(), delegate.bodyColumnName())
+        :QueryParser(delegate, "", delegate.bodyColumnName())
         { }
 
-        void setTableName(const string &name)                   {_mainTableName = name;}
+        string defaultTableName() const;
+        void setDefaultTableName(const string &name)            {_defaultTableName = name;}
         void setBodyColumnName(const string &name)              {_bodyColumnName = name;}
 
         void parse(const Value*);
@@ -89,6 +89,7 @@ namespace litecore {
         string SQL()  const                                     {return _sql.str();}
 
         const set<string>& parameters()                         {return _parameters;}
+        const set<string>& collectionTablesUsed() const         {return _kvTables;}
         const vector<string>& ftsTablesUsed() const             {return _ftsTables;}
         unsigned firstCustomResultColumn() const                {return _1stCustomResultCol;}
         const vector<string>& columnTitles() const              {return _columnTitles;}
@@ -112,21 +113,30 @@ namespace litecore {
         using Path = fleece::impl::Path;
 
         enum aliasType {
-            kDBAlias,
-            kJoinAlias,
-            kResultAlias,
-            kUnnestVirtualTableAlias,
-            kUnnestTableAlias
+            kDBAlias,                   // Primary FROM collection
+            kJoinAlias,                 // A JOINed collection
+            kResultAlias,               // A named query result value ("SELECT ___ AS x")
+            kUnnestVirtualTableAlias,   // An UNNEST implemented as a virtual table
+            kUnnestTableAlias           // An UNNEST implemented as a materialized table
         };
 
-        QueryParser(const Delegate &delegate, const string& tableName, const string& bodyColumnName)
+        struct aliasInfo {
+            aliasType type;
+            string    tableName;
+        };
+
+        using AliasMap = map<string, aliasInfo>;
+
+        QueryParser(const Delegate &delegate,
+                    const string& defaultTableName,
+                    const string& bodyColumnName)
         :_delegate(delegate)
-        ,_mainTableName(tableName)
+        ,_defaultTableName(defaultTableName)
         ,_bodyColumnName(bodyColumnName)
         { }
 
         QueryParser(const QueryParser *qp)
-        :QueryParser(qp->_delegate, qp->_mainTableName, qp->_bodyColumnName)
+        :QueryParser(qp->_delegate, qp->_defaultTableName, qp->_bodyColumnName)
         { }
 
         struct Operation;
@@ -154,7 +164,9 @@ namespace litecore {
         void writeWhereClause(const Value *where);
         void writeDeletionTest(const string &alias, bool isDeleted = false);
 
-        void addAlias(const string &alias, aliasType);
+        void addAlias(const string &alias, aliasType, const string &tableName);
+        struct FromAttributes;
+        FromAttributes parseFromEntry(const Value *value);
         void parseFromClause(const Value *from);
         void writeFromClause(const Value *from);
         int parseJoinType(slice);
@@ -213,14 +225,14 @@ namespace litecore {
         bool writeIndexedPrediction(const Array *node);
 
         void writeMetaPropertyGetter(slice metaKey, const string& dbAlias);
-        map<string, aliasType>::const_iterator verifyDbAlias(Path &property);
+        AliasMap::const_iterator verifyDbAlias(Path &property);
         bool optimizeMetaKeyExtraction(ArrayIterator&);
 
         const Delegate& _delegate;               // delegate object (SQLiteKeyStore)
-        string _mainTableName;                       // Name of the table containing documents
+        string _defaultTableName;                // Name of the default table to use
         string _bodyColumnName;                  // Column holding doc bodies
-        map<string, aliasType> _aliases;         // "AS..." aliases for db/joins/unnests
-        string _dbAlias;                         // Alias of the db itself, "_doc" by default
+        AliasMap _aliases;                       // "AS..." aliases for db/joins/unnests
+        string _dbAlias;                         // Alias of the main collection, "_doc" by default
         bool _propertiesUseSourcePrefix {false}; // Must properties include alias as prefix?
         vector<string> _columnTitles;            // Pretty names of result columns
         stringstream _sql;                       // The SQL being generated
@@ -229,6 +241,7 @@ namespace litecore {
         set<string> _parameters;                 // Plug-in "$" parameters found in parsing
         set<string> _variables;                  // Active variables, inside ANY/EVERY exprs
         map<string, string> _indexJoinTables;    // index table name --> alias
+        set<string> _kvTables;                   // Collection tables referenced in this query
         vector<string> _ftsTables;               // FTS virtual tables being used
         unsigned _1stCustomResultCol {0};        // Index of 1st result after _baseResultColumns
         bool _aggregatesOK {false};              // Are aggregate fns OK to call?

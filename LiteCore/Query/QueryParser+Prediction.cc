@@ -62,7 +62,7 @@ namespace litecore {
 
     // Returns the name of the index table for a PREDICTION() call expression.
     string QueryParser::predictiveTableName(const Value *expression) const {
-        string table = _delegate.collectionTableName(_delegate.defaultCollectionName()); //TEMP
+        string table = defaultTableName(); //TEMP
         return _delegate.predictiveTableName(table, predictiveIdentifier(expression));
     }
 

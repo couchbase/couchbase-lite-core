@@ -18,6 +18,7 @@
 
 #pragma once
 #include "QueryParser.hh"
+#include "StringUtil.hh"
 #include "fleece/Fleece.h"
 #include <string>
 #include <set>
@@ -34,10 +35,11 @@ public:
     void mustFail(string json);
 
 protected:
-    virtual std::string defaultCollectionName() const override {
-        return "_default";
+    virtual std::string defaultTableName() const override {
+        return "kv_default";
     }
     virtual string collectionTableName(const string &collection) const override {
+        CHECK(!hasPrefix(collection, "kv_"));   // make sure I didn't get passed a table name
         if (collection == "_default")
             return "kv_default";
         else
@@ -59,4 +61,6 @@ protected:
 #endif
 
     std::set<string> tableNames {"kv_default"};
+
+    std::set<string> usedTableNames;
 };

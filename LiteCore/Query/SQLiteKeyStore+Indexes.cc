@@ -87,7 +87,6 @@ namespace litecore {
     {
         Assert(spec.type != IndexSpec::kFullText);
         QueryParser qp(db());
-        qp.setTableName(CONCAT('"' << sourceTableName << '"'));
         qp.writeCreateIndex(spec.name,
                             sourceTableName,
                             expressions,

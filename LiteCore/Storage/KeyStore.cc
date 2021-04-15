@@ -17,6 +17,7 @@
 //
 
 #include "KeyStore.hh"
+#include "Query.hh"
 #include "Record.hh"
 #include "DataFile.hh"
 #include "Error.hh"
@@ -64,6 +65,11 @@ namespace litecore {
         setKV(rec.key(), rec.version(), rec.body(), t);
         rec.setExists();
     }
+
+    Retained<Query> KeyStore::compileQuery(slice expr, QueryLanguage language) {
+        return dataFile().compileQuery(expr, language, this);
+    }
+
 
     bool KeyStore::createIndex(slice name,
                                slice expressionJSON,

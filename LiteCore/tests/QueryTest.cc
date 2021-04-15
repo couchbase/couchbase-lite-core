@@ -30,7 +30,7 @@ using namespace std;
 using namespace std::chrono;
 using namespace date;
 
-TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
 
     IndexSpec::Options options { "en", true };
@@ -77,7 +77,7 @@ TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
     store->createIndex("nums"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray);
     store->deleteIndex("nums"_sl);
@@ -90,18 +90,12 @@ TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
 
     store->createIndex("nums"_sl, R"({"WHAT":[[".num"]], "WHERE":["=",[".type"],"number"]})"_sl);
 
-    const char *queryJson = nullptr;
-    bool expectOptimized = false;
-    SECTION("Using index") {
-        queryJson = "['AND', ['=', ['.type'], 'number'], "
-                            "['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
-        expectOptimized = true;
-    }
-    SECTION("Not using index") {
-        queryJson = "['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
-        expectOptimized = false;
-    }
-    Retained<Query> query = db->compileQuery(json5(queryJson));
+    auto [queryJson, expectOptimized] = GENERATE(
+        pair<const char*,bool>{"['AND', ['=', ['.type'], 'number'], "
+                                       "['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]", true},
+        pair<const char*,bool>{"['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]", false});
+    logSection(string("Query: ") + queryJson);
+    Retained<Query> query = store->compileQuery(json5(queryJson));
     checkOptimized(query, expectOptimized);
 
     int64_t rowCount;
@@ -114,7 +108,7 @@ TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Partial Index with NOT MISSING", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Partial Index with NOT MISSING", "[Query]") {
     // This tests whether SQLite is smart enough to know that a query on a property (.num) can
     // use a partial index whose condition is that the property is not MISSING.
     // Apparently it is :)
@@ -125,15 +119,15 @@ TEST_CASE_METHOD(QueryTest, "Partial Index with NOT MISSING", "[Query]") {
 
     const char *queryJson = "['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
 
-    Retained<Query> query = db->compileQuery(json5(queryJson));
+    Retained<Query> query = store->compileQuery(json5(queryJson));
     checkOptimized(query);
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
     addNumberedDocs();
     // Use a (SQL) query based on the Fleece "num" property:
-    Retained<Query> query{ db->compileQuery(json5("['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]")) };
+    Retained<Query> query{ store->compileQuery(json5("['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]")) };
     CHECK(query->columnCount() == 2);   // docID and sequence, by default
 
     for (int pass = 0; pass < 2; ++pass) {
@@ -166,17 +160,14 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query][N1QL]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query][N1QL]") {
     addNumberedDocs();
-    Retained<Query> query;
-    SECTION("JSON") {
-        query = db->compileQuery(json5(
-            "{WHAT: ['.num', ['AS', ['*', ['.num'], ['.num']], 'square']], WHERE: ['>', ['.num'], 10]}"));
-    }
-    SECTION("N1QL") {
-        query = db->compileQuery("SELECT num, num*num AS square WHERE num > 10"_sl,
-                                    QueryLanguage::kN1QL);
-    }
+    auto [str, language] = GENERATE(
+        pair<string,QueryLanguage>{json5("{WHAT: ['.num', ['AS', ['*', ['.num'], ['.num']], 'square']], WHERE: ['>', ['.num'], 10]}"),
+               QueryLanguage::kJSON},
+        pair<string,QueryLanguage>{"SELECT num, num*num AS square WHERE num > 10", QueryLanguage::kN1QL});
+    logSection(str);
+    Retained<Query> query = store->compileQuery(str, language);
     CHECK(query->columnCount() == 2);
     CHECK(query->columnTitles() == (vector<string>{"num", "square"}));
     int num = 11;
@@ -193,16 +184,15 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query][N1QL]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
     addNumberedDocs();
-    Retained<Query> query1{ db->compileQuery(json5("{WHAT: [['.main'], ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
-    Retained<Query> query2{ db->compileQuery(json5("{WHAT: [ '.main',  ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
+    Retained<Query> query1{ store->compileQuery(json5("{WHAT: [['.main'], ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
+    Retained<Query> query2{ store->compileQuery(json5("{WHAT: [ '.main',  ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
 
     CHECK(query1->columnTitles() == (vector<string>{ "main", "$1" }));
 
-    SECTION("Just regular docs") {
-    }
-    SECTION("Ignore deleted docs") {
+    if (GENERATE(false, true)) {
+        logSection("Ignore deleted docs");
         ExclusiveTransaction t(store->dataFile());
         for (int i = 201; i <= 300; i++)
             writeNumberedDoc(i, nullslice, t,
@@ -233,7 +223,7 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("null-and-void"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -243,7 +233,7 @@ TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
         t.commit();
     }
 
-    Retained<Query> query{ db->compileQuery(json5("{WHAT: [['.n'], ['.']]}")) };
+    Retained<Query> query{ store->compileQuery(json5("{WHAT: [['.n'], ['.']]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
     auto cols = e->columns();
@@ -257,9 +247,9 @@ TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
     addNumberedDocs();
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
                      "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
     CHECK(query->columnCount() == 2);
     int num = 11;
@@ -302,7 +292,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         for(int i = 0; i < 2; i++) {
@@ -326,7 +316,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     }
 
     // Check the data type of the returned values:
-    Retained<Query> query = db->compileQuery(json5( "{WHAT: ['.value']}"));
+    Retained<Query> query = store->compileQuery(json5( "{WHAT: ['.value']}"));
     Retained<QueryEnumerator> e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 4);
     int row = 0;
@@ -340,7 +330,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     }
 
     // Check the ISBOOLEAN function:
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{WHAT: ['._id'], WHERE: ['ISBOOLEAN()', ['.value']]}"));
     CHECK(query->columnTitles() == (vector<string>{"id"}));
     e = query->createEnumerator();
@@ -351,7 +341,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("tester"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -401,7 +391,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
     };
 
     for(auto query : queries) {
-        Retained<Query> q = db->compileQuery(query);
+        Retained<Query> q = store->compileQuery(query);
         Retained<QueryEnumerator> e = q->createEnumerator();
         REQUIRE(e->getRowCount() == 1);
         REQUIRE(e->next());
@@ -411,7 +401,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
     // For <https://github.com/couchbase/couchbase-lite-core/issues/545>
     {
         ExclusiveTransaction t(store->dataFile());
@@ -460,14 +450,14 @@ TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query object properties", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query object properties", "[Query]") {
     {
         ExclusiveTransaction t(db);
         writeMultipleTypeDocs(t);
         t.commit();
     }
 
-    Retained<Query> query{ db->compileQuery(json5("['=', 'FTW', ['_.subvalue', ['.value']]]")) };
+    Retained<Query> query{ store->compileQuery(json5("['=', 'FTW', ['_.subvalue', ['.value']]]")) };
 
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
@@ -476,10 +466,10 @@ TEST_CASE_METHOD(QueryTest, "Query object properties", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query array index", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query array index", "[Query]") {
     addArrayDocs();
 
-    Retained<Query> query{ db->compileQuery(json5("['=', 'five', ['_.[0]', ['.numbers']]]")) };
+    Retained<Query> query{ store->compileQuery(json5("['=', 'five', ['_.[0]', ['.numbers']]]")) };
 
     Retained<QueryEnumerator> e(query->createEnumerator());
     int i = 0;
@@ -492,9 +482,9 @@ TEST_CASE_METHOD(QueryTest, "Query array index", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
     addNumberedDocs(1, 1);
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: [['[]', null, false, true, 12345, 1234.5, 'howdy', ['._id']]]}")) };
 
     CHECK(query->columnTitles() == (vector<string>{"$1"}));
@@ -506,9 +496,9 @@ TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
     addNumberedDocs(1, 1);
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: [{n: null, f: false, t: true, i: 12345, d: 1234.5, s: 'howdy', m: ['.bogus'], id: ['._id']}]}")) };
 
     CHECK(query->columnTitles() == (vector<string>{"$1"}));
@@ -520,7 +510,7 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
     // Create a doc with a blob property:
     {
         ExclusiveTransaction t(store->dataFile());
@@ -534,7 +524,7 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
         t.commit();
     }
 
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
                   "{WHAT:[ ['.text'], {'text':['.text']} ]}")) };
     Log("%s", query->explain().c_str());
     Retained<QueryEnumerator> e(query->createEnumerator());
@@ -549,7 +539,7 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
 #pragma mark Targeted N1QL tests
 
 
-TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         for(int i = 0; i < 2; i++) {
@@ -567,7 +557,7 @@ TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
         t.commit();
     }
     
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: ['._id'], WHERE: ['>', ['ARRAY_LENGTH()', ['.value']], 1]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
@@ -576,7 +566,7 @@ TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string docID = "doc1";
@@ -595,7 +585,7 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
         t.commit();
     }
     
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSING()', ['.bogus'], ['MISSING'], ['.value']], null]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
@@ -604,28 +594,28 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
     
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.atai'], ['.value']], 1]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
     
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.atai'], ['.value']], null]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
 
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['IFNULL()', ['.value'], ['.real_value'], ['.atai']], 1]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
 
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.real_value'], ['.value'], ['.atai']], 1]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
@@ -634,43 +624,43 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
 
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['MISSINGIF()', ['.real_value'], 3], 1]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
     
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['IS', ['MISSINGIF()', ['.real_value'], 1], ['MISSING']]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
 
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['IS', ['MISSINGIF()', ['.value'], 1], ['MISSING']]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 0);
     
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['IS', ['MISSINGIF()', ['.value'], 1], null]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
 
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['NULLIF()', 3, ['.atai']], 3]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
     
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['NULLIF()', 1, ['.atai']], null]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
     
-    query =db->compileQuery(json5(
+    query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['IS', ['NULLIF()', 1, ['.atai']], ['MISSING']]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
@@ -679,7 +669,7 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
     addNumberedDocs(1,1);
     CHECK(queryWhat("['concat()', 'hello', 'world']") == "\"helloworld\"");
     CHECK(queryWhat("['||', 'hello', 'world']") == "\"helloworld\"");
@@ -691,7 +681,7 @@ TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -709,7 +699,7 @@ TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
         t.commit();
     }
     
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['REGEXP_CONTAINS()', ['.value'], '.*? value']}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
@@ -718,7 +708,7 @@ TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
     
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['REGEXP_LIKE()', ['.value'], '.*? value']}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
@@ -727,14 +717,14 @@ TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
     
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['>', ['REGEXP_POSITION()', ['.value'], '[ ]+value'], 4]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
     
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
        "{'WHAT': [['REGEXP_REPLACE()', ['.value'], '.*?value', 'nothing']]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 3);
@@ -747,14 +737,14 @@ TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
         t.commit();
     }
     
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: "
         "['AND', ['ISARRAY()', ['.value']], ['IS_ARRAY()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
@@ -763,7 +753,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     CHECK(e->columns()[0]->asString() == "array"_sl);
     CHECK(e->columns()[1]->asString() == "doc1"_sl);
     
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': [['TYPENAME()', ['.value']], ['._id'], ['.value']], WHERE: "
         "['AND', ['ISNUMBER()', ['.value']], ['IS_NUMBER()', ['.value']]]}"));
     e = (query->createEnumerator());
@@ -773,7 +763,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     CHECK(e->columns()[1]->asString() == "doc3"_sl);
     CHECK(e->columns()[2]->asDouble() == 4.5);
     
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: "
         "['AND', ['ISSTRING()', ['.value']], ['IS_STRING()', ['.value']]]}"));
     e = (query->createEnumerator());
@@ -783,7 +773,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     CHECK(e->columns()[1]->asString() == "doc2"_sl);
     CHECK(e->columns()[2]->asString() == "cool value"_sl);
     
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': [['TYPENAME()', ['.value']], ['._id']], WHERE: "
         "['AND', ['ISOBJECT()', ['.value']], ['IS_OBJECT()', ['.value']]]}"));
     e = (query->createEnumerator());
@@ -792,7 +782,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     CHECK(e->columns()[0]->asString() == "object"_sl);
     CHECK(e->columns()[1]->asString() == "doc4"_sl);
     
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: "
         "['AND', ['ISBOOLEAN()', ['.value']], ['IS_BOOLEAN()', ['.value']]]}"));
     e = (query->createEnumerator());
@@ -802,7 +792,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     CHECK(e->columns()[1]->asString() == "doc5"_sl);
     CHECK(e->columns()[2]->asBool());
     
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': [['TYPENAME()', ['.value']], ['._id']], WHERE: "
         "['AND', ['ISATOM()', ['.value']], ['IS_ATOM()', ['.value']]]}"));
     e = (query->createEnumerator());
@@ -819,7 +809,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
@@ -827,7 +817,7 @@ TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
         t.commit();
     }
     
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['TOBOOLEAN()', ['.value']], ['TO_BOOLEAN()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 8);
@@ -858,7 +848,7 @@ TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
@@ -866,7 +856,7 @@ TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
         t.commit();
     }
     
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['TOATOM()', ['.value']], ['TO_ATOM()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 8);
@@ -897,7 +887,7 @@ TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
@@ -908,7 +898,7 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
         t.commit();
     }
 
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
     "{'WHAT': [['TONUMBER()', ['.value']], ['TO_NUMBER()', ['.value']]]}")) };
     Retained<QueryEnumerator> e;
     {
@@ -937,7 +927,7 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
@@ -945,7 +935,7 @@ TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
         t.commit();
     }
     
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['TOSTRING()', ['.value']], ['TO_STRING()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 8);
@@ -975,7 +965,7 @@ TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
     CHECK(e->columns()[1]->asString() == "false"_sl);
 }
 
-TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         
@@ -1010,7 +1000,7 @@ TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
         t.commit();
     }
 
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['TOARRAY()', ['.value']], ['TO_ARRAY()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 5);
@@ -1037,7 +1027,7 @@ TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
     CHECK(e->missingColumns() == uint64_t(0));
 }
 
-TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         
@@ -1072,7 +1062,7 @@ TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
         t.commit();
     }
 
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['TOOBJECT()', ['.value']], ['TO_OBJECT()', ['.value']]]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 5);
@@ -1100,7 +1090,7 @@ TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
 
@@ -1119,7 +1109,7 @@ TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
     }
     
 
-    Retained<Query> query{ db->compileQuery(json5(
+    Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': ['.identifier', ['COUNT()', ['.index']]], 'GROUP_BY': ['.identifier'], 'HAVING': ['=', ['.identifier'], 1]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
@@ -1127,7 +1117,7 @@ TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
     CHECK(e->columns()[0]->asInt() == 1);
     CHECK(e->columns()[1]->asInt() == 5);
 
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': ['.identifier', ['COUNT()', ['.index']]], 'GROUP_BY': ['.identifier'], 'HAVING': ['!=', ['.identifier'], 1]}"));
     e = (query->createEnumerator());
 
@@ -1141,7 +1131,7 @@ TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeNumberedDoc(1, nullslice, t);
@@ -1149,14 +1139,14 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
         t.commit();
     }
 
-    auto query = db->compileQuery(json5(
+    auto query = store->compileQuery(json5(
         "{'WHAT': [['e()']]}"));
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == M_E);
 
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': [['pi()']]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
@@ -1188,7 +1178,7 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
     };
 
     for(int i = 0; i < what.size(); i++) {
-        query = db->compileQuery(json5(
+        query = store->compileQuery(json5(
         "{'WHAT': " + what[i] + "}"));
         e = (query->createEnumerator());
         REQUIRE(e->getRowCount() == 1);
@@ -1196,7 +1186,7 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
         CHECK(e->columns()[0]->asDouble() == results[i]);
     }
 
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': [['sign()', ['.num']]]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
@@ -1206,7 +1196,7 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
 
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
     testExpressions( {
         {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14]]",    "5.0"},
         {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14], 2]", "25.0"},
@@ -1225,7 +1215,7 @@ TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 #endif
 
 
-TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
     local_seconds localtime = (local_days)(2018_y/10/23); 
     struct tm tmpTime = FromTimestamp(localtime.time_since_epoch());
     localtime -= GetLocalTZOffset(&tmpTime, false);
@@ -1317,7 +1307,7 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -1327,7 +1317,7 @@ TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
         t.commit();
     }
 
-    auto query = db->compileQuery(json5(
+    auto query = store->compileQuery(json5(
         "{'WHAT': ['.num']}"));
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
@@ -1339,7 +1329,7 @@ TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
 
 
 // Test for #341, "kData fleece type unable to be queried"
-TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
      {
          ExclusiveTransaction t(store->dataFile());
          writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -1349,14 +1339,14 @@ TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
          t.commit();
     }
 
-    auto query = db->compileQuery(json5(
+    auto query = store->compileQuery(json5(
         "{'WHAT': ['.num']}"));
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asData() == "number one"_sl);
 
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': [['type()', ['.num']]]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
@@ -1365,7 +1355,7 @@ TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -1377,7 +1367,7 @@ TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
         t.commit();
     }
 
-    auto query = db->compileQuery(json5(
+    auto query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string']}"));
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
@@ -1385,7 +1375,7 @@ TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
     CHECK(e->columns()[0]->toJSONString() == "1234");
     CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
 
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': ['.bogus', '.num', '.nope', '.string', '.gone']}"));
     e = (query->createEnumerator());
     REQUIRE(e->next());
@@ -1395,7 +1385,7 @@ TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -1407,12 +1397,12 @@ TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
         t.commit();
     }
 
-    auto query = db->compileQuery(json5(
+    auto query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'LIMIT': -1}"));
     Retained<QueryEnumerator> e(query->createEnumerator());
     CHECK(e->getRowCount() == 0);
 
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'LIMIT': 100, 'OFFSET': -1}"));
     e = (query->createEnumerator());
     CHECK(e->getRowCount() == 1);
@@ -1421,13 +1411,13 @@ TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
     CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
 
     Query::Options opts(R"({"lim": -1})"_sl);
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'LIMIT': ['$lim']}"));
     e = (query->createEnumerator(&opts));
     CHECK(e->getRowCount() == 0);
 
     Query::Options opts2(R"({"lim": 100, "skip": -1})"_sl);
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'LIMIT': ['$lim'], 'OFFSET': ['$skip']}"));
     e = (query->createEnumerator(&opts2));
     CHECK(e->getRowCount() == 1);
@@ -1437,7 +1427,7 @@ TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
 
     // Offset without limit:
     Query::Options opts3(R"({"skip": 0})"_sl);
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'OFFSET': ['$skip']}"));
     e = (query->createEnumerator(&opts3));
     CHECK(e->getRowCount() == 1);
@@ -1447,7 +1437,7 @@ TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
      {
         ExclusiveTransaction t(store->dataFile());
         string docID = "rec-00";
@@ -1472,14 +1462,14 @@ TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
          t.commit();
     }
 
-    auto query = db->compileQuery(json5(
+    auto query = store->compileQuery(json5(
         "{'WHAT': [['.main.num1']], 'FROM': [{'AS':'main'}, {'AS':'secondary', 'ON': ['=', ['.main.num1'], ['.secondary.theone']]}]}"));
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asInt() == 4);
 
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT': [['.main.num1'], ['.secondary.theone']], 'FROM': [{'AS':'main'}, {'AS':'secondary', 'ON': ['=', ['.main.num1'], ['.secondary.theone']], 'JOIN':'LEFT OUTER'}]}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 11);
@@ -1491,7 +1481,7 @@ TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
     CHECK(e->columns()[1]->asInt() == 0);
     
     // NEED TO DEFINE THIS BEHAVIOR.  WHAT IS THE CORRECT RESULT?  THE BELOW FAILS!
-    /*query = db->compileQuery(json5(
+    /*query = store->compileQuery(json5(
         "{'WHAT': [['.main.num1'], ['.secondary.num2']], 'FROM': [{'AS':'main'}, {'AS':'secondary', 'JOIN':'CROSS'}], 'ORDER_BY': ['.secondary.num2']}"));
     e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 100);
@@ -1506,6 +1496,9 @@ TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
 class ArrayQueryTest : public QueryTest {
 protected:
     Retained<Query> query;
+
+    ArrayQueryTest(int option) :QueryTest(option) { }
+
 
     void checkQuery(int docNo, int expectedRowCount) {
         Retained<QueryEnumerator> e(query->createEnumerator());
@@ -1522,7 +1515,7 @@ protected:
     void testArrayQuery(const string &json, bool checkOptimization) {
         addArrayDocs(1, 90);
 
-        query = db->compileQuery(json);
+        query = store->compileQuery(json);
         string explanation = query->explain();
         Log("%s", explanation.c_str());
         checkQuery(88, 3);
@@ -1532,7 +1525,7 @@ protected:
                            "[[\".numbers\"]]"_sl,
                            IndexSpec::kArray);
         Log("-------- Recompiling query with index --------");
-        query = db->compileQuery(json);
+        query = store->compileQuery(json);
         checkOptimized(query, checkOptimization);
         checkQuery(88, 3);
 
@@ -1554,14 +1547,14 @@ protected:
     }
 };
 
-TEST_CASE_METHOD(ArrayQueryTest, "Query ANY", "[Query]") {
+N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY", "[Query]") {
     testArrayQuery(json5("['SELECT', {\
                              WHERE: ['ANY', 'num', ['.numbers'],\
                                             ['=', ['?num'], 'eight-eight']]}]"),
                    false);
 }
 
-TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
+N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
     testArrayQuery(json5("['SELECT', {\
                               FROM: [{as: 'doc'}, \
                                      {as: 'num', 'unnest': ['.doc.numbers']}],\
@@ -1570,13 +1563,13 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
+N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
     addArrayDocs(1, 90);
 
     auto json = json5("['SELECT', {\
                           WHERE: ['ANY', 'num', ['[]', ['.numbers[0]'], ['.numbers[1]']],\
                                          ['=', ['?num'], 'eight']]}]");
-    query = db->compileQuery(json);
+    query = store->compileQuery(json);
     string explanation = query->explain();
     Log("%s", explanation.c_str());
 
@@ -1584,14 +1577,14 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
+N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
     addArrayDocs(1, 90);
 
     auto json = json5("['SELECT', {\
                               FROM: [{as: 'doc'}, \
                                      {as: 'num', 'unnest': ['[]', ['.doc.numbers[0]'], ['.doc.numbers[1]']]}],\
                               WHERE: ['=', ['.num'], 'one-eight']}]");
-    query = db->compileQuery(json);
+    query = store->compileQuery(json);
     string explanation = query->explain();
     Log("%s", explanation.c_str());
 
@@ -1602,13 +1595,13 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
                        json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"),
                        IndexSpec::kArray);
     Log("-------- Recompiling query with index --------");
-    query = db->compileQuery(json);
+    query = store->compileQuery(json);
     checkOptimized(query);
 
     checkQuery(22, 2);
 }
 
-TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // CBL-1248
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // CBL-1248
     ExclusiveTransaction t(store->dataFile());
 
     for(int i = 0; i < 2; i++) {
@@ -1631,12 +1624,10 @@ TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // C
 
     Retained<Query> q;
     vector<slice> expectedResults;
-    SECTION("WHERE key from dict in sub-array") {
-        q = db->compileQuery(json5(
-                                      "{WHAT: ['._id'], \
-                                      WHERE: ['ANY', 'V', ['.variants'], ['ANY', 'I', ['?V.items'], ['=', ['?I.id'], 2]]]}"));
-        expectedResults.emplace_back("rec-002"_sl);
-    }
+    q = store->compileQuery(json5(
+                                  "{WHAT: ['._id'], \
+                                  WHERE: ['ANY', 'V', ['.variants'], ['ANY', 'I', ['?V.items'], ['=', ['?I.id'], 2]]]}"));
+    expectedResults.emplace_back("rec-002"_sl);
 
     Retained<QueryEnumerator> e(q->createEnumerator());
     REQUIRE(e->getRowCount() == expectedResults.size());
@@ -1648,7 +1639,7 @@ TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // C
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
 	{
         ExclusiveTransaction t(store->dataFile());
         string docID = "rec-00";
@@ -1672,28 +1663,28 @@ TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
     }
 
     // SELECT meta.id WHERE callsign IS MISSING
-    auto query = db->compileQuery(json5(
+    auto query = store->compileQuery(json5(
         "{'WHAT':[['._id']],'WHERE':['IS',['.callsign'],['MISSING']]}"));
     Retained<QueryEnumerator> e(query->createEnumerator());
     CHECK(e->getRowCount() == 1);
     CHECK(e->next());
     CHECK(e->columns()[0]->asString() == "rec-01"_sl);
     
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT':[['._id']],'WHERE':['IS',['.callsign'],null]}"));
     e = query->createEnumerator();
     CHECK(e->getRowCount() == 1);
     CHECK(e->next());
     CHECK(e->columns()[0]->asString() == "rec-02"_sl);
     
-    query = db->compileQuery("SELECT meta().id WHERE callsign IS 'ANA'"_sl, litecore::QueryLanguage::kN1QL);
+    query = store->compileQuery("SELECT meta().id WHERE callsign IS 'ANA'"_sl, litecore::QueryLanguage::kN1QL);
     e = query->createEnumerator();
     CHECK(e->getRowCount() == 1);
     CHECK(e->next());
     CHECK(e->columns()[0]->asString() == "rec-03"_sl);
     
     // SELECT meta.id WHERE callsign IS NOT VALUED
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{'WHAT':[['._id']],'WHERE':['NOT',['IS_VALUED()',['.callsign']]]}"));
     e = query->createEnumerator();
     CHECK(e->getRowCount() == 2);
@@ -1703,13 +1694,13 @@ TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
     CHECK(e->columns()[0]->asString() == "rec-02"_sl);
     
     // SELECT meta.id WHERE callsign IS VALUED
-    query = db->compileQuery("SELECT META().id WHERE callsign IS VALUED"_sl, litecore::QueryLanguage::kN1QL);
+    query = store->compileQuery("SELECT META().id WHERE callsign IS VALUED"_sl, litecore::QueryLanguage::kN1QL);
     e = query->createEnumerator();
     CHECK(e->getRowCount() == 1);
     CHECK(e->next());
     CHECK(e->columns()[0]->asString() == "rec-03"_sl);
     
-	query = db->compileQuery(json5(
+	query = store->compileQuery(json5(
         "{'WHAT': [['COUNT()','.'], ['.callsign']], 'WHERE':['IS NOT', ['.callsign'], null]}"));
 	e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 1);
@@ -1717,7 +1708,7 @@ TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
     CHECK(e->columns()[0]->asInt() == 1);
 	CHECK(e->columns()[1]->asString() == "ANA"_sl);
 
-	query = db->compileQuery(json5(
+	query = store->compileQuery(json5(
         "{'WHAT': [['COUNT()','.'], ['.callsign']], 'WHERE':['IS', ['.callsign'], null]}"));
 	e = (query->createEnumerator());
 	REQUIRE(e->getRowCount() == 1);
@@ -1725,7 +1716,7 @@ TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
     CHECK(e->columns()[0]->asInt() == 1);
 	CHECK(e->columns()[1]->asString().buf == nullptr);
 
-	query = db->compileQuery(json5(
+	query = store->compileQuery(json5(
         "{'WHAT': [['.callsign']]}"));
 	e = (query->createEnumerator());
 	CHECK(e->getRowCount() == 3); // Make sure there are actually three docs!
@@ -1736,8 +1727,8 @@ TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
 // problem.  Leaving an enumerator open in this way will cause a permission denied error when
 // trying to delete the database via db->deleteDataFile()
 #ifndef _MSC_VER
-TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
-    Retained<Query> query{ db->compileQuery(json5(
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
+    Retained<Query> query{ store->compileQuery(json5(
           "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     e->next();
@@ -1755,7 +1746,7 @@ TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
 #endif
 
 
-TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
     addNumberedDocs(1, 10);
     {
         ExclusiveTransaction t(store->dataFile());
@@ -1771,12 +1762,12 @@ TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
     addNumberedDocs(1, 3);
     expiration_t now = KeyStore::now();
 
     {
-        Retained<Query> query{ db->compileQuery(json5(
+        Retained<Query> query{ store->compileQuery(json5(
             "{WHAT: ['._id'], WHERE: ['.expiration']}")) };
         Retained<QueryEnumerator> e(query->createEnumerator());
         CHECK(!e->next());
@@ -1786,7 +1777,7 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
     store->setExpiration("rec-003"_sl, now + 10000);
 
     {
-        Retained<Query> query{ db->compileQuery(json5(
+        Retained<Query> query{ store->compileQuery(json5(
             "{WHAT: ['._expiration'], ORDER_BY: [['._id']]}")) };
         Retained<QueryEnumerator> e(query->createEnumerator());
         CHECK(e->next());
@@ -1799,7 +1790,7 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
         CHECK(!e->next());
     }
     {
-        Retained<Query> query{ db->compileQuery(json5(
+        Retained<Query> query{ store->compileQuery(json5(
             "{WHAT: ['._id'], WHERE: ['<=', ['._expiration'], ['$NOW']], ORDER_BY: [['._expiration']]}")) };
 
         Query::Options options { alloc_slice(format("{\"NOW\": %lld}", (long long)now)) };
@@ -1812,7 +1803,7 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string docID = "rec-00";
@@ -1841,7 +1832,7 @@ TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
         t.commit();
     }
     
-    auto query = db->compileQuery(json5(
+    auto query = store->compileQuery(json5(
        "{'WHAT': [{ \
            string: ['.string'], \
            int_min: ['.int_min'], \
@@ -1870,6 +1861,11 @@ TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
 }
 
 TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
+    if (GENERATE(false, true)) {
+        logSection("secondary collection");
+        store = &db->getKeyStore("coll_secondary");
+    }
+
     ExclusiveTransaction t(store->dataFile());
     writeDoc("uber_doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         enc.writeKey("dict");
@@ -1905,7 +1901,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     vector<slice> expectedResults;
     vector<string> expectedAliases;
     SECTION("WHERE alias numeric literal") {
-        q = db->compileQuery(json5(
+        q = store->compileQuery(json5(
             "{WHAT: ['._id', \
             ['AS', 1.375, 'answer']], \
             WHERE: ['=', ['.dict.key1'], 1]}"));
@@ -1914,7 +1910,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 
     SECTION("WHERE alias string literal") {
-        q = db->compileQuery(json5(
+        q = store->compileQuery(json5(
             "{WHAT: ['._id', \
             ['AS', 'Cthulhu ftaghn', 'answer']], \
             WHERE: ['=', ['.dict.key1'], 1]}"));
@@ -1923,7 +1919,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 
     SECTION("WHERE alias as-is") {
-        q = db->compileQuery(json5(
+        q = store->compileQuery(json5(
             "{WHAT: ['._id', \
             ['AS', ['.dict.key2'], 'answer']], \
             WHERE: ['=', ['.answer'], 1]}"));
@@ -1932,7 +1928,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
 
     SECTION("WHERE alias that shadows property") {
         // Here the alias is the same as the property used to define it...
-        q = db->compileQuery(json5(
+        q = store->compileQuery(json5(
             "{WHAT: ['._id', \
             ['AS', ['.dict.key2'], 'dict']], \
             WHERE: ['=', ['.dict'], 1]}"));
@@ -1940,7 +1936,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 
     SECTION("WHERE alias with special name") {
-        q = db->compileQuery(json5(
+        q = store->compileQuery(json5(
             "{WHAT: ['._id', \
             ['AS', ['.dict'], 'name.with [special]']], \
             WHERE: ['=', ['.name\\\\.with \\\\[special\\\\].key1'], 1]}"));
@@ -1948,7 +1944,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 
     SECTION("WHERE key on alias") {
-        q = db->compileQuery(json5(
+        q = store->compileQuery(json5(
             "{WHAT: ['._id', \
             ['AS', ['.dict'], 'answer']], \
             WHERE: ['=', ['.answer.key1'], 1]}"));
@@ -1956,7 +1952,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 
     SECTION("WHERE index on alias") {
-        q = db->compileQuery(json5(
+        q = store->compileQuery(json5(
             "{WHAT: ['._id', \
             ['AS', ['.arr'], 'answer']], \
             WHERE: ['=', ['.answer[1]'], 1]}"));
@@ -1964,7 +1960,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 
     SECTION("ORDER BY alias as-is") {
-        q = db->compileQuery(json5(
+        q = store->compileQuery(json5(
             "{WHAT: ['._id', \
             ['AS', ['.dict.key2'], 'answer']], \
             ORDER_BY: [['.answer']]}"));
@@ -1973,7 +1969,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 
     SECTION("ORDER BY key on alias") {
-        q = db->compileQuery(json5(
+        q = store->compileQuery(json5(
             "{WHAT: ['._id', \
             ['AS', ['.dict'], 'name.with [special]']], \
             ORDER_BY: [['DESC', ['.name\\\\.with \\\\[special\\\\].key1']]]}"));
@@ -1982,7 +1978,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 
     SECTION("ORDER BY index on alias") {
-        q = db->compileQuery(json5(
+        q = store->compileQuery(json5(
             "{WHAT: ['._id', \
             ['AS', ['.arr'], 'answer']], \
             ORDER_BY: [['.answer[1]']]}"));
@@ -2002,9 +1998,9 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query]") {
     addNumberedDocs();
-    Retained<Query> query{ db->compileQuery("SELECT num, num*num WHERE num >= 30 and num <= 40 ORDER BY num"_sl,
+    Retained<Query> query{ store->compileQuery("SELECT num, num*num WHERE num >= 30 and num <= 40 ORDER BY num"_sl,
                                                QueryLanguage::kN1QL) };
     CHECK(query->columnCount() == 2);
     int num = 30;
@@ -2021,11 +2017,11 @@ TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query closes when db closes", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query closes when db closes", "[Query]") {
     // Tests fix for <https://issues.couchbase.com/browse/CBL-214>
     addNumberedDocs(1, 10);
 
-    Retained<Query> query = db->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['>=', ['.num'], 5]}"));
+    Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['>=', ['.num'], 5]}"));
     Retained<QueryEnumerator> e(query->createEnumerator());
     CHECK(e->getRowCount() == 6);
 
@@ -2033,10 +2029,10 @@ TEST_CASE_METHOD(QueryTest, "Query closes when db closes", "[Query]") {
     deleteDatabase();
 }
 
-TEST_CASE_METHOD(QueryTest, "Query Math Precision", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Math Precision", "[Query]") {
     addNumberedDocs();
     Retained<Query> query;
-    query = db->compileQuery(json5(
+    query = store->compileQuery(json5(
         "{WHAT: ['.num', ['AS', ['/', 5.0, 15.0], 'd1'], ['AS', ['/', 5.5, 16.5], 'd2'], ['AS', ['/', 5, 15], 'd3']]}"));
 
     CHECK(query->columnTitles() == (vector<string>{"num","d1", "d2", "d3"}));
@@ -2051,7 +2047,7 @@ TEST_CASE_METHOD(QueryTest, "Query Math Precision", "[Query]") {
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
     vector<string> keys { "$Type", "Ty$pe", "Type$" };
     ExclusiveTransaction t(store->dataFile());
     writeDoc("doc"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -2064,14 +2060,14 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
     
     for (const string& key : keys) {
         string queryStr = stringWithFormat("{WHAT: [['.%s']]}", key.c_str());
-        Retained<Query> query = db->compileQuery(json5(queryStr));
+        Retained<Query> query = store->compileQuery(json5(queryStr));
         Retained<QueryEnumerator> e(query->createEnumerator());
         INFO("Attempted with array syntax " << key);
         REQUIRE(e->next());
         CHECK(e->columns()[0]->asString() == "special"_sl);
         
         queryStr = stringWithFormat("{WHAT: ['.%s']}", key.c_str());
-        query = db->compileQuery(json5(queryStr));
+        query = store->compileQuery(json5(queryStr));
         e = query->createEnumerator();
         INFO("Attempted with string syntax " << key);
         REQUIRE(e->next());
@@ -2079,7 +2075,7 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
     ExclusiveTransaction t(store->dataFile());
     writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         enc.writeKey("customerId");
@@ -2102,7 +2098,7 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
     t.commit();
     
     string queryStr = "SELECT customerId AS `$1` WHERE test_id='alias_func' ORDER BY `$1` LIMIT 2";
-    Retained<Query> query = db->compileQuery(queryStr, QueryLanguage::kN1QL);
+    Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
     CHECK(query->columnTitles() == vector<string>{"$1"});
     
     Retained<QueryEnumerator> e(query->createEnumerator());
@@ -2113,7 +2109,7 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
     REQUIRE(!e->next());
 }
 
-TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
     ExclusiveTransaction t(store->dataFile());
     writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         enc.writeKey("customerId");
@@ -2136,7 +2132,7 @@ TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
     t.commit();
 
     const char* n1ql = "SELECT array_Agg(customerId) where test_id = \"agg_func\"";
-    Retained<Query> query = db->compileQuery(n1ql, QueryLanguage::kN1QL);
+    Retained<Query> query = store->compileQuery(n1ql, QueryLanguage::kN1QL);
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
     CHECK(e->columns().count() == 1);
@@ -2147,7 +2143,7 @@ TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
     CHECK(agg->get(1)->asString() == "Scott"_sl);
 }
 
-TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string docID = "doc1";
@@ -2166,7 +2162,7 @@ TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
         t.commit();
     }
 
-    Retained<Query> query{ db->compileQuery("SELECT meta()"_sl, QueryLanguage::kN1QL) };
+    Retained<Query> query{ store->compileQuery("SELECT meta()"_sl, QueryLanguage::kN1QL) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -2178,7 +2174,7 @@ TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
     });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
     
-    query = db->compileQuery("SELECT meta(db) from db"_sl, QueryLanguage::kN1QL);
+    query = store->compileQuery("SELECT meta(db) from db"_sl, QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -2190,7 +2186,7 @@ TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
     });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
     
-    query = db->compileQuery("SELECT meta().id"_sl, QueryLanguage::kN1QL);
+    query = store->compileQuery("SELECT meta().id"_sl, QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -2198,11 +2194,56 @@ TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "doc2"_sl);
     
-    query = db->compileQuery("SELECT meta(db).id from db"_sl, QueryLanguage::kN1QL);
+    query = store->compileQuery("SELECT meta(db).id from db"_sl, QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "doc1"_sl);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "doc2"_sl); 
+}
+
+TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
+    {
+        ExclusiveTransaction t(db);
+        string docID = "rec-00";
+
+        for(int i = 0; i < 10; i++) {
+            stringstream ss("rec-00");
+            ss << i + 1;
+
+            writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
+                enc.writeKey("num1");
+                enc.writeInt(i);
+                enc.writeKey("num2");
+                enc.writeInt(10 - i);
+            });
+        }
+
+        KeyStore &secondary = db->getKeyStore("coll_secondary");
+        writeDoc(secondary, "magic"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("theone");
+            enc.writeInt(4);
+        });
+
+        t.commit();
+    }
+
+    auto query = db->compileQuery(json5(
+        "{'WHAT': [['.main.num1']], 'FROM': [{'AS':'main'}, {'COLLECTION':'secondary', 'ON': ['=', ['.main.num1'], ['.secondary.theone']]}]}"));
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 4);
+
+    query = db->compileQuery(json5(
+        "{'WHAT': [['.main.num1'], ['.secondary.theone']], 'FROM': [{'AS':'main'}, {'COLLECTION':'secondary', 'ON': ['=', ['.main.num1'], ['.secondary.theone']], 'JOIN':'LEFT OUTER'}]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 10);
+    e->seek(4);
+    CHECK(e->columns()[0]->asInt() == 4);
+    CHECK(e->columns()[1]->asInt() == 4);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 5);
+    CHECK(e->columns()[1]->asInt() == 0);
 }

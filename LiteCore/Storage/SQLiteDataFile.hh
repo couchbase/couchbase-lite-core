@@ -63,6 +63,9 @@ namespace litecore {
         std::vector<std::string> allKeyStoreNames() const override;
         bool keyStoreExists(const std::string &name) const override;
         void deleteKeyStore(const std::string &name) override;
+
+        SQLiteKeyStore& keyStoreFromTable(slice tableName);
+
         bool getSchema(const std::string &name, const std::string &type,
                        const std::string &tableName, std::string &outSQL) const;
         bool schemaExistsWithSQL(const std::string &name, const std::string &type,
@@ -89,11 +92,10 @@ namespace litecore {
                           int64_t &outRowCount,
                           alloc_slice *outRows =nullptr);
 
-        Retained<Query> compileQuery(slice expression, QueryLanguage) override;
+        Retained<Query> compileQuery(slice expression, QueryLanguage, KeyStore*) override;
 
     // QueryParser::delegate:
         virtual bool tableExists(const std::string &tableName) const override;
-        virtual std::string defaultCollectionName() const override;
         virtual string collectionTableName(const string &collection) const override;
         virtual std::string FTSTableName(const string &collection, const std::string &property) const override;
         virtual std::string unnestedTableName(const string &collection, const std::string &property) const override;

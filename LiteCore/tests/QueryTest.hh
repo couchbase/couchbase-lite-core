@@ -25,7 +25,22 @@ using namespace fleece::impl;
 
 
 class QueryTest : public DataFileTestFixture {
+public:
+    static const int numberOfOptions = 2;
+
 protected:
+
+    QueryTest() :QueryTest(0) { }
+
+    QueryTest(int option) {
+        logSection(option ? "secondary collection" : "default collection");
+        if (option != 0)
+            store = &db->getKeyStore("coll_secondary");
+    }
+
+    void logSection(const string &name) {
+        fprintf(stderr, "        --- %s\n", name.c_str());
+    }
 
     string numberString(int n) {
         static const char* kDigit[10] = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
@@ -55,10 +70,13 @@ protected:
 
     // Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
     void addNumberedDocs(int first =1, int n =100) {
+        auto level = QueryLog.level();
+        QueryLog.setLevel(LogLevel::Warning);
         ExclusiveTransaction t(store->dataFile());
         for (int i = first; i < first + n; i++)
             REQUIRE(writeNumberedDoc(i, nullslice, t) == (sequence_t)i);
         t.commit();
+        QueryLog.setLevel(level);
     }
 
     sequence_t writeArrayDoc(int i, ExclusiveTransaction &t,
@@ -162,7 +180,7 @@ protected:
     }
 
     int64_t rowsInQuery(string json) {
-        Retained<Query> query = db->compileQuery(json);
+        Retained<Query> query = store->compileQuery(json);
         Retained<QueryEnumerator> e(query->createEnumerator());
         return e->getRowCount();
     }
@@ -175,7 +193,7 @@ protected:
         }
         for(auto &test : tests) {
             INFO("Testing " << test.first);
-            auto query = db->compileQuery(json5("{'WHAT': [" + test.first + "]}"));
+            auto query = store->compileQuery(json5("{'WHAT': [" + test.first + "]}"));
             Retained<QueryEnumerator> e(query->createEnumerator());
             REQUIRE(e->getRowCount() == 1);
             REQUIRE(e->next());
@@ -191,7 +209,7 @@ protected:
     }
 
     string queryWhat(const char *what) {
-        auto query = db->compileQuery(json5(CONCAT("{'WHAT': [" << what << "]}")));
+        auto query = store->compileQuery(json5(CONCAT("{'WHAT': [" << what << "]}")));
         Retained<QueryEnumerator> e(query->createEnumerator());
         REQUIRE(e->next());
         return e->columns()[0]->toJSONString();
