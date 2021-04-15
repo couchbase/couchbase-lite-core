@@ -12,7 +12,6 @@ function(setup_build)
         ${TOP}MSVC/mkstemp.cc
         ${TOP}MSVC/strlcat.c
         ${TOP}MSVC/asprintf.c
-        ${TOP}vendor/fleece/Fleece/Support/slice.cc
     )
 
     target_compile_definitions(

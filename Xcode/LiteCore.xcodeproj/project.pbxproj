@@ -96,7 +96,7 @@
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
 		27229215260AB89900A3A41F /* BlobStreams.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27229214260AB89900A3A41F /* BlobStreams.cc */; };
-		27229278260D1ADF00A3A41F /* C4Collection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27229277260D1ADF00A3A41F /* C4Collection.cc */; };
+		27229278260D1ADF00A3A41F /* c4Collection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27229277260D1ADF00A3A41F /* c4Collection.cc */; };
 		272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850A91E9AF53B009CA22F /* Upgrader.cc */; };
 		272850AD1E9AF53B009CA22F /* Upgrader.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850AA1E9AF53B009CA22F /* Upgrader.hh */; };
 		272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850B41E9BE361009CA22F /* UpgraderTest.cc */; };
@@ -887,7 +887,7 @@
 		27229213260AB89900A3A41F /* BlobStreams.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BlobStreams.hh; sourceTree = "<group>"; };
 		27229214260AB89900A3A41F /* BlobStreams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BlobStreams.cc; sourceTree = "<group>"; };
 		27229268260D171D00A3A41F /* c4Collection.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Collection.hh; sourceTree = "<group>"; };
-		27229277260D1ADF00A3A41F /* C4Collection.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = C4Collection.cc; sourceTree = "<group>"; };
+		27229277260D1ADF00A3A41F /* c4Collection.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Collection.cc; sourceTree = "<group>"; };
 		27234104211516C000DA9437 /* c4QueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4QueryTest.hh; sourceTree = "<group>"; };
 		2723410F211B5FC400DA9437 /* QueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryTest.hh; sourceTree = "<group>"; };
 		2726F630207ED137007F2D02 /* ReplicatorTuning.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTuning.hh; sourceTree = "<group>"; };
@@ -2298,7 +2298,7 @@
 				2722504D1D7892610006D5A5 /* c4BlobStore.cc */,
 				27469D04233D58D900A1EE1A /* c4Certificate.cc */,
 				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
-				27229277260D1ADF00A3A41F /* C4Collection.cc */,
+				27229277260D1ADF00A3A41F /* c4Collection.cc */,
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
 				2712F5AE25D5A9AB0082D526 /* c4Error.cc */,
@@ -3591,7 +3591,7 @@
 			attributes = {
 				CLASSPREFIX = "";
 				LastSwiftUpdateCheck = 0730;
-				LastUpgradeCheck = 1240;
+				LastUpgradeCheck = 1250;
 				ORGANIZATIONNAME = Couchbase;
 				TargetAttributes = {
 					27139B2F18F8E9750021A9A3 = {
@@ -4220,7 +4220,7 @@
 				2743E35625F85F26006F696D /* c4Replicator_CAPI.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
 				27E4872B1923F24D007D8940 /* RevTreeRecord.cc in Sources */,
-				27229278260D1ADF00A3A41F /* C4Collection.cc in Sources */,
+				27229278260D1ADF00A3A41F /* c4Collection.cc in Sources */,
 				276CE6832267991500B681AC /* n1ql.cc in Sources */,
 				93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */,
 				2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */,
