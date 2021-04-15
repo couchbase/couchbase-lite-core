@@ -2282,10 +2282,15 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
         }
     };
     static_assert(whatCount == sizeof(verifiers) / sizeof(verifiers[0]));
-    string queryStr = std::reduce(&whats[0] + 1, &whats[0] + whatCount, string("select ")+whats[0],
-                                  [](const string& a, const string& b) {
-        return a + ", " + b;
-    });
+//    string queryStr = std::reduce(&whats[0] + 1, &whats[0] + whatCount, string("select ")+whats[0],
+//                                  [](const string& a, const string& b) {
+//        return a + ", " + b;
+//    });
+// above failed on Windows
+    string queryStr = string("select ")+whats[0];
+    for (unsigned i = 1; i < whatCount; ++i) {
+        queryStr = queryStr + ", " + whats[i];
+    }
     
     Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
     REQUIRE(query->columnCount() == whatCount);
@@ -2296,6 +2301,6 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     REQUIRE(e->next());
     uint64_t missingColumns = e->missingColumns();
     for (unsigned i = 0; i < whatCount; ++i) {
-        REQUIRE(verifiers[i](e->columns()[i], missingColumns & (1 << i)));
+        REQUIRE(verifiers[i](e->columns()[i], missingColumns & (1ull << i)));
     }
 }
