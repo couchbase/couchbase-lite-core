@@ -69,8 +69,7 @@ namespace litecore {
     {
         // Derive the table name from the expression (path) it unnests:
         auto kvTableName = tableName();
-        QueryParser qp(db());
-        qp.setDefaultTableName(kvTableName);
+        QueryParser qp(db(), kvTableName);
         auto predTableName = qp.predictiveTableName(expression);
 
         // Create the index table, unless an identical one already exists:

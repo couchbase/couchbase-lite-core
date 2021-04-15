@@ -190,7 +190,7 @@ namespace litecore {
         _1stCustomResultCol = 0;
         _isAggregateQuery = _aggregatesOK = _propertiesUseSourcePrefix = _checkedExpiration = false;
 
-        _aliases.insert({_dbAlias, {kDBAlias, defaultTableName()}});
+        _aliases.insert({_dbAlias, {kDBAlias, _defaultTableName}});
     }
 
 
@@ -434,14 +434,6 @@ namespace litecore {
 #pragma mark - "FROM" / "JOIN" clauses:
 
 
-    string QueryParser::defaultTableName() const {
-        if (_defaultTableName.empty())
-            return _delegate.defaultTableName();
-        else
-            return _defaultTableName;
-    }
-
-
     // Collects the attributes of a dict in the FROM clause
     struct QueryParser::FromAttributes {
         const Dict  *dict;
@@ -465,7 +457,7 @@ namespace litecore {
             require(_delegate.tableExists(from.tableName),
                     "no such collection \"%.*s\"", SPLAT(collection));
         } else {
-            from.tableName = defaultTableName();
+            from.tableName = _defaultTableName;
             DebugAssert(_delegate.tableExists(from.tableName));
         }
         if (from.alias.empty())
@@ -515,8 +507,8 @@ namespace litecore {
         }
         if (first) {
             // Default alias if there is no FROM clause:
-            addAlias(kDefaultTableAlias, kDBAlias, defaultTableName());
-            _kvTables.insert(defaultTableName());
+            addAlias(kDefaultTableAlias, kDBAlias, _defaultTableName);
+            _kvTables.insert(_defaultTableName);
         }
     }
 
@@ -588,7 +580,7 @@ namespace litecore {
                 }
             }
         } else {
-            _sql << " FROM " << sqlIdentifier(defaultTableName()) << " AS " << sqlIdentifier(_dbAlias);
+            _sql << " FROM " << sqlIdentifier(_defaultTableName) << " AS " << sqlIdentifier(_dbAlias);
         }
 
         // Add joins to index tables (FTS, predictive):
@@ -1674,7 +1666,7 @@ namespace litecore {
     {
         reset();
         if (!dbAlias.empty())
-            addAlias(string(dbAlias), kDBAlias, defaultTableName());
+            addAlias(string(dbAlias), kDBAlias, _defaultTableName);
         writeWhereClause(arrayExpr);
         string sql = SQL();
         if (sql[0] == ' ')
@@ -1728,7 +1720,7 @@ namespace litecore {
         string ftsName( requiredString(key, "left-hand side of MATCH expression") );
         require(!ftsName.empty() && ftsName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");
-        string table = defaultTableName(); //TEMP
+        string table = _defaultTableName; //TEMP
         return _delegate.FTSTableName(table, ftsName);
     }
 
@@ -1781,7 +1773,7 @@ namespace litecore {
 
     // Returns the index table name for an unnested array property.
     string QueryParser::unnestedTableName(const Value *arrayExpr) const {
-        string table = defaultTableName();
+        string table = _defaultTableName;
         Path path = propertyFromNode(arrayExpr);
         string propertyStr;
         if (!path.empty()) {

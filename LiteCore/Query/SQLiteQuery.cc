@@ -59,7 +59,7 @@ namespace litecore {
         SQLiteQuery(SQLiteDataFile &dataFile,
                     slice queryStr,
                     QueryLanguage language,
-                    SQLiteKeyStore* defaultKeyStore =nullptr)
+                    SQLiteKeyStore* defaultKeyStore)
         :Query(dataFile, queryStr, language)
         {
             static constexpr const char* kLanguageName[] = {"JSON", "N1QL"};
@@ -80,9 +80,7 @@ namespace litecore {
                 }
             }
 
-            QueryParser qp(dataFile);
-            if (defaultKeyStore)
-                qp.setDefaultTableName(defaultKeyStore->tableName());
+            QueryParser qp(dataFile, defaultKeyStore->tableName());
             qp.parseJSON(_json);
 
             // Collect the KeyStores read by this query:
@@ -541,10 +539,11 @@ namespace litecore {
     // The factory method that creates a SQLite Query.
     Retained<Query> SQLiteDataFile::compileQuery(slice selectorExpression,
                                                  QueryLanguage language,
-                                                 KeyStore* defaultKeyStore)
+                                                 KeyStore* keyStore)
     {
-        return new SQLiteQuery(*this, selectorExpression, language,
-                               (SQLiteKeyStore*)defaultKeyStore);
+        if (!keyStore)
+            keyStore = &defaultKeyStore();
+        return new SQLiteQuery(*this, selectorExpression, language, (SQLiteKeyStore*)keyStore);
     }
 
 

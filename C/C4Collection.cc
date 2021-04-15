@@ -17,11 +17,22 @@
 //
 
 #include "c4Collection.hh"
+#include "c4Query.hh"
 #include "TreeDocument.hh"
 #include "VectorDocument.hh"
 #include "betterassert.hh"
 
+
+// NOTE: Most of C4Collection is implemented in its concrete subclass CollectionImpl.
+
+
 using namespace litecore;
+
+
+C4Collection::C4Collection(C4Database *db, slice name)
+:_database(db)
+,_name(name)
+{ }
 
 
 C4Database* C4Collection::getDatabase() {
@@ -44,7 +55,6 @@ C4Document* C4Collection::documentContainingValue(FLValue value) noexcept {
 }
 
 
-C4Collection::C4Collection(C4Database *db, slice name)
-:_database(db)
-,_name(name)
-{ }
+Retained<C4Query> C4Collection::newQuery(C4QueryLanguage language, slice expr,int *errPos) const {
+    return C4Query::newQuery(const_cast<C4Collection*>(this), language, expr, errPos);
+}

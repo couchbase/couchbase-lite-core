@@ -50,15 +50,18 @@ namespace litecore {
         using ArrayIterator = fleece::impl::ArrayIterator;
         using Value = fleece::impl::Value;
 
+        // Default SQL column name containing document body
+        static constexpr const char* kBodyColumnName = "body";
 
-        /** Delegate knows about the naming & existence of tables. */
+
+        /** Delegate knows about the naming & existence of tables.
+            Implemented by SQLiteDataFile; this interface is to keep the QueryParser isolated from
+            such details and make it easier to unit-test. */
         class Delegate {
         public:
             virtual ~Delegate() =default;
             virtual bool tableExists(const string &tableName) const =0;
-            virtual string defaultTableName() const             {return "kv_default";}
             virtual string collectionTableName(const string &collection) const =0;
-            virtual string bodyColumnName() const               {return "body";}
             virtual string FTSTableName(const string &onTable, const string &property) const =0;
             virtual string unnestedTableName(const string &onTable, const string &property) const =0;
 #ifdef COUCHBASE_ENTERPRISE
@@ -67,12 +70,12 @@ namespace litecore {
         };
 
 
-        QueryParser(const Delegate &delegate)
-        :QueryParser(delegate, "", delegate.bodyColumnName())
+        QueryParser(const Delegate &delegate,
+                    const string& defaultTableName)
+        :_delegate(delegate)
+        ,_defaultTableName(defaultTableName)
         { }
 
-        string defaultTableName() const;
-        void setDefaultTableName(const string &name)            {_defaultTableName = name;}
         void setBodyColumnName(const string &name)              {_bodyColumnName = name;}
 
         void parse(const Value*);
@@ -127,17 +130,11 @@ namespace litecore {
 
         using AliasMap = map<string, aliasInfo>;
 
-        QueryParser(const Delegate &delegate,
-                    const string& defaultTableName,
-                    const string& bodyColumnName)
-        :_delegate(delegate)
-        ,_defaultTableName(defaultTableName)
-        ,_bodyColumnName(bodyColumnName)
-        { }
-
         QueryParser(const QueryParser *qp)
-        :QueryParser(qp->_delegate, qp->_defaultTableName, qp->_bodyColumnName)
-        { }
+        :QueryParser(qp->_delegate, qp->_defaultTableName)
+        {
+            _bodyColumnName = qp->_bodyColumnName;
+        }
 
         struct Operation;
         static const Operation kOperationList[];
@@ -230,7 +227,7 @@ namespace litecore {
 
         const Delegate& _delegate;               // delegate object (SQLiteKeyStore)
         string _defaultTableName;                // Name of the default table to use
-        string _bodyColumnName;                  // Column holding doc bodies
+        string _bodyColumnName = kBodyColumnName;// Column holding doc bodies
         AliasMap _aliases;                       // "AS..." aliases for db/joins/unnests
         string _dbAlias;                         // Alias of the main collection, "_doc" by default
         bool _propertiesUseSourcePrefix {false}; // Must properties include alias as prefix?

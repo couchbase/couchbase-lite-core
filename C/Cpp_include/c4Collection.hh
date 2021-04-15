@@ -87,7 +87,10 @@ struct C4Collection : public fleece::InstanceCountedIn<C4Collection>, C4Base {
     virtual C4Timestamp nextDocExpiration() const =0;
     virtual int64_t purgeExpiredDocs() =0;
 
-    // Indexes:
+    // Queries & Indexes:
+
+    /// Same as the C4Database method, but the query will refer to this collection by default.
+    Retained<C4Query> newQuery(C4QueryLanguage language, slice queryExpr, int *outErrorPos) const;
 
     virtual void createIndex(slice name,
                              slice indexSpecJSON,

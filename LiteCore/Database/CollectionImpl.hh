@@ -531,6 +531,12 @@ namespace litecore {
     };
 
 
-    static inline CollectionImpl* asInternal(C4Collection *coll) {return (CollectionImpl*)coll;}
+    static inline CollectionImpl* asInternal(C4Collection *coll) {
+        return (CollectionImpl*)coll;
+    }
+
+    static inline const CollectionImpl* asInternal(const C4Collection *coll) {
+        return (const CollectionImpl*)coll;
+    }
 
 }

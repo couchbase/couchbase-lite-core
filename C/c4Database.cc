@@ -18,6 +18,7 @@
 
 #include "c4Database.hh"
 #include "c4Collection.hh"
+#include "c4Query.hh"
 #include "c4Private.h"
 #include "c4ExceptionUtils.hh"
 
@@ -180,6 +181,13 @@ C4Database::C4Database(std::string name, std::string dir, const C4DatabaseConfig
 { }
 
 
+#pragma mark - QUERIES:
+
+
+Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice expr, int *errPos) const {
+    return C4Query::newQuery(_defaultCollection, language, expr, errPos);
+}
+
 
 #pragma mark - COOKIES:
 
@@ -251,6 +259,5 @@ bool C4Database::purgeDocument(slice docID) {
     return getDefaultCollection()->purgeDocument(docID);
 }
 
-
-#endif
+#endif // C4_STRICT_COLLECTION_API
 

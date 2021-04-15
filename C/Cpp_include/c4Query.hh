@@ -35,13 +35,26 @@ C4_ASSUME_NONNULL_BEGIN
 // ************************************************************************
 
 
-/** A compiled database query.
-    Instances are created by calling \ref C4Database::newQuery. */
+/** A compiled database query. */
 struct C4Query final : public fleece::RefCounted,
                        public fleece::InstanceCountedIn<C4Query>,
                        C4Base
 {
 public:
+    /// Creates a new query on a database.
+    static Retained<C4Query> newQuery(C4Database*,
+                                      C4QueryLanguage,
+                                      slice queryExpression,
+                                      int* C4NULLABLE outErrorPos);
+
+    /// Creates a new query on the collection's database.
+    /// If the query does not refer to a collection by name (e.g. "FROM airlines"),
+    /// it will use the given collection instead of the default one.
+    static Retained<C4Query> newQuery(C4Collection*,
+                                      C4QueryLanguage,
+                                      slice queryExpression,
+                                      int* C4NULLABLE outErrorPos);
+
     unsigned columnCount() const noexcept;
     slice columnTitle(unsigned col) const;
     alloc_slice explain() const;
@@ -102,10 +115,9 @@ public:
     std::unique_ptr<C4QueryObserver> observe(ObserverCallback);
 
 protected:
-    friend struct C4Database;
     friend struct litecore::C4QueryObserverImpl;
 
-    C4Query(const C4Database *db, C4QueryLanguage language, slice queryExpression);
+    C4Query(C4Collection*, C4QueryLanguage language, slice queryExpression);
     ~C4Query();
     void enableObserver(litecore::C4QueryObserverImpl *obs, bool enable);
 
@@ -128,7 +140,8 @@ private:
 
 
 /** A registration for callbacks whenever a query's result set changes.
-    The registration lasts until this object is destructed. */
+    The registration lasts until this object is destructed.
+    Created by calling \ref C4Query::observe. */
 struct C4QueryObserver : public fleece::InstanceCounted, C4Base {
 public:
     virtual ~C4QueryObserver() = default;

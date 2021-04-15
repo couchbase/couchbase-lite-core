@@ -35,9 +35,6 @@ public:
     void mustFail(string json);
 
 protected:
-    virtual std::string defaultTableName() const override {
-        return "kv_default";
-    }
     virtual string collectionTableName(const string &collection) const override {
         CHECK(!hasPrefix(collection, "kv_"));   // make sure I didn't get passed a table name
         if (collection == "_default")

@@ -24,8 +24,11 @@
 using namespace std;
 
 
+static constexpr const char* kDefaultTableName = "kv_default";
+
+
 string QueryParserTest::parse(FLValue val) {
-    QueryParser qp(*this);
+    QueryParser qp(*this, kDefaultTableName);
     qp.parse((const fleece::impl::Value*)val);
     usedTableNames = qp.collectionTablesUsed();
     return qp.SQL();
@@ -37,14 +40,14 @@ string QueryParserTest::parse(string json) {
 }
 
 string QueryParserTest::parseWhere(string json) {
-    QueryParser qp(*this);
+    QueryParser qp(*this, kDefaultTableName);
     alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
     qp.parseJustExpression(fleece::impl::Value::fromTrustedData(fleece));
     return qp.SQL();
 }
 
 void QueryParserTest::mustFail(string json) {
-    QueryParser qp(*this);
+    QueryParser qp(*this, kDefaultTableName);
     alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
     ExpectException(error::LiteCore, error::InvalidQuery, [&]{
         qp.parseJustExpression(fleece::impl::Value::fromTrustedData(fleece));

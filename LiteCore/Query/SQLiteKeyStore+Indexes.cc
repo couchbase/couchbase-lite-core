@@ -86,7 +86,7 @@ namespace litecore {
                                      Array::iterator &expressions)
     {
         Assert(spec.type != IndexSpec::kFullText);
-        QueryParser qp(db());
+        QueryParser qp(db(), sourceTableName);
         qp.writeCreateIndex(spec.name,
                             sourceTableName,
                             expressions,
