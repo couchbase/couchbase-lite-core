@@ -2287,11 +2287,6 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
                                   [](const string& a, const string& b) {
         return a + ", " + b;
     });
-// above failed on Windows
-//    string queryStr = string("select ")+whats[0];
-//    for (unsigned i = 1; i < whatCount; ++i) {
-//        queryStr = queryStr + ", " + whats[i];
-//    }
     
     Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
     REQUIRE(query->columnCount() == whatCount);
