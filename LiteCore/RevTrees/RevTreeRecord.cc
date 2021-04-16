@@ -35,7 +35,6 @@ namespace litecore {
     RevTreeRecord::RevTreeRecord(KeyStore& store, slice docID, ContentOption content)
     :_store(store), _rec(docID)
     {
-        read(content);
         _store.read(_rec, content);
         decode();
     }
