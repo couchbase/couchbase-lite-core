@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['base_5fpath',['base_path',['../struct_c4_log_file_options.html#af77026bcd572b8b0de374077dc597999',1,'C4LogFileOptions']]],
+  ['base_5fpath',['base_path',['../struct_c4_log_file_options.html#a549c193a38a33ba04e09bb502280be97',1,'C4LogFileOptions']]],
   ['body',['body',['../struct_c4_raw_document.html#a96e469a6ba0a216369041b840384ee0d',1,'C4RawDocument::body()'],['../struct_c4_doc_put_request.html#acb5327a03c23c53f09a7679e250f8e8b',1,'C4DocPutRequest::body()']]],
   ['bodysize',['bodySize',['../struct_c4_document_info.html#a78f698ad44aec5b764bba97b2cbb23f2',1,'C4DocumentInfo']]],
   ['buf',['buf',['../struct_f_l_slice.html#a6a1891b6d6c6ee0ae348c6419f90d797',1,'FLSlice::buf()'],['../struct_f_l_slice_result.html#a25ceb6212b3de8d0e0e012817c810ed2',1,'FLSliceResult::buf()']]],

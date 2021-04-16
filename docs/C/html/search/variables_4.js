@@ -4,7 +4,7 @@ var searchData=
   ['deltacb',['deltaCB',['../struct_c4_doc_put_request.html#a5f4075da733c786ccf86b46234476fee',1,'C4DocPutRequest']]],
   ['deltacbcontext',['deltaCBContext',['../struct_c4_doc_put_request.html#a528f2531003e4ad4eea89633904f5478',1,'C4DocPutRequest']]],
   ['deltasourcerevid',['deltaSourceRevID',['../struct_c4_doc_put_request.html#ae266f572224cafbe0a05d2cfe2793ca8',1,'C4DocPutRequest']]],
-  ['destructor',['destructor',['../struct_c4_extra_info.html#af12165845b08b23bb7ed347d39ccd7cc',1,'C4ExtraInfo']]],
+  ['destructor',['destructor',['../struct_c4_extra_info.html#aa89b4c18fea77bd943e86cb04e7413f7',1,'C4ExtraInfo']]],
   ['directory',['directory',['../struct_c4_listener_config.html#a58ed77302d3ef24f81170ef7aab8c002',1,'C4ListenerConfig']]],
   ['disablestemming',['disableStemming',['../struct_c4_index_options.html#ac3bcc8bd4d77a674ab19d88eadb12561',1,'C4IndexOptions']]],
   ['dispose',['dispose',['../struct_c4_socket_factory.html#ac0ceb1788a8526b5c6ba41cfe25f9651',1,'C4SocketFactory']]],

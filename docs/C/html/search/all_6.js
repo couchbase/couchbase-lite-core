@@ -71,7 +71,7 @@ var searchData=
   ['fleece_2bcorefoundation_2eh',['Fleece+CoreFoundation.h',['../_fleece_09_core_foundation_8h.html',1,'']]],
   ['fleece_2eh',['Fleece.h',['../_fleece_8h.html',1,'']]],
   ['fleece_5fbase_5fh',['FLEECE_BASE_H',['../_base_8h.html#ab8eb9019a39e72fdc4053a898a93b92f',1,'Base.h']]],
-  ['fleecedomain',['FleeceDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0a8b416e51b735e834728f74539e4ee017',1,'c4Base.h']]],
+  ['fleecedomain',['FleeceDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0a8b416e51b735e834728f74539e4ee017',1,'c4Error.h']]],
   ['flencodeapplyingjsondelta',['FLEncodeApplyingJSONDelta',['../group__delta.html#gab45e7002654e637b271f677f004610d1',1,'Fleece.h']]],
   ['flencodejsondelta',['FLEncodeJSONDelta',['../group__delta.html#ga399423832eaff940e7384b4806bb6728',1,'Fleece.h']]],
   ['flencoder',['FLEncoder',['../group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad',1,'FLEncoder():&#160;Fleece.h'],['../group___f_l_encoder.html',1,'(Global Namespace)']]],
