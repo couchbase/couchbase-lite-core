@@ -536,7 +536,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
 }
 
 
-#pragma mark Targeted N1QL tests
+#pragma mark Targeted N1QL-function tests
 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
@@ -1639,7 +1639,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {      
     }
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query][N1QL]") {
 	{
         ExclusiveTransaction t(store->dataFile());
         string docID = "rec-00";
@@ -1998,7 +1998,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query][N1QL]") {
     addNumberedDocs();
     Retained<Query> query{ store->compileQuery("SELECT num, num*num WHERE num >= 30 and num <= 40 ORDER BY num"_sl,
                                                QueryLanguage::kN1QL) };
@@ -2075,7 +2075,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
     }
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query][N1QL]") {
     ExclusiveTransaction t(store->dataFile());
     writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         enc.writeKey("customerId");
@@ -2109,7 +2109,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
     REQUIRE(!e->next());
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query][N1QL]") {
     ExclusiveTransaction t(store->dataFile());
     writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         enc.writeKey("customerId");
@@ -2143,7 +2143,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
     CHECK(agg->get(1)->asString() == "Scott"_sl);
 }
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string docID = "doc1";
@@ -2174,7 +2174,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
     });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
     
-    query = store->compileQuery("SELECT meta(db) from db"_sl, QueryLanguage::kN1QL);
+    query = store->compileQuery("SELECT meta(" + collectionName + ") from " + collectionName,
+                                QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -2194,7 +2195,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "doc2"_sl);
     
-    query = store->compileQuery("SELECT meta(db).id from db"_sl, QueryLanguage::kN1QL);
+    query = store->compileQuery("SELECT meta(" + collectionName + ").id from " + collectionName,
+                                QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());

@@ -28,14 +28,23 @@ class QueryTest : public DataFileTestFixture {
 public:
     static const int numberOfOptions = 2;
 
+    string collectionName;
+
 protected:
 
     QueryTest() :QueryTest(0) { }
 
     QueryTest(int option) {
         logSection(option ? "secondary collection" : "default collection");
-        if (option != 0)
-            store = &db->getKeyStore("coll_secondary");
+        switch (option) {
+            case 0:
+                collectionName = "_default";
+                break;
+            case 1:
+                collectionName = "secondary";
+                store = &db->getKeyStore("coll_secondary");
+                break;
+        }
     }
 
     void logSection(const string &name) {
