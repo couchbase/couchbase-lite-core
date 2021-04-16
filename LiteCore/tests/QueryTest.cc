@@ -2300,19 +2300,4 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     for (unsigned i = 0; i < whatCount; ++i) {
         REQUIRE(verifiers[i](e->columns()[i], missingColumns & (1ull << i)));
     }
-
-    queryStr = "SELECT *";
-    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
-    REQUIRE(query->columnCount() == 1);
-    e = query->createEnumerator();
-    REQUIRE(e->next());
-    REQUIRE(query->columnTitles()[0] == "_doc");
-
-    queryStr = "SELECT *, unitPrice FROM product";
-    query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
-    REQUIRE(query->columnCount() == 2);
-    e = query->createEnumerator();
-    REQUIRE(e->next());
-    REQUIRE(query->columnTitles()[0] == "product");
-    REQUIRE(query->columnTitles()[1] == "unitPrice");
 }

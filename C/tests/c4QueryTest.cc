@@ -343,7 +343,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete indexed doc", "[Query][C]") {
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Column titles", "[Query][C]") {
     // Properties:
     compileSelect(json5("['SELECT', {'WHAT': [['.'], ['.name'], '.gender', ['.', 'address', 'zip']]}]"));
-    checkColumnTitles({"*", "name", "gender", "zip"});
+    checkColumnTitles({"_doc", "name", "gender", "zip"});
     // Duplicates:
     compileSelect(json5("['SELECT', {'WHAT': ['.name', '.name', '.name']}]"));
     checkColumnTitles({"name", "name #2", "name #3"});
