@@ -2229,13 +2229,13 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     
     // Bonus Missing is due to that SqLite3 produces NULL which we interpret it as MISSING.
     constexpr const char* whats[] = {
-        "acos(3)",              // -> bogus MISSING.
+        "acos(3)",              // -> NULL.
         "acos(\"abc\")",        // -> NULL
         "2/0",                  // -> bogus MISSING
         "lower([1,2])",         // -> NULL
 /*4*/   "length(missingValue)", // -> MISSING
         "is_array(null)",       // -> NULL
-        "atan(asin(1.1))",      // -> bogus MISSING
+        "atan(asin(1.1))",      // -> NULL
         "round(12.5)",          // -> 13
         "8/10",                 // -> 0.8
 /*9*/   "unitPrice/10",         // -> 0.8 & columnTitle == "$10"
@@ -2246,7 +2246,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
 
     std::function<bool(const Value*, bool)> verifiers[] = {
         [](const Value* v, bool missing) {
-            return missing && v->type() == kNull;
+            return !missing && v->type() == kNull;
         },
         [](const Value* v, bool missing) {
             return !missing && v->type() == kNull;
@@ -2264,7 +2264,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
             return !missing && v->type() == kNull;
         },
         [](const Value* v, bool missing) {
-            return missing && v->type() == kNull;
+            return !missing && v->type() == kNull;
         },
         [](const Value* v, bool missing) {
             return !missing && v->type() == kNumber && v->asDouble() == 13;

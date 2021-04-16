@@ -915,10 +915,13 @@ namespace litecore {
 
         sqlite3_value *arg = argv[0];
         if (_usuallyTrue(isNumericNoError(arg))) {
-            sqlite3_result_double(ctx, fn(sqlite3_value_double(arg)));
-        } else {
-            setResultFleeceNull(ctx);
+            double d = fn(sqlite3_value_double(arg));
+            if (std::isfinite(d)) {
+                sqlite3_result_double(ctx, d);
+                return;
+            }
         }
+        setResultFleeceNull(ctx);
     }
 
     #define DefineUnaryMathFn(NAME, C_FN) \
