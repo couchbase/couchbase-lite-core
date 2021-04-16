@@ -22,6 +22,7 @@
 #include <cfloat>
 #include <cinttypes>
 #include <chrono>
+#include <numeric>
 #include "date/date.h"
 #include "ParseDate.hh"
 
@@ -2208,4 +2209,95 @@ TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
     CHECK(e->columns()[0]->asString() == "doc1"_sl);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "doc2"_sl); 
+}
+
+TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        string docID = "doc1";
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("unitPrice");
+            enc.writeInt(8);
+            enc.writeKey("orderlines");
+            enc.beginArray();
+            enc.writeInt(1);
+            enc.writeInt(2);
+            enc.endArray();
+        });
+        t.commit();
+    }
+    
+    // Bonus Missing is due to that SqLite3 produces NULL which we interpret it as MISSING.
+    constexpr const char* whats[] = {
+        "acos(3)",              // -> NULL.
+        "acos(\"abc\")",        // -> NULL
+        "2/0",                  // -> bogus MISSING
+        "lower([1,2])",         // -> NULL
+/*4*/   "length(missingValue)", // -> MISSING
+        "is_array(null)",       // -> NULL
+        "atan(asin(1.1))",      // -> NULL
+        "round(12.5)",          // -> 13
+        "8/10",                 // -> 0.8
+/*9*/   "unitPrice/10",         // -> 0.8 & columnTitle == "$10"
+        "orderlines",           // -> type() == kArray & columnTitle == "orderlines"
+        "orderlines[0]"         // -> 1 & columnTitle == "$11"
+    };
+    constexpr unsigned whatCount = sizeof(whats) / sizeof(whats[0]);
+
+    std::function<bool(const Value*, bool)> verifiers[] = {
+        [](const Value* v, bool missing) {
+            return !missing && v->type() == kNull;
+        },
+        [](const Value* v, bool missing) {
+            return !missing && v->type() == kNull;
+        },
+        [](const Value* v, bool missing) {
+            return missing && v->type() == kNull;
+        },
+        [](const Value* v, bool missing) {
+            return !missing && v->type() == kNull;
+        },
+/*4*/   [](const Value* v, bool missing) {
+            return missing && v->type() == kNull;
+        },
+        [](const Value* v, bool missing) {
+            return !missing && v->type() == kNull;
+        },
+        [](const Value* v, bool missing) {
+            return !missing && v->type() == kNull;
+        },
+        [](const Value* v, bool missing) {
+            return !missing && v->type() == kNumber && v->asDouble() == 13;
+        },
+        [](const Value* v, bool missing) {
+            return !missing && v->type() == kNumber && v->asDouble() == 0.8;
+        },
+/*9*/   [](const Value* v, bool missing) {
+            return !missing && v->type() == kNumber && v->asDouble() == 0.8;
+        },
+        [](const Value* v, bool missing) {
+            return !missing && v->type() == kArray;
+        },
+        [](const Value* v, bool missing) {
+            return !missing && v->type() == kNumber && v->asDouble() == 1;
+        }
+    };
+    static_assert(whatCount == sizeof(verifiers) / sizeof(verifiers[0]));
+    string queryStr = "select ";
+    queryStr += whats[0];
+    for (unsigned i = 1; i < whatCount; ++i) {
+        (queryStr += ", ") += whats[i];
+    }
+
+    Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
+    REQUIRE(query->columnCount() == whatCount);
+    Retained<QueryEnumerator> e = query->createEnumerator();
+    REQUIRE(query->columnTitles()[9] == "$10");
+    REQUIRE(query->columnTitles()[10] == "orderlines");
+    REQUIRE(query->columnTitles()[11] == "$11");
+    REQUIRE(e->next());
+    uint64_t missingColumns = e->missingColumns();
+    for (unsigned i = 0; i < whatCount; ++i) {
+        REQUIRE(verifiers[i](e->columns()[i], missingColumns & (1ull << i)));
+    }
 }
