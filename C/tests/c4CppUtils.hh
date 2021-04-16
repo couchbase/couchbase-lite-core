@@ -25,6 +25,7 @@
 #include "fleece/slice.hh"
 #include "c4Database.h"
 #include <utility>
+#include "betterassert.hh"
 
 /** These are utilities to make the LiteCore C API less awkward to use in C++.
     Nowadays, consider using the LiteCore C++ API instead. */

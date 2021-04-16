@@ -132,7 +132,7 @@ namespace litecore {
         virtual void externalTransactionCommitted(const SequenceTracker&) override;
 
     private:
-        friend class C4Database;
+        friend struct C4Database;
 
         DatabaseImpl(const FilePath &dir, C4DatabaseConfig config);
         virtual ~DatabaseImpl();

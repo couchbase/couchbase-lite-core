@@ -87,7 +87,7 @@ public:
 
     private:
         friend struct C4Query;
-        friend struct litecore::C4QueryObserverImpl;
+        friend class litecore::C4QueryObserverImpl;
         explicit Enumerator(C4Query*, const C4QueryOptions* C4NULLABLE =nullptr,
                             slice encodedParameters =fleece::nullslice);
         explicit Enumerator(Retained<litecore::QueryEnumerator> e);
@@ -115,7 +115,7 @@ public:
     std::unique_ptr<C4QueryObserver> observe(ObserverCallback);
 
 protected:
-    friend struct litecore::C4QueryObserverImpl;
+    friend class litecore::C4QueryObserverImpl;
 
     C4Query(C4Collection*, C4QueryLanguage language, slice queryExpression);
     ~C4Query();
