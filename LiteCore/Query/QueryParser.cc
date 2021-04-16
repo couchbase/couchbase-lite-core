@@ -745,7 +745,7 @@ namespace litecore {
 
     static string columnTitleFromProperty(const Path &property, bool useAlias) {
         if (property.empty())
-            return "*"; // for the property ".", i.e. the entire doc
+            return "*"; // for the property ".", i.e. the entire doc. It will be translated to unique db alias.
         string first(property[0].keyStr());
         if (first[0] == '_') {
             return first.substr(1);         // meta property
@@ -795,8 +795,11 @@ namespace litecore {
                 } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
                     title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
                 }
-                if (title.empty())
+                if (title.empty()) {
                     title = format("$%u", ++anonCount); // default for non-properties
+                } else if (title == "*") {
+                    title = _dbAlias;
+                }
             }
 
             // Make the title unique:
