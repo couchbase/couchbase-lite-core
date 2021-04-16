@@ -28,7 +28,8 @@ using namespace std;
 
 namespace litecore {
 
-    struct C4CollectionObserverImpl : public C4CollectionObserver {
+    class C4CollectionObserverImpl : public C4CollectionObserver {
+    public:
         C4CollectionObserverImpl(C4Collection *collection,
                                  C4SequenceNumber since,
                                  Callback callback)
@@ -94,7 +95,8 @@ C4CollectionObserver::create(C4Database *db, Callback callback) {
 
 namespace litecore {
 
-    struct C4DocumentObserverImpl : public C4DocumentObserver {
+    class C4DocumentObserverImpl : public C4DocumentObserver {
+    public:
         C4DocumentObserverImpl(C4Collection *collection,
                                slice docID,
                                Callback callback)
@@ -117,7 +119,8 @@ namespace litecore {
                 _notifier = nullopt;
             });
         }
-
+        
+    private:
         CollectionImpl* _collection;
         Callback _callback;
         optional<DocChangeNotifier> _notifier;
