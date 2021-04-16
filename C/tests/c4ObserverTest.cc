@@ -211,7 +211,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]
     dbObserver = c4dbobs_create(db, dbObserverCallback, this);
     CHECK(dbCallbackCalls == 0);
 
-    REQUIRE(c4db_purgeExpiredDocs(db, nullptr));
+    c4db_purgeExpiredDocs(db, nullptr);
 
     CHECK(dbCallbackCalls == 1);
     checkChanges({"A"}, {""});
