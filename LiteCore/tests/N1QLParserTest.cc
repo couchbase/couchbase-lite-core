@@ -27,25 +27,27 @@ using namespace std;
 using namespace litecore;
 using namespace fleece;
 
-class N1QLParserTest : QueryParserTest {
+class N1QLParserTest : public QueryParserTest {
 protected:
 
+    // Translates N1QL to JSON, with strings single-quoted to avoid tons of escapes in the tests.
+    // On syntax error, returns "".
     string translate(const char *n1ql) {
-        cerr << n1ql << "\n-->  " ;
+        UNSCOPED_INFO("N1QL: " << n1ql);
         unsigned errorPos;
 
         FLValue dict = (FLValue) n1ql::parse(n1ql, &errorPos);
         if (!dict) {
-            cerr << string(max(errorPos,5u)-5, ' ') << "^--syntax error\n";
+            UNSCOPED_INFO(string(errorPos + 6, ' ') << "^--syntax error");
             return "";
         }
 
         string jsonResult = string(alloc_slice(FLValue_ToJSONX((FLValue)dict, false, true)));
-        replace(jsonResult, '"', '\'');     // save the tests from having to escape tons of quotes
-        cerr << jsonResult << "\n";
+        replace(jsonResult, '"', '\'');
+        UNSCOPED_INFO(jsonResult);
 
         string sql = parse(dict);
-        cerr << "-->  " << sql << "\n";
+        UNSCOPED_INFO("-->  " << sql);
         
         FLValue_Release(dict);
         return jsonResult;
@@ -108,11 +110,11 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("select meta().id") == "{'WHAT':[['_.',['meta'],'.id']]}");
     CHECK(translate("select meta().sequence") == "{'WHAT':[['_.',['meta'],'.sequence']]}");
     CHECK(translate("select meta().deleted") == "{'WHAT':[['_.',['meta'],'.deleted']]}");
-    CHECK(translate("select meta(db).id from db") == "{'FROM':[{'AS':'db'}],'WHAT':[['_.',['meta','db'],'.id']]}");
+    CHECK(translate("select meta(_default).id from _default") == "{'FROM':[{'COLLECTION':'_default'}],'WHAT':[['_.',['meta','_default'],'.id']]}");
     {
         ExpectingExceptions x;
         CHECK_THROWS_WITH(translate("select meta().bogus"), "'bogus' is not a valid Meta key");
-        CHECK_THROWS_WITH(translate("select meta(db).bogus from db"), "'bogus' is not a valid Meta key");
+        CHECK_THROWS_WITH(translate("select meta(_default).bogus from _default"), "'bogus' is not a valid Meta key");
     }
     CHECK(translate("select foo[17]") == "{'WHAT':[['.foo[17]']]}");
     CHECK(translate("select foo.bar[-1].baz") == "{'WHAT':[['.foo.bar[-1].baz']]}");
@@ -123,18 +125,20 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("select $var") == "{'WHAT':[['$var']]}");
 
     // "custId" is implicitly scoped by the unique alias, "orders".
-    CHECK(translate("SELECT DISTINCT custId FROM orders where test_id = 'agg_func' ORDER BY custId") ==
-          "{'DISTINCT':true,'FROM':[{'AS':'orders'}],'ORDER_BY':[['.custId']],"
+    CHECK(translate("SELECT DISTINCT custId FROM _default AS orders where test_id = 'agg_func' ORDER BY custId") ==
+          "{'DISTINCT':true,'FROM':[{'AS':'orders','COLLECTION':'_default'}],'ORDER_BY':[['.custId']],"
           "'WHAT':[['.custId']],'WHERE':['=',['.test_id'],'agg_func']}");
     {
         ExpectingExceptions x;
-        CHECK_THROWS_WITH(translate("SELECT custId, other.custId FROM orders JOIN orders other "
+        CHECK_THROWS_WITH(translate("SELECT custId, other.custId FROM _default AS orders JOIN _default as other "
                                     "ON orders.test_id = other.test_id ORDER BY custId"),
                           "property 'custId.' does not begin with a declared 'AS' alias");
     }
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
+    tableNames.insert("stuff");
+
     CHECK(translate("SELECT -x") == "{'WHAT':[['-',['.x']]]}");
     CHECK(translate("SELECT NOT x") == "{'WHAT':[['NOT',['.x']]]}");
 
@@ -147,7 +151,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
     CHECK(translate("SELECT 17 != 'hi'") == "{'WHAT':[['!=',17,'hi']]}");
     CHECK(translate("SELECT 17 <>'hi'") == "{'WHAT':[['!=',17,'hi']]}");
 
-    CHECK(translate("SELECT 3+4) from x") == "");
+    CHECK(translate("SELECT 3+4) from stuff") == "");
 
     CHECK(translate("SELECT 17 IN (1, 2, 3)") == "{'WHAT':[['IN',17,['[]',1,2,3]]]}");
     CHECK(translate("SELECT 17 NOT IN (1, 2, 3)") == "{'WHAT':[['NOT IN',17,['[]',1,2,3]]]}");
@@ -274,33 +278,51 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
 // QueryParser does not support "IN SELECT" yet
 //    CHECK(translate("SELECT 17 NOT IN (SELECT value WHERE type='prime')") == "{'WHAT':[['NOT IN',17,['SELECT',{'WHAT':[['.value']],'WHERE':['=',['.type'],'prime']}]]]}");
 
+    tableNames.insert("kv_coll_product");
+
     CHECK(translate("SELECT productId, color, categories WHERE categories[0] LIKE 'Bed%' AND test_id='where_func' ORDER BY productId LIMIT 3") == "{'LIMIT':3,'ORDER_BY':[['.productId']],'WHAT':[['.productId'],['.color'],['.categories']],'WHERE':['AND',['LIKE',['.categories[0]'],'Bed%'],['=',['.test_id'],'where_func']]}");
     CHECK(translate("SELECT FLOOR(unitPrice+0.5) as sc FROM product where test_id = \"numberfunc\" ORDER BY sc limit 5") ==
-          "{'FROM':[{'AS':'product'}],'LIMIT':5,'ORDER_BY':[['.sc']],"
+          "{'FROM':[{'COLLECTION':'product'}],'LIMIT':5,'ORDER_BY':[['.sc']],"
           "'WHAT':[['AS',['FLOOR()',['+',['.unitPrice'],0.5]],'sc']],'WHERE':['=',['.test_id'],'numberfunc']}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
-    CHECK(translate("SELECT 0 FROM db") == "{'FROM':[{'AS':'db'}],'WHAT':[0]}");
-    CHECK(translate("SELECT * FROM db") == "{'FROM':[{'AS':'db'}],'WHAT':[['.']]}");
-    CHECK(translate("SELECT file.name FROM db AS file") == "{'FROM':[{'AS':'file'}],'WHAT':[['.file.name']]}");
-    CHECK(translate("SELECT file.name FROM db file") ==                    // omit 'AS'
-          "{'FROM':[{'AS':'file'}],'WHAT':[['.file.name']]}");
-    CHECK(translate("SELECT db.name FROM db JOIN db AS other ON other.key = db.key")
-          == "{'FROM':[{'AS':'db'},{'AS':'other','JOIN':'INNER','ON':['=',['.other.key'],['.db.key']]}],'WHAT':[['.db.name']]}");
-    CHECK(translate("SELECT db.name FROM db JOIN db other ON other.key = db.key") // omit 'AS'
-          == "{'FROM':[{'AS':'db'},{'AS':'other','JOIN':'INNER','ON':['=',['.other.key'],['.db.key']]}],'WHAT':[['.db.name']]}");
-    CHECK(translate("SELECT db.name FROM db JOIN db AS other ON other.key = db.key CROSS JOIN x")
-          == "{'FROM':[{'AS':'db'},{'AS':'other','JOIN':'INNER','ON':['=',['.other.key'],['.db.key']]},{'AS':'x','JOIN':'CROSS'}],'WHAT':[['.db.name']]}");
+    tableNames.insert("kv_coll_db");
+    tableNames.insert("kv_coll_other");
+    tableNames.insert("kv_coll_x");
+
+    CHECK(translate("SELECT 0 FROM db") == "{'FROM':[{'COLLECTION':'db'}],'WHAT':[0]}");
+    CHECK(translate("SELECT * FROM db") == "{'FROM':[{'COLLECTION':'db'}],'WHAT':[['.']]}");
+    CHECK(translate("SELECT file.name FROM db AS file") == "{'FROM':[{'AS':'file','COLLECTION':'db'}],'WHAT':[['.file.name']]}");
+    CHECK(translate("SELECT file.name FROM db file")                    // omit 'AS'
+          == "{'FROM':[{'AS':'file','COLLECTION':'db'}],"
+             "'WHAT':[['.file.name']]}");
+    CHECK(translate("SELECT db.name FROM db JOIN other ON other.key = db.key")
+          == "{'FROM':[{'COLLECTION':'db'},"
+                      "{'COLLECTION':'other','JOIN':'INNER','ON':['=',['.other.key'],['.db.key']]}],"
+              "'WHAT':[['.db.name']]}");
+    CHECK(translate("SELECT db.name FROM db JOIN x other ON other.key = db.key") // omit 'AS'
+          == "{'FROM':[{'COLLECTION':'db'},"
+                      "{'AS':'other','COLLECTION':'x','JOIN':'INNER','ON':['=',['.other.key'],['.db.key']]}],"
+              "'WHAT':[['.db.name']]}");
+    CHECK(translate("SELECT db.name FROM db JOIN other ON other.key = db.key CROSS JOIN x")
+          == "{'FROM':[{'COLLECTION':'db'},"
+                      "{'COLLECTION':'other','JOIN':'INNER','ON':['=',['.other.key'],['.db.key']]},"
+                      "{'COLLECTION':'x','JOIN':'CROSS'}],"
+              "'WHAT':[['.db.name']]}");
     CHECK(translate("SELECT rec, dss, dem FROM db rec LEFT JOIN db dss ON rec.sessionId = meta(dss).id "
                     "LEFT JOIN db dem ON rec.demId = meta(dem).id WHERE meta(rec).id LIKE 'rec:%'")
-          == "{'FROM':[{'AS':'rec'},{'AS':'dss','JOIN':'LEFT','ON':['=',['.rec.sessionId'],"
-             "['_.',['meta','dss'],'.id']]},{'AS':'dem','JOIN':'LEFT','ON':['=',['.rec.demId'],"
-             "['_.',['meta','dem'],'.id']]}],'WHAT':[['.rec'],['.dss'],['.dem']],"
+          == "{'FROM':[{'AS':'rec','COLLECTION':'db'},"
+                      "{'AS':'dss','COLLECTION':'db','JOIN':'LEFT','ON':['=',['.rec.sessionId'],['_.',['meta','dss'],'.id']]},"
+                      "{'AS':'dem','COLLECTION':'db','JOIN':'LEFT','ON':['=',['.rec.demId'],['_.',['meta','dem'],'.id']]}],"
+              "'WHAT':[['.rec'],['.dss'],['.dem']],"
              "'WHERE':['LIKE',['_.',['meta','rec'],'.id'],'rec:%']}");
-    CHECK(translate("SELECT a, b, c FROM db a JOIN db b ON (a.n = b.n) JOIN db c ON (b.m = c.m) WHERE a.type = b.type AND b.type = c.type")
-          == "{'FROM':[{'AS':'a'},{'AS':'b','JOIN':'INNER','ON':['=',['.a.n'],['.b.n']]},{'AS':'c','JOIN':'INNER','ON':['=',['.b.m'],['.c.m']]}],"
-             "'WHAT':[['.a'],['.b'],['.c']],'WHERE':['AND',['=',['.a.type'],['.b.type']],['=',['.b.type'],['.c.type']]]}");
+    CHECK(translate("SELECT a, b, c FROM db a JOIN other b ON (a.n = b.n) JOIN x c ON (b.m = c.m) WHERE a.type = b.type AND b.type = c.type")
+          == "{'FROM':[{'AS':'a','COLLECTION':'db'},"
+                      "{'AS':'b','COLLECTION':'other','JOIN':'INNER','ON':['=',['.a.n'],['.b.n']]},"
+                      "{'AS':'c','COLLECTION':'x','JOIN':'INNER','ON':['=',['.b.m'],['.c.m']]}],"
+             "'WHAT':[['.a'],['.b'],['.c']],"
+            "'WHERE':['AND',['=',['.a.type'],['.b.type']],['=',['.b.type'],['.c.type']]]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL type-checking/conversion functions", "[Query][N1QL][C]") {
