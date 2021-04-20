@@ -161,9 +161,6 @@ Mutable dictionaries</h2></td></tr>
 <tr class="memitem:ga5b788fbe95138da6100314c25199ed12"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga5b788fbe95138da6100314c25199ed12">FLMutableDict_SetChanged</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, bool)</td></tr>
 <tr class="memdesc:ga5b788fbe95138da6100314c25199ed12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets or clears the mutable Dict's "changed" flag.  <a href="#ga5b788fbe95138da6100314c25199ed12">More...</a><br /></td></tr>
 <tr class="separator:ga5b788fbe95138da6100314c25199ed12"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5e4aaaf5d5492bb1c875e08608fceb6a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga5e4aaaf5d5492bb1c875e08608fceb6a">FLMutableDict_Set</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a> FL_NONNULL, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key)</td></tr>
-<tr class="memdesc:ga5e4aaaf5d5492bb1c875e08608fceb6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the Slot storing the key's value, adding a new one if needed (with a null value.) To set the value itself, call one of the FLSlot functions, e.g.  <a href="#ga5e4aaaf5d5492bb1c875e08608fceb6a">More...</a><br /></td></tr>
-<tr class="separator:ga5e4aaaf5d5492bb1c875e08608fceb6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gada60af37e8be8da0931ab482769cb394"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#gada60af37e8be8da0931ab482769cb394">FLMutableDict_Remove</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key)</td></tr>
 <tr class="memdesc:gada60af37e8be8da0931ab482769cb394"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes the value for a key.  <a href="#gada60af37e8be8da0931ab482769cb394">More...</a><br /></td></tr>
 <tr class="separator:gada60af37e8be8da0931ab482769cb394"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -176,6 +173,33 @@ Mutable dictionaries</h2></td></tr>
 <tr class="memitem:gac775987f0baeb47b6dd3fe75ae7aec07"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#gac775987f0baeb47b6dd3fe75ae7aec07">FLMutableDict_GetMutableDict</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key)</td></tr>
 <tr class="memdesc:gac775987f0baeb47b6dd3fe75ae7aec07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function for getting a dict-valued property in mutable form.  <a href="#gac775987f0baeb47b6dd3fe75ae7aec07">More...</a><br /></td></tr>
 <tr class="separator:gac775987f0baeb47b6dd3fe75ae7aec07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga26750f3e625e1dd18378e98c59dc2bc7"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga26750f3e625e1dd18378e98c59dc2bc7">FLMutableDict_SetNull</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key)</td></tr>
+<tr class="memdesc:ga26750f3e625e1dd18378e98c59dc2bc7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a JSON null value into a mutable dictionary.  <a href="#ga26750f3e625e1dd18378e98c59dc2bc7">More...</a><br /></td></tr>
+<tr class="separator:ga26750f3e625e1dd18378e98c59dc2bc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac6b257b551c967c441e07355a6f912db"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#gac6b257b551c967c441e07355a6f912db">FLMutableDict_SetBool</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key, bool)</td></tr>
+<tr class="memdesc:gac6b257b551c967c441e07355a6f912db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a boolean value into a mutable dictionary.  <a href="#gac6b257b551c967c441e07355a6f912db">More...</a><br /></td></tr>
+<tr class="separator:gac6b257b551c967c441e07355a6f912db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8bac1048295621ad799d1355d1392604"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga8bac1048295621ad799d1355d1392604">FLMutableDict_SetInt</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key, int64_t)</td></tr>
+<tr class="memdesc:ga8bac1048295621ad799d1355d1392604"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores an integer into a mutable dictionary.  <a href="#ga8bac1048295621ad799d1355d1392604">More...</a><br /></td></tr>
+<tr class="separator:ga8bac1048295621ad799d1355d1392604"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf99919be76a9b006fcfa3602082e132e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#gaf99919be76a9b006fcfa3602082e132e">FLMutableDict_SetUInt</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key, uint64_t)</td></tr>
+<tr class="memdesc:gaf99919be76a9b006fcfa3602082e132e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores an unsigned integer into a mutable dictionary.  <a href="#gaf99919be76a9b006fcfa3602082e132e">More...</a><br /></td></tr>
+<tr class="separator:gaf99919be76a9b006fcfa3602082e132e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga877b3d54802ff1b3cc2ca3a7556ad754"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga877b3d54802ff1b3cc2ca3a7556ad754">FLMutableDict_SetFloat</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key, float)</td></tr>
+<tr class="memdesc:ga877b3d54802ff1b3cc2ca3a7556ad754"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a 32-bit floating-point number into a mutable dictionary.  <a href="#ga877b3d54802ff1b3cc2ca3a7556ad754">More...</a><br /></td></tr>
+<tr class="separator:ga877b3d54802ff1b3cc2ca3a7556ad754"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga91fbd73468dddc21b9f50019fd3ab63e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga91fbd73468dddc21b9f50019fd3ab63e">FLMutableDict_SetDouble</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key, double)</td></tr>
+<tr class="memdesc:ga91fbd73468dddc21b9f50019fd3ab63e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a 64-bit floating point number into a mutable dictionary.  <a href="#ga91fbd73468dddc21b9f50019fd3ab63e">More...</a><br /></td></tr>
+<tr class="separator:ga91fbd73468dddc21b9f50019fd3ab63e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad042399b3977cf868b7e08868710ea85"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#gad042399b3977cf868b7e08868710ea85">FLMutableDict_SetString</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>)</td></tr>
+<tr class="memdesc:gad042399b3977cf868b7e08868710ea85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a UTF-8-encoded string into a mutable dictionary.  <a href="#gad042399b3977cf868b7e08868710ea85">More...</a><br /></td></tr>
+<tr class="separator:gad042399b3977cf868b7e08868710ea85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5b960784afa6b7a92acdd34f36ea3924"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga5b960784afa6b7a92acdd34f36ea3924">FLMutableDict_SetData</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key, <a class="el" href="struct_f_l_slice.html">FLSlice</a>)</td></tr>
+<tr class="memdesc:ga5b960784afa6b7a92acdd34f36ea3924"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a binary data blob into a mutable dictionary.  <a href="#ga5b960784afa6b7a92acdd34f36ea3924">More...</a><br /></td></tr>
+<tr class="separator:ga5b960784afa6b7a92acdd34f36ea3924"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8d7335dce62a290029548ae88aa90d3b"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_dict.html#ga8d7335dce62a290029548ae88aa90d3b">FLMutableDict_SetValue</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
+<tr class="memdesc:ga8d7335dce62a290029548ae88aa90d3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a Fleece value into a mutable dictionary.  <a href="#ga8d7335dce62a290029548ae88aa90d3b">More...</a><br /></td></tr>
+<tr class="separator:ga8d7335dce62a290029548ae88aa90d3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Function Documentation</h2>
@@ -774,23 +798,32 @@ Mutable dictionaries</h2></td></tr>
 
 </div>
 </div>
-<a id="ga5e4aaaf5d5492bb1c875e08608fceb6a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5e4aaaf5d5492bb1c875e08608fceb6a">&#9670;&nbsp;</a></span>FLMutableDict_Set()</h2>
+<a id="gac6b257b551c967c441e07355a6f912db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac6b257b551c967c441e07355a6f912db">&#9670;&nbsp;</a></span>FLMutableDict_SetBool()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a> FLMutableDict_Set </td>
+          <td class="memname">static void FLMutableDict_SetBool </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
-          <td class="paramname"><em>FL_NONNULL</em>, </td>
+          <td class="paramname"><em>d</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
-          <td class="paramname"><em>key</em>&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -798,10 +831,14 @@ Mutable dictionaries</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Returns the Slot storing the key's value, adding a new one if needed (with a null value.) To set the value itself, call one of the FLSlot functions, e.g. </p>
-<p><a class="el" href="group___slots.html#ga6e2f352363451aa1ca1cbd5102cec63c">FLSlot_SetInt</a>. </p>
+<p>Stores a boolean value into a mutable dictionary. </p>
 
 </div>
 </div>
@@ -832,6 +869,353 @@ Mutable dictionaries</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Sets or clears the mutable Dict's "changed" flag. </p>
+
+</div>
+</div>
+<a id="ga5b960784afa6b7a92acdd34f36ea3924"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5b960784afa6b7a92acdd34f36ea3924">&#9670;&nbsp;</a></span>FLMutableDict_SetData()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void FLMutableDict_SetData </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
+          <td class="paramname"><em>d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Stores a binary data blob into a mutable dictionary. </p>
+
+</div>
+</div>
+<a id="ga91fbd73468dddc21b9f50019fd3ab63e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga91fbd73468dddc21b9f50019fd3ab63e">&#9670;&nbsp;</a></span>FLMutableDict_SetDouble()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void FLMutableDict_SetDouble </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
+          <td class="paramname"><em>d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">double&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Stores a 64-bit floating point number into a mutable dictionary. </p>
+
+</div>
+</div>
+<a id="ga877b3d54802ff1b3cc2ca3a7556ad754"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga877b3d54802ff1b3cc2ca3a7556ad754">&#9670;&nbsp;</a></span>FLMutableDict_SetFloat()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void FLMutableDict_SetFloat </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
+          <td class="paramname"><em>d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Stores a 32-bit floating-point number into a mutable dictionary. </p>
+
+</div>
+</div>
+<a id="ga8bac1048295621ad799d1355d1392604"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8bac1048295621ad799d1355d1392604">&#9670;&nbsp;</a></span>FLMutableDict_SetInt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void FLMutableDict_SetInt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
+          <td class="paramname"><em>d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int64_t&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Stores an integer into a mutable dictionary. </p>
+
+</div>
+</div>
+<a id="ga26750f3e625e1dd18378e98c59dc2bc7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga26750f3e625e1dd18378e98c59dc2bc7">&#9670;&nbsp;</a></span>FLMutableDict_SetNull()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void FLMutableDict_SetNull </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
+          <td class="paramname"><em>d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>key</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Stores a JSON null value into a mutable dictionary. </p>
+
+</div>
+</div>
+<a id="gad042399b3977cf868b7e08868710ea85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad042399b3977cf868b7e08868710ea85">&#9670;&nbsp;</a></span>FLMutableDict_SetString()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void FLMutableDict_SetString </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
+          <td class="paramname"><em>d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Stores a UTF-8-encoded string into a mutable dictionary. </p>
+
+</div>
+</div>
+<a id="gaf99919be76a9b006fcfa3602082e132e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf99919be76a9b006fcfa3602082e132e">&#9670;&nbsp;</a></span>FLMutableDict_SetUInt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void FLMutableDict_SetUInt </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
+          <td class="paramname"><em>d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Stores an unsigned integer into a mutable dictionary. </p>
+<dl class="section note"><dt>Note</dt><dd>: The only time this needs to be called, instead of <a class="el" href="group___f_l_dict.html#ga8bac1048295621ad799d1355d1392604">FLMutableDict_SetInt</a>, is if the value is greater than or equal to 2^63 and won't fit in an <code>int64_t</code>. </dd></dl>
+
+</div>
+</div>
+<a id="ga8d7335dce62a290029548ae88aa90d3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8d7335dce62a290029548ae88aa90d3b">&#9670;&nbsp;</a></span>FLMutableDict_SetValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void FLMutableDict_SetValue </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
+          <td class="paramname"><em>d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Stores a Fleece value into a mutable dictionary. </p>
 
 </div>
 </div>

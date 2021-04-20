@@ -73,7 +73,7 @@ namespace litecore {
 
         //---- ASCII conversions:
         alloc_slice expanded() const;
-        bool expandInto(slice_stream &dst) const noexcept;
+        bool expandInto(slice_ostream &dst) const noexcept;
         std::string str() const;
         explicit operator std::string() const       {return str();}
     };

@@ -17,6 +17,7 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
+#include "slice_stream.hh"
 #include <algorithm>
 #include <unordered_map>
 
@@ -48,17 +49,18 @@ namespace litecore {
 
     void VersionVector::readBinary(slice data) {
         reset();
-        if (data.size < 1 || data.readByte() != 0)
+        slice_istream in(data);
+        if (in.size < 1 || in.readByte() != 0)
             Version::throwBadBinary();
-        while (data.size > 0)
-            _vers.emplace_back(&data);
+        while (in.size > 0)
+            _vers.emplace_back(in);
         validate();
     }
 
 
     alloc_slice VersionVector::asBinary(peerID myID) const {
-        auto result = slice_stream::alloced(1 + _vers.size() * 2 * kMaxVarintLen64,
-                                            [&](slice_stream &out) {
+        auto result = slice_ostream::alloced(1 + _vers.size() * 2 * kMaxVarintLen64,
+                                            [&](slice_ostream &out) {
             if (!out.writeByte(0))           // leading 0 byte distinguishes it from a `revid`
                 return false;
             for (auto &v : _vers)
@@ -76,7 +78,7 @@ namespace litecore {
     }
 
 
-    bool VersionVector::writeASCII(slice_stream &out, peerID myID) const {
+    bool VersionVector::writeASCII(slice_ostream &out, peerID myID) const {
         int n = 0;
         for (auto &v : _vers) {
             if (n++ && !out.writeByte(','))
@@ -91,7 +93,7 @@ namespace litecore {
     alloc_slice VersionVector::asASCII(peerID myID) const {
         if (empty())
             return nullslice;
-        auto result = slice_stream::alloced(maxASCIILen(), [&](slice_stream &out) {
+        auto result = slice_ostream::alloced(maxASCIILen(), [&](slice_ostream &out) {
             return writeASCII(out, myID);
         });
         Assert(result);
@@ -107,9 +109,10 @@ namespace litecore {
 
 
     Version VersionVector::readCurrentVersionFromBinary(slice data) {
-        if (data.size < 1 || data.readByte() != 0)
+        slice_istream in(data);
+        if (data.size < 1 || in.readByte() != 0)
             Version::throwBadBinary();
-        return Version(&data);
+        return Version(in);
     }
 
 

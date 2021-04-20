@@ -207,7 +207,7 @@ namespace litecore {
         void writeResultColumn(const Value*);
         void writeCollation();
         void parseCollatableNode(const Value*);
-        void writeMetaProperty(slice fn, const string &tablePrefix, const char *property);
+        void writeMetaProperty(slice fn, const string &tablePrefix, slice property);
 
         void parseJoin(const Dict*);
 

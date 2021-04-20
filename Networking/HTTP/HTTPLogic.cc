@@ -25,6 +25,7 @@
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
+#include "slice_stream.hh"
 #include <regex>
 #include <sstream>
 
@@ -167,7 +168,8 @@ namespace litecore { namespace net {
         _error = {};
         _authChallenge.reset();
 
-        if (parseStatusLine(responseData) && parseHeaders(responseData, _responseHeaders))
+        slice_istream in(responseData);
+        if (parseStatusLine(in) && parseHeaders(in, _responseHeaders))
             _lastDisposition = handleResponse();
         else
             _lastDisposition = failure(WebSocketDomain, 400, "Received invalid HTTP"_sl);
@@ -214,7 +216,7 @@ namespace litecore { namespace net {
     }
 
 
-    bool HTTPLogic::parseStatusLine(slice &responseData) {
+    bool HTTPLogic::parseStatusLine(slice_istream &responseData) {
         slice version = responseData.readToDelimiter(" "_sl);
         uint64_t status = responseData.readDecimal();
         if (!version.hasPrefix("HTTP/"_sl) || status == 0 || status > INT_MAX)
@@ -223,7 +225,7 @@ namespace litecore { namespace net {
         if (responseData.size == 0 || (responseData[0] != ' ' && responseData[0] != '\r'))
             return false;
         while (responseData.hasPrefix(' '))
-            responseData.moveStart(1);
+            responseData.skip(1);
         slice message = responseData.readToDelimiter("\r\n"_sl);
         if (!message)
             return false;
@@ -233,7 +235,7 @@ namespace litecore { namespace net {
 
 
     // Reads HTTP headers out of `responseData`. Assumes data ends with CRLFCRLF.
-    bool HTTPLogic::parseHeaders(slice &responseData, Headers &headers) {
+    bool HTTPLogic::parseHeaders(slice_istream &responseData, Headers &headers) {
         while (true) {
             slice line = responseData.readToDelimiter("\r\n"_sl);
             if (!line)
@@ -397,10 +399,11 @@ namespace litecore { namespace net {
 
 
     string HTTPLogic::formatHTTP(slice http) {
+        slice_istream in(http);
         stringstream s;
         bool first = true;
         while (true) {
-            slice line = http.readToDelimiter("\r\n"_sl);
+            slice line = in.readToDelimiter("\r\n"_sl);
             if (line.size == 0)
                 break;
             if (!first)

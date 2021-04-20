@@ -32,7 +32,7 @@
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include "FleeceImpl.hh"
-#include "varint.hh"
+#include "slice_stream.hh"
 #include <ctime>
 #include <algorithm>
 
@@ -731,7 +731,7 @@ namespace litecore {
             for (auto rev : tree.allRevisions()) {
                 if (rev->revID.generation() < revGeneration
                             && !(mustHaveBodies && !rev->isBodyAvailable())) {
-                    slice_stream expanded(expandedBuf, sizeof(expandedBuf));
+                    slice_ostream expanded(expandedBuf, sizeof(expandedBuf));
                     if (rev->revID.expandInto(expanded)) {
                         result << delim << '"' << expanded.output() << '"';
                         if (delim.count() >= maxAncestors)

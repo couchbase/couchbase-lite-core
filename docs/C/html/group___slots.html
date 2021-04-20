@@ -69,11 +69,20 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>An <code>FLSlot</code> is a temporary reference to an element of a mutable Array/Dict.  
+<p>An <code>FLSlot</code> is a temporary reference to an element of a mutable Array/Dict; its only purpose is to let you store a value into it, using the <code>FLSlot_...</code> functions.  
 <a href="#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:gaa8842ce316630a9c9995d1c80cf5a291"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_base_8h.html#afefbce768b9d0df9c9ebc30dd6d13fed">MUST_USE_RESULT</a> <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___slots.html#gaa8842ce316630a9c9995d1c80cf5a291">FLMutableArray_Set</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>, uint32_t index)</td></tr>
+<tr class="memdesc:gaa8842ce316630a9c9995d1c80cf5a291"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an FLSlot that refers to the given index of the given array.  <a href="#gaa8842ce316630a9c9995d1c80cf5a291">More...</a><br /></td></tr>
+<tr class="separator:gaa8842ce316630a9c9995d1c80cf5a291"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac5f8da15c481f9dd12b459b38f1a8d7c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_base_8h.html#afefbce768b9d0df9c9ebc30dd6d13fed">MUST_USE_RESULT</a> <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___slots.html#gac5f8da15c481f9dd12b459b38f1a8d7c">FLMutableArray_Append</a> (<a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>)</td></tr>
+<tr class="memdesc:gac5f8da15c481f9dd12b459b38f1a8d7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Appends a null value to the array and returns an <code>FLSLot</code> that refers to that position.  <a href="#gac5f8da15c481f9dd12b459b38f1a8d7c">More...</a><br /></td></tr>
+<tr class="separator:gac5f8da15c481f9dd12b459b38f1a8d7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab00b3434d4d69afa08a001fc554fc44d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_base_8h.html#afefbce768b9d0df9c9ebc30dd6d13fed">MUST_USE_RESULT</a> <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___slots.html#gab00b3434d4d69afa08a001fc554fc44d">FLMutableDict_Set</a> (<a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a> FL_NONNULL, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> key)</td></tr>
+<tr class="memdesc:gab00b3434d4d69afa08a001fc554fc44d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an FLSlot that refers to the given key/value pair of the given dictionary.  <a href="#gab00b3434d4d69afa08a001fc554fc44d">More...</a><br /></td></tr>
+<tr class="separator:gab00b3434d4d69afa08a001fc554fc44d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga34d16d2ea0fe09b8fde6e005968dfa80"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___slots.html#ga34d16d2ea0fe09b8fde6e005968dfa80">FLSlot_SetNull</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>)</td></tr>
 <tr class="memdesc:ga34d16d2ea0fe09b8fde6e005968dfa80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a JSON null into a slot.  <a href="#ga34d16d2ea0fe09b8fde6e005968dfa80">More...</a><br /></td></tr>
 <tr class="separator:ga34d16d2ea0fe09b8fde6e005968dfa80"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -84,16 +93,16 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga6e2f352363451aa1ca1cbd5102cec63c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores an integer into a slot.  <a href="#ga6e2f352363451aa1ca1cbd5102cec63c">More...</a><br /></td></tr>
 <tr class="separator:ga6e2f352363451aa1ca1cbd5102cec63c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga87bf66ca2647a6df2cdb4fa5db5f3c5a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___slots.html#ga87bf66ca2647a6df2cdb4fa5db5f3c5a">FLSlot_SetUInt</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, uint64_t)</td></tr>
-<tr class="memdesc:ga87bf66ca2647a6df2cdb4fa5db5f3c5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores an unsigned integer into a slot.  <a href="#ga87bf66ca2647a6df2cdb4fa5db5f3c5a">More...</a><br /></td></tr>
+<tr class="memdesc:ga87bf66ca2647a6df2cdb4fa5db5f3c5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores an unsigned int into a slot.  <a href="#ga87bf66ca2647a6df2cdb4fa5db5f3c5a">More...</a><br /></td></tr>
 <tr class="separator:ga87bf66ca2647a6df2cdb4fa5db5f3c5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad4a46c9707d67790835eb69941363cf3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___slots.html#gad4a46c9707d67790835eb69941363cf3">FLSlot_SetFloat</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, float)</td></tr>
-<tr class="memdesc:gad4a46c9707d67790835eb69941363cf3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a float into a slot.  <a href="#gad4a46c9707d67790835eb69941363cf3">More...</a><br /></td></tr>
+<tr class="memdesc:gad4a46c9707d67790835eb69941363cf3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a <code>float</code> into a slot.  <a href="#gad4a46c9707d67790835eb69941363cf3">More...</a><br /></td></tr>
 <tr class="separator:gad4a46c9707d67790835eb69941363cf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae500e245c5dfd0ae1a0ad0e2f4607ab1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___slots.html#gae500e245c5dfd0ae1a0ad0e2f4607ab1">FLSlot_SetDouble</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, double)</td></tr>
-<tr class="memdesc:gae500e245c5dfd0ae1a0ad0e2f4607ab1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a double into a slot.  <a href="#gae500e245c5dfd0ae1a0ad0e2f4607ab1">More...</a><br /></td></tr>
+<tr class="memdesc:gae500e245c5dfd0ae1a0ad0e2f4607ab1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a <code>double</code> into a slot.  <a href="#gae500e245c5dfd0ae1a0ad0e2f4607ab1">More...</a><br /></td></tr>
 <tr class="separator:gae500e245c5dfd0ae1a0ad0e2f4607ab1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa5985ea283cf483b7b66dfc2ac3e7d23"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___slots.html#gaa5985ea283cf483b7b66dfc2ac3e7d23">FLSlot_SetString</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, <a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>)</td></tr>
-<tr class="memdesc:gaa5985ea283cf483b7b66dfc2ac3e7d23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a string into a slot.  <a href="#gaa5985ea283cf483b7b66dfc2ac3e7d23">More...</a><br /></td></tr>
+<tr class="memdesc:gaa5985ea283cf483b7b66dfc2ac3e7d23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a UTF-8 string into a slot.  <a href="#gaa5985ea283cf483b7b66dfc2ac3e7d23">More...</a><br /></td></tr>
 <tr class="separator:gaa5985ea283cf483b7b66dfc2ac3e7d23"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gabca109af50775df2c95a7fc37e1e9802"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___slots.html#gabca109af50775df2c95a7fc37e1e9802">FLSlot_SetData</a> (<a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a>, <a class="el" href="struct_f_l_slice.html">FLSlice</a>)</td></tr>
 <tr class="memdesc:gabca109af50775df2c95a7fc37e1e9802"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a data blob into a slot.  <a href="#gabca109af50775df2c95a7fc37e1e9802">More...</a><br /></td></tr>
@@ -103,9 +112,93 @@ Functions</h2></td></tr>
 <tr class="separator:ga33b10e12e20e7b0bec1bbb0bd98ad36d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>An <code>FLSlot</code> is a temporary reference to an element of a mutable Array/Dict. </p>
-<p>Its only purpose is to let you store a value into it, using the functions below. </p>
+<p>An <code>FLSlot</code> is a temporary reference to an element of a mutable Array/Dict; its only purpose is to let you store a value into it, using the <code>FLSlot_...</code> functions. </p>
+<p>Since there are three ways to store a value into a collection (array set, array append, dict set) and nine types of values that can be stored, that makes 27 setter functions. For efficiency, these are declared as inlines that call one of three functions to acquire a slot, and one of nine functions to store a value into it.</p>
+<p>It's usually more convenient to use the typed functions like <a class="el" href="group___f_l_array.html#ga04d32ac0ae51318deb9f2ddfcd411d7d">FLMutableArray_SetInt</a>, but you might drop down to the lower level ones if you're creating an adapter between Fleece and a different data model, such as Apple's Foundation classes. </p>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="gac5f8da15c481f9dd12b459b38f1a8d7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac5f8da15c481f9dd12b459b38f1a8d7c">&#9670;&nbsp;</a></span>FLMutableArray_Append()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="_base_8h.html#afefbce768b9d0df9c9ebc30dd6d13fed">MUST_USE_RESULT</a> <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a> FLMutableArray_Append </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Appends a null value to the array and returns an <code>FLSLot</code> that refers to that position. </p>
+<p>You store a value to it by calling one of the nine <code>FLSlot_Set...</code> functions. </p><dl class="section warning"><dt>Warning</dt><dd>You should immediately store a value into the <code>FLSlot</code>. Do not keep it around; any changes to the array invalidate it. </dd></dl>
+
+</div>
+</div>
+<a id="gaa8842ce316630a9c9995d1c80cf5a291"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa8842ce316630a9c9995d1c80cf5a291">&#9670;&nbsp;</a></span>FLMutableArray_Set()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="_base_8h.html#afefbce768b9d0df9c9ebc30dd6d13fed">MUST_USE_RESULT</a> <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a> FLMutableArray_Set </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>index</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns an FLSlot that refers to the given index of the given array. </p>
+<p>You store a value to it by calling one of the nine <code>FLSlot_Set...</code> functions. </p><dl class="section warning"><dt>Warning</dt><dd>You should immediately store a value into the <code>FLSlot</code>. Do not keep it around; any changes to the array invalidate it. </dd></dl>
+
+</div>
+</div>
+<a id="gab00b3434d4d69afa08a001fc554fc44d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab00b3434d4d69afa08a001fc554fc44d">&#9670;&nbsp;</a></span>FLMutableDict_Set()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="_base_8h.html#afefbce768b9d0df9c9ebc30dd6d13fed">MUST_USE_RESULT</a> <a class="el" href="group__types.html#ga264f1860d2c09595ce7870ced22a5ca8">FLSlot</a> FLMutableDict_Set </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__types.html#ga1a873a1463aac47cc9a6381722049aa1">FLMutableDict</a>&#160;</td>
+          <td class="paramname"><em>FL_NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td>
+          <td class="paramname"><em>key</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns an FLSlot that refers to the given key/value pair of the given dictionary. </p>
+<p>You store a value to it by calling one of the nine <code>FLSlot_Set...</code> functions. </p><dl class="section warning"><dt>Warning</dt><dd>You should immediately store a value into the <code>FLSlot</code>. Do not keep it around; any changes to the dictionary invalidate it. </dd></dl>
+
+</div>
+</div>
 <a id="ga68bafe1ddb72a33b304aa9f841bf24ae"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga68bafe1ddb72a33b304aa9f841bf24ae">&#9670;&nbsp;</a></span>FLSlot_SetBool()</h2>
 
@@ -192,7 +285,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Stores a double into a slot. </p>
+<p>Stores a <code>double</code> into a slot. </p>
 
 </div>
 </div>
@@ -222,7 +315,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Stores a float into a slot. </p>
+<p>Stores a <code>float</code> into a slot. </p>
 
 </div>
 </div>
@@ -302,7 +395,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Stores a string into a slot. </p>
+<p>Stores a UTF-8 string into a slot. </p>
 
 </div>
 </div>
@@ -332,7 +425,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Stores an unsigned integer into a slot. </p>
+<p>Stores an unsigned int into a slot. </p>
 
 </div>
 </div>

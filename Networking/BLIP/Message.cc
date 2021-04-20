@@ -148,7 +148,7 @@ namespace litecore { namespace blip {
 
 
     MessageIn::ReceiveState MessageIn::receivedFrame(Codec &codec,
-                                                     slice frame,
+                                                     slice entireFrame,
                                                      FrameFlags frameFlags)
     {
         ReceiveState state = kOther;
@@ -158,6 +158,7 @@ namespace litecore { namespace blip {
             lock_guard<mutex> lock(_receiveMutex);
 
             // Update byte count and send acknowledgement packet when appropriate:
+            slice_istream frame(entireFrame);
             _rawBytesReceived += frame.size;
             acknowledge((uint32_t)frame.size);
 
@@ -189,18 +190,20 @@ namespace litecore { namespace blip {
                 // Read just a few bytes to get the length of the properties (a varint at the
                 // start of the frame):
                 char buf[kMaxVarintLen32];
-                slice_stream out(buf, sizeof(buf));
+                slice_ostream out(buf, sizeof(buf));
                 codec.write(frame, out, mode);
-                slice dst = out.output();
+                slice_istream dst = out.output();
 
                 // Decode the properties length:
-                if (!ReadUVarInt32(&dst, &_propertiesSize))
+                if (optional<uint32_t> n = dst.readUVarInt32(); !n)
                     throw std::runtime_error("frame too small");
+                else
+                    _propertiesSize = *n;
                 if (_propertiesSize > kMaxPropertiesSize)
                     throw std::runtime_error("properties excessively large");
                 // Allocate properties and put any remaining decoded data there:
                 _properties = alloc_slice(_propertiesSize);
-                _propertiesRemaining = slice_stream(_properties);
+                _propertiesRemaining = slice_ostream(_properties);
                 _propertiesRemaining.write(dst.readAtMost(_propertiesSize));
                 if (_propertiesRemaining.capacity() == 0)
                     justFinishedProperties = true;
@@ -238,7 +241,7 @@ namespace litecore { namespace blip {
                 readFrame(codec, int(mode), frame, frameFlags);
             }
 
-            slice checksumSlice{checksum, Codec::kChecksumSize};
+            slice_istream checksumSlice{checksum, Codec::kChecksumSize};
             codec.readAndVerifyChecksum(checksumSlice);
 
             bodyBytesReceived = _in->bytesWritten();
@@ -289,10 +292,10 @@ namespace litecore { namespace blip {
     }
 
 
-    void MessageIn::readFrame(Codec &codec, int mode, slice &frame, bool finalFrame) {
+    void MessageIn::readFrame(Codec &codec, int mode, slice_istream &frame, bool finalFrame) {
         uint8_t buffer[4096];
         while (frame.size > 0) {
-            slice_stream output(buffer, sizeof(buffer));
+            slice_ostream output(buffer, sizeof(buffer));
             codec.write(frame, output, Codec::Mode(mode));
             if (output.bytesWritten() > 0)
                 _in->writeRaw(output.output());

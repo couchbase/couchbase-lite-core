@@ -24,7 +24,7 @@
 #include "StringUtil.hh"
 #include "TempArray.hh"
 #include "Writer.hh"
-#include "fleece/slice_stream.hh"
+#include "slice_stream.hh"
 
 #include "mbedSnippets.hh"
 #include "mbedUtils.hh"
@@ -82,7 +82,7 @@ namespace litecore { namespace crypto {
 
     DistinguishedName::VectorForm DistinguishedName::asVector() {
         VectorForm result;
-        slice dn = *this;
+        slice_istream dn = slice(*this);
         while (dn.size > 0) {
             slice key = dn.readToDelimiterOrEnd("="_sl);
 
@@ -502,7 +502,7 @@ namespace litecore { namespace crypto {
 
         // Concatenate the data:
         alloc_slice result(totalSize);
-        slice_stream dst(result);
+        slice_ostream dst(result);
         for (alloc_slice &pem : pems)
             dst.write(pem);
         DebugAssert(dst.bytesWritten() == result.size);

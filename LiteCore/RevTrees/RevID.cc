@@ -22,6 +22,7 @@
 #include "varint.hh"
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
+#include "slice_stream.hh"
 #include <math.h>
 #include <limits.h>
 
@@ -41,11 +42,11 @@ namespace litecore {
     pair<unsigned,slice> revid::generationAndDigest() const {
         if (isVersion())
             error::_throw(error::InvalidParameter);
-        slice digest = *this;
-        uint64_t gen;
-        if (!ReadUVarInt(&digest, &gen) || gen == 0 || gen > UINT_MAX)
+        slice_istream digest = *this;
+        if (auto gen = digest.readUVarInt(); !gen || *gen == 0 || *gen > UINT_MAX)
             error::_throw(error::CorruptRevisionData);
-        return {unsigned(gen), digest};
+        else
+            return {unsigned(*gen), digest};
     }
 
 
@@ -92,8 +93,8 @@ namespace litecore {
             return isVersion() && other.isVersion() && asVersion() == other.asVersion();
     }
 
-    bool revid::expandInto(slice_stream &result) const noexcept {
-        slice_stream out = result;
+    bool revid::expandInto(slice_ostream &result) const noexcept {
+        slice_ostream out = result.capture();
         if (isVersion()) {
             if (!asVersion().writeASCII(out))
                 return false;
@@ -115,7 +116,7 @@ namespace litecore {
             auto [gen, digest] = generationAndDigest();
             size_t expandedSize = 2 + size_t(::floor(::log10(gen))) + 2*digest.size;
             alloc_slice resultBuf(expandedSize);
-            slice_stream out(resultBuf);
+            slice_ostream out(resultBuf);
             Assert(expandInto(out));
             resultBuf.shorten(out.bytesWritten());
             return resultBuf;
@@ -165,7 +166,7 @@ namespace litecore {
 
 
     revidBuffer& revidBuffer::operator= (const Version &vers) noexcept {
-        slice_stream out(_buffer, sizeof(_buffer));
+        slice_ostream out(_buffer, sizeof(_buffer));
         out.writeByte(0);
         vers.writeBinary(out);
         *(slice*)this = out.output();
@@ -178,7 +179,8 @@ namespace litecore {
             error::_throw(error::BadRevisionID);
     }
 
-    bool revidBuffer::tryParse(slice ascii) noexcept {
+    bool revidBuffer::tryParse(slice asciiData) noexcept {
+        slice_istream ascii(asciiData);
         if (ascii.findByte('-') != nullptr) {
             // Digest type:
             uint8_t* start = _buffer, *end = start + sizeof(_buffer), *dst = start;

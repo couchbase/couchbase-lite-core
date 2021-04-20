@@ -300,8 +300,8 @@ namespace litecore { namespace net {
             return;
         if (_usuallyTrue(_unreadLen + data.size > _unread.size))
             _unread.resize(_unreadLen + data.size);
-        memcpy((void*)&_unread[data.size], &_unread[0], _unreadLen);
-        memcpy((void*)&_unread[0], data.buf, data.size);
+        memmove((void*)_unread.offset(data.size), _unread.offset(0), _unreadLen);
+        memcpy((void*)_unread.offset(0), data.buf, data.size);
         _unreadLen += data.size;
     }
 
@@ -311,8 +311,8 @@ namespace litecore { namespace net {
         if (_usuallyFalse(_unreadLen > 0)) {
             // Use up anything left in the buffer:
             size_t n = min(byteCount, _unreadLen);
-            memcpy(dst, &_unread[0], n);
-            memmove((void*)&_unread[0], &_unread[n], _unreadLen - n);
+            memcpy(dst, _unread.offset(0), n);
+            memmove((void*)_unread.offset(0), _unread.offset(n), _unreadLen - n);
             _unreadLen -= n;
             if (_unreadLen == 0)
                 _unread = nullslice;

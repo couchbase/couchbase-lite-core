@@ -56,18 +56,18 @@ namespace litecore { namespace blip {
         _checksum = (uint32_t)crc32(_checksum, (const Bytef*)data.buf, (int)data.size);
     }
 
-    void Codec::writeChecksum(slicestream &output) const {
+    void Codec::writeChecksum(slice_ostream &output) const {
         uint32_t chk = endian::enc32(_checksum);
         Assert(output.write(&chk, sizeof(chk)));
     }
 
 
-    void Codec::readAndVerifyChecksum(slice &input) const {
+    void Codec::readAndVerifyChecksum(slice_istream &input) const {
         if (input.size < kChecksumSize)
             error::_throw(error::CorruptData, "BLIP message ends before checksum");
         uint32_t chk;
         static_assert(kChecksumSize == sizeof(chk), "kChecksumSize is wrong");
-        input.readInto(&chk, sizeof(chk));
+        input.readAll(&chk, sizeof(chk));
         chk = endian::dec32(chk);
         if (chk != _checksum)
             error::_throw(error::CorruptData, "BLIP message invalid checksum");
@@ -75,13 +75,13 @@ namespace litecore { namespace blip {
 
 
     // Uncompressed write: just copies input bytes to output (updating checksum)
-    void Codec::_writeRaw(slice &input, slicestream &output) {
+    void Codec::_writeRaw(slice_istream &input, slice_ostream &output) {
         logInfo("Copying %zu bytes into %zu-byte buf (no compression)", input.size, output.capacity());
         Assert(output.capacity() > 0);
         size_t count = std::min(input.size, output.capacity());
         addToChecksum({input.buf, count});
         output.write(input.buf, count);
-        input.moveStart(count);
+        input.skip(count);
     }
 
 
@@ -93,7 +93,7 @@ namespace litecore { namespace blip {
 
 
     void ZlibCodec::_write(const char *operation,
-                           slice &input, slicestream &output,
+                           slice_istream &input, slice_ostream &output,
                            Mode mode,
                            size_t maxInput)
     {
@@ -136,7 +136,7 @@ namespace litecore { namespace blip {
     }
 
 
-    void Deflater::write(slice &input, slicestream &output, Mode mode) {
+    void Deflater::write(slice_istream &input, slice_ostream &output, Mode mode) {
         if (mode == Mode::Raw)
             return _writeRaw(input, output);
 
@@ -160,7 +160,7 @@ namespace litecore { namespace blip {
     }
 
 
-    void Deflater::_writeAndFlush(slice &input, slicestream &output) {
+    void Deflater::_writeAndFlush(slice_istream &input, slice_ostream &output) {
         // If we try to write all of the input, and there isn't room in the output, the zlib
         // codec might end up with buffered data that hasn't been output yet (even though we
         // told it to flush.) To work around this, write the data gradually and stop before
@@ -223,7 +223,7 @@ namespace litecore { namespace blip {
     }
 
 
-    void Inflater::write(slice &input, slicestream &output, Mode mode) {
+    void Inflater::write(slice_istream &input, slice_ostream &output, Mode mode) {
         if (mode == Mode::Raw)
             return _writeRaw(input, output);
 

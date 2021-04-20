@@ -31,6 +31,7 @@
 #include "PlatformIO.hh"
 #include "SecureDigest.hh"
 #include "NumConversion.hh"
+#include "slice_stream.hh"
 #include <algorithm>
 #include <unordered_set>
 
@@ -163,11 +164,12 @@ namespace litecore {
     }
 
     static alloc_slice escapedPath(slice inputPath) {
-        Assert(inputPath.peekByte() == '$');
-        alloc_slice escaped(inputPath.size + 1);
+        slice_istream in(inputPath);
+        Assert(in.peekByte() == '$');
+        alloc_slice escaped(in.size + 1);
         auto dst = (char*)escaped.buf;
         dst[0] = '\\';
-        inputPath.readInto(dst + 1, escaped.size - 1);
+        in.readAll(dst + 1, escaped.size - 1);
         return escaped;
     }
 
@@ -1264,11 +1266,11 @@ namespace litecore {
                 _sql << kVersionFnName << "(" << tablePrefix << "version" << ")";
                 break;
             case mkSequence:
-                writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i].cString());
+                writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i]);
                 _checkedExpiration = true;
                 break;
             case mkExpiration:
-                writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i].cString());
+                writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i]);
                 break;
             default:
                 Assert(false, "Internal logic error");
@@ -1286,7 +1288,7 @@ namespace litecore {
 
         if (op.hasPrefix('.')) {
             op.moveStart(1); // Skip initial .
-            if(op.peekByte() == '$') {
+            if(op.hasPrefix("$")) {
                 alloc_slice escaped = escapedPath(op);
                 writePropertyGetter(kValueFnName, Path(escaped));
             } else {
@@ -1412,7 +1414,7 @@ namespace litecore {
                     require(name, "Invalid JSON value in property path");
                     if (firstIsEncoded) {
                         name.moveStart(1);              // skip '.', '?', '$'
-                        if(name.peekByte() == '$') {
+                        if(name.hasPrefix("$")) {
                             alloc_slice escaped = escapedPath(name);
                             path.addComponents(escaped);
                         } else {
@@ -1474,10 +1476,11 @@ namespace litecore {
     }
 
 
-    void QueryParser::writeMetaProperty(slice fn, const string &tablePrefix, const char *property) {
-        require(fn == kValueFnName, "can't use '_%s' in this context", property);
+    void QueryParser::writeMetaProperty(slice fn, const string &tablePrefix, slice property) {
+        require(fn == kValueFnName, "can't use '_%.*s' in this context", SPLAT(property));
         _sql << tablePrefix << property;
     }
+
 
     // Return the iterator to _aliases based on the property.
     // Post-condition: iterator != _aliases.end()

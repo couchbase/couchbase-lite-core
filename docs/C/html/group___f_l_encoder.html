@@ -198,9 +198,9 @@ Finishing up</h2></td></tr>
 <tr class="memitem:ga6b74ee84f4d289ded29fc1e8577c760a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__reading.html#ga6fcf80a526bde8519ac9e48db7746f14">FLDoc</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_encoder.html#ga6b74ee84f4d289ded29fc1e8577c760a">FLEncoder_FinishDoc</a> (<a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>, <a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *)</td></tr>
 <tr class="memdesc:ga6b74ee84f4d289ded29fc1e8577c760a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ends encoding; if there has been no error, it returns the encoded Fleece data packaged in an FLDoc.  <a href="#ga6b74ee84f4d289ded29fc1e8577c760a">More...</a><br /></td></tr>
 <tr class="separator:ga6b74ee84f4d289ded29fc1e8577c760a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae3833d018e6d7295ec42381310169004"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_encoder.html#gae3833d018e6d7295ec42381310169004">FLEncoder_Finish</a> (<a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a> e, <a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *outError)</td></tr>
-<tr class="memdesc:gae3833d018e6d7295ec42381310169004"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ends encoding; if there has been no error, it returns the encoded data, else null.  <a href="#gae3833d018e6d7295ec42381310169004">More...</a><br /></td></tr>
-<tr class="separator:gae3833d018e6d7295ec42381310169004"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga843dcb106a33ebff9df164d3f5ea3a33"><td class="memItemLeft" align="right" valign="top"><a class="el" href="_base_8h.html#afefbce768b9d0df9c9ebc30dd6d13fed">MUST_USE_RESULT</a> <a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_encoder.html#ga843dcb106a33ebff9df164d3f5ea3a33">FLEncoder_Finish</a> (<a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a> e, <a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *outError)</td></tr>
+<tr class="memdesc:ga843dcb106a33ebff9df164d3f5ea3a33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ends encoding; if there has been no error, it returns the encoded data, else null.  <a href="#ga843dcb106a33ebff9df164d3f5ea3a33">More...</a><br /></td></tr>
+<tr class="separator:ga843dcb106a33ebff9df164d3f5ea3a33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Error handling</h2></td></tr>
@@ -454,14 +454,14 @@ Error handling</h2></td></tr>
 
 </div>
 </div>
-<a id="gae3833d018e6d7295ec42381310169004"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae3833d018e6d7295ec42381310169004">&#9670;&nbsp;</a></span>FLEncoder_Finish()</h2>
+<a id="ga843dcb106a33ebff9df164d3f5ea3a33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga843dcb106a33ebff9df164d3f5ea3a33">&#9670;&nbsp;</a></span>FLEncoder_Finish()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a> FLEncoder_Finish </td>
+          <td class="memname"><a class="el" href="_base_8h.html#afefbce768b9d0df9c9ebc30dd6d13fed">MUST_USE_RESULT</a> <a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a> FLEncoder_Finish </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group__types.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>&#160;</td>
           <td class="paramname"><em>e</em>, </td>
@@ -871,7 +871,7 @@ Error handling</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the data written so far as a standalone Fleece document, whose root is the last value written. </p>
-<p>You can continue writing, and the final output returned by <a class="el" href="group___f_l_encoder.html#gae3833d018e6d7295ec42381310169004">FLEncoder_Finish</a> will consist of everything after this point. That second part can be used in the future by loading it as an <code>FLDoc</code> with the first part as its <code>extern</code> reference. </p>
+<p>You can continue writing, and the final output returned by <a class="el" href="group___f_l_encoder.html#ga843dcb106a33ebff9df164d3f5ea3a33">FLEncoder_Finish</a> will consist of everything after this point. That second part can be used in the future by loading it as an <code>FLDoc</code> with the first part as its <code>extern</code> reference. </p>
 
 </div>
 </div>

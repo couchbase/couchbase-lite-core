@@ -42,7 +42,7 @@ namespace litecore { namespace blip {
     { }
 
 
-    void MessageOut::nextFrameToSend(Codec &codec, slice_stream &dst, FrameFlags &outFlags) {
+    void MessageOut::nextFrameToSend(Codec &codec, slice_ostream &dst, FrameFlags &outFlags) {
         outFlags = flags();
         if (isAck()) {
             // Acks have no checksum and don't go through the codec
@@ -56,10 +56,10 @@ namespace litecore { namespace blip {
         size_t frameSize = dst.capacity();
         {
             // `frame` is the same as `dst` but 4 bytes shorter, to leave space for the checksum
-            slice_stream frame(dst.next(), frameSize - Codec::kChecksumSize);
+            slice_ostream frame(dst.next(), frameSize - Codec::kChecksumSize);
             auto mode = hasFlag(kCompressed) ? Codec::Mode::SyncFlush : Codec::Mode::Raw;
             do {
-                slice &data = _contents.dataToSend();
+                slice_istream &data = _contents.dataToSend();
                 if (data.size == 0)
                     break;
                 _uncompressedBytesSent += (uint32_t)data.size;
@@ -160,13 +160,14 @@ namespace litecore { namespace blip {
     :_payload(payload)
     ,_unsentPayload(payload.buf, payload.size)
     ,_dataSource(move(dataSource))
+    ,_unsentDataBuffer(nullslice)
     {
         DebugAssert(payload.size <= UINT32_MAX);
     }
 
 
     // Returns the next message-body data to send (as a slice _reference_)
-    slice& MessageOut::Contents::dataToSend() {
+    slice_istream& MessageOut::Contents::dataToSend() {
         if (_unsentPayload.size > 0) {
             return _unsentPayload;
         } else {
@@ -205,16 +206,18 @@ namespace litecore { namespace blip {
 
 
     void MessageOut::Contents::getPropsAndBody(slice &props, slice &body) const {
-        props = _payload;
-        if (props.size) {
-            uint32_t propertiesSize;
-            ReadUVarInt32(&props, &propertiesSize);
-            props.setSize(propertiesSize);
-        } else if (!props.buf) {
-            body = nullslice;
+        slice_istream in = _payload;
+        if (in.size > 0) {
+            optional<uint32_t> propertiesSize = in.readUVarInt32();
+            if (!propertiesSize || *propertiesSize > in.size)
+                error::_throw(error::CorruptData, "Invalid properties size in BLIP frame");
+            in.setSize(*propertiesSize);
+        } else if (!in.buf) {
+            props = body = nullslice;
             return;
         }
-        body = slice(props.end(), _payload.end());
+        props = in;
+        body = slice(in.end(), _payload.end());
     }
 
 } }

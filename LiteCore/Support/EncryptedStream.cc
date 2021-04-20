@@ -116,11 +116,12 @@ namespace litecore {
 
 
     void EncryptedWriteStream::write(slice plaintext) {
+        slice_istream in(plaintext);
         // Fill the current partial block buffer:
-        auto capacity = min((size_t)kFileBlockSize - _bufferPos, plaintext.size);
-        memcpy(&_buffer[_bufferPos], plaintext.buf, capacity);
+        auto capacity = min((size_t)kFileBlockSize - _bufferPos, in.size);
+        memcpy(&_buffer[_bufferPos], in.buf, capacity);
         _bufferPos += capacity;
-        plaintext.moveStart(capacity);
+        in.skip(capacity);
         if (_bufferPos < sizeof(_buffer))
             return; // done; didn't fill buffer
 
@@ -128,12 +129,12 @@ namespace litecore {
         writeBlock(slice(_buffer, kFileBlockSize), false);
 
         // Write entire blocks:
-        while (plaintext.size >= kFileBlockSize)
-            writeBlock(plaintext.read(kFileBlockSize), false);
+        while (in.size >= kFileBlockSize)
+            writeBlock(in.readAll(kFileBlockSize), false);
 
         // Save remainder (if any) in the buffer.
-        memcpy(_buffer, plaintext.buf, plaintext.size);
-        _bufferPos = plaintext.size;
+        memcpy(_buffer, in.buf, in.size);
+        _bufferPos = in.size;
     }
 
 
@@ -211,7 +212,7 @@ namespace litecore {
 
 
     // Reads as many bytes as possible from _buffer into `remaining`.
-    void EncryptedReadStream::readFromBuffer(slice_stream &remaining) {
+    void EncryptedReadStream::readFromBuffer(slice_ostream &remaining) {
         size_t nFromBuffer = min(_bufferSize - _bufferPos, remaining.capacity());
         if (nFromBuffer > 0) {
             remaining.write(&_buffer[_bufferPos], nFromBuffer);
@@ -221,7 +222,7 @@ namespace litecore {
 
 
     size_t EncryptedReadStream::read(void *dst, size_t count) {
-        slice_stream remaining(dst, count);
+        slice_ostream remaining(dst, count);
         // If there's decrypted data in the buffer, copy it to the output:
         readFromBuffer(remaining);
         if (remaining.capacity() > 0 && _blockID <= _finalBlockID) {

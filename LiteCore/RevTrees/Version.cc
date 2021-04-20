@@ -20,6 +20,7 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
+#include "slice_stream.hh"
 #include <algorithm>
 
 
@@ -39,9 +40,12 @@ namespace litecore {
     }
 
     
-    Version::Version(slice *dataP) {
-        if (!ReadUVarInt(dataP, &_gen) || !ReadUVarInt(dataP, &_author.id))
+    Version::Version(slice_istream &data) {
+        optional<uint64_t> gen = data.readUVarInt(), id = data.readUVarInt();
+        if (!gen || !id)
             throwBadBinary();
+        _gen = *gen;
+        _author.id = *id;
         validate();
     }
 
@@ -57,7 +61,7 @@ namespace litecore {
 
 
     bool Version::_readASCII(slice ascii) noexcept {
-        slice in = ascii;
+        slice_istream in = ascii;
         _gen = in.readHex();
         if (in.readByte() != '@' || _gen == 0)
             return false;
@@ -79,13 +83,13 @@ namespace litecore {
     }
 
 
-    bool Version::writeBinary(slice_stream &out, peerID myID) const {
+    bool Version::writeBinary(slice_ostream &out, peerID myID) const {
         uint64_t id = (_author == kMePeerID) ? myID.id : _author.id;
-        return WriteUVarInt(out, _gen) && WriteUVarInt(out, id);
+        return out.writeUVarInt(_gen) && out.writeUVarInt(id);
     }
 
 
-    bool Version::writeASCII(slice_stream &out, peerID myID) const {
+    bool Version::writeASCII(slice_ostream &out, peerID myID) const {
         if (!out.writeHex(_gen) || !out.writeByte('@'))
             return false;
         auto author = (_author != kMePeerID) ? _author : myID;
@@ -97,7 +101,7 @@ namespace litecore {
 
 
     alloc_slice Version::asASCII(peerID myID) const {
-        auto result = slice_stream::alloced(kMaxASCIILength, [&](slice_stream &out) {
+        auto result = slice_ostream::alloced(kMaxASCIILength, [&](slice_ostream &out) {
             return writeASCII(out, myID);
         });
         Assert(result);

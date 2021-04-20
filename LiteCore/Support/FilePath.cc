@@ -223,8 +223,8 @@ namespace litecore {
     FilePath::operator alloc_slice() const {
         auto dirSize = _dir.size(), fileSize = _file.size();
         alloc_slice result(dirSize + fileSize);
-        memcpy((void*)&result[0],      _dir.data(),   dirSize);
-        memcpy((void*)&result[dirSize], _file.data(), fileSize);
+        memcpy((void*)result.offset(0),       _dir.data(),  dirSize);
+        memcpy((void*)result.offset(dirSize), _file.data(), fileSize);
         return result;
     }
 

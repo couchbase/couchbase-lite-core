@@ -29,7 +29,7 @@
 #include <utility>
 
 namespace fleece {
-    class slice_stream;
+    class slice_ostream;
 }
 
 namespace litecore {
@@ -43,7 +43,7 @@ namespace litecore {
     using std::unique_ptr;
 
     using fleece::slice;
-    using fleece::slice_stream;
+    using fleece::slice_ostream;
     using fleece::alloc_slice;
     using fleece::nullslice;
     using fleece::function_ref;
