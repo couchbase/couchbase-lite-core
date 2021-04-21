@@ -124,7 +124,7 @@ namespace litecore {
 
         void *dstData = offsetby(&this->revID[0], rev.revID.size);
         dstData = offsetby(dstData, PutUVarInt(dstData, rev.sequence));
-        memcpy(dstData, rev._body.buf, rev._body.size);
+        rev._body.copyTo(dstData);
 
         return (RawRevision*)offsetby(this, revSize);
     }
