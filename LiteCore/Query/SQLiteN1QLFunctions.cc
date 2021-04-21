@@ -1005,6 +1005,40 @@ namespace litecore {
         sqlite3_result_int(ctx, num > 0 ? 1 : (num < 0 ? -1 : 0) );
     }
 
+    static void fl_div(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
+            sqlite3_result_value(ctx, mnArg);
+            return;
+        }
+        // two arguments
+        if (_usuallyTrue(isNumericNoError(argv[0]) && isNumericNoError(argv[1]))) {
+            double numer = sqlite3_value_double(argv[0]);
+            double denom = sqlite3_value_double(argv[1]);
+            double quot = numer / denom;
+            if (std::isfinite(quot)) {
+                sqlite3_result_double(ctx, quot);
+                return;
+            }
+        }
+        setResultFleeceNull(ctx);
+    }
+
+    static void fl_idiv(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
+            sqlite3_result_value(ctx, mnArg);
+            return;
+        }
+        // two arguments
+        if (_usuallyTrue(isNumericNoError(argv[0]) && isNumericNoError(argv[1]))) {
+            int64_t numer = (int64_t)sqlite3_value_double(argv[0]);
+            int64_t denom = (int64_t)sqlite3_value_double(argv[1]);
+            if (denom != 0) {
+                sqlite3_result_int64(ctx, numer / denom);
+                return;
+            }
+        }
+        setResultFleeceNull(ctx);
+    }
 
 #pragma mark - DATES:
 
@@ -1525,6 +1559,8 @@ namespace litecore {
         { "tan",               1, fl_tan },
         { "trunc",             1, fl_trunc },
         { "trunc",             2, fl_trunc },
+        { "div",               2, fl_div },
+        { "idiv",              2, fl_idiv },
 
         { "millis_to_str",     1, millis_to_str },
         { "millis_to_utc",     1, millis_to_utc },

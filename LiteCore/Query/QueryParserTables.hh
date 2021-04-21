@@ -178,6 +178,8 @@ namespace litecore {
         {"sqrt",             1, 1},
         {"tan",              1, 1},
         {"trunc",            1, 2},
+        {"div",              2, 2},
+        {"idiv",             2, 2},
 
         // Patterns:
         {"regexp_contains",  2, 2},
