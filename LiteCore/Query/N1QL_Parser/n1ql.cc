@@ -1565,7 +1565,7 @@ YY_ACTION(void) yy_1_expr2(yycontext *yy, char *yytext, int yyleng)
   {
 #line 199
    x = (op.as<string>() == "/")
-                                            ? binaryOp(binaryOp(1.0, "*", x), op, r) // force floating division
+                                            ? binaryOp(x, "div()", r) // perform floating division
                                             : binaryOp(x, op, r); ;
   }
 #undef yythunkpos

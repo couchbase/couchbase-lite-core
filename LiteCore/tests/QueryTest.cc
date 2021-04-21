@@ -2227,77 +2227,65 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
         t.commit();
     }
     
-    // Bonus Missing is due to that SqLite3 produces NULL which we interpret it as MISSING.
-    constexpr const char* whats[] = {
-        "acos(3)",              // -> NULL.
-        "acos(\"abc\")",        // -> NULL
-        "2/0",                  // -> bogus MISSING
-        "lower([1,2])",         // -> NULL
-/*4*/   "length(missingValue)", // -> MISSING
-        "is_array(null)",       // -> NULL
-        "atan(asin(1.1))",      // -> NULL
-        "round(12.5)",          // -> 13
-        "8/10",                 // -> 0.8
-/*9*/   "unitPrice/10",         // -> 0.8 & columnTitle == "$10"
-        "orderlines",           // -> type() == kArray & columnTitle == "orderlines"
-        "orderlines[0]"         // -> 1 & columnTitle == "$11"
+    std::tuple<const char*, std::function<bool(const Value*, bool)>> testCases[] = {
+        { "acos(3)",       [](const Value* v, bool missing) { // =NULL
+            return !missing && v->type() == kNull; }},
+        { "acos(\"abc\")", [](const Value* v, bool missing) { // =NULL
+            return !missing && v->type() == kNull; }},
+        {"2/0",            [](const Value* v, bool missing) { // =NULL
+            return !missing && v->type() == kNull; }},
+        {"lower([1,2])",    [](const Value* v, bool missing) { // =NULL
+            return !missing && v->type() == kNull; }},
+/*4*/   {"length(missingValue)", [](const Value* v, bool missing) { // =MISSING
+            return missing && v->type() == kNull; }},
+        {"is_array(null)", [](const Value* v, bool missing) { // =NULL
+            return !missing && v->type() == kNull; }},
+        {"atan(asin(1.1))",  [](const Value* v, bool missing) { // =NULL
+            return !missing && v->type() == kNull; }},
+        {"round(12.5)",  [](const Value* v, bool missing) { // =13
+            return !missing && v->type() == kNumber && v->asDouble() == 13; }},
+        {"8/10",         [](const Value* v, bool missing) { // =0.8
+            return !missing && v->type() == kNumber && v->asDouble() == 0.8; }},
+/*9*/   {"unitPrice/10", [](const Value* v, bool missing) { // =0.8
+            return !missing && v->type() == kNumber && v->asDouble() == 0.8; }},
+        {"orderlines",  [](const Value* v, bool missing) {  // type() == kArray & columnTitle="orderlines"
+            return !missing && v->type() == kArray; }},
+        {"orderlines[0]",  [](const Value* v, bool missing) { // columnTitle="$11"
+            return !missing && v->type() == kNumber && v->asDouble() == 1; }},
+        {"div(8, 10)", [](const Value* v, bool missing) { // =0.8
+            return !missing && v->type() == kNumber && v->asDouble() == 0.8; }},
+        {"idiv(8, 10)",  [](const Value* v, bool missing) { // =0
+            return !missing && v->type() == kNumber && v->asDouble() == 0; }},
+/*14*/  {"idiv(-1, 1.9)", [](const Value* v, bool missing) { // =-1
+            return !missing && v->type() == kNumber && v->asDouble() == -1; }},
+        {"idiv(-1, 2.0)",  [](const Value* v, bool missing) { // =0
+            return !missing && v->type() == kNumber && v->asDouble() == 0; }},
+        {"idiv(-1, 2.9)",  [](const Value* v, bool missing) { // =0
+            return !missing && v->type() == kNumber && v->asDouble() == 0; }},
+        {"idiv(-3.9, 2.1)", [](const Value* v, bool missing) { // =-1
+            return !missing && v->type() == kNumber && v->asDouble() == -1; }},
+        {"idiv(5, 3)", [](const Value* v, bool missing) { // =1
+            return !missing && v->type() == kNumber && v->asDouble() == 1; }},
+/*19*/  {"idiv(5, 3.0)", [](const Value* v, bool missing) { // =1
+            return !missing && v->type() == kNumber && v->asDouble() == 1; }},
+        {"idiv(1, 0.99)",  [](const Value* v, bool missing) { // =NULL
+            return !missing && v->type() == kNull; }}
     };
-    constexpr unsigned whatCount = sizeof(whats) / sizeof(whats[0]);
-
-    std::function<bool(const Value*, bool)> verifiers[] = {
-        [](const Value* v, bool missing) {
-            return !missing && v->type() == kNull;
-        },
-        [](const Value* v, bool missing) {
-            return !missing && v->type() == kNull;
-        },
-        [](const Value* v, bool missing) {
-            return missing && v->type() == kNull;
-        },
-        [](const Value* v, bool missing) {
-            return !missing && v->type() == kNull;
-        },
-/*4*/   [](const Value* v, bool missing) {
-            return missing && v->type() == kNull;
-        },
-        [](const Value* v, bool missing) {
-            return !missing && v->type() == kNull;
-        },
-        [](const Value* v, bool missing) {
-            return !missing && v->type() == kNull;
-        },
-        [](const Value* v, bool missing) {
-            return !missing && v->type() == kNumber && v->asDouble() == 13;
-        },
-        [](const Value* v, bool missing) {
-            return !missing && v->type() == kNumber && v->asDouble() == 0.8;
-        },
-/*9*/   [](const Value* v, bool missing) {
-            return !missing && v->type() == kNumber && v->asDouble() == 0.8;
-        },
-        [](const Value* v, bool missing) {
-            return !missing && v->type() == kArray;
-        },
-        [](const Value* v, bool missing) {
-            return !missing && v->type() == kNumber && v->asDouble() == 1;
-        }
-    };
-    static_assert(whatCount == sizeof(verifiers) / sizeof(verifiers[0]));
+    size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
     string queryStr = "select ";
-    queryStr += whats[0];
-    for (unsigned i = 1; i < whatCount; ++i) {
-        (queryStr += ", ") += whats[i];
+    queryStr += std::get<0>(testCases[0]);
+    for (unsigned i = 1; i < testCaseCount; ++i) {
+        (queryStr += ", ") += std::get<0>(testCases[i]);
     }
 
     Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
-    REQUIRE(query->columnCount() == whatCount);
     Retained<QueryEnumerator> e = query->createEnumerator();
     REQUIRE(query->columnTitles()[9] == "$10");
     REQUIRE(query->columnTitles()[10] == "orderlines");
     REQUIRE(query->columnTitles()[11] == "$11");
     REQUIRE(e->next());
     uint64_t missingColumns = e->missingColumns();
-    for (unsigned i = 0; i < whatCount; ++i) {
-        REQUIRE(verifiers[i](e->columns()[i], missingColumns & (1ull << i)));
+    for (unsigned i = 0; i < testCaseCount; ++i) {
+        REQUIRE(std::get<1>(testCases[i])(e->columns()[i], missingColumns & (1ull << i)));
     }
 }

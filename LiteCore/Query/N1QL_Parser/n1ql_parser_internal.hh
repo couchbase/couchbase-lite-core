@@ -270,7 +270,7 @@ static const char* kFunctions[] = {         // (copied from LiteCore's QueryPars
     // Math:
     "abs",  "acos",  "asin",  "atan",  "atan2",  "ceil",  "cos",  "degrees",  "e",  "exp",
     "floor",  "ln",  "log",  "pi",  "power",  "radians",  "round",  "sign",  "sin",  "sqrt",
-    "tan",  "trunc",
+    "tan",  "trunc", "div", "idiv",
     // Patterns:
     "regexp_contains",  "regexp_like",  "regexp_position",  "regexp_replace",
     // Strings:
