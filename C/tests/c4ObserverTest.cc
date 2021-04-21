@@ -205,16 +205,21 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]
 
     createRev("A"_sl, kDocARev1, kFleeceBody);
     createRev("B"_sl, kDocBRev1, kFleeceBody);
-    REQUIRE(c4doc_setExpiration(db, "A"_sl, now - 100*1000, nullptr));
-    REQUIRE(c4doc_setExpiration(db, "B"_sl, now + 100*1000, nullptr));
 
     dbObserver = c4dbobs_create(db, dbObserverCallback, this);
     CHECK(dbCallbackCalls == 0);
 
-    c4db_purgeExpiredDocs(db, nullptr);
+    REQUIRE(c4doc_setExpiration(db, "A"_sl, now - 100*1000, nullptr));
+    REQUIRE(c4doc_setExpiration(db, "B"_sl, now + 100*1000, nullptr));
+
+    auto isDocExpired = [&]{
+        c4::ref<C4Document> doc = c4db_getDoc(db, "A"_sl, true, kDocGetAll, nullptr);
+        return doc == nullptr;
+    };
+    REQUIRE_BEFORE(5s, isDocExpired());
 
     CHECK(dbCallbackCalls == 1);
-    checkChanges({"A"}, {""});
+    checkChanges({"A"}, {""}, true);
 }
 
 
