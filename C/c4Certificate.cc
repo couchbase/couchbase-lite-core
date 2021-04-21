@@ -28,11 +28,16 @@
 #include <vector>
 
 #if DEBUG
-#    define ENABLE_CERT_REQUEST
-#    define ENABLE_SENDING_CERT_REQUESTS
+#ifndef ENABLE_CERT_REQUEST
+#    define ENABLE_CERT_REQUEST 1
 #endif
 
-#ifdef ENABLE_SENDING_CERT_REQUESTS
+#ifndef ENABLE_SENDING_CERT_REQUESTS
+#    define ENABLE_SENDING_CERT_REQUESTS 1
+#endif
+#endif
+
+#if ENABLE_SENDING_CERT_REQUESTS
 #include "CertRequest.hh"
 #endif
 
@@ -203,7 +208,7 @@ Retained<C4Cert> C4Cert::createRequest(std::vector<C4CertNameComponent> nameComp
 }
 
 Retained<C4Cert> C4Cert::requestFromData(slice certRequestData) {
-#ifdef ENABLE_CERT_REQUEST
+#if ENABLE_CERT_REQUEST
     return new C4Cert(new CertSigningRequest(certRequestData));
 #else
     C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "Certificate requests are disabled");
@@ -220,7 +225,7 @@ void C4Cert::sendSigningRequest(const C4Address &address,
                         slice optionsDictFleece,
                         const SigningCallback &callback)
 {
-#ifdef ENABLE_SENDING_CERT_REQUESTS
+#if ENABLE_SENDING_CERT_REQUESTS
     auto internalCallback = [=](crypto::Cert *cert, C4Error error) {
         Retained<C4Cert> c4cert;
         if (cert)

@@ -44,7 +44,7 @@ namespace litecore {
         public:
             access(MUTEX &mut, REF ref)     :_lock(mut), _ref(ref) { }
             access(const access&) =delete;  // I cannot be copied
-            access(access&&) =delete;       // I cannot be moved
+            access(access&&) { throw std::runtime_error("No moving!"); }       // I cannot be moved
 
             REF get()                       {return _ref;}
             operator REF ()                 {return _ref;}
@@ -62,7 +62,7 @@ namespace litecore {
         public:
             access(MUTEX &mut, Retained<R> &ref)     :_lock(mut), _ref(ref) { }
             access(const access&) =delete;  // I cannot be copied
-            access(access&&) =delete;       // I cannot be moved
+            access(access&&) { throw std::runtime_error("No moving!"); }      // I cannot be moved
 
             Retained<R>& get()              {return _ref;}
             operator R* ()                  {return _ref;}
@@ -78,7 +78,7 @@ namespace litecore {
         public:
             access(MUTEX &mut, const R* ref):_lock(mut), _ref(ref) { }
             access(const access&) =delete;  // I cannot be copied
-            access(access&&) =delete;       // I cannot be moved
+            access(access&&) { throw std::runtime_error("No moving!"); }       // I cannot be moved
 
             auto get()                      {return _ref;}
             operator const R* ()            {return _ref;}
