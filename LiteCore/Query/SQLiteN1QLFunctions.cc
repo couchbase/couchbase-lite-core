@@ -1006,7 +1006,7 @@ namespace litecore {
     }
 
     static void fl_div(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
@@ -1024,7 +1024,7 @@ namespace litecore {
     }
 
     static void fl_idiv(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        if (sqlite3_value* mnArg = passMissingOrNull(1, argv); mnArg != nullptr) {
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
             sqlite3_result_value(ctx, mnArg);
             return;
         }
