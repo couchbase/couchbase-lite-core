@@ -22,6 +22,7 @@
 #include "Stopwatch.hh"
 #include <chrono>
 #include <cstdlib>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -58,6 +59,7 @@ namespace litecore { namespace websocket {
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) override;
 
         // Concrete socket implementation needs to call these:
+        void gotTLSCertificate(slice certData);
         void gotHTTPResponse(int status, const Headers &headers);
         void onConnect();
         void onCloseRequested(int status, fleece::slice message);
@@ -105,19 +107,23 @@ namespace litecore { namespace websocket {
         void receivedPong();
         void startResponseTimer(std::chrono::seconds timeout);
         void timedOut();
+        bool beginDelegateCallback();
+        void endDelegateCallback();
 
         Parameters const _parameters;
         bool _framing;
-        std::unique_ptr<ClientProtocol> _clientProtocol;  // 3rd party class that does the framing
-        std::unique_ptr<ServerProtocol> _serverProtocol;  // 3rd party class that does the framing
-        std::mutex _mutex;                          //
-        fleece::alloc_slice _curMessage;            // Message being received
-        int _curOpCode;                             // Opcode of msg in _curMessage
-        size_t _curMessageLength {0};                   // # of valid bytes in _curMessage
-        size_t _bufferedBytes {0};                  // # bytes written but not yet completed
-        size_t _deliveredBytes;                     // Temporary count of bytes sent to delegate
+        std::unique_ptr<ClientProtocol> _clientProtocol;    // 3rd party class that does the framing
+        std::unique_ptr<ServerProtocol> _serverProtocol;    // 3rd party class that does the framing
+        std::mutex _mutex;                                  //
+        int _currentDelegateCallbacks;                      // Count of delegate callbacks which are executing
+        std::condition_variable _currentDelegateCallbacksCv;// CV to notify of changes in _currentDelegateCallbacks
+        fleece::alloc_slice _curMessage;                    // Message being received
+        int _curOpCode;                                     // Opcode of msg in _curMessage
+        size_t _curMessageLength {0};                       // # of valid bytes in _curMessage
+        size_t _bufferedBytes {0};                          // # bytes written but not yet completed
+        size_t _deliveredBytes;                             // Temporary count of bytes sent to delegate
         bool _closeSent {false}, _closeReceived {false};    // Close message sent or received?
-        bool _closed {false};                       // Sent onWebSocketClosed to delegate?
+        bool _closed {false};                               // Sent onWebSocketClosed to delegate?
         fleece::alloc_slice _closeMessage;                  // The encoded close request message
         std::unique_ptr<actor::Timer> _pingTimer;
         std::unique_ptr<actor::Timer> _responseTimer;
@@ -130,7 +136,7 @@ namespace litecore { namespace websocket {
 
         // Connection diagnostics, logged on close:
         fleece::Stopwatch _timeConnected {false};           // Time since socket opened
-        uint64_t _bytesSent {0}, _bytesReceived {0};// Total byte count sent/received
+        uint64_t _bytesSent {0}, _bytesReceived {0};        // Total byte count sent/received
     };
 
 } }

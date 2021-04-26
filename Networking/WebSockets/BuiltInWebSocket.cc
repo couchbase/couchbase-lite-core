@@ -247,7 +247,7 @@ namespace litecore { namespace websocket {
 
         // Tell the delegate what happened:
         if (!certData.empty())
-            delegate().onWebSocketGotTLSCertificate(slice(certData));
+            gotTLSCertificate(slice(certData));
         if (logic.status() != HTTPStatus::undefined)
             gotHTTPResponse(int(logic.status()), logic.responseHeaders());
         if (lastDisposition == HTTPLogic::kSuccess) {
