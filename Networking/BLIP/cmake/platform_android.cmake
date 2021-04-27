@@ -24,4 +24,9 @@ function(setup_build)
         "${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib"
         ${LITECORE_LOCATION}/LiteCore/Unix
     )
+
+    target_link_libraries(
+        BLIPStatic INTERFACE
+        zlibstatic
+    )
 endfunction()

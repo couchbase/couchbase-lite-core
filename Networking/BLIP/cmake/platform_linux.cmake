@@ -24,6 +24,6 @@ function(setup_build)
 
     target_link_libraries(
         BLIPStatic INTERFACE
-	${ZLIB_LIB}
+       ${ZLIB_LIB}
     )
 endfunction()
