@@ -68,7 +68,13 @@ namespace litecore {
         public:
             access(MUTEX &mut, Retained<R> &ref)     :_lock(mut), _ref(ref) { }
             access(const access&) =delete;  // I cannot be copied
-            access(access&&) { throw std::runtime_error("No moving!"); }      // I cannot be moved
+#if defined(_MSC_VER) && _MSC_VER < 1920
+            // https://developercommunity.visualstudio.com/t/15935-guaranteed-copy-elision-failure/1398603
+            // Deleting this constructor causes copy elision failure.  Microsoft won't fix prior to VS 2019.
+            access(access&&) { throw std::runtime_error("No moving!"); }
+#else
+            access(access&&) = delete;       // I cannot be moved
+#endif
 
             Retained<R>& get()              {return _ref;}
             operator R* ()                  {return _ref;}
@@ -84,7 +90,13 @@ namespace litecore {
         public:
             access(MUTEX &mut, const R* ref):_lock(mut), _ref(ref) { }
             access(const access&) =delete;  // I cannot be copied
-            access(access&&) { throw std::runtime_error("No moving!"); }       // I cannot be moved
+#if defined(_MSC_VER) && _MSC_VER < 1920
+            // https://developercommunity.visualstudio.com/t/15935-guaranteed-copy-elision-failure/1398603
+            // Deleting this constructor causes copy elision failure.  Microsoft won't fix prior to VS 2019.
+            access(access&&) { throw std::runtime_error("No moving!"); }
+#else
+            access(access&&) = delete;       // I cannot be moved
+#endif
 
             auto get()                      {return _ref;}
             operator const R* ()            {return _ref;}
