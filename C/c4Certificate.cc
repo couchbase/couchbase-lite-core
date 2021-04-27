@@ -27,7 +27,7 @@
 #include "NumConversion.hh"
 #include <vector>
 
-#if DEBUG
+#ifdef COUCHBASE_ENABLE_CERT_REQUEST
 #    define ENABLE_CERT_REQUEST
 #    define ENABLE_SENDING_CERT_REQUESTS
 #endif
