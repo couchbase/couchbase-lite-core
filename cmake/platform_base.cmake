@@ -116,6 +116,7 @@ function(set_litecore_source_base)
         LiteCore/Support/LogEncoder.cc
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/StringUtil.cc
+        LiteCore/Support/ThreadUtil.cc
         LiteCore/Support/ChannelManifest.cc
         PARENT_SCOPE
     )
