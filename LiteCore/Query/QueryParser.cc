@@ -28,7 +28,6 @@
 #include "DeepIterator.hh"
 #include "Path.hh"
 #include "Logging.hh"
-#include "StringUtil.hh"
 #include "PlatformIO.hh"
 #include "SecureDigest.hh"
 #include "NumConversion.hh"
@@ -123,60 +122,35 @@ namespace litecore {
             }
             return n;
         }
-    }
-    
-    static bool isAlphanumericOrUnderscore(slice str) {
-        if (str.size == 0)
-            return false;
-        for (size_t i = 0; i < str.size; i++)
-            if (!isalnum(str[i]) && str[i] != '_')
+
+        bool isAlphanumericOrUnderscore(slice str) {
+            if (str.size == 0)
                 return false;
-        return true;
-    }
+            for (size_t i = 0; i < str.size; i++)
+                if (!isalnum(str[i]) && str[i] != '_')
+                    return false;
+            return true;
+        }
 
-    static bool isValidIdentifier(slice str) {
-        return isAlphanumericOrUnderscore(str) && !isdigit(str[0]);
-    }
+        bool isValidIdentifier(slice str) {
+            return isAlphanumericOrUnderscore(str) && !isdigit(str[0]);
+        }
+    } // end of `qp` namespace
 
+    
     static bool isValidAlias(const string& alias) {
-        return alias.find('"') == string::npos && alias.find('\\') == string::npos;
+        return !slice(alias).findAnyByteOf("'\":");
     }
 
 
-    // Writes a string with SQL quoting (inside apostrophes, doubling contained apostrophes.)
-    static void writeEscapedString(std::ostream &out, slice str, char quote) {
-        bool simple = true;
-        for (unsigned i = 0; i < str.size; i++) {
-            if (str[i] == quote) {
-                simple = false;
-                break;
-            }
-        }
-        if (simple) {
-            out << str;
+    static string quotedIdentifierString(slice str) {
+        if (isValidIdentifier(str)) {
+            return string(str);
         } else {
-            for (unsigned i = 0; i < str.size; i++) {
-                if (str[i] == quote)
-                    out.write(&quote, 1);
-                out.write((const char*)&str[i], 1);
-            }
+            stringstream s;
+            s << sqlIdentifier(str);
+            return s.str();
         }
-    }
-
-
-    // Writes a string with SQL quoting (inside apostrophes, doubling contained apostrophes.)
-    /*static*/ void QueryParser::writeSQLString(std::ostream &out, slice str, char quote) {
-        out << quote;
-        writeEscapedString(out, str, quote);
-        out << quote;
-    }
-
-
-    static string quoteTableName(const string &name) {
-        if (name == kDefaultTableAlias)
-            return name;
-        else
-            return string("\"") + name + "\"";
     }
 
     static alloc_slice escapedPath(slice inputPath) {
@@ -292,7 +266,7 @@ namespace litecore {
         // WHAT clause:
         string defaultTablePrefix;
         if (_propertiesUseSourcePrefix)
-            defaultTablePrefix = quoteTableName(_dbAlias) + ".";
+            defaultTablePrefix = quotedIdentifierString(_dbAlias) + ".";
 
         auto startPosOfWhat = _sql.tellp();
         _1stCustomResultCol = 0;
@@ -334,7 +308,7 @@ namespace litecore {
             // Write columns for the FTS match offsets (in order of appearance of the MATCH expressions)
             for (string &ftsTable : _ftsTables) {
                 const string &alias = _indexJoinTables[ftsTable];
-                extra << ", offsets(" << alias << ".\"" << ftsTable << "\")";
+                extra << ", offsets(" << alias << "." << sqlIdentifier(ftsTable) << ")";
             }
             extra << ", ";
             string str = _sql.str();
@@ -401,7 +375,7 @@ namespace litecore {
     void QueryParser::writeDeletionTest(const string &alias, bool isDeleted) {
         _sql << "(";
         if (!alias.empty())
-            _sql << quoteTableName(alias) << '.';
+            _sql << sqlIdentifier(alias) << '.';
         _sql << "flags & " << (unsigned)DocumentFlags::kDeleted
              << (isDeleted ? " != 0)" : " = 0)");
     }
@@ -416,7 +390,8 @@ namespace litecore {
         try {
             if (isUnnestedTable)
                 _aliases[_dbAlias] = kUnnestTableAlias;
-            _sql << "CREATE INDEX \"" << name << "\" ON " << _tableName << " ";
+            _sql << "CREATE INDEX " << sqlIdentifier(name)
+                 << " ON " << sqlIdentifier(_tableName) << " ";
             if (expressionsIter.count() > 0) {
                 writeColumnList(expressionsIter);
             } else {
@@ -498,7 +473,7 @@ namespace litecore {
     void QueryParser::writeFromClause(const Value *from) {
         auto fromArray = (const Array*)from;    // already type-checked by parseFromClause
 
-        _sql << " FROM " << _tableName;
+        _sql << " FROM " << sqlIdentifier(_tableName);
 
         if (fromArray && !fromArray->empty()) {
             for (Array::iterator i(fromArray); i; ++i) {
@@ -510,19 +485,21 @@ namespace litecore {
                 switch (_aliases[alias]) {
                     case kDBAlias:
                         // The first item is the database alias:
-                        _sql << " AS \"" << alias << "\"";
+                        _sql << " AS " << sqlIdentifier(alias);
                         break;
                     case kUnnestVirtualTableAlias:
                         // UNNEST: Use fl_each() to make a virtual table:
                         _sql << " JOIN ";
                         writeEachExpression(unnest);
-                        _sql << " AS \"" << alias << "\"";
+                        _sql << " AS " << sqlIdentifier(alias);
                         break;
                     case kUnnestTableAlias: {
                         // UNNEST: Optimize query by using the unnest table as a join source:
                         string unnestTable = unnestedTableName(unnest);
-                        _sql << " JOIN \"" << unnestTable << "\" AS \"" << alias << "\""
-                                " ON \"" << alias << "\".docid=\"" << _dbAlias << "\".rowid";
+                        _sql << " JOIN " << sqlIdentifier(unnestTable)
+                             << " AS " << sqlIdentifier(alias)
+                             << " ON " << sqlIdentifier(alias) << ".docid="
+                             << sqlIdentifier(_dbAlias) << ".rowid";
                         break;
                     }
                     case kJoinAlias: {
@@ -542,8 +519,8 @@ namespace litecore {
                             require(on, "FROM item needs an ON clause to be a join");
                         }
 
-                        _sql << " " << kJoinTypeNames[ joinType ];
-                        _sql << " JOIN " << _tableName << " AS \"" << alias << "\"";
+                        _sql << " " << kJoinTypeNames[ joinType ] << " JOIN "
+                             << sqlIdentifier(_tableName) << " AS " << sqlIdentifier(alias);
 
                         _sql << " ON ";
                         _checkedDeleted = false;
@@ -565,15 +542,15 @@ namespace litecore {
                 }
             }
         } else {
-            _sql << " AS " << quoteTableName(_dbAlias);
+            _sql << " AS " << sqlIdentifier(_dbAlias);
         }
 
         // Add joins to index tables (FTS, predictive):
         for (auto &ftsTable : _indexJoinTables) {
             auto &table = ftsTable.first;
             auto &alias = ftsTable.second;
-            _sql << " JOIN \"" << table << "\" AS " << alias
-                 << " ON " << alias << ".docid = " << quoteTableName(_dbAlias) << ".rowid";
+            _sql << " JOIN " << sqlIdentifier(table) << " AS " << alias
+                 << " ON " << alias << ".docid = " << sqlIdentifier(_dbAlias) << ".rowid";
         }
     }
 
@@ -634,7 +611,7 @@ namespace litecore {
 
 
     void QueryParser::writeCollation() {
-        _sql << " COLLATE \"" << _collation.sqliteName() << "\"";
+        _sql << " COLLATE " << sqlIdentifier(_collation.sqliteName());
     }
 
 
@@ -686,7 +663,7 @@ namespace litecore {
         if (_context.back() == &kColumnListOperation) {
             writePropertyGetter(kValueFnName, Path(str));
         } else {
-            writeSQLString(str);
+            _sql << sqlString(str);
         }
     }
 
@@ -746,12 +723,14 @@ namespace litecore {
 
     static string columnTitleFromProperty(const Path &property, bool useAlias) {
         if (property.empty())
-            return "*";
+            return "*"; // for the property ".", i.e. the entire doc. It will be translated to unique db alias.
         string first(property[0].keyStr());
         if (first[0] == '_') {
             return first.substr(1);         // meta property
-        } else {
+        } else if (property[property.size()-1].keyStr()) {
             return string(property[property.size()-1].keyStr());
+        } else {
+            return {};
         }
     }
 
@@ -776,7 +755,7 @@ namespace litecore {
                 result = expr[1];
                 _sql << kResultFnName << "(";
                 parseCollatableNode(result);
-                _sql << ") AS \"" << title << '"';
+                _sql << ") AS " << sqlIdentifier(title);
                 addAlias(title, kResultAlias);
             } else {
                 _sql << (isImplicitBool(expr[0]) ? kBoolResultFnName : kResultFnName) << "(";
@@ -793,11 +772,12 @@ namespace litecore {
                     title = columnTitleFromProperty(Path(result->asString()), _propertiesUseSourcePrefix);
                 } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
                     title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
-                } else {
-                    title = format("$%u", ++anonCount); // default for non-properties
                 }
-                if (title.empty())
-                    title = "*";        // for the property ".", i.e. the entire doc
+                if (title.empty()) {
+                    title = format("$%u", ++anonCount); // default for non-properties
+                } else if (title == "*") {
+                    title = _dbAlias;
+                }
             }
 
             // Make the title unique:
@@ -948,7 +928,7 @@ namespace litecore {
         // Write the expression:
         auto ftsTableAlias = FTSJoinTableAlias(operands[0]);
         Assert(!ftsTableAlias.empty());
-        _sql << ftsTableAlias << ".\"" << FTSTableName(operands[0]) << "\" MATCH ";
+        _sql << ftsTableAlias << "." << sqlIdentifier(FTSTableName(operands[0])) << " MATCH ";
         parseCollatableNode(operands[1]);
     }
 
@@ -1006,11 +986,11 @@ namespace litecore {
 
     bool QueryParser::optimizeMetaKeyExtraction(Array::iterator& operands) {
         // Handle Meta().id - N1QL
-        // ["_.", ["meta" <db>], ".id"] - JSON
+        // ["_.", ["meta()", <db>], ".id"] - JSON
 
         const Array* metaop = operands[0]->asArray();
         if (metaop == nullptr || metaop->count() == 0 ||
-            metaop->begin().value()->asString() != "meta"_sl) {
+            ! metaop->begin().value()->asString().caseEquivalent("meta()")) {
             return false;
         }
         slice dbAlias;
@@ -1062,9 +1042,7 @@ namespace litecore {
             path.moveStart(2);
         }
 
-        _sql << ", ";
-        writeSQLString(path);
-        _sql << ")";
+        _sql << ", " << sqlString(path) << ")";
     }
 
 
@@ -1114,9 +1092,8 @@ namespace litecore {
         if (path.empty()) {
             _sql << '_' << var << ".value";
         } else {
-            _sql << kNestedValueFnName << "(_" << var << ".body, ";
-            writeSQLString(_sql, slice(string(path)));
-            _sql << ")";
+            _sql << kNestedValueFnName << "(_" << var << ".body, "
+                 << sqlString(string(path)) << ")";
         }
     }
 
@@ -1220,8 +1197,7 @@ namespace litecore {
             } else {
                 first = false;
             }
-            writeSQLString(k);
-            _sql << ", ";
+            _sql << sqlString(k) << ", ";
             writeMetaPropertyGetter(k, dbIter->first);
         }
         _sql << ')';
@@ -1230,7 +1206,7 @@ namespace litecore {
     void QueryParser::writeMetaPropertyGetter(slice metaKey, const string& dbAlias) {
         string tablePrefix;
         if (!dbAlias.empty()) {
-            tablePrefix = quoteTableName(dbAlias) + ".";
+            tablePrefix = quotedIdentifierString(dbAlias) + ".";
         }
 
         auto b = &kMetaKeys[0];
@@ -1296,7 +1272,9 @@ namespace litecore {
     // Handles function calls, where the op ends with "()"
     void QueryParser::functionOp(slice op, Array::iterator& operands) {
         // Look up the function name:
-        op.shorten(op.size - 2);
+        if (op.hasSuffix("()"_sl)) {
+            op.shorten(op.size - 2);
+        }
         string fnName = op.asString();
         const FunctionSpec *spec;
         for (spec = kFunctionList; spec->name; ++spec) {
@@ -1335,7 +1313,7 @@ namespace litecore {
             auto i = _indexJoinTables.find(fts);
             if (i == _indexJoinTables.end())
                 fail("rank() can only be called on FTS indexes");
-            _sql << "rank(matchinfo(" << i->second << ".\"" << i->first << "\"))";
+            _sql << "rank(matchinfo(" << i->second << "." << sqlIdentifier(i->first) << "))";
             return;
         }
 
@@ -1371,8 +1349,7 @@ namespace litecore {
         for (Dict::iterator i(dict); i; ++i) {
             if (n++ > 0)
                 _sql << ", ";
-            writeSQLString(i.keyString());
-            _sql << ", ";
+            _sql << sqlString(i.keyString()) << ", ";
             parseNode(i.value());
         }
         _sql << ')';
@@ -1521,7 +1498,7 @@ namespace litecore {
     void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
         auto &&iType = verifyDbAlias(property);
         string alias = iType->first;
-        string tablePrefix = alias.empty() ? "" : quoteTableName(alias) + ".";
+        string tablePrefix = alias.empty() ? "" : quotedIdentifierString(alias) + ".";
         
         if (iType->second >= kUnnestVirtualTableAlias) {
             // The alias is to an UNNEST. This needs to be written specially:
@@ -1535,7 +1512,7 @@ namespace litecore {
             // vs alias -> doc["path"]["to"]["value"])
             if(property.size() == 1) {
                 // Simple case, the alias is being used as-is
-                _sql << '"' << iType->first << '"';
+                _sql << sqlIdentifier(iType->first);
                 return;
             }
 
@@ -1543,7 +1520,8 @@ namespace litecore {
             // a collection type (e.g. alias = {"foo": "bar"}, and want to
             // ORDER BY alias.foo
             property.drop(1);
-            _sql << kNestedValueFnName << "(\"" << iType->first << "\", '" << string(property) << "')";
+            _sql << kNestedValueFnName << "(" << sqlIdentifier(iType->first)
+                 << ", " << sqlString(string(property)) << ")";
             return;
         } 
         
@@ -1578,8 +1556,7 @@ namespace litecore {
         // Write the function call:
         _sql << fn << "(" << tablePrefix << _bodyColumnName;
         if(!property.empty()) {
-            _sql << ", ";
-            writeSQLString(_sql, string(property));
+            _sql << ", " << sqlString(string(property));
         }
         if (param) {
             _sql << ", ";
@@ -1598,21 +1575,19 @@ namespace litecore {
                 "can't use '%s' on an UNNEST", spec.c_str());
         string tablePrefix;
         if (_propertiesUseSourcePrefix)
-            tablePrefix = quoteTableName(alias) + ".";
+            tablePrefix = quotedIdentifierString(alias) + ".";
 
         if (type == kUnnestVirtualTableAlias) {
             if (property.empty()) {
                 _sql << tablePrefix << "value";
             } else {
-                _sql << kNestedValueFnName << "(" << tablePrefix << "body, ";
-                writeSQLString(_sql, slice(spec));
-                _sql << ")";
+                _sql << kNestedValueFnName << "(" << tablePrefix << "body, "
+                     << sqlString(spec) << ")";
             }
         } else {
             _sql << kUnnestedValueFnName << "(" << tablePrefix << "body";
             if (!property.empty()) {
-                _sql << ", ";
-                writeSQLString(_sql, slice(spec));
+                _sql << ", " << sqlString(spec);
             }
             _sql << ")";
         }

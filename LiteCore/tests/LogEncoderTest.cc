@@ -187,15 +187,14 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
     logger.withStream([&](ostream &s) {
         CHECK(out.str().empty());
     });
-
-    std::this_thread::sleep_for(1200ms);
-
     string encoded;
-    logger.withStream([&](ostream &s) {
-        encoded = out.str();
-    });
+    CHECK(WaitUntil(5000ms, [&out, &logger, &encoded]{
+        logger.withStream([&](ostream &s) {
+            encoded = out.str();
+        });
+        return !encoded.empty();
+    }));
 
-    CHECK(!encoded.empty());
     string result = dumpLog(encoded, {});
     CHECK(!result.empty());
 }

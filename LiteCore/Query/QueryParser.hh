@@ -38,61 +38,75 @@ namespace fleece::impl {
 namespace litecore {
 
 
+    /** Translates queries from our JSON schema (actually Fleece) into SQL runnable by SQLite.
+        https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema */
     class QueryParser {
     public:
+        using string = std::string;
+        using string_view = std::string_view;
+        template <class T> using set = std::set<T>;
+        template <class T> using vector = std::vector<T>;
+        using Array = fleece::impl::Array;
+        using ArrayIterator = fleece::impl::ArrayIterator;
+        using Value = fleece::impl::Value;
+
+
         /** Delegate knows about the naming & existence of tables. */
         class delegate {
         public:
             virtual ~delegate() =default;
-            virtual std::string tableName() const =0;
-            virtual std::string bodyColumnName() const        {return "body";}
-            virtual std::string FTSTableName(const std::string &property) const =0;
-            virtual std::string unnestedTableName(const std::string &property) const =0;
+            virtual string tableName() const =0;
+            virtual string bodyColumnName() const               {return "body";}
+            virtual string FTSTableName(const string &property) const =0;
+            virtual string unnestedTableName(const string &property) const =0;
 #ifdef COUCHBASE_ENTERPRISE
-            virtual std::string predictiveTableName(const std::string &property) const =0;
+            virtual string predictiveTableName(const string &property) const =0;
 #endif
-            virtual bool tableExists(const std::string &tableName) const =0;
+            virtual bool tableExists(const string &tableName) const =0;
         };
+
 
         QueryParser(const delegate &delegate)
         :QueryParser(delegate, delegate.tableName(), delegate.bodyColumnName())
         { }
 
-        void setTableName(const std::string &name)                  {_tableName = name;}
-        void setBodyColumnName(const std::string &name)             {_bodyColumnName = name;}
+        void setTableName(const string &name)                   {_tableName = name;}
+        void setBodyColumnName(const string &name)              {_bodyColumnName = name;}
 
-        void parse(const fleece::impl::Value*);
+        void parse(const Value*);
         void parseJSON(slice);
 
-        void parseJustExpression(const fleece::impl::Value *expression);
+        void parseJustExpression(const Value *expression);
 
-        void writeCreateIndex(const std::string &name,
-                              fleece::impl::ArrayIterator &whatExpressions,
-                              const fleece::impl::Array *whereClause,
+        void writeCreateIndex(const string &name,
+                              ArrayIterator &whatExpressions,
+                              const Array *whereClause,
                               bool isUnnestedTable);
 
-        static void writeSQLString(std::ostream &out, slice str, char quote ='\'');
+        string SQL()  const                                     {return _sql.str();}
 
-        std::string SQL()  const                                    {return _sql.str();}
+        const set<string>& parameters()                         {return _parameters;}
+        const vector<string>& ftsTablesUsed() const             {return _ftsTables;}
+        unsigned firstCustomResultColumn() const                {return _1stCustomResultCol;}
+        const vector<string>& columnTitles() const              {return _columnTitles;}
 
-        const std::set<std::string>& parameters()                   {return _parameters;}
-        const std::vector<std::string>& ftsTablesUsed() const       {return _ftsTables;}
-        unsigned firstCustomResultColumn() const                    {return _1stCustomResultCol;}
-        const std::vector<std::string>& columnTitles() const        {return _columnTitles;}
+        bool isAggregateQuery() const                           {return _isAggregateQuery;}
+        bool usesExpiration() const                             {return _checkedExpiration;}
 
-        bool isAggregateQuery() const                               {return _isAggregateQuery;}
-        bool usesExpiration() const                                 {return _checkedExpiration;}
-
-        std::string expressionSQL(const fleece::impl::Value*);
-        std::string whereClauseSQL(const fleece::impl::Value*, std::string_view dbAlias);
-        std::string eachExpressionSQL(const fleece::impl::Value*);
-        std::string FTSExpressionSQL(const fleece::impl::Value*);
-        static std::string FTSColumnName(const fleece::impl::Value *expression);
-        std::string unnestedTableName(const fleece::impl::Value *key) const;
-        std::string predictiveIdentifier(const fleece::impl::Value *) const;
-        std::string predictiveTableName(const fleece::impl::Value *) const;
+        string expressionSQL(const Value*);
+        string whereClauseSQL(const Value*, string_view dbAlias);
+        string eachExpressionSQL(const Value*);
+        string FTSExpressionSQL(const Value*);
+        static string FTSColumnName(const Value *expression);
+        string unnestedTableName(const Value *key) const;
+        string predictiveIdentifier(const Value *) const;
+        string predictiveTableName(const Value *) const;
 
     private:
+        template <class T, class U> using map = std::map<T,U>;
+        using stringstream = std::stringstream;
+        using Dict = fleece::impl::Dict;
+        using Path = fleece::impl::Path;
 
         enum aliasType {
             kDBAlias,
@@ -102,15 +116,15 @@ namespace litecore {
             kUnnestTableAlias
         };
 
-        QueryParser(const delegate &delegate, const std::string& tableName, const std::string& bodyColumnName)
+        QueryParser(const delegate &delegate, const string& tableName, const string& bodyColumnName)
         :_delegate(delegate)
         ,_tableName(tableName)
         ,_bodyColumnName(bodyColumnName)
         { }
+
         QueryParser(const QueryParser *qp)
         :QueryParser(qp->_delegate, qp->_tableName, qp->_bodyColumnName)
         { }
-
 
         struct Operation;
         static const Operation kOperationList[];
@@ -124,108 +138,103 @@ namespace litecore {
         QueryParser& operator=(const QueryParser&) =delete;
 
         void reset();
-        void parseNode(const fleece::impl::Value*);
-        void parseOpNode(const fleece::impl::Array*);
-        void handleOperation(const Operation*, slice actualOperator, fleece::impl::ArrayIterator& operands);
+        void parseNode(const Value*);
+        void parseOpNode(const Array*);
+        void handleOperation(const Operation*, slice actualOperator, ArrayIterator& operands);
         void parseStringLiteral(slice str);
 
-        void writeSelect(const fleece::impl::Dict *dict);
-        void writeSelect(const fleece::impl::Value *where, const fleece::impl::Dict *operands);
-        unsigned writeSelectListClause(const fleece::impl::Dict *operands, slice key, const char *sql, bool aggregatesOK =false);
+        void writeSelect(const Dict *dict);
+        void writeSelect(const Value *where, const Dict *operands);
+        unsigned writeSelectListClause(const Dict *operands, slice key, const char *sql,
+                                       bool aggregatesOK =false);
 
-        void writeWhereClause(const fleece::impl::Value *where);
-        void writeDeletionTest(const std::string &alias, bool isDeleted = false);
+        void writeWhereClause(const Value *where);
+        void writeDeletionTest(const string &alias, bool isDeleted = false);
 
-        void addAlias(const std::string &alias, aliasType);
-        void parseFromClause(const fleece::impl::Value *from);
-        void writeFromClause(const fleece::impl::Value *from);
-        int parseJoinType(fleece::slice);
-        bool writeOrderOrLimitClause(const fleece::impl::Dict *operands,
-                                     fleece::slice jsonKey,
-                                     const char *keyword);
+        void addAlias(const string &alias, aliasType);
+        void parseFromClause(const Value *from);
+        void writeFromClause(const Value *from);
+        int parseJoinType(slice);
+        bool writeOrderOrLimitClause(const Dict *operands, slice jsonKey, const char *keyword);
 
-        void prefixOp(slice, fleece::impl::ArrayIterator&);
-        void postfixOp(slice, fleece::impl::ArrayIterator&);
-        void infixOp(slice, fleece::impl::ArrayIterator&);
-        void resultOp(slice, fleece::impl::ArrayIterator&);
-        void arrayLiteralOp(slice, fleece::impl::ArrayIterator&);
-        void betweenOp(slice, fleece::impl::ArrayIterator&);
-        void existsOp(slice, fleece::impl::ArrayIterator&);
-        void collateOp(slice, fleece::impl::ArrayIterator&);
-        void concatOp(slice, fleece::impl::ArrayIterator&);
-        void inOp(slice, fleece::impl::ArrayIterator&);
-        void likeOp(slice, fleece::impl::ArrayIterator&);
-        void matchOp(slice, fleece::impl::ArrayIterator&);
-        void anyEveryOp(slice, fleece::impl::ArrayIterator&);
-        void parameterOp(slice, fleece::impl::ArrayIterator&);
-        void propertyOp(slice, fleece::impl::ArrayIterator&);
-        void objectPropertyOp(slice, fleece::impl::ArrayIterator&);
-        void blobOp(slice, fleece::impl::ArrayIterator&);
-        void variableOp(slice, fleece::impl::ArrayIterator&);
-        void missingOp(slice, fleece::impl::ArrayIterator&);
-        void caseOp(slice, fleece::impl::ArrayIterator&);
-        void selectOp(slice, fleece::impl::ArrayIterator&);
-        void metaOp(slice, fleece::impl::ArrayIterator&);
-        void fallbackOp(slice, fleece::impl::ArrayIterator&);
+        void prefixOp(slice, ArrayIterator&);
+        void postfixOp(slice, ArrayIterator&);
+        void infixOp(slice, ArrayIterator&);
+        void resultOp(slice, ArrayIterator&);
+        void arrayLiteralOp(slice, ArrayIterator&);
+        void betweenOp(slice, ArrayIterator&);
+        void existsOp(slice, ArrayIterator&);
+        void collateOp(slice, ArrayIterator&);
+        void concatOp(slice, ArrayIterator&);
+        void inOp(slice, ArrayIterator&);
+        void likeOp(slice, ArrayIterator&);
+        void matchOp(slice, ArrayIterator&);
+        void anyEveryOp(slice, ArrayIterator&);
+        void parameterOp(slice, ArrayIterator&);
+        void propertyOp(slice, ArrayIterator&);
+        void objectPropertyOp(slice, ArrayIterator&);
+        void blobOp(slice, ArrayIterator&);
+        void variableOp(slice, ArrayIterator&);
+        void missingOp(slice, ArrayIterator&);
+        void caseOp(slice, ArrayIterator&);
+        void selectOp(slice, ArrayIterator&);
+        void metaOp(slice, ArrayIterator&);
+        void fallbackOp(slice, ArrayIterator&);
 
-        void functionOp(slice, fleece::impl::ArrayIterator&);
+        void functionOp(slice, ArrayIterator&);
 
-        void writeDictLiteral(const fleece::impl::Dict*);
-        bool writeNestedPropertyOpIfAny(fleece::slice fnName, fleece::impl::ArrayIterator &operands);
-        void writePropertyGetter(slice fn, fleece::impl::Path &&property,
-                                 const fleece::impl::Value *param =nullptr);
-        void writeFunctionGetter(slice fn, const fleece::impl::Value *source,
-                                 const fleece::impl::Value *param =nullptr);
-        void writeUnnestPropertyGetter(slice fn, fleece::impl::Path &property,
-                                       const std::string &alias, aliasType);
-        void writeEachExpression(fleece::impl::Path &&property);
-        void writeEachExpression(const fleece::impl::Value *arrayExpr);
-        void writeSQLString(slice str)              {writeSQLString(_sql, str);}
-        void writeArgList(fleece::impl::ArrayIterator& operands);
-        void writeColumnList(fleece::impl::ArrayIterator& operands);
-        void writeResultColumn(const fleece::impl::Value*);
+        void writeDictLiteral(const Dict*);
+        bool writeNestedPropertyOpIfAny(slice fnName, ArrayIterator &operands);
+        void writePropertyGetter(slice fn, Path &&property, const Value *param =nullptr);
+        void writeFunctionGetter(slice fn, const Value *source, const Value *param =nullptr);
+        void writeUnnestPropertyGetter(slice fn, Path &property, const string &alias, aliasType);
+        void writeEachExpression(Path &&property);
+        void writeEachExpression(const Value *arrayExpr);
+        void writeArgList(ArrayIterator& operands);
+        void writeColumnList(ArrayIterator& operands);
+        void writeResultColumn(const Value*);
         void writeCollation();
-        void parseCollatableNode(const fleece::impl::Value*);
-        void writeMetaProperty(slice fn, const std::string &tablePrefix, const char *property);
+        void parseCollatableNode(const Value*);
+        void writeMetaProperty(slice fn, const string &tablePrefix, const char *property);
 
-        void parseJoin(const fleece::impl::Dict*);
+        void parseJoin(const Dict*);
 
-        unsigned findFTSProperties(const fleece::impl::Value *root);
-        void findPredictionCalls(const fleece::impl::Value *root);
-        const std::string& indexJoinTableAlias(const std::string &key, const char *aliasPrefix =nullptr);
-        const std::string&  FTSJoinTableAlias(const fleece::impl::Value *matchLHS, bool canAdd =false);
-        const std::string&  predictiveJoinTableAlias(const fleece::impl::Value *expr, bool canAdd =false);
-        std::string FTSTableName(const fleece::impl::Value *key) const;
-        std::string expressionIdentifier(const fleece::impl::Array *expression, unsigned maxItems =0) const;
-        void findPredictiveJoins(const fleece::impl::Value *node, std::vector<std::string> &joins);
-        bool writeIndexedPrediction(const fleece::impl::Array *node);
+        unsigned findFTSProperties(const Value *root);
+        void findPredictionCalls(const Value *root);
+        const string& indexJoinTableAlias(const string &key, const char *aliasPrefix =nullptr);
+        const string&  FTSJoinTableAlias(const Value *matchLHS, bool canAdd =false);
+        const string&  predictiveJoinTableAlias(const Value *expr, bool canAdd =false);
+        string FTSTableName(const Value *key) const;
+        string expressionIdentifier(const Array *expression, unsigned maxItems =0) const;
+        void findPredictiveJoins(const Value *node, vector<string> &joins);
+        bool writeIndexedPrediction(const Array *node);
 
         void writeMetaPropertyGetter(slice metaKey, const string& dbAlias);
-        std::map<std::string, aliasType>::const_iterator verifyDbAlias(fleece::impl::Path &property);
-        bool optimizeMetaKeyExtraction(fleece::impl::ArrayIterator&);
+        map<string, aliasType>::const_iterator verifyDbAlias(Path &property);
+        bool optimizeMetaKeyExtraction(ArrayIterator&);
 
-        const delegate& _delegate;                  // delegate object (SQLiteKeyStore)
-        std::string _tableName;                     // Name of the table containing documents
-        std::string _bodyColumnName;                // Column holding doc bodies
-        std::map<std::string, aliasType> _aliases;  // "AS..." aliases for db/joins/unnests
-        std::string _dbAlias;                       // Alias of the db itself, "_doc" by default
-        bool _propertiesUseSourcePrefix {false};    // Must properties include alias as prefix?
-        std::vector<std::string> _columnTitles;     // Pretty names of result columns
-        std::stringstream _sql;                     // The SQL being generated
-        const fleece::impl::Value* _curNode;        // Current node being parsed
-        std::vector<const Operation*> _context;     // Parser stack
-        std::set<std::string> _parameters;          // Plug-in "$" parameters found in parsing
-        std::set<std::string> _variables;           // Active variables, inside ANY/EVERY exprs
-        std::map<std::string, std::string> _indexJoinTables;  // index table name --> alias
-        std::vector<std::string> _ftsTables;        // FTS virtual tables being used
-        unsigned _1stCustomResultCol {0};           // Index of 1st result after _baseResultColumns
-        bool _aggregatesOK {false};                 // Are aggregate fns OK to call?
-        bool _isAggregateQuery {false};             // Is this an aggregate query?
-        bool _checkedDeleted {false};               // Has query accessed _deleted meta-property?
-        bool _checkedExpiration {false};            // Has query accessed _expiration meta-property?
-        Collation _collation;                       // Collation in use during parse
-        bool _collationUsed {true};                 // Emitted SQL "COLLATION" yet?
-        bool _functionWantsCollation {false};       // The current function wants to receive collation in its argument list
+        const delegate& _delegate;               // delegate object (SQLiteKeyStore)
+        string _tableName;                       // Name of the table containing documents
+        string _bodyColumnName;                  // Column holding doc bodies
+        map<string, aliasType> _aliases;         // "AS..." aliases for db/joins/unnests
+        string _dbAlias;                         // Alias of the db itself, "_doc" by default
+        bool _propertiesUseSourcePrefix {false}; // Must properties include alias as prefix?
+        vector<string> _columnTitles;            // Pretty names of result columns
+        stringstream _sql;                       // The SQL being generated
+        const Value* _curNode;                   // Current node being parsed
+        vector<const Operation*> _context;       // Parser stack
+        set<string> _parameters;                 // Plug-in "$" parameters found in parsing
+        set<string> _variables;                  // Active variables, inside ANY/EVERY exprs
+        map<string, string> _indexJoinTables;    // index table name --> alias
+        vector<string> _ftsTables;               // FTS virtual tables being used
+        unsigned _1stCustomResultCol {0};        // Index of 1st result after _baseResultColumns
+        bool _aggregatesOK {false};              // Are aggregate fns OK to call?
+        bool _isAggregateQuery {false};          // Is this an aggregate query?
+        bool _checkedDeleted {false};            // Has query accessed _deleted meta-property?
+        bool _checkedExpiration {false};         // Has query accessed _expiration meta-property?
+        Collation _collation;                    // Collation in use during parse
+        bool _collationUsed {true};              // Emitted SQL "COLLATION" yet?
+        bool _functionWantsCollation {false};    // Current fn wants collation param in its arg list
     };
 
 }

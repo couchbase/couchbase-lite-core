@@ -182,7 +182,9 @@ namespace litecore {
         virtual void setProperties(AllocedDict properties) {
             LOCK(_mutex);
             _options.properties = properties;
-            _progressLevel = static_cast<C4ReplicatorProgressLevel>(_options.progressLevel());
+            if(properties[kC4ReplicatorOptionProgressLevel]) {
+                _progressLevel = static_cast<C4ReplicatorProgressLevel>(_options.progressLevel());
+            }
         }
 
         // Prevents any future client callbacks (called by `c4repl_free`.)

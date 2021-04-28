@@ -174,12 +174,12 @@ expr6 =
   | x:expr5 IS (
         NULL                            { $$ = binaryOp(x, "IS", nullValue); }
       | MISSING                         { $$ = binaryOp(x, "IS", op("MISSING")); }
-      | VALUED                          { $$ = op("IS_VALUED()", x); }
+      | VALUED                          { $$ = op("IS VALUED", x); }
     )
   | x:expr5 IS NOT (
         NULL                            { $$ = binaryOp(x, "IS NOT", nullValue); }
       | MISSING                         { $$ = op(x, "IS NOT", op("MISSING")); }
-      | VALUED                          { $$ = op("NOT", op("IS_VALUED()", x)); }
+      | VALUED                          { $$ = op("NOT", op("IS VALUED", x)); }
     )
   | inExpression
   | likeExpression
@@ -196,7 +196,9 @@ expr3 =
     x:expr2 (_ op:OP_PREC_3 _ r:expr2   { x = binaryOp(x, op, r);}
              )*                         { $$ = x}
 expr2 =
-    x:expr1 (_ op:OP_PREC_2 _ r:expr1   { x = binaryOp(x, op, r);}
+    x:expr1 (_ op:OP_PREC_2 _ r:expr1   { x = (op.as<string>() == "/")
+                                            ? binaryOp(x, "div()", r) // perform floating division
+                                            : binaryOp(x, op, r); }
              )*                         { $$ = x}
 expr1 =
     x:expr0 (_ op:OP_PREC_1 _ r:expr0   { x = binaryOp(x, op, r);}
@@ -319,7 +321,7 @@ propertyName
 
 
 function =
-    "meta"i _ '(' _                    { f = op("meta");}
+    "meta"i _ '(' _                    { f = op("meta()");}
     (ds:dataSourceName _               { appendAny(f, ds.as<string>());}
     )? ')' _                           { $$ = f;}
   | f:functionName e:parenExprs        { $$ = insertAny(e, 0, f.as<string>() + "()");}
