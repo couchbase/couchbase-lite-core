@@ -135,8 +135,10 @@ public:
         CHECK(_statusReceived.error.code == _expectedError.code);
         if (_expectedError.code)
             CHECK(_statusReceived.error.domain == _expectedError.domain);
-        CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
-        CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
+        if (!(_ignoreLackOfDocErrors &&_docPullErrors.empty()))
+            CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
+        if (!(_ignoreLackOfDocErrors &&_docPushErrors.empty()))
+            CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
         if (_checkDocsFinished)
             CHECK(asVector(_docsFinished) == asVector(_expectedDocsFinished));
         CHECK(_statusReceived.progress.unitsCompleted == _statusReceived.progress.unitsTotal);
@@ -591,6 +593,7 @@ public:
     C4Error _expectedError {};
     std::set<std::string> _docPushErrors, _docPullErrors;
     std::set<std::string> _expectedDocPushErrors, _expectedDocPullErrors;
+    bool _ignoreLackOfDocErrors = false;
     bool _ignoreTransientErrors = false;
     bool _checkDocsFinished {true};
     std::multiset<std::string> _docsFinished, _expectedDocsFinished;
