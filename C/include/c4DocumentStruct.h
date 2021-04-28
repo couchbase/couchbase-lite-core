@@ -24,7 +24,7 @@ C4Document_C
 #endif
 {
     void* _internal1;           // placeholders for vtable-ptr and refcount (see c4Document.hh)
-    uint32_t _internal2;
+    void* _internal2;
 
     C4DocumentFlags flags;      ///< Document flags
     C4HeapString docID;         ///< Document ID

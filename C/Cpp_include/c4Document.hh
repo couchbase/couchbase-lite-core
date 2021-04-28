@@ -181,17 +181,20 @@ protected:
                      C4RevisionFlags flags,
                      bool allowConflict,
                      C4Error* C4NULLABLE) noexcept;
-protected:
-    // These have the same offset and layout as the corresponding fields in the C C4Document:
-    C4DocumentFlags      _flags;        // Document flags
-    alloc_slice          _docID;        // Document ID
-    alloc_slice          _revID;        // Revision ID of current revision
-    C4SequenceNumber     _sequence;     // Sequence at which doc was last updated
-    C4Revision           _selected;     // Describes the currently-selected revision
-    C4ExtraInfo          _extraInfo = {}; // For client use
 
-    alloc_slice          _selectedRevID;// Same as _selected::revID
-    litecore::CollectionImpl* _collection;   // Owning collection
+    // (These fields must have the same offset and layout as the corresponding fields in the C
+    // struct C4Document_C declared in c4DocumentStruct.h. See full explanation in c4Document.cc.)
+    alignas(void*) // <--very important
+    C4DocumentFlags           _flags;           // Document flags
+    alloc_slice               _docID;           // Document ID
+    alloc_slice               _revID;           // Revision ID of current revision
+    C4SequenceNumber          _sequence;        // Sequence at which doc was last updated
+    C4Revision                _selected;        // Describes the currently-selected revision
+    C4ExtraInfo               _extraInfo = {};  // For client use
+    // (end of fields that have to match C4Document_C)
+
+    alloc_slice               _selectedRevID;   // Backing store for _selected.revID
+    litecore::CollectionImpl* _collection;      // Owning collection
 };
 
 

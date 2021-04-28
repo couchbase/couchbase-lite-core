@@ -47,8 +47,61 @@ C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
 :_collection(asInternal(collection))
 ,_docID(move(docID_))
 {
-    DebugAssert(&_flags == &((C4Document_C*)this)->flags);
-    DebugAssert((void*)&_docID == (void*)&((C4Document_C*)this)->docID);
+#if DEBUG
+    // Make sure that C4Document and C4Document_C line up so that the same object can serve as both:
+    auto asStruct = (C4Document_C*)this;
+    if (&_flags != &(asStruct)->flags || (void*)&_docID != (void*)&(asStruct)->docID) {
+        WarnError("FATAL: C4Document struct layout is wrong!! "
+                  "this=%p; asStruct=%p; `flags` at %p vs %p, `docID` at %p vs %p",
+                  this, asStruct, &_flags, &(asStruct)->flags, &_docID, &(asStruct)->docID);
+        /* If this is wrong, using C4Document is completely broken, so best just abort.
+           This indicates something wrong with the kludgy padding fields at the start of
+           C4Document_C in c4DocumentStruct.h -- they don't match the actual amount of space
+           taken up by the vtable and inherited field(s) of C4Document. */
+        std::terminate();
+
+        /* So here's what's up with this layout kludge. We have to make the type `C4Document*`
+           work equally well in C (as a non-opaque struct with six fields) and in C++ (as a
+           class inheriting from RefCounted.) It's the "non-opaque struct" part that's hard, but
+           for legacy reasons we have to keep it that way for now.
+
+           So, C4Document extends RefCounted, which contains a vtable pointer and an `int32_t`.
+           Therefore we can mimic its layout in C by putting a `void*` and an `int32_t` at the
+           start of `C4Document_C`, right? Well, that works with Clang and GCC but not MSVC.
+           The latter adds 4 extra bytes of padding before the first field (`flags`). Why?
+
+           It seems to be because there are two different ways to lay out a class with a base
+           class. Here the base class is RefCounted, which looks like:
+                class RefCounted {
+                    _vtable* __vptr;
+                    int32_t _refCount;
+                };
+           The GCC/Clang way to lay out C4Document is to pretend to add the inherited members:
+                class C4Document {
+                    _vtable* __vptr;
+                    int32_t _refCount;
+                    C4DocumentFlags _flags;         // (this is a uint32_t basically)
+                    ...
+                };
+
+           The MSVC way is to pretend to add the base class as a single member:
+                class C4Document {
+                    RefCounted __baseClass;
+                    C4DocumentFlags _flags;
+                    ...
+                };
+           This has different results because sizeof(RefCounted) == 16, not 12! C++ says the
+           size of a struct/class has to be a multiple of the alignment of each field, and the
+           vtable pointer is 8 bytes.
+
+           I've chosen to work around this by adding `alignas(void*)` to the declaration of the
+           `_flags` member, forcing it to be 8-byte aligned on all platforms for consistency.
+           Correspondingly, I changed the second `_internal2` padding field of `C4Document_C`
+           from `int32_t` to `void*`, so the `flags` field of that struct is also 8-byte aligned.
+           --Jens, April 28 2021
+         */
+    }
+#endif
 }
 
 
