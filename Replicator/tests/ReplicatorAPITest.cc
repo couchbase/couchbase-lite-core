@@ -683,6 +683,59 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Set Progress Level", "[Pull][C]") {
     }
 }
 
+TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
+    createDB2();
+
+    C4Error err;
+    C4ReplicatorParameters params {};std::vector<std::string> docIDs;
+    params.pull = kC4OneShot;
+    params.onDocumentsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        auto docIDs = (std::vector<std::string>*)context;
+        for(size_t i = 0; i < numDocs; i++) {
+            docIDs->emplace_back(slice(docs[i]->docID));
+        }
+    };
+
+    params.callbackContext = &docIDs;
+
+    c4::ref<C4Replicator> repl = c4repl_newLocal(db, db2, params, ERROR_INFO(err));
+    REQUIRE(repl);
+    REQUIRE(c4repl_setProgressLevel(repl, kC4ReplProgressPerDocument, ERROR_INFO(err)));
+
+    {
+        Encoder enc;
+        enc.beginDict();
+        enc[kC4ReplicatorOptionMaxRetries] = 3;
+        enc[kC4ReplicatorOptionMaxRetryInterval] = 2;
+        enc.endDict();
+        _options = AllocedDict(enc.finish());
+    }
+
+    c4repl_setOptions(repl, _options.data());
+    {
+        TransactionHelper t(db2);
+        char docID[20], json[100];
+        for (unsigned i = 1; i <= 50; i++) {
+            sprintf(docID, "doc-%03u", i);
+            sprintf(json, R"({"n":%d, "even":%s})", i, (i%2 ? "false" : "true"));
+            createFleeceRev(db2, slice(docID), C4STR("1-abcd"), slice(json));
+        }
+    }
+
+    c4repl_start(repl, false);
+    REQUIRE_BEFORE(5s, c4repl_getStatus(repl).level == kC4Stopped);
+    REQUIRE(c4db_getLastSequence(db) == 50);
+    REQUIRE(docIDs.size() == 50); 
+    for(unsigned i = 0; i < 50; i++) {
+        auto nextID = litecore::format( "doc-%03u", i + 1);
+        CHECK(nextID == docIDs[i]);
+    }
+}
+
 
 #include "c4ReplicatorImpl.hh"
 

@@ -34,6 +34,7 @@ set(
     REST_CAPI.cc
     Server.cc
     EE/RESTSyncListener_stub.cc
+    CertRequest.cc
 )
 
 ### STATIC LIBRARY:

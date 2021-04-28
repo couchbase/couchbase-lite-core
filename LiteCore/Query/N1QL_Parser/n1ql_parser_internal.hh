@@ -252,7 +252,7 @@ static const char* kReservedWords[] = {
     "AND",  "ANY",  "AS",  "ASC",  "BETWEEN",  "BY",  "CASE",  "CROSS",  "DESC",  "DISTINCT",
     "ELSE",  "END",  "EVERY",  "FALSE",  "FROM",  "GROUP",  "HAVING",  "IN",  "INNER",  "IS",
     "JOIN",  "LEFT",  "LIKE",  "LIMIT",  "MISSING",  "NATURAL",  "NOT",
-    "NULL",  "MISSING",  "OFFSET",  "ON",  "OR",  "ORDER",  "OUTER",  "REGEX",  "RIGHT",
+    "NULL",  "MISSING",  "OFFSET",  "ON",  "OR",  "ORDER",  "OUTER",  "RIGHT",
     "SATISFIES",  "SELECT",  "THEN",  "TRUE",  "USING",  "VALUED", "WHEN",  "WHERE",
     "COLLATE",
     nullptr
@@ -271,7 +271,7 @@ static const char* kFunctions[] = {         // (copied from LiteCore's QueryPars
     // Math:
     "abs",  "acos",  "asin",  "atan",  "atan2",  "ceil",  "cos",  "degrees",  "e",  "exp",
     "floor",  "ln",  "log",  "pi",  "power",  "radians",  "round",  "sign",  "sin",  "sqrt",
-    "tan",  "trunc",
+    "tan",  "trunc", "div", "idiv",
     // Patterns:
     "regexp_contains",  "regexp_like",  "regexp_position",  "regexp_replace",
     // Strings:

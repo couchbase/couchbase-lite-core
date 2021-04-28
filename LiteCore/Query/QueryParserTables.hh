@@ -73,6 +73,7 @@ namespace litecore {
         {"NOT IN",          2, 9,  3,  &QueryParser::inOp},
         {"BETWEEN",         3, 3,  3,  &QueryParser::betweenOp},
         {"EXISTS",          1, 1,  8,  &QueryParser::existsOp},
+        {"IS VALUED",       1, 1,  3,  &QueryParser::functionOp},
 
         {"COLLATE",         2, 2, 10,  &QueryParser::collateOp},
 
@@ -91,7 +92,7 @@ namespace litecore {
         {"ASC",             1, 1,  2,  &QueryParser::postfixOp},
         {"DESC",            1, 1,  2,  &QueryParser::postfixOp},
 
-        {"META",            0, 1, 99,  &QueryParser::metaOp},
+        {"META()",          0, 1, 99,  &QueryParser::metaOp},
 
         {nullslice,         0, 0, 99,  &QueryParser::fallbackOp} // fallback; must come last in list
     };
@@ -177,6 +178,8 @@ namespace litecore {
         {"sqrt",             1, 1},
         {"tan",              1, 1},
         {"trunc",            1, 2},
+        {"div",              2, 2},
+        {"idiv",             2, 2},
 
         // Patterns:
         {"regexp_contains",  2, 2},
@@ -222,7 +225,7 @@ namespace litecore {
         {"to_object",        1, 1, "toobject"},
         {"tostring",         1, 1},
         {"to_string",        1, 1, "tostring"},
-        {"is_valued",        1, 1, "isvalued"},
+        {"is valued",        1, 1, "isvalued"},
 
         // FTS (not standard N1QL):
         {"match",            2, 2},

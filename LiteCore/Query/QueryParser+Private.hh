@@ -11,6 +11,7 @@
 #include "fleece/slice.hh"
 #include "function_ref.hh"
 #include <iomanip>
+#include <string_view>
 
 namespace litecore::qp {
 
@@ -88,11 +89,16 @@ namespace litecore::qp {
 
 #pragma mark - FORMATTING:
 
+    /// True if the slice contains only ASCII alphanumerics and underscores (and is non-empty.)
     bool isAlphanumericOrUnderscore(slice str);
+
+    /// True if the slice is a valid SQL identifier that doesn't require double-quotes,
+    /// i.e. it isAlphanumericOrUnderscore and does not begin with a digit.
     bool isValidIdentifier(slice str);
 
-    // Temporary wrapper for a slice/string, which adds quotes/escapes when written to an ostream.
-    template <char Q, char E>
+    // Temporary wrapper for a slice/string, which adds SQL quotes/escapes when written to an
+    // ostream. Use the `sqlString()` and `sqlIdentifier()` functions instead of this directly.
+    template <char QUOTE, char ESC>
     struct quotedSlice {
         explicit quotedSlice(slice s) :_raw(s) { }
         quotedSlice(const quotedSlice&) = delete;
@@ -101,22 +107,32 @@ namespace litecore::qp {
         slice const _raw;
     };
 
-    template <char Q, char E>
-    std::ostream& operator<< (std::ostream &out, const quotedSlice<Q,E> &str)  {
+    template <char QUOTE, char ESC>
+    std::ostream& operator<< (std::ostream &out, const quotedSlice<QUOTE,ESC> &str)  {
         // SQL strings ('') are always quoted; identifiers ("") only when necessary.
-        if (Q == '"' && isValidIdentifier(str._raw))
+        if (QUOTE == '"' && isValidIdentifier(str._raw)) {
             out.write((const char*)str._raw.buf, str._raw.size);
-        else
-            out << std::quoted(string_view(str._raw), Q, E);
+        } else {
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 9
+            // (GCC 7.4 does not have std::quoted(string_view) for some reason, though GCC 9 does)
+            out << std::quoted(string(str._raw), QUOTE, ESC);
+#else
+            out << std::quoted(string_view(str._raw), QUOTE, ESC);
+#endif
+        }
         return out;
     }
 
-    // Wrap around a string when writing to a stream, to single-quote it as a SQL string literal.
+    // Wrap around a string when writing to a stream, to single-quote it as a SQL string literal
+    // and escape any single-quotes it contains:
+    // `out << sqlString("I'm a string");` --> `'I''m a string'`
     static inline auto sqlString(slice str) {
         return quotedSlice<'\'','\''>(str);
     }
 
-    // Wrap around a SQL identifier when writing to a stream, to double-quote it if necessary.
+    // Wrap around a SQL identifier when writing to a stream, to double-quote it if necessary:
+    // `out << sqlIdentifier("normal_identifier") --> `normal_identifier`
+    // `out << sqlIdentifier("weird-\"identifier\"");` --> `"weird-""identifier"""`
     static inline auto sqlIdentifier(slice name) {
         return quotedSlice<'"','"'>(name);
     }

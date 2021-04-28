@@ -503,6 +503,12 @@ namespace litecore {
             default:
                 return *this;
         }
+
+        if(domain == d && code == c) {
+            // No change, just return the same object
+            return *this;
+        }
+
         error err(d, c);
         err.backtrace = backtrace;
         return err;

@@ -764,12 +764,14 @@ namespace litecore {
 
     static string columnTitleFromProperty(const Path &property, bool useAlias) {
         if (property.empty())
-            return "*";
+            return "*"; // for the property ".", i.e. the entire doc. It will be translated to unique db alias.
         string first(property[0].keyStr());
         if (first[0] == '_') {
             return first.substr(1);         // meta property
-        } else {
+        } else if (property[property.size()-1].keyStr()) {
             return string(property[property.size()-1].keyStr());
+        } else {
+            return {};
         }
     }
 
@@ -811,11 +813,12 @@ namespace litecore {
                     title = columnTitleFromProperty(Path(result->asString()), _propertiesUseSourcePrefix);
                 } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
                     title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
-                } else {
-                    title = format("$%u", ++anonCount); // default for non-properties
                 }
-                if (title.empty())
-                    title = "*";        // for the property ".", i.e. the entire doc
+                if (title.empty()) {
+                    title = format("$%u", ++anonCount); // default for non-properties
+                } else if (title == "*") {
+                    title = _dbAlias;
+                }
             }
 
             // Make the title unique:
@@ -1024,11 +1027,11 @@ namespace litecore {
 
     bool QueryParser::optimizeMetaKeyExtraction(Array::iterator& operands) {
         // Handle Meta().id - N1QL
-        // ["_.", ["meta" <db>], ".id"] - JSON
+        // ["_.", ["meta()", <db>], ".id"] - JSON
 
         const Array* metaop = operands[0]->asArray();
         if (metaop == nullptr || metaop->count() == 0 ||
-            metaop->begin().value()->asString() != "meta"_sl) {
+            ! metaop->begin().value()->asString().caseEquivalent("meta()")) {
             return false;
         }
         slice dbAlias;
@@ -1311,7 +1314,9 @@ namespace litecore {
     // Handles function calls, where the op ends with "()"
     void QueryParser::functionOp(slice op, Array::iterator& operands) {
         // Look up the function name:
-        op.shorten(op.size - 2);
+        if (op.hasSuffix("()"_sl)) {
+            op.shorten(op.size - 2);
+        }
         string fnName = op.asString();
         const FunctionSpec *spec;
         for (spec = kFunctionList; spec->name; ++spec) {

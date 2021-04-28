@@ -450,7 +450,7 @@ YY_ACTION(void) yy_2_STRING_LITERAL(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_STRING_LITERAL\n"));
   {
-#line 445
+#line 447
    __ = unquote(yytext, '"');;
   }
 #undef yythunkpos
@@ -464,7 +464,7 @@ YY_ACTION(void) yy_1_STRING_LITERAL(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_STRING_LITERAL\n"));
   {
-#line 444
+#line 446
    __ = unquote(yytext, '\'');;
   }
 #undef yythunkpos
@@ -478,7 +478,7 @@ YY_ACTION(void) yy_1_INT_LITERAL(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_INT_LITERAL\n"));
   {
-#line 437
+#line 439
    __ = (long long)atoll(yytext);;
   }
 #undef yythunkpos
@@ -492,7 +492,7 @@ YY_ACTION(void) yy_1_FLOAT_LITERAL(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_FLOAT_LITERAL\n"));
   {
-#line 433
+#line 435
    double d;
                                           sscanf(yytext, "%lf", &d);
                                           __ = d; ;
@@ -508,7 +508,7 @@ YY_ACTION(void) yy_2_BOOLEAN_LITERAL(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_BOOLEAN_LITERAL\n"));
   {
-#line 429
+#line 431
    __ = false;;
   }
 #undef yythunkpos
@@ -522,7 +522,7 @@ YY_ACTION(void) yy_1_BOOLEAN_LITERAL(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_BOOLEAN_LITERAL\n"));
   {
-#line 428
+#line 430
    __ = true;;
   }
 #undef yythunkpos
@@ -536,7 +536,7 @@ YY_ACTION(void) yy_2_literal(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_literal\n"));
   {
-#line 425
+#line 427
    __ = op("MISSING");;
   }
 #undef yythunkpos
@@ -550,7 +550,7 @@ YY_ACTION(void) yy_1_literal(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_literal\n"));
   {
-#line 424
+#line 426
    __ = nullValue; ;
   }
 #undef yythunkpos
@@ -567,7 +567,7 @@ YY_ACTION(void) yy_3_dictLiteral(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_dictLiteral\n"));
   {
-#line 413
+#line 415
    __ = e.isNull() ? Any(MutableDict::newDict()) : e;;
   }
 #undef yythunkpos
@@ -587,7 +587,7 @@ YY_ACTION(void) yy_2_dictLiteral(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_dictLiteral\n"));
   {
-#line 411
+#line 413
    setAny(e, slice(k.as<string>()), v); ;
   }
 #undef yythunkpos
@@ -607,7 +607,7 @@ YY_ACTION(void) yy_1_dictLiteral(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_dictLiteral\n"));
   {
-#line 410
+#line 412
    e = dictWith(slice(k.as<string>()), e); ;
   }
 #undef yythunkpos
@@ -626,7 +626,7 @@ YY_ACTION(void) yy_3_arrayLiteral(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_arrayLiteral\n"));
   {
-#line 405
+#line 407
    __ = e.isNull() ? Any(op("[]")) : e;;
   }
 #undef yythunkpos
@@ -644,7 +644,7 @@ YY_ACTION(void) yy_2_arrayLiteral(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_arrayLiteral\n"));
   {
-#line 403
+#line 405
    appendAny(e, e2); ;
   }
 #undef yythunkpos
@@ -662,7 +662,7 @@ YY_ACTION(void) yy_1_arrayLiteral(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_arrayLiteral\n"));
   {
-#line 402
+#line 404
    e = op("[]", e); ;
   }
 #undef yythunkpos
@@ -678,7 +678,7 @@ YY_ACTION(void) yy_2_IDENTIFIER(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_IDENTIFIER\n"));
   {
-#line 346
+#line 348
    __ = unquote(yytext, '`');;
   }
 #undef yythunkpos
@@ -692,7 +692,7 @@ YY_ACTION(void) yy_1_IDENTIFIER(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_IDENTIFIER\n"));
   {
-#line 345
+#line 347
    __ = string(yytext);;
   }
 #undef yythunkpos
@@ -709,7 +709,7 @@ YY_ACTION(void) yy_4_parenExprs(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_4_parenExprs\n"));
   {
-#line 336
+#line 338
    __ = f;;
   }
 #undef yythunkpos
@@ -729,7 +729,7 @@ YY_ACTION(void) yy_3_parenExprs(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_parenExprs\n"));
   {
-#line 335
+#line 337
    appendAny(f, e2);;
   }
 #undef yythunkpos
@@ -749,7 +749,7 @@ YY_ACTION(void) yy_2_parenExprs(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_parenExprs\n"));
   {
-#line 334
+#line 336
    appendAny(f, e);;
   }
 #undef yythunkpos
@@ -769,7 +769,7 @@ YY_ACTION(void) yy_1_parenExprs(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_parenExprs\n"));
   {
-#line 333
+#line 335
    f = MutableArray::newArray();;
   }
 #undef yythunkpos
@@ -789,7 +789,7 @@ YY_ACTION(void) yy_4_function(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_4_function\n"));
   {
-#line 327
+#line 329
    __ = insertAny(e, 0, f.as<string>() + "()");;
   }
 #undef yythunkpos
@@ -809,7 +809,7 @@ YY_ACTION(void) yy_3_function(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_function\n"));
   {
-#line 326
+#line 328
    __ = f;;
   }
 #undef yythunkpos
@@ -829,7 +829,7 @@ YY_ACTION(void) yy_2_function(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_function\n"));
   {
-#line 325
+#line 327
    appendAny(f, ds.as<string>());;
   }
 #undef yythunkpos
@@ -849,8 +849,8 @@ YY_ACTION(void) yy_1_function(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_function\n"));
   {
-#line 324
-   f = op("meta");;
+#line 326
+   f = op("meta()");;
   }
 #undef yythunkpos
 #undef yypos
@@ -869,7 +869,7 @@ YY_ACTION(void) yy_4_propertyPath(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_4_propertyPath\n"));
   {
-#line 314
+#line 316
    __ = p;;
   }
 #undef yythunkpos
@@ -889,7 +889,7 @@ YY_ACTION(void) yy_3_propertyPath(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_propertyPath\n"));
   {
-#line 312
+#line 314
    p = concatIndex(p, i);;
   }
 #undef yythunkpos
@@ -909,7 +909,7 @@ YY_ACTION(void) yy_2_propertyPath(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_propertyPath\n"));
   {
-#line 310
+#line 312
    p = concatProperty(p, p2);;
   }
 #undef yythunkpos
@@ -929,7 +929,7 @@ YY_ACTION(void) yy_1_propertyPath(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_propertyPath\n"));
   {
-#line 309
+#line 311
    p = quoteProperty(p); ;
   }
 #undef yythunkpos
@@ -948,7 +948,7 @@ YY_ACTION(void) yy_3_property(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_property\n"));
   {
-#line 306
+#line 308
    __ = op(p);;
   }
 #undef yythunkpos
@@ -966,7 +966,7 @@ YY_ACTION(void) yy_2_property(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_property\n"));
   {
-#line 305
+#line 307
    __ = op("." + a.as<string>() + ".");;
   }
 #undef yythunkpos
@@ -984,7 +984,7 @@ YY_ACTION(void) yy_1_property(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_property\n"));
   {
-#line 304
+#line 306
    __ = op(".");;
   }
 #undef yythunkpos
@@ -1000,7 +1000,7 @@ YY_ACTION(void) yy_1_OP_PREFIX(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_OP_PREFIX\n"));
   {
-#line 297
+#line 299
    __ = trim(yytext);;
   }
 #undef yythunkpos
@@ -1017,7 +1017,7 @@ YY_ACTION(void) yy_3__baseExpr(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3__baseExpr\n"));
   {
-#line 290
+#line 292
    __ = op(string("$") + yytext); ;
   }
 #undef yythunkpos
@@ -1037,7 +1037,7 @@ YY_ACTION(void) yy_2__baseExpr(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2__baseExpr\n"));
   {
-#line 287
+#line 289
    __ = op("EXISTS", s); ;
   }
 #undef yythunkpos
@@ -1057,7 +1057,7 @@ YY_ACTION(void) yy_1__baseExpr(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1__baseExpr\n"));
   {
-#line 286
+#line 288
    __ = unaryOp(o, r);;
   }
 #undef yythunkpos
@@ -1074,7 +1074,7 @@ YY_ACTION(void) yy_1_collation(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_collation\n"));
   {
-#line 280
+#line 282
    __ = string(yytext); ;
   }
 #undef yythunkpos
@@ -1090,7 +1090,7 @@ YY_ACTION(void) yy_4_collateSuffix(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_4_collateSuffix\n"));
   {
-#line 277
+#line 279
    __ = co; ;
   }
 #undef yythunkpos
@@ -1108,7 +1108,7 @@ YY_ACTION(void) yy_3_collateSuffix(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_collateSuffix\n"));
   {
-#line 271
+#line 273
    if (co.isNull()) {
                                             co = arrayWith(c);
                                           } else {
@@ -1130,7 +1130,7 @@ YY_ACTION(void) yy_2_collateSuffix(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_collateSuffix\n"));
   {
-#line 269
+#line 271
    co = arrayWith(c); ;
   }
 #undef yythunkpos
@@ -1148,7 +1148,7 @@ YY_ACTION(void) yy_1_collateSuffix(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_collateSuffix\n"));
   {
-#line 267
+#line 269
    co = Any(); ;
   }
 #undef yythunkpos
@@ -1167,7 +1167,7 @@ YY_ACTION(void) yy_3_expr0(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_expr0\n"));
   {
-#line 264
+#line 266
    __ = x; ;
   }
 #undef yythunkpos
@@ -1187,7 +1187,7 @@ YY_ACTION(void) yy_2_expr0(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_expr0\n"));
   {
-#line 253
+#line 255
    MutableArray coArray = co;
                                           bool did_collateOp = false;
                                           for (auto iter = coArray.begin(); iter != coArray.end(); ++iter) {
@@ -1217,7 +1217,7 @@ YY_ACTION(void) yy_1_expr0(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_expr0\n"));
   {
-#line 252
+#line 254
    __ = op("_.", x, p);;
   }
 #undef yythunkpos
@@ -1235,7 +1235,7 @@ YY_ACTION(void) yy_1_selectExpr(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_selectExpr\n"));
   {
-#line 245
+#line 247
    __ = op("SELECT", s); ;
   }
 #undef yythunkpos
@@ -1250,7 +1250,7 @@ YY_ACTION(void) yy_2_IN_OR_NOT(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_IN_OR_NOT\n"));
   {
-#line 242
+#line 244
    __ = string("IN");;
   }
 #undef yythunkpos
@@ -1264,7 +1264,7 @@ YY_ACTION(void) yy_1_IN_OR_NOT(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_IN_OR_NOT\n"));
   {
-#line 241
+#line 243
    __ = string("NOT IN");;
   }
 #undef yythunkpos
@@ -1282,7 +1282,7 @@ YY_ACTION(void) yy_1_inExpression(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_inExpression\n"));
   {
-#line 237
+#line 239
    __ = op(i, x, insertAny(p, 0, string("[]"))); ;
   }
 #undef yythunkpos
@@ -1300,7 +1300,7 @@ YY_ACTION(void) yy_1_OP_PREC_1(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_OP_PREC_1\n"));
   {
-#line 228
+#line 230
    __ = trim(yytext);;
   }
 #undef yythunkpos
@@ -1314,7 +1314,7 @@ YY_ACTION(void) yy_1_OP_PREC_2(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_OP_PREC_2\n"));
   {
-#line 227
+#line 229
    __ = trim(yytext);;
   }
 #undef yythunkpos
@@ -1328,7 +1328,7 @@ YY_ACTION(void) yy_1_OP_PREC_3(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_OP_PREC_3\n"));
   {
-#line 226
+#line 228
    __ = trim(yytext);;
   }
 #undef yythunkpos
@@ -1342,7 +1342,7 @@ YY_ACTION(void) yy_1_OP_PREC_4(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_OP_PREC_4\n"));
   {
-#line 225
+#line 227
    __ = trim(yytext);;
   }
 #undef yythunkpos
@@ -1356,7 +1356,7 @@ YY_ACTION(void) yy_1_OP_PREC_5(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_OP_PREC_5\n"));
   {
-#line 224
+#line 226
    __ = trim(yytext);;
   }
 #undef yythunkpos
@@ -1370,7 +1370,7 @@ YY_ACTION(void) yy_4_OP_PREC_6(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_4_OP_PREC_6\n"));
   {
-#line 223
+#line 225
    __ = string("IS");;
   }
 #undef yythunkpos
@@ -1384,7 +1384,7 @@ YY_ACTION(void) yy_3_OP_PREC_6(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_3_OP_PREC_6\n"));
   {
-#line 222
+#line 224
    __ = string("IS NOT");;
   }
 #undef yythunkpos
@@ -1398,7 +1398,7 @@ YY_ACTION(void) yy_2_OP_PREC_6(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_OP_PREC_6\n"));
   {
-#line 221
+#line 223
    __ = string("!=");;
   }
 #undef yythunkpos
@@ -1412,7 +1412,7 @@ YY_ACTION(void) yy_1_OP_PREC_6(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_OP_PREC_6\n"));
   {
-#line 220
+#line 222
    __ = string("=");;
   }
 #undef yythunkpos
@@ -1426,7 +1426,7 @@ YY_ACTION(void) yy_1_OP_PREC_7(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_OP_PREC_7\n"));
   {
-#line 219
+#line 221
    __ = string("AND");;
   }
 #undef yythunkpos
@@ -1440,7 +1440,7 @@ YY_ACTION(void) yy_1_OP_PREC_8(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_OP_PREC_8\n"));
   {
-#line 218
+#line 220
    __ = string("OR");;
   }
 #undef yythunkpos
@@ -1458,7 +1458,7 @@ YY_ACTION(void) yy_1_betweenExpression(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_betweenExpression\n"));
   {
-#line 214
+#line 216
    auto b = op("BETWEEN", x, min, max);
                                           if (n.isNotNull())  b = op("NOT", b);
                                           __ = b; ;
@@ -1481,7 +1481,7 @@ YY_ACTION(void) yy_1_likeExpression(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_likeExpression\n"));
   {
-#line 208
+#line 210
    auto b = binaryOp(x, "LIKE", r);
                                           if (n.isNotNull())  b = op("NOT", b);
                                           __ = b; ;
@@ -1503,7 +1503,7 @@ YY_ACTION(void) yy_2_expr1(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_expr1\n"));
   {
-#line 205
+#line 207
    __ = x;
   }
 #undef yythunkpos
@@ -1523,7 +1523,7 @@ YY_ACTION(void) yy_1_expr1(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_expr1\n"));
   {
-#line 204
+#line 206
    x = binaryOp(x, op, r);;
   }
 #undef yythunkpos
@@ -1543,7 +1543,7 @@ YY_ACTION(void) yy_2_expr2(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_expr2\n"));
   {
-#line 202
+#line 204
    __ = x;
   }
 #undef yythunkpos
@@ -1564,7 +1564,9 @@ YY_ACTION(void) yy_1_expr2(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_1_expr2\n"));
   {
 #line 201
-   x = binaryOp(x, op, r);;
+   x = (op.as<string>() == "/")
+                                            ? binaryOp(x, "div()", r) // perform floating division
+                                            : binaryOp(x, op, r); ;
   }
 #undef yythunkpos
 #undef yypos
@@ -1744,7 +1746,7 @@ YY_ACTION(void) yy_7_expr6(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_7_expr6\n"));
   {
 #line 184
-   __ = op("NOT", op("IS_VALUED()", x)); ;
+   __ = op("NOT", op("IS VALUED", x)); ;
   }
 #undef yythunkpos
 #undef yypos
@@ -1804,7 +1806,7 @@ YY_ACTION(void) yy_4_expr6(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_4_expr6\n"));
   {
 #line 179
-   __ = op("IS_VALUED()", x); ;
+   __ = op("IS VALUED", x); ;
   }
 #undef yythunkpos
 #undef yypos
@@ -2392,7 +2394,7 @@ YY_ACTION(void) yy_1_dataSource(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_1_dataSource\n"));
   {
 #line 83
-   n = dictWith("COLLECTION"_sl, n);;
+   n = dictWith("COLLECTION"_sl, n); ;
   }
 #undef yythunkpos
 #undef yypos
@@ -4661,7 +4663,7 @@ YY_PARSE(yycontext *) YYRELEASE(yycontext *yyctx)
 }
 
 #endif
-#line 452 "n1ql.leg"
+#line 454 "n1ql.leg"
 
 //////// PARSER ENTRY POINT (C++):
 
