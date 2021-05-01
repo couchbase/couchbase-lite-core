@@ -29,4 +29,9 @@ function(setup_build)
         "${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib"
         "${CMAKE_CURRENT_LIST_DIR}/../../MSVC"
     )
+
+    target_link_libraries(
+        BLIPStatic INTERFACE
+       ${ZLIB_LIB}
+    )
 endfunction()
