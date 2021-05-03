@@ -156,8 +156,6 @@ static inline C4KeyPair* C4NULLABLE
     c4keypair_retain(C4KeyPair* C4NULLABLE r) C4API {return (C4KeyPair*)c4base_retain(r);}
 static inline C4Database* C4NULLABLE
     c4db_retain(C4Database* C4NULLABLE r) C4API     {return (C4Database*)c4base_retain(r);}
-static inline C4Collection* C4NULLABLE
-    c4coll_retain(C4Collection* C4NULLABLE r) C4API {return (C4Collection*)c4base_retain(r);}
 static inline C4Query* C4NULLABLE
     c4query_retain(C4Query* C4NULLABLE r) C4API     {return (C4Query*)c4base_retain(r);}
 
@@ -169,7 +167,6 @@ C4QueryEnumerator* C4NULLABLE
 static inline void c4cert_release   (C4Cert* C4NULLABLE r) C4API       {c4base_release(r);}
 static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API    {c4base_release(r);}
 static inline void c4db_release     (C4Database* C4NULLABLE r) C4API   {c4base_release(r);}
-static inline void c4coll_release   (C4Collection* C4NULLABLE r) C4API {c4base_release(r);}
 static inline void c4query_release  (C4Query* C4NULLABLE r) C4API      {c4base_release(r);}
 
 void               c4doc_release    (C4Document* C4NULLABLE) C4API;
