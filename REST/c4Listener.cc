@@ -59,7 +59,7 @@ C4Listener::C4Listener(C4ListenerConfig config)
         };
     }
 
-    _impl = NewListener(&config);
+    _impl = dynamic_cast<RESTListener*>(NewListener(&config).get());
     if (!_impl)
         C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported, "Unsupported listener API");
 }
@@ -70,12 +70,7 @@ C4Listener::C4Listener(C4Listener&&) = default;
 
 C4Listener::~C4Listener() {
     if (_impl)
-        ((RESTListener*)_impl.get())->stop();
-}
-
-
-RESTListener* C4Listener::restImpl() {
-    return dynamic_cast<RESTListener*>(_impl.get());
+        _impl->stop();
 }
 
 
@@ -92,22 +87,22 @@ bool C4Listener::unshareDB(C4Database *db) {
 }
 
 
-std::vector<std::string> C4Listener::URLs(C4Database* C4NULLABLE db, C4ListenerAPIs api) {
+std::vector<std::string> C4Listener::URLs(C4Database* C4NULLABLE db, C4ListenerAPIs api) const {
     AssertParam(api == kC4RESTAPI || api == kC4SyncAPI,
                 "The provided API must be one of the following:  REST, Sync.");
     vector<string> urls;
-    for (net::Address &address : restImpl()->addresses(db, api))
+    for (net::Address &address : _impl->addresses(db, api))
         urls.push_back(string(address.url()));
     return urls;
 }
 
 
-uint16_t C4Listener::port() {
-    return restImpl()->port();
+uint16_t C4Listener::port() const {
+    return _impl->port();
 }
 
 
-std::pair<unsigned, unsigned> C4Listener::connectionStatus() {
+std::pair<unsigned, unsigned> C4Listener::connectionStatus() const {
     auto active = _impl->activeConnectionCount();
     auto connectionCount = std::max(_impl->connectionCount(), active);
     auto activeConnectionCount = active;

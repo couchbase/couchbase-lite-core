@@ -29,20 +29,19 @@ struct C4Listener final : C4Base {
 
     bool unshareDB(C4Database *db);
 
-    uint16_t port();
+    uint16_t port() const;
 
-    std::pair<unsigned, unsigned> connectionStatus();
+    std::pair<unsigned, unsigned> connectionStatus() const;
 
-    std::vector<std::string> URLs(C4Database* C4NULLABLE db, C4ListenerAPIs api);
+    std::vector<std::string> URLs(C4Database* C4NULLABLE db, C4ListenerAPIs api) const;
 
     static std::string URLNameFromPath(slice path);
 
 private:
     C4Listener(const C4Listener&) = delete;
     C4Listener(C4Listener&&);
-    litecore::REST::RESTListener* restImpl();
 
-    Retained<litecore::REST::Listener> _impl;
+    Retained<litecore::REST::RESTListener> _impl;
     C4ListenerHTTPAuthCallback C4NULLABLE _httpAuthCallback;
     void* C4NULLABLE _callbackContext;
 };

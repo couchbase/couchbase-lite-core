@@ -77,7 +77,7 @@ bool c4listener_unshareDB(C4Listener *listener, C4Database *db,
 }
 
 
-uint16_t c4listener_getPort(C4Listener *listener) noexcept {
+uint16_t c4listener_getPort(const C4Listener *listener) noexcept {
     try {
         return listener->port();
     } catchAndWarn()
@@ -85,7 +85,7 @@ uint16_t c4listener_getPort(C4Listener *listener) noexcept {
 }
 
 
-FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db,
+FLMutableArray c4listener_getURLs(const C4Listener *listener, C4Database *db,
                                   C4ListenerAPIs api, C4Error* err) noexcept {
     try {
         auto urls = fleece::MutableArray::newArray();
@@ -97,7 +97,7 @@ FLMutableArray c4listener_getURLs(C4Listener *listener, C4Database *db,
 }
 
 
-void c4listener_getConnectionStatus(C4Listener *listener,
+void c4listener_getConnectionStatus(const C4Listener *listener,
                                     unsigned *connectionCount,
                                     unsigned *activeConnectionCount) noexcept
 {
