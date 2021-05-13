@@ -832,7 +832,7 @@
 		27047CE3233AE8DE009D1CE9 /* ListenerHarness.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ListenerHarness.hh; sourceTree = "<group>"; };
 		2705154C1D8CBE6C00D62D05 /* c4Query.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Query.cc; sourceTree = "<group>"; };
 		270515581D907F6200D62D05 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
-		2705155E1D909CC700D62D05 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; };
+		2705155E1D909CC700D62D05 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; wrapsLines = 1; };
 		2705155F1D90A29F00D62D05 /* Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tests.xcconfig; sourceTree = "<group>"; };
 		270515601D91C2AE00D62D05 /* c4PerfTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4PerfTest.cc; sourceTree = "<group>"; };
 		2708FE521CF4CC880022F721 /* LiteCoreCppTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LiteCoreCppTests; sourceTree = BUILT_PRODUCTS_DIR; };

@@ -152,7 +152,7 @@ struct C4KeyPair final : public fleece::RefCounted, C4Base {
     litecore::crypto::PrivateKey* C4NULLABLE getPrivateKey();
 
 private:
-    friend class C4Cert;
+    friend struct C4Cert;
 
     explicit C4KeyPair(litecore::crypto::Key*);
     ~C4KeyPair();
