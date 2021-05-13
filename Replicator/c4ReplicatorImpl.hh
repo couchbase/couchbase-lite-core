@@ -249,7 +249,7 @@ namespace litecore {
                 _replicator->terminate();
 
             // The below contains sensitive information, so zero it before destruction
-            _options.properties.wipe();
+            mutable_slice(_options.properties.data()).wipe();
         }
 
 
@@ -442,9 +442,11 @@ namespace litecore {
                 return;
             auto onBlob = _onBlobProgress.load();
             if (onBlob)
-                onBlob(this, (p.dir == Dir::kPushing),
-                       {p.docID.buf, p.docID.size},
-                       {p.docProperty.buf, p.docProperty.size},
+                onBlob(this,
+                       (p.dir == Dir::kPushing),
+                       nullslice,     // TODO: Collection support
+                       p.docID,
+                       p.docProperty,
                        p.key,
                        p.bytesCompleted, p.bytesTotal,
                        p.error,

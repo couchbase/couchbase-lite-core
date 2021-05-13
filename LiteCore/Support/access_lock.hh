@@ -15,8 +15,19 @@
 namespace litecore {
 
     /** A wrapper that protects an object from being used re-entrantly.
-        The object is only accessible through a callback, and an internal mutex prevents
-        multiple callbacks from running at once. */
+        It owns the object and a mutex, and exposes the object only while the mutex is locked.
+        The object can be accessed in two ways:
+        1.  Through a temporary `access` proxy object returned by `useLocked()` (no args).
+            The proxy dereferences to the owned object via the `->` and `*` operators, or by
+            implicit conversion.
+            The mutex is locked when the proxy is created, and unlocked by its destructor.
+            Thanks to C++ scope rules, if you use `useLocked()` as a parameter or receiver of
+            a call, the mutex stays locked until the call completes.
+            It's also valid to assign `useLocked()` to an auto variable and then use that one or
+            more times; the mutex will remain locked until that variable exits scope.
+        2.  Through a lambda/callback passed to the `useLocked()` flavors that take a parameter.
+            This locks the mutex, passes a reference to the owned object to the lambda, then
+            unlocks the mutex. */
     template <class T, class MUTEX =std::recursive_mutex>
     class access_lock {
     public:
@@ -63,6 +74,7 @@ namespace litecore {
 
         template <class R> using Retained = fleece::Retained<R>;
 
+        // (specialization when T is Retained<>)
         template <class R>
         class access<Retained<R>&> {
         public:
@@ -85,6 +97,7 @@ namespace litecore {
             Retained<R>&            _ref;
         };
 
+        // (specialization for const access when T is Retained<>)
         template <class R>
         class access<const Retained<R>&> {
         public:

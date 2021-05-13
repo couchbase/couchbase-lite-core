@@ -131,6 +131,8 @@ C4API_BEGIN_DECLS
     /** Returns the configuration the database was opened with. */
     const C4DatabaseConfig2* c4db_getConfig2(C4Database *database) C4API C4_RETURNS_NONNULL;
 
+#ifndef C4_STRICT_COLLECTION_API
+
     /** Returns the number of (undeleted) documents in the database. */
     uint64_t c4db_getDocumentCount(C4Database* database) C4API;
 
@@ -149,6 +151,8 @@ C4API_BEGIN_DECLS
     /** Purges all documents that have expired.
         @return  The number of documents purged, or -1 on error. */
     int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error* C4NULLABLE) C4API;
+
+#endif // C4_STRICT_COLLECTION_API
 
     /** Starts a background task that automatically purges expired documents.
         @return  True if the task started, false if it couldn't (i.e. database is read-only.) */

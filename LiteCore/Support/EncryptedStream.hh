@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Stream.hh"
+#include "slice_stream.hh"
 #include <memory>
 
 namespace litecore {
@@ -76,8 +77,8 @@ namespace litecore {
         uint64_t tell() const;
 
     private:
-        size_t readBlockFromFile(slice output);
-        void readFromBuffer(slice &dst);
+        size_t readBlockFromFile(fleece::mutable_slice);
+        void readFromBuffer(fleece::slice_ostream &dst);
         void fillBuffer();
         void findLength();
 

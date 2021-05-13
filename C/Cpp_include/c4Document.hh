@@ -27,17 +27,18 @@
 #    error "c4DocumentTypes.h was included before Base.hh"
 #endif
 
-namespace litecore {
-    class DatabaseImpl;
-    class revid;
-    class Upgrader;
-}
-
 C4_ASSUME_NONNULL_BEGIN
 
 
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
+
+
 struct C4Document : public fleece::RefCounted,
-                    public C4Base
+                    C4Base
 {
     // NOTE: Instances are created with database->getDocument or database->putDocument.
 
@@ -55,7 +56,8 @@ struct C4Document : public fleece::RefCounted,
     C4ExtraInfo& extraInfo()                                {return _extraInfo;}
     const C4ExtraInfo& extraInfo() const                    {return _extraInfo;}
 
-    C4Database* database() const                            {return _db;}
+    C4Collection* collection() const;
+    C4Database* database() const;
 
     virtual bool exists() const =0;
 
@@ -136,6 +138,7 @@ struct C4Document : public fleece::RefCounted,
     static char* generateID(char *outDocID, size_t bufferSize) noexcept;
 
     static bool isValidDocID(slice) noexcept;
+    static void requireValidDocID(slice);       // throws kC4ErrorBadDocID
 
     static bool equalRevIDs(slice revID1,
                             slice revID2) noexcept;
@@ -154,21 +157,15 @@ struct C4Document : public fleece::RefCounted,
 
 protected:
     friend class litecore::DatabaseImpl;
+    friend class litecore::CollectionImpl;
     friend class litecore::Upgrader;
 
-    C4Document(litecore::DatabaseImpl*, alloc_slice docID_);
+    C4Document(C4Collection*, alloc_slice docID_);
     virtual ~C4Document();
 
+    litecore::KeyStore& keyStore() const;
+
     [[noreturn]] static void failUnsupported();
-
-    litecore::DatabaseImpl* db();
-    const litecore::DatabaseImpl* db() const;
-
-    virtual alloc_slice detachSelectedRevBody() {
-        return alloc_slice(getRevisionBody()); // will copy
-    }
-
-    void requireValidDocID() const;   // Throws if invalid
 
     void setRevID(litecore::revid);
 
@@ -184,18 +181,20 @@ protected:
                      C4RevisionFlags flags,
                      bool allowConflict,
                      C4Error* C4NULLABLE) noexcept;
-protected:
-    // These have the same offset and layout as the corresponding fields in the C C4Document:
-    alignas(void*)
-    C4DocumentFlags      _flags;        // Document flags
-    alloc_slice          _docID;        // Document ID
-    alloc_slice          _revID;        // Revision ID of current revision
-    C4SequenceNumber     _sequence;     // Sequence at which doc was last updated
-    C4Revision           _selected;     // Describes the currently-selected revision
-    C4ExtraInfo          _extraInfo;    // For client use
 
-    alloc_slice          _selectedRevID;// Same as _selected::revID
-    Retained<C4Database> _db;           // Owning database
+    // (These fields must have the same offset and layout as the corresponding fields in the C
+    // struct C4Document_C declared in c4DocumentStruct.h. See full explanation in c4Document.cc.)
+    alignas(void*) // <--very important
+    C4DocumentFlags           _flags;           // Document flags
+    alloc_slice               _docID;           // Document ID
+    alloc_slice               _revID;           // Revision ID of current revision
+    C4SequenceNumber          _sequence;        // Sequence at which doc was last updated
+    C4Revision                _selected;        // Describes the currently-selected revision
+    C4ExtraInfo               _extraInfo = {};  // For client use
+    // (end of fields that have to match C4Document_C)
+
+    alloc_slice               _selectedRevID;   // Backing store for _selected.revID
+    litecore::CollectionImpl* _collection;      // Owning collection
 };
 
 

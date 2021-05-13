@@ -22,8 +22,10 @@
 #include "SQLite_Internal.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "DatabaseImpl.hh"
+#include "c4Collection.hh"
 #include "c4Document.hh"
 #include "c4BlobStore.hh"
+#include "c4Internal.hh"
 #include "BlobStreams.hh"
 #include "Error.hh"
 #include "Logging.hh"
@@ -46,14 +48,14 @@ namespace litecore {
     class Upgrader {
     public:
         Upgrader(const FilePath &oldPath, const FilePath &newPath, C4DatabaseConfig config)
-        :Upgrader(oldPath, new DatabaseImpl(newPath.path(), asTreeVersioning(config)))
+        :Upgrader(oldPath, DatabaseImpl::open(newPath, asTreeVersioning(config)))
         { }
 
 
-        Upgrader(const FilePath &oldPath, DatabaseImpl *newDB)
+        Upgrader(const FilePath &oldPath, Retained<DatabaseImpl> newDB)
         :_oldPath(oldPath)
         ,_oldDB(oldPath["db.sqlite3"].path(), SQLite::OPEN_READWRITE) // *
-        ,_newDB(newDB)
+        ,_newDB(move(newDB))
         ,_attachments(oldPath["attachments/"])
         {
             // * Note: It would be preferable to open the old db read-only, but that will fail

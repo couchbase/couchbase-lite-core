@@ -20,6 +20,7 @@
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
 #include "Logging.hh"
+#include "slice_stream.hh"
 #include <zlib.h>
 
 namespace litecore { namespace blip {
@@ -29,6 +30,8 @@ namespace litecore { namespace blip {
     class Codec : protected Logging {
     public:
         using slice = fleece::slice;
+        using slice_ostream = fleece::slice_ostream;
+        using slice_istream = fleece::slice_istream;
 
         Codec();
         virtual ~Codec() =default;
@@ -49,8 +52,8 @@ namespace litecore { namespace blip {
 
         /** Reads data from `input` and writes transformed data to `output`.
             Each slice's buf pointer is moved forwards past the consumed data. */
-        virtual void write(slice &input,
-                           slice &output,
+        virtual void write(slice_istream &input,
+                           slice_ostream &output,
                            Mode =Mode::Default) =0;
 
         /** Number of bytes buffered in the codec that haven't been written to
@@ -61,15 +64,15 @@ namespace litecore { namespace blip {
 
         /** Writes the codec's current checksum to the output slice.
             This is a CRC32 checksum of all the unencoded data processed so far. */
-        void writeChecksum(slice &output) const;
+        void writeChecksum(slice_ostream &output) const;
 
         /** Reads a checksum from the input slice and compares it with the codec's current one.
             If they aren't equal, throws an exception. */
-        void readAndVerifyChecksum(slice &input) const;
+        void readAndVerifyChecksum(slice_istream &input) const;
 
     protected:
         void addToChecksum(slice data);
-        void _writeRaw(slice &input, slice &output);
+        void _writeRaw(slice_istream &input, slice_ostream &output);
 
         uint32_t _checksum {0};
     };
@@ -84,7 +87,7 @@ namespace litecore { namespace blip {
         :_flate(flate)
         { }
 
-        void _write(const char *operation, slice &input, slice &output,
+        void _write(const char *operation, slice_istream &input, slice_ostream &output,
                    Mode, size_t maxInput =SIZE_MAX);
         void check(int) const;
 
@@ -105,11 +108,11 @@ namespace litecore { namespace blip {
         Deflater(CompressionLevel = DefaultCompression);
         ~Deflater();
 
-        void write(slice &input, slice &output, Mode =Mode::Default) override;
+        void write(slice_istream &input, slice_ostream &output, Mode =Mode::Default) override;
         unsigned unflushedBytes() const override;
 
     private:
-        void _writeAndFlush(slice &input, slice &output);
+        void _writeAndFlush(slice_istream &input, slice_ostream &output);
     };
 
 
@@ -119,7 +122,7 @@ namespace litecore { namespace blip {
         Inflater();
         ~Inflater();
 
-        void write(slice &input, slice &output, Mode =Mode::Default) override;
+        void write(slice_istream &input, slice_ostream &output, Mode =Mode::Default) override;
     };
 
 } }

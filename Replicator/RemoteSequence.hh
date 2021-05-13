@@ -7,6 +7,7 @@
 #pragma once
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
+#include "slice_stream.hh"
 #include <variant>
 #include <cinttypes>
 
@@ -30,7 +31,7 @@ namespace litecore::repl {
             if (json.size == 0) {
                 _value = fleece::nullslice;
             } else {
-                fleece::slice number = json;
+                fleece::slice_istream number(json);
                 auto n = number.readDecimal();
                 if (number.size == 0)
                     _value = n;

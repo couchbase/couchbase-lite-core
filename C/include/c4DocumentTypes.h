@@ -116,16 +116,18 @@ typedef struct C4DocPutRequest {
 /** \defgroup Observer  Database, Document, Query Observers
  @{ */
 
-/** \name Database Observer
+/** \name Collection Observer
  @{ */
 
-/** Represents a change to a document in a database. */
+/** Represents a change to a document in a collection, as returned from \ref c4dbobs_getChanges. */
 typedef struct {
     C4HeapString docID;         ///< The document's ID
-    C4HeapString revID;         ///< The latest revision ID (or null if doc was purged)
-    C4SequenceNumber sequence;  ///< The latest sequence number (or 0 if doc was purged)
-    C4RevisionFlags flags;
-} C4DatabaseChange;
+    C4HeapString revID;         ///< The current revision ID (or null if doc was purged)
+    C4SequenceNumber sequence;  ///< The current sequence number (or 0 if doc was purged)
+    C4RevisionFlags flags;      ///< The current revision's flags
+} C4CollectionChange;
+
+typedef C4CollectionChange C4DatabaseChange;
 
 /** @} */
 /** @} */

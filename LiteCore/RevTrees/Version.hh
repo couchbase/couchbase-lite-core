@@ -12,6 +12,7 @@
 namespace fleece {
     class Value;
     class Encoder;
+    struct slice_istream;
 }
 
 
@@ -59,8 +60,8 @@ namespace litecore {
             form, with no "*" allowed. myPeerID in the string will be changed to kMePeerID (0). */
         explicit Version(slice ascii, peerID myPeerID =kMePeerID);
 
-        /** Initializes from binary. On return, `binaryP->buf` will point just past the last byte read. */
-        explicit Version(slice *binaryP);
+        /** Initializes from binary. On return, `binary.buf` will point just past the last byte read. */
+        explicit Version(fleece::slice_istream &binary);
 
         /** The peer that created this version. */
         const peerID author() const             {return _author;}
@@ -79,8 +80,8 @@ namespace litecore {
             Otherwise it's written as '*'. */
         alloc_slice asASCII(peerID myID =kMePeerID) const;
 
-        bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
-        bool writeBinary(slice *buf, peerID myID =kMePeerID) const;
+        bool writeASCII(slice_ostream&, peerID myID =kMePeerID) const;
+        bool writeBinary(slice_ostream&, peerID myID =kMePeerID) const;
 
         /** Convenience to compare two generations and return a versionOrder. */
         static versionOrder compareGen(generation a, generation b);

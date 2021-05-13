@@ -155,6 +155,7 @@ namespace litecore { namespace repl {
             _lastNotifyTime = now;
             Replicator::BlobProgress prog {
                 Dir::kPulling,
+                nullslice,     // TODO: Collection support
                 _blob->docID, _blob->docProperty,
                 _blob->key,
                 status().progress.unitsCompleted,

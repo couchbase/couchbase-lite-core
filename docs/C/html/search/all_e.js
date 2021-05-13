@@ -1,11 +1,10 @@
 var searchData=
 [
-  ['paths',['Paths',['../group___f_l_key_path.html',1,'']]],
   ['parentdirectory',['parentDirectory',['../struct_c4_database_config2.html#a5752befd67e748b9ee6beb1a9364701a',1,'C4DatabaseConfig2']]],
   ['path',['path',['../struct_c4_address.html#a878f4bc000abd3e15eb257ae0c74645e',1,'C4Address']]],
   ['pointer',['pointer',['../struct_c4_extra_info.html#a1dbc7b5502eee4317772097cb24c6287',1,'C4ExtraInfo']]],
   ['port',['port',['../struct_c4_listener_config.html#a011f9d06c4b64a7033dbf446c21cd9aa',1,'C4ListenerConfig::port()'],['../struct_c4_address.html#addf23cc4d3fcd99b1cd2400ba616b1f7',1,'C4Address::port()']]],
-  ['posixdomain',['POSIXDomain',['../group___errors.html#gga6cbe7be44f2f63425404284687e6861ca0fcf36dd88fc41ab53e720a3410f8bf1',1,'c4Base.h']]],
+  ['posixdomain',['POSIXDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0a0fcf36dd88fc41ab53e720a3410f8bf1',1,'c4Error.h']]],
   ['prediction',['prediction',['../struct_c4_predictive_model.html#a71dff72e6128eac1257eb90e541103cc',1,'C4PredictiveModel']]],
   ['predictive_20_28machine_2dlearning_29_20query',['Predictive (Machine-Learning) Query',['../group___predictive_query.html',1,'']]],
   ['privatekeyrepresentation',['privateKeyRepresentation',['../struct_c4_t_l_s_config.html#ab946f27da80d5665fac06a780268b95f',1,'C4TLSConfig']]],

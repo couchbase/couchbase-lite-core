@@ -19,6 +19,7 @@
 #include "Upgrader.hh"
 #include "LiteCoreTest.hh"
 #include "DatabaseImpl.hh"
+#include "c4Collection.hh"
 #include "c4Document.hh"
 #include "c4BlobStore.hh"
 #include "Logging.hh"
@@ -51,7 +52,7 @@ protected:
 
         UpgradeDatabase(FilePath(oldPath), newPath, config);
 
-        db = new DatabaseImpl(newPath, config);
+        db = DatabaseImpl::open(newPath, config);
     }
 
     void upgradeInPlace(string fixturePath, C4DocumentVersioning versioning) {
@@ -70,13 +71,13 @@ protected:
 
         // First check that NoUpgrade flag correctly triggers an exception:
         ExpectException(error::LiteCore, error::DatabaseTooOld, [&]{
-            db = new DatabaseImpl(dbPath, config);
+            db = DatabaseImpl::open(dbPath, config);
         });
 
         // Now allow the upgrade:
         ExpectingExceptions x;
         config.flags &= ~kC4DB_NoUpgrade;
-        db = new DatabaseImpl(dbPath, config);
+        db = DatabaseImpl::open(dbPath, config);
     }
 
     void verifyDoc(slice docID, slice bodyJSON, vector<slice> revIDs) {

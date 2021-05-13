@@ -22,8 +22,15 @@
 #error "This is C++ only"
 #endif
 
+// ************************************************************************
+// This is the "umbrella header" that includes the entire LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
+
 #include "c4BlobStore.hh"
 #include "c4Certificate.hh"
+#include "c4Collection.hh"
 #include "c4Database.hh"
 #include "c4Document.hh"
 #include "c4DocEnumerator.hh"

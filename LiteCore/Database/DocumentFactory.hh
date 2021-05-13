@@ -13,8 +13,6 @@
 C4_ASSUME_NONNULL_BEGIN
 
 namespace litecore {
-    class DatabaseImpl;
-
 
     /** Abstract interface for creating Document instances; owned by a Database. */
     class DocumentFactory : protected C4Base {
@@ -22,9 +20,9 @@ namespace litecore {
         using ContentOption = litecore::ContentOption;
         using Record = litecore::Record;
 
-        DocumentFactory(DatabaseImpl *db)                       :_db(db) { }
+        DocumentFactory(C4Collection *coll)                     :_coll(coll) { }
         virtual ~DocumentFactory() =default;
-        DatabaseImpl* database() const                          {return _db;}
+        C4Collection* collection() const                        {return _coll;}
 
         virtual bool isFirstGenRevID(slice revID) const         {return false;}
 
@@ -38,7 +36,7 @@ namespace litecore {
                                                        C4RemoteID remoteDBID) =0;
 
     private:
-        DatabaseImpl* const _db;    // Unretained, to avoid ref-cycle with Database
+        C4Collection* const _coll;    // Unretained, to avoid ref-cycle
     };
 
 }

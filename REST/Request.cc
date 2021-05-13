@@ -26,6 +26,7 @@
 #include "netUtils.hh"
 #include "TCPSocket.hh"
 #include "date/date.h"
+#include "slice_stream.hh"
 #include <chrono>
 #include <cstdarg>
 #include <cinttypes>
@@ -51,11 +52,12 @@ namespace litecore { namespace REST {
 
 
     bool Request::readFromHTTP(slice httpData) {
+        slice_istream in(httpData);
         // <https://tools.ietf.org/html/rfc7230#section-3.1.1>
         _method = Method::None;
-        Method method = MethodNamed(httpData.readToDelimiter(" "_sl));
-        slice uri = httpData.readToDelimiter(" "_sl);
-        slice version = httpData.readToDelimiter("\r\n"_sl);
+        Method method = MethodNamed(in.readToDelimiter(" "_sl));
+        slice uri = in.readToDelimiter(" "_sl);
+        slice version = in.readToDelimiter("\r\n"_sl);
         if (method == Method::None || uri.size == 0 || !version.hasPrefix("HTTP/"_sl))
             return false;
         
@@ -68,7 +70,7 @@ namespace litecore { namespace REST {
         }
         _path = string(uri);
 
-        if (!HTTPLogic::parseHeaders(httpData, _headers))
+        if (!HTTPLogic::parseHeaders(in, _headers))
             return false;
 
         _method = method;
@@ -101,9 +103,9 @@ namespace litecore { namespace REST {
     int64_t Request::intQuery(const char *param, int64_t defaultValue) const {
         string val = query(param);
         if (!val.empty()) {
-            slice s(val);
+            slice_istream s(val);
             int64_t n = s.readSignedDecimal();
-            if (s.size == 0)
+            if (s.eof())
                 return n;
         }
         return defaultValue;
@@ -369,7 +371,7 @@ namespace litecore { namespace REST {
     bool RequestResponse::isValidWebSocketRequest() {
         return header("Connection").caseEquivalent("upgrade"_sl)
             && header("Upgrade").caseEquivalent("websocket"_sl)
-            && header("Sec-WebSocket-Version").readDecimal() >= 13
+            && slice_istream(header("Sec-WebSocket-Version")).readDecimal() >= 13
             && header("Sec-WebSocket-Key").size >= 10;
     }
 

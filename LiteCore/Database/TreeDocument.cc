@@ -18,6 +18,8 @@
 
 #include "TreeDocument.hh"
 #include "c4Document.hh"
+#include "CollectionImpl.hh"
+#include "c4Internal.hh"
 #include "c4Private.h"
 
 #include "DatabaseImpl.hh"
@@ -30,7 +32,7 @@
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include "FleeceImpl.hh"
-#include "varint.hh"
+#include "slice_stream.hh"
 #include <ctime>
 #include <algorithm>
 
@@ -43,17 +45,17 @@ namespace litecore {
 
     class TreeDocument final : public C4Document, public fleece::InstanceCountedIn<TreeDocument> {
     public:
-        TreeDocument(DatabaseImpl* database, slice docID, ContentOption content)
-        :C4Document(database, alloc_slice(docID))
-        ,_revTree(database->defaultKeyStore(), docID, content)
+        TreeDocument(C4Collection *collection, slice docID, ContentOption content)
+        :C4Document(collection, alloc_slice(docID))
+        ,_revTree(keyStore(), docID, content)
         {
             init();
         }
 
 
-        TreeDocument(DatabaseImpl *database, const Record &doc)
-        :C4Document(database, doc.key())
-        ,_revTree(database->defaultKeyStore(), doc)
+        TreeDocument(C4Collection *collection, const Record &doc)
+        :C4Document(collection, doc.key())
+        ,_revTree(keyStore(), doc)
         {
             init();
         }
@@ -70,7 +72,7 @@ namespace litecore {
 
         void init() {
             _revTree.owner = this;
-            _revTree.setPruneDepth(db()->maxRevTreeDepth());
+            _revTree.setPruneDepth(asInternal(database())->maxRevTreeDepth());
             _flags = (C4DocumentFlags)_revTree.flags();
             if (_revTree.exists())
                 _flags = (C4DocumentFlags)(_flags | kDocExists);
@@ -327,13 +329,13 @@ namespace litecore {
         }
 
         bool save(unsigned maxRevTreeDepth =0) override {
-            db()->mustBeInTransaction();
-            requireValidDocID();
+            asInternal(database())->mustBeInTransaction();
+            requireValidDocID(_docID);
             if (maxRevTreeDepth > 0)
                 _revTree.prune(maxRevTreeDepth);
             else
                 _revTree.prune();
-            switch (_revTree.save(db()->transaction())) {
+            switch (_revTree.save(asInternal(database())->transaction())) {
                 case litecore::RevTreeRecord::kConflict:
                     return false;
                 case litecore::RevTreeRecord::kNoNewSequence:
@@ -344,7 +346,7 @@ namespace litecore {
                         _sequence = _revTree.sequence();
                         if (_selected.sequence == 0)
                             _selected.sequence = _sequence;
-                        db()->documentSaved(this);
+                        asInternal(collection())->documentSaved(this);
                     }
                     return true;
                 default:
@@ -405,10 +407,7 @@ namespace litecore {
                 alloc_slice emptyDictBody;
                 if (mergedBody.size == 0) {
                     // An empty body isn't legal, so replace it with an encoded empty Dict:
-                    Encoder enc;
-                    enc.beginDictionary();
-                    enc.endDictionary();
-                    emptyDictBody = enc.finish();
+                    emptyDictBody = alloc_slice(fleece::impl::Encoder::kPreEncodedEmptyDict);
                     mergedBody = emptyDictBody;
                 }
 
@@ -448,7 +447,7 @@ namespace litecore {
             if (rq.deltaCB == nullptr) {
                 body = (rq.allocedBody.buf)? rq.allocedBody : alloc_slice(rq.body);
                 if (!body)
-                    body = Encoder::kPreEncodedEmptyDict;
+                    body = fleece::impl::Encoder::kPreEncodedEmptyDict;
             } else {
                 // Apply a delta via a callback:
                 if (!rq.deltaSourceRevID.buf || !selectRevision(rq.deltaSourceRevID, true)) {
@@ -469,7 +468,7 @@ namespace litecore {
 
             // Now validate that the body is OK:
             if (body)
-                db()->validateRevisionBody(body);
+                asInternal(database())->validateRevisionBody(body);
             return body;
         }
 
@@ -620,9 +619,9 @@ namespace litecore {
             if (rq.save && reallySave) {
                 if (!save())
                     return false;
-                if (db()->dataFile()->willLog(LogLevel::Verbose)) {
+                if (keyStore().dataFile().willLog(LogLevel::Verbose)) {
                     alloc_slice revID = newRev->revID.expanded();
-                    db()->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
+                    keyStore().dataFile()._logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
                         ((rq.revFlags & kRevDeleted) ? "Deleted" : "Saved"),
                         SPLAT(rq.docID), SPLAT(revID), _revTree.sequence());
                 }
@@ -661,11 +660,11 @@ namespace litecore {
 
 
     Retained<C4Document> TreeDocumentFactory::newDocumentInstance(slice docID, ContentOption c) {
-        return new TreeDocument(database(), docID, c);
+        return new TreeDocument(collection(), docID, c);
     }
 
     Retained<C4Document> TreeDocumentFactory::newDocumentInstance(const Record &rec) {
-        return new TreeDocument(database(), rec);
+        return new TreeDocument(collection(), rec);
     }
 
     bool TreeDocumentFactory::isFirstGenRevID(slice revID) const {
@@ -673,7 +672,7 @@ namespace litecore {
     }
 
     C4Document* TreeDocumentFactory::documentContaining(FLValue value) {
-        RevTreeRecord *vdoc = RevTreeRecord::containing((const Value*)value);
+        RevTreeRecord *vdoc = RevTreeRecord::containing((const fleece::impl::Value*)value);
         return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
     }
 
@@ -732,9 +731,9 @@ namespace litecore {
             for (auto rev : tree.allRevisions()) {
                 if (rev->revID.generation() < revGeneration
                             && !(mustHaveBodies && !rev->isBodyAvailable())) {
-                    slice expanded(expandedBuf, sizeof(expandedBuf));
+                    slice_ostream expanded(expandedBuf, sizeof(expandedBuf));
                     if (rev->revID.expandInto(expanded)) {
-                        result << delim << '"' << expanded << '"';
+                        result << delim << '"' << expanded.output() << '"';
                         if (delim.count() >= maxAncestors)
                             break;
                     }
@@ -743,7 +742,7 @@ namespace litecore {
             result << ']';
             return alloc_slice(result.str());
         };
-        return database()->dataFile()->defaultKeyStore().withDocBodies(docIDs, callback);
+        return asInternal(collection())->keyStore().withDocBodies(docIDs, callback);
     }
 
 

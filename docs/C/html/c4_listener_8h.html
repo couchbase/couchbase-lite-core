@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.15"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: include/c4Listener.h File Reference</title>
+<title>LiteCore: c4Listener.h File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -67,50 +67,16 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Data Structures</a> &#124;
-<a href="#typedef-members">Typedefs</a> &#124;
-<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">c4Listener.h File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &quot;<a class="el" href="c4_base_8h_source.html">c4Base.h</a>&quot;</code><br />
+<div class="textblock"><code>#include &quot;<a class="el" href="c4_listener_types_8h_source.html">c4ListenerTypes.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_fleece_8h_source.html">fleece/Fleece.h</a>&quot;</code><br />
 </div>
 <p><a href="c4_listener_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_t_l_s_config.html">C4TLSConfig</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">TLS configuration for C4Listener.  <a href="struct_c4_t_l_s_config.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_listener_config.html">C4ListenerConfig</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configuration for a C4Listener.  <a href="struct_c4_listener_config.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
-Typedefs</h2></td></tr>
-<tr class="memitem:gaf0da0563dd9593449dd4700a314771b3"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#gaf0da0563dd9593449dd4700a314771b3">C4ListenerCertAuthCallback</a>) (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *listener, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> clientCertData, void *context)</td></tr>
-<tr class="memdesc:gaf0da0563dd9593449dd4700a314771b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called when a client connects, during the TLS handshake, if a client certificate is received.  <a href="group___listener.html#gaf0da0563dd9593449dd4700a314771b3">More...</a><br /></td></tr>
-<tr class="separator:gaf0da0563dd9593449dd4700a314771b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gade7c7cc627bcbd73b774fc287595362d"><td class="memItemLeft" align="right" valign="top">typedef bool(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#gade7c7cc627bcbd73b774fc287595362d">C4ListenerHTTPAuthCallback</a>) (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *listener, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> authHeader, void *context)</td></tr>
-<tr class="memdesc:gade7c7cc627bcbd73b774fc287595362d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called when a client connects, after the TLS handshake (if any), when the initial HTTP request is received.  <a href="group___listener.html#gade7c7cc627bcbd73b774fc287595362d">More...</a><br /></td></tr>
-<tr class="separator:gade7c7cc627bcbd73b774fc287595362d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:ga49d05e191b69d6e99d05c1e9ee8d3b79"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#ga49d05e191b69d6e99d05c1e9ee8d3b79">C4ListenerAPIs</a> : unsigned { <a class="el" href="group___listener.html#gga49d05e191b69d6e99d05c1e9ee8d3b79a45e0c3e3bf4bc5cdea77856d1c59e2a7">kC4RESTAPI</a> = 0x01, 
-<a class="el" href="group___listener.html#gga49d05e191b69d6e99d05c1e9ee8d3b79a4de776a2a31eafbb81cac7020a88bada">kC4SyncAPI</a> = 0x02
- }</td></tr>
-<tr class="memdesc:ga49d05e191b69d6e99d05c1e9ee8d3b79"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flags indicating which network API(s) to serve.  <a href="group___listener.html#ga49d05e191b69d6e99d05c1e9ee8d3b79">More...</a><br /></td></tr>
-<tr class="separator:ga49d05e191b69d6e99d05c1e9ee8d3b79"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga86032450ec2ae6d6696789ba33c7e511"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#ga86032450ec2ae6d6696789ba33c7e511">C4PrivateKeyRepresentation</a> : unsigned { <a class="el" href="group___listener.html#gga86032450ec2ae6d6696789ba33c7e511a906ffb951c979bda7242b37f9f52d692">kC4PrivateKeyFromCert</a>, 
-<a class="el" href="group___listener.html#gga86032450ec2ae6d6696789ba33c7e511a6c43989d26b1e6f151d6ccb0c2ee767e">kC4PrivateKeyFromKey</a>
- }</td></tr>
-<tr class="memdesc:ga86032450ec2ae6d6696789ba33c7e511"><td class="mdescLeft">&#160;</td><td class="mdescRight">Different ways to provide TLS private keys.  <a href="group___listener.html#ga86032450ec2ae6d6696789ba33c7e511">More...</a><br /></td></tr>
-<tr class="separator:ga86032450ec2ae6d6696789ba33c7e511"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gab3e82cbd3d700758f22afd403b1d1205"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___listener.html#ga49d05e191b69d6e99d05c1e9ee8d3b79">C4ListenerAPIs</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#gab3e82cbd3d700758f22afd403b1d1205">c4listener_availableAPIs</a> (void)</td></tr>
@@ -122,13 +88,13 @@ Functions</h2></td></tr>
 <tr class="memitem:ga459b508f50c474050111021272fac1c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#ga459b508f50c474050111021272fac1c1">c4listener_free</a> (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *listener)</td></tr>
 <tr class="memdesc:ga459b508f50c474050111021272fac1c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes and disposes a listener.  <a href="group___listener.html#ga459b508f50c474050111021272fac1c1">More...</a><br /></td></tr>
 <tr class="separator:ga459b508f50c474050111021272fac1c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga20e088f81301a58238c6e516e985f3a1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#ga20e088f81301a58238c6e516e985f3a1">c4listener_shareDB</a> (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *listener, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memitem:ga20e088f81301a58238c6e516e985f3a1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#ga20e088f81301a58238c6e516e985f3a1">c4listener_shareDB</a> (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *listener, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:ga20e088f81301a58238c6e516e985f3a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Makes a database available from the network.  <a href="group___listener.html#ga20e088f81301a58238c6e516e985f3a1">More...</a><br /></td></tr>
 <tr class="separator:ga20e088f81301a58238c6e516e985f3a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3e3703d45997de86d62c9871a49212bb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#ga3e3703d45997de86d62c9871a49212bb">c4listener_unshareDB</a> (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *listener, <a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memitem:ga3e3703d45997de86d62c9871a49212bb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#ga3e3703d45997de86d62c9871a49212bb">c4listener_unshareDB</a> (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *listener, <a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:ga3e3703d45997de86d62c9871a49212bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Makes a previously-shared database unavailable.  <a href="group___listener.html#ga3e3703d45997de86d62c9871a49212bb">More...</a><br /></td></tr>
 <tr class="separator:ga3e3703d45997de86d62c9871a49212bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf8a0d3af377b9c0c6bedcf938468c8d9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#gaf8a0d3af377b9c0c6bedcf938468c8d9">c4listener_getURLs</a> (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *listener, <a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db, <a class="el" href="group___listener.html#ga49d05e191b69d6e99d05c1e9ee8d3b79">C4ListenerAPIs</a> api, <a class="el" href="struct_c4_error.html">C4Error</a> *err)</td></tr>
+<tr class="memitem:gaf8a0d3af377b9c0c6bedcf938468c8d9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#ga384f95fe181d6050d5757ff85bb8bc82">FLMutableArray</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#gaf8a0d3af377b9c0c6bedcf938468c8d9">c4listener_getURLs</a> (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *listener, <a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="group___listener.html#ga49d05e191b69d6e99d05c1e9ee8d3b79">C4ListenerAPIs</a> api, <a class="el" href="struct_c4_error.html">C4Error</a> *err)</td></tr>
 <tr class="memdesc:gaf8a0d3af377b9c0c6bedcf938468c8d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the URL(s) of a database being shared, or of the root, separated by "\n" bytes.  <a href="group___listener.html#gaf8a0d3af377b9c0c6bedcf938468c8d9">More...</a><br /></td></tr>
 <tr class="separator:gaf8a0d3af377b9c0c6bedcf938468c8d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac77df11febf25f5cb46734a9348d3e85"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___listener.html#gac77df11febf25f5cb46734a9348d3e85">c4listener_getPort</a> (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *listener)</td></tr>

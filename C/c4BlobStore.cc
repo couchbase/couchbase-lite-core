@@ -300,8 +300,9 @@ C4WriteStream::C4WriteStream(C4BlobStore &store)
 ,_store(store)
 { }
 
-C4WriteStream::C4WriteStream( C4WriteStream &&other)
-:_impl(move(other._impl))
+C4WriteStream::C4WriteStream(C4WriteStream &&other)
+:InstanceCounted(move(other))
+,_impl(move(other._impl))
 ,_store(other._store)
 { }
 
@@ -313,7 +314,7 @@ C4WriteStream::~C4WriteStream() {
 }
 
 void C4WriteStream::write(fleece::slice data)         {_impl->write(data);}
-uint64_t C4WriteStream::bytesWritten() const noexcept {return _impl->bytesWritten();}
+uint64_t C4WriteStream::getBytesWritten() const noexcept {return _impl->bytesWritten();}
 C4BlobKey C4WriteStream::computeBlobKey()             {return _impl->computeKey();}
 C4BlobKey C4WriteStream::install(const C4BlobKey *xk) {return _store.install(_impl.get(), xk);}
 

@@ -22,15 +22,23 @@
 
 C4_ASSUME_NONNULL_BEGIN
 
-    /** \defgroup Socket  Replication Socket Provider API
-        @{ */
+
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
+
+
+/** \defgroup Socket  Replication Socket Provider API
+    @{ */
 
 
 /** Represents an open bidirectional stream of bytes or messages (typically a TCP socket.)
     C4Socket is allocated and freed by LiteCore, but the client can associate it with a native
     stream/socket (like a file descriptor or a Java stream reference) by storing a value in its
     `nativeHandle` field. */
-struct C4Socket : C4Base {
+struct C4Socket : public fleece::InstanceCounted, C4Base {
 
     /** One-time registration of socket callbacks. Must be called before using any socket-based
         API including the replicator. Do not call multiple times. */
@@ -104,7 +112,9 @@ struct C4Socket : C4Base {
     void* C4NULLABLE getNativeHandle()             {return nativeHandle;}
 
 protected:
+    C4Socket() = default;
     virtual ~C4Socket();
+
     void* C4NULLABLE nativeHandle;     ///< for client's use
 };
 

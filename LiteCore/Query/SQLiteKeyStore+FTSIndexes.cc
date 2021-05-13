@@ -41,9 +41,9 @@ namespace litecore {
     // Creates a FTS index.
     bool SQLiteKeyStore::createFTSIndex(const IndexSpec &spec)
     {
-        auto ftsTableName = FTSTableName(spec.name);
+        auto ftsTableName = db().FTSTableName(tableName(), spec.name);
         // Collect the name of each FTS column and the SQL expression that populates it:
-        QueryParser qp(*this);
+        QueryParser qp(db(), tableName());
         qp.setBodyColumnName("new.body");
         vector<string> colNames, colExprs;
         for (Array::iterator i(spec.what()); i; ++i) {
@@ -100,11 +100,6 @@ namespace litecore {
                       whereNewSQL,
                       insertNewSQL);
         return true;
-    }
-
-
-    string SQLiteKeyStore::FTSTableName(const std::string &property) const {
-        return tableName() + "::" + property;
     }
 
 

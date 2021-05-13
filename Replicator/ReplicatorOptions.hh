@@ -28,7 +28,7 @@ namespace litecore { namespace repl {
         //---- Public fields:
 
         using Mode = C4ReplicatorMode;
-        using Validator = bool(*)(C4String docID, C4String revID, C4RevisionFlags, FLDict body, void *context);
+        using Validator = C4ReplicatorValidationFunction;
 
         Mode                    push                    {kC4Disabled};
         Mode                    pull                    {kC4Disabled};

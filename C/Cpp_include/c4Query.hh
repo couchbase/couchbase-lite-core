@@ -25,22 +25,36 @@
 #include <set>
 #include <utility>
 
-namespace litecore {
-    struct C4QueryEnumeratorImpl;
-    struct C4QueryObserverImpl;
-    class DatabaseImpl;
-    class LiveQuerier;
-    class Query;
-    class QueryEnumerator;
-}
-
 C4_ASSUME_NONNULL_BEGIN
 
 
-/** A compiled database query.
-    Instances are created by calling \ref C4Database::newQuery. */
-struct C4Query final : public fleece::RefCounted, public fleece::InstanceCountedIn<C4Query>, public C4Base {
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
+
+
+/** A compiled database query. */
+struct C4Query final : public fleece::RefCounted,
+                       public fleece::InstanceCountedIn<C4Query>,
+                       C4Base
+{
 public:
+    /// Creates a new query on a database.
+    static Retained<C4Query> newQuery(C4Database*,
+                                      C4QueryLanguage,
+                                      slice queryExpression,
+                                      int* C4NULLABLE outErrorPos);
+
+    /// Creates a new query on the collection's database.
+    /// If the query does not refer to a collection by name (e.g. "FROM airlines"),
+    /// it will use the given collection instead of the default one.
+    static Retained<C4Query> newQuery(C4Collection*,
+                                      C4QueryLanguage,
+                                      slice queryExpression,
+                                      int* C4NULLABLE outErrorPos);
+
     unsigned columnCount() const noexcept;
     slice columnTitle(unsigned col) const;
     alloc_slice explain() const;
@@ -73,7 +87,7 @@ public:
 
     private:
         friend struct C4Query;
-        friend struct litecore::C4QueryObserverImpl;
+        friend class litecore::C4QueryObserverImpl;
         explicit Enumerator(C4Query*, const C4QueryOptions* C4NULLABLE =nullptr,
                             slice encodedParameters =fleece::nullslice);
         explicit Enumerator(Retained<litecore::QueryEnumerator> e);
@@ -101,10 +115,9 @@ public:
     std::unique_ptr<C4QueryObserver> observe(ObserverCallback);
 
 protected:
-    friend struct C4Database;
-    friend struct litecore::C4QueryObserverImpl;
+    friend class litecore::C4QueryObserverImpl;
 
-    C4Query(const C4Database *db, C4QueryLanguage language, slice queryExpression);
+    C4Query(C4Collection*, C4QueryLanguage language, slice queryExpression);
     ~C4Query();
     void enableObserver(litecore::C4QueryObserverImpl *obs, bool enable);
 
@@ -127,8 +140,9 @@ private:
 
 
 /** A registration for callbacks whenever a query's result set changes.
-    The registration lasts until this object is destructed. */
-struct C4QueryObserver : public fleece::InstanceCounted, public C4Base {
+    The registration lasts until this object is destructed.
+    Created by calling \ref C4Query::observe. */
+struct C4QueryObserver : public fleece::InstanceCounted, C4Base {
 public:
     virtual ~C4QueryObserver() = default;
 
@@ -146,8 +160,9 @@ public:
 
 protected:
     C4QueryObserver(C4Query *query) :_query(query) { }
-    Retained<C4Query> _query;
-    C4Error                   _currentError {};
+    
+    Retained<C4Query>                           _query;
+    C4Error                                     _currentError {};
 };
 
 

@@ -48,7 +48,9 @@ C4API_BEGIN_DECLS
     char* c4doc_generateID(char *buffer, size_t bufferSize) C4API;
 
 
-    /** Gets a document from the database given its ID.
+#ifndef C4_STRICT_COLLECTION_API
+
+/** Gets a document from the database given its ID.
         The current revision is selected (if the document exists.)
         You must call `c4doc_release()` when finished with the document.
         @param database  The database to read from.
@@ -76,6 +78,8 @@ C4API_BEGIN_DECLS
     C4Document* c4doc_getBySequence(C4Database *database,
                                     C4SequenceNumber,
                                     C4Error* C4NULLABLE outError) C4API;
+
+#endif
 
     /** Saves changes to a C4Document.
         Must be called within a transaction.
@@ -122,11 +126,13 @@ C4API_BEGIN_DECLS
         in reverse chronological order.
         In a version-vector database this is of course the revision's version vector. It will be in
         global form (real peerID instead of "*") unless the `maxRevs` parameter is 0.
+        @param doc  The document.
         @param maxRevs  The maximum number of revisions to include in the result; or 0 for unlimited.
         @param backToRevs  An array of revision IDs: the history should stop when it gets to any of
                             these, and _must_ go back to one of these if possible, even if it means
                             skipping some revisions.
-        @param backToRevsCount  The number of revisions in the `backToRevs` array. */
+        @param backToRevsCount  The number of revisions in the `backToRevs` array.
+        @return  A string of comma-separate revision/version IDs in reverse chronological order. */
     C4SliceResult c4doc_getRevisionHistory(C4Document* doc,
                                            unsigned maxRevs,
                                            const C4String backToRevs[C4NULLABLE],
@@ -241,6 +247,8 @@ C4API_BEGIN_DECLS
     //////// PURGING & EXPIRATION:
         
 
+#ifndef C4_STRICT_COLLECTION_API
+
     /** \name Purging and Expiration
         @{ */
 
@@ -273,6 +281,7 @@ C4API_BEGIN_DECLS
                                     C4String docID,
                                     C4Error* C4NULLABLE outError) C4API;
 
+#endif // C4_STRICT_COLLECTION_API
 
     /** @} */
 
@@ -283,7 +292,9 @@ C4API_BEGIN_DECLS
     /** \name Creating and Updating Documents
         @{ */
 
-    /** A high-level Put operation, to insert a new or downloaded revision.
+#ifndef C4_STRICT_COLLECTION_API
+
+/** A high-level Put operation, to insert a new or downloaded revision.
         * If request->existingRevision is true, then request->history must contain the revision's
           history, with the revision's ID as the first item.
         * Otherwise, a new revision will be created and assigned a revID. The parent revision ID,
@@ -310,6 +321,8 @@ C4API_BEGIN_DECLS
                              C4Slice body,
                              C4RevisionFlags revisionFlags,
                              C4Error* C4NULLABLE error) C4API;
+
+#endif // C4_STRICT_COLLECTION_API
 
     /** Adds a revision to a document already in memory as a C4Document. This is more efficient
         than c4doc_put because it doesn't have to read from the database before writing; but if

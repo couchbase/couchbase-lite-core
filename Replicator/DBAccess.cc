@@ -46,10 +46,10 @@ namespace litecore { namespace repl {
                        bind(&DBAccess::markRevsSyncedLater, this),
                        tuning::kInsertionDelay)
     ,_timer(bind(&DBAccess::markRevsSyncedNow, this))
-    ,_usingVersionVectors((db->getConfig().flags & kC4DB_VersionVectors) != 0)
+    ,_usingVersionVectors((db->getConfiguration().flags & kC4DB_VersionVectors) != 0)
     {
         // Copy database's sharedKeys:
-        SharedKeys dbsk = db->getFLSharedKeys();
+        SharedKeys dbsk = db->getFleeceSharedKeys();
     }
 
 
@@ -264,7 +264,7 @@ namespace litecore { namespace repl {
         auto &db = _insertionDB ? *_insertionDB : *this;
         SharedKeys result;
         return db.useLocked<SharedKeys>([&](C4Database *idb) {
-            SharedKeys dbsk = idb->getFLSharedKeys();
+            SharedKeys dbsk = idb->getFleeceSharedKeys();
             lock_guard<mutex> lock(_tempSharedKeysMutex);
             if (!_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count()) {
                 // Copy database's sharedKeys:
@@ -306,7 +306,7 @@ namespace litecore { namespace repl {
         if (reEncode) {
             // Re-encode with database's current sharedKeys:
             return insertionDB().useLocked<alloc_slice>([&](C4Database* idb) {
-                SharedEncoder enc(idb->getSharedFleeceEncoder());
+                SharedEncoder enc(idb->sharedFleeceEncoder());
                 enc.writeValue(doc.root());
                 alloc_slice data = enc.finish();
                 enc.reset();
@@ -349,7 +349,7 @@ namespace litecore { namespace repl {
         FLError flErr;
         if (useDBSharedKeys) {
             insertionDB().useLocked([&](C4Database *idb) {
-                SharedEncoder enc(idb->getSharedFleeceEncoder());
+                SharedEncoder enc(idb->sharedFleeceEncoder());
                 JSONDelta::apply(srcRoot, deltaJSON, enc);
                 result = enc.finishDoc(&flErr);
             });
@@ -404,11 +404,13 @@ namespace litecore { namespace repl {
                     logDebug("Marking rev '%.*s' %.*s (#%" PRIu64 ") as synced to remote db %u",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, remoteDBID());
                     try {
-                        idb->markDocumentSynced(rev->docID, rev->revID, rev->sequence, remoteDBID());
+                        idb->getDefaultCollection()
+                          ->markDocumentSynced(rev->docID, rev->revID, rev->sequence, remoteDBID());
                     } catch (const exception &x) {
                         C4Error error = C4Error::fromException(x);
                         warn("Unable to mark '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",
-                             SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, error.domain, error.code);
+                             SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
+                             error.domain, error.code);
                     }
                 }
                 transaction.commit();

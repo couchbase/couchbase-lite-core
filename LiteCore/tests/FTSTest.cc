@@ -80,7 +80,7 @@ public:
                    vector<int> expectedOrder,
                    vector<int> expectedTerms,
                    QueryLanguage language =QueryLanguage::kJSON) {
-        Retained<Query> query{ store->compileQuery(language == QueryLanguage::kJSON
+        Retained<Query> query{ db->compileQuery(language == QueryLanguage::kJSON
                                                    ? json5(queryStr)
                                                    : slice(queryStr), language) };
         REQUIRE(query != nullptr);
@@ -337,7 +337,7 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
         lang = QueryLanguage::kN1QL;
     }
 
-    Retained<Query> query = store->compileQuery(lang == QueryLanguage::kJSON ?
+    Retained<Query> query = db->compileQuery(lang == QueryLanguage::kJSON ?
                                                 json5(queryStr) : slice(queryStr), lang);
     vector<slice> titles { "the"_sl, "shawshank"_sl, "redemption"_sl, "(1994)"_sl, "godfather"_sl, "(1972)"_sl,
         "part"_sl, "ii"_sl, "(1974)"_sl, "dark"_sl, "knight"_sl, "(2008)"_sl, "12"_sl, "angry"_sl, "men"_sl,
@@ -399,7 +399,7 @@ TEST_CASE_METHOD(FTSTest, "Test with Dictionary Values", "[FTS][Query]") {
 
     IndexSpec::Options options { "en", false, false };
     CHECK(store->createIndex("fts"_sl, "[[\".dict_value\"]]"_sl, IndexSpec::kFullText, &options));
-    Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH()', 'fts', 'bar']}"));
+    Retained<Query> query = db->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH()', 'fts', 'bar']}"));
     Retained<QueryEnumerator> results(query->createEnumerator(nullptr));        
     CHECK(results->getRowCount() == 1);
 }
@@ -472,7 +472,7 @@ TEST_CASE_METHOD(FTSTest, "Test with non-string values", "[FTS][Query]") {
 
     IndexSpec::Options options { "en", false, true };
     CHECK(store->createIndex("fts"_sl, "[[\".value\"]]"_sl, IndexSpec::kFullText, &options));
-    Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH()', 'fts', ['$value']]}"));
+    Retained<Query> query = db->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH()', 'fts', ['$value']]}"));
     Encoder e;
     e.beginDictionary(1);
     e.writeKey("value");
@@ -518,7 +518,7 @@ TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
     
     int expectedMissing = 2;
     for(auto q : queries) {
-        Retained<Query> query = store->compileQuery(q);
+        Retained<Query> query = db->compileQuery(q);
         Retained<QueryEnumerator> results(query->createEnumerator(nullptr));
         CHECK(results->getRowCount() == 2);
         

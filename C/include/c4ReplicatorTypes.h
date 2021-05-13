@@ -113,6 +113,7 @@ C4API_BEGIN_DECLS
 
     /** Information about a document that's been pushed or pulled. */
     typedef struct {
+        C4HeapString collectionName;
         C4HeapString docID;
         C4HeapString revID;
         C4RevisionFlags flags;
@@ -141,6 +142,7 @@ C4API_BEGIN_DECLS
     /** Callback a client can register, to hear about the status of blobs. */
     typedef void (*C4ReplicatorBlobProgressCallback)(C4Replicator*,
                                                      bool pushing,
+                                                     C4String collectionName,
                                                      C4String docID,
                                                      C4String docProperty,
                                                      C4BlobKey blobKey,
@@ -153,7 +155,8 @@ C4API_BEGIN_DECLS
         revision from being pushed, by returning false.
         (Note: In the case of an incoming revision, no flags other than 'deletion' and
         'hasAttachments' will be set.) */
-    typedef bool (*C4ReplicatorValidationFunction)(C4String docID,
+    typedef bool (*C4ReplicatorValidationFunction)(C4String collectionName,
+                                                   C4String docID,
                                                    C4String revID,
                                                    C4RevisionFlags,
                                                    FLDict body,

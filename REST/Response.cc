@@ -148,7 +148,7 @@ namespace litecore { namespace REST {
 
     Response& Response::setIdentity(C4Cert *cert, C4KeyPair *key) {
         Assert(key->hasPrivateKey());
-        Retained<Identity> id = new Identity(cert->assertSignedCert(), key->privateKey());
+        Retained<Identity> id = new Identity(cert->assertSignedCert(), key->getPrivateKey());
         tlsContext()->setIdentity(id);
         return *this;
     }

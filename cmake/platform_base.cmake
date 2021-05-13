@@ -18,6 +18,7 @@ function(set_litecore_source_base)
         C/c4BlobStore.cc
         C/c4CAPI.cc
         C/c4Certificate.cc
+        C/c4Collection.cc
         C/c4Database.cc
         C/c4DocEnumerator.cc
         C/c4Document.cc
@@ -115,6 +116,7 @@ function(set_litecore_source_base)
         LiteCore/Support/LogEncoder.cc
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/StringUtil.cc
+        LiteCore/Support/ThreadUtil.cc
         LiteCore/Support/ChannelManifest.cc
         PARENT_SCOPE
     )

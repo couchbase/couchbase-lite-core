@@ -94,12 +94,12 @@ Retained<C4Cert> C4Cert::fromData(slice certData) {
 }
 
 
-alloc_slice C4Cert::data(bool pemEncoded) {
+alloc_slice C4Cert::getData(bool pemEncoded) {
     return _impl->data(pemEncoded ? KeyFormat::PEM : KeyFormat::DER);
 }
 
 
-alloc_slice C4Cert::chainData() {
+alloc_slice C4Cert::getChainData() {
     if (auto signedCert = asSignedCert(); signedCert)
         return C4SliceResult(signedCert->dataOfChain());
     else
@@ -107,12 +107,12 @@ alloc_slice C4Cert::chainData() {
 }
 
 
-alloc_slice C4Cert::summary()       {return _impl->summary();}
-alloc_slice C4Cert::subjectName()   {return _impl->subjectName();}
-C4CertUsage C4Cert::usages()        {return _impl->nsCertType();}
+alloc_slice C4Cert::getSummary()       {return _impl->summary();}
+alloc_slice C4Cert::getSubjectName()   {return _impl->subjectName();}
+C4CertUsage C4Cert::getUsages()        {return _impl->nsCertType();}
 
 
-alloc_slice C4Cert::subjectNameComponent(C4CertNameAttributeID attrID) {
+alloc_slice C4Cert::getSubjectNameComponent(C4CertNameAttributeID attrID) {
     if (auto tag = SubjectAltNames::tagNamed(attrID); tag)
         return _impl->subjectAltNames()[*tag];
     else
@@ -120,7 +120,7 @@ alloc_slice C4Cert::subjectNameComponent(C4CertNameAttributeID attrID) {
 }
 
 
-C4Cert::NameInfo C4Cert::subjectNameAtIndex(unsigned index) {
+C4Cert::NameInfo C4Cert::getSubjectNameAtIndex(unsigned index) {
     // First go through the DistinguishedNames:
     auto subjectName = _impl->subjectName();
     if (auto dn = subjectName.asVector(); index < dn.size())
@@ -138,7 +138,7 @@ C4Cert::NameInfo C4Cert::subjectNameAtIndex(unsigned index) {
 }
 
 
-std::pair<C4Timestamp,C4Timestamp> C4Cert::validTimespan() {
+std::pair<C4Timestamp,C4Timestamp> C4Cert::getValidTimespan() {
     C4Timestamp created = 0, expires = 0;
     if (Cert *signedCert = asSignedCert(); signedCert) {
         time_t tCreated, tExpires;
@@ -156,7 +156,7 @@ bool C4Cert::isSelfSigned() {
 }
 
 
-Retained<C4KeyPair> C4Cert::publicKey() {
+Retained<C4KeyPair> C4Cert::getPublicKey() {
     if (auto signedCert = asSignedCert(); signedCert)
         return new C4KeyPair(signedCert->subjectPublicKey().get());
     return nullptr;
@@ -173,7 +173,7 @@ Retained<C4KeyPair> C4Cert::loadPersistentPrivateKey() {
 }
 
 
-Retained<C4Cert> C4Cert::nextInChain() {
+Retained<C4Cert> C4Cert::getNextInChain() {
     if (auto signedCert = asSignedCert(); signedCert)
         return new C4Cert(signedCert->next().get());
     return nullptr;
@@ -199,7 +199,7 @@ Retained<C4Cert> C4Cert::createRequest(std::vector<C4CertNameComponent> nameComp
     Cert::SubjectParameters params(name);
     params.subjectAltNames = move(altNames);
     params.nsCertType = NSCertType(certUsages);
-    return new C4Cert(new CertSigningRequest(params, subjectKey->privateKey()));
+    return new C4Cert(new CertSigningRequest(params, subjectKey->getPrivateKey()));
 }
 
 Retained<C4Cert> C4Cert::requestFromData(slice certRequestData) {
@@ -243,7 +243,7 @@ Retained<C4Cert> C4Cert::signRequest(const C4CertIssuerParameters &c4Params,
                                      C4Cert* C4NULLABLE issuerC4Cert)
 {
     auto csr = assertUnsignedCert();
-    auto privateKey = issuerPrivateKey->privateKey();
+    auto privateKey = issuerPrivateKey->getPrivateKey();
     AssertParam(privateKey != nullptr, "No private key");
 
     // Get the issuer cert:
@@ -309,21 +309,21 @@ C4KeyPair::C4KeyPair(Key *key)
 C4KeyPair::~C4KeyPair() = default;
 
 
-Retained<PublicKey> C4KeyPair::publicKey() {
-    if (PrivateKey *priv = privateKey(); priv)
+Retained<PublicKey> C4KeyPair::getPublicKey() {
+    if (PrivateKey *priv = getPrivateKey(); priv)
         return priv->publicKey();
     else
         return (PublicKey*)_impl.get();
 }
 
 
-PrivateKey* C4NULLABLE C4KeyPair::privateKey() {
+PrivateKey* C4NULLABLE C4KeyPair::getPrivateKey() {
     return _impl->isPrivate() ? (PrivateKey*)_impl.get() : nullptr;
 }
 
 
-PersistentPrivateKey* C4KeyPair::persistentPrivateKey() {
-    if (PrivateKey *priv = privateKey(); priv)
+PersistentPrivateKey* C4KeyPair::getPersistentPrivateKey() {
+    if (PrivateKey *priv = getPrivateKey(); priv)
         return priv->asPersistent();
     return nullptr;
 }
@@ -359,22 +359,22 @@ Retained<C4KeyPair> C4KeyPair::fromPrivateKeyData(slice privateKeyData, slice pa
 
 
 bool C4KeyPair::hasPrivateKey() {
-    return privateKey() != nullptr;
+    return getPrivateKey() != nullptr;
 }
 
 
-alloc_slice C4KeyPair::publicKeyDigest() {
+alloc_slice C4KeyPair::getPublicKeyDigest() {
     return alloc_slice(_impl->digestString());
 }
 
 
-alloc_slice C4KeyPair::publicKeyData() {
+alloc_slice C4KeyPair::getPublicKeyData() {
     return _impl->publicKeyData();
 }
 
 
-alloc_slice C4KeyPair::privateKeyData() {
-    if (auto priv = privateKey(); priv && priv->isPrivateKeyDataAvailable())
+alloc_slice C4KeyPair::getPrivateKeyData() {
+    if (auto priv = getPrivateKey(); priv && priv->isPrivateKeyDataAvailable())
         return priv->privateKeyData();
     return nullslice;
 }
@@ -385,7 +385,7 @@ alloc_slice C4KeyPair::privateKeyData() {
 
 bool C4KeyPair::isPersistent() {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    return persistentPrivateKey() != nullptr;
+    return getPersistentPrivateKey() != nullptr;
 #else
     return false;
 #endif
@@ -394,9 +394,9 @@ bool C4KeyPair::isPersistent() {
 
 Retained<C4KeyPair> C4KeyPair::persistentWithPublicKey(C4KeyPair *c4Key) {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    if (auto persistent = c4Key->persistentPrivateKey(); persistent)
+    if (auto persistent = c4Key->getPersistentPrivateKey(); persistent)
         return new C4KeyPair(persistent);
-    else if (auto privKey = PersistentPrivateKey::withPublicKey(c4Key->publicKey().get()); privKey)
+    else if (auto privKey = PersistentPrivateKey::withPublicKey(c4Key->getPublicKey().get()); privKey)
         return new C4KeyPair(privKey.get());
     else
         return nullptr;
@@ -407,7 +407,7 @@ Retained<C4KeyPair> C4KeyPair::persistentWithPublicKey(C4KeyPair *c4Key) {
 
 
 void C4KeyPair::removePersistent() {
-    auto priv = privateKey();
+    auto priv = getPrivateKey();
     AssertParam(priv, "No private key");
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     if (auto persistentKey = priv->asPersistent(); persistentKey)

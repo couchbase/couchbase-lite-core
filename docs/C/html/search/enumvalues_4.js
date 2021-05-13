@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['networkdomain',['NetworkDomain',['../group___errors.html#gga6cbe7be44f2f63425404284687e6861ca230c802d66f2578bb3142fbfa52946d4',1,'c4Base.h']]]
+  ['networkdomain',['NetworkDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0a230c802d66f2578bb3142fbfa52946d4',1,'c4Error.h']]]
 ];

@@ -24,6 +24,7 @@
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "FleeceImpl.hh"
+#include "sqlite3.h"
 #include <sstream>
 
 using namespace std;
@@ -32,7 +33,7 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    vector<string> SQLiteDataFile::allKeyStoreNames() {
+    vector<string> SQLiteDataFile::allKeyStoreNames() const {
         checkOpen();
         vector<string> names;
         SQLite::Statement allStores(*_sqlDb, string("SELECT substr(name,4) FROM sqlite_master"
@@ -47,7 +48,19 @@ namespace litecore {
     }
 
 
-    bool SQLiteDataFile::keyStoreExists(const string &name) {
+    void SQLiteDataFile::deleteKeyStore(const std::string &name) {
+        exec("DROP TABLE IF EXISTS kv_" + name);
+        // TODO: Do I need to drop indexes, triggers?
+    }
+
+
+    SQLiteKeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
+        Assert(tableName == "kv_default" || tableName.hasPrefix("kv_coll_"));
+        return (SQLiteKeyStore&)getKeyStore(tableName.from(3));
+    }
+
+
+    bool SQLiteDataFile::keyStoreExists(const string &name) const {
         return tableExists(string("kv_") + name);
     }
 
@@ -352,6 +365,41 @@ namespace litecore {
     }
 
 
+    void SQLiteKeyStore::moveTo(slice key, KeyStore &dst, ExclusiveTransaction &t, slice newKey) {
+        if (&dst == this || &dst.dataFile() != &dataFile())
+            error::_throw(error::InvalidParameter);
+        auto dstStore = dynamic_cast<SQLiteKeyStore*>(&dst);
+
+        if (newKey == nullslice)
+            newKey = key;
+        sequence_t seq = dstStore->lastSequence() + 1;
+
+        // ???? Should the version be reset since it's in a new collection?
+        auto &stmt = compileCached(
+            "INSERT INTO kv_" + dst.name() + " (key, version, body, extra, flags, sequence)"
+            "  SELECT ?, version, body, extra, flags, ? FROM kv_@ WHERE key=?");
+        stmt.bindNoCopy(1, (const char*)newKey.buf, (int)newKey.size);
+        stmt.bind      (2, (long long)seq);
+        stmt.bindNoCopy(3, (const char*)key.buf, (int)key.size);
+        UsingStatement u(stmt);
+
+        try {
+            if (stmt.exec() == 0)
+                error::_throw(error::NotFound);
+        } catch (SQLite::Exception &x) {
+            if (x.getErrorCode() == SQLITE_CONSTRAINT)      // duplicate key!
+                error::_throw(error::Conflict);
+            else
+                throw;
+        }
+
+        dstStore->setLastSequence(seq);
+
+        // Finally delete the old record:
+        del(key, t);
+    }
+
+
     bool SQLiteKeyStore::setDocumentFlag(slice key, sequence_t seq, DocumentFlags flags,
                                          ExclusiveTransaction&)
     {
@@ -446,7 +494,7 @@ namespace litecore {
     bool SQLiteKeyStore::mayHaveExpiration() {
         if (!_hasExpirationColumn) {
             string sql;
-            string tableName = "kv_" + name();
+            string tableName = this->tableName();
             db().getSchema(tableName, "table", tableName, sql);
             if (sql.find("expiration") != string::npos)
                 _hasExpirationColumn = true;

@@ -31,11 +31,11 @@
 
 C4_ASSUME_NONNULL_BEGIN
 
-
-/// Returns a description of a C4Error as a _temporary_ C string, for use in logging.
-#ifndef c4error_descriptionStr
-    #define c4error_descriptionStr(ERR)     (ERR).description().c_str()
-#endif
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
 
 
 // Just a mix-in that allows API class declarations to use common Fleece types un-namespaced:
@@ -44,5 +44,49 @@ struct C4Base {
     using alloc_slice = fleece::alloc_slice;
     template <class T> using Retained = fleece::Retained<T>;
 };
+
+
+// Forward references to internal LiteCore classes named in the public headers
+namespace litecore {
+    class BlobStore;
+    class BlobWriteStream;
+    class C4CollectionObserverImpl;
+    class C4DocumentObserverImpl;
+    class C4QueryEnumeratorImpl;
+    class C4QueryObserverImpl;
+    class CollectionImpl;
+    class DatabaseImpl;
+    class ExclusiveTransaction;
+    class FilePath;
+    class KeyStore;
+    class LiveQuerier;
+    class Query;
+    class QueryEnumerator;
+    class Record;
+    class revid;
+    class SeekableReadStream;
+    class SequenceTracker;
+    class Upgrader;
+
+    namespace crypto {
+        class Cert;
+        class CertBase;
+        class CertSigningRequest;
+        class Key;
+        class PersistentPrivateKey;
+        class PrivateKey;
+        class PublicKey;
+    }
+
+    namespace REST {
+        class Listener;
+        class RESTListener;
+    }
+
+    namespace websocket {
+        class WebSocket;
+    }
+}
+
 
 C4_ASSUME_NONNULL_END

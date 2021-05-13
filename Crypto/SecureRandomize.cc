@@ -43,7 +43,7 @@ namespace litecore {
     }
 
 
-    void GenerateUUID(fleece::slice s) {
+    void GenerateUUID(fleece::mutable_slice s) {
         // https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_.28random.29
         Assert(s.size == SizeOfUUID);
         SecureRandomize(s);
@@ -53,10 +53,10 @@ namespace litecore {
     }
 
 
-    void SecureRandomize(fleece::slice s) {
+    void SecureRandomize(fleece::mutable_slice s) {
 #ifdef __APPLE__
         // iOS and Mac OS implementation based on system-level CommonCrypto library:
-        CCRandomGenerateBytes((void*)s.buf, s.size);
+        CCRandomGenerateBytes(s.buf, s.size);
 #else
         // Other platforms use mbedTLS crypto:
         mbedtls_ctr_drbg_random(crypto::RandomNumberContext(), (unsigned char*)s.buf, s.size);

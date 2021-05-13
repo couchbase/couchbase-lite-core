@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 47;
+	objectVersion = 51;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -96,6 +96,7 @@
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
 		27229215260AB89900A3A41F /* BlobStreams.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27229214260AB89900A3A41F /* BlobStreams.cc */; };
+		27229278260D1ADF00A3A41F /* c4Collection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27229277260D1ADF00A3A41F /* c4Collection.cc */; };
 		272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850A91E9AF53B009CA22F /* Upgrader.cc */; };
 		272850AD1E9AF53B009CA22F /* Upgrader.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850AA1E9AF53B009CA22F /* Upgrader.hh */; };
 		272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850B41E9BE361009CA22F /* UpgraderTest.cc */; };
@@ -157,15 +158,18 @@
 		27469D07233D719800A1EE1A /* PublicKey.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01822EB92B900F9AB18 /* PublicKey.cc */; };
 		27469D08233D719800A1EE1A /* PublicKey+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */; };
 		27469D09233D719800A1EE1A /* mbedUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01C22EB933100F9AB18 /* mbedUtils.cc */; };
+		2746C8E62639E88700A3B2CC /* ThreadUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2746C8E52639E88700A3B2CC /* ThreadUtil.cc */; };
 		27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */; };
 		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		274B36D225B271F7001FC28D /* Version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274B36D125B271F7001FC28D /* Version.cc */; };
 		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
+		274D165D261250220018D39C /* c4CollectionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D163C26124A030018D39C /* c4CollectionTest.cc */; };
 		274D17822177ECCC007FD01A /* QueryParser+Prediction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */; };
 		274D17A32614E7220018D39C /* c4DocumentStruct.h in Headers */ = {isa = PBXBuildFile; fileRef = 274D17A22614E7220018D39C /* c4DocumentStruct.h */; };
 		274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */; };
+		274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */; };
 		274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */; };
 		274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */; };
 		274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF41DA30B43003AD158 /* QueryParser.cc */; };
@@ -864,6 +868,7 @@
 		2716F91D248578D000BE21D9 /* mbedSnippets.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = mbedSnippets.hh; sourceTree = "<group>"; };
 		2716F91E248578D000BE21D9 /* mbedSnippets.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mbedSnippets.cc; sourceTree = "<group>"; };
 		2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4CertificateTest.cc; sourceTree = "<group>"; };
+		27175AF1261B80E70045F3AC /* c4BlobStoreTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStoreTypes.h; sourceTree = "<group>"; };
 		27175B11261B91170045F3AC /* REST_CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = REST_CAPI.cc; sourceTree = "<group>"; };
 		27175B73261BC3030045F3AC /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		2719253323970C7F0053DDA6 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = data; sourceTree = "<group>"; };
@@ -882,6 +887,8 @@
 		272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStoreTest.cc; sourceTree = "<group>"; };
 		27229213260AB89900A3A41F /* BlobStreams.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BlobStreams.hh; sourceTree = "<group>"; };
 		27229214260AB89900A3A41F /* BlobStreams.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BlobStreams.cc; sourceTree = "<group>"; };
+		27229268260D171D00A3A41F /* c4Collection.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Collection.hh; sourceTree = "<group>"; };
+		27229277260D1ADF00A3A41F /* c4Collection.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Collection.cc; sourceTree = "<group>"; };
 		27234104211516C000DA9437 /* c4QueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4QueryTest.hh; sourceTree = "<group>"; };
 		2723410F211B5FC400DA9437 /* QueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryTest.hh; sourceTree = "<group>"; };
 		2726F630207ED137007F2D02 /* ReplicatorTuning.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTuning.hh; sourceTree = "<group>"; };
@@ -961,6 +968,8 @@
 		273F481425A68588005D4FE2 /* TestsCommon.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TestsCommon.hh; sourceTree = "<group>"; };
 		273F481525A68588005D4FE2 /* TestsCommon.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestsCommon.cc; sourceTree = "<group>"; };
 		27416E291E0494DF00F10F65 /* c4QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4QueryTest.cc; sourceTree = "<group>"; };
+		274281772624B4B300862700 /* c4Error.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Error.h; sourceTree = "<group>"; };
+		2742817B2624B74E00862700 /* c4Log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Log.h; sourceTree = "<group>"; };
 		27431BC6258A8AB0009E3EC5 /* QuietReporter.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QuietReporter.hh; sourceTree = "<group>"; };
 		2743E1DA25F69D58006F696D /* c4DocumentTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4DocumentTypes.h; sourceTree = "<group>"; };
 		2743E20825F6BC88006F696D /* c4Observer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Observer.hh; sourceTree = "<group>"; };
@@ -1017,6 +1026,7 @@
 		27469CFC233C35EB00A1EE1A /* TLSContext.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TLSContext.cc; sourceTree = "<group>"; };
 		27469D03233D488C00A1EE1A /* c4Certificate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Certificate.h; sourceTree = "<group>"; };
 		27469D04233D58D900A1EE1A /* c4Certificate.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4Certificate.cc; sourceTree = "<group>"; };
+		2746C8E52639E88700A3B2CC /* ThreadUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ThreadUtil.cc; sourceTree = "<group>"; };
 		274711C92037BE5A008E9A5A /* SecureSymmetricCrypto.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SecureSymmetricCrypto.cc; sourceTree = "<group>"; };
 		2747664520190841007B39D1 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2747664720190841007B39D1 /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite3.c; sourceTree = "<group>"; };
@@ -1038,6 +1048,9 @@
 		274D04081BA75E1C00FF7C35 /* C4Tests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = C4Tests; sourceTree = BUILT_PRODUCTS_DIR; };
 		274D040A1BA75E1C00FF7C35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		274D04261BA8A5BC00FF7C35 /* c4Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Internal.hh; sourceTree = "<group>"; };
+		274D163C26124A030018D39C /* c4CollectionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4CollectionTest.cc; sourceTree = "<group>"; };
+		274D166C2612906B0018D39C /* c4Collection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Collection.h; sourceTree = "<group>"; };
+		274D16D026138DCD0018D39C /* DoxygenDependencies.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = DoxygenDependencies.txt; sourceTree = "<group>"; };
 		274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "QueryParser+Prediction.cc"; sourceTree = "<group>"; };
 		274D17842177F212007FD01A /* QueryParser+Private.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "QueryParser+Private.hh"; sourceTree = "<group>"; };
 		274D1793261401320018D39C /* c4.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4.hh; sourceTree = "<group>"; };
@@ -1050,6 +1063,7 @@
 		274D184C261683F40018D39C /* c4Listener.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Listener.hh; sourceTree = "<group>"; };
 		274D18852617B3660018D39C /* c4SocketTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4SocketTypes.h; sourceTree = "<group>"; };
 		274D18862617B4300018D39C /* c4Socket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Socket.hh; sourceTree = "<group>"; };
+		274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocumentTest_Internal.cc; sourceTree = "<group>"; };
 		274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SecureRandomize.cc; sourceTree = "<group>"; };
 		274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteKeyStore.cc; sourceTree = "<group>"; };
 		274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteKeyStore.hh; sourceTree = "<group>"; };
@@ -1106,6 +1120,7 @@
 		275E9904238360B200EA516B /* Checkpointer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Checkpointer.hh; sourceTree = "<group>"; };
 		275FF6661E42A90C005F90DD /* QueryParserTables.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryParserTables.hh; sourceTree = "<group>"; };
 		275FF6D11E4947E1005F90DD /* c4BaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BaseTest.cc; sourceTree = "<group>"; };
+		2760FBC826210AA0000F34C5 /* CollectionImpl.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CollectionImpl.hh; sourceTree = "<group>"; };
 		2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStore.cc; sourceTree = "<group>"; };
 		2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CookieStore.hh; sourceTree = "<group>"; };
 		2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStoreTest.cc; sourceTree = "<group>"; };
@@ -1791,6 +1806,7 @@
 			isa = PBXGroup;
 			children = (
 				275FF6D11E4947E1005F90DD /* c4BaseTest.cc */,
+				274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */,
 				277015081D523E2E008BADD7 /* DataFileTest.cc */,
 				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
 				272B1BEA1FB1513100F56620 /* FTSTest.cc */,
@@ -1970,9 +1986,11 @@
 			isa = PBXGroup;
 			children = (
 				27175B73261BC3030045F3AC /* README.md */,
+				274D1793261401320018D39C /* c4.hh */,
 				2758DFF325F2A476007C7487 /* c4Base.hh */,
 				2758DFD225F161CD007C7487 /* c4BlobStore.hh */,
 				274D181826165AFB0018D39C /* c4Certificate.hh */,
+				27229268260D171D00A3A41F /* c4Collection.hh */,
 				2764ED3623870F15007F020F /* c4Database.hh */,
 				2758DFE425F197B9007C7487 /* c4Document.hh */,
 				2758E09825F3026F007C7487 /* c4DocEnumerator.hh */,
@@ -2081,6 +2099,7 @@
 				27F6F51B1BAA0482003FD798 /* c4Test.cc */,
 				27F6F51C1BAA0482003FD798 /* c4Test.hh */,
 				274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */,
+				274D163C26124A030018D39C /* c4CollectionTest.cc */,
 				275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */,
 				27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */,
 				2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */,
@@ -2210,6 +2229,7 @@
 				273F481425A68588005D4FE2 /* TestsCommon.hh */,
 				273F481525A68588005D4FE2 /* TestsCommon.cc */,
 				2744B33D241854F2005A194D /* ThreadUtil.hh */,
+				2746C8E52639E88700A3B2CC /* ThreadUtil.cc */,
 				2744B343241854F2005A194D /* Timer.cc */,
 				2744B345241854F2005A194D /* Timer.hh */,
 			);
@@ -2281,6 +2301,7 @@
 				2722504D1D7892610006D5A5 /* c4BlobStore.cc */,
 				27469D04233D58D900A1EE1A /* c4Certificate.cc */,
 				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
+				27229277260D1ADF00A3A41F /* c4Collection.cc */,
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
 				2712F5AE25D5A9AB0082D526 /* c4Error.cc */,
@@ -2293,6 +2314,7 @@
 				2764ED3723873B9E007F020F /* c4.txt */,
 				279DE3DD24788A030059AE4E /* c4_ee.txt */,
 				2764ED3823873B9E007F020F /* c4_exp.txt */,
+				274D16D026138DCD0018D39C /* DoxygenDependencies.txt */,
 				27B64937206971FC00FC12F7 /* Info.plist */,
 				274D03FF1BA7554700FF7C35 /* tests */,
 			);
@@ -2413,6 +2435,7 @@
 				27E3DD571DB8524300F2872D /* DatabaseImpl.cc */,
 				27F7A0BD1D5E2BAB00447BC6 /* DatabaseImpl.hh */,
 				273855AE25B790B1009D746E /* DatabaseImpl+Upgrade.cc */,
+				2760FBC826210AA0000F34C5 /* CollectionImpl.hh */,
 				272F00E9226FC15D00E62F72 /* BackgroundDB.cc */,
 				272F00E3226FC15D00E62F72 /* BackgroundDB.hh */,
 				275B35A4234E753800FE9CF0 /* Housekeeper.cc */,
@@ -2995,15 +3018,17 @@
 			isa = PBXGroup;
 			children = (
 				273E9F7D1C518793003115A6 /* c4.h */,
-				274D1793261401320018D39C /* c4.hh */,
 				2757DE591B9FC3F1002EE261 /* c4Base.h */,
 				271507F1212259DE005FE6E8 /* c4Compat.h */,
 				2722504A1D7884110006D5A5 /* c4BlobStore.h */,
 				27469D03233D488C00A1EE1A /* c4Certificate.h */,
+				274D166C2612906B0018D39C /* c4Collection.h */,
 				2757DE571B9FC3C9002EE261 /* c4Database.h */,
 				274A69881BED288D00D16D37 /* c4Document.h */,
 				27F370821DC02C3D0096F717 /* c4Document+Fleece.h */,
 				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
+				274281772624B4B300862700 /* c4Error.h */,
+				2742817B2624B74E00862700 /* c4Log.h */,
 				271AB00F2374A41E007B0319 /* c4Index.h */,
 				728EC54C1EC14611002C9A73 /* c4Listener.h */,
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
@@ -3011,6 +3036,7 @@
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
 				27491C9A1E7B1001001DC54B /* c4Socket.h */,
+				27175AF1261B80E70045F3AC /* c4BlobStoreTypes.h */,
 				274D181C26165BDA0018D39C /* c4CertificateTypes.h */,
 				2743E32625F853D4006F696D /* c4DatabaseTypes.h */,
 				2743E1DA25F69D58006F696D /* c4DocumentTypes.h */,
@@ -3545,6 +3571,7 @@
 				720EA3DE1BA7EAD9002B8416 /* Sources */,
 				720EA3E91BA7EAD9002B8416 /* Frameworks */,
 				720EA3EF1BA7EAD9002B8416 /* Headers */,
+				274D1689261389D60018D39C /* Build Documentation (Doxygen) */,
 			);
 			buildRules = (
 				720EA3F11BA7EAD9002B8416 /* PBXBuildRule */,
@@ -3567,7 +3594,7 @@
 			attributes = {
 				CLASSPREFIX = "";
 				LastSwiftUpdateCheck = 0730;
-				LastUpgradeCheck = 1240;
+				LastUpgradeCheck = 1250;
 				ORGANIZATIONNAME = Couchbase;
 				TargetAttributes = {
 					27139B2F18F8E9750021A9A3 = {
@@ -3748,6 +3775,26 @@
 			shellPath = "/bin/sh -e";
 			shellScript = "ditto -v \"$PROJECT_DIR/../C/tests/data\"          \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/C/tests/data\"\nditto -v \"$PROJECT_DIR/../LiteCore/tests/data\"   \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/LiteCore/tests/data\"\nditto -v \"$PROJECT_DIR/../Replicator/tests/data\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/TestData/Replicator/tests/data\"\n";
 		};
+		274D1689261389D60018D39C /* Build Documentation (Doxygen) */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"$(SRCROOT)/../C/DoxygenDependencies.txt",
+			);
+			inputPaths = (
+			);
+			name = "Build Documentation (Doxygen)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/../docs/index.html",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "if which doxygen >/dev/null\nthen\n  cd $SRCROOT/../C\n  doxygen\nfi\n";
+		};
 		275BF36C1F5F67940051374A /* Generate repo_version.h */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -3863,6 +3910,7 @@
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
+				274D165D261250220018D39C /* c4CollectionTest.cc in Sources */,
 				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
@@ -3879,6 +3927,7 @@
 				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
 				27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */,
+				274D18ED2617DFE40018D39C /* c4DocumentTest_Internal.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4150,6 +4199,7 @@
 				2705154D1D8CBE6C00D62D05 /* c4Query.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */,
+				2746C8E62639E88700A3B2CC /* ThreadUtil.cc in Sources */,
 				2744B34F241854F2005A194D /* Headers.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
 				275E9905238360B200EA516B /* Checkpointer.cc in Sources */,
@@ -4174,6 +4224,7 @@
 				2743E35625F85F26006F696D /* c4Replicator_CAPI.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
 				27E4872B1923F24D007D8940 /* RevTreeRecord.cc in Sources */,
+				27229278260D1ADF00A3A41F /* c4Collection.cc in Sources */,
 				276CE6832267991500B681AC /* n1ql.cc in Sources */,
 				93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */,
 				2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */,
@@ -4812,7 +4863,11 @@
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4833,7 +4888,11 @@
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4854,7 +4913,11 @@
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -4875,7 +4938,11 @@
 				DEVELOPMENT_TEAM = N2Q372V7W2;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				INFOPLIST_FILE = "LiteCore-iOS shell copy-Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -4974,7 +5041,11 @@
 					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
 				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
 				PRODUCT_NAME = "LiteCore-iOS";
@@ -5026,7 +5097,12 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks @executable_path/../..";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
@@ -5131,7 +5207,11 @@
 					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
 				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
 				PRODUCT_NAME = "LiteCore-iOS";
 				SDKROOT = iphoneos;
@@ -5177,7 +5257,12 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks @executable_path/../..";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -5212,7 +5297,11 @@
 					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
 				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
 				PRODUCT_NAME = "LiteCore-iOS";
@@ -5241,7 +5330,11 @@
 					"$(SRCROOT)/../vendor/fleece/Fleece/Support",
 				);
 				INFOPLIST_FILE = "LiteCore-iOS/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.couchbase.LiteCore-iOS";
 				PRODUCT_NAME = "LiteCore-iOS";
 				SDKROOT = iphoneos;
@@ -5293,7 +5386,12 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks @executable_path/../..";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
@@ -5339,7 +5437,12 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = "LiteCore-iOS Tests/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks @executable_path/../..";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+					"@executable_path/../..",
+				);
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = org.couchbase.LiteCoreTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -22,10 +22,10 @@
 #include "c4DocumentTypes.h"
 #include "DataFile.hh"
 #include "FilePath.hh"
-#include "InstanceCounted.hh"
-#include "access_lock.hh"
+#include "function_ref.hh"
+#include "fleece/slice.hh"
 #include <mutex>
-#include <unordered_set>
+#include <unordered_map>
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -39,154 +39,154 @@ namespace fleece { namespace impl {
 namespace litecore {
     class BackgroundDB;
     class BlobStore;
-    class DocumentFactory;
     class Housekeeper;
     class RevTreeRecord;
     class SequenceTracker;
 
+    // Stores and keys for raw documents:
+    namespace constants {
+        extern const C4Slice kLocalCheckpointStore;
+        extern const C4Slice kPeerCheckpointStore;
+        extern const C4Slice kPreviousPrivateUUIDKey;
+    }
 
-    /** The implementation of the C4Database class. */
+    /** The concrete subclass of C4Database that implements its functionality.
+        It also has some internal methods used by other components of LiteCore. */
     class DatabaseImpl final : public C4Database,
                                public DataFile::Delegate
     {
     public:
-        DatabaseImpl(const string &path, C4DatabaseConfig config);
+        static Retained<DatabaseImpl> open(const FilePath &path, C4DatabaseConfig config);
 
-        void close();
-        void deleteDatabase();
-        static bool deleteDatabaseAtPath(const string &dbPath);
+        FilePath filePath() const                       {return _dataFile->filePath().dir();}
 
         DataFile* dataFile()                            {return _dataFile.get();}
         const DataFile* dataFile() const                {return _dataFile.get();}
-        const string& name() const                      {return _name;}
-        FilePath path() const;
 
-        uint64_t countDocuments();
-        sequence_t lastSequence()                       {return defaultKeyStore().lastSequence();}
+        KeyStore& defaultKeyStore() const               {return _dataFile->defaultKeyStore();}
+
+        BackgroundDB* backgroundDatabase();
+
+        fleece::impl::Encoder& sharedEncoder() const;
+
+        uint64_t myPeerID() const;
+
+        void resetUUIDs();
+
+        ExclusiveTransaction& transaction() const;
+        void mustBeInTransaction();
+        void mustNotBeInTransaction();
 
         uint32_t maxRevTreeDepth();
         void setMaxRevTreeDepth(uint32_t depth);
 
-        static const slice kPublicUUIDKey;
-        static const slice kPrivateUUIDKey;
-
-        C4UUID getUUID(slice key);
-        void resetUUIDs();
-
-        uint64_t myPeerID() const;
-
-        void rekey(const C4EncryptionKey* C4NULLABLE newKey);
-        
-        void maintenance(DataFile::MaintenanceType what);
-
-        const C4DatabaseConfig2* config() const         {return &_config;}
-        const C4DatabaseConfig* configV1() const        {return &_configV1;};   // TODO: DEPRECATED
-
-        ExclusiveTransaction& transaction() const;
-
-        void beginTransaction();
-        void endTransaction(bool commit);
-
-        bool inTransaction() noexcept;
-        void mustBeInTransaction();
-        bool mustBeInTransaction(C4Error* C4NULLABLE outError) noexcept;
-        bool mustNotBeInTransaction(C4Error* C4NULLABLE outError) noexcept;
-
-        KeyStore& defaultKeyStore() const;
-        KeyStore& getKeyStore(const string &name) const;
-
-        bool purgeDocument(slice docID);
-        int64_t purgeExpiredDocs();
-        bool setExpiration(slice docID, expiration_t);
-        bool startHousekeeping();
-
         void validateRevisionBody(slice body);
 
-        Record getRawRecord(const std::string &storeName, slice key);
-        void putRawRecord(const string &storeName, slice key, slice meta, slice body);
 
-        DocumentFactory& documentFactory() const                {return *_documentFactory;}
+        // C4Database API:
 
-        Retained<C4Document> getDocument(slice docID,
-                                           bool mustExist,
-                                           C4DocContentLevel content) const;
-        Retained<C4Document> putDocument(const C4DocPutRequest &rq,
-                                         size_t* C4NULLABLE outCommonAncestorIndex,
-                                         C4Error* C4NULLABLE outError);
-
-        static C4Document* documentContainingValue(FLValue) noexcept;
-
-        fleece::impl::Encoder& sharedEncoder() const;
-        FLEncoder sharedFLEncoder() const;
-
-        fleece::impl::SharedKeys* documentKeys() const          {return _dataFile->documentKeys();}
-
-        access_lock<SequenceTracker>& sequenceTracker();
-
-        C4BlobStore& getBlobStore() const;
-
-        void lockClientMutex() noexcept                         {_clientMutex.lock();}
-        void unlockClientMutex() noexcept                       {_clientMutex.unlock();}
+        void close() override;
+        void closeAndDeleteFile() override;
+        alloc_slice getPath() const override               {return alloc_slice(filePath());}
+        alloc_slice getPeerID() const override;
+        C4UUID getPublicUUID() const override              {return getUUID(kPublicUUIDKey);}
+        C4UUID getPrivateUUID() const override             {return getUUID(kPrivateUUIDKey);}
+        void rekey(const C4EncryptionKey* C4NULLABLE newKey) override;
+        void maintenance(C4MaintenanceType) override;
+        std::vector<std::string> getCollectionNames() const override;
+        void forEachCollection(const CollectionCallback&) const override;
+        void forEachOpenCollection(const CollectionCallback&) const;
+        bool hasCollection(slice name) const override;
+        C4Collection* getCollection(slice name) const override;
+        C4Collection* createCollection(slice name) override;
+        void deleteCollection(slice name) override;
+        void beginTransaction() override;
+        void endTransaction(bool commit) override;
+        bool isInTransaction() const noexcept override;
+        C4Timestamp nextDocExpiration() const override;
+        bool getRawDocument(slice storeName,
+                            slice key,
+                            fleece::function_ref<void(C4RawDocument* C4NULLABLE)> callback) override;
+        void putRawDocument(slice storeName, const C4RawDocument&) override;
+        FLEncoder sharedFleeceEncoder() const override;
+        FLEncoder createFleeceEncoder() const override;
+        FLSharedKeys getFleeceSharedKeys() const override;
+        alloc_slice encodeJSON(slice jsonData) const override;
+        C4BlobStore& getBlobStore() const override;
+        alloc_slice rawQuery(slice query) override {return dataFile()->rawQuery(query.asString());}
+        void createIndex(slice name,
+                         slice indexSpecJSON,
+                         C4IndexType indexType,
+                         const C4IndexOptions* C4NULLABLE indexOptions =nullptr) override;
+        void deleteIndex(slice name) override;
+        alloc_slice getIndexesInfo(bool fullInfo = true) const override;
+        alloc_slice getIndexRows(slice name) const override;
+        void lockClientMutex() noexcept override                         {_clientMutex.lock();}
+        void unlockClientMutex() noexcept override                       {_clientMutex.unlock();}
+        C4RemoteID getRemoteDBID(slice remoteAddress, bool canCreate) override;
+        alloc_slice getRemoteDBAddress(C4RemoteID remoteID) override;
 
         // DataFile::Delegate API:
+
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         virtual void externalTransactionCommitted(const SequenceTracker&) override;
 
-        BackgroundDB* backgroundDatabase();
-        void stopBackgroundTasks();
-
-    public:
-        // should be private, but called from Document
-        void documentSaved(C4Document*);
-
-    protected:
-        virtual ~DatabaseImpl();
-        void mustNotBeInTransaction();
-
     private:
-        DatabaseImpl(const string &bundlePath, const C4DatabaseConfig&, FilePath &&dataFilePath);
+        friend struct C4Database;
+
+        DatabaseImpl(const FilePath &dir, C4DatabaseConfig config);
+        virtual ~DatabaseImpl();
+
+        void open(const FilePath &path);
+        void initCollections();
         static FilePath findOrCreateBundle(const string &path, bool canCreate,
                                            const char * C4NONNULL &outStorageEngine);
-        static bool deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine);
         void _cleanupTransaction(bool committed);
-        bool getUUIDIfExists(slice key, C4UUID&);
+        bool getUUIDIfExists(slice key, C4UUID&) const;
         C4UUID generateUUID(slice key, bool overwrite =false);
+
+        KeyStore& infoKeyStore() const;
+        Record getInfo(slice key) const;
+        void setInfo(slice key, slice body);
+        void setInfo(Record&);
+        KeyStore& rawDocStore(slice storeName);
+
+        C4UUID getUUID(slice key) const;
+        static constexpr slice kPublicUUIDKey = "publicUUID";
+        static constexpr slice kPrivateUUIDKey = "privateUUID";
+
+        void startBackgroundTasks();
+        void stopBackgroundTasks();
 
         unique_ptr<C4BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         void garbageCollectBlobs();
+
+        C4Collection* getOrCreateCollection(slice name, bool canCreate);
 
         C4DocumentVersioning checkDocumentVersioning();
         void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,
                                        ExclusiveTransaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
-        bool isNewDocPutRequest(const C4DocPutRequest &rq);
-        std::pair<Retained<C4Document>,int> putNewDoc(const C4DocPutRequest &rq);
+        using CollectionsMap = std::unordered_map<slice,std::unique_ptr<C4Collection>>;
 
-        const string                _name;                  // Database filename (w/o extension)
-        const string                _parentDirectory;       // Path to parent directory
-        C4DatabaseConfig2           _config;                // Configuration
-        C4DatabaseConfig            _configV1;              // TODO: DEPRECATED
+        std::string const           _parentDirectory;       // Path to parent directory
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
+        mutable std::recursive_mutex _collectionsMutex;
+        mutable CollectionsMap      _collections;
         ExclusiveTransaction* C4NULLABLE _transaction {nullptr}; // Current ExclusiveTransaction, or null
         int                         _transactionLevel {0};  // Nesting level of transactions
-        unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
         mutable unique_ptr<fleece::impl::Encoder> _encoder; // Shared Fleece Encoder
         mutable FLEncoder C4NULLABLE _flEncoder {nullptr};  // Ditto, for clients
-        unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
         mutable unique_ptr<C4BlobStore> _blobStore;         // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
         std::recursive_mutex        _clientMutex;           // Mutex for c4db_lock/unlock
         unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
-        Retained<Housekeeper>       _housekeeper;           // for expiration/cleanup tasks
         mutable uint64_t            _myPeerID {0};          // My identifier in version vectors
     };
 
 
-    static inline DatabaseImpl* asInternal(const C4Database *db) {
-        // Yeah, casting away constness, I know...
-        return (DatabaseImpl*)db;
-    }
+    static inline DatabaseImpl* asInternal(const C4Database *db) {return (DatabaseImpl*)db;}
 
 }
 

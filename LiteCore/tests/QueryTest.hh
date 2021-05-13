@@ -25,7 +25,31 @@ using namespace fleece::impl;
 
 
 class QueryTest : public DataFileTestFixture {
+public:
+    static const int numberOfOptions = 2;
+
+    string collectionName;
+
 protected:
+
+    QueryTest() :QueryTest(0) { }
+
+    QueryTest(int option) {
+        logSection(option ? "secondary collection" : "default collection");
+        switch (option) {
+            case 0:
+                collectionName = "_default";
+                break;
+            case 1:
+                collectionName = "secondary";
+                store = &db->getKeyStore("coll_secondary");
+                break;
+        }
+    }
+
+    void logSection(const string &name) {
+        fprintf(stderr, "        --- %s\n", name.c_str());
+    }
 
     string numberString(int n) {
         static const char* kDigit[10] = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
@@ -55,10 +79,13 @@ protected:
 
     // Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
     void addNumberedDocs(int first =1, int n =100) {
+        auto level = QueryLog.level();
+        QueryLog.setLevel(LogLevel::Warning);
         ExclusiveTransaction t(store->dataFile());
         for (int i = first; i < first + n; i++)
             REQUIRE(writeNumberedDoc(i, nullslice, t) == (sequence_t)i);
         t.commit();
+        QueryLog.setLevel(level);
     }
 
     sequence_t writeArrayDoc(int i, ExclusiveTransaction &t,

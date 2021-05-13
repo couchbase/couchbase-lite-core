@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['must_5fuse_5fresult',['MUST_USE_RESULT',['../_base_8h.html#afefbce768b9d0df9c9ebc30dd6d13fed',1,'Base.h']]]
+  ['hotlevel',['HOTLEVEL',['../_base_8h.html#a57662d1f12906b53c9f32de57a3a7d65',1,'Base.h']]]
 ];

@@ -86,7 +86,7 @@ namespace litecore { namespace repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
-            _changeObserver = C4DatabaseObserver::create(_db.useLocked(),
+            _changeObserver = C4DatabaseObserver::create(_db.useLocked()->getDefaultCollection(),
                                                          [this](C4DatabaseObserver*) {
                                                              this->_dbChanged();
                                                          });
@@ -280,7 +280,8 @@ namespace litecore { namespace repl {
             }
             if (_options.pushFilter) {
                 // If there's a push filter, ask it whether to push the doc:
-                if (!_options.pushFilter(doc->docID(),
+                if (!_options.pushFilter(nullslice,     // TODO: Collection support
+                                         doc->docID(),
                                          doc->selectedRev().revID,
                                          doc->selectedRev().flags,
                                          doc->getProperties(),

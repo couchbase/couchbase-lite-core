@@ -27,7 +27,7 @@ namespace litecore {
     /** DocumentFactory subclass for rev-tree document schema. */
     class TreeDocumentFactory final : public DocumentFactory {
     public:
-        TreeDocumentFactory(DatabaseImpl *db)   :DocumentFactory(db) { }
+        TreeDocumentFactory(C4Collection *coll)   :DocumentFactory(coll) { }
         Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
         Retained<C4Document> newDocumentInstance(const Record&) override;
         bool isFirstGenRevID(slice revID) const override;

@@ -26,7 +26,7 @@
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
 #include "c4Database.hh"
-#include "c4Private.h"
+#include "DatabaseImpl.hh"
 #include <inttypes.h>
 
 #include "c4Database.hh"
@@ -204,7 +204,7 @@ namespace litecore { namespace repl {
 
     slice Checkpointer::remoteDocID(C4Database *db) {
         if(!_docID)
-            _docID = docIDForUUID(db->privateUUID(), URLTransformStrategy::AsIs);
+            _docID = docIDForUUID(db->getPrivateUUID(), URLTransformStrategy::AsIs);
         return _docID;
     }
 
@@ -350,7 +350,8 @@ namespace litecore { namespace repl {
 
     bool Checkpointer::isDocumentAllowed(C4Document* doc) {
         return isDocumentIDAllowed(doc->docID())
-            && (!_options.pushFilter || _options.pushFilter(doc->docID(),
+            && (!_options.pushFilter || _options.pushFilter(nullslice,   // TODO: Collection support
+                                                            doc->docID(),
                                                             doc->selectedRev().revID,
                                                             doc->selectedRev().flags,
                                                             doc->getProperties(),

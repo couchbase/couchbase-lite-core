@@ -260,19 +260,20 @@ namespace litecore {
     const string DataFile::kInfoKeyStoreName{"info"};
 
 
-    KeyStore& DataFile::getKeyStore(const string &name) const {
+    KeyStore& DataFile::getKeyStore(slice name) const {
         return getKeyStore(name, _options.keyStores);
     }
 
-    KeyStore& DataFile::getKeyStore(const string &name, KeyStore::Capabilities options) const {
+    KeyStore& DataFile::getKeyStore(slice name, KeyStore::Capabilities options) const {
         checkOpen();
-        auto i = _keyStores.find(name);
+        string nameStr(name);
+        auto i = _keyStores.find(nameStr);
         if (i != _keyStores.end()) {
             KeyStore &store = *i->second;
             store.reopen();
             return store;
         } else {
-            return const_cast<DataFile*>(this)->addKeyStore(name, options);
+            return const_cast<DataFile*>(this)->addKeyStore(nameStr, options);
         }
     }
 

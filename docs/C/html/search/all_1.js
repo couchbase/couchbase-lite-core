@@ -7,6 +7,5 @@ var searchData=
   ['allowdeletedbs',['allowDeleteDBs',['../struct_c4_listener_config.html#a5073aad3011a63a52773383dffb1a0df',1,'C4ListenerConfig']]],
   ['allowpull',['allowPull',['../struct_c4_listener_config.html#ac1bbb70e1a22d33eb49c4d5e6ed3022d',1,'C4ListenerConfig']]],
   ['allowpush',['allowPush',['../struct_c4_listener_config.html#a64f41e25edbf75b77c63df717095bb59',1,'C4ListenerConfig']]],
-  ['apis',['apis',['../struct_c4_listener_config.html#a17aec9cbe7ff02868256f066f526d67e',1,'C4ListenerConfig']]],
-  ['arrays',['Arrays',['../group___f_l_array.html',1,'']]]
+  ['apis',['apis',['../struct_c4_listener_config.html#a17aec9cbe7ff02868256f066f526d67e',1,'C4ListenerConfig']]]
 ];

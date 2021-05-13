@@ -10,15 +10,16 @@
 #include "Actor.hh"
 #include "Timer.hh"
 
+struct C4Collection;
+
 namespace litecore {
     class BackgroundDB;
-    class DatabaseImpl;
 
 
     class Housekeeper : public actor::Actor {
     public:
-        /// Creates a Housekeeper for a Database.
-        explicit Housekeeper(DatabaseImpl* NONNULL);
+        /// Creates a Housekeeper for a Collection.
+        explicit Housekeeper(C4Collection* NONNULL);
 
         /// Asynchronously starts the Housekeeper task.
         void start();
@@ -36,8 +37,9 @@ namespace litecore {
         void _scheduleExpiration();
         void _doExpiration();
 
+        alloc_slice   _keyStoreName;
         BackgroundDB* _bgdb;
-        actor::Timer _expiryTimer;
+        actor::Timer  _expiryTimer;
     };
 
 

@@ -86,24 +86,16 @@ C4Replicator* c4repl_newLocal(C4Database* db,
 }
 #endif
 
-C4Replicator* c4repl_newWithWebSocket(C4Database* db,
-                                      litecore::websocket::WebSocket *openSocket,
-                                      C4ReplicatorParameters params,
-                                      C4Error *outError) noexcept
-{
-    try {
-        return db->newIncomingReplicator(openSocket, params).detach();
-    } catchError(outError);
-    return nullptr;
-}
-
 
 C4Replicator* c4repl_newWithSocket(C4Database* db,
                                    C4Socket *openSocket,
                                    C4ReplicatorParameters params,
                                    C4Error *outError) noexcept
 {
-    return c4repl_newWithWebSocket(db, litecore::repl::WebSocketFrom(openSocket), params, outError);
+    try {
+        return db->newIncomingReplicator(openSocket, params).detach();
+    } catchError(outError);
+    return nullptr;
 }
 
 

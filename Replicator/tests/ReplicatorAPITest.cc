@@ -308,7 +308,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
-    _pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
+    _pushFilter = [](C4String collectionName, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
         ((ReplicatorAPITest*)context)->_counter++;
         assert(docID.size > 0);
         assert(revID.size > 0);
@@ -375,7 +376,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
 
     SECTION("Filtered") {
         expectedPending = 99;
-        params.pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
+        params.pushFilter = [](C4String collectionName, C4String docID, C4String revID,
+                               C4RevisionFlags flags, FLDict flbody, void *context) {
             return FLSlice_Compare(docID, "0000005"_sl) != 0;
         };
     }
@@ -435,7 +437,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     SECTION("Filtered") {
         expectedIsPending = false;
         params.callbackContext = this;
-        params.pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
+        params.pushFilter = [](C4String collectionName, C4String docID, C4String revID,
+                               C4RevisionFlags flags, FLDict flbody, void *context) {
             auto test = (ReplicatorAPITest*)context;
             c4repl_getStatus(test->_repl);  // If _repl were locked during this callback, this would deadlock
             return FLSlice_Compare(docID, "0000005"_sl) != 0;

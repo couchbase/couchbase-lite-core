@@ -51,7 +51,8 @@ namespace litecore {
             error::_throw(error::CantUpgradeDatabase,
                           "Accessing indexes requires upgrading the database schema");
 
-        Assert(inTransaction());
+        if (!inTransaction())
+            error::_throw(error::NotInTransaction);
 
         int userVersion = _sqlDb->execAndGet("PRAGMA user_version");
         if (!options().upgradeable && userVersion < 301)

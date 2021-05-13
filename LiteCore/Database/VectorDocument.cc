@@ -19,9 +19,12 @@
 #include "VectorDocument.hh"
 #include "VectorRecord.hh"
 #include "VersionVector.hh"
-#include "DatabaseImpl.hh"
+#include "CollectionImpl.hh"
+#include "c4Database.hh"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
+#include "c4Internal.hh"
+#include "DatabaseImpl.hh"
 #include "Error.hh"
 #include "Delimiter.hh"
 #include "StringUtil.hh"
@@ -35,17 +38,17 @@ namespace litecore {
 
     class VectorDocument final : public C4Document, public InstanceCountedIn<VectorDocument> {
     public:
-        VectorDocument(DatabaseImpl* database, slice docID, ContentOption whichContent)
-        :C4Document(database, alloc_slice(docID))
-        ,_doc(database->defaultKeyStore(), Versioning::Vectors, docID, whichContent)
+        VectorDocument(C4Collection* coll, slice docID, ContentOption whichContent)
+        :C4Document(coll, alloc_slice(docID))
+        ,_doc(keyStore(), Versioning::Vectors, docID, whichContent)
         {
             _initialize();
         }
 
 
-        VectorDocument(DatabaseImpl *database, const Record &doc)
-        :C4Document(database, doc.key())
-        ,_doc(database->defaultKeyStore(), Versioning::Vectors, doc)
+        VectorDocument(C4Collection *coll, const Record &doc)
+        :C4Document(coll, doc.key())
+        ,_doc(keyStore(), Versioning::Vectors, doc)
         {
             _initialize();
         }
@@ -58,7 +61,7 @@ namespace litecore {
 
         void _initialize() {
             _doc.owner = this;
-            _doc.setEncoder(_db->getSharedFleeceEncoder());
+            _doc.setEncoder(database()->sharedFleeceEncoder());
             _updateDocFields();
             _selectRemote(RemoteID::Local);
         }
@@ -75,7 +78,7 @@ namespace litecore {
 
 
         peerID myPeerID() const {
-            return peerID{db()->myPeerID()};
+            return peerID{asInternal(database())->myPeerID()};
         }
 
 
@@ -200,7 +203,7 @@ namespace litecore {
                         return _doc.currentRevisionData();
                 } else if (rev->properties) {
                     // Else the properties have to be re-encoded to a slice:
-                    SharedEncoder enc(_db->getSharedFleeceEncoder());
+                    SharedEncoder enc(database()->sharedFleeceEncoder());
                     enc << rev->properties;
                     _latestBody = enc.finishDoc();
                     return _latestBody.data();;
@@ -336,10 +339,10 @@ namespace litecore {
 
         fleece::Doc _newProperties(alloc_slice body) {
             if (body.size > 0)
-                db()->validateRevisionBody(body);
+                asInternal(database())->validateRevisionBody(body);
             else
                 body = alloc_slice{(FLDict)Dict::emptyDict(), 2};
-            Doc fldoc = Doc(body, kFLUntrusted, database()->getFLSharedKeys());
+            Doc fldoc = Doc(body, kFLUntrusted, database()->getFleeceSharedKeys());
             Assert(fldoc.asDict());     // validateRevisionBody should have preflighted this
             return fldoc;
         }
@@ -365,7 +368,7 @@ namespace litecore {
                 return false;
             newRev.properties = fldoc.asDict();
 
-            db()->dataFile()->_logVerbose("putNewRevision '%.*s' %s ; currently %s",
+            keyStore().dataFile()._logVerbose("putNewRevision '%.*s' %s ; currently %s",
                     SPLAT(_docID),
                     string(newVers.asASCII()).c_str(),
                     string(_currentVersionVector().asASCII()).c_str());
@@ -408,16 +411,16 @@ namespace litecore {
                 alloc_slice newVersStr = newVers.asASCII();
                 alloc_slice oldVersStr = _currentVersionVector().asASCII();
                 if (order != kConflicting)
-                    db()->dataFile()->_logVerbose(
+                    keyStore().dataFile()._logVerbose(
                         "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> %s (remote %d)",
                         SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr),
                         kOrderName[order], rq.remoteDBID);
                 else if (remote != RemoteID::Local)
-                    db()->dataFile()->_logInfo(
+                    keyStore().dataFile()._logInfo(
                         "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> conflict (remote %d)",
                         SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
                 else
-                    db()->dataFile()->_logWarning(
+                    keyStore().dataFile()._logWarning(
                         "putExistingRevision '%.*s' #%.*s ; currently #%.*s --> conflict (remote %d)",
                         SPLAT(_docID), SPLAT(newVersStr), SPLAT(oldVersStr), rq.remoteDBID);
             }
@@ -547,9 +550,10 @@ namespace litecore {
 
 
         bool save(unsigned /*maxRevTreeDepth*/ =0) override {
-            requireValidDocID();
-            db()->mustBeInTransaction();
-            switch (_doc.save(db()->transaction())) {
+            requireValidDocID(_docID);
+            auto db = asInternal(collection()->getDatabase());
+            db->mustBeInTransaction();
+            switch (_doc.save(db->transaction())) {
                 case VectorRecord::kNoSave:
                     return true;
                 case VectorRecord::kNoNewSequence:
@@ -562,13 +566,13 @@ namespace litecore {
                     _selectRemote(RemoteID::Local);
                     if (_doc.sequence() > _sequence)
                         _sequence = _selected.sequence = _doc.sequence();
-                    if (db()->dataFile()->willLog(LogLevel::Verbose)) {
+                    if (db->dataFile()->willLog(LogLevel::Verbose)) {
                         alloc_slice revID = _doc.revID().expanded();
-                        db()->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
+                        db->dataFile()->_logVerbose( "%-s '%.*s' rev #%.*s as seq %" PRIu64,
                                                      ((_flags & kRevDeleted) ? "Deleted" : "Saved"),
                                                      SPLAT(_docID), SPLAT(revID), _sequence);
                     }
-                    db()->documentSaved(this);
+                    asInternal(collection())->documentSaved(this);
                     return true;
             }
             return false; // unreachable
@@ -586,12 +590,12 @@ namespace litecore {
 
 
     Retained<C4Document> VectorDocumentFactory::newDocumentInstance(slice docID, ContentOption c) {
-        return new VectorDocument(database(), docID, c);
+        return new VectorDocument(collection(), docID, c);
     }
 
 
     Retained<C4Document> VectorDocumentFactory::newDocumentInstance(const Record &record) {
-        return new VectorDocument(database(), record);
+        return new VectorDocument(collection(), record);
     }
 
 
@@ -613,7 +617,7 @@ namespace litecore {
         unordered_map<slice,slice> revMap(docIDs.size());
         for (ssize_t i = docIDs.size() - 1; i >= 0; --i)
             revMap[docIDs[i]] = revIDs[i];
-        const peerID myPeerID {database()->myPeerID()};
+        const peerID myPeerID {asInternal(collection()->getDatabase())->myPeerID()};
 
         // These variables get reused in every call to the callback but are declared outside to
         // avoid multiple construct/destruct calls:
@@ -675,7 +679,7 @@ namespace litecore {
             result << ']';
             return alloc_slice(result.str());                       // --> Done!
         };
-        return database()->dataFile()->defaultKeyStore().withDocBodies(docIDs, callback);
+        return asInternal(collection())->keyStore().withDocBodies(docIDs, callback);
     }
 
 

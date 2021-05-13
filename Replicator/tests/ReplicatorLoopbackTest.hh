@@ -529,7 +529,7 @@ public:
                                               storeName,
                                               _checkpointID,
                                               WITH_ERROR(&err)) );
-        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID) << "'; err = " << err.domain << "," << err.code);
+        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID));
         REQUIRE(doc);
         CHECK(doc->body == c4str(body));
         if (!local)

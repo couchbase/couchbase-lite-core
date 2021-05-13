@@ -137,7 +137,7 @@ namespace litecore {
             try {
                 // Create my own Query object associated with the Backgrounder's DataFile:
                 if (!_query) {
-                    _query = df->defaultKeyStore().compileQuery(_expression, _language);
+                    _query = df->compileQuery(_expression, _language);
                     if (_continuous)
                         _backgroundDB->addTransactionObserver(this);
                 }
@@ -148,7 +148,7 @@ namespace litecore {
         auto time = st.elapsedMS();
 
         if (!newQE)
-            logError("Query failed with error %s", c4error_descriptionStr(error));
+            logError("Query failed with error %s", error.description().c_str());
 
         if (_continuous) {
             if (newQE) {

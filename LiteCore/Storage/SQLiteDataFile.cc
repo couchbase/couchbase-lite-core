@@ -177,7 +177,10 @@ namespace litecore {
     }
 
 
-    SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath &path, Delegate *delegate, const Options *options) {
+    SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath &path,
+                                                      DataFile::Delegate *delegate,
+                                                      const Options *options)
+    {
         return new SQLiteDataFile(path, delegate, options);
     }
 
@@ -192,7 +195,9 @@ namespace litecore {
     }
 
 
-    SQLiteDataFile::SQLiteDataFile(const FilePath &path, Delegate *delegate, const Options *options)
+    SQLiteDataFile::SQLiteDataFile(const FilePath &path,
+                                   DataFile::Delegate *delegate,
+                                   const Options *options)
     :DataFile(path, delegate, options)
     {
         reopen();
@@ -531,7 +536,8 @@ namespace litecore {
     }
 
     int SQLiteDataFile::exec(const string &sql) {
-        Assert(inTransaction());
+        if (!inTransaction())
+            error::_throw(error::NotInTransaction);
         return _exec(sql);
     }
 
@@ -664,6 +670,31 @@ namespace litecore {
         _exec("PRAGMA wal_checkpoint(FULL)");
         return DataFile::fileSize();
     }
+
+
+#pragma mark - QUERIES:
+
+
+    string SQLiteDataFile::collectionTableName(const string &collection) const {
+        if (collection == "_default")
+            return "kv_default";
+        else
+            return "kv_coll_" + collection;
+    }
+
+    string SQLiteDataFile::FTSTableName(const string &onTable, const string &property) const {
+        return onTable + "::" + property;
+    }
+
+    string SQLiteDataFile::unnestedTableName(const string &onTable, const string &property) const {
+        return onTable + ":unnest:" + property;
+    }
+
+#ifdef COUCHBASE_ENTERPRISE
+    string SQLiteDataFile::predictiveTableName(const string &onTable, const std::string &property) const {
+        return onTable + ":predict:" + property;
+    }
+#endif
 
 
 #pragma mark - MAINTENANCE:

@@ -31,7 +31,7 @@ using namespace std;
 using namespace std::chrono;
 using namespace date;
 
-TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
 
     IndexSpec::Options options { "en", true };
@@ -78,7 +78,7 @@ TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
     addArrayDocs();
     store->createIndex("nums"_sl, "[[\".numbers\"]]"_sl, IndexSpec::kArray);
     store->deleteIndex("nums"_sl);
@@ -91,17 +91,11 @@ TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
 
     store->createIndex("nums"_sl, R"({"WHAT":[[".num"]], "WHERE":["=",[".type"],"number"]})"_sl);
 
-    const char *queryJson = nullptr;
-    bool expectOptimized = false;
-    SECTION("Using index") {
-        queryJson = "['AND', ['=', ['.type'], 'number'], "
-                            "['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
-        expectOptimized = true;
-    }
-    SECTION("Not using index") {
-        queryJson = "['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]";
-        expectOptimized = false;
-    }
+    auto [queryJson, expectOptimized] = GENERATE(
+        pair<const char*,bool>{"['AND', ['=', ['.type'], 'number'], "
+                                       "['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]", true},
+        pair<const char*,bool>{"['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]", false});
+    logSection(string("Query: ") + queryJson);
     Retained<Query> query = store->compileQuery(json5(queryJson));
     checkOptimized(query, expectOptimized);
 
@@ -115,7 +109,7 @@ TEST_CASE_METHOD(QueryTest, "Create Partial Index", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Partial Index with NOT MISSING", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Partial Index with NOT MISSING", "[Query]") {
     // This tests whether SQLite is smart enough to know that a query on a property (.num) can
     // use a partial index whose condition is that the property is not MISSING.
     // Apparently it is :)
@@ -131,7 +125,7 @@ TEST_CASE_METHOD(QueryTest, "Partial Index with NOT MISSING", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
     addNumberedDocs();
     // Use a (SQL) query based on the Fleece "num" property:
     Retained<Query> query{ store->compileQuery(json5("['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]")) };
@@ -167,17 +161,14 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query][N1QL]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query][N1QL]") {
     addNumberedDocs();
-    Retained<Query> query;
-    SECTION("JSON") {
-        query = store->compileQuery(json5(
-            "{WHAT: ['.num', ['AS', ['*', ['.num'], ['.num']], 'square']], WHERE: ['>', ['.num'], 10]}"));
-    }
-    SECTION("N1QL") {
-        query = store->compileQuery("SELECT num, num*num AS square WHERE num > 10"_sl,
-                                    QueryLanguage::kN1QL);
-    }
+    auto [str, language] = GENERATE(
+        pair<string,QueryLanguage>{json5("{WHAT: ['.num', ['AS', ['*', ['.num'], ['.num']], 'square']], WHERE: ['>', ['.num'], 10]}"),
+               QueryLanguage::kJSON},
+        pair<string,QueryLanguage>{"SELECT num, num*num AS square WHERE num > 10", QueryLanguage::kN1QL});
+    logSection(str);
+    Retained<Query> query = store->compileQuery(str, language);
     CHECK(query->columnCount() == 2);
     CHECK(query->columnTitles() == (vector<string>{"num", "square"}));
     int num = 11;
@@ -194,16 +185,15 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query][N1QL]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
     addNumberedDocs();
     Retained<Query> query1{ store->compileQuery(json5("{WHAT: [['.main'], ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
     Retained<Query> query2{ store->compileQuery(json5("{WHAT: [ '.main',  ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
 
     CHECK(query1->columnTitles() == (vector<string>{ "main", "$1" }));
 
-    SECTION("Just regular docs") {
-    }
-    SECTION("Ignore deleted docs") {
+    if (GENERATE(false, true)) {
+        logSection("Ignore deleted docs");
         ExclusiveTransaction t(store->dataFile());
         for (int i = 201; i <= 300; i++)
             writeNumberedDoc(i, nullslice, t,
@@ -234,7 +224,7 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("null-and-void"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -258,7 +248,7 @@ TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
     addNumberedDocs();
     Retained<Query> query{ store->compileQuery(json5(
                      "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
@@ -303,7 +293,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         for(int i = 0; i < 2; i++) {
@@ -352,7 +342,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("tester"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -412,7 +402,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean return", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
     // For <https://github.com/couchbase/couchbase-lite-core/issues/545>
     {
         ExclusiveTransaction t(store->dataFile());
@@ -461,7 +451,7 @@ TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query object properties", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query object properties", "[Query]") {
     {
         ExclusiveTransaction t(db);
         writeMultipleTypeDocs(t);
@@ -477,7 +467,7 @@ TEST_CASE_METHOD(QueryTest, "Query object properties", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query array index", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query array index", "[Query]") {
     addArrayDocs();
 
     Retained<Query> query{ store->compileQuery(json5("['=', 'five', ['_.[0]', ['.numbers']]]")) };
@@ -493,7 +483,7 @@ TEST_CASE_METHOD(QueryTest, "Query array index", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
     addNumberedDocs(1, 1);
     Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: [['[]', null, false, true, 12345, 1234.5, 'howdy', ['._id']]]}")) };
@@ -507,7 +497,7 @@ TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
     addNumberedDocs(1, 1);
     Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: [{n: null, f: false, t: true, i: 12345, d: 1234.5, s: 'howdy', m: ['.bogus'], id: ['._id']}]}")) };
@@ -521,7 +511,7 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
     // Create a doc with a blob property:
     {
         ExclusiveTransaction t(store->dataFile());
@@ -547,10 +537,10 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
 }
 
 
-#pragma mark Targeted N1QL tests
+#pragma mark Targeted N1QL-function tests
 
 
-TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         for(int i = 0; i < 2; i++) {
@@ -577,7 +567,7 @@ TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string docID = "doc1";
@@ -680,7 +670,7 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
     addNumberedDocs(1,1);
     CHECK(queryWhat("['concat()', 'hello', 'world']") == "\"helloworld\"");
     CHECK(queryWhat("['||', 'hello', 'world']") == "\"helloworld\"");
@@ -692,7 +682,7 @@ TEST_CASE_METHOD(QueryTest, "Query concat", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -748,7 +738,7 @@ TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
@@ -820,7 +810,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
@@ -859,7 +849,7 @@ TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
@@ -898,7 +888,7 @@ TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
@@ -938,7 +928,7 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeMultipleTypeDocs(t);
@@ -976,7 +966,7 @@ TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
     CHECK(e->columns()[1]->asString() == "false"_sl);
 }
 
-TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         
@@ -1038,7 +1028,7 @@ TEST_CASE_METHOD(QueryTest, "Query toarray", "[Query]") {
     CHECK(e->missingColumns() == uint64_t(0));
 }
 
-TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         
@@ -1101,7 +1091,7 @@ TEST_CASE_METHOD(QueryTest, "Query toobject", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
 
@@ -1142,7 +1132,7 @@ TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeNumberedDoc(1, nullslice, t);
@@ -1207,7 +1197,7 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
 
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
     testExpressions( {
         {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14]]",    "5.0"},
         {"['euclidean_distance()', ['[]', 10, 10], ['[]', 13, 14], 2]", "25.0"},
@@ -1226,7 +1216,7 @@ TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 #endif
 
 
-TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
     local_seconds localtime = (local_days)(2018_y/10/23); 
     struct tm tmpTime = FromTimestamp(localtime.time_since_epoch());
     localtime -= GetLocalTZOffset(&tmpTime, false);
@@ -1318,7 +1308,7 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -1340,7 +1330,7 @@ TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
 
 
 // Test for #341, "kData fleece type unable to be queried"
-TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
      {
          ExclusiveTransaction t(store->dataFile());
          writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -1366,7 +1356,7 @@ TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -1396,7 +1386,7 @@ TEST_CASE_METHOD(QueryTest, "Query Missing columns", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -1448,7 +1438,7 @@ TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
      {
         ExclusiveTransaction t(store->dataFile());
         string docID = "rec-00";
@@ -1508,6 +1498,9 @@ class ArrayQueryTest : public QueryTest {
 protected:
     Retained<Query> query;
 
+    ArrayQueryTest(int option) :QueryTest(option) { }
+
+
     void checkQuery(int docNo, int expectedRowCount) {
         Retained<QueryEnumerator> e(query->createEnumerator());
         CHECK(e->getRowCount() == expectedRowCount);
@@ -1555,14 +1548,14 @@ protected:
     }
 };
 
-TEST_CASE_METHOD(ArrayQueryTest, "Query ANY", "[Query]") {
+N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY", "[Query]") {
     testArrayQuery(json5("['SELECT', {\
                              WHERE: ['ANY', 'num', ['.numbers'],\
                                             ['=', ['?num'], 'eight-eight']]}]"),
                    false);
 }
 
-TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
+N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
     testArrayQuery(json5("['SELECT', {\
                               FROM: [{as: 'doc'}, \
                                      {as: 'num', 'unnest': ['.doc.numbers']}],\
@@ -1571,7 +1564,7 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
+N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
     addArrayDocs(1, 90);
 
     auto json = json5("['SELECT', {\
@@ -1585,7 +1578,7 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
+N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
     addArrayDocs(1, 90);
 
     auto json = json5("['SELECT', {\
@@ -1609,7 +1602,7 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
     checkQuery(22, 2);
 }
 
-TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // CBL-1248
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // CBL-1248
     ExclusiveTransaction t(store->dataFile());
 
     for(int i = 0; i < 2; i++) {
@@ -1632,12 +1625,10 @@ TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // C
 
     Retained<Query> q;
     vector<slice> expectedResults;
-    SECTION("WHERE key from dict in sub-array") {
-        q = store->compileQuery(json5(
-                                      "{WHAT: ['._id'], \
-                                      WHERE: ['ANY', 'V', ['.variants'], ['ANY', 'I', ['?V.items'], ['=', ['?I.id'], 2]]]}"));
-        expectedResults.emplace_back("rec-002"_sl);
-    }
+    q = store->compileQuery(json5(
+                                  "{WHAT: ['._id'], \
+                                  WHERE: ['ANY', 'V', ['.variants'], ['ANY', 'I', ['?V.items'], ['=', ['?I.id'], 2]]]}"));
+    expectedResults.emplace_back("rec-002"_sl);
 
     Retained<QueryEnumerator> e(q->createEnumerator());
     REQUIRE(e->getRowCount() == expectedResults.size());
@@ -1649,7 +1640,7 @@ TEST_CASE_METHOD(QueryTest, "Query nested ANY of dict", "[Query]") {        // C
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query][N1QL]") {
 	{
         ExclusiveTransaction t(store->dataFile());
         string docID = "rec-00";
@@ -1737,7 +1728,7 @@ TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query]") {
 // problem.  Leaving an enumerator open in this way will cause a permission denied error when
 // trying to delete the database via db->deleteDataFile()
 #ifndef _MSC_VER
-TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
     Retained<Query> query{ store->compileQuery(json5(
           "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
     Retained<QueryEnumerator> e(query->createEnumerator());
@@ -1756,7 +1747,7 @@ TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
 #endif
 
 
-TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
     addNumberedDocs(1, 10);
     {
         ExclusiveTransaction t(store->dataFile());
@@ -1772,7 +1763,7 @@ TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
     addNumberedDocs(1, 3);
     expiration_t now = KeyStore::now();
 
@@ -1813,7 +1804,7 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string docID = "rec-00";
@@ -1871,6 +1862,11 @@ TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
 }
 
 TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
+    if (GENERATE(false, true)) {
+        logSection("secondary collection");
+        store = &db->getKeyStore("coll_secondary");
+    }
+
     ExclusiveTransaction t(store->dataFile());
     writeDoc("uber_doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         enc.writeKey("dict");
@@ -2003,7 +1999,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query][N1QL]") {
     addNumberedDocs();
     Retained<Query> query{ store->compileQuery("SELECT num, num*num WHERE num >= 30 and num <= 40 ORDER BY num"_sl,
                                                QueryLanguage::kN1QL) };
@@ -2022,7 +2018,7 @@ TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query closes when db closes", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query closes when db closes", "[Query]") {
     // Tests fix for <https://issues.couchbase.com/browse/CBL-214>
     addNumberedDocs(1, 10);
 
@@ -2034,7 +2030,7 @@ TEST_CASE_METHOD(QueryTest, "Query closes when db closes", "[Query]") {
     deleteDatabase();
 }
 
-TEST_CASE_METHOD(QueryTest, "Query Math Precision", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Math Precision", "[Query]") {
     addNumberedDocs();
     Retained<Query> query;
     query = store->compileQuery(json5(
@@ -2052,7 +2048,7 @@ TEST_CASE_METHOD(QueryTest, "Query Math Precision", "[Query]") {
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
     vector<string> keys { "$Type", "Ty$pe", "Type$" };
     ExclusiveTransaction t(store->dataFile());
     writeDoc("doc"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
@@ -2080,7 +2076,7 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars", "[Query]") {
     }
 }
 
-TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query][N1QL]") {
     ExclusiveTransaction t(store->dataFile());
     writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         enc.writeKey("customerId");
@@ -2114,7 +2110,7 @@ TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query]") {
     REQUIRE(!e->next());
 }
 
-TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query][N1QL]") {
     ExclusiveTransaction t(store->dataFile());
     writeDoc("doc-01"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
         enc.writeKey("customerId");
@@ -2148,7 +2144,7 @@ TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query]") {
     CHECK(agg->get(1)->asString() == "Scott"_sl);
 }
 
-TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     {
         ExclusiveTransaction t(store->dataFile());
         string docID = "doc1";
@@ -2179,7 +2175,8 @@ TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
     });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
     
-    query = store->compileQuery("SELECT meta(db) from db"_sl, QueryLanguage::kN1QL);
+    query = store->compileQuery("SELECT meta(" + collectionName + ") from " + collectionName,
+                                QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -2199,7 +2196,8 @@ TEST_CASE_METHOD(QueryTest, "Query META", "[Query]") {
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "doc2"_sl);
     
-    query = store->compileQuery("SELECT meta(db).id from db"_sl, QueryLanguage::kN1QL);
+    query = store->compileQuery("SELECT meta(" + collectionName + ").id from " + collectionName,
+                                QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -2285,4 +2283,50 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     for (unsigned i = 0; i < testCaseCount; ++i) {
         REQUIRE(std::get<1>(testCases[i])(e->columns()[i], missingColumns & (1ull << i)));
     }
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
+    {
+        ExclusiveTransaction t(db);
+        string docID = "rec-00";
+
+        for(int i = 0; i < 10; i++) {
+            stringstream ss("rec-00");
+            ss << i + 1;
+
+            writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
+                enc.writeKey("num1");
+                enc.writeInt(i);
+                enc.writeKey("num2");
+                enc.writeInt(10 - i);
+            });
+        }
+
+        KeyStore &secondary = db->getKeyStore("coll_secondary");
+        writeDoc(secondary, "magic"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("theone");
+            enc.writeInt(4);
+        });
+
+        t.commit();
+    }
+
+    auto query = db->compileQuery(json5(
+        "{'WHAT': [['.main.num1']], 'FROM': [{'AS':'main'}, {'COLLECTION':'secondary', 'ON': ['=', ['.main.num1'], ['.secondary.theone']]}]}"));
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 4);
+
+    query = db->compileQuery(json5(
+        "{'WHAT': [['.main.num1'], ['.secondary.theone']], 'FROM': [{'AS':'main'}, {'COLLECTION':'secondary', 'ON': ['=', ['.main.num1'], ['.secondary.theone']], 'JOIN':'LEFT OUTER'}]}"));
+    e = (query->createEnumerator());
+    REQUIRE(e->getRowCount() == 10);
+    e->seek(4);
+    CHECK(e->columns()[0]->asInt() == 4);
+    CHECK(e->columns()[1]->asInt() == 4);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 5);
+    CHECK(e->columns()[1]->asInt() == 0);
 }

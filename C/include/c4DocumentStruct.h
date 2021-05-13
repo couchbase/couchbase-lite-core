@@ -23,7 +23,9 @@ C4Document
 C4Document_C
 #endif
 {
-    void* _internal1, *_internal2;              // placeholders for vtable-ptr and refcount in C++
+    void* _internal1;           // placeholders for vtable-ptr and refcount (see c4Document.hh)
+    void* _internal2;
+
     C4DocumentFlags flags;      ///< Document flags
     C4HeapString docID;         ///< Document ID
     C4HeapString revID;         ///< Revision ID of current revision

@@ -203,7 +203,8 @@ namespace litecore::repl {
         }
 
         // Ask the database to look up the ancestors:
-        vector<alloc_slice> ancestors = _db->useLocked()->findDocAncestors(
+        vector<alloc_slice> ancestors = _db->useLocked()->getDefaultCollection()
+                                                        ->findDocAncestors(
                                                 docIDs, revIDs,
                                                 kMaxPossibleAncestors,
                                                 !_options.disableDeltaSupport(),  // requireBodies

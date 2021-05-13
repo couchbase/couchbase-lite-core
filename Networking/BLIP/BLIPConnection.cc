@@ -354,16 +354,16 @@ namespace litecore { namespace blip {
 
                     if (!_frameBuf)
                         _frameBuf.reset(new uint8_t[kMaxVarintLen64 + 1 + 4 + kBigFrameSize]);
-                    slice out(_frameBuf.get(), maxSize);
-                    WriteUVarInt(&out, msg->_number);
-                    auto flagsPos = (FrameFlags*)out.buf;
-                    out.moveStart(1);
+                    slice_ostream out(_frameBuf.get(), maxSize);
+                    out.writeUVarInt(msg->_number);
+                    auto flagsPos = (FrameFlags*)out.next();
+                    out.advance(1);
 
                     // Ask the MessageOut to write data to fill the buffer:
                     auto prevBytesSent = msg->_bytesSent;
                     msg->nextFrameToSend(_outputCodec, out, frameFlags);
                     *flagsPos = frameFlags;
-                    slice frame(_frameBuf.get(), out.buf);
+                    slice frame = out.output();
                     bytesWritten += frame.size;
 
                     logVerbose("    Sending frame: %s #%" PRIu64 " %c%c%c%c, bytes %u--%u",
@@ -413,12 +413,17 @@ namespace litecore { namespace blip {
                     if (_closingWithError)
                         return;
                     // Read the frame header:
-                    slice payload = wsMessage->data;
+                    slice_istream payload = wsMessage->data;
                     _totalBytesRead += payload.size;
-                    uint64_t msgNo, flagsInt;
-                    if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt))
-                        throw runtime_error("Illegal BLIP frame header");
-                    auto flags = (FrameFlags)flagsInt;
+                    uint64_t msgNo;
+                    FrameFlags flags;
+                    {
+                        auto pMsgNo = payload.readUVarInt(), pFlags = payload.readUVarInt();
+                        if (!pMsgNo || !pFlags)
+                            throw runtime_error("Illegal BLIP frame header");
+                        msgNo = *pMsgNo;
+                        flags = (FrameFlags)*pFlags;
+                    }
                     logVerbose("Received frame: %s #%" PRIu64 " %c%c%c%c, length %5ld",
                                kMessageTypeNames[flags & kTypeMask], msgNo,
                                (flags & kMoreComing ? 'M' : '-'),
@@ -508,13 +513,13 @@ namespace litecore { namespace blip {
             }
 
             // Acks have no checksum and don't go through the codec; just read the byte count:
-            uint32_t byteCount;
-            if (!ReadUVarInt32(&body, &byteCount)) {
+            auto byteCount = slice_istream(body).readUVarInt32();
+            if (!byteCount) {
                 warn("Couldn't parse body of ACK");
                 return;
             }
             
-            msg->receivedAck(byteCount);
+            msg->receivedAck(*byteCount);
             if (frozen && !msg->needsAck())
                 thawMessage(msg);
         }

@@ -18,6 +18,7 @@
 
 #include "RESTListener.hh"
 #include "c4Private.h"
+#include "c4Collection.hh"
 #include "c4Database.hh"
 #include "c4DocEnumerator.hh"
 #include "c4Document.hh"
@@ -81,9 +82,9 @@ namespace litecore { namespace REST {
 
     
     void RESTListener::handleGetDatabase(RequestResponse &rq, C4Database *db) {
-        auto docCount = db->getDocumentCount();
+        auto docCount = db->getDocumentCount();  // TODO: Collection-aware
         auto lastSequence = db->getLastSequence();
-        C4UUID uuid = db->publicUUID();
+        C4UUID uuid = db->getPublicUUID();
         auto uuidStr = slice(&uuid, sizeof(uuid)).hexString();
 
         auto &json = rq.jsonEncoder();
@@ -283,7 +284,7 @@ namespace litecore { namespace REST {
                 // Encode body as Fleece (and strip _id and _rev):
                 alloc_slice encodedBody;
                 if (body)
-                    encodedBody = doc->encodeStrippingOldMetaProperties(body, db->getFLSharedKeys());
+                    encodedBody = doc->encodeStrippingOldMetaProperties(body, db->getFleeceSharedKeys());
 
                 // Save the revision:
                 C4Slice history[1] = {revID};

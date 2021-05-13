@@ -17,14 +17,9 @@
 //
 
 #pragma once
+#include "c4BlobStoreTypes.h"
 #include "c4DatabaseTypes.h"
 #include <stdio.h>
-
-#ifdef __cplusplus
-    #include "fleece/slice.hh"
-    #include <optional>
-    #include <string>
-#endif
 
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
@@ -32,40 +27,8 @@ C4API_BEGIN_DECLS
     /** \defgroup Blobs Blobs
         @{ */
 
-    //////// BLOB KEYS:
-
     /** \name Blob Keys
         @{ */
-
-    /** A unique identifier of a blob based on a SHA-1 digest of its contents. */
-    struct C4BlobKey {
-        uint8_t bytes[20];
-
-    #ifdef __cplusplus
-        using slice = fleece::slice;
-
-        /** Generates a SHA-1 digest of the content data and returns it as a C4BlobKey. */
-        static C4BlobKey computeDigestOfContent(slice content);
-
-        /** Translates an ASCII blob key, as found in a blob's "digest" property, to a C4BlobKey.
-            Returns `nullopt` if invalid. */
-        static std::optional<C4BlobKey> withDigestString(slice base64);
-
-        /** Returns the ASCII form, as used in a blob's "digest" property. */
-        std::string digestString() const;
-
-        /** Returns a slice pointing to the digest bytes. */
-        explicit operator slice() const     {return slice(bytes, sizeof(bytes));}
-
-        bool operator== (const C4BlobKey &k) const {
-            return memcmp(bytes, k.bytes, sizeof(bytes)) == 0;
-        }
-
-        bool operator!= (const C4BlobKey &k) const {
-            return !(*this == k);
-        }
-    #endif
-    };
 
 
     /** Decodes a string of the form "sha1-"+base64 into a raw key. */

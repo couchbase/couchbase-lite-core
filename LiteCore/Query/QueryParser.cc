@@ -31,6 +31,7 @@
 #include "PlatformIO.hh"
 #include "SecureDigest.hh"
 #include "NumConversion.hh"
+#include "slice_stream.hh"
 #include <algorithm>
 #include <unordered_set>
 
@@ -101,6 +102,15 @@ namespace litecore {
             return str;
         }
 
+        slice optionalString(const Value *v, const char *what) {
+            slice str;
+            if (v) {
+                str = required(v->asString(), what, "must be a string");
+                require(str.size > 0, what, "must be non-empty");
+            }
+            return str;
+        }
+
         const Value* getCaseInsensitive(const Dict *dict, slice key) {
             for (Dict::iterator i(dict); i; ++i)
                 if (i.key()->asString().caseEquivalent(key))
@@ -154,10 +164,12 @@ namespace litecore {
     }
 
     static alloc_slice escapedPath(slice inputPath) {
-        Assert(inputPath.peekByte() == '$');
-        alloc_slice escaped(inputPath.size + 1);
-        memcpy((void *)escaped.buf, "\\", 1);
-        inputPath.readInto(escaped.from(1));
+        slice_istream in(inputPath);
+        Assert(in.peekByte() == '$');
+        alloc_slice escaped(in.size + 1);
+        auto dst = (char*)escaped.buf;
+        dst[0] = '\\';
+        in.readAll(dst + 1, escaped.size - 1);
         return escaped;
     }
 
@@ -171,6 +183,7 @@ namespace litecore {
         _context.push_back(&kOuterOperation);
         _parameters.clear();
         _variables.clear();
+        _kvTables.clear();
         _ftsTables.clear();
         _indexJoinTables.clear();
         _aliases.clear();
@@ -179,7 +192,7 @@ namespace litecore {
         _1stCustomResultCol = 0;
         _isAggregateQuery = _aggregatesOK = _propertiesUseSourcePrefix = _checkedExpiration = false;
 
-        _aliases.insert({_dbAlias, kDBAlias});
+        _aliases.insert({_dbAlias, {kDBAlias, _defaultTableName}});
     }
 
 
@@ -381,17 +394,19 @@ namespace litecore {
     }
 
 
-    void QueryParser::writeCreateIndex(const string &name,
+    void QueryParser::writeCreateIndex(const string &indexName,
+                                       const string &onTableName,
                                        Array::iterator &expressionsIter,
                                        const Array *whereClause,
                                        bool isUnnestedTable)
     {
+        _defaultTableName = onTableName;
         reset();
         try {
             if (isUnnestedTable)
-                _aliases[_dbAlias] = kUnnestTableAlias;
-            _sql << "CREATE INDEX " << sqlIdentifier(name)
-                 << " ON " << sqlIdentifier(_tableName) << " ";
+                _aliases[_dbAlias] = {kUnnestTableAlias, onTableName};
+            _sql << "CREATE INDEX " << sqlIdentifier(indexName)
+                 << " ON " << sqlIdentifier(onTableName) << " ";
             if (expressionsIter.count() > 0) {
                 writeColumnList(expressionsIter);
             } else {
@@ -421,12 +436,43 @@ namespace litecore {
 #pragma mark - "FROM" / "JOIN" clauses:
 
 
-    void QueryParser::addAlias(const string &alias, aliasType type) {
-        require(isValidAlias(alias),
-                "Invalid AS identifier '%s'", alias.c_str());
+    // Collects the attributes of a dict in the FROM clause
+    struct QueryParser::FromAttributes {
+        const Dict  *dict;
+        string      tableName, alias;
+        const Value *on, *unnest;
+    };
+
+    QueryParser::FromAttributes QueryParser::parseFromEntry(const Value *value) {
+        auto dict = requiredDict(value, "FROM item");
+        slice collection = optionalString(getCaseInsensitive(dict, "COLLECTION"_sl),
+                                          "COLLECTION in FROM item");
+        FromAttributes from = {
+            dict,
+            {},
+            string(optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")),
+            getCaseInsensitive(dict, "ON"_sl),
+            getCaseInsensitive(dict, "UNNEST"_sl),
+        };
+        if (collection) {
+            from.tableName = _delegate.collectionTableName(string(collection));
+            require(_delegate.tableExists(from.tableName),
+                    "no such collection \"%.*s\"", SPLAT(collection));
+        } else {
+            from.tableName = _defaultTableName;
+            DebugAssert(_delegate.tableExists(from.tableName));
+        }
+        if (from.alias.empty())
+            from.alias = collection ? string(collection) : "_default";
+        return from;
+    }
+
+
+    void QueryParser::addAlias(const string &alias, aliasType type, const string &tableName) {
+        require(isValidAlias(alias), "Invalid AS identifier '%s'", alias.c_str());
         require(_aliases.find(alias) == _aliases.end(),
-                "duplicate AS identifier '%s'", alias.c_str());
-        _aliases.insert({alias, type});
+                "duplicate collection alias '%s'", alias.c_str());
+        _aliases.insert({alias, {type, tableName}});
         if (type == kDBAlias)
             _dbAlias = alias;
     }
@@ -439,100 +485,95 @@ namespace litecore {
             for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
                 if (first)
                     _propertiesUseSourcePrefix = true;
-                auto entry = requiredDict(i.value(), "FROM item");
-                string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
-                                              "AS in FROM item").asString();
-
-                // Determine the alias type:
-                auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
-                auto on = getCaseInsensitive(entry, "ON"_sl);
-
+                FromAttributes entry = parseFromEntry(i.value());
                 aliasType type;
                 if (first) {
-                    require(!on && !unnest, "first FROM item cannot have an ON or UNNEST clause");
+                    require(!entry.on && !entry.unnest, "first FROM item cannot have an ON or UNNEST clause");
                     type = kDBAlias;
-                } else if (!unnest) {
+                    _kvTables.insert(entry.tableName);
+                    _defaultTableName = entry.tableName;
+                } else if (!entry.unnest) {
                     type = kJoinAlias;
+                    _kvTables.insert(entry.tableName);
                 } else {
-                    require (!on, "cannot use ON and UNNEST together");
-                    string unnestTable = unnestedTableName(unnest);
+                    require (!entry.on, "cannot use ON and UNNEST together");
+                    string unnestTable = unnestedTableName(entry.unnest);
                     if (_delegate.tableExists(unnestTable))
                         type = kUnnestTableAlias;
                     else
                         type = kUnnestVirtualTableAlias;
+                    entry.tableName = "";
                 }
-                addAlias(alias, type);
+                addAlias(entry.alias, type, entry.tableName);
                 first = false;
             }
         }
-        if (first)
-            addAlias(kDefaultTableAlias, kDBAlias);
+        if (first) {
+            // Default alias if there is no FROM clause:
+            addAlias(kDefaultTableAlias, kDBAlias, _defaultTableName);
+            _kvTables.insert(_defaultTableName);
+        }
     }
 
 
     void QueryParser::writeFromClause(const Value *from) {
         auto fromArray = (const Array*)from;    // already type-checked by parseFromClause
 
-        _sql << " FROM " << sqlIdentifier(_tableName);
-
         if (fromArray && !fromArray->empty()) {
             for (Array::iterator i(fromArray); i; ++i) {
-                auto entry = requiredDict(i.value(), "FROM item");
-                string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
-                                              "AS in FROM item").asString();
-                auto on = getCaseInsensitive(entry, "ON"_sl);
-                auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
-                switch (_aliases[alias]) {
-                    case kDBAlias:
+                FromAttributes entry = parseFromEntry(i.value());
+                switch (_aliases[entry.alias].type) {
+                    case kDBAlias: {
                         // The first item is the database alias:
-                        _sql << " AS " << sqlIdentifier(alias);
+                        _sql << " FROM " << sqlIdentifier(entry.tableName)
+                             << " AS " << sqlIdentifier(entry.alias);
                         break;
+                    }
                     case kUnnestVirtualTableAlias:
                         // UNNEST: Use fl_each() to make a virtual table:
                         _sql << " JOIN ";
-                        writeEachExpression(unnest);
-                        _sql << " AS " << sqlIdentifier(alias);
+                        writeEachExpression(entry.unnest);
+                        _sql << " AS " << sqlIdentifier(entry.alias);
                         break;
                     case kUnnestTableAlias: {
                         // UNNEST: Optimize query by using the unnest table as a join source:
-                        string unnestTable = unnestedTableName(unnest);
+                        string unnestTable = unnestedTableName(entry.unnest);
                         _sql << " JOIN " << sqlIdentifier(unnestTable)
-                             << " AS " << sqlIdentifier(alias)
-                             << " ON " << sqlIdentifier(alias) << ".docid="
+                             << " AS " << sqlIdentifier(entry.alias)
+                             << " ON " << sqlIdentifier(entry.alias) << ".docid="
                              << sqlIdentifier(_dbAlias) << ".rowid";
                         break;
                     }
                     case kJoinAlias: {
                         // A join:
                         JoinType joinType = kInner;
-                        const Value* joinTypeVal = getCaseInsensitive(entry, "JOIN"_sl);
-                        if (joinTypeVal) {
-                            slice joinTypeStr = requiredString(joinTypeVal, "JOIN value");
+                        slice joinTypeStr = optionalString(getCaseInsensitive(entry.dict, "JOIN"),
+                                                           "JOIN value");
+                        if (joinTypeStr) {
                             joinType = JoinType(parseJoinType(joinTypeStr));
                             require(joinType != kInvalidJoin, "Unknown JOIN type '%.*s'",
                                     SPLAT(joinTypeStr));
                         }
 
                         if (joinType == kCross) {
-                            require(!on, "CROSS JOIN cannot accept an ON clause");
+                            require(!entry.on, "CROSS JOIN cannot accept an ON clause");
                         } else {
-                            require(on, "FROM item needs an ON clause to be a join");
+                            require(entry.on, "FROM item needs an ON clause to be a join");
                         }
 
                         _sql << " " << kJoinTypeNames[ joinType ] << " JOIN "
-                             << sqlIdentifier(_tableName) << " AS " << sqlIdentifier(alias);
-
-                        _sql << " ON ";
+                             << sqlIdentifier(entry.tableName)
+                             << " AS " << sqlIdentifier(entry.alias) << " ON ";
                         _checkedDeleted = false;
-                        if (on) {
+                        if (entry.on) {
                             _sql << "(";
-                            parseNode(on);
+                            parseNode(entry.on);
                             _sql << ")";
                         }
                         if (!_checkedDeleted) {
-                            if (on)
+                            if (entry.on)
                                 _sql << " AND ";
-                            writeDeletionTest(alias);
+                            writeDeletionTest(entry.alias);
                         }
                         break;
                     }
@@ -542,7 +583,7 @@ namespace litecore {
                 }
             }
         } else {
-            _sql << " AS " << sqlIdentifier(_dbAlias);
+            _sql << " FROM " << sqlIdentifier(_defaultTableName) << " AS " << sqlIdentifier(_dbAlias);
         }
 
         // Add joins to index tables (FTS, predictive):
@@ -756,7 +797,7 @@ namespace litecore {
                 _sql << kResultFnName << "(";
                 parseCollatableNode(result);
                 _sql << ") AS " << sqlIdentifier(title);
-                addAlias(title, kResultAlias);
+                addAlias(title, kResultAlias, "");
             } else {
                 _sql << (isImplicitBool(expr[0]) ? kBoolResultFnName : kResultFnName) << "(";
                 if (result->type() == kString) {
@@ -1152,6 +1193,7 @@ namespace litecore {
             QueryParser nested(this);
             nested.parse(dict);
             _sql << nested.SQL();
+            _kvTables.insert(nested._kvTables.begin(), nested._kvTables.end());
         }
     }
 
@@ -1227,11 +1269,11 @@ namespace litecore {
                 _sql << kVersionFnName << "(" << tablePrefix << "version" << ")";
                 break;
             case mkSequence:
-                writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i].cString());
+                writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i]);
                 _checkedExpiration = true;
                 break;
             case mkExpiration:
-                writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i].cString());
+                writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i]);
                 break;
             default:
                 Assert(false, "Internal logic error");
@@ -1249,7 +1291,7 @@ namespace litecore {
 
         if (op.hasPrefix('.')) {
             op.moveStart(1); // Skip initial .
-            if(op.peekByte() == '$') {
+            if(op.hasPrefix("$")) {
                 alloc_slice escaped = escapedPath(op);
                 writePropertyGetter(kValueFnName, Path(escaped));
             } else {
@@ -1377,7 +1419,7 @@ namespace litecore {
                     require(name, "Invalid JSON value in property path");
                     if (firstIsEncoded) {
                         name.moveStart(1);              // skip '.', '?', '$'
-                        if(name.peekByte() == '$') {
+                        if(name.hasPrefix("$")) {
                             alloc_slice escaped = escapedPath(name);
                             path.addComponents(escaped);
                         } else {
@@ -1439,14 +1481,15 @@ namespace litecore {
     }
 
 
-    void QueryParser::writeMetaProperty(slice fn, const string &tablePrefix, const char *property) {
-        require(fn == kValueFnName, "can't use '_%s' in this context", property);
+    void QueryParser::writeMetaProperty(slice fn, const string &tablePrefix, slice property) {
+        require(fn == kValueFnName, "can't use '_%.*s' in this context", SPLAT(property));
         _sql << tablePrefix << property;
     }
 
+
     // Return the iterator to _aliases based on the property.
     // Post-condition: iterator != _aliases.end()
-    std::map<std::string, QueryParser::aliasType>::const_iterator
+    QueryParser::AliasMap::const_iterator
     QueryParser::verifyDbAlias(fleece::impl::Path &property) {
         string alias;
         auto iType = _aliases.end();
@@ -1460,7 +1503,7 @@ namespace litecore {
         if (_aliases.size() > 1) {
             int cnt = 0;
             for (auto it = this->_aliases.begin(); it != this->_aliases.end(); ++it) {
-                if (it->second != kResultAlias) {
+                if (it->second.type != kResultAlias) {
                     if (++cnt == 2) {
                         hasMultiDbAliases = true;
                         break;
@@ -1497,22 +1540,23 @@ namespace litecore {
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
         auto &&iType = verifyDbAlias(property);
-        string alias = iType->first;
+        const string &alias = iType->first;
+        aliasType type = iType->second.type;
         string tablePrefix = alias.empty() ? "" : quotedIdentifierString(alias) + ".";
         
-        if (iType->second >= kUnnestVirtualTableAlias) {
+        if (type >= kUnnestVirtualTableAlias) {
             // The alias is to an UNNEST. This needs to be written specially:
-            writeUnnestPropertyGetter(fn, property, alias, iType->second);
+            writeUnnestPropertyGetter(fn, property, alias, type);
             return;
         }
 
-        if(iType->second == kResultAlias && property[0].keyStr().asString() == iType->first) {
+        if (type == kResultAlias && property[0].keyStr().asString() == alias) {
             // If the property in question is identified as an alias, emit that instead of
             // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
             // vs alias -> doc["path"]["to"]["value"])
             if(property.size() == 1) {
                 // Simple case, the alias is being used as-is
-                _sql << sqlIdentifier(iType->first);
+                _sql << sqlIdentifier(alias);
                 return;
             }
 
@@ -1520,7 +1564,7 @@ namespace litecore {
             // a collection type (e.g. alias = {"foo": "bar"}, and want to
             // ORDER BY alias.foo
             property.drop(1);
-            _sql << kNestedValueFnName << "(" << sqlIdentifier(iType->first)
+            _sql << kNestedValueFnName << "(" << sqlIdentifier(alias)
                  << ", " << sqlString(string(property)) << ")";
             return;
         } 
@@ -1631,7 +1675,7 @@ namespace litecore {
     {
         reset();
         if (!dbAlias.empty())
-            addAlias(string(dbAlias), kDBAlias);
+            addAlias(string(dbAlias), kDBAlias, _defaultTableName);
         writeWhereClause(arrayExpr);
         string sql = SQL();
         if (sql[0] == ' ')
@@ -1682,10 +1726,22 @@ namespace litecore {
 
     // Returns the FTS table name given the LHS of a MATCH expression.
     string QueryParser::FTSTableName(const Value *key) const {
-        string ftsName( requiredString(key, "left-hand side of MATCH expression") );
-        require(!ftsName.empty() && ftsName.find('"') == string::npos,
+        slice ftsName = requiredString(key, "left-hand side of MATCH expression");
+        string table;
+        slice alias;
+        if (auto dot = ftsName.findByte('.'); dot) {
+            alias = slice(ftsName.buf, dot);
+            ftsName = ftsName.from(dot + 1);
+            auto i = _aliases.find(string(alias));
+            require(i != _aliases.end() && i->second.type <= kJoinAlias, "Invalid alias in MATCH");
+            table = i->second.tableName;
+        } else {
+            require(!_propertiesUseSourcePrefix, "Missing collection alias in MATCH");
+            table = _defaultTableName;
+        }
+        require(!ftsName.empty() && !ftsName.findByte('"'),
                 "FTS index name may not contain double-quotes nor be empty");
-        return _delegate.FTSTableName(ftsName);
+        return _delegate.FTSTableName(table, string(ftsName));
     }
 
     // Returns or creates the FTS join alias given the LHS of a MATCH expression.
@@ -1737,21 +1793,29 @@ namespace litecore {
 
     // Returns the index table name for an unnested array property.
     string QueryParser::unnestedTableName(const Value *arrayExpr) const {
-        string path(propertyFromNode(arrayExpr));
+        string table = _defaultTableName;
+        Path path = propertyFromNode(arrayExpr);
+        string propertyStr;
         if (!path.empty()) {
             // It's a property path
-            require(path.find('"') == string::npos,
-                    "invalid property path for array index");
             if (_propertiesUseSourcePrefix) {
-                string dbAliasPrefix = _dbAlias + ".";
-                if (hasPrefix(path, dbAliasPrefix))
-                    path = path.substr(dbAliasPrefix.size());
+                if (const auto &first = path[0]; first.isKey()) {
+                    if (string keyStr(first.keyStr()); keyStr != _dbAlias) {
+                        if (auto i = _aliases.find(keyStr); i != _aliases.end()) {
+                            table = i->second.tableName;
+                        }
+                    }
+                }
+                path.drop(1);
             }
+            propertyStr = string(path);
+            require(propertyStr.find('"') == string::npos,
+                    "invalid property path for array index");
         } else {
             // It's some other expression; make a unique digest of it:
-            path = expressionIdentifier(arrayExpr->asArray());
+            propertyStr = expressionIdentifier(arrayExpr->asArray());
         }
-        return _delegate.unnestedTableName(path);
+        return _delegate.unnestedTableName(table, propertyStr);
     }
 
 

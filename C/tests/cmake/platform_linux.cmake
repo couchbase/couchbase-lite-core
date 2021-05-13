@@ -3,7 +3,6 @@ function(setup_build)
         C4Tests PRIVATE
 	${TOP}Crypto/mbedUtils.cc
 	${TOP}LiteCore/Unix/strlcat.c
-	${TOP}vendor/fleece/Fleece/Support/slice.cc
     )
 
     target_link_libraries(

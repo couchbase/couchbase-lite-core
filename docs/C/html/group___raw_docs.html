@@ -89,10 +89,10 @@ Functions</h2></td></tr>
 <tr class="memitem:ga712cc9ac2e82b308d06cff0e5b2bd85c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___raw_docs.html#ga712cc9ac2e82b308d06cff0e5b2bd85c">c4raw_free</a> (<a class="el" href="struct_c4_raw_document.html">C4RawDocument</a> *rawDoc)</td></tr>
 <tr class="memdesc:ga712cc9ac2e82b308d06cff0e5b2bd85c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees the storage occupied by a raw document.  <a href="#ga712cc9ac2e82b308d06cff0e5b2bd85c">More...</a><br /></td></tr>
 <tr class="separator:ga712cc9ac2e82b308d06cff0e5b2bd85c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9e50e76fe35c6e3b9f506b6621ca366a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_raw_document.html">C4RawDocument</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___raw_docs.html#ga9e50e76fe35c6e3b9f506b6621ca366a">c4raw_get</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> storeName, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memitem:ga9e50e76fe35c6e3b9f506b6621ca366a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_raw_document.html">C4RawDocument</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___raw_docs.html#ga9e50e76fe35c6e3b9f506b6621ca366a">c4raw_get</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> storeName, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:ga9e50e76fe35c6e3b9f506b6621ca366a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reads a raw document from the database.  <a href="#ga9e50e76fe35c6e3b9f506b6621ca366a">More...</a><br /></td></tr>
 <tr class="separator:ga9e50e76fe35c6e3b9f506b6621ca366a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf207d860a1214d87e17c70a0039ccd90"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___raw_docs.html#gaf207d860a1214d87e17c70a0039ccd90">c4raw_put</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> storeName, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> key, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> meta, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> body, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memitem:gaf207d860a1214d87e17c70a0039ccd90"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___raw_docs.html#gaf207d860a1214d87e17c70a0039ccd90">c4raw_put</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> storeName, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> key, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> meta, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> body, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:gaf207d860a1214d87e17c70a0039ccd90"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes a raw document to the database, or deletes it if both meta and body are NULL.  <a href="#gaf207d860a1214d87e17c70a0039ccd90">More...</a><br /></td></tr>
 <tr class="separator:gaf207d860a1214d87e17c70a0039ccd90"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -156,7 +156,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="struct_c4_raw_document.html">C4RawDocument</a>* c4raw_get </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
@@ -199,7 +199,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">bool c4raw_put </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>

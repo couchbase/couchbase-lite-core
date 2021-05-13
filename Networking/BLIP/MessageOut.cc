@@ -42,50 +42,52 @@ namespace litecore { namespace blip {
     { }
 
 
-    void MessageOut::nextFrameToSend(Codec &codec, slice &dst, FrameFlags &outFlags) {
+    void MessageOut::nextFrameToSend(Codec &codec, slice_ostream &dst, FrameFlags &outFlags) {
         outFlags = flags();
         if (isAck()) {
             // Acks have no checksum and don't go through the codec
             slice &data = _contents.dataToSend();
-            dst.writeFrom(data);
+            dst.write(data);
             _bytesSent += (uint32_t)data.size;
             return;
         }
 
-        size_t frameSize = dst.size;
-        dst.setSize(dst.size - Codec::kChecksumSize);          // Reserve room for checksum at end
-
         // Write the frame:
-        auto mode = hasFlag(kCompressed) ? Codec::Mode::SyncFlush : Codec::Mode::Raw;
-        do {
-            slice &data = _contents.dataToSend();
-            if (data.size == 0)
-                break;
-            _uncompressedBytesSent += (uint32_t)data.size;
-            codec.write(data, dst, mode);
-            _uncompressedBytesSent -= (uint32_t)data.size;
-        } while (dst.size >= 1024);
+        size_t frameSize = dst.capacity();
+        {
+            // `frame` is the same as `dst` but 4 bytes shorter, to leave space for the checksum
+            slice_ostream frame(dst.next(), frameSize - Codec::kChecksumSize);
+            auto mode = hasFlag(kCompressed) ? Codec::Mode::SyncFlush : Codec::Mode::Raw;
+            do {
+                slice_istream &data = _contents.dataToSend();
+                if (data.size == 0)
+                    break;
+                _uncompressedBytesSent += (uint32_t)data.size;
+                codec.write(data, frame, mode);
+                _uncompressedBytesSent -= (uint32_t)data.size;
+            } while (frame.capacity() >= 1024);
 
-        if (codec.unflushedBytes() > 0)
-            throw runtime_error("Compression buffer overflow");
+            if (codec.unflushedBytes() > 0)
+                throw runtime_error("Compression buffer overflow");
 
-        if (mode == Codec::Mode::SyncFlush) {
-            size_t bytesWritten = (frameSize - Codec::kChecksumSize) - dst.size;
-            if (bytesWritten > 0) {
-                // SyncFlush always ends the output with the 4 bytes 00 00 FF FF.
-                // We can remove those, then add them when reading the data back in.
-                Assert(bytesWritten >= 4 &&
-                       memcmp((const char*)dst.buf - 4, "\x00\x00\xFF\xFF", 4) == 0);
-                dst.moveStart(-4);
+            if (mode == Codec::Mode::SyncFlush) {
+                size_t bytesWritten = (frameSize - Codec::kChecksumSize) - frame.capacity();
+                if (bytesWritten > 0) {
+                    // SyncFlush always ends the output with the 4 bytes 00 00 FF FF.
+                    // We can remove those, then add them when reading the data back in.
+                    Assert(bytesWritten >= 4 &&
+                           memcmp((const char*)frame.next() - 4, "\x00\x00\xFF\xFF", 4) == 0);
+                    frame.retreat(4);
+                }
             }
+
+            // Write the checksum:
+            dst.advanceTo(frame.next());           // Catch `dst` up to where `frame` is
+            codec.writeChecksum(dst);
         }
 
-        // Write the checksum:
-        dst.setSize(dst.size + Codec::kChecksumSize);           // Undo "Reserve room..." above
-        codec.writeChecksum(dst);
-
         // Compute the (compressed) frame size, and update running totals:
-        frameSize -= dst.size;
+        frameSize -= dst.capacity();
         _bytesSent += (uint32_t)frameSize;
         _unackedBytes += (uint32_t)frameSize;
 
@@ -158,13 +160,14 @@ namespace litecore { namespace blip {
     :_payload(payload)
     ,_unsentPayload(payload.buf, payload.size)
     ,_dataSource(move(dataSource))
+    ,_unsentDataBuffer(nullslice)
     {
         DebugAssert(payload.size <= UINT32_MAX);
     }
 
 
     // Returns the next message-body data to send (as a slice _reference_)
-    slice& MessageOut::Contents::dataToSend() {
+    slice_istream& MessageOut::Contents::dataToSend() {
         if (_unsentPayload.size > 0) {
             return _unsentPayload;
         } else {
@@ -203,16 +206,18 @@ namespace litecore { namespace blip {
 
 
     void MessageOut::Contents::getPropsAndBody(slice &props, slice &body) const {
-        props = _payload;
-        if (props.size) {
-            uint32_t propertiesSize;
-            ReadUVarInt32(&props, &propertiesSize);
-            props.setSize(propertiesSize);
-        } else if (!props.buf) {
-            body = nullslice;
+        slice_istream in = _payload;
+        if (in.size > 0) {
+            optional<uint32_t> propertiesSize = in.readUVarInt32();
+            if (!propertiesSize || *propertiesSize > in.size)
+                error::_throw(error::CorruptData, "Invalid properties size in BLIP frame");
+            in.setSize(*propertiesSize);
+        } else if (!in.buf) {
+            props = body = nullslice;
             return;
         }
-        body = slice(props.end(), _payload.end());
+        props = in;
+        body = slice(in.end(), _payload.end());
     }
 
 } }

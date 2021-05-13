@@ -155,7 +155,7 @@ namespace litecore { namespace REST {
         Retained<PrivateKey> privateKey;
         switch (config->privateKeyRepresentation) {
             case kC4PrivateKeyFromKey:
-                privateKey = config->key->privateKey();
+                privateKey = config->key->getPrivateKey();
                 break;
             case kC4PrivateKeyFromCert:
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE

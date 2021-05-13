@@ -27,11 +27,6 @@ struct Identity {
 class CertHelper {
 public:
 
-    static CertHelper& instance() {
-        static CertHelper sInstance;
-        return sInstance;
-    }
-
     CertHelper()
     :temporaryServerIdentity(createIdentity(false, kC4CertUsage_TLSServer,
                                             "LiteCore Listener Test"))
@@ -45,7 +40,7 @@ public:
 
 
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-    Identity persistentServerIdentity() {
+    const Identity& persistentServerIdentity() {
         C4Log("Using server TLS w/persistent key for this test");
         if (!_serverPersistentIdentity.cert)
             _serverPersistentIdentity = createIdentity(true, kC4CertUsage_TLSServer,
@@ -54,7 +49,7 @@ public:
     }
 
 
-    Identity persistentClientIdentity() {
+    const Identity& persistentClientIdentity() {
         if (!_clientPersistentIdentity.cert)
             _clientPersistentIdentity = createIdentity(true, kC4CertUsage_TLSClient,
                                                                    "ListenerHarness");
@@ -110,7 +105,6 @@ public:
 private:
     Identity _serverPersistentIdentity, _clientPersistentIdentity,
              _ca;
-
 };
 
 #endif // COUCHBASE_ENTERPRISE

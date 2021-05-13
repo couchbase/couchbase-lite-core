@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "c4Collection.hh"
 #include "c4Database.hh"
 #include "c4Document.hh"
 #include "Batcher.hh"

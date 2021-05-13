@@ -7,8 +7,11 @@ var searchData=
   ['c4_5foptions',['C4_OPTIONS',['../c4_compat_8h.html#a0ba9baea964974f4e8742c63d5e9013c',1,'c4Compat.h']]],
   ['c4_5freturns_5fnonnull',['C4_RETURNS_NONNULL',['../c4_compat_8h.html#a5f5f88d0aedf64b82a40e28d2a0776c1',1,'c4Compat.h']]],
   ['c4api',['C4API',['../c4_compat_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868',1,'c4Compat.h']]],
+  ['c4api_5fbegin_5fdecls',['C4API_BEGIN_DECLS',['../c4_compat_8h.html#aeae175d3d227be9e3cde8c1fd0d0c29a',1,'c4Compat.h']]],
+  ['c4api_5fend_5fdecls',['C4API_END_DECLS',['../c4_compat_8h.html#a6b7503c411cd98b4d6172bf61a091f87',1,'c4Compat.h']]],
   ['c4inline',['C4INLINE',['../c4_compat_8h.html#ab6e8c999f5a33767c27706fb4392831d',1,'c4Compat.h']]],
   ['c4nonnull',['C4NONNULL',['../c4_compat_8h.html#a8944e5062c19897c26a00074e7c4550b',1,'c4Compat.h']]],
   ['c4nullable',['C4NULLABLE',['../c4_compat_8h.html#a284f49deb058040adaabad4c7d5e992a',1,'c4Compat.h']]],
-  ['cbl_5fcore_5fapi',['CBL_CORE_API',['../c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650',1,'c4Compat.h']]]
+  ['cbl_5fcore_5fapi',['CBL_CORE_API',['../c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650',1,'c4Compat.h']]],
+  ['coldlevel',['COLDLEVEL',['../_base_8h.html#a9b2436fdcebefc30179f697a8a483aa6',1,'Base.h']]]
 ];

@@ -23,6 +23,7 @@
 #include "c4Private.h"
 
 #include "c4ExceptionUtils.hh"
+#include "CollectionImpl.hh"
 #include "c4QueryImpl.hh"
 #include "c4Internal.hh"
 
@@ -40,19 +41,22 @@ using namespace litecore;
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = { };
 
 
-C4Query::C4Query(const C4Database *db, C4QueryLanguage language, slice queryExpression)
-:_database(asInternal(db))
-,_query(_database->defaultKeyStore().compileQuery(queryExpression, (QueryLanguage)language))
+C4Query::C4Query(C4Collection *coll, C4QueryLanguage language, slice queryExpression)
+:_database(asInternal(coll)->dbImpl())
+,_query(_database->dataFile()->compileQuery(queryExpression,
+                                            (QueryLanguage)language,
+                                            &asInternal(coll)->keyStore()))
 { }
 
 
 C4Query::~C4Query() = default;
 
 
-Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice queryExpression,
-                                       int *outErrorPos) const {
+Retained<C4Query> C4Query::newQuery(C4Collection *coll, C4QueryLanguage language, slice expr,
+                                    int *outErrorPos)
+{
     try {
-        return retained(new C4Query(this, language, queryExpression));
+        return retained(new C4Query(coll, language, expr));
     } catch (Query::parseError &x) {
         if (outErrorPos) {
             *outErrorPos = x.errorPosition;
@@ -61,6 +65,13 @@ Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice queryExpr
             throw;
         }
     }
+}
+
+
+Retained<C4Query> C4Query::newQuery(C4Database *db, C4QueryLanguage language, slice expr,
+                                    int *outErrorPos)
+{
+    return newQuery(db->getDefaultCollection(), language, expr, outErrorPos);
 }
 
 

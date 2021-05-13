@@ -72,7 +72,7 @@ $(function() {
 <p>Metadata about a document (actually about its current revision.)  
  <a href="struct_c4_document_info.html#details">More...</a></p>
 
-<p><code>#include &lt;<a class="el" href="c4_doc_enumerator_8h_source.html">c4DocEnumerator.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="c4_doc_enumerator_types_8h_source.html">c4DocEnumeratorTypes.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
@@ -89,8 +89,11 @@ Data Fields</h2></td></tr>
 <tr class="memdesc:afabd4bff5f16dad26ec8ffa0889642b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sequence at which doc was last updated.  <a href="#afabd4bff5f16dad26ec8ffa0889642b1">More...</a><br /></td></tr>
 <tr class="separator:afabd4bff5f16dad26ec8ffa0889642b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78f698ad44aec5b764bba97b2cbb23f2"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_document_info.html#a78f698ad44aec5b764bba97b2cbb23f2">bodySize</a></td></tr>
-<tr class="memdesc:a78f698ad44aec5b764bba97b2cbb23f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size in bytes of document body (approx)  <a href="#a78f698ad44aec5b764bba97b2cbb23f2">More...</a><br /></td></tr>
+<tr class="memdesc:a78f698ad44aec5b764bba97b2cbb23f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size in bytes of current revision body (as Fleece not JSON)  <a href="#a78f698ad44aec5b764bba97b2cbb23f2">More...</a><br /></td></tr>
 <tr class="separator:a78f698ad44aec5b764bba97b2cbb23f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a937031ca48204c0ff424a4391db65612"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_document_info.html#a937031ca48204c0ff424a4391db65612">metaSize</a></td></tr>
+<tr class="memdesc:a937031ca48204c0ff424a4391db65612"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size in bytes of extra metadata.  <a href="#a937031ca48204c0ff424a4391db65612">More...</a><br /></td></tr>
+<tr class="separator:a937031ca48204c0ff424a4391db65612"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9256df84f237625f072034c718d30f7e"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_document_info.html#a9256df84f237625f072034c718d30f7e">expiration</a></td></tr>
 <tr class="memdesc:a9256df84f237625f072034c718d30f7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Expiration time, or 0 if none.  <a href="#a9256df84f237625f072034c718d30f7e">More...</a><br /></td></tr>
 <tr class="separator:a9256df84f237625f072034c718d30f7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -110,7 +113,7 @@ Data Fields</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Size in bytes of document body (approx) </p>
+<p>Size in bytes of current revision body (as Fleece not JSON) </p>
 
 </div>
 </div>
@@ -162,6 +165,22 @@ Data Fields</h2></td></tr>
 
 </div>
 </div>
+<a id="a937031ca48204c0ff424a4391db65612"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a937031ca48204c0ff424a4391db65612">&#9670;&nbsp;</a></span>metaSize</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint64_t C4DocumentInfo::metaSize</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Size in bytes of extra metadata. </p>
+
+</div>
+</div>
 <a id="a832117e4d9ad7f2bf29da0c16325f1af"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a832117e4d9ad7f2bf29da0c16325f1af">&#9670;&nbsp;</a></span>revID</h2>
 
@@ -195,7 +214,7 @@ Data Fields</h2></td></tr>
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li>include/<a class="el" href="c4_doc_enumerator_8h_source.html">c4DocEnumerator.h</a></li>
+<li><a class="el" href="c4_doc_enumerator_types_8h_source.html">c4DocEnumeratorTypes.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

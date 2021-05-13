@@ -120,7 +120,7 @@ namespace litecore { namespace repl {
             if (rev->flags & kRevPurged) {
                 // Server says the document is no longer accessible, i.e. it's been
                 // removed from all channels the client has access to. Purge it.
-                if (_db->insertionDB().useLocked()->purgeDoc(rev->docID))
+                if (_db->insertionDB().useLocked()->purgeDocument(rev->docID))
                     logVerbose("    {'%.*s' removed (purged)}", SPLAT(rev->docID));
                 return true;
 
@@ -205,7 +205,7 @@ namespace litecore { namespace repl {
             if (C4Document::hasOldMetaProperties(root)) {
                 body = nullslice;
                 try {
-                    FLSharedKeys sk = _db->insertionDB().useLocked()->getFLSharedKeys();
+                    FLSharedKeys sk = _db->insertionDB().useLocked()->getFleeceSharedKeys();
                     body = C4Document::encodeStrippingOldMetaProperties(root, sk);
                 } catchAndWarn();
                 if (!body)

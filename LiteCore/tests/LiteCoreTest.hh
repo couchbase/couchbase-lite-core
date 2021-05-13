@@ -94,9 +94,14 @@ public:
     void reopenDatabase(const DataFile::Options *newOptions =nullptr);
 
     static sequence_t createDoc(KeyStore&, slice docID, slice body, ExclusiveTransaction&);
-    sequence_t createDoc(slice docID, slice body, ExclusiveTransaction &t)  {return createDoc(*store, docID, body, t);};
+    sequence_t createDoc(slice docID, slice body, ExclusiveTransaction &t)
+                                                    {return createDoc(*store, docID, body, t);};
 
-    sequence_t writeDoc(slice docID, DocumentFlags, ExclusiveTransaction&,
+    sequence_t writeDoc(slice docID, DocumentFlags flags, ExclusiveTransaction &t,
+                        std::function<void(fleece::impl::Encoder&)> fn)
+                                                    {return writeDoc(*store, docID, flags, t, fn);}
+    sequence_t writeDoc(KeyStore&,
+                        slice docID, DocumentFlags, ExclusiveTransaction&,
                         std::function<void(fleece::impl::Encoder&)>);
 
     virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;

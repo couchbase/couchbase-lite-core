@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['sqlitedomain',['SQLiteDomain',['../group___errors.html#gga6cbe7be44f2f63425404284687e6861cab14b819a5f23eedbfb517cd9ba1419d5',1,'c4Base.h']]]
+  ['sqlitedomain',['SQLiteDomain',['../group___errors.html#ggabb4faf1bef1be6c39f496e0ffdf8cdd0ab14b819a5f23eedbfb517cd9ba1419d5',1,'c4Error.h']]]
 ];

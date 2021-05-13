@@ -26,9 +26,9 @@ namespace litecore {
 
         access_lock<DataFile*>& dataFile()              {return _dataFile;}
 
-        using TransactionTask = function_ref<bool(DataFile*, SequenceTracker*)>;
+        using TransactionTask = function_ref<bool(KeyStore&, SequenceTracker*)>;
 
-        void useInTransaction(TransactionTask task);
+        void useInTransaction(slice keyStoreName, TransactionTask task);
 
         class TransactionObserver {
         public:

@@ -23,8 +23,9 @@
 #endif
 
 #include "fleece/slice.hh"
-#include "c4Base.h"
+#include "c4Database.h"
 #include <utility>
+#include "betterassert.hh"
 
 /** These are utilities to make the LiteCore C API less awkward to use in C++.
     Nowadays, consider using the LiteCore C++ API instead. */
@@ -49,11 +50,11 @@ namespace c4 {
     static inline void releaseRef(C4WriteStream* c)       noexcept {c4stream_closeWriter(c);}
 
     // The functions the ref<> template calls to retain a reference. (Not all types can be retained)
-    static inline C4Cert*     retainRef(C4Cert* c)     noexcept {return c4cert_retain(c);}
-    static inline C4Database* retainRef(C4Database* c) noexcept {return c4db_retain(c);}
-    static inline C4Document* retainRef(C4Document* c) noexcept {return c4doc_retain(c);}
-    static inline C4KeyPair*  retainRef(C4KeyPair* c)  noexcept {return c4keypair_retain(c);}
-    static inline C4Query*    retainRef(C4Query* c)    noexcept {return c4query_retain(c);}
+    static inline C4Cert*       retainRef(C4Cert* c)       noexcept {return c4cert_retain(c);}
+    static inline C4Database*   retainRef(C4Database* c)   noexcept {return c4db_retain(c);}
+    static inline C4Document*   retainRef(C4Document* c)   noexcept {return c4doc_retain(c);}
+    static inline C4KeyPair*    retainRef(C4KeyPair* c)    noexcept {return c4keypair_retain(c);}
+    static inline C4Query*      retainRef(C4Query* c)      noexcept {return c4query_retain(c);}
     static inline C4QueryEnumerator* retainRef(C4QueryEnumerator* c) noexcept {return c4queryenum_retain(c);}
 
 
@@ -108,5 +109,45 @@ namespace c4 {
 #ifndef c4error_descriptionStr
     #define c4error_descriptionStr(ERR)     fleece::alloc_slice(c4error_getDescription(ERR)).asString().c_str()
 #endif
+
+
+
+    /** Manages a transaction safely. The begin() method calls c4db_beginTransaction, then commit()
+        or abort() end it. If the Transaction object exits scope when it's been begun but not yet
+        ended, it aborts the transaction. */
+    class Transaction {
+    public:
+        Transaction(C4Database *db)
+        :_db(db)
+        { }
+
+        ~Transaction() {
+            if (_active)
+                abort(nullptr);
+        }
+
+        bool begin(C4Error* error) {
+            assert(!_active);
+            if (!c4db_beginTransaction(_db, error))
+                return false;
+            _active = true;
+            return true;
+        }
+
+        bool end(bool commit, C4Error* error) {
+            assert(_active);
+            _active = false;
+            return c4db_endTransaction(_db, commit, error);
+        }
+
+        bool commit(C4Error* error)     {return end(true, error);}
+        bool abort(C4Error* error)      {return end(false, error);}
+
+        bool active() const             {return _active;}
+
+    private:
+        C4Database *_db;
+        bool _active {false};
+    };
 
 }

@@ -24,6 +24,7 @@
 #include "c4BlobStore.hh"
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
+#include "CollectionImpl.hh"
 #include "DatabaseImpl.hh"
 #include "DocumentFactory.hh"
 #include "LegacyAttachments.hh"
@@ -39,17 +40,68 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleece::impl;
 using namespace litecore;
 
 
-C4Document::C4Document(DatabaseImpl *db, alloc_slice docID_)
-:_db(db)
+C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
+:_collection(asInternal(collection))
 ,_docID(move(docID_))
 {
-    DebugAssert(&_flags == &((C4Document_C*)this)->flags);
-    DebugAssert((void*)&_docID == (void*)&((C4Document_C*)this)->docID);
-    _extraInfo = { };
+#if DEBUG
+    // Make sure that C4Document and C4Document_C line up so that the same object can serve as both:
+    auto asStruct = (C4Document_C*)this;
+    if (&_flags != &(asStruct)->flags || (void*)&_docID != (void*)&(asStruct)->docID) {
+        WarnError("FATAL: C4Document struct layout is wrong!! "
+                  "this=%p; asStruct=%p; `flags` at %p vs %p, `docID` at %p vs %p",
+                  this, asStruct, &_flags, &(asStruct)->flags, &_docID, &(asStruct)->docID);
+        /* If this is wrong, using C4Document is completely broken, so best just abort.
+           This indicates something wrong with the kludgy padding fields at the start of
+           C4Document_C in c4DocumentStruct.h -- they don't match the actual amount of space
+           taken up by the vtable and inherited field(s) of C4Document. */
+        std::terminate();
+
+        /* So here's what's up with this layout kludge. We have to make the type `C4Document*`
+           work equally well in C (as a non-opaque struct with six fields) and in C++ (as a
+           class inheriting from RefCounted.) It's the "non-opaque struct" part that's hard, but
+           for legacy reasons we have to keep it that way for now.
+
+           So, C4Document extends RefCounted, which contains a vtable pointer and an `int32_t`.
+           Therefore we can mimic its layout in C by putting a `void*` and an `int32_t` at the
+           start of `C4Document_C`, right? Well, that works with Clang and GCC but not MSVC.
+           The latter adds 4 extra bytes of padding before the first field (`flags`). Why?
+
+           It seems to be because there are two different ways to lay out a class with a base
+           class. Here the base class is RefCounted, which looks like:
+                class RefCounted {
+                    _vtable* __vptr;
+                    int32_t _refCount;
+                };
+           The GCC/Clang way to lay out C4Document is to pretend to add the inherited members:
+                class C4Document {
+                    _vtable* __vptr;
+                    int32_t _refCount;
+                    C4DocumentFlags _flags;         // (this is a uint32_t basically)
+                    ...
+                };
+
+           The MSVC way is to pretend to add the base class as a single member:
+                class C4Document {
+                    RefCounted __baseClass;
+                    C4DocumentFlags _flags;
+                    ...
+                };
+           This has different results because sizeof(RefCounted) == 16, not 12! C++ says the
+           size of a struct/class has to be a multiple of the alignment of each field, and the
+           vtable pointer is 8 bytes.
+
+           I've chosen to work around this by adding `alignas(void*)` to the declaration of the
+           `_flags` member, forcing it to be 8-byte aligned on all platforms for consistency.
+           Correspondingly, I changed the second `_internal2` padding field of `C4Document_C`
+           from `int32_t` to `void*`, so the `flags` field of that struct is also 8-byte aligned.
+           --Jens, April 28 2021
+         */
+    }
+#endif
 }
 
 
@@ -58,8 +110,9 @@ C4Document::~C4Document() {
 }
 
 
-DatabaseImpl* C4Document::db()                              {return asInternal(_db);}
-const DatabaseImpl* C4Document::db() const                  {return asInternal(_db);}
+C4Collection* C4Document::collection() const                {return _collection;}
+C4Database* C4Document::database() const                    {return _collection->getDatabase();}
+KeyStore& C4Document::keyStore() const                      {return _collection->keyStore();}
 
 
 FLDict C4Document::getProperties() const noexcept {
@@ -73,7 +126,7 @@ alloc_slice C4Document::bodyAsJSON(bool canonical) const {
     if (!loadRevisionBody())
         error::_throw(error::NotFound);
     if (FLDict root = getProperties())
-        return ((const Dict*)root)->toJSON(canonical);
+        return ((const fleece::impl::Dict*)root)->toJSON(canonical);
     error::_throw(error::CorruptRevisionData);
 }
 
@@ -115,12 +168,6 @@ alloc_slice C4Document::getSelectedRevIDGlobalForm() const {
 }
 
 
-void C4Document::requireValidDocID() const {
-    if (!C4Document::isValidDocID(_docID))
-        error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(_docID));
-}
-
-
 #pragma mark - SAVING:
 
 
@@ -144,13 +191,14 @@ static void throwIfUnexpected(const C4Error &inError, C4Error *outError) {
                 return; // don't throw these errors
         }
     }
-    C4Error::raise(inError);
+    inError.raise();
 }
 
 
 Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags) {
-    db()->mustBeInTransaction();
-    db()->validateRevisionBody(revBody);
+    auto db = asInternal(database());
+    db->mustBeInTransaction();
+    db->validateRevisionBody(revBody);
 
     alloc_slice parentRev = _selectedRevID;
     C4DocPutRequest rq = {};
@@ -171,14 +219,14 @@ Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags)
             return this;
         } else if (myErr != C4Error{LiteCoreDomain, kC4ErrorConflict}) {
             // Something other than a conflict happened, so give up:
-            C4Error::raise(myErr);
+            myErr.raise();
         }
         // on conflict, fall through...
     }
 
     // MVCC prevented us from writing directly to the document. So instead, read-modify-write:
     C4Error myErr;
-    Retained<C4Document> savedDoc = database()->putDocument(rq, nullptr, &myErr);
+    Retained<C4Document> savedDoc = _collection->putDocument(rq, nullptr, &myErr);
     if (!savedDoc) {
         throwIfUnexpected(myErr, nullptr);
         savedDoc = nullptr;
@@ -220,104 +268,6 @@ bool C4Document::checkNewRev(slice parentRevID,
 }
 
 
-// DatabaseImpl methods for saving documents:
-
-
-Retained<C4Document> DatabaseImpl::putDocument(const C4DocPutRequest &rq,
-                                               size_t *outCommonAncestorIndex,
-                                               C4Error *outError)
-{
-    mustBeInTransaction();
-    if (rq.docID.buf && !C4Document::isValidDocID(rq.docID))
-        error::_throw(error::BadDocID);
-    if (rq.existingRevision || rq.historyCount > 0)
-        AssertParam(rq.docID.buf, "Missing docID");
-    if (rq.existingRevision) {
-        AssertParam(rq.historyCount > 0, "No history");
-    } else {
-        AssertParam(rq.historyCount <= 1, "Too much history");
-        AssertParam(rq.historyCount > 0 || !(rq.revFlags & kRevDeleted),
-                    "Can't create a new already-deleted document");
-        AssertParam(rq.remoteDBID == 0, "remoteDBID cannot be used when existingRevision=false");
-    }
-
-    int commonAncestorIndex = 0;
-    Retained<C4Document> doc;
-    if (rq.save && isNewDocPutRequest(rq)) {
-        // As an optimization, write the doc assuming there is no prior record in the db:
-        tie(doc, commonAncestorIndex) = putNewDoc(rq);
-        // If there's already a record, doc will be null, so we'll continue down regular path.
-    }
-    if (!doc) {
-        if (rq.existingRevision) {
-            // Insert existing revision:
-            doc = getDocument(rq.docID, false, kDocGetAll);
-            C4Error err;
-            commonAncestorIndex = doc->putExistingRevision(rq, &err);
-            if (commonAncestorIndex < 0) {
-                throwIfUnexpected(err, outError);
-                doc = nullptr;
-                commonAncestorIndex = 0;
-            }
-        } else {
-            // Create new revision:
-            slice docID = rq.docID;
-            alloc_slice newDocID;
-            if (!docID)
-                docID = newDocID = C4Document::createDocID();
-
-            slice parentRevID;
-            if (rq.historyCount > 0)
-                parentRevID = rq.history[0];
-
-            doc = getDocument(docID, false, kDocGetAll);
-            C4Error err;
-            if (!doc->checkNewRev(parentRevID, rq.revFlags, rq.allowConflict, &err)
-                     || !doc->putNewRevision(rq, &err)) {
-                throwIfUnexpected(err, outError);
-                doc = nullptr;
-            }
-            commonAncestorIndex = 0;
-        }
-    }
-
-    Assert(commonAncestorIndex >= 0, "Unexpected conflict in c4doc_put");
-    if (outCommonAncestorIndex)
-        *outCommonAncestorIndex = commonAncestorIndex;
-    return doc;
-}
-
-
-// Is this a PutRequest that doesn't require a Record to exist already?
-bool DatabaseImpl::isNewDocPutRequest(const C4DocPutRequest &rq) {
-    if (rq.deltaCB)
-        return false;
-    else if (rq.existingRevision)
-        return documentFactory().isFirstGenRevID(rq.history[rq.historyCount-1]);
-    else
-        return rq.historyCount == 0;
-}
-
-
-// Tries to fulfil a PutRequest by creating a new Record. Returns null if one already exists.
-pair<Retained<C4Document>,int> DatabaseImpl::putNewDoc(const C4DocPutRequest &rq)
-{
-    DebugAssert(rq.save, "putNewDoc optimization works only if rq.save is true");
-    Record record(rq.docID);
-    if (!rq.docID.buf)
-        record.setKey(C4Document::createDocID());
-    Retained<C4Document> doc = documentFactory().newDocumentInstance(record);
-    int commonAncestorIndex;
-    if (rq.existingRevision)
-        commonAncestorIndex = doc->putExistingRevision(rq, nullptr);
-    else
-        commonAncestorIndex = doc->putNewRevision(rq, nullptr) ? 0 : -1;
-    if (commonAncestorIndex < 0)
-        doc = nullptr;
-    return {doc, commonAncestorIndex};
-}
-
-
 #pragma mark - CONFLICTS:
 
 
@@ -329,7 +279,7 @@ void C4Document::resolveConflict(slice winningRevID,
 {
     alloc_slice mergedBody;
     if (mergedProperties) {
-        auto enc = database()->getSharedFleeceEncoder();
+        auto enc = database()->sharedFleeceEncoder();
         FLEncoder_WriteValue(enc, (FLValue)mergedProperties);
         FLError flErr;
         mergedBody = FLEncoder_Finish(enc, &flErr);
@@ -350,7 +300,13 @@ void C4Document::resolveConflict(slice winningRevID,
 
 bool C4Document::isValidDocID(slice docID) noexcept {
     return docID.size >= 1 && docID.size <= 240 && docID[0] != '_'
-    && isValidUTF8(docID) && hasNoControlCharacters(docID);
+        && isValidUTF8(docID) && hasNoControlCharacters(docID);
+}
+
+
+void C4Document::requireValidDocID(slice docID) {
+    if (!C4Document::isValidDocID(docID))
+        error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(docID));
 }
 
 
@@ -405,7 +361,7 @@ C4RevisionFlags C4Document::revisionFlagsFromDocFlags(C4DocumentFlags docFlags) 
 
 
 C4Document* C4Document::containingValue(FLValue value) noexcept {
-    return DatabaseImpl::documentContainingValue(value);
+    return C4Collection::documentContainingValue(value);
 }
 
 
@@ -415,11 +371,11 @@ bool C4Document::isOldMetaProperty(slice propertyName) noexcept {
 
 
 bool C4Document::hasOldMetaProperties(FLDict dict) noexcept {
-    return legacy_attachments::hasOldMetaProperties((const Dict*)dict);
+    return legacy_attachments::hasOldMetaProperties((const fleece::impl::Dict*)dict);
 }
 
 
 alloc_slice C4Document::encodeStrippingOldMetaProperties(FLDict properties, FLSharedKeys sk) {
-    return legacy_attachments::encodeStrippingOldMetaProperties((const Dict*)properties,
-                                                                (SharedKeys*)sk);
+    return legacy_attachments::encodeStrippingOldMetaProperties((const fleece::impl::Dict*)properties,
+                                                                (fleece::impl::SharedKeys*)sk);
 }

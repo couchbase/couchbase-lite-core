@@ -12,6 +12,10 @@
 #include "fleece/Fleece.hh"
 #include <optional>
 
+namespace fleece {
+    struct slice_istream;
+}
+
 namespace litecore { namespace net {
     class ClientSocket;
 
@@ -147,7 +151,7 @@ namespace litecore { namespace net {
         /** Utility function to parse HTTP headers. Reads header lines from HTTP data until
             it reaches an empty line (CRLFCRLF). On return, \ref httpData will point to any
             data remaining after the empty line. */
-        static bool parseHeaders(slice &httpData, websocket::Headers&);
+        static bool parseHeaders(fleece::slice_istream &httpData, websocket::Headers&);
 
         /// Given a "Sec-WebSocket-Key" header value, returns the "Sec-WebSocket-Accept" value.
         static std::string webSocketKeyResponse(const std::string &nonce);
@@ -157,8 +161,7 @@ namespace litecore { namespace net {
         Disposition failure(ClientSocket&);
         Disposition failure();
         bool connectingToProxy();
-        bool parseStatusLine(slice &responseData);
-        bool parseResponseHeaders(slice &responseData);
+        bool parseStatusLine(fleece::slice_istream &responseData);
         Disposition handleRedirect();
         Disposition handleAuthChallenge(slice headerName, bool forProxy);
         Disposition handleUpgrade();

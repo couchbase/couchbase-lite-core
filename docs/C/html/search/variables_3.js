@@ -1,14 +1,12 @@
 var searchData=
 [
-  ['datasource',['dataSource',['../struct_c4_full_text_match.html#ac5b72500a4c260a99d26a05932d0bb95',1,'C4FullTextMatch']]],
-  ['deltacb',['deltaCB',['../struct_c4_doc_put_request.html#a5f4075da733c786ccf86b46234476fee',1,'C4DocPutRequest']]],
-  ['deltacbcontext',['deltaCBContext',['../struct_c4_doc_put_request.html#a528f2531003e4ad4eea89633904f5478',1,'C4DocPutRequest']]],
-  ['deltasourcerevid',['deltaSourceRevID',['../struct_c4_doc_put_request.html#ae266f572224cafbe0a05d2cfe2793ca8',1,'C4DocPutRequest']]],
-  ['destructor',['destructor',['../struct_c4_extra_info.html#af12165845b08b23bb7ed347d39ccd7cc',1,'C4ExtraInfo']]],
-  ['directory',['directory',['../struct_c4_listener_config.html#a58ed77302d3ef24f81170ef7aab8c002',1,'C4ListenerConfig']]],
-  ['disablestemming',['disableStemming',['../struct_c4_index_options.html#ac3bcc8bd4d77a674ab19d88eadb12561',1,'C4IndexOptions']]],
-  ['dispose',['dispose',['../struct_c4_socket_factory.html#ac0ceb1788a8526b5c6ba41cfe25f9651',1,'C4SocketFactory']]],
-  ['docid',['docID',['../struct_c4_document_info.html#a665da5b167a5474f67c2019c8f52f8f4',1,'C4DocumentInfo::docID()'],['../struct_c4_document.html#aa0034af6409c5dbdae1a0f0b2353aa29',1,'C4Document::docID()'],['../struct_c4_doc_put_request.html#a11a881411db1472510cb11e592c1a72e',1,'C4DocPutRequest::docID()'],['../struct_c4_database_change.html#a6a8544e60ba41c52b0adc498f7eb702a',1,'C4DatabaseChange::docID()'],['../struct_c4_document_ended.html#aa9e38ab4785c59be2a129ee139a10830',1,'C4DocumentEnded::docID()']]],
-  ['documentcount',['documentCount',['../struct_c4_progress.html#a02ccd2221f16200d44c4846632f1724e',1,'C4Progress']]],
-  ['domain',['domain',['../struct_c4_error.html#a5d007c63db3e71548b611d49013bd362',1,'C4Error']]]
+  ['callbackcontext',['callbackContext',['../struct_c4_listener_config.html#a06e5fb9c6ff5c0dbdb097de04b5bd695',1,'C4ListenerConfig::callbackContext()'],['../struct_c4_replicator_parameters.html#a8eba26a34452e36508d93004f856f882',1,'C4ReplicatorParameters::callbackContext()']]],
+  ['certauthcallback',['certAuthCallback',['../struct_c4_t_l_s_config.html#a06aae7a7e629387c40a6e0852e03ba2c',1,'C4TLSConfig']]],
+  ['certificate',['certificate',['../struct_c4_t_l_s_config.html#a293df2300b81d98152e85c26c4891df9',1,'C4TLSConfig']]],
+  ['close',['close',['../struct_c4_socket_factory.html#a5292df8c6bdae3a87011e565c4a09ff2',1,'C4SocketFactory']]],
+  ['code',['code',['../struct_c4_error.html#ad5eb77d32d3c979d1c26c4f8042e58a4',1,'C4Error']]],
+  ['collectionname',['collectionName',['../struct_c4_document_ended.html#ac2c1fcbdf0a2f25310e8e9f8b555ea16',1,'C4DocumentEnded']]],
+  ['columns',['columns',['../struct_c4_query_enumerator.html#a15a13ce942164de297319895e7cf944e',1,'C4QueryEnumerator']]],
+  ['completedreceive',['completedReceive',['../struct_c4_socket_factory.html#a102507568c0639da02a1efd730c9fd1b',1,'C4SocketFactory']]],
+  ['context',['context',['../struct_c4_predictive_model.html#a40b30811ae6a54410e9ca578eb4929e8',1,'C4PredictiveModel::context()'],['../struct_c4_socket_factory.html#ae4b2c029e9555277d759c3b44cf4a53d',1,'C4SocketFactory::context()']]]
 ];

@@ -137,6 +137,10 @@ namespace litecore {
         /** Sets a flag of a record, without having to read/write the Record. */
         virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction&) =0;
 
+        /** Copies record with given key to another KeyStore, with a new sequence and possibly a
+            new key, then deletes it from this KeyStore. */
+        virtual void moveTo(slice key, KeyStore &dst, ExclusiveTransaction&,
+                            slice newKey =nullslice) =0;
 
         //////// Expiration:
 
@@ -163,10 +167,12 @@ namespace litecore {
         virtual unsigned expireRecords(std::optional<ExpirationCallback> =std::nullopt) =0;
 
 
-        //////// Queries & Indexing:
+        //////// Queries:
 
-        /** Creates a database query object. */
-        virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
+        /** A convenience that delegates to the DataFile, passing this as the defaultKeyStore. */
+        Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON);
+
+        //////// Indexing:
 
         virtual bool supportsIndexes(IndexSpec::Type) const                   {return false;}
         virtual bool createIndex(const IndexSpec&) =0;

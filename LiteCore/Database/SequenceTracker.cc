@@ -86,14 +86,14 @@ namespace litecore {
         bool                            external :1;
 
         // Placeholder entry (when docID == nullslice):
-        DatabaseChangeNotifier* const   databaseObserver {nullptr};
+        CollectionChangeNotifier* const   databaseObserver {nullptr};
 
         Entry(const alloc_slice &d, alloc_slice r, sequence_t s, RevisionFlags flags)
         :docID(d), revID(r), sequence(s), flags(flags), idle(false), external(false) {
             DebugAssert(docID != nullslice);
         }
 
-        explicit Entry(DatabaseChangeNotifier *o NONNULL)
+        explicit Entry(CollectionChangeNotifier *o NONNULL)
         :databaseObserver(o) { }    // placeholder
 
         bool isPlaceholder() const          {return docID.buf == nullptr;}
@@ -106,9 +106,13 @@ namespace litecore {
 
 
 
-    SequenceTracker::SequenceTracker()
+    SequenceTracker::SequenceTracker(slice name)
     :Logging(ChangesLog)
+    ,_name(name)
     { }
+
+
+    SequenceTracker::SequenceTracker(SequenceTracker&&) noexcept =default;
 
 
     SequenceTracker::~SequenceTracker() =default;
@@ -118,7 +122,7 @@ namespace litecore {
         Assert(!inTransaction());
 
         logInfo("begin transaction at #%" PRIu64, _lastSequence);
-        _transaction = make_unique<DatabaseChangeNotifier>(*this, nullptr);
+        _transaction = make_unique<CollectionChangeNotifier>(*this, nullptr);
         _preTransactionLastSequence = _lastSequence;
     }
 
@@ -307,7 +311,7 @@ namespace litecore {
 
 
     SequenceTracker::const_iterator
-    SequenceTracker::addPlaceholderAfter(DatabaseChangeNotifier *obs, sequence_t seq) {
+    SequenceTracker::addPlaceholderAfter(CollectionChangeNotifier *obs, sequence_t seq) {
         Assert(obs);
         ++_numPlaceholders;
         return _changes.emplace(_since(seq), obs);
@@ -483,7 +487,7 @@ namespace litecore {
 #pragma mark - DATABASE CHANGE NOTIFIER:
 
 
-    DatabaseChangeNotifier::DatabaseChangeNotifier(SequenceTracker &t, Callback cb, sequence_t afterSeq)
+    CollectionChangeNotifier::CollectionChangeNotifier(SequenceTracker &t, Callback cb, sequence_t afterSeq)
     :Logging(ChangesLog)
     ,tracker(t)
     ,callback(move(cb))
@@ -494,14 +498,14 @@ namespace litecore {
     }
 
 
-    DatabaseChangeNotifier::~DatabaseChangeNotifier() {
+    CollectionChangeNotifier::~CollectionChangeNotifier() {
         if (callback)
             logInfo("Deleting");
         tracker.removePlaceholder(_placeholder);
     }
 
 
-    void DatabaseChangeNotifier::notify() noexcept {
+    void CollectionChangeNotifier::notify() noexcept {
         if (callback) {
             logInfo("posting notification");
             callback(*this);
@@ -509,7 +513,7 @@ namespace litecore {
     }
 
 
-    size_t DatabaseChangeNotifier::readChanges(SequenceTracker::Change changes[],
+    size_t CollectionChangeNotifier::readChanges(SequenceTracker::Change changes[],
                                                size_t maxChanges,
                                                bool &external) {
         size_t n = tracker.readChanges(_placeholder, changes, maxChanges, external);

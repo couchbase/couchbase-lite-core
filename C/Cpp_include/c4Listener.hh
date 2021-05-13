@@ -11,13 +11,15 @@
 
 C4_ASSUME_NONNULL_BEGIN
 
-namespace litecore::REST {
-    class Listener;
-    class RESTListener;
-}
+
+// ************************************************************************
+// This header is part of the LiteCore C++ API.
+// If you use this API, you must _statically_ link LiteCore;
+// the dynamic library only exports the C API.
+// ************************************************************************
 
 
-struct C4Listener final : C4Base {
+struct C4Listener final : public fleece::InstanceCounted, C4Base {
 
     static C4ListenerAPIs availableAPIs();
 

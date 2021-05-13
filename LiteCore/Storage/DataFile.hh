@@ -113,6 +113,13 @@ namespace litecore {
 
         void forOtherDataFiles(function_ref<void(DataFile*)> fn);
 
+        //////// QUERIES:
+        
+        /** Creates a database query object. */
+        virtual Retained<Query> compileQuery(slice expr,
+                                             QueryLanguage =QueryLanguage::kJSON,
+                                             KeyStore* defaultKeyStore =nullptr) =0;
+
         /** Private API to run a raw (e.g. SQL) query, for diagnostic purposes only */
         virtual fleece::alloc_slice rawQuery(const std::string &query) =0;
 
@@ -129,15 +136,17 @@ namespace litecore {
         KeyStore& defaultKeyStore() const           {return defaultKeyStore(_options.keyStores);}
         KeyStore& defaultKeyStore(KeyStore::Capabilities) const;
 
-        KeyStore& getKeyStore(const std::string &name) const;
-        KeyStore& getKeyStore(const std::string &name, KeyStore::Capabilities) const;
+        KeyStore& getKeyStore(slice name) const;
+        KeyStore& getKeyStore(slice name, KeyStore::Capabilities) const;
 
-#if 0 //UNUSED:
+        virtual bool keyStoreExists(const std::string &name) const =0;
+
         /** The names of all existing KeyStores (whether opened yet or not) */
-        virtual std::vector<std::string> allKeyStoreNames() =0;
-#endif
-        
+        virtual std::vector<std::string> allKeyStoreNames() const =0;
+
         void closeKeyStore(const std::string &name);
+
+        virtual void deleteKeyStore(const std::string &name) =0;
 
 #if ENABLE_DELETE_KEY_STORES
         /** Permanently deletes a KeyStore. */

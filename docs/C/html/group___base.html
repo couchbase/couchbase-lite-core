@@ -75,9 +75,7 @@ $(function() {
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_extra_info.html">C4ExtraInfo</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_blob_key.html">C4BlobKey</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A raw SHA-1 digest used as the unique identifier of a blob.  <a href="struct_c4_blob_key.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Client-defined metadata that can be associated with some objects like C4Database.  <a href="struct_c4_extra_info.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
@@ -89,12 +87,6 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:ga6c2d959939ef287ba3f2ee719c949229"><td class="memItemLeft" align="right" valign="top">typedef uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a></td></tr>
-<tr class="memdesc:ga6c2d959939ef287ba3f2ee719c949229"><td class="mdescLeft">&#160;</td><td class="mdescRight">A database sequence number, representing the order in which a revision was created.  <a href="#ga6c2d959939ef287ba3f2ee719c949229">More...</a><br /></td></tr>
-<tr class="separator:ga6c2d959939ef287ba3f2ee719c949229"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4e9a8e237399a3869086cae270783476"><td class="memItemLeft" align="right" valign="top">typedef int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a></td></tr>
-<tr class="memdesc:ga4e9a8e237399a3869086cae270783476"><td class="mdescLeft">&#160;</td><td class="mdescRight">A date/time representation used for document expiration (and in date/time queries.) Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.)  <a href="#ga4e9a8e237399a3869086cae270783476">More...</a><br /></td></tr>
-<tr class="separator:ga4e9a8e237399a3869086cae270783476"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac99d7d179bccd9bbaf29b28272975b47"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a></td></tr>
 <tr class="separator:gac99d7d179bccd9bbaf29b28272975b47"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae9d094c5119a261ad11ffd484ba3098c"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="group___f_l_slice.html#gabc10b138e3c1345a4396b39c11a1f0d5">FLHeapSlice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae9d094c5119a261ad11ffd484ba3098c">C4HeapSlice</a></td></tr>
@@ -107,21 +99,32 @@ Typedefs</h2></td></tr>
 <tr class="separator:ga4d602b4474168ea3dfad19d863e70129"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9621f4998e1f10a82cca421fede5588a"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a></td></tr>
 <tr class="separator:ga9621f4998e1f10a82cca421fede5588a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1f93de2ae8a31d160f02db45bc412b58"><td class="memItemLeft" align="right" valign="top">typedef struct c4BlobStore&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a></td></tr>
-<tr class="memdesc:ga1f93de2ae8a31d160f02db45bc412b58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for an object that manages storage of blobs.  <a href="#ga1f93de2ae8a31d160f02db45bc412b58">More...</a><br /></td></tr>
-<tr class="separator:ga1f93de2ae8a31d160f02db45bc412b58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6c2d959939ef287ba3f2ee719c949229"><td class="memItemLeft" align="right" valign="top">typedef uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a></td></tr>
+<tr class="memdesc:ga6c2d959939ef287ba3f2ee719c949229"><td class="mdescLeft">&#160;</td><td class="mdescRight">A database sequence number, representing the order in which a revision was created.  <a href="#ga6c2d959939ef287ba3f2ee719c949229">More...</a><br /></td></tr>
+<tr class="separator:ga6c2d959939ef287ba3f2ee719c949229"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4e9a8e237399a3869086cae270783476"><td class="memItemLeft" align="right" valign="top">typedef int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a></td></tr>
+<tr class="memdesc:ga4e9a8e237399a3869086cae270783476"><td class="mdescLeft">&#160;</td><td class="mdescRight">A date/time representation used for document expiration (and in date/time queries.) Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.)  <a href="#ga4e9a8e237399a3869086cae270783476">More...</a><br /></td></tr>
+<tr class="separator:ga4e9a8e237399a3869086cae270783476"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3f2ced0e74afda9261b9337787129f57"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga3f2ced0e74afda9261b9337787129f57">C4BlobStore</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga3f2ced0e74afda9261b9337787129f57">C4BlobStore</a></td></tr>
+<tr class="memdesc:ga3f2ced0e74afda9261b9337787129f57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for an object that manages storage of blobs.  <a href="#ga3f2ced0e74afda9261b9337787129f57">More...</a><br /></td></tr>
+<tr class="separator:ga3f2ced0e74afda9261b9337787129f57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf83fec73b17269823bbf95b16ae4976d"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a></td></tr>
 <tr class="memdesc:gaf83fec73b17269823bbf95b16ae4976d"><td class="mdescLeft">&#160;</td><td class="mdescRight">An X.509 certificate, or certificate signing request (CSR).  <a href="#gaf83fec73b17269823bbf95b16ae4976d">More...</a><br /></td></tr>
 <tr class="separator:gaf83fec73b17269823bbf95b16ae4976d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga15e027d347f40041585744dad4dac1c9"><td class="memItemLeft" align="right" valign="top">typedef struct c4Database&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a></td></tr>
-<tr class="memdesc:ga15e027d347f40041585744dad4dac1c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to an opened database.  <a href="#ga15e027d347f40041585744dad4dac1c9">More...</a><br /></td></tr>
-<tr class="separator:ga15e027d347f40041585744dad4dac1c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga464907502d1ac3c9941899329b5d001f"><td class="memItemLeft" align="right" valign="top">typedef struct c4DatabaseObserver&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga464907502d1ac3c9941899329b5d001f">C4DatabaseObserver</a></td></tr>
-<tr class="memdesc:ga464907502d1ac3c9941899329b5d001f"><td class="mdescLeft">&#160;</td><td class="mdescRight">A database-observer reference.  <a href="#ga464907502d1ac3c9941899329b5d001f">More...</a><br /></td></tr>
-<tr class="separator:ga464907502d1ac3c9941899329b5d001f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga148577d41d550a29d8fbc4a1fa597efc"><td class="memItemLeft" align="right" valign="top">typedef struct c4DocumentObserver&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga148577d41d550a29d8fbc4a1fa597efc">C4DocumentObserver</a></td></tr>
-<tr class="memdesc:ga148577d41d550a29d8fbc4a1fa597efc"><td class="mdescLeft">&#160;</td><td class="mdescRight">A document-observer reference.  <a href="#ga148577d41d550a29d8fbc4a1fa597efc">More...</a><br /></td></tr>
-<tr class="separator:ga148577d41d550a29d8fbc4a1fa597efc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad8be2ad2cef903785ae3f9736e14253b"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a></td></tr>
+<tr class="memdesc:gad8be2ad2cef903785ae3f9736e14253b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to a namespace of documents in an opened database.  <a href="#gad8be2ad2cef903785ae3f9736e14253b">More...</a><br /></td></tr>
+<tr class="separator:gad8be2ad2cef903785ae3f9736e14253b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae046b9267a473fdc31471b022fc94676"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a></td></tr>
+<tr class="memdesc:gae046b9267a473fdc31471b022fc94676"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to an opened database.  <a href="#gae046b9267a473fdc31471b022fc94676">More...</a><br /></td></tr>
+<tr class="separator:gae046b9267a473fdc31471b022fc94676"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6ee85db00f1ffcf03308ef5350855e29"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a></td></tr>
+<tr class="memdesc:ga6ee85db00f1ffcf03308ef5350855e29"><td class="mdescLeft">&#160;</td><td class="mdescRight">A collection-observer reference.  <a href="#ga6ee85db00f1ffcf03308ef5350855e29">More...</a><br /></td></tr>
+<tr class="separator:ga6ee85db00f1ffcf03308ef5350855e29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadfd2a7d2677acc7971ea199199f0a7ac"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gadfd2a7d2677acc7971ea199199f0a7ac">C4DatabaseObserver</a></td></tr>
+<tr class="separator:gadfd2a7d2677acc7971ea199199f0a7ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8a4ef01035322ff935bae1ea30a9199e"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a></td></tr>
+<tr class="memdesc:ga8a4ef01035322ff935bae1ea30a9199e"><td class="mdescLeft">&#160;</td><td class="mdescRight">A document-observer reference.  <a href="#ga8a4ef01035322ff935bae1ea30a9199e">More...</a><br /></td></tr>
+<tr class="separator:ga8a4ef01035322ff935bae1ea30a9199e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga59fb880ac20dc61d0ef5568541b9cbca"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a></td></tr>
 <tr class="memdesc:ga59fb880ac20dc61d0ef5568541b9cbca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to a document enumerator.  <a href="#ga59fb880ac20dc61d0ef5568541b9cbca">More...</a><br /></td></tr>
 <tr class="separator:ga59fb880ac20dc61d0ef5568541b9cbca"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -131,27 +134,27 @@ Typedefs</h2></td></tr>
 <tr class="memitem:ga5e5ecc7839088461114e2ea751124156"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a></td></tr>
 <tr class="memdesc:ga5e5ecc7839088461114e2ea751124156"><td class="mdescLeft">&#160;</td><td class="mdescRight">A LiteCore network listener &ndash; supports the REST API, replication, or both.  <a href="#ga5e5ecc7839088461114e2ea751124156">More...</a><br /></td></tr>
 <tr class="separator:ga5e5ecc7839088461114e2ea751124156"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5742de87a925059b9259d898f699fb2c"><td class="memItemLeft" align="right" valign="top">typedef struct c4Query&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a></td></tr>
-<tr class="memdesc:ga5742de87a925059b9259d898f699fb2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to a compiled query.  <a href="#ga5742de87a925059b9259d898f699fb2c">More...</a><br /></td></tr>
-<tr class="separator:ga5742de87a925059b9259d898f699fb2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa38460d907351d080c099278153fe596"><td class="memItemLeft" align="right" valign="top">typedef struct c4QueryObserver&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gaa38460d907351d080c099278153fe596">C4QueryObserver</a></td></tr>
-<tr class="memdesc:gaa38460d907351d080c099278153fe596"><td class="mdescLeft">&#160;</td><td class="mdescRight">A query-observer reference.  <a href="#gaa38460d907351d080c099278153fe596">More...</a><br /></td></tr>
-<tr class="separator:gaa38460d907351d080c099278153fe596"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafc17929a5c2540de640863fd5f202281"><td class="memItemLeft" align="right" valign="top">typedef struct c4ReadStream&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gafc17929a5c2540de640863fd5f202281">C4ReadStream</a></td></tr>
-<tr class="memdesc:gafc17929a5c2540de640863fd5f202281"><td class="mdescLeft">&#160;</td><td class="mdescRight">An open stream for reading data from a blob.  <a href="#gafc17929a5c2540de640863fd5f202281">More...</a><br /></td></tr>
-<tr class="separator:gafc17929a5c2540de640863fd5f202281"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga67aedbf60fd71b8727d6d0ca9bd339ca"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a></td></tr>
+<tr class="memdesc:ga67aedbf60fd71b8727d6d0ca9bd339ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to a compiled query.  <a href="#ga67aedbf60fd71b8727d6d0ca9bd339ca">More...</a><br /></td></tr>
+<tr class="separator:ga67aedbf60fd71b8727d6d0ca9bd339ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga89a77eddf7600ce9e9e17933e8ef8a75"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga89a77eddf7600ce9e9e17933e8ef8a75">C4QueryObserver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga89a77eddf7600ce9e9e17933e8ef8a75">C4QueryObserver</a></td></tr>
+<tr class="memdesc:ga89a77eddf7600ce9e9e17933e8ef8a75"><td class="mdescLeft">&#160;</td><td class="mdescRight">A query-observer reference.  <a href="#ga89a77eddf7600ce9e9e17933e8ef8a75">More...</a><br /></td></tr>
+<tr class="separator:ga89a77eddf7600ce9e9e17933e8ef8a75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga02b4b239f9add8f17da2971e1fd6eea6"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a></td></tr>
+<tr class="memdesc:ga02b4b239f9add8f17da2971e1fd6eea6"><td class="mdescLeft">&#160;</td><td class="mdescRight">An open stream for reading data from a blob.  <a href="#ga02b4b239f9add8f17da2971e1fd6eea6">More...</a><br /></td></tr>
+<tr class="separator:ga02b4b239f9add8f17da2971e1fd6eea6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga709bd645c12619231f98f793daa46d67"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a></td></tr>
 <tr class="memdesc:ga709bd645c12619231f98f793daa46d67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque reference to a replicator.  <a href="#ga709bd645c12619231f98f793daa46d67">More...</a><br /></td></tr>
 <tr class="separator:ga709bd645c12619231f98f793daa46d67"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7063759634332538b33b50c169473715"><td class="memItemLeft" align="right" valign="top">typedef struct c4WriteStream&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga7063759634332538b33b50c169473715">C4WriteStream</a></td></tr>
-<tr class="memdesc:ga7063759634332538b33b50c169473715"><td class="mdescLeft">&#160;</td><td class="mdescRight">An open stream for writing data to a blob.  <a href="#ga7063759634332538b33b50c169473715">More...</a><br /></td></tr>
-<tr class="separator:ga7063759634332538b33b50c169473715"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae56f69f380fa40d8ee42f087416bb1e2"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">C4Socket</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">C4Socket</a></td></tr>
+<tr class="memdesc:gae56f69f380fa40d8ee42f087416bb1e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents an open bidirectional stream of bytes or messages (typically a TCP socket.)  <a href="#gae56f69f380fa40d8ee42f087416bb1e2">More...</a><br /></td></tr>
+<tr class="separator:gae56f69f380fa40d8ee42f087416bb1e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4a238757c9baa9a4fcea8f03d42dfa15"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a></td></tr>
+<tr class="memdesc:ga4a238757c9baa9a4fcea8f03d42dfa15"><td class="mdescLeft">&#160;</td><td class="mdescRight">An open stream for writing data to a blob.  <a href="#ga4a238757c9baa9a4fcea8f03d42dfa15">More...</a><br /></td></tr>
+<tr class="separator:ga4a238757c9baa9a4fcea8f03d42dfa15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga37ce7c8730c153596411479ae0b9c040"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga37ce7c8730c153596411479ae0b9c040">c4_now</a> (void)</td></tr>
-<tr class="memdesc:ga37ce7c8730c153596411479ae0b9c040"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current time, in milliseconds since 1/1/1970.  <a href="#ga37ce7c8730c153596411479ae0b9c040">More...</a><br /></td></tr>
-<tr class="separator:ga37ce7c8730c153596411479ae0b9c040"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae0419d888a0524b718da8c06fabe5a21"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="c4_compat_8h.html#ab6e8c999f5a33767c27706fb4392831d">C4INLINE</a> <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae0419d888a0524b718da8c06fabe5a21">c4str</a> (const char *str)</td></tr>
 <tr class="separator:gae0419d888a0524b718da8c06fabe5a21"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3e96c85c396e05a3819b25fe06ee694e"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga3e96c85c396e05a3819b25fe06ee694e">c4SliceEqual</a> (<a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> a, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> b)</td></tr>
@@ -164,50 +167,55 @@ Functions</h2></td></tr>
 <tr class="separator:ga0fd3abe3e50b902a9a186172ad8adb78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga137208581716b86cc485dc601f77bdc1"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga137208581716b86cc485dc601f77bdc1">c4cert_retain</a> (<a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *r)</td></tr>
 <tr class="separator:ga137208581716b86cc485dc601f77bdc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae05e01f73e4a555b4b275110f9e31394"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae05e01f73e4a555b4b275110f9e31394">c4cert_release</a> (<a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *r)</td></tr>
-<tr class="separator:gae05e01f73e4a555b4b275110f9e31394"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab756acc507c97a1c66ad520e1a327f0e"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#gaab0975fb1dd0dac704f1c53ce27cc8f3">C4KeyPair</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gab756acc507c97a1c66ad520e1a327f0e">c4keypair_retain</a> (<a class="el" href="group___base.html#gaab0975fb1dd0dac704f1c53ce27cc8f3">C4KeyPair</a> *r)</td></tr>
 <tr class="separator:gab756acc507c97a1c66ad520e1a327f0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa565ac815fdef649626be6107361e14e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gaa565ac815fdef649626be6107361e14e">c4keypair_release</a> (<a class="el" href="group___base.html#gaab0975fb1dd0dac704f1c53ce27cc8f3">C4KeyPair</a> *r)</td></tr>
-<tr class="separator:gaa565ac815fdef649626be6107361e14e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0e12f1e9f5b2e687b7c62fb2272fa085"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga0e12f1e9f5b2e687b7c62fb2272fa085">c4db_retain</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *r)</td></tr>
+<tr class="memitem:ga0e12f1e9f5b2e687b7c62fb2272fa085"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga0e12f1e9f5b2e687b7c62fb2272fa085">c4db_retain</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *r)</td></tr>
 <tr class="separator:ga0e12f1e9f5b2e687b7c62fb2272fa085"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga140327445ff91ebb34a8cc594b8dd686"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga140327445ff91ebb34a8cc594b8dd686">c4db_release</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *r)</td></tr>
-<tr class="separator:ga140327445ff91ebb34a8cc594b8dd686"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga456548ce2e8dbb04cfcb9ba64847b651"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga456548ce2e8dbb04cfcb9ba64847b651">c4query_retain</a> (<a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *r)</td></tr>
+<tr class="memitem:ga521cb42001b17d00ce2471a0d1ac338b"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga521cb42001b17d00ce2471a0d1ac338b">c4coll_retain</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *r)</td></tr>
+<tr class="separator:ga521cb42001b17d00ce2471a0d1ac338b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga456548ce2e8dbb04cfcb9ba64847b651"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga456548ce2e8dbb04cfcb9ba64847b651">c4query_retain</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *r)</td></tr>
 <tr class="separator:ga456548ce2e8dbb04cfcb9ba64847b651"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5ba76e998bb93ad98ed9382b03c861ad"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga5ba76e998bb93ad98ed9382b03c861ad">c4query_release</a> (<a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *r)</td></tr>
-<tr class="separator:ga5ba76e998bb93ad98ed9382b03c861ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf5b676967e67bda03bf963c6f33c8e59"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gaf5b676967e67bda03bf963c6f33c8e59">c4doc_retain</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *)</td></tr>
 <tr class="separator:gaf5b676967e67bda03bf963c6f33c8e59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe">c4doc_release</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *)</td></tr>
-<tr class="separator:gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga2f90cf631bbab057f64903dccff6c82f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga2f90cf631bbab057f64903dccff6c82f">c4queryenum_retain</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *)</td></tr>
 <tr class="separator:ga2f90cf631bbab057f64903dccff6c82f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae05e01f73e4a555b4b275110f9e31394"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae05e01f73e4a555b4b275110f9e31394">c4cert_release</a> (<a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *r)</td></tr>
+<tr class="separator:gae05e01f73e4a555b4b275110f9e31394"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa565ac815fdef649626be6107361e14e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gaa565ac815fdef649626be6107361e14e">c4keypair_release</a> (<a class="el" href="group___base.html#gaab0975fb1dd0dac704f1c53ce27cc8f3">C4KeyPair</a> *r)</td></tr>
+<tr class="separator:gaa565ac815fdef649626be6107361e14e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga140327445ff91ebb34a8cc594b8dd686"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga140327445ff91ebb34a8cc594b8dd686">c4db_release</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *r)</td></tr>
+<tr class="separator:ga140327445ff91ebb34a8cc594b8dd686"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga96c5610a32305181053272e9d1656984"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga96c5610a32305181053272e9d1656984">c4coll_release</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *r)</td></tr>
+<tr class="separator:ga96c5610a32305181053272e9d1656984"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5ba76e998bb93ad98ed9382b03c861ad"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga5ba76e998bb93ad98ed9382b03c861ad">c4query_release</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *r)</td></tr>
+<tr class="separator:ga5ba76e998bb93ad98ed9382b03c861ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe">c4doc_release</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *)</td></tr>
+<tr class="separator:gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab15a4580ef64eafd53a5165591666458"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gab15a4580ef64eafd53a5165591666458">c4queryenum_release</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *)</td></tr>
 <tr class="separator:gab15a4580ef64eafd53a5165591666458"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga71158f6dd23100938013eb188a2421f6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga71158f6dd23100938013eb188a2421f6">c4dbobs_free</a> (<a class="el" href="group___base.html#ga464907502d1ac3c9941899329b5d001f">C4DatabaseObserver</a> *)</td></tr>
+<tr class="memitem:ga71158f6dd23100938013eb188a2421f6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga71158f6dd23100938013eb188a2421f6">c4dbobs_free</a> (<a class="el" href="group___base.html#gadfd2a7d2677acc7971ea199199f0a7ac">C4DatabaseObserver</a> *)</td></tr>
 <tr class="separator:ga71158f6dd23100938013eb188a2421f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7b6efc206ab418ee64db9534eb47d85f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga7b6efc206ab418ee64db9534eb47d85f">c4docobs_free</a> (<a class="el" href="group___base.html#ga148577d41d550a29d8fbc4a1fa597efc">C4DocumentObserver</a> *)</td></tr>
+<tr class="memitem:ga7b6efc206ab418ee64db9534eb47d85f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga7b6efc206ab418ee64db9534eb47d85f">c4docobs_free</a> (<a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *)</td></tr>
 <tr class="separator:ga7b6efc206ab418ee64db9534eb47d85f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac7d5e9bd008f20ed446e92305be2e090"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gac7d5e9bd008f20ed446e92305be2e090">c4enum_free</a> (<a class="el" href="group___base.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *)</td></tr>
 <tr class="separator:gac7d5e9bd008f20ed446e92305be2e090"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga2c533d88a2b747a071bdcf1ea60e4fee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga2c533d88a2b747a071bdcf1ea60e4fee">c4listener_free</a> (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *)</td></tr>
 <tr class="separator:ga2c533d88a2b747a071bdcf1ea60e4fee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0b40933cebb5741d2224e726a8a50efd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga0b40933cebb5741d2224e726a8a50efd">c4queryobs_free</a> (<a class="el" href="group___base.html#gaa38460d907351d080c099278153fe596">C4QueryObserver</a> *)</td></tr>
+<tr class="memitem:ga0b40933cebb5741d2224e726a8a50efd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga0b40933cebb5741d2224e726a8a50efd">c4queryobs_free</a> (<a class="el" href="group___base.html#ga89a77eddf7600ce9e9e17933e8ef8a75">C4QueryObserver</a> *)</td></tr>
 <tr class="separator:ga0b40933cebb5741d2224e726a8a50efd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga27bca0ebc4fa272b0a7684cea0603509"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga27bca0ebc4fa272b0a7684cea0603509">c4raw_free</a> (<a class="el" href="struct_c4_raw_document.html">C4RawDocument</a> *)</td></tr>
 <tr class="separator:ga27bca0ebc4fa272b0a7684cea0603509"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga25a927ca78de4f96f5813de2bd6d2b65"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga25a927ca78de4f96f5813de2bd6d2b65">c4repl_free</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *)</td></tr>
 <tr class="separator:ga25a927ca78de4f96f5813de2bd6d2b65"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac1f167a51625c67900a4bd112450d8ca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gac1f167a51625c67900a4bd112450d8ca">c4stream_close</a> (<a class="el" href="group___base.html#gafc17929a5c2540de640863fd5f202281">C4ReadStream</a> *)</td></tr>
+<tr class="memitem:gac1f167a51625c67900a4bd112450d8ca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gac1f167a51625c67900a4bd112450d8ca">c4stream_close</a> (<a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a> *)</td></tr>
 <tr class="separator:gac1f167a51625c67900a4bd112450d8ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad6905d9164e017a67cf8b5bee5b8b85b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4stream_closeWriter</a> (<a class="el" href="group___base.html#ga7063759634332538b33b50c169473715">C4WriteStream</a> *)</td></tr>
+<tr class="memitem:gad6905d9164e017a67cf8b5bee5b8b85b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4stream_closeWriter</a> (<a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a> *)</td></tr>
 <tr class="separator:gad6905d9164e017a67cf8b5bee5b8b85b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga31c0b80a7f0b94d1e7dfdeeceea518be"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga31c0b80a7f0b94d1e7dfdeeceea518be">c4_getObjectCount</a> (void)</td></tr>
 <tr class="memdesc:ga31c0b80a7f0b94d1e7dfdeeceea518be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of objects that have been created but not yet freed.  <a href="#ga31c0b80a7f0b94d1e7dfdeeceea518be">More...</a><br /></td></tr>
 <tr class="separator:ga31c0b80a7f0b94d1e7dfdeeceea518be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga8af25974f939cc897bf166e47ede0d8c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga8af25974f939cc897bf166e47ede0d8c">c4_dumpInstances</a> (void)</td></tr>
+<tr class="memdesc:ga8af25974f939cc897bf166e47ede0d8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logs information about object in memory.  <a href="#ga8af25974f939cc897bf166e47ede0d8c">More...</a><br /></td></tr>
 <tr class="separator:ga8af25974f939cc897bf166e47ede0d8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -245,14 +253,14 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Typedef Documentation</h2>
-<a id="ga1f93de2ae8a31d160f02db45bc412b58"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1f93de2ae8a31d160f02db45bc412b58">&#9670;&nbsp;</a></span>C4BlobStore</h2>
+<a id="ga3f2ced0e74afda9261b9337787129f57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3f2ced0e74afda9261b9337787129f57">&#9670;&nbsp;</a></span>C4BlobStore</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef struct c4BlobStore <a class="el" href="group___base.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a></td>
+          <td class="memname">typedef struct <a class="el" href="group___base.html#ga3f2ced0e74afda9261b9337787129f57">C4BlobStore</a> <a class="el" href="group___base.html#ga3f2ced0e74afda9261b9337787129f57">C4BlobStore</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -277,14 +285,46 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga15e027d347f40041585744dad4dac1c9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga15e027d347f40041585744dad4dac1c9">&#9670;&nbsp;</a></span>C4Database</h2>
+<a id="gad8be2ad2cef903785ae3f9736e14253b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad8be2ad2cef903785ae3f9736e14253b">&#9670;&nbsp;</a></span>C4Collection</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef struct c4Database <a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a></td>
+          <td class="memname">typedef struct <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Opaque handle to a namespace of documents in an opened database. </p>
+
+</div>
+</div>
+<a id="ga6ee85db00f1ffcf03308ef5350855e29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6ee85db00f1ffcf03308ef5350855e29">&#9670;&nbsp;</a></span>C4CollectionObserver</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a> <a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>A collection-observer reference. </p>
+
+</div>
+</div>
+<a id="gae046b9267a473fdc31471b022fc94676"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae046b9267a473fdc31471b022fc94676">&#9670;&nbsp;</a></span>C4Database</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> <a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -293,19 +333,17 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga464907502d1ac3c9941899329b5d001f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga464907502d1ac3c9941899329b5d001f">&#9670;&nbsp;</a></span>C4DatabaseObserver</h2>
+<a id="gadfd2a7d2677acc7971ea199199f0a7ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadfd2a7d2677acc7971ea199199f0a7ac">&#9670;&nbsp;</a></span>C4DatabaseObserver</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef struct c4DatabaseObserver <a class="el" href="group___base.html#ga464907502d1ac3c9941899329b5d001f">C4DatabaseObserver</a></td>
+          <td class="memname">typedef <a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a> <a class="el" href="group___base.html#gadfd2a7d2677acc7971ea199199f0a7ac">C4DatabaseObserver</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>A database-observer reference. </p>
 
 </div>
 </div>
@@ -325,14 +363,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga148577d41d550a29d8fbc4a1fa597efc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga148577d41d550a29d8fbc4a1fa597efc">&#9670;&nbsp;</a></span>C4DocumentObserver</h2>
+<a id="ga8a4ef01035322ff935bae1ea30a9199e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8a4ef01035322ff935bae1ea30a9199e">&#9670;&nbsp;</a></span>C4DocumentObserver</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef struct c4DocumentObserver <a class="el" href="group___base.html#ga148577d41d550a29d8fbc4a1fa597efc">C4DocumentObserver</a></td>
+          <td class="memname">typedef struct <a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> <a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -401,14 +439,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga5742de87a925059b9259d898f699fb2c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5742de87a925059b9259d898f699fb2c">&#9670;&nbsp;</a></span>C4Query</h2>
+<a id="ga67aedbf60fd71b8727d6d0ca9bd339ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga67aedbf60fd71b8727d6d0ca9bd339ca">&#9670;&nbsp;</a></span>C4Query</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef struct c4Query <a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a></td>
+          <td class="memname">typedef struct <a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> <a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -417,14 +455,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gaa38460d907351d080c099278153fe596"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa38460d907351d080c099278153fe596">&#9670;&nbsp;</a></span>C4QueryObserver</h2>
+<a id="ga89a77eddf7600ce9e9e17933e8ef8a75"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga89a77eddf7600ce9e9e17933e8ef8a75">&#9670;&nbsp;</a></span>C4QueryObserver</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef struct c4QueryObserver <a class="el" href="group___base.html#gaa38460d907351d080c099278153fe596">C4QueryObserver</a></td>
+          <td class="memname">typedef struct <a class="el" href="group___base.html#ga89a77eddf7600ce9e9e17933e8ef8a75">C4QueryObserver</a> <a class="el" href="group___base.html#ga89a77eddf7600ce9e9e17933e8ef8a75">C4QueryObserver</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -433,14 +471,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gafc17929a5c2540de640863fd5f202281"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gafc17929a5c2540de640863fd5f202281">&#9670;&nbsp;</a></span>C4ReadStream</h2>
+<a id="ga02b4b239f9add8f17da2971e1fd6eea6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga02b4b239f9add8f17da2971e1fd6eea6">&#9670;&nbsp;</a></span>C4ReadStream</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef struct c4ReadStream <a class="el" href="group___base.html#gafc17929a5c2540de640863fd5f202281">C4ReadStream</a></td>
+          <td class="memname">typedef struct <a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a> <a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -509,6 +547,22 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="gae56f69f380fa40d8ee42f087416bb1e2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae56f69f380fa40d8ee42f087416bb1e2">&#9670;&nbsp;</a></span>C4Socket</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct <a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">C4Socket</a> <a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">C4Socket</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Represents an open bidirectional stream of bytes or messages (typically a TCP socket.) </p>
+
+</div>
+</div>
 <a id="ga04de3d84e73df3c8b75092054abcc117"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga04de3d84e73df3c8b75092054abcc117">&#9670;&nbsp;</a></span>C4String</h2>
 
@@ -553,14 +607,14 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga7063759634332538b33b50c169473715"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7063759634332538b33b50c169473715">&#9670;&nbsp;</a></span>C4WriteStream</h2>
+<a id="ga4a238757c9baa9a4fcea8f03d42dfa15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4a238757c9baa9a4fcea8f03d42dfa15">&#9670;&nbsp;</a></span>C4WriteStream</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef struct c4WriteStream <a class="el" href="group___base.html#ga7063759634332538b33b50c169473715">C4WriteStream</a></td>
+          <td class="memname">typedef struct <a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a> <a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -586,6 +640,9 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Logs information about object in memory. </p>
+<p>Useful for debugging when <a class="el" href="group___base.html#ga31c0b80a7f0b94d1e7dfdeeceea518be">c4_getObjectCount</a> indicates there are leaks. (Note: In release builds this doesn't have much to say, because the instrumentation it needs is suppressed for performance purposes.) </p>
+
 </div>
 </div>
 <a id="ga31c0b80a7f0b94d1e7dfdeeceea518be"></a>
@@ -605,27 +662,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the number of objects that have been created but not yet freed. </p>
-<p>This can be used as a debugging/testing tool to detect leaks. </p>
-
-</div>
-</div>
-<a id="ga37ce7c8730c153596411479ae0b9c040"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga37ce7c8730c153596411479ae0b9c040">&#9670;&nbsp;</a></span>c4_now()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a> c4_now </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Returns the current time, in milliseconds since 1/1/1970. </p>
+<p>This can be used as a debugging/testing tool to detect leaks; for example, capture the value at the start of a test, then call again at the end and compare. </p>
 
 </div>
 </div>
@@ -717,6 +754,58 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ga96c5610a32305181053272e9d1656984"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga96c5610a32305181053272e9d1656984">&#9670;&nbsp;</a></span>c4coll_release()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static void c4coll_release </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
+          <td class="paramname"><em>r</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ga521cb42001b17d00ce2471a0d1ac338b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga521cb42001b17d00ce2471a0d1ac338b">&#9670;&nbsp;</a></span>c4coll_retain()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a>* c4coll_retain </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *&#160;</td>
+          <td class="paramname"><em>r</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ga140327445ff91ebb34a8cc594b8dd686"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga140327445ff91ebb34a8cc594b8dd686">&#9670;&nbsp;</a></span>c4db_release()</h2>
 
@@ -729,7 +818,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">static void c4db_release </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>r</em></td><td>)</td>
           <td></td>
         </tr>
@@ -753,9 +842,9 @@ Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a>* c4db_retain </td>
+          <td class="memname">static <a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a>* c4db_retain </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>r</em></td><td>)</td>
           <td></td>
         </tr>
@@ -778,7 +867,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4dbobs_free </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga464907502d1ac3c9941899329b5d001f">C4DatabaseObserver</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gadfd2a7d2677acc7971ea199199f0a7ac">C4DatabaseObserver</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -832,7 +921,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4docobs_free </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga148577d41d550a29d8fbc4a1fa597efc">C4DocumentObserver</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -941,7 +1030,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">static void c4query_release </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *&#160;</td>
           <td class="paramname"><em>r</em></td><td>)</td>
           <td></td>
         </tr>
@@ -965,9 +1054,9 @@ Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a>* c4query_retain </td>
+          <td class="memname">static <a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a>* c4query_retain </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *&#160;</td>
           <td class="paramname"><em>r</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1026,7 +1115,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4queryobs_free </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#gaa38460d907351d080c099278153fe596">C4QueryObserver</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#ga89a77eddf7600ce9e9e17933e8ef8a75">C4QueryObserver</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -1168,7 +1257,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4stream_close </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#gafc17929a5c2540de640863fd5f202281">C4ReadStream</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -1186,7 +1275,7 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4stream_closeWriter </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga7063759634332538b33b50c169473715">C4WriteStream</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>

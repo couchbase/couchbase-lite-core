@@ -57,17 +57,18 @@ namespace litecore {
     }
 
 
-    void BackgroundDB::useInTransaction(TransactionTask task) {
+    void BackgroundDB::useInTransaction(slice keyStoreName, TransactionTask task) {
         _dataFile.useLocked([=](DataFile* dataFile) {
             if (!dataFile)
                 return;
             ExclusiveTransaction t(dataFile);
-            SequenceTracker sequenceTracker;
+            KeyStore &keyStore = dataFile->getKeyStore(keyStoreName);
+            SequenceTracker sequenceTracker(keyStoreName);
             sequenceTracker.beginTransaction();
 
             bool commit;
             try {
-                commit = task(dataFile, &sequenceTracker);
+                commit = task(keyStore, &sequenceTracker);
             } catch (const exception &) {
                 t.abort();
                 sequenceTracker.endTransaction(false);
