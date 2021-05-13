@@ -21,6 +21,7 @@ function(setup_build)
     target_compile_definitions(
         BLIPStatic PRIVATE
         -DINCL_EXTRA_HTON_FUNCTIONS # Make sure htonll is defined for WebSocketProtocol.hh
+        -DNOMINMAX                  # Windows, come on...stop it!
     )
 
     target_include_directories(

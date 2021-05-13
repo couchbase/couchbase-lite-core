@@ -111,8 +111,25 @@ namespace litecore {
     ,_name(name)
     { }
 
-
+#if defined(_MSC_VER) && _MSC_VER < 1920
+    SequenceTracker::SequenceTracker(SequenceTracker&& other) noexcept 
+    :Logging(ChangesLog)
+    ,_name(std::move(other._name))
+    ,_changes(std::move(other._changes))
+    ,_idle(std::move(other._idle))
+    ,_byDocID(std::move(other._byDocID))
+    ,_lastSequence(other._lastSequence)
+    ,_numPlaceholders(other._numPlaceholders)
+    ,_numDocObservers(other._numDocObservers)
+    ,_transaction(std::move(other._transaction))
+    ,_preTransactionLastSequence(other._preTransactionLastSequence)
+    {
+        
+    }
+#else
+    // Another compiler bug that I assume Microsoft is not going to fix in 2017
     SequenceTracker::SequenceTracker(SequenceTracker&&) noexcept =default;
+#endif
 
 
     SequenceTracker::~SequenceTracker() =default;
