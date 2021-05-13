@@ -127,7 +127,9 @@ typedef struct {
     C4RevisionFlags flags;      ///< The current revision's flags
 } C4CollectionChange;
 
+#ifndef C4_STRICT_COLLECTION_API
 typedef C4CollectionChange C4DatabaseChange;
+#endif
 
 /** @} */
 /** @} */

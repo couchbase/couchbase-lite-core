@@ -47,14 +47,14 @@ C4API_BEGIN_DECLS
     typedef void (*C4CollectionObserverCallback)(C4CollectionObserver* observer,
                                                void* C4NULLABLE context);
 
-    typedef C4CollectionObserverCallback C4DatabaseObserverCallback;
-
 #ifndef C4_STRICT_COLLECTION_API
 
+    typedef C4CollectionObserverCallback C4DatabaseObserverCallback;
+
     /** Creates a collection observer on the database's default collection. */
-    C4CollectionObserver* c4dbobs_create(C4Database* database,
-                                         C4CollectionObserverCallback callback,
-                                         void* C4NULLABLE context) C4API;
+    C4DatabaseObserver* c4dbobs_create(C4Database* database,
+                                       C4DatabaseObserverCallback callback,
+                                       void* C4NULLABLE context) C4API;
 
 #endif
 

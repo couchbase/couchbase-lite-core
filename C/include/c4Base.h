@@ -97,7 +97,9 @@ typedef struct C4Database C4Database;
 /** A collection-observer reference. */
 typedef struct C4CollectionObserver C4CollectionObserver;
 
-typedef C4CollectionObserver C4DatabaseObserver;    // TODO: Remove ASAP
+#ifndef C4_STRICT_COLLECTION_API
+typedef C4CollectionObserver C4DatabaseObserver;
+#endif
 
 /** Describes a version-controlled document. */
 typedef struct C4Document C4Document;

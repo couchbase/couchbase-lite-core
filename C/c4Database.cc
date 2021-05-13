@@ -259,5 +259,13 @@ bool C4Database::purgeDocument(slice docID) {
     return getDefaultCollection()->purgeDocument(docID);
 }
 
+C4Timestamp C4Database::getExpiration(slice docID) const {
+    return getDefaultCollection()->getExpiration(docID);
+}
+
+bool C4Database::setExpiration(slice docID, C4Timestamp timestamp) {
+    return getDefaultCollection()->setExpiration(docID, timestamp);
+}
+
 #endif // C4_STRICT_COLLECTION_API
 

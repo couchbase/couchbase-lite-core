@@ -16,7 +16,7 @@ var searchData=
   ['_5ffleece_5fh',['_FLEECE_H',['../_fleece_8h.html#a2873349e7e38b2b24a9f44ed408e0a91',1,'Fleece.h']]],
   ['_5fflslice_5fh',['_FLSLICE_H',['../_f_l_slice_8h.html#a05ee7d664be70b152a43f900c309f7e5',1,'FLSlice.h']]],
   ['_5finternal1',['_internal1',['../struct_c4_document.html#ae2bdb28f4bebb27020476723b0d6701a',1,'C4Document']]],
-  ['_5finternal2',['_internal2',['../struct_c4_document.html#a7dff8d351c96211b22f1cbcee9887dd4',1,'C4Document']]],
+  ['_5finternal2',['_internal2',['../struct_c4_document.html#aa7ff2da8956359ed1073a5abdd8aec85',1,'C4Document']]],
   ['_5fusuallyfalse',['_usuallyFalse',['../_base_8h.html#a7cdca1d9212861ca92e90bffea08d958',1,'Base.h']]],
   ['_5fusuallytrue',['_usuallyTrue',['../_base_8h.html#a67ec24fac9746e35bab22a7eac858e8c',1,'Base.h']]]
 ];

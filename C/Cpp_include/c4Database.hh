@@ -129,6 +129,8 @@ public:
                                      size_t* C4NULLABLE outCommonAncestorIndex,
                                      C4Error *outError);
     bool purgeDocument(slice docID);
+    C4Timestamp getExpiration(slice docID) const;
+    bool setExpiration(slice docID, C4Timestamp timestamp);
 #endif
 
     // Transactions:
