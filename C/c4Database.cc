@@ -65,7 +65,8 @@ C4EncryptionKey C4EncryptionKeyFromPassword(slice password, C4EncryptionAlgorith
 
 
 static FilePath dbPath(slice name, slice parentDir) {
-    Assert(name && parentDir);
+    if (name.size == 0 || parentDir.size == 0)
+        C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter);
     return FilePath(string(parentDir), string(name)).addingExtension(kC4DatabaseFilenameExtension);
 }
 
