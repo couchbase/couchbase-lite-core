@@ -2233,7 +2233,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
         { "acos(\"abc\")", [](const Value* v, bool missing) { // =NULL
             return !missing && v->type() == kNull; }},
         {"2/0",            [](const Value* v, bool missing) { // =NULL
-            return !missing && v->type() == kNull; }},
+            return missing; }},
         {"lower([1,2])",    [](const Value* v, bool missing) { // =NULL
             return !missing && v->type() == kNull; }},
 /*4*/   {"length(missingValue)", [](const Value* v, bool missing) { // =MISSING
@@ -2244,10 +2244,10 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
             return !missing && v->type() == kNull; }},
         {"round(12.5)",  [](const Value* v, bool missing) { // =13
             return !missing && v->type() == kNumber && v->asDouble() == 13; }},
-        {"8/10",         [](const Value* v, bool missing) { // =0.8
-            return !missing && v->type() == kNumber && v->asDouble() == 0.8; }},
-/*9*/   {"unitPrice/10", [](const Value* v, bool missing) { // =0.8
-            return !missing && v->type() == kNumber && v->asDouble() == 0.8; }},
+        {"8/10",         [](const Value* v, bool missing) { // =0
+            return !missing && v->type() == kNumber && v->asDouble() == 0; }},
+/*9*/   {"unitPrice/10", [](const Value* v, bool missing) { // =0
+            return !missing && v->type() == kNumber && v->asDouble() == 0; }},
         {"orderlines",  [](const Value* v, bool missing) {  // type() == kArray & columnTitle="orderlines"
             return !missing && v->type() == kArray; }},
         {"orderlines[0]",  [](const Value* v, bool missing) { // columnTitle="$11"
