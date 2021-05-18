@@ -2269,7 +2269,15 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
 /*19*/  {"idiv(5, 3.0)", [](const Value* v, bool missing) { // =1
             return !missing && v->type() == kNumber && v->asDouble() == 1; }},
         {"idiv(1, 0.99)",  [](const Value* v, bool missing) { // =NULL
-            return !missing && v->type() == kNull; }}
+            return !missing && v->type() == kNull; }},
+        {"round_even(12.5)", [](const Value* v, bool missing) {
+            return !missing && v->type() == kNumber && v->asDouble() == 12; }},
+        {"round_even(11.5)", [](const Value* v, bool missing) {
+            return !missing && v->type() == kNumber && v->asDouble() == 12; }},
+        {"round_even(12.115, 2)", [](const Value* v, bool missing) {
+            return !missing && v->type() == kNumber && v->asDouble() == 12.12; }},
+/*24*/  {"round_even(-12.125, 2)", [](const Value* v, bool missing) {
+            return !missing && v->type() == kNumber && v->asDouble() == -12.12; }}
     };
     size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
     string queryStr = "select ";

@@ -969,17 +969,26 @@ namespace litecore {
     }
 
     static void roundTo(sqlite3_context* ctx, int argc, sqlite3_value **argv, double (*fn)(double)) {
-        // Takes an optional 2nd argument giving the number of decimal places to round to.
-        if (!isNumeric(ctx, argv[0]))
+        if (sqlite3_value* mnArg = passMissingOrNull(argc, argv); mnArg != nullptr) {
+            sqlite3_result_value(ctx, mnArg);
             return;
+        }
+        
+        // Takes an optional 2nd argument giving the number of decimal places to round to.
+        if (!isNumeric(ctx, argv[0])) {
+            setResultFleeceNull(ctx);
+            return;
+        }
         double result = sqlite3_value_double(argv[0]);
 
         if(argc == 1) {
             result = fn(result);
         } else {
-            if (!isNumeric(ctx, argv[1]))
+            if (!isNumeric(ctx, argv[1])) {
+                setResultFleeceNull(ctx);
                 return;
-            double scale = pow(10, sqlite3_value_double(argv[1]));
+            }
+            double scale = pow(10, sqlite3_value_int64(argv[1]));
             result = fn(result * scale) / scale;
         }
 
@@ -990,6 +999,25 @@ namespace litecore {
     // round(n, places) rounds n to `places` decimal places.
     static void fl_round(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         roundTo(ctx, argc, argv, round);
+    }
+
+    // round(n) returns the value of `n` rounded to the nearest integer.
+    // round(n, places) rounds n to `places` decimal places.
+    // Ties (.5) are rounded to the nearest even integer.
+    static void fl_round_even(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        roundTo(ctx, argc, argv, [](double d)->double {
+            double fl = floor(d);
+            double fr = d - fl;
+            if (fr > 0.5) {
+                return fl + 1;
+            } else if (fr < 0.5) {
+                return fl;
+            } else if (int64_t(fl) % 2 == 0) {
+                return fl;
+            } else {
+                return fl + 1;
+            }
+        });
     }
 
     // trunc(n, [places]) is like round(), but truncates, i.e. rounds toward zero.
@@ -1553,6 +1581,8 @@ namespace litecore {
         { "radians",           1, fl_radians },
         { "round",             1, fl_round },
         { "round",             2, fl_round },
+        { "round_even",        1, fl_round_even },
+        { "round_even",        2, fl_round_even },
         { "sign",              1, fl_sign },
         { "sin",               1, fl_sin },
         { "sqrt",              1, fl_sqrt },
