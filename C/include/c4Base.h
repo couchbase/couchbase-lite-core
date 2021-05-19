@@ -27,6 +27,14 @@ C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
 
+// Corresponds to Couchbase Lite product version number, with 2 digits for minor and patch versions.
+// i.e. `10000 * MajorVersion + 100 * MinorVersion + PatchVersion`
+#define LITECORE_VERSION 30000
+
+// This number has no absolute meaning but is bumped whenever the LiteCore public API changes.
+#define LITECORE_API_VERSION 350
+
+
 /** \defgroup Base  Data Types and Base Functions
  @{ */
 
