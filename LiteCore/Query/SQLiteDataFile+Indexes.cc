@@ -75,7 +75,7 @@ namespace litecore {
         stmt.bindNoCopy(1, spec.name);
         stmt.bind(      2, spec.type);
         stmt.bindNoCopy(3, keyStoreName);
-        stmt.bindNoCopy(4, (char*)spec.expressionJSON.buf, (int)spec.expressionJSON.size);
+        stmt.bindNoCopy(4, (char*)spec.expression.buf, (int)spec.expression.size);
         if (spec.type != IndexSpec::kValue)
             stmt.bindNoCopy(5, indexTableName);
         LogStatement(stmt);

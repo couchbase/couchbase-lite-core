@@ -241,7 +241,7 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
     
     SECTION("Create Index First") {
         IndexSpec::Options options { "en", false, true };
-        CHECK(store->createIndex("List"_sl, "[[\".List\"]]"_sl, IndexSpec::kFullText, &options));
+        CHECK(store->createIndex2("List"_sl, "List"_sl, QueryLanguage::kN1QL, IndexSpec::kFullText, &options));
         queryStr = jsonQuery;
         lang = QueryLanguage::kJSON;
     }
@@ -390,7 +390,14 @@ TEST_CASE_METHOD(FTSTest, "Test with Dictionary Values", "[FTS][Query]") {
     }
 
     IndexSpec::Options options { "en", false, false };
-    CHECK(store->createIndex("fts"_sl, "[[\".dict_value\"]]"_sl, IndexSpec::kFullText, &options));
+    
+    SECTION("JSON index expression") {
+        CHECK(store->createIndex("fts"_sl, "[[\".dict_value\"]]", IndexSpec::kFullText, &options));
+    }
+    SECTION("N1QL index expression") {
+        CHECK(store->createIndex2("fts"_sl, "dict_value", QueryLanguage::kN1QL, IndexSpec::kFullText, &options));
+    }
+
     Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['MATCH()', 'fts', 'bar']}"));
     Retained<QueryEnumerator> results(query->createEnumerator(nullptr));        
     CHECK(results->getRowCount() == 1);

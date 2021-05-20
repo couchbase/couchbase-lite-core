@@ -27,6 +27,10 @@ namespace fleece::impl {
 }
 
 namespace litecore {
+    enum class QueryLanguage {          // Values MUST match C4QueryLanguage in c4Query.h
+        kJSON,
+        kN1QL,
+    };
 
     struct IndexSpec {
         enum Type {
@@ -45,7 +49,8 @@ namespace litecore {
 
         IndexSpec(std::string name_,
                   Type type_,
-                  alloc_slice expressionJSON_,
+                  alloc_slice expression_,
+                  QueryLanguage queryLanguage =QueryLanguage::kJSON,
                   const Options* opt =nullptr);
 
         IndexSpec(const IndexSpec&) =delete;
@@ -70,7 +75,8 @@ namespace litecore {
 
         std::string const            name;
         Type        const            type;
-        alloc_slice const            expressionJSON;
+        alloc_slice const            expression;
+        QueryLanguage                queryLanguage;
         std::optional<Options> const options;
 
     private:

@@ -28,8 +28,12 @@ namespace litecore { namespace n1ql {
 %}
 
 
-n1ql =
-    _ s:selectStatement _ !.            { $$ = s;}
+n1ql = _
+    s:selectStatement _ !.            { $$ = s;}
+    |
+    sr:selectResults !.               { MutableDict dict = MutableDict::newDict();
+                                        setAny(dict, "WHAT", sr);
+                                        $$ = dict; }
 
 
 ######## SELECT STATEMENT:

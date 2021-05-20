@@ -206,20 +206,22 @@ C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs,
 #pragma mark - INDEXES:
 
 
-bool c4db_createIndex(C4Database *database,
-                      C4Slice name,
-                      C4Slice indexSpecJSON,
-                      C4IndexType indexType,
-                      const C4IndexOptions *indexOptions,
-                      C4Error *outError) noexcept
+bool c4db_createIndex2(C4Database *database,
+                       C4Slice name,
+                       C4Slice indexSpec,
+                       C4QueryLanguage queryLanguage,
+                       C4IndexType indexType,
+                       const C4IndexOptions *indexOptions,
+                       C4Error *outError) noexcept
 {
     static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options),
                   "IndexSpec::Options types must match");
     return tryCatch(outError, [&]{
-        database->defaultKeyStore().createIndex(slice(name),
-                                                indexSpecJSON,
-                                                (IndexSpec::Type)indexType,
-                                                (const IndexSpec::Options*)indexOptions);
+        database->defaultKeyStore().createIndex2(slice(name),
+                                                 indexSpec,
+                                                 (QueryLanguage)queryLanguage,
+                                                 (IndexSpec::Type)indexType,
+                                                 (const IndexSpec::Options*)indexOptions);
     });
 }
 
@@ -242,7 +244,7 @@ static C4SliceResult getIndexes(C4Database* database, bool fullInfo, C4Error* ou
                 enc.beginDictionary();
                 enc.writeKey("name"); enc.writeString(spec.name);
                 enc.writeKey("type"); enc.writeInt(spec.type);
-                enc.writeKey("expr"); enc.writeString(spec.expressionJSON);
+                enc.writeKey("expr"); enc.writeString(spec.expression);
                 enc.endDictionary();
             } else {
                 enc.writeString(spec.name);

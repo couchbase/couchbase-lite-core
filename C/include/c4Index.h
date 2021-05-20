@@ -18,6 +18,7 @@
 
 #pragma once
 #include "c4Base.h"
+#include "c4Query.h"
 
 C4_ASSUME_NONNULL_BEGIN
 
@@ -120,17 +121,44 @@ extern "C" {
         @param database  The database to index.
         @param name  The name of the index. Any existing index with the same name will be replaced,
                      unless it has the identical expressions (in which case this is a no-op.)
+        @param indexSpec  The definition of the index in JSON form. (See above.)
+        @param queryLanguage The query language (JSON or N1QL) in that `indexSpec` is expressed.
+        @param indexType  The type of index (value or full-text.)
+        @param indexOptions  Options for the index. If NULL, each option will get a default value.
+        @param outError  On failure, will be set to the error status.
+        @return  True on success, false on failure. */
+     bool c4db_createIndex2(C4Database *database,
+                            C4String name,
+                            C4String indexSpec,
+                            C4QueryLanguage queryLanguage,
+                            C4IndexType indexType,
+                            const C4IndexOptions* C4NULLABLE indexOptions,
+                            C4Error* C4NULLABLE outError) C4API;
+
+    /** @param database  The database to index.
+        @param name  The name of the index. Any existing index with the same name will be replaced,
+                     unless it has the identical expressions (in which case this is a no-op.)
         @param indexSpecJSON  The definition of the index in JSON form. (See above.)
         @param indexType  The type of index (value or full-text.)
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-    bool c4db_createIndex(C4Database *database,
+    inline bool c4db_createIndex(C4Database *database,
                           C4String name,
                           C4String indexSpecJSON,
                           C4IndexType indexType,
                           const C4IndexOptions* C4NULLABLE indexOptions,
-                          C4Error* C4NULLABLE outError) C4API;
+                          C4Error* C4NULLABLE outError) C4API
+    {
+        return c4db_createIndex2(database,
+                                 name,
+                                 indexSpecJSON,
+                                 kC4JSONQuery,
+                                 indexType,
+                                 indexOptions,
+                                 outError);
+    }
+
 
     /** Deletes an index that was created by `c4db_createIndex`.
         @param database  The database to index.

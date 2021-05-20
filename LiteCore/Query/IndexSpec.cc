@@ -20,6 +20,9 @@
 #include "QueryParser+Private.hh"
 #include "Error.hh"
 #include "FleeceImpl.hh"
+#include "n1ql_parser.hh"
+#include "Query.hh"
+#include "MutableDict.hh"
 
 namespace litecore {
     using namespace fleece;
@@ -28,9 +31,10 @@ namespace litecore {
 
     IndexSpec::IndexSpec(std::string name_,
                          Type type_,
-                         alloc_slice expressionJSON_,
+                         alloc_slice expression_,
+                         QueryLanguage queryLanguage_,
                          const Options* opt)
-    :name(move(name_)), type(type_), expressionJSON(expressionJSON_)
+    :name(move(name_)), type(type_), expression(expression_), queryLanguage(queryLanguage_)
     ,options(opt ? std::make_optional(*opt) : std::optional<Options>())
     { }
 
@@ -50,10 +54,27 @@ namespace litecore {
 
     Doc* IndexSpec::doc() const {
         if (!_doc) {
-            try {
-                _doc = Doc::fromJSON(expressionJSON);
-            } catch (const FleeceException &) {
-                error::_throw(error::InvalidQuery, "Invalid JSON in index expression");
+            if (queryLanguage == QueryLanguage::kJSON) {
+                try {
+                    _doc = Doc::fromJSON(expression);
+                } catch (const FleeceException &) {
+                    error::_throw(error::InvalidQuery, "Invalid JSON in index expression");
+                }
+            } else if (queryLanguage == QueryLanguage::kN1QL) {
+                try {
+                    unsigned errPos;
+                    FLMutableDict result = n1ql::parse(string(expression), &errPos);
+                    if (!result) {
+                        throw Query::parseError("N1QL syntax error in index expression", errPos);
+                    }
+                    alloc_slice json = ((MutableDict*)result)->toJSON(true);
+                    FLMutableDict_Release(result);
+                    _doc = Doc::fromJSON(json);
+                } catch (const std::runtime_error&) {
+                    error::_throw(error::InvalidQuery, "Invalid N1QL in index expression");
+                }
+            } else {
+                throw std::logic_error("Uncovered enum of QueryLanguage in index expression");
             }
         }
         return _doc;
