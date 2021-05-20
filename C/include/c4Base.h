@@ -175,7 +175,7 @@ void               c4doc_release    (C4Document* C4NULLABLE) C4API;
 void               c4queryenum_release(C4QueryEnumerator* C4NULLABLE) C4API;
 
 // These types are _not_ ref-counted, but must be freed after use:
-void c4dbobs_free        (C4DatabaseObserver* C4NULLABLE) C4API;
+void c4dbobs_free        (C4CollectionObserver* C4NULLABLE) C4API;
 void c4docobs_free       (C4DocumentObserver* C4NULLABLE) C4API;
 void c4enum_free         (C4DocEnumerator* C4NULLABLE) C4API;
 void c4listener_free     (C4Listener* C4NULLABLE) C4API;
