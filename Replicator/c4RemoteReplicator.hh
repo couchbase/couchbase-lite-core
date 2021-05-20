@@ -27,13 +27,13 @@ namespace c4Internal {
     public:
 
         // Default maximum number of retry attempts before replications give up.
-        // These can be overridden by setting the option `kC4ReplicatorOptionMaxRetries`.
+        // These can be overridden by setting the option `kC4ReplicatorOptionMaxAttempts`, which is MaxRetryCount + 1.
         static constexpr unsigned kMaxOneShotRetryCount = 9;
         static constexpr unsigned kMaxContinuousRetryCount = UINT_MAX;
 
         // Longest possible retry delay, in seconds. The delay doubles on each failed retry
         // attempt, but pins to this value.
-        // This can be overridden by setting the option `kC4ReplicatorOptionMaxRetryInterval`.
+        // This can be overridden by setting the option `kC4ReplicatorOptionMaxAttemptWaitTime`.
         static constexpr unsigned kDefaultMaxRetryDelay = 5 * 60;
 
         C4RemoteReplicator(C4Database* db NONNULL,
@@ -221,6 +221,10 @@ namespace c4Internal {
             unsigned delay = 1 << std::min(retryCount, 30u);
             unsigned maxDelay = getIntProperty(kC4ReplicatorOptionMaxRetryInterval,
                                                kDefaultMaxRetryDelay);
+            maxDelay = getIntProperty(kC4ReplicatorOptionMaxAttemptWaitTime, maxDelay);
+            if (maxDelay == 0) {
+                maxDelay = kDefaultMaxRetryDelay;
+            }
             return std::min(delay, maxDelay);
         }
 
@@ -228,7 +232,9 @@ namespace c4Internal {
         // Returns the maximum number of (failed) retry attempts.
         unsigned maxRetryCount() const {
             unsigned defaultCount = continuous() ? kMaxContinuousRetryCount : kMaxOneShotRetryCount;
-            return getIntProperty(kC4ReplicatorOptionMaxRetries, defaultCount);
+            unsigned ret = getIntProperty(kC4ReplicatorOptionMaxRetries, defaultCount);
+            ret = getIntProperty(kC4ReplicatorOptionMaxAttempts, ret == UINT_MAX ? ret : ret + 1);
+            return ret == 0 ? defaultCount : ret - 1;
         }
 
 

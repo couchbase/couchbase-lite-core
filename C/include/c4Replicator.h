@@ -364,6 +364,8 @@ extern "C" {
     #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
     #define kC4ReplicatorOptionMaxRetries       "maxRetries" ///< Max number of retry attempts (int)
     #define kC4ReplicatorOptionMaxRetryInterval "maxRetryInterval" ///< Max delay betw retries (secs)
+    #define kC4ReplicatorOptionMaxAttempts      "maxAttempts" ///< Max number of attempts (int)
+    #define kC4ReplicatorOptionMaxAttemptWaitTime "maxAttemptWaitTime" ///< Max delay betw attempts (secs)
 
     // TLS options:
     #define kC4ReplicatorOptionRootCerts        "rootCerts"  ///< Trusted root certs (data)
