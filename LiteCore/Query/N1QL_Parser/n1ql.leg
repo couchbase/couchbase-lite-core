@@ -198,9 +198,7 @@ expr3 =
     x:expr2 (_ op:OP_PREC_3 _ r:expr2   { x = binaryOp(x, op, r);}
              )*                         { $$ = x}
 expr2 =
-    x:expr1 (_ op:OP_PREC_2 _ r:expr1   { x = (op.as<string>() == "/")
-                                            ? binaryOp(x, "div()", r) // perform floating division
-                                            : binaryOp(x, op, r); }
+    x:expr1 (_ op:OP_PREC_2 _ r:expr1   { x = binaryOp(x, op, r); }
              )*                         { $$ = x}
 expr1 =
     x:expr0 (_ op:OP_PREC_1 _ r:expr0   { x = binaryOp(x, op, r);}
