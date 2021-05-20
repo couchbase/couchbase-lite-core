@@ -189,8 +189,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[C][Push]") {
     {
         Encoder enc;
         enc.beginDict();
-        enc[kC4ReplicatorOptionMaxAttempts] = 4;
-        enc[kC4ReplicatorOptionMaxAttemptWaitTime] = 2;
+        enc[kC4ReplicatorOptionMaxRetries] = 3;
+        enc[kC4ReplicatorOptionMaxRetryInterval] = 2;
         enc.endDict();
         _options = AllocedDict(enc.finish());
     }
@@ -706,8 +706,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
     {
         Encoder enc;
         enc.beginDict();
-        enc[kC4ReplicatorOptionMaxAttempts] = 4;
-        enc[kC4ReplicatorOptionMaxAttemptWaitTime] = 2;
+        enc[kC4ReplicatorOptionMaxRetries] = 3;
+        enc[kC4ReplicatorOptionMaxRetryInterval] = 2;
         enc.endDict();
         _options = AllocedDict(enc.finish());
     }
