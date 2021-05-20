@@ -233,7 +233,7 @@ namespace c4Internal {
         unsigned maxRetryCount() const {
             unsigned defaultCount = continuous() ? kMaxContinuousRetryCount : kMaxOneShotRetryCount;
             unsigned ret = getIntProperty(kC4ReplicatorOptionMaxRetries, defaultCount);
-            ret = getIntProperty(kC4ReplicatorOptionMaxAttempts, ret + 1);
+            ret = getIntProperty(kC4ReplicatorOptionMaxAttempts, ret == UINT_MAX ? ret : ret + 1);
             return ret == 0 ? defaultCount : ret - 1;
         }
 
