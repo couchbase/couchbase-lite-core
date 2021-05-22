@@ -206,6 +206,23 @@ C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs,
 #pragma mark - INDEXES:
 
 
+bool c4db_createIndex(C4Database *database,
+                      C4Slice name,
+                      C4Slice indexSpecJSON,
+                      C4IndexType indexType,
+                      const C4IndexOptions *indexOptions,
+                      C4Error *outError) noexcept
+{
+    return c4db_createIndex2(database,
+                             name,
+                             indexSpecJSON,
+                             kC4JSONQuery,
+                             indexType,
+                             indexOptions,
+                             outError);
+}
+
+
 bool c4db_createIndex2(C4Database *database,
                        C4Slice name,
                        C4Slice indexSpec,
