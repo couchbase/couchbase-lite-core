@@ -139,11 +139,6 @@ C4API_BEGIN_DECLS
     /** Returns the latest sequence number allocated to a revision. */
     C4SequenceNumber c4db_getLastSequence(C4Database* database) C4API;
 
-    /** A fast check that returns true if this database _may_ have expiring documents.
-        (The implementation actually checks whether any document in this database has ever had an
-        expiration set.) */
-    bool c4db_mayHaveExpiration(C4Database *db) C4API;
-
     /** Returns the timestamp at which the next document expiration should take place,
         or 0 if there are no documents with expiration times. */
     C4Timestamp c4db_nextDocExpiration(C4Database *database) C4API;
@@ -153,10 +148,6 @@ C4API_BEGIN_DECLS
     int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error* C4NULLABLE) C4API;
 
 #endif // C4_STRICT_COLLECTION_API
-
-    /** Starts a background task that automatically purges expired documents.
-        @return  True if the task started, false if it couldn't (i.e. database is read-only.) */
-    bool c4db_startHousekeeping(C4Database *db) C4API;
 
     /** Returns the number of revisions of a document that are tracked. (Defaults to 20.) */
     uint32_t c4db_getMaxRevTreeDepth(C4Database *database) C4API;
@@ -272,6 +263,12 @@ C4API_BEGIN_DECLS
 
     C4_DEPRECATED("Use c4db_maintenance")
     bool c4db_compact(C4Database* database, C4Error* C4NULLABLE outError) C4API;
+
+    C4_DEPRECATED("Unnecessary")
+    static inline bool c4db_mayHaveExpiration(C4Database *db) C4API {return true;}
+
+    C4_DEPRECATED("Unnecessary")
+    static inline bool c4db_startHousekeeping(C4Database *db) C4API {return true;}
 
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END
