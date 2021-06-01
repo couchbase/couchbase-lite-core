@@ -1609,10 +1609,10 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
                            IndexSpec::kArray);
     }
     SECTION("N1QL index expression") {
-        store->createIndex2("numbersIndex"_sl,
-                            "[numbers[0], numbers[1]]",
-                            QueryLanguage::kN1QL,
-                            IndexSpec::kArray);
+        store->createIndex("numbersIndex"_sl,
+                           "[numbers[0], numbers[1]]",
+                           QueryLanguage::kN1QL,
+                           IndexSpec::kArray);
     }
     Log("-------- Recompiling query with index --------");
     query = store->compileQuery(json);

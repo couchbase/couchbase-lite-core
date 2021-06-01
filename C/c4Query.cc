@@ -234,11 +234,11 @@ bool c4db_createIndex2(C4Database *database,
     static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options),
                   "IndexSpec::Options types must match");
     return tryCatch(outError, [&]{
-        database->defaultKeyStore().createIndex2(slice(name),
-                                                 indexSpec,
-                                                 (QueryLanguage)queryLanguage,
-                                                 (IndexSpec::Type)indexType,
-                                                 (const IndexSpec::Options*)indexOptions);
+        database->defaultKeyStore().createIndex(slice(name),
+                                                indexSpec,
+                                                (QueryLanguage)queryLanguage,
+                                                (IndexSpec::Type)indexType,
+                                                (const IndexSpec::Options*)indexOptions);
     });
 }
 
@@ -262,6 +262,12 @@ static C4SliceResult getIndexes(C4Database* database, bool fullInfo, C4Error* ou
                 enc.writeKey("name"); enc.writeString(spec.name);
                 enc.writeKey("type"); enc.writeInt(spec.type);
                 enc.writeKey("expr"); enc.writeString(spec.expression);
+                enc.writeKey("lang"); switch (spec.queryLanguage) {
+                    case QueryLanguage::kJSON:
+                        enc.writeString("json"); break;
+                    case QueryLanguage::kN1QL:
+                        enc.writeString("n1ql"); break;
+                }
                 enc.endDictionary();
             } else {
                 enc.writeString(spec.name);

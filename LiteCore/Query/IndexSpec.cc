@@ -54,27 +54,28 @@ namespace litecore {
 
     Doc* IndexSpec::doc() const {
         if (!_doc) {
-            if (queryLanguage == QueryLanguage::kJSON) {
-                try {
-                    _doc = Doc::fromJSON(expression);
-                } catch (const FleeceException &) {
-                    error::_throw(error::InvalidQuery, "Invalid JSON in index expression");
-                }
-            } else if (queryLanguage == QueryLanguage::kN1QL) {
-                try {
-                    unsigned errPos;
-                    FLMutableDict result = n1ql::parse(string(expression), &errPos);
-                    if (!result) {
-                        throw Query::parseError("N1QL syntax error in index expression", errPos);
+            switch (queryLanguage) {
+                case QueryLanguage::kJSON:
+                    try {
+                        _doc = Doc::fromJSON(expression);
+                    } catch (const FleeceException &) {
+                        error::_throw(error::InvalidQuery, "Invalid JSON in index expression");
                     }
-                    alloc_slice json = ((MutableDict*)result)->toJSON(true);
-                    FLMutableDict_Release(result);
-                    _doc = Doc::fromJSON(json);
-                } catch (const std::runtime_error&) {
-                    error::_throw(error::InvalidQuery, "Invalid N1QL in index expression");
-                }
-            } else {
-                throw std::logic_error("Uncovered enum of QueryLanguage in index expression");
+                    break;
+                case QueryLanguage::kN1QL:
+                    try {
+                        unsigned errPos;
+                        FLMutableDict result = n1ql::parse(string(expression), &errPos);
+                        if (!result) {
+                            throw Query::parseError("N1QL syntax error in index expression", errPos);
+                        }
+                        alloc_slice json = ((MutableDict*)result)->toJSON(true);
+                        FLMutableDict_Release(result);
+                        _doc = Doc::fromJSON(json);
+                    } catch (const std::runtime_error&) {
+                        error::_throw(error::InvalidQuery, "Invalid N1QL in index expression");
+                    }
+                    break;
             }
         }
         return _doc;

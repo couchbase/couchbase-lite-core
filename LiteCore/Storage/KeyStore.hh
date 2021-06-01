@@ -156,7 +156,7 @@ namespace litecore {
 
         virtual bool supportsIndexes(IndexSpec::Type) const                   {return false;}
         virtual bool createIndex(const IndexSpec&) =0;
-        bool createIndex2(slice name,
+        bool createIndex(slice name,
                          slice expression,
                          QueryLanguage queryLanguage,
                          IndexSpec::Type =IndexSpec::kValue,
@@ -166,7 +166,7 @@ namespace litecore {
                                 IndexSpec::Type indexType=IndexSpec::kValue,
                                 const IndexSpec::Options* indexOption =nullptr) // convenience method
         {
-            return createIndex2(name, expressionJSON, QueryLanguage::kJSON, indexType, indexOption);
+            return createIndex(name, expressionJSON, QueryLanguage::kJSON, indexType, indexOption);
         }
         virtual void deleteIndex(slice name) =0;
         virtual std::vector<IndexSpec> getIndexes() const =0;
