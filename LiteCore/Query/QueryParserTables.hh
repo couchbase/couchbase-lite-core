@@ -173,6 +173,7 @@ namespace litecore {
         {"power",            2, 2},
         {"radians",          1, 1},
         {"round",            1, 2},
+        {"round_even",       1, 2},
         {"sign",             1, 1},
         {"sin",              1, 1},
         {"sqrt",             1, 1},

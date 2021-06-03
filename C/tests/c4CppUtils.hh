@@ -35,7 +35,7 @@ namespace c4 {
     // The functions the ref<> template calls to free a reference.
     static inline void releaseRef(C4Cert* c)              noexcept {c4cert_release(c);}
     static inline void releaseRef(C4Database* c)          noexcept {c4db_release(c);}
-    static inline void releaseRef(C4DatabaseObserver* c)  noexcept {c4dbobs_free(c);}
+    static inline void releaseRef(C4CollectionObserver* c)noexcept {c4dbobs_free(c);}
     static inline void releaseRef(C4DocEnumerator* c)     noexcept {c4enum_free(c);}
     static inline void releaseRef(C4Document* c)          noexcept {c4doc_release(c);}
     static inline void releaseRef(C4DocumentObserver* c)  noexcept {c4docobs_free(c);}

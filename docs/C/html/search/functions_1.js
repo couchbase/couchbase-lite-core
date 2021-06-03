@@ -106,7 +106,7 @@ var searchData=
   ['c4db_5furinamefrompath',['c4db_URINameFromPath',['../group___listener.html#ga02b9dd69898d987593c4939caa498432',1,'c4Listener.h']]],
   ['c4dbobs_5fcreate',['c4dbobs_create',['../group___observer.html#ga6ad9cad66ef86c85f7227f178e64070e',1,'c4Observer.h']]],
   ['c4dbobs_5fcreateoncollection',['c4dbobs_createOnCollection',['../group___observer.html#ga0e0ed067df021283f5ebc174320526d1',1,'c4Observer.h']]],
-  ['c4dbobs_5ffree',['c4dbobs_free',['../group___base.html#ga71158f6dd23100938013eb188a2421f6',1,'c4dbobs_free(C4DatabaseObserver *):&#160;c4Base.h'],['../group___observer.html#ga27279544b6677cde49610300cb80d329',1,'c4dbobs_free(C4CollectionObserver *):&#160;c4Observer.h']]],
+  ['c4dbobs_5ffree',['c4dbobs_free',['../group___base.html#ga27279544b6677cde49610300cb80d329',1,'c4dbobs_free(C4CollectionObserver *):&#160;c4Base.h'],['../group___observer.html#ga27279544b6677cde49610300cb80d329',1,'c4dbobs_free(C4CollectionObserver *):&#160;c4Observer.h']]],
   ['c4dbobs_5fgetchanges',['c4dbobs_getChanges',['../group___observer.html#ga97a1d7faa77087fdd1f6352b50deb1e7',1,'c4Observer.h']]],
   ['c4dbobs_5freleasechanges',['c4dbobs_releaseChanges',['../group___observer.html#ga2c2c42d5f1db1d69b5d4fcb074d90d85',1,'c4Observer.h']]],
   ['c4doc_5fblobiscompressible',['c4doc_blobIsCompressible',['../group___documents.html#ga6021c4ef35bf0105f38b1eddd31386d9',1,'c4Document+Fleece.h']]],

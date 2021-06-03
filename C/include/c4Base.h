@@ -27,6 +27,14 @@ C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
 
+// Corresponds to Couchbase Lite product version number, with 2 digits for minor and patch versions.
+// i.e. `10000 * MajorVersion + 100 * MinorVersion + PatchVersion`
+#define LITECORE_VERSION 30000
+
+// This number has no absolute meaning but is bumped whenever the LiteCore public API changes.
+#define LITECORE_API_VERSION 350
+
+
 /** \defgroup Base  Data Types and Base Functions
  @{ */
 
@@ -175,7 +183,7 @@ void               c4doc_release    (C4Document* C4NULLABLE) C4API;
 void               c4queryenum_release(C4QueryEnumerator* C4NULLABLE) C4API;
 
 // These types are _not_ ref-counted, but must be freed after use:
-void c4dbobs_free        (C4DatabaseObserver* C4NULLABLE) C4API;
+void c4dbobs_free        (C4CollectionObserver* C4NULLABLE) C4API;
 void c4docobs_free       (C4DocumentObserver* C4NULLABLE) C4API;
 void c4enum_free         (C4DocEnumerator* C4NULLABLE) C4API;
 void c4listener_free     (C4Listener* C4NULLABLE) C4API;
