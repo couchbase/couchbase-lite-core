@@ -74,6 +74,7 @@ namespace litecore { namespace repl {
         msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
         if (_skipDeleted)
             msg["activeOnly"_sl] = "true"_sl;
+        msg["revocations"] = "true";        // Enable revocation notification in "changes" (SG 3.0)
 
         auto channels = _options.channels();
         if (channels) {
@@ -145,6 +146,16 @@ namespace litecore { namespace repl {
     }
 
 
+    // We lost access to some documents; they need to be purged locally.
+    void Puller::_documentsRevoked(std::vector<Retained<RevToInsert>> revs) {
+        for (auto &rev : revs) {
+            Retained<IncomingRev> inc = makeIncomingRev();
+            if (inc)
+                inc->handleRevokedDoc(rev);
+        }
+    }
+
+
     // Received an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
         if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs
@@ -178,10 +189,18 @@ namespace litecore { namespace repl {
     void Puller::startIncomingRev(MessageIn *msg) {
         _revFinder->revReceived();
         decrement(_pendingRevMessages);
+        Retained<IncomingRev> inc = makeIncomingRev();
+        if (inc)
+            inc->handleRev(msg);  // ... will call _revWasHandled when it's finished
+    }
+
+
+    // Sets up an IncomingRev object to handle a revision.
+    Retained<IncomingRev> Puller::makeIncomingRev() {
         if(!connected()) {
             // Connection already closed, continuing would cause a crash
-            logVerbose("startIncomingRev called after connection close, ignoring...");
-            return;
+            logVerbose("makeIncomingRev called after connection close, ignoring...");
+            return nullptr;
         }
         increment(_activeIncomingRevs);
         increment(_unfinishedIncomingRevs);
@@ -193,9 +212,8 @@ namespace litecore { namespace repl {
             inc = _spareIncomingRevs.back();
             _spareIncomingRevs.pop_back();
         }
-        inc->handleRev(msg);  // ... will call _revWasHandled when it's finished
+        return inc;
     }
-
 
     void Puller::maybeStartIncomingRevs() {
         while (connected() && _activeIncomingRevs < tuning::kMaxActiveIncomingRevs

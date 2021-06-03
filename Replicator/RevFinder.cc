@@ -163,10 +163,12 @@ namespace litecore::repl {
     }
 
 
-    void RevFinder::checkDocAndRevID(slice docID, slice revID) {
+    void RevFinder::checkDocAndRevID(slice docID, slice revID =nullslice) {
         bool valid;
         if (docID.size < 1 || docID.size > 255)
             valid = false;
+        else if (!revID)
+            valid = true;
         else if (_db->usingVersionVectors())
             valid = revID.findByte('@') && !revID.findByte('*');     // require absolute form
         else
@@ -187,20 +189,40 @@ namespace litecore::repl {
     {
         // Compile the docIDs/revIDs into parallel vectors:
         vector<slice> docIDs, revIDs;
+        vector<Retained<RevToInsert>> revoked;
+        vector<uint32_t> changeIndexes;
         auto nChanges = changes.count();
         docIDs.reserve(nChanges);
         revIDs.reserve(nChanges);
+        uint32_t changeIndex = 0;
         for (auto item : changes) {
             // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
             auto change = item.asArray();
             slice docID = change[1].asString();
             slice revID = change[2].asString();
-            checkDocAndRevID(docID, revID);
-            docIDs.push_back(docID);
-            revIDs.push_back(revID);
-            sequences.push_back({RemoteSequence(change[0]),
-                                 max(change[4].asUnsigned(), (uint64_t)1)});
+            int64_t deletion = change[3].asInt();
+            uint64_t bodySize = change[4].asUnsigned();
+            if (deletion <= 1) {
+                // New revision (or tombstone):
+                checkDocAndRevID(docID, revID);
+                docIDs.push_back(docID);
+                revIDs.push_back(revID);
+                changeIndexes.push_back(changeIndex);
+                sequences.push_back({RemoteSequence(change[0]), max(bodySize, (uint64_t)1)});
+            } else {
+                // Access lost -- doc removed from channel, or user lost access to channel.
+                // In SG 2.x "deletion" is a boolean flag, 0=normal, 1=deleted.
+                // SG 3.x adds 2=revoked, 3=revoked+deleted, 4=removal (from channel)
+                checkDocAndRevID(docID);
+                auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
+                                           : RevocationMode::kRemovedFromChannel;
+                revoked.emplace_back(new RevToInsert(docID, mode));
+            }
+            ++changeIndex;
         }
+
+        if (!revoked.empty())
+            _delegate->documentsRevoked(move(revoked));
 
         // Ask the database to look up the ancestors:
         vector<alloc_slice> ancestors = _db->useLocked()->getDefaultCollection()
@@ -222,7 +244,7 @@ namespace litecore::repl {
                 // [use only writeRaw to avoid confusing JSONEncoder's comma mechanism, CBL-1208]
                 if (itemsWritten > 0)
                     encoder.writeRaw(",");      // comma after previous array item
-                while (itemsWritten++ < i)
+                while (itemsWritten++ < changeIndexes[i])
                     encoder.writeRaw("0,");
 
                 if ((status & kRevsConflict) == kRevsConflict && passive()) {
