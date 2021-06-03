@@ -36,6 +36,7 @@ namespace litecore { namespace repl {
 
         // Called by the Puller:
         void handleRev(blip::MessageIn* revMessage NONNULL);
+        void handleRevokedDoc(RevToInsert*);
         RevToInsert* rev() const                {return _rev;}
         RemoteSequence remoteSequence() const   {return _remoteSequence;}
         bool wasProvisionallyInserted() const   {return _provisionallyInserted;}
@@ -51,6 +52,7 @@ namespace litecore { namespace repl {
         ActivityLevel computeActivityLevel() const override;
 
     private:
+        void reinitialize();
         void parseAndInsert(alloc_slice jsonBody);
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
         void _handleRev(Retained<blip::MessageIn>);

@@ -115,6 +115,13 @@ namespace litecore { namespace repl {
     }
 
 
+    RevToInsert::RevToInsert(slice docID_, RevocationMode mode)
+    :ReplicatedRev(move(docID_), nullslice)
+    ,revocationMode(mode)
+    {
+        flags |= kRevPurged;
+    }
+
     void RevToInsert::trimBody() {
         doc = nullptr;
         historyBuf.reset();

@@ -53,16 +53,21 @@ namespace litecore { namespace repl {
     }
 
 
-    // Read the 'rev' message, then parse either synchronously or asynchronously.
-    // This runs on the caller's (Puller's) thread.
-    void IncomingRev::handleRev(blip::MessageIn *msg) {
+    // (Re)initialize state (I can be used multiple times by the Puller):
+    void IncomingRev::reinitialize() {
         Signpost::begin(Signpost::handlingRev, _serialNumber);
-
-        // (Re)initialize state (I can be used multiple times by the Puller):
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
         _provisionallyInserted = false;
         DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
         _blob = _pendingBlobs.end();
+
+    }
+
+
+    // Read the 'rev' message, then parse either synchronously or asynchronously.
+    // This runs on the caller's (Puller's) thread.
+    void IncomingRev::handleRev(blip::MessageIn *msg) {
+        reinitialize();
 
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
@@ -128,6 +133,15 @@ namespace litecore { namespace repl {
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), move(jsonBody));
         else
             parseAndInsert(move(jsonBody));
+    }
+
+
+    // We've lost access to this doc on the server; it should be purged.
+    void IncomingRev::handleRevokedDoc(RevToInsert *rev) {
+        reinitialize();
+        _rev = rev;
+        rev->owner = this;
+        insertRevision();
     }
 
 
