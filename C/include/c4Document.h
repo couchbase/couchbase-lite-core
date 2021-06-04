@@ -203,12 +203,6 @@ C4API_BEGIN_DECLS
     bool c4rev_equal(C4Slice rev1, C4Slice rev2) C4API;
 
 
-    /** Removes the body of the selected revision and clears its kKeepBody flag.
-        Must be called within a transaction. Remember to save the document afterwards.
-        @param doc  The document to operate on.
-        @return  True if successful, false if unsuccessful. */
-    bool c4doc_removeRevisionBody(C4Document* doc) C4API;
-
     /** Removes a branch from a document's history. The revID must correspond to a leaf
         revision; that revision and its ancestors will be removed, except for ancestors that are
         shared with another branch.

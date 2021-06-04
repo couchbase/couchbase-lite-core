@@ -24,36 +24,14 @@
 using namespace std;
 
 
-class BlobStoreTest {
+class BlobStoreTest : public C4Test {
 public:
-    
-    static const int numberOfOptions = 2;       // 0 = unencrypted, 1 = encrypted
 
     BlobStoreTest(int option)
-    :encrypted(option == 1)
+    :C4Test(option)
+    ,encrypted(isEncrypted())
+    ,store(c4db_getBlobStore(db, nullptr))
     {
-        C4EncryptionKey crypto, *encryption=nullptr;
-        if (encrypted) {
-            fprintf(stderr, "        ...encrypted\n");
-            INFO("(Encrypted)");
-            crypto.algorithm = kC4EncryptionAES256;
-            memset(&crypto.bytes, 0xCC, sizeof(crypto.bytes));
-            encryption = &crypto;
-        }
-
-        C4Error error;
-        store = c4blob_openStore(TEMPDIR("cbl_blob_test" + kPathSeparator),
-                                 kC4DB_Create,
-                                 encryption,
-                                 ERROR_INFO(error));
-        REQUIRE(store != nullptr);
-
-        memset(bogusKey.bytes, 0x55, sizeof(bogusKey.bytes));
-    }
-
-    ~BlobStoreTest() {
-        C4Error error;
-        CHECK(c4blob_deleteStore(store, WITH_ERROR(&error)));
     }
 
     C4BlobStore *store {nullptr};

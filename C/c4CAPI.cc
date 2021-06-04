@@ -911,11 +911,6 @@ bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1, C4String
 }
 
 
-bool c4doc_removeRevisionBody(C4Document* doc) noexcept {
-    return doc->removeRevisionBody();
-}
-
-
 // this function is probably unused; remove it if so
 int32_t c4doc_purgeRevision(C4Document *doc,
                             C4Slice revID,

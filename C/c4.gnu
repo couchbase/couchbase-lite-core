@@ -345,7 +345,6 @@ CBL {
 		c4db_setCookie;
 		c4db_getDoc;
 
-		c4doc_removeRevisionBody;
 		c4doc_bodyAsJSON;
 		c4doc_hasOldMetaProperties;
 		c4doc_containingValue;
@@ -404,6 +403,7 @@ CBL {
 		FLEncoder_WriteRaw;
 		FLEncoder_ConvertJSON;
 		FLEncoder_GetError;
+		FLEncoder_SetSharedKeys;
 
 		FLSharedKeys_Decode;
 		FLSharedKeys_Retain;

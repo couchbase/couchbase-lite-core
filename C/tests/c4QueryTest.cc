@@ -503,10 +503,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Multiple queries", "[Query][C][
     ExpectingExceptions x;
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
-    query = c4query_new(db,
+    query = c4query_new2(db, kC4JSONQuery,
                         json5slice("['AND', ['MATCH()', 'byStreet', 'Hwy'],\
                                             ['MATCH()', 'byStreet', 'Blvd']]"),
-                        &err);
+                        nullptr, &err);
     REQUIRE(query == nullptr);
     CheckError(err, LiteCoreDomain, kC4ErrorInvalidQuery,
                "Sorry, multiple MATCHes of the same property are not allowed");
@@ -518,10 +518,10 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Buried", "[Query][C][FTS][!thro
     ExpectingExceptions x;
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
-    query = c4query_new(db,
+    query = c4query_new2(db, kC4JSONQuery,
                         json5slice("['OR', ['MATCH()', 'byStreet', 'Hwy'],\
                                            ['=', ['.', 'contact', 'address', 'state'], 'CA']]"),
-                        &err);
+                         nullptr, &err);
     REQUIRE(query == nullptr);
     CheckError(err, LiteCoreDomain, kC4ErrorInvalidQuery,
                "MATCH can only appear at top-level, or in a top-level AND");
@@ -532,12 +532,12 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Aggregate", "[Query][C][FTS]") 
     // https://github.com/couchbase/couchbase-lite-core/issues/703
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
-    query = c4query_new(db,
+    query = c4query_new2(db, kC4JSONQuery,
             json5slice("['SELECT', { 'WHAT': [ [ 'count()', [ '.', 'uuid' ] ] ],"
                        " 'WHERE': [ 'AND', [ 'AND', [ '=', [ '.', 'doc_type' ], 'rec' ],"
                                                   " [ 'MATCH()', 'byStreet', 'keyword' ] ],"
                                          "[ '=', [ '.', 'pId' ], 'bfe2970b-9be6-46f6-b9a7-38c5947c27b1' ] ] } ]"),
-                        ERROR_INFO(err));
+                         nullptr, ERROR_INFO(err));
     REQUIRE(query);
     // Just test whether the enumerator starts without an error:
     auto e = c4query_run(query, nullptr, nullslice, ERROR_INFO(err));
@@ -549,13 +549,13 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Aggregate", "[Query][C][FTS]") 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with alias", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, WITH_ERROR(&err)));
-    query = c4query_new(db,
+    query = c4query_new2(db, kC4JSONQuery,
             json5slice("['SELECT', { 'WHAT': [ [ '.db.uuid' ] ],"
                        " 'FROM': [{ 'AS' : 'db'}],"
                        " 'WHERE': [ 'AND', [ 'AND', [ '=', [ '.db.doc_type' ], 'rec' ],"
                                                   " [ 'MATCH()', 'db.byStreet', 'keyword' ] ],"
                                          "[ '=', [ '.db.pId' ], 'bfe2970b-9be6-46f6-b9a7-38c5947c27b1' ] ] } ]"),
-                        ERROR_INFO(err));
+                         nullptr, ERROR_INFO(err));
     REQUIRE(query);
     // Just test whether the enumerator starts without an error:
     auto e = c4query_run(query, nullptr, nullslice, ERROR_INFO(err));
@@ -593,7 +593,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with accents", "[Query][C][FTS]
     }
 
     C4Slice queryStr = C4STR("{\"WHERE\": [\"MATCH()\",\"nameFTSIndex\",\"'hâkimler'\"], \"WHAT\": [[\".\"]]}");
-    query = c4query_new(db, queryStr, ERROR_INFO(err));
+    query = c4query_new2(db, kC4JSONQuery, queryStr, nullptr, ERROR_INFO(err));
     REQUIRE(query);
     auto e = c4query_run(query, nullptr, nullslice, ERROR_INFO(err));
     REQUIRE(e);
@@ -835,7 +835,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query parser error messages", "[Query][C]
     ExpectingExceptions x;
 
     C4Error error;
-    query = c4query_new(db, c4str("[\"=\"]"), &error);
+    query = c4query_new2(db, kC4JSONQuery, c4str("[\"=\"]"), nullptr, &error);
     REQUIRE(query == nullptr);
     CheckError(error, LiteCoreDomain, kC4ErrorInvalidQuery, "Wrong number of arguments to =");
 }
@@ -994,7 +994,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Database alias column names", "[Query][C][!
     C4Error err;
     string queryText = "{'WHAT':[['.main.'],['.secondary.']],'FROM':[{'AS':'main'},{'AS':'secondary','ON':['=',['.main.number1'],['.secondary.theone']]}]}";
     FLSliceResult queryStr = FLJSON5_ToJSON({queryText.data(), queryText.size()}, nullptr, nullptr, nullptr);
-    query = c4query_new(db, (C4Slice)queryStr, ERROR_INFO(err));
+    query = c4query_new2(db, kC4JSONQuery, (C4Slice)queryStr, nullptr, ERROR_INFO(err));
     REQUIRE(query);
     FLSlice expected1 = FLSTR("main");
     FLSlice expected2 = FLSTR("secondary");

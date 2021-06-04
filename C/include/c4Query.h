@@ -46,6 +46,7 @@ C4API_BEGIN_DECLS
                           int* C4NULLABLE outErrorPos,
                           C4Error* C4NULLABLE error) C4API;
 
+    C4_DEPRECATED("Use c4query_new2")
     C4Query* c4query_new(C4Database*, C4String, C4Error* C4NULLABLE) C4API;  // for backward compatibility
 
     /** Returns a string describing the implementation of the compiled query.

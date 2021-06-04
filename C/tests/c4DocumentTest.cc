@@ -182,15 +182,6 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     CHECK(doc->selectedRev.revID == kRevID);
     CHECK(doc->selectedRev.sequence == 1);
     CHECK(docBodyEquals(doc, kFleeceBody));
-    if (isRevTrees()) {
-        {
-            TransactionHelper t(db);
-            CHECK(c4doc_removeRevisionBody(doc));
-            CHECK(c4doc_selectCurrentRevision(doc));
-        }
-        CHECK(c4doc_getRevisionBody(doc) == nullslice);
-        CHECK(c4doc_getProperties(doc) == nullptr);
-    }
     c4doc_release(doc);
 
     // Get a bogus sequence

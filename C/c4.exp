@@ -345,7 +345,6 @@ _c4db_getCookies
 _c4db_setCookie
 _c4db_getDoc
 
-_c4doc_removeRevisionBody
 _c4doc_bodyAsJSON
 _c4doc_hasOldMetaProperties
 _c4doc_containingValue
@@ -404,6 +403,7 @@ _FLEncoder_NewWithOptions
 _FLEncoder_WriteRaw
 _FLEncoder_ConvertJSON
 _FLEncoder_GetError
+_FLEncoder_SetSharedKeys
 
 _FLSharedKeys_Decode
 _FLSharedKeys_Retain

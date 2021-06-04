@@ -58,15 +58,18 @@ C4API_BEGIN_DECLS
         @param encryptionKey  Optional encryption algorithm & key
         @param outError  Error is returned here
         @return  The BlobStore reference, or NULL on error */
+    C4_DEPRECATED("There is no reason to use this")
     C4BlobStore* c4blob_openStore(C4String dirPath,
                                   C4DatabaseFlags flags,
                                   const C4EncryptionKey* C4NULLABLE encryptionKey,
                                   C4Error* C4NULLABLE outError) C4API;
 
     /** Closes/frees a BlobStore. (A NULL parameter is allowed.) */
+    C4_DEPRECATED("There is no reason to use this")
     void c4blob_freeStore(C4BlobStore* C4NULLABLE) C4API;
 
     /** Deletes the BlobStore's blobs and directory, and (if successful) frees the object. */
+    C4_DEPRECATED("There is no reason to use this")
     bool c4blob_deleteStore(C4BlobStore*, C4Error* C4NULLABLE) C4API;
 
     /** @} */

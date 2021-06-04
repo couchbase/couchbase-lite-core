@@ -41,7 +41,7 @@ public:
         INFO("Query = " << queryStr);
         C4Error error{};
         c4query_release(query);
-        query = c4query_new(db, c4str(queryStr.c_str()), ERROR_INFO(error));
+        query = c4query_new2(db, kC4JSONQuery, c4str(queryStr.c_str()), nullptr, ERROR_INFO(error));
         REQUIRE(query);
     }
 

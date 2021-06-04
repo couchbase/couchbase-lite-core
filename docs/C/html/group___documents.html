@@ -257,9 +257,6 @@ Revisions</h2></td></tr>
 <tr class="memitem:gaf73c4e898b8a411354937c21b1a36c7c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaf73c4e898b8a411354937c21b1a36c7c">c4rev_equal</a> (<a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> rev1, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> rev2)</td></tr>
 <tr class="memdesc:gaf73c4e898b8a411354937c21b1a36c7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if two revision IDs are equivalent.  <a href="#gaf73c4e898b8a411354937c21b1a36c7c">More...</a><br /></td></tr>
 <tr class="separator:gaf73c4e898b8a411354937c21b1a36c7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga03402b5312aec3fd9f4929ec613643de"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga03402b5312aec3fd9f4929ec613643de">c4doc_removeRevisionBody</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc)</td></tr>
-<tr class="memdesc:ga03402b5312aec3fd9f4929ec613643de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes the body of the selected revision and clears its kKeepBody flag.  <a href="#ga03402b5312aec3fd9f4929ec613643de">More...</a><br /></td></tr>
-<tr class="separator:ga03402b5312aec3fd9f4929ec613643de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad6f9a70c53fa78627285ba4777f6aaf2"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gad6f9a70c53fa78627285ba4777f6aaf2">c4doc_purgeRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> revID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:gad6f9a70c53fa78627285ba4777f6aaf2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes a branch from a document's history.  <a href="#gad6f9a70c53fa78627285ba4777f6aaf2">More...</a><br /></td></tr>
 <tr class="separator:gad6f9a70c53fa78627285ba4777f6aaf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1612,33 +1609,6 @@ Creating and Updating Documents</h2></td></tr>
 
 <p>A high-level Put operation, to insert a new or downloaded revision. </p>
 <p>If request-&gt;existingRevision is true, then request-&gt;history must contain the revision's history, with the revision's ID as the first item. Otherwise, a new revision will be created and assigned a revID. The parent revision ID, if any, should be given as the single item of request-&gt;history. Either way, on success the document is returned with the inserted revision selected. Note that actually saving the document back to the database is optional &ndash; it only happens if request-&gt;save is true. You can set this to false if you want to review the changes before saving, e.g. to run them through a validation function. </p>
-
-</div>
-</div>
-<a id="ga03402b5312aec3fd9f4929ec613643de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga03402b5312aec3fd9f4929ec613643de">&#9670;&nbsp;</a></span>c4doc_removeRevisionBody()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool c4doc_removeRevisionBody </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Removes the body of the selected revision and clears its kKeepBody flag. </p>
-<p>Must be called within a transaction. Remember to save the document afterwards. </p><dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">doc</td><td>The document to operate on. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>True if successful, false if unsuccessful. </dd></dl>
 
 </div>
 </div>

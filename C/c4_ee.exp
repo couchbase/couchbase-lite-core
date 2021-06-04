@@ -384,7 +384,6 @@ _c4db_getCookies
 _c4db_setCookie
 _c4db_getDoc
 
-_c4doc_removeRevisionBody
 _c4doc_bodyAsJSON
 _c4doc_hasOldMetaProperties
 _c4doc_containingValue
@@ -443,6 +442,7 @@ _FLEncoder_NewWithOptions
 _FLEncoder_WriteRaw
 _FLEncoder_ConvertJSON
 _FLEncoder_GetError
+_FLEncoder_SetSharedKeys
 
 _FLSharedKeys_Decode
 _FLSharedKeys_Retain
@@ -459,39 +459,16 @@ _FLValue_ToJSON5
 
 _c4db_URINameFromPath
 
-_c4cert_copyChainData
-_c4cert_copyData
-_c4cert_createRequest
-_c4cert_fromData
-_c4cert_getPublicKey
-_c4cert_getValidTimespan
-_c4cert_isSelfSigned
-_c4cert_isSigned
-_c4cert_load
-_c4cert_loadPersistentPrivateKey
-_c4cert_nextInChain
-_c4cert_requestFromData
-_c4cert_save
-_c4cert_sendSigningRequest
-_c4cert_signRequest
-_c4cert_subjectName
-_c4cert_subjectNameAtIndex
-_c4cert_subjectNameComponent
-_c4cert_summary
-_c4cert_usages
 _kDefaultCertIssuerParameters
 
 _c4keypair_fromExternal
 _c4keypair_fromPrivateKeyData
 _c4keypair_fromPublicKeyData
-_c4keypair_generate
 _c4keypair_hasPrivateKey
 _c4keypair_isPersistent
-_c4keypair_persistentWithPublicKey
 _c4keypair_privateKeyData
 _c4keypair_publicKeyData
 _c4keypair_publicKeyDigest
-_c4keypair_removePersistent
 
 # Apple specific
 _FLEncoder_WriteNSObject

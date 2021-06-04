@@ -384,7 +384,6 @@ CBL {
 		c4db_setCookie;
 		c4db_getDoc;
 
-		c4doc_removeRevisionBody;
 		c4doc_bodyAsJSON;
 		c4doc_hasOldMetaProperties;
 		c4doc_containingValue;
@@ -443,6 +442,7 @@ CBL {
 		FLEncoder_WriteRaw;
 		FLEncoder_ConvertJSON;
 		FLEncoder_GetError;
+		FLEncoder_SetSharedKeys;
 
 		FLSharedKeys_Decode;
 		FLSharedKeys_Retain;
@@ -459,39 +459,16 @@ CBL {
 
 		c4db_URINameFromPath;
 
-		c4cert_copyChainData;
-		c4cert_copyData;
-		c4cert_createRequest;
-		c4cert_fromData;
-		c4cert_getPublicKey;
-		c4cert_getValidTimespan;
-		c4cert_isSelfSigned;
-		c4cert_isSigned;
-		c4cert_load;
-		c4cert_loadPersistentPrivateKey;
-		c4cert_nextInChain;
-		c4cert_requestFromData;
-		c4cert_save;
-		c4cert_sendSigningRequest;
-		c4cert_signRequest;
-		c4cert_subjectName;
-		c4cert_subjectNameAtIndex;
-		c4cert_subjectNameComponent;
-		c4cert_summary;
-		c4cert_usages;
 		kDefaultCertIssuerParameters;
 
 		c4keypair_fromExternal;
 		c4keypair_fromPrivateKeyData;
 		c4keypair_fromPublicKeyData;
-		c4keypair_generate;
 		c4keypair_hasPrivateKey;
 		c4keypair_isPersistent;
-		c4keypair_persistentWithPublicKey;
 		c4keypair_privateKeyData;
 		c4keypair_publicKeyData;
 		c4keypair_publicKeyDigest;
-		c4keypair_removePersistent;
 	local:
 		*;
 };

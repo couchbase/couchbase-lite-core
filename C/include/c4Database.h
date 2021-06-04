@@ -144,6 +144,9 @@ C4API_BEGIN_DECLS
     C4Timestamp c4db_nextDocExpiration(C4Database *database) C4API;
 
     /** Purges all documents that have expired.
+        \warning This is generally unnecessary, since the background housekeeping task will do it.
+        You might want to call this if you require the purge to happen synchronously, just before
+        copying the database file or something like that.)
         @return  The number of documents purged, or -1 on error. */
     int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error* C4NULLABLE) C4API;
 
