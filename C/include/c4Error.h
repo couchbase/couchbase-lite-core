@@ -150,7 +150,8 @@ typedef struct C4Error {
 
     static void warnCurrentException(const char *inFunction) noexcept;
 
-    [[noreturn]] static void raise(C4ErrorDomain, int code, const char *format =nullptr, ...) __printflike(3,4);
+    [[noreturn]] static void raise(C4ErrorDomain, int code,
+                                   const char* C4NULLABLE format =nullptr, ...) __printflike(3,4);
     [[noreturn]] static void raise(C4Error e)   {e.raise();}
 
     static void setCaptureBacktraces(bool) noexcept;

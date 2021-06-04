@@ -132,6 +132,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!thr
 
     static constexpr slice kTestBundleName = "cbl_core_test_bundle";
     C4Error error;
+
+    {
+        // Invalid db name:
+        ExpectingExceptions x;
+        CHECK(c4db_openNamed(""_sl, &config, &error) == nullptr);
+        CHECK(error == C4Error{LiteCoreDomain, kC4ErrorInvalidParameter});
+    }
+
     if (!c4db_deleteNamed(kTestBundleName, config.parentDirectory, &error))
         REQUIRE(error.code == 0);
     auto bundle = c4db_openNamed(kTestBundleName, &config, ERROR_INFO());
