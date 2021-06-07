@@ -1615,9 +1615,9 @@ __unused //TEMP
                 _checkedExpiration = true;
                 return;
             } else if (meta == kDeletedProperty) {
-                require(fn == kValueFnName, "can't use '_deleted' in this context");
+                require(fn == kValueFnName, "can't use 'deleted' in this context");
                 require(_queryingDeletedDocs,
-                        "a query using the `_deleted` meta-property must match only deleted documents");
+                        "a query using the `deleted` meta-property must match only deleted documents");
                 _sql << "true";
                 return;
             } else if (meta == kRevIDProperty) {

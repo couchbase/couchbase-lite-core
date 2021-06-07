@@ -277,10 +277,11 @@ namespace litecore {
             upgraded = upgradeSchema(SchemaVersion::WithDeletedTable,
                                      "Migrating deleted docs to `del_` tables", [&] {
                 // Migrate deleted docs to separate table:
+                _schemaVersion = SchemaVersion::WithDeletedTable; // enable creating _del keystores
                 for(string keyStoreName : allKeyStoreNames()) {
-                    auto &ks = getKeyStore(keyStoreName);
-                    if (ks.capabilities().sequences) {
+                    if (keyStoreNameIsCollection(keyStoreName)) {
                         Assert(!hasPrefix(keyStoreName, kDeletedKeyStorePrefix));
+                        (void) getKeyStore(keyStoreName); // creates the `_del` keystore
                         _exec(format("INSERT INTO kv_%s%s SELECT * FROM kv_%s WHERE (flags&1)!=0; "
                                      "DELETE FROM kv_%s WHERE (flags&1)!=0;",
                                      kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
@@ -539,8 +540,9 @@ namespace litecore {
     KeyStore* SQLiteDataFile::newKeyStore(const string &name, KeyStore::Capabilities options) {
         Assert(!hasPrefix(name, kDeletedKeyStorePrefix)); // can't access deleted stores directly
         auto keyStore = new SQLiteKeyStore(*this, name, options);
-        if (options.sequences && _schemaVersion >= SchemaVersion::WithDeletedTable) {
-            // Wrap the default store in a BothKeyStore that manages it and the deleted store
+        if (options.sequences && _schemaVersion >= SchemaVersion::WithDeletedTable
+                              && keyStoreNameIsCollection(name)) {
+            // Wrap the store in a BothKeyStore that manages it and the deleted store:
             auto deletedStore = new SQLiteKeyStore(*this, kDeletedKeyStorePrefix + name, options);
             return new BothKeyStore(keyStore, deletedStore);
         } else {
@@ -725,16 +727,26 @@ namespace litecore {
 #pragma mark - QUERIES:
 
 
+    bool SQLiteDataFile::tableNameIsCollection(slice tableName) {
+        return tableName.hasPrefix("kv_") && keyStoreNameIsCollection(tableName.from(3));
+    }
+
+
+    bool SQLiteDataFile::keyStoreNameIsCollection(slice ksName) {
+        if (ksName.hasPrefix(kDeletedKeyStorePrefix))
+            ksName = ksName.from(kDeletedKeyStorePrefix.size());
+        return ksName == slice("default") || ksName.hasPrefix("coll_");
+    }
+
+
     string SQLiteDataFile::collectionTableName(const string &collection, bool deleted) const {
         string name = "kv_";
         if (deleted)
             name += kDeletedKeyStorePrefix;
         if (collection == "_default") {
             name += "default";
-        } else {
-            name += "coll_";
-            name + collection;
-        }
+        } else
+            (name += "coll_") += collection;
         return name;
     }
 

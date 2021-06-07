@@ -41,8 +41,8 @@ public:
     static const int numberOfOptions = 2;
 
     KeyStoreTestFixture(int option) {
-        // On the first pass use a non-Both KeyStore
         if (option == 0) {
+            // On the first pass use a non-Both KeyStore
             keyStoreName = "test";
             store = &db->getKeyStore(keyStoreName);
         } else {
@@ -97,7 +97,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]")
     CHECK(store->lastSequence() == 1);
 
     // Get by key:
-    Record rec = db->defaultKeyStore().get(key, kMetaOnly);
+    Record rec = store->get(key, kMetaOnly);
     REQUIRE(rec.exists());
     CHECK(rec.key() == key);
     CHECK(rec.body() == nullslice);
@@ -106,7 +106,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]")
     CHECK(rec.extra() == nullslice);
     CHECK(rec.sequence() == 1);
 
-    rec = db->defaultKeyStore().get(key, kCurrentRevOnly);
+    rec = store->get(key, kCurrentRevOnly);
     REQUIRE(rec.exists());
     CHECK(rec.key() == key);
     CHECK(rec.body() == "body"_sl);
@@ -115,7 +115,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]")
     CHECK(rec.extra() == nullslice);
     CHECK(rec.sequence() == 1);
 
-    rec = db->defaultKeyStore().get(key, kEntireBody);
+    rec = store->get(key, kEntireBody);
     REQUIRE(rec.exists());
     CHECK(rec.key() == key);
     CHECK(rec.body() == "body"_sl);
@@ -125,7 +125,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]")
     CHECK(rec.sequence() == 1);
 
     // Get by sequence:
-    rec = db->defaultKeyStore().get(1);
+    rec = store->get(1);
     REQUIRE(rec.exists());
     CHECK(rec.key() == key);
     CHECK(rec.body() == "body"_sl);
@@ -258,6 +258,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile EnumerateDocs Deleted", "
         for (int i = 10; i <= 100; i += 10) {
             string docID = stringWithFormat("rec-%03d", i);
             RecordUpdate update(docID, "", DocumentFlags::kDeleted);
+            update.sequence = i;
             update.version = "2-0000";
             sequence_t seq = store->set(update, true, t);
             CHECK(seq == 100 + i/10);
@@ -533,13 +534,12 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile Conditional Write", "[Dat
     CHECK(store->lastSequence() == 4);
     Record rec4 = store->get(key);
     CHECK(rec4.flags() == DocumentFlags::kDeleted);
-    CHECK(rec4.version() == "4-00"_sl);
+    CHECK(rec4.version() == "4-000"_sl);
 
     // Un-delete:
     {
         ExclusiveTransaction t(db);
-        RecordUpdate rec(key, "", DocumentFlags::kDeleted);
-        rec.version = "recreated";
+        RecordUpdate rec(key, "recreated");
         rec.sequence = 0;
         CHECK(store->set(rec, true, t) == 0);
         rec.sequence = 2;

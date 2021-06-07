@@ -37,7 +37,8 @@ namespace litecore {
         checkOpen();
         vector<string> names;
         SQLite::Statement allStores(*_sqlDb, string("SELECT substr(name,4) FROM sqlite_master"
-                                                    " WHERE type='table' AND name GLOB 'kv_*'"));
+                                                    " WHERE type='table' AND name GLOB 'kv_*'"
+                                                    " AND NOT name GLOB 'kv_del_*'"));
         LogStatement(allStores);
         while (allStores.executeStep()) {
             string storeName = allStores.getColumn(0).getString();

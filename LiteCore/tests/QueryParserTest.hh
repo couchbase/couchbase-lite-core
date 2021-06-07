@@ -43,7 +43,7 @@ protected:
         if (collection == "_default")
             table += "default";
         else
-            table += collection;
+            table += "coll_" + collection;
         return table;
     }
     virtual std::string FTSTableName(const string &onTable, const std::string &property) const override {

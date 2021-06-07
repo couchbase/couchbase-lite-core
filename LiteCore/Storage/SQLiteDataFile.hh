@@ -66,6 +66,9 @@ namespace litecore {
 
         KeyStore& keyStoreFromTable(slice tableName);
 
+        static bool tableNameIsCollection(slice tableName);
+        static bool keyStoreNameIsCollection(slice ksName);
+
         bool getSchema(const std::string &name, const std::string &type,
                        const std::string &tableName, std::string &outSQL) const;
         bool schemaExistsWithSQL(const std::string &name, const std::string &type,

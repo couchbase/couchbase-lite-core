@@ -1034,6 +1034,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
 
 TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.8.cblite2", 0);
-    testOpeningOlderDBFixture("upgrade_2.8.cblite2", kC4DB_NoUpgrade);
-    testOpeningOlderDBFixture("upgrade_2.8.cblite2", kC4DB_ReadOnly);
+//    testOpeningOlderDBFixture("upgrade_2.8.cblite2", kC4DB_NoUpgrade);
+//    testOpeningOlderDBFixture("upgrade_2.8.cblite2", kC4DB_ReadOnly);
 }
