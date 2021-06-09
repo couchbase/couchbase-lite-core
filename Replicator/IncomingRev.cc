@@ -193,8 +193,13 @@ namespace litecore { namespace repl {
 
         // SG sends a fake revision with a "_removed":true property, to indicate that the doc is
         // no longer accessible (not in any channel the client has access to.)
-        if (root["_removed"_sl].asBool())
+        if (root["_removed"_sl].asBool()) {
+            if (!_options.enableAutoPurge()) {
+                finish();
+                return;
+            }
             _rev->flags |= kRevPurged;
+        }
 
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
@@ -247,7 +252,7 @@ namespace litecore { namespace repl {
     void IncomingRev::insertRevision() {
         Assert(_blob == _pendingBlobs.end());
         Assert(_rev->error.code == 0);
-        Assert(_rev->deltaSrc || _rev->doc);
+        Assert(_rev->deltaSrc || _rev->doc || _rev->revocationMode != RevocationMode::kNone);
         increment(_pendingCallbacks);
         //Signpost::mark(Signpost::gotRev, _serialNumber);
         _puller->insertRevision(_rev);

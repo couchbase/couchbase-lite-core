@@ -217,6 +217,7 @@ namespace litecore::repl {
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
                 revoked.emplace_back(new RevToInsert(docID, mode));
+                sequences.push_back({RemoteSequence(change[0]), 0});
             }
             ++changeIndex;
         }
@@ -233,7 +234,7 @@ namespace litecore::repl {
                                                 _db->remoteDBID());
         // Look through the database response:
         unsigned itemsWritten = 0, requested = 0;
-        for (unsigned i = 0; i < nChanges; ++i) {
+        for (unsigned i = 0; i < changeIndexes.size(); ++i) {
             slice docID = docIDs[i], revID = revIDs[i];
             alloc_slice anc(std::move(ancestors[i]));
             C4FindDocAncestorsResultFlags status = anc ? (anc[0] - '0') : kRevsLocalIsOlder;
@@ -250,7 +251,7 @@ namespace litecore::repl {
                 if ((status & kRevsConflict) == kRevsConflict && passive()) {
                     // Passive puller refuses conflicts:
                     encoder.writeRaw("409");
-                    sequences[i].bodySize = 0;
+                    sequences[changeIndexes[i]].bodySize = 0;
                     logDebug("    - '%.*s' #%.*s conflicts with local revision, rejecting",
                              SPLAT(docID), SPLAT(revID));
                 } else {
@@ -265,7 +266,7 @@ namespace litecore::repl {
             } else {
                 // I have an equal or newer revision; ignore this one:
                 // [Implicitly this appends a 0, but we're skipping trailing zeroes.]
-                sequences[i].bodySize = 0;
+                sequences[changeIndexes[i]].bodySize = 0;
                 if (status & kRevsAtThisRemote) {
                     logDebug("    - Already have '%.*s' %.*s",
                              SPLAT(docID), SPLAT(revID));
