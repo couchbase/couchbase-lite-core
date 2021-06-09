@@ -233,7 +233,7 @@ namespace litecore::repl {
                                                 _db->remoteDBID());
         // Look through the database response:
         unsigned itemsWritten = 0, requested = 0;
-        for (unsigned i = 0; i < nChanges; ++i) {
+        for (unsigned i = 0; i < changeIndexes.size(); ++i) {
             slice docID = docIDs[i], revID = revIDs[i];
             alloc_slice anc(std::move(ancestors[i]));
             C4FindDocAncestorsResultFlags status = anc ? (anc[0] - '0') : kRevsLocalIsOlder;

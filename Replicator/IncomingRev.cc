@@ -247,7 +247,7 @@ namespace litecore { namespace repl {
     void IncomingRev::insertRevision() {
         Assert(_blob == _pendingBlobs.end());
         Assert(_rev->error.code == 0);
-        Assert(_rev->deltaSrc || _rev->doc);
+        Assert(_rev->deltaSrc || _rev->doc || _rev->revocationMode != RevocationMode::kNone);
         increment(_pendingCallbacks);
         //Signpost::mark(Signpost::gotRev, _serialNumber);
         _puller->insertRevision(_rev);
