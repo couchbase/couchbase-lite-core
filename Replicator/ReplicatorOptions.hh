@@ -83,6 +83,12 @@ namespace litecore { namespace repl {
         }
 
         bool disableDeltaSupport() const {return properties[kC4ReplicatorOptionDisableDeltas].asBool();}
+        
+        bool enableAutoPurge() const {
+            if (!properties[kC4ReplicatorOptionAutoPurge])
+                return true;
+            return properties[kC4ReplicatorOptionDisableDeltas].asBool();
+        }
 
         /** Returns a string that uniquely identifies the remote database; by default its URL,
             or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.) */
