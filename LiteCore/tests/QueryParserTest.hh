@@ -39,7 +39,7 @@ protected:
         CHECK(!hasPrefix(collection, "kv_"));   // make sure I didn't get passed a table name
         string table = "kv_";
         if (deleted)
-            table += "_del";
+            table += "del_";
         if (collection == "_default")
             table += "default";
         else

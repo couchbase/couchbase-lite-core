@@ -1763,6 +1763,7 @@ TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
     CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['=', ['._deleted'], true]}")) == 10);
     CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['._deleted']}")) == 10);
     CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['.', '_deleted']}")) == 10);
+    CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['_.', ['meta()'], 'deleted']}")) == 10);
 }
 
 
@@ -2166,7 +2167,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
         t.commit();
     }
 
-    Retained<Query> query{ store->compileQuery("SELECT meta()"_sl, QueryLanguage::kN1QL) };
+    Retained<Query> query{ store->compileQuery("SELECT meta() WHERE meta().deleted"_sl, QueryLanguage::kN1QL) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());

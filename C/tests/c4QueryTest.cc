@@ -1004,6 +1004,22 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Database alias column names", "[Query][C][!
     FLSliceResult_Release(queryStr);
 }
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Deleted Docs", "[Query][C][!throws]") {
+    C4Error error;
+    TransactionHelper t(db);
+
+    c4::ref<C4Document> doc;
+    doc = c4doc_create(db, C4STR("doc1"), kC4SliceNull, 0, ERROR_INFO(error));
+    CHECK(doc);
+    doc = c4doc_create(db, C4STR("doc2"), kC4SliceNull, 0, ERROR_INFO(error));
+    CHECK(doc);
+    doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+    CHECK(doc);
+
+    compileSelect(json5("{WHAT: [['._id']], WHERE: ['._deleted']}"));
+    CHECK(run() == (vector<string>{"doc2"}));
+}
+
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query RevisionID", "[Query][C][!throws]") {
     C4Error error;
     TransactionHelper t(db);

@@ -75,6 +75,7 @@ namespace litecore {
                     if (!result)
                         throw Query::parseError("N1QL syntax error", errPos);
                     _json = ((MutableDict*)result)->toJSON(true);
+                    logVerbose("N1QL query translated to: %.*s", SPLAT(_json));
                     FLMutableDict_Release(result);
                     break;
                 }

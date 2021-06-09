@@ -124,8 +124,14 @@ namespace litecore {
         };
 
         struct aliasInfo {
-            aliasType type;
-            string    tableName;
+            aliasType   type;               // Type of alias (see above)
+            string      alias;              // The alias (same as the AliasMap key)
+            string      collection;         // Collection name
+            string      tableName;          // SQLite table name
+            bool        deletedOnly =false; // True if only matching deleted docs
+            const Dict  *dict = nullptr;    // The Dict defining this alias
+            const Value *on = nullptr;      // The 'ON' clause of `dict`, if any
+            const Value *unnest = nullptr;  // The 'UNNEST' clause of `dict`, if any
         };
 
         using AliasMap = map<string, aliasInfo>;
@@ -158,11 +164,14 @@ namespace litecore {
         unsigned writeSelectListClause(const Dict *operands, slice key, const char *sql,
                                        bool aggregatesOK =false);
 
+        void lookForDeleted(const Value *where);
         void writeWhereClause(const Value *where);
 
+        void addDefaultAlias();
+        void addAlias(aliasInfo&&);
         void addAlias(const string &alias, aliasType, const string &tableName);
         struct FromAttributes;
-        FromAttributes parseFromEntry(const Value *value);
+        aliasInfo parseFromEntry(const Value *value);
         void parseFromClause(const Value *from);
         void writeFromClause(const Value *from);
         int parseJoinType(slice);

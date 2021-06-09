@@ -143,14 +143,12 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser property contexts", "[Query][Quer
 }
 
 
-#if 0 //TODO: Restore testing _deleted
 TEST_CASE_METHOD(QueryParserTest, "QueryParser Deletion", "[Query][QueryParser]") {
     CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['._deleted']}]")
-          == "SELECT fl_result(_doc.key) FROM kv_default AS _doc");
-    CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['OR', ['._deleted'], ['.junk']]}]")
-          == "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE fl_value(_doc.body, 'junk')");
+          == "SELECT fl_result(_doc.key) FROM kv_del_default AS _doc WHERE true");
+    CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted']}]")
+          == "SELECT fl_result(_doc.key) FROM kv_del_default AS _doc WHERE true");
 }
-#endif
 
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser Expiration", "[Query][QueryParser]") {
