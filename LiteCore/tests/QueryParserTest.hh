@@ -35,14 +35,14 @@ public:
     void mustFail(string json);
 
 protected:
-    virtual string collectionTableName(const string &collection, CollectionTableType type) const override {
+    virtual string collectionTableName(const string &collection, DeletionStatus type) const override {
         CHECK(!hasPrefix(collection, "kv_"));   // make sure I didn't get passed a table name
         string table;
-        if (type == kUnionTable) {
+        if (type == kLiveAndDeletedDocs) {
             table = "all_";
         } else {
             table = "kv_";
-            if (type == kDeletedTable)
+            if (type == kDeletedDocs)
                 table += "del_";
         }
         if (collection == "_default")

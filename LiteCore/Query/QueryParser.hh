@@ -54,17 +54,21 @@ namespace litecore {
         static constexpr const char* kBodyColumnName = "body";
 
 
+        /** Which docs to include from a collection in a query; determines which table to use. */
+        enum DeletionStatus {
+            kLiveDocs, kDeletedDocs, kLiveAndDeletedDocs
+        };
+
         /** Delegate knows about the naming & existence of tables.
             Implemented by SQLiteDataFile; this interface is to keep the QueryParser isolated from
             such details and make it easier to unit-test. */
         class Delegate {
         public:
-            enum CollectionTableType {
-                kLiveTable, kDeletedTable, kUnionTable
-            };
+            using DeletionStatus = QueryParser::DeletionStatus;
+
             virtual ~Delegate() =default;
             virtual bool tableExists(const string &tableName) const =0;
-            virtual string collectionTableName(const string &collection, CollectionTableType) const =0;
+            virtual string collectionTableName(const string &collection, DeletionStatus) const =0;
             virtual string FTSTableName(const string &onTable, const string &property) const =0;
             virtual string unnestedTableName(const string &onTable, const string &property) const =0;
 #ifdef COUCHBASE_ENTERPRISE
@@ -120,32 +124,30 @@ namespace litecore {
         using Dict = fleece::impl::Dict;
         using Path = fleece::impl::Path;
 
+        // Types of table aliases
         enum aliasType {
-            kDBAlias,                   // Primary FROM collection
-            kJoinAlias,                 // A JOINed collection
-            kResultAlias,               // A named query result value ("SELECT ___ AS x")
-            kUnnestVirtualTableAlias,   // An UNNEST implemented as a virtual table
-            kUnnestTableAlias           // An UNNEST implemented as a materialized table
+            kDBAlias,                          // Primary FROM collection
+            kJoinAlias,                        // A JOINed collection
+            kResultAlias,                      // A named query result value ("SELECT ___ AS x")
+            kUnnestVirtualTableAlias,          // An UNNEST implemented as a virtual table
+            kUnnestTableAlias                  // An UNNEST implemented as a materialized table
         };
 
+        // Info about a table alias (an item of the FROM list, i.e. the main table or a join)
         struct aliasInfo {
-            aliasType   type;               // Type of alias (see above)
-            string      alias;              // The alias (same as the AliasMap key)
-            string      collection;         // Collection name
-            string      tableName;          // SQLite table name
-            Delegate::CollectionTableType tableType; // Matching live or deleted docs, or both?
-            const Dict  *dict = nullptr;    // The Dict defining this alias
-            const Value *on = nullptr;      // The 'ON' clause of `dict`, if any
-            const Value *unnest = nullptr;  // The 'UNNEST' clause of `dict`, if any
+            aliasType       type;              // Type of alias (see above)
+            string          alias;             // The alias (same as the AliasMap key)
+            string          collection;        // Collection name
+            string          tableName;         // SQLite table name
+            DeletionStatus  delStatus;         // Match live or deleted docs, or both?
+            const Dict  *   dict = nullptr;    // The Dict defining this alias
+            const Value *   on = nullptr;      // The 'ON' clause of `dict`, if any
+            const Value *   unnest = nullptr;  // The 'UNNEST' clause of `dict`, if any
         };
 
+        // Maps alias names -> info
         using AliasMap = map<string, aliasInfo>;
 
-        QueryParser(const QueryParser *qp)
-        :QueryParser(qp->_delegate, qp->_defaultCollectionName, qp->_defaultTableName)
-        {
-            _bodyColumnName = qp->_bodyColumnName;
-        }
 
         struct Operation;
         static const Operation kOperationList[];
@@ -154,6 +156,13 @@ namespace litecore {
                                kHighPrecedenceOperation;
         struct JoinedOperations;
         static const JoinedOperations kJoinedOperationsList[];
+
+
+        QueryParser(const QueryParser *qp)
+        :QueryParser(qp->_delegate, qp->_defaultCollectionName, qp->_defaultTableName)
+        {
+            _bodyColumnName = qp->_bodyColumnName;
+        }
 
         QueryParser(const QueryParser &qp) =delete;
         QueryParser& operator=(const QueryParser&) =delete;
@@ -176,7 +185,6 @@ namespace litecore {
         void addDefaultAlias();
         void addAlias(aliasInfo&&);
         void addAlias(const string &alias, aliasType, const string &tableName);
-        struct FromAttributes;
         aliasInfo parseFromEntry(const Value *value);
         void parseFromClause(const Value *from);
         void writeFromClause(const Value *from);
@@ -262,7 +270,6 @@ namespace litecore {
         Collation _collation;                    // Collation in use during parse
         bool _collationUsed {true};              // Emitted SQL "COLLATION" yet?
         bool _functionWantsCollation {false};    // Current fn wants collation param in its arg list
-        bool _queryingDeletedDocs {false};       // True if WHERE clause matches only deleteded docs
     };
 
 }

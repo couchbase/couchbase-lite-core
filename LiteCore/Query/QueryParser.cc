@@ -193,7 +193,6 @@ namespace litecore {
         _columnTitles.clear();
         _1stCustomResultCol = 0;
         _isAggregateQuery = _aggregatesOK = _propertiesUseSourcePrefix = _checkedExpiration = false;
-        _queryingDeletedDocs = false;
     }
 
 
@@ -461,7 +460,7 @@ namespace litecore {
         from.unnest = getCaseInsensitive(dict, "UNNEST"_sl);
         if (collection) {
             from.collection = string(collection);
-            from.tableName = _delegate.collectionTableName(from.collection, Delegate::kLiveTable);
+            from.tableName = _delegate.collectionTableName(from.collection, kLiveDocs);
             require(_delegate.tableExists(from.tableName),
                     "no such collection \"%.*s\"", SPLAT(collection));
         } else {
@@ -771,7 +770,7 @@ namespace litecore {
     }
 
 
-    // Returns `kDeletedTable` if the expression only matches deleted documents,
+    // Returns `kDeletedDocs` if the expression only matches deleted documents,
     // 'kLiveTable' if it doesn't access the 'deleted' meta-property at all,
     static bool matchesOnlyDeletedDocs(const Value *expr, slice alias) {
         if (isDeletedPropertyRef(expr, alias))
@@ -806,23 +805,23 @@ namespace litecore {
                 if (info.type == kDBAlias && !_propertiesUseSourcePrefix)
                     alias = ""_sl;
 
-                auto type = Delegate::kLiveTable;
+                auto type = kLiveDocs;
                 if (findDeletedPropertyRefs(select, alias)) {
                     if (where && matchesOnlyDeletedDocs(where, alias)) {
-                        type = Delegate::kDeletedTable;
+                        type = kDeletedDocs;
                         LogDebug(QueryLog, "QueryParser: only matches deleted docs in '%.*s'", SPLAT(alias));
                     } else {
-                        type = Delegate::kUnionTable;
+                        type = kLiveAndDeletedDocs;
                         LogDebug(QueryLog, "QueryParser: May match live and deleted docs in '%.*s'", SPLAT(alias));
                     }
                 } else {
                     LogDebug(QueryLog, "QueryParser: Doesn't access meta(%.*s).deleted", SPLAT(alias));
                 }
 
-                if (type != info.tableType) {
-                    info.tableType = type;
+                if (type != info.delStatus) {
+                    info.delStatus = type;
                     Assert(!info.collection.empty());
-                    info.tableName = _delegate.collectionTableName(info.collection, info.tableType);
+                    info.tableName = _delegate.collectionTableName(info.collection, info.delStatus);
                     if (info.type == kDBAlias) {
                         _defaultCollectionName = info.collection;
                         _defaultTableName = info.tableName;
@@ -834,14 +833,14 @@ namespace litecore {
 
 
     void QueryParser::writeDeletionTest(const string &alias) {
-        switch (_aliases[alias].tableType) {
-            case Delegate::kLiveTable:
+        switch (_aliases[alias].delStatus) {
+            case kLiveDocs:
                 _sql << "false";
                 break;
-            case Delegate::kDeletedTable:
+            case kDeletedDocs:
                 _sql <<  "true";
                 break;
-            case Delegate::kUnionTable:
+            case kLiveAndDeletedDocs:
                 _sql << "(";
                 if (!alias.empty())
                     _sql << sqlIdentifier(alias) << '.';

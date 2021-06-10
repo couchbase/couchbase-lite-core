@@ -752,15 +752,15 @@ namespace litecore {
     }
 
 
-    string SQLiteDataFile::collectionTableName(const string &collection, CollectionTableType type) const {
+    string SQLiteDataFile::collectionTableName(const string &collection, DeletionStatus type) const {
         Assert(!collection.empty());
         Assert(!hasPrefix(collection, "kv_") && !hasPrefix(collection, "coll_"));
         string name;
-        if (type == kUnionTable) {
+        if (type == QueryParser::kLiveAndDeletedDocs) {
             name = "all_";
         } else {
             name = "kv_";
-            if (type == kDeletedTable)
+            if (type == QueryParser::kDeletedDocs)
                 name += kDeletedKeyStorePrefix;
         }
         if (collection == "_default")
