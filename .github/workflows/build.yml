@@ -55,7 +55,7 @@ jobs:
     - name: Build
       # Use cmake to build -- this will invoke `make` on Linux/Mac, Visual Studio on Windows.
       working-directory: ${{github.workspace}}/build
-      run: cmake --build . --config $BUILD_TYPE
+      run: cmake --build . --config $env:BUILD_TYPE
 
 #### TEST
 
