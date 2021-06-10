@@ -86,7 +86,7 @@ namespace litecore {
                                      Array::iterator &expressions)
     {
         Assert(spec.type != IndexSpec::kFullText);
-        QueryParser qp(db(), sourceTableName);
+        QueryParser qp(db(), "", sourceTableName);
         qp.writeCreateIndex(spec.name,
                             sourceTableName,
                             expressions,
@@ -142,10 +142,8 @@ namespace litecore {
 
     vector<IndexSpec> SQLiteKeyStore::getIndexes() const {
         vector<IndexSpec> result;
-        for (auto &spec : db().getIndexes(nullptr)) {
-            if (spec.keyStoreName == name())
-                result.push_back(move(spec));
-        }
+        for (auto &spec : db().getIndexes(this))
+            result.push_back(move(spec));
         return result;
     }
 

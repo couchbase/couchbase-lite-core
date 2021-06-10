@@ -2167,7 +2167,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
         t.commit();
     }
 
-    Retained<Query> query{ store->compileQuery("SELECT meta() WHERE meta().deleted"_sl, QueryLanguage::kN1QL) };
+    Retained<Query> query{ store->compileQuery("SELECT meta()"_sl, QueryLanguage::kN1QL) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());

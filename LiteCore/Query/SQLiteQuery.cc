@@ -81,8 +81,10 @@ namespace litecore {
                 }
             }
 
-            QueryParser qp(dataFile, defaultKeyStore->tableName());
+            QueryParser qp(dataFile, defaultKeyStore->collectionName(), defaultKeyStore->tableName());
             qp.parseJSON(_json);
+            string sql = qp.SQL();
+            logInfo("Compiled as %s", sql.c_str());
 
             // Collect the KeyStores read by this query:
             for (const string &table : qp.collectionTablesUsed())
@@ -110,8 +112,6 @@ namespace litecore {
                     ks->addExpiration();
             }
 
-            string sql = qp.SQL();
-            logInfo("Compiled as %s", sql.c_str());
             LogTo(SQL, "Compiled {Query#%u}: %s", getObjectRef(), sql.c_str());
             _statement = dataFile.compile(sql.c_str());
             

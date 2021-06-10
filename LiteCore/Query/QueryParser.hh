@@ -59,9 +59,12 @@ namespace litecore {
             such details and make it easier to unit-test. */
         class Delegate {
         public:
+            enum CollectionTableType {
+                kLiveTable, kDeletedTable, kUnionTable
+            };
             virtual ~Delegate() =default;
             virtual bool tableExists(const string &tableName) const =0;
-            virtual string collectionTableName(const string &collection, bool deleted) const =0;
+            virtual string collectionTableName(const string &collection, CollectionTableType) const =0;
             virtual string FTSTableName(const string &onTable, const string &property) const =0;
             virtual string unnestedTableName(const string &onTable, const string &property) const =0;
 #ifdef COUCHBASE_ENTERPRISE
@@ -71,8 +74,10 @@ namespace litecore {
 
 
         QueryParser(const Delegate &delegate,
+                    const string& defaultCollectionName,
                     const string& defaultTableName)
         :_delegate(delegate)
+        ,_defaultCollectionName(defaultCollectionName)
         ,_defaultTableName(defaultTableName)
         { }
 
@@ -128,7 +133,7 @@ namespace litecore {
             string      alias;              // The alias (same as the AliasMap key)
             string      collection;         // Collection name
             string      tableName;          // SQLite table name
-            bool        deletedOnly =false; // True if only matching deleted docs
+            Delegate::CollectionTableType tableType; // Matching live or deleted docs, or both?
             const Dict  *dict = nullptr;    // The Dict defining this alias
             const Value *on = nullptr;      // The 'ON' clause of `dict`, if any
             const Value *unnest = nullptr;  // The 'UNNEST' clause of `dict`, if any
@@ -137,7 +142,7 @@ namespace litecore {
         using AliasMap = map<string, aliasInfo>;
 
         QueryParser(const QueryParser *qp)
-        :QueryParser(qp->_delegate, qp->_defaultTableName)
+        :QueryParser(qp->_delegate, qp->_defaultCollectionName, qp->_defaultTableName)
         {
             _bodyColumnName = qp->_bodyColumnName;
         }
@@ -164,7 +169,8 @@ namespace litecore {
         unsigned writeSelectListClause(const Dict *operands, slice key, const char *sql,
                                        bool aggregatesOK =false);
 
-        void lookForDeleted(const Value *where);
+        void lookForDeleted(const Dict *select);
+        void writeDeletionTest(const string &alias);
         void writeWhereClause(const Value *where);
 
         void addDefaultAlias();
@@ -235,6 +241,7 @@ namespace litecore {
 
         const Delegate& _delegate;               // delegate object (SQLiteKeyStore)
         string _defaultTableName;                // Name of the default table to use
+        string _defaultCollectionName;           // Name of the default collection to use
         string _bodyColumnName = kBodyColumnName;// Column holding doc bodies
         AliasMap _aliases;                       // "AS..." aliases for db/joins/unnests
         string _dbAlias;                         // Alias of the main collection, "_doc" by default

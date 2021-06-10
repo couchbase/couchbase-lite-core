@@ -105,6 +105,18 @@ namespace litecore {
     }
 
 
+    string SQLiteKeyStore::collectionName() const {
+        if (_name == "default")
+            return "_default";
+        else if (hasPrefix(_name, "coll_"))
+            return _name.substr(5);
+        else {
+            DebugAssert(false, "KeyStore is not a collection!");
+            return "";
+        }
+    }
+
+
     string SQLiteKeyStore::subst(const char *sqlTemplate) const {
         string sql(sqlTemplate);
         size_t pos;

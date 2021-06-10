@@ -99,7 +99,7 @@ namespace litecore {
 
     // QueryParser::delegate:
         virtual bool tableExists(const std::string &tableName) const override;
-        virtual string collectionTableName(const string &collection, bool deleted) const override;
+        virtual string collectionTableName(const string &collection, CollectionTableType) const override;
         virtual std::string FTSTableName(const string &collection, const std::string &property) const override;
         virtual std::string unnestedTableName(const string &collection, const std::string &property) const override;
 #ifdef COUCHBASE_ENTERPRISE

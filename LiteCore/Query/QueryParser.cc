@@ -25,6 +25,7 @@
 #include "Base64.hh"
 #include "Error.hh"
 #include "FleeceImpl.hh"
+#include "MutableDict.hh"
 #include "DeepIterator.hh"
 #include "Path.hh"
 #include "Logging.hh"
@@ -41,8 +42,6 @@ using namespace fleece::impl;
 using namespace litecore::qp;
 
 namespace litecore {
-
-    static constexpr const char* kDefaultCollectionName = "_default";
 
 
 #pragma mark - UTILITY FUNCTIONS:
@@ -177,10 +176,6 @@ namespace litecore {
     }
 
 
-    // Returns true if the expression only matches deleted documents.
-    static bool matchesOnlyDeletedDocs(const Value *expr NONNULL, slice alias);
-
-
 #pragma mark - QUERY PARSER TOP LEVEL:
 
 
@@ -233,7 +228,9 @@ namespace litecore {
                     parseNode(expression);
                 } else {
                     // Given some other expression; treat it as a WHERE clause of an implicit SELECT:
-                    writeSelect(expression, Dict::kEmpty);
+                    Retained<MutableDict> select = MutableDict::newDict();
+                    select->set("WHERE", expression);
+                    writeSelect(select);
                 }
             }
         } catch (const FleeceException &x) {handleFleeceException(x);}
@@ -253,24 +250,20 @@ namespace litecore {
 
     
     void QueryParser::writeSelect(const Dict *operands) {
-        writeSelect(getCaseInsensitive(operands, "WHERE"_sl), operands);
-    }
-
-
-    void QueryParser::writeSelect(const Value *where, const Dict *operands) {
         // Find all the joins in the FROM clause first, to populate alias info. This has to be done
         // before writing the WHAT clause, because that will depend on the aliases.
         auto from = getCaseInsensitive(operands, "FROM"_sl);
         parseFromClause(from);
-        
+
+        // Check whether the query accesses deleted docs, since this affects what tables to use:
+        lookForDeleted(operands);
+
         // Have to find all properties involved in MATCH before emitting the FROM clause:
+        auto where = getCaseInsensitive(operands, "WHERE"_sl);
         if (where) {
             unsigned numMatches = findFTSProperties(where);
             require(numMatches <= _ftsTables.size(),
                     "Sorry, multiple MATCHes of the same property are not allowed");
-
-            // Check whether the WHERE clause is testing for deleted docs:
-            lookForDeleted(where);
         }
 
         // Add the indexed prediction() calls to _indexJoinTables now
@@ -432,7 +425,7 @@ namespace litecore {
 
     void QueryParser::addDefaultAlias() {
         DebugAssert(_aliases.empty());
-        _aliases.insert({_dbAlias, {kDBAlias, _dbAlias, kDefaultCollectionName, _defaultTableName}});
+        _aliases.insert({_dbAlias, {kDBAlias, _dbAlias, _defaultCollectionName, _defaultTableName}});
     }
 
 
@@ -450,7 +443,7 @@ namespace litecore {
         aliasInfo entry;
         entry.type = type;
         entry.alias = alias;
-        entry.collection = kDefaultCollectionName;
+        entry.collection = _defaultCollectionName;
         entry.tableName = tableName;
         addAlias(move(entry));
     }
@@ -467,18 +460,17 @@ namespace litecore {
         from.on = getCaseInsensitive(dict, "ON"_sl);
         from.unnest = getCaseInsensitive(dict, "UNNEST"_sl);
         if (collection) {
-            //TEMP: TODO: Handle deleted-doc tables
             from.collection = string(collection);
-            from.tableName = _delegate.collectionTableName(from.collection, false);
+            from.tableName = _delegate.collectionTableName(from.collection, Delegate::kLiveTable);
             require(_delegate.tableExists(from.tableName),
                     "no such collection \"%.*s\"", SPLAT(collection));
         } else {
-            from.collection = kDefaultCollectionName;
+            from.collection = _defaultCollectionName;
             from.tableName = _defaultTableName;
             DebugAssert(_delegate.tableExists(from.tableName));
         }
         if (from.alias.empty())
-            from.alias = collection ? string(collection) : kDefaultCollectionName;
+            from.alias = collection ? string(collection) : _defaultCollectionName;
         return from;
     }
 
@@ -496,6 +488,7 @@ namespace litecore {
                     require(!entry.on && !entry.unnest, "first FROM item cannot have an ON or UNNEST clause");
                     entry.type = kDBAlias;
                     _kvTables.insert(entry.tableName);
+                    _defaultCollectionName = entry.collection;
                     _defaultTableName = entry.tableName;
                 } else if (!entry.unnest) {
                     entry.type = kJoinAlias;
@@ -708,14 +701,29 @@ namespace litecore {
     }
 
 
+#pragma mark - DELETED-DOC HANDLING:
+
+
+    // Returns true if the expression is the `meta()` property of the given alias.
+    static bool isMetaProperty(const Array *meta, slice alias) {
+        if (!meta || meta->empty() || !meta->get(0)->asString().caseEquivalent("META()"))
+            return false;
+        if (meta->count() == 1)
+            return alias.empty();
+        else
+            return meta->get(1)->asString() == alias;
+    }
+
+
     // Returns true if the expression is a reference to the "deleted" meta-property of an alias.
     // This can be appear either as a document property `_deleted`, or as a references to the
     // `deleted` property of the `meta()` function.
-    static bool isDeletedPropertyRef(const Value *expr NONNULL, slice alias) {
-        if (auto operation = expr->asArray(); operation && !operation->empty()) {
+    static bool isDeletedPropertyRef(const Array *operation, slice alias) {
+        if (operation && !operation->empty()) {
             slice op = operation->get(0)->asString();
             if (op.hasPrefix('.')) {
-                if (Path path = propertyFromNode(expr, '.'); path.size() == 1 || path.size() == 2) {
+                // `["._deleted"]` or `[".<alias>._deleted"]`
+                if (Path path = propertyFromNode(operation, '.'); path.size() == 1 || path.size() == 2) {
                     if (path[path.size() - 1].keyStr() != "_deleted")
                         return false;
                     if (path.size() == 1)
@@ -724,12 +732,38 @@ namespace litecore {
                         return path[0].keyStr() == alias;
                 }
             } else if (op == "_." && operation->count() == 3) {
+                // `["._", ["META()", <alias>], "deleted"]`
                 slice prop = operation->get(2)->asString();
-                if (prop == "deleted" || prop == ".deleted") {
-                    auto meta = operation->get(1)->asArray();
-                    if (meta && meta->count() > 0 && meta->get(0)->asString().caseEquivalent("META()")) {
-                        return true;
+                return (prop == "deleted" || prop == ".deleted")
+                    && isMetaProperty(operation->get(1)->asArray(), alias);
+            }
+        }
+        return false;
+    }
+
+    static bool isDeletedPropertyRef(const Value *expr, slice alias) {
+        return expr && isDeletedPropertyRef(expr->asArray(), alias);
+    }
+
+
+    static bool findDeletedPropertyRefs(const Dict *expr, slice alias) {
+        const Value *what = getCaseInsensitive(expr, "WHAT");
+        for (DeepIterator iter(expr); iter; ++iter) {
+            if (auto operation = iter.value()->asArray(); operation && operation != what) {
+                if (isDeletedPropertyRef(operation, alias))
+                    return true;
+                if (isMetaProperty(operation, alias)) {
+                    // Found a reference to `meta()`, but if it's being used to access a property
+                    // other than `deleted`, ignore it:
+                    slice prop;
+                    if (auto parent = iter.parent(); parent && parent != what) {
+                        if (auto parOp = parent->asArray(); parOp && parOp->count() >= 3) {
+                            if (parOp->get(0)->asString() == "_." && parOp->get(1) == operation)
+                                prop = parOp->get(2)->asString();
+                        }
                     }
+                    if (!prop || prop == "deleted" || prop == ".deleted")
+                        return true;
                 }
             }
         }
@@ -737,7 +771,8 @@ namespace litecore {
     }
 
 
-    // Returns true if the expression only matches deleted documents.
+    // Returns `kDeletedTable` if the expression only matches deleted documents,
+    // 'kLiveTable' if it doesn't access the 'deleted' meta-property at all,
     static bool matchesOnlyDeletedDocs(const Value *expr, slice alias) {
         if (isDeletedPropertyRef(expr, alias))
             return true;
@@ -762,21 +797,56 @@ namespace litecore {
     }
 
 
-    void QueryParser::lookForDeleted(const Value *where) {
+    void QueryParser::lookForDeleted(const Dict *select) {
+        const Value *where = getCaseInsensitive(select, "WHERE");
         for (auto &e : _aliases) {
             aliasInfo &info = e.second;
             if (info.type == kDBAlias || info.type == kJoinAlias) {
                 slice alias = info.alias;
                 if (info.type == kDBAlias && !_propertiesUseSourcePrefix)
                     alias = ""_sl;
-                if (matchesOnlyDeletedDocs(where, alias)) {
-                    info.deletedOnly = true;
+
+                auto type = Delegate::kLiveTable;
+                if (findDeletedPropertyRefs(select, alias)) {
+                    if (where && matchesOnlyDeletedDocs(where, alias)) {
+                        type = Delegate::kDeletedTable;
+                        LogDebug(QueryLog, "QueryParser: only matches deleted docs in '%.*s'", SPLAT(alias));
+                    } else {
+                        type = Delegate::kUnionTable;
+                        LogDebug(QueryLog, "QueryParser: May match live and deleted docs in '%.*s'", SPLAT(alias));
+                    }
+                } else {
+                    LogDebug(QueryLog, "QueryParser: Doesn't access meta(%.*s).deleted", SPLAT(alias));
+                }
+
+                if (type != info.tableType) {
+                    info.tableType = type;
                     Assert(!info.collection.empty());
-                    info.tableName = _delegate.collectionTableName(info.collection, true);
-                    if (info.type == kDBAlias)
+                    info.tableName = _delegate.collectionTableName(info.collection, info.tableType);
+                    if (info.type == kDBAlias) {
+                        _defaultCollectionName = info.collection;
                         _defaultTableName = info.tableName;
+                    }
                 }
             }
+        }
+    }
+
+
+    void QueryParser::writeDeletionTest(const string &alias) {
+        switch (_aliases[alias].tableType) {
+            case Delegate::kLiveTable:
+                _sql << "false";
+                break;
+            case Delegate::kDeletedTable:
+                _sql <<  "true";
+                break;
+            case Delegate::kUnionTable:
+                _sql << "(";
+                if (!alias.empty())
+                    _sql << sqlIdentifier(alias) << '.';
+                _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << " != 0)";
+                break;
         }
     }
 
@@ -1334,19 +1404,17 @@ namespace litecore {
                 writeMetaProperty(kValueFnName, tablePrefix, "key");
                 break;
             case mkDeleted:
-                require(_aliases[dbAlias].deletedOnly,
-                        "Can't tell if querying for deleted docs or not (temporary limitation)");
-                _sql << "true";
+                writeDeletionTest(dbAlias);
                 break;
             case mkRevisionId:
                 _sql << kVersionFnName << "(" << tablePrefix << "version" << ")";
                 break;
             case mkSequence:
                 writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i]);
-                _checkedExpiration = true;
                 break;
             case mkExpiration:
                 writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i]);
+                _checkedExpiration = true;
                 break;
             default:
                 Assert(false, "Internal logic error");
@@ -1657,9 +1725,7 @@ namespace litecore {
                 return;
             } else if (meta == kDeletedProperty) {
                 require(fn == kValueFnName, "can't use 'deleted' in this context");
-                require(iType->second.deletedOnly,
-                        "Can't tell if querying for deleted docs or not (temporary limitation)");
-                _sql << "true";
+                writeDeletionTest(alias);
                 return;
             } else if (meta == kRevIDProperty) {
                 _sql << kVersionFnName << "(" << tablePrefix << "version" << ")";

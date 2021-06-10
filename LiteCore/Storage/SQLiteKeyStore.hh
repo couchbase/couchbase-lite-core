@@ -60,7 +60,8 @@ namespace litecore {
         uint64_t purgeCount() const override;
 
         std::string tableName() const                                       {return "kv_" + name();}
-
+        std::string collectionName() const;
+        
         bool read(Record &rec, ReadBy, ContentOption) const override;
 
         sequence_t set(const RecordUpdate&, bool updateSequence, ExclusiveTransaction&) override;

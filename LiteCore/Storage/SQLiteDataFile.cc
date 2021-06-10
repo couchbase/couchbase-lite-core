@@ -544,7 +544,20 @@ namespace litecore {
                               && keyStoreNameIsCollection(name)) {
             // Wrap the store in a BothKeyStore that manages it and the deleted store:
             auto deletedStore = new SQLiteKeyStore(*this, kDeletedKeyStorePrefix + name, options);
+
+            keyStore->addExpiration();
+            deletedStore->addExpiration();
+            
+            // Create a SQLite view of a union of both stores, for use in queries:
+#define COLUMNS "key,sequence,flags,version,body,extra,expiration"
+            const char *cname = name.c_str();
+            _exec(format("CREATE TEMP VIEW IF NOT EXISTS all_%s (" COLUMNS ") AS "
+                         "SELECT " COLUMNS " from kv_%s UNION ALL SELECT " COLUMNS " from kv_del_%s",
+                         cname, cname, cname));
+#undef COLUMNS
+
             return new BothKeyStore(keyStore, deletedStore);
+
         } else {
             return keyStore;
         }
@@ -739,13 +752,20 @@ namespace litecore {
     }
 
 
-    string SQLiteDataFile::collectionTableName(const string &collection, bool deleted) const {
-        string name = "kv_";
-        if (deleted)
-            name += kDeletedKeyStorePrefix;
-        if (collection == "_default") {
+    string SQLiteDataFile::collectionTableName(const string &collection, CollectionTableType type) const {
+        Assert(!collection.empty());
+        Assert(!hasPrefix(collection, "kv_") && !hasPrefix(collection, "coll_"));
+        string name;
+        if (type == kUnionTable) {
+            name = "all_";
+        } else {
+            name = "kv_";
+            if (type == kDeletedTable)
+                name += kDeletedKeyStorePrefix;
+        }
+        if (collection == "_default")
             name += "default";
-        } else
+        else
             (name += "coll_") += collection;
         return name;
     }

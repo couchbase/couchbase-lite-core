@@ -25,10 +25,11 @@ using namespace std;
 
 
 static constexpr const char* kDefaultTableName = "kv_default";
+static constexpr const char* kDefaultCollectionName = "_default";
 
 
 string QueryParserTest::parse(FLValue val) {
-    QueryParser qp(*this, kDefaultTableName);
+    QueryParser qp(*this, kDefaultCollectionName, kDefaultTableName);
     qp.parse((const fleece::impl::Value*)val);
     usedTableNames = qp.collectionTablesUsed();
     return qp.SQL();
@@ -40,7 +41,7 @@ string QueryParserTest::parse(string json) {
 }
 
 string QueryParserTest::parseWhere(string json) {
-    QueryParser qp(*this, kDefaultTableName);
+    QueryParser qp(*this, kDefaultCollectionName, kDefaultTableName);
     alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
     qp.parseJustExpression(fleece::impl::Value::fromTrustedData(fleece));
     usedTableNames = qp.collectionTablesUsed();
@@ -48,7 +49,7 @@ string QueryParserTest::parseWhere(string json) {
 }
 
 void QueryParserTest::mustFail(string json) {
-    QueryParser qp(*this, kDefaultTableName);
+    QueryParser qp(*this, kDefaultCollectionName, kDefaultTableName);
     alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
     ExpectException(error::LiteCore, error::InvalidQuery, [&]{
         qp.parseJustExpression(fleece::impl::Value::fromTrustedData(fleece));
@@ -143,11 +144,29 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser property contexts", "[Query][Quer
 }
 
 
-TEST_CASE_METHOD(QueryParserTest, "QueryParser Deletion", "[Query][QueryParser]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Only Deleted Docs", "[Query][QueryParser]") {
     CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['._deleted']}]")
           == "SELECT fl_result(_doc.key) FROM kv_del_default AS _doc WHERE true");
+    CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['AND',  ['.foo'], ['._deleted']]}]")
+          == "SELECT fl_result(_doc.key) FROM kv_del_default AS _doc WHERE fl_value(_doc.body, 'foo') AND true");
     CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted']}]")
           == "SELECT fl_result(_doc.key) FROM kv_del_default AS _doc WHERE true");
+}
+
+
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Deleted And Live Docs", "[Query][QueryParser]") {
+    CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['OR',  ['.foo'], ['._deleted']]}]")
+          == "SELECT fl_result(_doc.key) FROM all_default AS _doc WHERE fl_value(_doc.body, 'foo') OR (_doc.flags & 1 != 0)");
+    CHECK(parseWhere("['SELECT', {WHAT: [['META()']]}]")
+          == "SELECT fl_result(dict_of('id', _doc.key, 'sequence', _doc.sequence, 'deleted', (_doc.flags & 1 != 0), 'expiration', _doc.expiration, 'revisionID', fl_version(_doc.version))) FROM all_default AS _doc");
+    CHECK(parseWhere("['SELECT', {WHAT: [['_.', ['META()'], 'deleted']]}]")
+          == "SELECT fl_result((_doc.flags & 1 != 0)) FROM all_default AS _doc");
+}
+
+
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Meta Without Deletion", "[Query][QueryParser]") {
+    CHECK(parseWhere("['SELECT', {WHAT: [['_.', ['META()'], 'sequence']], WHERE: ['_.', ['META()'], 'sequence']}]")
+          == "SELECT fl_result(_doc.sequence) FROM kv_default AS _doc WHERE _doc.sequence");
 }
 
 
