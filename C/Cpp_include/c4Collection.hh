@@ -93,7 +93,8 @@ struct C4Collection : public fleece::InstanceCountedIn<C4Collection>, C4Base {
     Retained<C4Query> newQuery(C4QueryLanguage language, slice queryExpr, int *outErrorPos) const;
 
     virtual void createIndex(slice name,
-                             slice indexSpecJSON,
+                             slice indexSpec,
+                             C4QueryLanguage indexLanguage,
                              C4IndexType indexType,
                              const C4IndexOptions* C4NULLABLE indexOptions =nullptr) =0;
 

@@ -144,9 +144,9 @@ Purging and Expiration</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Indexes</h2></td></tr>
-<tr class="memitem:gacfec9475d4e372e1fa23cf25e8ac6e2d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gacfec9475d4e372e1fa23cf25e8ac6e2d">c4coll_createIndex</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> indexSpecJSON, <a class="el" href="group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb">C4IndexType</a> indexType, const <a class="el" href="struct_c4_index_options.html">C4IndexOptions</a> *indexOptions, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gacfec9475d4e372e1fa23cf25e8ac6e2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a collection index, of the values of specific expressions across all documents.  <a href="#gacfec9475d4e372e1fa23cf25e8ac6e2d">More...</a><br /></td></tr>
-<tr class="separator:gacfec9475d4e372e1fa23cf25e8ac6e2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3e1f87685d106eafaebcff07ca757dd2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#ga3e1f87685d106eafaebcff07ca757dd2">c4coll_createIndex</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> indexSpec, <a class="el" href="group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84">C4QueryLanguage</a> queryLanguage, <a class="el" href="group___indexing.html#gaf0b8613e821a59cfdea501bec2d661cb">C4IndexType</a> indexType, const <a class="el" href="struct_c4_index_options.html">C4IndexOptions</a> *indexOptions, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga3e1f87685d106eafaebcff07ca757dd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a collection index, of the values of specific expressions across all documents.  <a href="#ga3e1f87685d106eafaebcff07ca757dd2">More...</a><br /></td></tr>
+<tr class="separator:ga3e1f87685d106eafaebcff07ca757dd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaeab34e537169505ee81b33f263734ac5"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___collection.html#gaeab34e537169505ee81b33f263734ac5">c4coll_deleteIndex</a> (<a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a> *collection, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:gaeab34e537169505ee81b33f263734ac5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes an index that was created by <code>c4coll_createIndex</code>.  <a href="#gaeab34e537169505ee81b33f263734ac5">More...</a><br /></td></tr>
 <tr class="separator:gaeab34e537169505ee81b33f263734ac5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -241,8 +241,8 @@ Indexes</h2></td></tr>
 
 </div>
 </div>
-<a id="gacfec9475d4e372e1fa23cf25e8ac6e2d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gacfec9475d4e372e1fa23cf25e8ac6e2d">&#9670;&nbsp;</a></span>c4coll_createIndex()</h2>
+<a id="ga3e1f87685d106eafaebcff07ca757dd2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3e1f87685d106eafaebcff07ca757dd2">&#9670;&nbsp;</a></span>c4coll_createIndex()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -263,7 +263,13 @@ Indexes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
-          <td class="paramname"><em>indexSpecJSON</em>, </td>
+          <td class="paramname"><em>indexSpec</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84">C4QueryLanguage</a>&#160;</td>
+          <td class="paramname"><em>queryLanguage</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -297,7 +303,8 @@ Indexes</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">collection</td><td>The collection to index. </td></tr>
     <tr><td class="paramname">name</td><td>The name of the index. Any existing index with the same name will be replaced, unless it has the identical expressions (in which case this is a no-op.) </td></tr>
-    <tr><td class="paramname">indexSpecJSON</td><td>The definition of the index in JSON form. (See above.) </td></tr>
+    <tr><td class="paramname">indexSpec</td><td>The definition of the index in JSON or N1QL form. (See above.) </td></tr>
+    <tr><td class="paramname">queryLanguage</td><td>The language of <code>indexSpec</code>, either JSON or N1QL. </td></tr>
     <tr><td class="paramname">indexType</td><td>The type of index (value or full-text.) </td></tr>
     <tr><td class="paramname">indexOptions</td><td>Options for the index. If NULL, each option will get a default value. </td></tr>
     <tr><td class="paramname">outError</td><td>On failure, will be set to the error status. </td></tr>

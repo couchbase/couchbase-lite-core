@@ -114,13 +114,6 @@ namespace litecore {
         alloc_slice encodeJSON(slice jsonData) const override;
         C4BlobStore& getBlobStore() const override;
         alloc_slice rawQuery(slice query) override {return dataFile()->rawQuery(query.asString());}
-        void createIndex(slice name,
-                         slice indexSpecJSON,
-                         C4IndexType indexType,
-                         const C4IndexOptions* C4NULLABLE indexOptions =nullptr) override;
-        void deleteIndex(slice name) override;
-        alloc_slice getIndexesInfo(bool fullInfo = true) const override;
-        alloc_slice getIndexRows(slice name) const override;
         void lockClientMutex() noexcept override                         {_clientMutex.lock();}
         void unlockClientMutex() noexcept override                       {_clientMutex.unlock();}
         C4RemoteID getRemoteDBID(slice remoteAddress, bool canCreate) override;

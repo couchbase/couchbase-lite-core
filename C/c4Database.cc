@@ -190,6 +190,35 @@ Retained<C4Query> C4Database::newQuery(C4QueryLanguage language, slice expr, int
 }
 
 
+#pragma mark - INDEXES:
+
+
+void C4Database::createIndex(slice indexName,
+                             slice indexSpec,
+                             C4QueryLanguage indexSpecLanguage,
+                             C4IndexType indexType,
+                             const C4IndexOptions *indexOptions)
+{
+    _defaultCollection->createIndex(indexName, indexSpec, indexSpecLanguage, indexType,
+                                    indexOptions);
+}
+
+
+void C4Database::deleteIndex(slice indexName) {
+    _defaultCollection->deleteIndex(indexName);
+}
+
+
+alloc_slice C4Database::getIndexesInfo(bool fullInfo) const {
+    return _defaultCollection->getIndexesInfo(fullInfo);
+}
+
+
+alloc_slice C4Database::getIndexRows(slice indexName) const {
+    return _defaultCollection->getIndexRows(indexName);
+}
+
+
 #pragma mark - COOKIES:
 
 

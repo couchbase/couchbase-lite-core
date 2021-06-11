@@ -466,14 +466,16 @@ namespace litecore {
 
 
         void createIndex(slice indexName,
-                         slice indexSpecJSON,
+                         slice indexSpec,
+                         C4QueryLanguage indexLanguage,
                          C4IndexType indexType,
                          const C4IndexOptions* indexOptions =nullptr) override
         {
             keyStore().createIndex(indexName,
-                               indexSpecJSON,
-                               (IndexSpec::Type)indexType,
-                               (const IndexSpec::Options*)indexOptions);
+                                   indexSpec,
+                                   (QueryLanguage)indexLanguage,
+                                   (IndexSpec::Type)indexType,
+                                   (const IndexSpec::Options*)indexOptions);
         }
 
         void deleteIndex(slice indexName) override {
@@ -491,7 +493,14 @@ namespace litecore {
                     FLEncoder_WriteKey(enc, slice("type"));
                     FLEncoder_WriteInt(enc, spec.type);
                     FLEncoder_WriteKey(enc, slice("expr"));
-                    FLEncoder_WriteString(enc, slice(spec.expressionJSON));
+                    FLEncoder_WriteString(enc, slice(spec.expression));
+                    FLEncoder_WriteKey(enc, slice("lang"));
+                    switch (spec.queryLanguage) {
+                        case QueryLanguage::kJSON:
+                            FLEncoder_WriteString(enc, slice("json")); break;
+                        case QueryLanguage::kN1QL:
+                            FLEncoder_WriteString(enc, slice("n1ql")); break;
+                    }
                     FLEncoder_EndDict(enc);
                 } else {
                     FLEncoder_WriteString(enc, slice(spec.name));

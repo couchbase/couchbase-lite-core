@@ -384,13 +384,14 @@ int64_t c4coll_purgeExpiredDocs(C4Collection *coll, C4Error * C4NULLABLE outErro
 
 bool c4coll_createIndex(C4Collection *coll,
                         C4String name,
-                        C4String indexSpecJSON,
+                        C4String indexSpec,
+                        C4QueryLanguage queryLanguage,
                         C4IndexType indexType,
                         const C4IndexOptions* C4NULLABLE indexOptions,
                         C4Error* C4NULLABLE outError) noexcept
 {
     return tryCatch(outError, [&]{
-        coll->createIndex(name, indexSpecJSON, indexType, indexOptions);
+        coll->createIndex(name, indexSpec, queryLanguage, indexType, indexOptions);
     });
 }
 
@@ -704,9 +705,28 @@ bool c4db_createIndex(C4Database *database,
                       const C4IndexOptions *indexOptions,
                       C4Error *outError) noexcept
 {
-    return c4coll_createIndex(database->getDefaultCollection(), name, indexSpecJSON,
+    return c4db_createIndex2(database,
+                             name,
+                             indexSpecJSON,
+                             kC4JSONQuery,
+                             indexType,
+                             indexOptions,
+                             outError);
+}
+
+
+bool c4db_createIndex2(C4Database *database,
+                       C4Slice name,
+                       C4Slice indexSpec,
+                       C4QueryLanguage queryLanguage,
+                       C4IndexType indexType,
+                       const C4IndexOptions *indexOptions,
+                       C4Error *outError) noexcept
+{
+    return c4coll_createIndex(database->getDefaultCollection(), name, indexSpec, queryLanguage,
                               indexType, indexOptions, outError);
 }
+
 
 
 // semi-deprecated
