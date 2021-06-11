@@ -152,12 +152,6 @@ C4API_BEGIN_DECLS
 
 #endif // C4_STRICT_COLLECTION_API
 
-    /** Returns the number of revisions of a document that are tracked. (Defaults to 20.) */
-    uint32_t c4db_getMaxRevTreeDepth(C4Database *database) C4API;
-
-    /** Configures the number of revisions of a document that are tracked. */
-    void c4db_setMaxRevTreeDepth(C4Database *database, uint32_t maxRevTreeDepth) C4API;
-
     /** Returns the database's public and/or private UUIDs. (Pass NULL for ones you don't want.) */
     bool c4db_getUUIDs(C4Database* database,
                        C4UUID* C4NULLABLE publicUUID, C4UUID* C4NULLABLE privateUUID,
