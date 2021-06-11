@@ -111,6 +111,23 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document PossibleAncestors", "[Document][C]") {
 #endif
 
 
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Get With Invalid ID", "[Document][C]") {
+    ExpectingExceptions x;
+    C4Error error = {};
+    CHECK(c4doc_get(db, nullslice, true, &error) == nullptr);
+    CHECK(error == (C4Error{LiteCoreDomain, kC4ErrorBadDocID}));
+
+    error = {};
+    CHECK(c4doc_get(db, ""_sl, true, &error) == nullptr);
+    CHECK(error == (C4Error{LiteCoreDomain, kC4ErrorBadDocID}));
+
+    error = {};
+    std::string tooLong(300, 'x');
+    CHECK(c4doc_get(db, slice(tooLong), true, &error) == nullptr);
+    CHECK(error == (C4Error{LiteCoreDomain, kC4ErrorBadDocID}));
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     // Try reading doc with mustExist=true, which should fail:
     C4Error error;

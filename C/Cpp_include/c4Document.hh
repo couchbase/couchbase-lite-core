@@ -137,6 +137,7 @@ struct C4Document : public fleece::RefCounted,
     static constexpr size_t kGeneratedIDLength = 23;
     static char* generateID(char *outDocID, size_t bufferSize) noexcept;
 
+    static constexpr size_t kMaxDocIDLength = 240;
     static bool isValidDocID(slice) noexcept;
     static void requireValidDocID(slice);       // throws kC4ErrorBadDocID
 

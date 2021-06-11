@@ -47,6 +47,9 @@ C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
 :_collection(asInternal(collection))
 ,_docID(move(docID_))
 {
+    // Quick sanity test of the docID, but no need to scan for valid UTF-8 since we're not inserting.
+    if (_docID.size < 1 || _docID.size > kMaxDocIDLength)
+        error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(docID_));
 #if DEBUG
     // Make sure that C4Document and C4Document_C line up so that the same object can serve as both:
     auto asStruct = (C4Document_C*)this;
@@ -299,7 +302,7 @@ void C4Document::resolveConflict(slice winningRevID,
 
 
 bool C4Document::isValidDocID(slice docID) noexcept {
-    return docID.size >= 1 && docID.size <= 240 && docID[0] != '_'
+    return docID.size >= 1 && docID.size <= kMaxDocIDLength && docID[0] != '_'
         && isValidUTF8(docID) && hasNoControlCharacters(docID);
 }
 
