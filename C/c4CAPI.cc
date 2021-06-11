@@ -113,7 +113,10 @@ C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* out
 
 C4StringResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
     try {
-        return C4StringResult(store->getFilePath(key));
+        auto result = C4StringResult(store->getFilePath(key));
+        if (!result.buf)
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
+        return result;
     } catchError(outError)
     return {};
 }
