@@ -1687,7 +1687,10 @@ C4Cert* c4cert_load(C4String name,
                     C4Error *outError)
 {
     return tryCatch<C4Cert*>(outError, [&]() {
-        return C4Cert::load(name).detach();
+        auto cert = C4Cert::load(name).detach();
+        if (!cert)
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, {}, outError);
+        return cert;
     });
 }
 

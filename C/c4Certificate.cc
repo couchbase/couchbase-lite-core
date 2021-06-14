@@ -66,7 +66,9 @@ CBL_CORE_API const C4CertIssuerParameters kDefaultCertIssuerParameters = {
 
 C4Cert::C4Cert(CertBase *impl)
 :_impl(impl)
-{ }
+{
+    Assert(impl);
+}
 
 
 C4Cert::~C4Cert() = default;
@@ -174,8 +176,10 @@ Retained<C4KeyPair> C4Cert::loadPersistentPrivateKey() {
 
 
 Retained<C4Cert> C4Cert::getNextInChain() {
-    if (auto signedCert = asSignedCert(); signedCert)
-        return new C4Cert(signedCert->next().get());
+    if (auto signedCert = asSignedCert(); signedCert) {
+        if (auto next = signedCert->next(); next)
+            return new C4Cert(next);
+    }
     return nullptr;
 }
 
@@ -291,7 +295,10 @@ void C4Cert::deleteNamed(slice name) {
 
 Retained<C4Cert> C4Cert::load(slice name) {
 #ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
-        return new C4Cert(Cert::loadCert(string(name)).get());
+    if (auto cert = Cert::loadCert(string(name)))
+        return new C4Cert(cert);
+    else
+        return nullptr;
 #else
     C4Error::raise(LiteCoreDomain, kC4ErrorUnimplemented, "No persistent key support");
 #endif
@@ -303,7 +310,9 @@ Retained<C4Cert> C4Cert::load(slice name) {
 
 C4KeyPair::C4KeyPair(Key *key)
 :_impl(key)
-{ }
+{
+    Assert(key);
+}
 
 
 C4KeyPair::~C4KeyPair() = default;
