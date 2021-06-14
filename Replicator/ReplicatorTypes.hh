@@ -104,7 +104,7 @@ namespace litecore { namespace repl {
                     bool noConflicts);
 
         /// Constructor for a revoked document
-        RevToInsert(slice docID,
+        RevToInsert(slice docID, slice revID,
                     RevocationMode);
 
         Dir dir() const override                    {return Dir::kPulling;}

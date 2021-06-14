@@ -163,12 +163,10 @@ namespace litecore::repl {
     }
 
 
-    void RevFinder::checkDocAndRevID(slice docID, slice revID =nullslice) {
+    void RevFinder::checkDocAndRevID(slice docID, slice revID) {
         bool valid;
         if (docID.size < 1 || docID.size > 255)
             valid = false;
-        else if (!revID)
-            valid = true;
         else if (_db->usingVersionVectors())
             valid = revID.findByte('@') && !revID.findByte('*');     // require absolute form
         else
@@ -202,9 +200,12 @@ namespace litecore::repl {
             slice revID = change[2].asString();
             int64_t deletion = change[3].asInt();
             uint64_t bodySize = change[4].asUnsigned();
+            
+            // Validate docID and revID:
+            checkDocAndRevID(docID, revID);
+            
             if (deletion <= 1) {
                 // New revision (or tombstone):
-                checkDocAndRevID(docID, revID);
                 docIDs.push_back(docID);
                 revIDs.push_back(revID);
                 changeIndexes.push_back(changeIndex);
@@ -213,10 +214,9 @@ namespace litecore::repl {
                 // Access lost -- doc removed from channel, or user lost access to channel.
                 // In SG 2.x "deletion" is a boolean flag, 0=normal, 1=deleted.
                 // SG 3.x adds 2=revoked, 3=revoked+deleted, 4=removal (from channel)
-                checkDocAndRevID(docID);
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
-                revoked.emplace_back(new RevToInsert(docID, mode));
+                revoked.emplace_back(new RevToInsert(docID, revID, mode));
                 sequences.push_back({RemoteSequence(change[0]), 0});
             }
             ++changeIndex;
