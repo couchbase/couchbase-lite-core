@@ -139,12 +139,6 @@ Accessors</h2></td></tr>
 <tr class="memitem:ga54162e9eac2f466d1ba329f5d8fa879b"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga54162e9eac2f466d1ba329f5d8fa879b">c4db_purgeExpiredDocs</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *)</td></tr>
 <tr class="memdesc:ga54162e9eac2f466d1ba329f5d8fa879b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Purges all documents that have expired.  <a href="#ga54162e9eac2f466d1ba329f5d8fa879b">More...</a><br /></td></tr>
 <tr class="separator:ga54162e9eac2f466d1ba329f5d8fa879b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3518626c9503ce302e7df6b618c2f0e3"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga3518626c9503ce302e7df6b618c2f0e3">c4db_getMaxRevTreeDepth</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database)</td></tr>
-<tr class="memdesc:ga3518626c9503ce302e7df6b618c2f0e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of revisions of a document that are tracked.  <a href="#ga3518626c9503ce302e7df6b618c2f0e3">More...</a><br /></td></tr>
-<tr class="separator:ga3518626c9503ce302e7df6b618c2f0e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa79b7e61a7b8e272ab70782855bdc5b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gaa79b7e61a7b8e272ab70782855bdc5b4">c4db_setMaxRevTreeDepth</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, uint32_t maxRevTreeDepth)</td></tr>
-<tr class="memdesc:gaa79b7e61a7b8e272ab70782855bdc5b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configures the number of revisions of a document that are tracked.  <a href="#gaa79b7e61a7b8e272ab70782855bdc5b4">More...</a><br /></td></tr>
-<tr class="separator:gaa79b7e61a7b8e272ab70782855bdc5b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaafd52f484b5d2fff22ed8729442e2972"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gaafd52f484b5d2fff22ed8729442e2972">c4db_getUUIDs</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="struct_c4_u_u_i_d.html">C4UUID</a> *publicUUID, <a class="el" href="struct_c4_u_u_i_d.html">C4UUID</a> *privateUUID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:gaafd52f484b5d2fff22ed8729442e2972"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the database's public and/or private UUIDs.  <a href="#gaafd52f484b5d2fff22ed8729442e2972">More...</a><br /></td></tr>
 <tr class="separator:gaafd52f484b5d2fff22ed8729442e2972"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -671,27 +665,6 @@ Database Maintenance</h2></td></tr>
 
 </div>
 </div>
-<a id="ga3518626c9503ce302e7df6b618c2f0e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3518626c9503ce302e7df6b618c2f0e3">&#9670;&nbsp;</a></span>c4db_getMaxRevTreeDepth()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t c4db_getMaxRevTreeDepth </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>database</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Returns the number of revisions of a document that are tracked. </p>
-<p>(Defaults to 20.) </p>
-
-</div>
-</div>
 <a id="ga8a5d2748be7291c11e45429ab408f7e3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga8a5d2748be7291c11e45429ab408f7e3">&#9670;&nbsp;</a></span>c4db_getName()</h2>
 
@@ -1017,36 +990,6 @@ Database Maintenance</h2></td></tr>
 <p>Associates an arbitrary pointer with this database instance, for client use. </p>
 <p>For example, this could be a reference to the higher-level object wrapping the database.</p>
 <p>The <code>destructor</code> field of the <code><a class="el" href="struct_c4_extra_info.html" title="Client-defined metadata that can be associated with some objects like C4Database.">C4ExtraInfo</a></code> can be used to provide a function that will be called when the C4Database is freed, so it can free any resources associated with the pointer. </p>
-
-</div>
-</div>
-<a id="gaa79b7e61a7b8e272ab70782855bdc5b4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa79b7e61a7b8e272ab70782855bdc5b4">&#9670;&nbsp;</a></span>c4db_setMaxRevTreeDepth()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void c4db_setMaxRevTreeDepth </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>database</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>maxRevTreeDepth</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Configures the number of revisions of a document that are tracked. </p>
 
 </div>
 </div>

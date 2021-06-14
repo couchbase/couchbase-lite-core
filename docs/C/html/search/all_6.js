@@ -232,7 +232,7 @@ var searchData=
   ['flslot_5fsetstring',['FLSlot_SetString',['../group___slots.html#gaa5985ea283cf483b7b66dfc2ac3e7d23',1,'Fleece.h']]],
   ['flslot_5fsetuint',['FLSlot_SetUInt',['../group___slots.html#ga87bf66ca2647a6df2cdb4fa5db5f3c5a',1,'Fleece.h']]],
   ['flslot_5fsetvalue',['FLSlot_SetValue',['../group___slots.html#ga33b10e12e20e7b0bec1bbb0bd98ad36d',1,'Fleece.h']]],
-  ['flstr',['FLSTR',['../group___f_l_slice.html#ga0e82def46e214a706216353705768453',1,'FLSTR():&#160;FLSlice.h'],['../group___f_l_slice.html#gae9d0af13963246fd37fbf16c4b237f53',1,'FLStr(const char *str):&#160;FLSlice.h']]],
+  ['flstr',['FLStr',['../group___f_l_slice.html#gae9d0af13963246fd37fbf16c4b237f53',1,'FLStr(const char *str):&#160;FLSlice.h'],['../group___f_l_slice.html#ga0e82def46e214a706216353705768453',1,'FLSTR():&#160;FLSlice.h']]],
   ['flstring',['FLString',['../group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76',1,'FLSlice.h']]],
   ['flstringresult',['FLStringResult',['../group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd',1,'FLSlice.h']]],
   ['fltimestamp',['FLTimestamp',['../group___f_l_value.html#ga154a21cd670c72d154c8bb78b4b3a5d3',1,'Fleece.h']]],
