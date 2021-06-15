@@ -74,7 +74,8 @@ namespace litecore { namespace repl {
         msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
         if (_skipDeleted)
             msg["activeOnly"_sl] = "true"_sl;
-        msg["revocations"] = "true";        // Enable revocation notification in "changes" (SG 3.0)
+        if (_options.enableAutoPurge() || progressNotificationLevel() > 0)
+            msg["revocations"] = "true";    // Enable revocation notification in "changes" (SG 3.0)
 
         auto channels = _options.channels();
         if (channels) {
