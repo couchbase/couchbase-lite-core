@@ -1764,7 +1764,7 @@ YY_ACTION(void) yy_6_expr6(yycontext *yy, char *yytext, int yyleng)
   yyprintf((stderr, "do yy_6_expr6\n"));
   {
 #line 185
-   __ = binaryOp(x, "IS NOT", op("MISSING")); ;
+   __ = op(x, "IS NOT", op("MISSING")); ;
   }
 #undef yythunkpos
 #undef yypos
