@@ -48,6 +48,7 @@ namespace litecore {
     :RevTree(other)
     ,_store(other._store)
     ,_rec(other._rec)
+    ,_contentLoaded(other._contentLoaded)
     {
         updateScope();
     }
