@@ -630,8 +630,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
         fleece::alloc_slice oldRevID(doc->revID);
         auto updatedDoc = c4doc_update(doc, json2fleece("{'ok':'go'}"), 0, ERROR_INFO(error));
         REQUIRE(updatedDoc);
-//        CHECK(doc->selectedRev.revID == oldRevID);
-//        CHECK(doc->revID == oldRevID);
+        CHECK(updatedDoc != doc);
+        CHECK(doc->selectedRev.revID == oldRevID);
+        CHECK(doc->revID == oldRevID);
         c4doc_release(doc);
         doc = updatedDoc;
     }

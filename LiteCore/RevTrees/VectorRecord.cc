@@ -134,6 +134,11 @@ namespace litecore {
     { }
 
 
+    VectorRecord::VectorRecord(const VectorRecord &other)
+    :VectorRecord(other._store, other._versioning, other.originalRecord())
+    { }
+
+
     VectorRecord::~VectorRecord() = default;
 
 
@@ -193,6 +198,24 @@ namespace litecore {
         if (which == kEntireBody && oldWhich < kEntireBody)
             readRecordExtra(rec.extra());
         return true;
+    }
+
+
+    // Reconstitutes the original Record I was loaded from
+    Record VectorRecord::originalRecord() const {
+        Record rec(_docID);
+        rec.updateSequence(_sequence);
+        rec.updateSubsequence(_subsequence);
+        if (_sequence > 0)
+            rec.setExists();
+        rec.setVersion(_revID);
+        rec.setFlags(_docFlags);
+        if (_bodyDoc)
+            rec.setBody(_bodyDoc.allocedData());
+        if (_extraDoc)
+            rec.setExtra(_extraDoc.allocedData());
+        rec.setContentLoaded(_whichContent);
+        return rec;
     }
 
 

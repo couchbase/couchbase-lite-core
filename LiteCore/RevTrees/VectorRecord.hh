@@ -98,6 +98,8 @@ namespace litecore {
         /// Reads a document given the docID.
         VectorRecord(KeyStore& store, Versioning, slice docID, ContentOption =kEntireBody);
 
+        VectorRecord(const VectorRecord&);
+
         ~VectorRecord();
 
         /// You can store a pointer to whatever you want here.
@@ -235,6 +237,7 @@ namespace litecore {
         fleece::Doc newLinkedFleeceDoc(const alloc_slice &body);
         void readRecordBody(const alloc_slice &body);
         void readRecordExtra(const alloc_slice &extra);
+        Record originalRecord() const;
         void requireBody() const;
         void requireRemotes() const;
         void mustLoadRemotes();
