@@ -62,6 +62,8 @@ namespace litecore { namespace blip {
     private:
         using slice_istream = fleece::slice_istream;
 
+        std::pair<slice,slice> getPropsAndBody() const;
+
         static const uint32_t kMaxUnackedBytes = 128000;
 
         /** Manages the data (properties, body, data source) of a MessageOut. */
@@ -70,7 +72,8 @@ namespace litecore { namespace blip {
             Contents(alloc_slice payload, MessageDataSource dataSource);
             slice_istream& dataToSend();
             bool hasMoreDataToSend() const;
-            void getPropsAndBody(slice &props, slice &body) const;
+            std::pair<slice,slice> getPropsAndBody() const;
+            slice body() const                  {return _payload;}
         private:
             void readFromDataSource();
 

@@ -129,8 +129,7 @@ namespace litecore { namespace blip {
 
 
     void MessageOut::dump(std::ostream& out, bool withBody) {
-        slice props, body;
-        _contents.getPropsAndBody(props, body);
+        auto [props, body] = getPropsAndBody();
         if (!withBody)
             body = nullslice;
         Message::dump(props, body, out);
@@ -139,7 +138,7 @@ namespace litecore { namespace blip {
 
     const char* MessageOut::findProperty(const char *propertyName) {
         slice props, body;
-        _contents.getPropsAndBody(props, body);
+        tie(props, body) = getPropsAndBody();
         return Message::findProperty(props, propertyName);
     }
 
@@ -147,13 +146,21 @@ namespace litecore { namespace blip {
     string MessageOut::description() {
         stringstream s;
         slice props, body;
-        _contents.getPropsAndBody(props, body);
+        tie(props, body) = getPropsAndBody();
         writeDescription(props, s);
         return s.str();
     }
 
 
 #pragma mark - DATA:
+
+
+    pair<slice,slice> MessageOut::getPropsAndBody() const {
+        if (type() < kAckRequestType)
+            return _contents.getPropsAndBody();
+        else
+            return {nullslice, _contents.body()};            // (ACKs do not have properties)
+    }
 
 
     MessageOut::Contents::Contents(alloc_slice payload, MessageDataSource dataSource)
@@ -205,19 +212,18 @@ namespace litecore { namespace blip {
     }
 
 
-    void MessageOut::Contents::getPropsAndBody(slice &props, slice &body) const {
+    pair<slice,slice> MessageOut::Contents::getPropsAndBody() const {
         slice_istream in = _payload;
         if (in.size > 0) {
+            // This assumes the message starts with properties, which start with a UVarInt32.
             optional<uint32_t> propertiesSize = in.readUVarInt32();
             if (!propertiesSize || *propertiesSize > in.size)
                 error::_throw(error::CorruptData, "Invalid properties size in BLIP frame");
             in.setSize(*propertiesSize);
         } else if (!in.buf) {
-            props = body = nullslice;
-            return;
+            return {nullslice, nullslice};
         }
-        props = in;
-        body = slice(in.end(), _payload.end());
+        return {in, slice(in.end(), _payload.end())};
     }
 
 } }
