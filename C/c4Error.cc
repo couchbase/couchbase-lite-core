@@ -270,18 +270,18 @@ static const char* getErrorName(C4Error err) {
 
 
 __cold
-C4SliceResult c4error_getMessage(C4Error err) noexcept {
+C4StringResult c4error_getMessage(C4Error err) noexcept {
     if (string msg = getErrorMessage(err); msg.empty())
         return {};
     else
-        return sliceResult(msg);
+        return nullPaddedStringResult(msg);
 }
 
 
 __cold
-C4SliceResult c4error_getDescription(C4Error error) noexcept {
+C4StringResult c4error_getDescription(C4Error error) noexcept {
     if (error.code == 0)
-        return sliceResult("No error");
+        return nullPaddedStringResult("No error");
     const char *errName = getErrorName(error);
     stringstream str;
     str << error::nameOfDomain((error::Domain)error.domain) << " ";
@@ -290,13 +290,13 @@ C4SliceResult c4error_getDescription(C4Error error) noexcept {
     else
         str << "error " << error.code;
     str << ", \"" << getErrorMessage(error) << "\"";
-    return sliceResult(str.str());
+    return nullPaddedStringResult(str.str());
 }
 
 
 __cold
 char* c4error_getDescriptionC(C4Error error, char buffer[], size_t bufferSize) noexcept {
-    C4SliceResult msg = c4error_getDescription(error);
+    C4StringResult msg = c4error_getDescription(error);
     auto len = min(msg.size, bufferSize-1);
     if (msg.buf)
         memcpy(buffer, msg.buf, len);
@@ -313,7 +313,7 @@ __cold void c4error_setCaptureBacktraces(bool c) noexcept       {error::sCapture
 __cold
 C4StringResult c4error_getBacktrace(C4Error error) noexcept {
     if (auto info = ErrorTable::instance().copy(error); info && info->backtrace)
-        return sliceResult(info->backtrace->toString());
+        return nullPaddedStringResult(info->backtrace->toString());
     return {};
 }
 

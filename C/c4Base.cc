@@ -79,7 +79,7 @@ static string getBuildInfo() {
 
 
 C4StringResult c4_getBuildInfo() C4API {
-    return sliceResult(getBuildInfo());
+    return stringResult(getBuildInfo());
 }
 
 
@@ -100,7 +100,7 @@ C4StringResult c4_getVersion() C4API {
     else
         vers = format("%s%s (%s:%s%.1s)", LiteCoreVersion, ee, GitBranch, commit.c_str(), GitDirty);
 #endif
-    return sliceResult(vers);
+    return stringResult(vers);
 }
 // LCOV_EXCL_STOP
 
@@ -117,15 +117,26 @@ C4SliceResult c4slice_createResult(C4Slice slice) {
 
 namespace c4Internal {
 
-    C4SliceResult sliceResult(const char *str) {
+    C4StringResult stringResult(const char *str) {
         if (str)
-            return C4SliceResult(slice(str));
+            return C4StringResult(alloc_slice(str));
         else
-            return {nullptr, 0};
+            return {};
     }
 
-    C4SliceResult sliceResult(const string &str) {
+    C4StringResult stringResult(const string &str) {
         return C4SliceResult(alloc_slice(str));
+    }
+
+    C4StringResult nullPaddedStringResult(const char *str) {
+        if (str)
+            return C4StringResult(alloc_slice::nullPaddedString(str));
+        else
+            return {};
+    }
+
+    C4StringResult nullPaddedStringResult(const string &str) {
+        return C4StringResult(alloc_slice::nullPaddedString(str));
     }
 
     string toString(C4Slice s) {

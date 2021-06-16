@@ -138,16 +138,16 @@ C4Slice c4doc_getRevisionBody(C4Document* doc) C4API {
 }
 
 
-C4SliceResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API {
-    return C4SliceResult(asInternal(doc)->getSelectedRevIDGlobalForm());
+C4StringResult c4doc_getSelectedRevIDGlobalForm(C4Document* doc) C4API {
+    return C4StringResult(asInternal(doc)->getSelectedRevIDGlobalForm());
 }
 
 
-C4SliceResult c4doc_getRevisionHistory(C4Document* doc,
+C4StringResult c4doc_getRevisionHistory(C4Document* doc,
                                        unsigned maxRevs,
                                        const C4String backToRevs[],
                                        unsigned backToRevsCount) C4API {
-    return C4SliceResult(asInternal(doc)->getSelectedRevHistory(maxRevs,
+    return C4StringResult(asInternal(doc)->getSelectedRevHistory(maxRevs,
                                                                 backToRevs, backToRevsCount));
 }
 
@@ -262,27 +262,27 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
 }
 
 
-C4SliceResult c4db_getRemoteDBAddress(C4Database *db, C4RemoteID remoteID) C4API {
+C4StringResult c4db_getRemoteDBAddress(C4Database *db, C4RemoteID remoteID) C4API {
     using namespace fleece;
-    return tryCatch<C4SliceResult>(nullptr, [&]{
+    return tryCatch<C4StringResult>(nullptr, [&]{
         Record doc = db->getRawDocument(toString(kC4InfoStore), slice(kRemoteDBURLsDoc));
         if (doc.exists()) {
             auto body = Value::fromData(doc.body());
             if (body) {
                 for (Dict::iterator i(body->asDict()); i; ++i) {
                     if (i.value()->asInt() == remoteID)
-                        return C4SliceResult(i.keyString());
+                        return C4StringResult(i.keyString());
                 }
             }
         }
-        return C4SliceResult{};
+        return C4StringResult{};
     });
 }
 
 
-C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase) C4API {
-    return tryCatch<C4SliceResult>(nullptr, [&]{
-        return C4SliceResult(asInternal(doc)->remoteAncestorRevID(remoteDatabase));
+C4StringResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase) C4API {
+    return tryCatch<C4StringResult>(nullptr, [&]{
+        return C4StringResult(asInternal(doc)->remoteAncestorRevID(remoteDatabase));
     });
 }
 
@@ -745,9 +745,9 @@ C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outErro
 }
 
 
-C4SliceResult c4doc_bodyAsJSON(C4Document *doc, bool canonical, C4Error *outError) noexcept {
-    return tryCatch<C4SliceResult>(outError, [&]{
-        return C4SliceResult(c4Internal::asInternal(doc)->bodyAsJSON(canonical));
+C4StringResult c4doc_bodyAsJSON(C4Document *doc, bool canonical, C4Error *outError) noexcept {
+    return tryCatch<C4StringResult>(outError, [&]{
+        return C4StringResult(c4Internal::asInternal(doc)->bodyAsJSON(canonical));
     });
 }
 

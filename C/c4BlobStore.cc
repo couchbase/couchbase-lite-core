@@ -52,9 +52,9 @@ bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
 }
 
 
-C4SliceResult c4blob_keyToString(C4BlobKey key) noexcept {
+C4StringResult c4blob_keyToString(C4BlobKey key) noexcept {
     string str = asInternal(key).base64String();
-    return sliceResult(str);
+    return stringResult(str);
 }
 
 
@@ -127,7 +127,7 @@ C4StringResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* ou
             c4error_return(LiteCoreDomain, kC4ErrorWrongFormat, {}, outError);
             return {nullptr, 0};
         }
-        return sliceResult((string)path);
+        return nullPaddedStringResult((string)path);
     } catchError(outError)
     return {nullptr, 0};
 }
