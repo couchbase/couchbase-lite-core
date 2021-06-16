@@ -946,12 +946,12 @@ namespace litecore {
     DefineUnaryMathFn(tan,   tan)
 
 
-    // atan2(x, y) returns the arctangent of y/x, i.e. the angle of the vector from the origin to
+    // atan2(y, x) returns the arctangent of y/x, i.e. the angle of the vector from the origin to
     // (x, y). It works correctly in all quadrants, and when x=0.
     static void fl_atan2(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         if (isNumeric(ctx, argv[0]) && isNumeric(ctx, argv[1]))
-            sqlite3_result_double(ctx, atan2(sqlite3_value_double(argv[1]),
-                                             sqlite3_value_double(argv[0])));
+            sqlite3_result_double(ctx, atan2(sqlite3_value_double(argv[0]),
+                                             sqlite3_value_double(argv[1])));
     }
 
     static void fl_power(sqlite3_context* ctx, int argc, sqlite3_value **argv) {

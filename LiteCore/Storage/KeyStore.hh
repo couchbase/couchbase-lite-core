@@ -32,12 +32,6 @@ namespace litecore {
     class Query;
 
 
-    enum class QueryLanguage {          // Values MUST match C4QueryLanguage in c4Query.h
-        kJSON,
-        kN1QL,
-    };
-
-
     enum class ReadBy {
         Key,
         Sequence
@@ -183,9 +177,19 @@ namespace litecore {
         virtual bool supportsIndexes(IndexSpec::Type) const                   {return false;}
         virtual bool createIndex(const IndexSpec&) =0;
         bool createIndex(slice name,
-                         slice expressionJSON,
+                         slice expression,
+                         QueryLanguage queryLanguage,
                          IndexSpec::Type =IndexSpec::kValue,
                          const IndexSpec::Options* = nullptr); // convenience method
+
+        bool createIndex(slice name,
+                         slice expression,
+                         IndexSpec::Type type =IndexSpec::kValue,
+                         const IndexSpec::Options* options = nullptr) // convenience method
+        {
+            return createIndex(name, expression, QueryLanguage::kJSON, type, options);
+        }
+
         virtual void deleteIndex(slice name) =0;
         virtual std::vector<IndexSpec> getIndexes() const =0;
 

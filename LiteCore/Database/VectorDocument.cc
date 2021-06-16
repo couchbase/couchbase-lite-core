@@ -54,6 +54,18 @@ namespace litecore {
         }
 
 
+        VectorDocument(const VectorDocument &other)
+        :C4Document(other)
+        ,_doc(other._doc)
+        ,_remoteID(other._remoteID)
+        { }
+
+
+        Retained<C4Document> copy() const override {
+            return new VectorDocument(*this);
+        }
+
+
         ~VectorDocument() {
             _doc.owner = nullptr;
         }

@@ -92,6 +92,7 @@ namespace litecore { namespace repl {
         alloc_slice             historyBuf;             // Revision history (comma-delimited revIDs)
         fleece::Doc             doc;
         const bool              noConflicts {false};    // Server is in no-conflicts mode
+        RevocationMode          revocationMode = RevocationMode::kNone;
         Retained<IncomingRev>   owner;                  // Object that's processing this rev
         alloc_slice             deltaSrc;
         alloc_slice             deltaSrcRevID;          // Source revision if body is a delta
@@ -101,6 +102,10 @@ namespace litecore { namespace repl {
                     slice historyBuf,
                     bool deleted,
                     bool noConflicts);
+
+        /// Constructor for a revoked document
+        RevToInsert(slice docID, slice revID,
+                    RevocationMode);
 
         Dir dir() const override                    {return Dir::kPulling;}
         void trim() override;

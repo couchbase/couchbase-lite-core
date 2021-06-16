@@ -1331,7 +1331,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Pu
     }));
 
     _expectedDocumentCount = -1;
-    _expectedDocPushErrors = {"doc"};
+    _expectedDocPushErrors = {"doc"};   // there are likely to be conflicts
+    _ignoreLackOfDocErrors = true;      // ...but they may not occur
     _ignoreTransientErrors = true;      // (retries will show up as transient errors)
     _checkDocsFinished = false;
 

@@ -50,6 +50,14 @@
 			},
             "allow_conflicts": true
 		},
+        "scratch_revocation": {
+            "server": "walrus:",
+            "users": {
+                "pupshaw": {"password": "frank", "admin_channels": ["a", "b"] }
+            },
+            "allow_conflicts": false
+            "sync": `function (doc, oldDoc) { channel(doc.channels); }`
+        },
 		"seekrit": {
 			"server": "walrus:",
 			"users": {

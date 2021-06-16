@@ -45,6 +45,8 @@ namespace litecore { namespace repl {
             virtual void caughtUp() =0;
             /** Tells the Delegate about the "rev" messages it will be receiving. */
             virtual void expectSequences(std::vector<ChangeSequence>) =0;
+            /** These document(s) are no longer accessible on the server and should be purged. */
+            virtual void documentsRevoked(std::vector<Retained<RevToInsert>>) =0;
         };
 
         RevFinder(Replicator* NONNULL, Delegate* NONNULL);

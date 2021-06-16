@@ -38,11 +38,11 @@ protected:
     virtual string collectionTableName(const string &collection, DeletionStatus type) const override {
         CHECK(!hasPrefix(collection, "kv_"));   // make sure I didn't get passed a table name
         string table;
-        if (type == kLiveAndDeletedDocs) {
+        if (type == litecore::QueryParser::kLiveAndDeletedDocs) {
             table = "all_";
         } else {
             table = "kv_";
-            if (type == kDeletedDocs)
+            if (type == litecore::QueryParser::kDeletedDocs)
                 table += "del_";
         }
         if (collection == "_default")

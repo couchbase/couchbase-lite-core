@@ -28,8 +28,12 @@ namespace litecore { namespace n1ql {
 %}
 
 
-n1ql =
-    _ s:selectStatement _ !.            { $$ = s;}
+n1ql = _
+    s:selectStatement _ !.            { $$ = s;}
+    |
+    sr:selectResults !.               { MutableDict dict = MutableDict::newDict();
+                                        setAny(dict, "WHAT", sr);
+                                        $$ = dict; }
 
 
 ######## SELECT STATEMENT:
@@ -180,7 +184,7 @@ expr6 =
     )
   | x:expr5 IS NOT (
         NULL                            { $$ = binaryOp(x, "IS NOT", nullValue); }
-      | MISSING                         { $$ = op(x, "IS NOT", op("MISSING")); }
+      | MISSING                         { $$ = binaryOp(x, "IS NOT", op("MISSING")); }
       | VALUED                          { $$ = op("NOT", op("IS VALUED", x)); }
     )
   | inExpression

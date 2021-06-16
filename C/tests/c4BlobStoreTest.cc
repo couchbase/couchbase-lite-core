@@ -69,11 +69,12 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "missing blobs", "[blob][C]") {
     
     CHECK(c4blob_getSize(store, bogusKey) == -1);
 
-    C4Error error;
+    C4Error error = {};
     C4SliceResult data = c4blob_getContents(store, bogusKey, &error);
     CHECK(data.buf == nullptr);
     CHECK(data.size == 0);
     CHECK(error.code == kC4ErrorNotFound);
+    error = {};
     data = c4blob_getFilePath(store, bogusKey, &error);
     CHECK(data.buf == nullptr);
     CHECK(data.size == 0);

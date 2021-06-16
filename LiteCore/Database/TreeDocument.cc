@@ -70,6 +70,11 @@ namespace litecore {
         }
 
 
+        Retained<C4Document> copy() const override {
+            return new TreeDocument(*this);
+        }
+
+
         void init() {
             _revTree.owner = this;
             _revTree.setPruneDepth(asInternal(database())->maxRevTreeDepth());

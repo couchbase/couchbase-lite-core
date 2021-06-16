@@ -42,6 +42,9 @@ struct C4Document : public fleece::RefCounted,
 {
     // NOTE: Instances are created with database->getDocument or database->putDocument.
 
+    /// Creates a new instance identical to this one, except its `extraInfo` is unset.
+    virtual Retained<C4Document> copy() const =0;
+
     // Accessors:
 
     C4DocumentFlags     flags() const noexcept FLPURE       {return _flags;}
@@ -120,11 +123,10 @@ struct C4Document : public fleece::RefCounted,
 
     // Updating & Saving:
 
-    /** Adds a new revision to this document, saves it to the database, and returns a
-        document instance that knows the new revision -- it may or may not be the same instance
-        as this one.
+    /** Adds a new revision to this document in the database, and returns a
+        new document instance that has the new revision.
         If the database already contains a conflicting revision, returns nullptr. */
-    virtual Retained<C4Document> update(slice revBody, C4RevisionFlags);
+    virtual Retained<C4Document> update(slice revBody, C4RevisionFlags) const;
 
     /** Saves changes to the document. Returns false on conflict. */
     virtual bool save(unsigned maxRevTreeDepth =0) =0;
@@ -137,6 +139,7 @@ struct C4Document : public fleece::RefCounted,
     static constexpr size_t kGeneratedIDLength = 23;
     static char* generateID(char *outDocID, size_t bufferSize) noexcept;
 
+    static constexpr size_t kMaxDocIDLength = 240;
     static bool isValidDocID(slice) noexcept;
     static void requireValidDocID(slice);       // throws kC4ErrorBadDocID
 
@@ -161,6 +164,7 @@ protected:
     friend class litecore::Upgrader;
 
     C4Document(C4Collection*, alloc_slice docID_);
+    C4Document(const C4Document&);
     virtual ~C4Document();
 
     litecore::KeyStore& keyStore() const;
@@ -171,12 +175,25 @@ protected:
 
     void clearSelectedRevision() noexcept;
 
-    // Returns the index (in rq.history) of the common ancestor; or -1 on error
-    virtual int32_t putExistingRevision(const C4DocPutRequest&, C4Error* C4NULLABLE) =0;
+    /// Subroutine of \ref CollectionImpl::putDocument that adds a revision with an existing revID,
+    /// i.e. one pulled by the replicator.
+    /// To avoid throwing exceptions in normal circumstances, this function will return common
+    /// errors via an `outError` parameter. It can also throw exceptions for unexpected errors.
+    /// @param rq  The put request
+    /// @param outError  "Expected" errors like Conflict or Not Found will be stored here.
+    /// @return the index (in rq.history) of the common ancestor; or -1 on error.
+    virtual int32_t putExistingRevision(const C4DocPutRequest &rq, C4Error* C4NULLABLE outError) =0;
 
-    // Returns false on error
-    virtual bool putNewRevision(const C4DocPutRequest&, C4Error* C4NULLABLE) =0;
+    /// Subroutine of \ref CollectionImpl::putDocument and \ref C4Document::update that adds a new
+    /// revision, i.e. when saving a document.
+    /// To avoid throwing exceptions in normal circumstances, this function will return common
+    /// errors via an `outError` parameter. It can also throw exceptions for unexpected errors.
+    /// @param rq  The put request
+    /// @param outError  "Expected" errors like Conflict or Not Found will be stored here.
+    /// @return  True on success, false on error
+    virtual bool putNewRevision(const C4DocPutRequest &rq, C4Error* C4NULLABLE outError) =0;
 
+    /// Subroutine of \ref update that sanity checks the parameters before trying to save.
     bool checkNewRev(slice parentRevID,
                      C4RevisionFlags flags,
                      bool allowConflict,

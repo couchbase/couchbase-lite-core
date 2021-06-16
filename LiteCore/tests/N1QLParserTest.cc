@@ -218,6 +218,11 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
              "'ORDER_BY':[['.CATG'],['.numprods']],"
              "'WHAT':[['AS',['.product.categories'],'CATG'],['AS',['COUNT()',['.']],'numprods']],"
              "'WHERE':['=',['.test_id'],'agg_func']}");
+    CHECK(translate("SELECT unitPrice, name FROM _default AS product WHERE unitPrice IS NOT MISSING AND "
+                    "test_id=\"where_func\" ORDER BY unitPrice, productId LIMIT 3")
+          == "{'FROM':[{'AS':'product','COLLECTION':'_default'}],'LIMIT':3,'ORDER_BY':[['.unitPrice'],['.productId']],"
+             "'WHAT':[['.unitPrice'],['.name']],"
+             "'WHERE':['AND',['IS NOT',['.unitPrice'],['MISSING']],['=',['.test_id'],'where_func']]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {

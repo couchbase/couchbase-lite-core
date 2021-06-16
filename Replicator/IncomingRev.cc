@@ -53,16 +53,21 @@ namespace litecore { namespace repl {
     }
 
 
-    // Read the 'rev' message, then parse either synchronously or asynchronously.
-    // This runs on the caller's (Puller's) thread.
-    void IncomingRev::handleRev(blip::MessageIn *msg) {
+    // (Re)initialize state (I can be used multiple times by the Puller):
+    void IncomingRev::reinitialize() {
         Signpost::begin(Signpost::handlingRev, _serialNumber);
-
-        // (Re)initialize state (I can be used multiple times by the Puller):
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
         _provisionallyInserted = false;
         DebugAssert(_pendingCallbacks == 0 && !_writer && _pendingBlobs.empty());
         _blob = _pendingBlobs.end();
+
+    }
+
+
+    // Read the 'rev' message, then parse either synchronously or asynchronously.
+    // This runs on the caller's (Puller's) thread.
+    void IncomingRev::handleRev(blip::MessageIn *msg) {
+        reinitialize();
 
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
@@ -131,6 +136,30 @@ namespace litecore { namespace repl {
     }
 
 
+    // We've lost access to this doc on the server; it should be purged.
+    void IncomingRev::handleRevokedDoc(RevToInsert *rev) {
+        reinitialize();
+        _rev = rev;
+        rev->owner = this;
+        
+        // Do not purge if the auto-purge is not enabled:
+        if (!_options.enableAutoPurge()) {
+            finish();
+            return;
+        }
+        
+        // Call the custom validation function if any:
+        if (_options.pullValidator) {
+            // Revoked rev body is empty when sent to the filter:
+            auto body = Dict::emptyDict();
+            if (!performPullValidation(body))
+                return;
+        }
+        
+        insertRevision();
+    }
+
+
     void IncomingRev::parseAndInsert(alloc_slice jsonBody) {
         // First create a Fleece document:
         Doc fleeceDoc;
@@ -179,8 +208,13 @@ namespace litecore { namespace repl {
 
         // SG sends a fake revision with a "_removed":true property, to indicate that the doc is
         // no longer accessible (not in any channel the client has access to.)
-        if (root["_removed"_sl].asBool())
+        if (root["_removed"_sl].asBool()) {
             _rev->flags |= kRevPurged;
+            if (!_options.enableAutoPurge()) {
+                finish();
+                return;
+            }
+        }
 
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
@@ -209,15 +243,10 @@ namespace litecore { namespace repl {
         });
 
         // Call the custom validation function if any:
-        if (_options.pullValidator) {
-            if (!_options.pullValidator(nullslice,     // TODO: Collection support
-                                        _rev->docID, _rev->revID, _rev->flags, root,
-                                        _options.callbackContext)) {
-                failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
-                _pendingBlobs.clear();
-                _blob = _pendingBlobs.end();
-                return;
-            }
+        if (!performPullValidation(root)) {
+            _pendingBlobs.clear();
+            _blob = _pendingBlobs.end();
+            return;
         }
 
         // Request the first blob, or if there are none, insert the revision into the DB:
@@ -228,12 +257,25 @@ namespace litecore { namespace repl {
         }
     }
 
+    // Calls the custom pull validator if available.
+    bool IncomingRev::performPullValidation(Dict body) {
+        if (_options.pullValidator) {
+            if (!_options.pullValidator(nullslice,     // TODO: Collection support
+                                        _rev->docID, _rev->revID, _rev->flags, body,
+                                        _options.callbackContext)) {
+                failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     // Asks the Inserter (via the Puller) to insert the revision into the database.
     void IncomingRev::insertRevision() {
         Assert(_blob == _pendingBlobs.end());
         Assert(_rev->error.code == 0);
-        Assert(_rev->deltaSrc || _rev->doc);
+        Assert(_rev->deltaSrc || _rev->doc || _rev->revocationMode != RevocationMode::kNone);
         increment(_pendingCallbacks);
         //Signpost::mark(Signpost::gotRev, _serialNumber);
         _puller->insertRevision(_rev);

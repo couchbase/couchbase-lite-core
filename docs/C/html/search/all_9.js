@@ -128,6 +128,7 @@ var searchData=
   ['kc4replicatorcompressionlevel',['kC4ReplicatorCompressionLevel',['../group___replicator.html#gae5750eb2de8aa268dfbd28d0352a849b',1,'c4ReplicatorTypes.h']]],
   ['kc4replicatorheartbeatinterval',['kC4ReplicatorHeartbeatInterval',['../group___replicator.html#ga8e9d89a7e439da283b860ead16cd0e44',1,'c4ReplicatorTypes.h']]],
   ['kc4replicatoroptionauthentication',['kC4ReplicatorOptionAuthentication',['../group___replicator.html#gad6e79a3fbaa188ae8e31fc23d7116d0a',1,'c4ReplicatorTypes.h']]],
+  ['kc4replicatoroptionautopurge',['kC4ReplicatorOptionAutoPurge',['../group___replicator.html#ga60b585afa24ae96f68527fa933f54627',1,'c4ReplicatorTypes.h']]],
   ['kc4replicatoroptionchannels',['kC4ReplicatorOptionChannels',['../group___replicator.html#gabaf733f2e0c86efc9ac0b936926a4ceb',1,'c4ReplicatorTypes.h']]],
   ['kc4replicatoroptioncookies',['kC4ReplicatorOptionCookies',['../group___replicator.html#gaa5c840d6c855ecf856ad6fdd613ed5aa',1,'c4ReplicatorTypes.h']]],
   ['kc4replicatoroptiondisabledeltas',['kC4ReplicatorOptionDisableDeltas',['../group___replicator.html#gaacae6d5287ee45a12ca238207f463236',1,'c4ReplicatorTypes.h']]],

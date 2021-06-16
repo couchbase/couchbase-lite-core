@@ -47,6 +47,9 @@ C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
 :_collection(asInternal(collection))
 ,_docID(move(docID_))
 {
+    // Quick sanity test of the docID, but no need to scan for valid UTF-8 since we're not inserting.
+    if (_docID.size < 1 || _docID.size > kMaxDocIDLength)
+        error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(docID_));
 #if DEBUG
     // Make sure that C4Document and C4Document_C line up so that the same object can serve as both:
     auto asStruct = (C4Document_C*)this;
@@ -107,6 +110,21 @@ C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
 
 C4Document::~C4Document() {
     destructExtraInfo(_extraInfo);
+}
+
+
+C4Document::C4Document(const C4Document &doc)
+:_flags(doc._flags)
+,_docID(doc._docID)
+,_revID(doc._revID)
+,_sequence(doc._sequence)
+,_selected(doc._selected)
+,_selectedRevID(doc._selectedRevID)
+,_collection(doc._collection)
+{
+    _selected.revID = _selectedRevID;
+    // Note: _extraInfo is not copied. It may be a pointer allocated by the client, which we should
+    // not create a second reference to without its knowledge.
 }
 
 
@@ -177,25 +195,7 @@ alloc_slice C4Document::createDocID() {
 }
 
 
-// Errors other than NotFound, Conflict and delta failures
-// should be thrown as exceptions, in the C++ API.
-static void throwIfUnexpected(const C4Error &inError, C4Error *outError) {
-    if (outError)
-        *outError = inError;
-    if (inError.domain == LiteCoreDomain) {
-        switch (inError.code) {
-            case kC4ErrorNotFound:
-            case kC4ErrorConflict:
-            case kC4ErrorDeltaBaseUnknown:
-            case kC4ErrorCorruptDelta:
-                return; // don't throw these errors
-        }
-    }
-    inError.raise();
-}
-
-
-Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags) {
+Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags) const {
     auto db = asInternal(database());
     db->mustBeInTransaction();
     db->validateRevisionBody(revBody);
@@ -210,13 +210,16 @@ Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags)
     rq.historyCount = 1;
     rq.save = true;
 
-    // First the fast path: try to save directly via putNewRevision:
     if (loadRevisions()) {
+        // First the fast path: try to save directly via putNewRevision. Do this on a copy, not on
+        // myself, because putNewRevision changes the instance, and if it fails I don't want to keep
+        // those changes.
+        Retained<C4Document> savedDoc = this->copy();
         C4Error myErr;
-        if (checkNewRev(parentRev, revFlags, false, &myErr)
-            && putNewRevision(rq, &myErr)) {
+        if (savedDoc->checkNewRev(parentRev, revFlags, false, &myErr)
+                && savedDoc->putNewRevision(rq, &myErr)) {
             // Fast path succeeded!
-            return this;
+            return savedDoc;
         } else if (myErr != C4Error{LiteCoreDomain, kC4ErrorConflict}) {
             // Something other than a conflict happened, so give up:
             myErr.raise();
@@ -227,14 +230,13 @@ Retained<C4Document> C4Document::update(slice revBody, C4RevisionFlags revFlags)
     // MVCC prevented us from writing directly to the document. So instead, read-modify-write:
     C4Error myErr;
     Retained<C4Document> savedDoc = _collection->putDocument(rq, nullptr, &myErr);
-    if (!savedDoc) {
-        throwIfUnexpected(myErr, nullptr);
-        savedDoc = nullptr;
-    }
+    if (!savedDoc && myErr != C4Error{LiteCoreDomain, kC4ErrorConflict})
+        myErr.raise();
     return savedDoc;
 }
 
 
+// Sanity checks a document update request before writing to the database.
 bool C4Document::checkNewRev(slice parentRevID,
                              C4RevisionFlags rqFlags,
                              bool allowConflict,
@@ -299,7 +301,7 @@ void C4Document::resolveConflict(slice winningRevID,
 
 
 bool C4Document::isValidDocID(slice docID) noexcept {
-    return docID.size >= 1 && docID.size <= 240 && docID[0] != '_'
+    return docID.size >= 1 && docID.size <= kMaxDocIDLength && docID[0] != '_'
         && isValidUTF8(docID) && hasNoControlCharacters(docID);
 }
 

@@ -248,14 +248,16 @@ int64_t c4coll_purgeExpiredDocs(C4Collection *,
     @param collection  The collection to index.
     @param name  The name of the index. Any existing index with the same name will be replaced,
                  unless it has the identical expressions (in which case this is a no-op.)
-    @param indexSpecJSON  The definition of the index in JSON form. (See above.)
+    @param indexSpec  The definition of the index in JSON or N1QL form. (See above.)
+    @param queryLanguage  The language of `indexSpec`, either JSON or N1QL.
     @param indexType  The type of index (value or full-text.)
     @param indexOptions  Options for the index. If NULL, each option will get a default value.
     @param outError  On failure, will be set to the error status.
     @return  True on success, false on failure. */
 bool c4coll_createIndex(C4Collection *collection,
                         C4String name,
-                        C4String indexSpecJSON,
+                        C4String indexSpec,
+                        C4QueryLanguage queryLanguage,
                         C4IndexType indexType,
                         const C4IndexOptions* C4NULLABLE indexOptions,
                         C4Error* C4NULLABLE outError) C4API;

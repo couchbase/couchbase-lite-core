@@ -48,6 +48,15 @@
 			"delta_sync": {"enabled": true, "rev_max_age_seconds": 86400},
 			"allow_conflicts": true
 		},
+		"scratch_revocation": {
+			"server": "walrus:",
+			"users": {
+				"pupshaw": {"password": "frank", "admin_channels": ["a", "b"] }
+			},
+			"delta_sync": {"enabled": true, "rev_max_age_seconds": 86400},
+			"allow_conflicts": false,
+			"sync": `function (doc, oldDoc) { channel(doc.channels); }`
+		},
 		"seekrit": {
 			"server": "walrus:",
 			"users": {

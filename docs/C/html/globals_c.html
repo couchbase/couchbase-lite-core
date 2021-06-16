@@ -183,7 +183,7 @@ $(function() {
 : <a class="el" href="group___collection.html#gae7ff4d349420d35a2e41ea68d6c33bb6">c4Collection.h</a>
 </li>
 <li>c4coll_createIndex()
-: <a class="el" href="group___collection.html#gacfec9475d4e372e1fa23cf25e8ac6e2d">c4Collection.h</a>
+: <a class="el" href="group___collection.html#ga3e1f87685d106eafaebcff07ca757dd2">c4Collection.h</a>
 </li>
 <li>c4coll_deleteIndex()
 : <a class="el" href="group___collection.html#gaeab34e537169505ee81b33f263734ac5">c4Collection.h</a>
@@ -290,6 +290,9 @@ $(function() {
 <li>c4db_createIndex()
 : <a class="el" href="group___indexing.html#ga792fae03419fed7999713a0d1547037a">c4Index.h</a>
 </li>
+<li>c4db_createIndex2()
+: <a class="el" href="group___indexing.html#gae96ea498339f008ecdaf665f55a3129e">c4Index.h</a>
+</li>
 <li>c4db_delete()
 : <a class="el" href="group___database.html#ga3904d58b8b2fb7edc214e409853c454f">c4Database.h</a>
 </li>
@@ -359,9 +362,6 @@ $(function() {
 <li>c4db_getLastSequence()
 : <a class="el" href="group___database.html#gab8f435e79ec606be7838044322b2ce39">c4Database.h</a>
 </li>
-<li>c4db_getMaxRevTreeDepth()
-: <a class="el" href="group___database.html#ga3518626c9503ce302e7df6b618c2f0e3">c4Database.h</a>
-</li>
 <li>c4db_getName()
 : <a class="el" href="group___database.html#ga8a5d2748be7291c11e45429ab408f7e3">c4Database.h</a>
 </li>
@@ -424,9 +424,6 @@ $(function() {
 </li>
 <li>c4db_setExtraInfo()
 : <a class="el" href="group___database.html#ga01fbe2ea3f7c5ee58eee705336799631">c4Database.h</a>
-</li>
-<li>c4db_setMaxRevTreeDepth()
-: <a class="el" href="group___database.html#gaa79b7e61a7b8e272ab70782855bdc5b4">c4Database.h</a>
 </li>
 <li>c4db_startHousekeeping()
 : <a class="el" href="c4_database_8h.html#a9521402d4d6848b4c32e2c39ec59f38b">c4Database.h</a>
@@ -699,8 +696,8 @@ $(function() {
 : <a class="el" href="group___listener.html#gab3e82cbd3d700758f22afd403b1d1205">c4Listener.h</a>
 </li>
 <li>c4listener_free()
-: <a class="el" href="group___listener.html#ga459b508f50c474050111021272fac1c1">c4Listener.h</a>
-, <a class="el" href="group___base.html#ga2c533d88a2b747a071bdcf1ea60e4fee">c4Base.h</a>
+: <a class="el" href="group___base.html#ga2c533d88a2b747a071bdcf1ea60e4fee">c4Base.h</a>
+, <a class="el" href="group___listener.html#ga459b508f50c474050111021272fac1c1">c4Listener.h</a>
 </li>
 <li>c4listener_getConnectionStatus()
 : <a class="el" href="group___listener.html#gaf861811c905530dcb338008b93ba5ce6">c4Listener.h</a>
@@ -902,8 +899,8 @@ $(function() {
 : <a class="el" href="group___observer.html#gad4ae536243b44f5e79c0de373318c22d">c4Observer.h</a>
 </li>
 <li>c4raw_free()
-: <a class="el" href="group___raw_docs.html#ga712cc9ac2e82b308d06cff0e5b2bd85c">c4Database.h</a>
-, <a class="el" href="group___base.html#ga27bca0ebc4fa272b0a7684cea0603509">c4Base.h</a>
+: <a class="el" href="group___base.html#ga27bca0ebc4fa272b0a7684cea0603509">c4Base.h</a>
+, <a class="el" href="group___raw_docs.html#ga712cc9ac2e82b308d06cff0e5b2bd85c">c4Database.h</a>
 </li>
 <li>c4raw_get()
 : <a class="el" href="group___raw_docs.html#ga9e50e76fe35c6e3b9f506b6621ca366a">c4Database.h</a>
@@ -918,8 +915,8 @@ $(function() {
 : <a class="el" href="group___documents.html#gade764c77842eee504a5fea7bbbed00e2">c4DocumentTypes.h</a>
 </li>
 <li>c4repl_free()
-: <a class="el" href="group___base.html#ga25a927ca78de4f96f5813de2bd6d2b65">c4Base.h</a>
-, <a class="el" href="group___replicator.html#gade69de3543d564b24abfedb2360ac1b4">c4Replicator.h</a>
+: <a class="el" href="group___replicator.html#gade69de3543d564b24abfedb2360ac1b4">c4Replicator.h</a>
+, <a class="el" href="group___base.html#ga25a927ca78de4f96f5813de2bd6d2b65">c4Base.h</a>
 </li>
 <li>c4repl_getPeerTLSCertificate()
 : <a class="el" href="group___replicator.html#ga2952f802ea88438eab7e3875a46a5b3d">c4Replicator.h</a>
@@ -1062,11 +1059,11 @@ $(function() {
 <li>C4StorageEngine
 : <a class="el" href="c4_database_types_8h.html#a150841cc47a5fdc1c7c2e9d56ae83d5a">c4DatabaseTypes.h</a>
 </li>
-<li>C4STR
-: <a class="el" href="group___base.html#ga1d36740f0ebef62e2a53e9f8ae772819">c4Base.h</a>
-</li>
 <li>c4str()
 : <a class="el" href="group___base.html#gae0419d888a0524b718da8c06fabe5a21">c4Base.h</a>
+</li>
+<li>C4STR
+: <a class="el" href="group___base.html#ga1d36740f0ebef62e2a53e9f8ae772819">c4Base.h</a>
 </li>
 <li>c4stream_bytesWritten()
 : <a class="el" href="group___blobs.html#gad2402569d396bc5fa884c87f2a526939">c4BlobStore.h</a>
@@ -1076,8 +1073,8 @@ $(function() {
 , <a class="el" href="group___base.html#gac1f167a51625c67900a4bd112450d8ca">c4Base.h</a>
 </li>
 <li>c4stream_closeWriter()
-: <a class="el" href="group___base.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4Base.h</a>
-, <a class="el" href="group___blobs.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4BlobStore.h</a>
+: <a class="el" href="group___blobs.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4BlobStore.h</a>
+, <a class="el" href="group___base.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4Base.h</a>
 </li>
 <li>c4stream_computeBlobKey()
 : <a class="el" href="group___blobs.html#ga44187546106566d114996a035025d43d">c4BlobStore.h</a>

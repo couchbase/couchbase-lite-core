@@ -111,6 +111,23 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document PossibleAncestors", "[Document][C]") {
 #endif
 
 
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Get With Invalid ID", "[Document][C]") {
+    ExpectingExceptions x;
+    C4Error error = {};
+    CHECK(c4doc_get(db, nullslice, true, &error) == nullptr);
+    CHECK(error == (C4Error{LiteCoreDomain, kC4ErrorBadDocID}));
+
+    error = {};
+    CHECK(c4doc_get(db, ""_sl, true, &error) == nullptr);
+    CHECK(error == (C4Error{LiteCoreDomain, kC4ErrorBadDocID}));
+
+    error = {};
+    std::string tooLong(300, 'x');
+    CHECK(c4doc_get(db, slice(tooLong), true, &error) == nullptr);
+    CHECK(error == (C4Error{LiteCoreDomain, kC4ErrorBadDocID}));
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Document][C]") {
     // Try reading doc with mustExist=true, which should fail:
     C4Error error;
@@ -352,73 +369,6 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][Document][C]") {
         REQUIRE(c4db_getDocumentCount(db) == 0);
     }
 }
-
-
-#if 0
-N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][Document][C]") {
-    if (isRevTrees()) {
-        CHECK(c4db_getMaxRevTreeDepth(db) == 20);
-        c4db_setMaxRevTreeDepth(db, 30);
-        CHECK(c4db_getMaxRevTreeDepth(db) == 30);
-        reopenDB();
-        CHECK(c4db_getMaxRevTreeDepth(db) == 30);
-    }
-
-    for (int setRemoteOrigin = 0; setRemoteOrigin <= 1; ++setRemoteOrigin) {
-        C4Log("-------- setRemoteOrigin = %d", setRemoteOrigin);
-        static const unsigned kNumRevs = 10000;
-        fleece::Stopwatch st;
-        C4Error error;
-        C4String docID;
-    	if(setRemoteOrigin) {
-    		docID = C4STR("doc_noRemote");
-		} else {
-			docID = C4STR("doc_withRemote");
-		}
-
-        auto doc = c4doc_get(db, docID, false, ERROR_INFO(error));
-        {
-            TransactionHelper t(db);
-            REQUIRE(doc != nullptr);
-            for (unsigned i = 0; i < kNumRevs; i++) {
-                C4DocPutRequest rq = {};
-                rq.docID = doc->docID;
-                rq.history = &doc->revID;
-                rq.historyCount = 1;
-                rq.body = kFleeceBody;
-                if (setRemoteOrigin && i == 0) {
-                    // Pretend the 1st revision has a remote origin (see issue #376)
-                    rq.remoteDBID = 1;
-                    rq.existingRevision = true;
-                    rq.history = &kRevID;
-                }
-                rq.save = true;
-                auto savedDoc = c4doc_put(db, &rq, nullptr, ERROR_INFO(error));
-                REQUIRE(savedDoc != nullptr);
-                c4doc_release(doc);
-                doc = savedDoc;
-            }
-        }
-        C4Log("Created %u revisions in %.3f sec", kNumRevs, st.elapsed());
-
-        if (isRevTrees()) {
-            // Check rev tree depth:
-            unsigned nRevs = 0;
-            c4doc_selectCurrentRevision(doc);
-            do {
-                unsigned expectedGen = kNumRevs - nRevs;
-                if (setRemoteOrigin && nRevs == 30)
-                    expectedGen = 1; // the remote-origin rev is pinned
-                CHECK(c4rev_getGeneration(doc->selectedRev.revID) == expectedGen);
-                ++nRevs;
-            } while (c4doc_selectParentRevision(doc));
-            C4Log("Document rev tree depth is %u", nRevs);
-            REQUIRE(nRevs == (setRemoteOrigin ? 31 : 30));
-        }
-        c4doc_release(doc);
-    }
-}
-#endif
 
 
 #if 0
@@ -680,8 +630,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Document][C]") {
         fleece::alloc_slice oldRevID(doc->revID);
         auto updatedDoc = c4doc_update(doc, json2fleece("{'ok':'go'}"), 0, ERROR_INFO(error));
         REQUIRE(updatedDoc);
-//        CHECK(doc->selectedRev.revID == oldRevID);
-//        CHECK(doc->revID == oldRevID);
+        CHECK(updatedDoc != doc);
+        CHECK(doc->selectedRev.revID == oldRevID);
+        CHECK(doc->revID == oldRevID);
         c4doc_release(doc);
         doc = updatedDoc;
     }

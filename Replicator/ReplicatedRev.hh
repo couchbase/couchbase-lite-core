@@ -18,6 +18,12 @@ namespace litecore { namespace repl {
         kPushing
     };
 
+    enum class RevocationMode : uint8_t {
+        kNone,
+        kRevokedAccess,
+        kRemovedFromChannel
+    };
+
 
     /** Metadata of a document revision. Abstract superclass of RevToSend, RevToInsert (see
         ReplicatorTypes.hh). Used to track revisions during the replication flow, and to notify

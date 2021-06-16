@@ -36,6 +36,7 @@ namespace litecore { namespace repl {
 
         // Called by the Puller:
         void handleRev(blip::MessageIn* revMessage NONNULL);
+        void handleRevokedDoc(RevToInsert*);
         RevToInsert* rev() const                {return _rev;}
         RemoteSequence remoteSequence() const   {return _remoteSequence;}
         bool wasProvisionallyInserted() const   {return _provisionallyInserted;}
@@ -51,12 +52,14 @@ namespace litecore { namespace repl {
         ActivityLevel computeActivityLevel() const override;
 
     private:
+        void reinitialize();
         void parseAndInsert(alloc_slice jsonBody);
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);
         fleece::Doc parseBody(alloc_slice jsonBody);
         void processFleeceBody(fleece::Doc);
+        bool performPullValidation(fleece::Dict body);
         void insertRevision();
         void _revisionInserted();
         void failWithError(C4Error);

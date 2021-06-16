@@ -85,6 +85,7 @@ CBL {
 		c4db_enumerateChanges;
 		c4db_enumerateAllDocs;
 		c4db_createIndex;
+		c4db_createIndex2;
 		c4db_deleteIndex;
 		c4db_getIndexes;
 		c4enum_next;

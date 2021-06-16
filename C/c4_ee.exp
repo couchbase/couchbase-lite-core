@@ -84,6 +84,7 @@ _c4rev_getGeneration
 _c4db_enumerateChanges
 _c4db_enumerateAllDocs
 _c4db_createIndex
+_c4db_createIndex2
 _c4db_deleteIndex
 _c4db_getIndexes
 _c4enum_next

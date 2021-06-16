@@ -853,55 +853,6 @@ namespace litecore {
     }
 
 
-#pragma mark - INDEXES:
-
-
-    void DatabaseImpl::createIndex(slice indexName,
-                                 slice indexSpecJSON,
-                                 C4IndexType indexType,
-                                 const C4IndexOptions *indexOptions)
-    {
-        static_assert(sizeof(C4IndexOptions) == sizeof(IndexSpec::Options));
-
-        defaultKeyStore().createIndex(indexName,
-                                            indexSpecJSON,
-                                            (IndexSpec::Type)indexType,
-                                            (const IndexSpec::Options*)indexOptions);
-    }
-
-
-    void DatabaseImpl::deleteIndex(slice indexName) {
-        defaultKeyStore().deleteIndex(indexName);
-    }
-
-
-    alloc_slice DatabaseImpl::getIndexesInfo(bool fullInfo) const {
-        impl::Encoder enc;
-        enc.beginArray();
-        for (const auto &spec : defaultKeyStore().getIndexes()) {
-            if (fullInfo) {
-                enc.beginDictionary();
-                enc.writeKey("name"); enc.writeString(spec.name);
-                enc.writeKey("type"); enc.writeInt(spec.type);
-                enc.writeKey("expr"); enc.writeString(spec.expressionJSON);
-                enc.endDictionary();
-            } else {
-                enc.writeString(spec.name);
-            }
-        }
-        enc.endArray();
-        return enc.finish();
-    }
-
-
-    alloc_slice DatabaseImpl::getIndexRows(slice indexName) const {
-        int64_t rowCount;
-        alloc_slice rows;
-        ((SQLiteDataFile*)dataFile())->inspectIndex(indexName, rowCount, &rows);
-        return rows;
-    }
-
-
 #pragma mark - REPLICATION:
 
 

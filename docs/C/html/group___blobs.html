@@ -293,6 +293,7 @@ Streamed Writes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Deletes the BlobStore's blobs and directory, and (if successful) frees the object. </p>
+<dl class="section warning"><dt>Warning</dt><dd>This should only be used for unit testing. Never delete a BlobStore belonging to a C4Database. </dd></dl>
 
 </div>
 </div>
@@ -313,7 +314,7 @@ Streamed Writes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Closes/frees a BlobStore. </p>
-<p>(A NULL parameter is allowed.) </p>
+<p>(A NULL parameter is allowed.) </p><dl class="section warning"><dt>Warning</dt><dd>This should only be used for unit testing. Never free a BlobStore belonging to a C4Database. </dd></dl>
 
 </div>
 </div>
@@ -547,7 +548,8 @@ Streamed Writes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Opens a BlobStore in a directory. </p>
-<p>If the flags allow creating, the directory will be created if necessary. Call <a class="el" href="group___blobs.html#ga89891503afc4df0189bd0a9d4cb45f37" title="Closes/frees a BlobStore.">c4blob_freeStore()</a> when finished using the BlobStore. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>If the flags allow creating, the directory will be created if necessary. Call <a class="el" href="group___blobs.html#ga89891503afc4df0189bd0a9d4cb45f37" title="Closes/frees a BlobStore.">c4blob_freeStore()</a> when finished using the BlobStore. </p><dl class="section warning"><dt>Warning</dt><dd>This should only be used for unit testing. Naked BlobStores are not supported. </dd></dl>
+<dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">dirPath</td><td>The filesystem path of the directory holding the attachments. </td></tr>
     <tr><td class="paramname">flags</td><td>Specifies options like create, read-only </td></tr>

@@ -187,20 +187,43 @@ namespace litecore::repl {
     {
         // Compile the docIDs/revIDs into parallel vectors:
         vector<slice> docIDs, revIDs;
+        vector<Retained<RevToInsert>> revoked;
+        vector<uint32_t> changeIndexes;
         auto nChanges = changes.count();
         docIDs.reserve(nChanges);
         revIDs.reserve(nChanges);
+        uint32_t changeIndex = 0;
         for (auto item : changes) {
             // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
             auto change = item.asArray();
             slice docID = change[1].asString();
             slice revID = change[2].asString();
+            int64_t deletion = change[3].asInt();
+            uint64_t bodySize = change[4].asUnsigned();
+            
+            // Validate docID and revID:
             checkDocAndRevID(docID, revID);
-            docIDs.push_back(docID);
-            revIDs.push_back(revID);
-            sequences.push_back({RemoteSequence(change[0]),
-                                 max(change[4].asUnsigned(), (uint64_t)1)});
+            
+            if (deletion <= 1) {
+                // New revision (or tombstone):
+                docIDs.push_back(docID);
+                revIDs.push_back(revID);
+                changeIndexes.push_back(changeIndex);
+                sequences.push_back({RemoteSequence(change[0]), max(bodySize, (uint64_t)1)});
+            } else {
+                // Access lost -- doc removed from channel, or user lost access to channel.
+                // In SG 2.x "deletion" is a boolean flag, 0=normal, 1=deleted.
+                // SG 3.x adds 2=revoked, 3=revoked+deleted, 4=removal (from channel)
+                auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
+                                           : RevocationMode::kRemovedFromChannel;
+                revoked.emplace_back(new RevToInsert(docID, revID, mode));
+                sequences.push_back({RemoteSequence(change[0]), 0});
+            }
+            ++changeIndex;
         }
+
+        if (!revoked.empty())
+            _delegate->documentsRevoked(move(revoked));
 
         // Ask the database to look up the ancestors:
         vector<alloc_slice> ancestors = _db->useLocked()->getDefaultCollection()
@@ -211,7 +234,7 @@ namespace litecore::repl {
                                                 _db->remoteDBID());
         // Look through the database response:
         unsigned itemsWritten = 0, requested = 0;
-        for (unsigned i = 0; i < nChanges; ++i) {
+        for (unsigned i = 0; i < changeIndexes.size(); ++i) {
             slice docID = docIDs[i], revID = revIDs[i];
             alloc_slice anc(std::move(ancestors[i]));
             C4FindDocAncestorsResultFlags status = anc ? (anc[0] - '0') : kRevsLocalIsOlder;
@@ -222,13 +245,13 @@ namespace litecore::repl {
                 // [use only writeRaw to avoid confusing JSONEncoder's comma mechanism, CBL-1208]
                 if (itemsWritten > 0)
                     encoder.writeRaw(",");      // comma after previous array item
-                while (itemsWritten++ < i)
+                while (itemsWritten++ < changeIndexes[i])
                     encoder.writeRaw("0,");
 
                 if ((status & kRevsConflict) == kRevsConflict && passive()) {
                     // Passive puller refuses conflicts:
                     encoder.writeRaw("409");
-                    sequences[i].bodySize = 0;
+                    sequences[changeIndexes[i]].bodySize = 0;
                     logDebug("    - '%.*s' #%.*s conflicts with local revision, rejecting",
                              SPLAT(docID), SPLAT(revID));
                 } else {
@@ -243,7 +266,7 @@ namespace litecore::repl {
             } else {
                 // I have an equal or newer revision; ignore this one:
                 // [Implicitly this appends a 0, but we're skipping trailing zeroes.]
-                sequences[i].bodySize = 0;
+                sequences[changeIndexes[i]].bodySize = 0;
                 if (status & kRevsAtThisRemote) {
                     logDebug("    - Already have '%.*s' %.*s",
                              SPLAT(docID), SPLAT(revID));

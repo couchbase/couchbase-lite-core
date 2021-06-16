@@ -53,23 +53,25 @@ C4API_BEGIN_DECLS
     /** Opens a BlobStore in a directory. If the flags allow creating, the directory will be
         created if necessary.
         Call c4blob_freeStore() when finished using the BlobStore.
+        \warning This should only be used for unit testing. Naked BlobStores are not supported.
         @param dirPath  The filesystem path of the directory holding the attachments.
         @param flags  Specifies options like create, read-only
         @param encryptionKey  Optional encryption algorithm & key
         @param outError  Error is returned here
         @return  The BlobStore reference, or NULL on error */
-    C4_DEPRECATED("There is no reason to use this")
     C4BlobStore* c4blob_openStore(C4String dirPath,
                                   C4DatabaseFlags flags,
                                   const C4EncryptionKey* C4NULLABLE encryptionKey,
                                   C4Error* C4NULLABLE outError) C4API;
 
-    /** Closes/frees a BlobStore. (A NULL parameter is allowed.) */
-    C4_DEPRECATED("There is no reason to use this")
+    /** Closes/frees a BlobStore. (A NULL parameter is allowed.)
+        \warning This should only be used for unit testing. Never free a BlobStore belonging to a
+                 C4Database. */
     void c4blob_freeStore(C4BlobStore* C4NULLABLE) C4API;
 
-    /** Deletes the BlobStore's blobs and directory, and (if successful) frees the object. */
-    C4_DEPRECATED("There is no reason to use this")
+    /** Deletes the BlobStore's blobs and directory, and (if successful) frees the object.
+        \warning This should only be used for unit testing. Never delete a BlobStore belonging to a
+                 C4Database. */
     bool c4blob_deleteStore(C4BlobStore*, C4Error* C4NULLABLE) C4API;
 
     /** @} */

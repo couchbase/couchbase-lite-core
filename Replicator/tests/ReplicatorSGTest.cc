@@ -655,3 +655,491 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
     C4Log("-------- %.3f sec with deltas, %.3f sec without; %.2fx speed",
           timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
 }
+
+// This test requires SG 3.0
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.SyncServer]") {
+    _remoteDBName = "scratch_revocation"_sl;
+    flushScratchDatabase();
+    
+    // Create docs on SG:
+    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
+
+    // Setup Replicator Options:
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+    
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+    
+    // Setup pull filter:
+    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+        }
+        return true;
+    };
+    
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(kC4Disabled, kC4OneShot);
+
+    // Verify:
+    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+    
+    // Revoked access to channel 'a':
+    HTTPStatus status;
+    C4Error error;
+    sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[\"b\"]}"_sl, true);
+    REQUIRE(status == HTTPStatus::OK);
+    
+    // Check if update to doc1 is still pullable:
+    auto oRevID = slice(doc1->revID).asString();
+    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
+    
+    C4Log("-------- Pull update");
+    replicate(kC4Disabled, kC4OneShot);
+    
+    // Verify the update:
+    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+    
+    // Revoke access to all channels:
+    sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
+    REQUIRE(status == HTTPStatus::OK);
+    
+    C4Log("-------- Pull the revoked");
+    replicate(kC4Disabled, kC4OneShot);
+    
+    // Verify if doc1 is purged:
+    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(!doc1);
+    CHECK(_docsEnded == 1);
+    CHECK(_counter == 1);
+}
+
+// This test requires SG 3.0
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision", "[.SyncServer]") {
+    _remoteDBName = "scratch_revocation"_sl;
+    flushScratchDatabase();
+    
+    // Create docs on SG:
+    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+
+    // Setup Replicator Options:
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+    
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+    
+    // Setup pull filter to filter the _removed rev:
+    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+            return false;
+        }
+        return true;
+    };
+    
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(kC4Disabled, kC4OneShot);
+
+    // Verify:
+    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+    
+    // Revoke access to all channels:
+    HTTPStatus status;
+    C4Error error;
+    sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
+    REQUIRE(status == HTTPStatus::OK);
+    
+    C4Log("-------- Pull the revoked");
+    replicate(kC4Disabled, kC4OneShot);
+    
+    // Verify if doc1 is not purged as the revoked rev is filtered:
+    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 1);
+    CHECK(_counter == 1);
+}
+
+// This test requires SG 3.0
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.SyncServer]") {
+    _remoteDBName = "scratch_revocation"_sl;
+    flushScratchDatabase();
+    
+    // Create docs on SG:
+    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+
+    // Setup Replicator Options:
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAutoPurge));
+        enc.writeBool(false);
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+    
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+    
+    // Setup pull filter:
+    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+        }
+        return true;
+    };
+    
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(kC4Disabled, kC4OneShot);
+
+    // Verify:
+    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+    
+    // Revoke access to all channels:
+    HTTPStatus status;
+    C4Error error;
+    sendRemoteRequest("PUT", "_user/pupshaw", &status, &error, "{\"admin_channels\":[]}"_sl, true);
+    REQUIRE(status == HTTPStatus::OK);
+    
+    C4Log("-------- Pulling the revoked");
+    replicate(kC4Disabled, kC4OneShot);
+    
+    // Verify if the doc1 is not purged as the auto purge is disabled:
+    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 1);
+    // No pull filter called
+    CHECK(_counter == 0);
+}
+
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Remove Doc From Channel", "[.SyncServer]") {
+    _remoteDBName = "scratch_revocation"_sl;
+    flushScratchDatabase();
+    
+    // Create docs on SG:
+    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
+
+    // Setup Replicator Options:
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+    
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+    
+    // Setup pull filter:
+    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+        }
+        return true;
+    };
+    
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(kC4Disabled, kC4OneShot);
+
+    // Verify:
+    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(slice(doc1->revID).hasPrefix("1-"_sl));
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+    
+    // Removed doc from channel 'a':
+    auto oRevID = slice(doc1->revID).asString();
+    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[\"b\"]}");
+    
+    C4Log("-------- Pull update");
+    replicate(kC4Disabled, kC4OneShot);
+    
+    // Verify the update:
+    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(slice(doc1->revID).hasPrefix("2-"_sl));
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+    
+    // Remove doc from all channels:
+    oRevID = slice(doc1->revID).asString();
+    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
+    
+    C4Log("-------- Pull the removed");
+    replicate(kC4Disabled, kC4OneShot);
+    
+    // Verify if doc1 is purged:
+    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(!doc1);
+    CHECK(_docsEnded == 1);
+    CHECK(_counter == 1);
+}
+
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Removed Revision", "[.SyncServer]") {
+    _remoteDBName = "scratch_revocation"_sl;
+    flushScratchDatabase();
+    
+    // Create docs on SG:
+    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+
+    // Setup Replicator Options:
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+    
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+    
+    // Setup pull filter to filter the _removed rev:
+    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+            Dict body(flbody);
+            CHECK(body.count() == 0);
+            return false;
+        }
+        return true;
+    };
+    
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(kC4Disabled, kC4OneShot);
+
+    // Verify:
+    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+    
+    // Remove doc from all channels
+    auto oRevID = slice(doc1->revID).asString();
+    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
+    
+    C4Log("-------- Pull the removed");
+    replicate(kC4Disabled, kC4OneShot);
+    
+    // Verify if doc1 is not purged as the removed rev is filtered:
+    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 1);
+    CHECK(_counter == 1);
+}
+
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channel", "[.SyncServer]") {
+    _remoteDBName = "scratch_revocation"_sl;
+    flushScratchDatabase();
+    
+    // Create docs on SG:
+    _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
+    sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
+
+    // Setup Replicator Options:
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAutoPurge));
+        enc.writeBool(false);
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+    
+    // Setup onDocsEnded:
+    _enableDocProgressNotifications = true;
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        for (size_t i = 0; i < numDocs; ++i) {
+            auto doc = docs[i];
+            if ((doc->flags & kRevPurged) == kRevPurged) {
+                ((ReplicatorAPITest*)context)->_docsEnded++;
+            }
+        }
+    };
+    
+    // Setup pull filter:
+    _pullFilter = [](C4String collectionName, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
+        if ((flags & kRevPurged) == kRevPurged) {
+            ((ReplicatorAPITest*)context)->_counter++;
+        }
+        return true;
+    };
+    
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(kC4Disabled, kC4OneShot);
+
+    // Verify:
+    c4::ref<C4Document> doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 0);
+    CHECK(_counter == 0);
+    
+    // Remove doc from all channels
+    auto oRevID = slice(doc1->revID).asString();
+    sendRemoteRequest("PUT", "doc1", "{\"_rev\":\"" + oRevID + "\", \"channels\":[]}");
+    
+    C4Log("-------- Pulling the removed");
+    replicate(kC4Disabled, kC4OneShot);
+    
+    // Verify if the doc1 is not purged as the auto purge is disabled:
+    doc1 = c4doc_get(db, "doc1"_sl, true, nullptr);
+    REQUIRE(doc1);
+    CHECK(_docsEnded == 1);
+    // No pull filter called
+    CHECK(_counter == 0);
+}

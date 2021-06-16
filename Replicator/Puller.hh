@@ -54,6 +54,9 @@ namespace litecore { namespace repl {
         virtual void expectSequences(std::vector<RevFinder::ChangeSequence> changes) override {
             enqueue(FUNCTION_TO_QUEUE(Puller::_expectSequences), move(changes));
         }
+        virtual void documentsRevoked(std::vector<Retained<RevToInsert>> revs) override {
+            enqueue(FUNCTION_TO_QUEUE(Puller::_documentsRevoked), move(revs));
+        }
         virtual void _childChangedStatus(Worker *task NONNULL, Status) override;
         virtual ActivityLevel computeActivityLevel() const override;
         void activityLevelChanged(ActivityLevel level);
@@ -61,8 +64,10 @@ namespace litecore { namespace repl {
     private:
         void _start(RemoteSequence sinceSequence);
         void _expectSequences(std::vector<RevFinder::ChangeSequence>);
+        void _documentsRevoked(std::vector<Retained<RevToInsert>>);
         void handleRev(Retained<blip::MessageIn>);
         void handleNoRev(Retained<blip::MessageIn>);
+        Retained<IncomingRev> makeIncomingRev();
         void startIncomingRev(blip::MessageIn* NONNULL);
         void maybeStartIncomingRevs();
         void _revsWereProvisionallyHandled();

@@ -1167,7 +1167,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
     };
 
     vector<double> results {
-        atan2(2, 1),
+        atan2(1, 2),
         acos(1),
         asin(1),
         atan(1),
@@ -1591,10 +1591,18 @@ N_WAY_TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
 
     checkQuery(22, 2);
 
-    Log("-------- Creating index --------");
-    store->createIndex("numbersIndex"_sl,
-                       json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"),
-                       IndexSpec::kArray);
+    if (GENERATE(0, 1)) {
+        Log("-------- Creating JSON index --------");
+        store->createIndex("numbersIndex"_sl,
+                           json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"),
+                           IndexSpec::kArray);
+    } else {
+        Log("-------- Creating N1QL index --------");
+        store->createIndex("numbersIndex"_sl,
+                           "[numbers[0], numbers[1]]",
+                           QueryLanguage::kN1QL,
+                           IndexSpec::kArray);
+    }
     Log("-------- Recompiling query with index --------");
     query = store->compileQuery(json);
     checkOptimized(query);
