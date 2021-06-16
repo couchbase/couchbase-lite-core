@@ -33,7 +33,7 @@ namespace litecore { namespace repl {
     class ReplicatedRev;
 
 
-    static constexpr const char *kReplicatorProtocolName = "+CBMobile_2";
+    static constexpr const char *kReplicatorProtocolName = "+CBMobile_3";
 
 
     /** The top-level replicator object, which runs the BLIP connection.
