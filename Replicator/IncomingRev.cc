@@ -141,6 +141,21 @@ namespace litecore { namespace repl {
         reinitialize();
         _rev = rev;
         rev->owner = this;
+        
+        // Do not purge if the auto-purge is not enabled:
+        if (!_options.enableAutoPurge()) {
+            finish();
+            return;
+        }
+        
+        // Call the custom validation function if any:
+        if (_options.pullValidator) {
+            // Revoked rev body is empty when sent to the filter:
+            auto body = Dict::emptyDict();
+            if (!performPullValidation(body))
+                return;
+        }
+        
         insertRevision();
     }
 
@@ -194,11 +209,11 @@ namespace litecore { namespace repl {
         // SG sends a fake revision with a "_removed":true property, to indicate that the doc is
         // no longer accessible (not in any channel the client has access to.)
         if (root["_removed"_sl].asBool()) {
+            _rev->flags |= kRevPurged;
             if (!_options.enableAutoPurge()) {
                 finish();
                 return;
             }
-            _rev->flags |= kRevPurged;
         }
 
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
@@ -228,15 +243,10 @@ namespace litecore { namespace repl {
         });
 
         // Call the custom validation function if any:
-        if (_options.pullValidator) {
-            if (!_options.pullValidator(nullslice,     // TODO: Collection support
-                                        _rev->docID, _rev->revID, _rev->flags, root,
-                                        _options.callbackContext)) {
-                failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
-                _pendingBlobs.clear();
-                _blob = _pendingBlobs.end();
-                return;
-            }
+        if (!performPullValidation(root)) {
+            _pendingBlobs.clear();
+            _blob = _pendingBlobs.end();
+            return;
         }
 
         // Request the first blob, or if there are none, insert the revision into the DB:
@@ -245,6 +255,19 @@ namespace litecore { namespace repl {
         } else {
             insertRevision();
         }
+    }
+
+    // Calls the custom pull validator if available.
+    bool IncomingRev::performPullValidation(Dict body) {
+        if (_options.pullValidator) {
+            if (!_options.pullValidator(nullslice,     // TODO: Collection support
+                                        _rev->docID, _rev->revID, _rev->flags, body,
+                                        _options.callbackContext)) {
+                failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
+                return false;
+            }
+        }
+        return true;
     }
 
 

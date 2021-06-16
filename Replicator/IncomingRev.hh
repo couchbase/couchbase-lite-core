@@ -59,6 +59,7 @@ namespace litecore { namespace repl {
         void gotDeltaSrc(alloc_slice deltaSrcBody);
         fleece::Doc parseBody(alloc_slice jsonBody);
         void processFleeceBody(fleece::Doc);
+        bool performPullValidation(fleece::Dict body);
         void insertRevision();
         void _revisionInserted();
         void failWithError(C4Error);
