@@ -1181,7 +1181,7 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
     };
 
     vector<double> results {
-        atan2(2, 1),
+        atan2(1, 2),
         acos(1),
         asin(1),
         atan(1),
