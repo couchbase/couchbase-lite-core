@@ -218,10 +218,18 @@ DataFileTestFixture::~DataFileTestFixture() {
 }
 
 
+sequence_t DataFileTestFixture::createDoc(KeyStore &s, slice docID, slice body, ExclusiveTransaction &t) {
+    RecordUpdate rec(docID, body);
+    auto seq = s.set(rec, true, t);
+    CHECK(seq != 0);
+    return seq;
+}
 
-sequence_t DataFileTestFixture::writeDoc(slice docID,
+
+sequence_t DataFileTestFixture::writeDoc(KeyStore &toStore,
+                                         slice docID,
                                          DocumentFlags flags,
-                                         Transaction &t,
+                                         ExclusiveTransaction &t,
                                          function<void(fleece::impl::Encoder&)> writeProperties)
 {
     fleece::impl::Encoder enc;
@@ -229,7 +237,14 @@ sequence_t DataFileTestFixture::writeDoc(slice docID,
     writeProperties(enc);
     enc.endDictionary();
     alloc_slice body = enc.finish();
-    return store->set(docID, nullslice, body, flags, t);
+    
+    if (toStore.capabilities().sequences) {
+        RecordUpdate rec(docID, body, flags);
+        return toStore.set(rec, true, t);
+    } else {
+        toStore.setKV(docID, body, t);
+        return 0;
+    }
 }
 
 

@@ -38,8 +38,6 @@ _c4db_getPath
 _c4db_getConfig
 _c4db_getDocumentCount
 _c4db_getLastSequence
-_c4db_getMaxRevTreeDepth
-_c4db_setMaxRevTreeDepth
 _c4db_getUUIDs
 _c4db_getExtraInfo
 _c4db_setExtraInfo
@@ -161,6 +159,8 @@ _c4socket_closed
 _c4socket_completedWrite
 _c4socket_received
 _c4socket_gotHTTPResponse
+_c4Socket_getNativeHandle
+_c4Socket_setNativeHandle
 
 _c4pred_registerModel
 _c4pred_unregisterModel
@@ -306,27 +306,46 @@ _c4error_getDescriptionC
 
 _c4key_setPassword
 
+_c4db_getDefaultCollection
+_c4db_hasCollection
+_c4db_getCollection
+_c4db_createCollection
+_c4db_deleteCollection
+_c4db_collectionNames
+_c4dbobs_createOnCollection
+_c4docobs_createWithCollection
+_c4coll_getName
+_c4coll_getDatabase
+_c4coll_getDocumentCount
+_c4coll_getLastSequence
+_c4coll_getDoc
+_c4coll_getDocBySequence
+_c4coll_putDoc
+_c4coll_createDoc
+_c4coll_moveDoc
+_c4coll_purgeDoc
+_c4coll_setDocExpiration
+_c4coll_getDocExpiration
+_c4coll_nextDocExpiration
+_c4coll_purgeExpiredDocs
+_c4coll_createIndex
+_c4coll_deleteIndex
+_c4coll_getIndexesInfo
+
 _c4db_copyNamed
 _c4db_deleteNamed
 _c4db_openAgain
 _c4db_openNamed
 _c4db_createFleeceEncoder
-_c4db_lock
-_c4db_unlock
 _c4db_getConfig2
 _c4db_getName
 _c4db_getRemoteDBID
 _c4db_exists
-_c4db_startHousekeeping
-_c4db_findDocAncestors
 _c4db_maintenance
-_c4db_mayHaveExpiration
 _c4db_getCookies
 _c4db_setCookie
 _c4db_getDoc
 
-_c4doc_removeRevisionBody
-_c4doc_getForPut
 _c4doc_bodyAsJSON
 _c4doc_hasOldMetaProperties
 _c4doc_containingValue
@@ -374,7 +393,6 @@ _c4address_fromURL
 _c4address_toURL
 
 _c4error_return
-_c4db_markSynced
 _c4_dumpInstances
 _gC4ExpectExceptions
 
@@ -386,6 +404,7 @@ _FLEncoder_NewWithOptions
 _FLEncoder_WriteRaw
 _FLEncoder_ConvertJSON
 _FLEncoder_GetError
+_FLEncoder_SetSharedKeys
 
 _FLSharedKeys_Decode
 _FLSharedKeys_Retain

@@ -131,7 +131,7 @@ public:
         docIDs.reserve(1200);
 
         C4Error error;
-        C4Query *query = c4query_new(db, c4str(whereStr), ERROR_INFO(error));
+        C4Query *query = c4query_new2(db, kC4JSONQuery, c4str(whereStr), nullptr, ERROR_INFO(error));
         REQUIRE(query);
         auto e = c4query_run(query, nullptr, kC4SliceNull, ERROR_INFO(error));
         REQUIRE(e);

@@ -40,11 +40,13 @@ namespace litecore { namespace repl {
         class Delegate : public Worker {
         public:
             Delegate(Worker *parent, const char *namePrefix) :Worker(parent, namePrefix) { }
-            virtual ~Delegate() { }
+            virtual ~Delegate() =default;
             /** Tells the Delegate the peer has finished sending historical changes. */
             virtual void caughtUp() =0;
             /** Tells the Delegate about the "rev" messages it will be receiving. */
             virtual void expectSequences(std::vector<ChangeSequence>) =0;
+            /** These document(s) are no longer accessible on the server and should be purged. */
+            virtual void documentsRevoked(std::vector<Retained<RevToInsert>>) =0;
         };
 
         RevFinder(Replicator* NONNULL, Delegate* NONNULL);
@@ -65,13 +67,13 @@ namespace litecore { namespace repl {
         void handleChangesNow(blip::MessageIn *req);
 
         void findOrRequestRevs(Retained<blip::MessageIn>);
-        int findRevs(fleece::Array, fleece::Encoder&, std::vector<ChangeSequence>&, C4Error*);
-        int findProposedRevs(fleece::Array, fleece::Encoder&, std::vector<ChangeSequence>&, C4Error*);
+        int findRevs(fleece::Array, fleece::Encoder&, std::vector<ChangeSequence>&);
+        int findProposedRevs(fleece::Array, fleece::Encoder&, std::vector<ChangeSequence>&);
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
         void _revReceived();
         void _reRequestingRev();
-        bool checkDocAndRevID(slice docID, slice revID, C4Error*);
+        void checkDocAndRevID(slice docID, slice revID);
 
         Retained<Delegate> _delegate;
         std::deque<Retained<blip::MessageIn>> _waitingChangesMessages; // Queued 'changes' messages

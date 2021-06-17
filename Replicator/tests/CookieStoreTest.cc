@@ -7,7 +7,8 @@
 //
 
 #include "c4Test.hh"
-#include "c4.hh"
+#include "c4CppUtils.hh"
+#include "c4Replicator.h"
 #include "CookieStore.hh"
 #include "DatabaseCookies.hh"
 #include "Address.hh"

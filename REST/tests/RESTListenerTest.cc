@@ -18,14 +18,15 @@
 
 #include "Error.hh"
 #include "c4Test.hh"
+#include "c4Replicator.h"
 #include "ListenerHarness.hh"
 #include "FilePath.hh"
 #include "Response.hh"
 #include "NetworkInterfaces.hh"
-#include "c4Internal.hh"
 #include "fleece/Mutable.hh"
 #include <optional>
 
+using namespace litecore;
 using namespace litecore::net;
 using namespace litecore::REST;
 using namespace std;

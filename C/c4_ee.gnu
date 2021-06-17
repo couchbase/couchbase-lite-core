@@ -39,8 +39,6 @@ CBL {
 		c4db_getConfig;
 		c4db_getDocumentCount;
 		c4db_getLastSequence;
-		c4db_getMaxRevTreeDepth;
-		c4db_setMaxRevTreeDepth;
 		c4db_getUUIDs;
 		c4db_getExtraInfo;
 		c4db_setExtraInfo;
@@ -162,6 +160,8 @@ CBL {
 		c4socket_completedWrite;
 		c4socket_received;
 		c4socket_gotHTTPResponse;
+		c4Socket_getNativeHandle;
+		c4Socket_setNativeHandle;
 
 		c4pred_registerModel;
 		c4pred_unregisterModel;
@@ -345,27 +345,46 @@ CBL {
 
 		c4key_setPassword;
 
+		c4db_getDefaultCollection;
+		c4db_hasCollection;
+		c4db_getCollection;
+		c4db_createCollection;
+		c4db_deleteCollection;
+		c4db_collectionNames;
+		c4dbobs_createOnCollection;
+		c4docobs_createWithCollection;
+		c4coll_getName;
+		c4coll_getDatabase;
+		c4coll_getDocumentCount;
+		c4coll_getLastSequence;
+		c4coll_getDoc;
+		c4coll_getDocBySequence;
+		c4coll_putDoc;
+		c4coll_createDoc;
+		c4coll_moveDoc;
+		c4coll_purgeDoc;
+		c4coll_setDocExpiration;
+		c4coll_getDocExpiration;
+		c4coll_nextDocExpiration;
+		c4coll_purgeExpiredDocs;
+		c4coll_createIndex;
+		c4coll_deleteIndex;
+		c4coll_getIndexesInfo;
+
 		c4db_copyNamed;
 		c4db_deleteNamed;
 		c4db_openAgain;
 		c4db_openNamed;
 		c4db_createFleeceEncoder;
-		c4db_lock;
-		c4db_unlock;
 		c4db_getConfig2;
 		c4db_getName;
 		c4db_getRemoteDBID;
 		c4db_exists;
-		c4db_startHousekeeping;
-		c4db_findDocAncestors;
 		c4db_maintenance;
-		c4db_mayHaveExpiration;
 		c4db_getCookies;
 		c4db_setCookie;
 		c4db_getDoc;
 
-		c4doc_removeRevisionBody;
-		c4doc_getForPut;
 		c4doc_bodyAsJSON;
 		c4doc_hasOldMetaProperties;
 		c4doc_containingValue;
@@ -413,7 +432,6 @@ CBL {
 		c4address_toURL;
 
 		c4error_return;
-		c4db_markSynced;
 		c4_dumpInstances;
 		gC4ExpectExceptions;
 
@@ -425,6 +443,7 @@ CBL {
 		FLEncoder_WriteRaw;
 		FLEncoder_ConvertJSON;
 		FLEncoder_GetError;
+		FLEncoder_SetSharedKeys;
 
 		FLSharedKeys_Decode;
 		FLSharedKeys_Retain;
@@ -441,39 +460,16 @@ CBL {
 
 		c4db_URINameFromPath;
 
-		c4cert_copyChainData;
-		c4cert_copyData;
-		c4cert_createRequest;
-		c4cert_fromData;
-		c4cert_getPublicKey;
-		c4cert_getValidTimespan;
-		c4cert_isSelfSigned;
-		c4cert_isSigned;
-		c4cert_load;
-		c4cert_loadPersistentPrivateKey;
-		c4cert_nextInChain;
-		c4cert_requestFromData;
-		c4cert_save;
-		c4cert_sendSigningRequest;
-		c4cert_signRequest;
-		c4cert_subjectName;
-		c4cert_subjectNameAtIndex;
-		c4cert_subjectNameComponent;
-		c4cert_summary;
-		c4cert_usages;
 		kDefaultCertIssuerParameters;
 
 		c4keypair_fromExternal;
 		c4keypair_fromPrivateKeyData;
 		c4keypair_fromPublicKeyData;
-		c4keypair_generate;
 		c4keypair_hasPrivateKey;
 		c4keypair_isPersistent;
-		c4keypair_persistentWithPublicKey;
 		c4keypair_privateKeyData;
 		c4keypair_publicKeyData;
 		c4keypair_publicKeyDigest;
-		c4keypair_removePersistent;
 	local:
 		*;
 };

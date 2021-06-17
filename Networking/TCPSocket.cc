@@ -34,6 +34,7 @@
 #include "sockpp/mbedtls_context.h"
 #include "sockpp/tls_socket.h"
 #include "PlatformIO.hh"
+#include "c4ExceptionUtils.hh"   // for ExpectingExceptions
 #include <chrono>
 #include <regex>
 #include <string>
@@ -162,12 +163,15 @@ namespace litecore { namespace net {
 
 
     bool ClientSocket::connect(const Address &addr) {
-        // sockpp constructors can throw exceptions.
-        try {
-            string hostname(slice(addr.hostname));
+        string hostname(slice(addr.hostname));
 
+        optional<IPAddress> ipAddr = IPAddress::parse(hostname);
+
+        unique_ptr<connector> socket;
+        try {
+            // sockpp constructors can throw exceptions.
+            ExpectingExceptions x;
             unique_ptr<sock_address> sockAddr;
-            optional<IPAddress> ipAddr = IPAddress::parse(hostname);
             if (ipAddr) {
                 // hostname is numeric, either IPv4 or IPv6:
                 sockAddr = ipAddr->sockppAddress(addr.port);
@@ -176,11 +180,8 @@ namespace litecore { namespace net {
                 sockAddr = make_unique<inet_address>(hostname, addr.port);
             }
 
-            auto socket = make_unique<connector>();
+            socket = make_unique<connector>();
             socket->connect(*sockAddr, secsToMicrosecs(timeout()));
-            return setSocket(move(socket))
-                && (!addr.isSecure() || wrapTLS(addr.hostname));
-
         } catch (const sockpp::sys_error &sx) {
             auto e = error::convertException(sx);
             setError(C4ErrorDomain(e.domain), e.code, slice(e.what()));
@@ -190,6 +191,8 @@ namespace litecore { namespace net {
             setError(C4ErrorDomain(e.domain), e.code, slice(e.what()));
             return false;
         }
+
+        return setSocket(move(socket)) && (!addr.isSecure() || wrapTLS(addr.hostname));
     }
 
 
@@ -297,8 +300,8 @@ namespace litecore { namespace net {
             return;
         if (_usuallyTrue(_unreadLen + data.size > _unread.size))
             _unread.resize(_unreadLen + data.size);
-        memcpy((void*)&_unread[data.size], &_unread[0], _unreadLen);
-        memcpy((void*)&_unread[0], data.buf, data.size);
+        memmove((void*)_unread.offset(data.size), _unread.offset(0), _unreadLen);
+        memcpy((void*)_unread.offset(0), data.buf, data.size);
         _unreadLen += data.size;
     }
 
@@ -308,8 +311,8 @@ namespace litecore { namespace net {
         if (_usuallyFalse(_unreadLen > 0)) {
             // Use up anything left in the buffer:
             size_t n = min(byteCount, _unreadLen);
-            memcpy(dst, &_unread[0], n);
-            memmove((void*)&_unread[0], &_unread[n], _unreadLen - n);
+            memcpy(dst, _unread.offset(0), n);
+            memmove((void*)_unread.offset(0), _unread.offset(n), _unreadLen - n);
             _unreadLen -= n;
             if (_unreadLen == 0)
                 _unread = nullslice;

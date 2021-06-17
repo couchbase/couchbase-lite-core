@@ -27,7 +27,7 @@ namespace litecore { namespace repl {
         This is used by the replicator to keep track of which revisions are being pulled. */
     class RemoteSequenceSet {
     public:
-        RemoteSequenceSet()                     { }
+        RemoteSequenceSet()                     =default;
 
         /** Empties the set. */
         void clear(RemoteSequence since) {

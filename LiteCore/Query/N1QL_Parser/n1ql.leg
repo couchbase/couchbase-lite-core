@@ -84,7 +84,9 @@ from =
          )*                             { $$ = d;}
 
 dataSource =
-    n:databaseName (AS? a:databaseAlias )?  { $$ = dictWith("AS"_sl, a.isNull() ? n : a);}
+    n:collectionName   					{ n = dictWith("COLLECTION"_sl, n); }
+		(AS? a:collectionAlias			{ setAny(n, "AS"_sl, a); }
+		)?								{ $$ = n; }
 
 join =
     o:joinOperator _ s:dataSource _     { setAny(s, "JOIN"_sl, o); }
@@ -119,8 +121,8 @@ order =
 
 columnAlias     = IDENTIFIER
 dataSourceName  = IDENTIFIER
-databaseName    = IDENTIFIER
-databaseAlias   = IDENTIFIER
+collectionName  = IDENTIFIER
+collectionAlias = IDENTIFIER
 
 
 ######## EXPRESSIONS:
@@ -304,7 +306,7 @@ OP_PREFIX =
 
 property =
     '*'                                 { $$ = op(".");}
-  | a:databaseAlias '.' _ '*'           { $$ = op("." + a.as<string>() + ".");}
+  | a:collectionAlias '.' _ '*'         { $$ = op("." + a.as<string>() + ".");}
   | p:propertyPath                      { $$ = op(p);}
 
 propertyPath =

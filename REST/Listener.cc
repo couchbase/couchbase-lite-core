@@ -17,7 +17,7 @@
 //
 
 #include "Listener.hh"
-#include "c4Database.h"
+#include "c4Database.hh"
 #include "c4ListenerInternal.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -70,7 +70,7 @@ namespace litecore { namespace REST {
 
     bool Listener::registerDatabase(C4Database* db, optional<string> name) {
         if (!name) {
-            alloc_slice path(c4db_getPath(db));
+            alloc_slice path(db->getPath());
             name = databaseNameFromPath(FilePath(string(path)));
         } else if (!isValidDatabaseName(*name)) {
             error::_throw(error::InvalidParameter, "Invalid name for sharing a database");
@@ -78,7 +78,7 @@ namespace litecore { namespace REST {
         lock_guard<mutex> lock(_mutex);
         if (_databases.find(*name) != _databases.end())
             return false;
-        _databases.emplace(*name, c4db_retain(db));
+        _databases.emplace(*name, db);
         return true;
     }
 
@@ -105,14 +105,14 @@ namespace litecore { namespace REST {
     }
 
 
-    c4::ref<C4Database> Listener::databaseNamed(const string &name) const {
+    Retained<C4Database> Listener::databaseNamed(const string &name) const {
         lock_guard<mutex> lock(_mutex);
         auto i = _databases.find(name);
         if (i == _databases.end())
             return nullptr;
         // Retain the database to avoid a race condition if it gets unregistered while this
         // thread's handler is still using it.
-        return c4::ref<C4Database>(c4db_retain(i->second));
+        return i->second;
     }
 
 

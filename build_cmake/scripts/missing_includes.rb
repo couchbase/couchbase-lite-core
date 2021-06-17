@@ -5,10 +5,32 @@
 # compile with one compiler, or standard library implementation, but fail with another, due to
 # differences in which other headers the standard library headers include.
 #
-# By Jens Alfke, Jan 2021
+# The script does _not_ look at headers #include'd by the current header, so it can produce false
+# positives when the required stdlib header is transitively included. But such situations can be
+# considered fragile, since changes in the included header might remove that stdlib include,
+# breaking the current header.
+#
+# By Jens Alfke, Jan-Mar 2021.
+#
+# Copyright (c) 2021 Couchbase, Inc All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 require "pathname"
 require "set"
+
+HeaderFileExtension = "hh"
 
 StdPrefix = "std::"
 
@@ -29,34 +51,34 @@ YELLOW = "\033[93m"
 # Maps a regex for a class/fn name, to the name of the header it's defined in
 Classes = Hash.new()
 
-def look_for(header, classes = nil)
-    classes = [header]  if classes == nil
+def look_for(header, classes)
     classes.each do |cls|
         Classes[Regexp.new("\\b" + StdPrefix + cls + "\\b")] = header
     end
 end
 
-look_for("algorithm",   ["binary_search", "clamp", "lower_bound", "max", "min", "minmax", "sort", "upper_bound"])
-look_for("atomic",      ["atomic", "atomic_ref", "atomic_flag", "memory_order"])
-look_for("chrono")
-look_for("fstream",     ["filebuf", "ifstream", "ofstream", "fstream"])
-look_for("functional",  ["function"])
-look_for("initializer_list")
-look_for("iostream",    ["cerr", "cin", "cout", "clog"])
-look_for("map")
-look_for("memory",      ["make_unique", "make_shared", "shared_ptr", "unique_ptr", "weak_ptr"])
-look_for("mutex",       ["mutex", "timed_mutex", "recursive_mutex", "lock_guard", "unique_lock", "scoped_lock", "once_flag", "call_once"])
-look_for("optional",    ["make_optional", "optional", "nullopt"])
-look_for("set")
-look_for("sstream",     ["string_stream"])
+# First parameter is header name, second is a list of symbols (without the `std::`) that require that header.
+look_for("algorithm",       ["binary_search", "clamp", "lower_bound", "max", "min", "minmax", "sort", "upper_bound"])
+look_for("atomic",          ["atomic", "atomic_\\w+", "memory_order"])
+look_for("chrono",          ["chrono"])
+look_for("fstream",         ["filebuf", "ifstream", "ofstream", "fstream"])
+look_for("functional",      ["function"])
+look_for("initializer_list",["initializer_list"])
+look_for("iostream",        ["cerr", "cin", "cout", "clog"])
+look_for("map",             ["map"])
+look_for("memory",          ["make_unique", "make_shared", "shared_ptr", "unique_ptr", "weak_ptr"])
+look_for("mutex",           ["mutex", "timed_mutex", "recursive_mutex", "lock_guard", "unique_lock", "scoped_lock", "once_flag", "call_once"])
+look_for("optional",        ["make_optional", "optional", "nullopt"])
+look_for("set",             ["set"])
+look_for("sstream",         ["string_stream"])
 #look_for("string")         # Suppressed because it's so often omitted, and yet rarely causes problems
-look_for("string_view")
-look_for("tuple",       ["tie", "tuple"])
-look_for("unordered_map")
-look_for("unordered_set")
-look_for("utility",     ["forward", "move", "pair", "get", "swap"])
-look_for("variant",      ["variant", "visit", "get_if"])
-look_for("vector")
+look_for("string_view",     ["string_view"])
+look_for("tuple",           ["tie", "tuple"])
+look_for("unordered_map",   ["unordered_map"])
+look_for("unordered_set",   ["unordered_set"])
+look_for("utility",         ["forward", "move", "pair", "get", "swap"])
+look_for("variant",         ["variant", "visit", "get_if"])
+look_for("vector",          ["vector"])
 # TODO: This is obviously incomplete. I've just been adding the most common stuff I find.
 
 
@@ -94,15 +116,22 @@ end
 
 def scan_tree(dir)
     dir.find do |file|
-        scan_file(file)  if file.extname == ".hh"
+        scan_file(file)  if file.extname == HeaderFileExtension
     end
 end
 
 
-if ARGV.empty? then
-    root = Pathname.new($0).parent.parent.parent  # Assumes script is in build_cmake/scripts/
-    puts "Scanning C++ headers in #{root.expand_path} ..."
-    scan_tree(root)
+if ARGV.empty? or ARGV[0][0] == '-' then
+    puts "#{BOLD}Usage:  missing_includes.rb [DIR] ...#{PLAIN}"
+    puts ""
+    puts "Finds C++ standard library headers you should probably \#include."
+    puts "Looks at all '.hh' files in each directory. When it finds an identifier in 'std::' that"
+    puts "it knows about, it checks if the corresponding header was included; if not, it prints a"
+    puts "warning."
+    puts "It knows about a few dozen common identifiers like 'std::string', 'std::move', etc.,"
+    puts "but by no means all of them. Nor does it detect headers transitively included."
+    puts "Hopefully you'll still find it useful."
+    exit 1
 else
     ARGV.each do |arg|
         scan_tree(Pathname.new(arg))

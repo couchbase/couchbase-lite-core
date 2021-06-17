@@ -174,7 +174,7 @@ namespace litecore { namespace websocket {
         These callbacks are made on an undefined thread managed by the WebSocketProvider! */
     class Delegate {
     public:
-        virtual ~Delegate() { }
+        virtual ~Delegate() =default;
 
         virtual void onWebSocketGotHTTPResponse(int status, const Headers &headers) { }
         virtual void onWebSocketGotTLSCertificate(slice certData) =0;

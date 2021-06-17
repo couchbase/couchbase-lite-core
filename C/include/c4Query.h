@@ -17,14 +17,11 @@
 //
 
 #pragma once
-#include "c4Base.h"
+#include "c4QueryTypes.h"
 #include "fleece/Fleece.h"
 
 C4_ASSUME_NONNULL_BEGIN
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+C4API_BEGIN_DECLS
 
     /** \defgroup QueryingDB Querying the Database
         @{ */
@@ -33,13 +30,6 @@ extern "C" {
     //////// DATABASE QUERIES:
 
 
-    /** Supported query languages. */
-    typedef C4_ENUM(uint32_t, C4QueryLanguage) {
-        kC4JSONQuery,   ///< JSON query schema as documented in LiteCore wiki
-        kC4N1QLQuery,   ///< N1QL syntax (a large subset)
-    };
-
-    
     /** Compiles a query from an expression given as JSON.
         The expression is a predicate that describes which documents should be returned.
         A separate, optional sort expression describes the ordering of the results.
@@ -56,6 +46,7 @@ extern "C" {
                           int* C4NULLABLE outErrorPos,
                           C4Error* C4NULLABLE error) C4API;
 
+    C4_DEPRECATED("Use c4query_new2")
     C4Query* c4query_new(C4Database*, C4String, C4Error* C4NULLABLE) C4API;  // for backward compatibility
 
     /** Returns a string describing the implementation of the compiled query.
@@ -77,47 +68,6 @@ extern "C" {
 
 
     //////// RUNNING QUERIES:
-
-
-    /** Options for running queries. */
-    typedef struct {
-        bool rankFullText_DEPRECATED;      ///< Ignored; use the `rank()` query function instead.
-    } C4QueryOptions;
-
-
-    /** Default query options. Has skip=0, limit=UINT_MAX, rankFullText=true. */
-	CBL_CORE_API extern const C4QueryOptions kC4DefaultQueryOptions;
-
-
-    /** Info about a match of a full-text query term. */
-    typedef struct {
-        uint64_t dataSource;    ///< Opaque identifier of where text is stored
-        uint32_t property;      ///< Which property in the index was matched (array index in `expressionsJSON`)
-        uint32_t term;          ///< Which search term (word) in the query was matched
-        uint32_t start;         ///< *Byte* range start of the match in the full text
-        uint32_t length;        ///< *Byte* range length of the match in the full text
-    } C4FullTextMatch;
-
-
-    /** A query result enumerator.
-        Created by c4db_query. Must be freed with c4queryenum_release.
-        The fields of this struct represent the current matched index row, and are valid until the
-        next call to c4queryenum_next or c4queryenum_release. */
-    struct C4QueryEnumerator {
-        /** The columns of this result, in the same order as in the query's `WHAT` clause. */
-        FLArrayIterator columns;
-
-        /** A bitmap where a 1 bit represents a column whose value is MISSING.
-            This is how you tell a missing property value from a value that's JSON 'null',
-            since the value in the `columns` array will be a Fleece `null` either way. */
-        uint64_t missingColumns;
-
-        /** The number of full-text matches (i.e. the number of items in `fullTextMatches`) */
-        uint32_t fullTextMatchCount;
-
-        /** Array with details of each full-text match */
-        const C4FullTextMatch* C4NULLABLE fullTextMatches;
-    };
 
 
     /** Sets the parameter values to use when running the query, if no parameters are given to
@@ -195,8 +145,5 @@ extern "C" {
 
     /** @} */
 
-#ifdef __cplusplus
-}
-#endif
-
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

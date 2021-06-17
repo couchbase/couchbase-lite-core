@@ -21,7 +21,7 @@
 #include "TLSContext.hh"
 #include "HTTPLogic.hh"
 #include "Address.hh"
-#include "c4Certificate.h"
+#include "c4Certificate.hh"
 #include "c4ExceptionUtils.hh"
 #include "Writer.hh"
 #include "Error.hh"
@@ -85,8 +85,7 @@ namespace litecore { namespace REST {
     { }
 
 
-    Response::~Response()
-    { }
+    Response::~Response() =default;
 
 
     Response& Response::setHeaders(const websocket::Headers &headers) {
@@ -138,21 +137,18 @@ namespace litecore { namespace REST {
 
 #ifdef COUCHBASE_ENTERPRISE
     Response& Response::allowOnlyCert(C4Cert *cert) {
-        Assert(c4cert_isSigned(cert));
-        tlsContext()->allowOnlyCert((Cert*)cert);
+        tlsContext()->allowOnlyCert(cert->assertSignedCert());
         return *this;
     }
     
     Response& Response::setRootCerts(C4Cert *cert) {
-        Assert(c4cert_isSigned(cert));
-        tlsContext()->setRootCerts((Cert*)cert);
+        tlsContext()->setRootCerts(cert->assertSignedCert());
         return *this;
     }
 
     Response& Response::setIdentity(C4Cert *cert, C4KeyPair *key) {
-        Assert(c4cert_isSigned(cert));
-        Assert(c4keypair_hasPrivateKey(key));
-        Retained<Identity> id = new Identity((Cert*)cert, (PrivateKey*)key);
+        Assert(key->hasPrivateKey());
+        Retained<Identity> id = new Identity(cert->assertSignedCert(), key->getPrivateKey());
         tlsContext()->setIdentity(id);
         return *this;
     }

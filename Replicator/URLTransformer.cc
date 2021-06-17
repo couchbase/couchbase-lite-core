@@ -17,7 +17,7 @@
 //
 
 #include "URLTransformer.hh"
-#include "c4Replicator.h"
+#include "c4Replicator.hh"
 
 namespace litecore::repl {
     URLTransformStrategy& operator++(URLTransformStrategy& s)  {
@@ -31,7 +31,7 @@ namespace litecore::repl {
 
     static alloc_slice AddPort(slice inputURL) {
         C4Address addr;
-        if(!c4address_fromURL(inputURL, &addr, nullptr) || (addr.port != 80 && addr.port != 443)) {
+        if(!C4Address::fromURL(inputURL, &addr, nullptr) || (addr.port != 80 && addr.port != 443)) {
             return nullslice;
         }
 
@@ -41,17 +41,17 @@ namespace litecore::repl {
             addr.port = 443;
         }
 
-        return c4address_toURL(addr);
+        return addr.toURL();
     }
 
     static alloc_slice RemovePort(slice inputURL) {
         C4Address addr;
-        if(!c4address_fromURL(inputURL, &addr, nullptr) || (addr.port != 80 && addr.port != 443)) {
+        if(!C4Address::fromURL(inputURL, &addr, nullptr) || (addr.port != 80 && addr.port != 443)) {
             return nullslice;
         }
 
         addr.port = 0;
-        return c4address_toURL(addr);
+        return addr.toURL();
     }
 
     alloc_slice transform_url(slice inputURL, URLTransformStrategy strategy) {

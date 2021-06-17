@@ -44,7 +44,7 @@ namespace litecore {
                   slice key,
                   slice iv,
                   bool padding,
-                  slice dst,
+                  mutable_slice dst,
                   slice src)
     {
         DebugAssert(key.size == kCCKeySizeAES256);
@@ -56,7 +56,7 @@ namespace litecore {
                                          key.buf, key.size,
                                          iv.buf,
                                          src.buf, src.size,
-                                         (void*)dst.buf, dst.size,
+                                         dst.buf, dst.size,
                                          &outSize);
         if (status != kCCSuccess) {
             Assert(status != kCCParamError && status != kCCBufferTooSmall &&
@@ -85,14 +85,14 @@ namespace litecore {
 
     // Cross-platform implementation using mbedTLS library:
 
-	static size_t AES(size_t key_size,
-			   mbedtls_cipher_type_t cipher,
-		       bool encrypt,
-               slice key,
-               slice iv,
-               bool padding,
-               slice dst,
-               slice src)
+    static size_t AES(size_t key_size,
+                      mbedtls_cipher_type_t cipher,
+                      bool encrypt,
+                      slice key,
+                      slice iv,
+                      bool padding,
+                      mutable_slice dst,
+                      slice src)
     {
 	    DebugAssert(key.size == key_size);
         DebugAssert(iv.buf == nullptr || iv.size == kAESBlockSize, "IV is wrong size");
@@ -126,7 +126,7 @@ namespace litecore {
                   slice key,
                   slice iv,
                   bool padding,
-                  slice dst,
+                  mutable_slice dst,
                   slice src)
     {
         return AES(kAES256KeySize, MBEDTLS_CIPHER_AES_256_CBC, encrypt, key, iv, padding, dst, src);

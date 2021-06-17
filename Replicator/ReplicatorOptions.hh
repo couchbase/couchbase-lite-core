@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "c4Replicator.h"
+#include "c4ReplicatorTypes.h"
 #include "fleece/Fleece.hh"
 
 namespace litecore { namespace repl {
@@ -28,7 +28,7 @@ namespace litecore { namespace repl {
         //---- Public fields:
 
         using Mode = C4ReplicatorMode;
-        using Validator = bool(*)(C4String docID, C4String revID, C4RevisionFlags, FLDict body, void *context);
+        using Validator = C4ReplicatorValidationFunction;
 
         Mode                    push                    {kC4Disabled};
         Mode                    pull                    {kC4Disabled};
@@ -39,8 +39,7 @@ namespace litecore { namespace repl {
 
         //---- Constructors/factories:
 
-        Options()
-        { }
+        Options() =default;
 
         Options(Mode push_, Mode pull_)
         :push(push_), pull(pull_)
@@ -84,6 +83,12 @@ namespace litecore { namespace repl {
         }
 
         bool disableDeltaSupport() const {return properties[kC4ReplicatorOptionDisableDeltas].asBool();}
+        
+        bool enableAutoPurge() const {
+            if (!properties[kC4ReplicatorOptionAutoPurge])
+                return true;
+            return properties[kC4ReplicatorOptionDisableDeltas].asBool();
+        }
 
         /** Returns a string that uniquely identifies the remote database; by default its URL,
             or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.) */

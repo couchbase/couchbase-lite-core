@@ -7,14 +7,21 @@
 #pragma once
 #include "RefCounted.hh"
 #include "fleece/slice.hh"
-#include "c4Document.h"
-#include "c4Replicator.h"
+#include "c4DocumentTypes.h"
+#include "c4ReplicatorTypes.h"
+#include "Error.hh"
 
 namespace litecore { namespace repl {
 
     enum class Dir {
         kPulling = 0,
         kPushing
+    };
+
+    enum class RevocationMode : uint8_t {
+        kNone,
+        kRevokedAccess,
+        kRemovedFromChannel
     };
 
 
@@ -27,6 +34,7 @@ namespace litecore { namespace repl {
         using alloc_slice = fleece::alloc_slice;
 
         // Note: The following fields must be compatible with the public C4DocumentEnded struct:
+        const alloc_slice   collectionName = {};    // TODO: Collection aware
         const alloc_slice   docID;
         const alloc_slice   revID;
         C4RevisionFlags     flags {0};
@@ -35,7 +43,11 @@ namespace litecore { namespace repl {
         bool                errorIsTransient {false};
 
         const C4DocumentEnded* asDocumentEnded() const  {
-            return (const C4DocumentEnded*)&docID;
+            auto c4de = (const C4DocumentEnded*)&collectionName;
+            // Verify the abovementioned compatibility:
+            DebugAssert((void*)&c4de->docID == &docID);
+            DebugAssert((void*)&c4de->errorIsTransient == &errorIsTransient);
+            return c4de;
         }
 
         bool                isWarning {false};

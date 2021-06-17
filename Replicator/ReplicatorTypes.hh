@@ -18,10 +18,9 @@
 
 #pragma once
 #include "ReplicatedRev.hh"
-#include "fleece/Fleece.h"
-#include "c4.hh"
-#include "c4Private.h"
-#include "access_lock.hh"
+#include "fleece/Fleece.hh"
+#include "c4Base.hh"
+#include "c4BlobStore.hh"
 #include <memory>
 #include <vector>
 
@@ -56,7 +55,7 @@ namespace litecore { namespace repl {
 
 
     /** A request by the peer to send a revision. */
-    class RevToSend : public ReplicatedRev {
+    class RevToSend final : public ReplicatedRev {
     public:
         alloc_slice     remoteAncestorRevID;        // Known ancestor revID (no-conflicts mode)
         unsigned        maxHistory {0};             // Max depth of rev history to send
@@ -88,11 +87,12 @@ namespace litecore { namespace repl {
 
 
     /** A revision to be added to the database, complete with body. */
-    class RevToInsert : public ReplicatedRev {
+    class RevToInsert final : public ReplicatedRev {
     public:
         alloc_slice             historyBuf;             // Revision history (comma-delimited revIDs)
         fleece::Doc             doc;
         const bool              noConflicts {false};    // Server is in no-conflicts mode
+        RevocationMode          revocationMode = RevocationMode::kNone;
         Retained<IncomingRev>   owner;                  // Object that's processing this rev
         alloc_slice             deltaSrc;
         alloc_slice             deltaSrcRevID;          // Source revision if body is a delta
@@ -102,6 +102,10 @@ namespace litecore { namespace repl {
                     slice historyBuf,
                     bool deleted,
                     bool noConflicts);
+
+        /// Constructor for a revoked document
+        RevToInsert(slice docID, slice revID,
+                    RevocationMode);
 
         Dir dir() const override                    {return Dir::kPulling;}
         void trim() override;

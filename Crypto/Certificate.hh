@@ -77,7 +77,7 @@ namespace litecore { namespace crypto {
         static std::optional<Tag> tagNamed(fleece::slice name);
         static fleece::slice nameOfTag(Tag);
 
-        SubjectAltNames() { }
+        SubjectAltNames() =default;
         explicit SubjectAltNames(::mbedtls_asn1_sequence*);
 
         fleece::alloc_slice encode() const;
@@ -154,7 +154,7 @@ namespace litecore { namespace crypto {
 
 
     /** A signed X.509 certificate. */
-    class Cert : public CertBase {
+    class Cert final : public CertBase {
     public:
 
         /** Instantiates a Cert from DER- or PEM-encoded certificate data.
@@ -256,7 +256,7 @@ namespace litecore { namespace crypto {
 
     /** A request for an X.509 certificate, containing the subject's name and public key,
         to be sent to a Certificate Authority that will sign it. */
-    class CertSigningRequest : public CertBase {
+    class CertSigningRequest final : public CertBase {
     public:
         /** Creates a Certificate Signing Request, to be sent to a CA that will sign it. */
         CertSigningRequest(const Cert::SubjectParameters &params, PrivateKey *subjectKey);

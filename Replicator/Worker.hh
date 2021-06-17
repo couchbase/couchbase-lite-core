@@ -23,6 +23,7 @@
 #include "Message.hh"
 #include "Error.hh"
 #include "fleece/Fleece.hh"
+#include <atomic>
 #include <functional>
 #include <memory>
 

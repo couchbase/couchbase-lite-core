@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <atomic>
 #include <functional>
+#include <memory>
 
 #undef check
 

@@ -28,8 +28,14 @@ namespace litecore {
 
     class DataFile;
     class Record;
-    class Transaction;
+    class ExclusiveTransaction;
     class Query;
+
+
+    enum class ReadBy {
+        Key,
+        Sequence
+    };
 
 
     /** A container of key/value mappings. Keys and values are opaque blobs.
@@ -43,10 +49,11 @@ namespace litecore {
     public:
 
         struct Capabilities {
-            bool sequences      :1;     ///< Records have sequences & can be enumerated by sequence
-
-            static const Capabilities defaults;
+            bool sequences;     ///< Records have sequences & can be enumerated by sequence
         };
+
+        static constexpr Capabilities withSequences = {true};
+        static constexpr Capabilities noSequences   = {false};
 
 
         DataFile& dataFile() const                  {return _db;}
@@ -65,18 +72,13 @@ namespace litecore {
 
         //////// Keys/values:
 
+        /** Reads the rest of a record whose key() or sequence() is already set. */
+        virtual bool read(Record &rec, ReadBy = ReadBy::Key, ContentOption = kEntireBody) const =0;
+
         Record get(slice key, ContentOption = kEntireBody) const;
-        virtual Record get(sequence_t, ContentOption = kEntireBody) const =0;
+        Record get(sequence_t, ContentOption = kEntireBody) const;
 
-        virtual void get(slice key, ContentOption, function_ref<void(const Record&)>);
-
-        /** Reads a record whose key() is already set. */
-        virtual bool read(Record &rec, ContentOption = kEntireBody) const =0;
-
-        /** Creates a database query object. */
-        virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
-
-        using WithDocBodyCallback = function_ref<alloc_slice(const RecordLite&)>;
+        using WithDocBodyCallback = function_ref<alloc_slice(const RecordUpdate&)>;
 
         /** Invokes the callback once for each document found in the database.
             The callback is given the docID, body and sequence, and returns a string.
@@ -86,46 +88,53 @@ namespace litecore {
 
         //////// Writing:
 
-        /** Core write method.
-            If `rec.sequence` is not `nullopt`, the record will not be updated if its existing sequence
-            doesn't match it. (A nonexistent record's "existing sequence" is considered to be 0.)
-            If `rec.updateSequence` is false, the record's sequence won't be changed, but its
-            current sequence must be provided in `rec.sequence`.
-            Returns the record's new sequence, or 0 if the record was not updated due to a sequence
-            conflict. */
-        virtual sequence_t set(const RecordLite &rec, Transaction&) =0;
+        /** Core setter for KeyStores _with_ sequences.
+            The `sequence` and `subsequence` in the RecordUpdate must match the current values in
+            the database, or the call will fail by returning 0 to indicate a conflict.
+            (A nonexistent record's sequence and subsequence are considered to be 0.)
+            @param rec  The properties of the record to save, including its _existing_ sequence
+                        and subsequence.
+            @param updateSequence  If true, the record's sequence will be updated to the database's
+                        next consecutive sequence number. If false, the record's subsequence
+                        will be incremented.
+            @param transaction  The active transaction.
+            @return  The record's new sequence number, or 0 if there is a conflict. */
+        virtual sequence_t set(const RecordUpdate &rec,
+                               bool updateSequence,
+                               ExclusiveTransaction &transaction) MUST_USE_RESULT =0;
 
-        // Convenience wrappers for set():
+        /** Alternative `set` that takes a `Record` directly.
+            It updates the `sequence` property, instead of returning the new sequence.
+            It throws a Conflict exception on conflict. */
+        void set(Record &rec,
+                 bool updateSequence,
+                 ExclusiveTransaction &transaction);
 
-        sequence_t set(slice key, slice version, slice value,
-                       DocumentFlags flags,
-                       Transaction &t,
-                       std::optional<sequence_t> replacingSequence =std::nullopt,
-                       bool newSequence =true)
-        {
-            RecordLite r = {key, version, value, nullslice, replacingSequence, newSequence, flags};
-            return set(r, t);
-        }
+        /** Core setter for KeyStores _without_ sequences.
+            There is no MVCC; whatever's stored at that key is overwritten.
+            @param key  The record's key (document ID).
+            @param version  Version metadata.
+            @param value  The record's value (body).
+            @param transaction  The current transaction. */
+        virtual void setKV(slice key,
+                           slice version,
+                           slice value,
+                           ExclusiveTransaction &transaction) =0;
 
-        sequence_t set(slice key, slice value, Transaction &t,
-                       std::optional<sequence_t> replacingSequence =std::nullopt,
-                       bool newSequence =true) {
-            RecordLite r = {key, nullslice, value, nullslice,
-                              replacingSequence, newSequence, DocumentFlags::kNone};
-            return set(r, t);
-        }
+        void setKV(slice key, slice value, ExclusiveTransaction &t)      {setKV(key, nullslice, value, t);}
 
-        sequence_t set(Record&,
-                       Transaction&,
-                       std::optional<sequence_t> replacingSequence =std::nullopt,
-                       bool newSequence =true);
+        void setKV(Record&, ExclusiveTransaction&);
 
-        virtual bool del(slice key, Transaction&, sequence_t replacingSequence =0) =0;
-        bool del(const Record &rec, Transaction &t)                 {return del(rec.key(), t);}
+        virtual bool del(slice key, ExclusiveTransaction&, sequence_t replacingSequence =0) =0;
+        bool del(const Record &rec, ExclusiveTransaction &t)                 {return del(rec.key(), t);}
 
         /** Sets a flag of a record, without having to read/write the Record. */
-        virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&) =0;
+        virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction&) =0;
 
+        /** Copies record with given key to another KeyStore, with a new sequence and possibly a
+            new key, then deletes it from this KeyStore. */
+        virtual void moveTo(slice key, KeyStore &dst, ExclusiveTransaction&,
+                            slice newKey =nullslice) =0;
 
         //////// Expiration:
 
@@ -152,6 +161,11 @@ namespace litecore {
         virtual unsigned expireRecords(std::optional<ExpirationCallback> =std::nullopt) =0;
 
 
+        //////// Queries:
+
+        /** A convenience that delegates to the DataFile, passing this as the defaultKeyStore. */
+        Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON);
+
         //////// Indexing:
 
         virtual bool supportsIndexes(IndexSpec::Type) const                   {return false;}
@@ -161,18 +175,20 @@ namespace litecore {
                          QueryLanguage queryLanguage,
                          IndexSpec::Type =IndexSpec::kValue,
                          const IndexSpec::Options* = nullptr); // convenience method
-        inline bool createIndex(slice name,
-                                slice expressionJSON,
-                                IndexSpec::Type indexType=IndexSpec::kValue,
-                                const IndexSpec::Options* indexOption =nullptr) // convenience method
+
+        bool createIndex(slice name,
+                         slice expression,
+                         IndexSpec::Type type =IndexSpec::kValue,
+                         const IndexSpec::Options* options = nullptr) // convenience method
         {
-            return createIndex(name, expressionJSON, QueryLanguage::kJSON, indexType, indexOption);
+            return createIndex(name, expression, QueryLanguage::kJSON, type, options);
         }
+
         virtual void deleteIndex(slice name) =0;
         virtual std::vector<IndexSpec> getIndexes() const =0;
 
         // public for complicated reasons; clients should never call it
-        virtual ~KeyStore()                             { }
+        virtual ~KeyStore()                             =default;
 
     protected:
         KeyStore(DataFile &db, const std::string &name, Capabilities capabilities)

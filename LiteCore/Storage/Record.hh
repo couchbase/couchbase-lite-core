@@ -40,12 +40,15 @@ namespace litecore {
     }
 
     static inline DocumentFlags& operator|= (DocumentFlags &a, DocumentFlags b) {
-        a = a | b;
-        return a;
+        return (a = a | b);
     }
 
     static inline DocumentFlags operator- (DocumentFlags a, DocumentFlags b) {
         return (DocumentFlags)((uint8_t)a & ~(uint8_t)b);
+    }
+
+    static inline DocumentFlags operator-= (DocumentFlags &a, DocumentFlags b) {
+        return (a = a - b);
     }
 
 
@@ -70,7 +73,7 @@ namespace litecore {
         and some extra metadata like flags and a sequence number. */
     class Record {
     public:
-        Record()                                  { }
+        Record()                                  =default;
         explicit Record(slice key);
         explicit Record(alloc_slice key);
 
@@ -86,11 +89,12 @@ namespace litecore {
         size_t extraSize() const FLPURE           {return _extraSize;}
 
         sequence_t sequence() const FLPURE        {return _sequence;}
+        sequence_t subsequence() const FLPURE     {return _subsequence;}
 
         DocumentFlags flags() const FLPURE        {return _flags;}
         void setFlags(DocumentFlags f)            {_flags = f;}
-        void setFlag(DocumentFlags f)             {_flags = (DocumentFlags)((uint8_t)_flags | (uint8_t)f);}
-        void clearFlag(DocumentFlags f)           {_flags = (DocumentFlags)((uint8_t)_flags & ~(uint8_t)f);}
+        void setFlag(DocumentFlags f)             {_flags |= f;}
+        void clearFlag(DocumentFlags f)           {_flags -= f;}
 
         bool exists() const FLPURE                {return _exists;}
 
@@ -114,10 +118,8 @@ namespace litecore {
         /** Clears/frees everything. */
         void clear() noexcept;
 
-        /** Clears everything but the key. */
-        void clearMetaAndBody() noexcept;
-
-        void updateSequence(sequence_t s)       {_sequence = s;}
+        void updateSequence(sequence_t s)       {_sequence = s; _subsequence = 0;}
+        void updateSubsequence()                {++_subsequence;}
         void setUnloadedBodySize(size_t size)   {_body = nullslice; _bodySize = size;}
         void setUnloadedExtraSize(size_t size)  {_extra = nullslice; _extraSize = size;}
         void setExists()                        {_exists = true;}
@@ -127,15 +129,19 @@ namespace litecore {
         expiration_t expiration() const FLPURE  {return _expiration;}
         void setExpiration(expiration_t x)      {_expiration = x;}
 
+        // Only called by KeyStore
+        void updateSubsequence(sequence_t s)    {_subsequence = s;}
+
     private:
         friend class KeyStore;
-        friend class Transaction;
+        friend class ExclusiveTransaction;
         friend class RecordEnumerator;
 
         alloc_slice     _key, _version, _body, _extra;  // The key, metadata and body of the record
         size_t          _bodySize {0};          // Size of body, if body wasn't loaded
         size_t          _extraSize {0};         // Size of `extra` col, if not loaded
         sequence_t      _sequence {0};          // Sequence number (if KeyStore supports sequences)
+        sequence_t      _subsequence {0};       // Per-record subsequence
         expiration_t    _expiration {0};        // Expiration time (only set by RecordEnumerator)
         DocumentFlags   _flags {DocumentFlags::kNone};// Document flags (deleted, conflicted, etc.)
         bool            _exists {false};        // Does the record exist?
@@ -143,13 +149,15 @@ namespace litecore {
     };
 
 
-    /** A lightweight struct used to represent a record without all the heap allocation of a Record object.
-        (See `KeyStore::set`.) */
-    struct RecordLite {
-        slice                       key, version, body, extra;
-        std::optional<sequence_t>   sequence;
-        bool                        updateSequence {true};
-        DocumentFlags               flags {DocumentFlags::kNone};
+    /** A lightweight struct used to represent a record in KeyStore setters,
+        without all the heap allocation of a Record object. */
+    struct RecordUpdate {
+        explicit RecordUpdate(slice key, slice body, DocumentFlags =DocumentFlags::kNone);
+        explicit RecordUpdate(const Record&);
+        
+        slice           key, version, body, extra;
+        sequence_t      sequence {0}, subsequence {0};
+        DocumentFlags   flags;
     };
 
 }

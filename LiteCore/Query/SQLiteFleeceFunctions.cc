@@ -491,10 +491,8 @@ namespace litecore {
 
     // fl_callback(docID, revID, body, extra, sequence, callback) -> string
     static void fl_callback(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        RecordLite rec;
-        rec.key = valueAsSlice(argv[0]);
+        RecordUpdate rec(valueAsSlice(argv[0]), valueAsSlice(argv[2]));
         rec.version = valueAsSlice(argv[1]);
-        rec.body = valueAsSlice(argv[2]);
         rec.extra = valueAsSlice(argv[3]);
         rec.sequence = sqlite3_value_int(argv[4]);
         auto callback = sqlite3_value_pointer(argv[5], kWithDocBodiesCallbackPointerType);

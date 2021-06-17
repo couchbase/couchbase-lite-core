@@ -16,11 +16,15 @@
 // limitations under the License.
 //
 
-#include "fleece/Fleece.hh"
+// NOTE: This class is used in the C4Tests, which link against the LiteCore DLL,
+// so it cannot use the LiteCore C++ API.
+
 #include "Address.hh"
+#include "c4Database.h"
+#include "c4Replicator.h"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "c4Database.h"
+#include "fleece/Fleece.hh"
 
 using namespace std;
 using namespace fleece;

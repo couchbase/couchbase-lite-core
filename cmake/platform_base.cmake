@@ -16,10 +16,11 @@ function(set_litecore_source_base)
         ${BASE_SSS_RESULT}
         C/c4Base.cc
         C/c4BlobStore.cc
+        C/c4CAPI.cc
         C/c4Certificate.cc
+        C/c4Collection.cc
         C/c4Database.cc
         C/c4DocEnumerator.cc
-        C/c4DocExpiration.cc
         C/c4Document.cc
         C/c4Error.cc
         C/c4Observer.cc
@@ -32,12 +33,11 @@ function(set_litecore_source_base)
         Crypto/PublicKey.cc
         Crypto/SecureDigest.cc
         Crypto/SecureSymmetricCrypto.cc
-        LiteCore/BlobStore/BlobStore.cc
+        LiteCore/BlobStore/BlobStreams.cc
         LiteCore/BlobStore/Stream.cc
         LiteCore/Database/BackgroundDB.cc
-        LiteCore/Database/Database.cc
-        LiteCore/Database/Database+Upgrade.cc
-        LiteCore/Database/Document.cc
+        LiteCore/Database/DatabaseImpl.cc
+        LiteCore/Database/DatabaseImpl+Upgrade.cc
         LiteCore/Database/Housekeeper.cc
         LiteCore/Database/LegacyAttachments.cc
         LiteCore/Database/LiveQuerier.cc
@@ -88,6 +88,7 @@ function(set_litecore_source_base)
         vendor/SQLiteCpp/src/Statement.cpp
         vendor/SQLiteCpp/src/Transaction.cpp
         Replicator/c4Replicator.cc
+        Replicator/c4Replicator_CAPI.cc
         Replicator/c4Socket.cc
         Replicator/ChangesFeed.cc
         Replicator/Checkpoint.cc
@@ -115,6 +116,7 @@ function(set_litecore_source_base)
         LiteCore/Support/LogEncoder.cc
         LiteCore/Support/PlatformIO.cc
         LiteCore/Support/StringUtil.cc
+        LiteCore/Support/ThreadUtil.cc
         LiteCore/Support/ChannelManifest.cc
         PARENT_SCOPE
     )

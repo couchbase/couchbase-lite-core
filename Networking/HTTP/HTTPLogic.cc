@@ -19,11 +19,13 @@
 #include "HTTPLogic.hh"
 #include "TCPSocket.hh"
 #include "WebSocketInterface.hh"
-#include "c4Replicator.h"
+#include "c4ReplicatorTypes.h"
+#include "Base64.hh"
 #include "Error.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
+#include "slice_stream.hh"
 #include <regex>
 #include <sstream>
 
@@ -57,8 +59,7 @@ namespace litecore { namespace net {
     }
 
 
-    HTTPLogic::~HTTPLogic()
-    { }
+    HTTPLogic::~HTTPLogic() =default;
 
 
     void HTTPLogic::setHeaders(const websocket::Headers &requestHeaders) {
@@ -135,9 +136,9 @@ namespace litecore { namespace net {
             if (_isWebSocket) {
                 // WebSocket handshake headers:
                 uint8_t nonceBuf[16];
-                slice nonceBytes(nonceBuf, sizeof(nonceBuf));
+                mutable_slice nonceBytes(nonceBuf, sizeof(nonceBuf));
                 SecureRandomize(nonceBytes);
-                _webSocketNonce = nonceBytes.base64String();
+                _webSocketNonce = base64::encode(nonceBytes);
                 rq << "Connection: Upgrade\r\n"
                       "Upgrade: websocket\r\n"
                       "Sec-WebSocket-Version: 13\r\n"
@@ -152,7 +153,7 @@ namespace litecore { namespace net {
 
 
     alloc_slice HTTPLogic::basicAuth(slice username, slice password) {
-        string credential = slice(string(username) + ':' + string(password)).base64String();
+        string credential = base64::encode(string(username) + ':' + string(password));
         return alloc_slice("Basic " + credential);
     }
 
@@ -167,7 +168,8 @@ namespace litecore { namespace net {
         _error = {};
         _authChallenge.reset();
 
-        if (parseStatusLine(responseData) && parseHeaders(responseData, _responseHeaders))
+        slice_istream in(responseData);
+        if (parseStatusLine(in) && parseHeaders(in, _responseHeaders))
             _lastDisposition = handleResponse();
         else
             _lastDisposition = failure(WebSocketDomain, 400, "Received invalid HTTP"_sl);
@@ -214,7 +216,7 @@ namespace litecore { namespace net {
     }
 
 
-    bool HTTPLogic::parseStatusLine(slice &responseData) {
+    bool HTTPLogic::parseStatusLine(slice_istream &responseData) {
         slice version = responseData.readToDelimiter(" "_sl);
         uint64_t status = responseData.readDecimal();
         if (!version.hasPrefix("HTTP/"_sl) || status == 0 || status > INT_MAX)
@@ -223,7 +225,7 @@ namespace litecore { namespace net {
         if (responseData.size == 0 || (responseData[0] != ' ' && responseData[0] != '\r'))
             return false;
         while (responseData.hasPrefix(' '))
-            responseData.moveStart(1);
+            responseData.skip(1);
         slice message = responseData.readToDelimiter("\r\n"_sl);
         if (!message)
             return false;
@@ -233,7 +235,7 @@ namespace litecore { namespace net {
 
 
     // Reads HTTP headers out of `responseData`. Assumes data ends with CRLFCRLF.
-    bool HTTPLogic::parseHeaders(slice &responseData, Headers &headers) {
+    bool HTTPLogic::parseHeaders(slice_istream &responseData, Headers &headers) {
         while (true) {
             slice line = responseData.readToDelimiter("\r\n"_sl);
             if (!line)
@@ -267,7 +269,7 @@ namespace litecore { namespace net {
             newAddr = _address;
             newAddr.path = location;
         } else {
-            if (!c4address_fromURL(location, &newAddr, nullptr)
+            if (!C4Address::fromURL(location, &newAddr, nullptr)
                     || (newAddr.scheme != "http"_sl && newAddr.scheme != "https"_sl))
                 return failure(NetworkDomain, kC4NetErrInvalidRedirect);
         }
@@ -333,7 +335,7 @@ namespace litecore { namespace net {
 
     string HTTPLogic::webSocketKeyResponse(const string &nonce) {
         SHA1 digest{slice(nonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
-        return slice(&digest, sizeof(digest)).base64String();
+        return digest.asBase64();
     }
 
 
@@ -397,10 +399,11 @@ namespace litecore { namespace net {
 
 
     string HTTPLogic::formatHTTP(slice http) {
+        slice_istream in(http);
         stringstream s;
         bool first = true;
         while (true) {
-            slice line = http.readToDelimiter("\r\n"_sl);
+            slice line = in.readToDelimiter("\r\n"_sl);
             if (line.size == 0)
                 break;
             if (!first)

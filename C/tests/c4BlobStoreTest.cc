@@ -24,36 +24,14 @@
 using namespace std;
 
 
-class BlobStoreTest {
+class BlobStoreTest : public C4Test {
 public:
-    
-    static const int numberOfOptions = 2;       // 0 = unencrypted, 1 = encrypted
 
     BlobStoreTest(int option)
-    :encrypted(option == 1)
+    :C4Test(option)
+    ,encrypted(isEncrypted())
+    ,store(c4db_getBlobStore(db, nullptr))
     {
-        C4EncryptionKey crypto, *encryption=nullptr;
-        if (encrypted) {
-            fprintf(stderr, "        ...encrypted\n");
-            INFO("(Encrypted)");
-            crypto.algorithm = kC4EncryptionAES256;
-            memset(&crypto.bytes, 0xCC, sizeof(crypto.bytes));
-            encryption = &crypto;
-        }
-
-        C4Error error;
-        store = c4blob_openStore(TEMPDIR("cbl_blob_test" + kPathSeparator),
-                                 kC4DB_Create,
-                                 encryption,
-                                 ERROR_INFO(error));
-        REQUIRE(store != nullptr);
-
-        memset(bogusKey.bytes, 0x55, sizeof(bogusKey.bytes));
-    }
-
-    ~BlobStoreTest() {
-        C4Error error;
-        CHECK(c4blob_deleteStore(store, WITH_ERROR(&error)));
     }
 
     C4BlobStore *store {nullptr};
@@ -91,11 +69,12 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "missing blobs", "[blob][C]") {
     
     CHECK(c4blob_getSize(store, bogusKey) == -1);
 
-    C4Error error;
+    C4Error error = {};
     C4SliceResult data = c4blob_getContents(store, bogusKey, &error);
     CHECK(data.buf == nullptr);
     CHECK(data.size == 0);
     CHECK(error.code == kC4ErrorNotFound);
+    error = {};
     data = c4blob_getFilePath(store, bogusKey, &error);
     CHECK(data.buf == nullptr);
     CHECK(data.size == 0);
@@ -128,13 +107,14 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][Encryption][C]") {
     REQUIRE(gotBlob.size == blobToStore.size);
     CHECK(memcmp(gotBlob.buf, blobToStore.buf, gotBlob.size) == 0);
 
-    alloc_slice p = c4blob_getFilePath(store, key, &error);
     if (encrypted) {
-        CHECK(p.buf == nullptr);
-        CHECK(p.size == 0);
+        ExpectingExceptions x;
+        alloc_slice p = c4blob_getFilePath(store, key, &error);
+        CHECK(!p);
         CHECK(error.code == kC4ErrorWrongFormat);
     } else {
-        REQUIRE(p.buf != nullptr);
+        alloc_slice p = c4blob_getFilePath(store, key, &error);
+        REQUIRE(p);
         string path((char*)p.buf, p.size);
         string filename = "QneWo5IYIQ0ZrbCG0hXPGC6jy7E=.blob";
         CHECK(path.find(filename) == path.size() - filename.size());

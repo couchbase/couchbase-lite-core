@@ -119,9 +119,9 @@ namespace litecore {
 
 #pragma mark - ACCESSORS:
 
-    const Rev* RevTree::currentRevision() {
+    const Rev* RevTree::currentRevision() const {
         Assert(!_unknown);
-        sort();
+        const_cast<RevTree*>(this)->sort();
         return _revs.empty() ? nullptr : _revs[0];
     }
 

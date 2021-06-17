@@ -109,18 +109,20 @@ namespace litecore {
     :_store(store)
     ,_docID(rec.key())
     ,_sequence(rec.sequence())
+    ,_subsequence(rec.subsequence())
     ,_revID(rec.version())
     ,_docFlags(rec.flags())
     ,_whichContent(rec.contentLoaded())
     ,_versioning(versioning)
     {
         _current.revID = revid(_revID);
-        _current.flags = rec.flags() - DocumentFlags::kConflicted - DocumentFlags::kSynced;
+        _current.flags = _docFlags - (DocumentFlags::kConflicted | DocumentFlags::kSynced);
         if (rec.exists()) {
             readRecordBody(rec.body());
             readRecordExtra(rec.extra());
         } else {
             // ‘"Untitled" empty state. Create an empty local properties dict:
+            _sequence = 0;
             _whichContent = kEntireBody;
             (void)mutableProperties();
         }
@@ -129,6 +131,11 @@ namespace litecore {
 
     VectorRecord::VectorRecord(KeyStore& store, Versioning v, slice docID, ContentOption whichContent)
     :VectorRecord(store, v, store.get(docID, whichContent))
+    { }
+
+
+    VectorRecord::VectorRecord(const VectorRecord &other)
+    :VectorRecord(other._store, other._versioning, other.originalRecord())
     { }
 
 
@@ -167,7 +174,7 @@ namespace litecore {
         // the document, detect that flag and belatedly update remote #1's state.
         if (_docFlags & DocumentFlags::kSynced) {
             setRemoteRevision(RemoteID(1), currentRevision());
-            _docFlags = _docFlags - DocumentFlags::kSynced;
+            _docFlags -= DocumentFlags::kSynced;
             _changed = false;
         }
     }
@@ -191,6 +198,24 @@ namespace litecore {
         if (which == kEntireBody && oldWhich < kEntireBody)
             readRecordExtra(rec.extra());
         return true;
+    }
+
+
+    // Reconstitutes the original Record I was loaded from
+    Record VectorRecord::originalRecord() const {
+        Record rec(_docID);
+        rec.updateSequence(_sequence);
+        rec.updateSubsequence(_subsequence);
+        if (_sequence > 0)
+            rec.setExists();
+        rec.setVersion(_revID);
+        rec.setFlags(_docFlags);
+        if (_bodyDoc)
+            rec.setBody(_bodyDoc.allocedData());
+        if (_extraDoc)
+            rec.setExtra(_extraDoc.allocedData());
+        rec.setContentLoaded(_whichContent);
+        return rec;
     }
 
 
@@ -463,7 +488,7 @@ namespace litecore {
 #pragma mark - SAVING:
 
 
-    VectorRecord::SaveResult VectorRecord::save(Transaction& transaction) {
+    VectorRecord::SaveResult VectorRecord::save(ExclusiveTransaction& transaction) {
         requireRemotes();
         auto [props, revID, flags] = currentRevision();
         props = nullptr; // unused
@@ -489,15 +514,19 @@ namespace litecore {
         alloc_slice body, extra;
         tie(body, extra) = encodeBodyAndExtra();
 
-        auto seq = _sequence;
-        bool updateSequence = (seq == 0 || _revIDChanged);
+        bool updateSequence = (_sequence == 0 || _revIDChanged);
         Assert(revID);
-        RecordLite rec = {_docID, revID, body, extra, seq, updateSequence, _docFlags};
-        seq = _store.set(rec, transaction);
+        RecordUpdate rec(_docID, body, _docFlags);
+        rec.version = revID;
+        rec.extra = extra;
+        rec.sequence = _sequence;
+        rec.subsequence = _subsequence;
+        auto seq = _store.set(rec, updateSequence, transaction);
         if (seq == 0)
             return kConflict;
 
         _sequence = seq;
+        _subsequence = updateSequence ? 0 : _subsequence + 1;
         _changed = _revIDChanged = false;
 
         // Update Fleece Doc to newly saved data:
@@ -672,19 +701,19 @@ namespace litecore {
         stringstream out;
         if (_bodyDoc) {
             slice data = _bodyDoc.allocedData();
-            out << "---BODY: " << data.size << " bytes at " << (void*)data.buf << ":\n";
+            out << "---BODY: " << data.size << " bytes at " << (const void*)data.buf << ":\n";
             fleece::impl::Value::dump(data, out);
         }
         if (_extraDoc) {
             slice data = _extraDoc.allocedData();
-            out << "---EXTRA: " << data.size << " bytes at " << (void*)data.buf << ":\n";
+            out << "---EXTRA: " << data.size << " bytes at " << (const void*)data.buf << ":\n";
             fleece::impl::Value::dump(data, out);
         }
         return out.str();
     }
 
 
-    /*static*/ void VectorRecord::forAllRevIDs(const RecordLite &rec,
+    /*static*/ void VectorRecord::forAllRevIDs(const RecordUpdate &rec,
                                                const ForAllRevIDsCallback &callback)
     {
         callback(RemoteID::Local, revid(rec.version), rec.body.size > 0);

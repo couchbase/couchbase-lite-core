@@ -439,7 +439,7 @@ namespace litecore::crypto {
     }
 
     Retained<PersistentPrivateKey> PersistentPrivateKey::withCertificate(Cert *cert) {
-        return withPublicKey(cert->subjectPublicKey());
+        return withPublicKey(cert->subjectPublicKey().get());
     }
 
     Retained<PersistentPrivateKey> PersistentPrivateKey::withPublicKey(PublicKey* publicKey) {

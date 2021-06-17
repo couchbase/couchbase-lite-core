@@ -15,17 +15,15 @@
 #include <chrono>
 #include <memory>
 
-namespace c4Internal {
-    class Database;
-}
-
 namespace litecore {
+    class DatabaseImpl;
+
 
     /** Runs a query in the background, and optionally watches for the query results to change
         as documents change. */
-    class LiveQuerier : public actor::Actor,
-                        BackgroundDB::TransactionObserver,
-                        fleece::InstanceCounted
+    class LiveQuerier final : public actor::Actor,
+                              BackgroundDB::TransactionObserver,
+                              fleece::InstanceCounted
     {
     public:
 
@@ -35,7 +33,7 @@ namespace litecore {
             virtual ~Delegate() =default;
         };
 
-        LiveQuerier(c4Internal::Database* NONNULL,
+        LiveQuerier(DatabaseImpl* NONNULL,
                     Query* NONNULL,
                     bool continuous,
                     Delegate* NONNULL);
@@ -58,7 +56,7 @@ namespace litecore {
         void _stop();
         void _dbChanged(clock::time_point);
 
-        Retained<c4Internal::Database> _database;       // The database
+        Retained<DatabaseImpl> _database;               // The database
         BackgroundDB* _backgroundDB;                    // Shadow DB on background thread
         Delegate* _delegate;                            // Whom ya gonna call?
         alloc_slice _expression;                        // The query text

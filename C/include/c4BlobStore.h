@@ -17,22 +17,19 @@
 //
 
 #pragma once
-#include "c4Database.h"
+#include "c4BlobStoreTypes.h"
+#include "c4DatabaseTypes.h"
 #include <stdio.h>
 
 C4_ASSUME_NONNULL_BEGIN
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+C4API_BEGIN_DECLS
 
     /** \defgroup Blobs Blobs
         @{ */
 
-    //////// BLOB KEYS:
-
     /** \name Blob Keys
         @{ */
+
 
     /** Decodes a string of the form "sha1-"+base64 into a raw key. */
     bool c4blob_keyFromString(C4String str, C4BlobKey*) C4API;
@@ -56,6 +53,7 @@ extern "C" {
     /** Opens a BlobStore in a directory. If the flags allow creating, the directory will be
         created if necessary.
         Call c4blob_freeStore() when finished using the BlobStore.
+        \warning This should only be used for unit testing. Naked BlobStores are not supported.
         @param dirPath  The filesystem path of the directory holding the attachments.
         @param flags  Specifies options like create, read-only
         @param encryptionKey  Optional encryption algorithm & key
@@ -66,10 +64,14 @@ extern "C" {
                                   const C4EncryptionKey* C4NULLABLE encryptionKey,
                                   C4Error* C4NULLABLE outError) C4API;
 
-    /** Closes/frees a BlobStore. (A NULL parameter is allowed.) */
+    /** Closes/frees a BlobStore. (A NULL parameter is allowed.)
+        \warning This should only be used for unit testing. Never free a BlobStore belonging to a
+                 C4Database. */
     void c4blob_freeStore(C4BlobStore* C4NULLABLE) C4API;
 
-    /** Deletes the BlobStore's blobs and directory, and (if successful) frees the object. */
+    /** Deletes the BlobStore's blobs and directory, and (if successful) frees the object.
+        \warning This should only be used for unit testing. Never delete a BlobStore belonging to a
+                 C4Database. */
     bool c4blob_deleteStore(C4BlobStore*, C4Error* C4NULLABLE) C4API;
 
     /** @} */
@@ -102,13 +104,13 @@ extern "C" {
     /** Derives the key of the given data, without storing it. */
     C4BlobKey c4blob_computeKey(C4Slice contents);
 
-    /** Stores a blob. The associated key will be written to `outKey`.
+    /** Stores a blob. The associated key will be written to `outKey`, if non-NULL.
         If `expectedKey` is not NULL, then the operation will fail unless the contents actually
         have that key. */
     bool c4blob_create(C4BlobStore *store,
                        C4Slice contents,
                        const C4BlobKey *C4NULLABLE expectedKey,
-                       C4BlobKey *outKey,
+                       C4BlobKey* C4NULLABLE outKey,
                        C4Error* C4NULLABLE error) C4API;
 
     /** Deletes a blob from the store given its key. */
@@ -173,7 +175,7 @@ extern "C" {
                         C4Error* C4NULLABLE) C4API;
 
     /** Returns the number of bytes written to the stream. */
-    uint64_t c4stream_bytesWritten(C4WriteStream*);
+    uint64_t c4stream_bytesWritten(C4WriteStream*) C4API;
 
     /** Computes the blob-key (digest) of the data written to the stream. This should only be
         called after writing the entire data. No more data can be written after this call. */
@@ -197,8 +199,5 @@ extern "C" {
     /** @} */
     /** @} */
 
-#ifdef __cplusplus
-}
-#endif
-
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

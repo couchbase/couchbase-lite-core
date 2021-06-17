@@ -16,8 +16,9 @@
 // limitations under the License.
 //
 
-#include "c4Internal.hh"
 #include "c4Test.hh"
+#include "c4Internal.hh"
+#include "c4ExceptionUtils.hh"
 #include "InstanceCounted.hh"
 #include "catch.hpp"
 #include "NumConversion.hh"
@@ -27,6 +28,7 @@
 #include <chrono>
 #include <thread>
 #ifdef WIN32
+#include "Error.hh"
 #include <winerror.h>
 #endif
 
@@ -35,6 +37,7 @@ using namespace std;
 using namespace std::chrono_literals;
 using namespace litecore::repl;
 
+using error = litecore::error;
 
 // NOTE: These tests have to be in the C++ tests target, not the C tests, because they use internal
 // LiteCore symbols that aren't exported by the dynamic library.
@@ -55,7 +58,7 @@ TEST_CASE("C4Error messages") {
         CHECK(errors[i].code == 1000+i);
         alloc_slice message = c4error_getMessage(errors[i]);
         string messageStr = string(message);
-        if (i >= (200 - kMaxErrorMessagesToSave)) {
+        if (i >= (200 - litecore::kMaxErrorMessagesToSave)) {
             // The latest C4Errors generated will have their custom messages:
             char expected[100];
             sprintf(expected, "Error number %d", 1000+i);
@@ -85,17 +88,15 @@ TEST_CASE("C4Error messages") {
 
 TEST_CASE("C4Error exceptions") {
     ++gC4ExpectExceptions;
-    C4Error error;
+    C4Error err;
     try {
-        throw litecore::error(litecore::error::LiteCore,
-                              litecore::error::InvalidParameter,
-                              "Oops");
+        throw error(error::LiteCore, error::InvalidParameter, "Oops");
         FAIL("Exception wasn't thrown");
-    } catchError(&error);
+    } catchError(&err);
     --gC4ExpectExceptions;
-    CHECK(error.domain == LiteCoreDomain);
-    CHECK(error.code == kC4ErrorInvalidParameter);
-    alloc_slice message = c4error_getMessage(error);
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorInvalidParameter);
+    alloc_slice message = c4error_getMessage(err);
     string messageStr = string(message);
     CHECK(messageStr == "Oops");
 }
@@ -161,7 +162,7 @@ namespace {
     class Virt {
     public:
         int64_t foo;
-        virtual ~Virt() { }
+        virtual ~Virt() =default;
     };
 
     class NonVirtCounty : public NonVirt, public fleece::InstanceCountedIn<NonVirtCounty> {
@@ -179,7 +180,7 @@ namespace {
     class TestActor : public litecore::actor::Actor {
     public:
         TestActor() 
-            :Actor(kC4Cpp_DefaultLog, "TestActor")
+            :Actor(litecore::kC4Cpp_DefaultLog, "TestActor")
         {}
 
         void doot() {
@@ -224,16 +225,16 @@ namespace {
     };
 
     TEST_CASE("fleece::InstanceCounted") {
-        auto baseInstances = InstanceCounted::count();
+        auto baseInstances = InstanceCounted::liveInstanceCount();
         auto n = new NonVirtCounty(12);
         auto v = new VirtCounty(34);
         C4Log("NonVirtCounty instance at %p; IC at %p", n, (fleece::InstanceCounted*)n);
         C4Log("VirtCounty instance at %p; IC at %p", v, (fleece::InstanceCountedIn<Virt>*)v);
-        REQUIRE(InstanceCounted::count() == baseInstances + 2);
+        REQUIRE(InstanceCounted::liveInstanceCount() == baseInstances + 2);
         c4_dumpInstances();
         delete n;
         delete v;
-        REQUIRE(InstanceCounted::count() == baseInstances);
+        REQUIRE(InstanceCounted::liveInstanceCount() == baseInstances);
     }
 
     TEST_CASE("Narrow Cast") {

@@ -27,6 +27,7 @@ namespace fleece::impl {
 }
 
 namespace litecore {
+    
     enum class QueryLanguage {          // Values MUST match C4QueryLanguage in c4Query.h
         kJSON,
         kN1QL,

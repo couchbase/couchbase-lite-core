@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.15"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: include/c4Query.h File Reference</title>
+<title>LiteCore: c4Query.h File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -67,62 +67,39 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Data Structures</a> &#124;
-<a href="#enum-members">Enumerations</a> &#124;
-<a href="#func-members">Functions</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">c4Query.h File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &quot;<a class="el" href="c4_base_8h_source.html">c4Base.h</a>&quot;</code><br />
+<div class="textblock"><code>#include &quot;<a class="el" href="c4_query_types_8h_source.html">c4QueryTypes.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_fleece_8h_source.html">fleece/Fleece.h</a>&quot;</code><br />
 </div>
 <p><a href="c4_query_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_options.html">C4QueryOptions</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Options for running queries.  <a href="struct_c4_query_options.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_full_text_match.html">C4FullTextMatch</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Info about a match of a full-text query term.  <a href="struct_c4_full_text_match.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A query result enumerator.  <a href="struct_c4_query_enumerator.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:ga23ce629032ce6fa439a0015788f2ff84"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84">C4QueryLanguage</a> : uint32_t { <a class="el" href="group___querying_d_b.html#gga23ce629032ce6fa439a0015788f2ff84a98e21065e3197bef39fa06f534408467">kC4JSONQuery</a>, 
-<a class="el" href="group___querying_d_b.html#gga23ce629032ce6fa439a0015788f2ff84aadd3622250323e8835fb5b7ae8f4a4af">kC4N1QLQuery</a>
- }</td></tr>
-<tr class="memdesc:ga23ce629032ce6fa439a0015788f2ff84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Supported query languages.  <a href="group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84">More...</a><br /></td></tr>
-<tr class="separator:ga23ce629032ce6fa439a0015788f2ff84"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga9d95d4ac381d844ad6738b6981b048f5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga9d95d4ac381d844ad6738b6981b048f5">c4query_new2</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84">C4QueryLanguage</a> language, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> expression, int *outErrorPos, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
+<tr class="memitem:ga9d95d4ac381d844ad6738b6981b048f5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga9d95d4ac381d844ad6738b6981b048f5">c4query_new2</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___querying_d_b.html#ga23ce629032ce6fa439a0015788f2ff84">C4QueryLanguage</a> language, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> expression, int *outErrorPos, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
 <tr class="memdesc:ga9d95d4ac381d844ad6738b6981b048f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compiles a query from an expression given as JSON.  <a href="group___querying_d_b.html#ga9d95d4ac381d844ad6738b6981b048f5">More...</a><br /></td></tr>
 <tr class="separator:ga9d95d4ac381d844ad6738b6981b048f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab19cc99ed4f1ecfd4e832252c5150333"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gab19cc99ed4f1ecfd4e832252c5150333">c4query_new</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *)</td></tr>
+<tr class="memitem:gab19cc99ed4f1ecfd4e832252c5150333"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gab19cc99ed4f1ecfd4e832252c5150333">c4query_new</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *)</td></tr>
 <tr class="separator:gab19cc99ed4f1ecfd4e832252c5150333"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafe6fdf74897813368f295eabbe9552aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gafe6fdf74897813368f295eabbe9552aa">c4query_explain</a> (<a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *)</td></tr>
+<tr class="memitem:gafe6fdf74897813368f295eabbe9552aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gafe6fdf74897813368f295eabbe9552aa">c4query_explain</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *)</td></tr>
 <tr class="memdesc:gafe6fdf74897813368f295eabbe9552aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a string describing the implementation of the compiled query.  <a href="group___querying_d_b.html#gafe6fdf74897813368f295eabbe9552aa">More...</a><br /></td></tr>
 <tr class="separator:gafe6fdf74897813368f295eabbe9552aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga605c9e0e59739259d8130e4652ec5125"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga605c9e0e59739259d8130e4652ec5125">c4query_columnCount</a> (<a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *)</td></tr>
+<tr class="memitem:ga605c9e0e59739259d8130e4652ec5125"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga605c9e0e59739259d8130e4652ec5125">c4query_columnCount</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *)</td></tr>
 <tr class="memdesc:ga605c9e0e59739259d8130e4652ec5125"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of columns (the values specified in the WHAT clause) in each row.  <a href="group___querying_d_b.html#ga605c9e0e59739259d8130e4652ec5125">More...</a><br /></td></tr>
 <tr class="separator:ga605c9e0e59739259d8130e4652ec5125"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gadcd0f7493a397614e3116c549b5272db"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gadcd0f7493a397614e3116c549b5272db">c4query_columnTitle</a> (<a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *, unsigned column)</td></tr>
+<tr class="memitem:gadcd0f7493a397614e3116c549b5272db"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gadcd0f7493a397614e3116c549b5272db">c4query_columnTitle</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *, unsigned column)</td></tr>
 <tr class="memdesc:gadcd0f7493a397614e3116c549b5272db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a suggested title for a column, which may be: An alias specified in an 'AS' modifier in the column definition A property name A function/operator that computes the column value, e.g.  <a href="group___querying_d_b.html#gadcd0f7493a397614e3116c549b5272db">More...</a><br /></td></tr>
 <tr class="separator:gadcd0f7493a397614e3116c549b5272db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gacfd9cb93f0fe66dbbcc5a4d74e26ffd5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gacfd9cb93f0fe66dbbcc5a4d74e26ffd5">c4query_setParameters</a> (<a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> encodedParameters)</td></tr>
+<tr class="memitem:gacfd9cb93f0fe66dbbcc5a4d74e26ffd5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gacfd9cb93f0fe66dbbcc5a4d74e26ffd5">c4query_setParameters</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *query, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> encodedParameters)</td></tr>
 <tr class="memdesc:gacfd9cb93f0fe66dbbcc5a4d74e26ffd5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the parameter values to use when running the query, if no parameters are given to <a class="el" href="group___querying_d_b.html#gab1172372d0a66f6adc28a95612eaecd2">c4query_run</a>.  <a href="group___querying_d_b.html#gacfd9cb93f0fe66dbbcc5a4d74e26ffd5">More...</a><br /></td></tr>
 <tr class="separator:gacfd9cb93f0fe66dbbcc5a4d74e26ffd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab1172372d0a66f6adc28a95612eaecd2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gab1172372d0a66f6adc28a95612eaecd2">c4query_run</a> (<a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query, const <a class="el" href="struct_c4_query_options.html">C4QueryOptions</a> *options, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> encodedParameters, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memitem:gab1172372d0a66f6adc28a95612eaecd2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gab1172372d0a66f6adc28a95612eaecd2">c4query_run</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *query, const <a class="el" href="struct_c4_query_options.html">C4QueryOptions</a> *options, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> encodedParameters, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:gab1172372d0a66f6adc28a95612eaecd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a compiled query.  <a href="group___querying_d_b.html#gab1172372d0a66f6adc28a95612eaecd2">More...</a><br /></td></tr>
 <tr class="separator:gab1172372d0a66f6adc28a95612eaecd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0a826aaf88b4a1eedb616ff1dc8447c7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga0a826aaf88b4a1eedb616ff1dc8447c7">c4query_fullTextMatched</a> (<a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query, const <a class="el" href="struct_c4_full_text_match.html">C4FullTextMatch</a> *term, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memitem:ga0a826aaf88b4a1eedb616ff1dc8447c7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga0a826aaf88b4a1eedb616ff1dc8447c7">c4query_fullTextMatched</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *query, const <a class="el" href="struct_c4_full_text_match.html">C4FullTextMatch</a> *term, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
 <tr class="memdesc:ga0a826aaf88b4a1eedb616ff1dc8447c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a <a class="el" href="struct_c4_full_text_match.html" title="Info about a match of a full-text query term.">C4FullTextMatch</a> from the enumerator, returns the entire text of the property that was matched.  <a href="group___querying_d_b.html#ga0a826aaf88b4a1eedb616ff1dc8447c7">More...</a><br /></td></tr>
 <tr class="separator:ga0a826aaf88b4a1eedb616ff1dc8447c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga458f33e21d4ed94de1fb84ec57a66445"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga458f33e21d4ed94de1fb84ec57a66445">c4queryenum_next</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
@@ -143,12 +120,6 @@ Functions</h2></td></tr>
 <tr class="memitem:gae256915b75e44d76263bbd8cf3a26a86"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gae256915b75e44d76263bbd8cf3a26a86">c4queryenum_close</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *)</td></tr>
 <tr class="memdesc:gae256915b75e44d76263bbd8cf3a26a86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes an enumerator without freeing it.  <a href="group___querying_d_b.html#gae256915b75e44d76263bbd8cf3a26a86">More...</a><br /></td></tr>
 <tr class="separator:gae256915b75e44d76263bbd8cf3a26a86"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:gafb878475a7c9c7560878b79e8a786ab5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> const <a class="el" href="struct_c4_query_options.html">C4QueryOptions</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gafb878475a7c9c7560878b79e8a786ab5">kC4DefaultQueryOptions</a></td></tr>
-<tr class="memdesc:gafb878475a7c9c7560878b79e8a786ab5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default query options.  <a href="group___querying_d_b.html#gafb878475a7c9c7560878b79e8a786ab5">More...</a><br /></td></tr>
-<tr class="separator:gafb878475a7c9c7560878b79e8a786ab5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 <!-- start footer part -->

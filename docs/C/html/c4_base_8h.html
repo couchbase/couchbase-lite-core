@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.15"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: include/c4Base.h File Reference</title>
+<title>LiteCore: c4Base.h File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -70,62 +70,38 @@ $(function() {
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
-<a href="#enum-members">Enumerations</a> &#124;
-<a href="#func-members">Functions</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">c4Base.h File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><code>#include &quot;<a class="el" href="c4_compat_8h_source.html">c4Compat.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="c4_error_8h_source.html">c4Error.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="c4_log_8h_source.html">c4Log.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="_f_l_slice_8h_source.html">fleece/FLSlice.h</a>&quot;</code><br />
 <code>#include &lt;stdarg.h&gt;</code><br />
-<code>#include &lt;stdbool.h&gt;</code><br />
-<code>#include &lt;stdint.h&gt;</code><br />
-<code>#include &lt;string.h&gt;</code><br />
 </div>
 <p><a href="c4_base_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_extra_info.html">C4ExtraInfo</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_blob_key.html">C4BlobKey</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A raw SHA-1 digest used as the unique identifier of a blob.  <a href="struct_c4_blob_key.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_error.html">C4Error</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An error value.  <a href="struct_c4_error.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_log_file_options.html">C4LogFileOptions</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Client-defined metadata that can be associated with some objects like C4Database.  <a href="struct_c4_extra_info.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:abd4a83720173b87bd04686206a65d6b4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#abd4a83720173b87bd04686206a65d6b4">LITECORE_VERSION</a>&#160;&#160;&#160;30000</td></tr>
+<tr class="separator:abd4a83720173b87bd04686206a65d6b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a906bded72f22a59134ce4d2db77a0c53"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a906bded72f22a59134ce4d2db77a0c53">LITECORE_API_VERSION</a>&#160;&#160;&#160;350</td></tr>
+<tr class="separator:a906bded72f22a59134ce4d2db77a0c53"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga1d36740f0ebef62e2a53e9f8ae772819"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga1d36740f0ebef62e2a53e9f8ae772819">C4STR</a>(STR)&#160;&#160;&#160;<a class="el" href="group___f_l_slice.html#ga0e82def46e214a706216353705768453">FLSTR</a>(STR)</td></tr>
 <tr class="separator:ga1d36740f0ebef62e2a53e9f8ae772819"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga64a4736910f7ff775c24aa0a2b4b3155"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga64a4736910f7ff775c24aa0a2b4b3155">kC4SliceNull</a>&#160;&#160;&#160;<a class="el" href="group___f_l_slice.html#ga5445a97beaea63c3eadb1427c3a717d8">kFLSliceNull</a></td></tr>
 <tr class="separator:ga64a4736910f7ff775c24aa0a2b4b3155"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0b5c1e31bf67e2f9874201b15a106801"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(DOMAIN,  LEVEL,  FMT, ...)</td></tr>
-<tr class="separator:ga0b5c1e31bf67e2f9874201b15a106801"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab215c8761710809dcff7165f3fff5cd3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#gab215c8761710809dcff7165f3fff5cd3">C4Debug</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="group___logging.html#ga0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="group___logging.html#ga8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96acea58c4ab61546a09849f79707b643cc990">kC4LogDebug</a>,   FMT, ## __VA_ARGS__)</td></tr>
-<tr class="separator:gab215c8761710809dcff7165f3fff5cd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0ad43e3afdc4edbfc5811e2ebd0eaff4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga0ad43e3afdc4edbfc5811e2ebd0eaff4">C4Log</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="group___logging.html#ga0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="group___logging.html#ga8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96aceacd23bf53526d7d191aec63097713b698">kC4LogInfo</a>,    FMT, ## __VA_ARGS__)</td></tr>
-<tr class="separator:ga0ad43e3afdc4edbfc5811e2ebd0eaff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga17b6ed73671848cc235f776a7811d613"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga17b6ed73671848cc235f776a7811d613">C4LogVerbose</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="group___logging.html#ga0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="group___logging.html#ga8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96acea199adaaf5428feaee1941cdb99af5729">kC4LogVerbose</a>, FMT, ## __VA_ARGS__)</td></tr>
-<tr class="separator:ga17b6ed73671848cc235f776a7811d613"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2c8f3034f294aa2e3c92bd23020a3252"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga2c8f3034f294aa2e3c92bd23020a3252">C4Warn</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="group___logging.html#ga0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="group___logging.html#ga8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96aceaf40f415b75caded03ecbad539aefd7f2">kC4LogWarning</a>, FMT, ## __VA_ARGS__)</td></tr>
-<tr class="separator:ga2c8f3034f294aa2e3c92bd23020a3252"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf4b74b787c81e9c7c9819fe657273f18"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#gaf4b74b787c81e9c7c9819fe657273f18">C4WarnError</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="group___logging.html#ga0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="group___logging.html#ga8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96aceaf2e8d69bfcab44c808994d4713fa549c">kC4LogError</a>,   FMT, ## __VA_ARGS__)</td></tr>
-<tr class="separator:gaf4b74b787c81e9c7c9819fe657273f18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:ga6c2d959939ef287ba3f2ee719c949229"><td class="memItemLeft" align="right" valign="top">typedef uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a></td></tr>
-<tr class="memdesc:ga6c2d959939ef287ba3f2ee719c949229"><td class="mdescLeft">&#160;</td><td class="mdescRight">A database sequence number, representing the order in which a revision was created.  <a href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">More...</a><br /></td></tr>
-<tr class="separator:ga6c2d959939ef287ba3f2ee719c949229"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4e9a8e237399a3869086cae270783476"><td class="memItemLeft" align="right" valign="top">typedef int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a></td></tr>
-<tr class="memdesc:ga4e9a8e237399a3869086cae270783476"><td class="mdescLeft">&#160;</td><td class="mdescRight">A date/time representation used for document expiration (and in date/time queries.) Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.)  <a href="group___base.html#ga4e9a8e237399a3869086cae270783476">More...</a><br /></td></tr>
-<tr class="separator:ga4e9a8e237399a3869086cae270783476"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac99d7d179bccd9bbaf29b28272975b47"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="struct_f_l_slice.html">FLSlice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a></td></tr>
 <tr class="separator:gac99d7d179bccd9bbaf29b28272975b47"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae9d094c5119a261ad11ffd484ba3098c"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="group___f_l_slice.html#gabc10b138e3c1345a4396b39c11a1f0d5">FLHeapSlice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae9d094c5119a261ad11ffd484ba3098c">C4HeapSlice</a></td></tr>
@@ -138,21 +114,32 @@ Typedefs</h2></td></tr>
 <tr class="separator:ga4d602b4474168ea3dfad19d863e70129"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9621f4998e1f10a82cca421fede5588a"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a></td></tr>
 <tr class="separator:ga9621f4998e1f10a82cca421fede5588a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1f93de2ae8a31d160f02db45bc412b58"><td class="memItemLeft" align="right" valign="top">typedef struct c4BlobStore&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga1f93de2ae8a31d160f02db45bc412b58">C4BlobStore</a></td></tr>
-<tr class="memdesc:ga1f93de2ae8a31d160f02db45bc412b58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for an object that manages storage of blobs.  <a href="group___base.html#ga1f93de2ae8a31d160f02db45bc412b58">More...</a><br /></td></tr>
-<tr class="separator:ga1f93de2ae8a31d160f02db45bc412b58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6c2d959939ef287ba3f2ee719c949229"><td class="memItemLeft" align="right" valign="top">typedef uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a></td></tr>
+<tr class="memdesc:ga6c2d959939ef287ba3f2ee719c949229"><td class="mdescLeft">&#160;</td><td class="mdescRight">A database sequence number, representing the order in which a revision was created.  <a href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">More...</a><br /></td></tr>
+<tr class="separator:ga6c2d959939ef287ba3f2ee719c949229"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4e9a8e237399a3869086cae270783476"><td class="memItemLeft" align="right" valign="top">typedef int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a></td></tr>
+<tr class="memdesc:ga4e9a8e237399a3869086cae270783476"><td class="mdescLeft">&#160;</td><td class="mdescRight">A date/time representation used for document expiration (and in date/time queries.) Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.)  <a href="group___base.html#ga4e9a8e237399a3869086cae270783476">More...</a><br /></td></tr>
+<tr class="separator:ga4e9a8e237399a3869086cae270783476"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3f2ced0e74afda9261b9337787129f57"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga3f2ced0e74afda9261b9337787129f57">C4BlobStore</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga3f2ced0e74afda9261b9337787129f57">C4BlobStore</a></td></tr>
+<tr class="memdesc:ga3f2ced0e74afda9261b9337787129f57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for an object that manages storage of blobs.  <a href="group___base.html#ga3f2ced0e74afda9261b9337787129f57">More...</a><br /></td></tr>
+<tr class="separator:ga3f2ced0e74afda9261b9337787129f57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf83fec73b17269823bbf95b16ae4976d"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a></td></tr>
 <tr class="memdesc:gaf83fec73b17269823bbf95b16ae4976d"><td class="mdescLeft">&#160;</td><td class="mdescRight">An X.509 certificate, or certificate signing request (CSR).  <a href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">More...</a><br /></td></tr>
 <tr class="separator:gaf83fec73b17269823bbf95b16ae4976d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga15e027d347f40041585744dad4dac1c9"><td class="memItemLeft" align="right" valign="top">typedef struct c4Database&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a></td></tr>
-<tr class="memdesc:ga15e027d347f40041585744dad4dac1c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to an opened database.  <a href="group___base.html#ga15e027d347f40041585744dad4dac1c9">More...</a><br /></td></tr>
-<tr class="separator:ga15e027d347f40041585744dad4dac1c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga464907502d1ac3c9941899329b5d001f"><td class="memItemLeft" align="right" valign="top">typedef struct c4DatabaseObserver&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga464907502d1ac3c9941899329b5d001f">C4DatabaseObserver</a></td></tr>
-<tr class="memdesc:ga464907502d1ac3c9941899329b5d001f"><td class="mdescLeft">&#160;</td><td class="mdescRight">A database-observer reference.  <a href="group___base.html#ga464907502d1ac3c9941899329b5d001f">More...</a><br /></td></tr>
-<tr class="separator:ga464907502d1ac3c9941899329b5d001f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga148577d41d550a29d8fbc4a1fa597efc"><td class="memItemLeft" align="right" valign="top">typedef struct c4DocumentObserver&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga148577d41d550a29d8fbc4a1fa597efc">C4DocumentObserver</a></td></tr>
-<tr class="memdesc:ga148577d41d550a29d8fbc4a1fa597efc"><td class="mdescLeft">&#160;</td><td class="mdescRight">A document-observer reference.  <a href="group___base.html#ga148577d41d550a29d8fbc4a1fa597efc">More...</a><br /></td></tr>
-<tr class="separator:ga148577d41d550a29d8fbc4a1fa597efc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad8be2ad2cef903785ae3f9736e14253b"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">C4Collection</a></td></tr>
+<tr class="memdesc:gad8be2ad2cef903785ae3f9736e14253b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to a namespace of documents in an opened database.  <a href="group___base.html#gad8be2ad2cef903785ae3f9736e14253b">More...</a><br /></td></tr>
+<tr class="separator:gad8be2ad2cef903785ae3f9736e14253b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae046b9267a473fdc31471b022fc94676"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a></td></tr>
+<tr class="memdesc:gae046b9267a473fdc31471b022fc94676"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to an opened database.  <a href="group___base.html#gae046b9267a473fdc31471b022fc94676">More...</a><br /></td></tr>
+<tr class="separator:gae046b9267a473fdc31471b022fc94676"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6ee85db00f1ffcf03308ef5350855e29"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a></td></tr>
+<tr class="memdesc:ga6ee85db00f1ffcf03308ef5350855e29"><td class="mdescLeft">&#160;</td><td class="mdescRight">A collection-observer reference.  <a href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">More...</a><br /></td></tr>
+<tr class="separator:ga6ee85db00f1ffcf03308ef5350855e29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadfd2a7d2677acc7971ea199199f0a7ac"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gadfd2a7d2677acc7971ea199199f0a7ac">C4DatabaseObserver</a></td></tr>
+<tr class="separator:gadfd2a7d2677acc7971ea199199f0a7ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8a4ef01035322ff935bae1ea30a9199e"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a></td></tr>
+<tr class="memdesc:ga8a4ef01035322ff935bae1ea30a9199e"><td class="mdescLeft">&#160;</td><td class="mdescRight">A document-observer reference.  <a href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">More...</a><br /></td></tr>
+<tr class="separator:ga8a4ef01035322ff935bae1ea30a9199e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga59fb880ac20dc61d0ef5568541b9cbca"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a></td></tr>
 <tr class="memdesc:ga59fb880ac20dc61d0ef5568541b9cbca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to a document enumerator.  <a href="group___base.html#ga59fb880ac20dc61d0ef5568541b9cbca">More...</a><br /></td></tr>
 <tr class="separator:ga59fb880ac20dc61d0ef5568541b9cbca"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -162,130 +149,27 @@ Typedefs</h2></td></tr>
 <tr class="memitem:ga5e5ecc7839088461114e2ea751124156"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a></td></tr>
 <tr class="memdesc:ga5e5ecc7839088461114e2ea751124156"><td class="mdescLeft">&#160;</td><td class="mdescRight">A LiteCore network listener &ndash; supports the REST API, replication, or both.  <a href="group___base.html#ga5e5ecc7839088461114e2ea751124156">More...</a><br /></td></tr>
 <tr class="separator:ga5e5ecc7839088461114e2ea751124156"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5742de87a925059b9259d898f699fb2c"><td class="memItemLeft" align="right" valign="top">typedef struct c4Query&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a></td></tr>
-<tr class="memdesc:ga5742de87a925059b9259d898f699fb2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to a compiled query.  <a href="group___base.html#ga5742de87a925059b9259d898f699fb2c">More...</a><br /></td></tr>
-<tr class="separator:ga5742de87a925059b9259d898f699fb2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa38460d907351d080c099278153fe596"><td class="memItemLeft" align="right" valign="top">typedef struct c4QueryObserver&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gaa38460d907351d080c099278153fe596">C4QueryObserver</a></td></tr>
-<tr class="memdesc:gaa38460d907351d080c099278153fe596"><td class="mdescLeft">&#160;</td><td class="mdescRight">A query-observer reference.  <a href="group___base.html#gaa38460d907351d080c099278153fe596">More...</a><br /></td></tr>
-<tr class="separator:gaa38460d907351d080c099278153fe596"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafc17929a5c2540de640863fd5f202281"><td class="memItemLeft" align="right" valign="top">typedef struct c4ReadStream&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gafc17929a5c2540de640863fd5f202281">C4ReadStream</a></td></tr>
-<tr class="memdesc:gafc17929a5c2540de640863fd5f202281"><td class="mdescLeft">&#160;</td><td class="mdescRight">An open stream for reading data from a blob.  <a href="group___base.html#gafc17929a5c2540de640863fd5f202281">More...</a><br /></td></tr>
-<tr class="separator:gafc17929a5c2540de640863fd5f202281"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga67aedbf60fd71b8727d6d0ca9bd339ca"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a></td></tr>
+<tr class="memdesc:ga67aedbf60fd71b8727d6d0ca9bd339ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to a compiled query.  <a href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">More...</a><br /></td></tr>
+<tr class="separator:ga67aedbf60fd71b8727d6d0ca9bd339ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga89a77eddf7600ce9e9e17933e8ef8a75"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga89a77eddf7600ce9e9e17933e8ef8a75">C4QueryObserver</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga89a77eddf7600ce9e9e17933e8ef8a75">C4QueryObserver</a></td></tr>
+<tr class="memdesc:ga89a77eddf7600ce9e9e17933e8ef8a75"><td class="mdescLeft">&#160;</td><td class="mdescRight">A query-observer reference.  <a href="group___base.html#ga89a77eddf7600ce9e9e17933e8ef8a75">More...</a><br /></td></tr>
+<tr class="separator:ga89a77eddf7600ce9e9e17933e8ef8a75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga02b4b239f9add8f17da2971e1fd6eea6"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a></td></tr>
+<tr class="memdesc:ga02b4b239f9add8f17da2971e1fd6eea6"><td class="mdescLeft">&#160;</td><td class="mdescRight">An open stream for reading data from a blob.  <a href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">More...</a><br /></td></tr>
+<tr class="separator:ga02b4b239f9add8f17da2971e1fd6eea6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga709bd645c12619231f98f793daa46d67"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a></td></tr>
 <tr class="memdesc:ga709bd645c12619231f98f793daa46d67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque reference to a replicator.  <a href="group___base.html#ga709bd645c12619231f98f793daa46d67">More...</a><br /></td></tr>
 <tr class="separator:ga709bd645c12619231f98f793daa46d67"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7063759634332538b33b50c169473715"><td class="memItemLeft" align="right" valign="top">typedef struct c4WriteStream&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga7063759634332538b33b50c169473715">C4WriteStream</a></td></tr>
-<tr class="memdesc:ga7063759634332538b33b50c169473715"><td class="mdescLeft">&#160;</td><td class="mdescRight">An open stream for writing data to a blob.  <a href="group___base.html#ga7063759634332538b33b50c169473715">More...</a><br /></td></tr>
-<tr class="separator:ga7063759634332538b33b50c169473715"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafb4f9f2f009acfd258b1be28e171da47"><td class="memItemLeft" align="right" valign="top">typedef struct c4LogDomain *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a></td></tr>
-<tr class="memdesc:gafb4f9f2f009acfd258b1be28e171da47"><td class="mdescLeft">&#160;</td><td class="mdescRight">A log domain, a specific source of logs that can be enabled or disabled.  <a href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">More...</a><br /></td></tr>
-<tr class="separator:gafb4f9f2f009acfd258b1be28e171da47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga68e736523f16dc1d71a504cf8eacc838"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga68e736523f16dc1d71a504cf8eacc838">C4LogCallback</a>) (<a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>, <a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>, const char *fmt, va_list args)</td></tr>
-<tr class="memdesc:ga68e736523f16dc1d71a504cf8eacc838"><td class="mdescLeft">&#160;</td><td class="mdescRight">A logging callback that the application can register.  <a href="group___logging.html#ga68e736523f16dc1d71a504cf8eacc838">More...</a><br /></td></tr>
-<tr class="separator:ga68e736523f16dc1d71a504cf8eacc838"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
-Enumerations</h2></td></tr>
-<tr class="memitem:ga6cbe7be44f2f63425404284687e6861c"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___errors.html#ga6cbe7be44f2f63425404284687e6861c">C4ErrorDomain</a> : uint32_t { <br />
-&#160;&#160;<a class="el" href="group___errors.html#gga6cbe7be44f2f63425404284687e6861caaa4196b6e3b217bd68cc55529805e0fa">LiteCoreDomain</a> = 1, 
-<a class="el" href="group___errors.html#gga6cbe7be44f2f63425404284687e6861ca0fcf36dd88fc41ab53e720a3410f8bf1">POSIXDomain</a>, 
-<a class="el" href="group___errors.html#gga6cbe7be44f2f63425404284687e6861cab14b819a5f23eedbfb517cd9ba1419d5">SQLiteDomain</a>, 
-<a class="el" href="group___errors.html#gga6cbe7be44f2f63425404284687e6861ca8b416e51b735e834728f74539e4ee017">FleeceDomain</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#gga6cbe7be44f2f63425404284687e6861ca230c802d66f2578bb3142fbfa52946d4">NetworkDomain</a>, 
-<a class="el" href="group___errors.html#gga6cbe7be44f2f63425404284687e6861ca0302b37e37e11311e3cd992f9373b048">WebSocketDomain</a>, 
-<a class="el" href="group___errors.html#gga6cbe7be44f2f63425404284687e6861ca142750bff6c62c0c8d022366cb47fc08">MbedTLSDomain</a>, 
-<a class="el" href="group___errors.html#gga6cbe7be44f2f63425404284687e6861ca3b6e90735c16e90e9cd0d56d74e4af92">kC4MaxErrorDomainPlus1</a>
-<br />
- }</td></tr>
-<tr class="separator:ga6cbe7be44f2f63425404284687e6861c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabc1eabfb65d7e55ac9efb8a95db4647f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___errors.html#gabc1eabfb65d7e55ac9efb8a95db4647f">C4ErrorCode</a> : int32_t { <br />
-&#160;&#160;<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647faff592ca492d70aa527bbe7c29b4c68f9">kC4ErrorAssertionFailed</a> = 1, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa5bf4f46c46c2a014c0ed100638365b50">kC4ErrorUnimplemented</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa8333f8805b048c96703b9190d393147a">kC4ErrorUnsupportedEncryption</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa28cdd53a5065f8c8c54f2526cf44f888">kC4ErrorBadRevisionID</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647faf8282094b53f4d102b087484d80e5555">kC4ErrorCorruptRevisionData</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa53844dbddb547aee05eb3c6523121123">kC4ErrorNotOpen</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa5d112e4810d2a4b0a0c96af789664b20">kC4ErrorNotFound</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fadeebf4d3cd05868b05ae35314a0df4f6">kC4ErrorConflict</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa68fc96251e144bfbaddd721047c8672b">kC4ErrorInvalidParameter</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa9b3e061cd882ea1852032a11e4328eb7">kC4ErrorUnexpectedError</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fac9bb39873025e9ef13af22b5d1e60200">kC4ErrorCantOpenFile</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa34c60964e4957f89d4f2ed8566e0c5ea">kC4ErrorIOError</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa83bbcfd8df9ff47a6054c0c3e9fef290">kC4ErrorMemoryError</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa835eeda1746f6334ecbd7d67de502591">kC4ErrorNotWriteable</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647faf5ef4c2b6a6bcf14af93942b40131862">kC4ErrorCorruptData</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa72593c5a1ddf7c710aa8d6cc331d17e3">kC4ErrorBusy</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa8e2b5016dc63972e926ee8569c027326">kC4ErrorNotInTransaction</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fabc61126f1169a511694a5d95744b5503">kC4ErrorTransactionNotClosed</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa3ec13a03e1e24b03f7e4b85e82e1704e">kC4ErrorUnsupported</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa1a54e625adee939361be7471e58e6591">kC4ErrorNotADatabaseFile</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa8d2b81e5bd5763ed3acae5bdd67c5f61">kC4ErrorWrongFormat</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa0a465fe48488b7a04c54c945c9ba00fa">kC4ErrorCrypto</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa12dd52a25fe77c9b296407e4d5621208">kC4ErrorInvalidQuery</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa70cc778a879c33924752ac6014ed48b6">kC4ErrorMissingIndex</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647facb97903f7447f3f65f9ff380296b987c">kC4ErrorInvalidQueryParam</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647faab2f5f925263526d93037e7a8ea35d1e">kC4ErrorRemoteError</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fadf1b48472b6d4f9f05d41836edf8bda8">kC4ErrorDatabaseTooOld</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647faacc414a83d2a29578a63785af27a4b24">kC4ErrorDatabaseTooNew</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa5ca1c4cc22c2f3bad6a5d5aabb1a48fa">kC4ErrorBadDocID</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fafa1ee8c45240ea4961514751994f56e8">kC4ErrorCantUpgradeDatabase</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fab85ba3341ee67a31c97266570d0255ef">kC4ErrorDeltaBaseUnknown</a>, 
-<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fae9def50b884324b47f2068e03a2aae6c">kC4ErrorCorruptDelta</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#ggabc1eabfb65d7e55ac9efb8a95db4647fa722cb0e8ba993d667f97ec108417e2f0">kC4NumErrorCodesPlus1</a>
-<br />
- }</td></tr>
-<tr class="separator:gabc1eabfb65d7e55ac9efb8a95db4647f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5153e11176806637d6354f57957ce803"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___errors.html#ga5153e11176806637d6354f57957ce803">C4NetworkErrorCode</a> : int32_t { <br />
-&#160;&#160;<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803a68fedd99e7e15fc11169c4cd49760e0d">kC4NetErrDNSFailure</a> = 1, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803ab1ec4dc6907db657ead615f346d6c027">kC4NetErrUnknownHost</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803a60245732ba15b7495790a494106c2760">kC4NetErrTimeout</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803af6b11f55b7676b1de25a47ad84648ce5">kC4NetErrInvalidURL</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803a48504acc356bfedb86513ea7da54abd3">kC4NetErrTooManyRedirects</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803ae248f6811e3f318e69ec04a63aee68eb">kC4NetErrTLSHandshakeFailed</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803a0bc1da2445dd5c26d281db4285520a32">kC4NetErrTLSCertExpired</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803a961fa356292eaccba0f385be76294356">kC4NetErrTLSCertUntrusted</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803ab1533b8b88903f548621ab1d8fd3252e">kC4NetErrTLSCertRequiredByPeer</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803a716ecd09054d8285a4afb717c0bb89a2">kC4NetErrTLSCertRejectedByPeer</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803a0ca7d9301ee0e106eecf84f4d7a03b25">kC4NetErrTLSCertUnknownRoot</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803a818e8e982f28d452fe6741a727be9401">kC4NetErrInvalidRedirect</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803a1702631bb323e181d3eeb3301fdbcec6">kC4NetErrUnknown</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803add0787f77c9bbc60fdcbe308830f2d6e">kC4NetErrTLSCertRevoked</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803a7296064cf14605159aba7f2f1476b262">kC4NetErrTLSCertNameMismatch</a>, 
-<a class="el" href="group___errors.html#gga5153e11176806637d6354f57957ce803ad708076361a49f33559058d3a95c3cdc">kC4NumNetErrorCodesPlus1</a>
-<br />
- }</td></tr>
-<tr class="memdesc:ga5153e11176806637d6354f57957ce803"><td class="mdescLeft">&#160;</td><td class="mdescRight">Network error codes (higher level than POSIX, lower level than HTTP.)  <a href="group___errors.html#ga5153e11176806637d6354f57957ce803">More...</a><br /></td></tr>
-<tr class="separator:ga5153e11176806637d6354f57957ce803"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga70ee0c0c337aa9fae2e31d8686b96ace"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> : int8_t { <br />
-&#160;&#160;<a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96acea58c4ab61546a09849f79707b643cc990">kC4LogDebug</a>, 
-<a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96acea199adaaf5428feaee1941cdb99af5729">kC4LogVerbose</a>, 
-<a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96aceacd23bf53526d7d191aec63097713b698">kC4LogInfo</a>, 
-<a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96aceaf40f415b75caded03ecbad539aefd7f2">kC4LogWarning</a>, 
-<br />
-&#160;&#160;<a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96aceaf2e8d69bfcab44c808994d4713fa549c">kC4LogError</a>, 
-<a class="el" href="group___logging.html#gga70ee0c0c337aa9fae2e31d8686b96acea813f8bcad7ddd8b20db4da81367c57a1">kC4LogNone</a>
-<br />
- }</td></tr>
-<tr class="memdesc:ga70ee0c0c337aa9fae2e31d8686b96ace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logging levels.  <a href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">More...</a><br /></td></tr>
-<tr class="separator:ga70ee0c0c337aa9fae2e31d8686b96ace"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae56f69f380fa40d8ee42f087416bb1e2"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">C4Socket</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">C4Socket</a></td></tr>
+<tr class="memdesc:gae56f69f380fa40d8ee42f087416bb1e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents an open bidirectional stream of bytes or messages (typically a TCP socket.)  <a href="group___base.html#gae56f69f380fa40d8ee42f087416bb1e2">More...</a><br /></td></tr>
+<tr class="separator:gae56f69f380fa40d8ee42f087416bb1e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4a238757c9baa9a4fcea8f03d42dfa15"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a></td></tr>
+<tr class="memdesc:ga4a238757c9baa9a4fcea8f03d42dfa15"><td class="mdescLeft">&#160;</td><td class="mdescRight">An open stream for writing data to a blob.  <a href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">More...</a><br /></td></tr>
+<tr class="separator:ga4a238757c9baa9a4fcea8f03d42dfa15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga37ce7c8730c153596411479ae0b9c040"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga37ce7c8730c153596411479ae0b9c040">c4_now</a> (void)</td></tr>
-<tr class="memdesc:ga37ce7c8730c153596411479ae0b9c040"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current time, in milliseconds since 1/1/1970.  <a href="group___base.html#ga37ce7c8730c153596411479ae0b9c040">More...</a><br /></td></tr>
-<tr class="separator:ga37ce7c8730c153596411479ae0b9c040"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae0419d888a0524b718da8c06fabe5a21"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="c4_compat_8h.html#ab6e8c999f5a33767c27706fb4392831d">C4INLINE</a> <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae0419d888a0524b718da8c06fabe5a21">c4str</a> (const char *str)</td></tr>
 <tr class="separator:gae0419d888a0524b718da8c06fabe5a21"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3e96c85c396e05a3819b25fe06ee694e"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga3e96c85c396e05a3819b25fe06ee694e">c4SliceEqual</a> (<a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> a, <a class="el" href="group___base.html#gac99d7d179bccd9bbaf29b28272975b47">C4Slice</a> b)</td></tr>
@@ -298,138 +182,97 @@ Functions</h2></td></tr>
 <tr class="separator:ga0fd3abe3e50b902a9a186172ad8adb78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga137208581716b86cc485dc601f77bdc1"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga137208581716b86cc485dc601f77bdc1">c4cert_retain</a> (<a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *r)</td></tr>
 <tr class="separator:ga137208581716b86cc485dc601f77bdc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae05e01f73e4a555b4b275110f9e31394"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae05e01f73e4a555b4b275110f9e31394">c4cert_release</a> (<a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *r)</td></tr>
-<tr class="separator:gae05e01f73e4a555b4b275110f9e31394"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab756acc507c97a1c66ad520e1a327f0e"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#gaab0975fb1dd0dac704f1c53ce27cc8f3">C4KeyPair</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gab756acc507c97a1c66ad520e1a327f0e">c4keypair_retain</a> (<a class="el" href="group___base.html#gaab0975fb1dd0dac704f1c53ce27cc8f3">C4KeyPair</a> *r)</td></tr>
 <tr class="separator:gab756acc507c97a1c66ad520e1a327f0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa565ac815fdef649626be6107361e14e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gaa565ac815fdef649626be6107361e14e">c4keypair_release</a> (<a class="el" href="group___base.html#gaab0975fb1dd0dac704f1c53ce27cc8f3">C4KeyPair</a> *r)</td></tr>
-<tr class="separator:gaa565ac815fdef649626be6107361e14e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0e12f1e9f5b2e687b7c62fb2272fa085"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga0e12f1e9f5b2e687b7c62fb2272fa085">c4db_retain</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *r)</td></tr>
+<tr class="memitem:ga0e12f1e9f5b2e687b7c62fb2272fa085"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga0e12f1e9f5b2e687b7c62fb2272fa085">c4db_retain</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *r)</td></tr>
 <tr class="separator:ga0e12f1e9f5b2e687b7c62fb2272fa085"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga140327445ff91ebb34a8cc594b8dd686"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga140327445ff91ebb34a8cc594b8dd686">c4db_release</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *r)</td></tr>
-<tr class="separator:ga140327445ff91ebb34a8cc594b8dd686"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga456548ce2e8dbb04cfcb9ba64847b651"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga456548ce2e8dbb04cfcb9ba64847b651">c4query_retain</a> (<a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *r)</td></tr>
+<tr class="memitem:ga456548ce2e8dbb04cfcb9ba64847b651"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga456548ce2e8dbb04cfcb9ba64847b651">c4query_retain</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *r)</td></tr>
 <tr class="separator:ga456548ce2e8dbb04cfcb9ba64847b651"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5ba76e998bb93ad98ed9382b03c861ad"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga5ba76e998bb93ad98ed9382b03c861ad">c4query_release</a> (<a class="el" href="group___base.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *r)</td></tr>
-<tr class="separator:ga5ba76e998bb93ad98ed9382b03c861ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf5b676967e67bda03bf963c6f33c8e59"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gaf5b676967e67bda03bf963c6f33c8e59">c4doc_retain</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *)</td></tr>
 <tr class="separator:gaf5b676967e67bda03bf963c6f33c8e59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe">c4doc_release</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *)</td></tr>
-<tr class="separator:gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga2f90cf631bbab057f64903dccff6c82f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga2f90cf631bbab057f64903dccff6c82f">c4queryenum_retain</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *)</td></tr>
 <tr class="separator:ga2f90cf631bbab057f64903dccff6c82f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae05e01f73e4a555b4b275110f9e31394"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gae05e01f73e4a555b4b275110f9e31394">c4cert_release</a> (<a class="el" href="group___base.html#gaf83fec73b17269823bbf95b16ae4976d">C4Cert</a> *r)</td></tr>
+<tr class="separator:gae05e01f73e4a555b4b275110f9e31394"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa565ac815fdef649626be6107361e14e"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gaa565ac815fdef649626be6107361e14e">c4keypair_release</a> (<a class="el" href="group___base.html#gaab0975fb1dd0dac704f1c53ce27cc8f3">C4KeyPair</a> *r)</td></tr>
+<tr class="separator:gaa565ac815fdef649626be6107361e14e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga140327445ff91ebb34a8cc594b8dd686"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga140327445ff91ebb34a8cc594b8dd686">c4db_release</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *r)</td></tr>
+<tr class="separator:ga140327445ff91ebb34a8cc594b8dd686"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5ba76e998bb93ad98ed9382b03c861ad"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga5ba76e998bb93ad98ed9382b03c861ad">c4query_release</a> (<a class="el" href="group___base.html#ga67aedbf60fd71b8727d6d0ca9bd339ca">C4Query</a> *r)</td></tr>
+<tr class="separator:ga5ba76e998bb93ad98ed9382b03c861ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe">c4doc_release</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *)</td></tr>
+<tr class="separator:gacf1b9a7ebc6654b0f5bcd1b3c8cd3dbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab15a4580ef64eafd53a5165591666458"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gab15a4580ef64eafd53a5165591666458">c4queryenum_release</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *)</td></tr>
 <tr class="separator:gab15a4580ef64eafd53a5165591666458"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga71158f6dd23100938013eb188a2421f6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga71158f6dd23100938013eb188a2421f6">c4dbobs_free</a> (<a class="el" href="group___base.html#ga464907502d1ac3c9941899329b5d001f">C4DatabaseObserver</a> *)</td></tr>
-<tr class="separator:ga71158f6dd23100938013eb188a2421f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7b6efc206ab418ee64db9534eb47d85f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga7b6efc206ab418ee64db9534eb47d85f">c4docobs_free</a> (<a class="el" href="group___base.html#ga148577d41d550a29d8fbc4a1fa597efc">C4DocumentObserver</a> *)</td></tr>
+<tr class="memitem:ga27279544b6677cde49610300cb80d329"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga27279544b6677cde49610300cb80d329">c4dbobs_free</a> (<a class="el" href="group___base.html#ga6ee85db00f1ffcf03308ef5350855e29">C4CollectionObserver</a> *)</td></tr>
+<tr class="separator:ga27279544b6677cde49610300cb80d329"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7b6efc206ab418ee64db9534eb47d85f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga7b6efc206ab418ee64db9534eb47d85f">c4docobs_free</a> (<a class="el" href="group___base.html#ga8a4ef01035322ff935bae1ea30a9199e">C4DocumentObserver</a> *)</td></tr>
 <tr class="separator:ga7b6efc206ab418ee64db9534eb47d85f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac7d5e9bd008f20ed446e92305be2e090"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gac7d5e9bd008f20ed446e92305be2e090">c4enum_free</a> (<a class="el" href="group___base.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *)</td></tr>
 <tr class="separator:gac7d5e9bd008f20ed446e92305be2e090"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga2c533d88a2b747a071bdcf1ea60e4fee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga2c533d88a2b747a071bdcf1ea60e4fee">c4listener_free</a> (<a class="el" href="group___base.html#ga5e5ecc7839088461114e2ea751124156">C4Listener</a> *)</td></tr>
 <tr class="separator:ga2c533d88a2b747a071bdcf1ea60e4fee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0b40933cebb5741d2224e726a8a50efd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga0b40933cebb5741d2224e726a8a50efd">c4queryobs_free</a> (<a class="el" href="group___base.html#gaa38460d907351d080c099278153fe596">C4QueryObserver</a> *)</td></tr>
+<tr class="memitem:ga0b40933cebb5741d2224e726a8a50efd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga0b40933cebb5741d2224e726a8a50efd">c4queryobs_free</a> (<a class="el" href="group___base.html#ga89a77eddf7600ce9e9e17933e8ef8a75">C4QueryObserver</a> *)</td></tr>
 <tr class="separator:ga0b40933cebb5741d2224e726a8a50efd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga27bca0ebc4fa272b0a7684cea0603509"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga27bca0ebc4fa272b0a7684cea0603509">c4raw_free</a> (<a class="el" href="struct_c4_raw_document.html">C4RawDocument</a> *)</td></tr>
 <tr class="separator:ga27bca0ebc4fa272b0a7684cea0603509"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga25a927ca78de4f96f5813de2bd6d2b65"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga25a927ca78de4f96f5813de2bd6d2b65">c4repl_free</a> (<a class="el" href="group___base.html#ga709bd645c12619231f98f793daa46d67">C4Replicator</a> *)</td></tr>
 <tr class="separator:ga25a927ca78de4f96f5813de2bd6d2b65"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac1f167a51625c67900a4bd112450d8ca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gac1f167a51625c67900a4bd112450d8ca">c4stream_close</a> (<a class="el" href="group___base.html#gafc17929a5c2540de640863fd5f202281">C4ReadStream</a> *)</td></tr>
+<tr class="memitem:gac1f167a51625c67900a4bd112450d8ca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gac1f167a51625c67900a4bd112450d8ca">c4stream_close</a> (<a class="el" href="group___base.html#ga02b4b239f9add8f17da2971e1fd6eea6">C4ReadStream</a> *)</td></tr>
 <tr class="separator:gac1f167a51625c67900a4bd112450d8ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad6905d9164e017a67cf8b5bee5b8b85b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4stream_closeWriter</a> (<a class="el" href="group___base.html#ga7063759634332538b33b50c169473715">C4WriteStream</a> *)</td></tr>
+<tr class="memitem:gad6905d9164e017a67cf8b5bee5b8b85b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#gad6905d9164e017a67cf8b5bee5b8b85b">c4stream_closeWriter</a> (<a class="el" href="group___base.html#ga4a238757c9baa9a4fcea8f03d42dfa15">C4WriteStream</a> *)</td></tr>
 <tr class="separator:gad6905d9164e017a67cf8b5bee5b8b85b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga31c0b80a7f0b94d1e7dfdeeceea518be"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga31c0b80a7f0b94d1e7dfdeeceea518be">c4_getObjectCount</a> (void)</td></tr>
 <tr class="memdesc:ga31c0b80a7f0b94d1e7dfdeeceea518be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of objects that have been created but not yet freed.  <a href="group___base.html#ga31c0b80a7f0b94d1e7dfdeeceea518be">More...</a><br /></td></tr>
 <tr class="separator:ga31c0b80a7f0b94d1e7dfdeeceea518be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga8af25974f939cc897bf166e47ede0d8c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___base.html#ga8af25974f939cc897bf166e47ede0d8c">c4_dumpInstances</a> (void)</td></tr>
+<tr class="memdesc:ga8af25974f939cc897bf166e47ede0d8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logs information about object in memory.  <a href="group___base.html#ga8af25974f939cc897bf166e47ede0d8c">More...</a><br /></td></tr>
 <tr class="separator:ga8af25974f939cc897bf166e47ede0d8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae52f7d1192e8484521eaab234fbea8fa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___errors.html#gae52f7d1192e8484521eaab234fbea8fa">c4error_getMessage</a> (<a class="el" href="struct_c4_error.html">C4Error</a> error)</td></tr>
-<tr class="memdesc:gae52f7d1192e8484521eaab234fbea8fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an error message describing a <a class="el" href="struct_c4_error.html" title="An error value.">C4Error</a>.  <a href="group___errors.html#gae52f7d1192e8484521eaab234fbea8fa">More...</a><br /></td></tr>
-<tr class="separator:gae52f7d1192e8484521eaab234fbea8fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab22d6fd5b6fd23951a30398c46ef9bd0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga7641ec7c9f4339b65cc4aabc050d67d8">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___errors.html#gab22d6fd5b6fd23951a30398c46ef9bd0">c4error_getDescription</a> (<a class="el" href="struct_c4_error.html">C4Error</a> error)</td></tr>
-<tr class="memdesc:gab22d6fd5b6fd23951a30398c46ef9bd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a description of an error, including the domain and code as well as the message.  <a href="group___errors.html#gab22d6fd5b6fd23951a30398c46ef9bd0">More...</a><br /></td></tr>
-<tr class="separator:gab22d6fd5b6fd23951a30398c46ef9bd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac822a4ab4c38df73c2e23e07ba86f2cc"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___errors.html#gac822a4ab4c38df73c2e23e07ba86f2cc">c4error_getDescriptionC</a> (<a class="el" href="struct_c4_error.html">C4Error</a> error, char *outBuffer, size_t bufferSize)</td></tr>
-<tr class="memdesc:gac822a4ab4c38df73c2e23e07ba86f2cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a description of an error, including the domain and code as well as the message.  <a href="group___errors.html#gac822a4ab4c38df73c2e23e07ba86f2cc">More...</a><br /></td></tr>
-<tr class="separator:gac822a4ab4c38df73c2e23e07ba86f2cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga479dac7185e74e3881c3ca45fd1156dc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_error.html">C4Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___errors.html#ga479dac7185e74e3881c3ca45fd1156dc">c4error_make</a> (<a class="el" href="group___errors.html#ga6cbe7be44f2f63425404284687e6861c">C4ErrorDomain</a> domain, int code, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> message)</td></tr>
-<tr class="memdesc:ga479dac7185e74e3881c3ca45fd1156dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a <a class="el" href="struct_c4_error.html" title="An error value.">C4Error</a> struct with the given domain and code, and associates the message with it.  <a href="group___errors.html#ga479dac7185e74e3881c3ca45fd1156dc">More...</a><br /></td></tr>
-<tr class="separator:ga479dac7185e74e3881c3ca45fd1156dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab551bff34c518cd1228569eeded1b0c7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___errors.html#gab551bff34c518cd1228569eeded1b0c7">c4error_mayBeTransient</a> (<a class="el" href="struct_c4_error.html">C4Error</a> err)</td></tr>
-<tr class="memdesc:gab551bff34c518cd1228569eeded1b0c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if this is a network error that may be transient, i.e.  <a href="group___errors.html#gab551bff34c518cd1228569eeded1b0c7">More...</a><br /></td></tr>
-<tr class="separator:gab551bff34c518cd1228569eeded1b0c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gadae61f7f9095f0a602e9401292b32898"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___errors.html#gadae61f7f9095f0a602e9401292b32898">c4error_mayBeNetworkDependent</a> (<a class="el" href="struct_c4_error.html">C4Error</a> err)</td></tr>
-<tr class="memdesc:gadae61f7f9095f0a602e9401292b32898"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if this error might go away when the network environment changes, i.e.  <a href="group___errors.html#gadae61f7f9095f0a602e9401292b32898">More...</a><br /></td></tr>
-<tr class="separator:gadae61f7f9095f0a602e9401292b32898"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2711d7833a0ffef8ed54321945e03158"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga2711d7833a0ffef8ed54321945e03158">c4log_writeToCallback</a> (<a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level, <a class="el" href="group___logging.html#ga68e736523f16dc1d71a504cf8eacc838">C4LogCallback</a> callback, bool preformatted)</td></tr>
-<tr class="memdesc:ga2711d7833a0ffef8ed54321945e03158"><td class="mdescLeft">&#160;</td><td class="mdescRight">Registers (or unregisters) a log callback, and sets the minimum log level to report.  <a href="group___logging.html#ga2711d7833a0ffef8ed54321945e03158">More...</a><br /></td></tr>
-<tr class="separator:ga2711d7833a0ffef8ed54321945e03158"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4f9b24521f0330f24b3b83eb4d262ef4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga4f9b24521f0330f24b3b83eb4d262ef4">c4log_writeToBinaryFile</a> (<a class="el" href="struct_c4_log_file_options.html">C4LogFileOptions</a> options, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
-<tr class="memdesc:ga4f9b24521f0330f24b3b83eb4d262ef4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Causes log messages to be written to a file, overwriting any previous contents.  <a href="group___logging.html#ga4f9b24521f0330f24b3b83eb4d262ef4">More...</a><br /></td></tr>
-<tr class="separator:ga4f9b24521f0330f24b3b83eb4d262ef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga68c1807153a23f21509ee4f3afe0510a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga68c1807153a23f21509ee4f3afe0510a">c4log_callbackLevel</a> (void)</td></tr>
-<tr class="separator:ga68c1807153a23f21509ee4f3afe0510a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1e26e6c6ed4977d0bcf9c64dde7d130a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga1e26e6c6ed4977d0bcf9c64dde7d130a">c4log_setCallbackLevel</a> (<a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level)</td></tr>
-<tr class="separator:ga1e26e6c6ed4977d0bcf9c64dde7d130a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7a88467cdc16ad9e0157bb0d1fdb44aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga7a88467cdc16ad9e0157bb0d1fdb44aa">c4log_binaryFileLevel</a> (void)</td></tr>
-<tr class="separator:ga7a88467cdc16ad9e0157bb0d1fdb44aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf4d933282a870bc9fb0f76b5420e76b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#gaf4d933282a870bc9fb0f76b5420e76b6">c4log_setBinaryFileLevel</a> (<a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level)</td></tr>
-<tr class="separator:gaf4d933282a870bc9fb0f76b5420e76b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga32577ceed42cd2a39e3cb6a6e18794f7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga32577ceed42cd2a39e3cb6a6e18794f7">c4log_getDomain</a> (const char *name, bool create)</td></tr>
-<tr class="memdesc:ga32577ceed42cd2a39e3cb6a6e18794f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Looks up a named log domain.  <a href="group___logging.html#ga32577ceed42cd2a39e3cb6a6e18794f7">More...</a><br /></td></tr>
-<tr class="separator:ga32577ceed42cd2a39e3cb6a6e18794f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4d8df5ec1a37bd0f88cdc53482b5bd67"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga4d8df5ec1a37bd0f88cdc53482b5bd67">c4log_getDomainName</a> (<a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>)</td></tr>
-<tr class="memdesc:ga4d8df5ec1a37bd0f88cdc53482b5bd67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of a log domain.  <a href="group___logging.html#ga4d8df5ec1a37bd0f88cdc53482b5bd67">More...</a><br /></td></tr>
-<tr class="separator:ga4d8df5ec1a37bd0f88cdc53482b5bd67"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gada0fe619b244eb56210ac80792062c70"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#gada0fe619b244eb56210ac80792062c70">c4log_getLevel</a> (<a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>)</td></tr>
-<tr class="memdesc:gada0fe619b244eb56210ac80792062c70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current log level of a domain, the minimum level of message it will log.  <a href="group___logging.html#gada0fe619b244eb56210ac80792062c70">More...</a><br /></td></tr>
-<tr class="separator:gada0fe619b244eb56210ac80792062c70"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3e2ed128631f5c4200e806e64d1bd64f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga3e2ed128631f5c4200e806e64d1bd64f">c4log_willLog</a> (<a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>, <a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>)</td></tr>
-<tr class="memdesc:ga3e2ed128631f5c4200e806e64d1bd64f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if logging to this domain at this level will have an effect.  <a href="group___logging.html#ga3e2ed128631f5c4200e806e64d1bd64f">More...</a><br /></td></tr>
-<tr class="separator:ga3e2ed128631f5c4200e806e64d1bd64f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4261638ad897214463814fe211114a5b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga4261638ad897214463814fe211114a5b">c4log_setLevel</a> (<a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> c4Domain, <a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level)</td></tr>
-<tr class="memdesc:ga4261638ad897214463814fe211114a5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Changes the level of the given log domain.  <a href="group___logging.html#ga4261638ad897214463814fe211114a5b">More...</a><br /></td></tr>
-<tr class="separator:ga4261638ad897214463814fe211114a5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga601fea02fe1389a61bf6218493544206"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga601fea02fe1389a61bf6218493544206">c4log</a> (<a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> domain, <a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level, const char *fmt,...) <a class="el" href="c4_compat_8h.html#ab302334d9a77a6925be4e5b45397e4a3">__printflike</a>(3</td></tr>
-<tr class="memdesc:ga601fea02fe1389a61bf6218493544206"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logs a message/warning/error to a specific domain, if its current level is less than or equal to the given level.  <a href="group___logging.html#ga601fea02fe1389a61bf6218493544206">More...</a><br /></td></tr>
-<tr class="separator:ga601fea02fe1389a61bf6218493544206"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaea9c2d6e9e8ada1d17044a0435cd37db"><td class="memItemLeft" align="right" valign="top">void void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#gaea9c2d6e9e8ada1d17044a0435cd37db">c4vlog</a> (<a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> domain, <a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level, const char *fmt, va_list args)</td></tr>
-<tr class="memdesc:gaea9c2d6e9e8ada1d17044a0435cd37db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as c4log, for use in calling functions that already take variable args.  <a href="group___logging.html#gaea9c2d6e9e8ada1d17044a0435cd37db">More...</a><br /></td></tr>
-<tr class="separator:gaea9c2d6e9e8ada1d17044a0435cd37db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad537b6f0baea4183e86bd812aa3786f7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#gad537b6f0baea4183e86bd812aa3786f7">c4slog</a> (<a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> domain, <a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> msg)</td></tr>
-<tr class="memdesc:gad537b6f0baea4183e86bd812aa3786f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as c4log, except it accepts preformatted messages as C4Slices.  <a href="group___logging.html#gad537b6f0baea4183e86bd812aa3786f7">More...</a><br /></td></tr>
-<tr class="separator:gad537b6f0baea4183e86bd812aa3786f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga88b11ee6499ba101ff3dcc3d25915dd7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___miscellaneous.html#ga88b11ee6499ba101ff3dcc3d25915dd7">c4_getBuildInfo</a> (void)</td></tr>
 <tr class="memdesc:ga88b11ee6499ba101ff3dcc3d25915dd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">A string describing the version of LiteCore.  <a href="group___miscellaneous.html#ga88b11ee6499ba101ff3dcc3d25915dd7">More...</a><br /></td></tr>
 <tr class="separator:ga88b11ee6499ba101ff3dcc3d25915dd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga77f2139ee52cfe1a295b7b3c1f86f180"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___miscellaneous.html#ga77f2139ee52cfe1a295b7b3c1f86f180">c4_getVersion</a> (void)</td></tr>
 <tr class="memdesc:ga77f2139ee52cfe1a295b7b3c1f86f180"><td class="mdescLeft">&#160;</td><td class="mdescRight">A short version string.  <a href="group___miscellaneous.html#ga77f2139ee52cfe1a295b7b3c1f86f180">More...</a><br /></td></tr>
 <tr class="separator:ga77f2139ee52cfe1a295b7b3c1f86f180"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga37ce7c8730c153596411479ae0b9c040"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___miscellaneous.html#ga37ce7c8730c153596411479ae0b9c040">c4_now</a> (void)</td></tr>
+<tr class="memdesc:ga37ce7c8730c153596411479ae0b9c040"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current time, in <em>milliseconds</em> since 1/1/1970.  <a href="group___miscellaneous.html#ga37ce7c8730c153596411479ae0b9c040">More...</a><br /></td></tr>
+<tr class="separator:ga37ce7c8730c153596411479ae0b9c040"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga04cc5f3cd09043dd8062e96f8c871b92"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___miscellaneous.html#ga04cc5f3cd09043dd8062e96f8c871b92">c4_setTempDir</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> path, <a class="el" href="struct_c4_error.html">C4Error</a> *err)</td></tr>
 <tr class="memdesc:ga04cc5f3cd09043dd8062e96f8c871b92"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wiring call for platforms without discoverable temporary directories.  <a href="group___miscellaneous.html#ga04cc5f3cd09043dd8062e96f8c871b92">More...</a><br /></td></tr>
 <tr class="separator:ga04cc5f3cd09043dd8062e96f8c871b92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac5ccfc0dd298ff14e4340cfe49bef0cc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___miscellaneous.html#gac5ccfc0dd298ff14e4340cfe49bef0cc">c4_runAsyncTask</a> (void(*task)(void *), void *context)</td></tr>
 <tr class="memdesc:gac5ccfc0dd298ff14e4340cfe49bef0cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Schedules a function to be called asynchronously on a background thread.  <a href="group___miscellaneous.html#gac5ccfc0dd298ff14e4340cfe49bef0cc">More...</a><br /></td></tr>
 <tr class="separator:gac5ccfc0dd298ff14e4340cfe49bef0cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:ga8a08dd9ac099a3155af75949612fd731"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> const <a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a></td></tr>
-<tr class="memdesc:ga8a08dd9ac099a3155af75949612fd731"><td class="mdescLeft">&#160;</td><td class="mdescRight">The default log domain.  <a href="group___logging.html#ga8a08dd9ac099a3155af75949612fd731">More...</a><br /></td></tr>
-<tr class="separator:ga8a08dd9ac099a3155af75949612fd731"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga20a02581ba68cc080a5c7df7480d43ce"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> const <a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga20a02581ba68cc080a5c7df7480d43ce">kC4DatabaseLog</a></td></tr>
-<tr class="memdesc:ga20a02581ba68cc080a5c7df7480d43ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log domain for database operations.  <a href="group___logging.html#ga20a02581ba68cc080a5c7df7480d43ce">More...</a><br /></td></tr>
-<tr class="separator:ga20a02581ba68cc080a5c7df7480d43ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3e2e84d3be4e73ab29abba1da3d8c769"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> const <a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga3e2e84d3be4e73ab29abba1da3d8c769">kC4QueryLog</a></td></tr>
-<tr class="memdesc:ga3e2e84d3be4e73ab29abba1da3d8c769"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log domain for query operations.  <a href="group___logging.html#ga3e2e84d3be4e73ab29abba1da3d8c769">More...</a><br /></td></tr>
-<tr class="separator:ga3e2e84d3be4e73ab29abba1da3d8c769"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5d9b2c0fea320fe3610686427e4ac018"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> const <a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga5d9b2c0fea320fe3610686427e4ac018">kC4SyncLog</a></td></tr>
-<tr class="memdesc:ga5d9b2c0fea320fe3610686427e4ac018"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log domain for replication operations.  <a href="group___logging.html#ga5d9b2c0fea320fe3610686427e4ac018">More...</a><br /></td></tr>
-<tr class="separator:ga5d9b2c0fea320fe3610686427e4ac018"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga72093fcdde1b7a27a9c864f114ff8894"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> const <a class="el" href="group___logging.html#gafb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___logging.html#ga72093fcdde1b7a27a9c864f114ff8894">kC4WebSocketLog</a></td></tr>
-<tr class="memdesc:ga72093fcdde1b7a27a9c864f114ff8894"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log domain for WebSocket operations.  <a href="group___logging.html#ga72093fcdde1b7a27a9c864f114ff8894">More...</a><br /></td></tr>
-<tr class="separator:ga72093fcdde1b7a27a9c864f114ff8894"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="a906bded72f22a59134ce4d2db77a0c53"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a906bded72f22a59134ce4d2db77a0c53">&#9670;&nbsp;</a></span>LITECORE_API_VERSION</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define LITECORE_API_VERSION&#160;&#160;&#160;350</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abd4a83720173b87bd04686206a65d6b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd4a83720173b87bd04686206a65d6b4">&#9670;&nbsp;</a></span>LITECORE_VERSION</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define LITECORE_VERSION&#160;&#160;&#160;30000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

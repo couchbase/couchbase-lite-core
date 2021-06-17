@@ -25,7 +25,31 @@ using namespace fleece::impl;
 
 
 class QueryTest : public DataFileTestFixture {
+public:
+    static const int numberOfOptions = 2;
+
+    string collectionName;
+
 protected:
+
+    QueryTest() :QueryTest(0) { }
+
+    QueryTest(int option) {
+        logSection(option ? "secondary collection" : "default collection");
+        switch (option) {
+            case 0:
+                collectionName = "_default";
+                break;
+            case 1:
+                collectionName = "secondary";
+                store = &db->getKeyStore("coll_secondary");
+                break;
+        }
+    }
+
+    void logSection(const string &name) {
+        fprintf(stderr, "        --- %s\n", name.c_str());
+    }
 
     string numberString(int n) {
         static const char* kDigit[10] = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
@@ -39,7 +63,7 @@ protected:
         return str;
     }
 
-    sequence_t writeNumberedDoc(int i, slice str, Transaction &t,
+    sequence_t writeNumberedDoc(int i, slice str, ExclusiveTransaction &t,
                                        DocumentFlags flags =DocumentFlags::kNone) {
         return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder &enc) {
             enc.writeKey("num");
@@ -55,13 +79,16 @@ protected:
 
     // Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
     void addNumberedDocs(int first =1, int n =100) {
-        Transaction t(store->dataFile());
+        auto level = QueryLog.level();
+        QueryLog.setLevel(LogLevel::Warning);
+        ExclusiveTransaction t(store->dataFile());
         for (int i = first; i < first + n; i++)
             REQUIRE(writeNumberedDoc(i, nullslice, t) == (sequence_t)i);
         t.commit();
+        QueryLog.setLevel(level);
     }
 
-    sequence_t writeArrayDoc(int i, Transaction &t,
+    sequence_t writeArrayDoc(int i, ExclusiveTransaction &t,
                                     DocumentFlags flags =DocumentFlags::kNone) {
         return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder &enc) {
             enc.writeKey("numbers");
@@ -75,13 +102,13 @@ protected:
     }
 
     void addArrayDocs(int first =1, int n =100) {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         for (int i = first; i < first + n; i++)
             REQUIRE(writeArrayDoc(i, t) == (sequence_t)i);
         t.commit();
     }
 
-    void writeMultipleTypeDocs(Transaction &t) {
+    void writeMultipleTypeDocs(ExclusiveTransaction &t) {
         writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("value");
             enc.beginArray();
@@ -113,7 +140,7 @@ protected:
         });
     }
 
-    void writeFalselyDocs(Transaction &t) {
+    void writeFalselyDocs(ExclusiveTransaction &t) {
         writeDoc("doc6"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("value");
             enc.beginArray();
@@ -133,24 +160,24 @@ protected:
     }
 
     void deleteDoc(slice docID, bool hardDelete) {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         if (hardDelete) {
             store->del(docID, t);
         } else {
             Record doc = store->get(docID);
             CHECK(doc.exists());
             doc.setFlag(DocumentFlags::kDeleted);
-            store->set(doc, t);
+            store->set(doc, true, t);
         }
         t.commit();
     }
 
     void undeleteDoc(slice docID) {
-        Transaction t(store->dataFile());
+        ExclusiveTransaction t(store->dataFile());
         Record doc = store->get(docID);
         CHECK(doc.exists());
         doc.clearFlag(DocumentFlags::kDeleted);
-        store->set(doc, t);
+        store->set(doc, true, t);
         t.commit();
     }
 
@@ -169,7 +196,7 @@ protected:
 
     void testExpressions(const std::vector<std::pair<std::string,std::string>> &tests) {
         {
-            Transaction t(store->dataFile());
+            ExclusiveTransaction t(store->dataFile());
             writeNumberedDoc(1, nullslice, t);
             t.commit();
         }

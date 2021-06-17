@@ -18,11 +18,12 @@
 
 #pragma once
 #include "KeyStore.hh"
-#include "QueryParser.hh"
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 namespace fleece::impl {
@@ -40,8 +41,17 @@ namespace litecore {
     class SQLiteDataFile;
     
 
+    namespace RecordColumn {
+        /// The order of result columns in a SELECT statement that returns a record.
+        /// SQLiteKeyStore::setRecordMetaAndBody assumes the statement adheres to this.
+        enum {
+            Sequence = 0, RawFlags, Key, Version, BodyOrSize, ExtraOrSize, Expiration
+        };
+    }
+
+
     /** SQLite implementation of KeyStore; corresponds to a SQL table. */
-    class SQLiteKeyStore : public KeyStore, public QueryParser::delegate {
+    class SQLiteKeyStore final : public KeyStore {
     public:
         using KeyStore::get; // GCC gets confused by the overloaded virtual functions in KeyStore
 
@@ -49,14 +59,18 @@ namespace litecore {
         sequence_t lastSequence() const override;
         uint64_t purgeCount() const override;
 
-        Record get(sequence_t, ContentOption) const override;
-        bool read(Record &rec, ContentOption) const override;
+        std::string tableName() const                                       {return "kv_" + name();}
 
-        sequence_t set(const RecordLite&, Transaction&) override;
+        bool read(Record &rec, ReadBy, ContentOption) const override;
 
-        bool del(slice key, Transaction&, sequence_t s) override;
+        sequence_t set(const RecordUpdate&, bool updateSequence, ExclusiveTransaction&) override;
+        void setKV(slice key, slice version, slice value, ExclusiveTransaction&) override;
 
-        bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&) override;
+        bool del(slice key, ExclusiveTransaction&, sequence_t s = 0) override;
+
+        bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction&) override;
+
+        void moveTo(slice key, KeyStore &dst, ExclusiveTransaction&, slice newKey = nullslice) override;
 
         void erase() override;
 
@@ -78,41 +92,34 @@ namespace litecore {
         void createConflictsIndex();
         void createBlobsIndex();
 
-        // QueryParser::delegate:
-        virtual std::string tableName() const override  {return std::string("kv_") + name();}
-        virtual std::string FTSTableName(const std::string &property) const override;
-        virtual std::string unnestedTableName(const std::string &property) const override;
-#ifdef COUCHBASE_ENTERPRISE
-        virtual std::string predictiveTableName(const std::string &property) const override;
-#endif
-        virtual bool tableExists(const std::string &tableName) const override;
-
+        /// Adds the `expiration` column to the table. Called only by SQLiteQuery.
+        void addExpiration();
 
     protected:
+        virtual bool mayHaveExpiration() override;
         RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                   sequence_t since,
                                                   RecordEnumerator::Options) override;
-        Retained<Query> compileQuery(slice expression, QueryLanguage) override;
 
-        SQLite::Statement* compile(const std::string &sql) const;
-        SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
-                                   const char *sqlTemplate) const;
+        std::unique_ptr<SQLite::Statement> compile(const char *sql) const;
+        SQLite::Statement& compileCached(const std::string &sqlTemplate) const;
 
         void transactionWillEnd(bool commit);
 
         void close() override;
         void reopen() override;
 
-        static slice columnAsSlice(const SQLite::Column &col);
+        /// Updates a record's flags, version, body, extra from a statement whose column order
+        /// matches the RecordColumn enum.
         static void setRecordMetaAndBody(Record &rec,
                                          SQLite::Statement &stmt,
-                                         ContentOption);
-        virtual bool mayHaveExpiration() override;
+                                         ContentOption,
+                                         bool setKey,
+                                         bool setSequence);
 
     private:
         friend class SQLiteDataFile;
         friend class SQLiteEnumerator;
-        friend class SQLiteQuery;
         
         SQLiteKeyStore(SQLiteDataFile&, const std::string &name, KeyStore::Capabilities options);
         void createTable();
@@ -133,7 +140,6 @@ namespace litecore {
         bool createFTSIndex(const IndexSpec&);
         bool createArrayIndex(const IndexSpec&);
         std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexSpec::Options*);
-        void addExpiration();
 
 #ifdef COUCHBASE_ENTERPRISE
         bool createPredictiveIndex(const IndexSpec&);
@@ -141,17 +147,12 @@ namespace litecore {
         void garbageCollectPredictiveIndexes();
 #endif
 
-        // All of these Statement pointers have to be reset in the close() method.
-        unique_ptr<SQLite::Statement> _recCountStmt;
-        unique_ptr<SQLite::Statement> _getByKeyStmt, _getCurByKeyStmt, _getMetaByKeyStmt;
-        unique_ptr<SQLite::Statement> _getBySeqStmt, _getCurBySeqStmt, _getMetaBySeqStmt;
-        unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
-        unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
-        unique_ptr<SQLite::Statement> _setFlagStmt, _withDocBodiesStmt;
-        unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
+        using StatementCache = std::unordered_map<std::string,std::unique_ptr<SQLite::Statement>>;
 
         enum Existence : uint8_t { kNonexistent, kUncommitted, kCommitted };
 
+        mutable std::mutex _stmtMutex;
+        mutable StatementCache _stmtCache;
         bool _createdSeqIndex {false}, _createdConflictsIndex {false}, _createdBlobsIndex {false};
         bool _lastSequenceChanged {false};
         bool _purgeCountChanged {false};
@@ -160,7 +161,6 @@ namespace litecore {
         mutable std::atomic<uint64_t> _purgeCount {0};
         bool _hasExpirationColumn {false};
         bool _uncommittedExpirationColumn {false};
-        mutable std::mutex _stmtMutex;
         Existence _existence;
     };
 

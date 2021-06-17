@@ -63,8 +63,7 @@ $(function() {
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Data Structures</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#nested-classes">Data Structures</a>  </div>
   <div class="headertitle">
 <div class="title">Databases</div>  </div>
 </div><!--header-->
@@ -81,19 +80,100 @@ Data Structures</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_u_u_i_d.html">C4UUID</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:ga30623fe81a410cb1931377dd9c81f378"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> const char *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga30623fe81a410cb1931377dd9c81f378">kC4DatabaseFilenameExtension</a></td></tr>
-<tr class="memdesc:ga30623fe81a410cb1931377dd9c81f378"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filename extension of databases &ndash; ".cblite2".  <a href="#ga30623fe81a410cb1931377dd9c81f378">More...</a><br /></td></tr>
-<tr class="separator:ga30623fe81a410cb1931377dd9c81f378"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
+Configuration</h2></td></tr>
+<tr class="memitem:ga21d5664eadc6420175b6ce5117de9dfe"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga21d5664eadc6420175b6ce5117de9dfe">c4key_setPassword</a> (<a class="el" href="struct_c4_encryption_key.html">C4EncryptionKey</a> *encryptionKey, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> password, <a class="el" href="group___database.html#ga7fc3558f0da3832690e8a085263164b9">C4EncryptionAlgorithm</a> alg)</td></tr>
+<tr class="memdesc:ga21d5664eadc6420175b6ce5117de9dfe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a password into a <a class="el" href="struct_c4_encryption_key.html" title="Encryption key specified in a C4DatabaseConfig.">C4EncryptionKey</a>, by using the key-derivation algorithm PBKDF2 to securely convert the password into a raw binary key.  <a href="#ga21d5664eadc6420175b6ce5117de9dfe">More...</a><br /></td></tr>
+<tr class="separator:ga21d5664eadc6420175b6ce5117de9dfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
+Lifecycle</h2></td></tr>
+<tr class="memitem:ga0d28b7aa4783a7d407a7192264322a33"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga0d28b7aa4783a7d407a7192264322a33">c4db_exists</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> inDirectory)</td></tr>
+<tr class="memdesc:ga0d28b7aa4783a7d407a7192264322a33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if a database with the given name exists in the directory.  <a href="#ga0d28b7aa4783a7d407a7192264322a33">More...</a><br /></td></tr>
+<tr class="separator:ga0d28b7aa4783a7d407a7192264322a33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5fddc48fdc40af5f96f7acf44478c90a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga5fddc48fdc40af5f96f7acf44478c90a">c4db_openNamed</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, const <a class="el" href="struct_c4_database_config2.html">C4DatabaseConfig2</a> *config, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga5fddc48fdc40af5f96f7acf44478c90a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens a database given its name (without the ".cblite2" extension) and directory.  <a href="#ga5fddc48fdc40af5f96f7acf44478c90a">More...</a><br /></td></tr>
+<tr class="separator:ga5fddc48fdc40af5f96f7acf44478c90a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4e97a398abf7dfa69311bab45d296e26"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga4e97a398abf7dfa69311bab45d296e26">c4db_openAgain</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga4e97a398abf7dfa69311bab45d296e26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens a new handle to the same database file as <code>db</code>.  <a href="#ga4e97a398abf7dfa69311bab45d296e26">More...</a><br /></td></tr>
+<tr class="separator:ga4e97a398abf7dfa69311bab45d296e26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8d11b72b401c465008243ba0ba35827b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga8d11b72b401c465008243ba0ba35827b">c4db_copyNamed</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> sourcePath, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> destinationName, const <a class="el" href="struct_c4_database_config2.html">C4DatabaseConfig2</a> *config, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
+<tr class="memdesc:ga8d11b72b401c465008243ba0ba35827b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies a prebuilt database from the given source path and places it in the destination directory, with the given name.  <a href="#ga8d11b72b401c465008243ba0ba35827b">More...</a><br /></td></tr>
+<tr class="separator:ga8d11b72b401c465008243ba0ba35827b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga579808387313afcd9c197e2375611b8f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga579808387313afcd9c197e2375611b8f">c4db_close</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga579808387313afcd9c197e2375611b8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes the database.  <a href="#ga579808387313afcd9c197e2375611b8f">More...</a><br /></td></tr>
+<tr class="separator:ga579808387313afcd9c197e2375611b8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3904d58b8b2fb7edc214e409853c454f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga3904d58b8b2fb7edc214e409853c454f">c4db_delete</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga3904d58b8b2fb7edc214e409853c454f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes the database and deletes the file/bundle.  <a href="#ga3904d58b8b2fb7edc214e409853c454f">More...</a><br /></td></tr>
+<tr class="separator:ga3904d58b8b2fb7edc214e409853c454f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga46b0156ac8d22a9f8f69197d2b28b068"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga46b0156ac8d22a9f8f69197d2b28b068">c4db_deleteNamed</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> dbName, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> inDirectory, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga46b0156ac8d22a9f8f69197d2b28b068"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes the file(s) for the database with the given name in the given directory.  <a href="#ga46b0156ac8d22a9f8f69197d2b28b068">More...</a><br /></td></tr>
+<tr class="separator:ga46b0156ac8d22a9f8f69197d2b28b068"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga67b4b603acd3f5adf87983cdd141c07d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga67b4b603acd3f5adf87983cdd141c07d">c4db_rekey</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, const <a class="el" href="struct_c4_encryption_key.html">C4EncryptionKey</a> *newKey, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga67b4b603acd3f5adf87983cdd141c07d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Changes a database's encryption key (removing encryption if it's NULL.)  <a href="#ga67b4b603acd3f5adf87983cdd141c07d">More...</a><br /></td></tr>
+<tr class="separator:ga67b4b603acd3f5adf87983cdd141c07d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga812f36f955058159f238b499c36eb11d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga812f36f955058159f238b499c36eb11d">c4_shutdown</a> (<a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga812f36f955058159f238b499c36eb11d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes down the storage engines.  <a href="#ga812f36f955058159f238b499c36eb11d">More...</a><br /></td></tr>
+<tr class="separator:ga812f36f955058159f238b499c36eb11d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
+Accessors</h2></td></tr>
+<tr class="memitem:ga8a5d2748be7291c11e45429ab408f7e3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga8a5d2748be7291c11e45429ab408f7e3">c4db_getName</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *)</td></tr>
+<tr class="memdesc:ga8a5d2748be7291c11e45429ab408f7e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of the database, as given to <code>c4db_openNamed</code>.  <a href="#ga8a5d2748be7291c11e45429ab408f7e3">More...</a><br /></td></tr>
+<tr class="separator:ga8a5d2748be7291c11e45429ab408f7e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga60a8ac7a4a92925db340ebc24f932f7f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga60a8ac7a4a92925db340ebc24f932f7f">c4db_getPath</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *)</td></tr>
+<tr class="memdesc:ga60a8ac7a4a92925db340ebc24f932f7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the path of the database.  <a href="#ga60a8ac7a4a92925db340ebc24f932f7f">More...</a><br /></td></tr>
+<tr class="separator:ga60a8ac7a4a92925db340ebc24f932f7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3f00e97f147623a93f75b3872fb26236"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="struct_c4_database_config2.html">C4DatabaseConfig2</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga3f00e97f147623a93f75b3872fb26236">c4db_getConfig2</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database)</td></tr>
+<tr class="memdesc:ga3f00e97f147623a93f75b3872fb26236"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the configuration the database was opened with.  <a href="#ga3f00e97f147623a93f75b3872fb26236">More...</a><br /></td></tr>
+<tr class="separator:ga3f00e97f147623a93f75b3872fb26236"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab428d1e8b3b3966cb19c3242fddc1129"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gab428d1e8b3b3966cb19c3242fddc1129">c4db_getDocumentCount</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database)</td></tr>
+<tr class="memdesc:gab428d1e8b3b3966cb19c3242fddc1129"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of (undeleted) documents in the database.  <a href="#gab428d1e8b3b3966cb19c3242fddc1129">More...</a><br /></td></tr>
+<tr class="separator:gab428d1e8b3b3966cb19c3242fddc1129"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab8f435e79ec606be7838044322b2ce39"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gab8f435e79ec606be7838044322b2ce39">c4db_getLastSequence</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database)</td></tr>
+<tr class="memdesc:gab8f435e79ec606be7838044322b2ce39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the latest sequence number allocated to a revision.  <a href="#gab8f435e79ec606be7838044322b2ce39">More...</a><br /></td></tr>
+<tr class="separator:gab8f435e79ec606be7838044322b2ce39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga86101a920e0f554dba23cf1e8b661095"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga86101a920e0f554dba23cf1e8b661095">c4db_nextDocExpiration</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database)</td></tr>
+<tr class="memdesc:ga86101a920e0f554dba23cf1e8b661095"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the timestamp at which the next document expiration should take place, or 0 if there are no documents with expiration times.  <a href="#ga86101a920e0f554dba23cf1e8b661095">More...</a><br /></td></tr>
+<tr class="separator:ga86101a920e0f554dba23cf1e8b661095"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga54162e9eac2f466d1ba329f5d8fa879b"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga54162e9eac2f466d1ba329f5d8fa879b">c4db_purgeExpiredDocs</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *)</td></tr>
+<tr class="memdesc:ga54162e9eac2f466d1ba329f5d8fa879b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Purges all documents that have expired.  <a href="#ga54162e9eac2f466d1ba329f5d8fa879b">More...</a><br /></td></tr>
+<tr class="separator:ga54162e9eac2f466d1ba329f5d8fa879b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaafd52f484b5d2fff22ed8729442e2972"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gaafd52f484b5d2fff22ed8729442e2972">c4db_getUUIDs</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="struct_c4_u_u_i_d.html">C4UUID</a> *publicUUID, <a class="el" href="struct_c4_u_u_i_d.html">C4UUID</a> *privateUUID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gaafd52f484b5d2fff22ed8729442e2972"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the database's public and/or private UUIDs.  <a href="#gaafd52f484b5d2fff22ed8729442e2972">More...</a><br /></td></tr>
+<tr class="separator:gaafd52f484b5d2fff22ed8729442e2972"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga01fbe2ea3f7c5ee58eee705336799631"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga01fbe2ea3f7c5ee58eee705336799631">c4db_setExtraInfo</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="struct_c4_extra_info.html">C4ExtraInfo</a>)</td></tr>
+<tr class="memdesc:ga01fbe2ea3f7c5ee58eee705336799631"><td class="mdescLeft">&#160;</td><td class="mdescRight">Associates an arbitrary pointer with this database instance, for client use.  <a href="#ga01fbe2ea3f7c5ee58eee705336799631">More...</a><br /></td></tr>
+<tr class="separator:ga01fbe2ea3f7c5ee58eee705336799631"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga07216ea0f9e2ff23427cb3ffdb827b1c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_extra_info.html">C4ExtraInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga07216ea0f9e2ff23427cb3ffdb827b1c">c4db_getExtraInfo</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database)</td></tr>
+<tr class="memdesc:ga07216ea0f9e2ff23427cb3ffdb827b1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the <a class="el" href="struct_c4_extra_info.html" title="Client-defined metadata that can be associated with some objects like C4Database.">C4ExtraInfo</a> associated with this db reference.  <a href="#ga07216ea0f9e2ff23427cb3ffdb827b1c">More...</a><br /></td></tr>
+<tr class="separator:ga07216ea0f9e2ff23427cb3ffdb827b1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
+Database Maintenance</h2></td></tr>
+<tr class="memitem:ga2d553c36278b6be38e1ad58479b14237"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga2d553c36278b6be38e1ad58479b14237">c4db_maintenance</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="group___database.html#ga7bfa7da5d827fee0633ff0bbd949d361">C4MaintenanceType</a> type, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga2d553c36278b6be38e1ad58479b14237"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs database maintenance.  <a href="#ga2d553c36278b6be38e1ad58479b14237">More...</a><br /></td></tr>
+<tr class="separator:ga2d553c36278b6be38e1ad58479b14237"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
+Transactions</h2></td></tr>
+<tr class="memitem:gad6cc27a1a6fd25a43f4712555ba2eac7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gad6cc27a1a6fd25a43f4712555ba2eac7">c4db_beginTransaction</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gad6cc27a1a6fd25a43f4712555ba2eac7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Begins a transaction.  <a href="#gad6cc27a1a6fd25a43f4712555ba2eac7">More...</a><br /></td></tr>
+<tr class="separator:gad6cc27a1a6fd25a43f4712555ba2eac7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga47b07e501132be828a30371a4c5df2a7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga47b07e501132be828a30371a4c5df2a7">c4db_endTransaction</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database, bool commit, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga47b07e501132be828a30371a4c5df2a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Commits or aborts a transaction.  <a href="#ga47b07e501132be828a30371a4c5df2a7">More...</a><br /></td></tr>
+<tr class="separator:ga47b07e501132be828a30371a4c5df2a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga94d51d79bff6970adbb87d367a66a487"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga94d51d79bff6970adbb87d367a66a487">c4db_isInTransaction</a> (<a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *database)</td></tr>
+<tr class="memdesc:ga94d51d79bff6970adbb87d367a66a487"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a transaction active?  <a href="#ga94d51d79bff6970adbb87d367a66a487">More...</a><br /></td></tr>
+<tr class="separator:ga94d51d79bff6970adbb87d367a66a487"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Configuration</h2></td></tr>
 <tr class="memitem:ga3dbc483ea55d3e717ebb4f8cbcc7ec9f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga3dbc483ea55d3e717ebb4f8cbcc7ec9f">C4DatabaseFlags</a> : uint32_t { <br />
-&#160;&#160;<a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9fab0fbdb6427a6198566ddefa12f1c367a">kC4DB_Create</a> = 1, 
-<a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa0c0fc47f60df2b2e6e6aeba34d3cbc25">kC4DB_ReadOnly</a> = 2, 
-<a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa951dc67b5ed677e9d2bed7d2621ed1fc">kC4DB_AutoCompact</a> = 4, 
-<a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa5d66fc312369e7d648fd18394ef081ca">kC4DB_SharedKeys</a> = 0x10, 
+&#160;&#160;<a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9fab0fbdb6427a6198566ddefa12f1c367a">kC4DB_Create</a> = 0x01, 
+<a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa0c0fc47f60df2b2e6e6aeba34d3cbc25">kC4DB_ReadOnly</a> = 0x02, 
+<a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa951dc67b5ed677e9d2bed7d2621ed1fc">kC4DB_AutoCompact</a> = 0x04, 
+<a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa3d6fe45c4aec2dceceed79f0c2730420">kC4DB_VersionVectors</a> = 0x08, 
 <br />
 &#160;&#160;<a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9fad95a171aa96612f3418c39a0255b9198">kC4DB_NoUpgrade</a> = 0x20, 
 <a class="el" href="group___database.html#gga3dbc483ea55d3e717ebb4f8cbcc7ec9faf2ba8d31f2a03e75cd83e33d25db6c70">kC4DB_NonObservable</a> = 0x40
@@ -110,110 +190,23 @@ Configuration</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:gafe5c89129a65b9aa71187493cc00f277"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encryption key sizes (in bytes).  <a href="group___database.html#gafe5c89129a65b9aa71187493cc00f277">More...</a><br /></td></tr>
 <tr class="separator:gafe5c89129a65b9aa71187493cc00f277"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga21d5664eadc6420175b6ce5117de9dfe"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga21d5664eadc6420175b6ce5117de9dfe">c4key_setPassword</a> (<a class="el" href="struct_c4_encryption_key.html">C4EncryptionKey</a> *encryptionKey, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> password, <a class="el" href="group___database.html#ga7fc3558f0da3832690e8a085263164b9">C4EncryptionAlgorithm</a> alg)</td></tr>
-<tr class="memdesc:ga21d5664eadc6420175b6ce5117de9dfe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores a password into a <a class="el" href="struct_c4_encryption_key.html" title="Encryption key specified in a C4DatabaseConfig.">C4EncryptionKey</a>, by using the key-derivation algorithm PBKDF2 to securely convert the password into a raw binary key.  <a href="#ga21d5664eadc6420175b6ce5117de9dfe">More...</a><br /></td></tr>
-<tr class="separator:ga21d5664eadc6420175b6ce5117de9dfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
-Lifecycle</h2></td></tr>
-<tr class="memitem:ga0d28b7aa4783a7d407a7192264322a33"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga0d28b7aa4783a7d407a7192264322a33">c4db_exists</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> inDirectory)</td></tr>
-<tr class="memdesc:ga0d28b7aa4783a7d407a7192264322a33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if a database with the given name exists in the directory.  <a href="#ga0d28b7aa4783a7d407a7192264322a33">More...</a><br /></td></tr>
-<tr class="separator:ga0d28b7aa4783a7d407a7192264322a33"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5fddc48fdc40af5f96f7acf44478c90a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga5fddc48fdc40af5f96f7acf44478c90a">c4db_openNamed</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> name, const <a class="el" href="struct_c4_database_config2.html">C4DatabaseConfig2</a> *config, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga5fddc48fdc40af5f96f7acf44478c90a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens a database given its name (without the ".cblite2" extension) and directory.  <a href="#ga5fddc48fdc40af5f96f7acf44478c90a">More...</a><br /></td></tr>
-<tr class="separator:ga5fddc48fdc40af5f96f7acf44478c90a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4e97a398abf7dfa69311bab45d296e26"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga4e97a398abf7dfa69311bab45d296e26">c4db_openAgain</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga4e97a398abf7dfa69311bab45d296e26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens a new handle to the same database file as <code>db</code>.  <a href="#ga4e97a398abf7dfa69311bab45d296e26">More...</a><br /></td></tr>
-<tr class="separator:ga4e97a398abf7dfa69311bab45d296e26"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8d11b72b401c465008243ba0ba35827b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga8d11b72b401c465008243ba0ba35827b">c4db_copyNamed</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> sourcePath, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> destinationName, const <a class="el" href="struct_c4_database_config2.html">C4DatabaseConfig2</a> *config, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
-<tr class="memdesc:ga8d11b72b401c465008243ba0ba35827b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies a prebuilt database from the given source path and places it in the destination directory, with the given name.  <a href="#ga8d11b72b401c465008243ba0ba35827b">More...</a><br /></td></tr>
-<tr class="separator:ga8d11b72b401c465008243ba0ba35827b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga579808387313afcd9c197e2375611b8f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga579808387313afcd9c197e2375611b8f">c4db_close</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga579808387313afcd9c197e2375611b8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes the database.  <a href="#ga579808387313afcd9c197e2375611b8f">More...</a><br /></td></tr>
-<tr class="separator:ga579808387313afcd9c197e2375611b8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3904d58b8b2fb7edc214e409853c454f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga3904d58b8b2fb7edc214e409853c454f">c4db_delete</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga3904d58b8b2fb7edc214e409853c454f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes the database and deletes the file/bundle.  <a href="#ga3904d58b8b2fb7edc214e409853c454f">More...</a><br /></td></tr>
-<tr class="separator:ga3904d58b8b2fb7edc214e409853c454f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga46b0156ac8d22a9f8f69197d2b28b068"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga46b0156ac8d22a9f8f69197d2b28b068">c4db_deleteNamed</a> (<a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> dbName, <a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> inDirectory, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga46b0156ac8d22a9f8f69197d2b28b068"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deletes the file(s) for the database with the given name in the given directory.  <a href="#ga46b0156ac8d22a9f8f69197d2b28b068">More...</a><br /></td></tr>
-<tr class="separator:ga46b0156ac8d22a9f8f69197d2b28b068"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga67b4b603acd3f5adf87983cdd141c07d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga67b4b603acd3f5adf87983cdd141c07d">c4db_rekey</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, const <a class="el" href="struct_c4_encryption_key.html">C4EncryptionKey</a> *newKey, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga67b4b603acd3f5adf87983cdd141c07d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Changes a database's encryption key (removing encryption if it's NULL.)  <a href="#ga67b4b603acd3f5adf87983cdd141c07d">More...</a><br /></td></tr>
-<tr class="separator:ga67b4b603acd3f5adf87983cdd141c07d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga812f36f955058159f238b499c36eb11d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga812f36f955058159f238b499c36eb11d">c4_shutdown</a> (<a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga812f36f955058159f238b499c36eb11d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes down the storage engines.  <a href="#ga812f36f955058159f238b499c36eb11d">More...</a><br /></td></tr>
-<tr class="separator:ga812f36f955058159f238b499c36eb11d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
-Accessors</h2></td></tr>
-<tr class="memitem:ga8a5d2748be7291c11e45429ab408f7e3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga8a5d2748be7291c11e45429ab408f7e3">c4db_getName</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *)</td></tr>
-<tr class="memdesc:ga8a5d2748be7291c11e45429ab408f7e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of the database, as given to <code>c4db_openNamed</code>.  <a href="#ga8a5d2748be7291c11e45429ab408f7e3">More...</a><br /></td></tr>
-<tr class="separator:ga8a5d2748be7291c11e45429ab408f7e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga60a8ac7a4a92925db340ebc24f932f7f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga60a8ac7a4a92925db340ebc24f932f7f">c4db_getPath</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *)</td></tr>
-<tr class="memdesc:ga60a8ac7a4a92925db340ebc24f932f7f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the path of the database.  <a href="#ga60a8ac7a4a92925db340ebc24f932f7f">More...</a><br /></td></tr>
-<tr class="separator:ga60a8ac7a4a92925db340ebc24f932f7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3f00e97f147623a93f75b3872fb26236"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="struct_c4_database_config2.html">C4DatabaseConfig2</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga3f00e97f147623a93f75b3872fb26236">c4db_getConfig2</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database)</td></tr>
-<tr class="memdesc:ga3f00e97f147623a93f75b3872fb26236"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the configuration the database was opened with.  <a href="#ga3f00e97f147623a93f75b3872fb26236">More...</a><br /></td></tr>
-<tr class="separator:ga3f00e97f147623a93f75b3872fb26236"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab428d1e8b3b3966cb19c3242fddc1129"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gab428d1e8b3b3966cb19c3242fddc1129">c4db_getDocumentCount</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database)</td></tr>
-<tr class="memdesc:gab428d1e8b3b3966cb19c3242fddc1129"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of (undeleted) documents in the database.  <a href="#gab428d1e8b3b3966cb19c3242fddc1129">More...</a><br /></td></tr>
-<tr class="separator:gab428d1e8b3b3966cb19c3242fddc1129"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab8f435e79ec606be7838044322b2ce39"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gab8f435e79ec606be7838044322b2ce39">c4db_getLastSequence</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database)</td></tr>
-<tr class="memdesc:gab8f435e79ec606be7838044322b2ce39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the latest sequence number allocated to a revision.  <a href="#gab8f435e79ec606be7838044322b2ce39">More...</a><br /></td></tr>
-<tr class="separator:gab8f435e79ec606be7838044322b2ce39"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga36213e705db6305f798dc6061a011b0d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga36213e705db6305f798dc6061a011b0d">c4db_mayHaveExpiration</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db)</td></tr>
-<tr class="memdesc:ga36213e705db6305f798dc6061a011b0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">A fast check that returns true if this database <em>may</em> have expiring documents.  <a href="#ga36213e705db6305f798dc6061a011b0d">More...</a><br /></td></tr>
-<tr class="separator:ga36213e705db6305f798dc6061a011b0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga86101a920e0f554dba23cf1e8b661095"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga86101a920e0f554dba23cf1e8b661095">c4db_nextDocExpiration</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database)</td></tr>
-<tr class="memdesc:ga86101a920e0f554dba23cf1e8b661095"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the timestamp at which the next document expiration should take place, or 0 if there are no documents with expiration times.  <a href="#ga86101a920e0f554dba23cf1e8b661095">More...</a><br /></td></tr>
-<tr class="separator:ga86101a920e0f554dba23cf1e8b661095"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga54162e9eac2f466d1ba329f5d8fa879b"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga54162e9eac2f466d1ba329f5d8fa879b">c4db_purgeExpiredDocs</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db, <a class="el" href="struct_c4_error.html">C4Error</a> *)</td></tr>
-<tr class="memdesc:ga54162e9eac2f466d1ba329f5d8fa879b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Purges all documents that have expired.  <a href="#ga54162e9eac2f466d1ba329f5d8fa879b">More...</a><br /></td></tr>
-<tr class="separator:ga54162e9eac2f466d1ba329f5d8fa879b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3aede5cf1a8fb47746e6851a5b2e5ee9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga3aede5cf1a8fb47746e6851a5b2e5ee9">c4db_startHousekeeping</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db)</td></tr>
-<tr class="memdesc:ga3aede5cf1a8fb47746e6851a5b2e5ee9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Starts a background task that automatically purges expired documents.  <a href="#ga3aede5cf1a8fb47746e6851a5b2e5ee9">More...</a><br /></td></tr>
-<tr class="separator:ga3aede5cf1a8fb47746e6851a5b2e5ee9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3518626c9503ce302e7df6b618c2f0e3"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga3518626c9503ce302e7df6b618c2f0e3">c4db_getMaxRevTreeDepth</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database)</td></tr>
-<tr class="memdesc:ga3518626c9503ce302e7df6b618c2f0e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of revisions of a document that are tracked.  <a href="#ga3518626c9503ce302e7df6b618c2f0e3">More...</a><br /></td></tr>
-<tr class="separator:ga3518626c9503ce302e7df6b618c2f0e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa79b7e61a7b8e272ab70782855bdc5b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gaa79b7e61a7b8e272ab70782855bdc5b4">c4db_setMaxRevTreeDepth</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, uint32_t maxRevTreeDepth)</td></tr>
-<tr class="memdesc:gaa79b7e61a7b8e272ab70782855bdc5b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configures the number of revisions of a document that are tracked.  <a href="#gaa79b7e61a7b8e272ab70782855bdc5b4">More...</a><br /></td></tr>
-<tr class="separator:gaa79b7e61a7b8e272ab70782855bdc5b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaafd52f484b5d2fff22ed8729442e2972"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gaafd52f484b5d2fff22ed8729442e2972">c4db_getUUIDs</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="struct_c4_u_u_i_d.html">C4UUID</a> *publicUUID, <a class="el" href="struct_c4_u_u_i_d.html">C4UUID</a> *privateUUID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gaafd52f484b5d2fff22ed8729442e2972"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the database's public and/or private UUIDs.  <a href="#gaafd52f484b5d2fff22ed8729442e2972">More...</a><br /></td></tr>
-<tr class="separator:gaafd52f484b5d2fff22ed8729442e2972"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga01fbe2ea3f7c5ee58eee705336799631"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga01fbe2ea3f7c5ee58eee705336799631">c4db_setExtraInfo</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="struct_c4_extra_info.html">C4ExtraInfo</a>)</td></tr>
-<tr class="memdesc:ga01fbe2ea3f7c5ee58eee705336799631"><td class="mdescLeft">&#160;</td><td class="mdescRight">Associates an arbitrary pointer with this database instance, for client use.  <a href="#ga01fbe2ea3f7c5ee58eee705336799631">More...</a><br /></td></tr>
-<tr class="separator:ga01fbe2ea3f7c5ee58eee705336799631"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga07216ea0f9e2ff23427cb3ffdb827b1c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_extra_info.html">C4ExtraInfo</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga07216ea0f9e2ff23427cb3ffdb827b1c">c4db_getExtraInfo</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database)</td></tr>
-<tr class="memdesc:ga07216ea0f9e2ff23427cb3ffdb827b1c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the <a class="el" href="struct_c4_extra_info.html">C4ExtraInfo</a> associated with this db reference.  <a href="#ga07216ea0f9e2ff23427cb3ffdb827b1c">More...</a><br /></td></tr>
-<tr class="separator:ga07216ea0f9e2ff23427cb3ffdb827b1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga30623fe81a410cb1931377dd9c81f378"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_compat_8h.html#a172b88317c4e1248e156ca77731f1650">CBL_CORE_API</a> const char *const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga30623fe81a410cb1931377dd9c81f378">kC4DatabaseFilenameExtension</a></td></tr>
+<tr class="memdesc:ga30623fe81a410cb1931377dd9c81f378"><td class="mdescLeft">&#160;</td><td class="mdescRight">Filename extension of databases &ndash; ".cblite2".  <a href="#ga30623fe81a410cb1931377dd9c81f378">More...</a><br /></td></tr>
+<tr class="separator:ga30623fe81a410cb1931377dd9c81f378"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Database Maintenance</h2></td></tr>
-<tr class="memitem:ga7bfa7da5d827fee0633ff0bbd949d361"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga7bfa7da5d827fee0633ff0bbd949d361">C4MaintenanceType</a> : uint32_t { <a class="el" href="group___database.html#gga7bfa7da5d827fee0633ff0bbd949d361aeab9914a3b23d8514d6d0fa95b6fe188">kC4Compact</a>, 
+<tr class="memitem:ga7bfa7da5d827fee0633ff0bbd949d361"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga7bfa7da5d827fee0633ff0bbd949d361">C4MaintenanceType</a> : uint32_t { <br />
+&#160;&#160;<a class="el" href="group___database.html#gga7bfa7da5d827fee0633ff0bbd949d361aeab9914a3b23d8514d6d0fa95b6fe188">kC4Compact</a>, 
 <a class="el" href="group___database.html#gga7bfa7da5d827fee0633ff0bbd949d361a045f0f639f5aefdc97f59cc966d89cbd">kC4Reindex</a>, 
-<a class="el" href="group___database.html#gga7bfa7da5d827fee0633ff0bbd949d361a629b18f4305dbeb838a65ef0649c4abe">kC4IntegrityCheck</a>
+<a class="el" href="group___database.html#gga7bfa7da5d827fee0633ff0bbd949d361a629b18f4305dbeb838a65ef0649c4abe">kC4IntegrityCheck</a>, 
+<a class="el" href="group___database.html#gga7bfa7da5d827fee0633ff0bbd949d361ad922e61f37b6cfbc2df2eb75f1e56496">kC4QuickOptimize</a>, 
+<br />
+&#160;&#160;<a class="el" href="group___database.html#gga7bfa7da5d827fee0633ff0bbd949d361ada7f47c31aa5b945b03f251fba9181c0">kC4FullOptimize</a>
+<br />
  }</td></tr>
 <tr class="memdesc:ga7bfa7da5d827fee0633ff0bbd949d361"><td class="mdescLeft">&#160;</td><td class="mdescRight">Types of maintenance that <a class="el" href="group___database.html#ga2d553c36278b6be38e1ad58479b14237">c4db_maintenance</a> can perform.  <a href="group___database.html#ga7bfa7da5d827fee0633ff0bbd949d361">More...</a><br /></td></tr>
 <tr class="separator:ga7bfa7da5d827fee0633ff0bbd949d361"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2d553c36278b6be38e1ad58479b14237"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga2d553c36278b6be38e1ad58479b14237">c4db_maintenance</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="group___database.html#ga7bfa7da5d827fee0633ff0bbd949d361">C4MaintenanceType</a> type, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga2d553c36278b6be38e1ad58479b14237"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs database maintenance.  <a href="#ga2d553c36278b6be38e1ad58479b14237">More...</a><br /></td></tr>
-<tr class="separator:ga2d553c36278b6be38e1ad58479b14237"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7d2a4ae39ae3d6732833058bd25d2bfe"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga7d2a4ae39ae3d6732833058bd25d2bfe">c4db_compact</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="separator:ga7d2a4ae39ae3d6732833058bd25d2bfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
-Transactions</h2></td></tr>
-<tr class="memitem:gad6cc27a1a6fd25a43f4712555ba2eac7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#gad6cc27a1a6fd25a43f4712555ba2eac7">c4db_beginTransaction</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:gad6cc27a1a6fd25a43f4712555ba2eac7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Begins a transaction.  <a href="#gad6cc27a1a6fd25a43f4712555ba2eac7">More...</a><br /></td></tr>
-<tr class="separator:gad6cc27a1a6fd25a43f4712555ba2eac7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga47b07e501132be828a30371a4c5df2a7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga47b07e501132be828a30371a4c5df2a7">c4db_endTransaction</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, bool commit, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
-<tr class="memdesc:ga47b07e501132be828a30371a4c5df2a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Commits or aborts a transaction.  <a href="#ga47b07e501132be828a30371a4c5df2a7">More...</a><br /></td></tr>
-<tr class="separator:ga47b07e501132be828a30371a4c5df2a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga94d51d79bff6970adbb87d367a66a487"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___database.html#ga94d51d79bff6970adbb87d367a66a487">c4db_isInTransaction</a> (<a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database)</td></tr>
-<tr class="memdesc:ga94d51d79bff6970adbb87d367a66a487"><td class="mdescLeft">&#160;</td><td class="mdescRight">Is a transaction active?  <a href="#ga94d51d79bff6970adbb87d367a66a487">More...</a><br /></td></tr>
-<tr class="separator:ga94d51d79bff6970adbb87d367a66a487"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
@@ -235,12 +228,13 @@ Transactions</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa0c0fc47f60df2b2e6e6aeba34d3cbc25"></a>kC4DB_ReadOnly&#160;</td><td class="fielddoc"><p>Open file read-only. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa951dc67b5ed677e9d2bed7d2621ed1fc"></a>kC4DB_AutoCompact&#160;</td><td class="fielddoc"><p>Enable auto-compaction. </p>
+<tr><td class="fieldname"><a id="gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa951dc67b5ed677e9d2bed7d2621ed1fc"></a>kC4DB_AutoCompact&#160;</td><td class="fielddoc"><p>Enable auto-compaction [UNIMPLEMENTED]. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa5d66fc312369e7d648fd18394ef081ca"></a>kC4DB_SharedKeys&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="gga3dbc483ea55d3e717ebb4f8cbcc7ec9fa3d6fe45c4aec2dceceed79f0c2730420"></a>kC4DB_VersionVectors&#160;</td><td class="fielddoc"><p>Upgrade DB to version vectors instead of rev trees [EXPERIMENTAL]. </p>
+</td></tr>
 <tr><td class="fieldname"><a id="gga3dbc483ea55d3e717ebb4f8cbcc7ec9fad95a171aa96612f3418c39a0255b9198"></a>kC4DB_NoUpgrade&#160;</td><td class="fielddoc"><p>Disable upgrading an older-version database. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="gga3dbc483ea55d3e717ebb4f8cbcc7ec9faf2ba8d31f2a03e75cd83e33d25db6c70"></a>kC4DB_NonObservable&#160;</td><td class="fielddoc"><p>Disable c4DatabaseObserver. </p>
+<tr><td class="fieldname"><a id="gga3dbc483ea55d3e717ebb4f8cbcc7ec9faf2ba8d31f2a03e75cd83e33d25db6c70"></a>kC4DB_NonObservable&#160;</td><td class="fielddoc"><p>Disable database/collection observers, for slightly faster writes. </p>
 </td></tr>
 </table>
 
@@ -262,7 +256,7 @@ Transactions</h2></td></tr>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga7fc3558f0da3832690e8a085263164b9acaeddafbafd730542991749e43ee966e"></a>kC4EncryptionNone&#160;</td><td class="fielddoc"><p>No encryption (default) </p>
 </td></tr>
-<tr><td class="fieldname"><a id="gga7fc3558f0da3832690e8a085263164b9a89e2ac186dfb8b2aefe408f62dfb3be1"></a>kC4EncryptionAES256&#160;</td><td class="fielddoc"><p>AES with 256-bit key. </p>
+<tr><td class="fieldname"><a id="gga7fc3558f0da3832690e8a085263164b9a89e2ac186dfb8b2aefe408f62dfb3be1"></a>kC4EncryptionAES256&#160;</td><td class="fielddoc"><p>AES with 256-bit key [ENTERPRISE EDITION ONLY]. </p>
 </td></tr>
 </table>
 
@@ -300,13 +294,21 @@ Transactions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Types of maintenance that <a class="el" href="group___database.html#ga2d553c36278b6be38e1ad58479b14237">c4db_maintenance</a> can perform. </p>
-<p>NOTE: Enum values must match the ones in DataFile::MaintenanceType </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga7bfa7da5d827fee0633ff0bbd949d361aeab9914a3b23d8514d6d0fa95b6fe188"></a>kC4Compact&#160;</td><td class="fielddoc"><p>Compact the database file and garbage-collect attachments. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga7bfa7da5d827fee0633ff0bbd949d361aeab9914a3b23d8514d6d0fa95b6fe188"></a>kC4Compact&#160;</td><td class="fielddoc"><p>Shrinks the database file by removing any empty pages, and deletes blobs that are no longer referenced by any documents. </p>
+<p>(Runs SQLite <code>PRAGMA incremental_vacuum; PRAGMA wal_checkpoint(TRUNCATE)</code>.) </p>
 </td></tr>
-<tr><td class="fieldname"><a id="gga7bfa7da5d827fee0633ff0bbd949d361a045f0f639f5aefdc97f59cc966d89cbd"></a>kC4Reindex&#160;</td><td class="fielddoc"><p>Rebuild indexes (not normally needed) </p>
+<tr><td class="fieldname"><a id="gga7bfa7da5d827fee0633ff0bbd949d361a045f0f639f5aefdc97f59cc966d89cbd"></a>kC4Reindex&#160;</td><td class="fielddoc"><p>Rebuilds indexes from scratch. </p>
+<p>Normally never needed, but can be used to help diagnose/troubleshoot cases of database corruption if only indexes are affected. (Runs SQLite <code>REINDEX</code>.) </p>
 </td></tr>
-<tr><td class="fieldname"><a id="gga7bfa7da5d827fee0633ff0bbd949d361a629b18f4305dbeb838a65ef0649c4abe"></a>kC4IntegrityCheck&#160;</td><td class="fielddoc"><p>Check for database corruption, returning an error if it finds any. </p>
+<tr><td class="fieldname"><a id="gga7bfa7da5d827fee0633ff0bbd949d361a629b18f4305dbeb838a65ef0649c4abe"></a>kC4IntegrityCheck&#160;</td><td class="fielddoc"><p>Checks for database corruption, as might be caused by a damaged filesystem, or memory corruption. </p>
+<p>(Runs SQLite <code>PRAGMA integrity_check</code>.) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga7bfa7da5d827fee0633ff0bbd949d361ad922e61f37b6cfbc2df2eb75f1e56496"></a>kC4QuickOptimize&#160;</td><td class="fielddoc"><p>Quickly updates database statistics that may help optimize queries that have been run by this Database since it was opened. </p>
+<p>The more queries that have been run, the more effective this will be, but it tries to do its work quickly by scanning only portions of indexes. This operation is also performed automatically by <a class="el" href="group___database.html#ga579808387313afcd9c197e2375611b8f">c4db_close</a>. (Runs SQLite <code>PRAGMA analysis_limit=400; PRAGMA optimize</code>.) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga7bfa7da5d827fee0633ff0bbd949d361ada7f47c31aa5b945b03f251fba9181c0"></a>kC4FullOptimize&#160;</td><td class="fielddoc"><p>Fully scans all indexes to gather database statistics that help optimize queries. </p>
+<p>This may take some time, depending on the size of the indexes, but it doesn't have to be redone unless the database changes drastically, or new indexes are created. (Runs SQLite <code>PRAGMA analysis_limit=0; ANALYZE</code>.) </p>
 </td></tr>
 </table>
 
@@ -343,7 +345,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">bool c4db_beginTransaction </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
@@ -374,7 +376,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">bool c4db_close </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
@@ -393,34 +395,6 @@ Transactions</h2></td></tr>
 
 <p>Closes the database. </p>
 <p>Does not free the handle, although any operation other than <a class="el" href="group___base.html#ga140327445ff91ebb34a8cc594b8dd686">c4db_release()</a> will fail with an error. </p>
-
-</div>
-</div>
-<a id="ga7d2a4ae39ae3d6732833058bd25d2bfe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7d2a4ae39ae3d6732833058bd25d2bfe">&#9670;&nbsp;</a></span>c4db_compact()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool c4db_compact </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>database</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
-          <td class="paramname"><em>outError</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
 
 </div>
 </div>
@@ -485,7 +459,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">bool c4db_delete </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
@@ -553,7 +527,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">bool c4db_endTransaction </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
@@ -620,7 +594,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">const <a class="el" href="struct_c4_database_config2.html">C4DatabaseConfig2</a>* c4db_getConfig2 </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em></td><td>)</td>
           <td></td>
         </tr>
@@ -640,7 +614,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">uint64_t c4db_getDocumentCount </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em></td><td>)</td>
           <td></td>
         </tr>
@@ -660,14 +634,14 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="struct_c4_extra_info.html">C4ExtraInfo</a> c4db_getExtraInfo </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Returns the <a class="el" href="struct_c4_extra_info.html">C4ExtraInfo</a> associated with this db reference. </p>
+<p>Returns the <a class="el" href="struct_c4_extra_info.html" title="Client-defined metadata that can be associated with some objects like C4Database.">C4ExtraInfo</a> associated with this db reference. </p>
 
 </div>
 </div>
@@ -680,7 +654,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a> c4db_getLastSequence </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em></td><td>)</td>
           <td></td>
         </tr>
@@ -688,27 +662,6 @@ Transactions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the latest sequence number allocated to a revision. </p>
-
-</div>
-</div>
-<a id="ga3518626c9503ce302e7df6b618c2f0e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3518626c9503ce302e7df6b618c2f0e3">&#9670;&nbsp;</a></span>c4db_getMaxRevTreeDepth()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t c4db_getMaxRevTreeDepth </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>database</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Returns the number of revisions of a document that are tracked. </p>
-<p>(Defaults to 20.) </p>
 
 </div>
 </div>
@@ -721,7 +674,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> c4db_getName </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -742,7 +695,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="group___base.html#ga9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4db_getPath </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
         </tr>
@@ -762,7 +715,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">bool c4db_getUUIDs </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
@@ -805,7 +758,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">bool c4db_isInTransaction </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em></td><td>)</td>
           <td></td>
         </tr>
@@ -825,7 +778,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">bool c4db_maintenance </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
@@ -849,27 +802,7 @@ Transactions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Performs database maintenance. </p>
-
-</div>
-</div>
-<a id="ga36213e705db6305f798dc6061a011b0d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga36213e705db6305f798dc6061a011b0d">&#9670;&nbsp;</a></span>c4db_mayHaveExpiration()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool c4db_mayHaveExpiration </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>db</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>A fast check that returns true if this database <em>may</em> have expiring documents. </p>
-<p>(The implementation actually checks whether any document in this database has ever had an expiration set.) </p>
+<p>For more detail, see the descriptions of the <a class="el" href="group___database.html#ga7bfa7da5d827fee0633ff0bbd949d361">C4MaintenanceType</a> enum constants. </p>
 
 </div>
 </div>
@@ -882,7 +815,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="group___base.html#ga4e9a8e237399a3869086cae270783476">C4Timestamp</a> c4db_nextDocExpiration </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em></td><td>)</td>
           <td></td>
         </tr>
@@ -900,9 +833,9 @@ Transactions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a>* c4db_openAgain </td>
+          <td class="memname"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a>* c4db_openAgain </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em>, </td>
         </tr>
         <tr>
@@ -931,7 +864,7 @@ Transactions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a>* c4db_openNamed </td>
+          <td class="memname"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a>* c4db_openNamed </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
           <td class="paramname"><em>name</em>, </td>
@@ -969,7 +902,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">int64_t c4db_purgeExpiredDocs </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>db</em>, </td>
         </tr>
         <tr>
@@ -987,6 +920,7 @@ Transactions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Purges all documents that have expired. </p>
+<dl class="section warning"><dt>Warning</dt><dd>This is generally unnecessary, since the background housekeeping task will do it. You might want to call this if you require the purge to happen synchronously, just before copying the database file or something like that.) </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>The number of documents purged, or -1 on error. </dd></dl>
 
 </div>
@@ -1000,7 +934,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">bool c4db_rekey </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
@@ -1036,7 +970,7 @@ Transactions</h2></td></tr>
         <tr>
           <td class="memname">void c4db_setExtraInfo </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="group___base.html#gae046b9267a473fdc31471b022fc94676">C4Database</a> *&#160;</td>
           <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
@@ -1055,58 +989,7 @@ Transactions</h2></td></tr>
 
 <p>Associates an arbitrary pointer with this database instance, for client use. </p>
 <p>For example, this could be a reference to the higher-level object wrapping the database.</p>
-<p>The <code>destructor</code> field of the <code><a class="el" href="struct_c4_extra_info.html">C4ExtraInfo</a></code> can be used to provide a function that will be called when the C4Database is freed, so it can free any resources associated with the pointer. </p>
-
-</div>
-</div>
-<a id="gaa79b7e61a7b8e272ab70782855bdc5b4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa79b7e61a7b8e272ab70782855bdc5b4">&#9670;&nbsp;</a></span>c4db_setMaxRevTreeDepth()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void c4db_setMaxRevTreeDepth </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>database</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>maxRevTreeDepth</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Configures the number of revisions of a document that are tracked. </p>
-
-</div>
-</div>
-<a id="ga3aede5cf1a8fb47746e6851a5b2e5ee9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3aede5cf1a8fb47746e6851a5b2e5ee9">&#9670;&nbsp;</a></span>c4db_startHousekeeping()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool c4db_startHousekeeping </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group___base.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>db</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Starts a background task that automatically purges expired documents. </p>
-<dl class="section return"><dt>Returns</dt><dd>True if the task started, false if it couldn't (i.e. database is read-only.) </dd></dl>
+<p>The <code>destructor</code> field of the <code><a class="el" href="struct_c4_extra_info.html" title="Client-defined metadata that can be associated with some objects like C4Database.">C4ExtraInfo</a></code> can be used to provide a function that will be called when the C4Database is freed, so it can free any resources associated with the pointer. </p>
 
 </div>
 </div>

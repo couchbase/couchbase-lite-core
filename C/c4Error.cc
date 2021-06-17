@@ -17,6 +17,7 @@
 //
 
 #include "c4Base.h"
+#include "c4Base.hh"
 #include "c4Internal.hh"
 #include "c4ExceptionUtils.hh"
 #include "Backtrace.hh"
@@ -35,7 +36,7 @@ using namespace litecore;
 using Backtrace = fleece::Backtrace;
 
 
-namespace c4Internal {
+namespace litecore {
 
     static_assert((int)kC4MaxErrorDomainPlus1 == (int)error::NumDomainsPlus1,
                   "C4 error domains are not in sync with C++ ones");
@@ -109,7 +110,7 @@ namespace c4Internal {
         /// Returns the ErrorInfo associated with a C4Error.
         /// (We have to return a copy; returning a reference would not be thread-safe.)
         __cold
-        optional<ErrorInfo> copy(C4Error &error) noexcept {
+        optional<ErrorInfo> copy(C4Error error) noexcept {
             if (error.internal_info == 0)
                 return nullopt;
             lock_guard<mutex> lock(_mutex);
@@ -126,98 +127,6 @@ namespace c4Internal {
         mutex            _mutex;             ///< mutex guarding the above
     };
 
-
-#pragma mark - INTERNAL API FOR CONVERTING EXCEPTIONS TO C4ERRORS:
-
-
-    // (These are declared in c4ExceptionUtils.hh)
-
-    __cold
-    void recordException(const exception &x, C4Error* outError) noexcept {
-        if (outError) {
-            error e = error::convertException(x).standardized();
-            *outError = ErrorTable::instance().makeError((C4ErrorDomain)e.domain, e.code,
-                                                         {e.what(), e.backtrace});
-        }
-    }
-
-
-    __cold
-    void recordException(C4Error* outError) noexcept {
-        if (outError) {
-            // This rigamarole recovers the current exception being thrown...
-            auto xp = std::current_exception();
-            if (xp) {
-                try {
-                    std::rethrow_exception(xp);
-                } catch(const std::exception& x) {
-                    // Now we have the exception, so we can record it in outError:
-                    recordException(x, outError);
-                    return;
-                } catch (...) { }
-            }
-            *outError = ErrorTable::instance().makeError(
-                                  LiteCoreDomain, kC4ErrorUnexpectedError,
-                                  {"Unknown C++ exception", Backtrace::capture(1)});
-        }
-    }
-
-}
-
-using namespace c4Internal;
-
-
-#pragma mark - PUBLIC API FOR CREATING C4ERRORS:
-
-
-__cold
-C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) noexcept {
-    ErrorInfo info;
-    if (message.size > 0)
-        info.message = string(slice(message));
-    return ErrorTable::instance().makeError(domain, code, move(info));
-}
-
-
-__cold
-C4Error c4error_printf(C4ErrorDomain domain, int code, const char *format, ...) noexcept {
-    va_list args;
-    va_start(args, format);
-    C4Error error = ErrorTable::instance().vmakeError(domain, code, format, args);
-    va_end(args);
-    return error;
-}
-
-
-__cold
-C4Error c4error_vprintf(C4ErrorDomain domain, int code, const char *format, va_list args) noexcept {
-    return ErrorTable::instance().vmakeError(domain, code, format, args);
-}
-
-
-__cold
-void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) noexcept {
-    if (outError)
-        *outError = ErrorTable::instance().makeError(domain, code, {string(slice(message))});
-}
-
-
-#pragma mark - PUBLIC ERROR ACCESSORS:
-
-
-__cold
-static string getErrorMessage(C4Error err) {
-    if (err.code == 0) {
-        return "";
-    } else if (err.domain < 1 || err.domain >= (C4ErrorDomain)error::NumDomainsPlus1) {
-        return "invalid C4Error (unknown domain)";
-    } else if (auto info = ErrorTable::instance().copy(err); info && !info->message.empty()) {
-        // Custom message referenced in info field
-        return info->message;
-    } else {
-        // No; get the regular error message for this domain/code:
-        return error((error::Domain)err.domain, err.code).what();
-    }
 }
 
 
@@ -269,39 +178,197 @@ static const char* getErrorName(C4Error err) {
 }
 
 
+#pragma mark - PUBLIC API:
+
+
+__cold
+C4Error C4Error::make(C4ErrorDomain domain, int code, slice message) {
+    ErrorInfo info;
+    if (message.size > 0)
+        info.message = string(slice(message));
+    return ErrorTable::instance().makeError(domain, code, move(info));
+}
+
+
+__cold
+C4Error C4Error::vprintf(C4ErrorDomain domain, int code, const char *format, va_list args) {
+    return ErrorTable::instance().vmakeError(domain, code, format, args);
+}
+
+
+__cold
+C4Error C4Error::printf(C4ErrorDomain domain, int code, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    auto err = vprintf(domain, code, format, args);
+    va_end(args);
+    return err;
+}
+
+
+__cold
+void C4Error::set(C4Error* outError, C4ErrorDomain domain, int code, const char *format, ...) {
+    if (outError) {
+        if (format && format[0]) {
+            va_list args;
+            va_start(args, format);
+            *outError = vprintf(domain, code, format, args);
+            va_end(args);
+        } else {
+            *outError = make(domain, code);
+        }
+    }
+}
+
+
+__cold
+C4Error C4Error::fromException(const exception &x) noexcept {
+    error e = error::convertException(x).standardized();
+    return ErrorTable::instance().makeError((C4ErrorDomain)e.domain, e.code,
+                                            {e.what(), e.backtrace});
+}
+
+
+__cold
+C4Error C4Error::fromCurrentException() noexcept {
+    // This rigamarole recovers the current exception being thrown...
+    auto xp = std::current_exception();
+    if (xp) {
+        try {
+            std::rethrow_exception(xp);
+        } catch(const std::exception& x) {
+            // Now we have the exception, so we can record it in outError:
+            return C4Error::fromException(x);
+        } catch (...) { }
+    }
+    return ErrorTable::instance().makeError(
+                                            LiteCoreDomain, kC4ErrorUnexpectedError,
+                                            {"Unknown C++ exception", Backtrace::capture(1)});
+}
+
+
+[[noreturn]] __cold
+void C4Error::raise() const {
+    if (auto info = ErrorTable::instance().copy(*this); info) {
+        error e(error::Domain(domain), code, info->message);
+        e.backtrace = info->backtrace;
+        throw e;
+    } else {
+        error::_throw(error::Domain(domain), code);
+    }
+}
+
+
+[[noreturn]] __cold
+void C4Error::raise(C4ErrorDomain domain, int code, const char *format, ...) {
+    std::string message;
+    if (format) {
+        va_list args;
+        va_start(args, format);
+        message = vformat(format, args);
+        va_end(args);
+    }
+    error{error::Domain(domain), code, message}._throw(1);
+}
+
+
+__cold
+string C4Error::message() const {
+    if (code == 0) {
+        return "";
+    } else if (domain < 1 || domain >= (C4ErrorDomain)error::NumDomainsPlus1) {
+        return "invalid C4Error (unknown domain)";
+    } else if (auto info = ErrorTable::instance().copy(*this); info && !info->message.empty()) {
+        // Custom message referenced in info field
+        return info->message;
+    } else {
+        // No; get the regular error message for this domain/code:
+        return error((error::Domain)domain, code).what();
+    }
+}
+
+
+__cold
+string C4Error::description() const {
+    if (code == 0)
+        return "No error";
+    const char *errName = getErrorName(*this);
+    stringstream str;
+    str << error::nameOfDomain((error::Domain)domain) << " ";
+    if (errName)
+        str << errName;
+    else
+        str << "error " << code;
+    str << ", \"" << message() << "\"";
+    return str.str();
+}
+
+
+__cold
+string C4Error::backtrace() const {
+    if (auto info = ErrorTable::instance().copy(*this); info && info->backtrace)
+        return info->backtrace->toString();
+    return "";
+}
+
+
+__cold bool C4Error::getCaptureBacktraces(void) noexcept    {return error::sCaptureBacktraces;}
+__cold void C4Error::setCaptureBacktraces(bool c) noexcept  {error::sCaptureBacktraces = c;}
+
+
+#pragma mark - PUBLIC C API:
+
+
+__cold
+C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) noexcept {
+    return C4Error::make(domain, code, message);
+}
+
+
+__cold
+C4Error c4error_printf(C4ErrorDomain domain, int code, const char *format, ...) noexcept {
+    va_list args;
+    va_start(args, format);
+    C4Error error = C4Error::vprintf(domain, code, format, args);
+    va_end(args);
+    return error;
+}
+
+
+__cold
+C4Error c4error_vprintf(C4ErrorDomain domain, int code, const char *format, va_list args) noexcept {
+    return C4Error::vprintf(domain, code, format, args);
+}
+
+
+__cold
+void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) noexcept {
+    if (outError)
+        *outError = ErrorTable::instance().makeError(domain, code, {string(slice(message))});
+}
+
+
 __cold
 C4SliceResult c4error_getMessage(C4Error err) noexcept {
-    if (string msg = getErrorMessage(err); msg.empty())
+    if (string msg = err.message(); msg.empty())
         return {};
     else
-        return sliceResult(msg);
+        return toSliceResult(msg);
 }
 
 
 __cold
 C4SliceResult c4error_getDescription(C4Error error) noexcept {
-    if (error.code == 0)
-        return sliceResult("No error");
-    const char *errName = getErrorName(error);
-    stringstream str;
-    str << error::nameOfDomain((error::Domain)error.domain) << " ";
-    if (errName)
-        str << errName;
-    else
-        str << "error " << error.code;
-    str << ", \"" << getErrorMessage(error) << "\"";
-    return sliceResult(str.str());
+    return toSliceResult(error.description());
 }
 
 
 __cold
 char* c4error_getDescriptionC(C4Error error, char buffer[], size_t bufferSize) noexcept {
-    C4SliceResult msg = c4error_getDescription(error);
-    auto len = min(msg.size, bufferSize-1);
-    if (msg.buf)
-        memcpy(buffer, msg.buf, len);
+    string msg = error.description();
+    auto len = min(msg.size(), bufferSize-1);
+    memcpy(buffer, msg.data(), len);
     buffer[len] = '\0';
-    c4slice_free(msg);
     return buffer;
 }
 
@@ -312,9 +379,10 @@ __cold void c4error_setCaptureBacktraces(bool c) noexcept       {error::sCapture
 
 __cold
 C4StringResult c4error_getBacktrace(C4Error error) noexcept {
-    if (auto info = ErrorTable::instance().copy(error); info && info->backtrace)
-        return sliceResult(info->backtrace->toString());
-    return {};
+    if (string bt = error.backtrace(); bt.empty())
+        return {};
+    else
+        return toSliceResult(bt);
 }
 
 
@@ -326,7 +394,7 @@ using ErrorSet = const int* [kC4MaxErrorDomainPlus1];
 
 
 __cold
-static bool errorIsInSet(C4Error err, ErrorSet set) {
+static bool errorIsInSet(const C4Error &err, ErrorSet set) {
     if (err.code != 0 && (unsigned)err.domain < kC4MaxErrorDomainPlus1) {
         const int *pCode = set[err.domain];
         if (pCode) {
@@ -340,7 +408,7 @@ static bool errorIsInSet(C4Error err, ErrorSet set) {
 
 
 __cold
-bool c4error_mayBeTransient(C4Error err) noexcept {
+bool C4Error::mayBeTransient() const noexcept {
     static CodeList kTransientPOSIX = {
         ENETRESET, ECONNABORTED, ECONNRESET, ETIMEDOUT, ECONNREFUSED, 0};
 
@@ -365,12 +433,12 @@ bool c4error_mayBeTransient(C4Error err) noexcept {
         nullptr,
         kTransientNetwork,
         kTransientWebSocket};
-    return errorIsInSet(err, kTransient);
+    return errorIsInSet(*this, kTransient);
 }
 
 
 __cold
-bool c4error_mayBeNetworkDependent(C4Error err) noexcept {
+bool C4Error::mayBeNetworkDependent() const noexcept {
     static CodeList kUnreachablePOSIX = {
         ENETDOWN, ENETUNREACH, ENOTCONN, ETIMEDOUT,
 #ifndef _MSC_VER
@@ -391,5 +459,10 @@ bool c4error_mayBeNetworkDependent(C4Error err) noexcept {
         nullptr,
         kUnreachableNetwork,
         nullptr};
-    return errorIsInSet(err, kUnreachable);
+    return errorIsInSet(*this, kUnreachable);
 }
+
+
+__cold bool c4error_mayBeTransient(C4Error e) noexcept          {return e.mayBeTransient();}
+__cold bool c4error_mayBeNetworkDependent(C4Error e) noexcept   {return e.mayBeNetworkDependent();}
+

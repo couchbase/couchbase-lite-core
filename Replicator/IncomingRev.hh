@@ -21,7 +21,6 @@
 #include "ReplicatorTypes.hh"
 #include "RemoteSequence.hh"
 #include "Timer.hh"
-#include "c4.hh"
 #include <atomic>
 #include <vector>
 
@@ -31,12 +30,13 @@ namespace litecore { namespace repl {
 
 
     /** Manages pulling a single document. */
-    class IncomingRev : public Worker {
+    class IncomingRev final : public Worker {
     public:
         IncomingRev(Puller* NONNULL);
 
         // Called by the Puller:
         void handleRev(blip::MessageIn* revMessage NONNULL);
+        void handleRevokedDoc(RevToInsert*);
         RevToInsert* rev() const                {return _rev;}
         RemoteSequence remoteSequence() const   {return _remoteSequence;}
         bool wasProvisionallyInserted() const   {return _provisionallyInserted;}
@@ -52,12 +52,14 @@ namespace litecore { namespace repl {
         ActivityLevel computeActivityLevel() const override;
 
     private:
+        void reinitialize();
         void parseAndInsert(alloc_slice jsonBody);
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);
         fleece::Doc parseBody(alloc_slice jsonBody);
         void processFleeceBody(fleece::Doc);
+        bool performPullValidation(fleece::Dict body);
         void insertRevision();
         void _revisionInserted();
         void failWithError(C4Error);
@@ -84,7 +86,7 @@ namespace litecore { namespace repl {
         // blob stuff:
         std::vector<PendingBlob>    _pendingBlobs;
         std::vector<PendingBlob>::const_iterator _blob;
-        c4::ref<C4WriteStream>      _writer;
+        std::unique_ptr<C4WriteStream> _writer;
         uint64_t                    _blobBytesWritten;
         actor::Timer::time          _lastNotifyTime;
     };

@@ -208,6 +208,7 @@ target_include_directories(
     LiteCoreWebSocket PRIVATE
     C
     C/include
+    C/Cpp_include
     Crypto
     LiteCore/Support
     Networking
@@ -266,6 +267,7 @@ target_include_directories(
     LiteCore/Support
     C
     C/include
+    C/Cpp_include
     Crypto
     Networking
     Networking/BLIP/
@@ -317,6 +319,7 @@ endif()
 target_include_directories(
     LiteCore INTERFACE
     C/include
+    C/Cpp_include
 )
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 target_link_libraries(

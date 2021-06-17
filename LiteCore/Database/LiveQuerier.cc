@@ -19,7 +19,7 @@
 #include "LiveQuerier.hh"
 #include "BackgroundDB.hh"
 #include "DataFile.hh"
-#include "Database.hh"
+#include "DatabaseImpl.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include <inttypes.h>
@@ -40,7 +40,7 @@ namespace litecore {
     static constexpr delay_t kLongDelay    = 500ms;
 
 
-    LiveQuerier::LiveQuerier(c4Internal::Database *db,
+    LiveQuerier::LiveQuerier(DatabaseImpl *db,
                              Query *query,
                              bool continuous,
                              Delegate *delegate)
@@ -95,7 +95,7 @@ namespace litecore {
 
     void LiveQuerier::_stop() {
         if (_query) {
-            _backgroundDB->use([&](DataFile *df) {
+            _backgroundDB->dataFile().useLocked([&](DataFile *df) {
                 _query = nullptr;
                 _currentEnumerator = nullptr;
                 if (_continuous)
@@ -133,11 +133,11 @@ namespace litecore {
         Retained<QueryEnumerator> newQE;
         C4Error error = {};
         fleece::Stopwatch st;
-        _backgroundDB->use([&](DataFile *df) {
+        _backgroundDB->dataFile().useLocked([&](DataFile *df) {
             try {
                 // Create my own Query object associated with the Backgrounder's DataFile:
                 if (!_query) {
-                    _query = df->defaultKeyStore().compileQuery(_expression, _language);
+                    _query = df->compileQuery(_expression, _language);
                     if (_continuous)
                         _backgroundDB->addTransactionObserver(this);
                 }
@@ -148,7 +148,7 @@ namespace litecore {
         auto time = st.elapsedMS();
 
         if (!newQE)
-            logError("Query failed with error %s", c4error_descriptionStr(error));
+            logError("Query failed with error %s", error.description().c_str());
 
         if (_continuous) {
             if (newQE) {

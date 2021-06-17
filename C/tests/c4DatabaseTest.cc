@@ -132,6 +132,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!thr
 
     static constexpr slice kTestBundleName = "cbl_core_test_bundle";
     C4Error error;
+
+    {
+        // Invalid db name:
+        ExpectingExceptions x;
+        CHECK(c4db_openNamed(""_sl, &config, &error) == nullptr);
+        CHECK(error == C4Error{LiteCoreDomain, kC4ErrorInvalidParameter});
+    }
+
     if (!c4db_deleteNamed(kTestBundleName, config.parentDirectory, &error))
         REQUIRE(error.code == 0);
     auto bundle = c4db_openNamed(kTestBundleName, &config, ERROR_INFO());
@@ -413,18 +421,28 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][Enumerato
 static constexpr int secs = 1000;
 static constexpr int ms = 1;
 
+
+static bool docExists(C4Database *db, slice docID) {
+    C4Error err;
+    auto doc = c4::make_ref(c4doc_get(db, docID, true, &err));
+    if (doc)
+        return true;
+    CHECK(err == C4Error{LiteCoreDomain, kC4ErrorNotFound});
+    return false;
+};
+
+
+
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C][Expiration]") {
     C4Error err;
     CHECK(c4db_nextDocExpiration(db) == 0);
     CHECK(c4db_purgeExpiredDocs(db, WITH_ERROR()) == 0);
-    CHECK(!c4db_mayHaveExpiration(db));
 
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kFleeceBody);
     C4Timestamp expire = c4_now() + 1*secs;
     REQUIRE(c4doc_setExpiration(db, docID, expire, WITH_ERROR()));
 
-    CHECK(c4db_mayHaveExpiration(db));
 
     expire = c4_now() + 2*secs;
     // Make sure setting it to the same is also true
@@ -455,61 +473,59 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C][Expira
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
-    this_thread::sleep_for(2000ms);
+    this_thread::sleep_for(2500ms);
     REQUIRE(c4_now() >= expire);
 
-    C4Log("---- Purge expired docs");
-    REQUIRE(c4db_purgeExpiredDocs(db, WITH_ERROR()) == 2);
+    CHECK(!docExists(db, docID));
+    CHECK(!docExists(db, docID2));
+    CHECK(docExists(db, docID3));
+    CHECK(docExists(db, docID4));
 
     CHECK(c4db_nextDocExpiration(db) == expire + 100*secs);
 
-    C4Log("---- Purge expired docs (again)");
+    C4Log("---- Purge expired docs");
     CHECK(c4db_purgeExpiredDocs(db, WITH_ERROR()) == 0);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration", "[Database][C][Expiration]")
 {
-    CHECK(!c4db_mayHaveExpiration(db));
-    c4db_startHousekeeping(db);
-
     createRev("expire_me"_sl, kRevID, kFleeceBody);
     C4Timestamp expire = c4_now() + 10000*ms;
     C4Error err;
     REQUIRE(c4doc_setExpiration(db, "expire_me"_sl, expire, WITH_ERROR()));
-    CHECK(c4db_mayHaveExpiration(db));
 
     createRev("expire_me_first"_sl, kRevID, kFleeceBody);
     expire = c4_now() + 1500*ms;
     REQUIRE(c4doc_setExpiration(db, "expire_me_first"_sl, expire, WITH_ERROR()));
 
+    auto docExists = [&] {
+        auto doc = c4::make_ref(c4doc_get(db, "expire_me_first"_sl, true, &err));
+        return doc != nullptr;
+    };
+
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
     this_thread::sleep_for(1500ms);
-    CHECK_BEFORE(15s, ! c4::make_ref(c4doc_get(db, "expire_me_first"_sl, true, &err)));
+    CHECK_BEFORE(15s, ! docExists());
     CHECK(err == C4Error{LiteCoreDomain, kC4ErrorNotFound});
     C4Log("---- Done...");
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Auto-Expiration After Reopen", "[Database][C][Expiration]")
 {
-    CHECK(!c4db_mayHaveExpiration(db));
     createRev("expire_me_first"_sl, kRevID, kFleeceBody);
     auto expire = c4_now() + 1500*ms;
-    C4Error err;
     REQUIRE(c4doc_setExpiration(db, "expire_me_first"_sl, expire, WITH_ERROR()));
-    CHECK(c4db_mayHaveExpiration(db));
 
     C4Log("---- Reopening DB...");
     reopenDB();
-    CHECK(c4db_mayHaveExpiration(db));
-    c4db_startHousekeeping(db);
+
+    auto checkExists = [&] {return docExists(db, "expire_me_first");};
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
     this_thread::sleep_for(1500ms);
-    CHECK_BEFORE(10s, ! c4::make_ref(c4doc_get(db, "expire_me_first"_sl, true, &err)));
-    CHECK(err.domain == LiteCoreDomain);
-    CHECK(err.code == kC4ErrorNotFound);
+    CHECK_BEFORE(10s, ! checkExists());
     C4Log("---- Done...");
 }
 
@@ -559,9 +575,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BackgroundDB torture test", "[D
 
     auto stopAt = c4_now() + 5*secs;
     do {
-        C4LogToAt(kC4DatabaseLog, kC4LogInfo, "---- start housekeeping ---");
-        c4db_startHousekeeping(db);
-
         char docID[50];
         c4doc_generateID(docID, sizeof(docID));
         createRev(slice(docID), kRevID, kFleeceBody);
@@ -577,13 +590,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BackgroundDB torture test", "[D
     c4log_setLevel(kC4DatabaseLog, oldLevel);
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C]")
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C][Blob]")
 {
     C4BlobStore *blobs = c4db_getBlobStore(db, ERROR_INFO());
     REQUIRE(blobs != nullptr);
 }
 
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C][Blob]")
 {
     C4Slice doc1ID = C4STR("doc001");
     C4Slice doc2ID = C4STR("doc002");
@@ -621,7 +634,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
 
     // Only reference to first blob is gone
     createRev(doc1ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, WITH_ERROR()));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key1) == -1);
     REQUIRE(c4blob_getSize(store, key2) > 0);
     REQUIRE(c4blob_getSize(store, key3) > 0);
@@ -629,20 +642,20 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
     // Two references exist to the second blob, so it should still
     // exist after deleting doc002
     createRev(doc2ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, WITH_ERROR()));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key1) == -1);
     REQUIRE(c4blob_getSize(store, key2) > 0);
     REQUIRE(c4blob_getSize(store, key3) > 0);
 
     // After deleting doc4 both blobs should be gone
     createRev(doc4ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, WITH_ERROR()));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key2) == -1);
     REQUIRE(c4blob_getSize(store, key3) > 0);
 
     // Delete doc with legacy attachment, and it too will be gone
     createRev(doc3ID, kRev2ID, kC4SliceNull, kRevDeleted);
-    REQUIRE(c4db_compact(db, WITH_ERROR()));
+    REQUIRE(c4db_maintenance(db, kC4Compact, WITH_ERROR()));
     REQUIRE(c4blob_getSize(store, key3) == -1);
 
     // Try an integrity check too

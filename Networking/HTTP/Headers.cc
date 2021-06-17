@@ -18,6 +18,7 @@
 
 #include "Headers.hh"
 #include "fleece/Fleece.hh"
+#include "slice_stream.hh"
 #include <string.h>
 #include "betterassert.hh"
 
@@ -112,7 +113,7 @@ namespace litecore { namespace websocket {
 
 
     int64_t Headers::getInt(slice name, int64_t defaultValue) const {
-        slice v = get(name);
+        slice_istream v = get(name);
         if (!v)
             return defaultValue;
         int64_t n = v.readSignedDecimal();

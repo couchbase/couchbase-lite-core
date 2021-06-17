@@ -24,26 +24,25 @@
 #include <unordered_map>
 #include <functional>
 
-namespace c4Internal {
-    class Database;
-    class Document;
-}
-
 namespace litecore {
-    class DatabaseChangeNotifier;
+    class CollectionChangeNotifier;
+    class DatabaseImpl;
     class DocChangeNotifier;
 
+    
     extern LogDomain ChangesLog; // "Changes"
     
 
-    /** Tracks database & document changes, and notifies listeners.
-        It's intended that this be a singleton per database _file_. */
+    /** Tracks collection & document changes, and notifies listeners. */
     class SequenceTracker : public Logging {
     public:
         enum class RevisionFlags : uint8_t { None = 0 };
 
-        SequenceTracker();
+        SequenceTracker(slice name);
         ~SequenceTracker();
+        SequenceTracker(SequenceTracker&&) noexcept;
+
+        slice name() const                      {return _name;}
 
         /** Call this as soon as the database begins a transaction. */
         void beginTransaction();
@@ -76,7 +75,7 @@ namespace litecore {
         /** The last sequence number seen. */
         sequence_t lastSequence() const        {return _lastSequence;}
 
-        /** A change to a document, as returned from \ref DatabaseChangeNotifier::readChanges. */
+        /** A change to a document, as returned from \ref CollectionChangeNotifier::readChanges. */
         struct Change {
             alloc_slice docID;      ///< Document ID
             alloc_slice revID;      ///< Revision ID (ASCII form)
@@ -112,7 +111,7 @@ namespace litecore {
         /** Returns the end of the Entry list. */
         const_iterator end() const;
 
-        const_iterator addPlaceholderAfter(DatabaseChangeNotifier *obs NONNULL, sequence_t);
+        const_iterator addPlaceholderAfter(CollectionChangeNotifier *obs NONNULL, sequence_t);
         void removePlaceholder(const_iterator);
         bool hasChangesAfterPlaceholder(const_iterator) const;
         size_t readChanges(const_iterator placeholder,
@@ -123,7 +122,7 @@ namespace litecore {
         void removeObsoleteEntries();
 
     private:
-        friend class DatabaseChangeNotifier;
+        friend class CollectionChangeNotifier;
         friend class DocChangeNotifier;
         friend class SequenceTrackerTest;
 
@@ -137,13 +136,14 @@ namespace litecore {
         SequenceTracker(const SequenceTracker&) =delete;
         SequenceTracker& operator=(const SequenceTracker&) =delete;
 
+        alloc_slice const                       _name;
         std::list<Entry>                        _changes;
         std::list<Entry>                        _idle;
         std::unordered_map<slice, iterator>     _byDocID;
         sequence_t                              _lastSequence {0};
         size_t                                  _numPlaceholders {0};
         size_t                                  _numDocObservers {0};
-        unique_ptr<DatabaseChangeNotifier>      _transaction;
+        unique_ptr<CollectionChangeNotifier>    _transaction;
         sequence_t                              _preTransactionLastSequence;
     };
 
@@ -174,16 +174,16 @@ namespace litecore {
     };
 
 
-    /** Tracks changes to a database and calls a client callback. */
-    class DatabaseChangeNotifier : public Logging {
+    /** Tracks changes to a collection and calls a client callback. */
+    class CollectionChangeNotifier : public Logging {
     public:
         /** A callback that will be invoked _once_ when new changes arrive. After that, calling
             \ref readChanges will reset the state so the callback can be called again. */
-        using Callback = std::function<void(DatabaseChangeNotifier&)>;
+        using Callback = std::function<void(CollectionChangeNotifier&)>;
 
-        DatabaseChangeNotifier(SequenceTracker&, Callback, sequence_t afterSeq =UINT64_MAX);
+        CollectionChangeNotifier(SequenceTracker&, Callback, sequence_t afterSeq =UINT64_MAX);
 
-        ~DatabaseChangeNotifier();
+        ~CollectionChangeNotifier();
 
         SequenceTracker &tracker;
         Callback const callback;
@@ -204,8 +204,8 @@ namespace litecore {
         void notify() noexcept;
 
     private:
-        DatabaseChangeNotifier(const DatabaseChangeNotifier&) =delete;
-        DatabaseChangeNotifier& operator=(const DatabaseChangeNotifier&) =delete;
+        CollectionChangeNotifier(const CollectionChangeNotifier&) =delete;
+        CollectionChangeNotifier& operator=(const CollectionChangeNotifier&) =delete;
 
         friend class SequenceTracker;
 

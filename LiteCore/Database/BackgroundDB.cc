@@ -17,10 +17,11 @@
 //
 
 #include "BackgroundDB.hh"
-#include "DataFile.hh"
-#include "Database.hh"
-#include "SequenceTracker.hh"
 #include "c4ExceptionUtils.hh"
+#include "c4Internal.hh"
+#include "DatabaseImpl.hh"
+#include "DataFile.hh"
+#include "SequenceTracker.hh"
 
 namespace litecore {
     using namespace actor;
@@ -28,14 +29,14 @@ namespace litecore {
     using namespace std;
 
 
-    BackgroundDB::BackgroundDB(Database *db)
-    :access_lock(db->dataFile()->openAnother(this))
+    BackgroundDB::BackgroundDB(DatabaseImpl *db)
+    :_dataFile(db->dataFile()->openAnother(this))
     ,_database(db)
     { }
 
 
     void BackgroundDB::close() {
-        use([this](DataFile* &df) {
+        _dataFile.useLocked([this](DataFile* &df) {
             delete df;
             df = nullptr;
         });
@@ -56,17 +57,18 @@ namespace litecore {
     }
 
 
-    void BackgroundDB::useInTransaction(TransactionTask task) {
-        use([=](DataFile* dataFile) {
+    void BackgroundDB::useInTransaction(slice keyStoreName, TransactionTask task) {
+        _dataFile.useLocked([=](DataFile* dataFile) {
             if (!dataFile)
                 return;
-            Transaction t(dataFile);
-            SequenceTracker sequenceTracker;
+            ExclusiveTransaction t(dataFile);
+            KeyStore &keyStore = dataFile->getKeyStore(keyStoreName);
+            SequenceTracker sequenceTracker(keyStoreName);
             sequenceTracker.beginTransaction();
 
             bool commit;
             try {
-                commit = task(dataFile, &sequenceTracker);
+                commit = task(keyStore, &sequenceTracker);
             } catch (const exception &) {
                 t.abort();
                 sequenceTracker.endTransaction(false);

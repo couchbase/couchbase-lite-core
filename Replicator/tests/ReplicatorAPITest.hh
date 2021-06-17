@@ -9,8 +9,8 @@
 #pragma once
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
-#include "c4.hh"
 #include "c4Certificate.h"
+#include "c4Replicator.h"
 #include "Address.hh"
 #include "Response.hh"
 #include "ReplicatorTuning.hh"
@@ -151,15 +151,6 @@ public:
         return AllocedDict(enc.finish());
     }
 
-    bool validate(slice docID, Dict body) {
-        //TODO: Do something here
-        return true;
-    }
-
-    static bool onValidate(FLString docID, C4RevisionFlags flags, FLDict body, void *context) {
-        return ((ReplicatorAPITest*)context)->validate(docID, body);
-    }
-
     void logState(C4ReplicatorStatus status) {
         std::string flags = "";
         if (status.flags & kC4WillRetry)     flags += "retry,";
@@ -293,7 +284,7 @@ public:
         _options = options();
         params.optionsDictFleece = _options.data();
         params.pushFilter = _pushFilter;
-//        params.validationFunc = onValidate;
+        params.validationFunc = _pullFilter;
         params.onStatusChanged = onStateChanged;
         params.onDocumentsEnded = _onDocsEnded;
         params.callbackContext = this;
@@ -464,6 +455,7 @@ public:
     std::unique_ptr<ProxySpec> _proxy;
     bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};
+    C4ReplicatorValidationFunction _pullFilter {nullptr};
     C4ReplicatorDocumentsEndedCallback _onDocsEnded {nullptr};
     C4SocketFactory* _socketFactory {nullptr};
     bool _flushedScratch {false};

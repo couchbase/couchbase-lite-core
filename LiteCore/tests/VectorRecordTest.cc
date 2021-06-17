@@ -92,7 +92,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save VectorRecord", "[VectorRecord
         CHECK(doc.changed());
 
         {
-            Transaction t(db);
+            ExclusiveTransaction t(db);
             CHECK(doc.save(t) == VectorRecord::kNewSequence);
             CHECK(!doc.changed());
             t.commit();
@@ -109,7 +109,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save VectorRecord", "[VectorRecord
         CHECK(doc.remoteRevision(RemoteID::Local)->properties == doc.properties());
 
         {
-            Transaction t(db);
+            ExclusiveTransaction t(db);
             CHECK(doc.save(t) == VectorRecord::kNoSave);
 
             doc.mutableProperties()["weekday"] = "Friday";
@@ -151,7 +151,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Empty Properties", "[
         CHECK(doc.properties() != nullptr);
         CHECK(doc.properties().empty());
 
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         CHECK(doc.save(t) == VectorRecord::kNewSequence);
         CHECK(!doc.changed());
         t.commit();
@@ -183,7 +183,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Empty Properties", "[
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remotes", "[VectorRecord]") {
-    Transaction t(db);
+    ExclusiveTransaction t(db);
     VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
 
     doc.mutableProperties()["rodent"] = "mouse";
@@ -220,7 +220,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remotes", "[VectorRec
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remote Update", "[VectorRecord]") {
-    Transaction t(db);
+    ExclusiveTransaction t(db);
     {
         VectorRecord doc(*store, Versioning::RevTrees, "Nuu");
         

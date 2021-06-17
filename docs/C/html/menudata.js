@@ -29,6 +29,7 @@ var menudata={children:[
 {text:"Data Structure Index",url:"classes.html"},
 {text:"Data Fields",url:"functions.html",children:[
 {text:"All",url:"functions.html",children:[
+{text:"_",url:"functions.html#index__5F"},
 {text:"a",url:"functions.html#index_a"},
 {text:"b",url:"functions.html#index_b"},
 {text:"c",url:"functions.html#index_c"},
@@ -50,6 +51,7 @@ var menudata={children:[
 {text:"v",url:"functions.html#index_v"},
 {text:"w",url:"functions.html#index_w"}]},
 {text:"Variables",url:"functions_vars.html",children:[
+{text:"_",url:"functions_vars.html#index__5F"},
 {text:"a",url:"functions_vars.html#index_a"},
 {text:"b",url:"functions_vars.html#index_b"},
 {text:"c",url:"functions_vars.html#index_c"},
@@ -77,6 +79,7 @@ var menudata={children:[
 {text:"_",url:"globals.html#index__5F"},
 {text:"c",url:"globals_c.html#index_c"},
 {text:"f",url:"globals_f.html#index_f"},
+{text:"h",url:"globals_h.html#index_h"},
 {text:"k",url:"globals_k.html#index_k"},
 {text:"l",url:"globals_l.html#index_l"},
 {text:"m",url:"globals_m.html#index_m"},
@@ -107,7 +110,11 @@ var menudata={children:[
 {text:"_",url:"globals_defs.html#index__5F"},
 {text:"c",url:"globals_defs.html#index_c"},
 {text:"f",url:"globals_defs.html#index_f"},
+{text:"h",url:"globals_defs.html#index_h"},
 {text:"k",url:"globals_defs.html#index_k"},
+{text:"l",url:"globals_defs.html#index_l"},
 {text:"m",url:"globals_defs.html#index_m"},
 {text:"n",url:"globals_defs.html#index_n"},
-{text:"r",url:"globals_defs.html#index_r"}]}]}]}]}
+{text:"r",url:"globals_defs.html#index_r"},
+{text:"s",url:"globals_defs.html#index_s"},
+{text:"w",url:"globals_defs.html#index_w"}]}]}]}]}

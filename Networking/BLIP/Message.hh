@@ -20,6 +20,7 @@
 #include "BLIPProtocol.hh"
 #include "RefCounted.hh"
 #include "fleece/Fleece.hh"
+#include "slice_stream.hh"
 #include <functional>
 #include <ostream>
 #include <memory>
@@ -63,7 +64,7 @@ namespace litecore { namespace blip {
         const int code {0};
         const fleece::slice message;
 
-        Error()  { }
+        Error()  =default;
         Error(fleece::slice domain_, int code_, fleece::slice msg =fleece::nullslice)
         :domain(domain_), code(code_), message(msg)
         { }
@@ -71,7 +72,7 @@ namespace litecore { namespace blip {
 
     // Like Error but with an allocated message string
     struct ErrorBuf : public Error {
-        ErrorBuf()  { }
+        ErrorBuf()  =default;
 
         ErrorBuf(fleece::slice domain, int code, fleece::alloc_slice msg)
         :Error(domain, code, msg)
@@ -199,7 +200,7 @@ namespace litecore { namespace blip {
         std::string description();
 
     private:
-        void readFrame(Codec&, int mode, slice &frame, bool finalFrame);
+        void readFrame(Codec&, int mode, fleece::slice_istream &frame, bool finalFrame);
         void acknowledge(uint32_t frameSize);
 
         Retained<Connection> _connection;       // The owning BLIP connection     
@@ -207,7 +208,7 @@ namespace litecore { namespace blip {
         MessageSize _rawBytesReceived {0};
         std::unique_ptr<fleece::JSONEncoder> _in; // Accumulates body data (not JSON)
         uint32_t _propertiesSize {0};           // Length of properties in bytes
-        slice _propertiesRemaining;             // Subrange of _properties still to be read
+        fleece::slice_ostream _propertiesRemaining; // Subrange of _properties still to be read
         uint32_t _unackedBytes {0};             // # bytes received that haven't been ACKed yet
         alloc_slice _properties;                // Just the (still encoded) properties
         alloc_slice _body;                      // Just the body

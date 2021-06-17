@@ -27,11 +27,11 @@ namespace litecore {
 
 
     /** SharedKeys implementation that stores the keys in a DataFile. */
-    class DocumentKeys : public fleece::impl::PersistentSharedKeys {
+    class DocumentKeys final : public fleece::impl::PersistentSharedKeys {
     public:
         DocumentKeys(DataFile &db)
         :_db(db),
-        _keyStore(_db.getKeyStore(DataFile::kInfoKeyStoreName))
+        _keyStore(_db.getKeyStore(DataFile::kInfoKeyStoreName, KeyStore::noSequences))
         { }
 
     protected:
@@ -40,7 +40,7 @@ namespace litecore {
             return loadFrom(r.body());
         }
         virtual void write(slice encodedData) override {
-            _keyStore.set("SharedKeys"_sl, encodedData, _db.transaction());
+            _keyStore.setKV("SharedKeys"_sl, encodedData, _db.transaction());
         }
 
     private:

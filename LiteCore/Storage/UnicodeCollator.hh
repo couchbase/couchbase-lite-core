@@ -39,7 +39,7 @@ namespace litecore {
         bool diacriticSensitive {true};
         fleece::alloc_slice localeName;
 
-        Collation() { }
+        Collation() =default;
 
         explicit Collation(bool cs, bool ds =true) {
             caseSensitive = cs;

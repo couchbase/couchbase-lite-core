@@ -34,7 +34,7 @@ namespace litecore {
         using sequence = uint64_t;
         using Map = std::map<sequence, sequence>;
 
-        SequenceSet() { }
+        SequenceSet() =default;
 
         /** Empties the set. */
         void clear()                            {_sequences.clear();}

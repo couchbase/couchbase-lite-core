@@ -39,7 +39,7 @@ namespace fleece { namespace impl {
 namespace litecore {
 
     class Query;
-    class Transaction;
+    class ExclusiveTransaction;
     class SequenceTracker;
 
 
@@ -93,7 +93,7 @@ namespace litecore {
         virtual uint64_t fileSize();
 
         /** Types of things \ref maintenance() can do.
-            NOTE: If you update this, you must update C4MaintenanceType in c4Database.h too! */
+            NOTE: If you update this, you must update C4MaintenanceType in c4DatabaseTypes.h too! */
         enum MaintenanceType {
             kCompact,
             kReindex,
@@ -113,6 +113,13 @@ namespace litecore {
 
         void forOtherDataFiles(function_ref<void(DataFile*)> fn);
 
+        //////// QUERIES:
+        
+        /** Creates a database query object. */
+        virtual Retained<Query> compileQuery(slice expr,
+                                             QueryLanguage =QueryLanguage::kJSON,
+                                             KeyStore* defaultKeyStore =nullptr) =0;
+
         /** Private API to run a raw (e.g. SQL) query, for diagnostic purposes only */
         virtual fleece::alloc_slice rawQuery(const std::string &query) =0;
 
@@ -129,15 +136,17 @@ namespace litecore {
         KeyStore& defaultKeyStore() const           {return defaultKeyStore(_options.keyStores);}
         KeyStore& defaultKeyStore(KeyStore::Capabilities) const;
 
-        KeyStore& getKeyStore(const std::string &name) const;
-        KeyStore& getKeyStore(const std::string &name, KeyStore::Capabilities) const;
+        KeyStore& getKeyStore(slice name) const;
+        KeyStore& getKeyStore(slice name, KeyStore::Capabilities) const;
 
-#if 0 //UNUSED:
+        virtual bool keyStoreExists(const std::string &name) const =0;
+
         /** The names of all existing KeyStores (whether opened yet or not) */
-        virtual std::vector<std::string> allKeyStoreNames() =0;
-#endif
-        
+        virtual std::vector<std::string> allKeyStoreNames() const =0;
+
         void closeKeyStore(const std::string &name);
+
+        virtual void deleteKeyStore(const std::string &name) =0;
 
 #if ENABLE_DELETE_KEY_STORES
         /** Permanently deletes a KeyStore. */
@@ -184,7 +193,7 @@ namespace litecore {
             /** Deletes a non-open file. Returns false if it doesn't exist. */
             virtual bool _deleteFile(const FilePath &path, const Options* =nullptr) =0;
 
-            virtual ~Factory() { }
+            virtual ~Factory() =default;
             friend class DataFile;
         };
 
@@ -206,10 +215,10 @@ namespace litecore {
         virtual KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) =0;
 
         /** Override to begin a database transaction. */
-        virtual void _beginTransaction(Transaction* t NONNULL) =0;
+        virtual void _beginTransaction(ExclusiveTransaction* t NONNULL) =0;
 
         /** Override to commit or abort a database transaction. */
-        virtual void _endTransaction(Transaction* t NONNULL, bool commit) =0;
+        virtual void _endTransaction(ExclusiveTransaction* t NONNULL, bool commit) =0;
 
         /** Is this DataFile object currently in a transaction? */
         bool inTransaction() const                      {return _inTransaction;}
@@ -234,7 +243,7 @@ namespace litecore {
     private:
         class Shared;
         friend class KeyStore;
-        friend class Transaction;
+        friend class ExclusiveTransaction;
         friend class ReadOnlyTransaction;
         friend class DocumentKeys;
 
@@ -242,11 +251,11 @@ namespace litecore {
                                    Shared *shared, Factory &factory);
         
         KeyStore& addKeyStore(const std::string &name, KeyStore::Capabilities);
-        void beginTransactionScope(Transaction*);
-        void transactionBegan(Transaction*);
-        void transactionEnding(Transaction*, bool committing);
-        void endTransactionScope(Transaction*);
-        Transaction& transaction();
+        void beginTransactionScope(ExclusiveTransaction*);
+        void transactionBegan(ExclusiveTransaction*);
+        void transactionEnding(ExclusiveTransaction*, bool committing);
+        void endTransactionScope(ExclusiveTransaction*);
+        ExclusiveTransaction& transaction();
 
         DataFile(const DataFile&) = delete;
         DataFile& operator=(const DataFile&) = delete;
@@ -267,13 +276,14 @@ namespace litecore {
     /** Grants exclusive write access to a DataFile while in scope.
         The transaction is committed when the object exits scope, unless abort() was called.
         Only one Transaction object can be created on a database file at a time.
-        Not just per DataFile object; per database _file_. */
-    class Transaction {
+        Not just per DataFile object; per database _file_.
+        That means THESE DO NOT NEST! (The higher level C4Database::Transaction does nest.) */
+    class ExclusiveTransaction {
     public:
-        explicit Transaction(DataFile*);
-        explicit Transaction(DataFile &db)  :Transaction(&db) { }
-        explicit Transaction(const unique_ptr<DataFile>& db)  :Transaction(db.get()) { }
-        ~Transaction();
+        explicit ExclusiveTransaction(DataFile*);
+        explicit ExclusiveTransaction(DataFile &db)  :ExclusiveTransaction(&db) { }
+        explicit ExclusiveTransaction(const unique_ptr<DataFile>& db)  :ExclusiveTransaction(db.get()) { }
+        ~ExclusiveTransaction();
 
         DataFile& dataFile() const          {return _db;}
 
@@ -286,8 +296,8 @@ namespace litecore {
         friend class DataFile;
         friend class KeyStore;
 
-        Transaction(DataFile*, bool begin);
-        Transaction(const Transaction&) = delete;
+        ExclusiveTransaction(DataFile*, bool begin);
+        ExclusiveTransaction(const ExclusiveTransaction&) = delete;
 
         DataFile&   _db;        // The DataFile
         bool _active;           // Is there an open transaction at the db level?

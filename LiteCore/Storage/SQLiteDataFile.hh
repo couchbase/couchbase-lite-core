@@ -19,8 +19,10 @@
 #pragma once
 
 #include "DataFile.hh"
+#include "QueryParser.hh"
 #include "IndexSpec.hh"
 #include "UnicodeCollator.hh"
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -38,10 +40,10 @@ namespace litecore {
 
 
     /** SQLite implementation of DataFile. */
-    class SQLiteDataFile : public DataFile {
+    class SQLiteDataFile final : public DataFile, public QueryParser::Delegate {
     public:
 
-        SQLiteDataFile(const FilePath &path, Delegate *delegate, const Options*);
+        SQLiteDataFile(const FilePath &path, DataFile::Delegate *delegate, const Options*);
         ~SQLiteDataFile();
 
         bool isOpen() const noexcept override;
@@ -58,9 +60,12 @@ namespace litecore {
 
         operator SQLite::Database&() {return *_sqlDb;}
 
-        std::vector<std::string> allKeyStoreNames() /*override*/;
-        bool keyStoreExists(const std::string &name);
-        bool tableExists(const std::string &name) const;
+        std::vector<std::string> allKeyStoreNames() const override;
+        bool keyStoreExists(const std::string &name) const override;
+        void deleteKeyStore(const std::string &name) override;
+
+        SQLiteKeyStore& keyStoreFromTable(slice tableName);
+
         bool getSchema(const std::string &name, const std::string &type,
                        const std::string &tableName, std::string &outSQL) const;
         bool schemaExistsWithSQL(const std::string &name, const std::string &type,
@@ -68,13 +73,13 @@ namespace litecore {
 
         fleece::alloc_slice rawQuery(const std::string &query) override;
 
-        class Factory : public DataFile::Factory {
+        class Factory final : public DataFile::Factory {
         public:
             Factory();
             virtual const char* cname() override {return "SQLite";}
             virtual std::string filenameExtension() override {return ".sqlite3";}
             virtual bool encryptionEnabled(EncryptionAlgorithm) override;
-            virtual SQLiteDataFile* openFile(const FilePath &, Delegate*, const Options* =nullptr) override;
+            virtual SQLiteDataFile* openFile(const FilePath &, DataFile::Delegate*, const Options* =nullptr) override;
         protected:
             virtual bool _deleteFile(const FilePath &path, const Options* =nullptr) override;
         };
@@ -87,14 +92,25 @@ namespace litecore {
                           int64_t &outRowCount,
                           alloc_slice *outRows =nullptr);
 
+        Retained<Query> compileQuery(slice expression, QueryLanguage, KeyStore*) override;
+
+    // QueryParser::delegate:
+        virtual bool tableExists(const std::string &tableName) const override;
+        virtual string collectionTableName(const string &collection) const override;
+        virtual std::string FTSTableName(const string &collection, const std::string &property) const override;
+        virtual std::string unnestedTableName(const string &collection, const std::string &property) const override;
+#ifdef COUCHBASE_ENTERPRISE
+        virtual std::string predictiveTableName(const string &collection, const std::string &property) const override;
+#endif
+
     protected:
         std::string loggingClassName() const override       {return "DB";}
         void logKeyStoreOp(SQLiteKeyStore&, const char *op, slice key);
         void _close(bool forDelete) override;
         void reopen() override;
         void rekey(EncryptionAlgorithm, slice newKey) override;
-        void _beginTransaction(Transaction*) override;
-        void _endTransaction(Transaction*, bool commit) override;
+        void _beginTransaction(ExclusiveTransaction*) override;
+        void _endTransaction(ExclusiveTransaction*, bool commit) override;
         void beginReadOnlyTransaction() override;
         void endReadOnlyTransaction() override;
         KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) override;
@@ -107,8 +123,8 @@ namespace litecore {
         uint64_t purgeCount(const std::string& keyStoreName) const;
         void setPurgeCount(SQLiteKeyStore&, uint64_t);
 
-        SQLite::Statement& compile(const unique_ptr<SQLite::Statement>& ref,
-                                   const char *sql) const;
+        std::unique_ptr<SQLite::Statement> compile(const char *sql) const;
+        void compileCached(unique_ptr<SQLite::Statement>&, const char *sql) const;
         int exec(const std::string &sql);
         int execWithLock(const std::string &sql);
         int64_t intQuery(const char *query);
@@ -125,6 +141,7 @@ namespace litecore {
 
     private:
         friend class SQLiteKeyStore;
+        friend class SQLiteQuery;
 
         // SQLite schema versioning (values of `pragma user_version`)
         enum class SchemaVersion {
@@ -157,8 +174,8 @@ namespace litecore {
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore *store =nullptr);
 
         unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
-        unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
-        unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
+        mutable unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
+        mutable unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
         CollationContextVector          _collationContexts;
         SchemaVersion                   _schemaVersion {SchemaVersion::None};
     };

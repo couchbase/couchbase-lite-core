@@ -18,6 +18,7 @@
 
 #pragma once
 #include "MessageBuilder.hh"
+#include "slice_stream.hh"
 #include <ostream>
 #include <utility>
 
@@ -34,20 +35,20 @@ namespace litecore { namespace blip {
         MessageOut(Connection *connection,
                    FrameFlags flags,
                    alloc_slice payload,
-                   MessageDataSource dataSource,
+                   MessageDataSource&& dataSource,
                    MessageNo number);
 
         MessageOut(Connection *connection,
                    MessageBuilder &builder,
                    MessageNo number)
-        :MessageOut(connection, (FrameFlags)0, builder.finish(), builder.dataSource, number)
+        :MessageOut(connection, (FrameFlags)0, builder.finish(), std::move(builder.dataSource), number)
         {
             _flags = builder.flags();   // finish() may update the flags, so set them after
             _onProgress = std::move(builder.onProgress);
         }
 
         void dontCompress()                     {_flags = (FrameFlags)(_flags & ~kCompressed);}
-        void nextFrameToSend(Codec &codec, slice &dst, FrameFlags &outFlags);
+        void nextFrameToSend(Codec &codec, fleece::slice_ostream &dst, FrameFlags &outFlags);
         void receivedAck(uint32_t byteCount);
         bool needsAck()                         {return _unackedBytes >= kMaxUnackedBytes;}
         MessageIn* createResponse();
@@ -59,23 +60,28 @@ namespace litecore { namespace blip {
         const char* findProperty(const char *propertyName);
 
     private:
+        using slice_istream = fleece::slice_istream;
+
+        std::pair<slice,slice> getPropsAndBody() const;
+
         static const uint32_t kMaxUnackedBytes = 128000;
 
         /** Manages the data (properties, body, data source) of a MessageOut. */
         class Contents {
         public:
             Contents(alloc_slice payload, MessageDataSource dataSource);
-            slice& dataToSend();
+            slice_istream& dataToSend();
             bool hasMoreDataToSend() const;
-            void getPropsAndBody(slice &props, slice &body) const;
+            std::pair<slice,slice> getPropsAndBody() const;
+            slice body() const                  {return _payload;}
         private:
             void readFromDataSource();
 
             alloc_slice _payload;               // Message data (uncompressed)
-            slice _unsentPayload;               // Unsent subrange of _payload
+            slice_istream _unsentPayload;       // Unsent subrange of _payload
             MessageDataSource _dataSource;      // Callback that produces more data to send
             alloc_slice _dataBuffer;            // Data read from _dataSource
-            slice _unsentDataBuffer;            // Unsent subrange of _dataBuffer
+            slice_istream _unsentDataBuffer;    // Unsent subrange of _dataBuffer
         };
 
         Connection* const _connection;          // My BLIP connection

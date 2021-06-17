@@ -18,14 +18,16 @@
 
 #pragma once
 #include "fleece/Fleece.hh"
+#include "c4BlobStore.h"
 #include "c4Database.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "function_ref.hh"
 #include <vector>
 
-// c4.hh defines a bunch of useful C++ helpers for LiteCore API, in the `c4` namespace. Check it out!
-#include "c4.hh"
+// c4CppUtils.hh defines a bunch of useful C++ helpers for rhw LiteCore C API,
+// in the `c4` namespace. Check it out!
+#include "c4CppUtils.hh"
 
 // More test utilities that don't depend on the C API.
 #include "TestsCommon.hh"

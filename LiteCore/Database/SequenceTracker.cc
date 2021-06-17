@@ -17,7 +17,7 @@
 //
 
 #include "SequenceTracker.hh"
-#include "Document.hh"
+#include "c4Document.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include <algorithm>
@@ -86,14 +86,14 @@ namespace litecore {
         bool                            external :1;
 
         // Placeholder entry (when docID == nullslice):
-        DatabaseChangeNotifier* const   databaseObserver {nullptr};
+        CollectionChangeNotifier* const   databaseObserver {nullptr};
 
         Entry(const alloc_slice &d, alloc_slice r, sequence_t s, RevisionFlags flags)
         :docID(d), revID(r), sequence(s), flags(flags), idle(false), external(false) {
             DebugAssert(docID != nullslice);
         }
 
-        explicit Entry(DatabaseChangeNotifier *o NONNULL)
+        explicit Entry(CollectionChangeNotifier *o NONNULL)
         :databaseObserver(o) { }    // placeholder
 
         bool isPlaceholder() const          {return docID.buf == nullptr;}
@@ -106,20 +106,40 @@ namespace litecore {
 
 
 
-    SequenceTracker::SequenceTracker()
+    SequenceTracker::SequenceTracker(slice name)
     :Logging(ChangesLog)
+    ,_name(name)
     { }
 
+#if defined(_MSC_VER) && _MSC_VER < 1920
+    SequenceTracker::SequenceTracker(SequenceTracker&& other) noexcept 
+    :Logging(ChangesLog)
+    ,_name(std::move(other._name))
+    ,_changes(std::move(other._changes))
+    ,_idle(std::move(other._idle))
+    ,_byDocID(std::move(other._byDocID))
+    ,_lastSequence(other._lastSequence)
+    ,_numPlaceholders(other._numPlaceholders)
+    ,_numDocObservers(other._numDocObservers)
+    ,_transaction(std::move(other._transaction))
+    ,_preTransactionLastSequence(other._preTransactionLastSequence)
+    {
+        
+    }
+#else
+    // Another compiler bug that I assume Microsoft is not going to fix in 2017
+    SequenceTracker::SequenceTracker(SequenceTracker&&) noexcept =default;
+#endif
 
-    SequenceTracker::~SequenceTracker()
-    { }
+
+    SequenceTracker::~SequenceTracker() =default;
 
 
     void SequenceTracker::beginTransaction() {
         Assert(!inTransaction());
 
         logInfo("begin transaction at #%" PRIu64, _lastSequence);
-        _transaction = make_unique<DatabaseChangeNotifier>(*this, nullptr);
+        _transaction = make_unique<CollectionChangeNotifier>(*this, nullptr);
         _preTransactionLastSequence = _lastSequence;
     }
 
@@ -308,7 +328,7 @@ namespace litecore {
 
 
     SequenceTracker::const_iterator
-    SequenceTracker::addPlaceholderAfter(DatabaseChangeNotifier *obs, sequence_t seq) {
+    SequenceTracker::addPlaceholderAfter(CollectionChangeNotifier *obs, sequence_t seq) {
         Assert(obs);
         ++_numPlaceholders;
         return _changes.emplace(_since(seq), obs);
@@ -484,7 +504,7 @@ namespace litecore {
 #pragma mark - DATABASE CHANGE NOTIFIER:
 
 
-    DatabaseChangeNotifier::DatabaseChangeNotifier(SequenceTracker &t, Callback cb, sequence_t afterSeq)
+    CollectionChangeNotifier::CollectionChangeNotifier(SequenceTracker &t, Callback cb, sequence_t afterSeq)
     :Logging(ChangesLog)
     ,tracker(t)
     ,callback(move(cb))
@@ -495,14 +515,14 @@ namespace litecore {
     }
 
 
-    DatabaseChangeNotifier::~DatabaseChangeNotifier() {
+    CollectionChangeNotifier::~CollectionChangeNotifier() {
         if (callback)
             logInfo("Deleting");
         tracker.removePlaceholder(_placeholder);
     }
 
 
-    void DatabaseChangeNotifier::notify() noexcept {
+    void CollectionChangeNotifier::notify() noexcept {
         if (callback) {
             logInfo("posting notification");
             callback(*this);
@@ -510,7 +530,7 @@ namespace litecore {
     }
 
 
-    size_t DatabaseChangeNotifier::readChanges(SequenceTracker::Change changes[],
+    size_t CollectionChangeNotifier::readChanges(SequenceTracker::Change changes[],
                                                size_t maxChanges,
                                                bool &external) {
         size_t n = tracker.readChanges(_placeholder, changes, maxChanges, external);

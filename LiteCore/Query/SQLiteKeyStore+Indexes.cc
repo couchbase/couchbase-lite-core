@@ -58,7 +58,7 @@ namespace litecore {
         spec.validateName();
 
         Stopwatch st;
-        Transaction t(db());
+        ExclusiveTransaction t(db());
         bool created;
         switch (spec.type) {
             case IndexSpec::kValue:      created = createValueIndex(spec); break;
@@ -86,9 +86,9 @@ namespace litecore {
                                      Array::iterator &expressions)
     {
         Assert(spec.type != IndexSpec::kFullText);
-        QueryParser qp(*this);
-        qp.setTableName(sourceTableName);
+        QueryParser qp(db(), sourceTableName);
         qp.writeCreateIndex(spec.name,
+                            sourceTableName,
                             expressions,
                             spec.where(),
                             (spec.type != IndexSpec::kValue));
@@ -98,7 +98,7 @@ namespace litecore {
 
 
     void SQLiteKeyStore::deleteIndex(slice name)  {
-        Transaction t(db());
+        ExclusiveTransaction t(db());
         auto spec = db().getIndex(name);
         if (spec) {
             db().deleteIndex(*spec);
@@ -156,15 +156,6 @@ namespace litecore {
     bool SQLiteKeyStore::createValueIndex(const IndexSpec &spec) {
         Array::iterator expressions(spec.what());
         return createIndex(spec, tableName(), expressions);
-    }
-
-
-#pragma mark - UTILITIES:
-
-
-    // Part of the QueryParser delegate API
-    bool SQLiteKeyStore::tableExists(const std::string &tableName) const {
-        return db().tableExists(tableName);
     }
 
 }

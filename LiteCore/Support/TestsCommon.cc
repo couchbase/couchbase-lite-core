@@ -94,7 +94,7 @@ void InitTestLogging() {
 }
 
 
-string sliceToHex(slice result) {
+string sliceToHex(pure_slice result) {
     string hex;
     for (size_t i = 0; i < result.size; i++) {
         char str[4];
@@ -107,7 +107,7 @@ string sliceToHex(slice result) {
 }
 
 
-string sliceToHexDump(slice result, size_t width) {
+string sliceToHexDump(pure_slice result, size_t width) {
     string hex;
     for (size_t row = 0; row < result.size; row += width) {
         size_t end = min(row + width, result.size);
@@ -139,7 +139,7 @@ namespace fleece {
         auto buf = (const uint8_t*)s.buf;
         for (size_t i = 0; i < s.size; i++) {
             if (buf[i] < 32 || buf[i] > 126)
-                return o << sliceToHex(slice(s)) << "]";
+                return o << sliceToHex(s) << "]";
         }
         return o << "\"" << string((char*)s.buf, s.size) << "\"]";
     }

@@ -28,7 +28,7 @@
 namespace litecore { namespace repl {
 
     /** Top-level object managing the push side of replication (sending revisions.) */
-    class Pusher : public Worker, public ChangesFeed::Delegate {
+    class Pusher final : public Worker, public ChangesFeed::Delegate {
     public:
         Pusher(Replicator *replicator NONNULL, Checkpointer&);
 
@@ -46,6 +46,8 @@ namespace litecore { namespace repl {
         int progressNotificationLevel() const override;
 
     protected:
+        friend class BlobDataSource;
+        
         virtual void dbHasNewChanges() override {enqueue(FUNCTION_TO_QUEUE(Pusher::_dbHasNewChanges));}
         virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) override {
             finishedDocumentWithError(rev, error, transient);
@@ -79,10 +81,9 @@ namespace litecore { namespace repl {
         void handleGetAttachment(Retained<blip::MessageIn>);
         void handleProveAttachment(Retained<blip::MessageIn>);
         void _attachmentSent();
-        C4ReadStream* readBlobFromRequest(blip::MessageIn *req NONNULL,
-                                          slice &outDigest,
-                                          Replicator::BlobProgress &outProgress,
-                                          C4Error *outError);
+        unique_ptr<C4ReadStream> readBlobFromRequest(blip::MessageIn *req NONNULL,
+                                                     slice &outDigest,
+                                                     Replicator::BlobProgress &outProgress);
         // Pusher+Revs.cc:
         void maybeSendMoreRevs();
         void retryRevs(RevToSendList, bool immediate);
@@ -93,7 +94,7 @@ namespace litecore { namespace repl {
         alloc_slice createRevisionDelta(C4Document *doc NONNULL, RevToSend *request NONNULL,
                                         fleece::Dict root, size_t revSize,
                                         bool sendLegacyAttachments);
-        void revToSendIsObsolete(const RevToSend &request, C4Error *c4err);
+        void revToSendIsObsolete(const RevToSend &request, C4Error *c4err =nullptr);
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>>;
 

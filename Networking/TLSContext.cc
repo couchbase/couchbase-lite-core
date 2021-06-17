@@ -65,8 +65,7 @@ namespace litecore { namespace net {
         });
     }
 
-    TLSContext::~TLSContext()
-    { }
+    TLSContext::~TLSContext() =default;
 
 
     void TLSContext::setRootCerts(slice certsData) {

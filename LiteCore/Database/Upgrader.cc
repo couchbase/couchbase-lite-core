@@ -16,24 +16,28 @@
 // limitations under the License.
 //
 
-#include "c4Internal.hh"
+#include "c4Base.hh"
 #include "c4Document+Fleece.h"
 #include "Upgrader.hh"
+#include "SQLite_Internal.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
-#include "Database.hh"
-#include "Document.hh"
-#include "BlobStore.hh"
-#include "FleeceImpl.hh"
+#include "DatabaseImpl.hh"
+#include "c4Collection.hh"
+#include "c4Document.hh"
+#include "c4BlobStore.hh"
+#include "c4Internal.hh"
+#include "BlobStreams.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "RevID.hh"
+#include "FleeceImpl.hh"
 #include <sqlite3.h>
 #include <thread>
 
 using namespace std;
 using namespace fleece;
 using namespace fleece::impl;
-using namespace c4Internal;
 
 
 namespace litecore {
@@ -44,14 +48,14 @@ namespace litecore {
     class Upgrader {
     public:
         Upgrader(const FilePath &oldPath, const FilePath &newPath, C4DatabaseConfig config)
-        :Upgrader(oldPath, new Database(newPath.path(), asTreeVersioning(config)))
+        :Upgrader(oldPath, DatabaseImpl::open(newPath, asTreeVersioning(config)))
         { }
 
 
-        Upgrader(const FilePath &oldPath, Database *newDB)
+        Upgrader(const FilePath &oldPath, Retained<DatabaseImpl> newDB)
         :_oldPath(oldPath)
         ,_oldDB(oldPath["db.sqlite3"].path(), SQLite::OPEN_READWRITE) // *
-        ,_newDB(newDB)
+        ,_newDB(move(newDB))
         ,_attachments(oldPath["attachments/"])
         {
             // * Note: It would be preferable to open the old db read-only, but that will fail
@@ -79,7 +83,7 @@ namespace litecore {
                 error::_throw(error::CantUpgradeDatabase,
                               "Database cannot be upgraded because its internal version number isn't recognized");
 
-            Database::TransactionHelper t(_newDB);
+            C4Database::Transaction t(_newDB);
             try {
                 copyDocs();
 #if 0
@@ -112,17 +116,12 @@ namespace litecore {
         }
 
 
-        static inline slice asSlice(const SQLite::Column &col) {
-            return slice(col.getBlob(), col.size());
-        }
-
-
         // Copies all documents to the new db.
         void copyDocs() {
             SQLite::Statement allDocs(_oldDB, "SELECT doc_id, docid FROM docs");
             while (allDocs.executeStep()) {
                 int64_t docKey = allDocs.getColumn(0);
-                slice docID = asSlice(allDocs.getColumn(1));
+                slice docID = getColumnAsSlice(allDocs, 1);
 
                 if (docID.hasPrefix("_"_sl)) {
                     Warn("Skipping doc '%.*s': Document ID starting with an underscore is not permitted.", SPLAT(docID));
@@ -131,8 +130,7 @@ namespace litecore {
 
                 Log("Importing doc '%.*s'", SPLAT(docID));
                 try {
-                    Retained<Document> newDoc(
-                            _newDB->documentFactory().newDocumentInstance(docID, kEntireBody));
+                    auto newDoc = _newDB->getDocument(docID, false, kDocGetAll);
                     copyRevisions(docKey, newDoc);
                 } catch (const error &x) {
                     // Add docID to exception message:
@@ -147,7 +145,7 @@ namespace litecore {
 
 
         // Copies all revisions of a document.
-        void copyRevisions(int64_t oldDocKey, Document *newDoc) {
+        void copyRevisions(int64_t oldDocKey, C4Document *newDoc) {
             if (!_currentRev) {
                 // Gets the current revision of doc
                 _currentRev.reset(new SQLite::Statement(_oldDB,
@@ -167,13 +165,13 @@ namespace litecore {
                 return;     // huh, no revisions
 
             vector<alloc_slice> history;
-            alloc_slice revID(asSlice(_currentRev->getColumn(1)));
+            alloc_slice revID(getColumnAsSlice(*_currentRev, 1));
             history.push_back(revID);
             Log("        ...rev %.*s", SPLAT(revID));
 
             // First row is the current revision:
             C4DocPutRequest put {};
-            put.docID = newDoc->docID;
+            put.docID = newDoc->docID();
             put.existingRevision = true;
             put.revFlags =0;
             if (_currentRev->getColumn(3).getInt() != 0)
@@ -185,7 +183,7 @@ namespace litecore {
             // Convert the JSON body to Fleece:
             alloc_slice body;
             {
-                Retained<Doc> doc = convertBody(asSlice(_currentRev->getColumn(4)));
+                Retained<Doc> doc = convertBody(getColumnAsSlice(*_currentRev, 4));
                 if (hasAttachments)
                     copyAttachments(doc);
                 body = doc->allocedData();
@@ -199,7 +197,7 @@ namespace litecore {
             _parentRevs->bind(1, (long long)oldDocKey);
             while (_parentRevs->executeStep()) {
                 if ((int64_t)_parentRevs->getColumn(0) == nextSequence) {
-                    alloc_slice parentID(asSlice(_parentRevs->getColumn(1)));
+                    alloc_slice parentID(getColumnAsSlice(*_parentRevs, 1));
                     history.push_back(parentID);
                     Log("        ...rev %.*s", SPLAT(parentID));
                     nextSequence = _parentRevs->getColumn(2);
@@ -247,8 +245,10 @@ namespace litecore {
         // Copies a blob to the new database if it exists in the old one.
         bool copyAttachment(slice digest) {
             Log("        ...attachment '%.*s'", SPLAT(digest));
-            blobKey key = blobKey::withBase64(digest);
-            string hex = key.hexString();
+            optional<C4BlobKey> key = C4BlobKey::withDigestString(digest);
+            if (!key)
+                return false;
+            string hex = slice(*key).hexString();
             for (char &c : hex)
                 c = (char)toupper(c);
             FilePath src = _attachments[hex + ".blob"];
@@ -256,13 +256,13 @@ namespace litecore {
                 return false;
 
             //OPT: Could move the attachment file instead of copying (to save disk space)
-            BlobWriteStream out(*_newDB->blobStore());
+            C4WriteStream out(_newDB->getBlobStore());
             char buf[32768];
             FileReadStream in(src);
             size_t bytesRead;
             while (0 != (bytesRead = in.read(buf, sizeof(buf))))
                 out.write({buf, bytesRead});
-            out.install(&key);
+            out.install((C4BlobKey*)&key);
             return true;
         }
 
@@ -290,7 +290,7 @@ namespace litecore {
 
         FilePath _oldPath;
         SQLite::Database _oldDB;
-        Retained<Database> _newDB;
+        Retained<DatabaseImpl> _newDB;
         FilePath _attachments;
         unique_ptr<SQLite::Statement> _currentRev, _parentRevs;
     };

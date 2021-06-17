@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.15"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>LiteCore: Paths</title>
+<title>LiteCore: Fleece Paths</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -66,7 +66,7 @@ $(function() {
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">Paths</div>  </div>
+<div class="title">Fleece Paths</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -93,6 +93,15 @@ Functions</h2></td></tr>
 <tr class="memitem:gad93b0de13ab553b2e291749da26e5df9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_key_path.html#gad93b0de13ab553b2e291749da26e5df9">FLKeyPath_EvalOnce</a> (<a class="el" href="struct_f_l_slice.html">FLSlice</a> specifier, <a class="el" href="group__types.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> root, <a class="el" href="group__types.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *error)</td></tr>
 <tr class="memdesc:gad93b0de13ab553b2e291749da26e5df9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluates a key-path from a specifier string, for a given Fleece root object.  <a href="#gad93b0de13ab553b2e291749da26e5df9">More...</a><br /></td></tr>
 <tr class="separator:gad93b0de13ab553b2e291749da26e5df9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa23928adf555020ef136faadbf177590"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_key_path.html#gaa23928adf555020ef136faadbf177590">FLKeyPath_ToString</a> (<a class="el" href="group___f_l_key_path.html#ga233d06088ad464981abf1cb0981dc832">FLKeyPath</a> path)</td></tr>
+<tr class="memdesc:gaa23928adf555020ef136faadbf177590"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a path in string form.  <a href="#gaa23928adf555020ef136faadbf177590">More...</a><br /></td></tr>
+<tr class="separator:gaa23928adf555020ef136faadbf177590"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7c322d14c39dc6e8aae3d87253452a85"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_key_path.html#ga7c322d14c39dc6e8aae3d87253452a85">FLKeyPath_Equals</a> (<a class="el" href="group___f_l_key_path.html#ga233d06088ad464981abf1cb0981dc832">FLKeyPath</a> path1, <a class="el" href="group___f_l_key_path.html#ga233d06088ad464981abf1cb0981dc832">FLKeyPath</a> path2)</td></tr>
+<tr class="memdesc:ga7c322d14c39dc6e8aae3d87253452a85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Equality test.  <a href="#ga7c322d14c39dc6e8aae3d87253452a85">More...</a><br /></td></tr>
+<tr class="separator:ga7c322d14c39dc6e8aae3d87253452a85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga152e7ebaa6a62d6a7dbad0caaae4f3a2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___f_l_key_path.html#ga152e7ebaa6a62d6a7dbad0caaae4f3a2">FLKeyPath_GetElement</a> (<a class="el" href="group___f_l_key_path.html#ga233d06088ad464981abf1cb0981dc832">FLKeyPath</a>, size_t i, <a class="el" href="struct_f_l_slice.html">FLSlice</a> *outDictKey, int32_t *outArrayIndex)</td></tr>
+<tr class="memdesc:ga152e7ebaa6a62d6a7dbad0caaae4f3a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an element of a path, either a key or an array index.  <a href="#ga152e7ebaa6a62d6a7dbad0caaae4f3a2">More...</a><br /></td></tr>
+<tr class="separator:ga152e7ebaa6a62d6a7dbad0caaae4f3a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>An FLKeyPath Describes a location in a Fleece object tree, as a path from the root that follows dictionary properties and array elements. </p>
@@ -118,6 +127,36 @@ Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="ga7c322d14c39dc6e8aae3d87253452a85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7c322d14c39dc6e8aae3d87253452a85">&#9670;&nbsp;</a></span>FLKeyPath_Equals()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool FLKeyPath_Equals </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___f_l_key_path.html#ga233d06088ad464981abf1cb0981dc832">FLKeyPath</a>&#160;</td>
+          <td class="paramname"><em>path1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___f_l_key_path.html#ga233d06088ad464981abf1cb0981dc832">FLKeyPath</a>&#160;</td>
+          <td class="paramname"><em>path2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Equality test. </p>
+
+</div>
+</div>
 <a id="gafcad708088b3ef5ead878c0465fd60a0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gafcad708088b3ef5ead878c0465fd60a0">&#9670;&nbsp;</a></span>FLKeyPath_Eval()</h2>
 
@@ -206,6 +245,48 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ga152e7ebaa6a62d6a7dbad0caaae4f3a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga152e7ebaa6a62d6a7dbad0caaae4f3a2">&#9670;&nbsp;</a></span>FLKeyPath_GetElement()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool FLKeyPath_GetElement </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___f_l_key_path.html#ga233d06088ad464981abf1cb0981dc832">FLKeyPath</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>i</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_f_l_slice.html">FLSlice</a> *&#160;</td>
+          <td class="paramname"><em>outDictKey</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int32_t *&#160;</td>
+          <td class="paramname"><em>outArrayIndex</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns an element of a path, either a key or an array index. </p>
+
+</div>
+</div>
 <a id="gaf999161bf98bcbc6d72a566567c8ce40"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gaf999161bf98bcbc6d72a566567c8ce40">&#9670;&nbsp;</a></span>FLKeyPath_New()</h2>
 
@@ -233,6 +314,26 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Creates a new FLKeyPath object by compiling a path specifier string. </p>
+
+</div>
+</div>
+<a id="gaa23928adf555020ef136faadbf177590"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa23928adf555020ef136faadbf177590">&#9670;&nbsp;</a></span>FLKeyPath_ToString()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___f_l_slice.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a> FLKeyPath_ToString </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___f_l_key_path.html#ga233d06088ad464981abf1cb0981dc832">FLKeyPath</a>&#160;</td>
+          <td class="paramname"><em>path</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns a path in string form. </p>
 
 </div>
 </div>

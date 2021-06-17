@@ -60,7 +60,7 @@ namespace litecore { namespace crypto {
 
 
     
-    class PublicKey : public Key {
+    class PublicKey final : public Key {
     public:
         /** Instantiates a PublicKey from data in DER (PKCS1) or PEM format. */
         explicit PublicKey(fleece::slice data);
@@ -72,7 +72,7 @@ namespace litecore { namespace crypto {
     protected:
         friend class CertBase;
         
-        PublicKey()                             { }
+        PublicKey()                             =default;
         explicit PublicKey(KeyOwner *owner)     :Key(owner) { }
     };
 
@@ -109,7 +109,7 @@ namespace litecore { namespace crypto {
         }
 
     protected:
-        PrivateKey()                                    { }
+        PrivateKey()                                    =default;
     };
 
 

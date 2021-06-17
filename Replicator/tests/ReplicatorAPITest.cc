@@ -10,9 +10,9 @@
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
 #include "c4Socket.h"
-#include "c4Socket+Internal.hh"
-#include "fleece/Fleece.hh"
+//#include "c4Socket+Internal.hh"
 #include "c4Internal.hh"
+#include "fleece/Fleece.hh"
 
 using namespace fleece;
 using namespace std;
@@ -24,7 +24,7 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
                          ReplicatorAPITest::kImagesDBName;
 
 
-TEST_CASE("URL Parsing") {
+TEST_CASE("URL Parsing", "[C]][Replicator]") {
     C4Address address;
     C4String dbName;
 
@@ -125,13 +125,13 @@ TEST_CASE("URL Parsing") {
 }
 
 
-TEST_CASE("URL Generation") {
+TEST_CASE("URL Generation", "[C]][Replicator]") {
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 8888, "/bar"_sl})) == "ws://foo.com:8888/bar"_sl);
     CHECK(alloc_slice(c4address_toURL({"ws"_sl, "foo.com"_sl, 0,    "/"_sl}))    == "ws://foo.com/"_sl);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Create C4Replicator without start", "[C][Push]") {
     // For CBL-524 "Lazy c4replicator initialize cause memory leak"
     C4Error err;
     C4ReplicatorParameters params = {};
@@ -308,7 +308,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
-    _pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
+    _pushFilter = [](C4String collectionName, C4String docID, C4String revID,
+                     C4RevisionFlags flags, FLDict flbody, void *context) {
         ((ReplicatorAPITest*)context)->_counter++;
         assert(docID.size > 0);
         assert(revID.size > 0);
@@ -355,7 +356,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[C][Pull]")
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -375,7 +376,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
 
     SECTION("Filtered") {
         expectedPending = 99;
-        params.pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
+        params.pushFilter = [](C4String collectionName, C4String docID, C4String revID,
+                               C4RevisionFlags flags, FLDict flbody, void *context) {
             return FLSlice_Compare(docID, "0000005"_sl) != 0;
         };
     }
@@ -414,7 +416,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pending Document IDs", "[Push]") {
 #endif
 
 #ifdef COUCHBASE_ENTERPRISE
-TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[C][Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
@@ -435,7 +437,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Is Document Pending", "[Push]") {
     SECTION("Filtered") {
         expectedIsPending = false;
         params.callbackContext = this;
-        params.pushFilter = [](C4String docID, C4String revID, C4RevisionFlags flags, FLDict flbody, void *context) {
+        params.pushFilter = [](C4String collectionName, C4String docID, C4String revID,
+                               C4RevisionFlags flags, FLDict flbody, void *context) {
             auto test = (ReplicatorAPITest*)context;
             c4repl_getStatus(test->_repl);  // If _repl were locked during this callback, this would deadlock
             return FLSlice_Compare(docID, "0000005"_sl) != 0;
@@ -734,21 +737,17 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
 }
 
 
-#include "c4Replicator.hh"
+#include "c4ReplicatorImpl.hh"
 
-struct C4TestReplicator : public C4Replicator {
+struct C4TestReplicator : public litecore::C4ReplicatorImpl {
     C4TestReplicator(C4Database* db, C4ReplicatorParameters params)
-        : C4Replicator(db, params)
-    {}
-
+        : C4ReplicatorImpl(db, params)   { }
     alloc_slice propertiesMemory() const { return _options.properties.data(); }
-
-    bool createReplicator() override { return false; }
-
-    alloc_slice URL() const override { return nullslice; }
+    void createReplicator() override     { }
+    alloc_slice URL() const override     { return nullslice; }
 };
 
-TEST_CASE_METHOD(ReplicatorAPITest, "c4Replicator Zero Memory", "[Replicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "c4Replicator Zero Memory", "[C][Replicator]") {
      {
          Encoder enc;
          enc.beginDict();

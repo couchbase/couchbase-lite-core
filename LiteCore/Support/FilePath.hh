@@ -23,7 +23,14 @@
 #include <string>
 #include <tuple> // for std::tie
 #include <ctime>
+#include <string_view>
 #include <utility>
+
+namespace fleece {
+    struct slice;
+    struct alloc_slice;
+}
+
 
 namespace litecore {
 
@@ -33,14 +40,15 @@ namespace litecore {
     class FilePath {
     public:
         /** Constructs a FilePath from a filesystem path. */
-        FilePath(const std::string &path)   {tie(_dir, _file) = splitPath(path);}
-        FilePath(const char *path NONNULL)  {tie(_dir, _file) = splitPath(std::string(path));}
+        explicit FilePath(std::string_view path)     {tie(_dir, _file) = splitPath(path);}
 
         FilePath();
 
         /** Constructs a FilePath from a directory name and a filename in that directory. */
-        FilePath(const std::string &dirName, const std::string &fileName);
-        
+        FilePath(std::string &&dirName, std::string &&fileName);
+        FilePath(std::string_view dirName, std::string_view fileName);
+        FilePath(const char *dirName, const char *fileName);
+
         /** Returns a folder with a predefined name that serves as a location for temporary
             files.  
          */
@@ -64,6 +72,7 @@ namespace litecore {
         std::string canonicalPath() const;
 
         operator std::string () const       {return path();}
+        operator fleece::alloc_slice() const;
 
         /** Converts a string to a valid filename by escaping invalid characters,
             including the directory separator ('/') */
@@ -157,7 +166,7 @@ namespace litecore {
             item in the directory. */
         void forEachMatch(fleece::function_ref<void(const FilePath&)> fn) const;
 
-        static std::pair<std::string,std::string> splitPath(const std::string &path);
+        static std::pair<std::string,std::string> splitPath(std::string_view path);
         static std::pair<std::string,std::string> splitExtension(const std::string &filename);
 
     private:

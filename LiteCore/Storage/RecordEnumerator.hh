@@ -88,7 +88,7 @@ namespace litecore {
         /** Internal implementation of enumerator; each storage type must subclass it. */
         class Impl {
         public:
-            virtual ~Impl()                         { }
+            virtual ~Impl()                         =default;
             virtual bool next() =0;
             virtual bool read(Record&) =0;
         };

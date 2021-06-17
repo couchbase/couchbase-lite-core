@@ -69,7 +69,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Predict]") {
     addNumberedDocs(1, 10);
     Retained<Query> query{ store->compileQuery(json5(
                                 "{'WHAT': [['PREDICTION()', '8ball', {number: ['.num']}]]}")) };
@@ -99,10 +99,10 @@ static void testResults(Query *query) {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         writeArrayDoc(101, t);      // Add a row that has no 'num' property
         t.commit();
     }
@@ -118,9 +118,9 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]") {
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         writeMultipleTypeDocs(t);
         t.commit();
     }
@@ -138,7 +138,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]"
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]") {
     Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
@@ -150,10 +150,10 @@ TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]"
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         writeArrayDoc(101, t);      // Add a row that has no 'num' property
         t.commit();
     }
@@ -201,10 +201,10 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         writeArrayDoc(101, t);      // Add a row that has no 'num' property
         t.commit();
     }
@@ -251,10 +251,10 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predic
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") {
     addNumberedDocs(1, 100);
     {
-        Transaction t(db);
+        ExclusiveTransaction t(db);
         writeArrayDoc(101, t);      // Add a row that has no 'num' property
         t.commit();
     }

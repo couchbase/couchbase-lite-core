@@ -142,6 +142,13 @@ namespace litecore {
     }
 
 
+    slice getColumnAsSlice(SQLite::Statement &stmt, int colIndex) {
+        auto col = stmt.getColumn(colIndex);
+        auto buf = col.getBlob();
+        return slice(buf, col.getBytes());
+    }
+
+
     SQLiteDataFile::Factory& SQLiteDataFile::sqliteFactory() {
         static SQLiteDataFile::Factory s;
         return s;
@@ -170,7 +177,10 @@ namespace litecore {
     }
 
 
-    SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath &path, Delegate *delegate, const Options *options) {
+    SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath &path,
+                                                      DataFile::Delegate *delegate,
+                                                      const Options *options)
+    {
         return new SQLiteDataFile(path, delegate, options);
     }
 
@@ -185,7 +195,9 @@ namespace litecore {
     }
 
 
-    SQLiteDataFile::SQLiteDataFile(const FilePath &path, Delegate *delegate, const Options *options)
+    SQLiteDataFile::SQLiteDataFile(const FilePath &path,
+                                   DataFile::Delegate *delegate,
+                                   const Options *options)
     :DataFile(path, delegate, options)
     {
         reopen();
@@ -492,13 +504,13 @@ namespace litecore {
     }
 #endif
 
-    void SQLiteDataFile::_beginTransaction(Transaction*) {
+    void SQLiteDataFile::_beginTransaction(ExclusiveTransaction*) {
         checkOpen();
         _exec("BEGIN");
     }
 
 
-    void SQLiteDataFile::_endTransaction(Transaction *t, bool commit) {
+    void SQLiteDataFile::_endTransaction(ExclusiveTransaction *t, bool commit) {
         // Notify key-stores so they can save state:
         forOpenKeyStores([commit](KeyStore &ks) {
             ((SQLiteKeyStore&)ks).transactionWillEnd(commit);
@@ -524,7 +536,8 @@ namespace litecore {
     }
 
     int SQLiteDataFile::exec(const string &sql) {
-        Assert(inTransaction());
+        if (!inTransaction())
+            error::_throw(error::NotInTransaction);
         return _exec(sql);
     }
 
@@ -545,20 +558,25 @@ namespace litecore {
     }
 
 
-    SQLite::Statement& SQLiteDataFile::compile(const unique_ptr<SQLite::Statement>& ref,
-                                               const char *sql) const
-    {
+    unique_ptr<SQLite::Statement> SQLiteDataFile::compile(const char *sql) const {
         checkOpen();
-        if (ref == nullptr) {
-            try {
-                const_cast<unique_ptr<SQLite::Statement>&>(ref)
-                                            = make_unique<SQLite::Statement>(*_sqlDb, sql, true);
-            } catch (const SQLite::Exception &x) {
-                warn("SQLite error compiling statement \"%s\": %s", sql, x.what());
-                throw;
-            }
+        try {
+            LogTo(SQL, "Compiling SQL \"%s\"", sql);
+            return make_unique<SQLite::Statement>(*_sqlDb, sql, true);
+        } catch (const SQLite::Exception &x) {
+            warn("SQLite error compiling statement \"%s\": %s", sql, x.what());
+            throw;
         }
-        return *ref;
+    }
+
+
+    void SQLiteDataFile::compileCached(unique_ptr<SQLite::Statement>& ref,
+                                       const char *sql) const
+    {
+        if (ref == nullptr)
+            ref = compile(sql);
+        else
+            checkOpen();
     }
 
 
@@ -601,7 +619,7 @@ namespace litecore {
     
     sequence_t SQLiteDataFile::lastSequence(const string& keyStoreName) const {
         sequence_t seq = 0;
-        compile(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
+        compileCached(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
         UsingStatement u(_getLastSeqStmt);
         _getLastSeqStmt->bindNoCopy(1, keyStoreName);
         if (_getLastSeqStmt->executeStep())
@@ -610,7 +628,7 @@ namespace litecore {
     }
 
     void SQLiteDataFile::setLastSequence(SQLiteKeyStore &store, sequence_t seq) {
-        compile(_setLastSeqStmt,
+        compileCached(_setLastSeqStmt,
                 "INSERT INTO kvmeta (name, lastSeq) VALUES (?, ?) "
                 "ON CONFLICT (name) "
                 "DO UPDATE SET lastSeq = excluded.lastSeq");
@@ -624,7 +642,7 @@ namespace litecore {
     uint64_t SQLiteDataFile::purgeCount(const std::string& keyStoreName) const {
         uint64_t purgeCnt = 0;
         if (_schemaVersion >= SchemaVersion::WithPurgeCount) {
-            compile(_getPurgeCntStmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
+            compileCached(_getPurgeCntStmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
             UsingStatement u(_getPurgeCntStmt);
             _getPurgeCntStmt->bindNoCopy(1, keyStoreName);
             if(_getPurgeCntStmt->executeStep()) {
@@ -636,7 +654,7 @@ namespace litecore {
 
     void SQLiteDataFile::setPurgeCount(SQLiteKeyStore& store, uint64_t count) {
         Assert(_schemaVersion >= SchemaVersion::WithPurgeCount);
-        compile(_setPurgeCntStmt,
+        compileCached(_setPurgeCntStmt,
             "INSERT INTO kvmeta (name, purgeCnt) VALUES (?, ?) "
             "ON CONFLICT (name) "
             "DO UPDATE SET purgeCnt = excluded.purgeCnt");
@@ -652,6 +670,31 @@ namespace litecore {
         _exec("PRAGMA wal_checkpoint(FULL)");
         return DataFile::fileSize();
     }
+
+
+#pragma mark - QUERIES:
+
+
+    string SQLiteDataFile::collectionTableName(const string &collection) const {
+        if (collection == "_default")
+            return "kv_default";
+        else
+            return "kv_coll_" + collection;
+    }
+
+    string SQLiteDataFile::FTSTableName(const string &onTable, const string &property) const {
+        return onTable + "::" + property;
+    }
+
+    string SQLiteDataFile::unnestedTableName(const string &onTable, const string &property) const {
+        return onTable + ":unnest:" + property;
+    }
+
+#ifdef COUCHBASE_ENTERPRISE
+    string SQLiteDataFile::predictiveTableName(const string &onTable, const std::string &property) const {
+        return onTable + ":predict:" + property;
+    }
+#endif
 
 
 #pragma mark - MAINTENANCE:

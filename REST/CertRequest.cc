@@ -20,7 +20,7 @@
 #include "Response.hh"
 #include "Headers.hh"
 #include "HTTPLogic.hh"
-#include "c4Replicator.h"
+#include "c4ReplicatorTypes.h"
 #include "Error.hh"
 
 namespace litecore::REST {

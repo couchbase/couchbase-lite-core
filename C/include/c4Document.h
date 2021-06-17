@@ -17,76 +17,26 @@
 //
 
 #pragma once
+#define __C4DOCUMENT_H__
+#include "c4DocumentTypes.h"
 
-#include "c4Base.h"
+#if LITECORE_CPP_API
+#include "c4Document.hh"   // C++ version of C4Document struct
+#else
+#include "c4DocumentStruct.h"   // C version of C4Document struct
+#endif
 
 C4_ASSUME_NONNULL_BEGIN
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+C4API_BEGIN_DECLS
 
 
     /** \defgroup Documents Documents
         @{ */
 
 
-    /** Flags describing a document. */
-    typedef C4_OPTIONS(uint32_t, C4DocumentFlags) {
-        kDocDeleted         = 0x01,     ///< The document's current revision is deleted.
-        kDocConflicted      = 0x02,     ///< The document is in conflict.
-        kDocHasAttachments  = 0x04,     ///< The document's current revision has attachments.
-        kDocExists          = 0x1000    ///< The document exists (i.e. has revisions.)
-    }; // Note: Superset of DocumentFlags
-
-    /** Flags that apply to a revision. */
-    typedef C4_OPTIONS(uint8_t, C4RevisionFlags) {
-        kRevDeleted        = 0x01, ///< Is this revision a deletion/tombstone?
-        kRevLeaf           = 0x02, ///< Is this revision a leaf (no children?)
-        kRevNew            = 0x04, ///< Has this rev been inserted since the doc was read?
-        kRevHasAttachments = 0x08, ///< Does this rev's body contain attachments?
-        kRevKeepBody       = 0x10, ///< Revision's body should not be discarded when non-leaf
-        kRevIsConflict     = 0x20, ///< Unresolved conflicting revision; will never be current
-        kRevClosed         = 0x40, ///< Rev is the (deleted) end of a closed conflicting branch
-        kRevPurged         = 0x80, ///< Revision is purged (this flag is never stored in the db)
-    }; // Note: Same as litecore::Rev::Flags
-
-
-    /** Specifies how much content to retrieve when getting a document. */
-    typedef C4_ENUM(uint8_t, C4DocContentLevel) {
-        kDocGetMetadata,            ///< Only get revID and flags
-        kDocGetCurrentRev,          ///< Get current revision body but not other revisions/remotes
-        kDocGetAll,                 ///< Get everything
-    }; // Note: Same as litecore::ContentOption
-
-
-    /** Describes a revision of a document. A sub-struct of C4Document. */
-    typedef struct {
-        C4HeapString revID;         ///< Revision ID
-        C4RevisionFlags flags;      ///< Flags (deleted?, leaf?, new? hasAttachments?)
-        C4SequenceNumber sequence;  ///< Sequence number in database
-    } C4Revision;
-
-
-    /** Describes a version-controlled document. */
-    struct C4Document {
-        C4DocumentFlags flags;      ///< Document flags
-        C4HeapString docID;         ///< Document ID
-        C4HeapString revID;         ///< Revision ID of current revision
-        C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
-
-        C4Revision selectedRev;     ///< Describes the currently-selected revision
-
-        C4ExtraInfo extraInfo;      ///< For client use
-    };
-
-
-    /** Identifies a remote database being replicated with. */
-    typedef uint32_t C4RemoteID;
-
-
     /** \name Lifecycle
         @{ */
+
 
 
     #define kC4GeneratedIDLength 23
@@ -98,7 +48,9 @@ extern "C" {
     char* c4doc_generateID(char *buffer, size_t bufferSize) C4API;
 
 
-    /** Gets a document from the database given its ID.
+#ifndef C4_STRICT_COLLECTION_API
+
+/** Gets a document from the database given its ID.
         The current revision is selected (if the document exists.)
         You must call `c4doc_release()` when finished with the document.
         @param database  The database to read from.
@@ -126,6 +78,8 @@ extern "C" {
     C4Document* c4doc_getBySequence(C4Database *database,
                                     C4SequenceNumber,
                                     C4Error* C4NULLABLE outError) C4API;
+
+#endif
 
     /** Saves changes to a C4Document.
         Must be called within a transaction.
@@ -172,11 +126,13 @@ extern "C" {
         in reverse chronological order.
         In a version-vector database this is of course the revision's version vector. It will be in
         global form (real peerID instead of "*") unless the `maxRevs` parameter is 0.
+        @param doc  The document.
         @param maxRevs  The maximum number of revisions to include in the result; or 0 for unlimited.
         @param backToRevs  An array of revision IDs: the history should stop when it gets to any of
                             these, and _must_ go back to one of these if possible, even if it means
                             skipping some revisions.
-        @param backToRevsCount  The number of revisions in the `backToRevs` array. */
+        @param backToRevsCount  The number of revisions in the `backToRevs` array.
+        @return  A string of comma-separate revision/version IDs in reverse chronological order. */
     C4SliceResult c4doc_getRevisionHistory(C4Document* doc,
                                            unsigned maxRevs,
                                            const C4String backToRevs[C4NULLABLE],
@@ -247,12 +203,6 @@ extern "C" {
     bool c4rev_equal(C4Slice rev1, C4Slice rev2) C4API;
 
 
-    /** Removes the body of the selected revision and clears its kKeepBody flag.
-        Must be called within a transaction. Remember to save the document afterwards.
-        @param doc  The document to operate on.
-        @return  True if successful, false if unsuccessful. */
-    bool c4doc_removeRevisionBody(C4Document* doc) C4API;
-
     /** Removes a branch from a document's history. The revID must correspond to a leaf
         revision; that revision and its ancestors will be removed, except for ancestors that are
         shared with another branch.
@@ -291,6 +241,8 @@ extern "C" {
     //////// PURGING & EXPIRATION:
         
 
+#ifndef C4_STRICT_COLLECTION_API
+
     /** \name Purging and Expiration
         @{ */
 
@@ -323,6 +275,7 @@ extern "C" {
                                     C4String docID,
                                     C4Error* C4NULLABLE outError) C4API;
 
+#endif // C4_STRICT_COLLECTION_API
 
     /** @} */
 
@@ -333,41 +286,9 @@ extern "C" {
     /** \name Creating and Updating Documents
         @{ */
 
+#ifndef C4_STRICT_COLLECTION_API
 
-    /** Optional callback to `c4doc_put` that generates the new revision body, based on an earlier
-        revision body and the body of the `C4DocPutRequest`. It's intended for use when the new
-        revision is specified as a delta.
-        @param context  The same value given in the `C4DocPutRequest`'s `deltaCBContext` field.
-        @param doc  The document; its selected revision is the one requested in the `deltaSourceRevID`.
-        @param delta  The contents of the request's `body` or `allocedBody`.
-        @param outError  If the callback fails, store an error here if it's non-NULL.
-        @return  The body to store in the new revision, or a null slice on failure. */
-    typedef C4SliceResult (*C4DocDeltaApplier)(void *context,
-                                               C4Document *doc,
-                                               C4Slice delta,
-                                               C4Error* C4NULLABLE outError);
-
-    /** Parameters for adding a revision using c4doc_put. */
-    typedef struct {
-        C4String body;              ///< Revision's body
-        C4String docID;             ///< Document ID
-        C4RevisionFlags revFlags;   ///< Revision flags (deletion, attachments, keepBody)
-        bool existingRevision;      ///< Is this an already-existing rev coming from replication?
-        bool allowConflict;         ///< OK to create a conflict, i.e. can parent be non-leaf?
-        const C4String *history;     ///< Array of ancestor revision IDs
-        size_t historyCount;        ///< Size of history[] array
-        bool save;                  ///< Save the document after inserting the revision?
-        uint32_t maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
-        C4RemoteID remoteDBID;      ///< Identifier of remote db this rev's from (or 0 if local)
-
-        C4SliceResult allocedBody;  ///< Set this instead of body if body is heap-allocated
-
-        C4DocDeltaApplier C4NULLABLE deltaCB;  ///< If non-NULL, will be called to generate the actual body
-        void* C4NULLABLE deltaCBContext;       ///< Passed to `deltaCB` callback
-        C4String deltaSourceRevID;  ///< Source rev for delta (must be valid if deltaCB is given)
-    } C4DocPutRequest;
-
-    /** A high-level Put operation, to insert a new or downloaded revision.
+/** A high-level Put operation, to insert a new or downloaded revision.
         * If request->existingRevision is true, then request->history must contain the revision's
           history, with the revision's ID as the first item.
         * Otherwise, a new revision will be created and assigned a revID. The parent revision ID,
@@ -395,6 +316,8 @@ extern "C" {
                              C4RevisionFlags revisionFlags,
                              C4Error* C4NULLABLE error) C4API;
 
+#endif // C4_STRICT_COLLECTION_API
+
     /** Adds a revision to a document already in memory as a C4Document. This is more efficient
         than c4doc_put because it doesn't have to read from the database before writing; but if
         the C4Document doesn't have the current state of the document, it will fail with the error
@@ -412,8 +335,6 @@ extern "C" {
 
     /** @} */
     /** @} */
-#ifdef __cplusplus
-}
-#endif
 
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END

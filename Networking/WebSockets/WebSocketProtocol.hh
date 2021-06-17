@@ -40,7 +40,7 @@
 #ifndef WEBSOCKETPROTOCOL_UWS_H
 #define WEBSOCKETPROTOCOL_UWS_H
 
-//jpa: Copied definitions of endian functions here, from original Networking.h
+//COUCHBASE: Copied definitions of endian functions here, from original Networking.h
 // #include "Networking.h"
 #ifdef __APPLE__
     #include <libkern/OSByteOrder.h>
@@ -67,7 +67,7 @@
     #include <endian.h>
     #include <arpa/inet.h>
 #endif
-//jpa: End of code adapted from Networking.h
+//COUCHBASE: End of code adapted from Networking.h
 
 #include <algorithm>
 #include <cstring>
@@ -263,9 +263,7 @@ private:
     OpCode opCode[2];
 
 public:
-    WebSocketProtocol() {
-
-    }
+    WebSocketProtocol() =default;
 
     // Based on utf8_check.c by Markus Kuhn, 2005
     // https://www.cl.cam.ac.uk/~mgk25/ucs/utf8_check.c
@@ -325,7 +323,8 @@ public:
         if (code) {
             code = htons(code);
             memcpy(dst, &code, 2);
-            memcpy(dst + 2, message, length);
+            if (length > 0)                  // COUCHBASE: Avoid UB when message==NULL and length==0
+                memcpy(dst + 2, message, length);
             return length + 2;
         }
         return 0;

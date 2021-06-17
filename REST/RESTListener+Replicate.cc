@@ -17,14 +17,15 @@
 //
 
 #include "RESTListener.hh"
-#include "c4.hh"
+#include "c4Database.hh"
+#include "c4Document.hh"
+#include "c4ExceptionUtils.hh"
 #include "c4Private.h"
-#include "c4Document+Fleece.h"
+#include "c4Replicator.hh"
 #include "c4ListenerInternal.hh"
 #include "Server.hh"
 #include "RefCounted.hh"
 #include "StringUtil.hh"
-#include "c4ExceptionUtils.hh"
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -50,43 +51,40 @@ namespace litecore { namespace REST {
         ,_continuous(continuous)
         { }
 
-        bool start(C4Database *localDB, C4String localDbName,
+        void start(C4Database *localDB, C4String localDbName,
                    const C4Address &remoteAddress, C4String remoteDbName,
-                   C4ReplicatorMode pushMode, C4ReplicatorMode pullMode, C4Error *outError)
+                   C4ReplicatorMode pushMode, C4ReplicatorMode pullMode)
         {
-            if (findMatchingTask()) {
-                c4error_return(WebSocketDomain, 409, C4STR("Equivalent replication already running"),
-                               outError);
-                return false;
-            }
+            if (findMatchingTask())
+                C4Error::raise(WebSocketDomain, 409, "Equivalent replication already running");
 
             Lock lock(_mutex);
             _push = (pushMode >= kC4OneShot);
             registerTask();
-            c4log(ListenerLog, kC4LogInfo,
-                  "Replicator task #%d starting: local=%.*s, mode=%s, scheme=%.*s, host=%.*s,"
-                  " port=%u, db=%.*s, bidi=%d, continuous=%d",
-                  taskID(), SPLAT(localDbName), (pushMode > kC4Disabled ? "push" : "pull"),
-                  SPLAT(remoteAddress.scheme), SPLAT(remoteAddress.hostname), remoteAddress.port,
-                  SPLAT(remoteDbName),
-                  _bidi, _continuous);
-            
-            C4ReplicatorParameters params = {};
-            params.push = pushMode;
-            params.pull = pullMode;
-            params.onStatusChanged = [](C4Replicator*, C4ReplicatorStatus status, void *context) {
-                ((ReplicationTask*)context)->onReplStateChanged(status);
-            };
-            params.callbackContext = this;
-            _repl = c4repl_new(localDB, remoteAddress, remoteDbName, params, outError);
-            if (!_repl) {
+            try {
                 c4log(ListenerLog, kC4LogInfo,
-                      "Replicator task #%d failed to start!", taskID());
+                      "Replicator task #%d starting: local=%.*s, mode=%s, scheme=%.*s, host=%.*s,"
+                      " port=%u, db=%.*s, bidi=%d, continuous=%d",
+                      taskID(), SPLAT(localDbName), (pushMode > kC4Disabled ? "push" : "pull"),
+                      SPLAT(remoteAddress.scheme), SPLAT(remoteAddress.hostname), remoteAddress.port,
+                      SPLAT(remoteDbName),
+                      _bidi, _continuous);
+
+                C4ReplicatorParameters params = {};
+                params.push = pushMode;
+                params.pull = pullMode;
+                params.onStatusChanged = [](C4Replicator*, C4ReplicatorStatus status, void *context) {
+                    ((ReplicationTask*)context)->onReplStateChanged(status);
+                };
+                params.callbackContext = this;
+
+                _repl = localDB->newReplicator(remoteAddress, remoteDbName, params);
+            } catch (...) {
+                c4log(ListenerLog, kC4LogInfo, "Replicator task #%d failed to start!", taskID());
                 unregisterTask();
-                return false;
+                throw;
             }
-            onReplStateChanged(c4repl_getStatus(_repl));
-            return true;
+            onReplStateChanged(_repl->getStatus());
         }
 
         ReplicationTask* findMatchingTask() {
@@ -103,8 +101,7 @@ namespace litecore { namespace REST {
 
         // Cancel any existing task with the same parameters as me:
         bool cancelExisting() {
-            auto task = findMatchingTask();
-            if (task) {
+            if (auto task = findMatchingTask(); task) {
                 task->stop();
                 return true;
             }
@@ -203,7 +200,7 @@ namespace litecore { namespace REST {
             Lock lock(_mutex);
             if (_repl) {
                 c4log(ListenerLog, kC4LogInfo, "Replicator task #%u stopping...", taskID());
-                c4repl_stop(_repl);
+                _repl->stop();
             }
         }
 
@@ -231,7 +228,7 @@ namespace litecore { namespace REST {
         bool _bidi, _continuous, _push;
         mutable Mutex _mutex;
         condition_variable_any _cv;
-        c4::ref<C4Replicator> _repl;
+        Retained<C4Replicator> _repl;
         C4ReplicatorStatus _status;
         alloc_slice _message;
         HTTPStatus _finalResult {HTTPStatus::undefined};
@@ -259,11 +256,11 @@ namespace litecore { namespace REST {
         slice remoteURL;
         C4ReplicatorMode pushMode, pullMode;
         pushMode = pullMode = (bidi ? activeMode : kC4Disabled);
-        if (c4repl_isValidDatabaseName(source)) {
+        if (C4Replicator::isValidDatabaseName(source)) {
             localName = source;
             pushMode = activeMode;
             remoteURL = target;
-        } else if (c4repl_isValidDatabaseName(target)) {
+        } else if (C4Replicator::isValidDatabaseName(target)) {
             localName = target;
             pullMode = activeMode;
             remoteURL = source;
@@ -272,17 +269,16 @@ namespace litecore { namespace REST {
                                        "Neither source nor target is a local database name");
         }
 
-        c4::ref<C4Database> localDB = databaseNamed(localName.asString());
+        Retained<C4Database> localDB = databaseNamed(localName.asString());
         if (!localDB)
             return rq.respondWithStatus(HTTPStatus::NotFound);
 
         C4Address remoteAddress;
-        C4String remoteDbName;
-        if (!c4address_fromURL(remoteURL, &remoteAddress, &remoteDbName))
+        slice remoteDbName;
+        if (!C4Address::fromURL(remoteURL, &remoteAddress, &remoteDbName))
             return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database URL");
 
         // Start the replication!
-        C4Error error;
         Retained<ReplicationTask> task = new ReplicationTask(this, source, target, bidi, continuous);
 
         if (params["cancel"].asBool()) {
@@ -293,11 +289,9 @@ namespace litecore { namespace REST {
             return;
         }
 
-        if (!task->start(localDB, localName,
-                         remoteAddress, remoteDbName,
-                         pushMode, pullMode, &error))
-            return rq.respondWithError(error);
-
+        task->start(localDB, localName,
+                    remoteAddress, remoteDbName,
+                    pushMode, pullMode);
 
         HTTPStatus statusCode = HTTPStatus::OK;
         if (!continuous) {

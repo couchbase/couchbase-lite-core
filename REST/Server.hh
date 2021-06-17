@@ -45,7 +45,7 @@ namespace litecore::net {
 namespace litecore { namespace REST {
 
     /** HTTP server with configurable URI handlers. */
-    class Server : public fleece::RefCounted, public fleece::InstanceCountedIn<Server> {
+    class Server final : public fleece::RefCounted, public fleece::InstanceCountedIn<Server> {
     public:
         Server();
         

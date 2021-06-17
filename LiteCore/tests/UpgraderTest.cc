@@ -18,9 +18,10 @@
 
 #include "Upgrader.hh"
 #include "LiteCoreTest.hh"
-#include "Database.hh"
-#include "Document.hh"
-#include "BlobStore.hh"
+#include "DatabaseImpl.hh"
+#include "c4Collection.hh"
+#include "c4Document.hh"
+#include "c4BlobStore.hh"
 #include "Logging.hh"
 #include "TempArray.hh"
 #include "PlatformCompat.hh"
@@ -28,11 +29,13 @@
 using namespace std;
 using namespace fleece;
 
+using DatabaseImpl = litecore::DatabaseImpl;
+
 
 class UpgradeTestFixture : public TestFixture {
 protected:
 
-    Retained<Database> db;
+    Retained<DatabaseImpl> db;
     C4DocumentVersioning _versioning;
 
     void upgrade(string oldPath, C4DocumentVersioning versioning) {
@@ -47,9 +50,9 @@ protected:
         config.versioning = versioning;
         _versioning = versioning;
 
-        UpgradeDatabase(oldPath, newPath, config);
+        UpgradeDatabase(FilePath(oldPath), newPath, config);
 
-        db = new Database(newPath, config);
+        db = DatabaseImpl::open(newPath, config);
     }
 
     void upgradeInPlace(string fixturePath, C4DocumentVersioning versioning) {
@@ -68,17 +71,17 @@ protected:
 
         // First check that NoUpgrade flag correctly triggers an exception:
         ExpectException(error::LiteCore, error::DatabaseTooOld, [&]{
-            db = new Database(dbPath, config);
+            db = DatabaseImpl::open(dbPath, config);
         });
 
         // Now allow the upgrade:
         ExpectingExceptions x;
         config.flags &= ~kC4DB_NoUpgrade;
-        db = new Database(dbPath, config);
+        db = DatabaseImpl::open(dbPath, config);
     }
 
     void verifyDoc(slice docID, slice bodyJSON, vector<slice> revIDs) {
-        Retained<Document> doc1( db->documentFactory().newDocumentInstance(docID, kEntireBody) );
+        auto doc1 = db->getDocument(docID, false, kDocGetAll);
         CHECK(doc1->exists());
         CHECK(doc1->bodyAsJSON() == bodyJSON);
         if (_versioning != kC4VectorVersioning) {
@@ -86,14 +89,16 @@ protected:
             for (slice revID : revIDs) {
                 if (i++ > 0)
                     CHECK(doc1->selectNextRevision());
-                CHECK(slice(doc1->selectedRev.revID) == revID);
+                CHECK(slice(doc1->selectedRev().revID) == revID);
             }
             CHECK(!doc1->selectNextRevision());
         }
     }
 
     void verifyAttachment(string digest) {
-        CHECK(db->blobStore()->get(blobKey::withBase64(digest)).exists());
+        auto key = C4BlobKey::withDigestString(digest);
+        REQUIRE(key);
+        CHECK(db->getBlobStore().getSize(*key) > 0);
     }
 
 };

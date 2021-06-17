@@ -58,7 +58,7 @@ namespace litecore { namespace REST {
         
         Request(Method, const std::string &path, const std::string &queries,
                 websocket::Headers headers, fleece::alloc_slice body);
-        Request() { }
+        Request() =default;
 
         bool readFromHTTP(fleece::slice httpData);      // data must extend at least to CRLF
 

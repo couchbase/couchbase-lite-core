@@ -89,10 +89,10 @@ namespace litecore {
     /** A serializable tree of Revisions. */
     class RevTree {
     public:
-        RevTree() { }
+        RevTree() =default;
         RevTree(slice body, slice extra, sequence_t seq);
         RevTree(const RevTree&);
-        virtual ~RevTree() { }
+        virtual ~RevTree() =default;
 
         void decode(slice body, slice extra, sequence_t seq);
 
@@ -106,7 +106,7 @@ namespace litecore {
         const Rev* getBySequence(sequence_t) const FLPURE;
 
         const std::vector<Rev*>& allRevisions() const FLPURE   {return _revs;}
-        const Rev* currentRevision();
+        const Rev* currentRevision() const;
         bool hasConflict() const FLPURE;
         bool hasNewRevisions() const FLPURE;
 

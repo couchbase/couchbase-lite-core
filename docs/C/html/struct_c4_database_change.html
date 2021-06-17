@@ -72,7 +72,7 @@ $(function() {
 <p>Represents a change to a document in a database.  
  <a href="struct_c4_database_change.html#details">More...</a></p>
 
-<p><code>#include &lt;<a class="el" href="c4_observer_8h_source.html">c4Observer.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="c4_document_types_8h_source.html">c4DocumentTypes.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
@@ -85,29 +85,12 @@ Data Fields</h2></td></tr>
 <tr class="memitem:aa8e203ed64d903b7a0a6f070de701dec"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_database_change.html#aa8e203ed64d903b7a0a6f070de701dec">sequence</a></td></tr>
 <tr class="memdesc:aa8e203ed64d903b7a0a6f070de701dec"><td class="mdescLeft">&#160;</td><td class="mdescRight">The latest sequence number (or 0 if doc was purged)  <a href="#aa8e203ed64d903b7a0a6f070de701dec">More...</a><br /></td></tr>
 <tr class="separator:aa8e203ed64d903b7a0a6f070de701dec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa5740497cc98f3197e013cf9184a26c7"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_database_change.html#aa5740497cc98f3197e013cf9184a26c7">bodySize</a></td></tr>
-<tr class="memdesc:aa5740497cc98f3197e013cf9184a26c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">The size of the revision body in bytes.  <a href="#aa5740497cc98f3197e013cf9184a26c7">More...</a><br /></td></tr>
-<tr class="separator:aa5740497cc98f3197e013cf9184a26c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad23daa0cfac48af76de921e0beda331d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_database_change.html#ad23daa0cfac48af76de921e0beda331d">flags</a></td></tr>
+<tr class="separator:ad23daa0cfac48af76de921e0beda331d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Represents a change to a document in a database. </p>
 </div><h2 class="groupheader">Field Documentation</h2>
-<a id="aa5740497cc98f3197e013cf9184a26c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa5740497cc98f3197e013cf9184a26c7">&#9670;&nbsp;</a></span>bodySize</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t C4DatabaseChange::bodySize</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>The size of the revision body in bytes. </p>
-
-</div>
-</div>
 <a id="a6a8544e60ba41c52b0adc498f7eb702a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6a8544e60ba41c52b0adc498f7eb702a">&#9670;&nbsp;</a></span>docID</h2>
 
@@ -121,6 +104,20 @@ Data Fields</h2></td></tr>
 </div><div class="memdoc">
 
 <p>The document's ID. </p>
+
+</div>
+</div>
+<a id="ad23daa0cfac48af76de921e0beda331d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad23daa0cfac48af76de921e0beda331d">&#9670;&nbsp;</a></span>flags</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___documents.html#gafc0b28ce70a5c3a9b8d968859e04b2c0">C4RevisionFlags</a> C4DatabaseChange::flags</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -157,7 +154,7 @@ Data Fields</h2></td></tr>
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li>include/<a class="el" href="c4_observer_8h_source.html">c4Observer.h</a></li>
+<li>include/<a class="el" href="c4_document_types_8h_source.html">c4DocumentTypes.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

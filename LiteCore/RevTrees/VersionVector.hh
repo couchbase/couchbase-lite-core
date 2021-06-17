@@ -35,7 +35,7 @@ namespace litecore {
         }
 
         /** Constructs an empty vector. */
-        VersionVector() { }
+        VersionVector() =default;
 
         /** Parses textual form from ASCII data. Overwrites any existing state.
             Throws BadRevisionID if the string's not valid.
@@ -110,7 +110,7 @@ namespace litecore {
             Otherwise they're written as '*'. */
         fleece::alloc_slice asASCII(peerID myID = kMePeerID) const;
 
-        bool writeASCII(slice *buf, peerID myID =kMePeerID) const;
+        bool writeASCII(slice_ostream&, peerID myID =kMePeerID) const;
         size_t maxASCIILen() const;
 
 #if DEBUG

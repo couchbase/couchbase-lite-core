@@ -32,7 +32,7 @@ namespace litecore { namespace blip {
     /** A BLIP connection. Use this object to open and close connections and send requests.
         The connection notifies about events and messages by calling its delegate.
         The methods are thread-safe. */
-    class Connection : public RefCounted, Logging {
+    class Connection final : public RefCounted, Logging {
     public:
 
         enum State {
@@ -116,7 +116,7 @@ namespace litecore { namespace blip {
         The delegate methods are called on undefined threads, and should not block. */
     class ConnectionDelegate {
     public:
-        virtual ~ConnectionDelegate()                           { }
+        virtual ~ConnectionDelegate()                           =default;
 
         /** Called when the HTTP response arrives (just before onConnect or onClose). */
         virtual void onHTTPResponse(int status, const websocket::Headers &headers) { }

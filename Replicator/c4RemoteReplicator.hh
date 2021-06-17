@@ -7,9 +7,8 @@
 //
 
 #pragma once
-#include "c4Replicator.hh"
+#include "c4ReplicatorImpl.hh"
 #include "c4Socket+Internal.hh"
-#include "c4.hh"
 #include "Address.hh"
 #include "StringUtil.hh"
 #include "Timer.hh"
@@ -19,11 +18,11 @@
 
 using namespace litecore::net;
 
-namespace c4Internal {
+namespace litecore {
 
 
     /** A replicator with a remote database via WebSockets. */
-    class C4RemoteReplicator : public C4Replicator {
+    class C4RemoteReplicator final : public C4ReplicatorImpl {
     public:
 
         // Default maximum number of retry attempts before replications give up.
@@ -40,9 +39,9 @@ namespace c4Internal {
                            const C4ReplicatorParameters &params,
                            const C4Address &serverAddress,
                            C4String remoteDatabaseName)
-        :C4Replicator(db, params)
+        :C4ReplicatorImpl(db, params)
         ,_url(effectiveURL(serverAddress, remoteDatabaseName))
-        ,_retryTimer(std::bind(&C4RemoteReplicator::retry, this, false, nullptr))
+        ,_retryTimer(std::bind(&C4RemoteReplicator::retry, this, false))
         {
             if (params.socketFactory) {
                 // Keep a copy of the C4SocketFactory struct in case original is invalidated:
@@ -52,7 +51,7 @@ namespace c4Internal {
         }
 
 
-        void start(bool reset) override {
+        void start(bool reset) noexcept override {
             LOCK(_mutex);
             if (_replicator)
                 return;
@@ -64,36 +63,32 @@ namespace c4Internal {
         }
 
 
-        virtual bool retry(bool resetCount, C4Error *outError) override {
+        virtual bool retry(bool resetCount) override {
             LOCK(_mutex);
             if (resetCount)
                 _retryCount = 0;
             if (_status.level >= kC4Connecting)
                 return true;
-            if (_status.level == kC4Stopped) {
-                c4error_return(LiteCoreDomain, kC4ErrorUnsupported,
-                               "Replicator is stopped"_sl, outError);
-                return false;
-            }
+            if (_status.level == kC4Stopped)
+                C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported, "Replicator is stopped");
             logInfo("Retrying connection to %.*s (attempt #%u)...", SPLAT(_url), _retryCount+1);
             if(!_restart(false)) {
                 UNLOCK();
                 notifyStateChanged();
                 return false;
             }
-            
             return true;
         }
 
 
-        virtual void stop() override {
+        virtual void stop() noexcept override {
             cancelScheduledRetry();
-            C4Replicator::stop();
+            C4ReplicatorImpl::stop();
         }
 
 
         // Called by the client when it determines the remote host is [un]reachable.
-        virtual void setHostReachable(bool reachable) override {
+        virtual void setHostReachable(bool reachable) noexcept override {
             LOCK(_mutex);
             if (!setStatusFlag(kC4HostReachable, reachable))
                 return;
@@ -105,14 +100,14 @@ namespace c4Internal {
         }
 
 
-        virtual void _suspend() override {
+        virtual void _suspend() noexcept override {
             // called with _mutex locked
             cancelScheduledRetry();
-            C4Replicator::_suspend();
+            C4ReplicatorImpl::_suspend();
         }
 
 
-        virtual bool _unsuspend() override {
+        virtual bool _unsuspend() noexcept override {
             // called with _mutex locked
             maybeScheduleRetry();
             return true;
@@ -120,40 +115,31 @@ namespace c4Internal {
 
 
     protected:
-        virtual alloc_slice URL() const override {
+        virtual alloc_slice URL() const noexcept override {
             return _url;
         }
 
 
-        virtual bool createReplicator() override {
+        virtual void createReplicator() override {
             auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _socketFactory);
-            
-            C4Error err;
-            c4::ref<C4Database> dbCopy = c4db_openAgain(_database, &err);
-            if(!dbCopy) {
-                _status.error = err;
-                return false;
-            }
-            
-            _replicator = new Replicator(dbCopy, webSocket, *this, _options);
+            _replicator = new Replicator(_database->openAgain().get(), webSocket, *this, _options);
             
             // Yes this line is disgusting, but the memory addresses that the logger logs
             // are not the _actual_ addresses of the object, but rather the pointer to
             // its Logging virtual table since inside of _logVerbose this is all that
             // is known.
             _logVerbose("C4RemoteRepl %p created Repl %p", (Logging *)this, (Logging *)_replicator.get());
-            return true;
         }
 
 
         // Both `start` and `retry` end up calling this.
-        bool _restart(bool reset) {
+        bool _restart(bool reset) noexcept {
             cancelScheduledRetry();
             return _start(reset);
         }
 
 
-        void maybeScheduleRetry() {
+        void maybeScheduleRetry() noexcept {
             if (_status.level == kC4Offline &&  statusFlag(kC4HostReachable)
                                             && !statusFlag(kC4Suspended)) {
                 _retryCount = 0;
@@ -163,14 +149,14 @@ namespace c4Internal {
 
 
         // Starts the timer to call `retry` in the future.
-        void scheduleRetry(unsigned delayInSecs) {
+        void scheduleRetry(unsigned delayInSecs) noexcept {
             _retryTimer.fireAfter(std::chrono::seconds(delayInSecs));
             setStatusFlag(kC4WillRetry, true);
         }
 
 
         // Cancels a previous call to `scheduleRetry`.
-        void cancelScheduledRetry() {
+        void cancelScheduledRetry() noexcept {
             _retryTimer.stop();
             setStatusFlag(kC4WillRetry, false);
         }
@@ -190,8 +176,8 @@ namespace c4Internal {
 
             // If this is a transient error, or if I'm continuous and the error might go away with
             // a change in network (i.e. network down, hostname unknown), then go offline.
-            bool transient = c4error_mayBeTransient(c4err);
-            if (transient || (continuous() && c4error_mayBeNetworkDependent(c4err))) {
+            bool transient = c4err.mayBeTransient();
+            if (transient || (continuous() && c4err.mayBeNetworkDependent())) {
                 if (_retryCount >= maxRetryCount()) {
                     logError("Will not retry; max retry count (%u) reached", _retryCount);
                     return;
@@ -200,24 +186,25 @@ namespace c4Internal {
                 // OK, we are going offline, to retry later:
                 _status.level = kC4Offline;
 
+                string desc = c4err.description();
                 if (transient || statusFlag(kC4HostReachable)) {
                     // On transient error, retry periodically, with exponential backoff:
                     unsigned delay = retryDelay(++_retryCount);
                     logError("Transient error (%s); attempt #%u in %u sec...",
-                             c4error_descriptionStr(c4err), _retryCount+1, delay);
+                             desc.c_str(), _retryCount+1, delay);
                     scheduleRetry(delay);
                 } else {
                     // On other network error, don't retry automatically. The client should await
                     // a network change and call c4repl_retry.
                     logError("Network error (%s); will retry when host becomes reachable...",
-                             c4error_descriptionStr(c4err));
+                             desc.c_str());
                 }
             }
         }
 
 
         // The function governing the exponential backoff of retries
-        unsigned retryDelay(unsigned retryCount) const {
+        unsigned retryDelay(unsigned retryCount) const noexcept {
             unsigned delay = 1 << std::min(retryCount, 30u);
             unsigned maxDelay = getIntProperty(kC4ReplicatorOptionMaxRetryInterval,
                                                kDefaultMaxRetryDelay);
@@ -226,7 +213,7 @@ namespace c4Internal {
 
 
         // Returns the maximum number of (failed) retry attempts.
-        unsigned maxRetryCount() const {
+        unsigned maxRetryCount() const noexcept {
             unsigned defaultCount = continuous() ? kMaxContinuousRetryCount : kMaxOneShotRetryCount;
             return getIntProperty(kC4ReplicatorOptionMaxRetries, defaultCount);
         }
@@ -248,7 +235,7 @@ namespace c4Internal {
         alloc_slice socketOptions() const {
             string protocolString = string(blip::Connection::kWSProtocolName) + kReplicatorProtocolName;
             Replicator::Options opts(kC4Disabled, kC4Disabled, _options.properties);
-            opts.setProperty(slice(kC4SocketOptionWSProtocols), protocolString.c_str());
+            opts.setProperty(kC4SocketOptionWSProtocols, protocolString.c_str());
             return opts.properties.data();
         }
 

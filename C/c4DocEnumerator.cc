@@ -16,18 +16,22 @@
 // limitations under the License.
 //
 
+#include "c4DocEnumerator.hh"
+#include "CollectionImpl.hh"
+#include "c4Document.hh"
 #include "c4Internal.hh"
-#include "c4DocEnumerator.h"
-
-#include "c4Database.hh"
-#include "Document.hh"
+#include "DatabaseImpl.hh"
+#include "DocumentFactory.hh"
 #include "DataFile.hh"
 #include "Record.hh"
 #include "RecordEnumerator.hh"
 #include "RevID.hh"
 #include "VersionVector.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "InstanceCounted.hh"
+
+using namespace litecore;
 
 
 #pragma mark - DOC ENUMERATION:
@@ -37,24 +41,24 @@ CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
 };
 
 
-struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted {
-    C4DocEnumerator(C4Database *database,
-                    sequence_t since,
-                    const C4EnumeratorOptions &options)
-    :RecordEnumerator(database->defaultKeyStore(), since, recordOptions(database, options))
-    ,_database(database)
+class C4DocEnumerator::Impl : public RecordEnumerator, public fleece::InstanceCounted {
+public:
+    Impl(C4Collection *collection,
+         sequence_t since,
+         const C4EnumeratorOptions &options)
+    :RecordEnumerator(asInternal(collection)->keyStore(), since, recordOptions(options))
+    ,_collection(asInternal(collection))
     ,_options(options)
     { }
 
-    C4DocEnumerator(C4Database *database,
-                    const C4EnumeratorOptions &options)
-    :RecordEnumerator(database->defaultKeyStore(), recordOptions(database, options))
-    ,_database(database)
+    Impl(C4Collection *collection,
+         const C4EnumeratorOptions &options)
+    :RecordEnumerator(asInternal(collection)->keyStore(), recordOptions(options))
+    ,_collection(asInternal(collection))
     ,_options(options)
     { }
 
-    static RecordEnumerator::Options recordOptions(C4Database *database,
-                                                   const C4EnumeratorOptions &c4options)
+    static RecordEnumerator::Options recordOptions(const C4EnumeratorOptions &c4options)
     {
         RecordEnumerator::Options options;
         if (c4options.flags & kC4Descending)
@@ -70,13 +74,13 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
         return options;
     }
 
-    Retained<Document> getDoc() {
+    Retained<C4Document> getDoc() {
         if (!hasRecord())
             return nullptr;
-        return _database->documentFactory().newDocumentInstance(record());
+        return _collection->newDocumentInstance(record());
     }
 
-    bool getDocInfo(C4DocumentInfo *outInfo) {
+    bool getDocInfo(C4DocumentInfo *outInfo) noexcept {
         if (!*this)
             return false;
 
@@ -97,66 +101,55 @@ struct C4DocEnumerator : public RecordEnumerator, public fleece::InstanceCounted
     }
 
 private:
-    Retained<Database> _database;
+    litecore::CollectionImpl* _collection;
     C4EnumeratorOptions const _options;
     alloc_slice _docRevID;
 };
 
 
-void c4enum_close(C4DocEnumerator *e) noexcept {
-    if (e)
-        e->close();
+C4DocEnumerator::C4DocEnumerator(C4Collection *collection,
+                                 C4SequenceNumber since,
+                                 const C4EnumeratorOptions &options)
+:_impl(new Impl(collection, since, options))
+{ }
+
+C4DocEnumerator::C4DocEnumerator(C4Collection *collection,
+                                 const C4EnumeratorOptions &options)
+:_impl(new Impl(collection, options))
+{ }
+
+#ifndef C4_STRICT_COLLECTION_API
+C4DocEnumerator::C4DocEnumerator(C4Database *database, const C4EnumeratorOptions &options)
+:C4DocEnumerator(database->getDefaultCollection(), options) { }
+C4DocEnumerator::C4DocEnumerator(C4Database *database, C4SequenceNumber since,
+                                 const C4EnumeratorOptions &options)
+:C4DocEnumerator(database->getDefaultCollection(), since, options) { }
+#endif
+
+C4DocEnumerator::~C4DocEnumerator() = default;
+
+bool C4DocEnumerator::getDocumentInfo(C4DocumentInfo &info) const noexcept {
+    return _impl && _impl->getDocInfo(&info);
 }
 
-void c4enum_free(C4DocEnumerator *e) noexcept {
-    delete e;
+C4DocumentInfo C4DocEnumerator::documentInfo() const {
+    C4DocumentInfo i;
+    if (!getDocumentInfo(i))
+        error::_throw(error::NotFound, "No more documents");
+    return i;
 }
 
-
-C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
-                                       C4SequenceNumber since,
-                                       const C4EnumeratorOptions *c4options,
-                                       C4Error *outError) noexcept
-{
-    return tryCatch<C4DocEnumerator*>(outError, [&]{
-        return new C4DocEnumerator(database, since,
-                                   c4options ? *c4options : kC4DefaultEnumeratorOptions);
-    });
+Retained<C4Document> C4DocEnumerator::getDocument() const {
+    return _impl ? _impl->getDoc() : nullptr;
 }
 
-
-C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
-                                       const C4EnumeratorOptions *c4options,
-                                       C4Error *outError) noexcept
-{
-    return tryCatch<C4DocEnumerator*>(outError, [&]{
-        return new C4DocEnumerator(database,
-                                   c4options ? *c4options : kC4DefaultEnumeratorOptions);
-    });
+bool C4DocEnumerator::next() {
+    if (_impl && _impl->next())
+        return true;
+    _impl = nullptr;
+    return false;
 }
 
-
-bool c4enum_next(C4DocEnumerator *e, C4Error *outError) noexcept {
-    return tryCatch<bool>(outError, [&]{
-        if (e->next())
-            return true;
-        clearError(outError);      // end of iteration is not an error
-        return false;
-    });
+void C4DocEnumerator::close() noexcept {
+    _impl = nullptr;
 }
-
-
-bool c4enum_getDocumentInfo(C4DocEnumerator *e, C4DocumentInfo *outInfo) noexcept {
-    return e->getDocInfo(outInfo);
-}
-
-
-C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
-    return tryCatch<C4Document*>(outError, [&]{
-        Retained<Document> doc = e->getDoc();
-        if (!doc)
-            clearError(outError);      // end of iteration is not an error
-        return retain(std::move(doc));
-    });
-}
-

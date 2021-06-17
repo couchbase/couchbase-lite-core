@@ -26,6 +26,7 @@
 #include "PlatformIO.hh"
 #include <sstream>
 #include <typeinfo>
+#include "betterassert.hh"
 
 namespace litecore { namespace n1ql {
 

@@ -33,8 +33,7 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    bool SQLiteKeyStore::createPredictiveIndex(const IndexSpec &spec)
-    {
+    bool SQLiteKeyStore::createPredictiveIndex(const IndexSpec &spec) {
         auto expressions = spec.what();
         if (expressions->count() != 1)
             error::_throw(error::InvalidQuery, "Predictive index requires exactly one expression");
@@ -69,8 +68,8 @@ namespace litecore {
                                                  const IndexSpec::Options *options)
     {
         // Derive the table name from the expression (path) it unnests:
-        QueryParser qp(*this);
         auto kvTableName = tableName();
+        QueryParser qp(db(), kvTableName);
         auto predTableName = qp.predictiveTableName(expression);
 
         // Create the index table, unless an identical one already exists:
@@ -120,11 +119,6 @@ namespace litecore {
                           insertTriggerExpr);
         }
         return predTableName;
-    }
-
-
-    string SQLiteKeyStore::predictiveTableName(const std::string &property) const {
-        return tableName() + ":predict:" + property;
     }
 
 }

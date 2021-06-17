@@ -59,6 +59,9 @@ namespace litecore {
     };
 
 
+    slice getColumnAsSlice(SQLite::Statement&, int col);
+
+
     // What the user_data of a registered function points to
     struct fleeceFuncContext {
         fleeceFuncContext(DataFile::Delegate *d,

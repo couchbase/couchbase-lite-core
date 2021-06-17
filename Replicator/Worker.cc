@@ -141,7 +141,7 @@ namespace litecore { namespace repl {
             return { };
         slice blipDomain = slice(error::nameOfDomain((error::Domain)err.domain));
         auto code = err.code;
-        alloc_slice message(c4error_getMessage(err));
+        alloc_slice message(err.message());
 
         //FIX: Map more common errors to standard domains/codes (via table lookup)
         switch (err.domain) {
@@ -184,7 +184,7 @@ namespace litecore { namespace repl {
                     SPLAT(err.domain), err.code, SPLAT(err.message));
             code = kC4ErrorRemoteError;
         }
-        return c4error_make(domain, code, err.message);
+        return C4Error::make(domain, code, err.message);
     }
 
 
@@ -196,14 +196,13 @@ namespace litecore { namespace repl {
     }
 
     void Worker::gotError(C4Error err) {
-        alloc_slice message = c4error_getDescription(err);
-        logError("Got LiteCore error: %.*s", SPLAT(message));
+        logError("Got LiteCore error: %s", err.description().c_str());
         onError(err);
     }
 
     void Worker::caughtException(const std::exception &x) {
         logError("Threw C++ exception: %s", x.what());
-        onError(c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what())));
+        onError(C4Error::make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what())));
     }
 
     void Worker::onError(C4Error err) {

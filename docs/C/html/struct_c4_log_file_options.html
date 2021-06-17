@@ -69,16 +69,19 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="c4_base_8h_source.html">c4Base.h</a>&gt;</code></p>
+<p>Configuration for file-based logging.  
+ <a href="struct_c4_log_file_options.html#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="c4_log_8h_source.html">c4Log.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
 <tr class="memitem:a4f5acbe20717ea01245d6ec3d818c8b3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___logging.html#ga70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_log_file_options.html#a4f5acbe20717ea01245d6ec3d818c8b3">log_level</a></td></tr>
-<tr class="memdesc:a4f5acbe20717ea01245d6ec3d818c8b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">The log level that the overall logging will limit to.  <a href="#a4f5acbe20717ea01245d6ec3d818c8b3">More...</a><br /></td></tr>
+<tr class="memdesc:a4f5acbe20717ea01245d6ec3d818c8b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">The minimum level of message to be logged.  <a href="#a4f5acbe20717ea01245d6ec3d818c8b3">More...</a><br /></td></tr>
 <tr class="separator:a4f5acbe20717ea01245d6ec3d818c8b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af77026bcd572b8b0de374077dc597999"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_log_file_options.html#af77026bcd572b8b0de374077dc597999">base_path</a></td></tr>
-<tr class="memdesc:af77026bcd572b8b0de374077dc597999"><td class="mdescLeft">&#160;</td><td class="mdescRight">The path to the binary log file base name (other elements will be added)  <a href="#af77026bcd572b8b0de374077dc597999">More...</a><br /></td></tr>
-<tr class="separator:af77026bcd572b8b0de374077dc597999"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a549c193a38a33ba04e09bb502280be97"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_log_file_options.html#a549c193a38a33ba04e09bb502280be97">base_path</a></td></tr>
+<tr class="memdesc:a549c193a38a33ba04e09bb502280be97"><td class="mdescLeft">&#160;</td><td class="mdescRight">The path to the binary log file base name (other elements will be added)  <a href="#a549c193a38a33ba04e09bb502280be97">More...</a><br /></td></tr>
+<tr class="separator:a549c193a38a33ba04e09bb502280be97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad021987386dc466c41469ce317245683"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_log_file_options.html#ad021987386dc466c41469ce317245683">max_size_bytes</a></td></tr>
 <tr class="memdesc:ad021987386dc466c41469ce317245683"><td class="mdescLeft">&#160;</td><td class="mdescRight">The maximum size of each log file (minimum 1024)  <a href="#ad021987386dc466c41469ce317245683">More...</a><br /></td></tr>
 <tr class="separator:ad021987386dc466c41469ce317245683"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -88,19 +91,21 @@ Data Fields</h2></td></tr>
 <tr class="memitem:a8f44548a4b11f4be2592b263ee1b45a6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_log_file_options.html#a8f44548a4b11f4be2592b263ee1b45a6">use_plaintext</a></td></tr>
 <tr class="memdesc:a8f44548a4b11f4be2592b263ee1b45a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disables binary encoding of the logs (not recommended)  <a href="#a8f44548a4b11f4be2592b263ee1b45a6">More...</a><br /></td></tr>
 <tr class="separator:a8f44548a4b11f4be2592b263ee1b45a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adbd3c5ea185419aa9caadc33a1fc9bf7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_log_file_options.html#adbd3c5ea185419aa9caadc33a1fc9bf7">header</a></td></tr>
-<tr class="memdesc:adbd3c5ea185419aa9caadc33a1fc9bf7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Header to print at the start of every log file.  <a href="#adbd3c5ea185419aa9caadc33a1fc9bf7">More...</a><br /></td></tr>
-<tr class="separator:adbd3c5ea185419aa9caadc33a1fc9bf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:addc6d0ddd3e9e0feaa85bffbe107441c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_log_file_options.html#addc6d0ddd3e9e0feaa85bffbe107441c">header</a></td></tr>
+<tr class="memdesc:addc6d0ddd3e9e0feaa85bffbe107441c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Header text to print at the start of every log file.  <a href="#addc6d0ddd3e9e0feaa85bffbe107441c">More...</a><br /></td></tr>
+<tr class="separator:addc6d0ddd3e9e0feaa85bffbe107441c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Field Documentation</h2>
-<a id="af77026bcd572b8b0de374077dc597999"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af77026bcd572b8b0de374077dc597999">&#9670;&nbsp;</a></span>base_path</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Configuration for file-based logging. </p>
+</div><h2 class="groupheader">Field Documentation</h2>
+<a id="a549c193a38a33ba04e09bb502280be97"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a549c193a38a33ba04e09bb502280be97">&#9670;&nbsp;</a></span>base_path</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> C4LogFileOptions::base_path</td>
+          <td class="memname"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> C4LogFileOptions::base_path</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -109,19 +114,19 @@ Data Fields</h2></td></tr>
 
 </div>
 </div>
-<a id="adbd3c5ea185419aa9caadc33a1fc9bf7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adbd3c5ea185419aa9caadc33a1fc9bf7">&#9670;&nbsp;</a></span>header</h2>
+<a id="addc6d0ddd3e9e0feaa85bffbe107441c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#addc6d0ddd3e9e0feaa85bffbe107441c">&#9670;&nbsp;</a></span>header</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="group___base.html#ga04de3d84e73df3c8b75092054abcc117">C4String</a> C4LogFileOptions::header</td>
+          <td class="memname"><a class="el" href="group___f_l_slice.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> C4LogFileOptions::header</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Header to print at the start of every log file. </p>
+<p>Header text to print at the start of every log file. </p>
 
 </div>
 </div>
@@ -137,7 +142,7 @@ Data Fields</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>The log level that the overall logging will limit to. </p>
+<p>The minimum level of message to be logged. </p>
 
 </div>
 </div>
@@ -190,7 +195,7 @@ Data Fields</h2></td></tr>
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li>include/<a class="el" href="c4_base_8h_source.html">c4Base.h</a></li>
+<li><a class="el" href="c4_log_8h_source.html">c4Log.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

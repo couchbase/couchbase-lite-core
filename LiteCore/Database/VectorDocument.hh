@@ -5,17 +5,19 @@
 //
 
 #pragma once
-#include "Document.hh"
-#include <vector>
+#include "DocumentFactory.hh"
+#include "fleece/Fleece.h"
 
-namespace c4Internal {
+C4_ASSUME_NONNULL_BEGIN
 
-    class VectorDocumentFactory : public DocumentFactory {
+namespace litecore {
+
+    class VectorDocumentFactory final : public DocumentFactory {
     public:
-        VectorDocumentFactory(Database *db)   :DocumentFactory(db) { }
+        VectorDocumentFactory(C4Collection *db)   :DocumentFactory(db) { }
 
-        Retained<Document> newDocumentInstance(C4Slice docID, ContentOption) override;
-        Retained<Document> newDocumentInstance(const Record&) override;
+        Retained<C4Document> newDocumentInstance(slice docID, ContentOption) override;
+        Retained<C4Document> newDocumentInstance(const Record&) override;
 
         std::vector<alloc_slice> findAncestors(const std::vector<slice> &docIDs,
                                                const std::vector<slice> &revIDs,
@@ -23,8 +25,10 @@ namespace c4Internal {
                                                bool mustHaveBodies,
                                                C4RemoteID remoteDBID) override;
 
-        static Document* documentContaining(FLValue value);
+        static C4Document* documentContaining(FLValue value);
 
     };
 
 }
+
+C4_ASSUME_NONNULL_END

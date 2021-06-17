@@ -21,7 +21,7 @@
 #include "DBAccess.hh"
 #include "StringUtil.hh"
 #include "MessageBuilder.hh"
-#include "c4BlobStore.h"
+#include "c4BlobStore.hh"
 #include <atomic>
 
 using namespace fleece;
@@ -56,7 +56,7 @@ namespace litecore { namespace repl {
     // Else sends a request for its data.
     bool IncomingRev::startBlob() {
         Assert(!_writer);
-        if (c4blob_getSize(_db->blobStore(), _blob->key) >= 0)
+        if (_db->blobStore()->getSize(_blob->key) >= 0)
             return false;  // already have it
 
         logVerbose("Requesting blob (%" PRIu64 " bytes, compress=%d)", _blob->length, _blob->compressible);
@@ -65,8 +65,7 @@ namespace litecore { namespace repl {
         _blobBytesWritten = 0;
 
         MessageBuilder req("getAttachment"_sl);
-        alloc_slice digest = c4blob_keyToString(_blob->key);
-        req["digest"_sl] = digest;
+        req["digest"_sl] = _blob->key.digestString();
         if (_blob->compressible)
             req["compress"_sl] = "true"_sl;
         sendRequest(req, [=](blip::MessageProgress progress) {
@@ -99,36 +98,37 @@ namespace litecore { namespace repl {
 
     // Writes data to the blob on disk.
     void IncomingRev::writeToBlob(alloc_slice data) {
-        C4Error err;
-		if(_writer == nullptr) {
-            _writer = c4blob_openWriteStream(_db->blobStore(), &err);
-            if (!_writer)
-                return gotError(err);
-#if DEBUG
-            int n = ++sNumOpenWriters;
-            if (n > sMaxOpenWriters) {
-                sMaxOpenWriters = n;
-                logInfo("There are now %d blob writers open", n);
+        try {
+            if(_writer == nullptr) {
+                _writer = make_unique<C4WriteStream>(*_db->blobStore());
+    #if DEBUG
+                int n = ++sNumOpenWriters;
+                if (n > sMaxOpenWriters) {
+                    sMaxOpenWriters = n;
+                    logInfo("There are now %d blob writers open", n);
+                }
+                logVerbose("Opened blob writer  [%d open; max %d]", n, (int)sMaxOpenWriters);
+    #endif
             }
-            logVerbose("Opened blob writer  [%d open; max %d]", n, (int)sMaxOpenWriters);
-#endif
-		}
-        if (data.size > 0) {
-            if (!c4stream_write(_writer, data.buf, data.size, &err))
-                return gotError(err);
-            _blobBytesWritten += data.size;
-            addProgress({data.size, 0});
+            if (data.size > 0) {
+                _writer->write(data);
+                _blobBytesWritten += data.size;
+                addProgress({data.size, 0});
+            }
+        } catch(...) {
+            blobGotError(C4Error::fromCurrentException());
         }
     }
 
 
     // Saves the blob to the database, and starts working on the next one (if any).
     void IncomingRev::finishBlob() {
-        alloc_slice digest = c4blob_keyToString(_blob->key);
-        logVerbose("Finished receiving blob %.*s (%" PRIu64 " bytes)", SPLAT(digest), _blob->length);
-        C4Error err;
-        if (!c4stream_install(_writer, &_blob->key, &err)) {
-            blobGotError(err);
+        logVerbose("Finished receiving blob %s (%" PRIu64 " bytes)",
+                   _blob->key.digestString().c_str(), _blob->length);
+        try {
+            _writer->install(&_blob->key);
+        } catch(...) {
+            blobGotError(C4Error::fromCurrentException());
             return;
         }
         closeBlobWriter();
@@ -155,6 +155,7 @@ namespace litecore { namespace repl {
             _lastNotifyTime = now;
             Replicator::BlobProgress prog {
                 Dir::kPulling,
+                nullslice,     // TODO: Collection support
                 _blob->docID, _blob->docProperty,
                 _blob->key,
                 status().progress.unitsCompleted,

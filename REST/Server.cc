@@ -25,7 +25,6 @@
 #include "Certificate.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "c4Base.h"
 #include "c4ExceptionUtils.hh"
 #include "c4ListenerInternal.hh"
 #include "PlatformCompat.hh"
@@ -201,7 +200,7 @@ namespace litecore { namespace REST {
         auto responder = make_unique<ResponderSocket>(_tlsContext);
         if (!responder->acceptSocket(move(sock)) || (_tlsContext && !responder->wrapTLS())) {
             c4log(ListenerLog, kC4LogError, "Error accepting incoming connection: %s",
-                  c4error_descriptionStr(responder->error()));
+                  responder->error().description().c_str());
             return;
         }
         if (c4log_willLog(ListenerLog, kC4LogVerbose)) {

@@ -50,27 +50,32 @@ namespace litecore {
         using ArrayIterator = fleece::impl::ArrayIterator;
         using Value = fleece::impl::Value;
 
+        // Default SQL column name containing document body
+        static constexpr const char* kBodyColumnName = "body";
 
-        /** Delegate knows about the naming & existence of tables. */
-        class delegate {
+
+        /** Delegate knows about the naming & existence of tables.
+            Implemented by SQLiteDataFile; this interface is to keep the QueryParser isolated from
+            such details and make it easier to unit-test. */
+        class Delegate {
         public:
-            virtual ~delegate() =default;
-            virtual string tableName() const =0;
-            virtual string bodyColumnName() const               {return "body";}
-            virtual string FTSTableName(const string &property) const =0;
-            virtual string unnestedTableName(const string &property) const =0;
-#ifdef COUCHBASE_ENTERPRISE
-            virtual string predictiveTableName(const string &property) const =0;
-#endif
+            virtual ~Delegate() =default;
             virtual bool tableExists(const string &tableName) const =0;
+            virtual string collectionTableName(const string &collection) const =0;
+            virtual string FTSTableName(const string &onTable, const string &property) const =0;
+            virtual string unnestedTableName(const string &onTable, const string &property) const =0;
+#ifdef COUCHBASE_ENTERPRISE
+            virtual string predictiveTableName(const string &onTable, const string &property) const =0;
+#endif
         };
 
 
-        QueryParser(const delegate &delegate)
-        :QueryParser(delegate, delegate.tableName(), delegate.bodyColumnName())
+        QueryParser(const Delegate &delegate,
+                    const string& defaultTableName)
+        :_delegate(delegate)
+        ,_defaultTableName(defaultTableName)
         { }
 
-        void setTableName(const string &name)                   {_tableName = name;}
         void setBodyColumnName(const string &name)              {_bodyColumnName = name;}
 
         void parse(const Value*);
@@ -79,6 +84,7 @@ namespace litecore {
         void parseJustExpression(const Value *expression);
 
         void writeCreateIndex(const string &name,
+                              const string &onTableName,
                               ArrayIterator &whatExpressions,
                               const Array *whereClause,
                               bool isUnnestedTable);
@@ -86,6 +92,7 @@ namespace litecore {
         string SQL()  const                                     {return _sql.str();}
 
         const set<string>& parameters()                         {return _parameters;}
+        const set<string>& collectionTablesUsed() const         {return _kvTables;}
         const vector<string>& ftsTablesUsed() const             {return _ftsTables;}
         unsigned firstCustomResultColumn() const                {return _1stCustomResultCol;}
         const vector<string>& columnTitles() const              {return _columnTitles;}
@@ -109,22 +116,25 @@ namespace litecore {
         using Path = fleece::impl::Path;
 
         enum aliasType {
-            kDBAlias,
-            kJoinAlias,
-            kResultAlias,
-            kUnnestVirtualTableAlias,
-            kUnnestTableAlias
+            kDBAlias,                   // Primary FROM collection
+            kJoinAlias,                 // A JOINed collection
+            kResultAlias,               // A named query result value ("SELECT ___ AS x")
+            kUnnestVirtualTableAlias,   // An UNNEST implemented as a virtual table
+            kUnnestTableAlias           // An UNNEST implemented as a materialized table
         };
 
-        QueryParser(const delegate &delegate, const string& tableName, const string& bodyColumnName)
-        :_delegate(delegate)
-        ,_tableName(tableName)
-        ,_bodyColumnName(bodyColumnName)
-        { }
+        struct aliasInfo {
+            aliasType type;
+            string    tableName;
+        };
+
+        using AliasMap = map<string, aliasInfo>;
 
         QueryParser(const QueryParser *qp)
-        :QueryParser(qp->_delegate, qp->_tableName, qp->_bodyColumnName)
-        { }
+        :QueryParser(qp->_delegate, qp->_defaultTableName)
+        {
+            _bodyColumnName = qp->_bodyColumnName;
+        }
 
         struct Operation;
         static const Operation kOperationList[];
@@ -151,7 +161,9 @@ namespace litecore {
         void writeWhereClause(const Value *where);
         void writeDeletionTest(const string &alias, bool isDeleted = false);
 
-        void addAlias(const string &alias, aliasType);
+        void addAlias(const string &alias, aliasType, const string &tableName);
+        struct FromAttributes;
+        FromAttributes parseFromEntry(const Value *value);
         void parseFromClause(const Value *from);
         void writeFromClause(const Value *from);
         int parseJoinType(slice);
@@ -195,7 +207,7 @@ namespace litecore {
         void writeResultColumn(const Value*);
         void writeCollation();
         void parseCollatableNode(const Value*);
-        void writeMetaProperty(slice fn, const string &tablePrefix, const char *property);
+        void writeMetaProperty(slice fn, const string &tablePrefix, slice property);
 
         void parseJoin(const Dict*);
 
@@ -210,14 +222,14 @@ namespace litecore {
         bool writeIndexedPrediction(const Array *node);
 
         void writeMetaPropertyGetter(slice metaKey, const string& dbAlias);
-        map<string, aliasType>::const_iterator verifyDbAlias(Path &property);
+        AliasMap::const_iterator verifyDbAlias(Path &property);
         bool optimizeMetaKeyExtraction(ArrayIterator&);
 
-        const delegate& _delegate;               // delegate object (SQLiteKeyStore)
-        string _tableName;                       // Name of the table containing documents
-        string _bodyColumnName;                  // Column holding doc bodies
-        map<string, aliasType> _aliases;         // "AS..." aliases for db/joins/unnests
-        string _dbAlias;                         // Alias of the db itself, "_doc" by default
+        const Delegate& _delegate;               // delegate object (SQLiteKeyStore)
+        string _defaultTableName;                // Name of the default table to use
+        string _bodyColumnName = kBodyColumnName;// Column holding doc bodies
+        AliasMap _aliases;                       // "AS..." aliases for db/joins/unnests
+        string _dbAlias;                         // Alias of the main collection, "_doc" by default
         bool _propertiesUseSourcePrefix {false}; // Must properties include alias as prefix?
         vector<string> _columnTitles;            // Pretty names of result columns
         stringstream _sql;                       // The SQL being generated
@@ -226,6 +238,7 @@ namespace litecore {
         set<string> _parameters;                 // Plug-in "$" parameters found in parsing
         set<string> _variables;                  // Active variables, inside ANY/EVERY exprs
         map<string, string> _indexJoinTables;    // index table name --> alias
+        set<string> _kvTables;                   // Collection tables referenced in this query
         vector<string> _ftsTables;               // FTS virtual tables being used
         unsigned _1stCustomResultCol {0};        // Index of 1st result after _baseResultColumns
         bool _aggregatesOK {false};              // Are aggregate fns OK to call?

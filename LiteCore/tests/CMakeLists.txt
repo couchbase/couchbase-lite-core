@@ -52,6 +52,7 @@ file(COPY ${FLEECE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/vendor/fleece/
 add_executable(
     CppTests
     c4BaseTest.cc
+    c4DocumentTest_Internal.cc
     DataFileTest.cc
     DocumentKeysTest.cc
     FTSTest.cc
@@ -79,6 +80,7 @@ add_executable(
     ${TOP}vendor/fleece/Tests/SupportTests.cc
     ${TOP}vendor/fleece/Tests/ValueTests.cc
     ${TOP}vendor/fleece/Experimental/KeyTree.cc
+    ${TOP}Replicator/tests/DBAccessTestWrapper.cc
     ${TOP}Replicator/tests/ReplicatorLoopbackTest.cc
     ${TOP}Replicator/tests/ReplicatorAPITest.cc
     ${TOP}Replicator/tests/ReplicatorSGTest.cc
@@ -113,6 +115,7 @@ target_include_directories(
     ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}C
     ${TOP}C/include
+    ${TOP}C/Cpp_include
     ${TOP}C/tests
     ${TOP}Crypto
     ${TOP}Networking

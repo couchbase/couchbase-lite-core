@@ -17,10 +17,11 @@
 //
 
 #include "ReplicatorTypes.hh"
+#include "c4Document.hh"
+#include "c4DocEnumerator.hh"
 #include "IncomingRev.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
-#include "c4DocEnumerator.h"
 #include <sstream>
 
 using namespace std;
@@ -39,7 +40,7 @@ namespace litecore { namespace repl {
     ,bodySize(info.bodySize)
     ,expiration(info.expiration)
     {
-        flags = c4rev_flagsFromDocFlags(info.flags);
+        flags = C4Document::revisionFlagsFromDocFlags(info.flags);
     }
 
 
@@ -82,9 +83,9 @@ namespace litecore { namespace repl {
             ancestors = &remoteAncestorRevID;
             ancestorCount = 1;
         }
-        auto result = alloc_slice(c4doc_getRevisionHistory(doc, maxHistory,
-                                                           (const C4String*)ancestors,
-                                                           unsigned(ancestorCount)));
+        alloc_slice result = doc->getRevisionHistory(maxHistory,
+                                                     (const slice*)ancestors,
+                                                     unsigned(ancestorCount));
         if (ancestorRevIDs && remoteAncestorRevID) {
             // Undo the push_back above
             ancestorRevIDs->resize(ancestorCount - 1);
@@ -96,8 +97,7 @@ namespace litecore { namespace repl {
 #pragma mark - REVTOINSERT:
 
 
-    RevToInsert::~RevToInsert()
-    { }
+    RevToInsert::~RevToInsert() =default;
 
 
     RevToInsert::RevToInsert(IncomingRev* owner_,
@@ -114,6 +114,13 @@ namespace litecore { namespace repl {
             flags |= kRevDeleted;
     }
 
+
+    RevToInsert::RevToInsert(slice docID_, slice revID_, RevocationMode mode)
+    :ReplicatedRev(move(docID_), move(revID_))
+    ,revocationMode(mode)
+    {
+        flags |= kRevPurged;
+    }
 
     void RevToInsert::trimBody() {
         doc = nullptr;

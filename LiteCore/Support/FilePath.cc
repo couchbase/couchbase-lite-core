@@ -158,8 +158,8 @@ namespace litecore {
     }
 
 
-    FilePath::FilePath(const string &dirName, const string &fileName)
-    :_dir(dirName), _file(fileName)
+    FilePath::FilePath(string &&dirName, string &&fileName)
+    :_dir(move(dirName)), _file(move(fileName))
     {
         if (_dir.empty())
             _dir = kCurrentDir;
@@ -169,18 +169,21 @@ namespace litecore {
             appendSeparatorTo(_dir);
     }
 
+    FilePath::FilePath(string_view dir, string_view file) :FilePath(string(dir), string(file)) { }
+    FilePath::FilePath(const char *dir, const char *file) :FilePath(string(dir), string(file)) { }
+
 
     FilePath::FilePath()
     :_dir(kCurrentDir), _file()
     { }
 
 
-    pair<string,string> FilePath::splitPath(const string &path) {
+    pair<string,string> FilePath::splitPath(string_view path) {
         string dirname, basename;
         auto slash = path.rfind(kSeparatorChar);
         auto backupSlash = path.rfind(kBackupSeparatorChar);
         if (slash == string::npos && backupSlash == string::npos) {
-            return{ kCurrentDir, path };
+            return{ kCurrentDir, string(path) };
         }
         
         if (slash == string::npos) {
@@ -190,7 +193,7 @@ namespace litecore {
             slash = std::max(slash, backupSlash);
         }
 
-        return {path.substr(0, slash+1), path.substr(slash+1)};
+        return {string(path.substr(0, slash+1)), string(path.substr(slash+1))};
     }
 
     pair<string,string> FilePath::splitExtension(const string &file) {
@@ -214,6 +217,15 @@ namespace litecore {
 
     string FilePath::unextendedName() const {
         return splitExtension(fileOrDirName()).first;
+    }
+
+
+    FilePath::operator alloc_slice() const {
+        auto dirSize = _dir.size(), fileSize = _file.size();
+        alloc_slice result(dirSize + fileSize);
+        memcpy((void*)result.offset(0),       _dir.data(),  dirSize);
+        memcpy((void*)result.offset(dirSize), _file.data(), fileSize);
+        return result;
     }
 
     

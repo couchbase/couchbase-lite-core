@@ -8,7 +8,7 @@
 #include "WebSocketImpl.hh"
 #include "TCPSocket.hh"
 #include "HTTPLogic.hh"
-#include "c4.hh"
+#include "c4Base.hh"
 #include <atomic>
 #include <exception>
 #include <memory>
@@ -28,7 +28,7 @@ namespace litecore::crypto {
 namespace litecore { namespace websocket {
 
     /** WebSocket implementation using TCPSocket. */
-    class BuiltInWebSocket : public WebSocketImpl, public net::HTTPLogic::CookieProvider {
+    class BuiltInWebSocket final : public WebSocketImpl, public net::HTTPLogic::CookieProvider {
     public:
         /** This must be called once, for c4Replicator to use BuiltInWebSocket by default. */
         static void registerWithReplicator();
@@ -82,7 +82,7 @@ namespace litecore { namespace websocket {
         // Size of the buffer allocated for reading from the socket.
         static constexpr size_t kReadBufferSize = 32 * 1024;
 
-        c4::ref<C4Database> _database;                      // The database (used only for cookies)
+        Retained<C4Database> _database;                     // The database (used only for cookies)
         std::unique_ptr<net::TCPSocket> _socket;            // The TCP socket
         Retained<BuiltInWebSocket> _selfRetain;             // Keeps me alive while connected
         Retained<net::TLSContext> _tlsContext;              // TLS settings

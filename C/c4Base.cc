@@ -16,16 +16,17 @@
 // limitations under the License.
 //
 
-#include "c4Internal.hh"
+#include "c4Base.h"
 #include "c4Private.h"
-#include "c4Socket.h"
+#include "c4Internal.hh"
+#include "c4ExceptionUtils.hh"
 
 #include "Actor.hh"
 #include "Backtrace.hh"
 #include "FilePath.hh"
+#include "KeyStore.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-
 #include "WebSocketInterface.hh"    // For websocket::WSLogDomain
 #include "InstanceCounted.hh"
 #include "sqlite3.h"
@@ -40,8 +41,9 @@
 #endif
 
 
-using namespace litecore;
 using namespace std;
+using namespace litecore;
+
 
 extern "C" {
     CBL_CORE_API std::atomic_int gC4ExpectExceptions;
@@ -79,7 +81,7 @@ static string getBuildInfo() {
 
 
 C4StringResult c4_getBuildInfo() C4API {
-    return sliceResult(getBuildInfo());
+    return toSliceResult(getBuildInfo());
 }
 
 
@@ -100,36 +102,23 @@ C4StringResult c4_getVersion() C4API {
     else
         vers = format("%s%s (%s:%s%.1s)", LiteCoreVersion, ee, GitBranch, commit.c_str(), GitDirty);
 #endif
-    return sliceResult(vers);
+    return toSliceResult(vers);
 }
 // LCOV_EXCL_STOP
+
+
+C4Timestamp c4_now(void) C4API {
+    return KeyStore::now();
+}
 
 
 #pragma mark - SLICES:
 
 
-C4SliceResult c4slice_createResult(C4Slice slice) {
-    alloc_slice result(slice);
-    result.retain();
-    return {(void*)result.buf, result.size};
-}
+namespace litecore {
 
-
-namespace c4Internal {
-
-    C4SliceResult sliceResult(const char *str) {
-        if (str)
-            return C4SliceResult(slice(str));
-        else
-            return {nullptr, 0};
-    }
-
-    C4SliceResult sliceResult(const string &str) {
+    C4SliceResult toSliceResult(const string &str) {
         return C4SliceResult(alloc_slice(str));
-    }
-
-    string toString(C4Slice s) {
-        return slice(s).asString();
     }
 
     void destructExtraInfo(C4ExtraInfo &x) noexcept {
@@ -275,6 +264,13 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
 // LCOV_EXCL_STOP
 
 
+__cold
+void C4Error::warnCurrentException(const char *inFunction) noexcept {
+    C4WarnError("Caught & ignored exception %s in %s",
+                C4Error::fromCurrentException().description().c_str(), inFunction);
+}
+
+
 #pragma mark - REFERENCE COUNTED:
 
 
@@ -293,7 +289,7 @@ void c4base_release(void *obj) C4API {
 
 
 int c4_getObjectCount() noexcept {
-    return fleece::InstanceCounted::count();
+    return fleece::InstanceCounted::liveInstanceCount();
 }
 
 // LCOV_EXCL_START

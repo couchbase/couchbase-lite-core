@@ -2,7 +2,7 @@ var searchData=
 [
   ['c4address',['C4Address',['../struct_c4_address.html',1,'']]],
   ['c4blobkey',['C4BlobKey',['../struct_c4_blob_key.html',1,'']]],
-  ['c4databasechange',['C4DatabaseChange',['../struct_c4_database_change.html',1,'']]],
+  ['c4collectionchange',['C4CollectionChange',['../struct_c4_collection_change.html',1,'']]],
   ['c4databaseconfig',['C4DatabaseConfig',['../struct_c4_database_config.html',1,'']]],
   ['c4databaseconfig2',['C4DatabaseConfig2',['../struct_c4_database_config2.html',1,'']]],
   ['c4docputrequest',['C4DocPutRequest',['../struct_c4_doc_put_request.html',1,'']]],
@@ -25,7 +25,6 @@ var searchData=
   ['c4replicatorparameters',['C4ReplicatorParameters',['../struct_c4_replicator_parameters.html',1,'']]],
   ['c4replicatorstatus',['C4ReplicatorStatus',['../struct_c4_replicator_status.html',1,'']]],
   ['c4revision',['C4Revision',['../struct_c4_revision.html',1,'']]],
-  ['c4socket',['C4Socket',['../struct_c4_socket.html',1,'']]],
   ['c4socketfactory',['C4SocketFactory',['../struct_c4_socket_factory.html',1,'']]],
   ['c4tlsconfig',['C4TLSConfig',['../struct_c4_t_l_s_config.html',1,'']]],
   ['c4uuid',['C4UUID',['../struct_c4_u_u_i_d.html',1,'']]]

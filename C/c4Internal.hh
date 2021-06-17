@@ -17,20 +17,10 @@
 //
 
 #pragma once
-
-#include "Base.hh"
-#include "Error.hh"
-#include "RefCounted.hh"
-#include "PlatformCompat.hh"
-#include "fleece/Fleece.h"
 #include "c4Base.h"
-#include "c4ExceptionUtils.hh"
-#include <mutex>
-#include <string_view>
 
-using namespace litecore;
 
-#define LOCK(MUTEX)     std::unique_lock<std::mutex> _lock(MUTEX)
+#define LOCK(MUTEX)     std::unique_lock<decltype(MUTEX)> _lock(MUTEX)
 #define UNLOCK()        _lock.unlock();
 
 #if defined(__clang__)
@@ -56,7 +46,9 @@ using namespace litecore;
 #endif
 
 
-namespace c4Internal {
+struct C4ExtraInfo;
+
+namespace litecore {
 
     // ERRORS & EXCEPTIONS:
 
@@ -66,14 +58,10 @@ namespace c4Internal {
     static constexpr size_t kMaxErrorMessagesToSave = 10;
 #endif
 
-    // SLICES:
+    // UTILITIES:
 
-    C4SliceResult sliceResult(const char *str);
-    C4SliceResult sliceResult(const std::string&);
-
-    std::string toString(C4Slice);
+    C4SliceResult toSliceResult(const std::string&);
 
     void destructExtraInfo(C4ExtraInfo&) noexcept;
-}
 
-using namespace c4Internal;
+}

@@ -17,7 +17,6 @@
 //
 
 #include "Query.hh"
-#include "KeyStore.hh"
 #include "DataFile.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -28,19 +27,19 @@ namespace litecore {
     LogDomain QueryLog("Query");
 
 
-    Query::Query(KeyStore &keyStore, slice expression, QueryLanguage language)
+    Query::Query(DataFile &dataFile, slice expression, QueryLanguage language)
     :Logging(QueryLog)
-    ,_keyStore(&keyStore)
+    ,_dataFile(&dataFile)
     ,_expression(expression)
     ,_language(language)
     {
-        keyStore.dataFile().registerQuery(this);
+        _dataFile->registerQuery(this);
     }
 
 
     Query::~Query() {
-        if (_keyStore)
-            _keyStore->dataFile().unregisterQuery(this);
+        if (_dataFile)
+            _dataFile->unregisterQuery(this);
     }
 
 
@@ -49,10 +48,10 @@ namespace litecore {
     }
 
 
-    KeyStore& Query::keyStore() const {
-        if (!_keyStore)
+    DataFile& Query::dataFile() const {
+        if (!_dataFile)
             error::_throw(error::NotOpen);
-        return *_keyStore;
+        return *_dataFile;
     }
 
 

@@ -29,10 +29,10 @@ namespace fleece { namespace impl {
 
 namespace litecore {
     class KeyStore;
-    class Transaction;
+    class ExclusiveTransaction;
 
     /** Manages storage of a serialized RevTree in a Record. */
-    class RevTreeRecord : public RevTree {
+    class RevTreeRecord final : public RevTree {
     public:
 
         RevTreeRecord(KeyStore&, slice docID, ContentOption =kEntireBody);
@@ -41,14 +41,15 @@ namespace litecore {
         RevTreeRecord(const RevTreeRecord&);
         ~RevTreeRecord();
 
-        /** Reads and parses the body of the record. Useful if doc was read as meta-only. */
-        void read(ContentOption);
+        /** Reads and parses the body of the record. Useful if doc was read as meta-only.
+            Returns false if the record has been updated on disk. */
+        bool read(ContentOption) MUST_USE_RESULT;
 
         /** Returns false if the record was loaded metadata-only. Revision accessors will fail. */
         bool revsAvailable() const          {return _contentLoaded == kEntireBody;}
         bool currentRevAvailable() const    {return _contentLoaded >= kCurrentRevOnly;}
 
-        slice currentRevBody();
+        slice currentRevBody() const;
 
         const alloc_slice& docID() const FLPURE {return _rec.key();}
         revid revID() const FLPURE         {return revid(_rec.version());}
@@ -65,7 +66,7 @@ namespace litecore {
         bool changed() const FLPURE        {return _changed;}
 
         enum SaveResult {kConflict, kNoNewSequence, kNewSequence};
-        SaveResult save(Transaction& transaction);
+        SaveResult save(ExclusiveTransaction& transaction);
 
         bool updateMeta();
 

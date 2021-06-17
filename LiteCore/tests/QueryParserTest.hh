@@ -18,14 +18,16 @@
 
 #pragma once
 #include "QueryParser.hh"
+#include "StringUtil.hh"
 #include "fleece/Fleece.h"
 #include <string>
+#include <set>
 #include "LiteCoreTest.hh"
 
 
-class QueryParserTest : public TestFixture, protected QueryParser::delegate {
+class QueryParserTest : public TestFixture, protected QueryParser::Delegate {
 public:
-    QueryParserTest() { }
+    QueryParserTest() =default;
 
     string parse(FLValue val);
     string parse(string json);
@@ -33,23 +35,29 @@ public:
     void mustFail(string json);
 
 protected:
-    virtual std::string tableName() const override {
-        return "kv_default";
+    virtual string collectionTableName(const string &collection) const override {
+        CHECK(!hasPrefix(collection, "kv_"));   // make sure I didn't get passed a table name
+        if (collection == "_default")
+            return "kv_default";
+        else
+            return "kv_coll_" + collection;
     }
-    virtual std::string FTSTableName(const std::string &property) const override {
-        return tableName() + "::" + property;
+    virtual std::string FTSTableName(const string &onTable, const std::string &property) const override {
+        return onTable + "::" + property;
     }
-    virtual std::string unnestedTableName(const std::string &property) const override {
-        return tableName() + ":unnest:" + property;
+    virtual std::string unnestedTableName(const string &onTable, const std::string &property) const override {
+        return onTable + ":unnest:" + property;
     }
     virtual bool tableExists(const string &tableName) const override {
-        return tablesExist;
+        return tableNames.count(tableName) > 0;
     }
 #ifdef COUCHBASE_ENTERPRISE
-    virtual std::string predictiveTableName(const std::string &property) const override {
-        return tableName() + ":predict:" + property;
+    virtual std::string predictiveTableName(const string &onTable, const std::string &property) const override {
+        return onTable + ":predict:" + property;
     }
 #endif
 
-    bool tablesExist {false};
+    std::set<string> tableNames {"kv_default"};
+
+    std::set<string> usedTableNames;
 };

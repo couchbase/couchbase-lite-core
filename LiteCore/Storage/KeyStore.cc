@@ -17,6 +17,7 @@
 //
 
 #include "KeyStore.hh"
+#include "Query.hh"
 #include "Record.hh"
 #include "DataFile.hh"
 #include "Error.hh"
@@ -29,20 +30,17 @@ using namespace std;
 
 namespace litecore {
 
-    const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false};
-
-
     Record KeyStore::get(slice key, ContentOption option) const {
         Record rec(key);
-        read(rec, option);
+        read(rec, ReadBy::Key, option);
         return rec;
     }
 
-    void KeyStore::get(slice key, ContentOption option, function_ref<void(const Record&)> fn) {
-        // Subclasses can implement this differently for better memory management.
-        Record rec(key);
-        read(rec, option);
-        fn(rec);
+    Record KeyStore::get(sequence_t seq, ContentOption option) const {
+        Record rec;
+        rec.updateSequence(seq);
+        read(rec, ReadBy::Sequence, option);
+        return rec;
     }
 
 #if ENABLE_DELETE_KEY_STORES
@@ -51,20 +49,27 @@ namespace litecore {
     }
 #endif
 
-    sequence_t KeyStore::set(Record &rec,
-                             Transaction &t,
-                             optional<sequence_t> replacingSequence,
-                             bool newSequence)
-    {
-        RecordLite r = {rec.key(), rec.version(), rec.body(), nullslice,
-                          replacingSequence, newSequence, rec.flags()};
-        auto seq = set(r, t);
-        if (seq > 0) {
+    void KeyStore::set(Record &rec, bool updateSequence, ExclusiveTransaction &t) {
+        if (auto seq = set(RecordUpdate(rec), updateSequence, t); seq > 0) {
             rec.setExists();
-            rec.updateSequence(seq);
+            if (updateSequence)
+                rec.updateSequence(seq);
+            else
+                rec.updateSubsequence();
+        } else {
+            error::_throw(error::Conflict);
         }
-        return seq;
     }
+
+    void KeyStore::setKV(Record& rec, ExclusiveTransaction &t) {
+        setKV(rec.key(), rec.version(), rec.body(), t);
+        rec.setExists();
+    }
+
+    Retained<Query> KeyStore::compileQuery(slice expr, QueryLanguage language) {
+        return dataFile().compileQuery(expr, language, this);
+    }
+
 
     bool KeyStore::createIndex(slice name,
                                slice expression,

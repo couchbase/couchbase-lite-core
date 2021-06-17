@@ -31,8 +31,10 @@ set(
     RESTListener+Handlers.cc
     RESTListener+Replicate.cc
     RESTListener.cc
+    REST_CAPI.cc
     Server.cc
     EE/RESTSyncListener_stub.cc
+    CertRequest.cc
 )
 
 ### STATIC LIBRARY:
@@ -42,6 +44,7 @@ target_include_directories(
     LiteCoreREST_Static PRIVATE
     .
     ../C/include
+    ../C/Cpp_include
     ../C
     ../LiteCore/Support
     ../Crypto

@@ -26,7 +26,7 @@
 
 namespace litecore {
     class KeyStore;
-    class Transaction;
+    class ExclusiveTransaction;
     class Version;
     class VersionVector;
 
@@ -97,6 +97,8 @@ namespace litecore {
 
         /// Reads a document given the docID.
         VectorRecord(KeyStore& store, Versioning, slice docID, ContentOption =kEntireBody);
+
+        VectorRecord(const VectorRecord&);
 
         ~VectorRecord();
 
@@ -186,7 +188,7 @@ namespace litecore {
 
         /// Saves changes, if any, back to the KeyStore.
         /// \note  Most errors are thrown as exceptions, but a conflict is returned as `kConflict`.
-        SaveResult save(Transaction &t);
+        SaveResult save(ExclusiveTransaction &t);
 
         /// Returns the `body` and `extra` Record values representing the current in-memory state.
         /// This is used by the \ref save method and the database upgrader. Shouldn't be needed elsewhere.
@@ -214,7 +216,7 @@ namespace litecore {
         using ForAllRevIDsCallback = function_ref<void(RemoteID,revid,bool hasBody)>;
 
         /// Given only a record, find all the revision IDs and pass them to the callback.
-        static void forAllRevIDs(const RecordLite&, const ForAllRevIDsCallback&);
+        static void forAllRevIDs(const RecordUpdate&, const ForAllRevIDsCallback&);
 
         //---- For testing:
 
@@ -235,6 +237,7 @@ namespace litecore {
         fleece::Doc newLinkedFleeceDoc(const alloc_slice &body);
         void readRecordBody(const alloc_slice &body);
         void readRecordExtra(const alloc_slice &extra);
+        Record originalRecord() const;
         void requireBody() const;
         void requireRemotes() const;
         void mustLoadRemotes();
@@ -250,7 +253,8 @@ namespace litecore {
         KeyStore&                    _store;                // The database KeyStore
         FLEncoder                    _encoder {nullptr};    // Database shared Fleece Encoder
         alloc_slice                  _docID;                // The docID
-        sequence_t                   _sequence;             // The sequence
+        sequence_t                   _sequence;             // The Record's sequence
+        sequence_t                   _subsequence;          // The Record's subsequence
         DocumentFlags                _docFlags;             // Document-level flags
         alloc_slice                  _revID;                // Current revision ID backing store
         Revision                     _current;              // Current revision

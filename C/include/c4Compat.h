@@ -72,9 +72,13 @@
 
 // Declaration for API functions; should be just before the ending ";".
 #ifdef __cplusplus
-    #define C4API noexcept
+    #define C4API               noexcept
+    #define C4API_BEGIN_DECLS   extern "C" {
+    #define C4API_END_DECLS     }
 #else
     #define C4API
+    #define C4API_BEGIN_DECLS
+    #define C4API_END_DECLS
 #endif
 
 // Deprecating functions & types  (Note: In C++only code, can use standard `[[deprecated]]`)

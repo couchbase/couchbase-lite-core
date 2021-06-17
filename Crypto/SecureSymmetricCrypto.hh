@@ -30,7 +30,7 @@ namespace litecore {
                   slice key,           // pointer to 32-byte key
                   slice iv,            // pointer to 16-byte initialization vector
                   bool padding,        // true=PKCS7 padding, false=no padding
-                  slice dst,           // output buffer & capacity
+                  fleece::mutable_slice dst,   // output buffer & capacity
                   slice src);          // input data
 
     /** Converts a password string into a key using PBKDF2. */

@@ -33,14 +33,15 @@ namespace litecore { namespace repl {
     class ReplicatedRev;
 
 
-    static constexpr const char *kReplicatorProtocolName = "+CBMobile_2";
+    static constexpr const char *kReplicatorProtocolName = "+CBMobile_3";
 
 
     /** The top-level replicator object, which runs the BLIP connection.
         Pull and push operations are run by subidiary Puller and Pusher objects.
         The database will only be accessed by the DBAgent object. */
-    class Replicator : public Worker, private blip::ConnectionDelegate,
-                       public InstanceCountedIn<Replicator> {
+    class Replicator final : public Worker,
+                             private blip::ConnectionDelegate,
+                             public InstanceCountedIn<Replicator> {
     public:
 
         class Delegate;
@@ -54,6 +55,7 @@ namespace litecore { namespace repl {
 
         struct BlobProgress {
             Dir         dir;
+            alloc_slice collectionName;
             alloc_slice docID;
             alloc_slice docProperty;
             C4BlobKey   key;
@@ -94,10 +96,10 @@ namespace litecore { namespace repl {
         void terminate();
 
         /** Invokes the callback for each document which has revisions pending push */
-        bool pendingDocumentIDs(Checkpointer::PendingDocCallback, C4Error* outErr);
+        void pendingDocumentIDs(Checkpointer::PendingDocCallback);
 
         /** Checks if the document with the given ID has any pending revisions to push */
-        bool isDocumentPending(slice docId, C4Error* outErr);
+        bool isDocumentPending(slice docID);
 
         Checkpointer& checkpointer()            {return _checkpointer;}
 

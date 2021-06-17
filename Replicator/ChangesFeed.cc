@@ -22,12 +22,10 @@
 #include "DBAccess.hh"
 #include "ReplicatorTuning.hh"
 #include "StringUtil.hh"
-#include "c4.hh"
+#include "c4DocEnumerator.hh"
+#include "c4Document.hh"
+#include "c4Observer.hh"
 #include "c4Private.h"
-#include "c4DocEnumerator.h"
-#include "c4Document+Fleece.h"
-#include "c4DocEnumerator.h"
-#include "c4Observer.h"
 #include "RevID.hh"
 #include "fleece/Fleece.hh"
 #include <cinttypes>
@@ -51,6 +49,9 @@ namespace litecore { namespace repl {
     {
         filterByDocIDs(_options.docIDs());
     }
+
+
+    ChangesFeed::~ChangesFeed() = default;
 
 
     string ChangesFeed::loggingClassName() const  {
@@ -85,13 +86,10 @@ namespace litecore { namespace repl {
             // Start the observer immediately, before querying historical changes, to avoid any
             // gaps between the history and notifications. But do not set `_notifyOnChanges` yet.
             logVerbose("Starting DB observer");
-            _db.use([&](C4Database* db) {
-                _changeObserver = c4dbobs_create(db,
-                                                 [](C4DatabaseObserver* observer, void *context) {
-                                                     ((ChangesFeed*)context)->_dbChanged();
-                                                 },
-                                                 this);
-            });
+            _changeObserver = C4DatabaseObserver::create(_db.useLocked()->getDefaultCollection(),
+                                                         [this](C4DatabaseObserver*) {
+                                                             this->_dbChanged();
+                                                         });
         }
 
         Changes changes = {};
@@ -122,21 +120,22 @@ namespace litecore { namespace repl {
         if (_db.usingVersionVectors())
             options.flags |= kC4IncludeRevHistory;
 
-        _db.use([&](C4Database* db) {
-            c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _maxSequence, &options, &changes.err);
-            if (e) {
+        try {
+            _db.useLocked([&](C4Database* db) {
+                C4DocEnumerator e(db, _maxSequence, options);
                 changes.revs.reserve(limit);
-                while (c4enum_next(e, &changes.err) && limit > 0) {
-                    C4DocumentInfo info;
-                    c4enum_getDocumentInfo(e, &info);
-                    auto rev = makeRevToSend(info, e, db);
+                while (e.next() && limit > 0) {
+                    C4DocumentInfo info = e.documentInfo();
+                    auto rev = makeRevToSend(info, &e);
                     if (rev) {
                         changes.revs.push_back(rev);
                         --limit;
                     }
                 }
-            }
-        });
+            });
+        } catch (...) {
+            changes.err = C4Error::fromCurrentException();
+        }
 
         if (limit > 0 && !_caughtUp) {
             // Couldn't get as many changes as asked for, so I've caught up with the DB.
@@ -150,7 +149,7 @@ namespace litecore { namespace repl {
         logVerbose("Asking DB observer for %u new changes since sequence #%" PRIu64 " ...",
                    limit, _maxSequence);
         static constexpr uint32_t kMaxChanges = 100;
-        C4DatabaseChange c4changes[kMaxChanges];
+        C4DatabaseObserver::Change c4changes[kMaxChanges];
         bool ext;
         uint32_t nChanges;
         auto const startingMaxSequence = _maxSequence;
@@ -158,7 +157,7 @@ namespace litecore { namespace repl {
         _notifyOnChanges = true;
 
         while (limit > 0) {
-            nChanges = c4dbobs_getChanges(_changeObserver, c4changes, min(limit,kMaxChanges), &ext);
+            nChanges = _changeObserver->getChanges(c4changes, min(limit,kMaxChanges), &ext);
             if (nChanges == 0)
                 break;
 
@@ -172,34 +171,30 @@ namespace litecore { namespace repl {
                        nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
 
             // Copy the changes into a vector of RevToSend:
-            C4DatabaseChange *c4change = c4changes;
-            _db.use([&](C4Database *db) {
-                auto oldChangesCount = changes.revs.size();
-                for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
-                    if (c4change->sequence <= startingMaxSequence)
-                        continue;
-                    C4DocumentInfo info {c4change->flags, c4change->docID, c4change->revID,
-                                         c4change->sequence};
-                    // Note: we send tombstones even if the original getChanges() call specified
-                    // skipDeletions. This is intentional; skipDeletions applies only to the initial
-                    // dump of existing docs, not to 'live' changes.
-                    if (auto rev = makeRevToSend(info, nullptr, db); rev) {
-                        // It's possible but unlikely to get the same docID in successive calls to
-                        // c4dbobs_getChanges, if it changes in between calls. Remove the older:
-                        for (size_t j = 0; j < oldChangesCount; ++j) {
-                            if(changes.revs[j]->docID == c4change->docID) {
-                                changes.revs.erase(changes.revs.begin() + j);
-                                ++limit;
-                                break;
-                            }
+            C4DatabaseObserver::Change *c4change = &c4changes[0];
+            auto oldChangesCount = changes.revs.size();
+            for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
+                if (c4change->sequence <= startingMaxSequence)
+                    continue;
+                C4DocumentInfo info {c4change->flags, c4change->docID, c4change->revID,
+                                     c4change->sequence};
+                // Note: we send tombstones even if the original getChanges() call specified
+                // skipDeletions. This is intentional; skipDeletions applies only to the initial
+                // dump of existing docs, not to 'live' changes.
+                if (auto rev = makeRevToSend(info, nullptr); rev) {
+                    // It's possible but unlikely to get the same docID in successive calls to
+                    // c4dbobs_getChanges, if it changes in between calls. Remove the older:
+                    for (size_t j = 0; j < oldChangesCount; ++j) {
+                        if(changes.revs[j]->docID == c4change->docID) {
+                            changes.revs.erase(changes.revs.begin() + j);
+                            ++limit;
+                            break;
                         }
-                        changes.revs.push_back(rev);
-                        --limit;
                     }
+                    changes.revs.push_back(rev);
+                    --limit;
                 }
-            });
-
-            c4dbobs_releaseChanges(c4changes, nChanges);
+            }
         }
 
         if (changes.revs.empty())
@@ -227,7 +222,7 @@ namespace litecore { namespace repl {
     // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
     // It does some quick tests, and if those pass creates a RevToSend and passes it on to the
     // other shouldPushRev, which does more expensive checks.
-    Retained<RevToSend> ChangesFeed::makeRevToSend(C4DocumentInfo &info, C4DocEnumerator *e, C4Database *db)
+    Retained<RevToSend> ChangesFeed::makeRevToSend(C4DocumentInfo &info, C4DocEnumerator *e)
     {
         _maxSequence = info.sequence;
         if (info.expiration > 0 && info.expiration < c4_now()) {
@@ -240,36 +235,42 @@ namespace litecore { namespace repl {
             return nullptr;             // skip rev: not in list of docIDs
         } else {
             auto rev = make_retained<RevToSend>(info);
-            return shouldPushRev(rev, e, db) ? rev : nullptr;
+            return shouldPushRev(rev, e) ? rev : nullptr;
         }
     }
 
 
     bool ChangesFeed::shouldPushRev(RevToSend *rev) const {
-        return _db.use<bool>([&](C4Database *db) {
-            return shouldPushRev(rev, nullptr, db);
-        });
+        return shouldPushRev(rev, nullptr);
     }
 
 
     // This is called both by revToSend, and by Pusher::doneWithRev.
-    bool ChangesFeed::shouldPushRev(RevToSend *rev, C4DocEnumerator *e, C4Database *db) const {
+    bool ChangesFeed::shouldPushRev(RevToSend *rev, C4DocEnumerator *e) const {
         bool needRemoteRevID = _getForeignAncestors && !rev->remoteAncestorRevID
                                                     && _isCheckpointValid;
         if (needRemoteRevID || _options.pushFilter) {
-            c4::ref<C4Document> doc;
             C4Error error;
-            if (e)
-                doc = c4enum_getDocument(e, &error);
-            else
-                doc = c4db_getDoc(db, rev->docID, true,
-                                 (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev),
-                                 &error);
+            Retained<C4Document> doc;
+            try {
+                _db.useLocked([&](C4Database *db) {
+                    if (e)
+                        doc = e->getDocument();
+                    else
+                        doc = db->getDocument(rev->docID, true,
+                                              (needRemoteRevID ? kDocGetAll : kDocGetCurrentRev));
+                    if (!doc)
+                        error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
+                });
+            } catch (...) {
+                error = C4Error::fromCurrentException();
+            }
             if (!doc) {
                 _delegate.failedToGetChange(rev, error, false);
                 return false;         // fail the rev: error getting doc
             }
-            if (!c4rev_equal(doc->revID, rev->revID))
+
+            if (!C4Document::equalRevIDs(doc->revID(), rev->revID))
                 return false;         // skip rev: there's a newer one already
 
             if (needRemoteRevID) {
@@ -279,9 +280,13 @@ namespace litecore { namespace repl {
             }
             if (_options.pushFilter) {
                 // If there's a push filter, ask it whether to push the doc:
-                if (!_options.pushFilter(doc->docID, doc->selectedRev.revID, doc->selectedRev.flags,
-                                         DBAccess::getDocRoot(doc), _options.callbackContext)) {
-                    logVerbose("Doc '%.*s' rejected by push filter", SPLAT(doc->docID));
+                if (!_options.pushFilter(nullslice,     // TODO: Collection support
+                                         doc->docID(),
+                                         doc->selectedRev().revID,
+                                         doc->selectedRev().flags,
+                                         doc->getProperties(),
+                                         _options.callbackContext)) {
+                    logVerbose("Doc '%.*s' rejected by push filter", SPLAT(doc->docID()));
                     return false;     // skip rev: rejected by push filter
                 }
             }
@@ -312,13 +317,14 @@ namespace litecore { namespace repl {
         auto &dbAccess = (DBAccess&)_db;
         Assert(dbAccess.remoteDBID());
         alloc_slice foreignAncestor = dbAccess.getDocRemoteAncestor(doc);
-        logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
-        if (foreignAncestor == slice(doc->revID))
+        logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID()), SPLAT(foreignAncestor));
+        if (foreignAncestor == slice(doc->revID()))
             return false;   // skip this rev: it's already on the peer
         if (foreignAncestor && !_usingVersionVectors
-                    && c4rev_getGeneration(foreignAncestor) >= c4rev_getGeneration(doc->revID)) {
+                    && C4Document::getRevIDGeneration(foreignAncestor)
+                        >= C4Document::getRevIDGeneration(doc->revID())) {
             if (_options.pull <= kC4Passive) {
-                C4Error error = c4error_make(WebSocketDomain, 409,
+                C4Error error = C4Error::make(WebSocketDomain, 409,
                                      "conflicts with newer server revision"_sl);
                 _delegate.failedToGetChange(rev, error, false);
             }

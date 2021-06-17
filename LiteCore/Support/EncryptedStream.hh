@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Stream.hh"
+#include "slice_stream.hh"
 #include <memory>
 
 namespace litecore {
@@ -30,7 +31,7 @@ namespace litecore {
         static const unsigned kFileBlockSize = 4096;
 
     protected:
-        EncryptedStream() { }
+        EncryptedStream() =default;
         void initEncryptor(EncryptionAlgorithm alg,
                            slice encryptionKey,
                            slice nonce);
@@ -46,7 +47,7 @@ namespace litecore {
 
 
     /** Encrypts data written to it, and writes it to a wrapped WriteStream. */
-    class EncryptedWriteStream : public virtual EncryptedStream, public virtual WriteStream {
+    class EncryptedWriteStream final : public virtual EncryptedStream, public virtual WriteStream {
     public:
         EncryptedWriteStream(std::shared_ptr<WriteStream> output,
                              EncryptionAlgorithm alg,
@@ -64,7 +65,7 @@ namespace litecore {
 
 
     /** Provides (random) access to a data stream encrypted by EncryptedWriteStream. */
-    class EncryptedReadStream : public EncryptedStream, public virtual SeekableReadStream {
+    class EncryptedReadStream final : public EncryptedStream, public virtual SeekableReadStream {
     public:
         EncryptedReadStream(std::shared_ptr<SeekableReadStream> input,
                             EncryptionAlgorithm alg,
@@ -76,8 +77,8 @@ namespace litecore {
         uint64_t tell() const;
 
     private:
-        size_t readBlockFromFile(slice output);
-        void readFromBuffer(slice &dst);
+        size_t readBlockFromFile(fleece::mutable_slice);
+        void readFromBuffer(fleece::slice_ostream &dst);
         void fillBuffer();
         void findLength();
 

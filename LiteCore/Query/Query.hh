@@ -18,7 +18,7 @@
 
 #pragma once
 #include "RefCounted.hh"
-#include "KeyStore.hh"
+#include "DataFile.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include <atomic>
@@ -33,7 +33,7 @@ namespace litecore {
 
 
     /** Abstract base class of compiled database queries.
-        These are created by the factory method KeyStore::compileQuery(). */
+        These are created by the factory method DataFile::compileQuery(). */
     class Query : public RefCounted, public Logging {
     public:
 
@@ -53,7 +53,7 @@ namespace litecore {
         };
 
 
-        KeyStore& keyStore() const;
+        DataFile& dataFile() const;
         alloc_slice expression() const                                  {return _expression;}
         QueryLanguage language() const                                  {return _language;}
 
@@ -65,10 +65,10 @@ namespace litecore {
 
         virtual std::string explain() =0;
 
-        virtual void close()                                            {_keyStore = nullptr;}
+        virtual void close()                                            {_dataFile = nullptr;}
 
         struct Options {
-            Options() { }
+            Options() =default;
             
             Options(const Options &o)
             :paramBindings(o.paramBindings), afterSequence(o.afterSequence) { }
@@ -92,12 +92,12 @@ namespace litecore {
         virtual QueryEnumerator* createEnumerator(const Options* =nullptr) =0;
 
     protected:
-        Query(KeyStore &keyStore, slice expression, QueryLanguage language);
+        Query(DataFile&, slice expression, QueryLanguage language);
         virtual ~Query();
         virtual std::string loggingIdentifier() const override;
         
     private:
-        KeyStore* _keyStore;
+        DataFile* _dataFile;
         alloc_slice _expression;
         QueryLanguage _language;
     };

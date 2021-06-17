@@ -18,55 +18,13 @@
 
 #pragma once
 
-#include "c4Document.h"
+#include "c4DocEnumeratorTypes.h"
 
 C4_ASSUME_NONNULL_BEGIN
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+C4API_BEGIN_DECLS
 
     /** \defgroup DocEnumerator  Document Enumeration
         @{ */
-
-
-    //////// DOCUMENT ENUMERATION (ALL_DOCS):
-
-
-    typedef C4_OPTIONS(uint16_t, C4EnumeratorFlags) {
-        kC4Descending           = 0x01, ///< If true, iteration goes by descending document IDs.
-        kC4Unsorted             = 0x02, ///< If true, iteration order is undefined (may be faster!)
-        kC4IncludeDeleted       = 0x08, ///< If true, include deleted documents.
-        kC4IncludeNonConflicted = 0x10, ///< If false, include _only_ documents in conflict.
-        kC4IncludeBodies        = 0x20, /** If false, document bodies will not be preloaded, just
-                                   metadata (docID, revID, sequence, flags.) This is faster if you
-                                   don't need to access the revision tree or revision bodies. You
-                                   can still access all the data of the document, but it will
-                                   trigger loading the document body from the database. */
-        kC4IncludeRevHistory    = 0x40  ///< Put entire revision history/version vector in `revID`
-    };
-
-
-    /** Options for enumerating over all documents. */
-    typedef struct {
-        C4EnumeratorFlags flags;    ///< Option flags */
-    } C4EnumeratorOptions;
-
-    /** Default all-docs enumeration options. (Equal to kC4IncludeNonConflicted | kC4IncludeBodies) */
-    CBL_CORE_API extern const C4EnumeratorOptions kC4DefaultEnumeratorOptions;
-    
-
-    /** Metadata about a document (actually about its current revision.) */
-    typedef struct C4DocumentInfo {
-        C4DocumentFlags flags;      ///< Document flags
-        C4HeapString docID;         ///< Document ID
-        C4HeapString revID;         ///< RevID of current revision
-        C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
-        uint64_t bodySize;          ///< Size in bytes of current revision body (as Fleece not JSON)
-        uint64_t metaSize;          ///< Size in bytes of extra metadata
-        int64_t expiration;         ///< Expiration time, or 0 if none
-    } C4DocumentInfo;
-
 
 
     /** Closes an enumeration. This is optional, but can be used to free up resources if the
@@ -76,6 +34,7 @@ extern "C" {
     /** Frees a C4DocEnumerator handle. */
     void c4enum_free(C4DocEnumerator* C4NULLABLE e) C4API;
 
+#ifndef C4_STRICT_COLLECTION_API
     /** Creates an enumerator ordered by sequence.
         Caller is responsible for freeing the enumerator when finished with it.
         @param database  The database.
@@ -99,6 +58,31 @@ extern "C" {
     C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
                                            const C4EnumeratorOptions* C4NULLABLE options,
                                            C4Error* C4NULLABLE outError) C4API;
+#endif
+
+    /** Creates an enumerator ordered by sequence.
+        Caller is responsible for freeing the enumerator when finished with it.
+        @param collection  The collection.
+        @param since  The sequence number to start _after_. Pass 0 to start from the beginning.
+        @param options  Enumeration options (NULL for defaults).
+        @param outError  Error will be stored here on failure.
+        @return  A new enumerator, or NULL on failure. */
+    C4DocEnumerator* c4coll_enumerateChanges(C4Collection *collection,
+                                             C4SequenceNumber since,
+                                             const C4EnumeratorOptions* C4NULLABLE options,
+                                             C4Error* C4NULLABLE outError) C4API;
+
+    /** Creates an enumerator ordered by docID.
+        Options have the same meanings as in Couchbase Lite.
+        There's no 'limit' option; just stop enumerating when you're done.
+        Caller is responsible for freeing the enumerator when finished with it.
+        @param collection  The collection.
+        @param options  Enumeration options (NULL for defaults).
+        @param outError  Error will be stored here on failure.
+        @return  A new enumerator, or NULL on failure. */
+    C4DocEnumerator* c4coll_enumerateAllDocs(C4Collection *collection,
+                                             const C4EnumeratorOptions* C4NULLABLE options,
+                                             C4Error* C4NULLABLE outError) C4API;
 
     /** Advances the enumerator to the next document.
         Returns false at the end, or on error; look at the C4Error to determine which occurred,
@@ -124,8 +108,5 @@ extern "C" {
 
     /** @} */
 
-#ifdef __cplusplus
-    }
-#endif
-
+C4API_END_DECLS
 C4_ASSUME_NONNULL_END
