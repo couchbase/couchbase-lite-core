@@ -2346,3 +2346,13 @@ TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
     CHECK(e->columns()[0]->asInt() == 5);
     CHECK(e->columns()[1]->asInt() == 0);
 }
+
+
+TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
+    addNumberedDocs(1, 10);
+    CHECK(rowsInQuery(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'_default'}]}")) == 10);
+    CHECK(rowsInQuery(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'_'}]}")) == 10);
+    CHECK(rowsInQuery(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'" + databaseName() + "'}]}")) == 10);
+
+    CHECK(rowsInQuery(json5("{'WHAT': ['.foo.'], 'FROM': [{'COLLECTION':'_', 'AS':'foo'}]}")) == 10);
+}

@@ -675,11 +675,24 @@ namespace litecore {
 #pragma mark - QUERIES:
 
 
+    // Maps a collection name used in a query (after "FROM..." or "JOIN...") to a table name.
+    // We have two special rules:
+    // 1. The name "_" refers to the default collection; this is simpler than "_default" and
+    //    means we don't have to imply that CBL 3.0 supports collections.
+    // 2. The name of the database also refers to the default collection, because people are
+    //    used to using "FROM bucket_name" in Server queries.
     string SQLiteDataFile::collectionTableName(const string &collection) const {
-        if (collection == "_default")
+        if (collection == "_default" || collection == "_") {
             return "kv_default";
-        else
-            return "kv_coll_" + collection;
+        } else {
+            string table = "kv_coll_" + collection;
+            if (collection == delegate()->databaseName() && !tableExists(table)) {
+                // The name of this database represents the default collection,
+                // _unless_ there is a collection with that name.
+                return "kv_default";
+            }
+            return table;
+        }
     }
 
     string SQLiteDataFile::FTSTableName(const string &onTable, const string &property) const {

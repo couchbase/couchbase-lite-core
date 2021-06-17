@@ -197,7 +197,7 @@ void DataFileTestFixture::reopenDatabase(const DataFile::Options *newOptions) {
 
 
 DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options *options) {
-    auto dbPath = databasePath("cbl_core_temp");
+    auto dbPath = databasePath(databaseName());
     deleteDatabase(dbPath);
     db.reset(newDatabase(dbPath, options));
     store = &db->defaultKeyStore();
