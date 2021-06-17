@@ -51,6 +51,8 @@ namespace litecore {
         class Delegate {
         public:
             virtual ~Delegate() =default;
+            // The user-visible name of this database
+            virtual string databaseName() const =0;
             // Callback that takes a blob dictionary and returns the blob data
             virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const =0;
             // Notifies that another DataFile on the same physical file has committed a transaction

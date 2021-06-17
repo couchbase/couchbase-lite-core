@@ -18,6 +18,7 @@
 
 #include "c4QueryTest.hh"
 #include "c4BlobStore.h"
+#include "c4Collection.h"
 #include "c4Observer.h"
 #include "StringUtil.hh"
 #include <thread>
@@ -1034,6 +1035,33 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query RevisionID", "[Query][C][!throws]")
     compileSelect(json5("{WHAT: [['._revisionID']], WHERE: ['AND', ['._deleted'], ['=', ['._id'], 'doc1']]}"));
     CHECK(run() == (vector<string>{revID}));
     c4doc_release(doc1c);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query alternative FROM names", "[Query][C]") {
+    TransactionHelper t(db);
+    string dbName(c4db_getName(db));
+
+    // Explicitly specify the default collection:
+    compileSelect(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'_default'}]}"));
+    CHECK(run().size() == 100);
+
+    // Use "_" as a synonym for the default collection:
+    compileSelect(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'_'}]}"));
+    CHECK(run().size() == 100);
+    compileSelect(json5("{'WHAT': ['.foo.'], 'FROM': [{'COLLECTION':'_', 'AS':'foo'}]}"));
+    CHECK(run().size() == 100);
+
+    // Use the database name as a synonym for the default collection:
+    compileSelect(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'" + dbName + "'}]}"));
+    CHECK(run().size() == 100);
+
+
+    // Create a collection with the same name as the database;
+    // then that name should access the new collection, not the default one:
+    c4db_createCollection(db, slice(dbName), ERROR_INFO());
+    compileSelect(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'" + dbName + "'}]}"));
+    CHECK(run().size() == 0);
 }
 
 

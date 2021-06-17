@@ -37,7 +37,7 @@ public:
 protected:
     virtual string collectionTableName(const string &collection) const override {
         CHECK(!hasPrefix(collection, "kv_"));   // make sure I didn't get passed a table name
-        if (collection == "_default")
+        if (collection == "_default" || collection == "_")
             return "kv_default";
         else
             return "kv_coll_" + collection;

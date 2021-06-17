@@ -279,7 +279,10 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
     CHECK(translate("SELECT orderlines[0] WHERE test_id='order_func' ORDER BY orderlines[0].productId, orderlines[0].qty ASC OFFSET 8192 LIMIT 1")
           == "{'LIMIT':1,'OFFSET':8192,'ORDER_BY':[['.orderlines[0].productId'],"
              "['ASC',['.orderlines[0].qty']]],'WHAT':[['.orderlines[0]']],'WHERE':['=',['.test_id'],'order_func']}");
-    
+
+    CHECK(translate("SELECT foo FROM _") == "{'FROM':[{'COLLECTION':'_'}],'WHAT':[['.foo']]}");
+    CHECK(translate("SELECT foo FROM _default") == "{'FROM':[{'COLLECTION':'_default'}],'WHAT':[['.foo']]}");
+
 // QueryParser does not support "IN SELECT" yet
 //    CHECK(translate("SELECT 17 NOT IN (SELECT value WHERE type='prime')") == "{'WHAT':[['NOT IN',17,['SELECT',{'WHAT':[['.value']],'WHERE':['=',['.type'],'prime']}]]]}");
 

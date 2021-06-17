@@ -104,6 +104,7 @@ public:
                         slice docID, DocumentFlags, ExclusiveTransaction&,
                         std::function<void(fleece::impl::Encoder&)>);
 
+    virtual string databaseName() const override        {return "cbl_core_temp";}
     virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
 };
 

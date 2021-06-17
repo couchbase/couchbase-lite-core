@@ -57,6 +57,10 @@ public:
         insertStmt->reset();
     }
 
+    virtual string databaseName() const override {
+        return "db";
+    }
+
     virtual alloc_slice blobAccessor(const Dict *blob) const override {
         auto digestProp = blob->get("digest"_sl);
         if (!digestProp)

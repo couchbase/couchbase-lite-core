@@ -121,6 +121,7 @@ namespace litecore {
 
         // DataFile::Delegate API:
 
+        virtual string databaseName() const override                    {return _name;}
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         virtual void externalTransactionCommitted(const SequenceTracker&) override;
 
@@ -163,7 +164,6 @@ namespace litecore {
 
         using CollectionsMap = std::unordered_map<slice,std::unique_ptr<C4Collection>>;
 
-        std::string const           _parentDirectory;       // Path to parent directory
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
         mutable std::recursive_mutex _collectionsMutex;
         mutable CollectionsMap      _collections;
