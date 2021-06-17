@@ -66,6 +66,7 @@ namespace litecore { namespace repl {
 
         MessageBuilder req("getAttachment"_sl);
         req["digest"_sl] = _blob->key.digestString();
+        req["docID"] = _blob->docID;
         if (_blob->compressible)
             req["compress"_sl] = "true"_sl;
         sendRequest(req, [=](blip::MessageProgress progress) {
