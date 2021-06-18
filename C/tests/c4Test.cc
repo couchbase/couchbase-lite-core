@@ -137,7 +137,7 @@ C4Test::C4Test(int num)
         RevTreeOption, VersionVectorOption, EncryptedRevTreeOption
 #endif
     };
-    static_assert(sizeof(numToTestOption)/sizeof(TestOptions) == numberOfOptions);
+    static_assert(sizeof(numToTestOption)/sizeof(TestOptions) >= numberOfOptions);
     TestOptions testOption = numToTestOption[num];
 
     static once_flag once;

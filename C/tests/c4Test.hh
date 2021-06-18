@@ -171,22 +171,18 @@ class TransactionHelper {
 /// and closes & deletes it in tearDown. Also checks for leaks of classes that are InstanceCounted.
 class C4Test {
 public:
-#if defined(COUCHBASE_ENTERPRISE)
     enum TestOptions {
         RevTreeOption = 0,
         VersionVectorOption,
         EncryptedRevTreeOption
     };
+#if defined(COUCHBASE_ENTERPRISE)
     #if SkipVersionVectorTest
     static const int numberOfOptions = 2;       // rev-tree, rev-tree encrypted
     #else
     static const int numberOfOptions = 3;       // rev-tree, version vector, rev-tree encrypted
     #endif
 #else
-    enum TestOptions {
-        RevTreeOption = 0,
-        VersionVectorOption
-    };
     #if SkipVersionVectorTest
     static const int numberOfOptions = 1;       // rev-tree
     #else
