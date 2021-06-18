@@ -1490,7 +1490,7 @@ namespace litecore {
     // Return the iterator to _aliases based on the property.
     // Post-condition: iterator != _aliases.end()
     QueryParser::AliasMap::const_iterator
-    QueryParser::verifyDbAlias(fleece::impl::Path &property) {
+    QueryParser::verifyDbAlias(fleece::impl::Path &property) const {
         string alias;
         auto iType = _aliases.end();
         if(!property.empty()) {
@@ -1726,22 +1726,12 @@ namespace litecore {
 
     // Returns the FTS table name given the LHS of a MATCH expression.
     string QueryParser::FTSTableName(const Value *key) const {
-        slice ftsName = requiredString(key, "left-hand side of MATCH expression");
-        string table;
-        slice alias;
-        if (auto dot = ftsName.findByte('.'); dot) {
-            alias = slice(ftsName.buf, dot);
-            ftsName = ftsName.from(dot + 1);
-            auto i = _aliases.find(string(alias));
-            require(i != _aliases.end() && i->second.type <= kJoinAlias, "Invalid alias in MATCH");
-            table = i->second.tableName;
-        } else {
-            require(!_propertiesUseSourcePrefix, "Missing collection alias in MATCH");
-            table = _defaultTableName;
-        }
-        require(!ftsName.empty() && !ftsName.findByte('"'),
+        Path keyPath(requiredString(key, "left-hand side of MATCH expression"));
+        auto iAlias = verifyDbAlias(keyPath);
+        string indexName = string(keyPath);
+        require(!indexName.empty() && indexName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");
-        return _delegate.FTSTableName(table, string(ftsName));
+        return _delegate.FTSTableName(iAlias->second.tableName, indexName);
     }
 
     // Returns or creates the FTS join alias given the LHS of a MATCH expression.

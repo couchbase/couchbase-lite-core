@@ -537,3 +537,17 @@ TEST_CASE_METHOD(FTSTest, "Missing FTS columns", "[FTS][Query]") {
         expectedMissing = 0;
     }
 }
+
+
+TEST_CASE_METHOD(FTSTest, "No alias on MATCH", "[FTS][Query]") {
+    // Test that the first parameter of `MATCH` doesn't need a db alias even when there's an `AS`,
+    // as long as there's only one alias.
+    createIndex({"english", true});
+
+    const string indexSpecs[] = {"sentence", "testdb.sentence"};
+    for (string spec : indexSpecs) {
+        string q = R"-({"WHAT":[["._id"],[".sentence"]],"FROM":[{"AS":"testdb"}],"WHERE":["MATCH()",")-"
+                   + spec + R"-(","'Dummie woman'"],"ORDER_BY":[["DESC",["RANK()","sentence"]]]})-";
+        Retained<Query> query = db->compileQuery(q);  // just verify it compiles
+    }
+}
