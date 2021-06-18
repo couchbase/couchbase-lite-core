@@ -165,7 +165,9 @@ class TransactionHelper {
 
 #pragma mark - C4TEST BASE CLASS:
 
-#define SkipVersionVectorTest 1
+#ifndef SkipVersionVectorTest
+    #define SkipVersionVectorTest 1
+#endif
 
 /// Base test fixture class for C4 tests. Creates a new empty C4Database in its setUp method,
 /// and closes & deletes it in tearDown. Also checks for leaks of classes that are InstanceCounted.
