@@ -127,9 +127,19 @@ string C4Test::sReplicatorFixturesDir = "Replicator/tests/data/";
 #endif
 
 
-C4Test::C4Test(int testOption)
+C4Test::C4Test(int num)
 :_storage(kC4SQLiteStorageEngine)
 {
+    constexpr static TestOptions numToTestOption[] = {
+#if SkipVersionVectorTest
+        RevTreeOption, EncryptedRevTreeOption
+#else
+        RevTreeOption, VersionVectorOption, EncryptedRevTreeOption
+#endif
+    };
+    static_assert(sizeof(numToTestOption)/sizeof(TestOptions) == numberOfOptions);
+    TestOptions testOption = numToTestOption[num];
+
     static once_flag once;
     call_once(once, [] {
         InitTestLogging();
@@ -174,7 +184,7 @@ C4Test::C4Test(int testOption)
     objectCount = c4_getObjectCount();
 
     _dbConfig = {slice(TempDir()), kC4DB_Create};
-    if (testOption & 1) {
+    if (testOption == VersionVectorOption) {
         _dbConfig.flags |= kC4DB_VersionVectors;
         kRev1ID = kRevID = kRev1ID_Alt = C4STR("1@*");
         kRev2ID = C4STR("2@*");
@@ -188,7 +198,7 @@ C4Test::C4Test(int testOption)
         kRev4ID = C4STR("4-44444444");
     }
 
-    if (testOption & 2) {
+    if (testOption == EncryptedRevTreeOption) {
         _dbConfig.encryptionKey.algorithm = kC4EncryptionAES256;
         memcpy(_dbConfig.encryptionKey.bytes, "this is not a random key at all.", kC4EncryptionKeySizeAES256);
     }

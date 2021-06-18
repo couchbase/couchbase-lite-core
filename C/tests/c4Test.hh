@@ -165,6 +165,7 @@ class TransactionHelper {
 
 #pragma mark - C4TEST BASE CLASS:
 
+#define SkipVersionVectorTest 1
 
 /// Base test fixture class for C4 tests. Creates a new empty C4Database in its setUp method,
 /// and closes & deletes it in tearDown. Also checks for leaks of classes that are InstanceCounted.
@@ -176,21 +177,32 @@ public:
         VersionVectorOption,
         EncryptedRevTreeOption
     };
+    #if SkipVersionVectorTest
+    static const int numberOfOptions = 2;       // rev-tree, rev-tree encrypted
+    #else
     static const int numberOfOptions = 3;       // rev-tree, version vector, rev-tree encrypted
+    #endif
 #else
     enum TestOptions {
         RevTreeOption = 0,
         VersionVectorOption
     };
+    #if SkipVersionVectorTest
+    static const int numberOfOptions = 1;       // rev-tree
+    #else
     static const int numberOfOptions = 2;       // rev-tree, version vector
+    #endif
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
     static std::string sReplicatorFixturesDir;  // directory where replicator test files live
 
     static constexpr slice kDatabaseName = "cbl_core_test";
-
+#if SkipVersionVectorTest
+    C4Test(int testOption =RevTreeOption);
+#else
     C4Test(int testOption =VersionVectorOption);
+#endif
     ~C4Test();
 
     alloc_slice databasePath() const            {return alloc_slice(c4db_getPath(db));}
