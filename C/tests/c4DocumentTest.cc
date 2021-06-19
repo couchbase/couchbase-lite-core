@@ -747,6 +747,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "LoadRevisions After Purge", "[Document][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Body Doesn't Change", "[Document][C]") {
+    // CBL-2033
     TransactionHelper t(db);
     // Create document
     createRev(kDocID, kRevID, kFleeceBody);
@@ -767,6 +768,49 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Body Doesn't Change", "[Document][C]") 
     slice newCurBody = c4doc_getRevisionBody(curDoc);
     CHECK(newCurBody == curBody);
     CHECK(newCurBody.buf == curBody.buf);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Deletion External Pointers", "[Document][C]") {
+    // CBL-2033
+    const slice streetVal = "1 Main street";
+
+    {
+        TransactionHelper t(db);
+        auto enc = c4db_getSharedFleeceEncoder(db);
+        FLEncoder_BeginDict(enc, 1);
+        FLEncoder_WriteKey(enc, FLSTR("address"));
+        FLEncoder_BeginDict(enc, 1);
+        FLEncoder_WriteKey(enc, FLSTR("street"));
+        FLEncoder_WriteString(enc, streetVal);
+        FLEncoder_EndDict(enc);
+        FLEncoder_EndDict(enc);
+
+        FLError err;
+        auto result = FLEncoder_Finish(enc, &err);
+        FLEncoder_Reset(enc);
+        createRev(kDocID, kRevID, (C4Slice)result);
+        FLSliceResult_Release(result);
+    }
+
+    c4::ref<C4Document> doc = c4doc_get(db, kDocID, true, nullptr);
+    REQUIRE(doc);
+    FLValue docBodyVal = FLValue_FromData(c4doc_getRevisionBody(doc), kFLTrusted);
+    REQUIRE(docBodyVal);
+    FLDict docBody = FLValue_AsDict(docBodyVal);
+    REQUIRE(docBody);
+    FLDict address = FLValue_AsDict(FLDict_Get(docBody, FLSTR("address")));
+    REQUIRE(address);
+
+    slice street = FLValue_AsString(FLDict_Get(address, FLSTR("street")));
+    CHECK(street == streetVal);
+
+    {
+        TransactionHelper t(db);
+        c4::ref<C4Document> updated = c4doc_update(doc, kC4SliceNull, kRevDeleted, nullptr);
+    }
+
+    CHECK(street == streetVal);
 }
 
 
