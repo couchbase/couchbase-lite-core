@@ -33,9 +33,6 @@ namespace litecore { namespace repl {
     class ReplicatedRev;
 
 
-    static constexpr const char *kReplicatorProtocolName = "+CBMobile_3";
-
-
     /** The top-level replicator object, which runs the BLIP connection.
         Pull and push operations are run by subidiary Puller and Pusher objects.
         The database will only be accessed by the DBAgent object. */
@@ -65,6 +62,10 @@ namespace litecore { namespace repl {
         };
 
         using DocumentsEnded = std::vector<Retained<ReplicatedRev>>;
+                    
+        static std::vector<string> CompatibleProtocols();
+                                 
+        static std::string ProtocolName();
 
         /** Replicator delegate; receives progress & error notifications. */
         class Delegate {

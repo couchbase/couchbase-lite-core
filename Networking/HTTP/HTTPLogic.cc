@@ -22,6 +22,7 @@
 #include "c4ReplicatorTypes.h"
 #include "Base64.hh"
 #include "Error.hh"
+#include "Replicator.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include "StringUtil.hh"
@@ -319,9 +320,13 @@ namespace litecore { namespace net {
           return failure(WebSocketDomain, kCodeProtocolError,
                          "Server failed to upgrade connection"_sl);
         }
-
-        if (_webSocketProtocol && _responseHeaders["Sec-Websocket-Protocol"_sl] != _webSocketProtocol) {
-            return failure(WebSocketDomain, 403, "Server did not accept protocol"_sl);
+        
+        // Check if server selected protocol from Sec-Websocket-Protocol is matched with
+        // the proposed protocols:
+        if (_webSocketProtocol) {
+            slice protocol = _responseHeaders["Sec-Websocket-Protocol"_sl];
+            if (!_webSocketProtocol.find(protocol))
+                return failure(WebSocketDomain, 403, "Server did not accept protocol"_sl);
         }
 
         // Check the returned nonce:

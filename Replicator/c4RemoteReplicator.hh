@@ -233,9 +233,8 @@ namespace litecore {
 
         // Options to pass to the C4Socket
         alloc_slice socketOptions() const {
-            string protocolString = string(blip::Connection::kWSProtocolName) + kReplicatorProtocolName;
             Replicator::Options opts(kC4Disabled, kC4Disabled, _options.properties);
-            opts.setProperty(kC4SocketOptionWSProtocols, protocolString.c_str());
+            opts.setProperty(kC4SocketOptionWSProtocols, Replicator::ProtocolName().c_str());
             return opts.properties.data();
         }
 
