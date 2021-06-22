@@ -282,7 +282,7 @@ namespace litecore {
         }
 
 
-        bool loadRevisions() const override {
+        bool loadRevisions() const override MUST_USE_RESULT {
             return _doc.contentAvailable() >= kEntireBody || const_cast<VectorRecord&>(_doc).loadData(kEntireBody);
         }
 
@@ -297,7 +297,7 @@ namespace litecore {
         }
 
 
-        bool loadRevisionBody() const override {
+        bool loadRevisionBody() const override MUST_USE_RESULT {
             if (!_remoteID)
                 return false;
             auto which = (*_remoteID == RemoteID::Local) ? kCurrentRevOnly : kEntireBody;
@@ -488,6 +488,7 @@ namespace litecore {
                              C4RevisionFlags mergedFlags,
                              bool /*pruneLosingBranch*/) override
         {
+            
             optional<pair<RemoteID, Revision>> won = _findRemote(winningRevID),
                                               lost = _findRemote(losingRevID);
             if (!won || !lost)
