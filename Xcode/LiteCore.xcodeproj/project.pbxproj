@@ -93,6 +93,7 @@
 		271A98AE243D250A008C032D /* NetworkInterfaces.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271A98AC243D24FD008C032D /* NetworkInterfaces.cc */; };
 		271AB0162374AD09007B0319 /* IndexSpec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271AB0152374AD09007B0319 /* IndexSpec.cc */; };
 		271BA454227B691500D49D13 /* c4DatabaseEncryptionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */; };
+		271BA4D2228373E500D49D13 /* BothKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA4D1228373E500D49D13 /* BothKeyStore.cc */; };
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
 		27229215260AB89900A3A41F /* BlobStreams.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27229214260AB89900A3A41F /* BlobStreams.cc */; };
@@ -880,6 +881,8 @@
 		271AB0142374AD09007B0319 /* IndexSpec.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IndexSpec.hh; sourceTree = "<group>"; };
 		271AB0152374AD09007B0319 /* IndexSpec.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IndexSpec.cc; sourceTree = "<group>"; };
 		271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseEncryptionTest.cc; sourceTree = "<group>"; };
+		271BA4D0228373E500D49D13 /* BothKeyStore.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BothKeyStore.hh; sourceTree = "<group>"; };
+		271BA4D1228373E500D49D13 /* BothKeyStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BothKeyStore.cc; sourceTree = "<group>"; };
 		271BA53C2297008200D49D13 /* HTTPTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPTypes.hh; sourceTree = "<group>"; };
 		271C069723078176000EC09B /* HTTPTypes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPTypes.cc; sourceTree = "<group>"; };
 		2722504A1D7884110006D5A5 /* c4BlobStore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStore.h; sourceTree = "<group>"; };
@@ -2776,6 +2779,8 @@
 				27C319ED1A143F5D00A89EDC /* KeyStore.hh */,
 				27E48711192171EA007D8940 /* DataFile.cc */,
 				27E48712192171EA007D8940 /* DataFile.hh */,
+				271BA4D0228373E500D49D13 /* BothKeyStore.hh */,
+				271BA4D1228373E500D49D13 /* BothKeyStore.cc */,
 				27A16314201FC2A500C18D9C /* DataFile+Shared.hh */,
 				27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */,
 				27DF46C21A12CF46007BB4A4 /* Record.cc */,
@@ -4170,6 +4175,7 @@
 				2744B36224186142005A194D /* BuiltInWebSocket.cc in Sources */,
 				27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */,
 				2744B352241854F2005A194D /* Codec.cc in Sources */,
+				271BA4D2228373E500D49D13 /* BothKeyStore.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
 				2744B35C241854F2005A194D /* MessageOut.cc in Sources */,
 				27469D09233D719800A1EE1A /* mbedUtils.cc in Sources */,

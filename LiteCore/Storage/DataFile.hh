@@ -65,6 +65,7 @@ namespace litecore {
             bool                upgradeable    :1;      ///< DB schema can be upgraded
             EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
             alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
+
             static const Options defaults;
         };
 
