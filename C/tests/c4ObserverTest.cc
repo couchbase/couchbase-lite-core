@@ -47,8 +47,11 @@ class C4ObserverTest : public C4Test {
             kDocBRev2History = "1@f00,1@bb";
         }
     }
-
+#if SkipVersionVectorTest
+    static const int numberOfOptions = 1;
+#else
     static const int numberOfOptions = 2;       // rev-tree, vector; no need to test encryption
+#endif
 
     ~C4ObserverTest() {
         c4docobs_free(docObserver);

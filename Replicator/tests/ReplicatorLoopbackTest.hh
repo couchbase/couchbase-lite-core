@@ -45,7 +45,11 @@ public:
     slice kNonLocalRev1ID, kNonLocalRev2ID, kNonLocalRev3ID, kConflictRev2AID, kConflictRev2BID;
 
     ReplicatorLoopbackTest()
+#if SkipVersionVectorTest
+    :C4Test(0)
+#else
     :C4Test(GENERATE(0, 1))
+#endif
     ,db2(createDatabase("2"))
     {
         // Change tuning param so that tests will actually create deltas, despite using small
