@@ -98,19 +98,29 @@ namespace litecore {
 
         bool exists() const FLPURE                {return _exists;}
 
-        template <typename T>
-            void setKey(const T &key)            {_key = key;}
-        template <typename T>
-            void setVersion(const T &vers)       {_version = vers;}
-        template <typename T>
-            void setBody(const T &body)          {_body = body; _bodySize = _body.size;}
-        template <typename T>
-            void setExtra(const T &extra)        {_extra = extra; _extraSize = _extra.size;}
+        void setKey(slice key)                  {_key = key;}
+        void setKey(alloc_slice key)            {_key = move(key);}
+        void setVersion(slice vers)             {_version = vers;}
+        void setVersion(alloc_slice vers)       {_version = move(vers);}
 
-        void setKey(alloc_slice &&key)           {_key = move(key);}
-        void setVersion(alloc_slice &&vers)      {_version = move(vers);}
-        void setBody(alloc_slice &&body)         {_body = move(body); _bodySize = _body.size;}
-        void setExtra(alloc_slice &&extra)       {_extra = move(extra); _extraSize = _extra.size;}
+        template <class SLICE>
+        void setBody(SLICE body) {
+            // Leave _body alone if the new body is identical; this prevents a doc's body from
+            // being swapped out when clients are using Fleece values pointing into it.
+            if (slice(body) != _body || !_body) {
+                _body = move(body);
+                _bodySize = _body.size;
+            }
+        }
+
+        template <class SLICE>
+        void setExtra(SLICE extra) {
+            // Same thing as setBody: there may be Fleece objects (other revs) in _extra.
+            if (slice(extra) != _extra || !_extra) {
+                _extra = move(extra);
+                _extraSize = _extra.size;
+            }
+        }
 
         uint64_t bodyAsUInt() const noexcept FLPURE;
         void setBodyAsUInt(uint64_t) noexcept;

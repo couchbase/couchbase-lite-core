@@ -190,7 +190,7 @@ namespace litecore {
         if (!rec.exists())
             return false;
 
-        //Warn("VectorRecord: Loading more data (which=%d) of '%.*s'", int(which), SPLAT(docID()));
+        LogToAt(DBLog, Verbose, "VectorRecord: Loading more data (which=%d) of '%.*s'", int(which), SPLAT(docID()));
         auto oldWhich = _whichContent;
         _whichContent = which;
         if (which >= kCurrentRevOnly && oldWhich < kCurrentRevOnly)
