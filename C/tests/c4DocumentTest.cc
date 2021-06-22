@@ -746,6 +746,30 @@ N_WAY_TEST_CASE_METHOD(C4Test, "LoadRevisions After Purge", "[Document][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Body Doesn't Change", "[Document][C]") {
+    TransactionHelper t(db);
+    // Create document
+    createRev(kDocID, kRevID, kFleeceBody);
+    createRev(kDocID, kRev2ID, kFleeceBody);
+
+    // Get the document, with only the current revision:
+    c4::ref<C4Document> curDoc = c4db_getDoc(db, kDocID, true, kDocGetCurrentRev, ERROR_INFO());
+    FLDict properties = c4doc_getProperties(curDoc);
+    slice curBody = c4doc_getRevisionBody(curDoc);
+
+    // Force the rest of the doc's data to be loaded:
+    REQUIRE(c4doc_setRemoteAncestor(curDoc, 1, kRevID, ERROR_INFO()));
+
+    // Check this didn't replace the current rev's body with a new alloc_slice:
+    REQUIRE(c4doc_selectCurrentRevision(curDoc));
+    FLDict newProperties = c4doc_getProperties(curDoc);
+    CHECK(newProperties == properties);
+    slice newCurBody = c4doc_getRevisionBody(curDoc);
+    CHECK(newCurBody == curBody);
+    CHECK(newCurBody.buf == curBody.buf);
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
     C4Error err;
     slice kRev1ID, kRev2ID, kRev3ID, kRev3ConflictID, kRev4ConflictID;
