@@ -1021,6 +1021,18 @@
 		2744B34B241854F2005A194D /* Message.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Message.cc; sourceTree = "<group>"; };
 		2744B34C241854F2005A194D /* MessageOut.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageOut.hh; sourceTree = "<group>"; };
 		27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTrackerTest.cc; sourceTree = "<group>"; };
+		2745B7CB26825F970012A17A /* index.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
+		2745B7CD26825F970012A17A /* Replicator Diagram.t2d */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "Replicator Diagram.t2d"; sourceTree = "<group>"; };
+		2745B7CE26825F970012A17A /* Classes.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Classes.md; sourceTree = "<group>"; wrapsLines = 1; };
+		2745B7CF26825F970012A17A /* Block Diagram.t2d */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "Block Diagram.t2d"; sourceTree = "<group>"; };
+		2745B7D026825F970012A17A /* Replicator Diagram.svg */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "Replicator Diagram.svg"; sourceTree = "<group>"; };
+		2745B7D126825F970012A17A /* Class Diagram.diagrams */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = "Class Diagram.diagrams"; sourceTree = "<group>"; };
+		2745B7D226825F970012A17A /* index.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = index.md; sourceTree = "<group>"; wrapsLines = 1; };
+		2745B7D326825F970012A17A /* Block Diagram.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Block Diagram.png"; sourceTree = "<group>"; };
+		2745B7D426825F970012A17A /* Replicator.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Replicator.md; sourceTree = "<group>"; wrapsLines = 1; };
+		2745B7D526825F970012A17A /* Block Diagram.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Block Diagram.pdf"; sourceTree = "<group>"; };
+		2745B7D626825F970012A17A /* Class Diagram.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Class Diagram.png"; sourceTree = "<group>"; };
+		2745B7D726825F970012A17A /* Class Diagram.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "Class Diagram.pdf"; sourceTree = "<group>"; };
 		2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorAPITest.cc; sourceTree = "<group>"; };
 		27469CFB233C35EB00A1EE1A /* TLSContext.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TLSContext.hh; sourceTree = "<group>"; };
 		27469CFC233C35EB00A1EE1A /* TLSContext.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TLSContext.cc; sourceTree = "<group>"; };
@@ -2081,6 +2093,34 @@
 			path = HTTP;
 			sourceTree = "<group>";
 		};
+		2745B7CA26825F970012A17A /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				2745B7CB26825F970012A17A /* index.html */,
+				2745B7CC26825F970012A17A /* overview */,
+			);
+			name = docs;
+			path = ../docs;
+			sourceTree = "<group>";
+		};
+		2745B7CC26825F970012A17A /* overview */ = {
+			isa = PBXGroup;
+			children = (
+				2745B7D526825F970012A17A /* Block Diagram.pdf */,
+				2745B7D326825F970012A17A /* Block Diagram.png */,
+				2745B7CF26825F970012A17A /* Block Diagram.t2d */,
+				2745B7D126825F970012A17A /* Class Diagram.diagrams */,
+				2745B7D726825F970012A17A /* Class Diagram.pdf */,
+				2745B7D626825F970012A17A /* Class Diagram.png */,
+				2745B7CE26825F970012A17A /* Classes.md */,
+				2745B7D226825F970012A17A /* index.md */,
+				2745B7D026825F970012A17A /* Replicator Diagram.svg */,
+				2745B7CD26825F970012A17A /* Replicator Diagram.t2d */,
+				2745B7D426825F970012A17A /* Replicator.md */,
+			);
+			path = overview;
+			sourceTree = "<group>";
+		};
 		2747664420190841007B39D1 /* sqlite3 */ = {
 			isa = PBXGroup;
 			children = (
@@ -2134,6 +2174,7 @@
 				273AD3CF18F4B23A007D8C23 /* README.md */,
 				275073581F4B5E13003D2CCE /* CMakeLists.txt */,
 				2757DE551B9FC34E002EE261 /* API */,
+				2745B7CA26825F970012A17A /* docs */,
 				27E4871019217187007D8940 /* LiteCore */,
 				27CCC7CA1E525E6D00CE1989 /* Replicator */,
 				271BA53122960DF900D49D13 /* Networking */,
