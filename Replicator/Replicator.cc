@@ -23,6 +23,7 @@
 #include "Puller.hh"
 #include "Checkpoint.hh"
 #include "DBAccess.hh"
+#include "Delimiter.hh"
 #include "c4Database.hh"
 #include "c4DocEnumerator.hh"
 #include "c4SocketTypes.h"           // for error codes
@@ -54,6 +55,15 @@ namespace litecore { namespace repl {
         {{ WebSocketDomain, 403, 0}, true, "An attempt was made to perform an unauthorized action"_sl},
         {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl}
     };
+
+                             
+    std::string Replicator::ProtocolName() {
+        stringstream result;
+        delimiter delim(",");
+        for (auto &name : kCompatProtocols)
+            result << delim << name;
+        return result.str();
+    }
 
 
     Replicator::Replicator(C4Database* db,

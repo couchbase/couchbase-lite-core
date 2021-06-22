@@ -24,7 +24,7 @@
 #include "fleece/Fleece.hh"
 #include "InstanceCounted.hh"
 #include "Stopwatch.hh"
-#include <vector>
+#include <array>
 
 namespace litecore { namespace repl {
 
@@ -32,8 +32,10 @@ namespace litecore { namespace repl {
     class Puller;
     class ReplicatedRev;
 
-
-    static constexpr const char *kReplicatorProtocolName = "+CBMobile_3";
+    static const array<string, 2> kCompatProtocols = {{
+        string(blip::Connection::kWSProtocolName) + "+CBMobile_3",
+        string(blip::Connection::kWSProtocolName) + "+CBMobile_2"
+    }};
 
 
     /** The top-level replicator object, which runs the BLIP connection.
@@ -65,6 +67,8 @@ namespace litecore { namespace repl {
         };
 
         using DocumentsEnded = std::vector<Retained<ReplicatedRev>>;
+                                 
+        static std::string ProtocolName();
 
         /** Replicator delegate; receives progress & error notifications. */
         class Delegate {
