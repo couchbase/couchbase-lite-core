@@ -701,6 +701,51 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Delete then Update", "[Document][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4Test, "LoadRevisions After Purge", "[Document][C]") {
+    TransactionHelper t(db);
+    for (auto content = int(kDocGetMetadata); content <= int(kDocGetAll); ++content) {
+        C4Log("---- Content level %d", content);
+
+        // Create document
+        c4::ref<C4Document> fullDoc = c4doc_create(db, kDocID, kFleeceBody, 0, ERROR_INFO());
+        REQUIRE(fullDoc);
+
+        // Get the document, with the current content level
+        c4::ref<C4Document> curDoc = c4db_getDoc(db, kDocID, true, C4DocContentLevel(content),
+                                                 ERROR_INFO());
+
+        // Purge the doc on disk!
+        REQUIRE(c4db_purgeDoc(db, kDocID, ERROR_INFO()));
+
+        ExpectingExceptions x;
+        C4Error error;
+
+        // If the doc hasn't loaded the revision history/tree yet, it will try to and fail because
+        // its sequence doesn't exist anymore; it will report this as a Conflict error.
+        // At the `kDocGetAll` level, the document will get all the way to saving and find that the
+        // document no longer exists, so it will report NotFound.
+        C4Error expectedError = {LiteCoreDomain,
+                                 (content < kDocGetAll ? kC4ErrorConflict : kC4ErrorNotFound)};
+
+        // Try to set curDoc's remote ancestor:
+        if (content < kDocGetAll) {
+            CHECK(!c4doc_setRemoteAncestor(curDoc, 1, curDoc->revID, &error));
+            CHECK(error == expectedError);
+        }
+
+        // Try to resolve a conflict:
+        error = {};
+        CHECK(!c4doc_resolveConflict(curDoc, curDoc->revID, kRev2ID, nullslice, {}, &error));
+        CHECK(error == expectedError);
+
+        // Try to update the document:
+        error = {};
+        CHECK(c4doc_update(curDoc, kFleeceBody, {}, &error) == nullptr);
+        CHECK(error == (C4Error{LiteCoreDomain, kC4ErrorNotFound}));
+    }
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Document][C]") {
     C4Error err;
     slice kRev1ID, kRev2ID, kRev3ID, kRev3ConflictID, kRev4ConflictID;

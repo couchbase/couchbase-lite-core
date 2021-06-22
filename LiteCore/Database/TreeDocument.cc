@@ -107,15 +107,22 @@ namespace litecore {
 
         // This method can throw exceptions, so should not be called from 'noexcept' overrides!
         // Such methods should call requireRevisions instead.
-        bool loadRevisions() const override {
+        bool loadRevisions() const override MUST_USE_RESULT {
             if (!_revTree.revsAvailable()) {
                 LogTo(DBLog, "Need to read rev-tree of doc '%.*s'", SPLAT(_docID));
                 alloc_slice curRev = _selectedRevID;
-                if (!const_cast<TreeDocument*>(this)->_revTree.read(kEntireBody))
+                if (!const_cast<TreeDocument*>(this)->_revTree.read(kEntireBody)) {
+                    LogTo(DBLog, "Couldn't read matching rev-tree of doc '%.*s'; it's been updated", SPLAT(_docID));
                     return false;
+                }
                 const_cast<TreeDocument*>(this)->selectRevision(curRev, true);
             }
             return true;
+        }
+
+        void mustLoadRevisions() {
+            if (!loadRevisions())
+                error::_throw(error::Conflict, "Can't load rev tree: doc has changed on disk");
         }
 
         bool hasRevisionBody() const noexcept override {
@@ -125,11 +132,10 @@ namespace litecore {
                 return _revTree.currentRevAvailable();
         }
 
-        bool loadRevisionBody() const override {
+        bool loadRevisionBody() const override MUST_USE_RESULT {
             if (!_selectedRev && _revTree.currentRevAvailable())
-                return true;            // only the current rev is available, so return true
-            loadRevisions();
-            return _selectedRev &&_selectedRev->body();
+                return true;            // current rev is selected & available, so return true
+            return loadRevisions() && (!_selectedRev || _selectedRev->body());
         }
 
         virtual slice getRevisionBody() const noexcept override {
@@ -241,7 +247,7 @@ namespace litecore {
                 if (!selectRevision(rev))
                     return false;
                 if (withBody)
-                    loadRevisionBody();
+                    (void)loadRevisionBody();
             } else {
                 selectRevision(nullptr);
             }
@@ -308,13 +314,13 @@ namespace litecore {
         }
 
         alloc_slice remoteAncestorRevID(C4RemoteID remote) override {
-            loadRevisions();
+            mustLoadRevisions();
             auto rev = _revTree.latestRevisionOnRemote(remote);
             return rev ? rev->revID.expanded() : alloc_slice();
         }
 
         void setRemoteAncestorRevID(C4RemoteID remote, slice revID) override {
-            loadRevisions();
+            mustLoadRevisions();
             const Rev *rev = _revTree[revidBuffer(revID)];
             if (!rev)
                 error::_throw(error::NotFound);
@@ -360,7 +366,7 @@ namespace litecore {
         }
 
         int32_t purgeRevision(slice revID) override {
-            loadRevisions();
+            mustLoadRevisions();
             int32_t total;
             if (revID.buf)
                 total = _revTree.purge(revidBuffer(revID));
@@ -379,7 +385,8 @@ namespace litecore {
                              slice mergedBody, C4RevisionFlags mergedFlags,
                              bool pruneLosingBranch =true) override
         {
-            loadRevisions();
+            mustLoadRevisions();
+            
             // Validate the revIDs:
             auto winningRev = _revTree[revidBuffer(winningRevID)];
             auto losingRev = _revTree[revidBuffer(losingRevID)];
@@ -481,7 +488,7 @@ namespace litecore {
         int32_t putExistingRevision(const C4DocPutRequest &rq, C4Error *outError) override {
             Assert(rq.historyCount >= 1);
             int32_t commonAncestor = -1;
-            loadRevisions();
+            mustLoadRevisions();
             vector<revidBuffer> revIDBuffers(rq.historyCount);
             for (size_t i = 0; i < rq.historyCount; i++)
                 revIDBuffers[i].parse(rq.history[i]);
