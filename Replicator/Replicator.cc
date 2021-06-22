@@ -56,20 +56,11 @@ namespace litecore { namespace repl {
         {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl}
     };
 
-
-    std::vector<string> Replicator::CompatibleProtocols() {
-        static const char *ProtocolNames[] = {"+CBMobile_3", "+CBMobile_2"};
-        
-        std::vector<std::string> protocols;
-        for (int i = 0; i < sizeof(ProtocolNames)/sizeof(char*); i++)
-            protocols.push_back(string(blip::Connection::kWSProtocolName) + ProtocolNames[i]);
-        return protocols;
-    }
                              
     std::string Replicator::ProtocolName() {
         stringstream result;
         delimiter delim(",");
-        for (auto &name : CompatibleProtocols())
+        for (auto &name : kCompatProtocols)
             result << delim << name;
         return result.str();
     }
