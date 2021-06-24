@@ -1,8 +1,10 @@
 # LiteCore Class Overview
 
+Last updated: 22 June 2021
+
 ## Diagram
 
-<img src="Class%20Diagram.png" width=584>
+<img src="Class%20Diagram.png" width="100%">
 
 This diagram shows the relationships between the major LiteCore classes and C interfaces, both public and internal. It does not contain every class; there would be too many to fit. The text contains descriptions of more classes.
 
