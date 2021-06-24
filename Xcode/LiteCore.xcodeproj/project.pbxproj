@@ -5556,7 +5556,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27DF7D6D1F4239A80022F3DF /* SQLite_Release.xcconfig */;
 			buildSettings = {
-				LLVM_LTO = NO;
 			};
 			name = Release;
 		};
@@ -5571,7 +5570,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */;
 			buildSettings = {
-				LLVM_LTO = NO;
 			};
 			name = Release;
 		};
@@ -5586,7 +5584,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */;
 			buildSettings = {
-				LLVM_LTO = NO;
 			};
 			name = Release;
 		};
