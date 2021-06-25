@@ -1394,6 +1394,7 @@
 		27DDC54123689BB100580B2B /* net_sockets.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = net_sockets.c; sourceTree = "<group>"; };
 		27DDC549236B56D000580B2B /* CertRequest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CertRequest.hh; sourceTree = "<group>"; };
 		27DDC54A236B56D000580B2B /* CertRequest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CertRequest.cc; sourceTree = "<group>"; };
+		27DF3BBC268672F700A57A1E /* Schema.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Schema.md; sourceTree = "<group>"; };
 		27DF46C21A12CF46007BB4A4 /* Record.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Record.cc; sourceTree = "<group>"; };
 		27DF46C31A12CF46007BB4A4 /* Record.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Record.hh; sourceTree = "<group>"; };
 		27DF7D631F4236500022F3DF /* libSQLite.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSQLite.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2106,17 +2107,18 @@
 		2745B7CC26825F970012A17A /* overview */ = {
 			isa = PBXGroup;
 			children = (
+				2745B7D226825F970012A17A /* index.md */,
+				2745B7CE26825F970012A17A /* Classes.md */,
+				2745B7D426825F970012A17A /* Replicator.md */,
+				27DF3BBC268672F700A57A1E /* Schema.md */,
 				2745B7D526825F970012A17A /* Block Diagram.pdf */,
 				2745B7D326825F970012A17A /* Block Diagram.png */,
 				2745B7CF26825F970012A17A /* Block Diagram.t2d */,
 				2745B7D126825F970012A17A /* Class Diagram.diagrams */,
 				2745B7D726825F970012A17A /* Class Diagram.pdf */,
 				2745B7D626825F970012A17A /* Class Diagram.png */,
-				2745B7CE26825F970012A17A /* Classes.md */,
-				2745B7D226825F970012A17A /* index.md */,
 				2745B7D026825F970012A17A /* Replicator Diagram.svg */,
 				2745B7CD26825F970012A17A /* Replicator Diagram.t2d */,
-				2745B7D426825F970012A17A /* Replicator.md */,
 			);
 			path = overview;
 			sourceTree = "<group>";

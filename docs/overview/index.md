@@ -4,4 +4,6 @@
 
 * **[Overview of the core classes (database, document, query, etc.)](Classes.md)**
 * **[Overview of the replicator classes](Replicator.md)**
-* **[Overview of Fleece](https://github.com/couchbaselabs/fleece/wiki/Using-Fleece)**
+* **[The SQLite database schema](Schema.md)**
+
+(More documentation is available at the [LiteCore wik](https://github.com/couchbase/couchbase-lite-core/wiki).)
