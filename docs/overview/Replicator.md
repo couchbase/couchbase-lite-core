@@ -11,13 +11,13 @@ The replicator classes mostly use the LiteCore public API to communicate with th
 
 To understand the replicator code, you really should read about the [replication protocol](https://github.com/couchbase/couchbase-lite-core/blob/master/modules/docs/pages/replication-protocol.adoc).
 
-And to understand that protocol, it's useful to read about the [BLIP protocol](https://github.com/couchbaselabs/BLIP-Cocoa/blob/master/Docs/BLIP%20Protocol.md) that it's built on. But if you just want the tl;dr, it's that BLIP is a sort of RPC protocol that lets you send request & reply messages over a TCP socket; it's based on WebSockets but adds the ability to match messages with their replies, and to multiplex multiple messages simultaneously.
+And to understand that protocol, it's useful to read about the [BLIP protocol](../../Networking/BLIP/README.md) that it's built on. But if you just want the tl;dr, it's that BLIP is a sort of RPC protocol that lets you send request & reply messages over a TCP socket; it's based on WebSockets but adds the ability to match messages with their replies, and to multiplex multiple messages simultaneously.
 
 ## Concurrency In The Replicator
 
-The replicator code makes heavy use of the BLIP library's `Actor` class, which implements the [Actor Model](https://en.wikipedia.org/wiki/Actor_model) of concurrency. An Actor is an object that internally runs its own event loop; its public API is asynchronous, with all public method calls being delegated to the event loop, where they are processed serially. The key benefit is that the implementation of an Actor is single-threaded, so it's easy to reason about, while each Actor still runs on its own thread (conceptually) for high concurrency.
+The replicator code makes heavy use of our `Actor` class, which implements the [Actor Model](https://en.wikipedia.org/wiki/Actor_model) of concurrency. An Actor is an object that internally runs its own event loop; its public API is asynchronous, with all public method calls being delegated to the event loop, where they are processed serially. The key benefit is that the implementation of an Actor is single-threaded, so it's easy to reason about, while each Actor still runs on its own thread (conceptually) for high concurrency.
 
-The BLIP-Cpp repo has an [overview of Actors](https://github.com/couchbaselabs/BLIP-Cpp/blob/master/docs/Actors.md). It covers both the general principles and how to use its implementation.
+Our [overview of Actors](../../Networking/BLIP/docs/Actors.md) covers both the general principles and how to use the implementation.
 
 In `Actor` subclasses the convention is that public methods simply call `enqueue` to schedule processing; the actual implementation of each method is in a private method that has the same name but with an underscore prefix. These private methods run on the Actor's event queue, so _only one can run at a time_, making it safe to access the class's data members without mutexes.
 
@@ -77,7 +77,7 @@ These represent document revisions being processed by the replicator.
 
 ## BLIP Classes
 
-These classes are in the separate [BLIP-Cpp](https://github.com/couchbaselabs/BLIP-Cpp) repo, but in practice are inseparable from LiteCore. They have no dependencies on the replicator, but they do depend on the lower-level LiteCore support classes and on Fleece.
+These classes are in `Networking/BLIP/`. They have no dependencies on the replicator, but they do depend on the lower-level LiteCore support classes and on Fleece.
 
 ### Connection
 
@@ -100,7 +100,7 @@ An incoming BLIP message. It's fed frames by the `BLIPIO` and reassembles them i
 
 An outgoing BLIP message. Breaks the message into frames on demand by the `BLIPIO`.
 
-(`MessageOut` is actually an internal class in BLIP-Cpp: the API uses the Builder pattern, so the replicator creates a `MessageBuilder` object and configures it; then the `Connection` internally creates a `MessageOut` from it.)
+(`MessageOut` is actually a private internal class: the API uses the Builder pattern, so the replicator creates a `MessageBuilder` object and configures it; then the `Connection` internally creates a `MessageOut` from it.)
 
 
 ## Networking Classes

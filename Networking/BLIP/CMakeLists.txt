@@ -1,10 +1,12 @@
 #[[
-BLIP-Cpp CMake Project
+BLIP CMake Project
 
 This project builds a static library containing the logic for crafting and processing BLIP messages.
 These types of messages are used in Couchbase Lite replication starting with Couchbase Lite 2.0.
 
 This project produces one target, BLIPStatic.
+
+(It has dependencies on other parts of the LiteCore source tree, so it doesn't build standalone.)
 
 If on Android or Windows this library must be linked with the zlibstatic library from the
 vendor/zlib folder (the target will be automatically added on those platforms, but the final product

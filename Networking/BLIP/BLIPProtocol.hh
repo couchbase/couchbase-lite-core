@@ -21,7 +21,7 @@
 
 namespace litecore { namespace blip {
 
-    // https://github.com/couchbaselabs/BLIP-Cpp/blob/master/docs/BLIP%20Protocol.md
+    // See "docs/BLIP Protocol.md"
 
     enum MessageType: uint8_t {
         kRequestType     = 0,  // A message initiated by a peer

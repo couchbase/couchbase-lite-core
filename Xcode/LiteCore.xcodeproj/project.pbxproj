@@ -870,7 +870,7 @@
 		2716F9BE249AD3CB00BE21D9 /* c4CertificateTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4CertificateTest.cc; sourceTree = "<group>"; };
 		27175AF1261B80E70045F3AC /* c4BlobStoreTypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStoreTypes.h; sourceTree = "<group>"; };
 		27175B11261B91170045F3AC /* REST_CAPI.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = REST_CAPI.cc; sourceTree = "<group>"; };
-		27175B73261BC3030045F3AC /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		27175B73261BC3030045F3AC /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; wrapsLines = 1; };
 		2719253323970C7F0053DDA6 /* data */ = {isa = PBXFileReference; lastKnownFileType = folder; path = data; sourceTree = "<group>"; };
 		2719253B23970F4E0053DDA6 /* replacedb */ = {isa = PBXFileReference; lastKnownFileType = folder; name = replacedb; path = data/replacedb; sourceTree = "<group>"; };
 		271A98A6243D2204008C032D /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
@@ -991,7 +991,7 @@
 		2744B31D241854F2005A194D /* LoopbackProvider.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LoopbackProvider.hh; sourceTree = "<group>"; };
 		2744B31E241854F2005A194D /* Message.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Message.hh; sourceTree = "<group>"; };
 		2744B31F241854F2005A194D /* BLIPProtocol.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIPProtocol.hh; sourceTree = "<group>"; };
-		2744B329241854F2005A194D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		2744B329241854F2005A194D /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; wrapsLines = 1; };
 		2744B32F241854F2005A194D /* Headers.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Headers.cc; sourceTree = "<group>"; };
 		2744B330241854F2005A194D /* WebSocketInterface.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketInterface.cc; sourceTree = "<group>"; };
 		2744B331241854F2005A194D /* WebSocketImpl.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketImpl.cc; sourceTree = "<group>"; };
@@ -1394,7 +1394,10 @@
 		27DDC54123689BB100580B2B /* net_sockets.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = net_sockets.c; sourceTree = "<group>"; };
 		27DDC549236B56D000580B2B /* CertRequest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CertRequest.hh; sourceTree = "<group>"; };
 		27DDC54A236B56D000580B2B /* CertRequest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CertRequest.cc; sourceTree = "<group>"; };
-		27DF3BBC268672F700A57A1E /* Schema.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Schema.md; sourceTree = "<group>"; };
+		27DF3BBC268672F700A57A1E /* Schema.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Schema.md; sourceTree = "<group>"; wrapsLines = 1; };
+		27DF3BC326867F2600A57A1E /* Actors.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Actors.md; sourceTree = "<group>"; wrapsLines = 1; };
+		27DF3BC426867F2600A57A1E /* logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo.png; sourceTree = "<group>"; };
+		27DF3BC526867F2600A57A1E /* BLIP Protocol.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "BLIP Protocol.md"; sourceTree = "<group>"; wrapsLines = 1; };
 		27DF46C21A12CF46007BB4A4 /* Record.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Record.cc; sourceTree = "<group>"; };
 		27DF46C31A12CF46007BB4A4 /* Record.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Record.hh; sourceTree = "<group>"; };
 		27DF7D631F4236500022F3DF /* libSQLite.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSQLite.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2033,6 +2036,7 @@
 				2744B34A241854F2005A194D /* MessageOut.cc */,
 				2744B34B241854F2005A194D /* Message.cc */,
 				2744B34C241854F2005A194D /* MessageOut.hh */,
+				27DF3BC226867F2600A57A1E /* docs */,
 			);
 			path = BLIP;
 			sourceTree = "<group>";
@@ -2906,6 +2910,16 @@
 				27DDC53723689BB100580B2B /* x509write_csr.c */,
 			);
 			path = library;
+			sourceTree = "<group>";
+		};
+		27DF3BC226867F2600A57A1E /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				27DF3BC326867F2600A57A1E /* Actors.md */,
+				27DF3BC426867F2600A57A1E /* logo.png */,
+				27DF3BC526867F2600A57A1E /* BLIP Protocol.md */,
+			);
+			path = docs;
 			sourceTree = "<group>";
 		};
 		27E4871019217187007D8940 /* LiteCore */ = {

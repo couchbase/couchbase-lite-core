@@ -217,4 +217,4 @@ Like all Couchbase open source code, this is released under the Apache 2 [licens
 [CBL_C]: https://github.com/couchbaselabs/couchbase-lite-C
 [N1QL]: https://www.couchbase.com/n1ql
 [FLEECE]: https://github.com/couchbaselabs/fleece
-[BLIP]: https://github.com/couchbaselabs/BLIP-Cpp/blob/master/docs/BLIP%20Protocol.md
+[BLIP]: https://github.com/couchbase/couchbase-lite-core/blob/master/Networking/BLIP/README.md
