@@ -239,33 +239,5 @@ C4API_BEGIN_DECLS
     /** @} */
 
 
-    //-------- DEPRECATED API --------
-
-    C4_DEPRECATED("Use c4db_openNamed")
-    C4Database* c4db_open(C4String path,
-                          const C4DatabaseConfig *config,
-                          C4Error* C4NULLABLE outError) C4API;
-
-    C4_DEPRECATED("Use c4db_copyNamed")
-    bool c4db_copy(C4String sourcePath,
-                   C4String destinationPath,
-                   const C4DatabaseConfig* config,
-                   C4Error* C4NULLABLE error) C4API;
-
-    C4_DEPRECATED("Use c4db_deleteNamed")
-    bool c4db_deleteAtPath(C4String dbPath, C4Error* C4NULLABLE outError) C4API;
-
-    C4_DEPRECATED("Use c4db_getConfig2")
-    const C4DatabaseConfig* c4db_getConfig(C4Database*) C4API;
-
-    C4_DEPRECATED("Use c4db_maintenance")
-    bool c4db_compact(C4Database* database, C4Error* C4NULLABLE outError) C4API;
-
-    C4_DEPRECATED("Unnecessary")
-    static inline bool c4db_mayHaveExpiration(C4Database *db) C4API {return true;}
-
-    C4_DEPRECATED("Unnecessary")
-    static inline bool c4db_startHousekeeping(C4Database *db) C4API {return true;}
-
 C4API_END_DECLS
 C4_ASSUME_NONNULL_END
