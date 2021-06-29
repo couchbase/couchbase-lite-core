@@ -426,17 +426,6 @@ bool c4key_setPassword(C4EncryptionKey *outKey, C4String password, C4EncryptionA
 }
 
 
-// TODO - Remove deprecated function
-C4Database* c4db_open(C4Slice path,
-                      const C4DatabaseConfig *configP,
-                      C4Error *outError) noexcept
-{
-    return tryCatch<C4Database*>(outError, [=] {
-        return C4Database::openAtPath(path, configP->flags, &configP->encryptionKey).detach();
-    });
-}
-
-
 C4Database* c4db_openNamed(C4String name,
                            const C4DatabaseConfig2 *config,
                            C4Error *outError) noexcept
@@ -451,15 +440,6 @@ C4Database* c4db_openAgain(C4Database* db,
                            C4Error *outError) noexcept
 {
     return c4db_openNamed(c4db_getName(db), c4db_getConfig2(db), outError);
-}
-
-
-// TODO - Remove deprecated function
-bool c4db_copy(C4String sourcePath, C4String destinationPath, const C4DatabaseConfig* config,
-               C4Error *error) noexcept {
-    return tryCatch(error, [=] {
-        C4Database::copyFileToPath(sourcePath, destinationPath, *config);
-    });
 }
 
 
@@ -486,14 +466,6 @@ bool c4db_delete(C4Database* database, C4Error *outError) noexcept {
 }
 
 
-// TODO - Remove deprecated function
-bool c4db_deleteAtPath(C4Slice dbPath, C4Error *outError) noexcept {
-    if (outError)
-        *outError = {};     // deleteDatabaseAtPath may return false w/o throwing an exception
-    return tryCatch<bool>(outError, [=]{return C4Database::deleteAtPath(dbPath);});
-}
-
-
 bool c4db_deleteNamed(C4String dbName,
                       C4String inDirectory,
                       C4Error *outError) noexcept
@@ -501,12 +473,6 @@ bool c4db_deleteNamed(C4String dbName,
     if (outError)
         *outError = {};     // deleteNamed may return false w/o throwing an exception
     return tryCatch<bool>(outError, [=]{return C4Database::deleteNamed(dbName, inDirectory);});
-}
-
-
-// TODO - Remove deprecated function
-bool c4db_compact(C4Database* database, C4Error *outError) noexcept {
-    return c4db_maintenance(database, kC4Compact, outError);
 }
 
 
@@ -538,11 +504,6 @@ C4String c4db_getName(C4Database *database) noexcept {
 
 C4SliceResult c4db_getPath(C4Database *database) noexcept {
     return C4SliceResult(database->getPath());
-}
-
-
-const C4DatabaseConfig* c4db_getConfig(C4Database *database) noexcept {
-    return &database->configV1();
 }
 
 
@@ -738,12 +699,6 @@ bool c4db_deleteIndex(C4Database *database,
                       C4Error *outError) noexcept
 {
     return c4coll_deleteIndex(database->getDefaultCollection(), name, outError);
-}
-
-C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError) noexcept {
-    return tryCatch<C4SliceResult>(outError, [&]{
-        return C4SliceResult(database->getIndexesInfo(false));
-    });
 }
 
 
@@ -1366,12 +1321,6 @@ C4Query* c4query_new2(C4Database *database,
             c4error_return(LiteCoreDomain, kC4ErrorInvalidQuery, {}, outError);
         return query;
     });
-}
-
-
-// deprecated
-C4Query* c4query_new(C4Database *database, C4String expression, C4Error *error) noexcept {
-    return c4query_new2(database, kC4JSONQuery, expression, nullptr, error);
 }
 
 

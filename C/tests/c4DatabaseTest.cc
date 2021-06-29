@@ -697,7 +697,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
         string bogusPath = TempDir() + "bogus" + kPathSeparator + "bogus";
         C4DatabaseConfig2 bogusConfig = config;
         bogusConfig.parentDirectory = slice(bogusPath);
-        ExpectingExceptions x; // call to c4db_copy will internally throw an exception
+        ExpectingExceptions x; // call to c4db_copyNamed will internally throw an exception
         REQUIRE(!c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &bogusConfig, &error));
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorNotFound);
@@ -710,7 +710,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     
     {
         string bogusSrcPathStr = srcPathStr + "bogus" + kPathSeparator;
-        ExpectingExceptions x; // call to c4db_copy will internally throw an exception
+        ExpectingExceptions x; // call to c4db_copyNamed will internally throw an exception
         REQUIRE(!c4db_copyNamed(c4str(bogusSrcPathStr.c_str()), kNuName, &config, &error));
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorNotFound);

@@ -27,16 +27,11 @@ c4error_getMessage
 c4error_mayBeTransient
 c4error_mayBeNetworkDependent
 
-c4db_open
 c4db_openNamed
 c4db_close
-c4db_copy
 c4db_delete
-c4db_deleteAtPath
-c4db_compact
 c4db_rekey
 c4db_getPath
-c4db_getConfig
 c4db_getDocumentCount
 c4db_getLastSequence
 c4db_getUUIDs
@@ -87,7 +82,6 @@ c4db_enumerateAllDocs
 c4db_createIndex
 c4db_createIndex2
 c4db_deleteIndex
-c4db_getIndexes
 c4enum_next
 c4enum_getDocumentInfo
 c4enum_getDocument
@@ -101,7 +95,6 @@ c4queryenum_close
 c4queryenum_retain
 c4queryenum_release
 
-c4query_new
 c4query_new2
 #c4query_retain  INLINE
 #c4query_release  INLINE

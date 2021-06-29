@@ -95,7 +95,7 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
     if (storageEngine) {
         factory = DataFile::factoryNamed(storageEngine);
         if (!factory)
-            Warn("c4db_deleteAtPath: unknown storage engine '%s'", storageEngine);
+            Warn("c4db_deleteNamed: unknown storage engine '%s'", storageEngine);
     } else {
         factory = DataFile::factoryForFile(path);
     }
