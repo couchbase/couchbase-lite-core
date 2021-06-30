@@ -13,28 +13,27 @@ try {
 
     New-Item -Type Directory -ErrorAction Ignore couchbase-lite-core\build_cmake\x64
     Set-Location couchbase-lite-core\build_cmake\x64
-    & 'C:\Program Files\CMake\bin\cmake.exe' -G "Visual Studio 15 2017 Win64" -DBUILD_ENTERPRISE=ON ..\..
+    & 'C:\Program Files\CMake\bin\cmake.exe' -G "Visual Studio 15 2017" -A x64 -DBUILD_ENTERPRISE=ON ..\..
     if($LASTEXITCODE -ne 0) {
         Write-Host "Failed to run CMake!" -ForegroundColor Red
         exit 1
     }
 
-    & 'C:\Program Files\CMake\bin\cmake.exe' --build .
+    & 'C:\Program Files\CMake\bin\cmake.exe' --build . --parallel 8
     if($LASTEXITCODE -ne 0) {
         Write-Host "Failed to build!" -ForegroundColor Red
         exit 1
     }
 
-    $env:LiteCoreTestsQuiet=1
     Set-Location LiteCore\tests\Debug
-    .\CppTests -r list
+    .\CppTests -r quiet
     if($LASTEXITCODE -ne 0) {
         Write-Host "C++ tests failed!" -ForegroundColor Red
         exit 1
     }
 
     Set-Location ..\..\..\C\tests\Debug
-    .\C4Tests -r list
+    .\C4Tests -r quiet
     if($LASTEXITCODE -ne 0) {
         Write-Host "C tests failed!" -ForegroundColor Red
         exit 1
