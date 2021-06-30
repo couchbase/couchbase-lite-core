@@ -112,6 +112,95 @@ typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
 };
 
 
+/** POSIX error numbers are *not* consistent across architectures.  This creates challenges for
+    multiplatform bindings, and so therefore they should be mapped to these enums, which mirror
+    std::errc from C++ 11 (with the addition of EHOSTDOWN, which is not standard) in the ordering
+    but not in terms of value since errc inherits the inconsistencies of the POSIX error codes.
+*/
+// (These are identical to the internal C++ error::PosixError enum values.)
+typedef C4_ENUM(int32_t, C4PosixErrorCode) {
+    kC4PosixErrAddressFamilyNotSupported,
+    kC4PosixErrAddressInUse,
+    kC4PosixErrAddressNotAvailable,
+    kC4PosixErrAlreadyConnected,
+    kC4PosixErrArgumentListTooLong,
+    kC4PosixErrArgumentOutOfDomain,
+    kC4PosixErrBadAddress,
+    kC4PosixErrBadFileDescriptor,
+    kC4PosixErrBadMessage,
+    kC4PosixErrBrokenPipe,
+    kC4PosixErrConnectionAborted,
+    kC4PosixErrConnectionAlreadyInProgress,
+    kC4PosixErrConnectionRefused,
+    kC4PosixErrConnectionReset,
+    kC4PosixErrCrossDeviceLink,
+    kC4PosixErrDestinationAddressRequired,
+    kC4PosixErrDeviceOrResourceBusy,
+    kC4PosixErrDirectoryNotEmpty,
+    kC4PosixErrExecutableFormatError,
+    kC4PosixErrFileExists,
+    kC4PosixErrFileTooLarge,
+    kC4PosixErrFilenameTooLong,
+    kC4PosixErrFunctionNotSupported,
+    kC4PosixErrHostDown,
+    kC4PosixErrHostUnreachable,
+    kC4PosixErrIdentifierRemoved,
+    kC4PosixErrIllegalByteSequence,
+    kC4PosixErrInappropriateIOControlOperation,
+    kC4PosixErrInterrupted,
+    kC4PosixErrInvalidArgument,
+    kC4PosixErrInvalidSeek,
+    /*kC4PosixErrIOError, */ // Uses kC4ErrorIOError
+    kC4PosixErrIsADirectory = kC4PosixErrInvalidSeek + 2,
+    kC4PosixErrMessageSize,
+    kC4PosixErrNetworkDown,
+    kC4PosixErrNetworkReset,
+    kC4PosixErrNetworkUnreachable,
+    kC4PosixErrNoBufferSpace,
+    kC4PosixErrNoChildProcess,
+    kC4PosixErrNoLink,
+    kC4PosixErrNoLockAvailable,
+    kC4PosixErrNoMessage,
+    kC4PosixErrNoMessageAvailable,
+    kC4PosixErrNoProtocolOption,
+    kC4PosixErrNoSpaceOnDevice,
+    kC4PosixErrNoStreamResources,
+    kC4PosixErrNoSuchDevice,
+    kC4PosixErrNoSuchDeviceOrAddress,
+    /*kC4PosixErrNoSuchFileOrDirectory, */ // Uses kC4ErrorNotFound
+    kC4PosixErrNoSuchProcess = kC4PosixErrNoSuchDeviceOrAddress + 2,
+    kC4PosixErrNotADirectory,
+    kC4PosixErrNotASocket,
+    kC4PosixErrNotAStream,
+    kC4PosixErrNotConnected,
+    kC4PosixErrNotEnoughMemory,
+    kC4PosixErrNotSupported,
+    kC4PosixErrOperationCanceled,
+    kC4PosixErrOperationInProgress,
+    kC4PosixErrOperationNotPermitted,
+    kC4PosixErrOperationNotSupported,
+    kC4PosixErrOperationWouldBlock,
+    kC4PosixErrOwnerDead,
+    kC4PosixErrPermissionDenied,
+    kC4PosixErrProtocolError,
+    kC4PosixErrProtocolNotSupported,
+    kC4PosixErrReadOnlyFileSystem,
+    kC4PosixErrResourceDeadlockWouldOccur,
+    kC4PosixErrResourceUnavailableTryAgain,
+    kC4PosixErrResultOutOfRange,
+    kC4PosixErrStateNotRecoverable,
+    kC4PosixErrStreamTimeout,
+    kC4PosixErrTextFileBusy,
+    kC4PosixErrTimedOut,
+    kC4PosixErrTooManyFilesOpen,
+    kC4PosixErrTooManyFilesOpenInSystem,
+    kC4PosixErrTooManyLinks,
+    kC4PosixErrTooManySymbolicLinkLevels,
+    kC4PosixErrValueTooLarge,
+    kC4PosixErrWrongProtocolType
+};
+
+
 /** An error value. These are returned by reference from API calls whose last parameter is a
     C4Error*. The semantics are based on Cocoa's usage of NSError:
     * A caller can pass NULL if it doesn't care about the error.

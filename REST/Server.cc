@@ -134,8 +134,10 @@ namespace litecore { namespace REST {
         auto ifAddr = interfaceToAddress(networkInterface, port);
         _tlsContext = tlsContext;
         _acceptor.reset(new acceptor(*ifAddr));
-        if (!*_acceptor)
-            error::_throw(error::POSIX, _acceptor->last_error());
+        if (!*_acceptor) {
+            error::convertErrno(_acceptor->last_error())._throw();
+        }
+
         _acceptor->set_non_blocking();
         c4log(ListenerLog, kC4LogInfo,"Server listening on port %d", this->port());
         awaitConnection();

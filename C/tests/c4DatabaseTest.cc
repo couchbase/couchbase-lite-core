@@ -78,10 +78,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][Err
     assertMessage(SQLiteDomain, SQLITE_IOERR_ACCESS, "SQLite error 3338", "disk I/O error (3338)");
     assertMessage(SQLiteDomain, SQLITE_IOERR, "SQLite error 10", "disk I/O error");
     assertMessage(LiteCoreDomain, 15, "LiteCore CorruptData", "data is corrupted");
-    assertMessage(POSIXDomain, ENOENT, "POSIX error 2", "No such file or directory");
+    assertMessage(POSIXDomain, kC4PosixErrInvalidArgument, "POSIX error 29", "Invalid argument");
+    assertMessage(POSIXDomain, E2BIG, "POSIX error 7", "Bad file descriptor"); // Not backwards compatible on purpose, so this is actually kC4PosixErrBadFileDescriptor
     assertMessage(LiteCoreDomain, kC4ErrorTransactionNotClosed, "LiteCore TransactionNotClosed", "transaction not closed");
     assertMessage(SQLiteDomain, -1234, "SQLite error -1234", "unknown error (-1234)");
     assertMessage((C4ErrorDomain)666, -1234, "INVALID_DOMAIN error -1234", "invalid C4Error (unknown domain)");
+    assertMessage(POSIXDomain, -5, "POSIX error -5", "unknown error (-5)");
 }
 
 
@@ -725,7 +727,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
         ExpectingExceptions x;
         REQUIRE(!c4db_copyNamed(c4str(srcPathStr.c_str()), kNuName, &config, &error));
         CHECK(error.domain == POSIXDomain);
-        CHECK(error.code == EEXIST);
+        CHECK(error.code == kC4PosixErrFileExists);
     }
 
     nudb = c4db_openNamed(kNuName, &config, ERROR_INFO());

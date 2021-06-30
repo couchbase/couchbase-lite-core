@@ -43,7 +43,7 @@ namespace litecore { namespace net {
 
     static int throwSocketError() {
 #ifdef _WIN32
-        error::_throw(error::POSIX, ::WSAGetLastError());
+        error::convertErrno(::WSAGetLastError())._throw();
 #else
         error::_throwErrno();
 #endif

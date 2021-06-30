@@ -74,7 +74,7 @@ namespace litecore { namespace repl {
             if (_blob != _pendingBlobs.end()) {
                 if (progress.state == MessageProgress::kDisconnected) {
                     // Set some error, so my IncomingRev will know I didn't complete [CBL-608]
-                    blobGotError({POSIXDomain, ECONNRESET});
+                    blobGotError({POSIXDomain, kC4PosixErrConnectionReset});
                 } else if (progress.reply) {
                     if (progress.reply->isError()) {
                         auto err = progress.reply->getError();
