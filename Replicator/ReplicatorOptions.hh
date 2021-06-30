@@ -87,7 +87,7 @@ namespace litecore { namespace repl {
         bool enableAutoPurge() const {
             if (!properties[kC4ReplicatorOptionAutoPurge])
                 return true;
-            return properties[kC4ReplicatorOptionDisableDeltas].asBool();
+            return properties[kC4ReplicatorOptionAutoPurge].asBool();
         }
 
         /** Returns a string that uniquely identifies the remote database; by default its URL,
