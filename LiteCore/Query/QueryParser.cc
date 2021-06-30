@@ -316,7 +316,7 @@ namespace litecore {
         // Now go back and prepend some WHAT columns needed for FTS:
         if(!_isAggregateQuery && !_ftsTables.empty()) {
             stringstream extra;
-            extra << _dbAlias << ".rowid";
+            extra << quotedIdentifierString(_dbAlias) << ".rowid";
 
             // Write columns for the FTS match offsets (in order of appearance of the MATCH expressions)
             for (string &ftsTable : _ftsTables) {
