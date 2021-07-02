@@ -2357,3 +2357,19 @@ TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
 
     CHECK(rowsInQuery(json5("{'WHAT': ['.foo.'], 'FROM': [{'COLLECTION':'_', 'AS':'foo'}]}")) == 10);
 }
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]") {
+    addNumberedDocs(1, 10);
+    bool withFrom = GENERATE(true, false);
+    string queryStr = "select *";
+    if (withFrom) {
+        (queryStr += " from ") += collectionName;
+        Retained<Query> query{ db->compileQuery(queryStr, QueryLanguage::kN1QL) };
+        Retained<QueryEnumerator> e(query->createEnumerator());
+        CHECK(e->getRowCount() == 10);
+    } else {
+        ExpectingExceptions _;
+        CHECK_THROWS_WITH(db->compileQuery(queryStr, QueryLanguage::kN1QL), "N1QL error: missing the FROM clause");
+    }
+}
