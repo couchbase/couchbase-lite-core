@@ -53,6 +53,17 @@ namespace litecore {
         kFTSOffsetsCol
     };
 
+    namespace {
+        bool hasKeyCaseEquivalent(const Dict* dict, slice key) {
+            for (Dict::iterator i(dict); i; ++i) {
+                if (i.key()->asString().caseEquivalent(key)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
 
     class SQLiteQuery : public Query {
     public:
@@ -72,8 +83,12 @@ namespace litecore {
                 case QueryLanguage::kN1QL: {
                     unsigned errPos;
                     FLMutableDict result = n1ql::parse(string(queryStr), &errPos);
-                    if (!result)
+                    if (!result) {
                         throw Query::parseError("N1QL syntax error", errPos);
+                    } else if (!hasKeyCaseEquivalent((MutableDict*)result, "from")) {
+                        throw error(error::LiteCore, error::InvalidQuery,
+                                    format("%s", "N1QL error: missing the FROM clause"));
+                    }
                     _json = ((MutableDict*)result)->toJSON(true);
                     FLMutableDict_Release(result);
                     break;

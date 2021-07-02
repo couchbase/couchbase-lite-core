@@ -163,10 +163,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query][N1QL]") {
     addNumberedDocs();
-    auto [str, language] = GENERATE(
-        pair<string,QueryLanguage>{json5("{WHAT: ['.num', ['AS', ['*', ['.num'], ['.num']], 'square']], WHERE: ['>', ['.num'], 10]}"),
-               QueryLanguage::kJSON},
-        pair<string,QueryLanguage>{"SELECT num, num*num AS square WHERE num > 10", QueryLanguage::kN1QL});
+    auto language = GENERATE(QueryLanguage::kJSON, QueryLanguage::kN1QL);
+    auto str = language == QueryLanguage::kJSON
+        ? json5("{WHAT: ['.num', ['AS', ['*', ['.num'], ['.num']], 'square']], WHERE: ['>', ['.num'], 10]}")
+        : string("SELECT num, num*num AS square FROM ")+collectionName+" WHERE num > 10";
     logSection(str);
     Retained<Query> query = store->compileQuery(str, language);
     CHECK(query->columnCount() == 2);
@@ -1686,7 +1686,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query][N1QL]") {
     CHECK(e->next());
     CHECK(e->columns()[0]->asString() == "rec-02"_sl);
     
-    query = store->compileQuery("SELECT meta().id WHERE callsign IS 'ANA'"_sl, litecore::QueryLanguage::kN1QL);
+    query = store->compileQuery(string("SELECT meta().id FROM ")+collectionName+" WHERE callsign IS 'ANA'", litecore::QueryLanguage::kN1QL);
     e = query->createEnumerator();
     CHECK(e->getRowCount() == 1);
     CHECK(e->next());
@@ -1703,7 +1703,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query NULL/MISSING check", "[Query][N1QL]") {
     CHECK(e->columns()[0]->asString() == "rec-02"_sl);
     
     // SELECT meta.id WHERE callsign IS VALUED
-    query = store->compileQuery("SELECT META().id WHERE callsign IS VALUED"_sl, litecore::QueryLanguage::kN1QL);
+    query = store->compileQuery(string("SELECT META().id FROM ")+collectionName+" WHERE callsign IS VALUED", litecore::QueryLanguage::kN1QL);
     e = query->createEnumerator();
     CHECK(e->getRowCount() == 1);
     CHECK(e->next());
@@ -2009,7 +2009,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query][N1QL]") {
     addNumberedDocs();
-    Retained<Query> query{ store->compileQuery("SELECT num, num*num WHERE num >= 30 and num <= 40 ORDER BY num"_sl,
+    Retained<Query> query{ store->compileQuery(string("SELECT num, num*num FROM ")+collectionName+" WHERE num >= 30 and num <= 40 ORDER BY num",
                                                QueryLanguage::kN1QL) };
     CHECK(query->columnCount() == 2);
     int num = 30;
@@ -2106,7 +2106,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Special Chars Alias", "[Query][N1QL]") 
     });
     t.commit();
     
-    string queryStr = "SELECT customerId AS `$1` WHERE test_id='alias_func' ORDER BY `$1` LIMIT 2";
+    string queryStr = string("SELECT customerId AS `$1` FROM ")+collectionName+" WHERE test_id='alias_func' ORDER BY `$1` LIMIT 2";
     Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
     CHECK(query->columnTitles() == vector<string>{"$1"});
     
@@ -2140,7 +2140,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query N1QL ARRAY_AGG", "[Query][N1QL]") {
     });
     t.commit();
 
-    const char* n1ql = "SELECT array_Agg(customerId) where test_id = \"agg_func\"";
+    string n1ql = string("SELECT array_Agg(customerId) FROM ")+collectionName+" where test_id = \"agg_func\"";
     Retained<Query> query = store->compileQuery(n1ql, QueryLanguage::kN1QL);
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
@@ -2171,7 +2171,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
         t.commit();
     }
 
-    Retained<Query> query{ store->compileQuery("SELECT meta()"_sl, QueryLanguage::kN1QL) };
+    Retained<Query> query{ store->compileQuery(string("SELECT meta() FROM ")+collectionName, QueryLanguage::kN1QL) };
     Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -2196,7 +2196,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
     
-    query = store->compileQuery("SELECT meta().id"_sl, QueryLanguage::kN1QL);
+    query = store->compileQuery(string("SELECT meta().id FROM ")+collectionName, QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -2288,6 +2288,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     for (unsigned i = 1; i < testCaseCount; ++i) {
         (queryStr += ", ") += std::get<0>(testCases[i]);
     }
+    queryStr += " from "+collectionName;
 
     Retained<Query> query = store->compileQuery(queryStr, QueryLanguage::kN1QL);
     Retained<QueryEnumerator> e = query->createEnumerator();
@@ -2355,4 +2356,20 @@ TEST_CASE_METHOD(QueryTest, "Alternative FROM names", "[Query]") {
     CHECK(rowsInQuery(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'" + databaseName() + "'}]}")) == 10);
 
     CHECK(rowsInQuery(json5("{'WHAT': ['.foo.'], 'FROM': [{'COLLECTION':'_', 'AS':'foo'}]}")) == 10);
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]") {
+    addNumberedDocs(1, 10);
+    bool withFrom = GENERATE(true, false);
+    string queryStr = "select *";
+    if (withFrom) {
+        (queryStr += " from ") += collectionName;
+        Retained<Query> query{ db->compileQuery(queryStr, QueryLanguage::kN1QL) };
+        Retained<QueryEnumerator> e(query->createEnumerator());
+        CHECK(e->getRowCount() == 10);
+    } else {
+        ExpectingExceptions _;
+        CHECK_THROWS_WITH(db->compileQuery(queryStr, QueryLanguage::kN1QL), "N1QL error: missing the FROM clause");
+    }
 }
