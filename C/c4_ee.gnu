@@ -161,6 +161,8 @@ CBL {
 		c4socket_completedWrite;
 		c4socket_received;
 		c4socket_gotHTTPResponse;
+		c4socket_retain;
+		c4socket_release;
 
 		c4pred_registerModel;
 		c4pred_unregisterModel;
