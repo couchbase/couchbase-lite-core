@@ -174,6 +174,8 @@ namespace litecore { namespace repl {
             C4DatabaseObserver::Change *c4change = &c4changes[0];
             auto oldChangesCount = changes.revs.size();
             for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
+                // The sequence of a purge change is 0. Therefore the following statement
+                // will effectively, beside other effects, skip the changes due to Purge.
                 if (c4change->sequence <= startingMaxSequence)
                     continue;
                 C4DocumentInfo info {c4change->flags, c4change->docID, c4change->revID,
