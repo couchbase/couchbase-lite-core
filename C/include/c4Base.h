@@ -155,6 +155,8 @@ C4Document* c4doc_retain(C4Document* r) C4API;
 void        c4doc_release(C4Document* r) C4API;
 C4QueryEnumerator* c4queryenum_retain(C4QueryEnumerator* r) C4API;
 void               c4queryenum_release(C4QueryEnumerator* r) C4API;
+C4Socket*   c4socket_retain(C4Socket*) C4API;
+void        c4socket_release(C4Socket*) C4API;
 
 // These types are _not_ ref-counted but must be freed after use:
 void c4dbobs_free   (C4DatabaseObserver*) C4API;

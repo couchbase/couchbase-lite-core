@@ -201,6 +201,15 @@ C4Socket* c4socket_fromNative(C4SocketFactory factory,
     });
 }
 
+C4Socket* c4socket_retain(C4Socket *socket) C4API {
+    retain(internal(socket));
+    return socket;
+}
+
+void c4socket_release(C4Socket *socket) C4API {
+    release(internal(socket));
+}
+
 void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) C4API {
     try {
         Headers headers(responseHeadersFleece);
