@@ -598,7 +598,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Pus
  }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push][Continuous][jzhao]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push][Continuous]") {
     _parallelThread.reset(runInParallel([=]() {
         sleepFor(1s);
         {
@@ -610,9 +610,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push]
         sleepFor(1s); // give replicator a moment to detect the latest revs
         stopWhenIdle();
     }));
+    // The purged document, namely "docA", should not be attempted by the push replicator.
     _expectedDocumentCount = 1;
     runPushReplication(kC4Continuous);
-    printf("jzhao - end\n");
 }
 
 
