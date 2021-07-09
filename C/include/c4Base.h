@@ -173,6 +173,8 @@ C4Document* C4NULLABLE
     c4doc_retain(C4Document* C4NULLABLE) C4API;
 C4QueryEnumerator* C4NULLABLE
     c4queryenum_retain(C4QueryEnumerator* C4NULLABLE) C4API;
+C4Socket* C4NULLABLE
+    c4socket_retain(C4Socket* C4NULLABLE) C4API;
 
 static inline void c4cert_release   (C4Cert* C4NULLABLE r) C4API       {c4base_release(r);}
 static inline void c4keypair_release(C4KeyPair* C4NULLABLE r) C4API    {c4base_release(r);}
@@ -181,6 +183,7 @@ static inline void c4query_release  (C4Query* C4NULLABLE r) C4API      {c4base_r
 
 void               c4doc_release    (C4Document* C4NULLABLE) C4API;
 void               c4queryenum_release(C4QueryEnumerator* C4NULLABLE) C4API;
+void               c4socket_release(C4Socket* C4NULLABLE) C4API;
 
 // These types are _not_ ref-counted, but must be freed after use:
 void c4dbobs_free        (C4CollectionObserver* C4NULLABLE) C4API;

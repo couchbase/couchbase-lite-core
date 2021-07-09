@@ -224,6 +224,17 @@ void* C4NULLABLE c4Socket_getNativeHandle(C4Socket *socket) noexcept {
     return socket->getNativeHandle();
 }
 
+inline repl::C4SocketImpl* internal(C4Socket *s)  {return (repl::C4SocketImpl*)s;}
+
+C4Socket* C4NULLABLE c4socket_retain(C4Socket* C4NULLABLE socket) C4API {
+    retain(internal(socket));
+    return socket;
+}
+
+void c4socket_release(C4Socket* C4NULLABLE socket) C4API {
+    release(internal(socket));
+}
+
 void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) noexcept {
     socket->gotHTTPResponse(status, responseHeadersFleece);
 }
