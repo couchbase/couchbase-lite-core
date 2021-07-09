@@ -595,6 +595,24 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][C
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][Continuous]") {
     addDocsInParallel(1500ms, 6);
     runPushReplication(kC4Continuous);
+ }
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push, Skip Purged", "[Push][Continuous]") {
+    _parallelThread.reset(runInParallel([=]() {
+        sleepFor(1s);
+        {
+            TransactionHelper t(db);
+            createRev(db, c4str("docA"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+            createRev(db, c4str("docB"), (isRevTrees() ? "1-11"_sl : "1@*"_sl), kFleeceBody);
+            c4db_purgeDoc(db, c4str("docA"), ERROR_INFO());
+        }
+        sleepFor(1s); // give replicator a moment to detect the latest revs
+        stopWhenIdle();
+    }));
+    // The purged document, namely "docA", should not be attempted by the push replicator.
+    _expectedDocumentCount = 1;
+    runPushReplication(kC4Continuous);
 }
 
 
