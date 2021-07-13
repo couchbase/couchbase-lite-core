@@ -214,7 +214,7 @@ Jens Alfke ([@snej](https://github.com/snej)), Jim Borden ([@borrrden](https://g
 Like all Couchbase open source code, this is released under the Apache 2 [license](LICENSE).
 
 [CBL]: http://www.couchbase.com/nosql-databases/couchbase-mobile
-[CBL_C]: https://github.com/couchbaselabs/couchbase-lite-C
+[CBL_C]: https://github.com/couchbase/couchbase-lite-C
 [N1QL]: https://www.couchbase.com/n1ql
 [FLEECE]: https://github.com/couchbaselabs/fleece
 [BLIP]: https://github.com/couchbaselabs/BLIP-Cpp/blob/master/docs/BLIP%20Protocol.md
