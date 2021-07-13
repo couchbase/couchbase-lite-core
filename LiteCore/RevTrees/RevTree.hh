@@ -112,6 +112,15 @@ namespace litecore {
         bool hasConflict() const;
         bool hasNewRevisions() const;
 
+        /// For unknown reason, sometimes the rev tree would come into an inconsistent state,
+        /// in which some conflicted leaf revs are not tagged conflict.
+        /// The method is a workaround for the problem. It tag those unclosed, non-current
+        /// leaves as conflict, solving the problem regardless of its real cause.
+        ///
+        /// Return true if it was recovered from inconsistent state
+        /// Return false otherwise
+        bool ensureConflictStateConsistent();
+
         /// Given an array of revision IDs in consecutive descending-generation order,
         /// finds the first one that exists in this tree. Returns:
         /// * {rev, index} if a common ancestor was found;

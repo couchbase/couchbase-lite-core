@@ -20,6 +20,8 @@
 #include "RevTree.hh"
 #include "Record.hh"
 #include "Doc.hh"
+#include "Logging.hh"
+#include "StringUtil.hh"
 #include <memory>
 #include <vector>
 
