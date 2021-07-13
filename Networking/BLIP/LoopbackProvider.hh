@@ -265,7 +265,7 @@ namespace litecore { namespace websocket {
                 if (_state >= State::connecting) {
                     logInfo("CLOSED with %-s %d: %.*s",
                         status.reasonName(), status.code,
-                        (int)status.message.size, status.message.buf);
+                        (int)status.message.size, (const char *)status.message.buf);
                     _webSocket->delegate().onWebSocketClose(status);
                 } else {
                     logInfo("CLOSED");
