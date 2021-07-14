@@ -11,6 +11,7 @@
 #include "StringUtil.hh"
 #include "c4Socket.h"
 //#include "c4Socket+Internal.hh"
+#include "c4Socket.hh"
 #include "c4Internal.hh"
 #include "fleece/Fleece.hh"
 
@@ -285,21 +286,33 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[C][Pu
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[C][Push][Pull]") {
     _address.hostname = C4STR("localhost");
-    bool factoryCalled = false;
+    struct Context {
+        int factoryCalls = 0;
+        C4Socket* socket = nullptr;
+    };
+    Context context;
     C4SocketFactory factory = {};
-    factory.context = &factoryCalled;
+    factory.context = &context;
     factory.open = [](C4Socket* socket, const C4Address* addr,
                       C4Slice options, void *context) {
-        *(bool*)context = true;
+        ((Context*)context)->factoryCalls++;
+        ((Context*)context)->socket = c4socket_retain(socket);      // Retain the socket
+        socket->setNativeHandle((void*)0x12345678);
         c4socket_closed(socket, {NetworkDomain, kC4NetErrTooManyRedirects});
     };
     _socketFactory = &factory;
+
     replicate(kC4Disabled, kC4OneShot, false);
-    REQUIRE(factoryCalled);
+    REQUIRE(context.factoryCalls == 1);
     CHECK(_callbackStatus.error.domain == NetworkDomain);
     CHECK(_callbackStatus.error.code == kC4NetErrTooManyRedirects);
     CHECK(_callbackStatus.progress.unitsCompleted == 0);
     CHECK(_callbackStatus.progress.unitsTotal == 0);
+
+    // Check that the retained socket still exists, and release it:
+    CHECK(context.socket != nullptr);
+    CHECK(context.socket->getNativeHandle() == (void*)0x12345678);
+    c4socket_release(context.socket);
 }
 
 

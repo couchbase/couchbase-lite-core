@@ -155,6 +155,8 @@ CBL {
 		c4socket_gotHTTPResponse;
 		c4Socket_getNativeHandle;
 		c4Socket_setNativeHandle;
+		c4socket_retain;
+		c4socket_release;
 
 		c4pred_registerModel;
 		c4pred_unregisterModel;
