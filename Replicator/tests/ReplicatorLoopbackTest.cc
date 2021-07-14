@@ -12,10 +12,11 @@
 #include "Timer.hh"
 #include "c4Database.hh"
 #include "PrebuiltCopier.hh"
-#include <chrono>
+#include "Base64.hh"
 #include "betterassert.hh"
 #include "fleece/Mutable.hh"
 #include "PlatformCompat.hh"
+#include <chrono>
 
 using namespace litecore::actor;
 using namespace std;
@@ -1860,3 +1861,122 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     CHECK(doc->sequence == seq);
     CHECK(c4db_getLastSequence(db) == seq);
 }
+
+
+#pragma mark - PROPERTY ENCRYPTION:
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Encrypted Properties No Callback", "[Push][Sync][Encryption]") {
+    {
+        TransactionHelper t(db);
+        createFleeceRev(db, "seekrit"_sl, kRevID,
+                        R"({"SSN":{"@type":"EncryptedProperty","value":"123-45-6789"}})"_sl);
+    }
+
+    _expectedDocumentCount = 0;
+    _expectedDocPushErrors = {"seekrit"};
+    auto opts = Replicator::Options::pushing();
+    ExpectingExceptions x;
+    runReplicators(opts, Replicator::Options::passive());
+
+    REQUIRE(db2->getDocumentCount() == 0);
+}
+
+
+#ifdef COUCHBASE_ENTERPRISE
+
+static alloc_slice UnbreakableEncryption(slice cleartext, int8_t delta) {
+    alloc_slice ciphertext(cleartext);
+    for (size_t i = 0; i < ciphertext.size; ++i)
+        (uint8_t&)ciphertext[i] += delta;        // "I've got patent pending on that!" --Wallace
+    return ciphertext;
+}
+
+struct TestEncryptorContext {
+    slice docID;
+    slice keyPath;
+    bool called;
+};
+
+static C4SliceResult testEncryptor(void* rawCtx,
+                                   C4String documentID,
+                                   FLDict properties,
+                                   C4String keyPath,
+                                   C4Slice input,
+                                   C4String* outAlgorithm,
+                                   C4String* outKeyID,
+                                   C4Error* outError)
+{
+    auto context = (TestEncryptorContext*)rawCtx;
+    context->called = true;
+    CHECK(documentID == context->docID);
+    CHECK(keyPath == context->keyPath);
+    return C4SliceResult(UnbreakableEncryption(input, 1));
+}
+
+static C4SliceResult testDecryptor(void* rawCtx,
+                                   C4String documentID,
+                                   FLDict properties,
+                                   C4String keyPath,
+                                   C4Slice input,
+                                   C4String algorithm,
+                                   C4String keyID,
+                                   C4Error* outError)
+{
+    auto context = (TestEncryptorContext*)rawCtx;
+    context->called = true;
+    CHECK(documentID == context->docID);
+    CHECK(keyPath == context->keyPath);
+    return C4SliceResult(UnbreakableEncryption(input, -1));
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Push][Pull][Sync][Encryption]") {
+    const bool TestDecryption = GENERATE(false, true);
+    C4Log("---- %s decryption ---", (TestDecryption ? "With" : "Without"));
+
+    slice originalJSON = R"({"SSN":{"@type":"EncryptedProperty","value":"123-45-6789"}})"_sl;
+    {
+        TransactionHelper t(db);
+        createFleeceRev(db, "seekrit"_sl, kRevID, originalJSON);
+        _expectedDocumentCount = 1;
+    }
+
+    TestEncryptorContext encryptContext = {"seekrit", "SSN", false};
+    TestEncryptorContext decryptContext = {"seekrit", "SSN", false};
+
+    auto opts = Replicator::Options::pushing();
+    opts.propertyEncryptor = &testEncryptor;
+    opts.propertyDecryptor = &testDecryptor;
+    opts.callbackContext = &encryptContext;
+
+    auto serverOpts = Replicator::Options::passive();
+    serverOpts.propertyEncryptor = &testEncryptor;
+    serverOpts.propertyDecryptor = &testDecryptor;
+    serverOpts.callbackContext = &decryptContext;
+    if (!TestDecryption)
+        serverOpts.setNoPropertyDecryption();
+
+    runReplicators(opts, serverOpts);
+
+    // Verify the synced document in db2:
+    CHECK(encryptContext.called);
+    c4::ref<C4Document> doc = c4db_getDoc(db2, "seekrit"_sl, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc);
+    Dict props = c4doc_getProperties(doc);
+
+    if (TestDecryption) {
+        CHECK(props.toJSON(false, true) == originalJSON);
+    } else {
+        CHECK(props.toJSON(false, true) == R"({"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"IzIzNC41Ni43ODk6Iw=="}})"_sl);
+
+        // Decrypt the "ciphertext" property by hand. We disabled decryption on the destination,
+        // so the property won't be converted back from the server schema.
+        slice cipherb64 = props["encrypted$SSN"].asDict()["ciphertext"].asString();
+        auto cipher = base64::decode(cipherb64);
+        alloc_slice clear = UnbreakableEncryption(cipher, -1);
+        CHECK(clear == "\"123-45-6789\"");
+    }
+}
+
+#endif // COUCHBASE_ENTERPRISE

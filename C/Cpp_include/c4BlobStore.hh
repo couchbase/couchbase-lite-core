@@ -40,11 +40,10 @@ namespace C4Blob {
     using slice = fleece::slice;
     using alloc_slice = fleece::alloc_slice;
 
-    /** The Dict property that identifies it as a special type of object.
-        For example, a blob is represented as `{"@type":"blob", "digest":"xxxx", ...}` */
-    static constexpr slice kObjectTypeProperty = "@type";
+    // (this is an alias of `C4Document::kObjectTypeProperty`)
+    extern const slice kObjectTypeProperty;
 
-    /** Value of kbjectTypeProperty that denotes a blob. */
+    /** Value of `C4Document::kObjectTypeProperty` ("@type") that denotes a blob. */
     static constexpr slice kObjectType_Blob = "blob";
 
     /** Blob dict property containing a digest of the contents. (Required if "data" is absent) */

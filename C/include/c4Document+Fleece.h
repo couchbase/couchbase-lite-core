@@ -35,7 +35,8 @@ C4API_BEGIN_DECLS
         For example, a blob is represented as `{"@type":"blob", "digest":"xxxx", ...}` */
     #define kC4ObjectTypeProperty "@type"
 
-    /** Value of kC4ObjectTypeProperty that denotes a blob. */
+
+    /** Value of `kC4ObjectTypeProperty` that denotes a blob. */
     #define kC4ObjectType_Blob "blob"
 
     /** Blob dict property containing a digest of the data. (Required if "data" is absent) */
@@ -46,6 +47,18 @@ C4API_BEGIN_DECLS
 
     /** Top-level document property whose value is a CBL 1.x / CouchDB attachments container. */
     #define kC4LegacyAttachmentsProperty "_attachments"
+
+
+    /** Value of `kC4ObjectTypeProperty` that denotes an encryptable value. */
+    #define kC4ObjectType_Encryptable "EncryptedProperty"
+
+    /** Encryptable-value property containing the actual value; may be any JSON/Fleece type.
+        Required if `ciphertext` is absent. */
+    #define kC4EncryptableValueProperty "value"
+
+    /** Encryptable-value property containing the already-encrypted data as a Base64-encoded string.
+        Required if `value` is absent. */
+    #define kC4EncryptedCiphertextProperty "ciphertext"
 
 
     /** Returns the properties of the selected revision, i.e. the root Fleece Dict. */

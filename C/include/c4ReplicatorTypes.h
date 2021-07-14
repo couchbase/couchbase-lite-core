@@ -162,6 +162,33 @@ C4API_BEGIN_DECLS
                                                    FLDict body,
                                                    void* C4NULLABLE context);
 
+#ifdef COUCHBASE_ENTERPRISE
+    /** Callback that encrypts properties, in documents pushed by the replicator. */
+    typedef C4SliceResult (*C4ReplicatorPropertyEncryptionCallback)(
+                   void* C4NULLABLE context,///< Replicator’s context
+                   C4String documentID,     ///< Document’s ID
+                   FLDict properties,       ///< Document’s properties
+                   C4String keyPath,        ///< Key path of the property to be encrypted
+                   C4Slice input,           ///< Property data to be encrypted.
+                   C4String* outAlgorithm,  ///< On return: algorithm name (optional).
+                   C4String* outKeyID,      ///< On return: encryption Key Identifier (optional).
+                   C4Error* outError);      ///< On return: error domain/code, if returning NULL
+
+    /** Callback that decrypts properties, in documents pulled by the replicator. */
+    typedef C4SliceResult (*C4ReplicatorPropertyDecryptionCallback)(
+                   void* C4NULLABLE context,///< Replicator’s context
+                   C4String documentID,     ///< Document’s ID
+                   FLDict properties,       ///< Document’s properties
+                   C4String keyPath,        ///< Key path of the property to be decrypted
+                   C4Slice input,           ///< Encrypted property data for you to decrypt.
+                   C4String algorithm,      ///< Algorithm name, if any.
+                   C4String keyID,          ///< Encryption Key Identifier, if any.
+                   C4Error* outError);      ///< On return: error domain/code, if returning NULL
+#else
+    typedef void* C4ReplicatorPropertyEncryptionCallback;
+    typedef void* C4ReplicatorPropertyDecryptionCallback;
+#endif // COUCHBASE_ENTERPRISE
+
 
     /** Parameters describing a replication, used when creating a C4Replicator. */
     typedef struct C4ReplicatorParameters {
@@ -173,6 +200,8 @@ C4API_BEGIN_DECLS
         C4ReplicatorStatusChangedCallback C4NULLABLE   onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
         C4ReplicatorDocumentsEndedCallback C4NULLABLE onDocumentsEnded;  ///< Callback notifying status of individual documents
         C4ReplicatorBlobProgressCallback C4NULLABLE    onBlobProgress;    ///< Callback notifying blob progress
+        C4ReplicatorPropertyEncryptionCallback C4NULLABLE propertyEncryptor;
+        C4ReplicatorPropertyDecryptionCallback C4NULLABLE propertyDecryptor;
         void* C4NULLABLE                               callbackContext;   ///< Value to be passed to the callbacks.
         const C4SocketFactory* C4NULLABLE              socketFactory;     ///< Custom C4SocketFactory, if not NULL
     } C4ReplicatorParameters;
@@ -192,6 +221,7 @@ C4API_BEGIN_DECLS
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" ///< Stable ID for remote db with unstable URL (string)
     #define kC4ReplicatorOptionProgressLevel    "progress"  ///< If >=1, notify on every doc; if >=2, on every attachment (int)
     #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
+    #define kC4ReplicatorOptionDisablePropertyDecryption "noDecryption" ///< Disables property decryption (bool)
     #define kC4ReplicatorOptionMaxRetries       "maxRetries" ///< Max number of retry attempts (int)
     #define kC4ReplicatorOptionMaxRetryInterval "maxRetryInterval" ///< Max delay betw retries (secs)
     #define kC4ReplicatorOptionAutoPurge        "autoPurge" ///< Enables auto purge; default is true (bool)

@@ -19,12 +19,14 @@
 #include "IncomingRev.hh"
 #include "Puller.hh"
 #include "DBAccess.hh"
+#include "PropertyEncryption.hh"
 #include "Increment.hh"
 #include "StringUtil.hh"
 #include "c4BlobStore.hh"
 #include "c4Document.hh"
 #include "Instrumentation.hh"
 #include "BLIP.hh"
+#include "fleece/Mutable.hh"
 #include <atomic>
 #include <deque>
 #include <set>
@@ -37,10 +39,6 @@ namespace litecore { namespace repl {
 
     // Docs with JSON bodies larger than this get parsed asynchronously (off the Puller thread)
     static constexpr size_t kMaxImmediateParseSize = 32 * 1024;
-
-    static inline bool jsonMightContainBlobs(slice json) {
-        return json.containsBytes("\"digest\""_sl);
-    }
 
     IncomingRev::IncomingRev(Puller *puller)
     :Worker(puller, "inc")
@@ -127,9 +125,13 @@ namespace litecore { namespace repl {
         if (_revMessage->noReply())
             _revMessage = nullptr;
 
+        _mayContainBlobs = jsonBody.containsBytes("\"digest\""_sl);
+        _mayContainEncryptedProperties = !_options.disablePropertyDecryption()
+                                         && MayContainPropertiesToDecrypt(jsonBody);
+
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
         if (_options.pullValidator|| jsonBody.size > kMaxImmediateParseSize
-                                  || jsonMightContainBlobs(jsonBody))
+                                  || _mayContainBlobs || _mayContainEncryptedProperties)
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), move(jsonBody));
         else
             parseAndInsert(move(jsonBody));
@@ -171,9 +173,10 @@ namespace litecore { namespace repl {
             if (!fleeceDoc)
                 err = C4Error::make(FleeceDomain, (int)encodeErr, "Incoming rev failed to encode"_sl);
 
-        } else if (_options.pullValidator || jsonMightContainBlobs(jsonBody)) {
+        } else if (_options.pullValidator || _mayContainBlobs || _mayContainEncryptedProperties) {
             // It's a delta, but we need the entire document body now because either it has to be
-            // passed to the validation function, or it may contain new blobs to download.
+            // passed to the validation function, it may contain new blobs to download, or it may
+            // have properties to decrypt.
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
                        SPLAT(_rev->docID), SPLAT(_rev->revID));
             fleeceDoc = _db->applyDelta(_rev->docID, _rev->deltaSrcRevID, jsonBody);
@@ -204,7 +207,7 @@ namespace litecore { namespace repl {
         // Note: fleeceDoc is _not_ yet suitable for inserting into the
         // database because it doesn't use the same SharedKeys, but it lets us look at the doc
         // metadata and blobs.
-        Dict root = fleeceDoc.root().asDict();
+        Dict root = fleeceDoc.asDict();
 
         // SG sends a fake revision with a "_removed":true property, to indicate that the doc is
         // no longer accessible (not in any channel the client has access to.)
@@ -216,31 +219,51 @@ namespace litecore { namespace repl {
             }
         }
 
+        // Decrypt properties:
+        MutableDict decryptedRoot;
+        if (_mayContainEncryptedProperties) {
+            C4Error error;
+            decryptedRoot = DecryptDocumentProperties(_rev->docID,
+                                                      root,
+                                                      _options.propertyDecryptor,
+                                                      _options.callbackContext,
+                                                      &error);
+            if (decryptedRoot) {
+                root = decryptedRoot;
+            } else if (error) {
+                failWithError(error);
+            }
+        }
+
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
-        // in _attachments that are redundant with blobs elsewhere in the doc:
-        if (C4Document::hasOldMetaProperties(root) && !_db->disableBlobSupport()) {
+        // in _attachments that are redundant with blobs elsewhere in the doc.
+        // This also re-encodes the document if it was modified by the decryptor.
+        if ((C4Document::hasOldMetaProperties(root) && !_db->disableBlobSupport())
+                || decryptedRoot) {
             auto sk = fleeceDoc.sharedKeys();
             alloc_slice body = C4Document::encodeStrippingOldMetaProperties(root, sk);
             if (!body) {
                 failWithError(WebSocketDomain, 500, "invalid legacy attachments"_sl);
                 return;
             }
-            _rev->doc = Doc(body, kFLTrusted, sk);
-            root = _rev->doc.root().asDict();
-        } else {
-            _rev->doc = fleeceDoc;
+            fleeceDoc = Doc(body, kFLTrusted, sk);
+            root = fleeceDoc.asDict();
         }
 
+        _rev->doc = fleeceDoc;
+
         // Check for blobs, and queue up requests for any I don't have yet:
-        _db->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
-            _rev->flags |= kRevHasAttachments;
-            _pendingBlobs.push_back({_rev->docID,
-                                     alloc_slice(FLDeepIterator_GetPathString(i)),
-                                     key,
-                                     blob["length"_sl].asUnsigned(),
-                                     C4Blob::isLikelyCompressible(blob)});
-            _blob = _pendingBlobs.begin();
-        });
+        if (_mayContainBlobs) {
+            _db->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
+                _rev->flags |= kRevHasAttachments;
+                _pendingBlobs.push_back({_rev->docID,
+                                         alloc_slice(FLDeepIterator_GetPathString(i)),
+                                         key,
+                                         blob["length"_sl].asUnsigned(),
+                                         C4Blob::isLikelyCompressible(blob)});
+                _blob = _pendingBlobs.begin();
+            });
+        }
 
         // Call the custom validation function if any:
         if (!performPullValidation(root)) {
