@@ -96,14 +96,28 @@ namespace litecore { namespace websocket {
         startResponseTimer(chrono::seconds(kConnectTimeoutSecs));
     }
 
+    void WebSocketImpl::gotTLSCertificate(slice certData) {
+        if (!beginDelegateCallback()) {
+            return;
+        }
+
+        logInfo("Got TLS certificate");
+        delegate().onWebSocketGotTLSCertificate(certData);
+        endDelegateCallback();
+    }
 
     void WebSocketImpl::gotHTTPResponse(int status, const websocket::Headers &headersFleece) {
+        if (!beginDelegateCallback()) {
+            return;
+        }
+
         logInfo("Got HTTP response (status %d)", status);
         delegate().onWebSocketGotHTTPResponse(status, headersFleece);
+        endDelegateCallback();
     }
 
     void WebSocketImpl::onConnect() {
-        if(_closed) {
+        if(!beginDelegateCallback()) {
             // If the WebSocket has already been closed, which only happens in rare cases
             // such as stopping a Replicator during the connecting phase, then don't continue...
             warn("WebSocket already closed, ignoring onConnect...");
@@ -115,6 +129,7 @@ namespace litecore { namespace websocket {
         _responseTimer->stop();
         _timeConnected.start();
         delegate().onWebSocketConnect();
+        endDelegateCallback();
 
         // Initialize ping timer. (This is the first time it's accessed, and this method is only
         // called once, so no locking is needed.)
@@ -368,19 +383,39 @@ namespace litecore { namespace websocket {
 
     // Initiates a request to close the connection cleanly.
     void WebSocketImpl::close(int status, fleece::slice message) {
-        if(!_didConnect && _framing) {
-            // The web socket is being requested to close before it's even connected, so just
-            // shortcut to the callback and make sure that onConnect does nothing now
-            closeSocket();
-            _closed = true;
-            
-            // CBL-1088: If this is not called here, it never will be since the above _closed = true
-            // prevents it from happening later.  This means that the Replicator using this connection
-            // will never be informed of the connection close and will never reach the stopped state
-            delegate().onWebSocketClose({kWebSocketClose, status, message});
-            return;
+        // Handle requests to close the web socket before it is connected.
+        if(_framing) {
+            while (true) {
+                // Wait until there are no delegate calbacks executing.
+                unique_lock<mutex> cvLock(_mutex);
+                _currentDelegateCallbacksCv.wait(cvLock, [this]() { return _currentDelegateCallbacks == 0; });
+                {
+                    lock_guard<mutex> lock(_mutex);
+                    // Verify that no callbacks began executing before the lock was acquired.
+                    // If that is not the case wait again by going back to the start of the loop.
+                    if (_currentDelegateCallbacks != 0) {
+                        continue;
+                    }
+
+                    // The connection has already been established so it should be closed properly.
+                    if (_didConnect) {
+                        break;
+                    }
+                    
+                    // After setting this flag to true, delegate callbacks wont be executed.
+                    _closed = true;
+                }
+
+                closeSocket();
+
+                // CBL-1088: If this is not called here, it never will be since the above _closed = true
+                // prevents it from happening later.  This means that the Replicator using this connection
+                // will never be informed of the connection close and will never reach the stopped state
+                delegate().onWebSocketClose({kWebSocketClose, status, message});
+                return;
+            }
         }
-        
+    
         logInfo("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
         if (_framing) {
             alloc_slice closeMsg;
@@ -514,6 +549,23 @@ namespace litecore { namespace websocket {
         delegate().onWebSocketClose(status);
     }
 
+    // Called before a delegate callback is executed and returns whether the delegate callback should proceed. 
+    // If true is returned, each call to this method must be balanced with a call to endDelegateCallback.
+    // Only applies to delegate callbacks of the connecting phase (gotTLSCertificate, gotHTTPResponse, onConnect).
+    bool WebSocketImpl::beginDelegateCallback() {
+        lock_guard<mutex> lock(_mutex);
+        if (_closed) {
+            return false;
+        }
+        _currentDelegateCallbacks++;
+        return true;
+    }
+
+    void WebSocketImpl::endDelegateCallback() {
+        lock_guard<mutex> lock(_mutex);
+        _currentDelegateCallbacks--;
+        _currentDelegateCallbacksCv.notify_all();
+    }
 } }
 
 
