@@ -231,7 +231,7 @@ namespace litecore { namespace repl {
             enc.beginDict();
             for (Dict::iterator i(blob); i; ++i) {
                 slice key = i.keyString();
-                if (key != C4Blob::kObjectTypeProperty && key != "stub"_sl) {
+                if (key != C4Document::kObjectTypeProperty && key != "stub"_sl) {
                     enc.writeKey(key);
                     enc.writeValue(i.value());
                 }

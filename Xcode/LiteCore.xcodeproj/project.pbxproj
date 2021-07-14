@@ -260,6 +260,8 @@
 		279DE3DF24788D1B0059AE4E /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		279DE3E824788DCF0059AE4E /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		279DE3E924788DCF0059AE4E /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
+		27A83D54269E3E69002B7EBA /* PropertyEncryptionTests.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */; };
+		27A83D58269F7DB2002B7EBA /* PropertyEncryption_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27A83D57269F7DB2002B7EBA /* PropertyEncryption_stub.cc */; };
 		27A924981D9B316D00086206 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27A924971D9B316D00086206 /* main.mm */; };
 		27A9249B1D9B316D00086206 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249A1D9B316D00086206 /* AppDelegate.m */; };
 		27A9249E1D9B316D00086206 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249D1D9B316D00086206 /* ViewController.m */; };
@@ -1225,6 +1227,10 @@
 		279DE3DD24788A030059AE4E /* c4_ee.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = c4_ee.txt; path = scripts/c4_ee.txt; sourceTree = "<group>"; };
 		27A16314201FC2A500C18D9C /* DataFile+Shared.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "DataFile+Shared.hh"; sourceTree = "<group>"; };
 		27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
+		27A83D4F269E35BC002B7EBA /* PropertyEncryption.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PropertyEncryption.cc; path = "../../../../CBL/couchbase-lite-core-EE/Replicator/PropertyEncryption.cc"; sourceTree = "<group>"; };
+		27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PropertyEncryptionTests.cc; sourceTree = "<group>"; };
+		27A83D57269F7DB2002B7EBA /* PropertyEncryption_stub.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PropertyEncryption_stub.cc; sourceTree = "<group>"; };
+		27A83D5C269F7F0E002B7EBA /* PropertyEncryption.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PropertyEncryption.hh; sourceTree = "<group>"; };
 		27A924941D9B316D00086206 /* LiteCore-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LiteCore-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A924971D9B316D00086206 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
 		27A924991D9B316D00086206 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -2433,6 +2439,7 @@
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
 				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
 				2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */,
+				27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -2628,6 +2635,9 @@
 				2773FCF51E6783A000108780 /* Checkpoint.hh */,
 				27F2BE9F221DF1A0006C13EE /* DBAccess.cc */,
 				27F2BE9E221DEF4E006C13EE /* DBAccess.hh */,
+				27A83D57269F7DB2002B7EBA /* PropertyEncryption_stub.cc */,
+				27A83D4F269E35BC002B7EBA /* PropertyEncryption.cc */,
+				27A83D5C269F7F0E002B7EBA /* PropertyEncryption.hh */,
 				2726F630207ED137007F2D02 /* ReplicatorTuning.hh */,
 				2734F619206ABEB000C982FF /* ReplicatorTypes.cc */,
 				2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */,
@@ -3971,6 +3981,7 @@
 				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
+				27A83D54269E3E69002B7EBA /* PropertyEncryptionTests.cc in Sources */,
 				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
 				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
@@ -4228,6 +4239,7 @@
 				27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */,
 				2744B352241854F2005A194D /* Codec.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
+				27A83D58269F7DB2002B7EBA /* PropertyEncryption_stub.cc in Sources */,
 				2744B35C241854F2005A194D /* MessageOut.cc in Sources */,
 				27469D09233D719800A1EE1A /* mbedUtils.cc in Sources */,
 				2744B358241854F2005A194D /* Channel.cc in Sources */,

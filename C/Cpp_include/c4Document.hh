@@ -158,6 +158,25 @@ struct C4Document : public fleece::RefCounted,
     static alloc_slice encodeStrippingOldMetaProperties(FLDict properties,
                                                         FLSharedKeys);
 
+    // Special property names & values:
+
+    /** The Dict property that identifies it as a special type of object.
+        For example, a blob is represented as `{"@type":"blob", "digest":"xxxx", ...}` */
+    static constexpr slice kObjectTypeProperty = "@type";
+
+    /** Value of `kC4ObjectTypeProperty` that denotes an encryptable value. */
+    static constexpr slice kObjectType_Encryptable = "EncryptedProperty";
+
+    /** Encryptable-value property containing the actual value; may be any JSON/Fleece type.
+        Required if `ciphertext` is absent. */
+    static constexpr slice kValueToEncryptProperty = "value";
+
+    /** Encryptable-value property containing the encrypted data as a Base64-encoded string.
+        Required if `value` is absent. */
+    static constexpr slice kCiphertextProperty = "ciphertext";
+
+    // NOTE: Blob-related constants are defined in c4BlobStore.hh.
+
 protected:
     friend class litecore::DatabaseImpl;
     friend class litecore::CollectionImpl;
