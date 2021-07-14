@@ -98,6 +98,7 @@ function(set_litecore_source_base)
         Replicator/IncomingRev.cc
         Replicator/IncomingRev+Blobs.cc
         Replicator/Inserter.cc
+        Replicator/PropertyEncryption_stub.cc
         Replicator/Puller.cc
         Replicator/Pusher.cc
         Replicator/Pusher+Attachments.cc

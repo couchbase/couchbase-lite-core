@@ -29,12 +29,16 @@ namespace litecore { namespace repl {
 
         using Mode = C4ReplicatorMode;
         using Validator = C4ReplicatorValidationFunction;
+        using PropertyEncryptor = C4ReplicatorPropertyEncryptionCallback;
+        using PropertyDecryptor = C4ReplicatorPropertyDecryptionCallback;
 
         Mode                    push                    {kC4Disabled};
         Mode                    pull                    {kC4Disabled};
         fleece::AllocedDict     properties;
         Validator               pushFilter              {nullptr};
         Validator               pullValidator           {nullptr};
+        PropertyEncryptor       propertyEncryptor       {nullptr};
+        PropertyDecryptor       propertyDecryptor       {nullptr};
         void*                   callbackContext         {nullptr};
 
         //---- Constructors/factories:
@@ -56,6 +60,8 @@ namespace litecore { namespace repl {
         ,properties(params.optionsDictFleece)
         ,pushFilter(params.pushFilter)
         ,pullValidator(params.validationFunc)
+        ,propertyEncryptor(params.propertyEncryptor)
+        ,propertyDecryptor(params.propertyDecryptor)
         ,callbackContext(params.callbackContext)
         { }
 
@@ -71,9 +77,9 @@ namespace litecore { namespace repl {
         fleece::slice filter() const  {return properties[kC4ReplicatorOptionFilter].asString();}
         fleece::Dict filterParams() const
                                   {return properties[kC4ReplicatorOptionFilterParams].asDict();}
-        bool skipDeleted() const  {return properties[kC4ReplicatorOptionSkipDeleted].asBool();}
-        bool noIncomingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
-        bool noOutgoingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
+        bool skipDeleted() const  {return boolProperty(kC4ReplicatorOptionSkipDeleted);}
+        bool noIncomingConflicts() const  {return boolProperty(kC4ReplicatorOptionNoIncomingConflicts);}
+        bool noOutgoingConflicts() const  {return boolProperty(kC4ReplicatorOptionNoIncomingConflicts);}
         int progressLevel() const  {
             if(properties[kC4ReplicatorOptionProgressLevel]) {
                 C4Warn("Passing in progress level via configuration is deprecated; use the setProgressLevel API");
@@ -82,12 +88,13 @@ namespace litecore { namespace repl {
             return (int)properties[kC4ReplicatorOptionProgressLevel].asInt();
         }
 
-        bool disableDeltaSupport() const {return properties[kC4ReplicatorOptionDisableDeltas].asBool();}
-        
+        bool disableDeltaSupport() const {return boolProperty(kC4ReplicatorOptionDisableDeltas);}
+        bool disablePropertyDecryption() const {return boolProperty(kC4ReplicatorOptionDisablePropertyDecryption);}
+
         bool enableAutoPurge() const {
             if (!properties[kC4ReplicatorOptionAutoPurge])
                 return true;
-            return properties[kC4ReplicatorOptionAutoPurge].asBool();
+            return boolProperty(kC4ReplicatorOptionAutoPurge);
         }
 
         /** Returns a string that uniquely identifies the remote database; by default its URL,
@@ -130,12 +137,18 @@ namespace litecore { namespace repl {
         }
 
         Options& setNoIncomingConflicts() {
-            return setProperty(C4STR(kC4ReplicatorOptionNoIncomingConflicts), true);
+            return setProperty(kC4ReplicatorOptionNoIncomingConflicts, true);
         }
 
         Options& setNoDeltas() {
-            return setProperty(C4STR(kC4ReplicatorOptionDisableDeltas), true);
+            return setProperty(kC4ReplicatorOptionDisableDeltas, true);
         }
+
+        Options& setNoPropertyDecryption() {
+            return setProperty(kC4ReplicatorOptionDisablePropertyDecryption, true);
+        }
+
+        bool boolProperty(slice property) const   {return properties[property].asBool();}
 
         explicit operator std::string() const;
     };

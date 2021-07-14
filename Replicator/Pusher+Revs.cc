@@ -17,6 +17,7 @@
 //
 
 #include "Pusher.hh"
+#include "PropertyEncryption.hh"
 #include "DBAccess.hh"
 #include "ReplicatorTuning.hh"
 #include "BLIP.hh"
@@ -24,6 +25,7 @@
 #include "Increment.hh"
 #include "StringUtil.hh"
 #include "c4Document.hh"
+#include "fleece/Mutable.hh"
 #include <cinttypes>
 
 using namespace std;
@@ -72,6 +74,22 @@ namespace litecore::repl {
             c4err = C4Error::make(LiteCoreDomain, kC4ErrorNotFound);
         }
 
+        // Encrypt any encryptable properties
+        MutableDict encryptedRoot;
+        if (root && MayContainPropertiesToEncrypt(doc->getRevisionBody())) {
+            logVerbose("Encrypting properties in doc '%.*s'", SPLAT(request->docID));
+            encryptedRoot = EncryptDocumentProperties(request->docID, root,
+                                                      _options.propertyEncryptor,
+                                                      _options.callbackContext,
+                                                      &c4err);
+            if (encryptedRoot)
+                root = encryptedRoot;
+            else if (c4err) {
+                root = nullptr;
+                finishedDocumentWithError(request, c4err, false);
+            }
+        }
+
         auto fullRevID = alloc_slice(_db->convertVersionToAbsolute(request->revID));
 
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
@@ -97,13 +115,16 @@ namespace litecore::repl {
                                           && (revisionFlags & kRevHasAttachments)
                                           && !_db->disableBlobSupport());
 
-            // Delta compression:
-            alloc_slice delta = createRevisionDelta(doc, request, root,
-                                                    doc->getRevisionBody().size,
-                                                    sendLegacyAttachments);
-            if (delta) {
+            // Delta compression (unless we encrypted properties):
+            alloc_slice deltaJSON;
+            if (!encryptedRoot) {
+                deltaJSON = createRevisionDelta(doc, request, root,
+                                                doc->getRevisionBody().size,
+                                                sendLegacyAttachments);
+            }
+            if (deltaJSON) {
                 msg["deltaSrc"_sl] = _db->convertVersionToAbsolute(doc->selectedRev().revID);
-                msg.jsonBody().writeRaw(delta);
+                msg.jsonBody().writeRaw(deltaJSON);
             } else if (root.empty()) {
                 msg.write("{}"_sl);
             } else {
@@ -129,8 +150,9 @@ namespace litecore::repl {
             else if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound)
                 blipError = 404;
             else {
-                warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %d/%d",
-                     SPLAT(request->docID), SPLAT(request->revID), c4err.domain, c4err.code);
+                warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %s",
+                     SPLAT(request->docID), SPLAT(request->revID),
+                     c4err.description().c_str());
                 blipError = 500;
             }
             msg["error"_sl] = blipError;

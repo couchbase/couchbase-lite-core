@@ -35,6 +35,12 @@ using namespace fleece;
 using namespace litecore;
 
 
+namespace C4Blob {
+    const slice kObjectTypeProperty = C4Document::kObjectTypeProperty;
+}
+
+
+
 #pragma mark - C4BLOBKEY:
 
 
@@ -329,7 +335,7 @@ optional<C4BlobKey> C4Blob::keyFromDigestProperty(FLDict dict) {
 
 
 bool C4Blob::isBlob(FLDict dict) {
-    FLValue cbltype= FLDict_Get(dict, C4Blob::kObjectTypeProperty);
+    FLValue cbltype= FLDict_Get(dict, C4Document::kObjectTypeProperty);
     return cbltype && slice(FLValue_AsString(cbltype)) == C4Blob::kObjectType_Blob;
 }
 
