@@ -90,12 +90,16 @@ typedef C4_ENUM(int32_t, C4ErrorCode) {
 };
 
 
-/** Network error codes (higher level than POSIX, lower level than HTTP.) */
+/** Network error codes (potentially higher level than POSIX, lower level than HTTP.) 
+    The entries marked with a POSIX code mirror that code so that platform bindings have
+    a stable cross platform error code to use for transient or network dependent errors, and
+    will behave the same as if the errno in question was passed.  Entries marked as retryable
+    will cause a retry loop according to the configured retry rules.  */
 // (These are identical to the internal C++ NetworkError enum values in WebSocketInterface.hh.)
 typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
-    kC4NetErrDNSFailure = 1,            // DNS lookup failed
-    kC4NetErrUnknownHost,               // DNS server doesn't know the hostname
-    kC4NetErrTimeout,                   // Connection timeout
+    kC4NetErrDNSFailure = 1,            // DNS lookup failed [retryable]
+    kC4NetErrUnknownHost,               // DNS server doesn't know the hostname [retryable]
+    kC4NetErrTimeout,                   // Connection timeout [ETIMEDOUT, retryable]
     kC4NetErrInvalidURL,                // Invalid URL
     kC4NetErrTooManyRedirects,          // HTTP redirect loop
     kC4NetErrTLSHandshakeFailed,        // TLS handshake failed, for reasons other than below
@@ -108,6 +112,17 @@ typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
     kC4NetErrUnknown,                   // Unknown error
     kC4NetErrTLSCertRevoked,            // Peer's cert has been revoked
     kC4NetErrTLSCertNameMismatch,       // Peer's cert's Common Name doesn't match hostname
+    kC4NetErrNetworkReset,              // The network subsystem was reset [ENETRESET, retryable]
+    kC4NetErrConnectionAborted,         // The connection was aborted by the OS [ECONNABORTED, retryable]
+    kC4NetErrConnectionReset,           // The connection was reset by the other side [ECONNRESET, retryable]
+    kC4NetErrConnectionRefused,         // The other side refused the connection [ECONNREFUSED, retryable]
+    kC4NetErrNetworkDown,               // The network subsystem is not functioning [ENETDOWN, retryable]
+    kC4NetErrNetworkUnreachable,        // There is no usable network at the moment [ENETUNREACH, retryable]
+    kC4NetErrNotConnected,              // The socket in question is no longer connected [ENOTCONN, retryable]
+    kC4NetErrHostDown,                  // The other side reports it is down [EHOSTDOWN, retryable]
+    kC4NetErrHostUnreachable,           // There is no network path to the host [EHOSTUNREACH, retryable]
+    kC4NetErrAddressNotAvailable,       // The address in question is already being used [EADDRNOTAVAIL, retryable]
+    kC4NetErrBrokenPipe,                // Broken pipe [EPIPE, retryable]
     kC4NumNetErrorCodesPlus1
 };
 
