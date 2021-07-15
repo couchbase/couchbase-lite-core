@@ -79,6 +79,7 @@ namespace litecore { namespace REST {
                 params.callbackContext = this;
 
                 _repl = localDB->newReplicator(remoteAddress, remoteDbName, params);
+                _repl->start();
             } catch (...) {
                 c4log(ListenerLog, kC4LogInfo, "Replicator task #%d failed to start!", taskID());
                 unregisterTask();
