@@ -233,7 +233,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Deletion", "[.SyncServer]") {
 
     replicate(kC4Disabled, kC4OneShot);
 
-    c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db, "doc"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
 
     CHECK(doc->revID == kRev2ID);
@@ -340,7 +340,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
 
     createRev("0000013"_sl, "2-f000"_sl, kFleeceBody);
 
-    c4::ref<C4Document> doc = c4doc_get(db, C4STR("0000013"), true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db, C4STR("0000013"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
 	C4Slice revID = C4STR("2-f000");
     CHECK(doc->selectedRev.revID == revID);
@@ -361,7 +361,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Push Conflict", "[.SyncServer]") {
     replicate(kC4Disabled, kC4OneShot);
 
     C4Log("-------- Checking Conflict --------");
-    doc = c4doc_get(db, C4STR("0000013"), true, nullptr);
+    doc = c4db_getDoc(db, C4STR("0000013"), true, kDocGetAll, nullptr);
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
 	revID = C4STR("2-f000");
@@ -401,7 +401,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Update Once-Conflicted Doc", "[.SyncServer]"
     replicate(kC4OneShot, kC4OneShot);
 
     // Verify doc:
-    c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
+    c4::ref<C4Document> doc = c4db_getDoc(db, "doc"_sl, true, kDocGetAll, nullptr);
     REQUIRE(doc);
 	C4Slice revID = C4STR("2-bbbb");
     CHECK(doc->revID == revID);
