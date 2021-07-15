@@ -39,7 +39,7 @@ namespace litecore {
 
         if (to.exists()) {
             Warn("Database already exists at %s, cannot copy!", to.path().c_str());
-            error::_throw(error::Domain::POSIX, kC4PosixErrFileExists);
+            error::_throw(error::Domain::POSIX, EEXIST);
         }
         
         FilePath backupPath;

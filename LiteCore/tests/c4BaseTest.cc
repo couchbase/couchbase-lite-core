@@ -78,18 +78,12 @@ TEST_CASE("C4Error messages") {
                           WSAENOTSOCK, WSAEOPNOTSUPP, WSAEPROTONOSUPPORT, WSAEPROTOTYPE,
                           WSAETIMEDOUT, WSAEWOULDBLOCK };
     for(const auto err: errs) {
-        error errObj = error::convertErrno(int(err));
+        error errObj(error::Domain::POSIX, int(err));
         string msg = errObj.what();
         CHECK(msg.find("Unknown error") == -1); // Should have a valid error message
         CHECK(errObj.code != err); // Should be remapped to standard POSIX code
     }
 #endif
-}
-
-TEST_CASE("C4Error errno conversion") {
-    auto e = error::convertErrno(EADDRINUSE);
-    CHECK(e.domain == error::Domain::POSIX);
-    CHECK(e.code == kC4PosixErrAddressInUse);
 }
 
 TEST_CASE("C4Error exceptions") {

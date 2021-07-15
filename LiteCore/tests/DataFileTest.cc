@@ -630,7 +630,7 @@ TEST_CASE("ParentDir") {
     check_parent("./folder/", "./");
     check_parent("file", "./");
     check_parent("folder/", "./");
-    ExpectException(error::POSIX, litecore::posix::InvalidArgument, [&]{
+    ExpectException(error::POSIX, EINVAL, [&]{
         stringstream ss;
         ss << "." << FilePath::kSeparator;
         FilePath(ss.str()).parentDir();

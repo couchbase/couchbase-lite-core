@@ -281,7 +281,7 @@ TEST_CASE_METHOD(C4RESTTest, "No Listeners on Same Port", "[Listener][C]") {
     auto listener2 = c4listener_start(&config, &err);
     CHECK(!listener2);
     CHECK(err.domain == POSIXDomain);
-    CHECK(err.code == kC4PosixErrAddressInUse);
+    CHECK(err.code == EADDRINUSE);
 }
 
 

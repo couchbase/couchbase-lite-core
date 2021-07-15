@@ -63,19 +63,8 @@ namespace litecore {
         char buf[1024];
         buf[0] = '\x0';
         FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-            nullptr, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            buf, sizeof(buf), nullptr);
-
-        char* c = buf;
-        while(c) {
-            if(*c == '\r') {
-                *c = 0;
-                break;
-            }
-
-            c++;
-        }
-
+			nullptr, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			buf, sizeof(buf), nullptr);
         return string(buf);
     }
 
@@ -153,126 +142,45 @@ namespace litecore {
 
     struct codeMapping { int err; error::Domain domain; int code; };
 
+#ifdef WIN32
+#define MAPWSA(code) { WSA##code,error::POSIX,code }
+#define MAPWSATO(from, to) { from,error::POSIX,to }
+
+    static const codeMapping kPrimaryCodeMapping[] = {
+        MAPWSA(EADDRINUSE),
+        MAPWSA(EADDRNOTAVAIL),
+        MAPWSA(EAFNOSUPPORT),
+        MAPWSA(EALREADY),
+        MAPWSATO(WSAECANCELLED, ECANCELED),
+        MAPWSA(ECONNABORTED),
+        MAPWSA(ECONNREFUSED),
+        MAPWSA(ECONNRESET),
+        MAPWSA(EDESTADDRREQ),
+        MAPWSA(EHOSTUNREACH),
+        MAPWSA(EINPROGRESS),
+        MAPWSA(EISCONN),
+        MAPWSA(ELOOP),
+        MAPWSA(EMSGSIZE),
+        MAPWSA(ENETDOWN),
+        MAPWSA(ENETRESET),
+        MAPWSA(ENETUNREACH),
+        MAPWSA(ENOBUFS),
+        MAPWSA(ENOPROTOOPT),
+        MAPWSA(ENOTCONN),
+        MAPWSA(ENOTSOCK),
+        MAPWSA(EOPNOTSUPP),
+        MAPWSA(EPROTONOSUPPORT),
+        MAPWSA(EPROTOTYPE),
+        MAPWSA(ETIMEDOUT),
+        MAPWSA(EWOULDBLOCK),
+        {0, /*must end with err=0*/     error::LiteCore,    0}
+    };
+#endif
+
+
     static const codeMapping kPOSIXMapping[] = {
-        {EAFNOSUPPORT,                  error::POSIX,       posix::AddressFamilyNotSupported},
-        {EADDRINUSE,                    error::POSIX,       posix::AddressInUse},
-        {EADDRNOTAVAIL,                 error::POSIX,       posix::AddressNotAvailable},
-        {EISCONN,                       error::POSIX,       posix::AlreadyConnected},
-        {E2BIG,                         error::POSIX,       posix::ArgumentListTooLong},
-        {EDOM,                          error::POSIX,       posix::ArgumentOutOfDomain},
-        {EFAULT,                        error::POSIX,       posix::BadAddress},
-        {EBADF,                         error::POSIX,       posix::BadFileDescriptor},
-        {EBADMSG,                       error::POSIX,       posix::BadMessage},
-        {EPIPE,                         error::POSIX,       posix::BrokenPipe},
-        {ECONNABORTED,                  error::POSIX,       posix::ConnectionAborted},
-        {EALREADY,                      error::POSIX,       posix::ConnectionAlreadyInProgress},
-        {ECONNREFUSED,                  error::POSIX,       posix::ConnectionRefused},
-        {ECONNRESET,                    error::POSIX,       posix::ConnectionReset},
-        {EXDEV,                         error::POSIX,       posix::CrossDeviceLink},
-        {EDESTADDRREQ,                  error::POSIX,       posix::DestinationAddressRequired},
-        {EBUSY,                         error::POSIX,       posix::DeviceOrResourceBusy},
-        {ENOTEMPTY,                     error::POSIX,       posix::DirectoryNotEmpty},
-        {ENOEXEC,                       error::POSIX,       posix::ExecutableFormatError},
-        {EEXIST,                        error::POSIX,       posix::FileExists},
-        {EFBIG,                         error::POSIX,       posix::FileTooLarge},
-        {ENAMETOOLONG,                  error::POSIX,       posix::FilenameTooLong},
-        {ENOSYS,                        error::POSIX,       posix::FunctionNotSupported},
-#ifdef EHOSTDOWN
-        {EHOSTDOWN,                     error::POSIX,       posix::HostDown},
-#endif
-        {EHOSTUNREACH,                  error::POSIX,       posix::HostUnreachable},
-        {EIDRM,                         error::POSIX,       posix::IdentifierRemoved},
-        {EILSEQ,                        error::POSIX,       posix::IllegalByteSequence},
-        {ENOTTY,                        error::POSIX,       posix::InappropriateIOControlOperation},
-        {EINTR,                         error::POSIX,       posix::Interrupted},
-        {EINVAL,                        error::POSIX,       posix::InvalidArgument},
-        {ESPIPE,                        error::POSIX,       posix::InvalidSeek},
-        {EIO,                           error::LiteCore,    error::IOError},
-        {EISDIR,                        error::POSIX,       posix::IsADirectory},
-        {EMSGSIZE,                      error::POSIX,       posix::MessageSize},
-        {ENETDOWN,                      error::POSIX,       posix::NetworkDown},
-        {ENETRESET,                     error::POSIX,       posix::NetworkReset},
-        {ENETUNREACH,                   error::POSIX,       posix::NetworkUnreachable},
-        {ENOBUFS,                       error::POSIX,       posix::NoBufferSpace},
-        {ECHILD,                        error::POSIX,       posix::NoChildProcess},
-        {ENOLINK,                       error::POSIX,       posix::NoLink},
-#ifdef ENOLOCK
-        {ENOLOCK,                       error::POSIX,       posix::NoLockAvailable},
-#endif
-        {ENOMSG,                        error::POSIX,       posix::NoMessage},
-        {ENODATA,                       error::POSIX,       posix::NoMessageAvailable},
-        {ENOPROTOOPT,                   error::POSIX,       posix::NoProtocolOption},
-        {ENOSPC,                        error::POSIX,       posix::NoSpaceOnDevice},
-        {ENOSR,                         error::POSIX,       posix::NoStreamResources},
-        {ENODEV,                        error::POSIX,       posix::NoSuchDevice},
-        {ENXIO,                         error::POSIX,       posix::NoSuchDeviceOrAddress},
         {ENOENT,                        error::LiteCore,    error::NotFound},
-        {ESRCH,                         error::POSIX,       posix::NoSuchProcess},
-        {ENOTDIR,                       error::POSIX,       posix::NotADirectory},
-        {ENOTSOCK,                      error::POSIX,       posix::NotASocket},
-        {ENOSTR,                        error::POSIX,       posix::NotAStream},
-        {ENOTCONN,                      error::POSIX,       posix::NotConnected},
-        {ENOMEM,                        error::POSIX,       posix::NotEnoughMemory},
-#if ENOTSUP != EOPNOTSUPP
-        {ENOTSUP,                       error::POSIX,       posix::NotSupported},
-#endif
-        {ECANCELED,                     error::POSIX,       posix::OperationCanceled},
-        {EINPROGRESS,                   error::POSIX,       posix::OperationInProgress},
-        {EPERM,                         error::POSIX,       posix::OperationNotPermitted},
-        {EOPNOTSUPP,                    error::POSIX,       posix::OperationNotSupported},
-#if EWOULDBLOCK != EAGAIN
-        {EWOULDBLOCK,                   error::POSIX,       posix::OperationWouldBlock},
-#endif
-        {EOWNERDEAD,                    error::POSIX,       posix::OwnerDead},
-        {EACCES,                        error::POSIX,       posix::PermissionDenied},
-        {EPROTO,                        error::POSIX,       posix::ProtocolError},
-        {EPROTONOSUPPORT,               error::POSIX,       posix::ProtocolNotSupported},
-        {EROFS,                         error::POSIX,       posix::ReadOnlyFileSystem},
-        {EDEADLK,                       error::POSIX,       posix::ResourceDeadlockWouldOccur},
-        {EAGAIN,                        error::POSIX,       posix::ResourceUnavailableTryAgain},
-        {ERANGE,                        error::POSIX,       posix::ResultOutOfRange},
-        {ENOTRECOVERABLE,               error::POSIX,       posix::StateNotRecoverable},
-        {ETIME,                         error::POSIX,       posix::StreamTimeout},
-        {ETXTBSY,                       error::POSIX,       posix::TextFileBusy},
-        {ETIMEDOUT,                     error::POSIX,       posix::TimedOut},
-        {EMFILE,                        error::POSIX,       posix::TooManyFilesOpen},
-        {ENFILE,                        error::POSIX,       posix::TooManyFilesOpenInSystem},
-        {EMLINK,                        error::POSIX,       posix::TooManyLinks},
-        {ELOOP,                         error::POSIX,       posix::TooManySymbolicLinkLevels},
-        {EOVERFLOW,                     error::POSIX,       posix::ValueTooLarge},
-        {EPROTOTYPE,                    error::POSIX,       posix::WrongProtocolType},
-
-#ifdef _MSC_VER
-        // Repeats for WSA specific error codes
-        {WSAEADDRINUSE,                error::POSIX,        posix::AddressInUse},
-        {WSAEADDRNOTAVAIL,             error::POSIX,        posix::AddressNotAvailable},
-        {WSAEAFNOSUPPORT,              error::POSIX,        posix::AddressFamilyNotSupported},
-        {WSAEALREADY,                  error::POSIX,        posix::ConnectionAlreadyInProgress},
-        {WSAECANCELLED,                error::POSIX,        posix::OperationCanceled},
-        {WSAECONNABORTED,              error::POSIX,        posix::ConnectionAborted},
-        {WSAECONNREFUSED,              error::POSIX,        posix::ConnectionRefused},
-        {WSAECONNRESET,                error::POSIX,        posix::ConnectionReset},
-        {WSAEDESTADDRREQ,              error::POSIX,        posix::DestinationAddressRequired},
-        {WSAEHOSTUNREACH,              error::POSIX,        posix::HostUnreachable},
-        {WSAEINPROGRESS,               error::POSIX,        posix::OperationInProgress},
-        {WSAEISCONN,                   error::POSIX,        posix::AlreadyConnected},
-        {WSAELOOP,                     error::POSIX,        posix::TooManySymbolicLinkLevels},
-        {WSAEMSGSIZE,                  error::POSIX,        posix::MessageSize},
-        {WSAENETDOWN,                  error::POSIX,        posix::NetworkDown},
-        {WSAENETRESET,                 error::POSIX,        posix::NetworkReset},
-        {WSAENETUNREACH,               error::POSIX,        posix::NetworkUnreachable},
-        {WSAENOBUFS,                   error::POSIX,        posix::NoBufferSpace},
-        {WSAENOPROTOOPT,               error::POSIX,        posix::NoProtocolOption},
-        {WSAENOTCONN,                  error::POSIX,        posix::NotConnected},
-        {WSAENOTSOCK,                  error::POSIX,        posix::NotASocket},
-        {WSAEOPNOTSUPP,                error::POSIX,        posix::OperationNotSupported},
-        {WSAEPROTONOSUPPORT,           error::POSIX,        posix::ProtocolNotSupported},
-        {WSAEPROTOTYPE,                error::POSIX,        posix::WrongProtocolType},
-        {WSAETIMEDOUT,                 error::POSIX,        posix::TimedOut},
-        {WSAEWOULDBLOCK,               error::POSIX,        posix::OperationWouldBlock},
-#endif
-
-        {0, /*must end with err=0*/     error::LiteCore,      0},
+        {0, /*must end with err=0*/     error::LiteCore,    0},
     };
 
     static const codeMapping kSQLiteMapping[] = {
@@ -283,7 +191,7 @@ namespace litecore {
         {SQLITE_READONLY,               error::LiteCore,    error::NotWriteable},
         {SQLITE_IOERR,                  error::LiteCore,    error::IOError},
         {SQLITE_CORRUPT,                error::LiteCore,    error::CorruptData},
-        {SQLITE_FULL,                   error::POSIX,       posix::NoSpaceOnDevice},
+        {SQLITE_FULL,                   error::POSIX,       ENOSPC},
         {SQLITE_CANTOPEN,               error::LiteCore,    error::CantOpenFile},
         {SQLITE_NOTADB,                 error::LiteCore,    error::NotADatabaseFile},
         {SQLITE_PERM,                   error::LiteCore,    error::NotWriteable},
@@ -313,6 +221,16 @@ namespace litecore {
     __cold
     static int getPrimaryCode(const error::Domain &domain, const int& code)
     {
+#ifdef WIN32
+        if(domain == error::Domain::POSIX) {
+            for (const codeMapping *row = &kPrimaryCodeMapping[0]; row->err != 0; ++row) {
+                if (row->err == code) {
+                    return row->code;
+                }
+            }
+        }
+#endif
+
         if(domain != error::Domain::SQLite) {
             return code;
         }
@@ -467,15 +385,8 @@ namespace litecore {
         switch (domain) {
             case LiteCore:
                 return litecore_errstr((LiteCoreError)code);
-            case POSIX: {
-                for (const codeMapping *row = &kPOSIXMapping[0]; row->err != 0; ++row) {
-                    if (row->code == code) {
-                        return row->domain == POSIX ? cbl_strerror(row->err) : _what(row->domain, row->code);
-                    }
-                }
-                
-                return "unknown error (" + to_string(code) + ")";
-            }
+            case POSIX:
+                return cbl_strerror(code);
             case SQLite:
             {
                 const int primary = code & 0xFF;
@@ -580,6 +491,9 @@ namespace litecore {
         Domain d = domain;
         int c = code;
         switch (domain) {
+            case POSIX:
+                mapError(d, c, kPOSIXMapping);
+                break;
             case SQLite:
                 mapError(d, c, kSQLiteMapping);
                 break;
@@ -664,26 +578,14 @@ namespace litecore {
 
 
     __cold
-    error error::convertErrno(int err) {
-        for (const codeMapping *row = &kPOSIXMapping[0]; row->err != 0; ++row) {
-            if(row->err == err) {
-                return error(row->domain, row->code, _what(row->domain, row->code));
-            }
-        }
-
-        DebugAssert(false, "Unknown errno received in convertErrno: %d", err);
-        runtime_error x("Unknown errno received: " + to_string(err));
-        return unexpectedException(x);
-    }
-
-
-    __cold
     bool error::isUnremarkable() const {
         if (code == 0)
             return true;
         switch (domain) {
             case LiteCore:
                 return code == NotFound || code == DatabaseTooOld;
+            case POSIX:
+                return code == ENOENT;
             case Network:
                 return code != websocket::kNetErrUnknown;
             default:
@@ -725,7 +627,7 @@ namespace litecore {
 
     __cold
     void error::_throwErrno() {
-        error::convertErrno(errno)._throw(1);
+        error{POSIX, errno}._throw(1);
     }
 
 
@@ -741,8 +643,7 @@ namespace litecore {
 
     __cold
     void error::_throwErrno(const char *fmt, ...) {
-        error converted = error::convertErrno(errno);
-        int code = converted.code;
+        int code = errno;
         va_list args;
         va_start(args, fmt);
         std::string message = vformat(fmt, args);

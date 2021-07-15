@@ -32,96 +32,12 @@ namespace fleece {
 
 namespace litecore {
 
-    namespace posix {
-        enum PosixError {
-            AddressFamilyNotSupported,
-            AddressInUse,
-            AddressNotAvailable,
-            AlreadyConnected,
-            ArgumentListTooLong,
-            ArgumentOutOfDomain,
-            BadAddress,
-            BadFileDescriptor,
-            BadMessage,
-            BrokenPipe,
-            ConnectionAborted,
-            ConnectionAlreadyInProgress,
-            ConnectionRefused,
-            ConnectionReset,
-            CrossDeviceLink,
-            DestinationAddressRequired,
-            DeviceOrResourceBusy,
-            DirectoryNotEmpty,
-            ExecutableFormatError,
-            FileExists,
-            FileTooLarge,
-            FilenameTooLong,
-            FunctionNotSupported,
-            HostDown,
-            HostUnreachable,
-            IdentifierRemoved,
-            IllegalByteSequence,
-            InappropriateIOControlOperation,
-            Interrupted,
-            InvalidArgument,
-            InvalidSeek,
-            /*IOError, */ // LiteCore IOError used instead
-            IsADirectory = InvalidSeek + 2,
-            MessageSize,
-            NetworkDown,
-            NetworkReset,
-            NetworkUnreachable,
-            NoBufferSpace,
-            NoChildProcess,
-            NoLink,
-            NoLockAvailable,
-            NoMessage,
-            NoMessageAvailable,
-            NoProtocolOption,
-            NoSpaceOnDevice,
-            NoStreamResources,
-            NoSuchDevice,
-            NoSuchDeviceOrAddress,
-            /*NoSuchFileOrDirectory, */ // LiteCore NotFound used instead
-            NoSuchProcess = NoSuchDeviceOrAddress + 2,
-            NotADirectory,
-            NotASocket,
-            NotAStream,
-            NotConnected,
-            NotEnoughMemory,
-            NotSupported,
-            OperationCanceled,
-            OperationInProgress,
-            OperationNotPermitted,
-            OperationNotSupported,
-            OperationWouldBlock,
-            OwnerDead,
-            PermissionDenied,
-            ProtocolError,
-            ProtocolNotSupported,
-            ReadOnlyFileSystem,
-            ResourceDeadlockWouldOccur,
-            ResourceUnavailableTryAgain,
-            ResultOutOfRange,
-            StateNotRecoverable,
-            StreamTimeout,
-            TextFileBusy,
-            TimedOut,
-            TooManyFilesOpen,
-            TooManyFilesOpenInSystem,
-            TooManyLinks,
-            TooManySymbolicLinkLevels,
-            ValueTooLarge,
-            WrongProtocolType
-        };
-    }
-
     /** Most API calls can throw this. */
     struct error : public std::runtime_error {
 
         enum Domain {
             LiteCore = 1,       // See LiteCoreError enum, below
-            POSIX,              // See litecore::posix::PosixError
+            POSIX,              // See <errno.h>
             SQLite,             // See <sqlite3.h>
             Fleece,             // See FleeceException.h
             Network,            // See NetworkError enum in WebSocketInterface.hh
@@ -200,7 +116,6 @@ namespace litecore {
             exception types like SQLite::Exception. */
         static error convertRuntimeError(const std::runtime_error&);
         static error convertException(const std::exception&);
-        static error convertErrno(int err);
 
         /** Static version of the standard `what` method. */
         static std::string _what(Domain, int code) noexcept;

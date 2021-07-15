@@ -410,8 +410,7 @@ static bool errorIsInSet(const C4Error &err, ErrorSet set) {
 __cold
 bool C4Error::mayBeTransient() const noexcept {
     static CodeList kTransientPOSIX = {
-        posix::NetworkReset, posix::ConnectionAborted, posix::ConnectionReset, 
-        posix::TimedOut, posix::ConnectionRefused, 0};
+        ENETRESET, ECONNABORTED, ECONNRESET, ETIMEDOUT, ECONNREFUSED, 0};
 
     static CodeList kTransientNetwork = {
         kC4NetErrDNSFailure,
@@ -441,8 +440,12 @@ bool C4Error::mayBeTransient() const noexcept {
 __cold
 bool C4Error::mayBeNetworkDependent() const noexcept {
     static CodeList kUnreachablePOSIX = {
-        posix::NetworkDown, posix::NetworkUnreachable, posix::NotConnected, posix::TimedOut,
-        posix::HostDown, posix::HostUnreachable, posix::AddressNotAvailable, posix::BrokenPipe, 0};
+        ENETDOWN, ENETUNREACH, ENOTCONN, ETIMEDOUT,
+#ifndef _MSC_VER
+        EHOSTDOWN, // Doesn't exist on Windows
+#endif
+        EHOSTUNREACH,EADDRNOTAVAIL,
+        EPIPE, 0};
 
     static CodeList kUnreachableNetwork = {
         kC4NetErrDNSFailure,

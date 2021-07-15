@@ -318,7 +318,7 @@ namespace litecore {
         auto p = path();
         
         if (p == kCurrentDir)
-            error::_throw(error::POSIX, posix::InvalidArgument);
+            error::_throw(error::POSIX, EINVAL);
 #ifdef _MSC_VER
         else if (p.size() == 3 && p[1] == ':' && (p[2] == kSeparatorChar || p[2] == kBackupSeparatorChar))
             return *this;
@@ -483,7 +483,7 @@ namespace litecore {
         lc_stat_t s;
         check(stat_u8(path().c_str(), &s));
         if (!S_ISDIR(s.st_mode))
-            error::_throw(error::POSIX, posix::NotADirectory);
+            error::_throw(error::POSIX, ENOTDIR);
     }
 
 
@@ -628,7 +628,7 @@ namespace litecore {
         while(result != 0 && errno == EEXIST) {
             if(loopCount++ == 10) {
                 WarnError("Unable to move blob after 10 attempts, giving up...");
-                error::_throw(error::POSIX, posix::FileExists);
+                error::_throw(error::POSIX, EEXIST);
             }
 
             check(chmod_u8(to.c_str(), 0600));

@@ -597,15 +597,15 @@ namespace litecore { namespace net {
         int err = _socket->last_error();
         Assert(err != 0);
         if (err > 0) {
-            auto converted = error::convertErrno(err);
-            string errStr = converted.what();
+            err = socketToPosixErrCode(err);
+            string errStr = error::_what(error::POSIX, err);
             LogWarn(WSLog, "%s got POSIX error %d \"%s\"",
                 (_isClient ? "ClientSocket" : "ResponderSocket"),
                 err, errStr.c_str());
-            if (converted.code == posix::OperationWouldBlock)     // Occurs in blocking mode when I/O times out
+            if (err == EWOULDBLOCK)     // Occurs in blocking mode when I/O times out
                 setError(NetworkDomain, kC4NetErrTimeout);
             else
-                setError(POSIXDomain, converted.code);
+                setError(POSIXDomain, err);
         } else {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
