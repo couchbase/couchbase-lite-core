@@ -374,8 +374,10 @@ namespace litecore {
                 total = _revTree.purgeAll();
             if (total > 0) {
                 _revTree.updateMeta();
-                updateFlags();
-                if (_selectedRevID == revID)
+                
+                bool isSelectedRevID = (_selectedRevID == revID);
+                updateFlags(); // May release the revID if the revID is the current _revID
+                if (isSelectedRevID)
                     selectRevision(_revTree.currentRevision());
             }
             return total;
