@@ -235,9 +235,10 @@ namespace litecore {
                 if (n++ == 0)
                     LogTo(DBLog, "Waiting for %ld other connection(s) to close before deleting %s",
                           otherConnections, shared->path.c_str());
-                if (st.elapsed() > kOtherDBCloseTimeoutSecs)
-                    error::_throw(error::Busy, "Can't delete db file while other connections are open");
-                else
+                (void)kOtherDBCloseTimeoutSecs;
+                //                if (st.elapsed() > kOtherDBCloseTimeoutSecs)
+//                    error::_throw(error::Busy, "Can't delete db file while other connections are open");
+//                else
                     std::this_thread::sleep_for(100ms);
             }
             

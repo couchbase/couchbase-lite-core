@@ -657,7 +657,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
 }
 
 // This test requires SG 3.0
-TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.SyncServer]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.SyncServer][zhao]") {
     _remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
     

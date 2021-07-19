@@ -25,6 +25,8 @@
 #include "NetworkInterfaces.hh"
 #include "fleece/Mutable.hh"
 #include <optional>
+#include <thread>
+#include <future>
 
 using namespace litecore;
 using namespace litecore::net;
@@ -51,7 +53,13 @@ public:
     C4RESTTest()
     :C4Test(0)
     ,ListenerHarness({TEST_PORT, nullslice, kC4RESTAPI})
-    { }
+    {
+        static std::once_flag once;
+        std::call_once(once, [&]() {
+            // Register the BuiltInWebSocket class as the C4Replicator's WebSocketImpl.
+            C4RegisterBuiltInWebSocket();
+        });
+    }
 
 
     void setUpDirectory() {
@@ -113,6 +121,7 @@ public:
         auto port = c4listener_getPort(listener());
         unique_ptr<Response> r(new Response(scheme, method, requestHostname, port, uri));
         r->setHeaders(headers).setBody(body);
+
         if (pinnedCert)
             r->allowOnlyCert(pinnedCert);
 #ifdef COUCHBASE_ENTERPRISE
@@ -378,7 +387,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][Listener][C]") {
 #pragma mark - DOCUMENTS:
 
 
-TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C]") {
+TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][Listener][C][zhao]") {
     unique_ptr<Response> r;
     Dict body;
     alloc_slice docID;
@@ -539,6 +548,27 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP auth correct", "[REST][Listener][C]") {
                      HTTPStatus::OK);
     CHECK(receivedHTTPAuthFromListener == listener());
     CHECK(receivedHTTPAuthHeader == "Basic xxxx");
+}
+
+
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate", "[REST][Listener][C][jzhao]") {
+
+    auto r = request("POST", "/_replicate",
+                     {{"Content-Type", "application/json"}},
+                     json5("{source: 'db',"
+                           "target: 'ws://172.23.100.204:4984/db',"
+                           "continuous: 'true'}"),
+                     HTTPStatus::OK);
+    printf("jzhao - test returns.\n");
+    
+    Dict body = r->bodyAsJSON().asDict();
+    uint64_t sid = body.get("session_id").asUnsigned();
+    printf("jzhao - %llu\n", sid);
+    
+    std::this_thread::sleep_for(std::chrono::seconds(70));
+    
+//    CHECK(receivedHTTPAuthFromListener == listener());
+//    CHECK(receivedHTTPAuthHeader == "Basic xxxx");
 }
 
 

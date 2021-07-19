@@ -67,7 +67,7 @@ struct QuietReporter: public CaseListReporter {
     //---- Catch overrides
 
     virtual void testCaseStarting( Catch::TestCaseInfo const& testInfo ) override {
-        c4log_setCallbackLevel(kC4LogWarning);
+        c4log_setCallbackLevel(kC4LogInfo);
         c4log_warnOnErrors(true);
         _caseStartTime = litecore::LogIterator::now();
         CaseListReporter::testCaseStarting(testInfo);

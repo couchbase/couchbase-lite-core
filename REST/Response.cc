@@ -194,6 +194,7 @@ namespace litecore { namespace REST {
             _status = _logic->status();
             _statusMessage = string(_logic->statusMessage());
             _headers = _logic->responseHeaders();
+            printf("jzhao - End of Response::run\n");
         } catchError(&_error);
         _logic.reset();
         _tlsContext = nullptr;

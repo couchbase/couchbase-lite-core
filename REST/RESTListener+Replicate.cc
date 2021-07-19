@@ -211,6 +211,7 @@ namespace litecore { namespace REST {
                 Lock lock(_mutex);
                 _status = status;
                 _message = c4error_getMessage(status.error);
+                printf("jzhao - status.leve = %d\n", status.level);
                 if (status.level == kC4Stopped) {
                     _finalResult = status.error.code ? HTTPStatus::GatewayError
                                                      : HTTPStatus::OK;
@@ -253,6 +254,8 @@ namespace litecore { namespace REST {
         bool continuous = params["continuous"].asBool();
         C4ReplicatorMode activeMode = continuous ? kC4Continuous : kC4OneShot;
 
+        
+        
         slice localName;
         slice remoteURL;
         C4ReplicatorMode pushMode, pullMode;
@@ -316,6 +319,7 @@ namespace litecore { namespace REST {
         if (statusCode == HTTPStatus::GatewayError)
             message = "Replicator error: " + message;
         rq.setStatus(statusCode, message.c_str());
+        printf("jzhao - handle replicate END\n");
     }
 
 

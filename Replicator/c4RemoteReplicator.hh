@@ -178,7 +178,8 @@ namespace litecore {
             // a change in network (i.e. network down, hostname unknown), then go offline.
             bool transient = c4err.mayBeTransient();
             if (transient || (continuous() && c4err.mayBeNetworkDependent())) {
-                if (_retryCount >= maxRetryCount()) {
+//                if (_retryCount >= maxRetryCount()) {
+                if (_retryCount >= 1) {
                     logError("Will not retry; max retry count (%u) reached", _retryCount);
                     return;
                 }
