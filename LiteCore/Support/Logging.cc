@@ -22,6 +22,7 @@
 #include "LogDecoder.hh"
 #include "PlatformIO.hh"
 #include "FilePath.hh"
+#include "Error.hh"
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -88,6 +89,10 @@ namespace litecore {
         for (int i = 0; kLevelNames[i]; i++) {
             auto path = createLogPath((LogLevel)i);
             sFileOut[i] = new ofstream(path, ofstream::out|ofstream::trunc|ofstream::binary);
+            if (!sFileOut[i]->good()) {
+                error::_throw(error::LiteCoreError::CantOpenFile,
+                              "File Logger fails to open files in directory %s", sLogDirectory.c_str());
+            }
         }
     }
 
