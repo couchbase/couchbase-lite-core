@@ -262,6 +262,44 @@ TEST_CASE("Logging rollover", "[Log]") {
     LogDomain::writeEncodedLogsTo(prevOptions); // undo writeEncodedLogsTo() call above
 }
 
+TEST_CASE("Logging throw in c++", "[Log]") {
+    auto now = chrono::milliseconds(time(nullptr));
+    char folderName[64];
+    sprintf(folderName, "Log_Rollover_%" PRIms "/", now.count());
+    FilePath tmpLogDir = TestFixture::sTempDir[folderName];
+    LogFileOptions fileOptions { tmpLogDir.path(), LogLevel::Info, 1024, 1, false };
+    // Note that we haven't created tmpLogDir. Therefore, there will be an exception.
+    string msg {"File Logger fails to open file, "};
+    msg += tmpLogDir.path();
+    string excMsg;
+    const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
+    try {
+        LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
+    } catch (std::exception& exc) {
+        excMsg = exc.what();
+    }
+    CHECK(excMsg.find(msg) == 0);
+    LogDomain::writeEncodedLogsTo(prevOptions);
+}
+
+TEST_CASE("Logging throw in c4", "[Log]") {
+    auto now = chrono::milliseconds(time(nullptr));
+    char folderName[64];
+    sprintf(folderName, "Log_Rollover_%" PRIms "/", now.count());
+    FilePath tmpLogDir = TestFixture::sTempDir[folderName];
+    // Note that we haven't created tmpLogDir.
+    C4Error error;
+    const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
+    CHECK(!c4log_writeToBinaryFile({kC4LogVerbose, slice(tmpLogDir.path()), 16*1024, 1, false},
+                                   &error));
+    string excMsg {"File Logger fails to open file, "};
+    excMsg += tmpLogDir.path();
+    string errMsg = "LiteCore CantOpenFile, \"";
+    errMsg += excMsg;
+    CHECK(string(c4error_getDescription(error)).find(errMsg) == 0);
+    LogDomain::writeEncodedLogsTo(prevOptions);
+}
+
 TEST_CASE("Logging plaintext", "[Log]") {
     char folderName[64];
     sprintf(folderName, "Log_Plaintext_%" PRIms "/", chrono::milliseconds(time(nullptr)).count());

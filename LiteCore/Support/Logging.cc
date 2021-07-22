@@ -22,6 +22,7 @@
 #include "LogDecoder.hh"
 #include "PlatformIO.hh"
 #include "FilePath.hh"
+#include "Error.hh"
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -47,6 +48,26 @@
 
 using namespace std;
 using namespace std::chrono;
+
+struct ScopedSetter {
+    bool& _var;
+    bool  _origVal, _newVal;
+    ScopedSetter(bool& var, bool toValue)
+        : _var(var)
+        , _origVal(var)
+    {
+        _var = toValue;
+    }
+    ~ScopedSetter() {
+        _var = _origVal;
+    }
+};
+
+// Please don't use error::_throw. It may cause deadlock. Use this one.
+#define ERROR_THROW(ERROR_CODE, FMT, ...)                      \
+    do {ScopedSetter setter(error::sWarnOnError, false);       \
+        error::_throw(ERROR_CODE, FMT, ## __VA_ARGS__);} while (false)
+
 
 namespace litecore {
 
@@ -88,6 +109,9 @@ namespace litecore {
         for (int i = 0; kLevelNames[i]; i++) {
             auto path = createLogPath((LogLevel)i);
             sFileOut[i] = new ofstream(path, ofstream::out|ofstream::trunc|ofstream::binary);
+            if (!sFileOut[i]->good()) {
+                ERROR_THROW(error::LiteCoreError::CantOpenFile, "File Logger fails to open file, %s", path.c_str());
+            }
         }
     }
 
@@ -179,6 +203,9 @@ namespace litecore {
         purgeOldLogs(level);
         const auto path = createLogPath(level);
         sFileOut[(int)level] = new ofstream(path, ofstream::out|ofstream::trunc|ofstream::binary);
+        if (!sFileOut[(int)level]->good()) {
+            fprintf(stderr, "rotateLog fails to open %s\n", path.c_str());
+        }
         if(encoder) {
             auto newEncoder = new LogEncoder(*sFileOut[(int)level], level);
             sLogEncoder[(int)level] = newEncoder;
@@ -197,6 +224,7 @@ namespace litecore {
         for (auto& fout : sFileOut)
             if (fout) fout->flush();
     }
+
 
 #pragma mark - GLOBAL SETTINGS:
 
@@ -624,19 +652,17 @@ namespace litecore {
     }
 
 
-
     void Logging::_log(LogLevel level, const char *format, ...) const {
         va_list args;
         va_start(args, format);
         _logv(level, format, args);
         va_end(args);
     }
-    
+
+
     void Logging::_logv(LogLevel level, const char *format, va_list args) const {
         _domain.computeLevel();
         if (_domain.willLog(level))
             _domain.vlog(level, getObjectRef(), true, format, args);
     }
-
-
 }
