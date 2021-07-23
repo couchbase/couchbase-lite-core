@@ -81,7 +81,8 @@ void InitTestLogging() {
             C4Error error;
             if (!c4log_writeToBinaryFile({kC4LogVerbose, slice(path), 16*1024, 1, false},
                                          &error)) {
-                C4WarnError("TestsCommon: Can't log to binary file, %s", error.description().c_str());
+                C4WarnError("TestsCommon: Can't log to binary file, %.*s",
+                            SPLAT(c4error_getDescription(error)));
             }
             c4log_setCallbackLevel(kC4LogInfo);
         } else {
