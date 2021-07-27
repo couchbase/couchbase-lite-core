@@ -415,6 +415,10 @@ bool C4Error::mayBeTransient() const noexcept {
     static CodeList kTransientNetwork = {
         kC4NetErrDNSFailure,
         kC4NetErrTimeout,
+        kC4NetErrNetworkReset,
+        kC4NetErrConnectionAborted,
+        kC4NetErrConnectionReset,
+        kC4NetErrConnectionRefused,
         0};
     static CodeList kTransientWebSocket = {
         408, /* Request Timeout */
@@ -450,6 +454,14 @@ bool C4Error::mayBeNetworkDependent() const noexcept {
     static CodeList kUnreachableNetwork = {
         kC4NetErrDNSFailure,
         kC4NetErrUnknownHost,   // Result may change if user logs into VPN or moves to intranet
+        kC4NetErrNetworkDown,
+        kC4NetErrNetworkUnreachable,
+        kC4NetErrNotConnected,
+        kC4NetErrTimeout,
+        kC4NetErrHostDown,
+        kC4NetErrHostUnreachable,
+        kC4NetErrAddressNotAvailable,
+        kC4NetErrBrokenPipe,
         0};
     static ErrorSet kUnreachable = { // indexed by C4ErrorDomain
         nullptr,

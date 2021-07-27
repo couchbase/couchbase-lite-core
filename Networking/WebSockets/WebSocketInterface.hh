@@ -77,7 +77,17 @@ namespace litecore { namespace websocket {
         kNetErrUnknown,              // Unknown error
         kNetErrTLSCertRevoked,
         kNetErrTLSCertNameMismatch,
-
+        kNetErrNetworkReset,
+        kNetErrConnectionAborted,
+        kNetErrConnectionReset,
+        kNetErrConnectionRefused,
+        kNetErrNetworkDown,         // 20
+        kNetErrNetworkUnreachable,
+        kNetErrNotConnected,
+        kNetErrHostDown,
+        kNetErrHostUnreachable,
+        kNetErrAddressNotAvailableAIL,
+        kNetErrBrokenPipe,
         // Add new codes here. You MUST add messages to kLiteCoreMessages!
         // You MUST add corresponding kC4NetErr codes to the enum in C4Base.h!
 

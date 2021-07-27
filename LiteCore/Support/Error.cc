@@ -332,7 +332,18 @@ namespace litecore {
             "redirected to an invalid URL",
             "unknown network error",
             "server TLS certificate has been revoked",
-            "server TLS certificate name mismatch"
+            "server TLS certificate name mismatch",
+            "network subsystem was reset",
+            "connection aborted",
+            "connection reset",
+            "connection refused",
+            "network subsystem down",
+            "network unreachable",
+            "socket not connected",
+            "host reported not available",
+            "host not reachable",
+            "address not available",
+            "broken pipe"
         };
         const char *str = nullptr;
         if (code < sizeof(kNetworkMessages)/sizeof(char*))
