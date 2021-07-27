@@ -51,10 +51,11 @@ public:
     constexpr static const C4String kProtectedDBName = C4STR("seekrit");
     constexpr static const C4String kImagesDBName = C4STR("images");
 
+    static std::once_flag once;
+    
     ReplicatorAPITest()
     :C4Test(0)
     {
-        static std::once_flag once;
         std::call_once(once, [&]() {
             // Register the BuiltInWebSocket class as the C4Replicator's WebSocketImpl.
             C4RegisterBuiltInWebSocket();

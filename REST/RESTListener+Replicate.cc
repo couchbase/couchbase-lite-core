@@ -77,7 +77,21 @@ namespace litecore { namespace REST {
                     ((ReplicationTask*)context)->onReplStateChanged(status);
                 };
                 params.callbackContext = this;
-
+                if (_authType) {
+                    Encoder enc;
+                    enc.beginDict();
+                        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+                        enc.beginDict();
+                            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+                            enc.writeString(_authType);
+                            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+                            enc.writeString(_user);
+                            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+                            enc.writeString(_password);
+                        enc.endDict();
+                    enc.endDict();
+                    params.optionsDictFleece = AllocedDict(enc.finish()).data();
+                }
                 _repl = localDB->newReplicator(remoteAddress, remoteDbName, params);
                 _repl->start();
             } catch (...) {
@@ -190,13 +204,6 @@ namespace litecore { namespace REST {
         }
 
 
-        HTTPStatus wait() {
-            Lock lock(_mutex);
-            _cv.wait(lock, [this]{return finished();});
-            return _finalResult;
-        }
-
-
         void stop() override {
             Lock lock(_mutex);
             if (_repl) {
@@ -204,6 +211,19 @@ namespace litecore { namespace REST {
                 _repl->stop();
             }
         }
+        
+
+        void setStopOnIdle(bool stopOnIdle) {
+            _stopOnIdle = stopOnIdle;
+        }
+
+        
+        void setAuth(slice authType, slice user, slice psw) {
+            _authType = authType;
+            _user = user;
+            _password = psw;
+        }
+
 
     private:
         void onReplStateChanged(const C4ReplicatorStatus &status) {
@@ -215,24 +235,26 @@ namespace litecore { namespace REST {
                     _finalResult = status.error.code ? HTTPStatus::GatewayError
                                                      : HTTPStatus::OK;
                     _repl = nullptr;
+                } else if (status.level == kC4Idle && _stopOnIdle) {
+                    _repl->stop();
                 }
                 time(&_timeUpdated);
             }
             if (finished()) {
                 c4log(ListenerLog, kC4LogInfo, "Replicator task #%u finished", taskID());
-                _cv.notify_all();
             }
             //unregisterTask();  --no, leave it so a later call to _active_tasks can get its state
         }
 
         alloc_slice _source, _target;
+        alloc_slice _authType, _user, _password;
         bool _bidi, _continuous, _push;
         mutable Mutex _mutex;
-        condition_variable_any _cv;
         Retained<C4Replicator> _repl;
         C4ReplicatorStatus _status;
         alloc_slice _message;
         HTTPStatus _finalResult {HTTPStatus::undefined};
+        bool _stopOnIdle {false};
     };
 
 
@@ -289,17 +311,19 @@ namespace litecore { namespace REST {
                          canceled ? "Stopped" : "No matching task");
             return;
         }
-
+        // Auth:
+        slice authType = params["authtype"].asString();
+        if (authType) {
+            slice user = params["user"].asString();
+            slice psw = params["password"].asString();
+            task->setAuth(authType, user, psw);
+        }
+        task->setStopOnIdle(params["stopOnIdle"].asBool());
         task->start(localDB, localName,
                     remoteAddress, remoteDbName,
                     pushMode, pullMode);
 
         HTTPStatus statusCode = HTTPStatus::OK;
-        if (!continuous) {
-            statusCode = task->wait();
-            task->unregisterTask();
-        }
-
         auto &json = rq.jsonEncoder();
         if (statusCode == HTTPStatus::OK) {
             json.beginDict();
