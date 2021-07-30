@@ -77,7 +77,21 @@ namespace litecore { namespace REST {
                     ((ReplicationTask*)context)->onReplStateChanged(status);
                 };
                 params.callbackContext = this;
-
+                if (_user) {
+                    Encoder enc;
+                    enc.beginDict();
+                        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+                        enc.beginDict();
+                            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+                            enc.writeString("Basic");
+                            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+                            enc.writeString(_user);
+                            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+                            enc.writeString(_password);
+                        enc.endDict();
+                    enc.endDict();
+                    params.optionsDictFleece = AllocedDict(enc.finish()).data();
+                }
                 _repl = localDB->newReplicator(remoteAddress, remoteDbName, params);
                 _repl->start();
             } catch (...) {
@@ -205,6 +219,13 @@ namespace litecore { namespace REST {
             }
         }
 
+
+        void setAuth(slice user, slice psw) {
+            _user = user;
+            _password = psw;
+        }
+
+
     private:
         void onReplStateChanged(const C4ReplicatorStatus &status) {
             {
@@ -226,6 +247,7 @@ namespace litecore { namespace REST {
         }
 
         alloc_slice _source, _target;
+        alloc_slice _user, _password;
         bool _bidi, _continuous, _push;
         mutable Mutex _mutex;
         condition_variable_any _cv;
@@ -289,7 +311,12 @@ namespace litecore { namespace REST {
                          canceled ? "Stopped" : "No matching task");
             return;
         }
-
+        // Auth:
+        slice user = params["user"].asString();
+        if (user) {
+            slice psw = params["password"].asString();
+            task->setAuth(user, psw);
+        }
         task->start(localDB, localName,
                     remoteAddress, remoteDbName,
                     pushMode, pullMode);

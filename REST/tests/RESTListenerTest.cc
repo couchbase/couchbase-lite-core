@@ -24,6 +24,7 @@
 #include "Response.hh"
 #include "NetworkInterfaces.hh"
 #include "fleece/Mutable.hh"
+#include "ReplicatorAPITest.hh"
 #include <optional>
 
 using namespace litecore;
@@ -51,8 +52,12 @@ public:
     C4RESTTest()
     :C4Test(0)
     ,ListenerHarness({TEST_PORT, nullslice, kC4RESTAPI})
-    { }
-
+    {
+        std::call_once(ReplicatorAPITest::once, [&]() {
+            // Register the BuiltInWebSocket class as the C4Replicator's WebSocketImpl.
+            C4RegisterBuiltInWebSocket();
+        });
+    }
 
     void setUpDirectory() {
         litecore::FilePath tempDir(TempDir() + "rest/");
@@ -133,6 +138,40 @@ public:
 
     unique_ptr<Response> request(string method, string uri, HTTPStatus expectedStatus) {
         return request(method, uri, {}, nullslice, expectedStatus);
+    }
+
+    bool wait(std::shared_ptr<Response> response, C4ReplicatorActivityLevel activityLevel, unsigned timeoutSeconds) {
+        Dict b = response->bodyAsJSON().asDict();
+        unsigned sid = (unsigned) b.get("session_id").asUnsigned();
+        const unsigned pollIntervalSeconds = 1;
+        unsigned nextTime = 0;
+        while (timeoutSeconds == 0 || nextTime < timeoutSeconds) {
+            nextTime += pollIntervalSeconds;
+            std::this_thread::sleep_for(chrono::seconds(pollIntervalSeconds));
+            auto r = request("GET", "/_active_tasks",
+                              {{"Content-Type", "application/json"}},
+                               "",
+                              HTTPStatus::OK);
+            Array body = r->bodyAsJSON().asArray();
+            Dict sess;
+            for (Array::iterator iter(body); iter; ++iter) {
+                Dict dict = iter.value().asDict();
+                unsigned s = (unsigned) dict.get("session_id").asUnsigned();
+                if (s == sid) {
+                    sess = dict;
+                    break;
+                }
+            }
+            if (!sess) {
+                break;
+            }
+            static slice const kStatusName[] = {"Stopped"_sl, "Offline"_sl, "Connecting"_sl,
+                "Idle"_sl, "Active"_sl};
+            if (sess.get("status").asString() == kStatusName[activityLevel]) {
+                return true;
+            }
+        }
+        return false;
     }
 
     void testRootLevel() {
@@ -682,5 +721,95 @@ TEST_CASE_METHOD(C4RESTTest, "Sync Listener URLs", "[REST][Listener][TLS][C]") {
         CHECK(hasSuffix(url, expectedSuffix + "db"));
     });
 }
+
+// Following test cases that are tagged with [.SyncServer] are not exercised in the automatic build.
+// They require special set-up of the Sync Gateway server, c.f. ReplicatorSGTest.cc.
+
+// Continuous replication without authentication
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate, Continuous", "[REST][Listener][C][.SyncServer]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    std::stringstream body;
+    string targetDb = slice(ReplicatorAPITest::kScratchDBName).asString();
+    body << "{source: 'db'," <<
+            "target: 'ws://localhost:4984/" << targetDb << "'," <<
+            "continuous: true}";
+    shared_ptr<Response> r = request("POST", "/_replicate",
+                                     {{"Content-Type", "application/json"}},
+                                     json5(body.str()),
+                                     HTTPStatus::OK);
+    CHECK(wait(r, kC4Idle, 5));
+
+    std::stringstream newss;
+    body.swap(newss);
+    body << "{source: 'db'," <<
+            "target: 'ws://localhost:4984/" << targetDb << "'," <<
+            "cancel: true}";
+    request("POST", "/_replicate",
+            {{"Content-Type", "application/json"}},
+            json5(body.str()),
+            HTTPStatus::OK);
+    CHECK(wait(r, kC4Stopped, 5));
+}
+
+
+// OneShot replication.
+//TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate, OneShot", "[REST][Listener][C][.SyncServer]") {
+//    importJSONLines(sFixturesDir + "names_100.json");
+//    std::stringstream body;
+//    body << "{source: 'db'," <<
+//            "target: 'ws://localhost:4984/" << slice(ReplicatorAPITest::kScratchDBName).asString() << "'," <<
+//            "continuous: false}";
+//
+//    auto r = request("POST", "/_replicate",
+//                     {{"Content-Type", "application/json"}},
+//                     json5(body.str()),
+//                     HTTPStatus::OK);
+//}
+
+
+// Continuous replication with authentication
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous, Auth", "[REST][Listener][C][.SyncServer]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    std::stringstream body;
+    string targetDb = slice(ReplicatorAPITest::kProtectedDBName).asString();
+    body << "{source: 'db'," <<
+            "target: 'ws://localhost:4984/" << targetDb << "'," <<
+            "user: 'pupshaw'," <<
+            "password: 'frank'," <<
+            "continuous: true}";
+    shared_ptr<Response> r = request("POST", "/_replicate",
+                     {{"Content-Type", "application/json"}},
+                     json5(body.str()),
+                     HTTPStatus::OK);
+    CHECK(wait(r, kC4Idle, 5));
+
+    std::stringstream newss;
+    body.swap(newss);
+    body << "{source: 'db'," <<
+            "target: 'ws://localhost:4984/" << targetDb << "'," <<
+            "cancel: true}";
+    request("POST", "/_replicate",
+            {{"Content-Type", "application/json"}},
+            json5(body.str()),
+            HTTPStatus::OK);
+    CHECK(wait(r, kC4Stopped, 5));
+}
+
+
+// OneShot replication with authentication.
+//TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Oneshot, Auth", "[REST][Listener][C][.SyncServer]") {
+//    importJSONLines(sFixturesDir + "names_100.json");
+//    std::stringstream body;
+//    body << "{source: 'db'," <<
+//            "target: 'ws://localhost:4984/" << slice(ReplicatorAPITest::kProtectedDBName).asString() << "'," <<
+//            "user: 'pupshaw'," <<
+//            "password: 'frank',"
+//            "continuous: false}";
+//
+//    auto r = request("POST", "/_replicate",
+//                     {{"Content-Type", "application/json"}},
+//                     json5(body.str()),
+//                     HTTPStatus::OK);
+//}
 
 #endif // COUCHBASE_ENTERPRISE
