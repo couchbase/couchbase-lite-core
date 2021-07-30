@@ -165,7 +165,9 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
 
 
 /*static*/ bool C4Database::deleteNamed(slice name, slice inDirectory) {
-    return deleteAtPath(alloc_slice(dbPath(name, inDirectory)));
+    // Split this into a variable to workaround a GCC 8 issue with constructor resolution
+    alloc_slice path = dbPath(name, inDirectory);
+    return deleteAtPath(path);
 }
 
 
