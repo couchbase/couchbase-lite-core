@@ -774,7 +774,6 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous, Auth", "[REST][Lis
     string targetDb = slice(ReplicatorAPITest::kProtectedDBName).asString();
     body << "{source: 'db'," <<
             "target: 'ws://localhost:4984/" << targetDb << "'," <<
-            "authtype: 'Basic'," <<
             "user: 'pupshaw'," <<
             "password: 'frank'," <<
             "continuous: true}";
@@ -803,7 +802,6 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous, Auth", "[REST][Lis
 //    std::stringstream body;
 //    body << "{source: 'db'," <<
 //            "target: 'ws://localhost:4984/" << slice(ReplicatorAPITest::kProtectedDBName).asString() << "'," <<
-//            "authtype: 'Basic'," <<
 //            "user: 'pupshaw'," <<
 //            "password: 'frank',"
 //            "continuous: false}";
