@@ -23,7 +23,7 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
                          ReplicatorAPITest::kWikipedia1kDBName,
                          ReplicatorAPITest::kProtectedDBName,
                          ReplicatorAPITest::kImagesDBName;
-
+std::once_flag           ReplicatorAPITest::once;
 
 TEST_CASE("URL Parsing", "[C]][Replicator]") {
     C4Address address;

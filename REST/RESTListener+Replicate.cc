@@ -77,7 +77,26 @@ namespace litecore { namespace REST {
                     ((ReplicationTask*)context)->onReplStateChanged(status);
                 };
                 params.callbackContext = this;
-
+                if (_authType) {
+                    if (!_authType.caseEquivalent("Basic")) {
+                        // Currently, we only support authtype of "Basic"
+                        // Give a warning here.
+                        c4log(ListenerLog, kC4LogWarning, "Sync-Gateway Server may only support \"Basic\" authtype. Your input is %*s", SPLAT(_authType));
+                    }
+                    Encoder enc;
+                    enc.beginDict();
+                        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+                        enc.beginDict();
+                            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+                            enc.writeString(_authType);
+                            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+                            enc.writeString(_user);
+                            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+                            enc.writeString(_password);
+                        enc.endDict();
+                    enc.endDict();
+                    params.optionsDictFleece = AllocedDict(enc.finish()).data();
+                }
                 _repl = localDB->newReplicator(remoteAddress, remoteDbName, params);
                 _repl->start();
             } catch (...) {
@@ -205,6 +224,14 @@ namespace litecore { namespace REST {
             }
         }
 
+
+        void setAuth(slice authType, slice user, slice psw) {
+            _authType = authType;
+            _user = user;
+            _password = psw;
+        }
+
+
     private:
         void onReplStateChanged(const C4ReplicatorStatus &status) {
             {
@@ -226,6 +253,7 @@ namespace litecore { namespace REST {
         }
 
         alloc_slice _source, _target;
+        alloc_slice _authType, _user, _password;
         bool _bidi, _continuous, _push;
         mutable Mutex _mutex;
         condition_variable_any _cv;
@@ -289,7 +317,13 @@ namespace litecore { namespace REST {
                          canceled ? "Stopped" : "No matching task");
             return;
         }
-
+        // Auth:
+        slice authType = params["authtype"].asString();
+        if (authType) {
+            slice user = params["user"].asString();
+            slice psw = params["password"].asString();
+            task->setAuth(authType, user, psw);
+        }
         task->start(localDB, localName,
                     remoteAddress, remoteDbName,
                     pushMode, pullMode);
