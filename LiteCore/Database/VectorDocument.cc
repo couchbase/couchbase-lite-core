@@ -325,7 +325,7 @@ namespace litecore {
         fleece::Doc _newProperties(const C4DocPutRequest &rq, C4Error *outError) {
             alloc_slice body;
             if (rq.deltaCB == nullptr) {
-                body = (rq.allocedBody.buf)? rq.allocedBody : alloc_slice(rq.body);
+                body = (rq.allocedBody.buf)? alloc_slice(rq.allocedBody) : alloc_slice(rq.body);
             } else {
                 // Apply a delta via a callback:
                 slice delta = (rq.allocedBody.buf)? slice(rq.allocedBody) : slice(rq.body);
