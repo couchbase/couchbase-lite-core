@@ -83,7 +83,7 @@ namespace litecore { namespace REST {
                         enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
                         enc.beginDict();
                             enc.writeKey(C4STR(kC4ReplicatorAuthType));
-                            enc.writeString("Basic");
+                            enc.writeString(kC4AuthTypeBasic);
                             enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
                             enc.writeString(_user);
                             enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
