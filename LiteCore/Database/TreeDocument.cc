@@ -459,7 +459,7 @@ namespace litecore {
         alloc_slice requestBody(const C4DocPutRequest &rq, C4Error *outError) {
             alloc_slice body;
             if (rq.deltaCB == nullptr) {
-                body = (rq.allocedBody.buf)? rq.allocedBody : alloc_slice(rq.body);
+                body = (rq.allocedBody.buf)? alloc_slice(rq.allocedBody) : alloc_slice(rq.body);
                 if (!body)
                     body = fleece::impl::Encoder::kPreEncodedEmptyDict;
             } else {
