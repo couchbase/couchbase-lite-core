@@ -328,8 +328,9 @@ namespace litecore {
     unique_ptr<C4BlobStore> DatabaseImpl::createBlobStore(const string &dirname,
                                                           C4EncryptionKey encryptionKey) const
     {
-        return make_unique<C4BlobStore>(alloc_slice(filePath().subdirectoryNamed(dirname)),
-                                        _config.flags, encryptionKey);
+	// Split path into a separate variable to workaround GCC 8 constructor resolution issue
+	alloc_slice path = filePath().subdirectoryNamed(dirname);
+        return make_unique<C4BlobStore>(path,_config.flags, encryptionKey);
     }
 
 

@@ -149,7 +149,7 @@ alloc_slice C4BlobStore::getFilePath(C4BlobKey key) const {
     else if (isEncrypted())
         error::_throw(error::WrongFormat);
     else
-        return alloc_slice(path);
+        return path;
 }
 
 
