@@ -246,8 +246,10 @@ namespace litecore { namespace websocket {
         // Body:
         if (_curMessageLength + length > _curMessage.size)
             return false; // overflow!
-        memcpy((void*)&_curMessage[_curMessageLength], data, length);
-        _curMessageLength += length;
+        if (length > 0) {
+            memcpy((void*)&_curMessage[_curMessageLength], data, length);
+            _curMessageLength += length;
+        }
 
         // End:
         if (fin && remainingBytes == 0) {
