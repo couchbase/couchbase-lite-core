@@ -246,6 +246,8 @@ namespace litecore { namespace websocket {
         // Body:
         if (_curMessageLength + length > _curMessage.size)
             return false; // overflow!
+
+        // CBL-2169: addressing the 0-th element of 0-length slice will trigger assertion failure.
         if (length > 0) {
             memcpy((void*)&_curMessage[_curMessageLength], data, length);
             _curMessageLength += length;
