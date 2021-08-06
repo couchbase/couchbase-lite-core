@@ -41,8 +41,8 @@ namespace litecore::repl {
     /// @param doc  The document's parsed properties.
     /// @param callback  The client's encryption callback, from the `C4ReplicatorParameters`.
     /// @param callbackContext  The client's callback context value, also from the parameters.
-    /// @param outError  On return, the error will be stored here, or 
-    /// @return  The mutated document, else nullptr if nothing changed.
+    /// @param outError  On return, the error if any, else a zero C4Error. (May not be NULL!)
+    /// @return  The mutated document, else nullptr if nothing changed or an error occurred.
     fleece::MutableDict EncryptDocumentProperties(fleece::slice docID,
                                                   fleece::Dict doc,
                                                   C4ReplicatorPropertyEncryptionCallback callback,
@@ -50,7 +50,12 @@ namespace litecore::repl {
                                                   C4Error *outError) noexcept;
 
     /// Finds encrypted properties in `doc` and decrypts them.
-    /// @return  The mutated document, else nullptr if nothing changed.
+    /// @param docID  The ID of the document.
+    /// @param doc  The document's parsed properties.
+    /// @param callback  The client's decryption callback, from the `C4ReplicatorParameters`.
+    /// @param callbackContext  The client's callback context value, also from the parameters.
+    /// @param outError  On return, the error if any, else a zero C4Error. (May not be NULL!)
+    /// @return  The mutated document, else nullptr if nothing changed or an error occurred.
     fleece::MutableDict DecryptDocumentProperties(fleece::slice docID,
                                                   fleece::Dict doc,
                                                   C4ReplicatorPropertyDecryptionCallback callback,
