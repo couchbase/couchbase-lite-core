@@ -42,8 +42,7 @@ namespace litecore::repl {
         // In CE, prevent any encryptable property from being accidentally pushed.
         // This may happen if a database was created and used with EE, and sensitive data added,
         // and then it's opened with a CE implementation.
-        if (outError)
-            *outError = {};
+        *outError = {};
         for (DeepIterator i(doc); i; ++i) {
             if (i.key() == C4Document::kObjectTypeProperty) {
                 if (i.value().asString() == C4Document::kObjectType_Encryptable) {
@@ -68,8 +67,7 @@ namespace litecore::repl {
                                                   void *callbackContext,
                                                   C4Error *outError) noexcept
     {
-        if (outError)
-            *outError = {};
+        *outError = {};
         return nullptr;
     }
 }

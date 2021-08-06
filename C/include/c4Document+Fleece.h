@@ -52,13 +52,8 @@ C4API_BEGIN_DECLS
     /** Value of `kC4ObjectTypeProperty` that denotes an encryptable value. */
     #define kC4ObjectType_Encryptable "EncryptedProperty"
 
-    /** Encryptable-value property containing the actual value; may be any JSON/Fleece type.
-        Required if `ciphertext` is absent. */
+    /** Encryptable-value property containing the actual value; may be any type. (Required.) */
     #define kC4EncryptableValueProperty "value"
-
-    /** Encryptable-value property containing the already-encrypted data as a Base64-encoded string.
-        Required if `value` is absent. */
-    #define kC4EncryptedCiphertextProperty "ciphertext"
 
 
     /** Returns the properties of the selected revision, i.e. the root Fleece Dict. */
