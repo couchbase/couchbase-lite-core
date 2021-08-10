@@ -108,6 +108,8 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("select `$type`") == "{'WHAT':[['.\\\\$type']]}");
 
     CHECK(translate("select meta().id") == "{'WHAT':[['_.',['meta()'],'.id']]}");
+    CHECK(translate("select meta(id).id from _default as id") == "{'FROM':[{'AS':'id','COLLECTION':'_default'}],"
+          "'WHAT':[['_.',['meta()','id'],'.id']]}");
     CHECK(translate("select meta().sequence") == "{'WHAT':[['_.',['meta()'],'.sequence']]}");
     CHECK(translate("select meta().deleted") == "{'WHAT':[['_.',['meta()'],'.deleted']]}");
     CHECK(translate("select meta(_default).id from _default") == "{'FROM':[{'COLLECTION':'_default'}],'WHAT':[['_.',['meta()','_default'],'.id']]}");
@@ -115,6 +117,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
         ExpectingExceptions x;
         CHECK_THROWS_WITH(translate("select meta().bogus"), "'bogus' is not a valid Meta key");
         CHECK_THROWS_WITH(translate("select meta(_default).bogus from _default"), "'bogus' is not a valid Meta key");
+        CHECK_THROWS_WITH(translate("select meta(id).id as id"), "database alias 'id' does not match a declared 'AS' alias");
     }
     CHECK(translate("select foo[17]") == "{'WHAT':[['.foo[17]']]}");
     CHECK(translate("select foo.bar[-1].baz") == "{'WHAT':[['.foo.bar[-1].baz']]}");
@@ -292,6 +295,11 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
     CHECK(translate("SELECT FLOOR(unitPrice+0.5) as sc FROM product where test_id = \"numberfunc\" ORDER BY sc limit 5") ==
           "{'FROM':[{'COLLECTION':'product'}],'LIMIT':5,'ORDER_BY':[['.sc']],"
           "'WHAT':[['AS',['FLOOR()',['+',['.unitPrice'],0.5]],'sc']],'WHERE':['=',['.test_id'],'numberfunc']}");
+
+    CHECK(translate("SELECT META().id AS id WHERE META().id = $ID") ==
+          "{'WHAT':[['AS',['_.',['meta()'],'.id'],'id']],'WHERE':['=',['_.',['meta()'],'.id'],['$ID']]}");
+    CHECK(translate("SELECT META().id AS id WHERE id = $ID") ==
+          "{'WHAT':[['AS',['_.',['meta()'],'.id'],'id']],'WHERE':['=',['.id'],['$ID']]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {

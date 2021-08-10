@@ -1486,9 +1486,9 @@ namespace litecore {
         _sql << tablePrefix << property;
     }
 
-
     // Return the iterator to _aliases based on the property.
-    // Post-condition: iterator != _aliases.end()
+    // Post-condition:
+    //     return_iterator != _aliases.end() && return_iterator->second.type != kResultAlias
     QueryParser::AliasMap::const_iterator
     QueryParser::verifyDbAlias(fleece::impl::Path &property) const {
         string alias;
@@ -1497,6 +1497,10 @@ namespace litecore {
             // Check for result alias before 'alias' gets reassigned below
             alias = string(property[0].keyStr());
             iType = _aliases.find(alias);
+            if (iType != _aliases.end() && iType->second.type == kResultAlias) {
+                // we only look for alias in the db context.
+                iType = _aliases.end();
+            }
         }
 
         bool hasMultiDbAliases = false;
@@ -1528,6 +1532,10 @@ namespace litecore {
 
         if(iType == _aliases.end()) {
             iType = _aliases.find(alias);
+            if (iType != _aliases.end() && iType->second.type == kResultAlias) {
+                // we only look for alias in the db context.
+                iType = _aliases.end();
+            }
         }
 
         require(iType != _aliases.end(),
@@ -1550,13 +1558,22 @@ namespace litecore {
             return;
         }
 
-        if (type == kResultAlias && property[0].keyStr().asString() == alias) {
+        // Check out the case the property starts with the result alias.
+        auto resultAliasIter = _aliases.end();
+        if (!property.empty()) {
+            resultAliasIter = _aliases.find(property[0].keyStr().asString());
+            if (resultAliasIter != _aliases.end() && resultAliasIter->second.type != kResultAlias) {
+                resultAliasIter = _aliases.end();
+            }
+        }
+        if (resultAliasIter != _aliases.end()) {
+            const string& resultAlias = resultAliasIter->first;
             // If the property in question is identified as an alias, emit that instead of
             // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
             // vs alias -> doc["path"]["to"]["value"])
             if(property.size() == 1) {
                 // Simple case, the alias is being used as-is
-                _sql << sqlIdentifier(alias);
+                _sql << sqlIdentifier(resultAlias);
                 return;
             }
 
@@ -1564,7 +1581,7 @@ namespace litecore {
             // a collection type (e.g. alias = {"foo": "bar"}, and want to
             // ORDER BY alias.foo
             property.drop(1);
-            _sql << kNestedValueFnName << "(" << sqlIdentifier(alias)
+            _sql << kNestedValueFnName << "(" << sqlIdentifier(resultAlias)
                  << ", " << sqlString(string(property)) << ")";
             return;
         } 
