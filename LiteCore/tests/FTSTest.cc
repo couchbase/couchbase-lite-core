@@ -120,7 +120,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
         lang = QueryLanguage::kJSON;
     }
     SECTION("N1QL query") {
-        queryStr = "SELECT sentence FROM _ WHERE MATCH(sentence, 'search') ORDER BY rank('sentence') DESC";
+        queryStr = "SELECT sentence FROM _ WHERE MATCH(sentence, 'search') ORDER BY rank(sentence) DESC";
         lang = QueryLanguage::kN1QL;
     }
     testQuery(

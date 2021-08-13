@@ -333,6 +333,9 @@ function =
     ind:indexName _ ',' _              { appendAny(f, ind.as<string>());}
     t:expression _                     { appendAny(f, t);}
     ')' _                              { $$ = f;}
+  | "rank"i _ '(' _                    { f = op("RANK()");}
+    ind:indexName _                    { appendAny(f, ind.as<string>());}
+    ')' _                              { $$ = f;}
   | f:functionName e:parenExprs        { $$ = insertAny(e, 0, f.as<string>() + "()");}
 
 functionName    =
