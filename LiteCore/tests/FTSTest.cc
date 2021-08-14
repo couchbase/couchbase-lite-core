@@ -120,7 +120,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
         lang = QueryLanguage::kJSON;
     }
     SECTION("N1QL query") {
-        queryStr = "SELECT sentence FROM _ WHERE MATCH('sentence', 'search') ORDER BY rank('sentence') DESC";
+        queryStr = "SELECT sentence FROM _ WHERE MATCH(sentence, 'search') ORDER BY rank(sentence) DESC";
         lang = QueryLanguage::kN1QL;
     }
     testQuery(
@@ -243,7 +243,7 @@ TEST_CASE_METHOD(FTSTest, "Test with array values", "[FTS][Query]") {
 
     store->deleteIndex("List"_sl);
     const char* const jsonQuery = "{WHAT: [ '._id'], WHERE: ['MATCH()', 'List', ['$title']]}";
-    const char* const n1qlQuery = "SELECT META().id FROM _ WHERE MATCH('List', $title)";
+    const char* const n1qlQuery = "SELECT META().id FROM _ WHERE MATCH(List, $title)";
     const char* queryStr = nullptr;
     QueryLanguage lang = QueryLanguage::kJSON;
     

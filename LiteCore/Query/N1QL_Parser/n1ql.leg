@@ -123,6 +123,7 @@ columnAlias     = IDENTIFIER
 dataSourceName  = IDENTIFIER
 collectionName  = IDENTIFIER
 collectionAlias = IDENTIFIER
+indexName       = IDENTIFIER
 
 
 ######## EXPRESSIONS:
@@ -328,6 +329,13 @@ function =
     "meta"i _ '(' _                    { f = op("meta()");}
     (ds:dataSourceName _               { appendAny(f, ds.as<string>());}
     )? ')' _                           { $$ = f;}
+  | "match"i _ '(' _                   { f = op("MATCH()");}
+    ind:indexName _ ',' _              { appendAny(f, ind.as<string>());}
+    t:expression _                     { appendAny(f, t);}
+    ')' _                              { $$ = f;}
+  | "rank"i _ '(' _                    { f = op("RANK()");}
+    ind:indexName _                    { appendAny(f, ind.as<string>());}
+    ')' _                              { $$ = f;}
   | f:functionName e:parenExprs        { $$ = insertAny(e, 0, f.as<string>() + "()");}
 
 functionName    =
