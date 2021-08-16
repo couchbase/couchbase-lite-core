@@ -753,18 +753,19 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate, Continuous", "[REST][Listener
 
 
 // OneShot replication.
-//TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate, OneShot", "[REST][Listener][C][.SyncServer]") {
-//    importJSONLines(sFixturesDir + "names_100.json");
-//    std::stringstream body;
-//    body << "{source: 'db'," <<
-//            "target: 'ws://localhost:4984/" << slice(ReplicatorAPITest::kScratchDBName).asString() << "'," <<
-//            "continuous: false}";
-//
-//    auto r = request("POST", "/_replicate",
-//                     {{"Content-Type", "application/json"}},
-//                     json5(body.str()),
-//                     HTTPStatus::OK);
-//}
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate, OneShot", "[REST][Listener][C][.SyncServer]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    std::stringstream body;
+    body << "{source: 'db'," <<
+            "target: 'ws://localhost:4984/" << slice(ReplicatorAPITest::kScratchDBName).asString() << "'," <<
+            "continuous: false}";
+
+    auto r = request("POST", "/_replicate",
+                     {{"Content-Type", "application/json"}},
+                     json5(body.str()),
+                     HTTPStatus::OK);
+    CHECK(r->status() == HTTPStatus::OK);
+}
 
 
 // Continuous replication with authentication
@@ -797,19 +798,20 @@ TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Continuous, Auth", "[REST][Lis
 
 
 // OneShot replication with authentication.
-//TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Oneshot, Auth", "[REST][Listener][C][.SyncServer]") {
-//    importJSONLines(sFixturesDir + "names_100.json");
-//    std::stringstream body;
-//    body << "{source: 'db'," <<
-//            "target: 'ws://localhost:4984/" << slice(ReplicatorAPITest::kProtectedDBName).asString() << "'," <<
-//            "user: 'pupshaw'," <<
-//            "password: 'frank',"
-//            "continuous: false}";
-//
-//    auto r = request("POST", "/_replicate",
-//                     {{"Content-Type", "application/json"}},
-//                     json5(body.str()),
-//                     HTTPStatus::OK);
-//}
+TEST_CASE_METHOD(C4RESTTest, "REST HTTP Replicate Oneshot, Auth", "[REST][Listener][C][.SyncServer]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    std::stringstream body;
+    body << "{source: 'db'," <<
+            "target: 'ws://localhost:4984/" << slice(ReplicatorAPITest::kProtectedDBName).asString() << "'," <<
+            "user: 'pupshaw'," <<
+            "password: 'frank',"
+            "continuous: false}";
+
+    auto r = request("POST", "/_replicate",
+                     {{"Content-Type", "application/json"}},
+                     json5(body.str()),
+                     HTTPStatus::OK);
+    CHECK(r->status() == HTTPStatus::OK);
+}
 
 #endif // COUCHBASE_ENTERPRISE

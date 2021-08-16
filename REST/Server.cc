@@ -29,6 +29,7 @@
 #include "c4ListenerInternal.hh"
 #include "PlatformCompat.hh"
 #include <mutex>
+#include <future>
 
 // TODO: Remove these pragmas when doc-comments in sockpp are fixed
 #pragma clang diagnostic push
@@ -186,7 +187,19 @@ namespace litecore { namespace REST {
             }
             if (sock) {
                 sock.set_non_blocking(false);
-                handleConnection(move(sock));
+                // We are in the poller thread and go handle the client connection in a new thead to avoid
+                // blocking the polling thread.
+                // "this" is retained before this method is called. We need to retain it in the new thread.
+                // The calling thread must keep the ref-count before the new thread retains it.
+                std::promise<void> signalRetain;
+                std::future<void> waitHandle = signalRetain.get_future();
+                thread handleThread([signalRetain = move(signalRetain), sock = move(sock), this]() mutable {
+                    Retained<Server> selfRetain = this;
+                    signalRetain.set_value();
+                    this->handleConnection(move(sock));
+                });
+                handleThread.detach();
+                waitHandle.wait();
             }
         } catch (const std::exception &x) {
             c4log(ListenerLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());

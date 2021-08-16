@@ -71,6 +71,7 @@ namespace litecore { namespace REST {
                       _bidi, _continuous);
 
                 C4ReplicatorParameters params = {};
+                AllocedDict optionsDict;
                 params.push = pushMode;
                 params.pull = pullMode;
                 params.onStatusChanged = [](C4Replicator*, C4ReplicatorStatus status, void *context) {
@@ -90,7 +91,8 @@ namespace litecore { namespace REST {
                             enc.writeString(_password);
                         enc.endDict();
                     enc.endDict();
-                    params.optionsDictFleece = AllocedDict(enc.finish()).data();
+                    optionsDict = AllocedDict(enc.finish());
+                    params.optionsDictFleece = optionsDict.data();
                 }
                 _repl = localDB->newReplicator(remoteAddress, remoteDbName, params);
                 _repl->start();
