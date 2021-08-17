@@ -186,7 +186,12 @@ namespace litecore { namespace REST {
             }
             if (sock) {
                 sock.set_non_blocking(false);
-                handleConnection(move(sock));
+                // We are in the poller thread and go handle the client connection in a new thead to avoid
+                // blocking the polling thread.
+                thread handleThread([selfRetain = Retained<Server>{this}, sock = move(sock), this]() mutable {
+                    this->handleConnection(move(sock));
+                });
+                handleThread.detach();
             }
         } catch (const std::exception &x) {
             c4log(ListenerLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());
