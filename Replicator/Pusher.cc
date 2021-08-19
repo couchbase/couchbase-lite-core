@@ -184,7 +184,8 @@ namespace litecore { namespace repl {
         auto changeCount = changes.revs.size();
         sendChanges(changes.revs);
 
-        if (changeCount < tuning::kDefaultChangeBatchSize) {
+        if (!changes.askAgain) {
+            // ChangesFeed says there are not currently any more changes, i.e. we've caught up.
             if (!_caughtUp) {
                 logInfo("Caught up, at lastSequence #%" PRIu64, changes.lastSequence);
                 _caughtUp = true;
@@ -198,7 +199,8 @@ namespace litecore { namespace repl {
                 }
             }
         } else if (_continuous) {
-            // Got a full batch of changes, so assume there are more
+            // ChangesFeed says there may be more changes; clear `_continuousCaughtUp` so that
+            // `maybeGetMoreChanges` will ask for more, assuming I'm not otherwise busy.
             _continuousCaughtUp = false;
         }
 
