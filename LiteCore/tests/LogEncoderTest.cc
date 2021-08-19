@@ -274,6 +274,7 @@ TEST_CASE("Logging throw in c++", "[Log]") {
     string excMsg;
     const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
     try {
+        ExpectingExceptions x;
         LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     } catch (std::exception& exc) {
         excMsg = exc.what();
@@ -288,6 +289,7 @@ TEST_CASE("Logging throw in c4", "[Log]") {
     sprintf(folderName, "Log_Rollover_%" PRIms "/", now.count());
     FilePath tmpLogDir = TestFixture::sTempDir[folderName];
     // Note that we haven't created tmpLogDir.
+    ExpectingExceptions x;
     C4Error error;
     const LogFileOptions prevOptions = LogDomain::currentLogFileOptions();
     CHECK(!c4log_writeToBinaryFile({kC4LogVerbose, slice(tmpLogDir.path()), 16*1024, 1, false},
