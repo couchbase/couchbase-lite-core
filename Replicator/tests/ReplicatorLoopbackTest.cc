@@ -1870,7 +1870,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Encrypted Properties No Callback"
     {
         TransactionHelper t(db);
         createFleeceRev(db, "seekrit"_sl, kRevID,
-                        R"({"SSN":{"@type":"EncryptedProperty","value":"123-45-6789"}})"_sl);
+                        R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})"_sl);
     }
 
     _expectedDocumentCount = 0;
@@ -1935,7 +1935,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Replicate Encrypted Properties", "[Pus
     const bool TestDecryption = GENERATE(false, true);
     C4Log("---- %s decryption ---", (TestDecryption ? "With" : "Without"));
 
-    slice originalJSON = R"({"SSN":{"@type":"EncryptedProperty","value":"123-45-6789"}})"_sl;
+    slice originalJSON = R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})"_sl;
     {
         TransactionHelper t(db);
         createFleeceRev(db, "seekrit"_sl, kRevID, originalJSON);

@@ -15,7 +15,7 @@ namespace litecore::repl {
     /// The key-prefix used in the Couchbase Server SDKs to tag an encrypted property.
     /// This is added during encryption to the key of an encrypted property *in its containing
     /// dictionary*. For example, the document
-    ///     `{"SSN":{"@type":"EncryptedProperty","value":"123-45-6789"}}`
+    ///     `{"SSN":{"@type":"encryptable","value":"123-45-6789"}}`
     /// changes to:
     ///     `{"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"..."}}`
     constexpr fleece::slice kServerEncryptedPropKeyPrefix = "encrypted$";

@@ -165,7 +165,7 @@ struct C4Document : public fleece::RefCounted,
     static constexpr slice kObjectTypeProperty = "@type";
 
     /** Value of `kC4ObjectTypeProperty` that denotes an encryptable value. */
-    static constexpr slice kObjectType_Encryptable = "EncryptedProperty";
+    static constexpr slice kObjectType_Encryptable = "encryptable";
 
     /** Encryptable-value property containing the actual value; may be any JSON/Fleece type.
         Required if `ciphertext` is absent. */
