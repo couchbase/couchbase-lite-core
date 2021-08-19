@@ -46,11 +46,12 @@ struct C4CollectionObserver : public fleece::InstanceCounted, C4Base {
     
     virtual ~C4CollectionObserver() =default;
 
-    /// Metadata of a change recorded by C4CollectionObserver.
+    /// Metadata of a change recorded by C4CollectionObserver. (Equivalent to C4CollectionChange.)
     struct Change {
         alloc_slice docID;              ///< Document ID
         alloc_slice revID;              ///< Revision ID
         C4SequenceNumber sequence;      ///< Sequence number, or 0 if this was a purge
+        uint32_t bodySize;              ///< (Approximate) size of revision body
         C4RevisionFlags flags;          ///< Revision flags
     };
 

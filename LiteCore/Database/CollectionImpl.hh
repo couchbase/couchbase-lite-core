@@ -377,6 +377,7 @@ namespace litecore {
                 st->documentChanged(doc->docID(),
                                     doc->getSelectedRevIDGlobalForm(), // entire version vector
                                     doc->selectedRev().sequence,
+                                    doc->getRevisionBody().size,
                                     SequenceTracker::RevisionFlags(doc->selectedRev().flags));
             }
         }

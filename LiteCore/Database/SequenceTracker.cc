@@ -81,6 +81,7 @@ namespace litecore {
         sequence_t                      committedSequence {0};
         alloc_slice                     revID;
         mutable std::vector<DocChangeNotifier*> documentObservers;
+        uint32_t                        bodySize;
         RevisionFlags                   flags;
         bool                            idle     :1;
         bool                            external :1;
@@ -88,10 +89,15 @@ namespace litecore {
         // Placeholder entry (when docID == nullslice):
         CollectionChangeNotifier* const   databaseObserver {nullptr};
 
-        Entry(const alloc_slice &d, alloc_slice r, sequence_t s, RevisionFlags flags)
-        :docID(d), revID(r), sequence(s), flags(flags), idle(false), external(false) {
+        Entry(const alloc_slice &d, alloc_slice r, sequence_t s, uint32_t bs, RevisionFlags flags)
+        :docID(d), revID(r), sequence(s), bodySize(bs), flags(flags), idle(false), external(false)
+        {
             DebugAssert(docID != nullslice);
         }
+
+        explicit Entry(const alloc_slice &d)
+        :Entry(d, nullslice, 0, 0, {})
+        { }
 
         explicit Entry(CollectionChangeNotifier *o NONNULL)
         :databaseObserver(o) { }    // placeholder
@@ -184,7 +190,7 @@ namespace litecore {
                 if (!entry->isPlaceholder()) {
                     // moves entry!
                     _documentChanged(entry->docID, entry->revID,
-                                     entry->committedSequence, entry->flags);
+                                     entry->committedSequence, entry->bodySize, entry->flags);
                 }
             } while (entry != lastEntry);
             housekeeping = true;
@@ -199,13 +205,14 @@ namespace litecore {
     void SequenceTracker::documentChanged(const alloc_slice &docID,
                                           const alloc_slice &revID,
                                           sequence_t sequence,
+                                          uint64_t bodySize,
                                           RevisionFlags flags)
     {
         Assert(inTransaction());
         Assert(docID && revID && sequence > _lastSequence);
 
         _lastSequence = sequence;
-        _documentChanged(docID, revID, sequence, flags);
+        _documentChanged(docID, revID, sequence, bodySize, flags);
     }
 
 
@@ -213,15 +220,17 @@ namespace litecore {
         Assert(docID);
         Assert(inTransaction());
 
-        _documentChanged(alloc_slice(docID), {}, 0, RevisionFlags::None);
+        _documentChanged(alloc_slice(docID), {}, 0, 0, {});
     }
 
 
     void SequenceTracker::_documentChanged(const alloc_slice &docID,
                                            const alloc_slice &revID,
                                            sequence_t sequence,
+                                           uint64_t bodySize,
                                            RevisionFlags flags)
     {
+        auto shortBodySize = (uint32_t)min(bodySize, (uint64_t)UINT32_MAX);
         bool listChanged = true;
         Entry *entry;
         auto i = _byDocID.find(docID);
@@ -242,10 +251,11 @@ namespace litecore {
             // Update its revID & sequence:
             entry->revID = revID;
             entry->sequence = sequence;
+            entry->bodySize = shortBodySize;
             entry->flags = flags;
         } else {
             // or create a new entry at the end:
-            _changes.emplace_back(docID, revID, sequence, flags);
+            _changes.emplace_back(docID, revID, sequence, shortBodySize, flags);
             iterator change = prev(_changes.end());
             _byDocID[change->docID] = change;
             entry = &*change;
@@ -291,7 +301,7 @@ namespace litecore {
                         Assert(e->sequence > _lastSequence);
                         _lastSequence = e->sequence;
                     }
-                    _documentChanged(e->docID, e->revID, e->sequence, e->flags);
+                    _documentChanged(e->docID, e->revID, e->sequence, e->bodySize, e->flags);
                 }
             }
             removeObsoleteEntries();
@@ -365,7 +375,7 @@ namespace litecore {
                 else if (i->external != external)
                     break;
                 if (changes)
-                    changes[n++] = Change{i->docID, i->revID, i->sequence, i->flags};
+                    changes[n++] = Change{i->docID, i->revID, i->sequence, i->bodySize, i->flags};
             }
             ++i;
         }
@@ -412,8 +422,7 @@ namespace litecore {
             entry = i->second;
         } else {
             // Document isn't known yet; create an entry and put it in the _idle list
-            entry = _idle.emplace(_idle.end(), alloc_slice(docID), alloc_slice(), 0,
-                                  RevisionFlags::None);
+            entry = _idle.emplace(_idle.end(), alloc_slice(docID));
             entry->idle = true;
             _byDocID[entry->docID] = entry;
         }
@@ -451,6 +460,8 @@ namespace litecore {
                 s << (string)i->docID << "@" << i->sequence;
                 if (verbose && i->flags != RevisionFlags::None)
                     s << '#' << hex << int(i->flags) << dec;
+                if (verbose)
+                    s << '+' << i->bodySize;
                 if (i->external)
                     s << "'";
             } else if (_transaction && i == _transaction->_placeholder) {
