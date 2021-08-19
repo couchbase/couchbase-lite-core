@@ -124,6 +124,7 @@ typedef struct {
     C4HeapString docID;         ///< The document's ID
     C4HeapString revID;         ///< The current revision ID (or null if doc was purged)
     C4SequenceNumber sequence;  ///< The current sequence number (or 0 if doc was purged)
+    uint32_t bodySize;          ///< The size of the revision body in bytes
     C4RevisionFlags flags;      ///< The current revision's flags
 } C4CollectionChange;
 

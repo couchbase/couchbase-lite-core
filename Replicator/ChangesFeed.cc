@@ -178,8 +178,12 @@ namespace litecore { namespace repl {
                 // will effectively, beside other effects, skip the changes due to Purge.
                 if (c4change->sequence <= startingMaxSequence)
                     continue;
-                C4DocumentInfo info {c4change->flags, c4change->docID, c4change->revID,
-                                     c4change->sequence};
+                C4DocumentInfo info = {};
+                info.flags = c4change->flags;
+                info.docID = c4change->docID;
+                info.revID = c4change->revID;
+                info.sequence = c4change->sequence;
+                info.bodySize = c4change->bodySize;
                 // Note: we send tombstones even if the original getChanges() call specified
                 // skipDeletions. This is intentional; skipDeletions applies only to the initial
                 // dump of existing docs, not to 'live' changes.
