@@ -50,7 +50,7 @@ C4API_BEGIN_DECLS
 
 
     /** Value of `kC4ObjectTypeProperty` that denotes an encryptable value. */
-    #define kC4ObjectType_Encryptable "EncryptedProperty"
+    #define kC4ObjectType_Encryptable "encryptable"
 
     /** Encryptable-value property containing the actual value; may be any type. (Required.) */
     #define kC4EncryptableValueProperty "value"

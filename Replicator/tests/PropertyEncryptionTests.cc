@@ -192,13 +192,13 @@ public:
 
 LITECORE_UNUSED
 static constexpr slice
-     kDecryptedOneProperty = R"({"SSN":{"@type":"EncryptedProperty","value":"123-45-6789"}})"
+     kDecryptedOneProperty = R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})"
     ,kEncryptedOneProperty = R"({"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="}})"
-    ,kDecryptedCustomAlg = R"({"SSN":{"@type":"EncryptedProperty","value":"123-45-6789"}})"
+    ,kDecryptedCustomAlg = R"({"SSN":{"@type":"encryptable","value":"123-45-6789"}})"
     ,kEncryptedCustomAlg = R"({"encrypted$SSN":{"alg":"Rot13","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg=","kid":"Schlage"}})"
-    ,kDecryptedNested = R"({"foo":1234,"nested":[0,1,{"SSN":{"@type":"EncryptedProperty","value":"123-45-6789"}},3,4]})"
+    ,kDecryptedNested = R"({"foo":1234,"nested":[0,1,{"SSN":{"@type":"encryptable","value":"123-45-6789"}},3,4]})"
     ,kEncryptedNested = R"({"foo":1234,"nested":[0,1,{"encrypted$SSN":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="}},3,4]})"
-    ,kDecryptedTwoProps = R"({"SSN1":{"@type":"EncryptedProperty","value":"123-45-6789"},"SSN2":{"@type":"EncryptedProperty","value":"123-45-6789"}})"
+    ,kDecryptedTwoProps = R"({"SSN1":{"@type":"encryptable","value":"123-45-6789"},"SSN2":{"@type":"encryptable","value":"123-45-6789"}})"
     ,kEncryptedTwoProps = R"({"encrypted$SSN1":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="},"encrypted$SSN2":{"alg":"CB_MOBILE_CUSTOM","ciphertext":"WFhYWEVOQ1JZUFRFRFhYWFg="}})"
 ;
 
@@ -212,7 +212,7 @@ TEST_CASE_METHOD(PropEncryptionTest, "No Property Encryption", "[Sync][Encryptio
         "{foo:1234, bar:false}",
         "{foo:1234, bar:[null, true, 'howdy', {}]}",
         "{SSN:{'@type':'CryptidProperty', value:'123-45-6789'}}",
-        "{SSN:{'%type':'EncryptedProperty', value:'123-45-6789'}}",
+        "{SSN:{'%type':'encryptable', value:'123-45-6789'}}",
     };
     for (slice testCase : kTestCases) {
         CHECK(encryptProperties(ConvertJSON5(string(testCase))) == nullptr);
