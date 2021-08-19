@@ -115,7 +115,8 @@ namespace litecore::net {
 
         void onReadable(std::function<void()>);
         void onWriteable(std::function<void()>);
-        void interrupt();
+        void onDisconnect(std::function<void()>);
+        void cancelCallbacks();
 
     protected:
         bool setSocket(std::unique_ptr<sockpp::stream_socket>);
@@ -130,6 +131,7 @@ namespace litecore::net {
     private:
         bool _setTimeout(double secs);
         sockpp::stream_socket* actualSocket() const;
+        void addListener(int pollerEvent /*Poller::Event*/, std::function<void()>&&);
 
         std::unique_ptr<sockpp::stream_socket> _socket;     // The TCP (or TLS) socket
         fleece::Retained<TLSContext> _tlsContext;           // Custom TLS context if any

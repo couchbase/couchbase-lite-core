@@ -221,6 +221,15 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Pull", "[.SyncServer]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Pull Forever", "[.SyncServer_Special]") {
+    _remoteDBName = kScratchDBName;
+    _stopWhenIdle = false;  // This test will NOT STOP ON ITS OWN
+    _mayGoOffline = true;
+    replicate(kC4Disabled, kC4Continuous);
+    // For CBL-2204: Wait for replicator to go idle, then shut down (Ctrl-C) SG process.
+}
+
+
 TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Deletion", "[.SyncServer]") {
     createRev("doc"_sl, kRevID, kFleeceBody);
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);

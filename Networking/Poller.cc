@@ -102,7 +102,7 @@ namespace litecore { namespace net {
         lock_guard<mutex> lock(_mutex);
         _listeners[fd][event] = move(listener);
         if (_waiting)
-            interrupt(0);
+            _interrupt(0);  // wake the poller thread so it will detect the new listener fd
     }
 
 
@@ -133,7 +133,7 @@ namespace litecore { namespace net {
     }
 
 
-    void Poller::interrupt(int message) {
+    void Poller::_interrupt(int message) {
 #ifdef WIN32
         if(::send(_interruptWriteFD, (const char *)&message, sizeof(message), 0) < 0)
 #else
@@ -153,6 +153,11 @@ namespace litecore { namespace net {
         return *this;
     }
 
+
+    void Poller::interrupt(int fd) {
+        Assert(fd > 0);
+        _interrupt(fd);
+    }
 
     void Poller::stop() {
         interrupt(-1);
@@ -266,8 +271,10 @@ namespace litecore { namespace net {
 
         // Wait in poll():
         while (::poll(pollfds.data(), nfds_t(pollfds.size()), -1) < 0) {
-            if (errno != EINTR)
+            if (errno != EINTR) {
+                LogError(WSLog, "Poller: poll() returned errno %d; stopping thread", errno);
                 return false;
+            }
         }
 
         _waiting = false;
@@ -281,22 +288,25 @@ namespace litecore { namespace net {
                     // This is an interrupt -- read the byte from the pipe:
                     int message;
                     ::read(_interruptReadFD, &message, sizeof(message));
-                    LogDebug(WSLog, "Poller: interruption %d", message);
                     if (message < 0) {
                         // Receiving a negative message aborts the loop
+                        LogTo(WSLog, "Poller: thread is stopping");
                         result = false;
                     } else if (message > 0) {
-                        // A positive message is a file descriptor to call:
-                        callAndRemoveListener(message, kReadable);
-                        callAndRemoveListener(message, kWriteable);
+                        // A positive message is a file descriptor to tell it's disconnected:
+                        fd = message;
+                        LogDebug(WSLog, "Poller: fd %d is disconnected", fd);
+                        callAndRemoveListener(fd, kDisconnected);
+                        removeListeners(fd);
                     }
                 } else {
                     LogDebug(WSLog, "Poller: fd %d got event 0x%02x", fd, entry.revents);
-                    if (entry.revents & (POLLIN | POLLERR | POLLHUP))
+                    if (entry.revents & (POLLIN | POLLHUP))
                         callAndRemoveListener(fd, kReadable);
-                    if (entry.revents & (POLLOUT | POLLERR | POLLHUP))
+                    if (entry.revents & POLLOUT)
                         callAndRemoveListener(fd, kWriteable);
-                    if (entry.revents & POLLNVAL) {
+                    if (entry.revents & (POLLNVAL | POLLERR)) {
+                        callAndRemoveListener(fd, kDisconnected);
                         removeListeners(fd);
                     }
                 }
