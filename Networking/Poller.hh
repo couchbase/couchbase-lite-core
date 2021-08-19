@@ -27,7 +27,9 @@ namespace litecore { namespace net {
         static Poller& instance();
 
         enum Event {
-            kReadable, kWriteable
+            kReadable,      // Data (or EOF) has arrived
+            kWriteable,     // Socket has room to write data
+            kDisconnected   // Socket was closed locally or remotely, or disconnected with error
         };
         
         using Listener = std::function<void()>;
@@ -54,9 +56,10 @@ namespace litecore { namespace net {
         Poller(bool startNow)               :Poller() {if (startNow) start();}
         bool poll();
         void callAndRemoveListener(int fd, Event);
-        
+        void _interrupt(int fd);
+
         std::mutex _mutex;
-        std::unordered_map<socket_t, std::array<Listener,2>> _listeners;
+        std::unordered_map<socket_t, std::array<Listener,3>> _listeners; // array indexed by Event
         std::thread _thread;
         std::atomic_bool _waiting {false};
 

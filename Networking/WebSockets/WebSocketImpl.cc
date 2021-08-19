@@ -201,6 +201,13 @@ namespace litecore { namespace websocket {
             // since they're called from this one.
             lock_guard<mutex> lock(_mutex);
 
+            if (data.empty() && !_closeReceived) {
+                // We assume empty data means a zero-length read, i.e. EOF
+                logError("Protocol error: Peer shutdown socket without a CLOSE message");
+                protocolError();
+                return;
+            }
+
             _bytesReceived += data.size;
             if (_framing) {
                 _deliveredBytes = 0;

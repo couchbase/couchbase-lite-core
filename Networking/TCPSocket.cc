@@ -116,13 +116,19 @@ namespace litecore { namespace net {
 
 
     void TCPSocket::close() {
-        if (_socket)
+        if (connected()) {
+            int fd = fileDescriptor();
             _socket->shutdown();
+            // The shutdown() system call should cause poll() to notify the Poller that the fd is
+            // closed, but sometimes it does not, so send it an interrupt too:
+            if (_nonBlocking)
+                Poller::instance().interrupt(fd);
+        }
     }
 
 
     sockpp::stream_socket* TCPSocket::actualSocket() const {
-        if (auto socket = _socket.get(); !socket->is_open())
+        if (auto socket = _socket.get(); !socket || !socket->is_open())
             return nullptr;
         else if (auto tlsSock = dynamic_cast<tls_socket*>(socket); tlsSock)
             return &tlsSock->stream();
@@ -450,21 +456,29 @@ namespace litecore { namespace net {
 
 
     void TCPSocket::onReadable(function<void()> listener) {
-        Poller::instance().addListener(fileDescriptor(), Poller::kReadable, move(listener));
+        addListener(Poller::kReadable, move(listener));
     }
 
 
     void TCPSocket::onWriteable(function<void()> listener) {
-        Poller::instance().addListener(fileDescriptor(), Poller::kWriteable, move(listener));
+        addListener(Poller::kWriteable, move(listener));
     }
 
 
-    void TCPSocket::interrupt() {
-        if(fileDescriptor() >= 0) {
-            // If an interrupt is called with an invalid socket, the poller's
-            // loop will exit, so don't do that
-            Poller::instance().interrupt(fileDescriptor());
-        }
+    void TCPSocket::onDisconnect(function<void()> listener) {
+        addListener(Poller::kDisconnected, move(listener));
+    }
+
+
+    void TCPSocket::addListener(int event, function<void()> &&listener) {
+        if (int fd = fileDescriptor(); fd >= 0)
+            Poller::instance().addListener(fd, Poller::Event(event), move(listener));
+    }
+
+
+    void TCPSocket::cancelCallbacks() {
+        if (int fd = fileDescriptor(); fd >= 0)
+            Poller::instance().removeListeners(fd);
     }
 
 
