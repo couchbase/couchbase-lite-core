@@ -261,8 +261,6 @@ namespace litecore { namespace net {
                       "iovec and slice are incompatible");
         ssize_t written = _socket->write(reinterpret_cast<vector<iovec>&>(ioByteRanges));
         if (written < 0) {
-            if (socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
-                return 0;
             checkStreamError();
             return written;
         }
@@ -290,8 +288,6 @@ namespace litecore { namespace net {
         Assert(byteCount > 0);
         ssize_t n = _socket->read(dst, byteCount);
         if (n < 0) {
-            if (socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
-                return 0;
             checkStreamError();
         } else if (n == 0) {
             _eofOnRead = true;
