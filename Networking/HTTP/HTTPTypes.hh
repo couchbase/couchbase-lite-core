@@ -68,13 +68,14 @@ namespace litecore { namespace net {
     enum Method: unsigned {
         None        = 0,
 
-        GET         = 1,
-        PUT         = 2,
-        DELETE      = 4,
-        POST        = 8,
-        OPTIONS     = 16,
+        HEAD        = 1,
+        GET         = 2,
+        PUT         = 4,
+        DELETE      = 8,
+        POST        = 16,
+        OPTIONS     = 32,
 
-        UPGRADE     = 32,       // represents a WebSocket upgrade request
+        UPGRADE     = 64,       // represents a WebSocket upgrade request
 
         ALL         = UINT_MAX
     };
