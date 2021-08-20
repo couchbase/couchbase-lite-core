@@ -398,6 +398,7 @@ public:
         if (r->run()) {
             *outStatus = r->status();
             *outError = {};
+            _serverName = r->header("Server");
             return r->body();
         } else {
             REQUIRE(r->error().code != 0);
@@ -434,6 +435,20 @@ public:
     }
 
 
+    bool requireSG3() {
+        // `_serverName` is set by sendRemoteRequest
+        if (!_serverName)
+            sendRemoteRequest("HEAD", "/");
+        REQUIRE(_serverName.hasPrefix("Couchbase Sync Gateway/"));
+        if (_serverName >= "Couchbase Sync Gateway/3") {
+            return true;
+        } else {
+            C4Warn("*** Skipping test: server is %.*s, but this test requires SG 3.0 or later ***",
+                   SPLAT(_serverName));
+            return false;
+        }
+    }
+
     static std::vector<std::string> asVector(const std::set<std::string> strings) {
         std::vector<std::string> out;
         for (const std::string &s : strings)
@@ -454,6 +469,7 @@ public:
     c4::ref<C4KeyPair> identityKey;
 #endif
     std::unique_ptr<ProxySpec> _proxy;
+    alloc_slice _serverName;
     bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};
     C4ReplicatorValidationFunction _pullFilter {nullptr};

@@ -660,7 +660,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.SyncServer]") {
     _remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
-    
+    if (!requireSG3())
+        return; // skip test unless SG is ≥ 3.0
+
     // Create docs on SG:
     _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
     sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\", \"b\"]}"_sl);
@@ -755,7 +757,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.Sync
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision", "[.SyncServer]") {
     _remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
-    
+    if (!requireSG3())
+        return; // skip test unless SG is ≥ 3.0
+
     // Create docs on SG:
     _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
     sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
@@ -832,7 +836,9 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Filter Revoked Revision
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Revoke Access", "[.SyncServer]") {
     _remoteDBName = "scratch_revocation"_sl;
     flushScratchDatabase();
-    
+    if (!requireSG3())
+        return; // skip test unless SG is ≥ 3.0
+
     // Create docs on SG:
     _authHeader = "Basic cHVwc2hhdzpmcmFuaw=="_sl;
     sendRemoteRequest("PUT", "doc1", "{\"channels\":[\"a\"]}"_sl);
