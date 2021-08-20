@@ -212,8 +212,10 @@ namespace litecore { namespace net {
         }
 
         while(select(maxfd, &fds_read, &fds_write, &fds_err, nullptr) == SOCKET_ERROR) {
-            if(WSAGetLastError() != WSAEINTR)
+            if(WSAGetLastError() != WSAEINTR) {
+                LogError(WSLog, "Poller: poll() returned WSA error %d; stopping thread", WSAGetLastError());
                 return false;
+            }
         }
 
         _waiting = false;
@@ -224,24 +226,30 @@ namespace litecore { namespace net {
             LogDebug(WSLog, "Poller: interruption %d", message);
             if (message < 0) {
                 // Receiving a negative message aborts the loop
+                LogTo(WSLog, "Poller: thread is stopping");
                 result = false;
             } else if (message > 0) {
                 // A positive message is a file descriptor to call:
-                callAndRemoveListener(message, kReadable);
-                callAndRemoveListener(message, kWriteable);
+                LogDebug(WSLog, "Poller: fd %d is disconnected", message);
+                callAndRemoveListener(message, kDisconnected);
+                removeListeners(message);
             }
         }
 
         for (SOCKET s : all_fds) {
             if(FD_ISSET(s, &fds_read)) {
+                LogDebug(WSLog, "Poller: socket %d got read event", s);
                  callAndRemoveListener(s, kReadable);
             }
 
             if(FD_ISSET(s, &fds_write)) {
+                LogDebug(WSLog, "Poller: socket %d got write event", s);
                 callAndRemoveListener(s, kWriteable);
             }
 
             if(FD_ISSET(s, &fds_err)) {
+                LogDebug(WSLog, "Poller: socket %d got error", s);
+                callAndRemoveListener(s, kDisconnected);
                 removeListeners(s);
             }
         }
