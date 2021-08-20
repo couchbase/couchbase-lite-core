@@ -51,21 +51,23 @@ namespace litecore { namespace net {
     }
 
 
-    static const char* kMethodNames[6] = {"GET", "PUT", "DELETE", "POST", "OPTIONS", "UPGRADE"};
+    static constexpr size_t kNumMethods = 7;
+    static const char* kMethodNames[kNumMethods] = {
+        "HEAD", "GET", "PUT", "DELETE", "POST", "OPTIONS", "UPGRADE"};
 
 
     const char* MethodName(Method method) {
         int shift = -1;
         for (auto m = (unsigned)method; m != 0; m >>= 1)
             ++shift;
-        if (shift < 0 || shift >= 6)
+        if (shift < 0 || shift >= kNumMethods)
             return "??";
         return kMethodNames[shift];
     }
 
 
     Method MethodNamed(slice name) {
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < kNumMethods; ++i) {
             if (slice(kMethodNames[i]) == name)
                 return Method(1 << i);
         }
