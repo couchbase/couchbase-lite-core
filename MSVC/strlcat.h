@@ -14,6 +14,10 @@
 // limitations under the License.
 //
 
+// Adapted from OpenBSD string.h (Copyright (c) 1990 The Regents of the University of California.)
+// Originally licensed under the BSD 3-clause license
+// https://github.com/openbsd/src/blob/1693b10bbdb876791a8ba7277dd26d2fd5e7aff8/include/string.h#L127-L128
+
 #pragma once
 
 #ifndef __cplusplus
