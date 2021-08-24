@@ -147,11 +147,36 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_contains of fl_value",
     insert("e",   "{\"hey\": {\"a\": \"bar\", \"b\": 1}}"); // array_contains doesn't match dicts!
     insert("f",   "{\"hey\": \"bar\"}");
     insert("d",   "{\"xxx\": [1, 1, 2, \"bar\"]}");
+    insert("g",   "{\"hey\": [true, 0]}");
+    insert("h",   "{\"hey\": [false, 1]}");
 
     CHECK(query("SELECT ARRAY_CONTAINS(fl_value(body, 'hey'), 4) FROM kv")
-          == (vector<string>{"1", "1", "0", "null", "null", "MISSING" }));
+          == (vector<string>{"1", "1", "0", "null", "null", "MISSING", "0", "0" }));
     CHECK(query("SELECT ARRAY_CONTAINS(fl_value(body, 'hey'), 'bar') FROM kv")
-          == (vector<string>{"1", "0", "1", "null", "null", "MISSING" }));
+          == (vector<string>{"1", "0", "1", "null", "null", "MISSING", "0", "0" }));
+    CHECK(query("SELECT ARRAY_CONTAINS(fl_value(body, 'hey'), fl_bool(1)) FROM kv")
+          == vector<string>{"1", "1", "1", "null", "null", "MISSING", "1", "1" });
+    CHECK(query("SELECT ARRAY_CONTAINS(fl_value(body, 'hey'), fl_bool(0)) FROM kv")
+          == vector<string>{"0", "0", "0", "null", "null", "MISSING", "1", "1" });
+
+    // select array_contains([3==3], true) => true
+    CHECK(query("select array_contains(array_of(3 == 3), fl_bool(3)) from kv where kv.key = 'a'")
+          == vector<string>{"1"});
+    // select array_contains([4==3], true) => false
+    CHECK(query("select array_contains(array_of(4 == 3), fl_bool(1)) from kv where kv.key = 'a'")
+          == vector<string>{"0"});
+    // select array_contains([3==3], false) => false
+    CHECK(query("select array_contains(array_of(3 == 3), fl_bool(0)) from kv where kv.key = 'a'")
+          == vector<string>{"0"});
+    // select array_contains([4==3], false) => true
+    CHECK(query("select array_contains(array_of(4 == 3), fl_bool(0)) from kv where kv.key = 'a'")
+          == vector<string>{"1"});
+    // select array_contains([1], true) => true
+    CHECK(query("select array_contains(array_of(1), fl_bool(1)) from kv where kv.key = 'a'")
+          == vector<string>{"1"});
+    // select array_contains([2], true) => false
+    CHECK(query("select array_contains(array_of(2), fl_bool(2)) from kv where kv.key = 'a'")
+          == vector<string>{"0"});
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_ifnull of fl_value", "[Query]") {

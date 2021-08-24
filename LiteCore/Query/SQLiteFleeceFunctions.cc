@@ -371,12 +371,19 @@ namespace litecore {
             }
         }
 
+        auto comparable = [](valueType vtype1, valueType vtype2) {
+            // pre-condition: vtype2 != kBoolean
+            return   vtype1 == vtype2 ? true
+                   : vtype2 == kNumber ? vtype1 == kBoolean
+                   : false;
+        };
+
         // Now iterate the array/dict:
         bool found = false;
         if (collection->type() == kArray) {
             for (Array::iterator j(collection->asArray()); j; ++j) {
                 auto val = j.value();
-                if (val->type() == targetType && predicate(val, target)) {
+                if (comparable(val->type(), targetType) && predicate(val, target)) {
                     found = true;
                     break;
                 }
@@ -384,7 +391,7 @@ namespace litecore {
         } else {
             for (Dict::iterator j(collection->asDict()); j; ++j) {
                 auto val = j.value();
-                if (val->type() == targetType && predicate(val, target)) {
+                if (comparable(val->type(), targetType) && predicate(val, target)) {
                     found = true;
                     break;
                 }
