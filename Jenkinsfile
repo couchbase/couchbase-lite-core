@@ -7,12 +7,12 @@ pipeline {
         stage("Build Mobile") {
             parallel {
                 stage("Android") {
-                    agent { label 'mobile-mac-mini' }
+                    agent { label 'mobile-lite-android' }
                     environment {
                        BRANCH = "${BRANCH_NAME}"
                     }
                     steps {
-                        sh 'jenkins/jenkins_android.sh $HOME/Library/Developer/Xamarin/android-sdk-macosx'
+                        sh 'jenkins/jenkins_android.sh $HOME/jenkins/tools/android-sdk'
                     }
                 }
                 stage("iOS") {
