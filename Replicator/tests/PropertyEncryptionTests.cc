@@ -86,8 +86,18 @@ public:
 
         *outAlgorithm = C4String(_algorithm);
         *outKeyID = C4String(_keyID);
-
+        
         CHECK(cleartext == _expectedCleartext);
+        
+        if (_returnError) {
+            *outError = {LiteCoreDomain, kC4ErrorCrypto};
+            return alloc_slice();
+        }
+            
+        if (_returnNull) {
+            return alloc_slice();
+        }
+        
         return alloc_slice(kDefaultCiphertext);
     }
 
@@ -114,6 +124,8 @@ public:
     C4ReplicatorPropertyEncryptionCallback _callback = &encryptionCallback;
     slice _algorithm;
     slice _keyID;
+    bool _returnNull = false;
+    bool _returnError = false;
     int _numCallbacks = 0;
 };
 
@@ -158,8 +170,17 @@ public:
             CHECK(keyPath == _expectedKeyPath);
         CHECK(algorithm == _expectedAlgorithm);
         CHECK(keyID == _expectedKeyID);
-
         CHECK(ciphertext == _expectedCiphertext);
+        
+        if (_returnError) {
+            *outError = {LiteCoreDomain, kC4ErrorCrypto};
+            return alloc_slice();
+        }
+            
+        if (_returnNull) {
+            return alloc_slice();
+        }
+        
         return alloc_slice(kDefaultCleartext);
     }
 
@@ -186,6 +207,8 @@ public:
     slice _expectedCiphertext = kDefaultCiphertext;
     slice _expectedAlgorithm = "CB_MOBILE_CUSTOM";
     slice _expectedKeyID;
+    bool _returnNull = false;
+    bool _returnError = false;
     int _numCallbacks = 0;
 };
 
@@ -267,6 +290,23 @@ TEST_CASE_METHOD(PropEncryptionTest, "Encryption Fails Without Callback", "[Sync
     REQUIRE(error == C4Error{LiteCoreDomain, kC4ErrorCrypto});
 }
 
+TEST_CASE_METHOD(PropEncryptionTest, "Skip Encryption Not Allowed", "[Sync][Encryption]") {
+    _returnNull = true;
+    C4Error error;
+    ExpectingExceptions x;
+    auto result = encryptProperties(kDecryptedOneProperty, &error);
+    REQUIRE(!result);
+    REQUIRE(error == C4Error{LiteCoreDomain, kC4ErrorCrypto});
+}
+
+TEST_CASE_METHOD(PropEncryptionTest, "Encryption returns error", "[Sync][Encryption]") {
+    _returnError = true;
+    C4Error error;
+    ExpectingExceptions x;
+    auto result = encryptProperties(kDecryptedOneProperty, &error);
+    REQUIRE(!result);
+    REQUIRE(error == C4Error{LiteCoreDomain, kC4ErrorCrypto});
+}
 
 #else
 
@@ -341,6 +381,22 @@ TEST_CASE_METHOD(PropDecryptionTest, "No Decryption Without Callback", "[Sync][E
     CHECK(!error);
 }
 
+TEST_CASE_METHOD(PropDecryptionTest, "Skip Decryption", "[Sync][Encryption]") {
+    _returnNull = true;
+    C4Error error;
+    MutableDict props = decryptProperties(kEncryptedOneProperty, &error);
+    CHECK(!props); // i.e. doc should be unchanged
+    CHECK(!error);
+}
+
+TEST_CASE_METHOD(PropDecryptionTest, "Decryption returns error", "[Sync][Encryption]") {
+    _returnError = true;
+    C4Error error;
+    ExpectingExceptions x;
+    MutableDict props = decryptProperties(kEncryptedOneProperty, &error);
+    REQUIRE(!props);
+    REQUIRE(error == C4Error{LiteCoreDomain, kC4ErrorCrypto});
+}
 
 #else
 
