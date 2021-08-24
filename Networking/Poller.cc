@@ -154,16 +154,21 @@ namespace litecore { namespace net {
     }
 
 
+    void Poller::stop() {
+        _interrupt(-1);
+        _thread.join();
+    }
+
+
     void Poller::interrupt(int fd) {
         Assert(fd > 0);
         _interrupt(fd);
     }
 
-    void Poller::stop() {
-        interrupt(-1);
-        _thread.join();
-    }
+    
+#pragma mark - BACKGROUND THREAD:
 
+    
 #ifdef WIN32
     // WSAPoll has proven to be weirdly unreliable, so fall back
     // to a select based implementation
