@@ -49,7 +49,7 @@ if [ -z "$EDITION" ]; then
     usage
 fi
 
-SDK_MGR="${SDK_HOME}/tools/bin/sdkmanager"
+SDK_MGR="${SDK_HOME}/cmdline-tools/latest/bin/sdkmanager"
 CMAKE_PATH="${SDK_HOME}/cmake/${CMAKE_VER}/bin"
 
 BUILD_REL_TARGET="build_${ANDROID_ARCH}_release"
