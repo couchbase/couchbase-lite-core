@@ -21,7 +21,7 @@ if [ -z "$SDK_HOME" ]; then
     usage
 fi
 
-SDK_MGR="${SDK_HOME}/tools/bin/sdkmanager"
+SDK_MGR="${SDK_HOME}/cmdline-tools/latest/bin/sdkmanager"
 CMAKE_PATH="${SDK_HOME}/cmake/${CMAKE_VER}/bin"
 yes | ${SDK_MGR} --licenses > /dev/null 2>&1
 ${SDK_MGR} --install "cmake;${CMAKE_VER}"
