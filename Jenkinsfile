@@ -12,7 +12,7 @@ pipeline {
                        BRANCH = "${BRANCH_NAME}"
                     }
                     steps {
-                        sh 'jenkins/jenkins_android.sh $HOME/couchbase/jenkins/tools/android-sdk'
+                        sh 'jenkins/jenkins_android.sh $HOME/jenkins/tools/android-sdk'
                     }
                 }
                 stage("iOS") {
