@@ -371,10 +371,15 @@ namespace litecore {
             }
         }
 
-        auto comparable = [](valueType vtype1, valueType vtype2) {
-            // pre-condition: vtype2 != kBoolean
-            return   vtype1 == vtype2 ? true
-                   : vtype2 == kNumber ? vtype1 == kBoolean
+        // predicate tests the first argument, which will come from the array, against the second argument,
+        // the target of the query whether it is contained in the array. Before applying it, they must be
+        // of compatible types. We require they have identical valueTypes except for kBoolean, in which case they
+        // are to be compared as integer. Whether the target is a kNumber or kBoolean, its type appears here as kNumber.
+        // We only need to convert the type of the array element.
+        auto comparable = [](valueType vtype1, valueType targetType) {
+            // pre-condition: targetType != kBoolean
+            return   vtype1 == targetType ? true
+                   : targetType == kNumber ? vtype1 == kBoolean
                    : false;
         };
 
