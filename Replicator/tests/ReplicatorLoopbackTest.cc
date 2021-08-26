@@ -1903,8 +1903,8 @@ static C4SliceResult testEncryptor(void* rawCtx,
                                    FLDict properties,
                                    C4String keyPath,
                                    C4Slice input,
-                                   C4String* outAlgorithm,
-                                   C4String* outKeyID,
+                                   C4StringResult* outAlgorithm,
+                                   C4StringResult* outKeyID,
                                    C4Error* outError)
 {
     auto context = (TestEncryptorContext*)rawCtx;
