@@ -54,31 +54,6 @@ namespace litecore {
     }
 
 
-namespace {
-    struct RestoreIndex {
-        DatabaseImpl* _db;
-        ExclusiveTransaction& _transaction;
-        vector<IndexSpec> _specs;
-
-        RestoreIndex(DatabaseImpl* db, ExclusiveTransaction& t)
-            : _db(db)
-            , _transaction(t)
-            , _specs{_db->defaultKeyStore().getIndexes()}
-        {
-            for (IndexSpec& spec: _specs) {
-                _db->defaultKeyStore().deleteIndex(spec.name, _transaction);
-            }
-        }
-
-        ~RestoreIndex() {
-            for (IndexSpec& spec: _specs) {
-                _db->defaultKeyStore().createIndex(spec, _transaction);
-            }
-        }
-    };
-}
-
-
     void DatabaseImpl::upgradeDocumentVersioning(C4DocumentVersioning curVersioning,
                                              C4DocumentVersioning newVersioning,
                                              ExclusiveTransaction &t)
@@ -90,7 +65,11 @@ namespace {
         if (_config.flags & (kC4DB_ReadOnly |kC4DB_NoUpgrade))
             error::_throw(error::CantUpgradeDatabase, "Document versioning needs upgrade");
 
-        RestoreIndex restoreIndexes(this, t);
+        // Save current indexes
+        vector<IndexSpec> indexSpecs{defaultKeyStore().getIndexes()};
+        for (IndexSpec& spec: indexSpecs) {
+            defaultKeyStore().deleteIndex(spec.name, t);
+        }
 
         LogTo(DBLog, "*** Upgrading stored documents from %s to %s ***",
               kNameOfVersioning[curVersioning], kNameOfVersioning[newVersioning]);
@@ -121,6 +100,11 @@ namespace {
             }
 
             ++docCount;
+        }
+        
+        // Restore all the indexes
+        for (IndexSpec& spec: indexSpecs) {
+            defaultKeyStore().createIndex(spec, t);
         }
 
         LogTo(DBLog, "*** %" PRIu64 " documents upgraded, now committing changes... ***", docCount);
