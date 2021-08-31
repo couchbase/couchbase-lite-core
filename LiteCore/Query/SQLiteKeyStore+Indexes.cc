@@ -118,8 +118,9 @@ namespace litecore {
 
     void SQLiteKeyStore::deleteIndex(slice name, ExclusiveTransaction &t)  {
         auto spec = db().getIndex(name);
-        // pre-condition: !!spec
-        db().deleteIndex(*spec);
+        if (!!spec) {
+            db().deleteIndex(*spec);
+        }
     }
 
 
