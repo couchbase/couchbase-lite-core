@@ -57,8 +57,16 @@ namespace litecore {
     bool SQLiteKeyStore::createIndex(const IndexSpec &spec) {
         spec.validateName();
 
-        Stopwatch st;
         ExclusiveTransaction t(db());
+        bool created = createIndex(spec, t);
+        if (created) {
+            t.commit();
+        }
+        return created;
+    }
+
+    bool SQLiteKeyStore::createIndex(const IndexSpec &spec, ExclusiveTransaction& t) {
+        Stopwatch st;
         bool created;
         switch (spec.type) {
             case IndexSpec::kValue:      created = createValueIndex(spec); break;
@@ -71,7 +79,6 @@ namespace litecore {
         }
 
         if (created) {
-            t.commit();
             double time = st.elapsed();
             QueryLog.log((time < 3.0 ? LogLevel::Info : LogLevel::Warning),
                          "Created index '%s' in %.3f sec", spec.name.c_str(), time);
@@ -101,11 +108,18 @@ namespace litecore {
         ExclusiveTransaction t(db());
         auto spec = db().getIndex(name);
         if (spec) {
-            db().deleteIndex(*spec);
+            deleteIndex(name, t);
             t.commit();
         } else {
             t.abort();
         }
+    }
+
+
+    void SQLiteKeyStore::deleteIndex(slice name, ExclusiveTransaction &t)  {
+        auto spec = db().getIndex(name);
+        // pre-condition: !!spec
+        db().deleteIndex(*spec);
     }
 
 

@@ -54,6 +54,31 @@ namespace litecore {
     }
 
 
+namespace {
+    struct RestoreIndex {
+        DatabaseImpl* _db;
+        ExclusiveTransaction& _transaction;
+        vector<IndexSpec> _specs;
+
+        RestoreIndex(DatabaseImpl* db, ExclusiveTransaction& t)
+            : _db(db)
+            , _transaction(t)
+            , _specs{_db->defaultKeyStore().getIndexes()}
+        {
+            for (IndexSpec& spec: _specs) {
+                _db->defaultKeyStore().deleteIndex(spec.name, _transaction);
+            }
+        }
+
+        ~RestoreIndex() {
+            for (IndexSpec& spec: _specs) {
+                _db->defaultKeyStore().createIndex(spec, _transaction);
+            }
+        }
+    };
+}
+
+
     void DatabaseImpl::upgradeDocumentVersioning(C4DocumentVersioning curVersioning,
                                              C4DocumentVersioning newVersioning,
                                              ExclusiveTransaction &t)
@@ -64,6 +89,8 @@ namespace litecore {
             error::_throw(error::Unimplemented, "Cannot downgrade document versioning");
         if (_config.flags & (kC4DB_ReadOnly |kC4DB_NoUpgrade))
             error::_throw(error::CantUpgradeDatabase, "Document versioning needs upgrade");
+
+        RestoreIndex restoreIndexes(this, t);
 
         LogTo(DBLog, "*** Upgrading stored documents from %s to %s ***",
               kNameOfVersioning[curVersioning], kNameOfVersioning[newVersioning]);
