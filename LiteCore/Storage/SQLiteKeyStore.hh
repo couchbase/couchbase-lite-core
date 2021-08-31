@@ -81,8 +81,10 @@ namespace litecore {
 
         bool supportsIndexes(IndexSpec::Type t) const override               {return true;}
         bool createIndex(const IndexSpec&) override;
+        bool createIndex(const IndexSpec&, ExclusiveTransaction&) override;
 
         void deleteIndex(slice name) override;
+        void deleteIndex(slice name, ExclusiveTransaction &t) override;
         std::vector<IndexSpec> getIndexes() const override;
 
         virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice> &docIDs,

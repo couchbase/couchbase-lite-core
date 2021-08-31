@@ -170,6 +170,7 @@ namespace litecore {
 
         virtual bool supportsIndexes(IndexSpec::Type) const                   {return false;}
         virtual bool createIndex(const IndexSpec&) =0;
+        virtual bool createIndex(const IndexSpec&, ExclusiveTransaction&) =0;
         bool createIndex(slice name,
                          slice expression,
                          QueryLanguage queryLanguage,
@@ -185,6 +186,7 @@ namespace litecore {
         }
 
         virtual void deleteIndex(slice name) =0;
+        virtual void deleteIndex(slice name, ExclusiveTransaction &t) =0;
         virtual std::vector<IndexSpec> getIndexes() const =0;
 
         // public for complicated reasons; clients should never call it
