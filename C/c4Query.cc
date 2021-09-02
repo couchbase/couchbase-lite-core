@@ -63,7 +63,7 @@ Retained<C4Query> C4Query::newQuery(C4Collection *coll, C4QueryLanguage language
         }
         throw;
     } catch (...) {
-        if (outErrorPos != nullptr) {
+        if (outErrorPos) {
             *outErrorPos = -1;
         }
         throw;
