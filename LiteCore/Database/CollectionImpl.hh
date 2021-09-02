@@ -508,7 +508,9 @@ namespace litecore {
                 }
             }
             FLEncoder_EndArray(enc);
-            return alloc_slice(FLEncoder_Finish(enc, nullptr));
+            alloc_slice ret {FLEncoder_Finish(enc, nullptr)};
+            FLEncoder_Free(enc);
+            return ret;
         }
 
         alloc_slice getIndexRows(slice indexName) const override {
