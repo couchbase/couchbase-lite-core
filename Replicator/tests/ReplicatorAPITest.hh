@@ -365,8 +365,11 @@ public:
             REQUIRE(slice(_remoteDBName).hasPrefix("scratch"_sl));
 
         auto port = uint16_t(_address.port + !!admin);
-        if (!hasPrefix(path, "/"))
-            path = string("/") + (string)(slice)_remoteDBName + "/" + path;
+        if (!hasPrefix(path, "/")) {
+            path = string("/") + path;
+            if (_remoteDBName.size > 0)
+                path = string("/") + (string)(slice)_remoteDBName + path;
+        }
         if (_logRemoteRequests)
             C4Log("*** Server command: %s %.*s:%d%s",
               method.c_str(), SPLAT(_address.hostname), port, path.c_str());

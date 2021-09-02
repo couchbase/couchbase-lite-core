@@ -35,6 +35,7 @@
 #include "sockpp/tls_socket.h"
 #include "PlatformIO.hh"
 #include "c4ExceptionUtils.hh"   // for ExpectingExceptions
+#include "slice_stream.hh"
 #include <chrono>
 #include <regex>
 #include <string>
@@ -350,7 +351,7 @@ namespace litecore { namespace net {
 
         while (true) {
             // Read more bytes:
-            ssize_t n = _read((void*)result.end(), alloced.size - result.size);
+            ssize_t n = read((void*)result.end(), alloced.size - result.size);
             if (n < 0)
                 return nullslice;
             if (n == 0) {
@@ -364,7 +365,7 @@ namespace litecore { namespace net {
             if (found) {
                 pushUnread(slice(found.end(), result.end()));
                 result.setEnd(found.end());
-                alloced.resize(result.size);
+                alloced.resize(result.size - (includeDelim ? 0 : delim.size));
                 return alloced;
             }
 
@@ -376,9 +377,60 @@ namespace litecore { namespace net {
                     return nullslice;
                 }
                 alloced.resize(newSize);
-                result.setStart(alloced.buf);
+                result = slice(alloced.buf, result.size);
             }
         }
+    }
+
+
+    alloc_slice TCPSocket::readToEOF() {
+        alloc_slice body;
+        body.resize(1024);
+        size_t length = 0;
+        while (true) {
+            ssize_t n = read((void*)&body[length], body.size - length);
+            if (n < 0) {
+                body.reset();
+                return nullslice;
+            } else if (n == 0)
+                break;
+            length += n;
+            if (length == body.size)
+                body.resize(2 * body.size);
+        }
+        body.resize(length);
+        return body;
+    }
+
+
+    alloc_slice TCPSocket::readChunkedHTTPBody() {
+        // <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding#directives>
+        alloc_slice body;
+        size_t chunkLength;
+        do {
+            alloc_slice line = readToDelimiter("\r\n", false);
+            slice_istream reader(line);
+            chunkLength = reader.readHex();
+            if (!reader.eof()) {
+                setError(WebSocketDomain, kCodeProtocolError, "Invalid chunked response data");
+                return nullslice;
+            }
+
+            if (chunkLength > 0) {
+                auto start = body.size;
+                body.resize(start + chunkLength);
+                if (readExactly((void*)&body[start], chunkLength) < chunkLength)
+                    return nullslice;
+            }
+            char crlf[2];
+            if (readExactly(crlf, 2) < 2)
+                return nullslice;
+            if (crlf[0] != '\r' || crlf[1] != '\n') {
+                setError(WebSocketDomain, kCodeProtocolError, "Invalid chunked response data");
+                return nullslice;
+            }
+        } while (chunkLength > 0);
+        return body;
     }
 
 
@@ -386,31 +438,35 @@ namespace litecore { namespace net {
         int64_t contentLength = headers.getInt("Content-Length"_sl, -1);
         if (contentLength >= 0) {
             // Read exactly Content-Length bytes:
+            body.resize(size_t(contentLength));
             if (contentLength > 0) {
-                body.resize(size_t(contentLength));
-                if (readExactly((void*)body.buf, (size_t)contentLength) < contentLength) {
+                if (readExactly((void*)body.buf, (size_t)contentLength) < contentLength)
                     body.reset();
-                    return false;
-                }
             }
+
+        } else if (slice xfer = headers["Transfer-Encoding"]; xfer) {
+            if (xfer.caseEquivalent("chunked")) {
+                // Chunked transfer encoding:
+                body = readChunkedHTTPBody();
+                //TODO: There may be more response headers after the chunks
+            } else {
+                body.reset();
+                setError(NetworkDomain, kNetErrUnknown,
+                         "Unsupported HTTP Transfer-Encoding");
+                // Other transfer encodings are "gzip", "deflate"
+            }
+
+        } else if (auto conn = headers["Connection"]; conn.caseEquivalent("close")) {
+            // Connection:Close mode -- read till EOF:
+            body = readToEOF();
+
         } else {
-            // No Content-Length, so read till EOF:
-            body.resize(1024);
-            size_t length = 0;
-            while (true) {
-                ssize_t n = read((void*)&body[length], body.size - length);
-                if (n < 0) {
-                    body.reset();
-                    return false;
-                } else if (n == 0)
-                    break;
-                length += n;
-                if (length == body.size)
-                    body.resize(2 * body.size);
-            }
-            body.resize(length);
+            body.reset();
+            setError(WebSocketDomain, kCodeProtocolError,
+                     "Unsupported 'Connection' response header");
         }
-        return true;
+
+        return !!body;
     }
 
 
