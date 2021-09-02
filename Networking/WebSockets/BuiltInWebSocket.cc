@@ -103,9 +103,8 @@ namespace litecore { namespace websocket {
 
     void BuiltInWebSocket::closeSocket() {
         logVerbose("closeSocket");
-        if (_socket &&_socket->connected()) {
-            _socket->close();   // This will often be detected in readFromSocket(), which will close it
-            _socket->interrupt(); // But on Windows it usually is not, so interrupt it to poke it into doing the right thing
+        if (_socket) {
+            _socket->close();
         }
     }
 
@@ -141,6 +140,10 @@ namespace litecore { namespace websocket {
         }
 
         _socket->setNonBlocking(true);
+        _socket->onDisconnect([&] {
+            logVerbose("socket disconnected");
+            closeWithError(_socket->error());
+        });
         awaitReadable();
 
         // OK, now we are connected -- notify delegate and receiving I/O events:
@@ -376,34 +379,25 @@ namespace litecore { namespace websocket {
 
             ssize_t n = _socket->read((void*)_readBuffer.buf, min(_readBuffer.size,
                                                                   _curReadCapacity.load()));
-            logDebug("Received %zu bytes from socket", n);
+            logDebug("Received %zd bytes from socket", n);
             if (_usuallyFalse(n < 0)) {
                 closeWithError(_socket->error());
                 return;
             }
-            
-            // CBL-1633: Need to check for EOF here, or _socket->read returns
-            // 0 endlessly
-            if(n == 0 && _socket->atReadEOF()) {
-                if(_socket->atWriteEOF()) {
-                    closeSocket();
-                } else {
-                    close();
-                }
-                
-                return;
+
+            if (n > 0) {
+                // The bytes read count against the read-capacity:
+                auto oldCapacity = _curReadCapacity.fetch_sub(n);
+                if (oldCapacity - n > 0)
+                    awaitReadable();
+                else
+                    logDebug("**** socket read THROTTLED");
+            } else {
+                logVerbose("Zero-byte read: EOF from peer");
             }
 
-            // The bytes read count against the read-capacity:
-            auto oldCapacity = _curReadCapacity.fetch_sub(n);
-            if (oldCapacity - n > 0)
-                awaitReadable();
-            else
-                logDebug("**** socket read THROTTLED");
-
             // Pass data to WebSocket parser:
-            if (n > 0)
-                onReceive(slice(_readBuffer.buf, n));
+            onReceive(slice(_readBuffer.buf, n));
         } catch (const exception &x) {
             closeWithException(x, "during I/O");
         }
@@ -448,16 +442,6 @@ namespace litecore { namespace websocket {
                 return;
             }
             
-            // CBL-1633: Need to check for EOF here, or _socket->write returns
-            // 0 endlessly
-            if(n == 0 && _socket->atWriteEOF()) {
-                if(_socket->atReadEOF()) {
-                    closeSocket();
-                }
-                
-                return;
-            }
-
             size_t nRemoved = beforeSize - outboxSnapshot.size();
             bool moreToWrite;
             {
@@ -498,6 +482,8 @@ namespace litecore { namespace websocket {
 
 
     void BuiltInWebSocket::closeWithError(C4Error err) {
+        if (_socket)
+            _socket->cancelCallbacks();
         if (err.code == 0) {
             onClose(0);
         } else {

@@ -65,6 +65,12 @@ namespace litecore {
         if (_config.flags & (kC4DB_ReadOnly |kC4DB_NoUpgrade))
             error::_throw(error::CantUpgradeDatabase, "Document versioning needs upgrade");
 
+        // Save current indexes
+        vector<IndexSpec> indexSpecs{defaultKeyStore().getIndexes()};
+        for (IndexSpec& spec: indexSpecs) {
+            defaultKeyStore().deleteIndex(spec.name, t);
+        }
+
         LogTo(DBLog, "*** Upgrading stored documents from %s to %s ***",
               kNameOfVersioning[curVersioning], kNameOfVersioning[newVersioning]);
         uint64_t docCount = 0;
@@ -94,6 +100,11 @@ namespace litecore {
             }
 
             ++docCount;
+        }
+        
+        // Restore all the indexes
+        for (IndexSpec& spec: indexSpecs) {
+            defaultKeyStore().createIndex(spec, t);
         }
 
         LogTo(DBLog, "*** %" PRIu64 " documents upgraded, now committing changes... ***", docCount);

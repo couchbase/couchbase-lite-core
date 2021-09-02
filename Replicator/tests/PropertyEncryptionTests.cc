@@ -75,8 +75,8 @@ public:
                         Dict properties,
                         slice keyPath,
                         slice cleartext,
-                        C4String* outAlgorithm,
-                        C4String* outKeyID,
+                        C4StringResult* outAlgorithm,
+                        C4StringResult* outKeyID,
                         C4Error* outError)
     {
         ++_numCallbacks;
@@ -84,9 +84,9 @@ public:
         if (!_expectedKeyPath.empty())
             CHECK(keyPath == _expectedKeyPath);
 
-        *outAlgorithm = C4String(_algorithm);
-        *outKeyID = C4String(_keyID);
-        
+        *outAlgorithm = C4StringResult(_algorithm);
+        *outKeyID = C4StringResult(_keyID);
+
         CHECK(cleartext == _expectedCleartext);
         
         if (_returnError) {
@@ -106,8 +106,8 @@ public:
                                             FLDict properties,
                                             C4String keyPath,
                                             C4Slice cleartext,
-                                            C4String* outAlgorithm,
-                                            C4String* outKeyID,
+                                            C4StringResult* outAlgorithm,
+                                            C4StringResult* outKeyID,
                                             C4Error* outError)
     {
         return C4SliceResult(((PropEncryptionTest*)context)->encrypt(documentID, properties,

@@ -20,6 +20,8 @@
 #include "c4Private.h"
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
+#include "c4Index.h"
+#include "c4IndexTypes.h"
 #include "FilePath.hh"
 #include "SecureRandomize.hh"
 #include <cmath>
@@ -904,6 +906,28 @@ TEST_CASE("Database Upgrade From 2.7 to New Rev-Trees", "[Database][Upgrade][C]"
 // In 3.0 it's no longer possible to open 2.7 databases without upgrading
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
+}
+
+
+TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
+    string dbPath = "upgrade_2.8.cblite2";
+    C4DatabaseFlags withFlags{0};
+
+    C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
+    C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
+    C4Database *db;
+    auto name = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
+    C4Log("---- copy Fixture to: %s/%s", TempDir().c_str(), name.asString().c_str());
+    C4Error err;
+    db = c4db_openNamed(name, &config, WITH_ERROR(&err));
+    CHECK(db);
+
+    Doc info(alloc_slice(c4db_getIndexesInfo(db, WITH_ERROR(&err))));
+    CHECK(info.asArray().count() == 1);
+    Dict index = info.asArray()[0].asDict();
+    REQUIRE(index);
+    CHECK(index["name"].asString() == "index1");
+    CHECK(index["type"].asInt() == kC4ValueIndex);
 }
 
 

@@ -371,12 +371,24 @@ namespace litecore {
             }
         }
 
+        // predicate tests the first argument, which will come from the array, against the second argument,
+        // the target of the query whether it is contained in the array. Before applying it, they must be
+        // of compatible types. We require they have identical valueTypes except for kBoolean, in which case they
+        // are to be compared as integer. Whether the target is a kNumber or kBoolean, its type appears here as kNumber.
+        // We only need to convert the type of the array element.
+        auto comparable = [](valueType vtype1, valueType targetType) {
+            // pre-condition: targetType != kBoolean
+            return   vtype1 == targetType ? true
+                   : targetType == kNumber ? vtype1 == kBoolean
+                   : false;
+        };
+
         // Now iterate the array/dict:
         bool found = false;
         if (collection->type() == kArray) {
             for (Array::iterator j(collection->asArray()); j; ++j) {
                 auto val = j.value();
-                if (val->type() == targetType && predicate(val, target)) {
+                if (comparable(val->type(), targetType) && predicate(val, target)) {
                     found = true;
                     break;
                 }
@@ -384,7 +396,7 @@ namespace litecore {
         } else {
             for (Dict::iterator j(collection->asDict()); j; ++j) {
                 auto val = j.value();
-                if (val->type() == targetType && predicate(val, target)) {
+                if (comparable(val->type(), targetType) && predicate(val, target)) {
                     found = true;
                     break;
                 }

@@ -7,12 +7,12 @@ pipeline {
         stage("Build Mobile") {
             parallel {
                 stage("Android") {
-                    agent { label 's61113u16 (litecore)' }
+                    agent { label 'mobile-lite-android' }
                     environment {
                        BRANCH = "${BRANCH_NAME}"
                     }
                     steps {
-                        sh 'jenkins/jenkins_android.sh $HOME/android-sdk'
+                        sh 'jenkins/jenkins_android.sh $HOME/jenkins/tools/android-sdk'
                     }
                 }
                 stage("iOS") {

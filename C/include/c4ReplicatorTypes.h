@@ -165,25 +165,25 @@ C4API_BEGIN_DECLS
 #ifdef COUCHBASE_ENTERPRISE
     /** Callback that encrypts properties, in documents pushed by the replicator. */
     typedef C4SliceResult (*C4ReplicatorPropertyEncryptionCallback)(
-                   void* C4NULLABLE context,///< Replicator’s context
-                   C4String documentID,     ///< Document’s ID
-                   FLDict properties,       ///< Document’s properties
-                   C4String keyPath,        ///< Key path of the property to be encrypted
-                   C4Slice input,           ///< Property data to be encrypted.
-                   C4String* outAlgorithm,  ///< On return: algorithm name (optional).
-                   C4String* outKeyID,      ///< On return: encryption Key Identifier (optional).
-                   C4Error* outError);      ///< On return: error domain/code, if returning NULL
+                   void* C4NULLABLE context,    ///< Replicator’s context
+                   C4String documentID,         ///< Document’s ID
+                   FLDict properties,           ///< Document’s properties
+                   C4String keyPath,            ///< Key path of the property to be encrypted
+                   C4Slice input,               ///< Property data to be encrypted.
+                   C4StringResult* outAlgorithm,///< On return: algorithm name (optional).
+                   C4StringResult* outKeyID,    ///< On return: encryption Key Identifier (optional).
+                   C4Error* outError);          ///< On return: error domain/code, if returning NULL
 
     /** Callback that decrypts properties, in documents pulled by the replicator. */
     typedef C4SliceResult (*C4ReplicatorPropertyDecryptionCallback)(
-                   void* C4NULLABLE context,///< Replicator’s context
-                   C4String documentID,     ///< Document’s ID
-                   FLDict properties,       ///< Document’s properties
-                   C4String keyPath,        ///< Key path of the property to be decrypted
-                   C4Slice input,           ///< Encrypted property data for you to decrypt.
-                   C4String algorithm,      ///< Algorithm name, if any.
-                   C4String keyID,          ///< Encryption Key Identifier, if any.
-                   C4Error* outError);      ///< On return: error domain/code, if returning NULL
+                   void* C4NULLABLE context,    ///< Replicator’s context
+                   C4String documentID,         ///< Document’s ID
+                   FLDict properties,           ///< Document’s properties
+                   C4String keyPath,            ///< Key path of the property to be decrypted
+                   C4Slice input,               ///< Encrypted property data for you to decrypt.
+                   C4String algorithm,          ///< Algorithm name, if any.
+                   C4String keyID,              ///< Encryption Key Identifier, if any.
+                   C4Error* outError);          ///< On return: error domain/code, if returning NULL
 #else
     typedef void* C4ReplicatorPropertyEncryptionCallback;
     typedef void* C4ReplicatorPropertyDecryptionCallback;
