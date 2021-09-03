@@ -60,10 +60,13 @@ Retained<C4Query> C4Query::newQuery(C4Collection *coll, C4QueryLanguage language
     } catch (Query::parseError &x) {
         if (outErrorPos) {
             *outErrorPos = x.errorPosition;
-            return nullptr;
-        } else {
-            throw;
         }
+        throw;
+    } catch (...) {
+        if (outErrorPos) {
+            *outErrorPos = -1;
+        }
+        throw;
     }
 }
 
