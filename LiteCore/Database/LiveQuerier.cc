@@ -135,6 +135,9 @@ namespace litecore {
         fleece::Stopwatch st;
         _backgroundDB->dataFile().useLocked([&](DataFile *df) {
             try {
+                if (!df)
+                    C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen);
+
                 // Create my own Query object associated with the Backgrounder's DataFile:
                 if (!_query) {
                     _query = df->compileQuery(_expression, _language);
