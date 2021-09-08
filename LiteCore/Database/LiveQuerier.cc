@@ -79,7 +79,11 @@ namespace litecore {
 
     void LiveQuerier::stop() {
         logInfo("Stopping");
-        _stopping = true;
+         _backgroundDB->dataFile().useLocked([&](DataFile *df) {
+             // CBL-2335: Guard access to the _stopping variable so that
+             // it is not changed at unpredictable times
+             _stopping = true;
+         });
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_stop));
     }
 
@@ -125,18 +129,23 @@ namespace litecore {
 
 
     void LiveQuerier::_runQuery(Query::Options options) {
-        if (_stopping)
-            return;
-
         _waitingToRun = false;
         logVerbose("Running query...");
         Retained<QueryEnumerator> newQE;
         C4Error error = {};
         fleece::Stopwatch st;
         _backgroundDB->dataFile().useLocked([&](DataFile *df) {
+            if (_stopping) {
+                // CBL-2335: Guard access to the _stopping variable so that
+                // it is not changed at unpredictable times
+                return;
+            }
+
             try {
-                if (!df)
+                if (_usuallyFalse(!df)) {
+                    // CBL-2335: Backup for the above, to avoid a crash
                     C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen);
+                }
 
                 // Create my own Query object associated with the Backgrounder's DataFile:
                 if (!_query) {
