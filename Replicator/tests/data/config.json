@@ -4,7 +4,11 @@
 			"log_keys": ["HTTP+", "Sync"]
 		}
 	},
-	
+
+    "disable_persistent_config": true,
+    "admin_interface_authentication": false,
+    "metrics_interface_authentication": false,
+
 	"adminInterface": ":4985",
 	
 	"databases": {
