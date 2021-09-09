@@ -73,6 +73,7 @@ namespace litecore {
 
     void LiveQuerier::start(const Query::Options &options) {
         _lastTime = clock::now();
+        _stopping = false;
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_runQuery), options);
     }
 
@@ -107,7 +108,6 @@ namespace litecore {
             });
         }
         logVerbose("...stopped");
-        _stopping = false;
     }
 
 
