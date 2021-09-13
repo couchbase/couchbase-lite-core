@@ -205,7 +205,7 @@ namespace litecore::repl {
             checkDocAndRevID(docID, revID);
 
             if (deletion <= 1 || deletion == 0b101) {
-                // New revision or tombstone or or (tombstone+removal):
+                // New revision or tombstone or (tombstone+removal):
                 // The removal flag, 0b100, could be due to pushing a tombstone to the SGW.
                 // We disregard the removal flag in this case.
                 docIDs.push_back(docID);
