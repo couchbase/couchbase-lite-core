@@ -1152,3 +1152,123 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
     // No pull filter called
     CHECK(_counter == 0);
 }
+
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete Doc", "[.SyncServer]") {
+    _remoteDBName = "scratch_revocation"_sl;
+    flushScratchDatabase();
+
+    // Setup Replicator Options:
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+
+    // Create a doc and push it:
+    c4::ref<C4Document> doc;
+    FLSlice docID = C4STR("doc");
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        doc = c4doc_create(db, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        REQUIRE(doc);
+    }
+    CHECK(c4db_getDocumentCount(db) == 1);
+    replicate(kC4OneShot, kC4Disabled);
+
+    // Delete the doc and push it:
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        REQUIRE(doc);
+        REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    }
+    CHECK(c4db_getDocumentCount(db) == 0);
+    replicate(kC4OneShot, kC4Disabled);
+
+    // Apply a pull and verify that the document is not purged.
+    replicate(kC4Disabled, kC4OneShot);
+    C4Error error;
+    doc = c4db_getDoc(db, C4STR("doc"), true, kDocGetAll, ERROR_INFO(error));
+    CHECK(error.code == 0);
+    CHECK(doc != nullptr);
+    REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    CHECK(c4db_getDocumentCount(db) == 0);
+}
+
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete then Create Doc", "[.SyncServer]") {
+    _remoteDBName = "scratch_revocation"_sl;
+    flushScratchDatabase();
+
+    // Setup Replicator Options:
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+
+    // Create a new doc and push it:
+    c4::ref<C4Document> doc;
+    FLSlice docID = C4STR("doc");
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        doc = c4doc_create(db, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        REQUIRE(doc);
+    }
+    CHECK(c4db_getDocumentCount(db) == 1);
+    replicate(kC4OneShot, kC4Disabled);
+
+    // Delete the doc and push it:
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        REQUIRE(doc);
+        REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    }
+    CHECK(c4db_getDocumentCount(db) == 0);
+    replicate(kC4OneShot, kC4Disabled);
+
+    // Create a new doc with the same id that was deleted:
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        doc = c4doc_create(db, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        REQUIRE(doc);
+    }
+    CHECK(c4db_getDocumentCount(db) == 1);
+
+    // Apply a pull and verify the document is not purged:
+    replicate(kC4Disabled, kC4OneShot);
+    C4Error error;
+    c4::ref<C4Document> doc2 = c4db_getDoc(db, docID, true, kDocGetAll, ERROR_INFO(error));
+    CHECK(error.code == 0);
+    CHECK(doc2 != nullptr);
+    CHECK(c4db_getDocumentCount(db) == 1);
+    CHECK(doc2->revID == doc->revID);
+}
