@@ -1,4 +1,13 @@
 ﻿<#
+
+# Copyright 2020-Present Couchbase, Inc.
+#
+# Use of this software is governed by the Business Source License included in
+# the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+# file, in accordance with the Business Source License, use of this software
+# will be governed by the Apache License, Version 2.0, included in the file
+# licenses/APL2.txt.
+
 .SYNOPSIS
     A script for the Couchbase official build servers to use to build LiteCore for Windows Desktop and UWP
 .DESCRIPTION
