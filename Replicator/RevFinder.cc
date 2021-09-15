@@ -203,9 +203,11 @@ namespace litecore::repl {
             
             // Validate docID and revID:
             checkDocAndRevID(docID, revID);
-            
-            if (deletion <= 1) {
-                // New revision (or tombstone):
+
+            if (deletion <= 1 || deletion == 0b101) {
+                // New revision or tombstone or (tombstone+removal):
+                // The removal flag, 0b100, could be due to pushing a tombstone to the SGW.
+                // We disregard the removal flag in this case.
                 docIDs.push_back(docID);
                 revIDs.push_back(revID);
                 changeIndexes.push_back(changeIndex);
@@ -214,6 +216,7 @@ namespace litecore::repl {
                 // Access lost -- doc removed from channel, or user lost access to channel.
                 // In SG 2.x "deletion" is a boolean flag, 0=normal, 1=deleted.
                 // SG 3.x adds 2=revoked, 3=revoked+deleted, 4=removal (from channel)
+                // If the removal flag is accompanyied by the deleted flag, we don't purge, c.f. above remark.
                 auto mode = (deletion < 4) ? RevocationMode::kRevokedAccess
                                            : RevocationMode::kRemovedFromChannel;
                 revoked.emplace_back(new RevToInsert(docID, revID, mode));
