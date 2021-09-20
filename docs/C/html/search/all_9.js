@@ -1,3 +1,13 @@
+/*
+Copyright 2016-Present Couchbase, Inc.
+
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+*/
+
 var searchData=
 [
   ['kc4arrayindex',['kC4ArrayIndex',['../group___indexing.html#ggaf0b8613e821a59cfdea501bec2d661cba0d12c792025a20b6b01036743309a931',1,'c4IndexTypes.h']]],

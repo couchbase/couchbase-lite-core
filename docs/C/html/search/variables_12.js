@@ -1,3 +1,13 @@
+/*
+Copyright 2016-Present Couchbase, Inc.
+
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+*/
+
 var searchData=
 [
   ['unitscompleted',['unitsCompleted',['../struct_c4_progress.html#aa317c3380e493c7e2a381f229678ad14',1,'C4Progress']]],

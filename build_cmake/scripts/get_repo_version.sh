@@ -1,5 +1,13 @@
 #!/bin/bash -e
 
+# Copyright 2017-Present Couchbase, Inc.
+#
+# Use of this software is governed by the Business Source License included in
+# the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+# file, in accordance with the Business Source License, use of this software
+# will be governed by the Apache License, Version 2.0, included in the file
+# licenses/APL2.txt.
+
 # This script creates a C header "repo_version.h" with string constants that
 # contain the current Git status of the repo, and the official build number/ID (if any).
 # It takes a single parameter, the path of the file to generate.

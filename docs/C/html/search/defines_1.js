@@ -1,3 +1,13 @@
+/*
+Copyright 2016-Present Couchbase, Inc.
+
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+*/
+
 var searchData=
 [
   ['c4_5fassume_5fnonnull_5fbegin',['C4_ASSUME_NONNULL_BEGIN',['../c4_compat_8h.html#a65df7846c7a495cb9a67d65a9110bb3c',1,'c4Compat.h']]],
