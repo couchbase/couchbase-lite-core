@@ -24,7 +24,7 @@
 // This is the struct that's forward-declared in the public c4Database.h
 struct c4Database : public c4Internal::Database {
     c4Database(const FilePath &path, C4DatabaseConfig config, C4DatabaseTag dbTag=DatabaseTagOther)
-    :Database(path, config) { }
+    :Database(path, config, dbTag) { }
 
     C4ExtraInfo extraInfo { };
 
