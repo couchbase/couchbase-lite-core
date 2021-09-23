@@ -32,6 +32,7 @@
 #include <dirent.h>
 #include <algorithm>
 #include <thread>
+#include <sstream>
 
 #include "SQLiteDataFile.hh"
 
@@ -41,7 +42,7 @@ using namespace std;
 namespace litecore {
 
     // How long deleteDataFile() should wait for other threads to close their connections
-    static const unsigned kOtherDBCloseTimeoutSecs = 3;
+    static const unsigned kOtherDBCloseTimeoutSecs = 6;
 
 
     LogDomain DBLog("DB");
@@ -220,6 +221,21 @@ namespace litecore {
     {
         shared->condemn(true);
         try {
+            shared->forOpenDataFiles(file, [](DataFile* df) {
+                if (df->databaseTag() == DatabaseTagExternal) {
+                    error::_throw(error::Busy, "Can't delete db file while the caller has open connections");
+                }
+            });
+            
+            // c.f. C4_ENUM(uint32_t, C4DatabaseTag) in DataFile.hh
+            const char* const kDatabaseTags[] = {
+                "external",
+                "replicator",
+                "backgroundDB",
+                "REST",
+                "Other"
+            };
+            
             // Wait for other connections to close -- in multithreaded setups there may be races where
             // another thread takes a bit longer to close its connection.
             int n = 0;
@@ -235,10 +251,22 @@ namespace litecore {
                 if (n++ == 0)
                     LogTo(DBLog, "Waiting for %ld other connection(s) to close before deleting %s",
                           otherConnections, shared->path.c_str());
-                if (st.elapsed() > kOtherDBCloseTimeoutSecs)
-                    error::_throw(error::Busy, "Can't delete db file while other connections are open");
-                else
+                if (st.elapsed() > kOtherDBCloseTimeoutSecs) {
+                    ostringstream dbtags;
+                    shared->forOpenDataFiles(nullptr, [&](DataFile* df) {
+                        if (!dbtags.str().empty()) {
+                            dbtags << ", ";
+                        }
+                        dbtags << kDatabaseTags[df->databaseTag()];
+                    });
+                    ostringstream ss;
+                    ss << "Can't delete db file while other connections are open. The open connections are tagged "
+                    << dbtags.str() << ".";
+                    error::_throw(error::Busy, "Can't delete db file while other connections are open."
+                                               " The open connections are tagged %s.", ss.str().c_str());
+                } else {
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
             }
             
             if (file)

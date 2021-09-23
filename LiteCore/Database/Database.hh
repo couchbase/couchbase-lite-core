@@ -51,7 +51,7 @@ namespace c4Internal {
     /** A top-level LiteCore database. */
     class Database : public RefCounted, public DataFile::Delegate, public fleece::InstanceCountedIn<Database> {
     public:
-        Database(const string &path, C4DatabaseConfig config);
+        Database(const string &path, C4DatabaseConfig config, C4DatabaseTag dbTag =DatabaseTagOther);
 
         void close();
         void deleteDatabase();

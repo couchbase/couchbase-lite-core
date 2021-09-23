@@ -90,8 +90,17 @@ C4Database* c4db_open(C4Slice path,
                       const C4DatabaseConfig *configP,
                       C4Error *outError) noexcept
 {
+    return dbOpen(path, configP, DatabaseTagExternal, outError);
+}
+
+// The corresponding internally-faced API
+C4Database* dbOpen(C4String path,
+                   const C4DatabaseConfig *configP,
+                   C4DatabaseTag dbTag,
+                   C4Error *outError) noexcept
+{
     return tryCatch<C4Database*>(outError, [=] {
-        return retain(new C4Database(toString(path), *configP));
+            return retain(new C4Database(toString(path), *configP, dbTag));
     });
 }
 
@@ -100,17 +109,35 @@ C4Database* c4db_openNamed(C4String name,
                            const C4DatabaseConfig2 *config C4NONNULL,
                            C4Error *outError) C4API
 {
+    return dbOpenNamed(name, config, DatabaseTagExternal, outError);
+}
+
+// The corresponding internally-faced API
+C4Database* dbOpenNamed(C4String name,
+                        const C4DatabaseConfig2 *config C4NONNULL,
+                        C4DatabaseTag dbTag,
+                        C4Error *outError) C4API
+{
     FilePath path = dbPath(name, config->parentDirectory);
     C4DatabaseConfig oldConfig = newToOldConfig(config);
-    return c4db_open(slice(path), &oldConfig, outError);
+    return dbOpen(slice(path), &oldConfig, DatabaseTagExternal, outError);
 }
 
 
 C4Database* c4db_openAgain(C4Database* db,
                            C4Error *outError) noexcept
 {
+    return dbOpenAgain(db, DatabaseTagExternal, outError);
+
+}
+
+// The corresponding internally-faced API
+C4Database* dbOpenAgain(C4Database* db,
+                        C4DatabaseTag dbTag,
+                        C4Error *outError) noexcept
+{
     string path = db->path();
-    return c4db_open({path.data(), path.size()}, c4db_getConfig(db), outError);
+    return dbOpen({path.data(), path.size()}, c4db_getConfig(db), DatabaseTagExternal, outError);
 }
 
 
