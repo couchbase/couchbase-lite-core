@@ -718,6 +718,32 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
     REQUIRE(c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error));
 }
 
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Test delete while database open", "[Database][C]") {
+    // CBL-2357: Distinguish between internal and external database handles so that
+    // external handles open during a delete will be a fast-fail
+
+    C4Error err;
+    C4Database* otherConnection = c4db_openAgain(db, &err);
+    REQUIRE(otherConnection);
+    c4db_close(otherConnection, &err);
+
+    auto start = chrono::system_clock::now();
+    {
+        ExpectingExceptions e;
+        CHECK(!c4db_delete(otherConnection, &err));
+    }
+
+    auto end = chrono::system_clock::now();
+    c4db_release(otherConnection);
+
+    auto timeTaken = chrono::duration_cast<chrono::seconds>(end - start);
+    CHECK(timeTaken < 2s);
+    CHECK(err.code == kC4ErrorBusy);
+
+    auto message = slice(c4error_getDescription(err));
+    CHECK(message == "Can't delete db file while the caller has open connections");
+}
+
 
 #pragma mark - SCHEMA UPGRADES
 
