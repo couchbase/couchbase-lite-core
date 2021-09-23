@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "c4Compat.h"
 #include "KeyStore.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
@@ -36,6 +37,14 @@ namespace fleece { namespace impl {
     class SharedKeys;
     class PersistentSharedKeys;
 } }
+
+typedef C4_ENUM(uint32_t, C4DatabaseTag) {
+    DatabaseTagExternal,
+    DatebaseTagReplicator,
+    DatabaseTagBgDB,
+    DatabaseTagREST,
+    DatabaseTagOther
+};
 
 namespace litecore {
 
@@ -68,6 +77,7 @@ namespace litecore {
             bool                upgradeable    :1;      ///< DB schema can be upgraded
             EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
             alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
+            C4DatabaseTag       dbTag;
             static const Options defaults;
         };
 
@@ -92,6 +102,14 @@ namespace litecore {
 
         /** Opens another instance on the same file. */
         DataFile* openAnother(Delegate* NONNULL);
+        
+        C4DatabaseTag databaseTag() const {
+            return _options.dbTag;
+        }
+        
+        void setDatabaseTag(C4DatabaseTag dbTag) {
+            _options.dbTag = dbTag;
+        }
 
         virtual uint64_t fileSize();
 

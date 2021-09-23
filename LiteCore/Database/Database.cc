@@ -103,7 +103,8 @@ namespace c4Internal {
 
 
     Database::Database(const string &bundlePath,
-                       C4DatabaseConfig inConfig)
+                       C4DatabaseConfig inConfig,
+                       C4DatabaseTag dbTag)
     :_dataFilePath(findOrCreateBundle(bundlePath,
                                       (inConfig.flags & kC4DB_Create) != 0,
                                       inConfig.storageEngine))
@@ -118,6 +119,7 @@ namespace c4Internal {
         options.upgradeable = (config.flags & kC4DB_NoUpgrade) == 0;
         options.useDocumentKeys = true;
         options.encryptionAlgorithm = (EncryptionAlgorithm)config.encryptionKey.algorithm;
+        options.dbTag = dbTag;
         if (options.encryptionAlgorithm != kNoEncryption) {
 #ifdef COUCHBASE_ENTERPRISE
             options.encryptionKey = alloc_slice(config.encryptionKey.bytes,

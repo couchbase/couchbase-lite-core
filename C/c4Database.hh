@@ -23,8 +23,8 @@
 
 // This is the struct that's forward-declared in the public c4Database.h
 struct c4Database : public c4Internal::Database {
-    c4Database(const FilePath &path, C4DatabaseConfig config)
-    :Database(path, config) { }
+    c4Database(const FilePath &path, C4DatabaseConfig config, C4DatabaseTag dbTag=DatabaseTagOther)
+    :Database(path, config, dbTag) { }
 
     C4ExtraInfo extraInfo { };
 
@@ -34,3 +34,22 @@ private:
 
 
 static inline C4Database* external(c4Internal::Database *db)    {return (C4Database*)db;}
+
+// Internally-faced APIs
+C4Database* dbOpen(C4String path,
+                   const C4DatabaseConfig *config C4NONNULL,
+                   C4DatabaseTag dbTag,
+                   C4Error *outError) C4API;
+
+/** Opens a database given its name (without the ".cblite2" extension) and directory. */
+C4Database* dbOpenNamed(C4String name,
+                        const C4DatabaseConfig2 *config C4NONNULL,
+                        C4DatabaseTag dbTag,
+                        C4Error *outError) C4API;
+
+/** Opens a new handle to the same database file as `db`.
+    The new connection is completely independent and can be used on another thread. */
+C4Database* dbOpenAgain(C4Database* db C4NONNULL,
+                        C4DatabaseTag dbTag,
+                        C4Error *outError) C4API;
+

@@ -740,8 +740,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Test delete while database open", "[Data
     CHECK(timeTaken < 2s);
     CHECK(err.code == kC4ErrorBusy);
 
-    auto message = slice(c4error_getDescription(err));
-    CHECK(message == "Can't delete db file while the caller has open connections");
+    string message = string(slice(c4error_getDescription(err)));
+    CHECK(message.find("Can't delete db file while the caller has open connections") != string::npos);
 }
 
 

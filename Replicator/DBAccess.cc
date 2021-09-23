@@ -17,6 +17,7 @@
 //
 
 #include "DBAccess.hh"
+#include "C4Database.hh"
 #include "ReplicatedRev.hh"
 #include "ReplicatorTuning.hh"
 #include "Error.hh"
@@ -59,7 +60,7 @@ namespace litecore { namespace repl {
             use([&](C4Database *db) {
                 if (!_insertionDB) {
                     C4Error error;
-                    C4Database *idb = c4db_openAgain(db, &error);
+                    C4Database *idb = dbOpenAgain(db, DatebaseTagReplicator, &error);
                     if (!idb) {
                         logError("Couldn't open new db connection: %s", c4error_descriptionStr(error));
                         idb = c4db_retain(db);
