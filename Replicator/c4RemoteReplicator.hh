@@ -133,6 +133,7 @@ namespace c4Internal {
                 _status.error = err;
                 return false;
             }
+            c4db_setDatabaseTag(dbCopy, DatabaseTagReplicator);
             
             _replicator = new Replicator(dbCopy, webSocket, *this, _options);
             
