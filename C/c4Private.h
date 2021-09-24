@@ -55,6 +55,17 @@ bool c4log_getWarnOnErrors(void) C4API;
     exception occurs. */
 void c4log_enableFatalExceptionBacktrace(void) C4API;
 
+typedef C4_ENUM(uint32_t, C4DatabaseTag) {
+    DatabaseTagAppOpened,
+    DatabaseTagReplicator,
+    DatabaseTagBgDB,
+    DatabaseTagREST,
+    DatabaseTagOther
+};
+
+C4DatabaseTag c4db_getDatabaseTag(C4Database* db) C4API;
+void c4db_setDatabaseTag(C4Database* db, C4DatabaseTag dbTag) C4API;
+
 /** Locks a recursive mutex associated with the C4Database instance.
     Blocks if it's already locked. */
 void c4db_lock(C4Database *db) C4API;

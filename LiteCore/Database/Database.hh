@@ -155,6 +155,14 @@ namespace c4Internal {
         BackgroundDB* backgroundDatabase();
         void stopBackgroundTasks();
 
+        C4DatabaseTag getDatabaseTag() const {
+            return (C4DatabaseTag)_dataFile->databaseTag();
+        }
+
+        void setDatabaseTag(C4DatabaseTag dbTag) {
+            _dataFile->setDatabaseTag((DatabaseTag)dbTag);
+        }
+
 #if 0 // unused
         bool mustUseVersioning(C4DocumentVersioning, C4Error*) noexcept;
 #endif
