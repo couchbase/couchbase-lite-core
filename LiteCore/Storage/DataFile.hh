@@ -48,8 +48,7 @@ namespace litecore {
         kDatabaseTagAppOpened,
         kDatabaseTagReplicator,
         kDatabaseTagBgDB,
-        kDatabaseTagREST,
-        kDatabaseTagOther
+        kDatabaseTagREST
     };
 
     /** A database file, primarily a container of KeyStores which store the actual data.

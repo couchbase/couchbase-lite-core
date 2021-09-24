@@ -59,8 +59,7 @@ typedef C4_ENUM(uint32_t, C4DatabaseTag) {
     DatabaseTagAppOpened,
     DatabaseTagReplicator,
     DatabaseTagBgDB,
-    DatabaseTagREST,
-    DatabaseTagOther
+    DatabaseTagREST
 };
 
 C4DatabaseTag c4db_getDatabaseTag(C4Database* db) C4API;

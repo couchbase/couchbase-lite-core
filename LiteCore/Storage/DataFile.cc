@@ -237,8 +237,7 @@ namespace litecore {
                 "appOpened",
                 "replicator",
                 "backgroundDB",
-                "REST",
-                "Other"
+                "REST"
             };
 
             // Wait for other connections to close -- in multithreaded setups there may be races where
