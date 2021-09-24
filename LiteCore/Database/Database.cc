@@ -118,6 +118,7 @@ namespace c4Internal {
         options.upgradeable = (config.flags & kC4DB_NoUpgrade) == 0;
         options.useDocumentKeys = true;
         options.encryptionAlgorithm = (EncryptionAlgorithm)config.encryptionKey.algorithm;
+        options.dbTag = kDatabaseTagAppOpened;
         if (options.encryptionAlgorithm != kNoEncryption) {
 #ifdef COUCHBASE_ENTERPRISE
             options.encryptionKey = alloc_slice(config.encryptionKey.bytes,

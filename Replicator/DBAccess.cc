@@ -22,6 +22,7 @@
 #include "Error.hh"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
+#include "c4Private.h"
 #include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
@@ -63,6 +64,8 @@ namespace litecore { namespace repl {
                     if (!idb) {
                         logError("Couldn't open new db connection: %s", c4error_descriptionStr(error));
                         idb = c4db_retain(db);
+                    } else {
+                        c4db_setDatabaseTag(idb, DatabaseTagReplicator);
                     }
                     _insertionDB.reset(new access_lock<C4Database*>(move(idb)));
                 }
