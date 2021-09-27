@@ -1,3 +1,12 @@
+/*
+Copyright 2016-Present Couchbase, Inc.
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+*/
+
 var searchData=
 [
   ['max_5frotate_5fcount',['max_rotate_count',['../struct_c4_log_file_options.html#abf2712a60653edf16876d8e4dc16a280',1,'C4LogFileOptions']]],

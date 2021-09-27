@@ -1,3 +1,12 @@
+/*
+Copyright 2016-Present Couchbase, Inc.
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+*/
+
 var searchData=
 [
   ['datasource',['dataSource',['../struct_c4_full_text_match.html#ac5b72500a4c260a99d26a05932d0bb95',1,'C4FullTextMatch']]],
