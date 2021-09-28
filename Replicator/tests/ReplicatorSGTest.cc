@@ -28,7 +28,6 @@
 #include "SecureRandomize.hh"
 #include "fleece/Fleece.hh"
 #include <cstdlib>
-#include <future>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -667,7 +666,7 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
 }
 
 
-TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer][jzhao]") {
+TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") {
     flushScratchDatabase();
     _logRemoteRequests = false;
 
@@ -699,10 +698,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer][jz
 
     C4Log("-------- Updating docs on SG --------");
     // Now update the docs on SG:
-    std::promise<void> sentPromise;
-    std::future<void> updatesDone = sentPromise.get_future();
     unsigned numUpdates = 14;
-    std::thread th([&](std::promise<void>&& sentPromise) {
+    std::thread th([&]() {
         unsigned nu = numUpdates;
         for (int c = 1; c <= nu; ++c) {
             revIDs.emplace_back();
@@ -736,22 +733,8 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer][jz
                 revIDs[c].emplace_back(resDict.get(Dict::Key("rev"_sl)).asString());
             }
         }
-        sentPromise.set_value();
-    }, std::move(sentPromise));
+    });
     th.detach();
-
-    bool concurrent = false;
-    SECTION("Concurrent update and pull") {
-        concurrent = true;
-    }
-    SECTION("Pull after updates have been sent") {
-        concurrent = false;
-    }
-
-    if (!concurrent)  {
-        // Wait for updates to be sent.
-        updatesDone.get();
-    }
 
     REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR()));
 
@@ -760,29 +743,27 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer][jz
     while ((status = c4repl_getStatus(_repl)).level != kC4Idle) {
         std::this_thread::sleep_for(1ms);
     }
-    if (concurrent) {
-        // we wait for all documents to reach revision numUpdates + 1.
-        while (true) {
-            bool done = true;
-            for (slice docId: docIDs) {
-                c4::ref<C4Document> doc = c4doc_get(db, docId, true, ERROR_INFO());
-                string revid = string(doc->revID);
-                std::istringstream is(revid);
-                int i;
-                is >> i;
-                if (i <= numUpdates) {
-                    done = false;
-                    std::cout << "Replicator comes to Idle but not done" << std::endl;
-                    std::this_thread::sleep_for(1ms);
-                    break;
-                }
-            }
-            if (done) {
+    // we wait for all documents to reach revision numUpdates + 1.
+    while (true) {
+        bool done = true;
+        for (slice docId: docIDs) {
+            c4::ref<C4Document> doc = c4doc_get(db, docId, true, ERROR_INFO());
+            string revid = string(doc->revID);
+            std::istringstream is(revid);
+            int i;
+            is >> i;
+            if (i <= numUpdates) {
+                done = false;
+                std::cout << "Replicator comes to Idle but not done" << std::endl;
+                std::this_thread::sleep_for(1ms);
                 break;
             }
         }
+        if (done) {
+            break;
+        }
     }
-
+    // All documents reached target revisions. Now, stop it.
     c4repl_stop(_repl);
     while ((status = c4repl_getStatus(_repl)).level != kC4Stopped) {
         std::this_thread::sleep_for(1ms);
@@ -793,10 +774,6 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer][jz
           status.progress.documentCount, c4db_getDocumentCount(db));
 
     CHECK(status.progress.unitsTotal == status.progress.unitsCompleted);
-    if (!concurrent) {
-        CHECK(numDocs == status.progress.documentCount);
-        CHECK(status.progress.unitsTotal == status.progress.documentCount);
-    }
 }
 
 
