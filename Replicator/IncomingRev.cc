@@ -64,8 +64,9 @@ namespace litecore { namespace repl {
 
     // Read the 'rev' message, then parse either synchronously or asynchronously.
     // This runs on the caller's (Puller's) thread.
-    void IncomingRev::handleRev(blip::MessageIn *msg) {
+    void IncomingRev::handleRev(blip::MessageIn *msg, uint64_t bodySizeOfRemoteSequence) {
         reinitialize();
+        _bodySizeOfRemoteSequence = bodySizeOfRemoteSequence;
 
         // Set up to handle the current message:
         DebugAssert(!_revMessage);
@@ -373,6 +374,7 @@ namespace litecore { namespace repl {
         _rev = nullptr;
         _parent = nullptr;
         _remoteSequence = {};
+        _bodySizeOfRemoteSequence = 0;
     }
 
 

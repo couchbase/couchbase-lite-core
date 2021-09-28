@@ -194,8 +194,10 @@ namespace litecore { namespace repl {
         _revFinder->revReceived();
         decrement(_pendingRevMessages);
         Retained<IncomingRev> inc = makeIncomingRev();
-        if (inc)
-            inc->handleRev(msg);  // ... will call _revWasHandled when it's finished
+        if (inc) {
+            slice sequenceStr = msg->property(slice("sequence"));
+            inc->handleRev(msg, _missingSequences.bodySizeOfSequence(RemoteSequence(sequenceStr)));  // ... will call _revWasHandled when it's finished
+        }
     }
 
 
@@ -283,7 +285,7 @@ namespace litecore { namespace repl {
 
 
     void Puller::revReRequested(fleece::Retained<IncomingRev> inc) {
-        enqueue(FUNCTION_TO_QUEUE(Puller::_revReRequested), _missingSequences.bodySizeOfSequence(inc->remoteSequence()));
+        enqueue(FUNCTION_TO_QUEUE(Puller::_revReRequested), inc->bodySizeOfRemoteSequence());
     }
 
 
