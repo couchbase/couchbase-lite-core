@@ -530,22 +530,27 @@ fleece::alloc_slice C4Test::readFile(std::string path) {
 }
 
 
-bool C4Test::readFileByLines(string path, function_ref<bool(FLSlice)> callback) {
+bool C4Test::readFileByLines(string path, function_ref<bool(FLSlice)> callback, size_t maxLines) {
     INFO("Reading lines from " << path);
     fstream fd(path.c_str(), ios_base::in);
     REQUIRE(fd);
     vector<char> buf(1000000);  // The Wikipedia dumps have verrry long lines
+    size_t lineCount = 0;
     while (fd.good()) {
+        if (maxLines > 0 && lineCount == maxLines) {
+            break;
+        }
         fd.getline(buf.data(), buf.capacity());
         auto len = fd.gcount();
         if (len <= 0)
             break;
+        ++lineCount;
         REQUIRE(buf[len-1] == '\0');
         --len;
         if (!callback({buf.data(), (size_t)len}))
             return false;
     }
-    REQUIRE(fd.eof());
+    REQUIRE((fd.eof() || (maxLines > 0 && lineCount == maxLines)));
     return true;
 }
 
@@ -598,7 +603,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
 
 
 // Read a file that contains a JSON document per line. Every line becomes a document.
-unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Database* database) {
+unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Database* database, size_t maxLines) {
     C4Log("Reading %s ...  ", path.c_str());
     fleece::Stopwatch st;
     if(database == nullptr) {
@@ -633,7 +638,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             if (verbose && numDocs % 100000 == 0)
                 C4Log("%u  ", numDocs);
             return true;
-        });
+        }, maxLines);
         C4Log("Committing...");
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");

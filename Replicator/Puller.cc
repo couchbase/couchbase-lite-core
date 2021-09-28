@@ -253,8 +253,11 @@ namespace litecore { namespace repl {
 
     void Puller::_revsFinished(int gen) {
         auto revs = _returningRevs.pop(gen);
+        if (!revs) {
+            return;
+        }
         for (IncomingRev *inc : *revs) {
-            // If it was provisionally inserted, _activeIncomingRevs will have been decremented
+            // If it was provisionally inserted, _activeIncomingRevs will have been decremented
             // already (in _revsWereProvisionallyHandled.) If not, decrement now:
             if (!inc->wasProvisionallyInserted())
                 decrement(_activeIncomingRevs);
@@ -280,17 +283,17 @@ namespace litecore { namespace repl {
 
 
     void Puller::revReRequested(fleece::Retained<IncomingRev> inc) {
-        enqueue(FUNCTION_TO_QUEUE(Puller::_revReRequested), inc);
+        enqueue(FUNCTION_TO_QUEUE(Puller::_revReRequested), _missingSequences.bodySizeOfSequence(inc->remoteSequence()));
     }
 
 
-    void Puller::_revReRequested(Retained<IncomingRev> inc) {
+    void Puller::_revReRequested(uint64_t missingBodySize) {
         // Regression from CBL-936 / CBG-881:  Because after a delta failure the full revision is
         // requested without another changes message, this needs to be bumped back up because it
         // won't get another changes message to bump it.
         increment(_pendingRevMessages);
         _revFinder->reRequestingRev();
-        addProgress({0, _missingSequences.bodySizeOfSequence(inc->remoteSequence())});
+        addProgress({0, missingBodySize});
     }
 
 

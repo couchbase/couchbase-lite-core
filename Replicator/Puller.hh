@@ -72,7 +72,7 @@ namespace litecore { namespace repl {
         void maybeStartIncomingRevs();
         void _revsWereProvisionallyHandled();
         void _revsFinished(int gen);
-        void _revReRequested(fleece::Retained<IncomingRev>);
+        void _revReRequested(uint64_t missingBodySize);
         void completedSequence(const RemoteSequence&,
                                bool withTransientError =false, bool updateCheckpoint =true);
         void updateLastSequence();
