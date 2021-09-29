@@ -284,8 +284,8 @@ namespace litecore { namespace repl {
     }
 
 
-    void Puller::revReRequested(fleece::Retained<IncomingRev> inc) {
-        enqueue(FUNCTION_TO_QUEUE(Puller::_revReRequested), inc->bodySizeOfRemoteSequence());
+    void Puller::revReRequested(uint64_t missingBodySize) {
+        enqueue(FUNCTION_TO_QUEUE(Puller::_revReRequested), missingBodySize);
     }
 
 

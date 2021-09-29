@@ -48,8 +48,6 @@ namespace litecore { namespace repl {
 
         int progressNotificationLevel() const override;
 
-        uint64_t bodySizeOfRemoteSequence() const { return _bodySizeOfRemoteSequence; }
-
     protected:
         ActivityLevel computeActivityLevel() const override;
 
@@ -93,7 +91,7 @@ namespace litecore { namespace repl {
         actor::Timer::time          _lastNotifyTime;
         bool                        _mayContainBlobs;
         bool                        _mayContainEncryptedProperties;
-        uint64_t                    _bodySizeOfRemoteSequence;
+        uint64_t                    _bodySize;
     };
 
 } }

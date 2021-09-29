@@ -43,7 +43,7 @@ namespace litecore { namespace repl {
         // Called only by IncomingRev
         void revWasProvisionallyHandled()           {_provisionallyHandledRevs.add(1);}
         void revWasHandled(IncomingRev *inc NONNULL);
-        void revReRequested(fleece::Retained<IncomingRev> inc);
+        void revReRequested(uint64_t missingBodySize);
 
         void insertRevision(RevToInsert *rev NONNULL);
 
