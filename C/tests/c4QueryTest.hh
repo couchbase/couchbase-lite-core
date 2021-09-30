@@ -136,7 +136,7 @@ public:
         TransactionHelper t(db);
 
         C4Error c4err;
-        size_t count = 2 + firstName != nullptr;
+        size_t count = 2 + (firstName != nullptr);
         FLEncoder enc = c4db_getSharedFleeceEncoder(db);
         FLEncoder_BeginDict(enc, count);
         FLEncoder_WriteKey(enc, FLSTR("custom"));

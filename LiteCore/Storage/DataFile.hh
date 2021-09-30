@@ -45,10 +45,14 @@ namespace litecore {
 
     // Must match ::C4DatabaseTag, declared in c4Private.h
     enum DatabaseTag: uint32_t {
-        kDatabaseTagAppOpened,
-        kDatabaseTagReplicator,
-        kDatabaseTagBgDB,
-        kDatabaseTagREST
+        kDatabaseTag_AppOpened,
+        kDatabaseTag_DBAccess,
+        kDatabaseTag_C4RemoteReplicator,
+        kDatabaseTag_C4IncomingReplicator,
+        kDatabaseTag_C4LocalReplicator1,
+        kDatabaseTag_C4LocalReplicator2,
+        kDatabaseTag_BackgroundDB,
+        kDatabaseTag_RESTListener
     };
 
     /** A database file, primarily a container of KeyStores which store the actual data.

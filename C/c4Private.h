@@ -56,10 +56,14 @@ bool c4log_getWarnOnErrors(void) C4API;
 void c4log_enableFatalExceptionBacktrace(void) C4API;
 
 typedef C4_ENUM(uint32_t, C4DatabaseTag) {
-    DatabaseTagAppOpened,
-    DatabaseTagReplicator,
-    DatabaseTagBgDB,
-    DatabaseTagREST
+    DatabaseTag_AppOpened,
+    DatabaseTag_DBAccess,
+    DatabaseTag_C4RemoteReplicator,
+    DatabaseTag_C4IncomingReplicator,
+    DatabaseTag_C4LocalReplicator1,
+    DatabaseTag_C4LocalReplicator2,
+    DatabaseTag_BackgroundDB,
+    DatabaseTag_RESTListener
 };
 
 C4DatabaseTag c4db_getDatabaseTag(C4Database* db) C4API;

@@ -33,7 +33,7 @@ namespace litecore {
     ,_database(db)
     {
         use([this](DataFile* df) {
-              df->setDatabaseTag(kDatabaseTagBgDB);
+              df->setDatabaseTag(kDatabaseTag_BackgroundDB);
         });
     }
 

@@ -65,7 +65,7 @@ namespace litecore { namespace repl {
                         logError("Couldn't open new db connection: %s", c4error_descriptionStr(error));
                         idb = c4db_retain(db);
                     } else {
-                        c4db_setDatabaseTag(idb, DatabaseTagReplicator);
+                        c4db_setDatabaseTag(idb, DatabaseTag_DBAccess);
                     }
                     _insertionDB.reset(new access_lock<C4Database*>(move(idb)));
                 }
