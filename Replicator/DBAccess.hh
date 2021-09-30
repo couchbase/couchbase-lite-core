@@ -41,6 +41,10 @@ namespace litecore { namespace repl {
         DBAccess(C4Database* db, bool disableBlobSupport);
         ~DBAccess();
 
+        /** Shuts down the DBAccess and makes further use of it invalid.  Any attempt to use
+            it after this point is considered undefined behavior. */
+        void close();
+
         /** Looks up the remote DB identifier of this replication. */
         C4RemoteID lookUpRemoteDBID(slice key, C4Error *outError);
 
