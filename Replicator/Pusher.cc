@@ -435,28 +435,34 @@ namespace litecore { namespace repl {
         if (!_proposeChanges)
             return false;
         try {
-            Retained<C4Document> doc = _db->getDoc(rev->docID, kDocGetAll);
-            if (doc && C4Document::equalRevIDs(doc->revID(), rev->revID)) {
-                alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
-                if (foreignAncestor && foreignAncestor != rev->remoteAncestorRevID) {
-                    // Remote ancestor has changed, so retry if it's not a conflict:
-                    doc->selectRevision(foreignAncestor, false);
-                    if (!(doc->selectedRev().flags & kRevIsConflict)) {
-                        logInfo("I see the remote rev of '%.*s' is now #%.*s; retrying push",
-                                SPLAT(rev->docID), SPLAT(foreignAncestor));
-                        rev->remoteAncestorRevID = foreignAncestor;
-                        return true;
+            bool retry = false;
+            _db->useLocked([&](C4Database *db) {
+                DBAccess::AssertDBOpen(db);
+
+                Retained<C4Document> doc = db->getDocument(rev->docID, true, kDocGetAll);
+                if (doc && C4Document::equalRevIDs(doc->revID(), rev->revID)) {
+                    alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
+                    if (foreignAncestor && foreignAncestor != rev->remoteAncestorRevID) {
+                        // Remote ancestor has changed, so retry if it's not a conflict:
+                        doc->selectRevision(foreignAncestor, false);
+                        if (!(doc->selectedRev().flags & kRevIsConflict)) {
+                            logInfo("I see the remote rev of '%.*s' is now #%.*s; retrying push",
+                                    SPLAT(rev->docID), SPLAT(foreignAncestor));
+                            rev->remoteAncestorRevID = foreignAncestor;
+                            retry = true;
+                        }
+                    } else {
+                        // No change to remote ancestor, but try again later if it changes:
+                        logInfo("Will try again if remote rev of '%.*s' is updated",
+                                SPLAT(rev->docID));
+                        _conflictsIMightRetry.emplace(rev->docID, rev);
                     }
                 } else {
-                    // No change to remote ancestor, but try again later if it changes:
-                    logInfo("Will try again if remote rev of '%.*s' is updated",
-                            SPLAT(rev->docID));
-                    _conflictsIMightRetry.emplace(rev->docID, rev);
+                    // Doc has changed, so this rev is obsolete
+                    revToSendIsObsolete(*rev);
                 }
-            } else {
-                // Doc has changed, so this rev is obsolete
-                revToSendIsObsolete(*rev);
-            }
+            });
+            return retry;
         } catchAndWarn();
         return false;
     }
@@ -491,6 +497,15 @@ namespace litecore { namespace repl {
                 C4Error error = C4Error::make(WebSocketDomain, 409, "conflicts with server document"_sl);
                 finishedDocumentWithError(rev, error, false);
             }
+        }
+    }
+
+    void Pusher::onError(C4Error err) {
+        // If the database closes on replication stop, this error might happen
+        // but it is inconsequential so suppress it.  It will still be logged, but
+        // not in the worker's error property.
+        if(err.domain != LiteCoreDomain || err.code != kC4ErrorNotOpen) {
+            Worker::onError(err);
         }
     }
 

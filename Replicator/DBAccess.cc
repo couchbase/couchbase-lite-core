@@ -50,6 +50,7 @@ namespace litecore { namespace repl {
     AccessLockedDB& DBAccess::insertionDB() {
         if (!_insertionDB) {
             useLocked([&](C4Database *db) {
+                AssertDBOpen(db);
                 if (!_insertionDB) {
                     Retained<C4Database> idb;
                     try {
@@ -68,7 +69,24 @@ namespace litecore { namespace repl {
 
 
     DBAccess::~DBAccess() {
+        close();
+    }
+
+
+    void DBAccess::close() {
         _timer.stop();
+        useLocked([&](Retained<C4Database> &db) {
+            // Any use of the class after this will result in a crash that
+            // should be easily identifiable, so forgo asserting if the pointer
+            // is null in other areas.
+            db = nullptr;
+        });
+        if (_insertionDB) {
+            _insertionDB->useLocked([&](Retained<C4Database> &idb) {
+                idb = nullptr;
+            });
+            _insertionDB.reset();
+        }
     }
 
 
@@ -89,7 +107,10 @@ namespace litecore { namespace repl {
 
     C4RemoteID DBAccess::lookUpRemoteDBID(slice key) {
         Assert(_remoteDBID == 0);
-        _remoteDBID = useLocked()->getRemoteDBID(key, true);
+        useLocked([&](C4Database *db) {
+            AssertDBOpen(db);
+            _remoteDBID = db->getRemoteDBID(key, true);
+        });
         return _remoteDBID;
     }
 
@@ -124,13 +145,18 @@ namespace litecore { namespace repl {
     }
 
     unique_ptr<C4DocEnumerator> DBAccess::unresolvedDocsEnumerator(bool orderByID) {
-        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        options.flags &= ~kC4IncludeBodies;
-        options.flags &= ~kC4IncludeNonConflicted;
-        options.flags |= kC4IncludeDeleted;
-        if (!orderByID)
-            options.flags |= kC4Unsorted;
-        return make_unique<C4DocEnumerator>(useLocked(), options);
+        C4DocEnumerator* e;
+        useLocked([&](C4Database *db) {
+            AssertDBOpen(db);
+            C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+            options.flags &= ~kC4IncludeBodies;
+            options.flags &= ~kC4IncludeNonConflicted;
+            options.flags |= kC4IncludeDeleted;
+            if (!orderByID)
+                options.flags |= kC4Unsorted;
+            e = new C4DocEnumerator(db, options);
+        });
+        return unique_ptr<C4DocEnumerator>{e};
     }
 
 
@@ -258,6 +284,7 @@ namespace litecore { namespace repl {
         auto &db = _insertionDB ? *_insertionDB : *this;
         SharedKeys result;
         return db.useLocked<SharedKeys>([&](C4Database *idb) {
+            AssertDBOpen(idb);
             SharedKeys dbsk = idb->getFleeceSharedKeys();
             lock_guard<mutex> lock(_tempSharedKeysMutex);
             if (!_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count()) {

@@ -56,6 +56,16 @@ namespace litecore::repl {
     }
 
 
+    void RevFinder::onError(C4Error err) {
+        // If the database closes on replication stop, this error might happen
+        // but it is inconsequential so suppress it.  It will still be logged, but
+        // not in the worker's error property.
+        if(err.domain != LiteCoreDomain || err.code != kC4ErrorNotOpen) {
+            Worker::onError(err);
+        }
+    }
+
+
     void RevFinder::_reRequestingRev() {
         increment(_numRevsBeingRequested);
     }

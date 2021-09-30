@@ -41,6 +41,14 @@ namespace litecore { namespace repl {
         DBAccess(C4Database* db, bool disableBlobSupport);
         ~DBAccess();
 
+        static inline void AssertDBOpen(C4Database* db) {
+            if(!db) litecore::error::_throw(litecore::error::Domain::LiteCore, litecore::error::LiteCoreError::NotOpen);
+        }
+        
+        /** Shuts down the DBAccess and makes further use of it invalid.  Any attempt to use
+            it after this point is considered undefined behavior. */
+        void close();
+
         /** Looks up the remote DB identifier of this replication. */
         C4RemoteID lookUpRemoteDBID(slice key);
 
@@ -57,7 +65,10 @@ namespace litecore { namespace repl {
 
         /** Gets a document by ID */
         Retained<C4Document> getDoc(slice docID, C4DocContentLevel content) const {
-            return useLocked()->getDocument(docID, true, content);
+            return useLocked<Retained<C4Document>>([&](C4Database *db) {
+                AssertDBOpen(db);
+                return db->getDocument(docID, true, content);
+            });
         }
 
         /** Returns the remote ancestor revision ID of a document. */
