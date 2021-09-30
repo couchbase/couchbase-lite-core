@@ -35,7 +35,7 @@ namespace litecore { namespace repl {
         IncomingRev(Puller* NONNULL);
 
         // Called by the Puller:
-        void handleRev(blip::MessageIn* revMessage NONNULL);
+        void handleRev(blip::MessageIn* revMessage NONNULL, uint64_t bodySizeOfRemoteSequence);
         void handleRevokedDoc(RevToInsert*);
         RevToInsert* rev() const                {return _rev;}
         RemoteSequence remoteSequence() const   {return _remoteSequence;}
@@ -91,6 +91,7 @@ namespace litecore { namespace repl {
         actor::Timer::time          _lastNotifyTime;
         bool                        _mayContainBlobs;
         bool                        _mayContainEncryptedProperties;
+        uint64_t                    _bodySize;
     };
 
 } }

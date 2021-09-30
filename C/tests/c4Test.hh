@@ -269,9 +269,9 @@ public:
                             std::string idPrefix ="",
                             double timeout =0.0,
                             bool verbose =false);
-    bool readFileByLines(std::string path, function_ref<bool(FLSlice)>);
+    bool readFileByLines(std::string path, function_ref<bool(FLSlice)>, size_t maxLines);
     unsigned importJSONLines(std::string path, double timeout =0.0, bool verbose =false,
-                             C4Database* database = nullptr);
+                             C4Database* database = nullptr, size_t maxLines =0);
 
 
     bool docBodyEquals(C4Document *doc NONNULL, slice fleece);

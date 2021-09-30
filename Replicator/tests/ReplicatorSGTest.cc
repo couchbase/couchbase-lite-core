@@ -665,6 +665,118 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
           timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
 }
 
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") {
+    flushScratchDatabase();
+    _logRemoteRequests = false;
+
+//    c4log_setCallbackLevel(kC4LogInfo);
+
+    C4Log("-------- Populating local db --------");
+    size_t numDocs = 100;
+    auto populateDB = [&]() {
+        TransactionHelper t(db);
+        importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", 0.0, false, nullptr, (size_t)numDocs);
+    };
+    populateDB();
+    REQUIRE(c4db_getDocumentCount(db) == numDocs);
+
+    C4Log("-------- Pushing to SG --------");
+    replicate(kC4OneShot, kC4Disabled);
+
+    std::vector<std::vector<alloc_slice>> revIDs;
+    std::vector<std::string> docIDs;
+    revIDs.emplace_back();
+    for (int docNo = 0; docNo < numDocs; ++docNo) {
+        char buf[20];
+        sprintf(buf, "%07u", docNo + 1);
+        docIDs.emplace_back(buf);
+        c4::ref<C4Document> doc = c4doc_get(db, slice(buf), true, ERROR_INFO());
+        REQUIRE(doc);
+        revIDs.back().emplace_back(doc->revID);
+    }
+
+    C4Log("-------- Updating docs on SG --------");
+    // Now update the docs on SG:
+    unsigned numUpdates = 14;
+    std::thread th([&]() {
+        unsigned nu = numUpdates;
+        for (int c = 1; c <= nu; ++c) {
+            revIDs.emplace_back();
+            for (int docNo = 0; docNo < numDocs; ++docNo) {
+                const char* docID = docIDs[docNo].c_str();
+                c4::ref<C4Document> doc = c4doc_get(db, slice(docID), true, ERROR_INFO());
+                REQUIRE(doc);
+
+                Dict props = c4doc_getProperties(doc);
+                JSONEncoder enc;
+                enc.beginDict();
+                enc.writeKey("_id"_sl);
+                enc.writeString(docID);
+                enc.writeKey("_rev"_sl);
+                enc.writeString(revIDs[c-1][docNo]);
+                for (Dict::iterator i(props); i; ++i) {
+                    enc.writeKey(i.keyString());
+                    auto value = i.value();
+                    if (i.keyString() == "Total Time"_sl)
+                        enc.writeInt(100 + c);
+                    else
+                        enc.writeValue(value);
+                }
+                enc.endDict();
+
+                FLError flError;
+                alloc_slice res = sendRemoteRequest("PUT", docID, enc.finish());
+                fleece::Doc fdoc = Doc::fromJSON(res, &flError);
+                REQUIRE(flError == kFLNoError);
+                Dict resDict = fdoc.root().asDict();
+                revIDs[c].emplace_back(resDict.get(Dict::Key("rev"_sl)).asString());
+            }
+        }
+    });
+    th.detach();
+
+    REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR()));
+
+    C4ReplicatorStatus status;
+    // Wait for Idle state
+    while ((status = c4repl_getStatus(_repl)).level != kC4Idle) {
+        std::this_thread::sleep_for(1ms);
+    }
+    // we wait for all documents to reach revision numUpdates + 1.
+    while (true) {
+        bool done = true;
+        for (slice docId: docIDs) {
+            c4::ref<C4Document> doc = c4doc_get(db, docId, true, ERROR_INFO());
+            string revid = string(doc->revID);
+            std::istringstream is(revid);
+            int i;
+            is >> i;
+            if (i <= numUpdates) {
+                done = false;
+                std::cout << "Replicator comes to Idle but not done" << std::endl;
+                std::this_thread::sleep_for(1ms);
+                break;
+            }
+        }
+        if (done) {
+            break;
+        }
+    }
+    // All documents reached target revisions. Now, stop it.
+    c4repl_stop(_repl);
+    while ((status = c4repl_getStatus(_repl)).level != kC4Stopped) {
+        std::this_thread::sleep_for(1ms);
+    }
+
+    C4Log("-------- status.total=%lld, status.completed=%lld, status.docCount=%lld, number of documents in the database=%lld\n",
+          status.progress.unitsTotal, status.progress.unitsCompleted,
+          status.progress.documentCount, c4db_getDocumentCount(db));
+
+    CHECK(status.progress.unitsTotal == status.progress.unitsCompleted);
+}
+
+
 // This test requires SG 3.0
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.SyncServer]") {
     _remoteDBName = "scratch_revocation"_sl;
