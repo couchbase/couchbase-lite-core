@@ -608,4 +608,52 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Stop after transient connect failure", "[C]
     
     waitForStatus(kC4Stopped);
 }
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Push][Pull][.Slow]") {
+    // CBL-2410
+    C4SocketFactory factory = {};
+    _mayGoOffline = true;
+
+    SECTION("Using framing") {
+        factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+                          C4Slice options, void *context) {
+            // Do nothing, just let things time out....
+        };
+        
+        factory.close = [](C4Socket* socket) {
+            // This is a requirement for this test to pass, or the socket will
+            // never actually finish "closing".  Furthermore, this call will hang
+            // before this fix
+            c4socket_closed(socket, {});
+        };
+    }
+    
+    SECTION("Not using framing") {
+        factory.framing = kC4NoFraming;
+        factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+                          C4Slice options, void *context) {
+            // Do nothing, just let things time out....
+        };
+        
+        factory.requestClose = [](C4Socket* socket, int code, C4Slice message) {
+            // This is a requirement for this test to pass, or the socket will
+            // never actually finish "closing".  Furthermore, this call will hang
+            // before this fix
+            c4socket_closed(socket, {});
+        };
+    }
+
+    _socketFactory = &factory;
+    
+    C4Error err;
+    importJSONLines(sFixturesDir + "names_100.json");
+    REQUIRE(startReplicator(kC4Passive, kC4OneShot, &err));
+    
+    // Before the fix, offline would never be reached
+    waitForStatus(kC4Offline, 16s);
+    c4repl_stop(_repl);
+    waitForStatus(kC4Stopped, 2s);
+    _socketFactory = nullptr;
+}
+
 #endif

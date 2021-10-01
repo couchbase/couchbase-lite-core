@@ -456,7 +456,15 @@ namespace litecore { namespace websocket {
                 return; // Guard against multiple calls to onClose
 
             _pingTimer.reset();
-            _responseTimer.reset();
+
+            if(!_timedOut) {
+                // CBL-2410: If _timedOut is true then we are almost
+                // certainly in this method synchronously from the _responseTimer
+                // callback which means resetting here would cause a hang.  Since
+                // _timedOut is true, this timer has already fired anyway so there
+                // is no pressing need for a tear down here, it can wait until later.
+                _responseTimer.reset();
+            }
 
             if (status.reason == kWebSocketClose) {
                 if (_timedOut)
