@@ -47,6 +47,8 @@ namespace litecore { namespace repl {
             enqueue(&Pusher::_docRemoteAncestorChanged, docID, remoteAncestorRevID);
         }
 
+        void onError(C4Error err) override;
+
     protected:
         virtual void afterEvent() override;
         virtual void _connectionClosed() override;

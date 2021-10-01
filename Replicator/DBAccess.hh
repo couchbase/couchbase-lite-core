@@ -41,6 +41,10 @@ namespace litecore { namespace repl {
         DBAccess(C4Database* db, bool disableBlobSupport);
         ~DBAccess();
 
+        static inline void AssertDBOpen(C4Database* db) {
+            if(!db) litecore::error::_throw(litecore::error::Domain::LiteCore, litecore::error::LiteCoreError::NotOpen);
+        }
+        
         /** Shuts down the DBAccess and makes further use of it invalid.  Any attempt to use
             it after this point is considered undefined behavior. */
         void close();
@@ -58,6 +62,7 @@ namespace litecore { namespace repl {
         /** Gets a document by ID */
         C4Document* getDoc(slice docID, C4Error *outError) const {
             return use<C4Document*>([&](C4Database *db) {
+                AssertDBOpen(db);
                 return c4doc_get(db, docID, true, outError);
             });
         }
@@ -65,6 +70,7 @@ namespace litecore { namespace repl {
         /** Gets a RawDocument. */
         C4RawDocument* getRawDoc(slice storeID, slice docID, C4Error *outError) const {
             return use<C4RawDocument*>([&](C4Database *db) {
+                AssertDBOpen(db);
                 return c4raw_get(db, storeID, docID, outError);
             });
         }
@@ -146,12 +152,14 @@ namespace litecore { namespace repl {
         /** Equivalent of "use()", but accesses the database handle used for insertion. */
         template <class LAMBDA>
         void useForInsert(LAMBDA callback) {
+            // insertionDB() asserts DB open, no need to do it here
             insertionDB().use(callback);
         }
 
         /** Equivalent of "use()", but accesses the database handle used for insertion. */
         template <class RESULT, class LAMBDA>
         RESULT useForInsert(LAMBDA callback) {
+            // insertionDB() asserts DB open, no need to do it here
             return insertionDB().use<RESULT>(callback);
         }
 

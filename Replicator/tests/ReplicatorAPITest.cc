@@ -532,6 +532,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Rapid Restarts", "[C][Push][Pull]") {
         c4repl_stop(_repl);
         waitForStatus(kC4Stopped);
     }
+
+    auto status = c4repl_getStatus(_repl);
+    CHECK(status.error.code == 0);
 }
 #endif
 
