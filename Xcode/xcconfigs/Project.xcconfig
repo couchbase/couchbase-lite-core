@@ -21,7 +21,7 @@ GCC_WARN_SIGN_COMPARE = NO
 GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
 CLANG_STATIC_ANALYZER_MODE = shallow
 
-LITECORE_VERSION_STRING                            = 3.0.0
+LITECORE_VERSION_STRING                            = 3.1.0
 LITECORE_BUILD_NUMBER                              = 0
 
 IPHONEOS_DEPLOYMENT_TARGET                         =  9.0
