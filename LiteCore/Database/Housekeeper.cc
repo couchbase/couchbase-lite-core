@@ -64,6 +64,8 @@ namespace litecore {
         } else {
             _doExpiration();
         }
+        
+        _started = true;
     }
 
 
@@ -89,6 +91,18 @@ namespace litecore {
         // This doesn't have to be enqueued, since Timer is thread-safe.
         if (exp == 0)
             return;
+        
+        if(!_started) {
+            // CBL-2392: If setExpiration is called two times rapidly, this call might end up
+            // being second since it is async, so if the timer is still untouched, that means
+            // start is still waiting to be called, so schedule this for later.
+            enqueue(FUNCTION_TO_QUEUE(Housekeeper::_documentExpirationChanged), exp);
+        } else {
+            _documentExpirationChanged(exp);
+        }
+    }
+
+    void Housekeeper::_documentExpirationChanged(expiration_t exp) {
         expiration_t delay = exp - KeyStore::now();
         if (_expiryTimer.fireEarlierAfter(chrono::milliseconds(delay)))
             logVerbose("Housekeeper: rescheduled expiration, now in %" PRIi64 "ms", delay);

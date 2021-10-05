@@ -42,10 +42,12 @@ namespace litecore {
         void _stop();
         void _scheduleExpiration();
         void _doExpiration();
+        void _documentExpirationChanged(expiration_t exp);
 
         alloc_slice   _keyStoreName;
         BackgroundDB* _bgdb;
         actor::Timer  _expiryTimer;
+        bool _started { false };
     };
 
 
