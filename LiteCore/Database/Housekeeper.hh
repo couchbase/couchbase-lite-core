@@ -46,7 +46,6 @@ namespace litecore {
         alloc_slice   _keyStoreName;
         BackgroundDB* _bgdb;
         actor::Timer  _expiryTimer;
-        bool _started { false };
     };
 
 
