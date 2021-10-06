@@ -54,10 +54,13 @@ Retained<C4Query> C4Query::newQuery(C4Collection *coll, C4QueryLanguage language
     } catch (Query::parseError &x) {
         if (outErrorPos) {
             *outErrorPos = x.errorPosition;
-            return nullptr;
-        } else {
-            throw;
         }
+        throw;
+    } catch (...) {
+        if (outErrorPos) {
+            *outErrorPos = -1;
+        }
+        throw;
     }
 }
 
@@ -226,9 +229,23 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
 
 void C4Query::liveQuerierUpdated(QueryEnumerator *qe, C4Error err) {
     Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(qe);
-    LOCK(_mutex);
-    if (!_bgQuerier)
-        return;
-    for (auto &obs : _observers)
+    set<C4QueryObserverImpl *> observers;
+    {
+        LOCK(_mutex);
+        if (!_bgQuerier) {
+            return;
+        }
+
+        // CBL-2336: Calling notify inside the lock could result
+        // in a deadlock, but on the other hand not calling it
+        // inside the lock could result in the callback coming back
+        // to mutate the collection while we are using it (which, 
+        // coincidentally, is why this deadlocks in the first place).
+        // So to counteract this, make a copy and iterate over that.
+        observers = _observers;
+    }
+
+    for(auto &obs : observers) {
         obs->notify(c4e, err);
+    }
 }
