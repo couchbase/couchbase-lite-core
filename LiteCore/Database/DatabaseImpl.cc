@@ -267,16 +267,20 @@ namespace litecore {
                "Database being destructed while in a transaction");
 
         destructExtraInfo(extraInfo);
+        
+        // Eagerly close the data file to ensure that no other instances will
+        // be trying to use me as a delegate (for example in externalTransactionCommitted)
+        // after I'm already in an invalid state.
+        //
+        // CBL-2364: This needs to happen before closing the collections so that a transaction
+        // committed on another database using the same datafile doesn't try to access it.
+        if (_dataFile)
+            _dataFile->close();
 
         for (auto &entry : _collections)
             asInternal(entry.second.get())->close();
 
         FLEncoder_Free(_flEncoder);
-        // Eagerly close the data file to ensure that no other instances will
-        // be trying to use me as a delegate (for example in externalTransactionCommitted)
-        // after I'm already in an invalid state
-        if (_dataFile)
-            _dataFile->close();
     }
 
 
