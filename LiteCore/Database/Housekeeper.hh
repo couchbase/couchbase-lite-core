@@ -40,7 +40,7 @@ namespace litecore {
     private:
         void _start();
         void _stop();
-        void _scheduleExpiration();
+        void _scheduleExpiration(bool onlyIfEarlier);
         void _doExpiration();
 
         alloc_slice   _keyStoreName;
