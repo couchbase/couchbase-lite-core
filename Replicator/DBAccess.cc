@@ -95,6 +95,7 @@ namespace litecore { namespace repl {
         if (_usingVersionVectors) {
             if (_myPeerID.empty()) {
                 useLocked([&](C4Database *c4db) {
+                    AssertDBOpen(c4db);
                     if (_myPeerID.empty())
                         _myPeerID = string(c4db->getPeerID());
                 });
@@ -129,6 +130,7 @@ namespace litecore { namespace repl {
                 _remoteDBID, SPLAT(docID), SPLAT(revID));
         try {
             useLocked([&](C4Database *db) {
+                AssertDBOpen(db);
                 C4Database::Transaction t(db);
                 Retained<C4Document> doc = db->getDocument(docID, true, kDocGetAll);
                 if (!doc)
