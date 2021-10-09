@@ -799,7 +799,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Pus
     _mayGoOffline = true;
 
     SECTION("Using framing") {
-        factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+        factory.open = [](C4Socket* socket, const C4Address* addr,
                           C4Slice options, void *context) {
             // Do nothing, just let things time out....
         };
@@ -814,7 +814,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Pus
     
     SECTION("Not using framing") {
         factory.framing = kC4NoFraming;
-        factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL,
+        factory.open = [](C4Socket* socket, const C4Address* addr,
                           C4Slice options, void *context) {
             // Do nothing, just let things time out....
         };
