@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "C4Database.hh"
 #include "KeyStore.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
@@ -61,6 +62,7 @@ namespace litecore {
             bool                upgradeable    :1;      ///< DB schema can be upgraded
             EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
             alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
+            DatabaseTag         dbTag;                  ///<Database tag for diagnostic purpose
             static const Options defaults;
         };
 
@@ -85,6 +87,9 @@ namespace litecore {
 
         /** Opens another instance on the same file. */
         DataFile* openAnother(Delegate* NONNULL);
+
+        DatabaseTag databaseTag() const                     {return _options.dbTag;}
+        void setDatabaseTag(DatabaseTag dbTag)              {_options.dbTag = dbTag;}
 
         virtual uint64_t fileSize();
 

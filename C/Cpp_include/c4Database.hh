@@ -37,6 +37,17 @@ C4_ASSUME_NONNULL_BEGIN
 C4EncryptionKey C4EncryptionKeyFromPassword(fleece::slice password,
                                             C4EncryptionAlgorithm = kC4EncryptionAES256);
 
+// Must match ::C4DatabaseTag, declared in c4Private.h
+enum DatabaseTag: uint32_t {
+    kDatabaseTag_AppOpened,
+    kDatabaseTag_DBAccess,
+    kDatabaseTag_C4RemoteReplicator,
+    kDatabaseTag_C4IncomingReplicator,
+    kDatabaseTag_C4LocalReplicator1,
+    kDatabaseTag_C4LocalReplicator2,
+    kDatabaseTag_BackgroundDB,
+    kDatabaseTag_RESTListener
+};
 
 /// A LiteCore database connection.
 struct C4Database : public fleece::RefCounted,
@@ -72,6 +83,10 @@ public:
     virtual void closeAndDeleteFile() =0;
     virtual void rekey(const C4EncryptionKey* C4NULLABLE key) =0;
     virtual void maintenance(C4MaintenanceType) =0;
+
+    // Diagnostic helpers:
+    virtual DatabaseTag getDatabaseTag() const =0;
+    virtual void        setDatabaseTag(DatabaseTag dbTag) =0;
 
     // Attributes:
 

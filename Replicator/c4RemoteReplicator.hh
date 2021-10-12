@@ -128,7 +128,11 @@ namespace litecore {
 
         virtual void createReplicator() override {
             auto webSocket = CreateWebSocket(_url, socketOptions(), _database, _socketFactory);
-            _replicator = new Replicator(_database->openAgain().get(), webSocket, *this, _options);
+            auto dbOpenedAgain = _database->openAgain();
+            if (dbOpenedAgain != nullptr) {
+                dbOpenedAgain->setDatabaseTag(kDatabaseTag_C4RemoteReplicator);
+            }
+            _replicator = new Replicator(dbOpenedAgain.get(), webSocket, *this, _options);
             
             // Yes this line is disgusting, but the memory addresses that the logger logs
             // are not the _actual_ addresses of the object, but rather the pointer to

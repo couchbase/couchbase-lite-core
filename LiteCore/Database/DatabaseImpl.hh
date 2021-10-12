@@ -87,6 +87,8 @@ namespace litecore {
         C4UUID getPrivateUUID() const override             {return getUUID(kPrivateUUIDKey);}
         void rekey(const C4EncryptionKey* C4NULLABLE newKey) override;
         void maintenance(C4MaintenanceType) override;
+        DatabaseTag getDatabaseTag() const override        {return _dataFile->databaseTag();};
+        void setDatabaseTag(DatabaseTag dbTag) override    {_dataFile->setDatabaseTag(dbTag);}
         std::vector<std::string> getCollectionNames() const override;
         void forEachCollection(const CollectionCallback&) const override;
         void forEachOpenCollection(const CollectionCallback&) const;

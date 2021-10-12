@@ -26,8 +26,11 @@ namespace litecore {
     BackgroundDB::BackgroundDB(DatabaseImpl *db)
     :_dataFile(db->dataFile()->openAnother(this))
     ,_database(db)
-    { }
-
+    {
+        _dataFile.useLocked([](DataFile* df) {
+            df->setDatabaseTag(kDatabaseTag_BackgroundDB);
+        });
+    }
 
     void BackgroundDB::close() {
         _dataFile.useLocked([this](DataFile* &df) {
