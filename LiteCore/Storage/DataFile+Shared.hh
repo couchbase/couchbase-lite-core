@@ -13,13 +13,16 @@
 //
 
 #pragma once
+#include "CrossProcessNotifier.hh"
+#include "C4Error.h"
 #include "Error.hh"
 #include "Logging.hh"
 #include "InstanceCounted.hh"
-#include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
-#include <unordered_map>
 #include <algorithm>
+#include <mutex>              // std::mutex, std::unique_lock
+#include <optional>
+#include <unordered_map>
 
 namespace litecore {
 
@@ -35,19 +38,20 @@ namespace litecore {
         static Retained<Shared> forPath(const FilePath &path, DataFile *dataFile) {
             string pathStr = path.canonicalPath();
             unique_lock<mutex> lock(sFileMapMutex);
-            Retained<Shared> file = sFileMap[pathStr];
-            if (!file) {
-                file = new Shared(pathStr);
-                sFileMap[pathStr] = file;
-                file->_logDebug("created for DataFile %p at %s", dataFile, pathStr.c_str());
+            Retained<Shared> shared = sFileMap[pathStr];
+            if (!shared) {
+                shared = new Shared(pathStr);
+                sFileMap[pathStr] = shared;
+                shared->_logDebug("created for DataFile %p at %s", dataFile, pathStr.c_str());
             } else {
-                file->_logDebug("adding DataFile %p", dataFile);
+                if (dataFile)
+                    shared->_logDebug("adding DataFile %p", dataFile);
             }
             lock.unlock();
 
             if (dataFile)
-                file->addDataFile(dataFile);
-            return file;
+                shared->addDataFile(dataFile);
+            return shared;
         }
 
 
@@ -70,6 +74,15 @@ namespace litecore {
         void addDataFile(DataFile *dataFile) {
             unique_lock<mutex> lock(_mutex);
             mustNotBeCondemned();
+            if (!_xpNotifier) {
+                _xpNotifier = new CrossProcessNotifier();
+                C4Error error;
+                if (!_xpNotifier->start(FilePath(path).parentDir(),
+                                       [&] {crossProcessObserve();},
+                                       &error)) {
+                    Warn("Couldn't start cross-process notifier: %s", error.description().c_str());
+                }
+            }
             if (find(_dataFiles.begin(), _dataFiles.end(), dataFile) == _dataFiles.end())
                 _dataFiles.push_back(dataFile);
         }
@@ -146,16 +159,25 @@ namespace litecore {
         }
 
 
+        void crossProcessNotifyTransactionEnded() {
+            LogTo(DBLog, "Posting cross-process transaction notification");
+            DebugAssert(_xpNotifier);
+            _xpNotifier->notify();
+        }
+
+
     protected:
-        Shared(const string &p)
+        Shared(const string &path)
         :Logging(DBLog)
-        ,path(p)
+        ,path(path)
         {
-            logDebug("instantiated on %s", p.c_str());
+            logDebug("instantiated on %s", path.c_str());
         }
 
         ~Shared() {
             logDebug("destructing");
+            if (_xpNotifier)
+                _xpNotifier->stop();
             unique_lock<mutex> lock(sFileMapMutex);
             sFileMap.erase(path);
         }
@@ -166,14 +188,23 @@ namespace litecore {
         }
 
 
+        void crossProcessObserve() {
+            LogTo(DBLog, "Cross-process notification received!!!");
+            //TODO: Fill this in
+        }
+
+
     private:
-        mutex              _transactionMutex;       // Mutex for transactions
-        condition_variable _transactionCond;        // For waiting on the mutex
-        ExclusiveTransaction*       _transaction {nullptr};  // Currently active Transaction object
-        vector<DataFile*>  _dataFiles;              // Open DataFiles on this File
-        unordered_map<string, Retained<RefCounted>> _sharedObjects;
-        bool               _condemned {false};      // Prevents db from being opened or deleted
-        mutex              _mutex;                  // Mutex for non-transaction state
+        using SharedObjectMap = unordered_map<string, Retained<RefCounted>>;
+
+        mutex                   _transactionMutex;       // Mutex for transactions
+        condition_variable      _transactionCond;        // For waiting on the mutex
+        ExclusiveTransaction*   _transaction {nullptr};  // Currently active Transaction object
+        Retained<CrossProcessNotifier> _xpNotifier;
+        vector<DataFile*>       _dataFiles;              // Open DataFiles on this File
+        SharedObjectMap         _sharedObjects;          // Named object store for clients to use
+        bool                    _condemned {false};      // Prevents db from being opened or deleted
+        mutex                   _mutex;                  // Mutex for non-transaction state
 
         static unordered_map<string, Shared*> sFileMap;
         static mutex sFileMapMutex;

@@ -343,6 +343,7 @@ namespace litecore {
         _inTransaction = false;
         if (_documentKeys)
             _documentKeys->transactionEnded();
+        _shared->crossProcessNotifyTransactionEnded();
     }
 
 
@@ -410,6 +411,7 @@ namespace litecore {
             if (other->delegate())
                 other->delegate()->externalTransactionCommitted(sequenceTracker);
         });
+        
     }
 
 

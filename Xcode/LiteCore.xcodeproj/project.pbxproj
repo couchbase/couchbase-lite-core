@@ -128,6 +128,7 @@
 		273E9F771C516145003115A6 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		273F481625A68588005D4FE2 /* TestsCommon.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273F481525A68588005D4FE2 /* TestsCommon.cc */; };
 		273F481725A68588005D4FE2 /* TestsCommon.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273F481525A68588005D4FE2 /* TestsCommon.cc */; };
+		273F86EB2714EE750009675E /* CrossProcessNotifier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273F86EA2714EE750009675E /* CrossProcessNotifier.cc */; };
 		27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
 		2742D10C2305C25D003197E1 /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
 		27431BC7258A8AB0009E3EC5 /* QuietReporter.hh in Sources */ = {isa = PBXBuildFile; fileRef = 27431BC6258A8AB0009E3EC5 /* QuietReporter.hh */; };
@@ -969,6 +970,8 @@
 		273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tokenizer.xcconfig; sourceTree = "<group>"; };
 		273F481425A68588005D4FE2 /* TestsCommon.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TestsCommon.hh; sourceTree = "<group>"; };
 		273F481525A68588005D4FE2 /* TestsCommon.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestsCommon.cc; sourceTree = "<group>"; };
+		273F86E92714EE750009675E /* CrossProcessNotifier.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CrossProcessNotifier.hh; sourceTree = "<group>"; };
+		273F86EA2714EE750009675E /* CrossProcessNotifier.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CrossProcessNotifier.cc; sourceTree = "<group>"; };
 		27416E291E0494DF00F10F65 /* c4QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4QueryTest.cc; sourceTree = "<group>"; };
 		274281772624B4B300862700 /* c4Error.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Error.h; sourceTree = "<group>"; };
 		2742817B2624B74E00862700 /* c4Log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Log.h; sourceTree = "<group>"; };
@@ -2834,6 +2837,8 @@
 				27E48711192171EA007D8940 /* DataFile.cc */,
 				27E48712192171EA007D8940 /* DataFile.hh */,
 				27A16314201FC2A500C18D9C /* DataFile+Shared.hh */,
+				273F86EA2714EE750009675E /* CrossProcessNotifier.cc */,
+				273F86E92714EE750009675E /* CrossProcessNotifier.hh */,
 				27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */,
 				27DF46C21A12CF46007BB4A4 /* Record.cc */,
 				27DF46C31A12CF46007BB4A4 /* Record.hh */,
@@ -4334,6 +4339,7 @@
 				2712F5AF25D5A9AB0082D526 /* c4Error.cc in Sources */,
 				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
+				273F86EB2714EE750009675E /* CrossProcessNotifier.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
 				270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */,
 				27D9655F2335667A00F4A51C /* SecureRandomize.cc in Sources */,
