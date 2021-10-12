@@ -11,7 +11,7 @@
 //
 
 #pragma once
-#include "C4Database.hh"
+#include "c4Database.hh"
 #include "KeyStore.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
