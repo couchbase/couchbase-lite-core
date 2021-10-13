@@ -37,7 +37,6 @@ C4_ASSUME_NONNULL_BEGIN
 C4EncryptionKey C4EncryptionKeyFromPassword(fleece::slice password,
                                             C4EncryptionAlgorithm = kC4EncryptionAES256);
 
-// Must match ::C4DatabaseTag, declared in c4Private.h
 enum DatabaseTag: uint32_t {
     kDatabaseTag_AppOpened,
     kDatabaseTag_DBAccess,
