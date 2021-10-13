@@ -52,6 +52,20 @@ C4SliceResult c4db_getIndexRows(C4Database* database,
 
 C4StringResult c4db_getPeerID(C4Database* database) C4API;
 
+typedef C4_ENUM(uint32_t, C4DatabaseTag) {
+    DatabaseTag_AppOpened,
+    DatabaseTag_DBAccess,
+    DatabaseTag_C4RemoteReplicator,
+    DatabaseTag_C4IncomingReplicator,
+    DatabaseTag_C4LocalReplicator1,
+    DatabaseTag_C4LocalReplicator2,
+    DatabaseTag_BackgroundDB,
+    DatabaseTag_RESTListener
+};
+
+C4DatabaseTag _c4db_getDatabaseTag(C4Database* db) C4API;
+void _c4db_setDatabaseTag(C4Database* db, C4DatabaseTag dbTag) C4API;
+
 /** Sets the document flag kSynced. Used by the replicator to track synced documents. */
 bool c4db_markSynced(C4Database *database,
                      C4String docID,

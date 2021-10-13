@@ -934,5 +934,12 @@ namespace litecore {
         }
         return nullslice;
     }
+}
 
+C4DatabaseTag _c4db_getDatabaseTag(C4Database *db) noexcept {
+    return litecore::asInternal(db)->getDatabaseTag();
+}
+
+void _c4db_setDatabaseTag(C4Database *db, C4DatabaseTag dbTag) C4API {
+    litecore::asInternal(db)->setDatabaseTag(dbTag);
 }
