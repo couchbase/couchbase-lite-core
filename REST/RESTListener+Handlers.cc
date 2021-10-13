@@ -108,6 +108,7 @@ namespace litecore { namespace REST {
             return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database name");
 
         auto db = C4Database::openNamed(dbName, {slice(path.dirName()), kC4DB_Create});
+        _c4db_setDatabaseTag(db, DatabaseTag_RESTListener);
         registerDatabase(db, dbName);
 
         rq.respondWithStatus(HTTPStatus::Created, "Created");

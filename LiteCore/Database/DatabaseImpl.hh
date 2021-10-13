@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "c4Private.h"
 #include "c4Database.hh"
 #include "c4DocumentTypes.h"
 #include "DataFile.hh"
@@ -118,6 +119,14 @@ namespace litecore {
         virtual string databaseName() const override                    {return _name;}
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         virtual void externalTransactionCommitted(const SequenceTracker&) override;
+        
+        C4DatabaseTag getDatabaseTag() const {
+            return (C4DatabaseTag)_dataFile->databaseTag();
+        }
+
+        void setDatabaseTag(C4DatabaseTag dbTag) {
+            _dataFile->setDatabaseTag((DatabaseTag)dbTag);
+        }
 
     private:
         friend struct C4Database;
