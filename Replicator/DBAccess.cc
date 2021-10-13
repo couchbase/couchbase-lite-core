@@ -54,6 +54,7 @@ namespace litecore { namespace repl {
                     Retained<C4Database> idb;
                     try {
                         idb = db->openAgain();
+                        _c4db_setDatabaseTag(idb, DatabaseTag_DBAccess);
                     } catch (const exception &x) {
                         C4Error error = C4Error::fromException(x);
                         logError("Couldn't open new db connection: %s", error.description().c_str());
