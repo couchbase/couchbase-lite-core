@@ -41,9 +41,6 @@ namespace litecore {
 
     LogDomain DBLog("DB");
 
-    unordered_map<string, DataFile::Shared*> DataFile::Shared::sFileMap;
-    mutex DataFile::Shared::sFileMapMutex;
-
 
 #pragma mark - FACTORY:
 
@@ -95,8 +92,8 @@ namespace litecore {
 
 
     const DataFile::Options DataFile::Options::defaults = {
-        {true},                 // sequences
-        true, true, true, true  // create, writeable, useDocumentKeys, upgradeable
+        {true},                 // KeyStore capabilities: sequences
+        true, true, true, true, // create, writeable, useDocumentKeys, upgradeable
     };
 
 
@@ -229,7 +226,7 @@ namespace litecore {
 
                 if (n++ == 0)
                     LogTo(DBLog, "Waiting for %ld other connection(s) to close before deleting %s",
-                          otherConnections, shared->path.c_str());
+                          otherConnections, shared->path().c_str());
                 if (st.elapsed() > kOtherDBCloseTimeoutSecs)
                     error::_throw(error::Busy, "Can't delete db file while other connections are open");
                 else
@@ -238,7 +235,7 @@ namespace litecore {
             
             if (file)
                 file->close(true);
-            bool result = factory._deleteFile(FilePath(shared->path), options)
+            bool result = factory._deleteFile(FilePath(shared->path()), options)
                        && shared->deleteNotifierFile();
             shared->condemn(false);
             return result;
@@ -318,52 +315,6 @@ namespace litecore {
 
     void DataFile::recordLastSequences() {
         _lastKnownSequences = getLastSequences();
-    }
-
-
-    void DataFile::discoverExternalChanges() {
-        ExclusiveTransaction t(this);    // This is a fake transaction
-
-        //TODO: Do I have to compare purgeSequences too?
-        auto knownSequences = move(_lastKnownSequences);
-        recordLastSequences();
-        for (auto [storeName, lastSeq] : _lastKnownSequences) {
-            if (auto knownSeq = knownSequences[storeName]; knownSeq < lastSeq) {
-                // OK, one of my KeyStores changed. Iterate changes, push them into a
-                // SequenceTracker, and use that to notify delegates:
-                logInfo("Discovered new sequences %llu-%llu in %s",
-                        knownSeq + 1, lastSeq, storeName.c_str());
-                KeyStore &store = getKeyStore(storeName);
-                SequenceTracker sequenceTracker(storeName);
-                sequenceTracker.beginTransaction();
-
-                RecordEnumerator::Options options;
-                options.includeDeleted = true;
-                options.contentOption = kMetaOnly;
-                RecordEnumerator e(store, knownSeq, options);
-                while (e.next()) {
-                    auto &record = e.record();
-                    C4RevisionFlags revFlags {0};
-                    if (record.flags() & DocumentFlags::kDeleted)
-                        revFlags |= kRevDeleted;
-                    if (record.flags() & DocumentFlags::kHasAttachments)
-                        revFlags |= kRevHasAttachments;
-                    if (record.flags() & DocumentFlags::kConflicted)
-                        revFlags |= kRevIsConflict;
-                    sequenceTracker.documentChanged(record.key(), record.version(),
-                                                    record.sequence(), record.bodySize(),
-                                                    SequenceTracker::RevisionFlags(revFlags));
-                }
-
-                // Notify my delegate, and other DataFiles' delegates:
-                if (auto del = delegate(); del)
-                    del->externalTransactionCommitted(sequenceTracker);
-                t.notifyCommitted(sequenceTracker);
-
-                sequenceTracker.endTransaction(true);
-            }
-        }
-        t.abort();  // there weren't actually any changes made.
     }
 
 
@@ -465,7 +416,7 @@ namespace litecore {
     void ExclusiveTransaction::notifyCommitted(SequenceTracker &sequenceTracker) {
         _db.forOtherDataFiles([&](DataFile *other) {
             if (other->delegate())
-                other->delegate()->externalTransactionCommitted(sequenceTracker);
+                other->delegate()->externalTransactionCommitted(&sequenceTracker);
         });
         
     }

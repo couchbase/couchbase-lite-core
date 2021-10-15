@@ -23,18 +23,6 @@
 namespace litecore {
     using namespace std;
 
-#pragma mark - UTILITIES:
-
-
-    static int _check(const char *fn, int result) {
-        if (result != 0)
-            LogToAt(DBLog, Error, "%s (%d) from %s", strerror(result), result, fn);
-        return result;
-    }
-
-    #define check(EXPR) _check(#EXPR, EXPR)
-
-
 #pragma mark - SHARED DATA:
 
 
@@ -42,11 +30,12 @@ namespace litecore {
     static constexpr int kFilePermissions = 0600;
 
 
-
     #define LOCK(DATA)     CrossProcessNotifierData::Lock _lock(DATA)
 
 
-#pragma mark - CROSS-PROCESS NOTIFIER:
+    CrossProcessNotifier::CrossProcessNotifier()
+    :Logging(DBLog)
+    { }
 
 
     CrossProcessNotifier::~CrossProcessNotifier() {
@@ -87,6 +76,7 @@ namespace litecore {
             return false;
         }
         _sharedData = (CrossProcessNotifierData*)mapped;
+        logInfo("File mapped at %p", _sharedData);
 
         // Check the file contents, and initialize if necessary:
         if (!_sharedData->valid()) {
@@ -105,8 +95,6 @@ namespace litecore {
         }
 
         // Now start the observer thread:
-        logInfo("Initialized");
-        _myPID = getpid();
         _callback = callback;
         _running = true;
         thread([this] { observerThread(this); }).detach();
@@ -141,7 +129,7 @@ namespace litecore {
 
     void CrossProcessNotifier::notify() const {
         if (_sharedData)
-            _sharedData->broadcast(_myPID);
+            _sharedData->broadcast(::getpid());
     }
 
 
@@ -154,13 +142,15 @@ namespace litecore {
             Callback callback;
             {
                 LOCK(_sharedData);
-                if (check(_sharedData->wait(&notifyingPID)) != 0)
+                if (int err = _sharedData->wait(&notifyingPID); err != 0) {
+                    logError("pthread_cond_wait failed: %s (%d)", strerror(err), err);
                     break;
+                }
                 running = _running;
                 callback = _callback;
             }
 
-            if (notifyingPID != _myPID && notifyingPID != -1 && callback) {
+            if (notifyingPID != ::getpid() && notifyingPID != -1 && callback) {
                 logVerbose("Notified by pid %d! Invoking callback()...", notifyingPID);
                 try {
                     callback();

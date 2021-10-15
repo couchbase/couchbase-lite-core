@@ -42,31 +42,39 @@ namespace litecore {
     class DataFile : public Logging, public fleece::InstanceCountedIn<DataFile> {
     public:
 
+        /** DataFile's delegate, implemented by DatabaseImpl and BackgroundDB. */
         class Delegate {
         public:
             virtual ~Delegate() =default;
-            // The user-visible name of this database
+            /// Returns the name of the database. Used by QueryParser to recognize the N1QL idiom
+            /// "FROM dbname", which is mapped to the default collection.
             virtual string databaseName() const =0;
-            // Callback that takes a blob dictionary and returns the blob data
-            virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const =0;
-            // Notifies that another DataFile on the same physical file has committed a transaction
-            virtual void externalTransactionCommitted(const SequenceTracker &sourceTracker) { }
-            // Another OS process has notified that it changed the database:
-            virtual bool crossProcessChangeNotification()   {return false;}
+            /// Callback that takes a blob dictionary and returns the blob data; called by queries
+            /// that access blobs.
+            /// @param blob  The Dict containing the blob metadata.
+            virtual alloc_slice blobAccessor(const fleece::impl::Dict *blob) const =0;
+            /// Notifies that changes have been committed by another DataFile or an external
+            /// OS process. If a SequenceTracker is given, the implementation of this method can
+            /// read the changes from its current transaction; otherwise it will have to run a
+            /// by-sequence enumeration to find the new sequences.
+            /// @param tracker  The SequenceTracker of the DataFile that committed the changes,
+            ///                 or NULL if the changes came from an external process.
+            virtual void externalTransactionCommitted(const SequenceTracker *tracker) { }
         };
 
         struct Options {
             KeyStore::Capabilities keyStores;
-            bool                create         :1;      ///< Should the db be created if it doesn't exist?
-            bool                writeable      :1;      ///< If false, db is opened read-only
-            bool                useDocumentKeys:1;      ///< Use SharedKeys for Fleece docs
-            bool                upgradeable    :1;      ///< DB schema can be upgraded
-            EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
-            alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
-            static const Options defaults;
+            bool                   create           :1; ///< Allows db to be created
+            bool                   writeable        :1; ///< If false, db is opened read-only
+            bool                   useDocumentKeys  :1; ///< Use SharedKeys for Fleece docs
+            bool                   upgradeable      :1; ///< DB schema can be upgraded
+            EncryptionAlgorithm    encryptionAlgorithm; ///< What encryption (if any)
+            alloc_slice            encryptionKey;       ///< Encryption key, if encrypting
+
+            static const Options defaults;              ///< Default set of Options
         };
 
-        DataFile(const FilePath &path, Delegate* delegate NONNULL, const Options* =nullptr);
+        DataFile(const FilePath &path, Delegate* delegate, const Options* =nullptr);
         virtual ~DataFile();
 
         FilePath filePath() const noexcept                  {return _path;}
@@ -86,7 +94,7 @@ namespace litecore {
         void deleteDataFile();
 
         /** Opens another instance on the same file. */
-        DataFile* openAnother(Delegate* NONNULL);
+        DataFile* openAnother(Delegate*);
 
         virtual uint64_t fileSize();
 
@@ -119,10 +127,6 @@ namespace litecore {
 
         /** Remembers the current latest sequences. */
         void recordLastSequences();
-
-        /** Looks for changes made by an external process, and if there are any,
-            notifies all local DataFiles' delegates. */
-        void discoverExternalChanges();
 
         //////// QUERIES:
         

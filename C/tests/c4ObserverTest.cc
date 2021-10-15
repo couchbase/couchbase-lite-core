@@ -239,9 +239,3 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]
     CHECK(dbCallbackCalls == 1);
     checkChanges({"A"}, {""}, true);
 }
-
-
-N_WAY_TEST_CASE_METHOD(C4ObserverTest, "DB Observer Continuous", "[.neverstops]") {
-    dbObserver = c4dbobs_create(db, dbObserverLoggingCallback, this);
-    std::this_thread::sleep_for(20s);
-}

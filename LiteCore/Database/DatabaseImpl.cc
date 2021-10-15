@@ -677,11 +677,11 @@ namespace litecore {
     }
 
 
-    void DatabaseImpl::externalTransactionCommitted(const SequenceTracker &srcTracker) {
+    void DatabaseImpl::externalTransactionCommitted(const SequenceTracker *srcTracker) {
         // CAREFUL: This may be called on an arbitrary thread
         LOCK(_collectionsMutex);
         forEachOpenCollection([&](C4Collection *coll) {
-            if (slice(asInternal(coll)->keyStore().name()) == srcTracker.name())
+            if (!srcTracker || srcTracker->name() == slice(asInternal(coll)->keyStore().name()))
                 asInternal(coll)->externalTransactionCommitted(srcTracker);
         });
     }

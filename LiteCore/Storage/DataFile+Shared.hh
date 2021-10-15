@@ -32,17 +32,23 @@ namespace litecore {
     /** Shared state between all open DataFile instances on the same filesystem file.
         Manages a mutex that ensures that only one DataFile can open a transaction at once.
         This class is internal to DataFile. */
-    class DataFile::Shared : public RefCounted, public fleece::InstanceCountedIn<DataFile::Shared>,
-                             Logging {
+    class DataFile::Shared : public RefCounted,
+                             public fleece::InstanceCountedIn<DataFile::Shared>,
+                             Logging
+    {
     public:
 
+        /// Returns the `Shared` instance for the given filesystem path, creating it if needed.
+        /// @param path  The filesystem path.
+        /// @param dataFile  DataFile to register with the instance, or null.
+        /// @return  The `Shared` instance.
         static Retained<Shared> forPath(const FilePath &path, DataFile *dataFile) {
             string pathStr = path.canonicalPath();
-            unique_lock<mutex> lock(sFileMapMutex);
-            Retained<Shared> shared = sFileMap[pathStr];
+            unique_lock<mutex> lock(sGlobalFileMapMutex);
+            Retained<Shared> shared = sGlobalFileMap[pathStr];
             if (!shared) {
                 shared = new Shared(pathStr);
-                sFileMap[pathStr] = shared;
+                sGlobalFileMap[pathStr] = shared;
                 shared->_logDebug("created for DataFile %p at %s", dataFile, pathStr.c_str());
             } else {
                 if (dataFile)
@@ -56,21 +62,15 @@ namespace litecore {
         }
 
 
-        static size_t openCountOnPath(const FilePath &path) {
-            string pathStr = path.canonicalPath();
-
-            unique_lock<mutex> lock(sFileMapMutex);
-            Shared* file = sFileMap[pathStr];
-            return file ? file->openCount() : 0;
+        const string& path() const {
+            return _path;
         }
-
-
-        const string path;                              // The filesystem path
 
 
         ExclusiveTransaction* transaction() {
             return _transaction;
         }
+
 
         void addDataFile(DataFile *dataFile) {
             unique_lock<mutex> lock(_mutex);
@@ -79,6 +79,7 @@ namespace litecore {
             if (find(_dataFiles.begin(), _dataFiles.end(), dataFile) == _dataFiles.end())
                 _dataFiles.push_back(dataFile);
         }
+
 
         bool removeDataFile(DataFile *dataFile) {
             unique_lock<mutex> lock(_mutex);
@@ -113,7 +114,7 @@ namespace litecore {
             unique_lock<mutex> lock(_mutex);
             if (condemn) {
                 mustNotBeCondemned();
-                LogVerbose(DBLog, "Preparing to delete DataFile %s", path.c_str());
+                LogVerbose(DBLog, "Preparing to delete DataFile %s", _path.c_str());
             }
             _condemned = condemn;
         }
@@ -168,24 +169,34 @@ namespace litecore {
         }
 
 
-    protected:
+    private:
+        using GlobalFileMap = unordered_map<string, Shared*>;
+        using SharedObjectMap = unordered_map<string, Retained<RefCounted>>;
+
         static constexpr const char* kSharedMemFilename = "cblite_mem";
 
         Shared(const string &path)
         :Logging(DBLog)
-        ,path(path)
+        ,_path(path)
         {
             logDebug("instantiated on %s", path.c_str());
         }
+
 
         ~Shared() {
             logDebug("destructing");
             if (_xpNotifier)
                 _xpNotifier->stop();
-            unique_lock<mutex> lock(sFileMapMutex);
-            sFileMap.erase(path);
+            unique_lock<mutex> lock(sGlobalFileMapMutex);
+            sGlobalFileMap.erase(_path);
         }
 
+
+        string loggingIdentifier() const override {
+            return _path;
+        }
+
+        
         void mustNotBeCondemned() {
             if (_condemned)
                 error::_throw(error::Busy, "Database file is being deleted");
@@ -193,7 +204,7 @@ namespace litecore {
 
 
         FilePath notifierPath() const {
-            return FilePath(path).withExtension("cblite_shmem");
+            return FilePath(_path).withExtension("cblite_shmem");
         }
 
 
@@ -206,11 +217,8 @@ namespace litecore {
                 // This is the callback that runs when another process updates the database:
                 logInfo("Cross-process notification received!!!");
                 unique_lock<mutex> lock(_mutex);
-                for (DataFile *df : _dataFiles) {
-                    if (df->delegate() && df->delegate()->crossProcessChangeNotification())
-                        return;
-                }
-                warn("No Database handled the cross-process notification");
+                for (DataFile *df : _dataFiles)
+                    df->delegate()->externalTransactionCommitted(nullptr);
             };
 
             C4Error error;
@@ -219,20 +227,21 @@ namespace litecore {
         }
 
 
-    private:
-        using SharedObjectMap = unordered_map<string, Retained<RefCounted>>;
-
-        mutex                   _transactionMutex;       // Mutex for transactions
-        condition_variable      _transactionCond;        // For waiting on the mutex
-        ExclusiveTransaction*   _transaction {nullptr};  // Currently active Transaction object
-        Retained<CrossProcessNotifier> _xpNotifier;
-        vector<DataFile*>       _dataFiles;              // Open DataFiles on this File
-        SharedObjectMap         _sharedObjects;          // Named object store for clients to use
+        const string            _path;                   // The filesystem path
+        vector<DataFile*>       _dataFiles;              // The open DataFiles on this file
         bool                    _condemned {false};      // Prevents db from being opened or deleted
-        mutex                   _mutex;                  // Mutex for non-transaction state
+        SharedObjectMap         _sharedObjects;          // Named object store for clients to use
+        Retained<CrossProcessNotifier> _xpNotifier;      // Cross-process change notifier/observer
+        mutex                   _mutex;                  // Mutex for the above state
 
-        static unordered_map<string, Shared*> sFileMap;
-        static mutex sFileMapMutex;
+        ExclusiveTransaction*   _transaction {nullptr};  // Currently active Transaction object
+        mutex                   _transactionMutex;       // Mutex for transactions
+        condition_variable      _transactionCond;        // For waiting on the transaction mutex
+
+
+        // static/global data:
+        static inline GlobalFileMap    sGlobalFileMap;
+        static inline mutex            sGlobalFileMapMutex;
     };
 
 }

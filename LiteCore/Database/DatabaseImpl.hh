@@ -117,7 +117,7 @@ namespace litecore {
 
         virtual string databaseName() const override                    {return _name;}
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
-        virtual void externalTransactionCommitted(const SequenceTracker&) override;
+        virtual void externalTransactionCommitted(const SequenceTracker*) override;
 
     private:
         friend struct C4Database;

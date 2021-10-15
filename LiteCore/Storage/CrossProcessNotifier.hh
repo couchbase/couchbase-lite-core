@@ -25,7 +25,7 @@ namespace litecore {
     public:
         using Callback = std::function<void()>;
 
-        CrossProcessNotifier()                          :Logging(DBLog) { }
+        CrossProcessNotifier();
 
         /// Starts the notifier.
         /// @param path  Path where the shared-memory file should be created.
@@ -55,7 +55,6 @@ namespace litecore {
 
         std::string _path;                  // Path of the file
         Callback    _callback;              // Client callback to invoke
-        int         _myPID;                 // This process's pid
         CrossProcessNotifierData* _sharedData {nullptr};  // Points to the shared memory in the file
         bool        _running {false};       // True when started, set to false by `stop`
     };

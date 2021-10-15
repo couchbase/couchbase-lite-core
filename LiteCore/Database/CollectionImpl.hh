@@ -116,9 +116,51 @@ namespace litecore {
         }
 
 
-        void externalTransactionCommitted(const SequenceTracker &sourceTracker) {
-            if (_sequenceTracker)
-                _sequenceTracker->useLocked()->addExternalTransaction(sourceTracker);
+        void externalTransactionCommitted(const SequenceTracker *externalTracker) {
+            // CAREFUL: This may be called on an arbitrary thread
+            if (!_sequenceTracker)
+                return;
+            _sequenceTracker->useLocked([&](SequenceTracker &sequenceTracker) {
+                if (externalTracker) {
+                    // Another Database in this process made changes, which can be copied from
+                    // its SequenceTracker:
+                    sequenceTracker.addExternalTransaction(*externalTracker);
+                } else {
+                    // Something outside the system, like another process, changed the db somehow.
+                    // Use a RecordEnumerator to find all new sequences, and feed them to my
+                    // SequenceTracker:
+                    logVerbose("Enumerating sequences to catch up with external changes...");
+                    sequence_t lastSequence = sequenceTracker.lastSequence();
+                    sequenceTracker.beginTransaction();
+
+                    unsigned n = 0;
+                    RecordEnumerator::Options options;
+                    options.includeDeleted = true;
+                    options.contentOption = kMetaOnly;
+                    RecordEnumerator e(*_keyStore, lastSequence, options);
+                    while (e.next()) {
+                        auto &record = e.record();
+                        C4RevisionFlags revFlags {0};
+                        if (record.flags() & DocumentFlags::kDeleted)
+                            revFlags |= kRevDeleted;
+                        if (record.flags() & DocumentFlags::kHasAttachments)
+                            revFlags |= kRevHasAttachments;
+                        if (record.flags() & DocumentFlags::kConflicted)
+                            revFlags |= kRevIsConflict;
+                        sequenceTracker.documentChanged(record.key(), record.version(),
+                                           record.sequence(), record.bodySize(),
+                                           SequenceTracker::RevisionFlags(revFlags));
+                        ++n;
+                    }
+
+                    sequenceTracker.endTransaction(n > 0);
+                    if (n > 0)
+                        logInfo("Scanned external changes, added %u revs, sequences %llu+1 to %llu",
+                                n, lastSequence, sequenceTracker.lastSequence());
+                    else
+                        logVerbose("...no revisions to add");
+                }
+            });
         }
 
 

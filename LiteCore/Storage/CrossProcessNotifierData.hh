@@ -63,11 +63,13 @@ namespace litecore {
             return {0, nullptr};
         }
 
+        // must be called while locked!
         int broadcast(int pid) {
             _lastPID = pid;
             return ::pthread_cond_broadcast(&_condition);
         }
 
+        // must be called while locked!
         int wait(int *outPID) {
             int err = ::pthread_cond_wait(&_condition, &_mutex);
             *outPID = _lastPID;

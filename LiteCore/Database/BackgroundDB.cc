@@ -51,7 +51,7 @@ namespace litecore {
     }
 
 
-    void BackgroundDB::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
+    void BackgroundDB::externalTransactionCommitted(const SequenceTracker *sourceTracker) {
         notifyTransactionObservers();
     }
 
@@ -108,15 +108,6 @@ namespace litecore {
         LOCK(_transactionObserversMutex);
         for (auto obs : _transactionObservers)
             obs->transactionCommitted();
-    }
-
-
-    bool BackgroundDB::crossProcessChangeNotification() {
-        auto dataFile = _dataFile.useLocked();
-        if (!dataFile)
-            return false;
-        (*dataFile).discoverExternalChanges();
-        return true;
     }
 
 }
