@@ -48,6 +48,8 @@ namespace litecore {
         void addTransactionObserver(TransactionObserver* NONNULL);
         void removeTransactionObserver(TransactionObserver* NONNULL);
 
+        bool crossProcessChangeNotification() override;
+
     private:
         string databaseName() const override;
         alloc_slice blobAccessor(const fleece::impl::Dict*) const override;

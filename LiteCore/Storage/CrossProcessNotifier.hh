@@ -12,40 +12,52 @@
 struct C4Error;
 
 namespace litecore {
-    class FilePath;
 
-    /** Implements a simple change notification system that works between any processes that have
-        opened the same database file. */
+    class CrossProcessNotifierData;
+
+    /** Implements a simple change notification system that works between any processes on the
+        same computer. Any process can post a notification, which will be received by all the
+        others (but not itself.)
+
+        This is implemented with a small file that's mapped as shared memory. Notifications are
+        scoped to all processes that have opened a CrossProcessNotifier on the same file. */
     class CrossProcessNotifier final : public RefCounted, Logging {
     public:
         using Callback = std::function<void()>;
 
-        CrossProcessNotifier();
+        CrossProcessNotifier()                          :Logging(DBLog) { }
 
-        bool start(const FilePath &databaseDir,
+        /// Starts the notifier.
+        /// @param path  Path where the shared-memory file should be created.
+        /// @param callback  The function to be called when another process notifies.
+        /// @param outError  On failure, the error will be stored here if non-null.
+        /// @return  True on success, false on failure.
+        bool start(const std::string &path,
                    Callback callback,
                    C4Error *outError);
-        void stop();
 
+        /// Posts a notification to other processes. Does not trigger a callback in this process.
+        /// Has no effect if the notifier is not started or failed to start.
         void notify() const;
+
+        /// Stops the notifier. The background task may take a moment to clean up, but no more
+        /// notifications will be delivered after this method returns.
+        /// @warning Notifiers cannot be restarted after stopping. Create a new instance instead.
+        void stop();
 
     protected:
         ~CrossProcessNotifier();
-        std::string loggingIdentifier() const override;
+        std::string loggingIdentifier() const override  {return _path;}
 
     private:
-        struct SharedData;
-        static constexpr const char* kSharedMemFilename = "cblite_mem";
-
-        void observe(Retained<CrossProcessNotifier>);
+        void observerThread(Retained<CrossProcessNotifier>);
         void teardown();
-        int _check(const char *fn, int result) const;
 
-        std::string _path;
-        Callback    _callback;
-        int         _myPID;
-        SharedData* _sharedData {nullptr};
-        bool        _running {false};
+        std::string _path;                  // Path of the file
+        Callback    _callback;              // Client callback to invoke
+        int         _myPID;                 // This process's pid
+        CrossProcessNotifierData* _sharedData {nullptr};  // Points to the shared memory in the file
+        bool        _running {false};       // True when started, set to false by `stop`
     };
 
 }

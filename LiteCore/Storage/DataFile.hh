@@ -51,6 +51,8 @@ namespace litecore {
             virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const =0;
             // Notifies that another DataFile on the same physical file has committed a transaction
             virtual void externalTransactionCommitted(const SequenceTracker &sourceTracker) { }
+            // Another OS process has notified that it changed the database:
+            virtual bool crossProcessChangeNotification()   {return false;}
         };
 
         struct Options {
@@ -107,7 +109,20 @@ namespace litecore {
         fleece::impl::SharedKeys* documentKeys() const;
 
 
+        /** Iterates over all other open DataFiles on the same physical file. */
         void forOtherDataFiles(function_ref<void(DataFile*)> fn);
+
+        //////// REMOTE CHANGES:
+        ///
+        /** Looks up the latest sequence of every KeyStore. */
+        virtual std::unordered_map<string,sequence_t> getLastSequences() const =0;
+
+        /** Remembers the current latest sequences. */
+        void recordLastSequences();
+
+        /** Looks for changes made by an external process, and if there are any,
+            notifies all local DataFiles' delegates. */
+        void discoverExternalChanges();
 
         //////// QUERIES:
         
@@ -264,6 +279,7 @@ namespace litecore {
         std::unordered_map<std::string, unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         mutable Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         std::unordered_set<Query*> _queries;                    // Query objects
+        std::unordered_map<string,sequence_t> _lastKnownSequences;  //TODO: Move to Shared
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic_bool        _closeSignaled {false};         // Have I been asked to close?
     };
@@ -287,6 +303,7 @@ namespace litecore {
         void abort();
 
         void notifyCommitted(SequenceTracker&);
+        bool committed() const              {return _committed;}
 
     private:
         friend class DataFile;
@@ -295,8 +312,9 @@ namespace litecore {
         ExclusiveTransaction(DataFile*, bool begin);
         ExclusiveTransaction(const ExclusiveTransaction&) = delete;
 
-        DataFile&   _db;        // The DataFile
-        bool _active;           // Is there an open transaction at the db level?
+        DataFile&   _db;                // The DataFile
+        bool        _active;            // Is there an open transaction at the db level?
+        bool        _committed {false}; // Was the transaction committed?
     };
 
 

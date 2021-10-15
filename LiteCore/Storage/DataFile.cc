@@ -13,6 +13,7 @@
 #include "DataFile+Shared.hh"
 #include "Query.hh"
 #include "Record.hh"
+#include "SequenceTracker.hh"
 #include "DocumentKeys.hh"
 #include "FilePath.hh"
 #include "Logging.hh"
@@ -237,7 +238,8 @@ namespace litecore {
             
             if (file)
                 file->close(true);
-            bool result = factory._deleteFile(FilePath(shared->path), options);
+            bool result = factory._deleteFile(FilePath(shared->path), options)
+                       && shared->deleteNotifierFile();
             shared->condemn(false);
             return result;
         } catch (...) {
@@ -314,6 +316,57 @@ namespace litecore {
     }
 
 
+    void DataFile::recordLastSequences() {
+        _lastKnownSequences = getLastSequences();
+    }
+
+
+    void DataFile::discoverExternalChanges() {
+        ExclusiveTransaction t(this);    // This is a fake transaction
+
+        //TODO: Do I have to compare purgeSequences too?
+        auto knownSequences = move(_lastKnownSequences);
+        recordLastSequences();
+        for (auto [storeName, lastSeq] : _lastKnownSequences) {
+            if (auto knownSeq = knownSequences[storeName]; knownSeq < lastSeq) {
+                // OK, one of my KeyStores changed. Iterate changes, push them into a
+                // SequenceTracker, and use that to notify delegates:
+                logInfo("Discovered new sequences %llu-%llu in %s",
+                        knownSeq + 1, lastSeq, storeName.c_str());
+                KeyStore &store = getKeyStore(storeName);
+                SequenceTracker sequenceTracker(storeName);
+                sequenceTracker.beginTransaction();
+
+                RecordEnumerator::Options options;
+                options.includeDeleted = true;
+                options.contentOption = kMetaOnly;
+                RecordEnumerator e(store, knownSeq, options);
+                while (e.next()) {
+                    auto &record = e.record();
+                    C4RevisionFlags revFlags {0};
+                    if (record.flags() & DocumentFlags::kDeleted)
+                        revFlags |= kRevDeleted;
+                    if (record.flags() & DocumentFlags::kHasAttachments)
+                        revFlags |= kRevHasAttachments;
+                    if (record.flags() & DocumentFlags::kConflicted)
+                        revFlags |= kRevIsConflict;
+                    sequenceTracker.documentChanged(record.key(), record.version(),
+                                                    record.sequence(), record.bodySize(),
+                                                    SequenceTracker::RevisionFlags(revFlags));
+                }
+
+                // Notify my delegate, and other DataFiles' delegates:
+                if (auto del = delegate(); del)
+                    del->externalTransactionCommitted(sequenceTracker);
+                t.notifyCommitted(sequenceTracker);
+
+                sequenceTracker.endTransaction(true);
+            }
+        }
+        t.abort();  // there weren't actually any changes made.
+    }
+
+
 #pragma mark - TRANSACTION:
 
     
@@ -336,6 +389,8 @@ namespace litecore {
             else
                 _documentKeys->revert();
         }
+        if (committing)
+            recordLastSequences();
     }
     
     void DataFile::endTransactionScope(ExclusiveTransaction* t) {
@@ -343,7 +398,6 @@ namespace litecore {
         _inTransaction = false;
         if (_documentKeys)
             _documentKeys->transactionEnded();
-        _shared->crossProcessNotifyTransactionEnded();
     }
 
 
@@ -386,6 +440,7 @@ namespace litecore {
         Assert(_active, "Transaction is not active");
         _db.transactionEnding(this, true);
         _active = false;
+        _committed = true;
         _db._logVerbose("commit transaction");
         Stopwatch st;
         _db._endTransaction(this, true);
@@ -400,6 +455,7 @@ namespace litecore {
         Assert(_active, "Transaction is not active");
         _db.transactionEnding(this, false);
         _active = false;
+        _committed = false;
         _db._logVerbose("abort transaction");
         _db._endTransaction(this, false);
         Signpost::end(Signpost::transaction, uintptr_t(this));

@@ -11,9 +11,11 @@
 //
 
 #include "KeyStore.hh"
+#include "DataFile.hh"
 #include "Query.hh"
 #include "Record.hh"
-#include "DataFile.hh"
+#include "SequenceTracker.hh"
+#include "c4DocumentTypes.h"    // for C4RevisionFlags
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "Logging.hh"

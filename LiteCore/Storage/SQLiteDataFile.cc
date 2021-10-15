@@ -301,6 +301,8 @@ namespace litecore {
         int rc = register_unicodesn_tokenizer(sqlite);
         if (rc != SQLITE_OK)
             warn("Unable to register FTS tokenizer: SQLite err %d", rc);
+
+        recordLastSequences();
     }
 
 
@@ -338,6 +340,7 @@ namespace litecore {
     // Called by DataFile::close (the public method)
     void SQLiteDataFile::_close(bool forDelete) {
         _getLastSeqStmt.reset();
+        _getLastSeqsStmt.reset();
         _setLastSeqStmt.reset();
         _getPurgeCntStmt.reset();
         _setPurgeCntStmt.reset();
@@ -610,37 +613,53 @@ namespace litecore {
             return !existed;
     }
 
-    
+
+    unordered_map<string,sequence_t> SQLiteDataFile::getLastSequences() const {
+        unordered_map<string,sequence_t> result;
+        auto &stmt = _getLastSeqsStmt;
+        compileCached(stmt, "SELECT name, lastSeq FROM kvmeta");
+        UsingStatement u(stmt);
+        while (stmt->executeStep()) {
+            result.insert({string(stmt->getColumn(0)),
+                int64_t(stmt->getColumn(1))});
+        }
+        return result;
+    }
+
+
     sequence_t SQLiteDataFile::lastSequence(const string& keyStoreName) const {
         sequence_t seq = 0;
-        compileCached(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
-        UsingStatement u(_getLastSeqStmt);
-        _getLastSeqStmt->bindNoCopy(1, keyStoreName);
-        if (_getLastSeqStmt->executeStep())
-            seq = (int64_t)_getLastSeqStmt->getColumn(0);
+        auto &stmt = _getLastSeqStmt;
+        compileCached(stmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
+        UsingStatement u(stmt);
+        stmt->bindNoCopy(1, keyStoreName);
+        if (stmt->executeStep())
+            seq = (int64_t)stmt->getColumn(0);
         return seq;
     }
 
     void SQLiteDataFile::setLastSequence(SQLiteKeyStore &store, sequence_t seq) {
-        compileCached(_setLastSeqStmt,
+        auto &stmt = _setLastSeqStmt;
+        compileCached(stmt,
                 "INSERT INTO kvmeta (name, lastSeq) VALUES (?, ?) "
                 "ON CONFLICT (name) "
                 "DO UPDATE SET lastSeq = excluded.lastSeq");
-        UsingStatement u(_setLastSeqStmt);
-        _setLastSeqStmt->bindNoCopy(1, store.name());
-        _setLastSeqStmt->bind(2, (long long)seq);
-        _setLastSeqStmt->exec();
+        UsingStatement u(stmt);
+        stmt->bindNoCopy(1, store.name());
+        stmt->bind(2, (long long)seq);
+        stmt->exec();
     }
 
 
     uint64_t SQLiteDataFile::purgeCount(const std::string& keyStoreName) const {
         uint64_t purgeCnt = 0;
         if (_schemaVersion >= SchemaVersion::WithPurgeCount) {
-            compileCached(_getPurgeCntStmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
-            UsingStatement u(_getPurgeCntStmt);
-            _getPurgeCntStmt->bindNoCopy(1, keyStoreName);
-            if(_getPurgeCntStmt->executeStep()) {
-                purgeCnt = (int64_t)_getPurgeCntStmt->getColumn(0);
+            auto &stmt = _getPurgeCntStmt;
+            compileCached(stmt, "SELECT purgeCnt FROM kvmeta WHERE name=?");
+            UsingStatement u(stmt);
+            stmt->bindNoCopy(1, keyStoreName);
+            if(stmt->executeStep()) {
+                purgeCnt = (int64_t)stmt->getColumn(0);
             }
         }
         return purgeCnt;
@@ -648,14 +667,15 @@ namespace litecore {
 
     void SQLiteDataFile::setPurgeCount(SQLiteKeyStore& store, uint64_t count) {
         Assert(_schemaVersion >= SchemaVersion::WithPurgeCount);
-        compileCached(_setPurgeCntStmt,
+        auto &stmt = _getPurgeCntStmt;
+        compileCached(stmt,
             "INSERT INTO kvmeta (name, purgeCnt) VALUES (?, ?) "
             "ON CONFLICT (name) "
             "DO UPDATE SET purgeCnt = excluded.purgeCnt");
-        UsingStatement u(_setPurgeCntStmt);
-        _setPurgeCntStmt->bindNoCopy(1, store.name());
-        _setPurgeCntStmt->bind(2, (long long)count);
-        _setPurgeCntStmt->exec();
+        UsingStatement u(stmt);
+        stmt->bindNoCopy(1, store.name());
+        stmt->bind(2, (long long)count);
+        stmt->exec();
     }
 
 

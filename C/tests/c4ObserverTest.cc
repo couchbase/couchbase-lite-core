@@ -12,6 +12,7 @@
 
 #include "c4Test.hh"
 #include "c4Observer.h"
+#include <thread>
 
 
 class C4ObserverTest : public C4Test {
@@ -55,6 +56,20 @@ class C4ObserverTest : public C4Test {
     void dbObserverCalled(C4DatabaseObserver *obs) {
         CHECK(obs == dbObserver);
         ++dbCallbackCalls;
+        C4Log("=== dbObserverCalled #%d", dbCallbackCalls);
+    }
+
+    void logObservedChanges(C4DatabaseObserver *obs) {
+        C4CollectionChange changes[100];
+        bool external;
+        int n;
+        do {
+            n = c4dbobs_getChanges(obs, changes, 100, &external);
+            for (int i = 0; i < n; i++) {
+                C4Log("Seq %3llu: '%.*s' %.*s", changes[i].sequence,
+                      FMTSLICE(changes[i].docID), FMTSLICE(changes[i].revID));
+            }
+        } while (n > 0);
     }
 
     void docObserverCalled(C4DocumentObserver* obs,
@@ -90,11 +105,17 @@ class C4ObserverTest : public C4Test {
     unsigned docCallbackCalls {0};
     alloc_slice lastDocCallbackDocID;
     C4SequenceNumber lastDocCallbackSequence = 0;
+    bool logChanges = false;
 };
 
 
 static void dbObserverCallback(C4DatabaseObserver* obs, void *context) {
     ((C4ObserverTest*)context)->dbObserverCalled(obs);
+}
+
+static void dbObserverLoggingCallback(C4DatabaseObserver* obs, void *context) {
+    ((C4ObserverTest*)context)->dbObserverCalled(obs);
+    ((C4ObserverTest*)context)->logObservedChanges(obs);
 }
 
 static void docObserverCallback(C4DocumentObserver* obs,
@@ -220,3 +241,7 @@ N_WAY_TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4ObserverTest, "DB Observer Continuous", "[.neverstops]") {
+    dbObserver = c4dbobs_create(db, dbObserverLoggingCallback, this);
+    std::this_thread::sleep_for(20s);
+}

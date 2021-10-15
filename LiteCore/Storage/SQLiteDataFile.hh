@@ -113,6 +113,7 @@ namespace litecore {
 #endif
 
         sequence_t lastSequence(const std::string& keyStoreName) const;
+        std::unordered_map<std::string,sequence_t> getLastSequences() const override;
         void setLastSequence(SQLiteKeyStore&, sequence_t);
         uint64_t purgeCount(const std::string& keyStoreName) const;
         void setPurgeCount(SQLiteKeyStore&, uint64_t);
@@ -168,8 +169,9 @@ namespace litecore {
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore *store =nullptr);
 
         unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
-        mutable unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
-        mutable unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
+        mutable unique_ptr<SQLite::Statement>   _getLastSeqStmt, _getLastSeqsStmt,
+                                                _setLastSeqStmt, _getPurgeCntStmt,
+                                                _setPurgeCntStmt;
         CollationContextVector          _collationContexts;
         SchemaVersion                   _schemaVersion {SchemaVersion::None};
     };

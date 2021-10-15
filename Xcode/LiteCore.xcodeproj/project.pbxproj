@@ -972,6 +972,8 @@
 		273F481525A68588005D4FE2 /* TestsCommon.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestsCommon.cc; sourceTree = "<group>"; };
 		273F86E92714EE750009675E /* CrossProcessNotifier.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CrossProcessNotifier.hh; sourceTree = "<group>"; };
 		273F86EA2714EE750009675E /* CrossProcessNotifier.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CrossProcessNotifier.cc; sourceTree = "<group>"; };
+		273F86EF2716474A0009675E /* cblnotify.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cblnotify.cc; sourceTree = "<group>"; };
+		273F86F12718D8BA0009675E /* CrossProcessNotifierData.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CrossProcessNotifierData.hh; sourceTree = "<group>"; };
 		27416E291E0494DF00F10F65 /* c4QueryTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4QueryTest.cc; sourceTree = "<group>"; };
 		274281772624B4B300862700 /* c4Error.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Error.h; sourceTree = "<group>"; };
 		2742817B2624B74E00862700 /* c4Log.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Log.h; sourceTree = "<group>"; };
@@ -2839,6 +2841,8 @@
 				27A16314201FC2A500C18D9C /* DataFile+Shared.hh */,
 				273F86EA2714EE750009675E /* CrossProcessNotifier.cc */,
 				273F86E92714EE750009675E /* CrossProcessNotifier.hh */,
+				273F86F12718D8BA0009675E /* CrossProcessNotifierData.hh */,
+				273F86EF2716474A0009675E /* cblnotify.cc */,
 				27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */,
 				27DF46C21A12CF46007BB4A4 /* Record.cc */,
 				27DF46C31A12CF46007BB4A4 /* Record.hh */,

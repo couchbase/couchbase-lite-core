@@ -32,7 +32,8 @@ namespace litecore {
     /** Shared state between all open DataFile instances on the same filesystem file.
         Manages a mutex that ensures that only one DataFile can open a transaction at once.
         This class is internal to DataFile. */
-    class DataFile::Shared : public RefCounted, public fleece::InstanceCountedIn<DataFile::Shared>, Logging {
+    class DataFile::Shared : public RefCounted, public fleece::InstanceCountedIn<DataFile::Shared>,
+                             Logging {
     public:
 
         static Retained<Shared> forPath(const FilePath &path, DataFile *dataFile) {
@@ -74,15 +75,7 @@ namespace litecore {
         void addDataFile(DataFile *dataFile) {
             unique_lock<mutex> lock(_mutex);
             mustNotBeCondemned();
-            if (!_xpNotifier) {
-                _xpNotifier = new CrossProcessNotifier();
-                C4Error error;
-                if (!_xpNotifier->start(FilePath(path).parentDir(),
-                                       [&] {crossProcessObserve();},
-                                       &error)) {
-                    Warn("Couldn't start cross-process notifier: %s", error.description().c_str());
-                }
-            }
+            createCrossProcessNotifier();
             if (find(_dataFiles.begin(), _dataFiles.end(), dataFile) == _dataFiles.end())
                 _dataFiles.push_back(dataFile);
         }
@@ -138,8 +131,14 @@ namespace litecore {
         void unsetTransaction(ExclusiveTransaction* t) {
             unique_lock<mutex> lock(_transactionMutex);
             Assert(t && _transaction == t);
+            bool committed = t->committed();
             _transaction = nullptr;
             _transactionCond.notify_one();
+
+            if (committed && _xpNotifier) {
+                logInfo("Posting cross-process transaction notification");
+                _xpNotifier->notify();
+            }
         }
 
 
@@ -159,14 +158,19 @@ namespace litecore {
         }
 
 
-        void crossProcessNotifyTransactionEnded() {
-            LogTo(DBLog, "Posting cross-process transaction notification");
-            DebugAssert(_xpNotifier);
-            _xpNotifier->notify();
+        // Deletes the file used by the CrossProcessNotifier.
+        bool deleteNotifierFile() {
+            if (_xpNotifier) {
+                _xpNotifier->stop();
+                _xpNotifier = nullptr;
+            }
+            return notifierPath().del();
         }
 
 
     protected:
+        static constexpr const char* kSharedMemFilename = "cblite_mem";
+
         Shared(const string &path)
         :Logging(DBLog)
         ,path(path)
@@ -188,9 +192,30 @@ namespace litecore {
         }
 
 
-        void crossProcessObserve() {
-            LogTo(DBLog, "Cross-process notification received!!!");
-            //TODO: Fill this in
+        FilePath notifierPath() const {
+            return FilePath(path).withExtension("cblite_shmem");
+        }
+
+
+        void createCrossProcessNotifier() {
+            if (_xpNotifier)
+                return;
+            _xpNotifier = new CrossProcessNotifier();
+
+            auto observer = [&] {
+                // This is the callback that runs when another process updates the database:
+                logInfo("Cross-process notification received!!!");
+                unique_lock<mutex> lock(_mutex);
+                for (DataFile *df : _dataFiles) {
+                    if (df->delegate() && df->delegate()->crossProcessChangeNotification())
+                        return;
+                }
+                warn("No Database handled the cross-process notification");
+            };
+
+            C4Error error;
+            if (!_xpNotifier->start(notifierPath(), observer, &error))
+                warn("Couldn't start cross-process notifier: %s", error.description().c_str());
         }
 
 

@@ -110,4 +110,13 @@ namespace litecore {
             obs->transactionCommitted();
     }
 
+
+    bool BackgroundDB::crossProcessChangeNotification() {
+        auto dataFile = _dataFile.useLocked();
+        if (!dataFile)
+            return false;
+        (*dataFile).discoverExternalChanges();
+        return true;
+    }
+
 }

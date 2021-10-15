@@ -11,11 +11,8 @@
 //
 
 #include "CrossProcessNotifier.hh"
+#include "CrossProcessNotifierData.hh"
 #include "C4Error.h"
-#include "Defer.hh"
-#include "Error.hh"
-#include "FilePath.hh"
-#include "Logging.hh"
 #include "ThreadUtil.hh"
 #include <fcntl.h>
 #include <pthread.h>
@@ -26,44 +23,30 @@
 namespace litecore {
     using namespace std;
 
-    static constexpr int kPermissions = 0700;
-
-    struct CrossProcessNotifier::SharedData {
-        uint32_t        lastPID;        // Process ID of last process that broadcast
-        pthread_mutex_t mutex;
-        pthread_cond_t  condition;      // Condition variable for coordinating
-    };
+#pragma mark - UTILITIES:
 
 
     static int _check(const char *fn, int result) {
         if (result != 0)
-            LogToAt(DBLog, Warning, "error %d from %s", result, fn);
-        return result;
-    }
-
-    int CrossProcessNotifier::_check(const char *fn, int result) const {
-        if (result != 0)
-            warn("error %d from %s", result, fn);
+            LogToAt(DBLog, Error, "%s (%d) from %s", strerror(result), result, fn);
         return result;
     }
 
     #define check(EXPR) _check(#EXPR, EXPR)
 
 
-    class MutexLocker {
-    public:
-        MutexLocker(pthread_mutex_t &mutex) :_mutex(&mutex) {check(::pthread_mutex_lock(_mutex));}
-        ~MutexLocker()                      {check(::pthread_mutex_unlock(_mutex));}
-    private:
-        pthread_mutex_t* _mutex;
-    };
-
-    #define LOCK(MUTEX)     MutexLocker _lock(MUTEX)
+#pragma mark - SHARED DATA:
 
 
-    CrossProcessNotifier::CrossProcessNotifier()
-    :Logging(DBLog)
-    { }
+    // File permissions for the shared-memory file. Allows read+write, for owner only.
+    static constexpr int kFilePermissions = 0600;
+
+
+
+    #define LOCK(DATA)     CrossProcessNotifierData::Lock _lock(DATA)
+
+
+#pragma mark - CROSS-PROCESS NOTIFIER:
 
 
     CrossProcessNotifier::~CrossProcessNotifier() {
@@ -72,33 +55,25 @@ namespace litecore {
     }
 
 
-    string CrossProcessNotifier::loggingIdentifier() const {
-        return _path;
-    }
-
-
-
-    bool CrossProcessNotifier::start(const FilePath &databaseDir,
-                                     Callback callback,
-                                     C4Error *outError)
-    {
-        // Open the shared-memory file:
+    bool CrossProcessNotifier::start(const string &path, Callback callback, C4Error *outError) {
+        // Open/create the shared-memory file:
+        _path = std::move(path);
         int err;
-        FilePath memFile = databaseDir[kSharedMemFilename];
-        _path = memFile.path();
-        int fd = ::open(memFile.path().c_str(), O_CREAT | O_RDWR, kPermissions);
+        int fd = ::open(_path.c_str(), O_CREAT | O_RDWR, kFilePermissions);
         if (fd < 0) {
             err = errno;
-            _check("open()", err);
-            C4Error::set(outError, POSIXDomain, err, "Couldn't open shared-memory file");
+            logError("%s (%d) opening shared-memory file", strerror(err), err);
+            C4Error::set(outError, POSIXDomain, err, "Couldn't open shared-memory file %s",
+                         _path.c_str());
             return false;
         }
-        // Ensure the file is non-empty, without deleting any existing contents:
+        // Ensure the file is non-empty, without deleting any existing contents. Leave enough room
+        // for any potential future expansion of the data:
         ::ftruncate(fd, 4096);
 
-        // Map it read-write:
+        // Memory-map it, read-write & shared. After this the file descriptor can be closed:
         void *mapped = ::mmap(nullptr,
-                              sizeof(SharedData),
+                              sizeof(CrossProcessNotifierData),
                               PROT_READ | PROT_WRITE,
                               MAP_FILE | MAP_SHARED,
                               fd,
@@ -106,52 +81,44 @@ namespace litecore {
         err = errno;
         ::close(fd);
         if (mapped == MAP_FAILED) {
-            _check("mmap()", err);
-            C4Error::set(outError, POSIXDomain, errno,
-                         "Couldn't memory-map shared-memory file");
+            logError("%s (%d) memory-mapping file", strerror(err), err);
+            C4Error::set(outError, POSIXDomain, err,
+                         "Couldn't memory-map shared-memory file %s", _path.c_str());
             return false;
         }
-        _sharedData = (SharedData*)mapped;
+        _sharedData = (CrossProcessNotifierData*)mapped;
 
-        // Initialize the mutex and condition variable in the shared memory:
-        pthread_mutexattr_t mattr;
-        ::pthread_mutexattr_init(&mattr);
-        err = check(::pthread_mutexattr_setpshared(&mattr, true));
-        ::pthread_mutex_init(&_sharedData->mutex, &mattr);
-        ::pthread_mutexattr_destroy(&mattr);
-        if (err) {
-            teardown();
-            C4Error::set(outError, POSIXDomain, err, "Unable to create a shared mutex");
-            return false;
+        // Check the file contents, and initialize if necessary:
+        if (!_sharedData->valid()) {
+            if (_sharedData->uninitialized())
+                logInfo("Initializing shared memory notifier file");
+            else
+                warn("Shared memory is invalid; re-initializing it");
+            if (auto [error, fn] = _sharedData->initialize(); error != 0) {
+                warn("Couldn't initialize notifier in file %s; %s failed",
+                     _path.c_str(), fn);
+                C4Error::set(outError, POSIXDomain, err,
+                             "Couldn't initialize notifier in file %s; %s failed",
+                             _path.c_str(), fn);
+                return false;
+            }
         }
 
-        // Create a condition variable:
-        pthread_condattr_t cattr;
-        ::pthread_condattr_init(&cattr);
-        check(::pthread_condattr_setpshared(&cattr, true));   // make it work between processes
-        err = check(::pthread_cond_init(&_sharedData->condition, &cattr));
-        ::pthread_condattr_destroy(&cattr);
-        if (err) {
-            teardown();
-            C4Error::set(outError, POSIXDomain, err,"Unable to create a shared condition lock");
-            return false;
-        }
-
+        // Now start the observer thread:
         logInfo("Initialized");
         _myPID = getpid();
         _callback = callback;
-
-        // Now start the observer thread:
         _running = true;
-        thread([this] { observe(this); }).detach();
+        thread([this] { observerThread(this); }).detach();
 
         return true;
     }
 
 
     void CrossProcessNotifier::teardown() {
+        _running = false;
         if (_sharedData) {
-            ::munmap(_sharedData, sizeof(SharedData));
+            ::munmap(_sharedData, sizeof(CrossProcessNotifierData));
             _sharedData = nullptr;
         }
     }
@@ -160,51 +127,48 @@ namespace litecore {
     void CrossProcessNotifier::stop() {
         if (_running) {
             logVerbose("Stopping...");
-            // Clear the `_running` flag and trigger a notification to wake up my thread.
+            // Clear the `_running` flag and trigger a notification to wake up my thread,
+            // which will detect the cleared flag and stop.
             // (Unfortunately this wakes up all other observing processes; I don't know how to
             // get around that. The others will ignore it.)
-            LOCK(_sharedData->mutex);
+            LOCK(_sharedData);
             _running = false;
             _callback = nullptr;
-            _sharedData->lastPID = -1;
-            check(::pthread_cond_broadcast(&_sharedData->condition));
+            _sharedData->broadcast(-1);
         }
     }
 
 
     void CrossProcessNotifier::notify() const {
-        if (!_sharedData)
-            return;
-        logInfo("Posting notification (from PID %d)", _myPID);
-        LOCK(_sharedData->mutex);
-        _sharedData->lastPID = _myPID;
-        check(::pthread_cond_broadcast(&_sharedData->condition));
+        if (_sharedData)
+            _sharedData->broadcast(_myPID);
     }
 
 
-    void CrossProcessNotifier::observe(Retained<CrossProcessNotifier> selfRetain) {
+    void CrossProcessNotifier::observerThread(Retained<CrossProcessNotifier> selfRetain) {
         SetThreadName("CBL Cross-Process Notifier");
 
-        bool running;
-        do {
+        for (bool running = _running; running; ) {
             logVerbose("Waiting...");
-            int notifierPID;
+            int notifyingPID;
             Callback callback;
             {
-                LOCK(_sharedData->mutex);
-                if (check(::pthread_cond_wait(&_sharedData->condition, &_sharedData->mutex)) != 0)
+                LOCK(_sharedData);
+                if (check(_sharedData->wait(&notifyingPID)) != 0)
                     break;
-                notifierPID = _sharedData->lastPID;
                 running = _running;
                 callback = _callback;
             }
 
-            if (notifierPID != _myPID && notifierPID != -1 && callback) {
-                logVerbose("Notified by pid %d! Invoking callback()...",
-                      _sharedData->lastPID);
-                callback();
+            if (notifyingPID != _myPID && notifyingPID != -1 && callback) {
+                logVerbose("Notified by pid %d! Invoking callback()...", notifyingPID);
+                try {
+                    callback();
+                } catch (...) {
+                    C4Error::warnCurrentException("CrossProcessNotifier::observerThread");
+                }
             }
-        } while (running);
+        }
 
         logVerbose("Thread stopping");
         teardown();
