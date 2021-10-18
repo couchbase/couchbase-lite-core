@@ -404,7 +404,7 @@ namespace litecore { namespace net {
         do {
             alloc_slice line = readToDelimiter("\r\n", false);
             slice_istream reader(line);
-            chunkLength = reader.readHex();
+            chunkLength = (size_t)reader.readHex();
             if (!reader.eof()) {
                 setError(WebSocketDomain, kCodeProtocolError, "Invalid chunked response data");
                 return nullslice;

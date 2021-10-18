@@ -67,6 +67,7 @@ add_executable(
     UpgraderTest.cc
     VersionVectorTest.cc
     ${TOP}REST/tests/RESTListenerTest.cc
+    ${TOP}REST/tests/RESTClientTest.cc
     ${TOP}REST/tests/SyncListenerTest.cc
     ${TOP}vendor/fleece/Tests/API_ValueTests.cc
     ${TOP}vendor/fleece/Tests/DeltaTests.cc
