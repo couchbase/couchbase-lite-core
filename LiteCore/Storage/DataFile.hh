@@ -1,19 +1,13 @@
 //
 // DataFile.hh
 //
-// Copyright (c) 2014 Couchbase, Inc All rights reserved.
+// Copyright 2014-Present Couchbase, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 
 #pragma once
@@ -42,6 +36,17 @@ namespace litecore {
     class ExclusiveTransaction;
     class SequenceTracker;
 
+    // Must match ::C4DatabaseTag, declared in c4Private.h
+    enum DatabaseTag: uint32_t {
+        kDatabaseTag_AppOpened,
+        kDatabaseTag_DBAccess,
+        kDatabaseTag_C4RemoteReplicator,
+        kDatabaseTag_C4IncomingReplicator,
+        kDatabaseTag_C4LocalReplicator1,
+        kDatabaseTag_C4LocalReplicator2,
+        kDatabaseTag_BackgroundDB,
+        kDatabaseTag_RESTListener
+    };
 
     /** A database file, primarily a container of KeyStores which store the actual data.
         This is an abstract class, with concrete subclasses for different database engines. */
@@ -67,6 +72,7 @@ namespace litecore {
             bool                upgradeable    :1;      ///< DB schema can be upgraded
             EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
             alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
+            DatabaseTag         dbTag;
             static const Options defaults;
         };
 
@@ -91,6 +97,14 @@ namespace litecore {
 
         /** Opens another instance on the same file. */
         DataFile* openAnother(Delegate* NONNULL);
+
+        DatabaseTag databaseTag() const {
+            return _options.dbTag;
+        }
+
+        void setDatabaseTag(DatabaseTag dbTag) {
+            _options.dbTag = dbTag;
+        }
 
         virtual uint64_t fileSize();
 

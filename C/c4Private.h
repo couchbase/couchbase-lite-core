@@ -1,19 +1,13 @@
 //
 // c4Private.h
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright 2016-Present Couchbase, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 
 #pragma once
@@ -57,6 +51,20 @@ C4SliceResult c4db_getIndexRows(C4Database* database,
                                 C4Error* C4NULLABLE error) C4API;
 
 C4StringResult c4db_getPeerID(C4Database* database) C4API;
+
+typedef C4_ENUM(uint32_t, C4DatabaseTag) {
+    DatabaseTag_AppOpened,
+    DatabaseTag_DBAccess,
+    DatabaseTag_C4RemoteReplicator,
+    DatabaseTag_C4IncomingReplicator,
+    DatabaseTag_C4LocalReplicator1,
+    DatabaseTag_C4LocalReplicator2,
+    DatabaseTag_BackgroundDB,
+    DatabaseTag_RESTListener
+};
+
+C4DatabaseTag _c4db_getDatabaseTag(C4Database* db) C4API;
+void _c4db_setDatabaseTag(C4Database* db, C4DatabaseTag dbTag) C4API;
 
 /** Sets the document flag kSynced. Used by the replicator to track synced documents. */
 bool c4db_markSynced(C4Database *database,

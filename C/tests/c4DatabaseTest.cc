@@ -1,19 +1,13 @@
 //
 // c4DatabaseTest.cc
 //
-// Copyright (c) 2015 Couchbase, Inc All rights reserved.
+// Copyright 2015-Present Couchbase, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 
 #include "c4Test.hh"
@@ -166,6 +160,44 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenNamed", "[Database][C][!thr
         // Open nonexistent bundle:
         REQUIRE(!c4db_openNamed("no_such_bundle"_sl, &config, &error));
     }
+}
+
+
+//#define FAIL_FAST
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Test delete while database open", "[Database][C]") {
+    // CBL-2357: Distinguish between internal and external database handles so that
+    // external handles open during a delete will be a fast-fail
+
+    C4Error err;
+    C4Database* otherConnection = c4db_openAgain(db, &err);
+    REQUIRE(otherConnection);
+    c4db_close(otherConnection, &err);
+#ifdef FAIL_FAST
+    auto start = chrono::system_clock::now();
+#endif
+    {
+        ExpectingExceptions e;
+        CHECK(!c4db_delete(otherConnection, &err));
+    }
+#ifdef FAIL_FAST
+    auto end = chrono::system_clock::now();
+#endif
+    c4db_release(otherConnection);
+
+#ifdef FAIL_FAST
+    auto timeTaken = chrono::duration_cast<chrono::seconds>(end - start);
+    CHECK(timeTaken < 2s);
+#endif
+    CHECK(err.code == kC4ErrorBusy);
+
+    C4SliceResult message = c4error_getDescription(err);
+#ifdef FAIL_FAST
+    CHECK(slice(message) == "LiteCore Busy, \"Can't delete db file while the caller has open connections\"");
+#else
+    CHECK(slice(message) == "LiteCore Busy, \"Can't delete db file while other connections are open. The open connections are tagged appOpened.\"");
+#endif
+    FLSliceResult_Release(message);
 }
 
 

@@ -1,19 +1,13 @@
 //
 // Housekeeper.cc
 //
-// Copyright © 2019 Couchbase. All rights reserved.
+// Copyright 2019-Present Couchbase, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 
 #include "Housekeeper.hh"
@@ -41,7 +35,7 @@ namespace litecore {
 
     void Housekeeper::start() {
         logInfo("Housekeeper: started.");
-        enqueue(FUNCTION_TO_QUEUE(Housekeeper::_scheduleExpiration));
+        enqueue(FUNCTION_TO_QUEUE(Housekeeper::_scheduleExpiration), true);
     }
 
 
@@ -57,7 +51,7 @@ namespace litecore {
     }
 
 
-    void Housekeeper::_scheduleExpiration() {
+    void Housekeeper::_scheduleExpiration(bool onlyIfEarlier) {
         expiration_t nextExp = _bgdb->dataFile().useLocked<expiration_t>([&](DataFile *df) {
             return df ? df->defaultKeyStore().nextExpiration() : 0;
         });
@@ -66,7 +60,16 @@ namespace litecore {
             return;
         } else if (expiration_t delay = nextExp - KeyStore::now(); delay > 0) {
             logVerbose("Housekeeper: scheduling expiration in %" PRIi64 "ms", delay);
-            _expiryTimer.fireAfter(chrono::milliseconds(delay));
+            
+            // CBL-2392: Since start enqueues an async call to these method, and
+            // documentExpirationChanged calls it synchronously there is a race.
+            // The race is solved by using fireEarlierAfter, but any further calls
+            // should continue to use fireAfter or the timer will never be rescheduled.
+            if(onlyIfEarlier) {
+                _expiryTimer.fireEarlierAfter(chrono::milliseconds(delay));
+            } else {
+                _expiryTimer.fireAfter(chrono::milliseconds(delay));
+            }
         } else {
             _doExpiration();
         }
@@ -87,7 +90,7 @@ namespace litecore {
             return true;
         });
 
-        _scheduleExpiration();
+        _scheduleExpiration(false);
     }
 
 

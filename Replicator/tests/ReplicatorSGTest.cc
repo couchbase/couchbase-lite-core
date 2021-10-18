@@ -1,19 +1,13 @@
 //
 // ReplicatorSGTest.cc
 //
-// Copyright © 2019 Couchbase. All rights reserved.
+// Copyright 2019-Present Couchbase, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 
 #include "ReplicatorAPITest.hh"
@@ -665,6 +659,118 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Pull iTunes deltas from SG", "[.SyncServer][
           timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
 }
 
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Replicator count balance", "[.SyncServer]") {
+    flushScratchDatabase();
+    _logRemoteRequests = false;
+
+//    c4log_setCallbackLevel(kC4LogInfo);
+
+    C4Log("-------- Populating local db --------");
+    size_t numDocs = 100;
+    auto populateDB = [&]() {
+        TransactionHelper t(db);
+        importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", 0.0, false, nullptr, (size_t)numDocs);
+    };
+    populateDB();
+    REQUIRE(c4db_getDocumentCount(db) == numDocs);
+
+    C4Log("-------- Pushing to SG --------");
+    replicate(kC4OneShot, kC4Disabled);
+
+    std::vector<std::vector<alloc_slice>> revIDs;
+    std::vector<std::string> docIDs;
+    revIDs.emplace_back();
+    for (int docNo = 0; docNo < numDocs; ++docNo) {
+        char buf[20];
+        sprintf(buf, "%07u", docNo + 1);
+        docIDs.emplace_back(buf);
+        c4::ref<C4Document> doc = c4doc_get(db, slice(buf), true, ERROR_INFO());
+        REQUIRE(doc);
+        revIDs.back().emplace_back(doc->revID);
+    }
+
+    C4Log("-------- Updating docs on SG --------");
+    // Now update the docs on SG:
+    unsigned numUpdates = 14;
+    std::thread th([&]() {
+        unsigned nu = numUpdates;
+        for (int c = 1; c <= nu; ++c) {
+            revIDs.emplace_back();
+            for (int docNo = 0; docNo < numDocs; ++docNo) {
+                const char* docID = docIDs[docNo].c_str();
+                c4::ref<C4Document> doc = c4doc_get(db, slice(docID), true, ERROR_INFO());
+                REQUIRE(doc);
+
+                Dict props = c4doc_getProperties(doc);
+                JSONEncoder enc;
+                enc.beginDict();
+                enc.writeKey("_id"_sl);
+                enc.writeString(docID);
+                enc.writeKey("_rev"_sl);
+                enc.writeString(revIDs[c-1][docNo]);
+                for (Dict::iterator i(props); i; ++i) {
+                    enc.writeKey(i.keyString());
+                    auto value = i.value();
+                    if (i.keyString() == "Total Time"_sl)
+                        enc.writeInt(100 + c);
+                    else
+                        enc.writeValue(value);
+                }
+                enc.endDict();
+
+                FLError flError;
+                alloc_slice res = sendRemoteRequest("PUT", docID, enc.finish());
+                fleece::Doc fdoc = Doc::fromJSON(res, &flError);
+                REQUIRE(flError == kFLNoError);
+                Dict resDict = fdoc.root().asDict();
+                revIDs[c].emplace_back(resDict.get(Dict::Key("rev"_sl)).asString());
+            }
+        }
+    });
+    th.detach();
+
+    REQUIRE(startReplicator(kC4Continuous, kC4Continuous, WITH_ERROR()));
+
+    C4ReplicatorStatus status;
+    // Wait for Idle state
+    while ((status = c4repl_getStatus(_repl)).level != kC4Idle) {
+        std::this_thread::sleep_for(1ms);
+    }
+    // we wait for all documents to reach revision numUpdates + 1.
+    while (true) {
+        bool done = true;
+        for (slice docId: docIDs) {
+            c4::ref<C4Document> doc = c4doc_get(db, docId, true, ERROR_INFO());
+            string revid = string(doc->revID);
+            std::istringstream is(revid);
+            int i;
+            is >> i;
+            if (i <= numUpdates) {
+                done = false;
+                std::cout << "Replicator comes to Idle but not done" << std::endl;
+                std::this_thread::sleep_for(1ms);
+                break;
+            }
+        }
+        if (done) {
+            break;
+        }
+    }
+    // All documents reached target revisions. Now, stop it.
+    c4repl_stop(_repl);
+    while ((status = c4repl_getStatus(_repl)).level != kC4Stopped) {
+        std::this_thread::sleep_for(1ms);
+    }
+
+    C4Log("-------- status.total=%lld, status.completed=%lld, status.docCount=%lld, number of documents in the database=%lld\n",
+          status.progress.unitsTotal, status.progress.unitsCompleted,
+          status.progress.documentCount, c4db_getDocumentCount(db));
+
+    CHECK(status.progress.unitsTotal == status.progress.unitsCompleted);
+}
+
+
 // This test requires SG 3.0
 TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled - Revoke Access", "[.SyncServer]") {
     _remoteDBName = "scratch_revocation"_sl;
@@ -1151,4 +1257,124 @@ TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Disabled - Remove Doc From Channe
     CHECK(_docsEnded == 1);
     // No pull filter called
     CHECK(_counter == 0);
+}
+
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete Doc", "[.SyncServer]") {
+    _remoteDBName = "scratch_revocation"_sl;
+    flushScratchDatabase();
+
+    // Setup Replicator Options:
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+
+    // Create a doc and push it:
+    c4::ref<C4Document> doc;
+    FLSlice docID = C4STR("doc");
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        doc = c4doc_create(db, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        REQUIRE(doc);
+    }
+    CHECK(c4db_getDocumentCount(db) == 1);
+    replicate(kC4OneShot, kC4Disabled);
+
+    // Delete the doc and push it:
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        REQUIRE(doc);
+        REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    }
+    CHECK(c4db_getDocumentCount(db) == 0);
+    replicate(kC4OneShot, kC4Disabled);
+
+    // Apply a pull and verify that the document is not purged.
+    replicate(kC4Disabled, kC4OneShot);
+    C4Error error;
+    doc = c4db_getDoc(db, C4STR("doc"), true, kDocGetAll, ERROR_INFO(error));
+    CHECK(error.code == 0);
+    CHECK(doc != nullptr);
+    REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    CHECK(c4db_getDocumentCount(db) == 0);
+}
+
+
+TEST_CASE_METHOD(ReplicatorSGTest, "Auto Purge Enabled(default) - Delete then Create Doc", "[.SyncServer]") {
+    _remoteDBName = "scratch_revocation"_sl;
+    flushScratchDatabase();
+
+    // Setup Replicator Options:
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+
+    // Create a new doc and push it:
+    c4::ref<C4Document> doc;
+    FLSlice docID = C4STR("doc");
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        doc = c4doc_create(db, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        REQUIRE(doc);
+    }
+    CHECK(c4db_getDocumentCount(db) == 1);
+    replicate(kC4OneShot, kC4Disabled);
+
+    // Delete the doc and push it:
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        REQUIRE(doc);
+        REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    }
+    CHECK(c4db_getDocumentCount(db) == 0);
+    replicate(kC4OneShot, kC4Disabled);
+
+    // Create a new doc with the same id that was deleted:
+    {
+        TransactionHelper t(db);
+        C4Error error;
+        doc = c4doc_create(db, docID, json2fleece("{channels:['a']}"), 0, ERROR_INFO(error));
+        CHECK(error.code == 0);
+        REQUIRE(doc);
+    }
+    CHECK(c4db_getDocumentCount(db) == 1);
+
+    // Apply a pull and verify the document is not purged:
+    replicate(kC4Disabled, kC4OneShot);
+    C4Error error;
+    c4::ref<C4Document> doc2 = c4db_getDoc(db, docID, true, kDocGetAll, ERROR_INFO(error));
+    CHECK(error.code == 0);
+    CHECK(doc2 != nullptr);
+    CHECK(c4db_getDocumentCount(db) == 1);
+    CHECK(doc2->revID == doc->revID);
 }

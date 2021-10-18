@@ -1,3 +1,12 @@
+/*
+Copyright 2016-Present Couchbase, Inc.
+Use of this software is governed by the Business Source License included in
+the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+file, in accordance with the Business Source License, use of this software will
+be governed by the Apache License, Version 2.0, included in the file
+licenses/APL2.txt.
+*/
+
 var searchData=
 [
   ['algorithm',['algorithm',['../struct_c4_encryption_key.html#a19316cf599a0b9a42d0ac036b5c60240',1,'C4EncryptionKey']]],

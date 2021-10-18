@@ -1,19 +1,13 @@
 //
 // LiveQuerier.cc
 //
-// Copyright © 2019 Couchbase. All rights reserved.
+// Copyright 2019-Present Couchbase, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 
 #include "LiveQuerier.hh"
@@ -73,13 +67,18 @@ namespace litecore {
 
     void LiveQuerier::start(const Query::Options &options) {
         _lastTime = clock::now();
+        _stopping = false;
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_runQuery), options);
     }
 
 
     void LiveQuerier::stop() {
         logInfo("Stopping");
-        _stopping = true;
+         _backgroundDB->dataFile().useLocked([&](DataFile *df) {
+             // CBL-2335: Guard access to the _stopping variable so that
+             // it is not changed at unpredictable times
+             _stopping = true;
+         });
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_stop));
     }
 
@@ -103,7 +102,6 @@ namespace litecore {
             });
         }
         logVerbose("...stopped");
-        _stopping = false;
     }
 
 
@@ -125,16 +123,24 @@ namespace litecore {
 
 
     void LiveQuerier::_runQuery(Query::Options options) {
-        if (_stopping)
-            return;
-
         _waitingToRun = false;
         logVerbose("Running query...");
         Retained<QueryEnumerator> newQE;
         C4Error error = {};
         fleece::Stopwatch st;
         _backgroundDB->dataFile().useLocked([&](DataFile *df) {
+            if (_stopping) {
+                // CBL-2335: Guard access to the _stopping variable so that
+                // it is not changed at unpredictable times
+                return;
+            }
+
             try {
+                if (_usuallyFalse(!df)) {
+                    // CBL-2335: Backup for the above, to avoid a crash
+                    C4Error::raise(LiteCoreDomain, kC4ErrorNotOpen);
+                }
+
                 // Create my own Query object associated with the Backgrounder's DataFile:
                 if (!_query) {
                     _query = df->compileQuery(_expression, _language);

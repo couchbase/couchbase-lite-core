@@ -1,19 +1,13 @@
 //
 // DataFile.cc
 //
-// Copyright (c) 2014 Couchbase, Inc All rights reserved.
+// Copyright 2014-Present Couchbase, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 #include "DataFile.hh"
 #include "DataFile+Shared.hh"
@@ -41,7 +35,7 @@ using namespace std;
 namespace litecore {
 
     // How long deleteDataFile() should wait for other threads to close their connections
-    static const unsigned kOtherDBCloseTimeoutSecs = 3;
+    static const unsigned kOtherDBCloseTimeoutSecs = 6;
 
 
     LogDomain DBLog("DB");
@@ -205,6 +199,7 @@ namespace litecore {
 
 #pragma mark - DELETION:
 
+//#define FAIL_FAST
 
     void DataFile::deleteDataFile() {
         deleteDataFile(this, nullptr, _shared, factory());
@@ -220,6 +215,28 @@ namespace litecore {
     {
         shared->condemn(true);
         try {
+            // Fail-fast if there is open db connection owned by the external application.
+#ifdef FAIL_FAST
+            shared->forOpenDataFiles(file, [](DataFile* df) {
+                if (df->databaseTag() == kDatabaseTagAppOpened) {
+                    error::_throw(error::Busy, "Can't delete db file while the caller has open connections");
+                }
+            });
+#endif
+
+            // c.f. C4_ENUM(uint32_t, C4DatabaseTag) in DataFile.hh
+            const char* const kDatabaseTags[] = {
+                "appOpened",
+                "dbAccess",
+                "c4RemoteReplicator",
+                "c4IncomingReplicator",
+                "c4LocalReplicator1",
+                "c4LocalReplicator2",
+                "backgroundDB",
+                "RESTListener"
+            };
+            static_assert(sizeof(kDatabaseTags)/sizeof(const char*) == kDatabaseTag_RESTListener + 1);
+
             // Wait for other connections to close -- in multithreaded setups there may be races where
             // another thread takes a bit longer to close its connection.
             int n = 0;
@@ -235,10 +252,22 @@ namespace litecore {
                 if (n++ == 0)
                     LogTo(DBLog, "Waiting for %ld other connection(s) to close before deleting %s",
                           otherConnections, shared->path.c_str());
-                if (st.elapsed() > kOtherDBCloseTimeoutSecs)
-                    error::_throw(error::Busy, "Can't delete db file while other connections are open");
-                else
+                if (st.elapsed() > kOtherDBCloseTimeoutSecs) {
+                    ostringstream ss;
+                    ss << "Can't delete db file while other connections are open. The open connections are tagged ";
+                    bool first = true;
+                    shared->forOpenDataFiles(nullptr, [&](DataFile* df) {
+                        if (!first) {
+                            ss << ", ";
+                        } else {
+                            first = false;
+                        }
+                        ss << kDatabaseTags[df->databaseTag()];
+                    });
+                    error::_throw(error::Busy, "%s.", ss.str().c_str());
+                } else {
                     std::this_thread::sleep_for(100ms);
+                }
             }
             
             if (file)

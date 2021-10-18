@@ -3,7 +3,13 @@
 //  LiteCore
 //
 //  Created by Jens Alfke on 3/10/17.
-//  Copyright © 2017 Couchbase. All rights reserved.
+//  Copyright 2017-Present Couchbase, Inc.
+//
+//  Use of this software is governed by the Business Source License included
+//  in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+//  in that file, in accordance with the Business Source License, use of this
+//  software will be governed by the Apache License, Version 2.0, included in
+//  the file licenses/APL2.txt.
 //
 
 #include "ReplicatorAPITest.hh"
@@ -785,5 +791,52 @@ TEST_CASE_METHOD(ReplicatorAPITest, "c4Replicator Zero Memory", "[C][Replicator]
     }
 }
 
-
 #endif
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Connection Timeout stop properly", "[C][Push][Pull][.Slow]") {
+    // CBL-2410
+    C4SocketFactory factory = {};
+    _mayGoOffline = true;
+
+    SECTION("Using framing") {
+        factory.open = [](C4Socket* socket, const C4Address* addr,
+                          C4Slice options, void *context) {
+            // Do nothing, just let things time out....
+        };
+        
+        factory.close = [](C4Socket* socket) {
+            // This is a requirement for this test to pass, or the socket will
+            // never actually finish "closing".  Furthermore, this call will hang
+            // before this fix
+            c4socket_closed(socket, {});
+        };
+    }
+    
+    SECTION("Not using framing") {
+        factory.framing = kC4NoFraming;
+        factory.open = [](C4Socket* socket, const C4Address* addr,
+                          C4Slice options, void *context) {
+            // Do nothing, just let things time out....
+        };
+        
+        factory.requestClose = [](C4Socket* socket, int code, C4Slice message) {
+            // This is a requirement for this test to pass, or the socket will
+            // never actually finish "closing".  Furthermore, this call will hang
+            // before this fix
+            c4socket_closed(socket, {});
+        };
+    }
+
+    _socketFactory = &factory;
+    
+    C4Error err;
+    importJSONLines(sFixturesDir + "names_100.json");
+    REQUIRE(startReplicator(kC4Passive, kC4OneShot, &err));
+    
+    // Before the fix, offline would never be reached
+    waitForStatus(kC4Offline, 16s);
+    c4repl_stop(_repl);
+    waitForStatus(kC4Stopped, 2s);
+    _socketFactory = nullptr;
+}
+

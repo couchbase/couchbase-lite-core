@@ -1,19 +1,13 @@
 //
 // c4Query.cc
 //
-// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+// Copyright 2016-Present Couchbase, Inc.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Use of this software is governed by the Business Source License included
+// in the file licenses/BSL-Couchbase.txt.  As of the Change Date specified
+// in that file, in accordance with the Business Source License, use of this
+// software will be governed by the Apache License, Version 2.0, included in
+// the file licenses/APL2.txt.
 //
 
 #include "c4Query.hh"
@@ -235,9 +229,23 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
 
 void C4Query::liveQuerierUpdated(QueryEnumerator *qe, C4Error err) {
     Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(qe);
-    LOCK(_mutex);
-    if (!_bgQuerier)
-        return;
-    for (auto &obs : _observers)
+    set<C4QueryObserverImpl *> observers;
+    {
+        LOCK(_mutex);
+        if (!_bgQuerier) {
+            return;
+        }
+
+        // CBL-2336: Calling notify inside the lock could result
+        // in a deadlock, but on the other hand not calling it
+        // inside the lock could result in the callback coming back
+        // to mutate the collection while we are using it (which, 
+        // coincidentally, is why this deadlocks in the first place).
+        // So to counteract this, make a copy and iterate over that.
+        observers = _observers;
+    }
+
+    for(auto &obs : observers) {
         obs->notify(c4e, err);
+    }
 }
