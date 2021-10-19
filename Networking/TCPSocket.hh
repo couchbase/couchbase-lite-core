@@ -81,15 +81,25 @@ namespace litecore::net {
         static constexpr size_t kMaxDelimitedReadSize = 50 * 1024;
 
         /// Reads from the socket until the \ref delimiter byte sequence is found,
-        /// and returns the bytes read ending with the delimiter.
+        /// and returns the bytes read.
         /// If the delimiter is not found, due to EOF of reading more than \ref maxSize bytes,
-        /// throws an exception.
+        /// sets an error and returns nullslice.
+        /// @param delimiter  The byte sequence that ends the data.
+        /// @param includeDelimiter  If true, delimiter is included at end of returned data.
+        /// @param maxSize  Maximum number of bytes to read; if exceeded, sets error & returns null.
         fleece::alloc_slice readToDelimiter(slice delimiter,
                                             bool includeDelimiter =true,
                                             size_t maxSize =kMaxDelimitedReadSize) MUST_USE_RESULT;
 
+        /// Reads all remaining data until EOF on the read side.
+        fleece::alloc_slice readToEOF();
+
+        /// Reads HTTP "Transfer-Encoding: chunked" response data.
+        fleece::alloc_slice readChunkedHTTPBody();
+
         /// Reads an HTTP body, given the headers.
-        /// If there's a Content-Length header, reads that many bytes, otherwise reads till EOF.
+        /// Supports explicit Content-Length, Chunked transfer encoding, or old-school read-to-EOF.
+        /// On error, sets the error property and returns false.
         bool readHTTPBody(const websocket::Headers &headers, fleece::alloc_slice &body) MUST_USE_RESULT;
 
         bool atReadEOF() const                          {return _eofOnRead;}
