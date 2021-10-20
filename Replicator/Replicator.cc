@@ -657,13 +657,26 @@ namespace litecore { namespace repl {
     }
 
 
-    void Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback){
-        _checkpointer.pendingDocumentIDs(_db->useLocked(), callback);
+    bool Replicator::pendingDocumentIDs(Checkpointer::PendingDocCallback callback){
+        // CBL-2448
+        auto db = _db;
+        if(!db) {
+            return false;
+        }
+        
+        _checkpointer.pendingDocumentIDs(db->useLocked(), callback);
+        return true;
     }
 
 
-    bool Replicator::isDocumentPending(slice docID) {
-        return _checkpointer.isDocumentPending(_db->useLocked(), docID);
+    optional<bool> Replicator::isDocumentPending(slice docID) {
+        // CBL-2448
+        auto db = _db;
+        if(!db) {
+            return nullopt;
+        }
+        
+        return _checkpointer.isDocumentPending(db->useLocked(), docID);
     }
 
 

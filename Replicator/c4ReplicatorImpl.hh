@@ -494,10 +494,14 @@ namespace litecore {
                 // calling pendingDocumentIDs (which might call into the app's validation function.)
                 LOCK(repl->_mutex);
                 replicator = repl->_replicator;
-                if (!replicator) {
-                    checkpointer.emplace(repl->_options, repl->URL());
-                    database = repl->_database;
-                }
+                
+                // CBL-2448: Also make my own checkpointer and database in case a call comes in
+                // after Replicator::terminate() is called.  The fix includes the replicator
+                // pending document ID function now returning a boolean success, isDocumentPending returning
+                // an optional<bool> and if pendingDocumentIDs returns false or isDocumentPending
+                // returns nullopt, the checkpointer is fallen back on
+                checkpointer.emplace(repl->_options, repl->URL());
+                database = repl->_database;
             }
 
             alloc_slice pendingDocumentIDs() {
@@ -509,10 +513,11 @@ namespace litecore {
                     enc.writeString(info.docID);
                     any = true;
                 };
-                if (replicator)
-                    replicator->pendingDocumentIDs(callback);
-                else
+                
+                if (!replicator || !replicator->pendingDocumentIDs(callback)) {
                     checkpointer->pendingDocumentIDs(database, callback);
+                }
+                
                 if (!any)
                     return {};
                 enc.endArray();
@@ -520,8 +525,14 @@ namespace litecore {
             }
 
             bool isDocumentPending(C4Slice docID) {
-                return replicator ? replicator->isDocumentPending(docID)
-                                  : checkpointer->isDocumentPending(database, docID);
+                if(replicator) {
+                    auto result = replicator->isDocumentPending(docID);
+                    if(result.has_value()) {
+                        return *result;
+                    }
+                }
+                
+                return checkpointer->isDocumentPending(database, docID);
             }
 
         private:
