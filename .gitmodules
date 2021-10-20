@@ -16,3 +16,9 @@
 [submodule "vendor/zlib"]
 	path = vendor/zlib
 	url = https://github.com/couchbasedeps/zlib
+[submodule "vendor/ios-cmake"]
+	path = vendor/ios-cmake
+	url = https://github.com/couchbasedeps/ios-cmake
+[submodule "vendor/sqlite3-unicodesn"]
+	path = vendor/sqlite3-unicodesn
+	url = https://github.com/couchbasedeps/sqlite3-unicodesn
