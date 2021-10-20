@@ -25,4 +25,4 @@ jobs:
       working-directory: ${{github.workspace}}/build_cmake/scripts
       run: |
         pip install termcolor
-        ./check-deps.python
+        ./check-deps.py
