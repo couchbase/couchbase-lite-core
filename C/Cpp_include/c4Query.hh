@@ -53,8 +53,8 @@ public:
     slice columnTitle(unsigned col) const;
     alloc_slice explain() const;
 
-    alloc_slice parameters() const noexcept         {return _parameters;}
-    void setParameters(slice parameters)            {_parameters = parameters;}
+    alloc_slice parameters() const noexcept;
+    void setParameters(slice parameters);
 
     alloc_slice fullTextMatched(const C4FullTextMatch&);
 

@@ -45,7 +45,12 @@ namespace litecore {
                     Delegate* NONNULL);
 
         void start(const Query::Options &options);
-
+        
+        /** Change the query options of the current running live query. The function will
+            discard the current results and re-run the query. If the live query is being stopped or
+            stopped, the function will be no-ops. */
+        void changeOptions(const Query::Options &options);
+        
         void stop();
 
     protected:
@@ -59,6 +64,7 @@ namespace litecore {
         virtual void transactionCommitted() override;
 
         void _runQuery(Query::Options);
+        void _changeOptions(Query::Options);
         void _stop();
         void _dbChanged(clock::time_point);
 
