@@ -957,6 +957,72 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer", "[Query][C][!throws]") {
     CHECK(c4queryenum_getRowCount(e2, WITH_ERROR(&error)) == 8);
 }
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query observer with changing query parameters", "[Query][C][!throws]") {
+    compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$state']]"));
+    C4Error error;
+
+    struct State {
+        C4Query *query;
+        c4::ref<C4QueryObserver> obs;
+        atomic<int> count = 0;
+    };
+
+    auto callback = [](C4QueryObserver *obs, C4Query *query, void *context) {
+        C4Log("---- Query observer called!");
+        auto state = (State*)context;
+        CHECK(query == state->query);
+        CHECK(obs == state->obs);
+        CHECK(state->count == 0);
+        ++state->count;
+    };
+    
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey("state"_sl);
+    enc.writeString("CA");
+    enc.endDict();
+    auto params = enc.finish();
+    c4query_setParameters(query, params);
+    
+    auto explain = c4query_explain(query);
+    CHECK(explain);
+    C4Log("Explain = %.*s", (int)explain.size, (char*)explain.buf);
+    
+    State state;
+    state.query = query;
+    state.obs = c4queryobs_create(query, callback, &state);
+    CHECK(state.obs);
+    c4queryobs_setEnabled(state.obs, true);
+
+    C4Log("---- Waiting for query observers...");
+    REQUIRE_BEFORE(2000ms, state.count > 0);
+
+    C4Log("Checking query observers...");
+    CHECK(state.count == 1);
+    c4::ref<C4QueryEnumerator> e1 = c4queryobs_getEnumerator(state.obs, true, ERROR_INFO(error));
+    REQUIRE(e1);
+    CHECK(error.code == 0);
+    CHECK(c4queryenum_getRowCount(e1, WITH_ERROR(&error)) == 8);
+    
+    state.count = 0;
+    enc.beginDict();
+    enc.writeKey("state"_sl);
+    enc.writeString("NY");
+    enc.endDict();
+    params = enc.finish();
+    c4query_setParameters(query, params);
+    
+    C4Log("---- Waiting for query observers after changing the parameters...");
+    REQUIRE_BEFORE(5000ms, state.count > 0);
+
+    C4Log("Checking query observers...");
+    CHECK(state.count == 1);
+    c4::ref<C4QueryEnumerator> e2 = c4queryobs_getEnumerator(state.obs, true, ERROR_INFO(error));
+    REQUIRE(e2);
+    CHECK(error.code == 0);
+    CHECK(c4queryenum_getRowCount(e2, WITH_ERROR(&error)) == 9);
+}
+
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Delete index", "[Query][C][!throws]") {
     C4Error err;
     C4String names[2] = { C4STR("length"), C4STR("byStreet") };

@@ -71,6 +71,12 @@ namespace litecore {
     }
 
 
+    void LiveQuerier::changeOptions(const Query::Options &options) {
+        _lastTime = clock::now();
+        enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_changeOptions), options);
+    }
+
+
     void LiveQuerier::stop() {
         logInfo("Stopping");
          _backgroundDB->dataFile().useLocked([&](DataFile *df) {
@@ -174,6 +180,15 @@ namespace litecore {
             return;
         
         _delegate->liveQuerierUpdated(newQE, error);
+    }
+
+
+    void LiveQuerier::_changeOptions(Query::Options options) {
+        if (_stopping)
+            return;
+        
+        _currentEnumerator = nullptr;
+        _runQuery(options);
     }
 
 }

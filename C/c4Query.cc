@@ -93,13 +93,29 @@ alloc_slice C4Query::fullTextMatched(const C4FullTextMatch &term) {
 }
 
 
+alloc_slice C4Query::parameters() const noexcept {
+    LOCK(_mutex);
+    return _parameters;
+}
+
+
+void C4Query::setParameters(slice parameters) {
+    LOCK(_mutex);
+    _parameters = parameters;
+    
+    if (_bgQuerier) {
+        _bgQuerier->changeOptions(_parameters);
+    }
+}
+
+
 #pragma mark - ENUMERATOR:
 
 
 Retained<QueryEnumerator> C4Query::_createEnumerator(const C4QueryOptions *c4options,
                                                      slice encodedParameters)
 {
-    Query::Options options(encodedParameters ? encodedParameters : _parameters);
+    Query::Options options(encodedParameters ? encodedParameters : parameters());
     return _query->createEnumerator(&options);
 }
 
