@@ -19,6 +19,7 @@
 #include "InstanceCounted.hh"
 #include "Stopwatch.hh"
 #include <array>
+#include <optional>
 
 namespace litecore { namespace repl {
 
@@ -93,11 +94,12 @@ namespace litecore { namespace repl {
             No further delegate callbacks will be made!  */
         void terminate();
 
-        /** Invokes the callback for each document which has revisions pending push */
-        void pendingDocumentIDs(Checkpointer::PendingDocCallback);
+        /** Invokes the callback for each document which has revisions pending push.
+            Returns false if unable to do so.  */
+        bool pendingDocumentIDs(Checkpointer::PendingDocCallback);
 
-        /** Checks if the document with the given ID has any pending revisions to push */
-        bool isDocumentPending(slice docID);
+        /** Checks if the document with the given ID has any pending revisions to push.  If unable, returns an empty optional. */
+        std::optional<bool> isDocumentPending(slice docID);
 
         Checkpointer& checkpointer()            {return _checkpointer;}
 
