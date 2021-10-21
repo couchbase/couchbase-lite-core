@@ -244,7 +244,6 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
 
 
 void C4Query::liveQuerierUpdated(QueryEnumerator *qe, C4Error err) {
-    Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(qe);
     set<C4QueryObserverImpl *> observers;
     {
         LOCK(_mutex);
@@ -262,6 +261,7 @@ void C4Query::liveQuerierUpdated(QueryEnumerator *qe, C4Error err) {
     }
 
     for(auto &obs : observers) {
+        Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(qe == nullptr ? nullptr : qe->clone());
         obs->notify(c4e, err);
     }
 }

@@ -344,6 +344,13 @@ namespace litecore {
             return nullptr;
         }
 
+        QueryEnumerator* clone() override {
+            SQLiteQueryEnumerator* clon = new SQLiteQueryEnumerator(&_options, _lastSequence.load(), _purgeCount.load(), _recording.get());
+            clon->_1stCustomResultColumn = this->_1stCustomResultColumn;
+            clon->_hasFullText = this->_hasFullText;
+            return clon;
+        }
+
         bool hasFullText() const override {
             return _hasFullText;
         }
@@ -371,6 +378,16 @@ namespace litecore {
         string loggingClassName() const override    {return "QueryEnum";}
 
     private:
+        SQLiteQueryEnumerator(const Query::Options *options,
+                              sequence_t lastSequence,
+                              uint64_t purgeCount,
+                              Doc* recording)
+        :QueryEnumerator(options, lastSequence, purgeCount)
+        ,Logging(QueryLog)
+        ,_recording(recording)
+        ,_iter(_recording->asArray())
+        {}
+
         Retained<Doc> _recording;
         Array::iterator _iter;
         unsigned _1stCustomResultColumn;    // Column index of the 1st column declared in JSON
