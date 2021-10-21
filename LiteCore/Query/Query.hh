@@ -123,6 +123,8 @@ namespace litecore {
             that will return the new results. Otherwise returns null. */
         virtual QueryEnumerator* refresh(Query *query) =0;
 
+        virtual QueryEnumerator* clone() =0;
+
         virtual bool obsoletedBy(const QueryEnumerator*) =0;
 
     protected:
