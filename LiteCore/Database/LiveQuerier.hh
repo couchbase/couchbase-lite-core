@@ -52,6 +52,15 @@ namespace litecore {
         void changeOptions(const Query::Options &options);
         
         void stop();
+        
+        /** The callback for getting the current result. */
+        using CurrentResultCallback = std::function<void(QueryEnumerator*, C4Error)>;
+        
+        /** Get current result asynchronously. The current result including enumerators and error
+            will be reported using the same queue as when the new update is reported to the delegate.
+            NOTE: If there has been no query result yet, a NULL enumerator and an empty error will
+            be reported. */
+        void getCurrentResult(CurrentResultCallback callback);
 
     protected:
         virtual ~LiveQuerier();
@@ -67,6 +76,7 @@ namespace litecore {
         void _changeOptions(Query::Options);
         void _stop();
         void _dbChanged(clock::time_point);
+        void _currentResult(CurrentResultCallback callback);
 
         Retained<DatabaseImpl> _database;               // The database
         BackgroundDB* _backgroundDB;                    // Shadow DB on background thread
@@ -75,6 +85,7 @@ namespace litecore {
         QueryLanguage _language;                        // The query language (JSON or N1QL)
         Retained<Query> _query;                         // Compiled query
         Retained<QueryEnumerator> _currentEnumerator;   // Latest query results
+        C4Error _currentError;                          // Latest query error;
         clock::time_point _lastTime;                    // Time the query last ran
         bool _continuous;                               // Do I keep running until stopped?
         bool _waitingToRun {false};                     // Is a call to _runQuery scheduled?

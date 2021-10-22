@@ -231,6 +231,33 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
             _bgQuerierDelegate = make_unique<LiveQuerierDelegate>(this);
             _bgQuerier = new LiveQuerier(_database, _query, true, _bgQuerierDelegate.get());
             _bgQuerier->start(_parameters);
+        } else {
+            // CBL-2459: For the second+ observers, get the current query result and notify if
+            // the result is available. The current result will be reported via the callback
+            // called on the same queue as when the query result is notified via the delegate.
+            //
+            // While waiting for the current result, if there are new observers enabled,
+            // add them to the _pendingObservers set so the current result can be notified to
+            // all pending observers at once. Noted that if the delegate (See liveQuerierUpdated())
+            // is called before the current result callback is called, the _pendingObservers
+            // will be cleared by the delegate as they will be notified with the updated result
+            // by the delegate.
+            
+            _pendingObservers.insert(obs);
+            if (_pendingObservers.size() > 1)
+                return;
+            
+            _bgQuerier->getCurrentResult([&](QueryEnumerator* qe, C4Error err) {
+                set<C4QueryObserverImpl *> observers;
+                {
+                    LOCK(_mutex);
+                    if (qe || err.code > 0) // Have a result to notify
+                        observers = _pendingObservers;
+                    _pendingObservers.clear();
+                }
+                if (observers.size() > 0)
+                    this->notifyObservers(observers, qe, err);
+            });
         }
     } else {
         _observers.erase(obs);
@@ -258,8 +285,18 @@ void C4Query::liveQuerierUpdated(QueryEnumerator *qe, C4Error err) {
         // coincidentally, is why this deadlocks in the first place).
         // So to counteract this, make a copy and iterate over that.
         observers = _observers;
+        
+        // Clear pending observers as all pending observers are in observers and will be notified
+        // with the update.
+        _pendingObservers.clear();
     }
+    
+    notifyObservers(observers, qe, err);
+}
 
+void C4Query::notifyObservers(const set<C4QueryObserverImpl*> &observers,
+                              QueryEnumerator *qe, C4Error err)
+{
     for(auto &obs : observers) {
         Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(qe == nullptr ? nullptr : qe->clone());
         obs->notify(c4e, err);

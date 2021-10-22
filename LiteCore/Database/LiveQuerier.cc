@@ -89,6 +89,11 @@ namespace litecore {
     }
 
 
+    void LiveQuerier::getCurrentResult(LiveQuerier::CurrentResultCallback callback) {
+        enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_currentResult), callback);
+    }
+
+
     // Database change (transaction committed) notification
     void LiveQuerier::transactionCommitted() {
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_dbChanged), clock::now());
@@ -172,6 +177,7 @@ namespace litecore {
                 logInfo("Results changed at seq %" PRIu64 " (%.3fms)", newQE->lastSequence(), time);
                 _currentEnumerator = newQE;
             }
+            _currentError = error;
         } else {
             logInfo("...finished one-shot query in %.3fms", time);
         }
@@ -188,7 +194,13 @@ namespace litecore {
             return;
         
         _currentEnumerator = nullptr;
+        _currentError = {};
+        
         _runQuery(options);
     }
 
+
+    void LiveQuerier::_currentResult(CurrentResultCallback callback) {
+        callback(_currentEnumerator, _currentError);
+    }
 }
