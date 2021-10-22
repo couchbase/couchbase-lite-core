@@ -234,7 +234,8 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
         } else {
             // CBL-2459: For the second+ observers, get the current query result and notify if
             // the result is available. The current result will be reported via the callback
-            // called on the same queue as when the query result is notified via the delegate.
+            // on the _bgQuerier's queue, which is the same queue where the _bgQuerier notifies
+            // the updated query results to its delegate.
             //
             // While waiting for the current result, if there are new observers enabled,
             // add them to the _pendingObservers set so the current result can be notified to
@@ -247,6 +248,7 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
             if (_pendingObservers.size() > 1)
                 return;
             
+            // Note: the callback is called from the _bgQuerier's queue.
             _bgQuerier->getCurrentResult([&](QueryEnumerator* qe, C4Error err) {
                 set<C4QueryObserverImpl *> observers;
                 {
@@ -261,6 +263,7 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
         }
     } else {
         _observers.erase(obs);
+        _pendingObservers.erase(obs);
         if (_observers.empty() && _bgQuerier) {
             _bgQuerier->stop();
             _bgQuerier = nullptr;
