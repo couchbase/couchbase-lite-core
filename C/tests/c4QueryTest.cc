@@ -1125,6 +1125,96 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query alternative FROM names", "[Query][C
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!throws]") {
+    compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
+    C4Error error;
+
+    struct State {
+        C4Query *query;
+        c4::ref<C4QueryObserver> obs;
+        atomic<int> count = 0;
+    };
+
+    auto callback = [](C4QueryObserver *obs, C4Query *query, void *context) {
+        C4Log("---- Query observer called!");
+        auto state = (State*)context;
+        CHECK(query == state->query);
+        CHECK(obs == state->obs);
+        CHECK(state->count == 0);
+        ++state->count;
+    };
+
+    State state1;
+    state1.query = query;
+    state1.obs = c4queryobs_create(query, callback, &state1);
+    CHECK(state1.obs);
+    c4queryobs_setEnabled(state1.obs, true);
+
+    State state2;
+    state2.query = query;
+    state2.obs = c4queryobs_create(query, callback, &state2);
+    CHECK(state2.obs);
+    c4queryobs_setEnabled(state2.obs, true);
+
+    C4Log("---- Waiting for query observers...");
+    REQUIRE_BEFORE(2000ms, state1.count > 0 && state2.count > 0);
+
+    C4Log("Checking query observers...");
+    CHECK(state1.count == 1);
+    c4::ref<C4QueryEnumerator> e1 = c4queryobs_getEnumerator(state1.obs, true, ERROR_INFO(error));
+    REQUIRE(e1);
+    CHECK(error.code == 0);
+    CHECK(c4queryenum_getRowCount(e1, WITH_ERROR(&error)) == 8);
+    state1.count = 0;
+
+    CHECK(state2.count == 1);
+    c4::ref<C4QueryEnumerator> e2 = c4queryobs_getEnumerator(state2.obs, true, ERROR_INFO(error));
+    REQUIRE(e2);
+    CHECK(error.code == 0);
+    CHECK(e2 != e1);
+    CHECK(c4queryenum_getRowCount(e2, WITH_ERROR(&error)) == 8);
+    state2.count = 0;
+    
+    State state3;
+    state3.query = query;
+    state3.obs = c4queryobs_create(query, callback, &state3);
+    CHECK(state3.obs);
+    c4queryobs_setEnabled(state3.obs, true);
+    
+    C4Log("---- Waiting for a new query observer...");
+    REQUIRE_BEFORE(2000ms, state3.count > 0);
+    
+    C4Log("Checking a new query observer...");
+    CHECK(state3.count == 1);
+    c4::ref<C4QueryEnumerator> e3 = c4queryobs_getEnumerator(state3.obs, true, ERROR_INFO(error));
+    REQUIRE(e3);
+    CHECK(error.code == 0);
+    CHECK(e3 != e2);
+    CHECK(c4queryenum_getRowCount(e3, WITH_ERROR(&error)) == 8);
+    state3.count = 0;
+
+    C4Log("Iterating all query results...");
+    int count = 0;
+    while (c4queryenum_next(e1, nullptr) && c4queryenum_next(e2, nullptr) && c4queryenum_next(e3, nullptr)) {
+        ++count;
+        FLArrayIterator col1 = e1->columns;
+        FLArrayIterator col2 = e2->columns;
+        FLArrayIterator col3 = e3->columns;
+        auto c = FLArrayIterator_GetCount(&col1);
+        CHECK(c == FLArrayIterator_GetCount(&col2));
+        CHECK(c == FLArrayIterator_GetCount(&col3));
+        for (auto i = 0; i < c; ++i) {
+            FLValue v1 = FLArrayIterator_GetValueAt(&col1, i);
+            FLValue v2 = FLArrayIterator_GetValueAt(&col2, i);
+            FLValue v3 = FLArrayIterator_GetValueAt(&col3, i);
+            CHECK(FLValue_IsEqual(v1, v2));
+            CHECK(FLValue_IsEqual(v2, v3));
+        }
+    }
+    CHECK(count == 8);
+}
+
+
 #pragma mark - BIGGER DATABASE:
 
 
