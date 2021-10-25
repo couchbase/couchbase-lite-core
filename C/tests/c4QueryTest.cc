@@ -1125,7 +1125,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query alternative FROM names", "[Query][C
 }
 
 
-N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!throws][.pending-CBL-2459]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!throws]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
 
@@ -1174,21 +1174,41 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!t
     CHECK(e2 != e1);
     CHECK(c4queryenum_getRowCount(e2, WITH_ERROR(&error)) == 8);
     state2.count = 0;
+    
+    State state3;
+    state3.query = query;
+    state3.obs = c4queryobs_create(query, callback, &state3);
+    CHECK(state3.obs);
+    c4queryobs_setEnabled(state3.obs, true);
+    
+    C4Log("---- Waiting for a new query observer...");
+    REQUIRE_BEFORE(2000ms, state3.count > 0);
+    
+    C4Log("Checking a new query observer...");
+    CHECK(state3.count == 1);
+    c4::ref<C4QueryEnumerator> e3 = c4queryobs_getEnumerator(state3.obs, true, ERROR_INFO(error));
+    REQUIRE(e3);
+    CHECK(error.code == 0);
+    CHECK(e3 != e2);
+    CHECK(c4queryenum_getRowCount(e3, WITH_ERROR(&error)) == 8);
+    state3.count = 0;
 
-    REQUIRE(c4queryenum_restart(e1, ERROR_INFO(error)));
-    REQUIRE(c4queryenum_restart(e2, ERROR_INFO(error)));
-
+    C4Log("Iterating all query results...");
     int count = 0;
-    while (c4queryenum_next(e1, nullptr) && c4queryenum_next(e2, nullptr)) {
+    while (c4queryenum_next(e1, nullptr) && c4queryenum_next(e2, nullptr) && c4queryenum_next(e3, nullptr)) {
         ++count;
         FLArrayIterator col1 = e1->columns;
         FLArrayIterator col2 = e2->columns;
+        FLArrayIterator col3 = e3->columns;
         auto c = FLArrayIterator_GetCount(&col1);
         CHECK(c == FLArrayIterator_GetCount(&col2));
+        CHECK(c == FLArrayIterator_GetCount(&col3));
         for (auto i = 0; i < c; ++i) {
             FLValue v1 = FLArrayIterator_GetValueAt(&col1, i);
             FLValue v2 = FLArrayIterator_GetValueAt(&col2, i);
+            FLValue v3 = FLArrayIterator_GetValueAt(&col3, i);
             CHECK(FLValue_IsEqual(v1, v2));
+            CHECK(FLValue_IsEqual(v2, v3));
         }
     }
     CHECK(count == 8);
