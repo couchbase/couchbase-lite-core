@@ -222,6 +222,20 @@ TEST_CASE_METHOD(ReplicatorSGTest, "API Continuous Pull", "[.SyncServer]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorSGTest, "Stop after Idle with Error", "[.SyncServer]") {
+    // CBL-2501. This test is motivated by this bug. The bug bites when it finds a network error as the replicator
+    // closes the socket after being stopped. Not able to find a way to inject the error, I tested
+    // this case by tempering with the code in WebSocketImpl.onClose() and inject a transient error,
+    // CloseStatus { kWebSocketClose, kCodeAbnormal }
+    // Before the fix: continuous retry after Stopping;
+    // after the fix: stop with the error regardless of it being transient.
+    _remoteDBName = kScratchDBName;
+    _mayGoOffline = true;
+    _stopWhenIdle = true;
+    replicate(kC4Disabled, kC4Continuous, false);
+}
+
+
 TEST_CASE_METHOD(ReplicatorSGTest, "Push & Pull Deletion", "[.SyncServer]") {
     createRev("doc"_sl, kRevID, kFleeceBody);
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
