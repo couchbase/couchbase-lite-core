@@ -275,6 +275,10 @@ namespace litecore {
 
 
         void updateStatusFromReplicator(C4ReplicatorStatus status) noexcept {
+            if (_status.level == kC4Stopping && status.level != kC4Stopped) {
+                // From Stopping it can only go to Stopped
+                return;
+            }
             // The Replicator doesn't use the flags, so don't copy them:
             auto flags = _status.flags;
             _status = status;
