@@ -119,8 +119,10 @@ private:
     class LiveQuerierDelegate;
     
     Retained<litecore::QueryEnumerator> _createEnumerator(const C4QueryOptions* C4NULLABLE, slice params);
-    Retained<litecore::C4QueryEnumeratorImpl> wrapEnumerator(litecore::QueryEnumerator*);
-    void liveQuerierUpdated(litecore::QueryEnumerator *qe, C4Error err);
+    Retained<litecore::C4QueryEnumeratorImpl> wrapEnumerator(litecore::QueryEnumerator* C4NULLABLE);
+    void liveQuerierUpdated(litecore::QueryEnumerator* C4NULLABLE, C4Error err);
+    void notifyObservers(const std::set<litecore::C4QueryObserverImpl*> &observers,
+                         litecore::QueryEnumerator* C4NULLABLE, C4Error err);
 
     Retained<litecore::DatabaseImpl>            _database;
     Retained<litecore::Query>                   _query;
@@ -128,6 +130,7 @@ private:
     Retained<litecore::LiveQuerier>             _bgQuerier;
     std::unique_ptr<LiveQuerierDelegate>        _bgQuerierDelegate;
     std::set<litecore::C4QueryObserverImpl*>    _observers;
+    std::set<litecore::C4QueryObserverImpl*>    _pendingObservers;
     mutable std::mutex                          _mutex;
 };
 
