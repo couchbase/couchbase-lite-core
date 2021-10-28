@@ -27,10 +27,10 @@ namespace litecore {
         C4CollectionObserverImpl(C4Collection *collection,
                                  C4SequenceNumber since,
                                  Callback callback)
-        :_collection(asInternal(collection))
+        :_retainDatabase(collection->getDatabase())
+        ,_collection(asInternal(collection))
         ,_callback(move(callback))
         {
-            retain(_collection->getDatabase());
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
                 _notifier.emplace(st,
                                   [this](CollectionChangeNotifier&) {_callback(this);},
@@ -45,7 +45,6 @@ namespace litecore {
                 // I do this explicitly, synchronized with the SequenceTracker.
                 _notifier = nullopt;
             });
-            release(_collection->getDatabase());
         }
 
 
@@ -63,6 +62,7 @@ namespace litecore {
         }
 
     private:
+        Retained<C4Database> _retainDatabase;
         CollectionImpl* _collection;
         optional<CollectionChangeNotifier> _notifier;
         Callback _callback;
