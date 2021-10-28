@@ -44,7 +44,18 @@ namespace litecore {
         from.copyTo(temp);
 
         {
-            auto db = C4Database::openAtPath(temp.path(), config->flags, &config->encryptionKey);
+            Retained<C4Database> db;
+            try {
+                db = C4Database::openAtPath(temp.path(), config->flags, &config->encryptionKey);
+            } catch (const error &x) {
+                if (x.domain == error::LiteCore && x.code == error::NotADatabaseFile) {
+                    Warn("Cannot open the copied database with the given encryption key. "
+                         "The given encryption key needs to be matched with the encryption key "
+                         "of the original database. To change the encryption key, open the copied "
+                         "database then change the encryption key.");
+                }
+                throw;
+            }
             asInternal(db)->resetUUIDs();
             db->close();
         }
