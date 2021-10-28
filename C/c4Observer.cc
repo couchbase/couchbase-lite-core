@@ -30,6 +30,7 @@ namespace litecore {
         :_collection(asInternal(collection))
         ,_callback(move(callback))
         {
+            retain(_collection->getDatabase());
             _collection->sequenceTracker().useLocked<>([&](SequenceTracker &st) {
                 _notifier.emplace(st,
                                   [this](CollectionChangeNotifier&) {_callback(this);},
@@ -44,6 +45,7 @@ namespace litecore {
                 // I do this explicitly, synchronized with the SequenceTracker.
                 _notifier = nullopt;
             });
+            release(_collection->getDatabase());
         }
 
 
