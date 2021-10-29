@@ -52,6 +52,8 @@ namespace litecore { namespace repl {
             revReceived() will be made in the future. */
         void reRequestingRev() {enqueue(FUNCTION_TO_QUEUE(RevFinder::_reRequestingRev));}
 
+        void onError(C4Error err) override;
+
     private:
         static const size_t kMaxPossibleAncestors = 10;
 
