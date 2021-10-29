@@ -69,7 +69,24 @@ namespace litecore { namespace repl {
 
 
     DBAccess::~DBAccess() {
+        close();
+    }
+
+
+    void DBAccess::close() {
         _timer.stop();
+        useLocked([](Retained<C4Database>& db) {
+            // Any use of the class after this will result in a crash that
+            // should be easily identifiable, so forgo asserting if the pointer
+            // is null in other areas.
+            db = nullptr;
+        }, &DBAccess::AssertDBOpen);
+        if (_insertionDB) {
+            _insertionDB->useLocked([&](Retained<C4Database>& idb) {
+                idb = nullptr;
+            }, &DBAccess::AssertDBOpen);
+            _insertionDB.reset();
+        }
     }
 
 

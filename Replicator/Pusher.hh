@@ -39,6 +39,8 @@ namespace litecore { namespace repl {
 
         int progressNotificationLevel() const override;
 
+        void onError(C4Error err) override;
+
     protected:
         friend class BlobDataSource;
         
