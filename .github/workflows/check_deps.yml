@@ -19,7 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        submodules: recursive
+        submodules: true # Only need one level for this check
         fetch-depth: 0 # Pull all history or else we won't get branch info
 
     - name: Check Submodules
