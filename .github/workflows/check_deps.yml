@@ -20,6 +20,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
+        fetch-depth: 0 # Pull all history or else we won't get branch info
 
     - name: Check Submodules
       working-directory: ${{github.workspace}}/build_cmake/scripts
