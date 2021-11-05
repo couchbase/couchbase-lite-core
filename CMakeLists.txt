@@ -131,6 +131,9 @@ set(SQLITE3_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/vendor/SQLiteCpp/sqlite3) # Fo
 
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
+
+set(ENABLE_PROGRAMS OFF CACHE INTERNAL "Build mbed TLS programs.")
+set(ENABLE_TESTING OFF CACHE INTERNAL "Build mbed TLS tests.")
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 
 # Generate file repo_version.h containing Git repo information, and add it to #include path:
