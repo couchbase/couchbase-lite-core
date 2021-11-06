@@ -147,7 +147,43 @@ C4API_BEGIN_DECLS
 
 
     /** \name Query Observer
-     @{ */
+        @{
+        A query observer, also called a "live query", notifies the client when the query's result
+        set changes. (Not just any time the database changes.)
+
+        This is done as follows, starting from when the first time an observer on a particular
+        query is enabled:
+
+        1. A separate C4Query instance is created, on a separate database instance
+           (there's one of these background database instances per C4Database.)
+        2. The copied query is run on a background thread, and it saves its results.
+        3. The query observer(s) are notified so they can see the initial results.
+        4. The background thread listens for changes to the database, _or_ changes to the query
+           parameters (\ref c4query_setParameters). In response:
+           - If it's been less than 250ms since the last time it ran the query, it first waits
+             500ms; during this time it ignores further database changes.
+           - It runs the query.
+           - It compares the new result set to the old one; if they're different, it saves the
+             new results and notifies observers. Otherwise it does nothing.
+        6. This background task stops when the last observer is disabled.
+
+        Some notes on performance:
+     
+        * All C4Queries on a single C4Database share a single background C4Database, which can
+          only do one thing at a time. That means multiple live queries can bog down since they
+          have to run one after the other.
+        * The first time any query observer is added in a given _C4Database_, the background
+          database instance has to be opened, which takes a few milliseconds.
+        * The first time an observer is added to a C4Query, a copy of that query has to be
+          created and compiled by the background database, which can also take a few millseconds.
+        * Running a C4Query before adding an observer is a bit of a waste, because the query will
+          be run twice. It's more efficient to skip running it, and instead wait for the first
+          call to the observer.
+        * The timing logic in step 4 is a heuristic to provide low latency on occasional database
+          changes, but prevent rapid database changes (as happen during pull replication) from
+          running the query constantly and/or spamming observers with notifications.
+          (The specific times are not currently alterable; they're constants in LiveQuerier.cc.)
+     */
 
     /** Callback invoked by a query observer, notifying that the query results have changed.
         The actual enumerator is not passed to the callback, but can be retrieved by calling
@@ -172,7 +208,13 @@ C4API_BEGIN_DECLS
                                        C4QueryObserverCallback callback,
                                        void* C4NULLABLE context) C4API;
 
-    /** Enables a query observer so its callback can be called, or disables it to stop callbacks. */
+    /** Enables a query observer so its callback can be called, or disables it to stop callbacks.
+
+        When a query observer is enabled, its callback will be called with the current results.
+        If this is the first observer, the query has to run first (on a background thread) so
+        the callback will take a little while; if there are already enabled observers, the
+        callback will be pretty much instantaneous.
+     */
     void c4queryobs_setEnabled(C4QueryObserver *obs, bool enabled) C4API;
 
     /** Returns the current query results, if any.
