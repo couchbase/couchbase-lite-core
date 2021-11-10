@@ -133,8 +133,8 @@ namespace litecore {
 
         private:
             friend access_lock;
-            access(MUTEX &mut, const R* ref, SENTRY *pSentry):access(mut, ref) {
-                if (*pSentry) (*pSentry)(Retained<R>(const_cast<R*>(_ref)));
+            access(MUTEX &mut, const Retained<R>& ref, SENTRY *pSentry):access(mut, ref.get()) {
+                if (*pSentry) (*pSentry)(ref);
             }
             access_lock::LOCK_GUARD _lock;
             const R*                _ref;
