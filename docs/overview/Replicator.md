@@ -46,7 +46,7 @@ A few other classes, notably `WebSocketImpl`, use mutexes directly.
 
 ## Replicator Classes
 
-\<img src="Replicator%20Diagram.svg" width=584\>
+<img src="Replicator%20Diagram.svg" width=584\>
 
 > Note: the diagram is slightly out of date. It’s missing some of the Pusher / Puller helper classes, and shows an obsolete class `IncomingBlob`.
 
