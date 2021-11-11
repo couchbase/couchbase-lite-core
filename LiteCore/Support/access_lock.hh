@@ -76,8 +76,8 @@ namespace litecore {
 
         private:
             friend access_lock;
-            access(MUTEX &mut, REF ref, SENTRY* pSentry):access(mut, ref) {
-                if (*pSentry) (*pSentry)(_ref);
+            access(MUTEX &mut, REF ref, SENTRY& sentry):access(mut, ref) {
+                if (sentry) sentry(_ref);
             }
             access_lock::LOCK_GUARD _lock;
             REF                     _ref;
@@ -105,8 +105,8 @@ namespace litecore {
 
         private:
             friend access_lock;
-            access(MUTEX &mut, Retained<R> &ref, SENTRY *pSentry):access(mut, ref) {
-                if (*pSentry) (*pSentry)(_ref);
+            access(MUTEX &mut, Retained<R> &ref, SENTRY& sentry):access(mut, ref) {
+                if (sentry) sentry(_ref);
             }
             access_lock::LOCK_GUARD _lock;
             Retained<R>&            _ref;
@@ -133,8 +133,8 @@ namespace litecore {
 
         private:
             friend access_lock;
-            access(MUTEX &mut, const Retained<R>& ref, SENTRY *pSentry):access(mut, ref.get()) {
-                if (*pSentry) (*pSentry)(ref);
+            access(MUTEX &mut, const Retained<R>& ref, SENTRY& sentry):access(mut, ref.get()) {
+                if (sentry) sentry(ref);
             }
             access_lock::LOCK_GUARD _lock;
             const R*                _ref;
@@ -149,7 +149,7 @@ namespace litecore {
         /// within the same lock scope; just make sure that variable has as brief a lifetime as
         /// possible.
         auto useLocked() {
-            return access<T&>(_mutex, _contents, &_sentry);
+            return access<T&>(_mutex, _contents, _sentry);
         }
 
         /// Locks my mutex and passes a refence to my contents to the callback.
@@ -174,7 +174,7 @@ namespace litecore {
         // const versions:
 
         auto useLocked() const  {
-            return access<const T&>(getMutex(), _contents, const_cast<SENTRY*>(&_sentry));
+            return access<const T&>(getMutex(), _contents, const_cast<SENTRY&>(_sentry));
         }
 
         template <class LAMBDA>
