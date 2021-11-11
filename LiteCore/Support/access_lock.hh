@@ -14,6 +14,7 @@
 
 #pragma once
 #include "RefCounted.hh"
+#include <functional>
 #include <mutex>
 #include <type_traits>
 #include <utility>
@@ -51,7 +52,7 @@ namespace litecore {
         { }
 
         using LOCK_GUARD = std::lock_guard<std::remove_reference_t<MUTEX>>;
-
+        using SENTRY = std::function<void(const T&)>;
 
         /** Temporary access token returned by the `useLocked()` method. You can pass it as a parameter
             as though it were that object, call the object via `->`, or access the object
@@ -74,6 +75,10 @@ namespace litecore {
             auto operator -> ()             {return &_ref;}
 
         private:
+            friend access_lock;
+            access(MUTEX &mut, REF ref, SENTRY& sentry):access(mut, ref) {
+                if (sentry) sentry(_ref);
+            }
             access_lock::LOCK_GUARD _lock;
             REF                     _ref;
         };
@@ -99,6 +104,10 @@ namespace litecore {
             R* operator -> ()               {return _ref;}
 
         private:
+            friend access_lock;
+            access(MUTEX &mut, Retained<R> &ref, SENTRY& sentry):access(mut, ref) {
+                if (sentry) sentry(_ref);
+            }
             access_lock::LOCK_GUARD _lock;
             Retained<R>&            _ref;
         };
@@ -123,6 +132,10 @@ namespace litecore {
             auto operator -> ()             {return _ref;}
 
         private:
+            friend access_lock;
+            access(MUTEX &mut, const Retained<R>& ref, SENTRY& sentry):access(mut, ref.get()) {
+                if (sentry) sentry(ref);
+            }
             access_lock::LOCK_GUARD _lock;
             const R*                _ref;
         };
@@ -135,12 +148,15 @@ namespace litecore {
         /// You can assign the result of `useLocked()` to a local variable and use it multiple times
         /// within the same lock scope; just make sure that variable has as brief a lifetime as
         /// possible.
-        auto useLocked()        {return access<T&>(_mutex, _contents);}
+        auto useLocked() {
+            return access<T&>(_mutex, _contents, _sentry);
+        }
 
         /// Locks my mutex and passes a refence to my contents to the callback.
         template <class LAMBDA>
         void useLocked(LAMBDA callback) {
             LOCK_GUARD lock(_mutex);
+            if (_sentry) _sentry(_contents);
             callback(_contents);
         }
 
@@ -151,27 +167,35 @@ namespace litecore {
         template <class RESULT, class LAMBDA>
         RESULT useLocked(LAMBDA callback) {
             LOCK_GUARD lock(_mutex);
+            if (_sentry) _sentry(_contents);
             return callback(_contents);
         }
 
         // const versions:
 
-        auto useLocked() const  {return access<const T&>(getMutex(), _contents);}
+        auto useLocked() const  {
+            return access<const T&>(getMutex(), _contents, const_cast<SENTRY&>(_sentry));
+        }
 
         template <class LAMBDA>
         void useLocked(LAMBDA callback) const {
             LOCK_GUARD lock(getMutex());
+            if (_sentry) _sentry(_contents);
             callback(_contents);
         }
 
         template <class RESULT, class LAMBDA>
         RESULT useLocked(LAMBDA callback) const {
             LOCK_GUARD lock(getMutex());
+            if (_sentry) _sentry(_contents);
             return callback(_contents);
         }
 
 
         MUTEX& getMutex() const {return const_cast<MUTEX&>(_mutex);}
+
+    protected:
+        SENTRY _sentry;
 
     private:
         T _contents;
