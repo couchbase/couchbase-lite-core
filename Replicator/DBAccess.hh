@@ -41,6 +41,16 @@ namespace litecore { namespace repl {
         DBAccess(C4Database* db, bool disableBlobSupport);
         ~DBAccess();
 
+        static inline void AssertDBOpen(const Retained<C4Database>& db) {
+            if(!db) {
+                litecore::error::_throw(litecore::error::Domain::LiteCore, litecore::error::LiteCoreError::NotOpen);
+            }
+        }
+
+        /** Shuts down the DBAccess and makes further use of it invalid.  Any attempt to use
+            it after this point is considered undefined behavior. */
+        void close();
+
         /** Looks up the remote DB identifier of this replication. */
         C4RemoteID lookUpRemoteDBID(slice key);
 
@@ -172,6 +182,7 @@ namespace litecore { namespace repl {
         std::optional<AccessLockedDB> _insertionDB;         // DB handle to use for insertions
         std::string _myPeerID;
         const bool _usingVersionVectors;                    // True if DB uses version vectors
+        std::atomic_flag _closed = ATOMIC_FLAG_INIT;
     };
 
 } }

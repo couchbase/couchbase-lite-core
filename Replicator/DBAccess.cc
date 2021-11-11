@@ -69,7 +69,28 @@ namespace litecore { namespace repl {
 
 
     DBAccess::~DBAccess() {
+        close();
+    }
+
+
+    void DBAccess::close() {
+        if (_closed.test_and_set()) {
+            return;
+        }
         _timer.stop();
+        useLocked([this](Retained<C4Database>& db) {
+            // Any use of the class after this will result in a crash that
+            // should be easily identifiable, so forgo asserting if the pointer
+            // is null in other areas.
+            db = nullptr;
+            this->_sentry = &DBAccess::AssertDBOpen;
+            if (this->_insertionDB) {
+                this->_insertionDB->useLocked([](Retained<C4Database>& idb) {
+                    idb = nullptr;
+                });
+                this->_insertionDB.reset();
+            }
+        });
     }
 
 
@@ -300,6 +321,7 @@ namespace litecore { namespace repl {
         }
         if (reEncode) {
             // Re-encode with database's current sharedKeys:
+            // insertionDB() asserts DB open, no need to do it here
             return insertionDB().useLocked<alloc_slice>([&](C4Database* idb) {
                 SharedEncoder enc(idb->sharedFleeceEncoder());
                 enc.writeValue(doc.root());
@@ -343,6 +365,7 @@ namespace litecore { namespace repl {
         Doc result;
         FLError flErr;
         if (useDBSharedKeys) {
+            // insertionDB() asserts DB open, no need to do it here
             insertionDB().useLocked([&](C4Database *idb) {
                 SharedEncoder enc(idb->sharedFleeceEncoder());
                 JSONDelta::apply(srcRoot, deltaJSON, enc);
@@ -392,6 +415,7 @@ namespace litecore { namespace repl {
             return;
 
         Stopwatch st;
+        // insertionDB() asserts DB open, no need to do it here
         insertionDB().useLocked([&](C4Database *idb) {
             try {
                 C4Database::Transaction transaction(idb);
