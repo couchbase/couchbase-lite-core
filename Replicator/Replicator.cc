@@ -349,6 +349,7 @@ namespace litecore { namespace repl {
             DebugAssert(!connected());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
+            _db->close();
             Signpost::end(Signpost::replication, uintptr_t(this));
         }
         if (_delegate) {
