@@ -461,16 +461,17 @@ _  = [ \t\r\n]*            # Optional whitespace
 
 #undef __
 
+const char kN1QLEND = '\0';
 
 static int n1ql_input(yycontext *ctx, char *buf, size_t max_size) {
-    ctx->stream->get(buf, max_size);
+    ctx->stream->get(buf, max_size, kN1QLEND);
     return (int) ctx->stream->gcount();
 }
 
 
 FLMutableDict parse(const string &input, unsigned *errPos) {
     MutableDict result;
-    std::stringstream stream(input, std::ios_base::in);
+    std::stringstream stream(input+kN1QLEND, std::ios_base::in);
     yycontext ctx = { };
     ctx.stream = &stream;
 
