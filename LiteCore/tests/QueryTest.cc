@@ -2223,7 +2223,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
         });
         t.commit();
     }
-    
+
     std::tuple<const char*, std::function<bool(const Value*, bool)>> testCases[] = {
         { "acos(3)",       [](const Value* v, bool missing) { // =NULL
             return !missing && v->type() == kNull; }},
@@ -2274,7 +2274,11 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
         {"round_even(12.115, 2)", [](const Value* v, bool missing) {
             return !missing && v->type() == kNumber && v->asDouble() == 12.12; }},
 /*24*/  {"round_even(-12.125, 2)", [](const Value* v, bool missing) {
-            return !missing && v->type() == kNumber && v->asDouble() == -12.12; }}
+            return !missing && v->type() == kNumber && v->asDouble() == -12.12; }},
+        {"META().id", [](const Value* v, bool missing) {
+            return !missing && v->type() == kString && (v->asString().compare("doc1") == 0); }},
+        {"META().revisionID", [](const Value* v, bool missing) {
+            return missing && v->type() == kNull; }}
     };
     size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
     string queryStr = "select ";
@@ -2289,6 +2293,8 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
     REQUIRE(query->columnTitles()[9] == "$10");
     REQUIRE(query->columnTitles()[10] == "orderlines");
     REQUIRE(query->columnTitles()[11] == "$11");
+    REQUIRE(query->columnTitles()[25] == "id");
+    REQUIRE(query->columnTitles()[26] == "revisionID");
     REQUIRE(e->next());
     uint64_t missingColumns = e->missingColumns();
     for (unsigned i = 0; i < testCaseCount; ++i) {
