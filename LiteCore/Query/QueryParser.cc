@@ -809,7 +809,7 @@ namespace litecore {
                     if (expr[0]->asString().hasPrefix('.')) {
                         title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
                     } else if (expr[0]->asString().hasPrefix("_.") && expr.count() == 3 &&
-                               expr[1]->type() == kArray && expr[1]->asArray()->count() == 1 &&
+                               expr[1]->type() == kArray && expr[1]->asArray()->count() > 0 &&
                                expr[1]->asArray()->begin()->asString().compare("meta()") == 0) {
                         title = expr[2]->asString();
                         title = title.substr(1);

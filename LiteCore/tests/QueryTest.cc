@@ -2224,6 +2224,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
         t.commit();
     }
 
+    string meta_default = "META("+collectionName+").revisionID";
     std::tuple<const char*, std::function<bool(const Value*, bool)>> testCases[] = {
         { "acos(3)",       [](const Value* v, bool missing) { // =NULL
             return !missing && v->type() == kNull; }},
@@ -2277,7 +2278,7 @@ TEST_CASE_METHOD(QueryTest, "Various Exceptional Conditions", "[Query]") {
             return !missing && v->type() == kNumber && v->asDouble() == -12.12; }},
         {"META().id", [](const Value* v, bool missing) {
             return !missing && v->type() == kString && (v->asString().compare("doc1") == 0); }},
-        {"META().revisionID", [](const Value* v, bool missing) {
+        {meta_default.c_str(), [](const Value* v, bool missing) {
             return missing && v->type() == kNull; }}
     };
     size_t testCaseCount = sizeof(testCases) / sizeof(testCases[0]);
