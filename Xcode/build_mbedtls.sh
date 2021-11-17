@@ -35,8 +35,7 @@ echo "CMake options: $CMAKE_OPTS"
 if [[ "$EFFECTIVE_PLATFORM_NAME" == "-maccatalyst" ]]
 then
     cmake "$SRCROOT/../vendor/mbedtls" $CMAKE_OPTS \
-        '-DCMAKE_CXX_FLAGS=-target x86_64-apple-ios13.1-macabi' \
-        '-DCMAKE_C_FLAGS=-target x86_64-apple-ios13.1-macabi'
+        '-DCMAKE_C_FLAGS=-target x86_64-apple-ios13.1-macabi -Wno-overriding-t-option'
 else
     cmake "$SRCROOT/../vendor/mbedtls" $CMAKE_OPTS
 fi
