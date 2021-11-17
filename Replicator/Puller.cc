@@ -39,13 +39,15 @@ namespace litecore { namespace repl {
 
     Puller::Puller(Replicator *replicator)
     :Delegate(replicator, "Pull")
-    ,_inserter(new Inserter(replicator))
-    ,_revFinder(new RevFinder(replicator, this))
-    ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
-    ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
 #if __APPLE__
+    // This field must go before _revFinder because "this" is passed in "new RevFinder(this)," which will
+    // call this->mailboxForChildren() which depends on it.
     ,_revMailbox(nullptr, "Puller revisions")
 #endif
+    ,_inserter(new Inserter(replicator))
+    ,_revFinder(new RevFinder(this))
+    ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
+    ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
     {
         _passive = _options.pull <= kC4Passive;
         registerHandler("rev",              &Puller::handleRev);
@@ -338,8 +340,13 @@ namespace litecore { namespace repl {
 
 
     void Puller::_childChangedStatus(Worker *task, Status status) {
-        // Combine the IncomingRev's progress into mine:
-        addProgress(status.progressDelta);
+        if(task == _revFinder) {
+            _revFinderStatus = status;
+            afterEvent(); // Pass up my new computed status to parent
+        } else {
+            // Combine the IncomingRev's progress into mine:
+            addProgress(status.progressDelta);
+        }
     }
 
     
@@ -360,6 +367,15 @@ namespace litecore { namespace repl {
         } else {
             level = kC4Stopped;
         }
+
+        if (level == kC4Stopped) {
+            _revFinder = nullptr;       // break cycle
+           if(_revFinderStatus.level == kC4Busy) {
+               //CBL-2562 (and others): but wait to change status until rev finder is done
+               level = kC4Busy;
+           }
+        }
+
         if (SyncBusyLog.willLog(LogLevel::Info)) {
             logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
                 kC4ReplicatorActivityLevelNames[level],
@@ -367,9 +383,6 @@ namespace litecore { namespace repl {
                 _pendingRevMessages, _activeIncomingRevs);
         }
 
-        if (level == kC4Stopped)
-            _revFinder = nullptr;       // break cycle
-        
         return level;
     }
 

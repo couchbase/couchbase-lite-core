@@ -80,6 +80,12 @@ namespace litecore { namespace repl {
         bool _caughtUp {false};             // Got all historic sequences, now up to date
         bool _fatalError {false};           // Have I gotten a fatal error?
 
+#if __APPLE__
+        // This helps limit the number of threads used by GCD:
+        virtual actor::Mailbox* mailboxForChildren() override       {return &_revMailbox;}
+        actor::Mailbox _revMailbox;
+#endif
+
         RemoteSequenceSet _missingSequences; // Known sequences I need to pull
         std::deque<Retained<blip::MessageIn>> _waitingRevMessages;     // Queued 'rev' messages
         mutable std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRevs
@@ -87,15 +93,10 @@ namespace litecore { namespace repl {
         actor::ActorBatcher<Puller,IncomingRev> _returningRevs;
         Retained<Inserter> _inserter;
         mutable Retained<RevFinder> _revFinder;
+        Status _revFinderStatus {};
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
         unsigned _unfinishedIncomingRevs {0};
-
-#if __APPLE__
-        // This helps limit the number of threads used by GCD:
-        virtual actor::Mailbox* mailboxForChildren() override       {return &_revMailbox;}
-        actor::Mailbox _revMailbox;
-#endif
     };
 
 

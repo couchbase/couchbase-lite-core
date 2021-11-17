@@ -43,7 +43,7 @@ namespace litecore { namespace repl {
             virtual void documentsRevoked(std::vector<Retained<RevToInsert>>) =0;
         };
 
-        RevFinder(Replicator* NONNULL, Delegate* NONNULL);
+        RevFinder(Delegate* NONNULL);
 
         /** Delegate must call this every time it receives a "rev" message. */
         void revReceived()     {enqueue(FUNCTION_TO_QUEUE(RevFinder::_revReceived));}
