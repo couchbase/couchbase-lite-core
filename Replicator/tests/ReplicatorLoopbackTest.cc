@@ -1083,6 +1083,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Conflict Resolved Equivalently", "[Pull][Push][Conflict][NoConflicts]") {
+    // The windows build stuck at this test.
     // CBL-726: Push conflict but server rev is just a newer ancestor of the local rev.
     // Local:  1-abcd -- 2-c001d00d -- 3-deadbeef -- 4-baba    (known remote rev: 2)
     // Server: 1-abcd -- 2-c001d00d -- 3-deadbeef
