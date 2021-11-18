@@ -965,8 +965,15 @@ namespace litecore {
                 // Come up with a column title if there is no 'AS':
                 if (result->type() == kString) {
                     title = columnTitleFromProperty(Path(result->asString()), _propertiesUseSourcePrefix);
-                } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
-                    title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
+                } else if (result->type() == kArray) {
+                    if (expr[0]->asString().hasPrefix('.')) {
+                        title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
+                    } else if (expr[0]->asString().hasPrefix("_.") && expr.count() == 3 &&
+                               expr[1]->type() == kArray && expr[1]->asArray()->count() > 0 &&
+                               expr[1]->asArray()->begin()->asString().compare("meta()") == 0) {
+                        title = expr[2]->asString();
+                        title = title.substr(1);
+                    }
                 }
                 if (title.empty()) {
                     title = format("$%u", ++anonCount); // default for non-properties
