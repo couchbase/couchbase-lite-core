@@ -71,7 +71,13 @@ namespace litecore::net {
         //-------- READING:
 
         /// Reads up to \ref byteCount bytes to the location \ref dst.
-        /// On EOF returns zero. On other error returns -1.
+        ///
+        /// - In blocking mode: Returning zero means that EOF was reached.
+        /// - In non-blocking mode: Returning zero means either that EOF was reached or
+        ///   EWOULDBLOCK error was returned. Use atReadEOF() to confirm whether the EOF was
+        ///   reached or not.
+        ///
+        /// On other error returns -1.
         ssize_t read(void *dst, size_t byteCount) MUST_USE_RESULT;
 
         /// Reads exactly \ref byteCount bytes to the location \ref dst.
