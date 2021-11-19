@@ -87,6 +87,11 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL literals", "[Query][N1QL][C]") {
     CHECK(translate("SELECT {'x':17}") == "{'WHAT':[{'x':17}]}");
     CHECK(translate("SELECT { 'x' :  17  } ") == "{'WHAT':[{'x':17}]}");
     CHECK(translate("SELECT {'x':17, 'null': null,'empty':{} , 'str':'hi'||'there'}") == "{'WHAT':[{'empty':{},'null':null,'str':['||','hi','there'],'x':17}]}");
+    string withNewline = R"r(
+        SELECT *
+        FROM _
+    )r";
+    CHECK(translate(withNewline.c_str()) == "{'FROM':[{'COLLECTION':'_'}],'WHAT':[['.']]}");
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
