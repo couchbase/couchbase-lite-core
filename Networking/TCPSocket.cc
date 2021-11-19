@@ -283,6 +283,8 @@ namespace litecore { namespace net {
         Assert(byteCount > 0);
         ssize_t n = _socket->read(dst, byteCount);
         if (n < 0) {
+            if (_nonBlocking && socketToPosixErrCode(_socket->last_error()) == EWOULDBLOCK)
+                return 0;
             checkStreamError();
         } else if (n == 0) {
             _eofOnRead = true;

@@ -387,6 +387,11 @@ namespace litecore { namespace websocket {
                 else
                     logDebug("**** socket read THROTTLED");
             } else {
+                if (!_socket->atReadEOF()) {
+                    logDebug("**** socket got EWOULDLOCK");
+                    awaitReadable();
+                    return;
+                }
                 logVerbose("Zero-byte read: EOF from peer");
             }
 
