@@ -66,6 +66,7 @@ namespace litecore {
 
 
     void LiveQuerier::start(const Query::Options &options) {
+        _stopping = false;
         _lastTime = clock::now();
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_runQuery), options);
     }
@@ -112,7 +113,6 @@ namespace litecore {
             });
         }
         logVerbose("...stopped");
-        _stopping = false;
     }
 
 
@@ -137,13 +137,13 @@ namespace litecore {
         _waitingToRun = false;
         logVerbose("Running query...");
         Retained<QueryEnumerator> newQE;
-        C4Error error = {};
+        C4Error error {};
         fleece::Stopwatch st;
-        _backgroundDB->dataFile().useLocked([&](DataFile *df) {
+        auto stopping = _backgroundDB->dataFile().useLocked<bool>([&](DataFile *df) {
             if (_stopping) {
                 // CBL-2335: Guard access to the _stopping variable so that
                 // it is not changed at unpredictable times
-                return;
+                return true;
             }
 
             try {
@@ -161,7 +161,14 @@ namespace litecore {
                 // Now run the query:
                 newQE = _query->createEnumerator(&options);
             } catchError(&error);
+
+            return false;
         });
+
+        if(stopping) {
+            return;
+        }
+
         auto time = st.elapsedMS();
 
         if (!newQE)
@@ -181,9 +188,6 @@ namespace litecore {
         } else {
             logInfo("...finished one-shot query in %.3fms", time);
         }
-
-        if (_stopping)
-            return;
         
         _delegate->liveQuerierUpdated(newQE, error);
     }
