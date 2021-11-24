@@ -342,10 +342,19 @@ namespace litecore { namespace crypto {
             };
             SecKeyRef publicKey, privateKey;
             ++gC4ExpectExceptions;
-            OSStatus err = SecKeyGeneratePair((CFDictionaryRef)params, &publicKey, &privateKey);
+            if (@available(macOS 12.00, iOS 15, *)) {
+                CFErrorRef error;
+                privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
+                if (!privateKey) {
+                    warnCFError(error, "SecKeyCreateRandomKey");
+                    return nullptr;
+                }
+                publicKey = SecKeyCopyPublicKey(privateKey);
+            } else {
+                OSStatus err = SecKeyGeneratePair((CFDictionaryRef)params, &publicKey, &privateKey);
+                checkOSStatus(err, "SecKeyGeneratePair", "Couldn't create a private key");
+            }
             --gC4ExpectExceptions;
-            checkOSStatus(err, "SecKeyGeneratePair", "Couldn't create a private key");
-
             return new KeychainKeyPair(keySizeInBits, publicKey, privateKey);
         }
     }
