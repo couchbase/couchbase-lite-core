@@ -18,6 +18,7 @@
 #include "c4Internal.hh"
 #include "c4Private.h"
 #include "c4BlobStore.hh"
+#include "Defer.hh"
 #include "TreeDocument.hh"
 #include "VectorDocument.hh"
 #include "BackgroundDB.hh"
@@ -857,9 +858,13 @@ namespace litecore {
 
     static const char * kRemoteDBURLsDoc = "remotes";
 
-
     C4RemoteID DatabaseImpl::getRemoteDBID(slice remoteAddress, bool canCreate) {
         bool inTransaction = false;
+        DEFER {
+            if (inTransaction) {
+                endTransaction(false);
+            }
+        };
         C4RemoteID remoteID = 0;
 
         // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
@@ -886,10 +891,8 @@ namespace litecore {
                 }
             }
 
-            if (remoteID > 0) {
-                // Found the remote ID!
-                return remoteID;
-            } else if (!canCreate) {
+            if (remoteID > 0 // Found the remote ID!
+                || !canCreate) {
                 break;
             } else if (creating) {
                 // Update or create the document, adding the identifier:
@@ -916,8 +919,6 @@ namespace litecore {
                 break;
             }
         }
-        if (inTransaction)
-            endTransaction(false);
         return remoteID;
     }
 
