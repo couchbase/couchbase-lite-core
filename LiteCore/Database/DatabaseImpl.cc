@@ -18,6 +18,7 @@
 #include "c4Internal.hh"
 #include "c4Private.h"
 #include "c4BlobStore.hh"
+#include "Defer.hh"
 #include "TreeDocument.hh"
 #include "VectorDocument.hh"
 #include "BackgroundDB.hh"
@@ -857,19 +858,13 @@ namespace litecore {
 
     static const char * kRemoteDBURLsDoc = "remotes";
 
-    struct Finally {
-        std::function<void()> _finally;
-        Finally(const std::function<void()>& f) : _finally(f) {}
-        ~Finally() { _finally(); }
-    };
-
     C4RemoteID DatabaseImpl::getRemoteDBID(slice remoteAddress, bool canCreate) {
         bool inTransaction = false;
-        Finally _finally_{[&inTransaction,this]() {
+        DEFER {
             if (inTransaction) {
-                this->endTransaction(false);
+                endTransaction(false);
             }
-        }};
+        };
         C4RemoteID remoteID = 0;
 
         // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
