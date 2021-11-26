@@ -370,7 +370,7 @@ namespace litecore { namespace repl {
 
         if (level == kC4Stopped) {
             _revFinder = nullptr;       // break cycle
-           if(_revFinderStatus.level == kC4Busy) {
+           if(_revFinderStatus.level != kC4Idle) {
                //CBL-2562 (and others): but wait to change status until rev finder is done
                level = kC4Busy;
            }
