@@ -78,6 +78,7 @@ namespace litecore {
                         // Since the revision is now likely stored on the server, it may be the base of a merge
                         // in the future, so preserve its body:
                         setLatestRevisionOnRemote(kDefaultRemoteID, cur);
+                        _rec.clearFlag(DocumentFlags::kSynced);
                         keepBody(cur);
                         _changed = false;
                     }

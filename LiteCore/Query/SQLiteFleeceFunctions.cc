@@ -501,7 +501,8 @@ namespace litecore {
         rec.version = valueAsSlice(argv[1]);
         rec.extra = valueAsSlice(argv[3]);
         rec.sequence = sqlite3_value_int(argv[4]);
-        auto callback = sqlite3_value_pointer(argv[5], kWithDocBodiesCallbackPointerType);
+        rec.flags = (DocumentFlags)sqlite3_value_int(argv[5]);
+        auto callback = sqlite3_value_pointer(argv[6], kWithDocBodiesCallbackPointerType);
         if (!callback || !rec.key) {
             sqlite3_result_error(ctx, "Missing or invalid callback", -1);
             return;
@@ -534,7 +535,7 @@ namespace litecore {
         { "fl_bool",           1, fl_bool },
         { "array_of",         -1, array_of },
         { "dict_of",          -1, dict_of },
-        { "fl_callback",       6, fl_callback },
+        { "fl_callback",       7, fl_callback },
         { }
     };
 
