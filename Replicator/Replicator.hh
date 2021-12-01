@@ -37,8 +37,8 @@ namespace litecore { namespace repl {
         Pull and push operations are run by subidiary Puller and Pusher objects.
         The database will only be accessed by the DBAgent object. */
     class Replicator final : public Worker,
-                             private blip::ConnectionDelegate,
-                             public InstanceCountedIn<Replicator> {
+                             private blip::ConnectionDelegate
+    {
     public:
 
         class Delegate;
