@@ -10,7 +10,7 @@ function(setup_globals)
     # and if the person using this project wants to do so then they will have to set the options
     # accordingly
 
-    if(NOT LITECORE_DISABLE_ICU)
+    if(NOT LITECORE_DISABLE_ICU AND NOT LITECORE_DYNAMIC_ICU)
         set (_icu_libs)
         foreach (_lib icuuc icui18n icudata)
             unset (_iculib CACHE)
@@ -49,7 +49,7 @@ function(setup_globals)
     message("Using libz header files in ${ZLIB_INCLUDE}")
 
     mark_as_advanced(
-	ICU_LIBS LIBICU_INCLUDE ZLIB_LIB ZLIB_INCLUDE
+	    ICU_LIBS LIBICU_INCLUDE ZLIB_LIB ZLIB_INCLUDE
     )
 endfunction()
 
@@ -64,6 +64,7 @@ function(set_litecore_source)
      set(
          ${LINUX_SSS_RESULT}
          ${BASE_LITECORE_FILES}
+         LiteCore/Unix/icu_shim.c
          PARENT_SCOPE
      )
  endfunction()

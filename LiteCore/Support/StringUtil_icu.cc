@@ -14,19 +14,14 @@
 
 #include "StringUtil.hh"
 #include "Logging.hh"
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdocumentation"
-#include <unicode/ucasemap.h>
-#include <unicode/urename.h>
-#pragma clang diagnostic pop
+#include "icu_shim.h"
 
 namespace litecore {
     using namespace fleece;
     
     alloc_slice UTF8ChangeCase(slice str, bool toUppercase) {
         UErrorCode error = U_ZERO_ERROR;
-        UCaseMap* csm = ucasemap_open(nullptr, 0, &error);
+        UCaseMap* csm = lc_ucasemap_open(nullptr, 0, &error);
         if(_usuallyFalse(!U_SUCCESS(error))) {
             return{};
         }
@@ -36,13 +31,13 @@ namespace litecore {
         bool finished = false;
         while(!finished) {
             if(toUppercase) {
-                resultSize = ucasemap_utf8ToUpper(csm, (char *)result.buf, (int32_t)result.size, (const char *)str.buf, (int32_t)str.size, &error);
+                resultSize = lc_ucasemap_utf8ToUpper(csm, (char *)result.buf, (int32_t)result.size, (const char *)str.buf, (int32_t)str.size, &error);
             } else {
-                resultSize = ucasemap_utf8ToLower(csm, (char *)result.buf, (int32_t)result.size, (const char *)str.buf, (int32_t)str.size, &error);
+                resultSize = lc_ucasemap_utf8ToLower(csm, (char *)result.buf, (int32_t)result.size, (const char *)str.buf, (int32_t)str.size, &error);
             }
             
             if(_usuallyFalse(!U_SUCCESS(error) && error != U_BUFFER_OVERFLOW_ERROR)) {
-                ucasemap_close(csm);
+                lc_ucasemap_close(csm);
                 return{};
             }
         
@@ -54,7 +49,7 @@ namespace litecore {
             }
         }
         
-        ucasemap_close(csm);
+        lc_ucasemap_close(csm);
         return result;
     }
 }

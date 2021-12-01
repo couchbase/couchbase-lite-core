@@ -67,6 +67,11 @@ function(setup_litecore_build_linux)
             LiteCoreStatic INTERFACE
             ${ICU_LIBS}
         )
+    elseif(LITECORE_DYNAMIC_ICU)
+        target_compile_definitions(
+            LiteCoreStatic PRIVATE
+            -DCBL_USE_ICU_SHIM
+        )
     endif()
 
     target_include_directories(
