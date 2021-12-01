@@ -24,10 +24,13 @@ namespace litecore {
 
 
     BackgroundDB::BackgroundDB(DatabaseImpl *db)
-    :_dataFile(db->dataFile()->openAnother(this))
-    ,_database(db)
+    :_database(db)
     {
-        _dataFile.useLocked([](DataFile* df) {
+        _dataFile.useLocked([db, this](DataFile*& df) {
+            // CBL-2543: Don't actually call openAnother until inside the constructor
+            // otherwise, openAnother could quickly call back into externalTransactionCommitted
+            // before this BackgroundDB is fully initialized.
+            df = db->dataFile()->openAnother(this);
             df->setDatabaseTag(kDatabaseTag_BackgroundDB);
         });
     }
