@@ -495,7 +495,7 @@ namespace litecore {
 #pragma mark - REVISION HISTORY:
 
 
-    // fl_callback(docID, revID, body, extra, sequence, callback) -> string
+    // fl_callback(docID, revID, body, extra, sequence, callback, flags) -> string
     static void fl_callback(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         RecordUpdate rec(valueAsSlice(argv[0]), valueAsSlice(argv[2]));
         rec.version = valueAsSlice(argv[1]);
