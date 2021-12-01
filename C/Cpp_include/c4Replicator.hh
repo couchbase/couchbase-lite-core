@@ -25,7 +25,6 @@ C4_ASSUME_NONNULL_BEGIN
 
 
 struct C4Replicator : public fleece::RefCounted,
-                      public fleece::InstanceCountedIn<C4Replicator>,
                       C4Base
 {
     // NOTE: Instances are created with database->newReplicator(...).
