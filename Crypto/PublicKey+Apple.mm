@@ -342,18 +342,18 @@ namespace litecore { namespace crypto {
             };
             SecKeyRef publicKey, privateKey;
             ++gC4ExpectExceptions;
-            if (@available(macOS 12.00, iOS 15, *)) {
-                CFErrorRef error;
-                privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
-                if (!privateKey) {
-                    warnCFError(error, "SecKeyCreateRandomKey");
-                    return nullptr;
-                }
-                publicKey = SecKeyCopyPublicKey(privateKey);
-            } else {
-                OSStatus err = SecKeyGeneratePair((CFDictionaryRef)params, &publicKey, &privateKey);
-                checkOSStatus(err, "SecKeyGeneratePair", "Couldn't create a private key");
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 150000
+            CFErrorRef error;
+            privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
+            if (!privateKey) {
+                warnCFError(error, "SecKeyCreateRandomKey");
+                return nullptr;
             }
+            publicKey = SecKeyCopyPublicKey(privateKey);
+#else
+            OSStatus err = SecKeyGeneratePair((CFDictionaryRef)params, &publicKey, &privateKey);
+            checkOSStatus(err, "SecKeyGeneratePair", "Couldn't create a private key");
+#endif
             --gC4ExpectExceptions;
             return new KeychainKeyPair(keySizeInBits, publicKey, privateKey);
         }
@@ -368,7 +368,14 @@ namespace litecore { namespace crypto {
                 SecPolicyRef policyRef = SecPolicyCreateBasicX509();
                 checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
                               "SecTrustCreateWithCertificates", "Couldn't create trust to get public key");
-                SecKeyRef publicKeyRef = SecTrustCopyPublicKey(trustRef);
+                
+                SecKeyRef publicKeyRef;
+                if (@available(macOS 11.0, iOS 14.0, *)) {
+                    publicKeyRef = SecTrustCopyKey(trustRef);
+                } else {
+                    publicKeyRef = SecTrustCopyPublicKey(trustRef);
+                }
+                
                 CFRelease(policyRef);
                 CFRelease(trustRef);
                 
@@ -583,7 +590,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-#if TARGET_OS_MACCATALYST
+#if TARGET_OS_MACCATALYST || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trustRef, &cferr))
@@ -600,12 +607,21 @@ namespace litecore { namespace crypto {
                           "Couldn't evaluate the trust to get certificate chain" );
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
-            for (CFIndex i = 1; i < count; i++) {
-                SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
-                NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
-                cert->append(new Cert(slice(data)));
+            if (@available(macOS 12.0, iOS 15.0, *)) {
+                CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
+                for (CFIndex i = 1; i < count; i++) {
+                    SecCertificateRef ref = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
+                    NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
+                    cert->append(new Cert(slice(data)));
+                }
+                CFRelease(certs);
+            } else {
+                for (CFIndex i = 1; i < count; i++) {
+                    SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
+                    NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
+                    cert->append(new Cert(slice(data)));
+                }
             }
-            
             return cert;
         }
     }
@@ -639,7 +655,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-#if TARGET_OS_MACCATALYST
+#if TARGET_OS_MACCATALYST || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trustRef, &cferr))
@@ -657,16 +673,33 @@ namespace litecore { namespace crypto {
             
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
-            for (CFIndex i = count - 1; i >= 0; i--) {
-                SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
-                if (getChildCertCount(ref) < 2) {
-                    NSDictionary* params = @{
-                        (id)kSecClass:              (id)kSecClassCertificate,
-                        (id)kSecValueRef:           (__bridge id)ref
-                    };
-                    checkOSStatus(SecItemDelete((CFDictionaryRef)params),
-                                  "SecItemDelete",
-                                  "Couldn't delete a certificate from the Keychain");
+            if (@available(macOS 12.0, iOS 15.0, *)) {
+                CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
+                for (CFIndex i = count - 1; i >= 0; i--) {
+                    SecCertificateRef ref = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
+                    if (getChildCertCount(ref) < 2) {
+                        NSDictionary* params = @{
+                            (id)kSecClass:              (id)kSecClassCertificate,
+                            (id)kSecValueRef:           (__bridge id)ref
+                        };
+                        checkOSStatus(SecItemDelete((CFDictionaryRef)params),
+                                      "SecItemDelete",
+                                      "Couldn't delete a certificate from the Keychain");
+                    }
+                }
+                CFRelease(certs);
+            } else {
+                for (CFIndex i = count - 1; i >= 0; i--) {
+                    SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
+                    if (getChildCertCount(ref) < 2) {
+                        NSDictionary* params = @{
+                            (id)kSecClass:              (id)kSecClassCertificate,
+                            (id)kSecValueRef:           (__bridge id)ref
+                        };
+                        checkOSStatus(SecItemDelete((CFDictionaryRef)params),
+                                      "SecItemDelete",
+                                      "Couldn't delete a certificate from the Keychain");
+                    }
                 }
             }
         }
@@ -708,7 +741,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result;
             OSStatus err;
-#if TARGET_OS_MACCATALYST
+#if TARGET_OS_MACCATALYST || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trust, &cferr))
@@ -728,21 +761,36 @@ namespace litecore { namespace crypto {
             
             Retained<Cert> root;
             CFIndex certCount = SecTrustGetCertificateCount(trust);
-            for (CFIndex i = 1; i < certCount; ++i) {
-                auto certRef = SecTrustGetCertificateAtIndex(trust, i);
-                LogTo(TLSLogDomain, "    ... root %s", describe(certRef).c_str());
-                CFDataRef dataRef = SecCertificateCopyData(certRef);
-                CFAutorelease(dataRef);
-                Retained<Cert> cert = new Cert(slice(dataRef));
-                if (root == nil)
-                    root = cert;
-                else
-                    root->append(cert);
+            if (@available(macOS 12.0, iOS 15.0, *)) {
+                CFArrayRef certs = SecTrustCopyCertificateChain(trust);
+                for (CFIndex i = 1; i < certCount; ++i) {
+                    SecCertificateRef ref = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
+                    LogTo(TLSLogDomain, "    ... root %s", describe(ref).c_str());
+                    CFDataRef dataRef = SecCertificateCopyData(ref);
+                    CFAutorelease(dataRef);
+                    Retained<Cert> cert = new Cert(slice(dataRef));
+                    if (root == nil)
+                        root = cert;
+                    else
+                        root->append(cert);
+                }
+                CFRelease(certs);
+            } else {
+                for (CFIndex i = 1; i < certCount; ++i) {
+                    SecCertificateRef ref = SecTrustGetCertificateAtIndex(trust, i);
+                    LogTo(TLSLogDomain, "    ... root %s", describe(ref).c_str());
+                    CFDataRef dataRef = SecCertificateCopyData(ref);
+                    CFAutorelease(dataRef);
+                    Retained<Cert> cert = new Cert(slice(dataRef));
+                    if (root == nil)
+                        root = cert;
+                    else
+                        root->append(cert);
+                }
             }
             return root;
         }
     }
-
 #endif // ROOT_CERT_LOOKUP_AVAILABLE
 
 

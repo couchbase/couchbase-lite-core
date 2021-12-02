@@ -21,7 +21,7 @@ namespace litecore {
 
 #if defined(__APPLE__) && LITECORE_SIGNPOSTS
 
-#if TARGET_OS_MACCATALYST
+#if TARGET_OS_MACCATALYST || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
     os_log_t LiteCore = os_log_create("com.couchbase.litecore", "signposts");;
 #endif
 
@@ -30,7 +30,7 @@ namespace litecore {
     };
 
     void Signpost::mark(Type t, uintptr_t param, uintptr_t param2) {
-#if TARGET_OS_MACCATALYST
+#if TARGET_OS_MACCATALYST || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
         if (__builtin_available(iOS 12.0, macOS 10.14, *))
             os_signpost_event_emit(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
 #else
@@ -40,7 +40,7 @@ namespace litecore {
     }
 
     void Signpost::begin(Type t, uintptr_t param, uintptr_t param2) {
-#if TARGET_OS_MACCATALYST
+#if TARGET_OS_MACCATALYST || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
         if (__builtin_available(iOS 12.0, macOS 10.14, *))
             os_signpost_interval_begin(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
 #else
@@ -50,7 +50,7 @@ namespace litecore {
     }
 
     void Signpost::end(Type t, uintptr_t param, uintptr_t param2) {
-#if TARGET_OS_MACCATALYST
+#if TARGET_OS_MACCATALYST || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
         if (__builtin_available(iOS 12.0, macOS 10.14, *))
             os_signpost_interval_end(LiteCore, t, "LiteCore", "%lu %lu %d %d", param, param2, 0, (t % 5));
 #else
