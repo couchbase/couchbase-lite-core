@@ -30,8 +30,8 @@ using namespace litecore::blip;
 
 namespace litecore::repl {
 
-    RevFinder::RevFinder(Delegate *delegate)
-    :Worker(delegate, "RevFinder")
+    RevFinder::RevFinder(Replicator *replicator, Delegate *delegate)
+    :Worker(replicator, "RevFinder")
     ,_delegate(delegate)
     {
         _passive = _options.pull <= kC4Passive;

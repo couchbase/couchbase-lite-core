@@ -93,7 +93,6 @@ namespace litecore { namespace repl {
         actor::ActorBatcher<Puller,IncomingRev> _returningRevs;
         Retained<Inserter> _inserter;
         mutable Retained<RevFinder> _revFinder;
-        Status _revFinderStatus {kC4Idle};
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
         unsigned _unfinishedIncomingRevs {0};
