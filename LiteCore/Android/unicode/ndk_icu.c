@@ -206,26 +206,6 @@ UCollationResult lc_ucol_strcoll(const UCollator* coll, const UChar* source, int
     return ptr(coll, source, sourceLength, target, targetLength);
 }
 
-UCollationResult lc_ucol_strcollIter(const UCollator* coll, UCharIterator* sIter, UCharIterator* tIter, UErrorCode* status) {
-  pthread_once(&once_control, &init_icudata_version);
-  UCollationResult (*ptr)(const UCollator*, UCharIterator*, UCharIterator*, UErrorCode*);
-  if (syms[10] == NULL) {
-    *status = U_UNSUPPORTED_ERROR;
-    return (UCollationResult)0;
-  }
-  ptr = (UCollationResult(*)(const UCollator*, UCharIterator*, UCharIterator*, UErrorCode*))syms[10];
-  return ptr(coll, sIter, tIter, status);
-}
-
-/* unicode/uiter.h */
-void lc_uiter_setUTF8(UCharIterator* iter, const char* s, int32_t length) {
-  pthread_once(&once_control, &init_icudata_version);
-  void (*ptr)(UCharIterator*, const char*, int32_t);
-  ptr = (void(*)(UCharIterator*, const char*, int32_t))syms[9];
-  ptr(iter, s, length);
-  return;
-}
-
 /* unicode/ucasemap.h */
 UCaseMap* lc_ucasemap_open(const char* locale, uint32_t options, UErrorCode* pErrorCode) {
   pthread_once(&once_control, &init_icudata_version);

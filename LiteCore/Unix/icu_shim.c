@@ -238,35 +238,6 @@ UCollationResult lc_ucol_strcoll(const UCollator* coll, const UChar* source, int
     #endif
 }
 
-LOCAL_INLINE
-UCollationResult lc_ucol_strcollIter(const UCollator* coll, UCharIterator* sIter, UCharIterator* tIter, UErrorCode* status) {
-  #ifdef CBL_USE_ICU_SHIM
-  pthread_once(&once_control, &init_icudata_version);
-  UCollationResult (*ptr)(const UCollator*, UCharIterator*, UCharIterator*, UErrorCode*);
-  if (syms[10] == NULL) {
-    *status = U_UNSUPPORTED_ERROR;
-    return (UCollationResult)0;
-  }
-  ptr = (UCollationResult(*)(const UCollator*, UCharIterator*, UCharIterator*, UErrorCode*))syms[10];
-  return ptr(coll, sIter, tIter, status);
-  #else
-  return ucol_strcollIter(coll, sIter, tIter, status);
-  #endif
-}
-
-/* unicode/uiter.h */
-LOCAL_INLINE
-void lc_uiter_setUTF8(UCharIterator* iter, const char* s, int32_t length) {
-  #ifdef CBL_USE_ICU_SHIM
-  pthread_once(&once_control, &init_icudata_version);
-  void (*ptr)(UCharIterator*, const char*, int32_t);
-  ptr = (void(*)(UCharIterator*, const char*, int32_t))syms[9];
-  ptr(iter, s, length);
-  #else
-  uiter_setUTF8(iter, s, length);
-  #endif
-}
-
 /* unicode/ucasemap.h */
 LOCAL_INLINE
 UCaseMap* lc_ucasemap_open(const char* locale, uint32_t options, UErrorCode* pErrorCode) {
