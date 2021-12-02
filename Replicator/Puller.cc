@@ -39,13 +39,15 @@ namespace litecore { namespace repl {
 
     Puller::Puller(Replicator *replicator)
     :Delegate(replicator, "Pull")
+#if __APPLE__
+    // This field must go before _revFinder because "this" is passed in "new RevFinder(replicator, this)," which will
+    // call this->mailboxForChildren() which depends on it.
+    ,_revMailbox(nullptr, "Puller revisions")
+#endif
     ,_inserter(new Inserter(replicator))
     ,_revFinder(new RevFinder(replicator, this))
     ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
     ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
-#if __APPLE__
-    ,_revMailbox(nullptr, "Puller revisions")
-#endif
     {
         _passive = _options.pull <= kC4Passive;
         registerHandler("rev",              &Puller::handleRev);
