@@ -30,8 +30,8 @@ using namespace litecore::blip;
 
 namespace litecore::repl {
 
-    RevFinder::RevFinder(Delegate *delegate)
-    :Worker(delegate, "RevFinder")
+    RevFinder::RevFinder(Replicator *replicator, Delegate *delegate)
+    :Worker(replicator, "RevFinder")
     ,_delegate(delegate)
     {
         _passive = _options.pull <= kC4Passive;
@@ -281,15 +281,9 @@ namespace litecore::repl {
                     logDebug("    - Already have '%.*s' %.*s but need to mark it as remote ancestor",
                              SPLAT(docID), SPLAT(revID));
                     _db->setDocRemoteAncestor(docID, revID);
-                    if (!_passive && !_db->usingVersionVectors()) {
-                        auto repl = replicatorIfAny();
-                        if(repl) {
-                            repl->docRemoteAncestorChanged(alloc_slice(docID),
-                                                                   alloc_slice(revID));
-                        } else {
-                            Warn("findRevs no longer has a replicator reference (replicator stopped?), ignoring docRemoteAncestorChange callback");
-                        }
-                    }
+                    if (!_passive && !_db->usingVersionVectors())
+                        replicator()->docRemoteAncestorChanged(alloc_slice(docID),
+                                                               alloc_slice(revID));
                 }
             }
         }
