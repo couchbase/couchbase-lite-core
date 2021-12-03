@@ -284,7 +284,7 @@ namespace litecore::repl {
                     if (!_passive && !_db->usingVersionVectors()) {
                         auto repl = replicatorIfAny();
                         if(repl) {
-                            replicator()->docRemoteAncestorChanged(alloc_slice(docID),
+                            repl->docRemoteAncestorChanged(alloc_slice(docID),
                                                                    alloc_slice(revID));
                         } else {
                             Warn("findRevs no longer has a replicator reference (replicator stopped?), ignoring docRemoteAncestorChange callback");
