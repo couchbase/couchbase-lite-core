@@ -85,17 +85,19 @@ namespace litecore { namespace repl {
         mutable std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRevs
         actor::ActorCountBatcher<Puller> _provisionallyHandledRevs;
         actor::ActorBatcher<Puller,IncomingRev> _returningRevs;
+#if __APPLE__
+        // This helps limit the number of threads used by GCD:
+        virtual actor::Mailbox* mailboxForChildren() override       {return &_revMailbox;}
+        // This field must go before _revFinder because "this" is passed in "new RevFinder(replicator, this)," which will
+        // call this->mailboxForChildren() which depends on it.
+        actor::Mailbox _revMailbox;
+#endif
         Retained<Inserter> _inserter;
         mutable Retained<RevFinder> _revFinder;
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
         unsigned _unfinishedIncomingRevs {0};
 
-#if __APPLE__
-        // This helps limit the number of threads used by GCD:
-        virtual actor::Mailbox* mailboxForChildren() override       {return &_revMailbox;}
-        actor::Mailbox _revMailbox;
-#endif
     };
 
 
