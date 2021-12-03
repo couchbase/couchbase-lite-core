@@ -287,7 +287,8 @@ namespace litecore::repl {
                             repl->docRemoteAncestorChanged(alloc_slice(docID),
                                                                    alloc_slice(revID));
                         } else {
-                            Warn("findRevs no longer has a replicator reference (replicator stopped?), ignoring docRemoteAncestorChange callback");
+                            Warn("findRevs no longer has a replicator reference (replicator stopped?), "
+                                 "ignoring docRemoteAncestorChange callback");
                         }
                     }
                 }
