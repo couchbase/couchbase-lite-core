@@ -707,6 +707,12 @@ namespace litecore {
             RevTree tree(rec.body, rec.extra, 0);
             auto current = tree.currentRevision();
 
+            if (remoteDBID == RevTree::kDefaultRemoteID && (rec.flags & DocumentFlags::kSynced)) {
+                // CBL-2579: Special case where the main remote DB is pending local update
+                // of its remote ancestor
+                tree.setLatestRevisionOnRemote(RevTree::kDefaultRemoteID, current);
+            }
+
             // Does it exist in the doc?
             if (const Rev *rev = tree[revID]) {
                 if (rev->isBodyAvailable())
