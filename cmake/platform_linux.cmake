@@ -57,7 +57,13 @@ endfunction()
 function(setup_litecore_build_linux)
     setup_litecore_build_unix()
 
-    if(NOT LITECORE_DISABLE_ICU)
+    if(LITECORE_DYNAMIC_ICU)
+        target_compile_definitions(
+            LiteCoreStatic PRIVATE
+            -DCBL_USE_ICU_SHIM
+            -DLITECORE_USES_ICU=1
+        )
+    elseif(NOT LITECORE_DISABLE_ICU)
         target_compile_definitions(
             LiteCoreStatic PRIVATE
             -DLITECORE_USES_ICU=1
@@ -66,11 +72,6 @@ function(setup_litecore_build_linux)
         target_link_libraries(
             LiteCoreStatic INTERFACE
             ${ICU_LIBS}
-        )
-    elseif(LITECORE_DYNAMIC_ICU)
-        target_compile_definitions(
-            LiteCoreStatic PRIVATE
-            -DCBL_USE_ICU_SHIM
         )
     endif()
 
