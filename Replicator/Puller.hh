@@ -88,6 +88,8 @@ namespace litecore { namespace repl {
 #if __APPLE__
         // This helps limit the number of threads used by GCD:
         virtual actor::Mailbox* mailboxForChildren() override       {return &_revMailbox;}
+        // This field must go before _revFinder because "this" is passed in "new RevFinder(replicator, this)," which will
+        // call this->mailboxForChildren() which depends on it.
         actor::Mailbox _revMailbox;
 #endif
         Retained<Inserter> _inserter;
