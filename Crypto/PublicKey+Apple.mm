@@ -342,7 +342,7 @@ namespace litecore { namespace crypto {
             };
             SecKeyRef publicKey, privateKey;
             ++gC4ExpectExceptions;
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 150000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 150000
             CFErrorRef error;
             privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
             if (!privateKey) {
@@ -370,7 +370,7 @@ namespace litecore { namespace crypto {
                               "SecTrustCreateWithCertificates", "Couldn't create trust to get public key");
                 
                 SecKeyRef publicKeyRef = NULL;
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 110000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 140000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 110000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 140000
                 if (@available(macOS 11.0, iOS 14.0, *)) {
                     publicKeyRef = SecTrustCopyKey(trustRef);
                 } else {
@@ -594,7 +594,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-#if TARGET_OS_MACCATALYST || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trustRef, &cferr))
@@ -611,7 +611,7 @@ namespace litecore { namespace crypto {
                           "Couldn't evaluate the trust to get certificate chain" );
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 150000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 150000
             if (@available(macOS 12.0, iOS 15.0, *)) {
                 CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
                 for (CFIndex i = 1; i < count; i++) {
@@ -663,7 +663,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-#if TARGET_OS_MACCATALYST || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trustRef, &cferr))
@@ -681,7 +681,7 @@ namespace litecore { namespace crypto {
             
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 150000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 150000
             if (@available(macOS 12.0, iOS 15.0, *)) {
                 CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
                 for (CFIndex i = count - 1; i >= 0; i--) {
@@ -753,7 +753,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result;
             OSStatus err;
-#if TARGET_OS_MACCATALYST || __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trust, &cferr))
@@ -773,7 +773,7 @@ namespace litecore { namespace crypto {
             
             Retained<Cert> root;
             CFIndex certCount = SecTrustGetCertificateCount(trust);
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 150000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 150000
             if (@available(macOS 12.0, iOS 15.0, *)) {
                 CFArrayRef certs = SecTrustCopyCertificateChain(trust);
                 for (CFIndex i = 1; i < certCount; ++i) {
