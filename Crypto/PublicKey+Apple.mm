@@ -594,7 +594,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 101400 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 120000
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trustRef, &cferr))
@@ -663,7 +663,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 101400 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 120000
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trustRef, &cferr))
@@ -753,7 +753,7 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result;
             OSStatus err;
-#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 101500 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000
+#if __MAC_OS_X_VERSION_MIN_ALLOWED >= 101400 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 120000
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trust, &cferr))
