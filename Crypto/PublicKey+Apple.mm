@@ -369,16 +369,16 @@ namespace litecore { namespace crypto {
                 checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
                               "SecTrustCreateWithCertificates", "Couldn't create trust to get public key");
                 
-                SecKeyRef publicKeyRef;
+                SecKeyRef publicKeyRef = NULL;
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 110000 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 140000
                 if (@available(macOS 11.0, iOS 14.0, *)) {
                     publicKeyRef = SecTrustCopyKey(trustRef);
-                } else
+                } else {
 #else
                 {
                     publicKeyRef = SecTrustCopyPublicKey(trustRef);
-                }
 #endif
+                }
                 
                 CFRelease(policyRef);
                 CFRelease(trustRef);
@@ -620,7 +620,7 @@ namespace litecore { namespace crypto {
                     cert->append(new Cert(slice(data)));
                 }
                 CFRelease(certs);
-            } else
+            } else {
 #else
             {
                 for (CFIndex i = 1; i < count; i++) {
@@ -628,8 +628,8 @@ namespace litecore { namespace crypto {
                     NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
                     cert->append(new Cert(slice(data)));
                 }
-            }
 #endif
+            }
             return cert;
         }
     }
@@ -697,7 +697,7 @@ namespace litecore { namespace crypto {
                     }
                 }
                 CFRelease(certs);
-            } else
+            } else {
 #else
             {
                 for (CFIndex i = count - 1; i >= 0; i--) {
@@ -712,8 +712,8 @@ namespace litecore { namespace crypto {
                                       "Couldn't delete a certificate from the Keychain");
                     }
                 }
-            }
 #endif
+            }
         }
     }
 
@@ -788,7 +788,7 @@ namespace litecore { namespace crypto {
                         root->append(cert);
                 }
                 CFRelease(certs);
-            } else
+            } else {
 #else
             {
                 for (CFIndex i = 1; i < certCount; ++i) {
@@ -802,8 +802,8 @@ namespace litecore { namespace crypto {
                     else
                         root->append(cert);
                 }
-            }
 #endif
+            }
             return root;
         }
     }
