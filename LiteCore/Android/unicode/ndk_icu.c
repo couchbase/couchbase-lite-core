@@ -25,6 +25,7 @@
 #include "unicode/utypes.h"
 #include "unicode/ucol.h"
 #include "unicode/ucasemap.h"
+#include "icu_shim.h"
 
 /* Allowed version number ranges between [44, 999].
  * 44 is the minimum supported ICU version that was shipped in
