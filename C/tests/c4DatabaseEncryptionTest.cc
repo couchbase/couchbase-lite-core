@@ -42,16 +42,30 @@ public:
 
 
 TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
-    C4EncryptionKey key = {};
-    {
-        ExpectingExceptions x;
-        REQUIRE(!c4key_setPassword(&key, nullslice, kC4EncryptionAES256));
-        REQUIRE(!c4key_setPassword(&key, "password123"_sl, kC4EncryptionNone));
+    SECTION("SHA256") {
+        C4EncryptionKey key = {};
+        {
+            ExpectingExceptions x;
+            REQUIRE(!c4key_setPassword(&key, nullslice, kC4EncryptionAES256));
+            REQUIRE(!c4key_setPassword(&key, "password123"_sl, kC4EncryptionNone));
+        }
+        REQUIRE(c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256));
+        CHECK(key.algorithm == kC4EncryptionAES256);
+        CHECK(slice(key.bytes, sizeof(key.bytes)).hexString() ==
+              "ad3470ce03363552b20a4a70a4aec02cb7439f6202e75b231ab57f2d5e716909");
     }
-    REQUIRE(c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256));
-    CHECK(key.algorithm == kC4EncryptionAES256);
-    CHECK(slice(key.bytes, sizeof(key.bytes)).hexString() ==
-          "ad3470ce03363552b20a4a70a4aec02cb7439f6202e75b231ab57f2d5e716909");
+    SECTION("SHA1") {
+        uint8_t sha1key[32];
+        size_t  len = 0;
+
+        REQUIRE(!c4key_setPasswordSHA1(sha1key, &len, nullslice));
+        len = 0;
+        REQUIRE(!c4key_setPasswordSHA1(sha1key, &len, "password123"_sl));
+        REQUIRE(len == 32);
+        REQUIRE(c4key_setPasswordSHA1(sha1key, &len, "password123"_sl));
+        CHECK(slice(sha1key, 32).hexString() ==
+              "7ecec9cc8d4efbebcbf537a3169f61d9db05971a9fec9761ff37fdb1f09f862d");
+    }
 }
 
 N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encryption][C]") {

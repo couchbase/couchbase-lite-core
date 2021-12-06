@@ -75,6 +75,18 @@ namespace litecore {
     }
 
 
+    bool DeriveKeyFromPasswordSHA1(slice password,
+                                   void *outKey,
+                                   size_t keyLength)
+    {
+        int status = CCKeyDerivationPBKDF(kCCPBKDF2,
+                                          (const char*)password.buf, password.size,
+                                          (const uint8_t*)kPBKDFSalt.buf, kPBKDFSalt.size,
+                                          kCCPRFHmacAlgSHA1,
+                                          kPBKDFRounds,
+                                          (uint8_t*)outKey, keyLength);
+        return (status == noErr);
+    }
 #else
 
     // Cross-platform implementation using mbedTLS library:
@@ -132,6 +144,28 @@ namespace litecore {
                                size_t keyLength)
     {
         const mbedtls_md_info_t *digestType = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+        if (!digestType)
+            return false;
+        mbedtls_md_context_t ctx;
+        mbedtls_md_init(&ctx);
+        int status = mbedtls_md_setup(&ctx, digestType, 1);
+        if (status != 0)
+            return false;
+        status = mbedtls_pkcs5_pbkdf2_hmac(&ctx,
+                                       (const unsigned char*)password.buf, password.size,
+                                       (const unsigned char*)kPBKDFSalt.buf, kPBKDFSalt.size,
+                                       kPBKDFRounds,
+                                       (int)keyLength, (unsigned char*)outKey);
+        mbedtls_md_free(&ctx);
+        return (status == 0);
+    }
+
+
+    bool DeriveKeyFromPasswordSHA1(slice password,
+                                   void *outKey,
+                                   size_t keyLength)
+    {
+        const mbedtls_md_info_t *digestType = mbedtls_md_info_from_type(MBEDTLS_MD_SHA1);
         if (!digestType)
             return false;
         mbedtls_md_context_t ctx;
