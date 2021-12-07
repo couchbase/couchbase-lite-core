@@ -17,7 +17,6 @@
 #include "c4IndexTypes.h"
 #include "c4QueryTypes.h"
 #include "function_ref.hh"
-#include <array>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -39,7 +38,8 @@ C4EncryptionKey C4EncryptionKeyFromPassword(fleece::slice password,
                                             C4EncryptionAlgorithm = kC4EncryptionAES256);
 
 /// Derives an encryption key from a user-entered password with SHA1 as the hashing function
-std::array<uint8_t,32> C4EncryptionKeyFromPasswordSHA1(fleece::slice password);
+C4EncryptionKey C4EncryptionKeyFromPasswordSHA1(fleece::slice password,
+                                                C4EncryptionAlgorithm = kC4EncryptionAES256);
 
 /// A LiteCore database connection.
 struct C4Database : public fleece::RefCounted,

@@ -25,7 +25,6 @@
 #include "c4.h"
 #include "c4Private.h"
 #include "Delimiter.hh"
-#include <algorithm>
 #include <sstream>
 
 using namespace std;
@@ -421,15 +420,9 @@ bool c4key_setPassword(C4EncryptionKey *outKey, C4String password, C4EncryptionA
 }
 
 
-bool c4key_setPasswordSHA1(uint8_t outKey[], size_t* keyLength, C4String password) noexcept {
-    if (*keyLength < 32) {
-        *keyLength = 32;
-        return false;
-    }
+bool c4key_setPasswordSHA1(C4EncryptionKey *outKey, C4String password, C4EncryptionAlgorithm alg) noexcept {
     return tryCatch(nullptr, [=] {
-        *keyLength = 32;
-        std::array<uint8_t,32> key = C4EncryptionKeyFromPasswordSHA1(password);
-        std::copy(key.begin(), key.end(), outKey);
+        *outKey = C4EncryptionKeyFromPasswordSHA1(password, alg);
     });
 }
 

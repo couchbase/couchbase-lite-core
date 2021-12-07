@@ -54,11 +54,13 @@ C4EncryptionKey C4EncryptionKeyFromPassword(slice password, C4EncryptionAlgorith
     return key;
 }
 
-std::array<uint8_t,32> C4EncryptionKeyFromPasswordSHA1(fleece::slice password) {
-    std::array<uint8_t,32> key{};
+C4EncryptionKey C4EncryptionKeyFromPasswordSHA1(slice password, C4EncryptionAlgorithm alg) {
+    C4EncryptionKey key;
     AssertParam(password.size > 0, "Password is empty");
-    if (!litecore::DeriveKeyFromPasswordSHA1(password, key.data(), key.size()))
-        C4Error::raise(LiteCoreDomain, kC4ErrorCrypto, "SHA1 Key derivation failed");
+    AssertParam(alg == kC4EncryptionAES256, "Invalid encryption algorithm");
+    if (!litecore::DeriveKeyFromPasswordSHA1(password, key.bytes, kEncryptionKeySize[alg]))
+        C4Error::raise(LiteCoreDomain, kC4ErrorCrypto, "Key derivation failed");
+    key.algorithm = alg;
     return key;
 }
 
