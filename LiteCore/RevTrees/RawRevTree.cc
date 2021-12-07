@@ -29,6 +29,29 @@ namespace litecore {
 #pragma pack()
 
 
+    bool RawRevision::isRevTree(slice raw_tree) {
+        // The data cannot be shorter than a single revision:
+        if (raw_tree.size < sizeof(RawRevision))
+            return false;
+        // Data must end with a 32-bit 0:
+        auto end = (const void*)offsetby(raw_tree.end(), -int(sizeof(uint32_t)));
+        uint32_t ending;
+        memcpy(&ending, end, sizeof(ending));
+        if (ending != 0)
+            return false;
+        // Check each revision:
+        const RawRevision *next;
+        for (auto rawRev = (const RawRevision*)raw_tree.buf; rawRev < end; rawRev = next) {
+            next = rawRev->next();
+            // Rev can't be too short for data, or extend past end of data:...
+            if (next > end || next <= (void*)&rawRev->revID[rawRev->revIDLen])
+                return false;
+        }
+        return true;
+    }
+
+
+
     std::deque<Rev> RawRevision::decodeTree(slice raw_tree,
                                             RevTree::RemoteRevMap &remoteMap,
                                             RevTree* owner,

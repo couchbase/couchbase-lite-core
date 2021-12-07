@@ -30,6 +30,11 @@ namespace litecore {
     // revision is the current one for every remote database.
     class RawRevision {
     public:
+        /// Safe, quick check to determine if data is in rev-tree format.
+        /// This can be used to distinguish a v2.x 'body' column, which is a rev-tree,
+        /// from v3.x where it's Fleece (and the rev-tree is in 'extra'.)
+        static bool isRevTree(slice raw_tree);
+
         static std::deque<Rev> decodeTree(slice raw_tree,
                                           RevTree::RemoteRevMap &remoteMap,
                                           RevTree *owner NONNULL,
@@ -37,6 +42,11 @@ namespace litecore {
 
         static alloc_slice encodeTree(const std::vector<Rev*> &revs,
                                       const RevTree::RemoteRevMap &remoteMap);
+
+        static inline slice getCurrentRevBody(slice raw_tree) noexcept {
+            auto rawRev = (const RawRevision*)raw_tree.buf;
+            return rawRev->body();
+        }
 
     private:
         static const uint16_t kNoParent = UINT16_MAX;
@@ -56,7 +66,7 @@ namespace litecore {
         // These follow the revID:
         // varint       sequence
         // if HasData flag:
-        //    char      data[];         // Contains the revision body (JSON)
+        //    char      data[];         // Contains the revision body (Fleece)
 
         bool isValid() const {
             return size_BE != 0;
