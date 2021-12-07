@@ -18,7 +18,7 @@ CMAKE_OPTS="$CMAKE_OPTS \
             -DENABLE_PROGRAMS=0 \
             -DENABLE_TESTING=0"
 
-if [[ "$CONFIGURATION" == "Release*" ]]
+if [[ "$CONFIGURATION" == Release* ]]
 then
     CMAKE_OPTS="$CMAKE_OPTS -DCMAKE_BUILD_TYPE=RelWithDebInfo"
 else
