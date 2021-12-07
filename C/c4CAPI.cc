@@ -420,6 +420,13 @@ bool c4key_setPassword(C4EncryptionKey *outKey, C4String password, C4EncryptionA
 }
 
 
+bool c4key_setPasswordSHA1(C4EncryptionKey *outKey, C4String password, C4EncryptionAlgorithm alg) noexcept {
+    return tryCatch(nullptr, [=] {
+        *outKey = C4EncryptionKeyFromPasswordSHA1(password, alg);
+    });
+}
+
+
 C4Database* c4db_openNamed(C4String name,
                            const C4DatabaseConfig2 *config,
                            C4Error *outError) noexcept

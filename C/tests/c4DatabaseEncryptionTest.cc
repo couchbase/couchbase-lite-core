@@ -42,16 +42,25 @@ public:
 
 
 TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
-    C4EncryptionKey key = {};
-    {
-        ExpectingExceptions x;
-        REQUIRE(!c4key_setPassword(&key, nullslice, kC4EncryptionAES256));
-        REQUIRE(!c4key_setPassword(&key, "password123"_sl, kC4EncryptionNone));
+    bool (*c4key_setPasswordFunc)(C4EncryptionKey *encryptionKey,
+                                  C4String password,
+                                  C4EncryptionAlgorithm alg) = nullptr;
+    string expectedKey;
+    C4EncryptionKey key {};
+    SECTION("SHA256") {
+        c4key_setPasswordFunc = c4key_setPassword;
+        expectedKey = "ad3470ce03363552b20a4a70a4aec02cb7439f6202e75b231ab57f2d5e716909";
     }
-    REQUIRE(c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256));
+    SECTION("SHA1") {
+        c4key_setPasswordFunc = c4key_setPasswordSHA1;
+        expectedKey = "7ecec9cc8d4efbebcbf537a3169f61d9db05971a9fec9761ff37fdb1f09f862d";
+    }
+    REQUIRE(!(*c4key_setPasswordFunc)(&key, nullslice, kC4EncryptionAES256));
+    REQUIRE(!(*c4key_setPasswordFunc)(&key, "password123"_sl, kC4EncryptionNone));
+    key = {};
+    REQUIRE((*c4key_setPasswordFunc)(&key, "password123"_sl, kC4EncryptionAES256));
     CHECK(key.algorithm == kC4EncryptionAES256);
-    CHECK(slice(key.bytes, sizeof(key.bytes)).hexString() ==
-          "ad3470ce03363552b20a4a70a4aec02cb7439f6202e75b231ab57f2d5e716909");
+    CHECK(slice(key.bytes, sizeof(key.bytes)).hexString() == expectedKey);
 }
 
 N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encryption][C]") {

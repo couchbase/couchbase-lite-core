@@ -32,4 +32,8 @@ namespace litecore {
                                void *outKey,
                                size_t keyLength);
 
+    /** Converts a password string into a key using PBKDF2 and SHA1 as the hashing function. */
+    bool DeriveKeyFromPasswordSHA1(slice password,
+                                   void *outKey,
+                                   size_t keyLength);
 }

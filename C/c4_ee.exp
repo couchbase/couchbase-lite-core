@@ -339,6 +339,7 @@ _c4error_getDescription
 _c4error_getDescriptionC
 
 _c4key_setPassword
+_c4key_setPasswordSHA1
 
 _c4db_getDefaultCollection
 _c4db_hasCollection

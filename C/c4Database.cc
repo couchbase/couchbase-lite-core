@@ -54,6 +54,15 @@ C4EncryptionKey C4EncryptionKeyFromPassword(slice password, C4EncryptionAlgorith
     return key;
 }
 
+C4EncryptionKey C4EncryptionKeyFromPasswordSHA1(slice password, C4EncryptionAlgorithm alg) {
+    C4EncryptionKey key;
+    AssertParam(password.size > 0, "Password is empty");
+    AssertParam(alg == kC4EncryptionAES256, "Invalid encryption algorithm");
+    if (!litecore::DeriveKeyFromPasswordSHA1(password, key.bytes, kEncryptionKeySize[alg]))
+        C4Error::raise(LiteCoreDomain, kC4ErrorCrypto, "Key derivation failed");
+    key.algorithm = alg;
+    return key;
+}
 
 #pragma mark - STATIC LIFECYCLE METHODS:
 

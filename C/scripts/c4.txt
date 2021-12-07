@@ -307,6 +307,7 @@ c4error_getDescription
 c4error_getDescriptionC
 
 c4key_setPassword
+c4key_setPasswordSHA1
 
 # COLLECTION API:
 c4db_getDefaultCollection

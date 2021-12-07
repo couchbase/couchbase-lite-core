@@ -339,6 +339,7 @@ CBL {
 		c4error_getDescriptionC;
 
 		c4key_setPassword;
+		c4key_setPasswordSHA1;
 
 		c4db_getDefaultCollection;
 		c4db_hasCollection;

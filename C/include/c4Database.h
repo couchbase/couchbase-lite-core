@@ -36,17 +36,16 @@ C4API_BEGIN_DECLS
                            C4String password,
                            C4EncryptionAlgorithm alg) C4API;
 
-
     /** Stores a password into a C4EncryptionKey, by using the key-derivation algorithm PBKDF2
-        to securely convert the password into a raw binary key.
+        to securely convert the password into a raw binary key. Uses SHA1 for the hashing function
+        as employed by PBKDF2.
         @param encryptionKey  The raw key will be stored here.
         @param password  The password string.
         @param alg  The encryption algorithm to use. Must not be kC4EncryptionNone.
         @return  True on success, false on failure */
-    bool c4key_setPassword(C4EncryptionKey *encryptionKey,
-                           C4String password,
-                           C4EncryptionAlgorithm alg) C4API;
-
+    bool c4key_setPasswordSHA1(C4EncryptionKey *encryptionKey,
+                               C4String password,
+                               C4EncryptionAlgorithm alg) C4API;
 
     /** @} */
 
