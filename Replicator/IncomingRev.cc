@@ -39,7 +39,7 @@ namespace litecore { namespace repl {
     ,_puller(puller)
     {
         _passive = _options.pull <= kC4Passive;
-        _important = false;
+        _importance = false;
         static atomic<uint32_t> sRevSignpostCount {0};
         _serialNumber = ++sRevSignpostCount;
     }
@@ -372,8 +372,8 @@ namespace litecore { namespace repl {
     }
 
 
-    int IncomingRev::progressNotificationLevel() const {
-        return _puller ? _puller->progressNotificationLevel() : 0;
+    C4ReplicatorProgressLevel IncomingRev::progressNotificationLevel() const {
+        return _puller ? _puller->progressNotificationLevel() : kC4ReplProgressOverall;
     }
 
 

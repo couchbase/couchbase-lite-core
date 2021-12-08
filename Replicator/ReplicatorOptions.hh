@@ -74,12 +74,12 @@ namespace litecore { namespace repl {
         bool skipDeleted() const  {return boolProperty(kC4ReplicatorOptionSkipDeleted);}
         bool noIncomingConflicts() const  {return boolProperty(kC4ReplicatorOptionNoIncomingConflicts);}
         bool noOutgoingConflicts() const  {return boolProperty(kC4ReplicatorOptionNoIncomingConflicts);}
-        int progressLevel() const  {
-            if(properties[kC4ReplicatorOptionProgressLevel]) {
+        C4ReplicatorProgressLevel progressLevel() const  {
+            auto value = properties[kC4ReplicatorOptionProgressLevel];
+            if (value) {
                 C4Warn("Passing in progress level via configuration is deprecated; use the setProgressLevel API");
             }
-
-            return (int)properties[kC4ReplicatorOptionProgressLevel].asInt();
+            return (C4ReplicatorProgressLevel)value.asInt();
         }
 
         bool disableDeltaSupport() const {return boolProperty(kC4ReplicatorOptionDisableDeltas);}

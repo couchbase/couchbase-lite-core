@@ -78,7 +78,7 @@ namespace litecore { namespace repl {
     {
         _loggingID = string(db->getPath()) + " " + _loggingID;
         _passive = _options.pull <= kC4Passive && _options.push <= kC4Passive;
-        _important = 2;
+        _importance = 2;
 
         logInfo("%s", string(options).c_str());
 

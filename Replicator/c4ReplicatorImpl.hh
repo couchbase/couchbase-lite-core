@@ -177,7 +177,7 @@ namespace litecore {
             LOCK(_mutex);
             _options.properties = properties;
             if(properties[kC4ReplicatorOptionProgressLevel]) {
-                _progressLevel = static_cast<C4ReplicatorProgressLevel>(_options.progressLevel());
+                _progressLevel = _options.progressLevel();
             }
         }
 
@@ -200,7 +200,7 @@ namespace litecore {
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override {
             _progressLevel = level;
             if(_replicator) {
-                _replicator->setProgressNotificationLevel(static_cast<int>(level));
+                _replicator->setProgressNotificationLevel(level);
             } else {
                 logVerbose("Replicator not yet created, saving progress level value for later...");
             }
@@ -311,7 +311,7 @@ namespace litecore {
                     _replicator = nullptr;
                     return false;
                 }
-                _replicator->setProgressNotificationLevel(static_cast<int>(_progressLevel));
+                _replicator->setProgressNotificationLevel(_progressLevel);
             }
 
             setStatusFlag(kC4Suspended, false);

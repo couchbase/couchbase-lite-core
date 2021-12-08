@@ -213,7 +213,7 @@ C4API_BEGIN_DECLS
     #define kC4ReplicatorOptionNoIncomingConflicts "noIncomingConflicts" ///< Reject incoming conflicts (bool)
     #define kC4ReplicatorCheckpointInterval     "checkpointInterval" ///< How often to checkpoint, in seconds (number)
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" ///< Stable ID for remote db with unstable URL (string)
-    #define kC4ReplicatorOptionProgressLevel    "progress"  ///< If >=1, notify on every doc; if >=2, on every attachment (int)
+    #define kC4ReplicatorOptionProgressLevel    "progress"  ///< (C4ReplicatorProgressLevel)
     #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
     #define kC4ReplicatorOptionDisablePropertyDecryption "noDecryption" ///< Disables property decryption (bool)
     #define kC4ReplicatorOptionMaxRetries       "maxRetries" ///< Max number of retry attempts (int)

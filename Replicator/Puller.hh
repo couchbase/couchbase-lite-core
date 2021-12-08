@@ -41,7 +41,7 @@ namespace litecore { namespace repl {
 
         void insertRevision(RevToInsert *rev NONNULL);
 
-        int progressNotificationLevel() const override;
+        C4ReplicatorProgressLevel progressNotificationLevel() const override;
 
     protected:
         virtual void caughtUp() override        {enqueue(FUNCTION_TO_QUEUE(Puller::_setCaughtUp));}

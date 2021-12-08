@@ -97,7 +97,7 @@ namespace litecore { namespace repl {
 
 
     Worker::~Worker() {
-        if (_important)
+        if (_importance)
             logStats();
         logDebug("destructing (%p); actorName='%s'", this, actorName().c_str());
     }
@@ -257,7 +257,7 @@ namespace litecore { namespace repl {
         }
     }
 
-    void Worker::setProgressNotificationLevel(int level) {
+    void Worker::setProgressNotificationLevel(C4ReplicatorProgressLevel level) {
         if(_progressNotificationLevel.exchange(level) != level) {
             logVerbose("Set progress notification level to %d", level);
         }
@@ -277,7 +277,7 @@ namespace litecore { namespace repl {
 
         bool changed = _statusChanged;
         _statusChanged = false;
-        if (changed && _important) {
+        if (changed && _importance) {
             logVerbose("progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64 " / %" PRIu64 ", %" PRIu64 " docs",
                        _status.progressDelta.unitsCompleted, _status.progressDelta.unitsTotal,
                        _status.progressDelta.documentCount,
@@ -289,9 +289,9 @@ namespace litecore { namespace repl {
         if (newLevel != _status.level) {
             _status.level = newLevel;
             changed = true;
-            if (_important) {
+            if (_importance) {
                 auto name = kC4ReplicatorActivityLevelNames[newLevel];
-                if (_important > 1)
+                if (_importance > 1)
                     logInfo("now %-s", name);
                 else
                     logVerbose("now %-s", name);

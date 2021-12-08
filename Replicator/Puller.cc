@@ -336,9 +336,9 @@ namespace litecore { namespace repl {
 
 #pragma mark - STATUS / PROGRESS:
 
-    int Puller::progressNotificationLevel() const {
+    C4ReplicatorProgressLevel Puller::progressNotificationLevel() const {
         const auto repl = const_cast<Puller*>(this)->replicatorIfAny();
-        return repl ? repl->progressNotificationLevel() : 0;
+        return repl ? repl->progressNotificationLevel() : kC4ReplProgressOverall;
     }
 
 

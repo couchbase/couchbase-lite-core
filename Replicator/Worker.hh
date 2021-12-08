@@ -29,7 +29,13 @@ namespace litecore { namespace repl {
 
     extern LogDomain SyncBusyLog;
 
-    /** Abstract base class of Actors used by the replicator */
+    /** Abstract base class of Actors used by the replicator, including `Replicator` itself.
+        It provides:
+        - Access to the replicator options, the database, and the BLIP connection.
+        - A tree structure, via a `_parent` reference. Parents aggregate progress of children.
+        - Progress, status, and error tracking. Changes are detected at the end of every Actor
+          event and propagated to the parent, which aggregates them together with its own.
+        - Some BLIP convenience methods for registering handlers and sending messages. */
     class Worker : public actor::Actor, public fleece::InstanceCountedIn<Worker> {
     public:
         
@@ -45,50 +51,93 @@ namespace litecore { namespace repl {
             C4Progress progressDelta;
         };
 
-        virtual Retained<Replicator> replicatorIfAny();     // may return null
-        Retained<Replicator> replicator();                  // throws rather than return null
+        /// The Replicator at the top of the tree.
+        /// Returns NULL if this Worker has stopped and discarded its parent link.
+        /// Otherwise, the Replicator will remain alive at least until the Retained value returned
+        /// by this method exits scope.
+        virtual Retained<Replicator> replicatorIfAny();
 
+        /// The Replicator at the top of the tree. Never NULL.
+        /// @warning Throws rather than returning NULL.
+        Retained<Replicator> replicator();
+
+        /// True if the replicator is passive (run by the listener.)
         bool passive() const                                {return _passive;}
 
-        /** Called by the Replicator when the BLIP connection closes. */
+        /// Called by the Replicator on its direct children when the BLIP connection closes.
         void connectionClosed() {
             enqueue(FUNCTION_TO_QUEUE(Worker::_connectionClosed));
         }
 
-        /** Called by child actors when their status changes. */
+        /// Child workers call this on their parent when their status changes.
         void childChangedStatus(Worker *task, const Status &status) {
             enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), task, status);
         }
 
         // Tech Debt: Where is the line between worker and replicator?
-        // Also, this level should be an enum
-        virtual int progressNotificationLevel() const   {return _progressNotificationLevel;}
-        void setProgressNotificationLevel(int level);
+        virtual C4ReplicatorProgressLevel progressNotificationLevel() const {
+            return _progressNotificationLevel;
+        }
+        void setProgressNotificationLevel(C4ReplicatorProgressLevel);
 
 #if !DEBUG
     protected:
 #endif
+        /// True if there is a BLIP connection.
         bool connected() const                          {return _connection != nullptr;}
+
+        /// The BLIP connection. Throws if there isn't one.
         blip::Connection& connection() const            {Assert(_connection); return *_connection;}
 
     protected:
+        /// Designated constructor.
+        /// @param connection  The BLIP connection.
+        /// @param parent  The Worker that owns this one.
+        /// @param options  The replicator options.
+        /// @param db  Shared object providing thread-safe access to the C4Database.
+        /// @param namePrefix  Prepended to the Actor name.
         Worker(blip::Connection *connection NONNULL,
                Worker *parent,
                const Options &options,
-               std::shared_ptr<DBAccess>,
+               std::shared_ptr<DBAccess> db,
                const char *namePrefix NONNULL);
 
+        /// Simplified constructor. Gets the other parameters from the parent object.
         Worker(Worker *parent NONNULL, const char *namePrefix NONNULL);
 
-        ~Worker();
+        virtual ~Worker();
 
-        virtual std::string loggingClassName() const override;
-
+        /// Override to specify an Actor mailbox that all children of this Worker should use.
+        /// On Apple platforms, a mailbox is a GCD queue, so this reduces the number of queues.
         virtual actor::Mailbox* mailboxForChildren() {
             return _parent ? _parent->mailboxForChildren() : nullptr;
         }
 
-        /** Registers a callback to run when a BLIP request with the given profile arrives. */
+        // overrides:
+        virtual std::string loggingClassName() const override;
+        virtual std::string loggingIdentifier() const override {return _loggingID;}
+        virtual void afterEvent() override;
+        virtual void caughtException(const std::exception &x) override;
+
+#pragma mark - BLIP:
+
+        /// True if the WebSocket connection is open and acting as a client (active).
+        bool isOpenClient() const               {return _connection &&
+                                                 _connection->role() == websocket::Role::Client;}
+        /// True if the WebSocket connection is open and acting as a server (passive).
+        bool isOpenServer() const               {return _connection &&
+                                                 _connection->role() == websocket::Role::Server;}
+        /// True if the replicator is continuous.
+        bool isContinuous() const               {return _options.push == kC4Continuous
+                                                     || _options.pull == kC4Continuous;}
+
+        /// Implementation of public `connectionClosed`. May be overridden, but call super.
+        virtual void _connectionClosed() {
+            logDebug("connectionClosed");
+            _connection = nullptr;
+        }
+
+        /// Registers a method to run when a BLIP request with the given profile arrives.
         template <class ACTOR>
         void registerHandler(const char *profile NONNULL,
                              void (ACTOR::*method)(Retained<blip::MessageIn>)) {
@@ -97,63 +146,74 @@ namespace litecore { namespace repl {
             _connection->setRequestHandler(profile, false, asynchronize(profile, fn));
         }
 
-        /** Implementation of connectionClosed(). May be overridden, but call super. */
-        virtual void _connectionClosed() {
-            logDebug("connectionClosed");
-            _connection = nullptr;
-        }
-
-        /** Convenience to send a BLIP request. */
+        /// Sends a BLIP request. Increments `_pendingResponseCount` until the response is
+        /// complete, keeping this Worker in the busy state.
         void sendRequest(blip::MessageBuilder& builder,
                          blip::MessageProgressCallback onProgress = nullptr);
 
-        void gotError(const blip::MessageIn* NONNULL);
-        void gotError(C4Error) ;
-        virtual void onError(C4Error);         // don't call this, but you can override
-
-        /** Report less-serious errors that affect a document but don't stop replication. */
-        virtual void finishedDocumentWithError(ReplicatedRev* NONNULL, C4Error, bool transientErr);
-
-        void finishedDocument(ReplicatedRev*);
-
-        static blip::ErrorBuf c4ToBLIPError(C4Error);
-        static C4Error blipToC4Error(const blip::Error&);
-
-        static inline bool isNotFoundError(C4Error err) {
-            return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
-        }
-
-        bool isOpenClient() const               {return _connection && _connection->role() == websocket::Role::Client;}
-        bool isOpenServer() const               {return _connection && _connection->role() == websocket::Role::Server;}
-        bool isContinuous() const               {return _options.push == kC4Continuous
-                                                     || _options.pull == kC4Continuous;}
-        const Status& status() const            {return _status;}
-        virtual ActivityLevel computeActivityLevel() const;
-        virtual void changedStatus();
-        void addProgress(C4Progress);
-        void setProgress(C4Progress);
-
-        virtual void _childChangedStatus(Worker *task, Status) { }
-
-        virtual void afterEvent() override;
-        virtual void caughtException(const std::exception &x) override;
-
-        virtual std::string loggingIdentifier() const override {return _loggingID;}
+        /// The number of BLIP responses I'm waiting for.
         int pendingResponseCount() const        {return _pendingResponseCount;}
 
-        Options _options;
-        Retained<Worker> _parent;
-        std::shared_ptr<DBAccess> _db;
-        uint8_t _important {1};
-        bool _passive {false};
-        std::string _loggingID;
+#pragma mark - ERRORS:
 
+        /// Logs the message's error and calls `onError`.
+        void gotError(const blip::MessageIn* NONNULL);
+        /// Logs a fatal error and calls `onError`.
+        void gotError(C4Error);
+
+        /// Sets my status's `error` property. Call `gotError` instead, but you can override.
+        virtual void onError(C4Error);
+
+        /// Reports a less-serious error that affects a document but doesn't stop replication.
+        virtual void finishedDocumentWithError(ReplicatedRev* NONNULL, C4Error, bool transientErr);
+
+        /// Reports that a document has been completed.
+        void finishedDocument(ReplicatedRev*);
+
+        /// Static utility to convert LiteCore --> BLIP errors.
+        static blip::ErrorBuf c4ToBLIPError(C4Error);
+        /// Static utility to convert BLIP --> LiteCore errors.
+        static C4Error blipToC4Error(const blip::Error&);
+
+#pragma mark - STATUS & PROGRESS:
+
+        /// My current status.
+        const Status& status() const            {return _status;}
+
+        /// Called by `afterEvent` if my status has changed.
+        /// Default implementation calls the parent's `childChangedStatus`,
+        /// then if status is `kC4Stopped`, clears the parent pointer.
+        virtual void changedStatus();
+
+        /// Implementation of public `childChangedStatus`; called on this Actor's thread.
+        /// Does nothing, but you can override.
+        virtual void _childChangedStatus(Worker *task, Status) { }
+
+        /// Adds the counts in the given struct to my status's progress.
+        void addProgress(C4Progress);
+        /// Directly sets my status's progress counts.
+        void setProgress(C4Progress);
+
+        /// Determines whether I'm stopped/idle/busy.
+        /// Called after every event, to update `_status.level`.
+        /// The default implementation returns `kC4Busy` if there are pending BLIP responses,
+        /// or this Actor has pending events in its queue, else `kC4Idle`.
+        virtual ActivityLevel computeActivityLevel() const;
+
+#pragma mark - INSTANCE DATA:
+    protected:
+        Options                     _options;                   // The replicator options
+        Retained<Worker>            _parent;                    // Worker that owns me
+        std::shared_ptr<DBAccess>   _db;                        // Database
+        std::string                 _loggingID;                 // My name in the log
+        uint8_t                     _importance {1};            // Higher values log more
+        bool                        _passive {false};           // Part of a server-side replicator?
     private:
-        Retained<blip::Connection> _connection;
-        int _pendingResponseCount {0};
-        std::atomic_int _progressNotificationLevel;
-        Status _status {kC4Idle};
-        bool _statusChanged {false};
+        Retained<blip::Connection>  _connection;                // BLIP connection
+        int                         _pendingResponseCount {0};  // # of responses I'm awaiting
+        std::atomic<C4ReplicatorProgressLevel> _progressNotificationLevel; // What types of progress to notify
+        Status                      _status {kC4Idle};          // My status
+        bool                        _statusChanged {false};     // Status changed during this event
     };
 
 } }

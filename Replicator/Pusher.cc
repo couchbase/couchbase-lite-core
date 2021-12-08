@@ -524,9 +524,9 @@ namespace litecore { namespace repl {
 #pragma mark - PROGRESS:
 
 
-    int Pusher::progressNotificationLevel() const {
+    C4ReplicatorProgressLevel Pusher::progressNotificationLevel() const {
         const auto repl = const_cast<Pusher*>(this)->replicatorIfAny();
-        return repl ? repl->progressNotificationLevel() : 0;
+        return repl ? repl->progressNotificationLevel() : kC4ReplProgressOverall;
     }
 
 
