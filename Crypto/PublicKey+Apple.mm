@@ -359,7 +359,12 @@ namespace litecore { namespace crypto {
                 SecPolicyRef policyRef = SecPolicyCreateBasicX509();
                 checkOSStatus(SecTrustCreateWithCertificates(certRef, policyRef, &trustRef),
                               "SecTrustCreateWithCertificates", "Couldn't create trust to get public key");
-                SecKeyRef publicKeyRef = SecTrustCopyPublicKey(trustRef);
+                SecKeyRef publicKeyRef = NULL;
+                if (@available(macOS 11.0, iOS 14.0, *)) {
+                    publicKeyRef = SecTrustCopyKey(trustRef);
+                } else {
+                    publicKeyRef = SecTrustCopyPublicKey(trustRef);
+                }
                 CFRelease(policyRef);
                 CFRelease(trustRef);
                 
@@ -574,19 +579,19 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-#if TARGET_OS_MACCATALYST
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trustRef, &cferr))
                     warnCFError(cferr, "SecTrustEvaluateWithError");
                 err = SecTrustGetTrustResult(trustRef, &result);
             } else {
-                LogError(TLSLogDomain, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
-                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
-            }
+#if TARGET_OS_MACCATALYST
+                LogError(TLSLogDomain, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14, iOS < 12");
+                error::_throw(error::UnsupportedOperation, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14, iOS < 12");
 #else
-            err = SecTrustEvaluate(trustRef, &result);
+                err = SecTrustEvaluate(trustRef, &result);
 #endif
+            }
             checkOSStatus(err, "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain" );
             CFIndex count = SecTrustGetCertificateCount(trustRef);
@@ -630,19 +635,20 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result; // Result will be ignored.
             OSStatus err;
-#if TARGET_OS_MACCATALYST
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trustRef, &cferr))
                     warnCFError(cferr, "SecTrustEvaluateWithError");
                 err = SecTrustGetTrustResult(trustRef, &result);
             } else {
-                LogError(TLSLogDomain, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
-                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
-            }
+#if TARGET_OS_MACCATALYST
+                LogError(TLSLogDomain, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14 and iOS < 12");
+                error::_throw(error::UnsupportedOperation, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14 and iOS < 12");
 #else
-            err = SecTrustEvaluate(trustRef, &result);
+                err = SecTrustEvaluate(trustRef, &result);
 #endif
+            }
+
             checkOSStatus(err, "SecTrustEvaluate",
                           "Couldn't evaluate the trust to get certificate chain");
             
@@ -699,19 +705,20 @@ namespace litecore { namespace crypto {
             
             SecTrustResultType result;
             OSStatus err;
-#if TARGET_OS_MACCATALYST
+
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
                 if (!SecTrustEvaluateWithError(trust, &cferr))
                     warnCFError(cferr, "SecTrustEvaluateWithError");
                 err = SecTrustGetTrustResult(trust, &result);
             } else {
-                LogError(TLSLogDomain, "Catalyst version not available: Not supported by macOS < 10.14 and iOS < 12.0");
-                error::_throw(error::UnsupportedOperation, "Not supported by macOS < 10.14 and iOS < 12.0");
-            }
+#if TARGET_OS_MACCATALYST
+                LogError(TLSLogDomain, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14, iOS < 12.0");
+                error::_throw(error::UnsupportedOperation, "Catalyst:SecTrustEvaluateWithError not available, macOS < 10.14, iOS < 12.0");
 #else
-            err = SecTrustEvaluate(trust, &result);
+                err = SecTrustEvaluate(trust, &result);
 #endif
+            }
             checkOSStatus(err, "SecTrustEvaluate", "Couldn't validate certificate");
             LogTo(TLSLogDomain, "    ...SecTrustEvaluate returned %d", result);
             if (result != kSecTrustResultUnspecified && result != kSecTrustResultProceed)
