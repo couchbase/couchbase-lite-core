@@ -390,7 +390,7 @@ namespace litecore { namespace repl {
         if(response.isInteger()) {
             status = (int)response.asInt();
         } else if(auto dict = response.asDict(); dict) {
-            status = dict["status"].asInt();
+            status = (int)dict["status"].asInt();
             serverRevID = dict["rev"].asString();
         }
 
