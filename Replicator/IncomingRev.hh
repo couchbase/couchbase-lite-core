@@ -40,15 +40,13 @@ namespace litecore { namespace repl {
         void revisionProvisionallyInserted();
         void revisionInserted();
 
-        C4ReplicatorProgressLevel progressNotificationLevel() const override;
-
     protected:
         ActivityLevel computeActivityLevel() const override;
 
     private:
         void reinitialize();
         void parseAndInsert(alloc_slice jsonBody);
-        bool nonPassive() const                 {return _options.pull > kC4Passive;}
+        bool nonPassive() const                 {return _options->pull > kC4Passive;}
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);
         fleece::Doc parseBody(alloc_slice jsonBody);

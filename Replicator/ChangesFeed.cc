@@ -36,18 +36,18 @@ using namespace fleece;
 namespace litecore { namespace repl {
 
 
-    ChangesFeed::ChangesFeed(Delegate &delegate, Options &options,
+    ChangesFeed::ChangesFeed(Delegate &delegate, const Options *options,
                              DBAccess &db, Checkpointer *checkpointer)
     :Logging(SyncLog)
     ,_delegate(delegate)
     ,_options(options)
     ,_db(db)
     ,_checkpointer(checkpointer)
-    ,_continuous(_options.push == kC4Continuous)
-    ,_passive(_options.push <= kC4Passive)
-    ,_skipDeleted(_options.skipDeleted())
+    ,_continuous(_options->push == kC4Continuous)
+    ,_passive(_options->push <= kC4Passive)
+    ,_skipDeleted(_options->skipDeleted())
     {
-        filterByDocIDs(_options.docIDs());
+        filterByDocIDs(_options->docIDs());
     }
 
 
@@ -113,7 +113,7 @@ namespace litecore { namespace repl {
 
         // Run a by-sequence enumerator to find the changed docs:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        if (!_getForeignAncestors && !_options.pushFilter)
+        if (!_getForeignAncestors && !_options->pushFilter)
             options.flags &= ~kC4IncludeBodies;
         if (!_skipDeleted)
             options.flags |= kC4IncludeDeleted;
@@ -255,7 +255,7 @@ namespace litecore { namespace repl {
     bool ChangesFeed::shouldPushRev(RevToSend *rev, C4DocEnumerator *e) const {
         bool needRemoteRevID = _getForeignAncestors && !rev->remoteAncestorRevID
                                                     && _isCheckpointValid;
-        if (needRemoteRevID || _options.pushFilter) {
+        if (needRemoteRevID || _options->pushFilter) {
             C4Error error;
             Retained<C4Document> doc;
             try {
@@ -284,14 +284,14 @@ namespace litecore { namespace repl {
                 if (!getRemoteRevID(rev, doc))
                     return false;     // skip or fail rev: it's already on the peer
             }
-            if (_options.pushFilter) {
+            if (_options->pushFilter) {
                 // If there's a push filter, ask it whether to push the doc:
-                if (!_options.pushFilter(nullslice,     // TODO: Collection support
+                if (!_options->pushFilter(nullslice,     // TODO: Collection support
                                          doc->docID(),
                                          doc->selectedRev().revID,
                                          doc->selectedRev().flags,
                                          doc->getProperties(),
-                                         _options.callbackContext)) {
+                                         _options->callbackContext)) {
                     logVerbose("Doc '%.*s' rejected by push filter", SPLAT(doc->docID()));
                     return false;     // skip rev: rejected by push filter
                 }
@@ -310,7 +310,8 @@ namespace litecore { namespace repl {
 #pragma mark - REPLICATOR CHANGES FEED:
 
 
-    ReplicatorChangesFeed::ReplicatorChangesFeed(Delegate &delegate, Options &options, DBAccess &db, Checkpointer *cp)
+    ReplicatorChangesFeed::ReplicatorChangesFeed(Delegate &delegate, const Options *options,
+                                                 DBAccess &db, Checkpointer *cp)
     :ChangesFeed(delegate, options, db, cp)     // DBAccess is a subclass of access_lock<C4Database*>
     ,_usingVersionVectors(db.usingVersionVectors())
     { }
@@ -329,7 +330,7 @@ namespace litecore { namespace repl {
         if (foreignAncestor && !_usingVersionVectors
                     && C4Document::getRevIDGeneration(foreignAncestor)
                         >= C4Document::getRevIDGeneration(doc->revID())) {
-            if (_options.pull <= kC4Passive) {
+            if (_options->pull <= kC4Passive) {
                 C4Error error = C4Error::make(WebSocketDomain, 409,
                                      "conflicts with newer server revision"_sl);
                 _delegate.failedToGetChange(rev, error, false);

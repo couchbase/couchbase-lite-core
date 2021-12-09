@@ -761,7 +761,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
 struct C4TestReplicator : public litecore::C4ReplicatorImpl {
     C4TestReplicator(C4Database* db, C4ReplicatorParameters params)
         : C4ReplicatorImpl(db, params)   { }
-    alloc_slice propertiesMemory() const { return _options.properties.data(); }
+    alloc_slice propertiesMemory() const { return _options->properties.data(); }
     void createReplicator() override     { }
     alloc_slice URL() const override     { return nullslice; }
 };

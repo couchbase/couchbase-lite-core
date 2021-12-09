@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
 #pragma mark - CHECKPOINT ACCESSORS:
 
 
-    Checkpointer::Checkpointer(const Options &opt, fleece::slice remoteURL)
+    Checkpointer::Checkpointer(const Options *opt, fleece::slice remoteURL)
     :_options(opt)
     ,_remoteURL(remoteURL)
     { }
@@ -204,7 +204,7 @@ namespace litecore { namespace repl {
 
 
     slice Checkpointer::remoteDBIDString() const {
-        return _options.remoteDBIDString(_remoteURL);
+        return _options->remoteDBIDString(_remoteURL);
     }
 
 
@@ -221,10 +221,10 @@ namespace litecore { namespace repl {
     // Computes the ID of the checkpoint document.
     string Checkpointer::docIDForUUID(const C4UUID &localUUID, URLTransformStrategy urlStrategy) {
         // Derive docID from from db UUID, remote URL, channels, filter, and docIDs.
-        Array channels = _options.channels();
-        Value filter = _options.properties[kC4ReplicatorOptionFilter];
-        const Value filterParams = _options.properties[kC4ReplicatorOptionFilterParams];
-        Array docIDs = _options.docIDs();
+        Array channels = _options->channels();
+        Value filter = _options->properties[kC4ReplicatorOptionFilter];
+        const Value filterParams = _options->properties[kC4ReplicatorOptionFilterParams];
+        Array docIDs = _options->docIDs();
 
         // Compute the ID by writing the values to a Fleece array, then taking a SHA1 digest:
         fleece::Encoder enc;
@@ -326,11 +326,11 @@ namespace litecore { namespace repl {
 
 
     void Checkpointer::initializeDocIDs() {
-        if(!_docIDs.empty() || !_options.docIDs() || _options.docIDs().empty()) {
+        if(!_docIDs.empty() || !_options->docIDs() || _options->docIDs().empty()) {
             return;
         }
 
-        Array::iterator i(_options.docIDs());
+        Array::iterator i(_options->docIDs());
         while(i) {
             string docID = i.value().asString().asString();
             if(!docID.empty()) {
@@ -344,12 +344,12 @@ namespace litecore { namespace repl {
 
     bool Checkpointer::isDocumentAllowed(C4Document* doc) {
         return isDocumentIDAllowed(doc->docID())
-            && (!_options.pushFilter || _options.pushFilter(nullslice,   // TODO: Collection support
+            && (!_options->pushFilter || _options->pushFilter(nullslice,   // TODO: Collection support
                                                             doc->docID(),
                                                             doc->selectedRev().revID,
                                                             doc->selectedRev().flags,
                                                             doc->getProperties(),
-                                                            _options.callbackContext));
+                                                            _options->callbackContext));
     }
 
 
@@ -363,7 +363,7 @@ namespace litecore { namespace repl {
 
 
     void Checkpointer::pendingDocumentIDs(C4Database* db, PendingDocCallback callback) {
-        if(_options.push < kC4OneShot) {
+        if(_options->push < kC4OneShot) {
             // Couchbase Lite should not allow this case
             C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported);
         }
@@ -377,8 +377,8 @@ namespace litecore { namespace repl {
         }
 
         C4EnumeratorOptions opts { kC4IncludeNonConflicted | kC4IncludeDeleted };
-        const auto hasDocIDs = bool(_options.docIDs());
-        if(!hasDocIDs && _options.pushFilter) {
+        const auto hasDocIDs = bool(_options->docIDs());
+        if(!hasDocIDs && _options->pushFilter) {
             // docIDs has precedence over push filter
             opts.flags |= kC4IncludeBodies;
         }
@@ -393,7 +393,7 @@ namespace litecore { namespace repl {
             if(!isDocumentIDAllowed(info.docID))
                 continue;
 
-            if (!hasDocIDs && _options.pushFilter) {
+            if (!hasDocIDs && _options->pushFilter) {
                 // If there is a push filter, we have to get the doc body for it to peruse:
                 Retained<C4Document> nextDoc = e.getDocument();
                 if(!nextDoc) {
@@ -416,7 +416,7 @@ namespace litecore { namespace repl {
 
 
     bool Checkpointer::isDocumentPending(C4Database* db, slice docId) {
-        if(_options.push < kC4OneShot) {
+        if(_options->push < kC4OneShot) {
             // Couchbase Lite should not allow this case
             C4Error::raise(LiteCoreDomain, kC4ErrorUnsupported);
         }

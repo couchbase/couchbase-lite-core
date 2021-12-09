@@ -23,6 +23,8 @@
 
 
 namespace litecore { namespace repl {
+    using fleece::RetainedConst;
+
     class DBAccess;
     class Replicator;
     class ReplicatedRev;
@@ -74,11 +76,9 @@ namespace litecore { namespace repl {
             enqueue(FUNCTION_TO_QUEUE(Worker::_childChangedStatus), task, status);
         }
 
-        // Tech Debt: Where is the line between worker and replicator?
-        virtual C4ReplicatorProgressLevel progressNotificationLevel() const {
-            return _progressNotificationLevel;
+        C4ReplicatorProgressLevel progressNotificationLevel() const {
+            return _options->progressLevel;
         }
-        void setProgressNotificationLevel(C4ReplicatorProgressLevel);
 
 #if !DEBUG
     protected:
@@ -98,7 +98,7 @@ namespace litecore { namespace repl {
         /// @param namePrefix  Prepended to the Actor name.
         Worker(blip::Connection *connection NONNULL,
                Worker *parent,
-               const Options &options,
+               const Options* options NONNULL,
                std::shared_ptr<DBAccess> db,
                const char *namePrefix NONNULL);
 
@@ -128,8 +128,8 @@ namespace litecore { namespace repl {
         bool isOpenServer() const               {return _connection &&
                                                  _connection->role() == websocket::Role::Server;}
         /// True if the replicator is continuous.
-        bool isContinuous() const               {return _options.push == kC4Continuous
-                                                     || _options.pull == kC4Continuous;}
+        bool isContinuous() const               {return _options->push == kC4Continuous
+                                                     || _options->pull == kC4Continuous;}
 
         /// Implementation of public `connectionClosed`. May be overridden, but call super.
         virtual void _connectionClosed() {
@@ -202,7 +202,7 @@ namespace litecore { namespace repl {
 
 #pragma mark - INSTANCE DATA:
     protected:
-        Options                     _options;                   // The replicator options
+        RetainedConst<Options>      _options;                   // The replicator options
         Retained<Worker>            _parent;                    // Worker that owns me
         std::shared_ptr<DBAccess>   _db;                        // Database
         std::string                 _loggingID;                 // My name in the log
@@ -211,7 +211,6 @@ namespace litecore { namespace repl {
     private:
         Retained<blip::Connection>  _connection;                // BLIP connection
         int                         _pendingResponseCount {0};  // # of responses I'm awaiting
-        std::atomic<C4ReplicatorProgressLevel> _progressNotificationLevel; // What types of progress to notify
         Status                      _status {kC4Idle};          // My status
         bool                        _statusChanged {false};     // Status changed during this event
     };

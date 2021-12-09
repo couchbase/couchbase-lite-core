@@ -76,7 +76,7 @@ namespace litecore { namespace repl {
 
     Worker::Worker(blip::Connection *connection,
                    Worker *parent,
-                   const Options &options,
+                   const Options *options,
                    std::shared_ptr<DBAccess> dbAccess,
                    const char *namePrefix)
     :Actor(SyncLog, string(namePrefix) + connection->name(),
@@ -85,7 +85,6 @@ namespace litecore { namespace repl {
     ,_parent(parent)
     ,_options(options)
     ,_db(dbAccess)
-    ,_progressNotificationLevel(options.progressLevel())
     ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
     ,_loggingID(parent ? parent->replicator()->loggingName() : connection->name())
     { }
@@ -254,12 +253,6 @@ namespace litecore { namespace repl {
                      p.unitsCompleted, p.unitsTotal,
                      _status.progress.unitsCompleted, _status.progress.unitsTotal);
 #endif
-        }
-    }
-
-    void Worker::setProgressNotificationLevel(C4ReplicatorProgressLevel level) {
-        if(_progressNotificationLevel.exchange(level) != level) {
-            logVerbose("Set progress notification level to %d", level);
         }
     }
 

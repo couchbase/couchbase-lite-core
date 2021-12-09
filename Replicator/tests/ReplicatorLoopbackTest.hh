@@ -89,7 +89,10 @@ public:
     }
 
     // opts1 is the options for _db; opts2 is the options for _db2
-    void runReplicators(Replicator::Options opts1, Replicator::Options opts2, bool reset = false) {
+    void runReplicators(Replicator::Options opts1,
+                        Replicator::Options opts2,
+                        bool reset = false)
+    {
         std::unique_lock<std::mutex> lock(_mutex);
 
         _gotResponse = false;
@@ -101,24 +104,27 @@ public:
         c4::ref<C4Database> dbServer = c4db_openAgain(db2, nullptr);
         REQUIRE(dbClient);
         REQUIRE(dbServer);
-        if (opts2.push > kC4Passive || opts2.pull > kC4Passive) {
+
+        auto optsRef1 = make_retained<Replicator::Options>(opts1);
+        auto optsRef2 = make_retained<Replicator::Options>(opts2);
+        if (optsRef2->push > kC4Passive || optsRef2->pull > kC4Passive) {
             // always make opts1 the active (client) side
             std::swap(dbServer, dbClient);
-            std::swap(opts1, opts2);
+            std::swap(optsRef1, optsRef2);
             std::swap(_clientProgressLevel, _serverProgressLevel);
         }
+        optsRef1->setProgressLevel(_clientProgressLevel);
+        optsRef2->setProgressLevel(_serverProgressLevel);
 
         // Create client (active) and server (passive) replicators:
         _replClient = new Replicator(dbClient,
                                      new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Client, kLatency),
-                                     *this, opts1);
+                                     *this, optsRef1);
 
-        _replClient->setProgressNotificationLevel(_clientProgressLevel);
         _replServer = new Replicator(dbServer,
                                      new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Server, kLatency),
-                                     *this, opts2);
+                                     *this, optsRef2);
 
-        _replServer->setProgressNotificationLevel(_serverProgressLevel);
         Log("Client replicator is %s", _replClient->loggingName().c_str());
 
         // Response headers:
@@ -585,7 +591,7 @@ public:
     std::mutex _mutex;
     std::condition_variable _cond;
     bool _replicatorClientFinished {false}, _replicatorServerFinished {false};
-    int _clientProgressLevel {0}, _serverProgressLevel {0};
+    C4ReplicatorProgressLevel _clientProgressLevel {}, _serverProgressLevel {};
     bool _gotResponse {false};
     Replicator::Status _statusReceived { };
     unsigned _statusChangedCalls {0};

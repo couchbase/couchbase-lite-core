@@ -12,13 +12,15 @@
 
 #pragma once
 #include "c4ReplicatorTypes.h"
+#include "RefCounted.hh"
 #include "fleece/Fleece.hh"
 
 namespace litecore { namespace repl {
 
     /** Replication configuration options */
-    struct Options {
-
+    class Options final : public fleece::RefCounted {
+    public:
+        
         //---- Public fields:
 
         using Mode = C4ReplicatorMode;
@@ -26,18 +28,17 @@ namespace litecore { namespace repl {
         using PropertyEncryptor = C4ReplicatorPropertyEncryptionCallback;
         using PropertyDecryptor = C4ReplicatorPropertyDecryptionCallback;
 
-        Mode                    push                    {kC4Disabled};
-        Mode                    pull                    {kC4Disabled};
+        Mode const              push;
+        Mode const              pull;
         fleece::AllocedDict     properties;
         Validator               pushFilter              {nullptr};
         Validator               pullValidator           {nullptr};
         PropertyEncryptor       propertyEncryptor       {nullptr};
         PropertyDecryptor       propertyDecryptor       {nullptr};
         void*                   callbackContext         {nullptr};
+        std::atomic<C4ReplicatorProgressLevel> progressLevel {kC4ReplProgressOverall};
 
         //---- Constructors/factories:
-
-        Options() =default;
 
         Options(Mode push_, Mode pull_)
         :push(push_), pull(pull_)
@@ -45,7 +46,9 @@ namespace litecore { namespace repl {
 
         template <class SLICE>
         Options(Mode push_, Mode pull_, SLICE propertiesFleece)
-        :push(push_), pull(pull_), properties(propertiesFleece)
+        :push(push_)
+        ,pull(pull_)
+        ,properties(propertiesFleece)
         { }
 
         explicit Options(C4ReplicatorParameters params)
@@ -59,12 +62,33 @@ namespace litecore { namespace repl {
         ,callbackContext(params.callbackContext)
         { }
 
+        Options(const Options &opt)     // copy ctor, required because std::atomic doesn't have one
+        :push(opt.push)
+        ,pull(opt.pull)
+        ,pushFilter(opt.pushFilter)
+        ,pullValidator(opt.pullValidator)
+        ,propertyEncryptor(opt.propertyEncryptor)
+        ,propertyDecryptor(opt.propertyDecryptor)
+        ,callbackContext(opt.callbackContext)
+        ,properties(slice(opt.properties.data())) // copy data, bc dtor wipes it
+        ,progressLevel(opt.progressLevel.load())
+        { }
+
+        ~Options() {
+            // `properties` can contain sensitive data like passwords.
+            fleece::mutable_slice(properties.data()).wipe();
+        }
+
         static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
         static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
         static Options pushpull(Mode mode =kC4OneShot) {return Options(mode, mode);}
         static Options passive()                       {return Options(kC4Passive,kC4Passive);}
 
         //---- Property accessors:
+
+        bool setProgressLevel(C4ReplicatorProgressLevel level) {
+            return progressLevel.exchange(level) != level;
+        }
 
         fleece::Array channels() const {return arrayProperty(kC4ReplicatorOptionChannels);}
         fleece::Array docIDs() const   {return arrayProperty(kC4ReplicatorOptionDocIDs);}
@@ -74,13 +98,6 @@ namespace litecore { namespace repl {
         bool skipDeleted() const  {return boolProperty(kC4ReplicatorOptionSkipDeleted);}
         bool noIncomingConflicts() const  {return boolProperty(kC4ReplicatorOptionNoIncomingConflicts);}
         bool noOutgoingConflicts() const  {return boolProperty(kC4ReplicatorOptionNoIncomingConflicts);}
-        C4ReplicatorProgressLevel progressLevel() const  {
-            auto value = properties[kC4ReplicatorOptionProgressLevel];
-            if (value) {
-                C4Warn("Passing in progress level via configuration is deprecated; use the setProgressLevel API");
-            }
-            return (C4ReplicatorProgressLevel)value.asInt();
-        }
 
         bool disableDeltaSupport() const {return boolProperty(kC4ReplicatorOptionDisableDeltas);}
         bool disablePropertyDecryption() const {return boolProperty(kC4ReplicatorOptionDisablePropertyDecryption);}
