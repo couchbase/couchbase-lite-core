@@ -12,12 +12,15 @@
 
 #include "c4Test.hh"
 #include "c4Private.h"
+#include "c4Collection.h"
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
 #include "c4Index.h"
 #include "c4IndexTypes.h"
 #include "FilePath.hh"
+#include "fleece/Mutable.hh"
 #include "SecureRandomize.hh"
+#include <array>
 #include <cmath>
 #include <errno.h>
 #include <iostream>
@@ -947,19 +950,133 @@ TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
 
     C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
     C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
-    C4Database *db;
+    c4::ref<C4Database> db;
     auto name = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
     C4Log("---- copy Fixture to: %s/%s", TempDir().c_str(), name.asString().c_str());
     C4Error err;
     db = c4db_openNamed(name, &config, WITH_ERROR(&err));
     CHECK(db);
 
-    Doc info(alloc_slice(c4db_getIndexesInfo(db, WITH_ERROR(&err))));
-    CHECK(info.asArray().count() == 1);
-    Dict index = info.asArray()[0].asDict();
-    REQUIRE(index);
-    CHECK(index["name"].asString() == "index1");
-    CHECK(index["type"].asInt() == kC4ValueIndex);
+    std::function<void(C4Database*)> checkIndex = [](C4Database* db){
+        C4Error err;
+        Doc info(alloc_slice(c4db_getIndexesInfo(db, WITH_ERROR(&err))));
+        CHECK(info.asArray().count() == 1);
+        Dict index = info.asArray()[0].asDict();
+        REQUIRE(index);
+        CHECK(index["name"].asString() == "index1");
+        CHECK(index["type"].asInt() == kC4ValueIndex);
+    };
+    checkIndex(db);
+
+    REQUIRE(c4db_close(db, WITH_ERROR()));
+
+    // Reopen the database and edit the first document
+
+    db = c4db_openNamed(name, &config, WITH_ERROR(&err));
+    CHECK(db);
+    CHECK(c4db_getDocumentCount(db) == 2);
+
+    // Get the first document
+
+    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+    c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+    CHECK(c4enum_next(e, ERROR_INFO(&err)));
+
+    c4::ref<C4Document> doc1 = c4enum_getDocument(e, &err);
+    CHECK(doc1);
+    alloc_slice doc1ID = doc1->docID;
+    alloc_slice revID1 = doc1->revID;
+
+    // Get the revision body
+
+    Doc fl_docRev1(alloc_slice(c4doc_getRevisionBody(doc1)), kFLTrusted, c4db_getFLSharedKeys(db));
+    CHECK(fl_docRev1.root().type() == kFLDict);
+    Dict rev1Dict = fl_docRev1.root().asDict();
+
+    std::function<void(Dict&, std::array<slice,2>, std::array<slice,2>)> checkDict
+        = [](Dict& dict, std::array<slice,2> keys, std::array<slice,2> values) {
+            int i = 0;
+            for (Dict::iterator it = dict.begin(); it != dict.end(); ++it) {
+                if (i >= keys.size()) {
+                    return;
+                }
+                CHECK(it.keyString().asString() == keys[i].asString());
+                CHECK(it.value().asString().asString() == values[i].asString());
+                ++i;
+            }
+        };
+
+    checkDict(rev1Dict, {"firstName"_sl, "lastName"_sl}, {"fName"_sl, "lName"_sl});
+
+    // Make a mutable copy of rev1BodyDict and edit it
+
+    MutableDict mdict2 = rev1Dict.mutableCopy();
+    mdict2.set("firstName", "Hello");
+    mdict2.set("lastName", "World");
+    checkDict(mdict2, {"firstName"_sl, "lastName"_sl}, {"Hello"_sl, "World"_sl});
+
+    std::function<FLSliceResult(C4Database*, Dict&)> encodeDict =
+    [](C4Database* db, Dict& dict) {
+        TransactionHelper t(db);
+        FLEncoder enc = c4db_getSharedFleeceEncoder(db);
+        FLEncoder_WriteValue(enc, dict);
+        FLError flError = kFLNoError;
+        auto ret = FLEncoder_Finish(enc, &flError);
+        CHECK(flError == kFLNoError);
+        return ret;
+    };
+
+    // Encode the modified dict:
+    FLSliceResult fl_dict2 = encodeDict(db, mdict2);
+
+    // Add revision 2 to doc1 with modified body, fl_dict2
+
+    C4DocPutRequest rq = {};
+    rq.docID = doc1ID;
+    rq.allocedBody = fl_dict2;
+    C4String history[1] = {revID1};
+    rq.history = history;
+    rq.historyCount = 1;
+    rq.save = true;
+    {
+        TransactionHelper t(db);
+        doc1 = c4coll_putDoc(c4db_getDefaultCollection(db), &rq, nullptr, &err);
+    }
+    CHECK(doc1);
+    CHECK(slice(doc1->revID).asString().find("2-") == 0);
+    // Make sure the db still contains 2 documents, and re-check the index.
+    CHECK(c4db_getDocumentCount(db) == 2);
+    checkIndex(db);
+
+    REQUIRE(c4db_close(db, WITH_ERROR()));
+
+    // Reopen the database and add a new document
+
+    db = c4db_openNamed(name, &config, WITH_ERROR(&err));
+    CHECK(db);
+    CHECK(c4db_getDocumentCount(db) == 2);
+
+    // Add a new document
+
+    slice doc3ID = "new-doc";
+    MutableDict mdict3 = MutableDict::newDict();
+    mdict3.set("new-key", "new-value");
+    FLSliceResult fl_dict3 = encodeDict(db, mdict3);
+
+    rq = {};
+    rq.docID = doc3ID;
+    rq.allocedBody = fl_dict3;
+    rq.save = true;
+    c4::ref<C4Document> doc3;
+    {
+        TransactionHelper t(db);
+        doc3 = c4coll_putDoc(c4db_getDefaultCollection(db), &rq, nullptr, &err);
+    }
+    CHECK(doc3);
+    CHECK(slice(doc3->revID).asString().find("1-") == 0);
+    // Make sure the db now contains 3 documents, and re-check the index.
+    CHECK(c4db_getDocumentCount(db) == 3);
+    checkIndex(db);
 }
 
 
