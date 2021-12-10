@@ -11,8 +11,9 @@
 //
 
 
-#include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
+#include "SQLite_Internal.hh"
+#include "RawRevTree.hh"
 #include "UnicodeCollator.hh"
 #include "Path.hh"
 #include "Error.hh"
@@ -37,7 +38,13 @@ namespace litecore {
             return nullslice;             // No 'body' column; may be deleted doc
         DebugAssert(type == SQLITE_BLOB);
         DebugAssert(sqlite3_value_subtype(arg) == 0);
-        return valueAsSlice(arg);
+        auto body = valueAsSlice(arg);
+        if (RawRevision::isRevTree(body)) {
+            // This is a 2.x-format `body` column containing a revision tree, i.e. the document
+            // has not yet been updated to 3.0 format. Extract the current revision's body:
+            body = RawRevision::getCurrentRevBody(body);
+        }
+        return body;
     }
 
 

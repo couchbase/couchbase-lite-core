@@ -207,6 +207,10 @@ namespace litecore {
         }
 
         // Store new versioning:
+        if (!versDoc.exists() && newVersioning == kC4TreeVersioning_v2) {
+            // If this is a new db, all docs will have the new v3 tree versioning.
+            newVersioning = kC4TreeVersioning;
+        }
         versDoc.setBodyAsUInt((uint64_t)newVersioning);
         setInfo(versDoc);
         t.commit();
