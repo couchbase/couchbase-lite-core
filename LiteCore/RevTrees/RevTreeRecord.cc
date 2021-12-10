@@ -11,6 +11,7 @@
 //
 
 #include "RevTreeRecord.hh"
+#include "RawRevTree.hh"
 #include "Record.hh"
 #include "KeyStore.hh"
 #include "DataFile.hh"
@@ -68,15 +69,22 @@ namespace litecore {
 
         if (_rec.exists()) {
             _contentLoaded = _rec.contentLoaded();
+            if (_contentLoaded == kCurrentRevOnly && RawRevision::isRevTree(_rec.body())) {
+                // Only asked for the current rev, but since doc is in the v2 format we got the
+                // entire rev-tree in the body:
+                _contentLoaded = kEntireBody;
+            }
+
             switch (_contentLoaded) {
                 case kEntireBody:
                     RevTree::decode(_rec.body(), _rec.extra(),  _rec.sequence());
                     if (auto cur = currentRevision(); cur && (_rec.flags() & DocumentFlags::kSynced)) {
-                        // The kSynced flag is set when the document's current revision is pushed to a server.
-                        // This is done instead of updating the doc body, for reasons of speed. So when loading
-                        // the document, detect that flag and belatedly update the current revision's flags.
-                        // Since the revision is now likely stored on the server, it may be the base of a merge
-                        // in the future, so preserve its body:
+                        // The kSynced flag is set when the document's current revision is pushed
+                        // to a server. This is done instead of updating the doc body, for reasons
+                        // of speed. So when loading the document, detect that flag and belatedly
+                        // update the current revision's flags. Since the revision is now likely
+                        // stored on the server, it may be the base of a merge in the future,
+                        // so preserve its body:
                         setLatestRevisionOnRemote(kDefaultRemoteID, cur);
                         keepBody(cur);
                         _changed = false;

@@ -16,6 +16,7 @@
 #include "c4BlobStore.h"
 #include "c4Index.h"
 #include "c4IndexTypes.h"
+#include "c4Query.h"
 #include "FilePath.hh"
 #include "SecureRandomize.hh"
 #include <cmath>
@@ -881,7 +882,7 @@ static void testOpeningOlderDBFixture(const string & dbPath,
     C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
     C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
     C4Error error;
-    C4Database *db;
+    c4::ref<C4Database> db;
     auto name = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
 
     if (expectedErrorCode == 0) {
@@ -896,6 +897,11 @@ static void testOpeningOlderDBFixture(const string & dbPath,
         return;
     }
 
+    // These test databases contain 100 documents with IDs `doc1`...`doc100`.
+    // Each doc has two properties: `n` whose integer value is the doc number (1..100)
+    // and `even` whose boolean value is true iff `n` is even.
+    // Documents 51-100 are deleted (but still have those properties, which is unusual.)
+
     // Verify getting documents by ID:
     char docID[20];
     for (unsigned i = 1; i <= 100; i++) {
@@ -903,39 +909,57 @@ static void testOpeningOlderDBFixture(const string & dbPath,
         INFO("Checking docID " << docID);
         C4Document *doc = c4doc_get(db, slice(docID), true, ERROR_INFO());
         REQUIRE(doc);
-        if (i <= 50)
-            CHECK((doc->flags & kRevDeleted) == 0);
-        else
-            CHECK((doc->flags & kRevDeleted) != 0);
-        // TODO: Verify the doc contents too
+        CHECK(((doc->flags & kDocDeleted) != 0) == (i > 50));
+        Dict body = c4doc_getProperties(doc);
+        CHECK(body["n"].asInt() == i);
         c4doc_release(doc);
     }
 
     // Verify enumerating documents:
-    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    options.flags |= kC4IncludeDeleted;
-    C4DocEnumerator *e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
-    REQUIRE(e);
-    unsigned i = 1;
-    while (c4enum_next(e, ERROR_INFO(&error))) {
-        INFO("Checking enumeration #" << i);
-        sprintf(docID, "doc-%03u", i);
-        C4DocumentInfo info;
-        REQUIRE(c4enum_getDocumentInfo(e, &info));
-        CHECK(slice(info.docID) == slice(docID));
-        ++i;
+    {
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        options.flags |= kC4IncludeDeleted;
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+        REQUIRE(e);
+        unsigned i = 1;
+        while (c4enum_next(e, ERROR_INFO(&error))) {
+            INFO("Checking enumeration #" << i);
+            sprintf(docID, "doc-%03u", i);
+            C4DocumentInfo info;
+            REQUIRE(c4enum_getDocumentInfo(e, &info));
+            CHECK(slice(info.docID) == slice(docID));
+            CHECK(((info.flags & kDocDeleted) != 0) == (i > 50));
+            ++i;
+        }
+        CHECK(error == C4Error{});
+        CHECK(i == 101);
     }
-    CHECK(error == C4Error{});
-    CHECK(i == 101);
+
+    // Verify a query:
+    {
+        c4::ref<C4Query> query = c4query_new2(db, kC4N1QLQuery,
+                                              "SELECT n FROM _ WHERE even == true"_sl,
+                                              nullptr, ERROR_INFO());
+        REQUIRE(query);
+        c4::ref<C4QueryEnumerator> e = c4query_run(query, nullptr, nullslice, ERROR_INFO());
+        REQUIRE(e);
+        unsigned count = 0, total = 0;
+        while (c4queryenum_next(e, ERROR_INFO(error))) {
+            ++count;
+            total += FLValue_AsInt( FLArrayIterator_GetValue(&e->columns) );
+        }
+        CHECK(!error);
+        CHECK(count == 25);     // (half of docs are even, and half of those are deleted)
+        CHECK(total == 650);    // (sum of even integers from 2 to 50)
+    }
 
     CHECK(c4db_delete(db, WITH_ERROR()));
-    c4db_release(db);
 }
 
 
-TEST_CASE("Database Upgrade From 2.7 to New Rev-Trees", "[Database][Upgrade][C]") {
+TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", 0);
-// In 3.0 it's no longer possible to open 2.7 databases without upgrading
+// In 3.0 it's no longer possible to open 2.x databases without upgrading
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
 }
