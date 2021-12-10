@@ -141,9 +141,11 @@ namespace litecore::repl {
                 sequences.reserve(nChanges);
 
                 auto &encoder = response.jsonBody();
+                auto getConflictRevIDs =  req->boolProperty(Pusher::kConflictIncludesRevProperty);
                 encoder.beginArray();
-                int requested = proposed ? findProposedRevs(changes, encoder, req->boolProperty(Pusher::kConflictIncludesRevProperty), sequences)
-                                         : findRevs(changes, encoder, sequences);
+                int requested = proposed 
+                    ? findProposedRevs(changes, encoder, getConflictRevIDs ,sequences)
+                    : findRevs(changes, encoder, sequences);
                 encoder.endArray();
 
                 // CBL-1399: Important that the order be call expectSequences and *then* respond

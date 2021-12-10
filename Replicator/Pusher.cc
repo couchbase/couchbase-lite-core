@@ -459,22 +459,16 @@ namespace litecore { namespace repl {
                 if(receivedRevID && receivedRevID != rev->remoteAncestorRevID) {
                     // Remote ancestor received in proposeChanges response, so try with 
                     // this one instead
-                    try {
-                        // If receivedRevID is newer than rev->revID this will throw since locally we don't have
-                        // that rev yet.  So the only way this function succeeds is if receivedRevID is equal to
-                        // or an ancestor of rev->revID
-                        if(doc->selectCommonAncestorRevision(rev->revID, receivedRevID)) {
-                            logInfo("Remote reported different rev of '%.*s' (mine: %.*s theirs: %.*s); retrying push",
-                                SPLAT(rev->docID), SPLAT(rev->remoteAncestorRevID), SPLAT(receivedRevID));
-                            rev->remoteAncestorRevID = receivedRevID;
-                            return true;
-                        }
-                    } catch(error& e) {
-                        // Not Found error should be caught, because it means that receivedRevID is not
-                        // a part of the rev tree history
-                        if(e.domain != error::Domain::LiteCore || e.code != error::NotFound) {
-                            throw;
-                        }
+
+                    // If the first portion of this test passes, then the rev exists in the tree.
+                    // If the second portion passes, then receivedRevID is an ancestor of the 
+                    // current rev ID and it is usable for a retry.
+                    if(doc->selectRevision(receivedRevID, false) && 
+                        doc->selectCommonAncestorRevision(rev->revID, receivedRevID)) {
+                        logInfo("Remote reported different rev of '%.*s' (mine: %.*s theirs: %.*s); retrying push",
+                            SPLAT(rev->docID), SPLAT(rev->remoteAncestorRevID), SPLAT(receivedRevID));
+                        rev->remoteAncestorRevID = receivedRevID;
+                        return true;
                     }
                 }
 
