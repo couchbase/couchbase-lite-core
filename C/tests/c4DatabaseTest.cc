@@ -1032,29 +1032,11 @@ TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
     // Add revision 2 to doc1 with modified body, fl_dict2
 
     string rev2 = C4Test::createNewRev(db, doc1ID, {fl_dict2.buf, fl_dict2.size}, 0);
-    // Make sure we get a new revision rather than a new document.
+    // Make sure we get a new revision and we want to re-check the index.
     CHECK(rev2.find("2-") == 0);
     checkIndex(db);
 
     REQUIRE(c4db_close(db, WITH_ERROR()));
-
-    // Reopen the database and add a new document
-
-    db = c4db_openNamed(name, &config, WITH_ERROR(&err));
-    CHECK(db);
-    CHECK(c4db_getDocumentCount(db) == 2);
-
-    // Add a new document
-
-    slice doc3ID = "new-doc";
-    MutableDict mdict3 = MutableDict::newDict();
-    mdict3.set("new-key", "new-value");
-    FLSliceResult fl_dict3 = encodeDict(db, mdict3);
-
-    C4Test::createRev(db, doc3ID, C4STR("1-abcd"), {fl_dict3.buf, fl_dict3.size}, 0);
-    // Make sure the db now contains 3 documents, and re-check the index.
-    CHECK(c4db_getDocumentCount(db) == 3);
-    checkIndex(db);
 }
 
 
