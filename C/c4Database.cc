@@ -75,7 +75,7 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 &config2) {
     return C4DatabaseConfig {
         config2.flags | kC4DB_AutoCompact,
         NULL,
-        (config2.flags & kC4DB_VersionVectors) ? kC4VectorVersioning : kC4TreeVersioning,
+        (config2.flags & kC4DB_VersionVectors) ? kC4VectorVersioning : kC4TreeVersioning_v2,
         config2.encryptionKey
     };
 }
