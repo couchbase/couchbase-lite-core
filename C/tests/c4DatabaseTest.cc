@@ -1031,21 +1031,9 @@ TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
 
     // Add revision 2 to doc1 with modified body, fl_dict2
 
-    C4DocPutRequest rq = {};
-    rq.docID = doc1ID;
-    rq.allocedBody = fl_dict2;
-    C4String history[1] = {revID1};
-    rq.history = history;
-    rq.historyCount = 1;
-    rq.save = true;
-    {
-        TransactionHelper t(db);
-        doc1 = c4coll_putDoc(c4db_getDefaultCollection(db), &rq, nullptr, &err);
-    }
-    CHECK(doc1);
-    CHECK(slice(doc1->revID).asString().find("2-") == 0);
-    // Make sure the db still contains 2 documents, and re-check the index.
-    CHECK(c4db_getDocumentCount(db) == 2);
+    string rev2 = C4Test::createNewRev(db, doc1ID, {fl_dict2.buf, fl_dict2.size}, 0);
+    // Make sure we get a new revision rather than a new document.
+    CHECK(rev2.find("2-") == 0);
     checkIndex(db);
 
     REQUIRE(c4db_close(db, WITH_ERROR()));
@@ -1063,17 +1051,7 @@ TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
     mdict3.set("new-key", "new-value");
     FLSliceResult fl_dict3 = encodeDict(db, mdict3);
 
-    rq = {};
-    rq.docID = doc3ID;
-    rq.allocedBody = fl_dict3;
-    rq.save = true;
-    c4::ref<C4Document> doc3;
-    {
-        TransactionHelper t(db);
-        doc3 = c4coll_putDoc(c4db_getDefaultCollection(db), &rq, nullptr, &err);
-    }
-    CHECK(doc3);
-    CHECK(slice(doc3->revID).asString().find("1-") == 0);
+    C4Test::createRev(db, doc3ID, C4STR("1-abcd"), {fl_dict3.buf, fl_dict3.size}, 0);
     // Make sure the db now contains 3 documents, and re-check the index.
     CHECK(c4db_getDocumentCount(db) == 3);
     checkIndex(db);
