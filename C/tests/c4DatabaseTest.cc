@@ -12,7 +12,6 @@
 
 #include "c4Test.hh"
 #include "c4Private.h"
-#include "c4Collection.h"
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
 #include "c4Index.h"
@@ -993,27 +992,20 @@ TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
     CHECK(fl_docRev1.root().type() == kFLDict);
     Dict rev1Dict = fl_docRev1.root().asDict();
 
-    std::function<void(Dict&, std::array<slice,2>, std::array<slice,2>)> checkDict
-        = [](Dict& dict, std::array<slice,2> keys, std::array<slice,2> values) {
-            int i = 0;
-            for (Dict::iterator it = dict.begin(); it != dict.end(); ++it) {
-                if (i >= keys.size()) {
-                    return;
-                }
-                CHECK(it.keyString().asString() == keys[i].asString());
-                CHECK(it.value().asString().asString() == values[i].asString());
-                ++i;
-            }
-        };
-
-    checkDict(rev1Dict, {"firstName"_sl, "lastName"_sl}, {"fName"_sl, "lName"_sl});
-
     // Make a mutable copy of rev1BodyDict and edit it
 
     MutableDict mdict2 = rev1Dict.mutableCopy();
-    mdict2.set("firstName", "Hello");
-    mdict2.set("lastName", "World");
-    checkDict(mdict2, {"firstName"_sl, "lastName"_sl}, {"Hello"_sl, "World"_sl});
+    vector<alloc_slice> keys;
+    for (MutableDict::iterator it = mdict2.begin(); it != mdict2.end(); ++it) {
+        slice key = it.keyString();
+        keys.push_back(alloc_slice(key));
+    }
+    // Update the values of mdict2
+    for (vector<alloc_slice>::const_iterator it = keys.begin(); it != keys.end(); ++it) {
+        Value val = mdict2.get(*it);
+        string valStr = val.toJSONString() + "-update";
+        mdict2.set(*it, valStr);
+    }
 
     std::function<FLSliceResult(C4Database*, Dict&)> encodeDict =
     [](C4Database* db, Dict& dict) {
