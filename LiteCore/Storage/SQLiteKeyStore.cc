@@ -451,7 +451,7 @@ namespace litecore {
 
         // Construct SQL query with a big "IN (...)" clause for all the docIDs:
         stringstream sql;
-        sql << "SELECT key, fl_callback(key, body, sequence, ?) FROM kv_" << name()
+        sql << "SELECT key, fl_callback(key, body, sequence, flags, ?) FROM kv_" << name()
             << " WHERE key IN ('";
         unsigned n = 0;
         for (slice docID : docIDs) {

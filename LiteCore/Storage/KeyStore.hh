@@ -87,7 +87,7 @@ namespace litecore {
         /** Creates a database query object. */
         virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
 
-        using WithDocBodyCallback = std::function<alloc_slice(slice docID, slice body, sequence_t)>;
+        using WithDocBodyCallback = std::function<alloc_slice(slice docID, slice body, sequence_t, int flags)>;
 
         /** Invokes the callback once for each document found in the database.
             The callback is given the docID, body and sequence, and returns a string.
