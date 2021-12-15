@@ -218,7 +218,10 @@ public:
         _query->liveQuerierStopped();
     }
 
-    C4Query* _query;
+    // CBL-2673: Since the live querier is async, the C4Query *must* outlive the 
+    // live querier.  This ensures that.  This will be released when the cycle
+    // is broken in liveQuerierStopped.
+    Retained<C4Query> _query;
 };
 
 
