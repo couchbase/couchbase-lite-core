@@ -214,7 +214,14 @@ public:
         _query->liveQuerierUpdated(qe, err);
     }
 
-    C4Query* _query;
+    void liveQuerierStopped() override {
+        _query->liveQuerierStopped();
+    }
+
+    // CBL-2673: Since the live querier is async, the C4Query *must* outlive the 
+    // live querier.  This ensures that.  This will be released when the cycle
+    // is broken in liveQuerierStopped.
+    Retained<C4Query> _query;
 };
 
 
@@ -266,8 +273,6 @@ void C4Query::enableObserver(C4QueryObserverImpl *obs, bool enable) {
         _pendingObservers.erase(obs);
         if (_observers.empty() && _bgQuerier) {
             _bgQuerier->stop();
-            _bgQuerier = nullptr;
-            _bgQuerierDelegate = nullptr;
         }
     }
 }
@@ -295,6 +300,14 @@ void C4Query::liveQuerierUpdated(QueryEnumerator *qe, C4Error err) {
     }
     
     notifyObservers(observers, qe, err);
+}
+
+void C4Query::liveQuerierStopped() {
+    // CBL-2673: Wait until _bgQuerier is done with its async stuff before freeing it
+    // and its delegate, otherwise a race could cause a liveQuerierUpdated call to
+    // a garbage delegate.
+    _bgQuerier = nullptr;
+    _bgQuerierDelegate = nullptr;
 }
 
 void C4Query::notifyObservers(const set<C4QueryObserverImpl*> &observers,
