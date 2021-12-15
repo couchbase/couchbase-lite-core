@@ -344,7 +344,9 @@ namespace litecore { namespace crypto {
             SecKeyRef publicKey = NULL, privateKey = NULL;
             if (@available(macOS 10.12, iOS 10.0, *)) {
                 CFErrorRef error;
+                ++gC4ExpectExceptions;
                 privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
+                --gC4ExpectExceptions;
                 if (!privateKey) {
                     warnCFError(error, "SecKeyCreateRandomKey");
                     return nullptr;
@@ -618,15 +620,14 @@ namespace litecore { namespace crypto {
                     cert->append(new Cert(slice(data)));
                 }
                 CFRelease(certs);
-            } else {
-#else
+            } else
+#endif
             {
                 for (CFIndex i = 1; i < count; i++) {
                     SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
                     NSData* data = (NSData*) CFBridgingRelease(SecCertificateCopyData(ref));
                     cert->append(new Cert(slice(data)));
                 }
-#endif
             }
             
             return cert;
@@ -697,8 +698,8 @@ namespace litecore { namespace crypto {
                     }
                 }
                 CFRelease(certs);
-            } else {
-#else
+            } else
+#endif
             {
                 for (CFIndex i = count - 1; i >= 0; i--) {
                     SecCertificateRef ref = SecTrustGetCertificateAtIndex(trustRef, i);
@@ -712,7 +713,7 @@ namespace litecore { namespace crypto {
                                       "Couldn't delete a certificate from the Keychain");
                     }
                 }
-#endif
+
             }
         }
     }
@@ -789,8 +790,8 @@ namespace litecore { namespace crypto {
                         root->append(cert);
                 }
                 CFRelease(certs);
-            } else {
-#else
+            } else
+#endif
             {
                 for (CFIndex i = 1; i < certCount; ++i) {
                     auto certRef = SecTrustGetCertificateAtIndex(trust, i);
@@ -803,7 +804,6 @@ namespace litecore { namespace crypto {
                     else
                         root->append(cert);
                 }
-#endif
             }
             return root;
         }
