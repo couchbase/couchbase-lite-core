@@ -340,8 +340,8 @@ namespace litecore { namespace crypto {
                 (id)kSecAttrIsPermanent:    @YES,
                 (id)kSecAttrLabel:          @(timestr),
             };
-            SecKeyRef publicKey = NULL, privateKey = NULL;
             
+            SecKeyRef publicKey = NULL, privateKey = NULL;
             if (@available(macOS 10.12, iOS 10.0, *)) {
                 CFErrorRef error;
                 privateKey = SecKeyCreateRandomKey((CFDictionaryRef)params, &error);
@@ -358,7 +358,6 @@ namespace litecore { namespace crypto {
                 checkOSStatus(err, "SecKeyGeneratePair", "Couldn't create a private key");
             }
             
-
             return new KeychainKeyPair(keySizeInBits, publicKey, privateKey);
         }
     }
