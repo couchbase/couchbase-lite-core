@@ -111,6 +111,8 @@ namespace litecore {
                 if (_continuous)
                     _backgroundDB->removeTransactionObserver(this);
             });
+
+            _delegate->liveQuerierStopped();
         }
         logVerbose("...stopped");
     }

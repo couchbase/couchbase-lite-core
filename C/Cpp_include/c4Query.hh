@@ -121,6 +121,7 @@ private:
     Retained<litecore::QueryEnumerator> _createEnumerator(const C4QueryOptions* C4NULLABLE, slice params);
     Retained<litecore::C4QueryEnumeratorImpl> wrapEnumerator(litecore::QueryEnumerator* C4NULLABLE);
     void liveQuerierUpdated(litecore::QueryEnumerator* C4NULLABLE, C4Error err);
+    void liveQuerierStopped();
     void notifyObservers(const std::set<litecore::C4QueryObserverImpl*> &observers,
                          litecore::QueryEnumerator* C4NULLABLE, C4Error err);
 
