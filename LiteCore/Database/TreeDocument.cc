@@ -584,7 +584,7 @@ namespace c4Internal {
             revMap[docIDs[i]] = revIDs[i];
         stringstream result;
 
-        auto callback = [&](slice docID, slice docBody, sequence_t sequence) -> alloc_slice {
+        auto callback = [&](slice docID, slice docBody, sequence_t sequence, int flags) -> alloc_slice {
             // --- This callback runs inside the SQLite query ---
             // --- It will be called once for each docID in the vector ---
             // Convert revID to encoded binary form:
@@ -592,6 +592,13 @@ namespace c4Internal {
             revID.parse(revMap[docID]);
 
             RevTree tree(docBody, 0);
+            auto current = tree.currentRevision();
+
+            if (remoteDBID == RevTree::kDefaultRemoteID && ((DocumentFlags)flags & DocumentFlags::kSynced)) {
+                // CBL-2579: Special case where the main remote DB is pending local update
+                // of its remote ancestor
+                tree.setLatestRevisionOnRemote(RevTree::kDefaultRemoteID, current);
+            }
 
             // Does it exist in the doc?
             if (tree[revID]) {
