@@ -51,7 +51,11 @@ namespace litecore { namespace blip {
         {
             // `frame` is the same as `dst` but 4 bytes shorter, to leave space for the checksum
             slice_ostream frame(dst.next(), frameSize - Codec::kChecksumSize);
+#if 0
             auto mode = hasFlag(kCompressed) ? Codec::Mode::SyncFlush : Codec::Mode::Raw;
+#else
+            auto mode = Codec::Mode::Raw;           
+#endif
             do {
                 slice_istream &data = _contents.dataToSend();
                 if (data.size == 0)
