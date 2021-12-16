@@ -79,7 +79,7 @@ If you want to use Objective-C or Swift APIs, you should use Couchbase Lite inst
 
 The following instructions are to build just LiteCore on its own:
 
-* Make sure you have Xcode **10.0** or later (:warning: Do not use Xcode 13 because of a [downstream issue](https://github.com/ARMmbed/mbedtls/issues/5052) :warning:).
+* Make sure you have Xcode **12.2** or later (:warning: Do not use Xcode 13 because of a [downstream issue](https://github.com/ARMmbed/mbedtls/issues/5052) :warning:).
 * Open **Xcode/LiteCore.xcodeproj**. 
 * Select the scheme **LiteCore static** or **LiteCore dylib**. 
 * Choose _Product>Build_ (for a debug build) or _Product>Build For>Profiling_ (for a release/optimized build).
