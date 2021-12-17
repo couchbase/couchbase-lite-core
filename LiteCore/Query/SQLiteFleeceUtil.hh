@@ -38,6 +38,14 @@ namespace litecore {
 
     extern const char* const kFleeceValuePointerType;
 
+    // Given an arg whose value is either a doc's `body` column or raw Fleece, this returns the
+    // Fleece data.
+    // If it detects a v2.x-format `body` it extracts the current revision's Fleece out of the
+    // serialized rev-tree. That data might be at an odd address; if so it copies it to a new
+    // heap block and sets `outCopied` to true. As a result, if `outCopied` returns set to true,
+    // you MUST call `::free((void*)data.buf` on the result.
+    slice valueAsDocBody(sqlite3_value *arg, bool &outCopied);
+
     static inline const fleece::impl::Value* asFleeceValue(sqlite3_value *value) {
         return (const fleece::impl::Value*) sqlite3_value_pointer(value, kFleeceValuePointerType);
     }
@@ -47,8 +55,11 @@ namespace litecore {
     class QueryFleeceScope : public fleece::impl::Scope {
     public:
         QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv);
+        ~QueryFleeceScope();
         
         const fleece::impl::Value *root;
+    private:
+        bool _copied;
     };
 
 
