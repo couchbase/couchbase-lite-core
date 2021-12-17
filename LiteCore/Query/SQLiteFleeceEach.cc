@@ -75,6 +75,7 @@ private:
     // Instance data:
     FleeceVTab* _vtab;                  // The virtual table
     optional<Scope> _scope;             // Fleece document
+    bool _scopeDataIsCopied {false};    // If true, _scope.data() is a malloc'ed block
     alloc_slice _rootPath;              // The path string within the data, if any
     const Value *_container;            // The object being iterated (target of the path)
     valueType _containerType;           // The value type of _container
@@ -193,8 +194,19 @@ private:
     { }
 
 
+    void resetScope() noexcept {
+        if (_scope) {
+            auto data = _scope->data().buf;
+            _scope.reset();
+            if (_scopeDataIsCopied) {
+                ::free((void*)data);
+                _scopeDataIsCopied = false;
+            }
+        }
+    }
+
     void reset() noexcept {
-        _scope.reset();
+        resetScope();
         _rootPath = nullslice;
         _container = nullptr;
         _containerType = kNull;
@@ -212,27 +224,22 @@ private:
             return SQLITE_OK;
 
         // Parse the Fleece data:
-        slice data = valueAsSlice(argv[0]);
+        slice data;
+        if (idxNum == kPathIndex) {
+            // If fl_each is called with a 2nd (property path) argument, then the first arg is the
+            // doc body, which we need to extract Fleece from:
+            data = valueAsDocBody(argv[0], _scopeDataIsCopied);
+        } else {
+            data = valueAsSlice(argv[0]);
+            _scopeDataIsCopied = false;
+        }
         if (!data) {
             // Weird not to get a document; have to return early to avoid a crash.
             // Treat this as an empty doc. (See issue #379)
             Warn("fleece_each filter called with null document! Query is likely to fail. (#379)");
             return SQLITE_OK;
         }
-        if (size_t(data.buf) & 1) {
-            // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
-            // revision data, so it could occur. Now that it's not allowed, we have to work around
-            // this by copying the data to an even address. (#787)
-            // NOTE: This same problem is already solved by QueryFleeceScope, but it requires
-            // a sqlite3_context*, which we don't have here ... refactoring that class to be
-            // useable here too would be more code change than I want to introduce right now
-            // while fixing this bug, but would be good for long-term cleanup.
-            alloc_slice copiedFleeceData(data);
-            _scope.emplace(copiedFleeceData, _vtab->context.sharedKeys);
-            data = copiedFleeceData;
-        } else {
-            _scope.emplace(data, _vtab->context.sharedKeys);
-        }
+        _scope.emplace(data, _vtab->context.sharedKeys);
 
         _container = Value::fromTrustedData(data);
         if (!_container) {
@@ -271,7 +278,7 @@ private:
         if (!_atEOF())
             return false;
         // Caller is going to wipe out the blob I'm parsing, so clear my Scope first
-        _scope.reset();
+        resetScope();
         return true;
     }
 

@@ -31,21 +31,22 @@ namespace litecore {
 
     // fl_root(body) -> fleeceData
     static void fl_root(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        // Pull the Fleece data out of a raw document body:
-        slice body = valueAsSlice(argv[0]);
-        if (body) {
-            DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_BLOB);
-            DebugAssert(sqlite3_value_subtype(argv[0]) == 0);
+        if (sqlite3_value_type(argv[0]) == SQLITE_BLOB) {
+            // Pull the Fleece data out of a raw document body:
+            bool copied;
+            slice body = valueAsDocBody(argv[0], copied);
             setResultBlobFromFleeceData(ctx, body);
-            return;
-        }
-        // If arg isn't a blob, check if it's a tagged Fleece pointer:
-        const Value *val = asFleeceValue(argv[0]);
-        if (val) {
-            sqlite3_result_pointer(ctx, (void*)val, kFleeceValuePointerType, nullptr);
+            if (copied)
+                ::free((void*)body.buf);
         } else {
-            DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_NULL);
-            sqlite3_result_null(ctx);
+            // If arg isn't a blob, check if it's a tagged Fleece pointer:
+            const Value *val = asFleeceValue(argv[0]);
+            if (val) {
+                sqlite3_result_pointer(ctx, (void*)val, kFleeceValuePointerType, nullptr);
+            } else {
+                DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_NULL);
+                sqlite3_result_null(ctx);
+            }
         }
     }
 
