@@ -80,11 +80,21 @@ namespace litecore {
 
     void LiveQuerier::stop() {
         logInfo("Stopping");
-         _backgroundDB->dataFile().useLocked([&](DataFile *df) {
-             // CBL-2335: Guard access to the _stopping variable so that
-             // it is not changed at unpredictable times
-             _stopping = true;
-         });
+        bool didStop = _backgroundDB->dataFile().useLocked<bool>([&](DataFile *df) {
+            // CBL-2335: Guard access to the _stopping variable so that
+            // it is not changed at unpredictable times
+            if (_stopping) {
+                return true;
+            }
+            _stopping = true;
+            return false;
+        });
+        
+        if (didStop) {
+            logVerbose("...Calling stop is ignored as it has already been called");
+            return;
+        }
+        
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_stop));
     }
 
@@ -111,9 +121,12 @@ namespace litecore {
                 if (_continuous)
                     _backgroundDB->removeTransactionObserver(this);
             });
-
-            _delegate->liveQuerierStopped();
         }
+        // CBL-2678 : _query may not be initialized yet so liveQuerierStopped() needs to be
+        // called outside the _query check. Noted that _stop() will be called only once
+        // as the stop() method has been guard from working more than once after the
+        // _stopping flag was set to true.
+        _delegate->liveQuerierStopped();
         logVerbose("...stopped");
     }
 
