@@ -359,8 +359,9 @@ namespace litecore { namespace blip {
                     *flagsPos = frameFlags;
                     slice frame = out.output();
                     bytesWritten += frame.size;
-
-                    logVerbose("    Sending frame: %s #%" PRIu64 " %c%c%c%c, bytes %u--%u",
+                    
+                    // CBL-2670, CBL-2671 : Temporary change from VERBOSE to INFO for investigating the issues.
+                    logInfo("    Sending frame: %s #%" PRIu64 " %c%c%c%c, bytes %u--%u",
                                kMessageTypeNames[frameFlags & kTypeMask], msg->number(),
                                (frameFlags & kMoreComing ? 'M' : '-'),
                                (frameFlags & kUrgent ? 'U' : '-'),
@@ -418,7 +419,9 @@ namespace litecore { namespace blip {
                         msgNo = *pMsgNo;
                         flags = (FrameFlags)*pFlags;
                     }
-                    logVerbose("Received frame: %s #%" PRIu64 " %c%c%c%c, length %5ld",
+                    
+                    // CBL-2670, CBL-2671 : Temporary change from VERBOSE to INFO for investigating the issues.
+                    logInfo("Received frame: %s #%" PRIu64 " %c%c%c%c, length %5ld",
                                kMessageTypeNames[flags & kTypeMask], msgNo,
                                (flags & kMoreComing ? 'M' : '-'),
                                (flags & kUrgent ? 'U' : '-'),

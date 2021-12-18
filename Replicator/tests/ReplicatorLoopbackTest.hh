@@ -80,6 +80,12 @@ public:
     }
 
     ~ReplicatorLoopbackTest() {
+        {
+            // CBL-2670, CBL-2671 : Temporary code for investigating the issues.
+            c4log_setLevel(c4log_getDomain("WS", false), kC4LogWarning);
+            c4log_setLevel(c4log_getDomain("BLIP", false), kC4LogWarning);
+        }
+        
         if (_parallelThread)
             _parallelThread->join();
         _replClient = _replServer = nullptr;

@@ -224,6 +224,11 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]"
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
+    {
+        // CBL-2670, CBL-2671 : Temporary code for investigating the issues.
+        c4log_setLevel(c4log_getDomain("WS", false), kC4LogInfo);
+        c4log_setLevel(c4log_getDomain("BLIP", false), kC4LogInfo);
+    }
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     _expectedDocumentCount = 12189;
     runPushReplication();
@@ -746,6 +751,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blob]") {
+    {
+        // CBL-2670, CBL-2671 : Temporary code for investigating the issues.
+        c4log_setLevel(c4log_getDomain("WS", false), kC4LogInfo);
+        c4log_setLevel(c4log_getDomain("BLIP", false), kC4LogInfo);
+    }
+    
     static const int kNumDocs = 1000, kNumBlobsPerDoc = 5;
     Log("Creating %d docs, with %d blobs each ...", kNumDocs, kNumBlobsPerDoc);
     {
