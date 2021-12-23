@@ -55,8 +55,11 @@ TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
         c4key_setPasswordFunc = c4key_setPasswordSHA1;
         expectedKey = "7ecec9cc8d4efbebcbf537a3169f61d9db05971a9fec9761ff37fdb1f09f862d";
     }
-    REQUIRE(!(*c4key_setPasswordFunc)(&key, nullslice, kC4EncryptionAES256));
-    REQUIRE(!(*c4key_setPasswordFunc)(&key, "password123"_sl, kC4EncryptionNone));
+    {
+        ExpectingExceptions expectingExceptions;
+        REQUIRE(!(*c4key_setPasswordFunc)(&key, nullslice, kC4EncryptionAES256));
+        REQUIRE(!(*c4key_setPasswordFunc)(&key, "password123"_sl, kC4EncryptionNone));
+    }
     key = {};
     REQUIRE((*c4key_setPasswordFunc)(&key, "password123"_sl, kC4EncryptionAES256));
     CHECK(key.algorithm == kC4EncryptionAES256);
