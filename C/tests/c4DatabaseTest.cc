@@ -14,6 +14,8 @@
 #include "c4Private.h"
 #include "c4DocEnumerator.h"
 #include "c4BlobStore.h"
+#include "c4Index.h"
+#include "c4IndexTypes.h"
 #include "c4Query.h"
 #include "FilePath.hh"
 #include "SecureRandomize.hh"
@@ -960,6 +962,76 @@ TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
 // In 3.0 it's no longer possible to open 2.x databases without upgrading
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
+}
+
+
+TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
+    string dbPath = "upgrade_2.8.cblite2";
+
+    // This test tests CBL-2374. When there are indexes, simply moving records of v2 schema
+    // to v3 schema will cause fleece to fail. This failure can be avoided by regenerate
+    // the index after migrating all the records to v3 schema. However, this can incur
+    // significant performance cost for large dbs. CBL-2374 fixed the root-cause so that,
+    // 1. we can move the records to v3 schema without touching the existent indexes.
+    // 2. we allow v3 databse to have records of mixed v2 and v3 schemas. By not moving
+    //    all v2 records to v3 schema, we've further optimized the performance of
+    //    opening v2 databases.
+    // This test tests both cases:
+    // A. Revision Tree: assure we don't have to move records to V3 schemas.
+    // B. Version Vector: assure we can move records to v3 schema without touching
+    //    the index.
+    // NB: the database used in this test contains a value index of "firstName, lastName"
+
+    C4DatabaseFlags withFlags{0};
+    SECTION("Revision Tree") { }
+    SECTION("Version Vector") {
+        withFlags = kC4DB_VersionVectors;
+    }
+
+    C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
+    C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
+    auto name = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
+    C4Log("---- copy Fixture to: %s/%s", TempDir().c_str(), name.asString().c_str());
+    C4Error err;
+    c4::ref<C4Database> db = c4db_openNamed(name, &config, WITH_ERROR(&err));
+    CHECK(db);
+    
+    // This db has two documents with docIDs,
+    // "-3aW8VeEWNHiXlvj6lhl2Cl" and "-4xUa8BVjx0TiT_iCFWjpzM".
+    // They have the same JSON body, {"firstName":"fName","lastName":"lName"}.
+    // Let's edit one doc:
+    {
+        slice docID = "-4xUa8BVjx0TiT_iCFWjpzM"_sl;
+        C4Test::createFleeceRev(db, docID, nullslice,
+                                slice(json5("{firstName:'john',lastName:'foo'}")));
+    }
+    
+    // Verify a query agaist the (compound) index, (firstName, lastName).
+    {
+        C4Error error;
+        c4::ref<C4Query> query = c4query_new2(db, kC4N1QLQuery,
+            "SELECT firstName, lastName FROM _ ORDER BY firstName, lastName"_sl,
+            nullptr, ERROR_INFO());
+        REQUIRE(query);
+        c4::ref<C4QueryEnumerator> e = c4query_run(query, nullptr, nullslice, ERROR_INFO());
+        REQUIRE(e);
+        unsigned count = 0;
+        const char* fl_names[][2] = { {"fName", "lName"},
+                                      {"john", "foo"}
+                                    };
+        while (c4queryenum_next(e, ERROR_INFO(error))) {
+            auto iter = e->columns;
+            auto cc = FLArrayIterator_GetCount(&iter);
+            REQUIRE(cc == 2);
+            for (unsigned i = 0; i < cc; ++i) {
+                Value v(FLArrayIterator_GetValueAt(&iter, i));
+                CHECK(v.asString().compare(fl_names[count][i]) == 0);
+            }
+            ++count;
+        }
+        CHECK(!error);
+        CHECK(count == 2);
+    }
 }
 
 
