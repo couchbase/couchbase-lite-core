@@ -300,20 +300,24 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Server Addresses", "[Listener]") {
             continue;
         }
         
+        C4Log("  >>> Starting server at %s", addr.c_str());
         s->start(0, addr);
         auto innerAddresses = s->addresses();
         REQUIRE(innerAddresses.size() == 1);
         CHECK(innerAddresses[0] == addr);
         CHECK(s->port() != 0);
+        C4Log("  <<< Stopping server %s on port %d", addr.c_str(), s->port());
         s->stop();
     }
     
     for(const auto& interface : litecore::net::Interface::all()) {
+        C4Log("  >>> Starting server at %s", interface.name.c_str());
         s->start(0, interface.name);
         auto innerAddresses = s->addresses();
         REQUIRE(innerAddresses.size() == 1);
         CHECK(innerAddresses[0] == (string)interface.primaryAddress());
         CHECK(s->port() != 0);
+        C4Log("  <<< Stopping server at %s on port %d", interface.name.c_str(), s->port());
         s->stop();
     }
 }
