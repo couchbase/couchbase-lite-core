@@ -59,16 +59,9 @@ namespace litecore {
         if (_config.flags & (kC4DB_ReadOnly |kC4DB_NoUpgrade))
             error::_throw(error::CantUpgradeDatabase, "Document versioning needs upgrade");
 
-        // Drop indexes (then restore them afterwards.) This is faster than letting SQLite
-        // update indexes incrementally, when large numbers of docs are modified.
-        vector<IndexSpec> indexSpecs{defaultKeyStore().getIndexes()};
-        for (IndexSpec& spec: indexSpecs) {
-            defaultKeyStore().deleteIndex(spec.name, t);
-        }
-
         alloc_slice path = getPath();
-        LogTo(DBLog, "SCHEMA UPGRADE: Upgrading database <%.*s> from %s to %s ...",
-              SPLAT(path), kNameOfVersioning[curVersioning], kNameOfVersioning[newVersioning]);
+        LogTo(DBLog, "*** Upgrading stored documents from %s to %s ***",
+              kNameOfVersioning[curVersioning], kNameOfVersioning[newVersioning]);
         uint64_t docCount = 0;
 
         // Iterate over all documents:
@@ -97,15 +90,6 @@ namespace litecore {
 
             ++docCount;
         }
-        
-        // Restore all the indexes
-        if (!indexSpecs.empty()) {
-            LogTo(DBLog, "\tRebuilding %u indexes...", unsigned(indexSpecs.size()));
-            for (IndexSpec& spec: indexSpecs) {
-                defaultKeyStore().createIndex(spec, t);
-            }
-        }
-
         LogTo(DBLog, "\t%" PRIu64 " documents upgraded, now committing changes...", docCount);
     }
 
