@@ -965,8 +965,21 @@ TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
 }
 
 
-TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C][.jzhao]") {
-    string dbPath = "upgrade_2.8.cblite2";
+TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
+    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
+}
+
+
+TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
+    testOpeningOlderDBFixture("upgrade_2.8.cblite2", 0);
+// In 3.0 it's no longer possible to open 2.x databases without upgrading
+//    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
+//    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
+}
+
+
+TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
+    string dbPath = "upgrade_2.8_index.cblite2";
 
     // This test tests CBL-2374. When there are indexes, simply moving records of v2 schema
     // to v3 schema will cause fleece to fail. This failure can be avoided by regenerate
@@ -983,10 +996,8 @@ TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C][.jzhao]") {
     // NB: the database used in this test contains a value index of "firstName, lastName"
 
     C4DatabaseFlags withFlags{0};
-    SECTION("Revision Tree") { }
-    SECTION("Version Vector") {
-        withFlags = kC4DB_VersionVectors;
-    }
+    SECTION("Revision Tree")  { }
+    SECTION("Version Vector") { withFlags = kC4DB_VersionVectors; }
 
     C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
     C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
@@ -1032,11 +1043,6 @@ TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C][.jzhao]") {
         CHECK(!error);
         CHECK(count == 2);
     }
-}
-
-
-TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
-    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
 }
 
 

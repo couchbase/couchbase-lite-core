@@ -254,7 +254,7 @@ namespace litecore {
                 _exec("ALTER TABLE kvmeta ADD COLUMN purgeCnt INTEGER DEFAULT 0;");
             });
 
-            bool upgraded = upgradeSchema(SchemaVersion::WithNewDocs,
+            if (!upgradeSchema(SchemaVersion::WithNewDocs,
                                           "Adding `extra` column", [&] {
                 // Add the 'extra' column to every KeyStore:
                 for (string &name : allKeyStoreNames()) {
@@ -263,37 +263,9 @@ namespace litecore {
                         _exec("ALTER TABLE kv_" + name + " ADD COLUMN extra BLOB;");
                     }
                 }
-            });
-            if (!upgraded)
+            })) {
                 error::_throw(error::CantUpgradeDatabase);
-
-
-            upgraded = upgradeSchema(SchemaVersion::WithDeletedTable,
-                                     "Migrating deleted docs to `del_` tables", [&] {
-                // Migrate deleted docs to separate table:
-                _schemaVersion = SchemaVersion::WithDeletedTable; // enable creating _del keystores
-                for(string keyStoreName : allKeyStoreNames()) {
-                    if (keyStoreNameIsCollection(keyStoreName)) {
-                        Assert(!hasPrefix(keyStoreName, kDeletedKeyStorePrefix));
-                        (void) getKeyStore(keyStoreName); // creates the `_del` keystore
-                        
-                        string str = format("INSERT INTO kv_%s%s SELECT * FROM kv_%s WHERE (flags&1)!=0; "
-                                     "DELETE FROM kv_%s WHERE (flags&1)!=0;",
-                                     kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
-                                     keyStoreName.c_str(),
-                                            keyStoreName.c_str());
-                        _exec(str);
-                        
-//                        _exec(format("INSERT INTO kv_%s%s SELECT * FROM kv_%s WHERE (flags&1)!=0; "
-//                                     "DELETE FROM kv_%s WHERE (flags&1)!=0;",
-//                                     kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
-//                                     keyStoreName.c_str(),
-//                                     keyStoreName.c_str()));
-                    }
-                }
-            });
-            if (!upgraded)
-                error::_throw(error::CantUpgradeDatabase);
+            }
         });
 
         // Configure number of extra threads to be used by SQLite:
@@ -307,6 +279,27 @@ namespace litecore {
         int rc = register_unicodesn_tokenizer(sqlite);
         if (rc != SQLITE_OK)
             warn("Unable to register FTS tokenizer: SQLite err %d", rc);
+
+        withFileLock([this]{
+            if (!upgradeSchema(SchemaVersion::WithDeletedTable,
+                                     "Migrating deleted docs to `del_` tables", [&] {
+                // Migrate deleted docs to separate table:
+                _schemaVersion = SchemaVersion::WithDeletedTable; // enable creating _del keystores
+                for(string keyStoreName : allKeyStoreNames()) {
+                    if (keyStoreNameIsCollection(keyStoreName)) {
+                        Assert(!hasPrefix(keyStoreName, kDeletedKeyStorePrefix));
+                        (void) getKeyStore(keyStoreName); // creates the `_del` keystore
+                        _exec(format("INSERT INTO kv_%s%s SELECT * FROM kv_%s WHERE (flags&1)!=0; "
+                                     "DELETE FROM kv_%s WHERE (flags&1)!=0;",
+                                     kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
+                                     keyStoreName.c_str(),
+                                     keyStoreName.c_str()));
+                    }
+                }
+            })) {
+                error::_throw(error::CantUpgradeDatabase);
+            }
+        });
     }
 
 
