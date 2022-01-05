@@ -11,6 +11,7 @@
 //
 
 #include "DatabaseImpl.hh"
+#include "CollectionImpl.hh"
 #include "VectorRecord.hh"
 #include "RecordEnumerator.hh"
 #include "RevID.hh"
@@ -49,8 +50,8 @@ namespace litecore {
 
 
     void DatabaseImpl::upgradeDocumentVersioning(C4DocumentVersioning curVersioning,
-                                             C4DocumentVersioning newVersioning,
-                                             ExclusiveTransaction &t)
+                                                 C4DocumentVersioning newVersioning,
+                                                 ExclusiveTransaction &t)
     {
         if (newVersioning == curVersioning)
             return;
@@ -59,53 +60,44 @@ namespace litecore {
         if (_config.flags & (kC4DB_ReadOnly |kC4DB_NoUpgrade))
             error::_throw(error::CantUpgradeDatabase, "Document versioning needs upgrade");
 
-        // Drop indexes (then restore them afterwards.) This is faster than letting SQLite
-        // update indexes incrementally, when large numbers of docs are modified.
-        vector<IndexSpec> indexSpecs{defaultKeyStore().getIndexes()};
-        for (IndexSpec& spec: indexSpecs) {
-            defaultKeyStore().deleteIndex(spec.name, t);
-        }
-
         alloc_slice path = getPath();
-        LogTo(DBLog, "SCHEMA UPGRADE: Upgrading database <%.*s> from %s to %s ...",
-              SPLAT(path), kNameOfVersioning[curVersioning], kNameOfVersioning[newVersioning]);
+        LogTo(DBLog, "*** Upgrading stored documents from %s to %s ***",
+              kNameOfVersioning[curVersioning], kNameOfVersioning[newVersioning]);
         uint64_t docCount = 0;
 
-        // Iterate over all documents:
-        RecordEnumerator::Options options;
-        options.sortOption = kUnsorted;
-        options.includeDeleted = true;
-        options.contentOption = kEntireBody;
-        RecordEnumerator e(defaultKeyStore(), options);
-        while (e.next()) {
-            // Read the doc as a RevTreeRecord. This will correctly read both the old 2.x style
-            // record (with no `extra`) and the new 3.x style.
-            const Record &rec = e.record();
-            RevTreeRecord revTree(defaultKeyStore(), rec);
-            if (newVersioning == kC4VectorVersioning) {
-                // Upgrade from rev-trees (v2 or v3) to version-vectors:
-                upgradeToVersionVectors(this, rec, revTree, t);
-            } else {
-                // Upgrading v2 rev-trees to new db schema with `extra` column;
-                // simply resave and RevTreeRecord will use the new schema:
-                auto result = revTree.save(t);
-                Assert(result == RevTreeRecord::kNoNewSequence);
-                LogVerbose(DBLog, "  - Upgraded doc '%.*s' #%s",
-                        SPLAT(rec.key()),
-                        revid(rec.version()).str().c_str());
-            }
+        // Iterate over all documents in all collections:
+        for (string &ksName : _dataFile->allKeyStoreNames()) {
+            if (SQLiteDataFile::keyStoreNameIsCollection(ksName)) {
+                LogTo(DBLog, "*** Upgrading stored documents in `%s` from %s to %s ***",
+                      ksName.c_str(),
+                      kNameOfVersioning[curVersioning], kNameOfVersioning[newVersioning]);
+                RecordEnumerator::Options options;
+                options.sortOption = kUnsorted;
+                options.includeDeleted = true;
+                options.contentOption = kEntireBody;
+                RecordEnumerator e(_dataFile->getKeyStore(ksName), options);
+                while (e.next()) {
+                    // Read the doc as a RevTreeRecord. This will correctly read both the old 2.x style
+                    // record (with no `extra`) and the new 3.x style.
+                    const Record &rec = e.record();
+                    RevTreeRecord revTree(defaultKeyStore(), rec);
+                    if (newVersioning == kC4VectorVersioning) {
+                        // Upgrade from rev-trees (v2 or v3) to version-vectors:
+                        upgradeToVersionVectors(this, rec, revTree, t);
+                    } else {
+                        // Upgrading v2 rev-trees to new db schema with `extra` column;
+                        // simply resave and RevTreeRecord will use the new schema:
+                        auto result = revTree.save(t);
+                        Assert(result == RevTreeRecord::kNoNewSequence);
+                        LogVerbose(DBLog, "  - Upgraded doc '%.*s' #%s",
+                                SPLAT(rec.key()),
+                                revid(rec.version()).str().c_str());
+                    }
 
-            ++docCount;
-        }
-        
-        // Restore all the indexes
-        if (!indexSpecs.empty()) {
-            LogTo(DBLog, "\tRebuilding %u indexes...", unsigned(indexSpecs.size()));
-            for (IndexSpec& spec: indexSpecs) {
-                defaultKeyStore().createIndex(spec, t);
+                    ++docCount;
+                }
             }
         }
-
         LogTo(DBLog, "\t%" PRIu64 " documents upgraded, now committing changes...", docCount);
     }
 

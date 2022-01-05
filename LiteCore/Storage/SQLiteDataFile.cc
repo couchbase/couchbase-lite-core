@@ -20,6 +20,7 @@
 #include "SQLiteDataFile.hh"
 #include "SQLiteKeyStore.hh"
 #include "SQLite_Internal.hh"
+#include "BothKeyStore.hh"
 #include "Record.hh"
 #include "UnicodeCollator.hh"
 #include "Error.hh"
@@ -98,6 +99,9 @@ namespace litecore {
     // multiple threads from trying to start transactions at once, but another process might
     // open the database and grab the write lock.
     static const unsigned kBusyTimeoutSecs = 10;
+
+    // Prefix of the KeyStores for deleted documents
+    static const string kDeletedKeyStorePrefix = "del_";
 
     LogDomain SQL("SQL", LogLevel::Warning);
 
@@ -217,14 +221,14 @@ namespace litecore {
                 // Configure persistent db settings, and create the schema.
                 // `auto_vacuum` has to be enabled ASAP, before anything's written to the db!
                 // (even setting `auto_vacuum` writes to the db, it turns out! See CBSE-7971.)
-                _exec("PRAGMA auto_vacuum=incremental; "
+                _exec(format("PRAGMA auto_vacuum=incremental; "
                       "PRAGMA journal_mode=WAL; "
                       "BEGIN; "
                       "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
                       "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0, purgeCnt INTEGER DEFAULT 0) WITHOUT ROWID; "
-                      "PRAGMA user_version=400; "
-                      "END;"
-                      );
+                      "PRAGMA user_version=%d; "
+                      "END;",
+					  SchemaVersion::Current));
                 Assert(intQuery("PRAGMA auto_vacuum") == 2, "Incremental vacuum was not enabled!");
                 _schemaVersion = SchemaVersion::Current;
                 // Create the default KeyStore's table:
@@ -235,65 +239,67 @@ namespace litecore {
                 error::_throw(error::DatabaseTooNew);
             }
 
-            if (_schemaVersion < SchemaVersion::WithPurgeCount) {
+            _exec(format("PRAGMA cache_size=%d; "            // Memory cache
+                         "PRAGMA mmap_size=%d; "             // Memory-mapped reads
+                         "PRAGMA synchronous=normal; "       // Speeds up commits
+                         "PRAGMA journal_size_limit=%lld; "  // Limit WAL disk usage
+                         "PRAGMA case_sensitive_like=true",  // Case sensitive LIKE, for N1QL compat
+                         -(int)kCacheSize/1024, kMMapSize, (long long)kJournalSize));
+
+            (void)upgradeSchema(SchemaVersion::WithPurgeCount,
+                                "Adding purgeCnt column", [&] {
                 // Schema upgrade: Add the `purgeCnt` column to the kvmeta table.
                 // We can postpone this schema change if the db is read-only, since the purge count
                 // is only used to mark changes to the database, and we won't be changing it.
-                if (options().writeable) {
-                    if (!options().upgradeable)
-                        error::_throw(error::CantUpgradeDatabase,
-                                      "Database needs upgrade to add document-purging metadata");
-                    try {
-                        _exec("ALTER TABLE kvmeta ADD COLUMN purgeCnt INTEGER DEFAULT 0; "
-                              "PRAGMA user_version=302; ");
-                        _schemaVersion = SchemaVersion::WithPurgeCount;
-                    } catch (const SQLite::Exception &x) {
-                        // Recover if the db file itself is read-only
-                        if (x.getErrorCode() != SQLITE_READONLY)
-                            throw;
-                    }
-                }
-            }
+                _exec("ALTER TABLE kvmeta ADD COLUMN purgeCnt INTEGER DEFAULT 0;");
+            });
 
-            if (_schemaVersion < SchemaVersion::WithNewDocs) {
+            bool upgraded = upgradeSchema(SchemaVersion::WithNewDocs,
+                                          "Adding `extra` column", [&] {
                 // Add the 'extra' column to every KeyStore:
-                if (!options().writeable || !options().upgradeable)
-                    error::_throw(error::CantUpgradeDatabase,
-                                  "Database needs upgrade to newer document storage format");
                 for (string &name : allKeyStoreNames()) {
                     if(name.find("::") == string::npos) {
                         // CBL-1741: Only update data tables, not FTS index tables
-                        _exec("ALTER TABLE kv_" + name + " ADD COLUMN extra BLOB; "
-                              "PRAGMA user_version=400; ");
+                        _exec("ALTER TABLE kv_" + name + " ADD COLUMN extra BLOB;");
                     }
                 }
-                _schemaVersion = SchemaVersion::WithNewDocs;
-            }
+            });
+            if (!upgraded)
+                error::_throw(error::CantUpgradeDatabase);
+
+
+            upgraded = upgradeSchema(SchemaVersion::WithDeletedTable,
+                                     "Migrating deleted docs to `del_` tables", [&] {
+                // Migrate deleted docs to separate table:
+                _schemaVersion = SchemaVersion::WithDeletedTable; // enable creating _del keystores
+                for(string keyStoreName : allKeyStoreNames()) {
+                    if (keyStoreNameIsCollection(keyStoreName)) {
+                        Assert(!hasPrefix(keyStoreName, kDeletedKeyStorePrefix));
+                        (void) getKeyStore(keyStoreName); // creates the `_del` keystore
+                        
+                        string str = format("INSERT INTO kv_%s%s SELECT * FROM kv_%s WHERE (flags&1)!=0; "
+                                     "DELETE FROM kv_%s WHERE (flags&1)!=0;",
+                                     kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
+                                     keyStoreName.c_str(),
+                                            keyStoreName.c_str());
+                        _exec(str);
+                        
+//                        _exec(format("INSERT INTO kv_%s%s SELECT * FROM kv_%s WHERE (flags&1)!=0; "
+//                                     "DELETE FROM kv_%s WHERE (flags&1)!=0;",
+//                                     kDeletedKeyStorePrefix.c_str(), keyStoreName.c_str(),
+//                                     keyStoreName.c_str(),
+//                                     keyStoreName.c_str()));
+                    }
+                }
+            });
+            if (!upgraded)
+                error::_throw(error::CantUpgradeDatabase);
         });
 
-        _exec(format("PRAGMA cache_size=%d; "            // Memory cache
-                     "PRAGMA mmap_size=%d; "             // Memory-mapped reads
-                     "PRAGMA synchronous=normal; "       // Speeds up commits
-                     "PRAGMA journal_size_limit=%lld; "  // Limit WAL disk usage
-                     "PRAGMA case_sensitive_like=true",  // Case sensitive LIKE, for N1QL compat
-                     -(int)kCacheSize/1024, kMMapSize, (long long)kJournalSize));
-
-#if DEBUG
-        // Deliberately make unordered queries unpredictable, to expose any LiteCore code that
-        // unintentionally relies on ordering:
-        if (RandomNumber() % 1)
-            _sqlDb->exec("PRAGMA reverse_unordered_selects=1");
-#endif
-
         // Configure number of extra threads to be used by SQLite:
-        int maxThreads = 0;
-#if TARGET_OS_OSX
-        maxThreads = 2;
-        // TODO: Configure for other platforms
-#endif
         auto sqlite = _sqlDb->getHandle();
-        if (maxThreads > 0)
-            sqlite3_limit(sqlite, SQLITE_LIMIT_WORKER_THREADS, maxThreads);
+        if (thread::hardware_concurrency() > 2)
+            sqlite3_limit(sqlite, SQLITE_LIMIT_WORKER_THREADS, 2);
 
         // Register collators, custom functions, and the FTS tokenizer:
         RegisterSQLiteUnicodeCollations(sqlite, _collationContexts);
@@ -301,6 +307,51 @@ namespace litecore {
         int rc = register_unicodesn_tokenizer(sqlite);
         if (rc != SQLITE_OK)
             warn("Unable to register FTS tokenizer: SQLite err %d", rc);
+    }
+
+
+    bool SQLiteDataFile::upgradeSchema(SchemaVersion minVersion,
+                                       const char *what,
+                                       function_ref<void()> upgrade)
+    {
+        auto logUpgrade = [&](const char *msg) {
+            logInfo("SCHEMA UPGRADE (%d-%d) %-s", _schemaVersion, minVersion, msg);
+        };
+
+        if (_schemaVersion < minVersion) {
+            if (!options().writeable) {
+                logUpgrade("skipped; cannot upgrade read-only connection");
+                return false;
+            }
+            if (!options().upgradeable) {
+                logUpgrade("blocked: opening with 'NoUpgrade' flag");
+                error::_throw(error::CantUpgradeDatabase);
+            }
+            
+            logUpgrade(what);
+            bool inTransaction = false;
+            try {
+                _exec("BEGIN");
+                inTransaction = true;
+                upgrade();
+                _exec(format("PRAGMA user_version=%d; END", minVersion));
+            } catch (const SQLite::Exception &x) {
+                // Recover if the db file itself is read-only (but not opened with writeable=false)
+                if (x.getErrorCode() == SQLITE_READONLY) {
+                    logUpgrade("skipped; cannot upgrade read-only file");
+                    if (inTransaction)
+                        _exec("ABORT");
+                    auto opts = options();
+                    opts.writeable = false;
+                    setOptions(opts);
+                    return false;
+                } else {
+                    throw;
+                }
+            }
+            _schemaVersion = minVersion;
+        }
+        return true;
     }
 
 
@@ -489,7 +540,29 @@ namespace litecore {
 
 
     KeyStore* SQLiteDataFile::newKeyStore(const string &name, KeyStore::Capabilities options) {
-        return new SQLiteKeyStore(*this, name, options);
+        Assert(!hasPrefix(name, kDeletedKeyStorePrefix)); // can't access deleted stores directly
+        auto keyStore = new SQLiteKeyStore(*this, name, options);
+        if (options.sequences && _schemaVersion >= SchemaVersion::WithDeletedTable
+                              && keyStoreNameIsCollection(name)) {
+            // Wrap the store in a BothKeyStore that manages it and the deleted store:
+            auto deletedStore = new SQLiteKeyStore(*this, kDeletedKeyStorePrefix + name, options);
+
+            keyStore->addExpiration();
+            deletedStore->addExpiration();
+            
+            // Create a SQLite view of a union of both stores, for use in queries:
+#define COLUMNS "key,sequence,flags,version,body,extra,expiration"
+            const char *cname = name.c_str();
+            _exec(format("CREATE TEMP VIEW IF NOT EXISTS all_%s (" COLUMNS ") AS "
+                         "SELECT " COLUMNS " from kv_%s UNION ALL SELECT " COLUMNS " from kv_del_%s",
+                         cname, cname, cname));
+#undef COLUMNS
+
+            return new BothKeyStore(keyStore, deletedStore);
+
+        } else {
+            return keyStore;
+        }
     }
 
 #if ENABLE_DELETE_KEY_STORES
@@ -507,7 +580,7 @@ namespace litecore {
     void SQLiteDataFile::_endTransaction(ExclusiveTransaction *t, bool commit) {
         // Notify key-stores so they can save state:
         forOpenKeyStores([commit](KeyStore &ks) {
-            ((SQLiteKeyStore&)ks).transactionWillEnd(commit);
+            ks.transactionWillEnd(commit);
         });
 
         exec(commit ? "COMMIT" : "ROLLBACK");
@@ -669,24 +742,48 @@ namespace litecore {
 #pragma mark - QUERIES:
 
 
+    bool SQLiteDataFile::tableNameIsCollection(slice tableName) {
+        return tableName.hasPrefix("kv_") && keyStoreNameIsCollection(tableName.from(3));
+    }
+
+
+    bool SQLiteDataFile::keyStoreNameIsCollection(slice ksName) {
+        if (ksName.hasPrefix(kDeletedKeyStorePrefix))
+            ksName = ksName.from(kDeletedKeyStorePrefix.size());
+        return ksName == slice("default") || ksName.hasPrefix("coll_");
+    }
+
+
     // Maps a collection name used in a query (after "FROM..." or "JOIN...") to a table name.
     // We have two special rules:
     // 1. The name "_" refers to the default collection; this is simpler than "_default" and
     //    means we don't have to imply that CBL 3.0 supports collections.
     // 2. The name of the database also refers to the default collection, because people are
     //    used to using "FROM bucket_name" in Server queries.
-    string SQLiteDataFile::collectionTableName(const string &collection) const {
-        if (collection == "_default" || collection == "_") {
-            return "kv_default";
+    string SQLiteDataFile::collectionTableName(const string &collection, DeletionStatus type) const {
+        Assert(!collection.empty());
+        Assert(!hasPrefix(collection, "kv_") && !hasPrefix(collection, "coll_"));
+        string name;
+        if (type == QueryParser::kLiveAndDeletedDocs) {
+            name = "all_";
         } else {
-            string table = "kv_coll_" + collection;
-            if (collection == delegate()->databaseName() && !tableExists(table)) {
+            name = "kv_";
+            if (type == QueryParser::kDeletedDocs)
+                name += kDeletedKeyStorePrefix;
+        }
+        if (collection == "_default" || collection == "_")
+            name += "default";
+        else {
+            string candidate = name + "coll_" + collection;
+            if (collection == delegate()->databaseName() && !tableExists(candidate)) {
                 // The name of this database represents the default collection,
                 // _unless_ there is a collection with that name.
-                return "kv_default";
+                name += "default";
+            } else {
+                name = candidate;
             }
-            return table;
         }
+        return name;
     }
 
     string SQLiteDataFile::FTSTableName(const string &onTable, const string &property) const {

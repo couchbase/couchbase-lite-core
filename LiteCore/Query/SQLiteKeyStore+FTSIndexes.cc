@@ -37,7 +37,7 @@ namespace litecore {
     {
         auto ftsTableName = db().FTSTableName(tableName(), spec.name);
         // Collect the name of each FTS column and the SQL expression that populates it:
-        QueryParser qp(db(), tableName());
+        QueryParser qp(db(), collectionName(), tableName());
         qp.setBodyColumnName("new.body");
         vector<string> colNames, colExprs;
         for (Array::iterator i(spec.what()); i; ++i) {

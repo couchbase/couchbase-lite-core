@@ -31,7 +31,8 @@ namespace litecore {
         checkOpen();
         vector<string> names;
         SQLite::Statement allStores(*_sqlDb, string("SELECT substr(name,4) FROM sqlite_master"
-                                                    " WHERE type='table' AND name GLOB 'kv_*'"));
+                                                    " WHERE type='table' AND name GLOB 'kv_*'"
+                                                    " AND NOT name GLOB 'kv_del_*'"));
         LogStatement(allStores);
         while (allStores.executeStep()) {
             string storeName = allStores.getColumn(0).getString();
@@ -48,9 +49,9 @@ namespace litecore {
     }
 
 
-    SQLiteKeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
+    KeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
         Assert(tableName == "kv_default" || tableName.hasPrefix("kv_coll_"));
-        return (SQLiteKeyStore&)getKeyStore(tableName.from(3));
+        return getKeyStore(tableName.from(3));
     }
 
 
@@ -98,6 +99,18 @@ namespace litecore {
     }
 
 
+    string SQLiteKeyStore::collectionName() const {
+        if (_name == "default")
+            return "_default";
+        else if (hasPrefix(_name, "coll_"))
+            return _name.substr(5);
+        else {
+            DebugAssert(false, "KeyStore is not a collection!");
+            return "";
+        }
+    }
+
+
     string SQLiteKeyStore::subst(const char *sqlTemplate) const {
         string sql(sqlTemplate);
         size_t pos;
@@ -125,8 +138,9 @@ namespace litecore {
     }
 
 
-    uint64_t SQLiteKeyStore::recordCount() const {
-        auto &stmt = compileCached("SELECT count(*) FROM kv_@ WHERE (flags & 1) != 1");
+    uint64_t SQLiteKeyStore::recordCount(bool includeDeleted) const {
+        auto &stmt = compileCached(includeDeleted ? "SELECT count(*) FROM kv_@"
+                                              : "SELECT count(*) FROM kv_@ WHERE (flags & 1) != 1");
         UsingStatement u(stmt);
         if (stmt.executeStep())
             return (int64_t)stmt.getColumn(0);
@@ -134,20 +148,33 @@ namespace litecore {
     }
 
 
+    void SQLiteKeyStore::shareSequencesWith(KeyStore &source) {
+        _sequencesOwner = dynamic_cast<SQLiteKeyStore*>(&source);
+    }
+
+
     sequence_t SQLiteKeyStore::lastSequence() const {
-        if (_lastSequence >= 0)
-            return _lastSequence;
-        sequence_t seq = db().lastSequence(_name);
-        if (db().inTransaction())
-            _lastSequence = seq;
-        return seq;
+        if (_sequencesOwner) {
+            return _sequencesOwner->lastSequence();
+        } else {
+            if (_lastSequence >= 0)
+                return _lastSequence;
+            sequence_t seq = db().lastSequence(_name);
+            if (db().inTransaction())
+                _lastSequence = seq;
+            return seq;
+        }
     }
 
     
     void SQLiteKeyStore::setLastSequence(sequence_t seq) {
-        if (_capabilities.sequences) {
-            _lastSequence = seq;
-            _lastSequenceChanged = true;
+        if (_sequencesOwner) {
+            _sequencesOwner->setLastSequence(seq);
+        } else {
+            if (_capabilities.sequences) {
+                _lastSequence = seq;
+                _lastSequenceChanged = true;
+            }
         }
     }
 
@@ -172,6 +199,7 @@ namespace litecore {
 
     void SQLiteKeyStore::transactionWillEnd(bool commit) {
         if (_lastSequenceChanged) {
+            Assert(!_sequencesOwner);
             if (commit)
                 db().setLastSequence(*this, _lastSequence);
             _lastSequenceChanged = false;
@@ -199,6 +227,11 @@ namespace litecore {
                 return;
             }
         }
+    }
+
+
+    /*static*/ slice SQLiteKeyStore::columnAsSlice(const SQLite::Column &col) {
+        return slice(col.getBlob(), col.getBytes());
     }
 
 
@@ -408,13 +441,15 @@ namespace litecore {
     }
 
 
+#if ENABLE_DELETE_KEY_STORES
     void SQLiteKeyStore::erase() {
         ExclusiveTransaction t(db());
         db().exec(string("DELETE FROM kv_"+name()));
         setLastSequence(0);
         t.commit();
     }
-
+#endif
+    
 
     void SQLiteKeyStore::createTrigger(string_view triggerName,
                                        string_view triggerSuffix,

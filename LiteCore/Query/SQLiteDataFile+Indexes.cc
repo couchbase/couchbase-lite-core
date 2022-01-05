@@ -183,6 +183,7 @@ namespace litecore {
                                           "AND name NOT LIKE 'kv_%_blobs' "
                                           "AND name NOT LIKE 'kv_%_conflicts' "
                                           "AND name NOT LIKE 'kv_%_seqs' "
+                                          "AND name NOT LIKE 'kv_%_expiration' "
                                           "AND sql NOT NULL");
         while(getIndex.executeStep()) {
             string indexName = getIndex.getColumn(0);

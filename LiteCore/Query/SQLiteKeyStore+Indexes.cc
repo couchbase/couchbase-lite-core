@@ -51,16 +51,8 @@ namespace litecore {
     bool SQLiteKeyStore::createIndex(const IndexSpec &spec) {
         spec.validateName();
 
-        ExclusiveTransaction t(db());
-        bool created = createIndex(spec, t);
-        if (created) {
-            t.commit();
-        }
-        return created;
-    }
-
-    bool SQLiteKeyStore::createIndex(const IndexSpec &spec, ExclusiveTransaction& t) {
         Stopwatch st;
+        ExclusiveTransaction t(db());
         bool created;
         switch (spec.type) {
             case IndexSpec::kValue:      created = createValueIndex(spec); break;
@@ -73,6 +65,7 @@ namespace litecore {
         }
 
         if (created) {
+            t.commit();
             double time = st.elapsed();
             QueryLog.log((time < 3.0 ? LogLevel::Info : LogLevel::Warning),
                          "Created index '%s' in %.3f sec", spec.name.c_str(), time);
@@ -87,7 +80,7 @@ namespace litecore {
                                      Array::iterator &expressions)
     {
         Assert(spec.type != IndexSpec::kFullText);
-        QueryParser qp(db(), sourceTableName);
+        QueryParser qp(db(), "", sourceTableName);
         qp.writeCreateIndex(spec.name,
                             sourceTableName,
                             expressions,
@@ -102,18 +95,10 @@ namespace litecore {
         ExclusiveTransaction t(db());
         auto spec = db().getIndex(name);
         if (spec) {
-            deleteIndex(name, t);
+            db().deleteIndex(*spec);
             t.commit();
         } else {
             t.abort();
-        }
-    }
-
-
-    void SQLiteKeyStore::deleteIndex(slice name, ExclusiveTransaction &t)  {
-        auto spec = db().getIndex(name);
-        if (!!spec) {
-            db().deleteIndex(*spec);
         }
     }
 
@@ -151,10 +136,8 @@ namespace litecore {
 
     vector<IndexSpec> SQLiteKeyStore::getIndexes() const {
         vector<IndexSpec> result;
-        for (auto &spec : db().getIndexes(nullptr)) {
-            if (spec.keyStoreName == name())
-                result.push_back(move(spec));
-        }
+        for (auto &spec : db().getIndexes(this))
+            result.push_back(move(spec));
         return result;
     }
 

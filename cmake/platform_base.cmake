@@ -71,6 +71,7 @@ function(set_litecore_source_base)
         LiteCore/RevTrees/RevTreeRecord.cc
         LiteCore/RevTrees/Version.cc
         LiteCore/RevTrees/VersionVector.cc
+        LiteCore/Storage/BothKeyStore.cc
         LiteCore/Storage/DataFile.cc
         LiteCore/Storage/KeyStore.cc
         LiteCore/Storage/Record.cc

@@ -840,7 +840,8 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
     C4Error error;
     
     string explanationString = toString(c4query_explain(query));
-    CHECK(litecore::hasPrefix(explanationString, "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'contact.address.state') = 'CA') AND (_doc.flags & 1 = 0)"));
+    INFO("Explanation = " << explanationString);
+    CHECK(litecore::hasPrefix(explanationString, "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE fl_value(_doc.body, 'contact.address.state') = 'CA'"));
     
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, ERROR_INFO(error));
     REQUIRE(e);
@@ -1062,6 +1063,22 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "Database alias column names", "[Query][C][!
     CHECK((c4query_columnTitle(query, 0) == expected1));
     CHECK((c4query_columnTitle(query, 1) == expected2));
     FLSliceResult_Release(queryStr);
+}
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Deleted Docs", "[Query][C][!throws]") {
+    C4Error error;
+    TransactionHelper t(db);
+
+    c4::ref<C4Document> doc;
+    doc = c4doc_create(db, C4STR("doc1"), kC4SliceNull, 0, ERROR_INFO(error));
+    CHECK(doc);
+    doc = c4doc_create(db, C4STR("doc2"), kC4SliceNull, 0, ERROR_INFO(error));
+    CHECK(doc);
+    doc = c4doc_update(doc, kC4SliceNull, kRevDeleted, ERROR_INFO(error));
+    CHECK(doc);
+
+    compileSelect(json5("{WHAT: [['._id']], WHERE: ['._deleted']}"));
+    CHECK(run() == (vector<string>{"doc2"}));
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query RevisionID", "[Query][C][!throws]") {
