@@ -53,7 +53,7 @@ namespace litecore {
     }
 
     bool RevTreeRecord::read(ContentOption content) {
-        if (_rec.sequence() > 0) {
+        if (_rec.sequence() > 0_seq) {
             if (!_store.read(_rec, ReadBy::Sequence, content))
                 return false;
         } else {
@@ -206,7 +206,7 @@ namespace litecore {
         sequence_t sequence = _rec.sequence();
         bool createSequence;
         if (auto cur = currentRevision(); cur) {
-            createSequence = (sequence == 0 || hasNewRevisions());
+            createSequence = (sequence == 0_seq || hasNewRevisions());
             removeNonLeafBodies();
             slice newBody;
             alloc_slice newExtra;
@@ -217,7 +217,7 @@ namespace litecore {
             newRec.extra = newExtra;
 
             sequence = _store.set(newRec, createSequence, transaction);
-            if (!sequence)
+            if (sequence == 0_seq)
                 return kConflict;               // Conflict
 
             if (createSequence)
@@ -235,7 +235,7 @@ namespace litecore {
                 saved(sequence);
         } else {
             createSequence = false;
-            if (sequence && !_store.del(_rec.key(), transaction, sequence))
+            if (sequence != 0_seq && !_store.del(_rec.key(), transaction, sequence))
                 return kConflict;
         }
         _changed = false;
@@ -245,7 +245,7 @@ namespace litecore {
 #if DEBUG
     void RevTreeRecord::dump(std::ostream& out) {
         out << "\"" << (std::string)docID() << "\" / " << (std::string)revID();
-        out << " (seq " << sequence() << ") ";
+        out << " (seq " << uint64_t(sequence()) << ") ";
         if (isDeleted())
             out << " del";
         if (isConflicted())

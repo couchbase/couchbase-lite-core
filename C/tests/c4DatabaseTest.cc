@@ -348,7 +348,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Databa
         sprintf(docID, "doc-%03d", i);
         CHECK(info.docID == c4str(docID));
         CHECK(info.revID == kRevID);
-        CHECK(info.sequence == (uint64_t)i);
+        CHECK(info.sequence == (C4SequenceNumber)i);
         CHECK(info.flags == (C4DocumentFlags)kDocExists);
         CHECK(info.bodySize == kFleeceBody.size);
         if (isRevTrees())

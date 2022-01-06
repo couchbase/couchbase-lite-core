@@ -48,20 +48,20 @@ namespace litecore {
         auto target = (deleting ? _deadStore : _liveStore).get();   // the store to update
         auto other  = (deleting ? _liveStore : _deadStore).get();
 
-        if (updateSequence && rec.sequence == 0) {
+        if (updateSequence && rec.sequence == 0_seq) {
             // Request should succeed only if doc _doesn't_ exist yet, so check other KeyStore:
             if (other->get(rec.key, kMetaOnly).exists())
-                return 0;
+                return 0_seq;
         }
 
         // Forward the 'set' to the target store:
         auto seq = target->set(rec, updateSequence, t);
 
-        if (seq == 0 && rec.sequence > 0) {
+        if (seq == 0_seq && rec.sequence > 0_seq) {
             // Conflict. Maybe record is currently in the other KeyStore; if so, delete it & retry
             if (other->del(rec.key, t, rec.sequence)) {
                 auto rec2 = rec;
-                rec2.sequence = 0;
+                rec2.sequence = 0_seq;
                 seq = target->set(rec2, updateSequence, t);
             }
         }

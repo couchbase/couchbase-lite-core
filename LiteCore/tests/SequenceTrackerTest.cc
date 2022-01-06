@@ -39,7 +39,7 @@ namespace litecore {
         }
 
         SequenceTracker tracker;
-        sequence_t seq = 0;
+        sequence_t seq = 0_seq;
 
         // These methods provide access to private members of SequenceTracker
 
@@ -96,11 +96,11 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker", "[notificatio
     CHECK(tracker.lastSequence() == seq);
     REQUIRE_IF_DEBUG(dump(true) == "[(C@3#33+3333, B@5#55+5555, A@6#66+6666, D@7#77+7777)]");
 
-    REQUIRE(docIDAt(0) == "C"_sl);
-    REQUIRE(docIDAt(4) == "B"_sl);
-    REQUIRE(docIDAt(5) == "A"_sl);
-    REQUIRE(docIDAt(6) == "D"_sl);
-    REQUIRE(since(7) == end());
+    REQUIRE(docIDAt(0_seq) == "C"_sl);
+    REQUIRE(docIDAt(4_seq) == "B"_sl);
+    REQUIRE(docIDAt(5_seq) == "A"_sl);
+    REQUIRE(docIDAt(6_seq) == "D"_sl);
+    REQUIRE(since(7_seq) == end());
 }
 
 
@@ -114,7 +114,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
     CollectionChangeNotifier cn1(tracker, [&](CollectionChangeNotifier&) {++count1;});
     CollectionChangeNotifier cn2(tracker, [&](CollectionChangeNotifier&) {++count2;});
     {
-        CollectionChangeNotifier cn3(tracker, [&](CollectionChangeNotifier&) {++count3;}, 1);
+        CollectionChangeNotifier cn3(tracker, [&](CollectionChangeNotifier&) {++count3;}, 1_seq);
         REQUIRE_IF_DEBUG(dump() == "[(A@1, *, B@2, C@3, *, *)]");
 
         SequenceTracker::Change changes[5];
@@ -123,7 +123,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
         CHECK(!external);
         CHECK(changes[0].docID == "B"_sl);
         CHECK(changes[0].revID == "1-bb"_sl);
-        CHECK(changes[0].sequence == 2);
+        CHECK(changes[0].sequence == 2_seq);
         CHECK(changes[1].docID == "C"_sl);
         REQUIRE_IF_DEBUG(dump() == "[(A@1, B@2, C@3, *, *, *)]");
         REQUIRE(!cn3.hasChanges());
@@ -139,7 +139,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
         REQUIRE(cn1.readChanges(changes, 5, external) == 1);
         CHECK(changes[0].docID == "B"_sl);
         CHECK(changes[0].revID == "2-bb"_sl);
-        CHECK(changes[0].sequence == 4);
+        CHECK(changes[0].sequence == 4_seq);
         CHECK(!external);
         REQUIRE(!cn1.hasChanges());
         REQUIRE(cn1.readChanges(changes, 5, external) == 0);
@@ -241,7 +241,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
     CollectionChangeNotifier cn(tracker, nullptr);
 
     // First create some docs:
-    sequence_t seq = 0;
+    sequence_t seq = 0_seq;
     tracker.beginTransaction();
     tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111, Flag1);
     tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222, Flag2);
@@ -273,7 +273,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
     SECTION("Commit, then check feed") {
         // Commit:
         tracker.endTransaction(true);
-        CHECK(tracker.lastSequence() == 5);
+        CHECK(tracker.lastSequence() == 5_seq);
 
         CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, *, B@4, D@5]");
 
@@ -298,7 +298,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
 
         // Commit:
         tracker.endTransaction(true);
-        CHECK(tracker.lastSequence() == 5);
+        CHECK(tracker.lastSequence() == 5_seq);
 
         CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, B@4, D@5, *]");
 
@@ -312,7 +312,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
 
     SECTION("Abort, then check feed") {
         tracker.endTransaction(false);
-        CHECK(tracker.lastSequence() == 3);
+        CHECK(tracker.lastSequence() == 3_seq);
         CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, *, B@2, D@0]");
 
         numChanges = cn.readChanges(changes, 10, external);
@@ -334,7 +334,7 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
 
         // Abort:
         tracker.endTransaction(false);
-        CHECK(tracker.lastSequence() == 3);
+        CHECK(tracker.lastSequence() == 3_seq);
         CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, *, B@2, D@0]");
 
         // The rolled-back docs should be in the feed again:
@@ -368,7 +368,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Ignores Externa
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges", "[notification]") {
     // Add a change notifier:
     int count1 = 0;
-    CollectionChangeNotifier cn(tracker, [&](CollectionChangeNotifier&) {++count1;}, 0);
+    CollectionChangeNotifier cn(tracker, [&](CollectionChangeNotifier&) {++count1;}, 0_seq);
 
     // Add some docs:
     tracker.beginTransaction();
@@ -427,9 +427,9 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Purge", "[notif
         CHECK(!external);
         CHECK(changes[0].docID == "B"_sl);
         CHECK(changes[0].revID == "1-bb"_sl);
-        CHECK(changes[0].sequence == 2);
+        CHECK(changes[0].sequence == 2_seq);
         CHECK(changes[1].docID == "A"_sl);
         CHECK(changes[1].revID == nullslice);
-        CHECK(changes[1].sequence == 0);
+        CHECK(changes[1].sequence == 0_seq);
     }
 }

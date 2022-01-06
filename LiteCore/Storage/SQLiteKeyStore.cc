@@ -157,8 +157,8 @@ namespace litecore {
         if (_sequencesOwner) {
             return _sequencesOwner->lastSequence();
         } else {
-            if (_lastSequence >= 0)
-                return _lastSequence;
+            if (_lastSequence)
+                return *_lastSequence;
             sequence_t seq = db().lastSequence(_name);
             if (db().inTransaction())
                 _lastSequence = seq;
@@ -201,7 +201,7 @@ namespace litecore {
         if (_lastSequenceChanged) {
             Assert(!_sequencesOwner);
             if (commit)
-                db().setLastSequence(*this, _lastSequence);
+                db().setLastSequence(*this, *_lastSequence);
             _lastSequenceChanged = false;
         }
 
@@ -211,7 +211,7 @@ namespace litecore {
             _purgeCountChanged = false;
         }
 
-        _lastSequence = -1;
+        _lastSequence = nullopt;
         _purgeCountValid = false;
 
         if (!commit && _uncommittedExpirationColumn)
@@ -247,7 +247,7 @@ namespace litecore {
         if (setKey)
             rec.setKey(getColumnAsSlice(stmt, RecordColumn::Key));
         if (setSequence)
-            rec.updateSequence((int64_t)stmt.getColumn(RecordColumn::Sequence));
+            rec.updateSequence(sequence_t(int64_t(stmt.getColumn(RecordColumn::Sequence))));
 
         // The subsequence is in the `flags` column, left-shifted so it doesn't interfere with the
         // defined flag bits.
@@ -285,7 +285,7 @@ namespace litecore {
             DebugAssert(rec.key());
             stmt.bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
         } else {
-            DebugAssert(rec.sequence());
+            DebugAssert(rec.sequence() != 0_seq);
             stmt.bind(1, (long long)rec.sequence());
         }
 
@@ -324,7 +324,7 @@ namespace litecore {
                OldSequenceParam, OldSubsequenceParam };
         const char *opName;
         SQLite::Statement *stmt;
-        if (rec.sequence == 0) {
+        if (rec.sequence == 0_seq) {
             // Insert only:
             stmt = &compileCached(
                     "INSERT OR IGNORE INTO kv_@ (version, body, extra, flags, sequence, key)"
@@ -340,12 +340,12 @@ namespace litecore {
             opName = "update";
         }
 
-        sequence_t seq = 0;
+        sequence_t seq;
         int64_t rawFlags = int(rec.flags);
         if (updateSequence) {
             seq = lastSequence() + 1;
         } else {
-            Assert(rec.sequence > 0);
+            Assert(rec.sequence > 0_seq);
             seq = rec.sequence;
             // If we don't update the sequence, update the subsequence so MVCC can work:
             rawFlags |= (rec.subsequence + 1) << 16;
@@ -363,7 +363,7 @@ namespace litecore {
 
         UsingStatement u(*stmt);
         if (stmt->exec() == 0)
-            return 0;               // condition wasn't met, i.e. conflict
+            return 0_seq;               // condition wasn't met, i.e. conflict
 
         if (updateSequence)
             setLastSequence(seq);
@@ -376,7 +376,7 @@ namespace litecore {
         SQLite::Statement *stmt;
         db()._logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %" PRIu64,
                         _name.c_str(), SPLAT(key), seq);
-        if (seq) {
+        if (seq != 0_seq) {
             stmt = &compileCached("DELETE FROM kv_@ WHERE key=? AND sequence=?");
             stmt->bind(2, (long long)seq);
         } else {
@@ -445,7 +445,7 @@ namespace litecore {
     void SQLiteKeyStore::erase() {
         ExclusiveTransaction t(db());
         db().exec(string("DELETE FROM kv_"+name()));
-        setLastSequence(0);
+        setLastSequence(0_seq);
         t.commit();
     }
 #endif

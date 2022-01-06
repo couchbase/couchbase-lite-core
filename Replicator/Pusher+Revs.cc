@@ -92,7 +92,7 @@ namespace litecore::repl {
         msg.compressed = true;
         msg["id"_sl] = request->docID;
         msg["rev"_sl] = fullRevID;
-        msg["sequence"_sl] = request->sequence;
+        msg["sequence"_sl] = uint64_t(request->sequence);
         if (root) {
             if (request->noConflicts)
                 msg["noconflicts"_sl] = true;
@@ -317,7 +317,8 @@ namespace litecore::repl {
                 _checkpointer.completedSequence(rev->sequence);
 
                 auto lastSeq = _checkpointer.localMinSequence();
-                if (lastSeq / 1000 > _lastSequenceLogged / 1000 || willLog(LogLevel::Verbose))
+                if (uint64_t(lastSeq) / 1000 > uint64_t(_lastSequenceLogged) / 1000
+                        || willLog(LogLevel::Verbose))
                     logInfo("Checkpoint now %s", _checkpointer.to_string().c_str());
                 _lastSequenceLogged = lastSeq;
             }

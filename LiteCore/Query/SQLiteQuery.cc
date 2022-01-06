@@ -140,9 +140,9 @@ namespace litecore {
         sequence_t lastSequence() const {
             // This number is just used for before/after comparisons, so
             // return the total last-sequence of all used KeyStores
-            return std::accumulate(_keyStores.begin(), _keyStores.end(), 0,
+            return std::accumulate(_keyStores.begin(), _keyStores.end(), 0_seq,
                                    [](sequence_t total, const KeyStore *ks) {
-                return total + ks->lastSequence();
+                return total + uint64_t(ks->lastSequence());
             });
         }
 

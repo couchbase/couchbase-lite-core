@@ -59,7 +59,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Untitled VectorRecord", "[VectorRe
     cerr << "Doc is: " << doc << "\n";
 
     CHECK(!doc.exists());
-    CHECK(doc.sequence() == 0);
+    CHECK(doc.sequence() == 0_seq);
     CHECK(doc.docID() == "Nuu");
     CHECK(doc.revID() == nullslice);
     CHECK(doc.flags() == DocumentFlags::kNone);
@@ -100,7 +100,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save VectorRecord", "[VectorRecord
 
         cerr << "Doc is: " << doc << "\n";
         cerr << "Revisions: " << doc.revisionStorage() << "\n";
-        CHECK(doc.sequence() == 1);
+        CHECK(doc.sequence() == 1_seq);
         CHECK(doc.revID().str() == "1-f2e52c9d6f0f40b6303eb0fb58d4ba6dd4521adc");
         CHECK(doc.flags() == DocumentFlags::kHasAttachments);
         CHECK(doc.properties().toJSON(true, true) == "{year:2525}");
@@ -120,7 +120,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save VectorRecord", "[VectorRecord
 
         cerr << "Doc is: " << doc << "\n";
         cerr << "Revisions: " << doc.revisionStorage() << "\n";
-        CHECK(doc.sequence() == 2);
+        CHECK(doc.sequence() == 2_seq);
         CHECK(doc.revID().str() == "2-c8eeae1245a44de160c2ca96e448f1650dd901da");
         CHECK(doc.flags() == DocumentFlags::kNone);
         CHECK(doc.properties().toJSON(true, true) == "{weekday:\"Friday\",year:2525}");
@@ -133,7 +133,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Save VectorRecord", "[VectorRecord
     {
         VectorRecord readDoc(*store, Versioning::RevTrees, store->get("Nuu"));
         CHECK(readDoc.docID() == "Nuu");
-        CHECK(readDoc.sequence() == 2);
+        CHECK(readDoc.sequence() == 2_seq);
         CHECK(readDoc.revID().str() == "2-c8eeae1245a44de160c2ca96e448f1650dd901da");
         CHECK(readDoc.flags() == DocumentFlags::kNone);
         CHECK(readDoc.properties().toJSON(true, true) == "{weekday:\"Friday\",year:2525}");
@@ -204,7 +204,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VectorRecord Remotes", "[VectorRec
     cerr << "Doc is: " << doc << "\n";
     cerr << "Revisions: " << doc.revisionStorage() << "\n";
 
-    CHECK(doc.sequence() == 1);
+    CHECK(doc.sequence() == 1_seq);
     CHECK(doc.revID().str() == "1-f000");
     CHECK(doc.flags() == DocumentFlags::kHasAttachments);
     CHECK(doc.properties().toJSON(true, true) == "{rodent:\"mouse\"}");

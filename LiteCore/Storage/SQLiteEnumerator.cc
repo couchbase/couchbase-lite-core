@@ -52,7 +52,7 @@ namespace litecore {
        }
 
        virtual sequence_t sequence() const override {
-           return (int64_t)_stmt->getColumn(0);
+           return sequence_t(int64_t(_stmt->getColumn(0)));
        }
 
     private:

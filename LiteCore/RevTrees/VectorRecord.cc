@@ -116,7 +116,7 @@ namespace litecore {
             readRecordExtra(rec.extra());
         } else {
             // ‘"Untitled" empty state. Create an empty local properties dict:
-            _sequence = 0;
+            _sequence = 0_seq;
             _whichContent = kEntireBody;
             (void)mutableProperties();
         }
@@ -200,7 +200,7 @@ namespace litecore {
         Record rec(_docID);
         rec.updateSequence(_sequence);
         rec.updateSubsequence(_subsequence);
-        if (_sequence > 0)
+        if (_sequence > 0_seq)
             rec.setExists();
         rec.setVersion(_revID);
         rec.setFlags(_docFlags);
@@ -508,7 +508,7 @@ namespace litecore {
         alloc_slice body, extra;
         tie(body, extra) = encodeBodyAndExtra();
 
-        bool updateSequence = (_sequence == 0 || _revIDChanged);
+        bool updateSequence = (_sequence == 0_seq || _revIDChanged);
         Assert(revID);
         RecordUpdate rec(_docID, body, _docFlags);
         rec.version = revID;
@@ -516,7 +516,7 @@ namespace litecore {
         rec.sequence = _sequence;
         rec.subsequence = _subsequence;
         auto seq = _store.set(rec, updateSequence, transaction);
-        if (seq == 0)
+        if (seq == 0_seq)
             return kConflict;
 
         _sequence = seq;
@@ -601,7 +601,7 @@ namespace litecore {
 
 
     void VectorRecord::dump(ostream& out) const {
-        out << "\"" << (string)docID() << "\" #" << sequence() << " ";
+        out << "\"" << (string)docID() << "\" #" << uint64_t(sequence()) << " ";
         int nRevs = _revisions.count();
         for (int i = 0; i < nRevs; ++i) {
             optional<Revision> rev = remoteRevision(RemoteID(i));

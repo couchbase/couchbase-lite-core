@@ -349,7 +349,7 @@ namespace litecore {
                     _selected.flags &= ~kRevNew;
                     if (_revTree.sequence() > _sequence) {
                         _sequence = _revTree.sequence();
-                        if (_selected.sequence == 0)
+                        if (_selected.sequence == 0_seq)
                             _selected.sequence = _sequence;
                         asInternal(collection())->documentSaved(this);
                     }
@@ -704,7 +704,7 @@ namespace litecore {
             revID.parse(revMap[rec.key]);
             auto revGeneration = revID.generation();
             C4FindDocAncestorsResultFlags status = {};
-            RevTree tree(rec.body, rec.extra, 0);
+            RevTree tree(rec.body, rec.extra, 0_seq);
             auto current = tree.currentRevision();
 
             // Does it exist in the doc?

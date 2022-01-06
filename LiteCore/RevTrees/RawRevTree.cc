@@ -67,7 +67,7 @@ namespace litecore {
         auto rev = revs.begin();
         for (; rawRev->isValid(); rawRev = rawRev->next()) {
             rawRev->copyTo(*rev, revs);
-            if (rev->sequence == 0)
+            if (rev->sequence == 0_seq)
                 rev->sequence = curSeq;
             rev->owner = owner;
             rev++;
@@ -123,7 +123,7 @@ namespace litecore {
     size_t RawRevision::sizeToWrite(const Rev &rev) {
         return offsetof(RawRevision, revID)
              + rev.revID.size
-             + SizeOfVarInt(rev.sequence)
+             + SizeOfVarInt(uint64_t(rev.sequence))
              + rev._body.size;
     }
 
@@ -140,7 +140,7 @@ namespace litecore {
         this->flags = (Rev::Flags)dstFlags;
 
         void *dstData = offsetby(&this->revID[0], rev.revID.size);
-        dstData = offsetby(dstData, PutUVarInt(dstData, rev.sequence));
+        dstData = offsetby(dstData, PutUVarInt(dstData, uint64_t(rev.sequence)));
         rev._body.copyTo(dstData);
 
         return (RawRevision*)offsetby(this, revSize);
@@ -157,7 +157,7 @@ namespace litecore {
             dst.parent = &revs[parentIndex];
         const void *data = offsetby(&this->revID, this->revIDLen);
         ptrdiff_t len = (uint8_t*)end-(uint8_t*)data;
-        data = offsetby(data, GetUVarInt(slice(data, len), &dst.sequence));
+        data = offsetby(data, GetUVarInt(slice(data, len), (uint64_t*)&dst.sequence));
         if (this->flags & RawRevision::kHasData)
             dst._body = slice(data, end);
         else

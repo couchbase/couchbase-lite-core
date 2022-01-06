@@ -65,7 +65,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DbInfo", "[DataFile]") {
     REQUIRE(db->isOpen());
     REQUIRE(&store->dataFile() == db.get());
     REQUIRE(store->recordCount() == 0);
-    REQUIRE(store->lastSequence() == 0);
+    REQUIRE(store->lastSequence() == 0_seq);
 }
 
 
@@ -85,10 +85,10 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]")
         RecordUpdate rec(key, "body"_sl);
         rec.version = "version"_sl;
         rec.extra = "extra"_sl;
-        CHECK(store->set(rec, true, t) == 1);
+        CHECK(store->set(rec, true, t) == 1_seq);
         t.commit();
     }
-    CHECK(store->lastSequence() == 1);
+    CHECK(store->lastSequence() == 1_seq);
 
     // Get by key:
     Record rec = store->get(key, kMetaOnly);
@@ -98,7 +98,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]")
     CHECK(rec.bodySize() == 4);
     CHECK(rec.version() == "version"_sl);
     CHECK(rec.extra() == nullslice);
-    CHECK(rec.sequence() == 1);
+    CHECK(rec.sequence() == 1_seq);
 
     rec = store->get(key, kCurrentRevOnly);
     REQUIRE(rec.exists());
@@ -107,7 +107,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]")
     CHECK(rec.bodySize() == 4);
     CHECK(rec.version() == "version"_sl);
     CHECK(rec.extra() == nullslice);
-    CHECK(rec.sequence() == 1);
+    CHECK(rec.sequence() == 1_seq);
 
     rec = store->get(key, kEntireBody);
     REQUIRE(rec.exists());
@@ -116,17 +116,17 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]")
     CHECK(rec.bodySize() == 4);
     CHECK(rec.version() == "version"_sl);
     CHECK(rec.extra() == "extra"_sl);
-    CHECK(rec.sequence() == 1);
+    CHECK(rec.sequence() == 1_seq);
 
     // Get by sequence:
-    rec = store->get(1);
+    rec = store->get(1_seq);
     REQUIRE(rec.exists());
     CHECK(rec.key() == key);
     CHECK(rec.body() == "body"_sl);
     CHECK(rec.bodySize() == 4);
     CHECK(rec.version() == "version"_sl);
     CHECK(rec.extra() == "extra"_sl);
-    CHECK(rec.sequence() == 1);
+    CHECK(rec.sequence() == 1_seq);
 }
 
 
@@ -150,8 +150,8 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile SaveDocs", "[DataFile]") 
         rec.setBody("THIS IS THE BODY"_sl);
         store->set(rec, true, t);
 
-        REQUIRE(rec.sequence() == 2);
-        REQUIRE(store->lastSequence() == 2);
+        REQUIRE(rec.sequence() == 2_seq);
+        REQUIRE(store->lastSequence() == 2_seq);
         auto doc_alias = store->get(rec.sequence());
         REQUIRE(doc_alias.key() == rec.key());
         REQUIRE(doc_alias.version() == rec.version());
@@ -161,17 +161,17 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile SaveDocs", "[DataFile]") 
         store->set(doc_alias, true, t);
 
         REQUIRE(store->read(rec));
-        REQUIRE(rec.sequence() == 3);
+        REQUIRE(rec.sequence() == 3_seq);
         REQUIRE(rec.version() == doc_alias.version());
         REQUIRE(rec.body() == doc_alias.body());
 
         // Record shouldn't exist outside transaction yet:
-        REQUIRE(aliased_db->getKeyStore(keyStoreName).get("rec"_sl).sequence() == 0);
+        REQUIRE(aliased_db->getKeyStore(keyStoreName).get("rec"_sl).sequence() == 0_seq);
         t.commit();
     }
 
-    REQUIRE(store->get("rec"_sl).sequence() == 3);
-    REQUIRE(aliased_db->getKeyStore(keyStoreName).get("rec"_sl).sequence() == 3);
+    REQUIRE(store->get("rec"_sl).sequence() == 3_seq);
+    REQUIRE(aliased_db->getKeyStore(keyStoreName).get("rec"_sl).sequence() == 3_seq);
 }
 
 
@@ -252,10 +252,10 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile EnumerateDocs Deleted", "
         for (int i = 10; i <= 100; i += 10) {
             string docID = stringWithFormat("rec-%03d", i);
             RecordUpdate update(docID, "", DocumentFlags::kDeleted);
-            update.sequence = i;
+            update.sequence = sequence_t(i);
             update.version = "2-0000";
             sequence_t seq = store->set(update, true, t);
-            CHECK(seq == 100 + i/10);
+            CHECK(seq == sequence_t(100 + i/10));
         }
         t.commit();
     }
@@ -279,7 +279,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile EnumerateDocs Deleted", "
                 CHECK(e->bodySize() == 7);
                 CHECK(e->flags() == DocumentFlags::kNone);
             } else {
-                CHECK(e->sequence() == 100 + (i / 10));
+                CHECK(e->sequence() == sequence_t(100 + (i / 10)));
                 CHECK(e->bodySize() == 0);
                 CHECK(e->flags() == DocumentFlags::kDeleted);
             }
@@ -312,7 +312,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile AbortTransaction", "[Data
         t.abort();
     }
     REQUIRE(store->get("a"_sl).body() == alloc_slice("A"));
-    REQUIRE(store->get("x"_sl).sequence() == 0);
+    REQUIRE(store->get("x"_sl).sequence() == 0_seq);
 }
 
 
@@ -352,7 +352,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile DeleteKey", "[DataFile]")
         createDoc(key, "A"_sl, t);
         t.commit();
     }
-    REQUIRE(store->lastSequence() == 1);
+    REQUIRE(store->lastSequence() == 1_seq);
     {
         ExclusiveTransaction t(db);
         store->del(key, t);
@@ -360,7 +360,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile DeleteKey", "[DataFile]")
     }
     Record rec = store->get(key);
     REQUIRE_FALSE(rec.exists());
-    REQUIRE(store->lastSequence() == 1);
+    REQUIRE(store->lastSequence() == 1_seq);
 }
 
 
@@ -414,11 +414,11 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile DeleteDocAndReopen", "[Da
 
 
 N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile KeyStoreInfo", "[DataFile]") {
-    REQUIRE(store->lastSequence() == 0);
+    REQUIRE(store->lastSequence() == 0_seq);
     REQUIRE(store->name() == keyStoreName);
 
     REQUIRE(store->recordCount() == 0);
-    REQUIRE(store->lastSequence() == 0);
+    REQUIRE(store->lastSequence() == 0_seq);
 }
 
 
@@ -447,7 +447,7 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile KeyStoreWrite", "[DataFil
         createDoc(*store, key, "value"_sl, t);
         t.commit();
     }
-    REQUIRE(store->lastSequence() == 1);
+    REQUIRE(store->lastSequence() == 1_seq);
     Record rec = store->get(key);
     REQUIRE(rec.key() == key);
     REQUIRE(rec.exists());
@@ -457,23 +457,23 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile KeyStoreWrite", "[DataFil
 
 N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile Conditional Write", "[DataFile]") {
     alloc_slice key("key");
-    sequence_t oldSeq = 0;
+    sequence_t oldSeq = 0_seq;
     sequence_t newSeq;
     {
         ExclusiveTransaction t(db);
         RecordUpdate rec(key, "initialvalue"_sl);
         rec.sequence = oldSeq;
         newSeq = store->set(rec, true, t);
-        CHECK(newSeq == 1);
+        CHECK(newSeq == 1_seq);
 
         rec.body = "wronginitialvalue"_sl;
         rec.sequence = oldSeq;
         auto badSeq = store->set(rec, true, t);
-        CHECK(badSeq == 0);
+        CHECK(badSeq == 0_seq);
         t.commit();
     }
 
-    REQUIRE(store->lastSequence() == 1);
+    REQUIRE(store->lastSequence() == 1_seq);
     REQUIRE(store->get(key).body() == "initialvalue"_sl);
 
     {
@@ -481,11 +481,11 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile Conditional Write", "[Dat
         RecordUpdate rec(key, "updatedvalue"_sl);
         rec.sequence = newSeq;
         newSeq = store->set(rec, true, t);
-        CHECK(newSeq == 2);
+        CHECK(newSeq == 2_seq);
         t.commit();
     }
 
-    REQUIRE(store->lastSequence() == 2);
+    REQUIRE(store->lastSequence() == 2_seq);
     Record rec2 = store->get(key);
     REQUIRE(rec2.body() == "updatedvalue"_sl);
 
@@ -494,17 +494,17 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile Conditional Write", "[Dat
         ExclusiveTransaction t(db);
         RecordUpdate rec(key, "", DocumentFlags::kDeleted);
         rec.version = "3-00";
-        rec.sequence = 0;
-        CHECK(store->set(rec, true, t) == 0);
-        rec.sequence = 666;
-        CHECK(store->set(rec, true, t) == 0);
+        rec.sequence = 0_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
+        rec.sequence = 666_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
         rec.sequence = newSeq;
         newSeq = store->set(rec, true, t);
-        CHECK(newSeq == 3);
+        CHECK(newSeq == 3_seq);
         t.commit();
     }
 
-    CHECK(store->lastSequence() == 3);
+    CHECK(store->lastSequence() == 3_seq);
     Record rec3 = store->get(key);
     CHECK(rec3.flags() == DocumentFlags::kDeleted);
     CHECK(rec3.body() == ""_sl);
@@ -515,17 +515,17 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile Conditional Write", "[Dat
         ExclusiveTransaction t(db);
         RecordUpdate rec(key, "", DocumentFlags::kDeleted);
         rec.version = "4-000";
-        rec.sequence = 0;
-        CHECK(store->set(rec, true, t) == 0);
-        rec.sequence = 2;
-        CHECK(store->set(rec, true, t) == 0);
+        rec.sequence = 0_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
+        rec.sequence = 2_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
         rec.sequence = newSeq;
         newSeq = store->set(rec, true, t);
-        CHECK(newSeq == 4);
+        CHECK(newSeq == 4_seq);
         t.commit();
     }
 
-    CHECK(store->lastSequence() == 4);
+    CHECK(store->lastSequence() == 4_seq);
     Record rec4 = store->get(key);
     CHECK(rec4.flags() == DocumentFlags::kDeleted);
     CHECK(rec4.version() == "4-000"_sl);
@@ -534,17 +534,17 @@ N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile Conditional Write", "[Dat
     {
         ExclusiveTransaction t(db);
         RecordUpdate rec(key, "recreated");
-        rec.sequence = 0;
-        CHECK(store->set(rec, true, t) == 0);
-        rec.sequence = 2;
-        CHECK(store->set(rec, true, t) == 0);
+        rec.sequence = 0_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
+        rec.sequence = 2_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
         rec.sequence = newSeq;
         newSeq = store->set(rec, true, t);
-        CHECK(newSeq == 5);
+        CHECK(newSeq == 5_seq);
         t.commit();
     }
 
-    CHECK(store->lastSequence() == 5);
+    CHECK(store->lastSequence() == 5_seq);
     Record rec5 = store->get(key);
     CHECK(rec5.flags() == DocumentFlags::kNone);
     CHECK(rec5.body() == "recreated");
@@ -560,14 +560,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Move Record", "[DataFile]
         rec.version = "version";
         rec.extra = "extra";
         sequence_t seq = store->set(rec, true, t);
-        CHECK(seq == 2);
+        CHECK(seq == 2_seq);
         t.commit();
     }
-    CHECK(store->lastSequence() == 2);
+    CHECK(store->lastSequence() == 2_seq);
     CHECK(store->purgeCount() == 0);
 
     KeyStore& otherStore = db->getKeyStore("other");
-    CHECK(otherStore.lastSequence() == 0);
+    CHECK(otherStore.lastSequence() == 0_seq);
     CHECK(otherStore.purgeCount() == 0);
 
     {
@@ -583,12 +583,12 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Move Record", "[DataFile]
     CHECK(rec.version() == "version");
     CHECK(rec.extra() == "extra");
     CHECK(rec.flags() == DocumentFlags::kHasAttachments);
-    CHECK(rec.sequence() == 1);
-    CHECK(otherStore.lastSequence() == 1);
+    CHECK(rec.sequence() == 1_seq);
+    CHECK(otherStore.lastSequence() == 1_seq);
 
     rec = store->get("key");
     CHECK_FALSE(rec.exists());
-    CHECK(store->lastSequence() == 2);
+    CHECK(store->lastSequence() == 2_seq);
     CHECK(store->purgeCount() == 1);
 
     {

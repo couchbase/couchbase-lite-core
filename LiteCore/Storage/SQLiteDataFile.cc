@@ -678,12 +678,12 @@ namespace litecore {
 
     
     sequence_t SQLiteDataFile::lastSequence(const string& keyStoreName) const {
-        sequence_t seq = 0;
+        sequence_t seq = 0_seq;
         compileCached(_getLastSeqStmt, "SELECT lastSeq FROM kvmeta WHERE name=?");
         UsingStatement u(_getLastSeqStmt);
         _getLastSeqStmt->bindNoCopy(1, keyStoreName);
         if (_getLastSeqStmt->executeStep())
-            seq = (int64_t)_getLastSeqStmt->getColumn(0);
+            seq = sequence_t(int64_t(_getLastSeqStmt->getColumn(0)));
         return seq;
     }
 

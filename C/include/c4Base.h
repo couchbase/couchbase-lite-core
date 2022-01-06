@@ -17,6 +17,10 @@
 #include "fleece/FLSlice.h"
 #include <stdarg.h>
 
+#if LITECORE_CPP_API
+#include "c4EnumUtil.hh"
+#endif
+
 C4_ASSUME_NONNULL_BEGIN
 C4API_BEGIN_DECLS
 
@@ -57,7 +61,16 @@ static inline void c4slice_free(C4SliceResult s)            {FLSliceResult_Relea
 
 
 /** A database sequence number, representing the order in which a revision was created. */
-typedef uint64_t C4SequenceNumber;
+#if LITECORE_CPP_API
+    /** A database sequence number, representing the order in which a revision was created. */
+    enum class C4SequenceNumber : uint64_t { None = 0, Max = UINT64_MAX };
+    static inline C4SequenceNumber operator"" _seq (uint64_t n) {return C4SequenceNumber(n);}
+    DEFINE_ENUM_INC_DEC(C4SequenceNumber)
+    DEFINE_ENUM_ADD_SUB_INT(C4SequenceNumber)
+#else
+    /** A database sequence number, representing the order in which a revision was created. */
+    typedef uint64_t C4SequenceNumber;
+#endif
 
 
 /** A date/time representation used for document expiration (and in date/time queries.)

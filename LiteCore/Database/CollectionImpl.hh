@@ -77,7 +77,7 @@ namespace litecore {
 
 
         uint64_t getDocumentCount() const override  {return keyStore().recordCount();}
-        sequence_t getLastSequence() const override {return keyStore().lastSequence();}
+        C4SequenceNumber getLastSequence() const override  {return keyStore().lastSequence();}
         KeyStore& keyStore() const         {precondition(_keyStore); return *_keyStore;}
 
         DatabaseImpl* dbImpl()                      {return asInternal(getDatabase());}
@@ -224,7 +224,7 @@ namespace litecore {
                 return false;
             if (!revID) {
                 // Look up revID by sequence, if it wasn't given:
-                Assert(sequence != 0);
+                Assert(sequence != 0_seq);
                 do {
                     if (doc->selectedRev().sequence == sequence) {
                         revID = doc->selectedRev().revID;

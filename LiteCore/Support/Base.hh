@@ -16,6 +16,7 @@
 #include "PlatformCompat.hh"
 #include "function_ref.hh"
 #include "RefCounted.hh"
+#include "c4Base.hh"
 #include <memory>
 #include <stddef.h>
 #include <stdint.h>
@@ -44,8 +45,7 @@ namespace litecore {
     using fleece::RefCounted;
     using fleece::Retained;
 
-    // Database sequence number
-    typedef uint64_t sequence_t;
+    using sequence_t = C4SequenceNumber;
 
     enum EncryptionAlgorithm : uint8_t {
         kNoEncryption = 0,      /**< No encryption (default) */
