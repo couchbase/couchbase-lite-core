@@ -42,7 +42,7 @@ namespace litecore {
         }
 
         virtual bool read(Record &rec) const override {
-            rec.setExpiration(_stmt->getColumn(RecordColumn::Expiration));
+            rec.setExpiration(expiration_t(int64_t(_stmt->getColumn(RecordColumn::Expiration))));
             SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt, _content, true, true);
             return true;
         }

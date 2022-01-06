@@ -135,12 +135,12 @@ C4Cert::NameInfo C4Cert::getSubjectNameAtIndex(unsigned index) {
 
 
 std::pair<C4Timestamp,C4Timestamp> C4Cert::getValidTimespan() {
-    C4Timestamp created = 0, expires = 0;
+    C4Timestamp created = C4Timestamp::None, expires = C4Timestamp::None;
     if (Cert *signedCert = asSignedCert(); signedCert) {
         time_t tCreated, tExpires;
         tie(tCreated, tExpires) = signedCert->validTimespan();
-        created = C4Timestamp(difftime(tCreated, 0) * 1000.0);
-        expires = C4Timestamp(difftime(tExpires, 0) * 1000.0);
+        created = C4Timestamp(int64_t(difftime(tCreated, 0) * 1000.0));
+        expires = C4Timestamp(int64_t(difftime(tExpires, 0) * 1000.0));
     }
     return {created, expires};
 }

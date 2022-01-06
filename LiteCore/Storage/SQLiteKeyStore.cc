@@ -546,11 +546,11 @@ namespace litecore {
 
 
     bool SQLiteKeyStore::setExpiration(slice key, expiration_t expTime) {
-        Assert(expTime >= 0, "Invalid (negative) expiration time");
+        Assert(expTime >= expiration_t(0), "Invalid (negative) expiration time");
         addExpiration();
         auto &stmt = compileCached("UPDATE kv_@ SET expiration=? WHERE key=?");
         UsingStatement u(stmt);
-        if (expTime > 0)
+        if (expTime > expiration_t::None)
             stmt.bind(1, (long long)expTime);
         else
             stmt.bind(1); // null
@@ -565,24 +565,24 @@ namespace litecore {
 
     expiration_t SQLiteKeyStore::getExpiration(slice key) {
         if (!mayHaveExpiration())
-            return 0;
+            return expiration_t::None;
         auto &stmt = compileCached("SELECT expiration FROM kv_@ WHERE key=?");
         UsingStatement u(stmt);
         stmt.bindNoCopy(1, (const char*)key.buf, (int)key.size);
         if (!stmt.executeStep())
-            return 0;
-        return stmt.getColumn(0);
+            return expiration_t::None;
+        return expiration_t(int64_t(stmt.getColumn(0)));
     }
 
 
     expiration_t SQLiteKeyStore::nextExpiration() {
-        expiration_t next = 0;
+        expiration_t next = expiration_t::None;
         if (mayHaveExpiration()) {
             auto &stmt = compileCached("SELECT min(expiration) FROM kv_@");
             UsingStatement u(stmt);
             if (!stmt.executeStep())
-                return 0;
-            next = stmt.getColumn(0);
+                return next;
+            next = expiration_t(int64_t(stmt.getColumn(0)));
         }
         db()._logVerbose("Next expiration time is %" PRId64, next);
         return next;

@@ -48,7 +48,7 @@ namespace litecore {
 
     /** Record's expiration timestamp: milliseconds since Unix epoch (Jan 1 1970).
         A zero value means no expiration. */
-    typedef int64_t expiration_t;
+    typedef C4Timestamp expiration_t;
 
 
     /** Specifies what parts of a record to read. (Used by KeyStore::get, RecordEnumerator, etc.) */

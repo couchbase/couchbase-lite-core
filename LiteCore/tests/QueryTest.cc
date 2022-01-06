@@ -1788,12 +1788,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
             "{WHAT: ['._expiration'], ORDER_BY: [['._id']]}")) };
         Retained<QueryEnumerator> e(query->createEnumerator());
         CHECK(e->next());
-        CHECK(e->columns()[0]->asInt() == now - 10000);
+        CHECK(expiration_t(e->columns()[0]->asInt()) == now - 10000);
         CHECK(e->next());
         CHECK(e->columns()[0]->type() == kNull);
         CHECK(e->missingColumns() == 1);
         CHECK(e->next());
-        CHECK(e->columns()[0]->asInt() == now + 10000);
+        CHECK(expiration_t(e->columns()[0]->asInt()) == now + 10000);
         CHECK(!e->next());
     }
     {

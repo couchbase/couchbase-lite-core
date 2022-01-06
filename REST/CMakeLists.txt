@@ -68,6 +68,7 @@ endif()
 
 target_compile_definitions(
     LiteCoreREST_Static PRIVATE
+    LITECORE_CPP_API=1
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
 
