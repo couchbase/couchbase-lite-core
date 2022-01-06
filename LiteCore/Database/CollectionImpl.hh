@@ -384,7 +384,7 @@ namespace litecore {
         }
 
 
-        bool setExpiration(slice docID, expiration_t expiration) override {
+        bool setExpiration(slice docID, C4Timestamp expiration) override {
             {
                 C4Database::Transaction t(dbImpl());
                 if (!keyStore().setExpiration(docID, expiration))
@@ -392,7 +392,7 @@ namespace litecore {
                 t.commit();
             }
 
-            if (expiration > 0) {
+            if (expiration > C4Timestamp::None) {
                 if (_housekeeper)
                     _housekeeper->documentExpirationChanged(expiration);
                 else

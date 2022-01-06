@@ -39,7 +39,7 @@ namespace litecore { namespace repl {
         enc.beginDict();
         if (gWriteTimestamps) {
             enc.writeKey("time"_sl);
-            enc.writeInt(c4_now() / 1000);
+            enc.writeInt(int64_t(c4_now()) / 1000);
         }
 
         auto minSeq = localMinSequence();

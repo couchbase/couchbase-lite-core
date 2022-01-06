@@ -75,8 +75,8 @@ namespace litecore {
     }
 
     expiration_t KeyStore::now() noexcept {
-        return std::chrono::duration_cast<std::chrono::milliseconds>
-                (std::chrono::system_clock::now().time_since_epoch()).count();
+        return expiration_t(std::chrono::duration_cast<std::chrono::milliseconds>
+                (std::chrono::system_clock::now().time_since_epoch()).count());
     }
 
 }

@@ -103,7 +103,7 @@ namespace litecore {
     expiration_t BothKeyStore::nextExpiration() {
         auto lx = _liveStore->nextExpiration();
         auto dx = _deadStore->nextExpiration();
-        if (lx > 0 && dx > 0)
+        if (lx > expiration_t::None && dx > expiration_t::None)
             return std::min(lx, dx);        // choose the earliest time
         else
             return std::max(lx, dx);        // or choose the nonzero time

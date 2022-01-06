@@ -60,22 +60,33 @@ static inline void c4slice_free(C4SliceResult s)            {FLSliceResult_Relea
 #pragma mark - COMMON TYPES:
 
 
-/** A database sequence number, representing the order in which a revision was created. */
 #if LITECORE_CPP_API
+    C4API_END_DECLS // GCC doesn't like this stuff inside `extern "C" {}`
+
     /** A database sequence number, representing the order in which a revision was created. */
     enum class C4SequenceNumber : uint64_t { None = 0, Max = UINT64_MAX };
-    static inline C4SequenceNumber operator"" _seq (uint64_t n) {return C4SequenceNumber(n);}
+    static inline C4SequenceNumber operator"" _seq (unsigned long long n) {return C4SequenceNumber(n);}
     DEFINE_ENUM_INC_DEC(C4SequenceNumber)
     DEFINE_ENUM_ADD_SUB_INT(C4SequenceNumber)
+
+
+    /** A date/time representation used for document expiration (and in date/time queries.)
+        Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.)
+        A value of None represents "no expiration".  */
+    enum class C4Timestamp : int64_t { None = 0, Error = -1 };
+    DEFINE_ENUM_ADD_SUB_INT(C4Timestamp)
+
+    C4API_BEGIN_DECLS
 #else
     /** A database sequence number, representing the order in which a revision was created. */
     typedef uint64_t C4SequenceNumber;
+
+    /** A date/time representation used for document expiration (and in date/time queries.)
+        Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.)
+        A value of 0 represents "no expiration". */
+    typedef int64_t C4Timestamp;
 #endif
 
-
-/** A date/time representation used for document expiration (and in date/time queries.)
-    Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.) */
-typedef int64_t C4Timestamp;
 
 
 /** Client-defined metadata that can be associated with some objects like C4Database.
