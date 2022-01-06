@@ -12,6 +12,8 @@
 
 // I'm just using this source file as a canary to make sure the headers parse as plain C.
 
+#undef LITECORE_CPP_API
+
 #include "c4.h"
 #include "c4Certificate.h"
 #include "c4DocEnumerator.h"

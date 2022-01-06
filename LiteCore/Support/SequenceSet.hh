@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "c4Base.h"
 #include <map>
 #include <string>
 #include <utility>
@@ -25,7 +26,7 @@ namespace litecore {
         ranges using a std::map that maps the first sequence in a range to the end of the range. */
     class SequenceSet {
     public:
-        using sequence = uint64_t;
+        using sequence = C4SequenceNumber;
         using Map = std::map<sequence, sequence>;
 
         SequenceSet() =default;
@@ -48,10 +49,10 @@ namespace litecore {
         size_t rangesCount() const              {return _sequences.size();}
 
         /** Returns the lowest sequence in the set. If the set is empty, returns 0. */
-        sequence first() const                  {return empty() ? 0 : _sequences.begin()->first;}
+        sequence first() const                  {return empty() ? sequence(0) : _sequences.begin()->first;}
 
         /** Returns the highest sequence in the set. If the set is empty, returns 0. */
-        sequence last() const                   {return empty() ? 0 : prev(_sequences.end())->second - 1;}
+        sequence last() const                   {return empty() ? sequence(0) : prev(_sequences.end())->second - 1;}
 
         /** Is the sequence in the set? */
         bool contains(sequence s) const {

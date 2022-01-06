@@ -241,6 +241,7 @@ add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 target_compile_definitions(
     LiteCoreStatic PRIVATE
     LITECORE_IMPL
+    LITECORE_CPP_API=1
     HAS_UNCAUGHT_EXCEPTIONS # date.h use std::uncaught_exceptions instead of std::uncaught_exception
 )
 

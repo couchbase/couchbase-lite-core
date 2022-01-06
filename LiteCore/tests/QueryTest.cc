@@ -133,7 +133,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
             auto cols = e->columns();
             REQUIRE(e->columns().count() == 2);
             slice docID = cols[0]->asString();
-            sequence_t seq = cols[1]->asInt();
+            sequence_t seq = sequence_t(cols[1]->asInt());
             string expectedDocID = stringWithFormat("rec-%03d", i);
             REQUIRE(docID == slice(expectedDocID));
             REQUIRE(seq == (sequence_t)i);

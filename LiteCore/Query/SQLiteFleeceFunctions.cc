@@ -500,7 +500,7 @@ namespace litecore {
         RecordUpdate rec(valueAsSlice(argv[0]), valueAsSlice(argv[2]));
         rec.version = valueAsSlice(argv[1]);
         rec.extra = valueAsSlice(argv[3]);
-        rec.sequence = sqlite3_value_int(argv[4]);
+        rec.sequence = sequence_t(sqlite3_value_int(argv[4]));
         auto callback = sqlite3_value_pointer(argv[5], kWithDocBodiesCallbackPointerType);
         if (!callback || !rec.key) {
             sqlite3_result_error(ctx, "Missing or invalid callback", -1);

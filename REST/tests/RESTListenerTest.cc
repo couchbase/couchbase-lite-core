@@ -10,8 +10,8 @@
 // the file licenses/APL2.txt.
 //
 
-#include "Error.hh"
 #include "c4Test.hh"
+#include "Error.hh"
 #include "c4Replicator.h"
 #include "ListenerHarness.hh"
 #include "FilePath.hh"

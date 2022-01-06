@@ -10,7 +10,7 @@
 // the file licenses/APL2.txt.
 //
 
-#include "c4CppUtils.hh"
+#include "c4Base.hh"
 #include "PublicKey.hh"
 #include "Certificate.hh"
 #include "CertRequest.hh"

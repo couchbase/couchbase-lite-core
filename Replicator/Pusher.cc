@@ -80,7 +80,7 @@ namespace litecore { namespace repl {
             return;
         }
 
-        C4SequenceNumber since = max(req->intProperty("since"_sl), 0l);
+        auto since = C4SequenceNumber(max(req->intProperty("since"_sl), 0l));
         _continuous = req->boolProperty("continuous"_sl);
         _changesFeed.setContinuous(_continuous);
         _changesFeed.setSkipDeletedDocs(req->boolProperty("activeOnly"_sl));
@@ -248,7 +248,7 @@ namespace litecore { namespace repl {
                          SPLAT(remoteAncestorRevID));
                 }
             } else {
-                enc << change->sequence << change->docID;
+                enc << uint64_t(change->sequence) << change->docID;
                 encodeRevID(enc, change->revID);
                 if (change->deleted() || change->bodySize > 0)
                     enc << change->deleted();

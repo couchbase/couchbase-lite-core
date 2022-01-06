@@ -1839,7 +1839,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
         CHECK(c4doc_save(doc, 0, WITH_ERROR(&error)));
     }
     doc = c4doc_get(db, C4STR("doc1"), true, nullptr);
-    C4SequenceNumber seq = isRevTrees() ? 7 : 5;
+    auto seq = C4SequenceNumber(isRevTrees() ? 7 : 5);
     CHECK(doc->sequence == seq);
     CHECK(c4db_getLastSequence(db) == seq); // db-sequence is greater than #6(doc2)
     
@@ -1863,7 +1863,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Resolve conflict with existing revisio
     doc = c4doc_get(db, C4STR("doc2"), true, nullptr);
     CHECK(doc->revID == revOrVersID(kDoc1Rev2B, "2@*"));
     CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
-    seq = isRevTrees() ? 8 : 6;
+    seq = C4SequenceNumber(isRevTrees() ? 8 : 6);
     CHECK(doc->sequence == seq);
     CHECK(c4db_getLastSequence(db) == seq);
 }

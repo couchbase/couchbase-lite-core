@@ -90,14 +90,14 @@ namespace litecore {
         }
 
         explicit Entry(const alloc_slice &d)
-        :Entry(d, nullslice, 0, 0, {})
+        :Entry(d, nullslice, 0_seq, 0, {})
         { }
 
         explicit Entry(CollectionChangeNotifier *o NONNULL)
         :databaseObserver(o) { }    // placeholder
 
         bool isPlaceholder() const          {return docID.buf == nullptr;}
-        bool isPurge() const                {return sequence == 0 && !isPlaceholder();}
+        bool isPurge() const                {return sequence == 0_seq && !isPlaceholder();}
         bool isIdle() const                 {return idle && !isPlaceholder();}
 
         Entry(const Entry&) =delete;
@@ -214,7 +214,7 @@ namespace litecore {
         Assert(docID);
         Assert(inTransaction());
 
-        _documentChanged(alloc_slice(docID), {}, 0, 0, {});
+        _documentChanged(alloc_slice(docID), {}, 0_seq, 0, {});
     }
 
 
@@ -291,7 +291,7 @@ namespace litecore {
             auto end = other._changes.end();
             for (auto e = next(other._transaction->_placeholder); e != end; ++e) {
                 if (!e->isPlaceholder()) {
-                    if (e->sequence != 0) {
+                    if (e->sequence != 0_seq) {
                         Assert(e->sequence > _lastSequence);
                         _lastSequence = e->sequence;
                     }
@@ -451,7 +451,7 @@ namespace litecore {
             else
                 s << ", ";
             if (!i->isPlaceholder()) {
-                s << (string)i->docID << "@" << i->sequence;
+                s << (string)i->docID << "@" << uint64_t(i->sequence);
                 if (verbose && i->flags != RevisionFlags::None)
                     s << '#' << hex << int(i->flags) << dec;
                 if (verbose)

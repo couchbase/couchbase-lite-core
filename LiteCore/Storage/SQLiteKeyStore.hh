@@ -61,7 +61,7 @@ namespace litecore {
         sequence_t set(const RecordUpdate&, bool updateSequence, ExclusiveTransaction&) override;
         void setKV(slice key, slice version, slice value, ExclusiveTransaction&) override;
 
-        bool del(slice key, ExclusiveTransaction&, sequence_t s = 0) override;
+        bool del(slice key, ExclusiveTransaction&, sequence_t s = 0_seq) override;
 
         bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction&) override;
 
@@ -154,7 +154,7 @@ namespace litecore {
         bool _lastSequenceChanged {false};
         bool _purgeCountChanged {false};
         mutable bool _purgeCountValid {false};      // TODO: Use optional class from C++17
-        mutable int64_t _lastSequence {-1};
+        mutable std::optional<sequence_t> _lastSequence;
         mutable std::atomic<uint64_t> _purgeCount {0};
         bool _hasExpirationColumn {false};
         bool _uncommittedExpirationColumn {false};

@@ -68,14 +68,14 @@ namespace litecore {
             :paramBindings(o.paramBindings), afterSequence(o.afterSequence) { }
 
             template <class T>
-            Options(T bindings, sequence_t afterSeq =0, uint64_t withPurgeCount =0)
+            Options(T bindings, sequence_t afterSeq =0_seq, uint64_t withPurgeCount =0)
             :paramBindings(bindings), afterSequence(afterSeq), purgeCount(withPurgeCount) { }
 
             Options after(sequence_t afterSeq) const {return Options(paramBindings, afterSeq, purgeCount);}
             Options withPurgeCount(uint64_t purgeCnt) const {return Options(paramBindings, afterSequence, purgeCnt);}
 
             bool notOlderThan(sequence_t afterSeq, uint64_t purgeCnt) const {
-                return afterSequence > 0 && afterSequence >= afterSeq && purgeCnt == purgeCount;
+                return afterSequence > 0_seq && afterSequence >= afterSeq && purgeCnt == purgeCount;
             }
 
             alloc_slice const paramBindings;

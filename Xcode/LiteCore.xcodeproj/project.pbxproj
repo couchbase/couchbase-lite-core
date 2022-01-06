@@ -1177,6 +1177,7 @@
 		276CF337254C893200C493B5 /* DeDuplicateEncoder.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DeDuplicateEncoder.hh; sourceTree = "<group>"; };
 		276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteEnumerator.cc; sourceTree = "<group>"; };
 		276D15401DFF541000543B1B /* SQLiteQuery.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteQuery.cc; sourceTree = "<group>"; };
+		276D4AD42787709200F61A89 /* c4EnumUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4EnumUtil.hh; sourceTree = "<group>"; };
 		276E02101EA9717200FEFE8A /* RESTListenerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTListenerTest.cc; sourceTree = "<group>"; };
 		276E02191EA983EE00FEFE8A /* Response.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Response.cc; sourceTree = "<group>"; };
 		276E021A1EA983EE00FEFE8A /* Response.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Response.hh; sourceTree = "<group>"; };
@@ -1997,6 +1998,7 @@
 				27175B73261BC3030045F3AC /* README.md */,
 				274D1793261401320018D39C /* c4.hh */,
 				2758DFF325F2A476007C7487 /* c4Base.hh */,
+				276D4AD42787709200F61A89 /* c4EnumUtil.hh */,
 				2758DFD225F161CD007C7487 /* c4BlobStore.hh */,
 				274D181826165AFB0018D39C /* c4Certificate.hh */,
 				27229268260D171D00A3A41F /* c4Collection.hh */,
