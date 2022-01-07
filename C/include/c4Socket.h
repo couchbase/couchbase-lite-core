@@ -95,6 +95,10 @@ C4API_BEGIN_DECLS
 
     /** Constructs a C4Socket from a "native handle", whose interpretation is up to the
         C4SocketFactory.  This is used by listeners to handle an incoming replication connection.
+        @warning  You MUST immediately call `c4socket_retain` on this pointer (and the usual
+                  `c4socket_release` when done.) This is inconsistent with the general ref-counting
+                  convention, but fixing this function to return a retained value would cause all
+                  existing platforms to leak C4Sockets, so we're leaving it alone.
         @param factory  The C4SocketFactory that will manage the socket.
         @param nativeHandle  A value known to the factory that represents the underlying socket,
             such as a file descriptor or a native object pointer.
