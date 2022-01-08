@@ -664,9 +664,19 @@ namespace litecore { namespace repl {
         if(!db) {
             return false;
         }
-        
-        _checkpointer.pendingDocumentIDs(db->useLocked(), callback);
-        return true;
+
+        try {
+            db->useLocked([this, callback](const Retained<C4Database>& db) {
+                _checkpointer.pendingDocumentIDs(db, callback);
+            });
+            return true;
+        } catch (const error& err) {
+            if (error{error::Domain::LiteCore, error::LiteCoreError::NotOpen} == err) {
+                return false;
+            } else {
+                throw;
+            }
+        }
     }
 
 
@@ -676,8 +686,18 @@ namespace litecore { namespace repl {
         if(!db) {
             return nullopt;
         }
-        
-        return _checkpointer.isDocumentPending(db->useLocked(), docID);
+
+        try {
+            return db->useLocked<bool>([this,docID](const Retained<C4Database>&db) {
+                return _checkpointer.isDocumentPending(db, docID);
+            });
+        } catch(const error& err) {
+            if (error{error::Domain::LiteCore, error::LiteCoreError::NotOpen} == err) {
+                return nullopt;
+            } else {
+                throw;
+            }
+        }
     }
 
 
