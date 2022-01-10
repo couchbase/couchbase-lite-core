@@ -965,8 +965,21 @@ TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
 }
 
 
+TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
+    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
+}
+
+
+TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
+    testOpeningOlderDBFixture("upgrade_2.8.cblite2", 0);
+// In 3.0 it's no longer possible to open 2.x databases without upgrading
+//    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
+//    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
+}
+
+
 TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
-    string dbPath = "upgrade_2.8.cblite2";
+    string dbPath = "upgrade_2.8_index.cblite2";
 
     // This test tests CBL-2374. When there are indexes, simply moving records of v2 schema
     // to v3 schema will cause fleece to fail. This failure can be avoided by regenerate
@@ -983,10 +996,8 @@ TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
     // NB: the database used in this test contains a value index of "firstName, lastName"
 
     C4DatabaseFlags withFlags{0};
-    SECTION("Revision Tree") { }
-    SECTION("Version Vector") {
-        withFlags = kC4DB_VersionVectors;
-    }
+    SECTION("Revision Tree")  { }
+    SECTION("Version Vector") { withFlags = kC4DB_VersionVectors; }
 
     C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
     C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
@@ -995,7 +1006,7 @@ TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
     C4Error err;
     c4::ref<C4Database> db = c4db_openNamed(name, &config, WITH_ERROR(&err));
     CHECK(db);
-    
+
     // This db has two documents with docIDs,
     // "-3aW8VeEWNHiXlvj6lhl2Cl" and "-4xUa8BVjx0TiT_iCFWjpzM".
     // They have the same JSON body, {"firstName":"fName","lastName":"lName"}.
@@ -1005,7 +1016,7 @@ TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
         C4Test::createFleeceRev(db, docID, nullslice,
                                 slice(json5("{firstName:'john',lastName:'foo'}")));
     }
-    
+
     // Verify a query agaist the (compound) index, (firstName, lastName).
     {
         C4Error error;
@@ -1032,11 +1043,6 @@ TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
         CHECK(!error);
         CHECK(count == 2);
     }
-}
-
-
-TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
-    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
 }
 
 
@@ -1158,3 +1164,4 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     CHECK(doc->flags == (kDocDeleted | kDocExists));
     c4doc_release(doc);
 }
+

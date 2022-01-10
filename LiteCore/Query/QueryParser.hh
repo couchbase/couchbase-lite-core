@@ -48,14 +48,21 @@ namespace litecore {
         static constexpr const char* kBodyColumnName = "body";
 
 
+        /** Which docs to include from a collection in a query; determines which table to use. */
+        enum DeletionStatus {
+            kLiveDocs, kDeletedDocs, kLiveAndDeletedDocs
+        };
+
         /** Delegate knows about the naming & existence of tables.
             Implemented by SQLiteDataFile; this interface is to keep the QueryParser isolated from
             such details and make it easier to unit-test. */
         class Delegate {
         public:
+            using DeletionStatus = QueryParser::DeletionStatus;
+
             virtual ~Delegate() =default;
             virtual bool tableExists(const string &tableName) const =0;
-            virtual string collectionTableName(const string &collection) const =0;
+            virtual string collectionTableName(const string &collection, DeletionStatus) const =0;
             virtual string FTSTableName(const string &onTable, const string &property) const =0;
             virtual string unnestedTableName(const string &onTable, const string &property) const =0;
 #ifdef COUCHBASE_ENTERPRISE
@@ -65,8 +72,10 @@ namespace litecore {
 
 
         QueryParser(const Delegate &delegate,
+                    const string& defaultCollectionName,
                     const string& defaultTableName)
         :_delegate(delegate)
+        ,_defaultCollectionName(defaultCollectionName)
         ,_defaultTableName(defaultTableName)
         { }
 
@@ -109,26 +118,30 @@ namespace litecore {
         using Dict = fleece::impl::Dict;
         using Path = fleece::impl::Path;
 
+        // Types of table aliases
         enum aliasType {
-            kDBAlias,                   // Primary FROM collection
-            kJoinAlias,                 // A JOINed collection
-            kResultAlias,               // A named query result value ("SELECT ___ AS x")
-            kUnnestVirtualTableAlias,   // An UNNEST implemented as a virtual table
-            kUnnestTableAlias           // An UNNEST implemented as a materialized table
+            kDBAlias,                          // Primary FROM collection
+            kJoinAlias,                        // A JOINed collection
+            kResultAlias,                      // A named query result value ("SELECT ___ AS x")
+            kUnnestVirtualTableAlias,          // An UNNEST implemented as a virtual table
+            kUnnestTableAlias                  // An UNNEST implemented as a materialized table
         };
 
+        // Info about a table alias (an item of the FROM list, i.e. the main table or a join)
         struct aliasInfo {
-            aliasType type;
-            string    tableName;
+            aliasType       type;              // Type of alias (see above)
+            string          alias;             // The alias (same as the AliasMap key)
+            string          collection;        // Collection name
+            string          tableName;         // SQLite table name
+            DeletionStatus  delStatus;         // Match live or deleted docs, or both?
+            const Dict  *   dict = nullptr;    // The Dict defining this alias
+            const Value *   on = nullptr;      // The 'ON' clause of `dict`, if any
+            const Value *   unnest = nullptr;  // The 'UNNEST' clause of `dict`, if any
         };
 
+        // Maps alias names -> info
         using AliasMap = map<string, aliasInfo>;
 
-        QueryParser(const QueryParser *qp)
-        :QueryParser(qp->_delegate, qp->_defaultTableName)
-        {
-            _bodyColumnName = qp->_bodyColumnName;
-        }
 
         struct Operation;
         static const Operation kOperationList[];
@@ -137,6 +150,13 @@ namespace litecore {
                                kHighPrecedenceOperation;
         struct JoinedOperations;
         static const JoinedOperations kJoinedOperationsList[];
+
+
+        QueryParser(const QueryParser *qp)
+        :QueryParser(qp->_delegate, qp->_defaultCollectionName, qp->_defaultTableName)
+        {
+            _bodyColumnName = qp->_bodyColumnName;
+        }
 
         QueryParser(const QueryParser &qp) =delete;
         QueryParser& operator=(const QueryParser&) =delete;
@@ -152,12 +172,14 @@ namespace litecore {
         unsigned writeSelectListClause(const Dict *operands, slice key, const char *sql,
                                        bool aggregatesOK =false);
 
+        void lookForDeleted(const Dict *select);
+        void writeDeletionTest(const string &alias);
         void writeWhereClause(const Value *where);
-        void writeDeletionTest(const string &alias, bool isDeleted = false);
 
+        void addDefaultAlias();
+        void addAlias(aliasInfo&&);
         void addAlias(const string &alias, aliasType, const string &tableName);
-        struct FromAttributes;
-        FromAttributes parseFromEntry(const Value *value);
+        aliasInfo parseFromEntry(const Value *value);
         void parseFromClause(const Value *from);
         void writeFromClause(const Value *from);
         int parseJoinType(slice);
@@ -221,6 +243,7 @@ namespace litecore {
 
         const Delegate& _delegate;               // delegate object (SQLiteKeyStore)
         string _defaultTableName;                // Name of the default table to use
+        string _defaultCollectionName;           // Name of the default collection to use
         string _bodyColumnName = kBodyColumnName;// Column holding doc bodies
         AliasMap _aliases;                       // "AS..." aliases for db/joins/unnests
         string _dbAlias;                         // Alias of the main collection, "_doc" by default
@@ -237,7 +260,6 @@ namespace litecore {
         unsigned _1stCustomResultCol {0};        // Index of 1st result after _baseResultColumns
         bool _aggregatesOK {false};              // Are aggregate fns OK to call?
         bool _isAggregateQuery {false};          // Is this an aggregate query?
-        bool _checkedDeleted {false};            // Has query accessed _deleted meta-property?
         bool _checkedExpiration {false};         // Has query accessed _expiration meta-property?
         Collation _collation;                    // Collation in use during parse
         bool _collationUsed {true};              // Emitted SQL "COLLATION" yet?

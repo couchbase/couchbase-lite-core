@@ -84,13 +84,16 @@ namespace litecore {
                                     format("%s", "N1QL error: missing the FROM clause"));
                     }
                     _json = ((MutableDict*)result)->toJSON(true);
+                    logVerbose("N1QL query translated to: %.*s", SPLAT(_json));
                     FLMutableDict_Release(result);
                     break;
                 }
             }
 
-            QueryParser qp(dataFile, defaultKeyStore->tableName());
+            QueryParser qp(dataFile, defaultKeyStore->collectionName(), defaultKeyStore->tableName());
             qp.parseJSON(_json);
+            string sql = qp.SQL();
+            logInfo("Compiled as %s", sql.c_str());
 
             // Collect the KeyStores read by this query:
             for (const string &table : qp.collectionTablesUsed())
@@ -118,8 +121,6 @@ namespace litecore {
                     ks->addExpiration();
             }
 
-            string sql = qp.SQL();
-            logInfo("Compiled as %s", sql.c_str());
             LogTo(SQL, "Compiled {Query#%u}: %s", getObjectRef(), sql.c_str());
             _statement = dataFile.compile(sql.c_str());
             
@@ -140,7 +141,7 @@ namespace litecore {
             // This number is just used for before/after comparisons, so
             // return the total last-sequence of all used KeyStores
             return std::accumulate(_keyStores.begin(), _keyStores.end(), 0,
-                                   [](sequence_t total, const SQLiteKeyStore *ks) {
+                                   [](sequence_t total, const KeyStore *ks) {
                 return total + ks->lastSequence();
             });
         }
@@ -150,7 +151,7 @@ namespace litecore {
             // This number is just used for before/after comparisons, so
             // return the total purge-count of all used KeyStores
             return std::accumulate(_keyStores.begin(), _keyStores.end(), 0,
-                                   [](uint64_t total, const SQLiteKeyStore *ks) {
+                                   [](uint64_t total, const KeyStore *ks) {
                 return total + ks->purgeCount();
             });
         }
@@ -231,7 +232,7 @@ namespace litecore {
         shared_ptr<SQLite::Statement> _statement;           // Compiled SQLite statement
         unique_ptr<SQLite::Statement> _matchedTextStatement;// Gets the matched text
         vector<string> _columnTitles;                       // Titles of columns
-        vector<SQLiteKeyStore*> _keyStores;
+        vector<KeyStore*> _keyStores;
     };
 
 

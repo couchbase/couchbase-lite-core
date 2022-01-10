@@ -19,6 +19,7 @@
 #include "Base64.hh"
 #include "Error.hh"
 #include "FleeceImpl.hh"
+#include "MutableDict.hh"
 #include "DeepIterator.hh"
 #include "Path.hh"
 #include "Logging.hh"
@@ -35,6 +36,7 @@ using namespace fleece::impl;
 using namespace litecore::qp;
 
 namespace litecore {
+
 
 #pragma mark - UTILITY FUNCTIONS:
 
@@ -185,8 +187,6 @@ namespace litecore {
         _columnTitles.clear();
         _1stCustomResultCol = 0;
         _isAggregateQuery = _aggregatesOK = _propertiesUseSourcePrefix = _checkedExpiration = false;
-
-        _aliases.insert({_dbAlias, {kDBAlias, _defaultTableName}});
     }
 
 
@@ -221,7 +221,9 @@ namespace litecore {
                     parseNode(expression);
                 } else {
                     // Given some other expression; treat it as a WHERE clause of an implicit SELECT:
-                    writeSelect(expression, Dict::kEmpty);
+                    Retained<MutableDict> select = MutableDict::newDict();
+                    select->set("WHERE", expression);
+                    writeSelect(select);
                 }
             }
         } catch (const FleeceException &x) {handleFleeceException(x);}
@@ -230,6 +232,7 @@ namespace litecore {
 
     void QueryParser::parseJustExpression(const Value *expression) {
         reset();
+        addDefaultAlias();
         try {
             parseNode(expression);
         } catch (const FleeceException &x) {handleFleeceException(x);}
@@ -240,17 +243,16 @@ namespace litecore {
 
     
     void QueryParser::writeSelect(const Dict *operands) {
-        writeSelect(getCaseInsensitive(operands, "WHERE"_sl), operands);
-    }
-
-
-    void QueryParser::writeSelect(const Value *where, const Dict *operands) {
         // Find all the joins in the FROM clause first, to populate alias info. This has to be done
         // before writing the WHAT clause, because that will depend on the aliases.
         auto from = getCaseInsensitive(operands, "FROM"_sl);
         parseFromClause(from);
-        
+
+        // Check whether the query accesses deleted docs, since this affects what tables to use:
+        lookForDeleted(operands);
+
         // Have to find all properties involved in MATCH before emitting the FROM clause:
+        auto where = getCaseInsensitive(operands, "WHERE"_sl);
         if (where) {
             unsigned numMatches = findFTSProperties(where);
             require(numMatches <= _ftsTables.size(),
@@ -364,27 +366,10 @@ namespace litecore {
 
 
     void QueryParser::writeWhereClause(const Value *where) {
-        _checkedDeleted = false;
-        _sql << " WHERE ";
         if (where) {
-            _sql << "(";
+            _sql << " WHERE ";
             parseNode(where);
-            _sql << ")";
         }
-        if (!_checkedDeleted) {
-            if (where)
-                _sql << " AND ";
-            writeDeletionTest(_dbAlias);
-        }
-    }
-
-
-    void QueryParser::writeDeletionTest(const string &alias, bool isDeleted) {
-        _sql << "(";
-        if (!alias.empty())
-            _sql << sqlIdentifier(alias) << '.';
-        _sql << "flags & " << (unsigned)DocumentFlags::kDeleted
-             << (isDeleted ? " != 0)" : " = 0)");
     }
 
 
@@ -396,6 +381,7 @@ namespace litecore {
     {
         _defaultTableName = onTableName;
         reset();
+        addDefaultAlias();
         try {
             if (isUnnestedTable)
                 _aliases[_dbAlias] = {kUnnestTableAlias, onTableName};
@@ -430,48 +416,59 @@ namespace litecore {
 #pragma mark - "FROM" / "JOIN" clauses:
 
 
-    // Collects the attributes of a dict in the FROM clause
-    struct QueryParser::FromAttributes {
-        const Dict  *dict;
-        string      tableName, alias;
-        const Value *on, *unnest;
-    };
+    void QueryParser::addDefaultAlias() {
+        DebugAssert(_aliases.empty());
+        _aliases.insert({_dbAlias, {kDBAlias, _dbAlias, _defaultCollectionName, _defaultTableName}});
+    }
 
-    QueryParser::FromAttributes QueryParser::parseFromEntry(const Value *value) {
-        auto dict = requiredDict(value, "FROM item");
-        slice collection = optionalString(getCaseInsensitive(dict, "COLLECTION"_sl),
-                                          "COLLECTION in FROM item");
-        FromAttributes from = {
-            dict,
-            {},
-            string(optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")),
-            getCaseInsensitive(dict, "ON"_sl),
-            getCaseInsensitive(dict, "UNNEST"_sl),
-        };
-        if (collection) {
-            from.tableName = _delegate.collectionTableName(string(collection));
-            require(_delegate.tableExists(from.tableName),
-                    "no such collection \"%.*s\"", SPLAT(collection));
-        } else {
-            from.tableName = _defaultTableName;
-            DebugAssert(_delegate.tableExists(from.tableName));
-        }
-        if (from.alias.empty())
-            from.alias = collection ? string(collection) : "_default";
-        return from;
+
+    void QueryParser::addAlias(aliasInfo &&entry) {
+        require(isValidAlias(entry.alias), "Invalid AS identifier '%s'", entry.alias.c_str());
+        require(_aliases.find(entry.alias) == _aliases.end(),
+                "duplicate collection alias '%s'", entry.alias.c_str());
+        if (entry.type == kDBAlias)
+            _dbAlias = entry.alias;
+        _aliases.insert({entry.alias, move(entry)});
     }
 
 
     void QueryParser::addAlias(const string &alias, aliasType type, const string &tableName) {
-        require(isValidAlias(alias), "Invalid AS identifier '%s'", alias.c_str());
-        require(_aliases.find(alias) == _aliases.end(),
-                "duplicate collection alias '%s'", alias.c_str());
-        _aliases.insert({alias, {type, tableName}});
-        if (type == kDBAlias)
-            _dbAlias = alias;
+        aliasInfo entry;
+        entry.type = type;
+        entry.alias = alias;
+        entry.collection = _defaultCollectionName;
+        entry.tableName = tableName;
+        addAlias(move(entry));
     }
 
 
+    QueryParser::aliasInfo QueryParser::parseFromEntry(const Value *value) {
+        auto dict = requiredDict(value, "FROM item");
+        slice collection = optionalString(getCaseInsensitive(dict, "COLLECTION"_sl),
+                                          "COLLECTION in FROM item");
+        aliasInfo from;
+        from.type = aliasType(-1);
+        from.dict = dict;
+        from.alias = string(optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item"));
+        from.on = getCaseInsensitive(dict, "ON"_sl);
+        from.unnest = getCaseInsensitive(dict, "UNNEST"_sl);
+        if (collection) {
+            from.collection = string(collection);
+            from.tableName = _delegate.collectionTableName(from.collection, kLiveDocs);
+            require(_delegate.tableExists(from.tableName),
+                    "no such collection \"%.*s\"", SPLAT(collection));
+        } else {
+            from.collection = _defaultCollectionName;
+            from.tableName = _defaultTableName;
+            DebugAssert(_delegate.tableExists(from.tableName));
+        }
+        if (from.alias.empty())
+            from.alias = collection ? string(collection) : _defaultCollectionName;
+        return from;
+    }
+
+
+    // Sanity-checks the FROM clause, and  populates _kvTables and _aliases based on it.
     void QueryParser::parseFromClause(const Value *from) {
         _aliases.clear();
         bool first = true;
@@ -479,26 +476,26 @@ namespace litecore {
             for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
                 if (first)
                     _propertiesUseSourcePrefix = true;
-                FromAttributes entry = parseFromEntry(i.value());
-                aliasType type;
+                aliasInfo entry = parseFromEntry(i.value());
                 if (first) {
                     require(!entry.on && !entry.unnest, "first FROM item cannot have an ON or UNNEST clause");
-                    type = kDBAlias;
+                    entry.type = kDBAlias;
                     _kvTables.insert(entry.tableName);
+                    _defaultCollectionName = entry.collection;
                     _defaultTableName = entry.tableName;
                 } else if (!entry.unnest) {
-                    type = kJoinAlias;
+                    entry.type = kJoinAlias;
                     _kvTables.insert(entry.tableName);
                 } else {
                     require (!entry.on, "cannot use ON and UNNEST together");
                     string unnestTable = unnestedTableName(entry.unnest);
                     if (_delegate.tableExists(unnestTable))
-                        type = kUnnestTableAlias;
+                        entry.type = kUnnestTableAlias;
                     else
-                        type = kUnnestVirtualTableAlias;
+                        entry.type = kUnnestVirtualTableAlias;
                     entry.tableName = "";
                 }
-                addAlias(entry.alias, type, entry.tableName);
+                addAlias(move(entry));
                 first = false;
             }
         }
@@ -515,8 +512,8 @@ namespace litecore {
 
         if (fromArray && !fromArray->empty()) {
             for (Array::iterator i(fromArray); i; ++i) {
-                FromAttributes entry = parseFromEntry(i.value());
-                switch (_aliases[entry.alias].type) {
+                aliasInfo &entry = _aliases.find(parseFromEntry(i.value()).alias)->second;
+                switch (entry.type) {
                     case kDBAlias: {
                         // The first item is the database alias:
                         _sql << " FROM " << sqlIdentifier(entry.tableName)
@@ -558,16 +555,10 @@ namespace litecore {
                         _sql << " " << kJoinTypeNames[ joinType ] << " JOIN "
                              << sqlIdentifier(entry.tableName)
                              << " AS " << sqlIdentifier(entry.alias) << " ON ";
-                        _checkedDeleted = false;
                         if (entry.on) {
                             _sql << "(";
                             parseNode(entry.on);
                             _sql << ")";
-                        }
-                        if (!_checkedDeleted) {
-                            if (entry.on)
-                                _sql << " AND ";
-                            writeDeletionTest(entry.alias);
                         }
                         break;
                     }
@@ -699,6 +690,156 @@ namespace litecore {
             writePropertyGetter(kValueFnName, Path(str));
         } else {
             _sql << sqlString(str);
+        }
+    }
+
+
+#pragma mark - DELETED-DOC HANDLING:
+
+
+    // Returns true if the expression is the `meta()` property of the given alias.
+    static bool isMetaProperty(const Array *meta, slice alias) {
+        if (!meta || meta->empty() || !meta->get(0)->asString().caseEquivalent("META()"))
+            return false;
+        if (meta->count() == 1)
+            return alias.empty();
+        else
+            return meta->get(1)->asString() == alias;
+    }
+
+
+    // Returns true if the expression is a reference to the "deleted" meta-property of an alias.
+    // This can be appear either as a document property `_deleted`, or as a references to the
+    // `deleted` property of the `meta()` function.
+    static bool isDeletedPropertyRef(const Array *operation, slice alias) {
+        if (operation && !operation->empty()) {
+            slice op = operation->get(0)->asString();
+            if (op.hasPrefix('.')) {
+                // `["._deleted"]` or `[".<alias>._deleted"]`
+                if (Path path = propertyFromNode(operation, '.'); path.size() == 1 || path.size() == 2) {
+                    if (path[path.size() - 1].keyStr() != "_deleted")
+                        return false;
+                    if (path.size() == 1)
+                        return alias.empty();
+                    else
+                        return path[0].keyStr() == alias;
+                }
+            } else if (op == "_." && operation->count() == 3) {
+                // `["._", ["META()", <alias>], "deleted"]`
+                slice prop = operation->get(2)->asString();
+                return (prop == "deleted" || prop == ".deleted")
+                    && isMetaProperty(operation->get(1)->asArray(), alias);
+            }
+        }
+        return false;
+    }
+
+    static bool isDeletedPropertyRef(const Value *expr, slice alias) {
+        return expr && isDeletedPropertyRef(expr->asArray(), alias);
+    }
+
+
+    static bool findDeletedPropertyRefs(const Dict *expr, slice alias) {
+        const Value *what = getCaseInsensitive(expr, "WHAT");
+        for (DeepIterator iter(expr); iter; ++iter) {
+            if (auto operation = iter.value()->asArray(); operation && operation != what) {
+                if (isDeletedPropertyRef(operation, alias))
+                    return true;
+                if (isMetaProperty(operation, alias)) {
+                    // Found a reference to `meta()`, but if it's being used to access a property
+                    // other than `deleted`, ignore it:
+                    slice prop;
+                    if (auto parent = iter.parent(); parent && parent != what) {
+                        if (auto parOp = parent->asArray(); parOp && parOp->count() >= 3) {
+                            if (parOp->get(0)->asString() == "_." && parOp->get(1) == operation)
+                                prop = parOp->get(2)->asString();
+                        }
+                    }
+                    if (!prop || prop == "deleted" || prop == ".deleted")
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+    // Returns `kDeletedDocs` if the expression only matches deleted documents,
+    // 'kLiveTable' if it doesn't access the 'deleted' meta-property at all,
+    static bool matchesOnlyDeletedDocs(const Value *expr, slice alias) {
+        if (isDeletedPropertyRef(expr, alias))
+            return true;
+        if (auto operation = expr->asArray(); operation && operation->count() >= 2) {
+            Array::iterator operands(operation);
+            slice op = operands->asString();
+            ++operands;
+            if (op == "=" || op == "==") {
+                // Match ["=", ["._deleted"], true] or ["=", true, ["._deleted"]]
+                if (operands.count() == 2) {
+                    return (operands[0]->asBool() == true && isDeletedPropertyRef(operands[1], alias))
+                        || (operands[1]->asBool() == true && isDeletedPropertyRef(operands[0], alias));
+                }
+            } else if (op.caseEquivalent("AND")) {
+                // Match ["AND", ... ["._deleted"] ...]
+                for(; operands; ++operands)
+                    if (matchesOnlyDeletedDocs(operands.value(), alias))
+                        return true;
+            }
+        }
+        return false;
+    }
+
+
+    void QueryParser::lookForDeleted(const Dict *select) {
+        const Value *where = getCaseInsensitive(select, "WHERE");
+        for (auto &e : _aliases) {
+            aliasInfo &info = e.second;
+            if (info.type == kDBAlias || info.type == kJoinAlias) {
+                slice alias = info.alias;
+                if (info.type == kDBAlias && !_propertiesUseSourcePrefix)
+                    alias = ""_sl;
+
+                auto type = kLiveDocs;
+                if (findDeletedPropertyRefs(select, alias)) {
+                    if (where && matchesOnlyDeletedDocs(where, alias)) {
+                        type = kDeletedDocs;
+                        LogDebug(QueryLog, "QueryParser: only matches deleted docs in '%.*s'", SPLAT(alias));
+                    } else {
+                        type = kLiveAndDeletedDocs;
+                        LogDebug(QueryLog, "QueryParser: May match live and deleted docs in '%.*s'", SPLAT(alias));
+                    }
+                } else {
+                    LogDebug(QueryLog, "QueryParser: Doesn't access meta(%.*s).deleted", SPLAT(alias));
+                }
+
+                if (type != info.delStatus) {
+                    info.delStatus = type;
+                    Assert(!info.collection.empty());
+                    info.tableName = _delegate.collectionTableName(info.collection, info.delStatus);
+                    if (info.type == kDBAlias) {
+                        _defaultCollectionName = info.collection;
+                        _defaultTableName = info.tableName;
+                    }
+                }
+            }
+        }
+    }
+
+
+    void QueryParser::writeDeletionTest(const string &alias) {
+        switch (_aliases[alias].delStatus) {
+            case kLiveDocs:
+                _sql << "false";
+                break;
+            case kDeletedDocs:
+                _sql <<  "true";
+                break;
+            case kLiveAndDeletedDocs:
+                _sql << "(";
+                if (!alias.empty())
+                    _sql << sqlIdentifier(alias) << '.';
+                _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << " != 0)";
+                break;
         }
     }
 
@@ -1256,18 +1397,17 @@ namespace litecore {
                 writeMetaProperty(kValueFnName, tablePrefix, "key");
                 break;
             case mkDeleted:
-                writeDeletionTest(dbAlias, true);
-                _checkedDeleted = true;     // note that the query has tested _deleted
+                writeDeletionTest(dbAlias);
                 break;
             case mkRevisionId:
                 _sql << kVersionFnName << "(" << tablePrefix << "version" << ")";
                 break;
             case mkSequence:
                 writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i]);
-                _checkedExpiration = true;
                 break;
             case mkExpiration:
                 writeMetaProperty(kValueFnName, tablePrefix, kMetaKeys[i]);
+                _checkedExpiration = true;
                 break;
             default:
                 Assert(false, "Internal logic error");
@@ -1594,9 +1734,8 @@ namespace litecore {
                 _checkedExpiration = true;
                 return;
             } else if (meta == kDeletedProperty) {
-                require(fn == kValueFnName, "can't use '_deleted' in this context");
-                writeDeletionTest(alias, true);
-                _checkedDeleted = true;     // note that the query has tested _deleted
+                require(fn == kValueFnName, "can't use 'deleted' in this context");
+                writeDeletionTest(alias);
                 return;
             } else if (meta == kRevIDProperty) {
                 _sql << kVersionFnName << "(" << tablePrefix << "version" << ")";
@@ -1676,7 +1815,6 @@ namespace litecore {
 
 
     std::string QueryParser::expressionSQL(const fleece::impl::Value* expr) {
-        reset();
         parseJustExpression(expr);
         return SQL();
     }
@@ -1696,12 +1834,14 @@ namespace litecore {
 
     std::string QueryParser::eachExpressionSQL(const fleece::impl::Value* arrayExpr) {
         reset();
+        addDefaultAlias();
         writeEachExpression(arrayExpr);
         return SQL();
     }
 
     std::string QueryParser::FTSExpressionSQL(const fleece::impl::Value* ftsExpr) {
         reset();
+        addDefaultAlias();
         writeFunctionGetter(kFTSValueFnName, ftsExpr);
         return SQL();
     }

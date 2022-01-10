@@ -41,11 +41,19 @@ namespace litecore {
             return _stmt->executeStep();
         }
 
-        virtual bool read(Record &rec) override {
+        virtual bool read(Record &rec) const override {
             rec.setExpiration(_stmt->getColumn(RecordColumn::Expiration));
             SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt, _content, true, true);
             return true;
         }
+
+       virtual slice key() const override {
+           return SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2));
+       }
+
+       virtual sequence_t sequence() const override {
+           return (int64_t)_stmt->getColumn(0);
+       }
 
     private:
         unique_ptr<SQLite::Statement> _stmt;
