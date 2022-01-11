@@ -33,13 +33,13 @@ namespace litecore {
 
 
     slice valueAsDocBody(sqlite3_value *arg, bool &outCopied) {
+        outCopied = false;
         auto type = sqlite3_value_type(arg);
         if (_usuallyFalse(type == SQLITE_NULL))
             return nullslice;             // No 'body' column; may be deleted doc
         DebugAssert(type == SQLITE_BLOB);
         DebugAssert(sqlite3_value_subtype(arg) == 0);
         auto fleece = valueAsSlice(arg);
-        outCopied = false;
         if (RawRevision::isRevTree(fleece)) {
             // This is a 2.x-format `body` column containing a revision tree, i.e. the document
             // has not yet been updated to 3.0 format. Extract the current revision's body:

@@ -59,7 +59,7 @@ namespace litecore {
         
         const fleece::impl::Value *root;
     private:
-        bool _copied;
+        bool _copied; // Do not initialize it; the base class will do.
     };
 
 
