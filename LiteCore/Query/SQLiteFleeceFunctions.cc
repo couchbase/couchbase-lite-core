@@ -33,7 +33,7 @@ namespace litecore {
     static void fl_root(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         if (sqlite3_value_type(argv[0]) == SQLITE_BLOB) {
             // Pull the Fleece data out of a raw document body:
-            bool copied;
+            bool copied{false};
             slice body = valueAsDocBody(argv[0], copied);
             setResultBlobFromFleeceData(ctx, body);
             if (copied)
