@@ -32,19 +32,27 @@ namespace litecore {
     const char* const kFleeceValuePointerType = "FleeceValue";
 
 
-    static inline slice argAsDocBody(sqlite3_context* ctx, sqlite3_value *arg) {
+    slice valueAsDocBody(sqlite3_value *arg, bool &outCopied) {
         auto type = sqlite3_value_type(arg);
         if (_usuallyFalse(type == SQLITE_NULL))
             return nullslice;             // No 'body' column; may be deleted doc
         DebugAssert(type == SQLITE_BLOB);
         DebugAssert(sqlite3_value_subtype(arg) == 0);
-        auto body = valueAsSlice(arg);
-        if (RawRevision::isRevTree(body)) {
+        auto fleece = valueAsSlice(arg);
+        outCopied = false;
+        if (RawRevision::isRevTree(fleece)) {
             // This is a 2.x-format `body` column containing a revision tree, i.e. the document
             // has not yet been updated to 3.0 format. Extract the current revision's body:
-            body = RawRevision::getCurrentRevBody(body);
+            fleece = RawRevision::getCurrentRevBody(fleece);
+            if (_usuallyFalse(size_t(fleece.buf) & 1)) {
+                // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
+                // revision data, so it could occur. Now that it's not allowed, we have to work around
+                // this by copying the data to an even address. (#589)
+                fleece = fleece.copy();
+                outCopied = true;
+            }
         }
-        return body;
+        return fleece;
     }
 
 
@@ -118,7 +126,7 @@ namespace litecore {
 
 
     QueryFleeceScope::QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv)
-    :Scope(argAsDocBody(ctx, argv[0]),
+    :Scope(valueAsDocBody(argv[0], _copied),
            ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys)
     {
         if (_usuallyTrue(data().buf != nullptr)) {
@@ -132,6 +140,14 @@ namespace litecore {
         }
         if (_usuallyTrue(sqlite3_value_type(argv[1]) != SQLITE_NULL))
             root = evaluatePathFromArg(ctx, argv, 1, root);
+    }
+
+
+    QueryFleeceScope::~QueryFleeceScope() {
+        if (_usuallyFalse(_copied)) {
+            unregister();
+            free((void*)data().buf);
+        }
     }
 
 
