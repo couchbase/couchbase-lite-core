@@ -33,7 +33,7 @@ namespace litecore {
                 this, store.name().c_str(),
                 options.includeDeleted, options.onlyConflicts, options.onlyBlobs,
                 options.sortOption);
-        _impl.reset(_store->newEnumeratorImpl(false, 0, options));
+        _impl.reset(_store->newEnumeratorImpl(false, 0_seq, options));
     }
 
     // By-sequence constructor

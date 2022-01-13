@@ -180,7 +180,7 @@ namespace litecore {
             \ref readChanges will reset the state so the callback can be called again. */
         using Callback = std::function<void(CollectionChangeNotifier&)>;
 
-        CollectionChangeNotifier(SequenceTracker&, Callback, sequence_t afterSeq =UINT64_MAX);
+        CollectionChangeNotifier(SequenceTracker&, Callback, sequence_t afterSeq =sequence_t::Max);
 
         ~CollectionChangeNotifier();
 

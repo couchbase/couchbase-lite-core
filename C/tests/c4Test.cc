@@ -337,7 +337,8 @@ void C4Test::createConflictingRev(C4Database *db,
     rq.body = body;
     rq.revFlags = flags;
     rq.save = true;
-    auto doc = c4doc_put(db, &rq, nullptr, ERROR_INFO());
+    C4Error error;
+    auto doc = c4doc_put(db, &rq, nullptr, &error);
 //    char buf[256];
 //    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
 //    REQUIRE(doc != nullptr);        // can't use Catch on bg threads

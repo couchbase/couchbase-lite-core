@@ -99,7 +99,7 @@ namespace litecore {
 
 #if DEBUG
     void Rev::dump(std::ostream& out) {
-        out << "(" << sequence << ") " << (std::string)revID.expanded() << "  ";
+        out << "(" << uint64_t(sequence) << ") " << (std::string)revID.expanded() << "  ";
         if (isLeaf())
             out << " leaf";
         if (isDeleted())
@@ -304,7 +304,7 @@ namespace litecore {
         newRev->owner = this;
         newRev->revID = revID;
         newRev->_body = (slice)copyBody(body);
-        newRev->sequence = 0; // Sequence is unknown till record is saved
+        newRev->sequence = 0_seq; // Sequence is unknown till record is saved
         newRev->flags = Rev::Flags(Rev::kLeaf | Rev::kNew | revFlags);
         newRev->parent = parentRev;
 
@@ -426,7 +426,7 @@ namespace litecore {
 
 void RevTree::resetConflictSequence(const Rev* winningRev) {
     auto rev = const_cast<Rev*>(winningRev);
-    rev->sequence = 0;
+    rev->sequence = 0_seq;
 }
 
 #pragma mark - REMOVAL (prune / purge / compact):
@@ -607,7 +607,7 @@ void RevTree::resetConflictSequence(const Rev* winningRev) {
 
     bool RevTree::hasNewRevisions() const {
         for (Rev *rev : _revs) {
-            if (rev->isNew() || rev->sequence == 0)
+            if (rev->isNew() || rev->sequence == 0_seq)
                 return true;
         }
         return false;
@@ -616,7 +616,7 @@ void RevTree::resetConflictSequence(const Rev* winningRev) {
     void RevTree::saved(sequence_t newSequence) {
         for (Rev *rev : _revs) {
             rev->clearFlag(Rev::kNew);
-            if (rev->sequence == 0) {
+            if (rev->sequence == 0_seq) {
                 rev->sequence = newSequence;
             }
         }

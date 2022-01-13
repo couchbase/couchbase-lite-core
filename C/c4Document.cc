@@ -169,7 +169,7 @@ void C4Document::clearSelectedRevision() noexcept {
     _selectedRevID = nullslice;
     _selected.revID = _selectedRevID;
     _selected.flags = (C4RevisionFlags)0;
-    _selected.sequence = 0;
+    _selected.sequence = 0_seq;
 }
 
 

@@ -28,7 +28,8 @@ namespace litecore {
 
     void Record::clear() noexcept {
         _key = _version = _body = _extra = nullslice;
-        _bodySize = _extraSize = _sequence = _subsequence = 0;
+        _bodySize = _extraSize = _subsequence = 0;
+        _sequence = 0_seq;
         _flags = DocumentFlags::kNone;
         _contentLoaded = kMetaOnly;
         _exists = false;

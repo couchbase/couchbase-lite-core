@@ -36,6 +36,7 @@ namespace litecore {
         class Delegate {
         public:
             virtual void liveQuerierUpdated(QueryEnumerator*, C4Error) =0;
+            virtual void liveQuerierStopped() = 0;
             virtual ~Delegate() =default;
         };
 

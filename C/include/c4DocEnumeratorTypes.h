@@ -56,7 +56,7 @@ typedef struct C4DocumentInfo {
     C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
     uint64_t bodySize;          ///< Size in bytes of current revision body (as Fleece not JSON)
     uint64_t metaSize;          ///< Size in bytes of extra metadata
-    int64_t expiration;         ///< Expiration time, or 0 if none
+    C4Timestamp expiration;     ///< Expiration time, or 0 if none
 } C4DocumentInfo;
 
 

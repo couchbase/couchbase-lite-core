@@ -231,7 +231,7 @@ namespace litecore { namespace repl {
     Retained<RevToSend> ChangesFeed::makeRevToSend(C4DocumentInfo &info, C4DocEnumerator *e)
     {
         _maxSequence = info.sequence;
-        if (info.expiration > 0 && info.expiration < c4_now()) {
+        if (info.expiration > C4Timestamp::None && info.expiration < c4_now()) {
             logVerbose("'%.*s' is expired; not pushing it", SPLAT(info.docID));
             return nullptr;             // skip rev: expired
         } else if (!_passive && _checkpointer && _checkpointer->isSequenceCompleted(info.sequence)) {

@@ -133,7 +133,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
             auto cols = e->columns();
             REQUIRE(e->columns().count() == 2);
             slice docID = cols[0]->asString();
-            sequence_t seq = cols[1]->asInt();
+            sequence_t seq = sequence_t(cols[1]->asInt());
             string expectedDocID = stringWithFormat("rec-%03d", i);
             REQUIRE(docID == slice(expectedDocID));
             REQUIRE(seq == (sequence_t)i);
@@ -1749,7 +1749,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]")
 #endif
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
     addNumberedDocs(1, 10);
     {
         ExclusiveTransaction t(store->dataFile());
@@ -1760,8 +1760,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
     }
 
     CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['<=', ['.num'], 15]}")) == 10);
+    // Different ways to express that the query should apply to deleted docs only:
     CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['AND', ['<=', ['.num'], 15], ['._deleted']]}")) == 5);
-    CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['OR',['=',['._deleted'],false],['=',['._deleted'],true]]}")) == 20);
+    CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['=', ['._deleted'], true]}")) == 10);
+    CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['._deleted']}")) == 10);
+    CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['.', '_deleted']}")) == 10);
+    CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['_.', ['meta()'], 'deleted']}")) == 10);
 }
 
 
@@ -1784,12 +1788,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
             "{WHAT: ['._expiration'], ORDER_BY: [['._id']]}")) };
         Retained<QueryEnumerator> e(query->createEnumerator());
         CHECK(e->next());
-        CHECK(e->columns()[0]->asInt() == now - 10000);
+        CHECK(expiration_t(e->columns()[0]->asInt()) == now - 10000);
         CHECK(e->next());
         CHECK(e->columns()[0]->type() == kNull);
         CHECK(e->missingColumns() == 1);
         CHECK(e->next());
-        CHECK(e->columns()[0]->asInt() == now + 10000);
+        CHECK(expiration_t(e->columns()[0]->asInt()) == now + 10000);
         CHECK(!e->next());
     }
     {

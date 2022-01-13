@@ -206,6 +206,10 @@ namespace litecore {
         }
 
         // Store new versioning:
+        if (!versDoc.exists() && newVersioning == kC4TreeVersioning_v2) {
+            // If this is a new db, all docs will have the new v3 tree versioning.
+            newVersioning = kC4TreeVersioning;
+        }
         versDoc.setBodyAsUInt((uint64_t)newVersioning);
         setInfo(versDoc);
         t.commit();
@@ -400,7 +404,7 @@ namespace litecore {
     void DatabaseImpl::startBackgroundTasks() {
         for (const string &name : _dataFile->allKeyStoreNames()) {
             if (slice collName = keyStoreNameToCollectionName(name); collName) {
-                if (_dataFile->getKeyStore(name).nextExpiration() > 0) {
+                if (_dataFile->getKeyStore(name).nextExpiration() > C4Timestamp::None) {
                     asInternal(getCollection(collName))->startHousekeeping();
                 }
             }
@@ -409,10 +413,10 @@ namespace litecore {
 
 
     C4Timestamp DatabaseImpl::nextDocExpiration() const {
-        C4Timestamp minTime = 0;
+        C4Timestamp minTime = C4Timestamp::None;
         forEachCollection([&](C4Collection *coll) {
             auto time = coll->nextDocExpiration();
-            if (time > minTime || minTime == 0)
+            if (time > minTime || minTime == C4Timestamp::None)
                 minTime = time;
         });
         return minTime;

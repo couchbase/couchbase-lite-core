@@ -74,7 +74,7 @@ namespace litecore {
 
 unique_ptr<C4CollectionObserver>
 C4CollectionObserver::create(C4Collection *coll, C4CollectionObserver::Callback callback) {
-    return make_unique<litecore::C4CollectionObserverImpl>(coll, UINT64_MAX, move(callback));
+    return make_unique<litecore::C4CollectionObserverImpl>(coll, C4SequenceNumber::Max, move(callback));
 }
 
 

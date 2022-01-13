@@ -66,6 +66,7 @@ namespace litecore {
 
 
     void LiveQuerier::start(const Query::Options &options) {
+        _stopping = false;
         _lastTime = clock::now();
         _stopping = false;
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_runQuery), options);
@@ -80,11 +81,21 @@ namespace litecore {
 
     void LiveQuerier::stop() {
         logInfo("Stopping");
-         _backgroundDB->dataFile().useLocked([&](DataFile *df) {
-             // CBL-2335: Guard access to the _stopping variable so that
-             // it is not changed at unpredictable times
-             _stopping = true;
-         });
+        bool didStop = _backgroundDB->dataFile().useLocked<bool>([&](DataFile *df) {
+            // CBL-2335: Guard access to the _stopping variable so that
+            // it is not changed at unpredictable times
+            if (_stopping) {
+                return true;
+            }
+            _stopping = true;
+            return false;
+        });
+        
+        if (didStop) {
+            logVerbose("...Calling stop is ignored as it has already been called");
+            return;
+        }
+        
         enqueue(FUNCTION_TO_QUEUE(LiveQuerier::_stop));
     }
 
@@ -112,6 +123,11 @@ namespace litecore {
                     _backgroundDB->removeTransactionObserver(this);
             });
         }
+        // CBL-2678 : _query may not be initialized yet so liveQuerierStopped() needs to be
+        // called outside the _query check. Noted that _stop() will be called only once
+        // as the stop() method has been guard from working more than once after the
+        // _stopping flag was set to true.
+        _delegate->liveQuerierStopped();
         logVerbose("...stopped");
     }
 
@@ -137,13 +153,13 @@ namespace litecore {
         _waitingToRun = false;
         logVerbose("Running query...");
         Retained<QueryEnumerator> newQE;
-        C4Error error = {};
+        C4Error error {};
         fleece::Stopwatch st;
-        _backgroundDB->dataFile().useLocked([&](DataFile *df) {
+        auto stopping = _backgroundDB->dataFile().useLocked<bool>([&](DataFile *df) {
             if (_stopping) {
                 // CBL-2335: Guard access to the _stopping variable so that
                 // it is not changed at unpredictable times
-                return;
+                return true;
             }
 
             try {
@@ -161,7 +177,14 @@ namespace litecore {
                 // Now run the query:
                 newQE = _query->createEnumerator(&options);
             } catchError(&error);
+
+            return false;
         });
+
+        if(stopping) {
+            return;
+        }
+
         auto time = st.elapsedMS();
 
         if (!newQE)
@@ -181,9 +204,6 @@ namespace litecore {
         } else {
             logInfo("...finished one-shot query in %.3fms", time);
         }
-
-        if (_stopping)
-            return;
         
         _delegate->liveQuerierUpdated(newQE, error);
     }

@@ -106,7 +106,7 @@ namespace litecore {
         void setEncoder(FLEncoder enc)                      {_encoder = enc;}
 
         /// Returns true if the document exists in the database.
-        bool exists() const noexcept FLPURE                 {return _sequence > 0;}
+        bool exists() const noexcept FLPURE                 {return _sequence > 0_seq;}
 
         /// Returns what content has been loaded: metadata, current revision, or all revisions.
         ContentOption contentAvailable() const noexcept FLPURE {return _whichContent;}
@@ -248,7 +248,7 @@ namespace litecore {
         FLEncoder                    _encoder {nullptr};    // Database shared Fleece Encoder
         alloc_slice                  _docID;                // The docID
         sequence_t                   _sequence;             // The Record's sequence
-        sequence_t                   _subsequence;          // The Record's subsequence
+        uint64_t                     _subsequence;          // The Record's subsequence
         DocumentFlags                _docFlags;             // Document-level flags
         alloc_slice                  _revID;                // Current revision ID backing store
         Revision                     _current;              // Current revision

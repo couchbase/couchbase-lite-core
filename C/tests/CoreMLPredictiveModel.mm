@@ -394,6 +394,7 @@ namespace cbl {
                 case MLMultiArrayDataTypeInt32:     stride *= sizeof(int32_t); break;
                 case MLMultiArrayDataTypeFloat32:   stride *= sizeof(float); break;
                 case MLMultiArrayDataTypeDouble:    stride *= sizeof(double); break;
+                default: NSCAssert(false, @"Unexpected switch case."); break;
             }
             for (NSUInteger i = 0; i < n; i++) {
                 encodeMultiArray(enc, array, dimension + 1, data);
@@ -409,6 +410,9 @@ namespace cbl {
                     break;
                 case MLMultiArrayDataTypeDouble:
                     encodeInner(enc, (const double*)data, stride, n);
+                    break;
+                default:
+                    NSCAssert(false, @"Unexpected switch case.");
                     break;
             }
         }

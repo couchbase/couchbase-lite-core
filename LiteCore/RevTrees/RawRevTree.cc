@@ -29,6 +29,29 @@ namespace litecore {
 #pragma pack()
 
 
+    bool RawRevision::isRevTree(slice raw_tree) {
+        // The data cannot be shorter than a single revision:
+        if (raw_tree.size < sizeof(RawRevision))
+            return false;
+        // Data must end with a 32-bit 0:
+        auto end = (const void*)offsetby(raw_tree.end(), -int(sizeof(uint32_t)));
+        uint32_t ending;
+        memcpy(&ending, end, sizeof(ending));
+        if (ending != 0)
+            return false;
+        // Check each revision:
+        const RawRevision *next;
+        for (auto rawRev = (const RawRevision*)raw_tree.buf; rawRev < end; rawRev = next) {
+            next = rawRev->next();
+            // Rev can't be too short for data, or extend past end of data:...
+            if (next > end || next <= (void*)&rawRev->revID[rawRev->revIDLen])
+                return false;
+        }
+        return true;
+    }
+
+
+
     std::deque<Rev> RawRevision::decodeTree(slice raw_tree,
                                             RevTree::RemoteRevMap &remoteMap,
                                             RevTree* owner,
@@ -44,7 +67,7 @@ namespace litecore {
         auto rev = revs.begin();
         for (; rawRev->isValid(); rawRev = rawRev->next()) {
             rawRev->copyTo(*rev, revs);
-            if (rev->sequence == 0)
+            if (rev->sequence == 0_seq)
                 rev->sequence = curSeq;
             rev->owner = owner;
             rev++;
@@ -100,7 +123,7 @@ namespace litecore {
     size_t RawRevision::sizeToWrite(const Rev &rev) {
         return offsetof(RawRevision, revID)
              + rev.revID.size
-             + SizeOfVarInt(rev.sequence)
+             + SizeOfVarInt(uint64_t(rev.sequence))
              + rev._body.size;
     }
 
@@ -117,7 +140,7 @@ namespace litecore {
         this->flags = (Rev::Flags)dstFlags;
 
         void *dstData = offsetby(&this->revID[0], rev.revID.size);
-        dstData = offsetby(dstData, PutUVarInt(dstData, rev.sequence));
+        dstData = offsetby(dstData, PutUVarInt(dstData, uint64_t(rev.sequence)));
         rev._body.copyTo(dstData);
 
         return (RawRevision*)offsetby(this, revSize);
@@ -134,7 +157,7 @@ namespace litecore {
             dst.parent = &revs[parentIndex];
         const void *data = offsetby(&this->revID, this->revIDLen);
         ptrdiff_t len = (uint8_t*)end-(uint8_t*)data;
-        data = offsetby(data, GetUVarInt(slice(data, len), &dst.sequence));
+        data = offsetby(data, GetUVarInt(slice(data, len), (uint64_t*)&dst.sequence));
         if (this->flags & RawRevision::kHasData)
             dst._body = slice(data, end);
         else

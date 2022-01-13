@@ -44,7 +44,7 @@ namespace litecore {
 #endif
 
     void KeyStore::set(Record &rec, bool updateSequence, ExclusiveTransaction &t) {
-        if (auto seq = set(RecordUpdate(rec), updateSequence, t); seq > 0) {
+        if (auto seq = set(RecordUpdate(rec), updateSequence, t); seq > 0_seq) {
             rec.setExists();
             if (updateSequence)
                 rec.updateSequence(seq);
@@ -75,8 +75,8 @@ namespace litecore {
     }
 
     expiration_t KeyStore::now() noexcept {
-        return std::chrono::duration_cast<std::chrono::milliseconds>
-                (std::chrono::system_clock::now().time_since_epoch()).count();
+        return expiration_t(std::chrono::duration_cast<std::chrono::milliseconds>
+                (std::chrono::system_clock::now().time_since_epoch()).count());
     }
 
 }

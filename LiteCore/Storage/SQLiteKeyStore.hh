@@ -49,24 +49,23 @@ namespace litecore {
     public:
         using KeyStore::get; // GCC gets confused by the overloaded virtual functions in KeyStore
 
-        uint64_t recordCount() const override;
+        uint64_t recordCount(bool includeDeleted =false) const override;
         sequence_t lastSequence() const override;
         uint64_t purgeCount() const override;
 
         std::string tableName() const                                       {return "kv_" + name();}
-
+        std::string collectionName() const;
+        
         bool read(Record &rec, ReadBy, ContentOption) const override;
 
         sequence_t set(const RecordUpdate&, bool updateSequence, ExclusiveTransaction&) override;
         void setKV(slice key, slice version, slice value, ExclusiveTransaction&) override;
 
-        bool del(slice key, ExclusiveTransaction&, sequence_t s = 0) override;
+        bool del(slice key, ExclusiveTransaction&, sequence_t s = 0_seq) override;
 
         bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction&) override;
 
         void moveTo(slice key, KeyStore &dst, ExclusiveTransaction&, slice newKey = nullslice) override;
-
-        void erase() override;
 
         virtual bool setExpiration(slice key, expiration_t) override;
         virtual expiration_t getExpiration(slice key) override;
@@ -75,10 +74,8 @@ namespace litecore {
 
         bool supportsIndexes(IndexSpec::Type t) const override               {return true;}
         bool createIndex(const IndexSpec&) override;
-        bool createIndex(const IndexSpec&, ExclusiveTransaction&) override;
 
         void deleteIndex(slice name) override;
-        void deleteIndex(slice name, ExclusiveTransaction &t) override;
         std::vector<IndexSpec> getIndexes() const override;
 
         virtual std::vector<alloc_slice> withDocBodies(const std::vector<slice> &docIDs,
@@ -89,7 +86,9 @@ namespace litecore {
         void createBlobsIndex();
 
         /// Adds the `expiration` column to the table. Called only by SQLiteQuery.
-        void addExpiration();
+        void addExpiration() override;
+
+        void shareSequencesWith(KeyStore&) override;
 
     protected:
         virtual bool mayHaveExpiration() override;
@@ -100,7 +99,7 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement> compile(const char *sql) const;
         SQLite::Statement& compileCached(const std::string &sqlTemplate) const;
 
-        void transactionWillEnd(bool commit);
+        void transactionWillEnd(bool commit) override;
 
         void close() override;
         void reopen() override;
@@ -112,6 +111,8 @@ namespace litecore {
                                          ContentOption,
                                          bool setKey,
                                          bool setSequence);
+
+        static slice columnAsSlice(const SQLite::Column&);
 
     private:
         friend class SQLiteDataFile;
@@ -153,10 +154,11 @@ namespace litecore {
         bool _lastSequenceChanged {false};
         bool _purgeCountChanged {false};
         mutable bool _purgeCountValid {false};      // TODO: Use optional class from C++17
-        mutable int64_t _lastSequence {-1};
+        mutable std::optional<sequence_t> _lastSequence;
         mutable std::atomic<uint64_t> _purgeCount {0};
         bool _hasExpirationColumn {false};
         bool _uncommittedExpirationColumn {false};
+        SQLiteKeyStore* _sequencesOwner {nullptr};
         Existence _existence;
     };
 

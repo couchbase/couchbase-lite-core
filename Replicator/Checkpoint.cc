@@ -29,8 +29,8 @@ namespace litecore { namespace repl {
 
     void Checkpoint::resetLocal() {
         _completed.clear();
-        _completed.add(0, 1);
-        _lastChecked = 0;
+        _completed.add(0_seq, 1_seq);
+        _lastChecked = 0_seq;
     }
 
 
@@ -39,13 +39,13 @@ namespace litecore { namespace repl {
         enc.beginDict();
         if (gWriteTimestamps) {
             enc.writeKey("time"_sl);
-            enc.writeInt(c4_now() / 1000);
+            enc.writeInt(int64_t(c4_now()) / 1000);
         }
 
         auto minSeq = localMinSequence();
-        if (minSeq > 0) {
+        if (minSeq > 0_seq) {
             enc.writeKey("local"_sl);
-            enc.writeUInt(minSeq);
+            enc.writeUInt(uint64_t(minSeq));
         }
 
 #ifdef SPARSE_CHECKPOINTS
@@ -55,8 +55,8 @@ namespace litecore { namespace repl {
             enc.writeKey("localCompleted"_sl);
             enc.beginArray();
             for (auto &range : _completed) {
-                enc.writeInt(range.first);
-                enc.writeInt(range.second - range.first);
+                enc.writeUInt(uint64_t(range.first));
+                enc.writeUInt(uint64_t(range.second - range.first));
             };
             enc.endArray();
         }
@@ -88,8 +88,8 @@ namespace litecore { namespace repl {
             Array pending = root["localCompleted"].asArray();
             if (pending) {
                 for (Array::iterator i(pending); i; ++i) {
-                    C4SequenceNumber first = i->asInt();
-                    C4SequenceNumber last = (++i)->asInt();
+                    auto first = C4SequenceNumber(i->asUnsigned());
+                    auto last = C4SequenceNumber((++i)->asUnsigned());
                     if (last >= first)
                         _completed.add(first, last + 1);
                 }
@@ -97,7 +97,7 @@ namespace litecore { namespace repl {
 #endif
             {
                 auto minSequence = (C4SequenceNumber) root["local"_sl].asInt();
-                _completed.add(0, minSequence + 1);
+                _completed.add(0_seq, minSequence + 1);
             }
         }
     }
@@ -138,7 +138,7 @@ namespace litecore { namespace repl {
     size_t Checkpoint::pendingSequenceCount() const {
         // Count the gaps between the ranges:
         size_t count = 0;
-        C4SequenceNumber end = 0;
+        C4SequenceNumber end = 0_seq;
         for (auto &range : _completed) {
             count += range.first - end;
             end = range.second;
@@ -170,9 +170,9 @@ namespace litecore {
         int n = 0;
         for (auto &range : _sequences) {
             if (n++ > 0) str << ", ";
-            str << range.first;
+            str << uint64_t(range.first);
             if (range.second != range.first + 1)
-                str << "-" << (range.second - 1);
+                str << "-" << uint64_t((range.second - 1));
         }
         str << "]";
         return str.str();

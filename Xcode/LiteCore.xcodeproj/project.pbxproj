@@ -93,6 +93,7 @@
 		271A98AE243D250A008C032D /* NetworkInterfaces.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271A98AC243D24FD008C032D /* NetworkInterfaces.cc */; };
 		271AB0162374AD09007B0319 /* IndexSpec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271AB0152374AD09007B0319 /* IndexSpec.cc */; };
 		271BA454227B691500D49D13 /* c4DatabaseEncryptionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */; };
+		271BA4D2228373E500D49D13 /* BothKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA4D1228373E500D49D13 /* BothKeyStore.cc */; };
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
 		27229215260AB89900A3A41F /* BlobStreams.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27229214260AB89900A3A41F /* BlobStreams.cc */; };
@@ -882,6 +883,8 @@
 		271AB0142374AD09007B0319 /* IndexSpec.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = IndexSpec.hh; sourceTree = "<group>"; };
 		271AB0152374AD09007B0319 /* IndexSpec.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IndexSpec.cc; sourceTree = "<group>"; };
 		271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseEncryptionTest.cc; sourceTree = "<group>"; };
+		271BA4D0228373E500D49D13 /* BothKeyStore.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = BothKeyStore.hh; sourceTree = "<group>"; };
+		271BA4D1228373E500D49D13 /* BothKeyStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = BothKeyStore.cc; sourceTree = "<group>"; };
 		271BA53C2297008200D49D13 /* HTTPTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPTypes.hh; sourceTree = "<group>"; };
 		271C069723078176000EC09B /* HTTPTypes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPTypes.cc; sourceTree = "<group>"; };
 		2722504A1D7884110006D5A5 /* c4BlobStore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStore.h; sourceTree = "<group>"; };
@@ -1174,6 +1177,7 @@
 		276CF337254C893200C493B5 /* DeDuplicateEncoder.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DeDuplicateEncoder.hh; sourceTree = "<group>"; };
 		276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteEnumerator.cc; sourceTree = "<group>"; };
 		276D15401DFF541000543B1B /* SQLiteQuery.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteQuery.cc; sourceTree = "<group>"; };
+		276D4AD42787709200F61A89 /* c4EnumUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4EnumUtil.hh; sourceTree = "<group>"; };
 		276E02101EA9717200FEFE8A /* RESTListenerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTListenerTest.cc; sourceTree = "<group>"; };
 		276E02191EA983EE00FEFE8A /* Response.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Response.cc; sourceTree = "<group>"; };
 		276E021A1EA983EE00FEFE8A /* Response.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Response.hh; sourceTree = "<group>"; };
@@ -1195,7 +1199,6 @@
 		2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LegacyAttachments.hh; sourceTree = "<group>"; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
-		277C1B231F58794100031200 /* libreadline.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libreadline.tbd; path = usr/lib/libreadline.tbd; sourceTree = SDKROOT; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorSGTest.cc; sourceTree = "<group>"; };
@@ -1207,7 +1210,6 @@
 		278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseCookies.cc; sourceTree = "<group>"; };
 		278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseCookies.hh; sourceTree = "<group>"; };
 		278F476724C9131000E1CA7A /* iOS Perf Test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS Perf Test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		278F476824C9131100E1CA7A /* LiteCore-iOS shell copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "LiteCore-iOS shell copy-Info.plist"; path = "/Users/snej/Couchbase/CBL_C/vendor/couchbase-lite-core/Xcode/LiteCore-iOS shell copy-Info.plist"; sourceTree = "<absolute>"; };
 		278F478524C914BF00E1CA7A /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		278F478724C914C600E1CA7A /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Security.framework; sourceTree = DEVELOPER_DIR; };
 		278F478924C914CC00E1CA7A /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/SystemConfiguration.framework; sourceTree = DEVELOPER_DIR; };
@@ -1636,20 +1638,6 @@
 		729272F22238DB8500E7208E /* c4ExceptionUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4ExceptionUtils.hh; sourceTree = "<group>"; };
 		72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrebuiltCopier.cc; sourceTree = "<group>"; };
 		72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrebuiltCopier.hh; sourceTree = "<group>"; };
-		930BE2AC1EE0C47500CCC14C /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS10.3.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
-		93FA3F4B1EE21A4D00D15CF5 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		93FA3F4D1EE21A4D00D15CF5 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
-		93FA3F4E1EE21A4D00D15CF5 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		93FA3F501EE21A4D00D15CF5 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
-		93FA3F511EE21A4D00D15CF5 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
-		93FA3F541EE21A4D00D15CF5 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		93FA3F561EE21A4D00D15CF5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		93FA3F591EE21A4D00D15CF5 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		93FA3F5B1EE21A4D00D15CF5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		93FA3F6A1EE21BAE00D15CF5 /* LCSServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LCSServer.h; sourceTree = "<group>"; };
-		93FA3F6B1EE21BAE00D15CF5 /* LCSServer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = LCSServer.mm; sourceTree = "<group>"; };
-		93FA3F6C1EE21BAE00D15CF5 /* LCSServerConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LCSServerConfig.h; sourceTree = "<group>"; };
-		93FA3F6D1EE21BAE00D15CF5 /* LCSServerConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LCSServerConfig.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2010,6 +1998,7 @@
 				27175B73261BC3030045F3AC /* README.md */,
 				274D1793261401320018D39C /* c4.hh */,
 				2758DFF325F2A476007C7487 /* c4Base.hh */,
+				276D4AD42787709200F61A89 /* c4EnumUtil.hh */,
 				2758DFD225F161CD007C7487 /* c4BlobStore.hh */,
 				274D181826165AFB0018D39C /* c4Certificate.hh */,
 				27229268260D171D00A3A41F /* c4Collection.hh */,
@@ -2194,14 +2183,12 @@
 				2754616A22F21F3900DF87B0 /* Crypto */,
 				275072AD18E4A68E00A80C5A /* Objective-C Tests */,
 				27A924951D9B316D00086206 /* LiteCore iOS */,
-				93FA3F491EE21A4D00D15CF5 /* LiteCoreServ iOS */,
 				27D74A721D4D3EC000D806E0 /* vendor */,
 				2763011E1F338B77004A1592 /* wiki */,
 				273E9FA41C519A1B003115A6 /* xcconfigs */,
 				275BF36A1F5F671C0051374A /* Scripts */,
 				2750723D18E3E52800A80C5A /* Frameworks */,
 				2750723C18E3E52800A80C5A /* Products */,
-				278F476824C9131100E1CA7A /* LiteCore-iOS shell copy-Info.plist */,
 			);
 			sourceTree = "<group>";
 			wrapsLines = 0;
@@ -2235,9 +2222,7 @@
 				271A98A6243D2204008C032D /* SystemConfiguration.framework */,
 				27098AB721714AB0002751DA /* Vision.framework */,
 				2700BB4D216FF2DA00797537 /* CoreML.framework */,
-				277C1B231F58794100031200 /* libreadline.tbd */,
 				27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */,
-				930BE2AC1EE0C47500CCC14C /* libz.tbd */,
 				2759DC251E70908900F3C4B2 /* libz.tbd */,
 				7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */,
 				270515581D907F6200D62D05 /* CoreFoundation.framework */,
@@ -2636,7 +2621,6 @@
 				27F2BE9F221DF1A0006C13EE /* DBAccess.cc */,
 				27F2BE9E221DEF4E006C13EE /* DBAccess.hh */,
 				27A83D57269F7DB2002B7EBA /* PropertyEncryption_stub.cc */,
-				27A83D4F269E35BC002B7EBA /* PropertyEncryption.cc */,
 				27A83D5C269F7F0E002B7EBA /* PropertyEncryption.hh */,
 				2726F630207ED137007F2D02 /* ReplicatorTuning.hh */,
 				2734F619206ABEB000C982FF /* ReplicatorTypes.cc */,
@@ -2833,6 +2817,8 @@
 				27C319ED1A143F5D00A89EDC /* KeyStore.hh */,
 				27E48711192171EA007D8940 /* DataFile.cc */,
 				27E48712192171EA007D8940 /* DataFile.hh */,
+				271BA4D0228373E500D49D13 /* BothKeyStore.hh */,
+				271BA4D1228373E500D49D13 /* BothKeyStore.cc */,
 				27A16314201FC2A500C18D9C /* DataFile+Shared.hh */,
 				27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */,
 				27DF46C21A12CF46007BB4A4 /* Record.cc */,
@@ -3218,35 +3204,6 @@
 				27FDDF08236770F900860E69 /* xtea.h */,
 			);
 			path = mbedtls;
-			sourceTree = "<group>";
-		};
-		93FA3F491EE21A4D00D15CF5 /* LiteCoreServ iOS */ = {
-			isa = PBXGroup;
-			children = (
-				93FA3F4D1EE21A4D00D15CF5 /* AppDelegate.h */,
-				93FA3F4E1EE21A4D00D15CF5 /* AppDelegate.m */,
-				93FA3F6A1EE21BAE00D15CF5 /* LCSServer.h */,
-				93FA3F6B1EE21BAE00D15CF5 /* LCSServer.mm */,
-				93FA3F6C1EE21BAE00D15CF5 /* LCSServerConfig.h */,
-				93FA3F6D1EE21BAE00D15CF5 /* LCSServerConfig.m */,
-				93FA3F501EE21A4D00D15CF5 /* ViewController.h */,
-				93FA3F511EE21A4D00D15CF5 /* ViewController.m */,
-				93FA3F531EE21A4D00D15CF5 /* Main.storyboard */,
-				93FA3F561EE21A4D00D15CF5 /* Assets.xcassets */,
-				93FA3F581EE21A4D00D15CF5 /* LaunchScreen.storyboard */,
-				93FA3F5B1EE21A4D00D15CF5 /* Info.plist */,
-				93FA3F4A1EE21A4D00D15CF5 /* Supporting Files */,
-			);
-			name = "LiteCoreServ iOS";
-			path = "LiteCoreServ-iOS";
-			sourceTree = "<group>";
-		};
-		93FA3F4A1EE21A4D00D15CF5 /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				93FA3F4B1EE21A4D00D15CF5 /* main.m */,
-			);
-			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -4238,6 +4195,7 @@
 				2744B36224186142005A194D /* BuiltInWebSocket.cc in Sources */,
 				27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */,
 				2744B352241854F2005A194D /* Codec.cc in Sources */,
+				271BA4D2228373E500D49D13 /* BothKeyStore.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
 				27A83D58269F7DB2002B7EBA /* PropertyEncryption_stub.cc in Sources */,
 				2744B35C241854F2005A194D /* MessageOut.cc in Sources */,
@@ -4571,22 +4529,6 @@
 			isa = PBXVariantGroup;
 			children = (
 				27A924A51D9B316D00086206 /* Base */,
-			);
-			name = LaunchScreen.storyboard;
-			sourceTree = "<group>";
-		};
-		93FA3F531EE21A4D00D15CF5 /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				93FA3F541EE21A4D00D15CF5 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
-		93FA3F581EE21A4D00D15CF5 /* LaunchScreen.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				93FA3F591EE21A4D00D15CF5 /* Base */,
 			);
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";

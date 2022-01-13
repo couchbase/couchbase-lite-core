@@ -46,13 +46,9 @@ namespace litecore {
     }
 
 
-    /** A Record's sequence number in a KeyStore. */
-    typedef uint64_t sequence_t;
-
-
     /** Record's expiration timestamp: milliseconds since Unix epoch (Jan 1 1970).
         A zero value means no expiration. */
-    typedef int64_t expiration_t;
+    typedef C4Timestamp expiration_t;
 
 
     /** Specifies what parts of a record to read. (Used by KeyStore::get, RecordEnumerator, etc.) */
@@ -83,7 +79,7 @@ namespace litecore {
         size_t extraSize() const FLPURE           {return _extraSize;}
 
         sequence_t sequence() const FLPURE        {return _sequence;}
-        sequence_t subsequence() const FLPURE     {return _subsequence;}
+        uint64_t subsequence() const FLPURE       {return _subsequence;}
 
         DocumentFlags flags() const FLPURE        {return _flags;}
         void setFlags(DocumentFlags f)            {_flags = f;}
@@ -134,7 +130,7 @@ namespace litecore {
         void setExpiration(expiration_t x)      {_expiration = x;}
 
         // Only called by KeyStore
-        void updateSubsequence(sequence_t s)    {_subsequence = s;}
+        void updateSubsequence(uint64_t s)      {_subsequence = s;}
 
     private:
         friend class KeyStore;
@@ -145,7 +141,7 @@ namespace litecore {
         size_t          _bodySize {0};          // Size of body, if body wasn't loaded
         size_t          _extraSize {0};         // Size of `extra` col, if not loaded
         sequence_t      _sequence {0};          // Sequence number (if KeyStore supports sequences)
-        sequence_t      _subsequence {0};       // Per-record subsequence
+        uint64_t        _subsequence {0};       // Per-record subsequence
         expiration_t    _expiration {0};        // Expiration time (only set by RecordEnumerator)
         DocumentFlags   _flags {DocumentFlags::kNone};// Document flags (deleted, conflicted, etc.)
         bool            _exists {false};        // Does the record exist?
@@ -160,7 +156,8 @@ namespace litecore {
         explicit RecordUpdate(const Record&);
         
         slice           key, version, body, extra;
-        sequence_t      sequence {0}, subsequence {0};
+        sequence_t      sequence {0};
+        uint64_t        subsequence {0};
         DocumentFlags   flags;
     };
 

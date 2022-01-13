@@ -360,7 +360,7 @@ C4Timestamp c4coll_getDocExpiration(C4Collection *coll,
                                     C4String docID,
                                     C4Error* C4NULLABLE outError) noexcept
 {
-    C4Timestamp expiration = -1;
+    C4Timestamp expiration = C4Timestamp::Error;
     tryCatch(outError, [&]{
         expiration = coll->getExpiration(docID);
     });
@@ -368,7 +368,7 @@ C4Timestamp c4coll_getDocExpiration(C4Collection *coll,
 }
 
 C4Timestamp c4coll_nextDocExpiration(C4Collection *coll) noexcept {
-    return tryCatch<uint64_t>(nullptr, [=]{
+    return tryCatch<C4Timestamp>(nullptr, [=]{
         return coll->nextDocExpiration();
     });
 }
@@ -1544,7 +1544,7 @@ void c4cert_getValidTimespan(C4Cert* cert,
     try {
         ts = cert->getValidTimespan();
     } catch (...) {
-        ts.first = ts.second = 0;
+        ts.first = ts.second = C4Timestamp::None;
     }
     if (outCreated)
         *outCreated = ts.first;

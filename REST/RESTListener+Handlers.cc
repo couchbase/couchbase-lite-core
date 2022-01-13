@@ -90,9 +90,9 @@ namespace litecore { namespace REST {
         json.writeKey("doc_count"_sl);
         json.writeUInt(docCount);
         json.writeKey("update_seq"_sl);
-        json.writeUInt(lastSequence);
+        json.writeUInt(uint64_t(lastSequence));
         json.writeKey("committed_update_seq"_sl);
-        json.writeUInt(lastSequence);
+        json.writeUInt(uint64_t(lastSequence));
         json.endDict();
     }
 

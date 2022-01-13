@@ -53,12 +53,12 @@ namespace litecore {
 
     void Housekeeper::_scheduleExpiration(bool onlyIfEarlier) {
         expiration_t nextExp = _bgdb->dataFile().useLocked<expiration_t>([&](DataFile *df) {
-            return df ? df->defaultKeyStore().nextExpiration() : 0;
+            return df ? df->defaultKeyStore().nextExpiration() : expiration_t::None;
         });
-        if (nextExp == 0) {
+        if (nextExp == expiration_t::None) {
             logVerbose("Housekeeper: no scheduled document expiration");
             return;
-        } else if (expiration_t delay = nextExp - KeyStore::now(); delay > 0) {
+        } else if (auto delay = nextExp - KeyStore::now(); delay > 0) {
             logVerbose("Housekeeper: scheduling expiration in %" PRIi64 "ms", delay);
             
             // CBL-2392: Since start enqueues an async call to these method, and
@@ -96,9 +96,9 @@ namespace litecore {
 
     void Housekeeper::documentExpirationChanged(expiration_t exp) {
         // This doesn't have to be enqueued, since Timer is thread-safe.
-        if (exp == 0)
+        if (exp == expiration_t::None)
             return;
-        expiration_t delay = exp - KeyStore::now();
+        auto delay = exp - KeyStore::now();
         if (_expiryTimer.fireEarlierAfter(chrono::milliseconds(delay)))
             logVerbose("Housekeeper: rescheduled expiration, now in %" PRIi64 "ms", delay);
     }

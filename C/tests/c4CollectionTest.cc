@@ -59,7 +59,7 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     CHECK(dflt->getName() == "_default");
     CHECK(dflt->getDatabase() == db);
     CHECK(dflt->getDocumentCount() == 0);
-    CHECK(dflt->getLastSequence() == 0);
+    CHECK(dflt->getLastSequence() == 0_seq);
     // The existing c4Database tests exercise the C4Collection API for the default collection,
     // since they call the c4Database C functions which are wrappers that indirect through
     // db->getDefaultCollection().
@@ -93,13 +93,13 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
     // Put some stuff in the default collection
     createNumberedDocs(100);
     CHECK(dflt->getDocumentCount() == 100);
-    CHECK(dflt->getLastSequence() == 100);
+    CHECK(dflt->getLastSequence() == 100_seq);
 
     // Verify "guitars" is empty:
     CHECK(guitars->getName() == "guitars");
     CHECK(guitars->getDatabase() == db);
     CHECK(guitars->getDocumentCount() == 0);
-    CHECK(guitars->getLastSequence() == 0);
+    CHECK(guitars->getLastSequence() == 0_seq);
 
     db->deleteCollection("guitars");
     CHECK(!db->hasCollection("guitars"));
@@ -120,9 +120,9 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][C
         t.commit();
     }
     CHECK(guitars->getDocumentCount() == 100);
-    CHECK(guitars->getLastSequence() == 100);
+    CHECK(guitars->getLastSequence() == 100_seq);
     CHECK(dflt->getDocumentCount() == 0);
-    CHECK(dflt->getLastSequence() == 0);
+    CHECK(dflt->getLastSequence() == 0_seq);
 
     // Add more docs to it and _default, but abort:
     {
@@ -131,14 +131,14 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][C
         addNumberedDocs(dflt, 100);
 
         CHECK(guitars->getDocumentCount() == 200);
-        CHECK(guitars->getLastSequence() == 200);
+        CHECK(guitars->getLastSequence() == 200_seq);
         CHECK(dflt->getDocumentCount() == 100);
-        CHECK(dflt->getLastSequence() == 100);
+        CHECK(dflt->getLastSequence() == 100_seq);
 
         t.abort();
     }
     CHECK(guitars->getDocumentCount() == 100);
-    CHECK(guitars->getLastSequence() == 100);
+    CHECK(guitars->getLastSequence() == 100_seq);
     CHECK(dflt->getDocumentCount() == 0);
-    CHECK(dflt->getLastSequence() == 0);
+    CHECK(dflt->getLastSequence() == 0_seq);
 }

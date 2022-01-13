@@ -76,6 +76,14 @@
 #endif
 
 
+// Suppresses warnings if an entity is unused.
+#if __has_attribute(unused)
+#   define C4UNUSED __attribute__((unused))
+#else
+#   define C4UNUSED
+#endif
+
+
 // Declaration for API functions; should be just before the ending ";".
 #ifdef __cplusplus
     #define C4API               noexcept

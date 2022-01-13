@@ -29,6 +29,27 @@ using namespace litecore;
 using namespace fleece::impl;
 using namespace std;
 
+
+class KeyStoreTestFixture : public DataFileTestFixture {
+public:
+    static const int numberOfOptions = 2;
+
+    KeyStoreTestFixture(int option) {
+        if (option == 0) {
+            // On the first pass use a non-Both KeyStore
+            keyStoreName = "test";
+            store = &db->getKeyStore(keyStoreName);
+        } else {
+            keyStoreName = store->name();
+        }
+        Log("    ---- Using KeyStore '%s', a %s", keyStoreName.c_str(), typeid(*store).name());
+    }
+
+    string keyStoreName;
+};
+
+
+
 static void check_parent(string full, string parent)
 {
 #ifdef _MSC_VER
@@ -40,15 +61,15 @@ static void check_parent(string full, string parent)
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DbInfo", "[DataFile]") {
     REQUIRE(db->isOpen());
     REQUIRE(&store->dataFile() == db.get());
     REQUIRE(store->recordCount() == 0);
-    REQUIRE(store->lastSequence() == 0);
+    REQUIRE(store->lastSequence() == 0_seq);
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Delete DB", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "Delete DB", "[DataFile]") {
     auto path = db->filePath();
     deleteDatabase();
     path.forEachMatch([](const FilePath &file) {
@@ -57,59 +78,59 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Delete DB", "[DataFile]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile CreateDoc", "[DataFile]") {
     alloc_slice key("key");
     {
         ExclusiveTransaction t(db);
         RecordUpdate rec(key, "body"_sl);
         rec.version = "version"_sl;
         rec.extra = "extra"_sl;
-        CHECK(store->set(rec, true, t) == 1);
+        CHECK(store->set(rec, true, t) == 1_seq);
         t.commit();
     }
-    CHECK(store->lastSequence() == 1);
+    CHECK(store->lastSequence() == 1_seq);
 
     // Get by key:
-    Record rec = db->defaultKeyStore().get(key, kMetaOnly);
+    Record rec = store->get(key, kMetaOnly);
     REQUIRE(rec.exists());
     CHECK(rec.key() == key);
     CHECK(rec.body() == nullslice);
     CHECK(rec.bodySize() == 4);
     CHECK(rec.version() == "version"_sl);
     CHECK(rec.extra() == nullslice);
-    CHECK(rec.sequence() == 1);
+    CHECK(rec.sequence() == 1_seq);
 
-    rec = db->defaultKeyStore().get(key, kCurrentRevOnly);
+    rec = store->get(key, kCurrentRevOnly);
     REQUIRE(rec.exists());
     CHECK(rec.key() == key);
     CHECK(rec.body() == "body"_sl);
     CHECK(rec.bodySize() == 4);
     CHECK(rec.version() == "version"_sl);
     CHECK(rec.extra() == nullslice);
-    CHECK(rec.sequence() == 1);
+    CHECK(rec.sequence() == 1_seq);
 
-    rec = db->defaultKeyStore().get(key, kEntireBody);
+    rec = store->get(key, kEntireBody);
     REQUIRE(rec.exists());
     CHECK(rec.key() == key);
     CHECK(rec.body() == "body"_sl);
     CHECK(rec.bodySize() == 4);
     CHECK(rec.version() == "version"_sl);
     CHECK(rec.extra() == "extra"_sl);
-    CHECK(rec.sequence() == 1);
+    CHECK(rec.sequence() == 1_seq);
 
     // Get by sequence:
-    rec = db->defaultKeyStore().get(1);
+    rec = store->get(1_seq);
     REQUIRE(rec.exists());
     CHECK(rec.key() == key);
     CHECK(rec.body() == "body"_sl);
     CHECK(rec.bodySize() == 4);
     CHECK(rec.version() == "version"_sl);
     CHECK(rec.extra() == "extra"_sl);
-    CHECK(rec.sequence() == 1);
+    CHECK(rec.sequence() == 1_seq);
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile SaveDocs", "[DataFile]") {
     {
         //WORKAROUND: Add a rec before the main transaction so it doesn't start at sequence 0
         ExclusiveTransaction t(db);
@@ -120,7 +141,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
     }
 
     unique_ptr<DataFile> aliased_db { newDatabase(db->filePath()) };
-    REQUIRE(aliased_db->defaultKeyStore().get("a"_sl).body() == alloc_slice("A"));
+    REQUIRE(aliased_db->getKeyStore(keyStoreName).get("a"_sl).body() == alloc_slice("A"));
 
     {
         ExclusiveTransaction t(db);
@@ -129,8 +150,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
         rec.setBody("THIS IS THE BODY"_sl);
         store->set(rec, true, t);
 
-        REQUIRE(rec.sequence() == 2);
-        REQUIRE(store->lastSequence() == 2);
+        REQUIRE(rec.sequence() == 2_seq);
+        REQUIRE(store->lastSequence() == 2_seq);
         auto doc_alias = store->get(rec.sequence());
         REQUIRE(doc_alias.key() == rec.key());
         REQUIRE(doc_alias.version() == rec.version());
@@ -140,17 +161,17 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
         store->set(doc_alias, true, t);
 
         REQUIRE(store->read(rec));
-        REQUIRE(rec.sequence() == 3);
+        REQUIRE(rec.sequence() == 3_seq);
         REQUIRE(rec.version() == doc_alias.version());
         REQUIRE(rec.body() == doc_alias.body());
 
         // Record shouldn't exist outside transaction yet:
-        REQUIRE(aliased_db->defaultKeyStore().get("rec"_sl).sequence() == 0);
+        REQUIRE(aliased_db->getKeyStore(keyStoreName).get("rec"_sl).sequence() == 0_seq);
         t.commit();
     }
 
-    REQUIRE(store->get("rec"_sl).sequence() == 3);
-    REQUIRE(aliased_db->defaultKeyStore().get("rec"_sl).sequence() == 3);
+    REQUIRE(store->get("rec"_sl).sequence() == 3_seq);
+    REQUIRE(aliased_db->getKeyStore(keyStoreName).get("rec"_sl).sequence() == 3_seq);
 }
 
 
@@ -169,7 +190,7 @@ static void createNumberedDocs(KeyStore *store, int n =100, bool withAssertions 
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile EnumerateDocs", "[DataFile]") {
     {
         INFO("Enumerate empty db");
         int i = 0;
@@ -203,13 +224,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile EnumerateDocsDescending", "[DataFile]") {
     RecordEnumerator::Options opts;
     opts.sortOption = kDescending;
 
     createNumberedDocs(store);
 
-    SECTION("Enumerate over all docs, descending:") {
+    SECTION("Enumerate over all docs, descending key:") {
         int i = 100;
         for (RecordEnumerator e(*store, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
@@ -218,11 +239,61 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         }
         REQUIRE(i == 0);
     }
-
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile EnumerateDocs Deleted", "[DataFile]") {
+    RecordEnumerator::Options opts;
+
+    createNumberedDocs(store);
+    {
+        // Delete docs 10, 20, ... 100
+        ExclusiveTransaction t(db);
+        for (int i = 10; i <= 100; i += 10) {
+            string docID = stringWithFormat("rec-%03d", i);
+            RecordUpdate update(docID, "", DocumentFlags::kDeleted);
+            update.sequence = sequence_t(i);
+            update.version = "2-0000";
+            sequence_t seq = store->set(update, true, t);
+            CHECK(seq == sequence_t(100 + i/10));
+        }
+        t.commit();
+    }
+
+    CHECK(store->recordCount(false) == 90);
+    CHECK(store->recordCount(true) == 100);
+
+    for (int includeDeleted = 0; includeDeleted <= 1; ++includeDeleted) {
+        Log("    ---- includeDeleted = %d", includeDeleted);
+        opts.includeDeleted = includeDeleted;
+        int i = 1;
+        RecordEnumerator e(*store, opts);
+        for (; e.next(); ++i) {
+            if (!includeDeleted && (i % 10 == 0))
+                ++i;
+            cout << i << " ";
+            string expectedDocID = stringWithFormat("rec-%03d", i);
+            CHECK(e->key() == expectedDocID);
+            if (i % 10 != 0) {
+                CHECK(e->sequence() == (sequence_t)i);
+                CHECK(e->bodySize() == 7);
+                CHECK(e->flags() == DocumentFlags::kNone);
+            } else {
+                CHECK(e->sequence() == sequence_t(100 + (i / 10)));
+                CHECK(e->bodySize() == 0);
+                CHECK(e->flags() == DocumentFlags::kDeleted);
+            }
+        }
+        cout << "\n";
+        if (!includeDeleted && (i % 10 == 0))
+            ++i;
+        CHECK(i == 101);
+        REQUIRE_FALSE(e);
+    }
+}
+
+
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile AbortTransaction", "[DataFile]") {
     // Initial record:
     Record a("a");
     a.setBody("A");
@@ -241,12 +312,12 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[Data
         t.abort();
     }
     REQUIRE(store->get("a"_sl).body() == alloc_slice("A"));
-    REQUIRE(store->get("x"_sl).sequence() == 0);
+    REQUIRE(store->get("x"_sl).sequence() == 0_seq);
 }
 
 
 // Test for MB-12287
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile TransactionsThenIterate", "[DataFile]") {
     unique_ptr<DataFile> db2 { newDatabase(db->filePath()) };
 
     const unsigned kNTransactions = 42; // 41 is ok, 42+ fails
@@ -274,14 +345,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate",
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile DeleteKey", "[DataFile]") {
     slice key("a");
     {
         ExclusiveTransaction t(db);
         createDoc(key, "A"_sl, t);
         t.commit();
     }
-    REQUIRE(store->lastSequence() == 1);
+    REQUIRE(store->lastSequence() == 1_seq);
     {
         ExclusiveTransaction t(db);
         store->del(key, t);
@@ -289,11 +360,11 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]")
     }
     Record rec = store->get(key);
     REQUIRE_FALSE(rec.exists());
-    REQUIRE(store->lastSequence() == 1);
+    REQUIRE(store->lastSequence() == 1_seq);
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile DeleteDoc", "[DataFile]") {
     slice key("a");
     {
         ExclusiveTransaction t(db);
@@ -315,7 +386,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]")
 
 
 // Tests workaround for ForestDB bug MB-18753
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile DeleteDocAndReopen", "[DataFile]") {
     slice key("a");
     {
         ExclusiveTransaction t(db);
@@ -342,17 +413,16 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[Da
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreInfo", "[DataFile]") {
-    KeyStore &s = db->getKeyStore("store");
-    REQUIRE(s.lastSequence() == 0);
-    REQUIRE(s.name() == string("store"));
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile KeyStoreInfo", "[DataFile]") {
+    REQUIRE(store->lastSequence() == 0_seq);
+    REQUIRE(store->name() == keyStoreName);
 
-    REQUIRE(s.recordCount() == 0);
-    REQUIRE(s.lastSequence() == 0);
+    REQUIRE(store->recordCount() == 0);
+    REQUIRE(store->lastSequence() == 0_seq);
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStore Create-Then-Abort", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile KeyStore Create-Then-Abort", "[DataFile]") {
     {
         ExclusiveTransaction t(db);
         KeyStore &s = db->getKeyStore("store", KeyStore::noSequences);
@@ -370,57 +440,114 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStore Create-Then-Abor
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFile]") {
-    KeyStore &s = db->getKeyStore("store");
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile KeyStoreWrite", "[DataFile]") {
     alloc_slice key("key");
     {
         ExclusiveTransaction t(db);
-        createDoc(s, key, "value"_sl, t);
+        createDoc(*store, key, "value"_sl, t);
         t.commit();
     }
-    REQUIRE(s.lastSequence() == 1);
-    Record rec = s.get(key);
+    REQUIRE(store->lastSequence() == 1_seq);
+    Record rec = store->get(key);
     REQUIRE(rec.key() == key);
+    REQUIRE(rec.exists());
     REQUIRE(rec.body() == "value"_sl);
-
-    Record doc2 = store->get(key);
-    REQUIRE_FALSE(doc2.exists());
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Conditional Write", "[DataFile]") {
-    KeyStore &s = db->getKeyStore("store");
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile Conditional Write", "[DataFile]") {
     alloc_slice key("key");
-    sequence_t oldSeq = 0;
+    sequence_t oldSeq = 0_seq;
     sequence_t newSeq;
     {
         ExclusiveTransaction t(db);
         RecordUpdate rec(key, "initialvalue"_sl);
         rec.sequence = oldSeq;
-        newSeq = s.set(rec, true, t);
-        CHECK(newSeq == 1);
+        newSeq = store->set(rec, true, t);
+        CHECK(newSeq == 1_seq);
 
         rec.body = "wronginitialvalue"_sl;
         rec.sequence = oldSeq;
-        auto badSeq = s.set(rec, true, t);
-        CHECK(badSeq == 0);
+        auto badSeq = store->set(rec, true, t);
+        CHECK(badSeq == 0_seq);
         t.commit();
     }
 
-    REQUIRE(s.lastSequence() == 1);
-    REQUIRE(s.get(key).body() == "initialvalue"_sl);
+    REQUIRE(store->lastSequence() == 1_seq);
+    REQUIRE(store->get(key).body() == "initialvalue"_sl);
 
     {
         ExclusiveTransaction t(db);
         RecordUpdate rec(key, "updatedvalue"_sl);
         rec.sequence = newSeq;
-        newSeq = s.set(rec, true, t);
-        CHECK(newSeq == 2);
+        newSeq = store->set(rec, true, t);
+        CHECK(newSeq == 2_seq);
         t.commit();
     }
 
-    REQUIRE(s.lastSequence() == 2);
-    REQUIRE(s.get(key).body() == "updatedvalue"_sl);
+    REQUIRE(store->lastSequence() == 2_seq);
+    Record rec2 = store->get(key);
+    REQUIRE(rec2.body() == "updatedvalue"_sl);
+
+    // Now mark it as deleted:
+    {
+        ExclusiveTransaction t(db);
+        RecordUpdate rec(key, "", DocumentFlags::kDeleted);
+        rec.version = "3-00";
+        rec.sequence = 0_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
+        rec.sequence = 666_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
+        rec.sequence = newSeq;
+        newSeq = store->set(rec, true, t);
+        CHECK(newSeq == 3_seq);
+        t.commit();
+    }
+
+    CHECK(store->lastSequence() == 3_seq);
+    Record rec3 = store->get(key);
+    CHECK(rec3.flags() == DocumentFlags::kDeleted);
+    CHECK(rec3.body() == ""_sl);
+    CHECK(rec3.version() == "3-00"_sl);
+
+    // Update deleted:
+    {
+        ExclusiveTransaction t(db);
+        RecordUpdate rec(key, "", DocumentFlags::kDeleted);
+        rec.version = "4-000";
+        rec.sequence = 0_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
+        rec.sequence = 2_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
+        rec.sequence = newSeq;
+        newSeq = store->set(rec, true, t);
+        CHECK(newSeq == 4_seq);
+        t.commit();
+    }
+
+    CHECK(store->lastSequence() == 4_seq);
+    Record rec4 = store->get(key);
+    CHECK(rec4.flags() == DocumentFlags::kDeleted);
+    CHECK(rec4.version() == "4-000"_sl);
+
+    // Un-delete:
+    {
+        ExclusiveTransaction t(db);
+        RecordUpdate rec(key, "recreated");
+        rec.sequence = 0_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
+        rec.sequence = 2_seq;
+        CHECK(store->set(rec, true, t) == 0_seq);
+        rec.sequence = newSeq;
+        newSeq = store->set(rec, true, t);
+        CHECK(newSeq == 5_seq);
+        t.commit();
+    }
+
+    CHECK(store->lastSequence() == 5_seq);
+    Record rec5 = store->get(key);
+    CHECK(rec5.flags() == DocumentFlags::kNone);
+    CHECK(rec5.body() == "recreated");
 }
 
 
@@ -433,14 +560,14 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Move Record", "[DataFile]
         rec.version = "version";
         rec.extra = "extra";
         sequence_t seq = store->set(rec, true, t);
-        CHECK(seq == 2);
+        CHECK(seq == 2_seq);
         t.commit();
     }
-    CHECK(store->lastSequence() == 2);
+    CHECK(store->lastSequence() == 2_seq);
     CHECK(store->purgeCount() == 0);
 
     KeyStore& otherStore = db->getKeyStore("other");
-    CHECK(otherStore.lastSequence() == 0);
+    CHECK(otherStore.lastSequence() == 0_seq);
     CHECK(otherStore.purgeCount() == 0);
 
     {
@@ -456,12 +583,12 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Move Record", "[DataFile]
     CHECK(rec.version() == "version");
     CHECK(rec.extra() == "extra");
     CHECK(rec.flags() == DocumentFlags::kHasAttachments);
-    CHECK(rec.sequence() == 1);
-    CHECK(otherStore.lastSequence() == 1);
+    CHECK(rec.sequence() == 1_seq);
+    CHECK(otherStore.lastSequence() == 1_seq);
 
     rec = store->get("key");
     CHECK_FALSE(rec.exists());
-    CHECK(store->lastSequence() == 2);
+    CHECK(store->lastSequence() == 2_seq);
     CHECK(store->purgeCount() == 1);
 
     {
@@ -489,27 +616,27 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Move Record", "[DataFile]
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFile]") {
-    KeyStore &s = db->getKeyStore("store");
+#if ENABLE_DELETE_KEY_STORES
+N_WAY_TEST_CASE_METHOD (KeyStoreTestFixture, "DataFile KeyStoreDelete", "[DataFile]") {
     alloc_slice key("key");
 //    {
 //        Transaction t(db);
 //        t(s).set(key, "value"_sl);
 //        t.commit();
 //    }
-    s.erase();
-    REQUIRE(s.lastSequence() == 0);
-    Record rec = s.get(key);
+    store->erase();
+    REQUIRE(store->lastSequence() == 0);
+    Record rec = store->get(key);
     REQUIRE_FALSE(rec.exists());
 }
+#endif
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[DataFile][!throws]") {
-    KeyStore &s = db->getKeyStore("store");
     alloc_slice key("key");
     db->close();
     ExpectException(error::LiteCore, error::NotOpen, [&]{
-        Record rec = s.get(key);
+        Record rec = store->get(key);
     });
 }
 

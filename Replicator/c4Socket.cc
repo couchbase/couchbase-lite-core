@@ -56,6 +56,8 @@ C4Socket* C4Socket::fromNative(const C4SocketFactory &factory,
                                void *nativeHandle,
                                const C4Address &address)
 {
+    // Note: This should be wrapped in `retain()` since `C4SocketImpl` is ref-counted,
+    // but doing so would cause client code to leak. Instead I added a warning to the doc-comment.
     return new C4SocketImpl(address.toURL(), Role::Server, {}, &factory, nativeHandle);
 }
 

@@ -58,7 +58,10 @@ namespace litecore {
         bool keyStoreExists(const std::string &name) const override;
         void deleteKeyStore(const std::string &name) override;
 
-        SQLiteKeyStore& keyStoreFromTable(slice tableName);
+        KeyStore& keyStoreFromTable(slice tableName);
+
+        static bool tableNameIsCollection(slice tableName);
+        static bool keyStoreNameIsCollection(slice ksName);
 
         bool getSchema(const std::string &name, const std::string &type,
                        const std::string &tableName, std::string &outSQL) const;
@@ -90,7 +93,7 @@ namespace litecore {
 
     // QueryParser::delegate:
         virtual bool tableExists(const std::string &tableName) const override;
-        virtual string collectionTableName(const string &collection) const override;
+        virtual string collectionTableName(const string &collection, DeletionStatus) const override;
         virtual std::string FTSTableName(const string &collection, const std::string &property) const override;
         virtual std::string unnestedTableName(const string &collection, const std::string &property) const override;
 #ifdef COUCHBASE_ENTERPRISE
@@ -141,18 +144,22 @@ namespace litecore {
         enum class SchemaVersion {
             None            = 0,    // Newly created database
             MinReadable     = 201,  // Cannot open earlier versions than this (CBL 2.0)
-            MaxReadable     = 499,  // Cannot open versions newer than this
 
             WithIndexTable  = 301,  // Added 'indexes' table (CBL 2.5)
             WithPurgeCount  = 302,  // Added 'purgeCnt' column to KeyStores (CBL 2.7)
 
             WithNewDocs     = 400,  // New document/revision storage (CBL 3.0)
 
-            Current = WithNewDocs
+            WithDeletedTable= 500,  // Added 'deleted' KeyStore for deleted docs (CBL 3.0?)
+            MaxReadable     = 599,  // Cannot open versions newer than this
+
+            Current = WithDeletedTable
         };
 
         void reopenSQLiteHandle();
         void ensureSchemaVersionAtLeast(SchemaVersion);
+        bool upgradeSchema(SchemaVersion minVersion, const char *what, function_ref<void()>);
+        void migrateDeletedDocs();
         void decrypt();
         bool _decrypt(EncryptionAlgorithm, slice key);
         int _exec(const std::string &sql);
@@ -168,6 +175,7 @@ namespace litecore {
         std::vector<SQLiteIndexSpec> getIndexesOldStyle(const KeyStore *store =nullptr);
 
         unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
+        std::unique_ptr<SQLiteKeyStore> _realDefaultKeyStore;
         mutable unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
         mutable unique_ptr<SQLite::Statement>   _getPurgeCntStmt, _setPurgeCntStmt;
         CollationContextVector          _collationContexts;

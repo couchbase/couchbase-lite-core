@@ -16,6 +16,7 @@
 #include "c4BlobStore.h"
 #include "c4Index.h"
 #include "c4IndexTypes.h"
+#include "c4Query.h"
 #include "FilePath.hh"
 #include "SecureRandomize.hh"
 #include <cmath>
@@ -347,7 +348,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Enumerator With Info", "[Databa
         sprintf(docID, "doc-%03d", i);
         CHECK(info.docID == c4str(docID));
         CHECK(info.revID == kRevID);
-        CHECK(info.sequence == (uint64_t)i);
+        CHECK(info.sequence == (C4SequenceNumber)i);
         CHECK(info.flags == (C4DocumentFlags)kDocExists);
         CHECK(info.bodySize == kFleeceBody.size);
         if (isRevTrees())
@@ -881,7 +882,7 @@ static void testOpeningOlderDBFixture(const string & dbPath,
     C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
     C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
     C4Error error;
-    C4Database *db;
+    c4::ref<C4Database> db;
     auto name = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
 
     if (expectedErrorCode == 0) {
@@ -896,6 +897,11 @@ static void testOpeningOlderDBFixture(const string & dbPath,
         return;
     }
 
+    // These test databases contain 100 documents with IDs `doc1`...`doc100`.
+    // Each doc has two properties: `n` whose integer value is the doc number (1..100)
+    // and `even` whose boolean value is true iff `n` is even.
+    // Documents 51-100 are deleted (but still have those properties, which is unusual.)
+
     // Verify getting documents by ID:
     char docID[20];
     for (unsigned i = 1; i <= 100; i++) {
@@ -903,68 +909,140 @@ static void testOpeningOlderDBFixture(const string & dbPath,
         INFO("Checking docID " << docID);
         C4Document *doc = c4doc_get(db, slice(docID), true, ERROR_INFO());
         REQUIRE(doc);
-        if (i <= 50)
-            CHECK((doc->flags & kRevDeleted) == 0);
-        else
-            CHECK((doc->flags & kRevDeleted) != 0);
-        // TODO: Verify the doc contents too
+        CHECK(((doc->flags & kDocDeleted) != 0) == (i > 50));
+        Dict body = c4doc_getProperties(doc);
+        CHECK(body["n"].asInt() == i);
         c4doc_release(doc);
     }
 
     // Verify enumerating documents:
-    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    options.flags |= kC4IncludeDeleted;
-    C4DocEnumerator *e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
-    REQUIRE(e);
-    unsigned i = 1;
-    while (c4enum_next(e, ERROR_INFO(&error))) {
-        INFO("Checking enumeration #" << i);
-        sprintf(docID, "doc-%03u", i);
-        C4DocumentInfo info;
-        REQUIRE(c4enum_getDocumentInfo(e, &info));
-        CHECK(slice(info.docID) == slice(docID));
-        ++i;
+    {
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        options.flags |= kC4IncludeDeleted;
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, ERROR_INFO());
+        REQUIRE(e);
+        unsigned i = 1;
+        while (c4enum_next(e, ERROR_INFO(&error))) {
+            INFO("Checking enumeration #" << i);
+            sprintf(docID, "doc-%03u", i);
+            C4DocumentInfo info;
+            REQUIRE(c4enum_getDocumentInfo(e, &info));
+            CHECK(slice(info.docID) == slice(docID));
+            CHECK(((info.flags & kDocDeleted) != 0) == (i > 50));
+            ++i;
+        }
+        CHECK(error == C4Error{});
+        CHECK(i == 101);
     }
-    CHECK(error == C4Error{});
-    CHECK(i == 101);
+
+    // Verify a query:
+    {
+        c4::ref<C4Query> query = c4query_new2(db, kC4N1QLQuery,
+                                              "SELECT n FROM _ WHERE even == true"_sl,
+                                              nullptr, ERROR_INFO());
+        REQUIRE(query);
+        c4::ref<C4QueryEnumerator> e = c4query_run(query, nullptr, nullslice, ERROR_INFO());
+        REQUIRE(e);
+        unsigned count = 0, total = 0;
+        while (c4queryenum_next(e, ERROR_INFO(error))) {
+            ++count;
+            total += FLValue_AsInt( FLArrayIterator_GetValue(&e->columns) );
+        }
+        CHECK(!error);
+        CHECK(count == 25);     // (half of docs are even, and half of those are deleted)
+        CHECK(total == 650);    // (sum of even integers from 2 to 50)
+    }
 
     CHECK(c4db_delete(db, WITH_ERROR()));
-    c4db_release(db);
 }
 
 
-TEST_CASE("Database Upgrade From 2.7 to New Rev-Trees", "[Database][Upgrade][C]") {
+TEST_CASE("Database Upgrade From 2.7", "[Database][Upgrade][C]") {
     testOpeningOlderDBFixture("upgrade_2.7.cblite2", 0);
-// In 3.0 it's no longer possible to open 2.7 databases without upgrading
+// In 3.0 it's no longer possible to open 2.x databases without upgrading
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
 //    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
 }
 
 
-TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
-    string dbPath = "upgrade_2.8.cblite2";
-    C4DatabaseFlags withFlags{0};
-
-    C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
-    C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
-    C4Database *db;
-    auto name = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
-    C4Log("---- copy Fixture to: %s/%s", TempDir().c_str(), name.asString().c_str());
-    C4Error err;
-    db = c4db_openNamed(name, &config, WITH_ERROR(&err));
-    CHECK(db);
-
-    Doc info(alloc_slice(c4db_getIndexesInfo(db, WITH_ERROR(&err))));
-    CHECK(info.asArray().count() == 1);
-    Dict index = info.asArray()[0].asDict();
-    REQUIRE(index);
-    CHECK(index["name"].asString() == "index1");
-    CHECK(index["type"].asInt() == kC4ValueIndex);
+TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
+    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
 }
 
 
-TEST_CASE("Database Upgrade From 2.7 to Version Vectors", "[Database][Upgrade][C]") {
-    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_VersionVectors);
+TEST_CASE("Database Upgrade From 2.8", "[Database][Upgrade][C]") {
+    testOpeningOlderDBFixture("upgrade_2.8.cblite2", 0);
+// In 3.0 it's no longer possible to open 2.x databases without upgrading
+//    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_NoUpgrade);
+//    testOpeningOlderDBFixture("upgrade_2.7.cblite2", kC4DB_ReadOnly);
+}
+
+
+TEST_CASE("Database Upgrade From 2.8 with Index", "[Database][Upgrade][C]") {
+    string dbPath = "upgrade_2.8_index.cblite2";
+
+    // This test tests CBL-2374. When there are indexes, simply moving records of v2 schema
+    // to v3 schema will cause fleece to fail. This failure can be avoided by regenerate
+    // the index after migrating all the records to v3 schema. However, this can incur
+    // significant performance cost for large dbs. CBL-2374 fixed the root-cause so that,
+    // 1. we can move the records to v3 schema without touching the existent indexes.
+    // 2. we allow v3 databse to have records of mixed v2 and v3 schemas. By not moving
+    //    all v2 records to v3 schema, we've further optimized the performance of
+    //    opening v2 databases.
+    // This test tests both cases:
+    // A. Revision Tree: assure we don't have to move records to V3 schemas.
+    // B. Version Vector: assure we can move records to v3 schema without touching
+    //    the index.
+    // NB: the database used in this test contains a value index of "firstName, lastName"
+
+    C4DatabaseFlags withFlags{0};
+    SECTION("Revision Tree")  { }
+    SECTION("Version Vector") { withFlags = kC4DB_VersionVectors; }
+
+    C4Log("---- Opening copy of db %s with flags 0x%x", dbPath.c_str(), withFlags);
+    C4DatabaseConfig2 config = {slice(TempDir()), withFlags};
+    auto name = C4Test::copyFixtureDB(kVersionedFixturesSubDir + dbPath);
+    C4Log("---- copy Fixture to: %s/%s", TempDir().c_str(), name.asString().c_str());
+    C4Error err;
+    c4::ref<C4Database> db = c4db_openNamed(name, &config, WITH_ERROR(&err));
+    CHECK(db);
+
+    // This db has two documents with docIDs,
+    // "-3aW8VeEWNHiXlvj6lhl2Cl" and "-4xUa8BVjx0TiT_iCFWjpzM".
+    // They have the same JSON body, {"firstName":"fName","lastName":"lName"}.
+    // Let's edit one doc:
+    {
+        slice docID = "-4xUa8BVjx0TiT_iCFWjpzM"_sl;
+        C4Test::createFleeceRev(db, docID, nullslice,
+                                slice(json5("{firstName:'john',lastName:'foo'}")));
+    }
+
+    // Verify a query agaist the (compound) index, (firstName, lastName).
+    {
+        C4Error error;
+        c4::ref<C4Query> query = c4query_new2(db, kC4N1QLQuery,
+            "SELECT firstName, lastName FROM _ ORDER BY firstName, lastName"_sl,
+            nullptr, ERROR_INFO());
+        REQUIRE(query);
+        c4::ref<C4QueryEnumerator> e = c4query_run(query, nullptr, nullslice, ERROR_INFO());
+        REQUIRE(e);
+        unsigned count = 0;
+        const char* fl_names[][2] = { {"fName", "lName"},
+                                      {"john", "foo"}
+                                    };
+        while (c4queryenum_next(e, ERROR_INFO(error))) {
+            auto iter = e->columns;
+            auto cc = FLArrayIterator_GetCount(&iter);
+            REQUIRE(cc == 2);
+            for (unsigned i = 0; i < cc; ++i) {
+                Value v(FLArrayIterator_GetValueAt(&iter, i));
+                CHECK(v.asString().compare(fl_names[count][i]) == 0);
+            }
+            ++count;
+        }
+        CHECK(!error);
+        CHECK(count == 2);
+    }
 }
 
 
@@ -1086,3 +1164,4 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Upgrade To Version Vectors", "[
     CHECK(doc->flags == (kDocDeleted | kDocExists));
     c4doc_release(doc);
 }
+
