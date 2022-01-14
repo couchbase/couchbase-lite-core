@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 
+#include "c4.hh"
 #include "VectorRecord.hh"
 #include "fleece/Mutable.hh"
 #include <iostream>

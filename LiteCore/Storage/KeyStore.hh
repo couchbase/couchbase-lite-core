@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#define LITECORE_CPP_API 1
 #include "IndexSpec.hh"
 #include "RefCounted.hh"
 #include "RecordEnumerator.hh"
@@ -121,7 +122,7 @@ namespace litecore {
 
         void setKV(Record&, ExclusiveTransaction&);
 
-        virtual bool del(slice key, ExclusiveTransaction&, sequence_t replacingSequence =0_seq) =0;
+        virtual bool del(slice key, ExclusiveTransaction&, sequence_t replacingSequence ={}) =0;
         bool del(const Record &rec, ExclusiveTransaction &t)                 {return del(rec.key(), t);}
 
         /** Sets a flag of a record, without having to read/write the Record. */

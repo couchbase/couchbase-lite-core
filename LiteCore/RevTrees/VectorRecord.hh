@@ -106,7 +106,7 @@ namespace litecore {
         void setEncoder(FLEncoder enc)                      {_encoder = enc;}
 
         /// Returns true if the document exists in the database.
-        bool exists() const noexcept FLPURE                 {return _sequence > 0_seq;}
+        bool exists() const noexcept FLPURE                 {return _sequence > sequence_t(0);}
 
         /// Returns what content has been loaded: metadata, current revision, or all revisions.
         ContentOption contentAvailable() const noexcept FLPURE {return _whichContent;}
