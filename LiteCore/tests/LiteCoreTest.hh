@@ -14,9 +14,9 @@
 
 #include "PlatformCompat.hh"
 #include "TestsCommon.hh"
+#include "c4Base.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#include "c4Base.h"
 #include <functional>
 #include <memory>
 #include <utility>
