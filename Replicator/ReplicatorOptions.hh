@@ -74,11 +74,6 @@ namespace litecore { namespace repl {
         ,progressLevel(opt.progressLevel.load())
         { }
 
-        ~Options() {
-            // `properties` can contain sensitive data like passwords.
-            fleece::mutable_slice(properties.data()).wipe();
-        }
-
         static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
         static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
         static Options pushpull(Mode mode =kC4OneShot) {return Options(mode, mode);}
