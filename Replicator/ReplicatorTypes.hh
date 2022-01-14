@@ -23,6 +23,7 @@ struct C4DocumentInfo;
 namespace litecore { namespace repl {
     using fleece::RefCounted;
     using fleece::Retained;
+    using fleece::RetainedConst;
     class IncomingRev;
 
     // Operations on C4Progress objects:

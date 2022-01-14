@@ -242,7 +242,7 @@ namespace litecore {
 
         // Options to pass to the C4Socket
         alloc_slice socketOptions() const {
-            Replicator::Options opts(kC4Disabled, kC4Disabled, _options.properties);
+            Replicator::Options opts(kC4Disabled, kC4Disabled, _options->properties);
             opts.setProperty(kC4SocketOptionWSProtocols, Replicator::ProtocolName().c_str());
             return opts.properties.data();
         }

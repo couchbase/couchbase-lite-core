@@ -63,33 +63,33 @@ namespace litecore { namespace repl {
     Replicator::Replicator(C4Database* db,
                            websocket::WebSocket *webSocket,
                            Delegate &delegate,
-                           Options options)
-    :Worker(new Connection(webSocket, options.properties, *this),
+                           Options *options)
+    :Worker(new Connection(webSocket, options->properties, *this),
             nullptr,
             options,
-            make_shared<DBAccess>(db, options.properties["disable_blob_support"_sl].asBool()),
+            make_shared<DBAccess>(db, options->properties["disable_blob_support"_sl].asBool()),
             "Repl")
     ,_delegate(&delegate)
     ,_connectionState(connection().state())
-    ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
+    ,_pushStatus(options->push == kC4Disabled ? kC4Stopped : kC4Busy)
+    ,_pullStatus(options->pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_docsEnded(this, "docsEnded", &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     ,_checkpointer(_options, webSocket->url())
     {
         _loggingID = string(db->getPath()) + " " + _loggingID;
-        _passive = _options.pull <= kC4Passive && _options.push <= kC4Passive;
-        _important = 2;
+        _passive = _options->pull <= kC4Passive && _options->push <= kC4Passive;
+        _importance = 2;
 
-        logInfo("%s", string(options).c_str());
+        logInfo("%s", string(*options).c_str());
 
-        if (options.push != kC4Disabled) {
+        if (options->push != kC4Disabled) {
             _pusher = new Pusher(this, _checkpointer);
         } else {
             for (auto profile : {"subChanges", "getAttachment", "proveAttachment"})
                 registerHandler(profile,  &Replicator::returnForbidden);
         }
         
-        if (options.pull != kC4Disabled) {
+        if (options->pull != kC4Disabled) {
             _puller = new Puller(this);
         } else {
             for (auto profile : {"changes", "proposeChanges", "rev", "norev"})
@@ -97,7 +97,7 @@ namespace litecore { namespace repl {
         }
 
         actor::Timer::duration saveDelay = tuning::kDefaultCheckpointSaveDelay;
-        if (auto i = options.properties[kC4ReplicatorCheckpointInterval].asInt(); i > 0)
+        if (auto i = options->properties[kC4ReplicatorCheckpointInterval].asInt(); i > 0)
             saveDelay = chrono::seconds(i);
         _checkpointer.enableAutosave(saveDelay, bind(&Replicator::saveCheckpoint, this, _1));
 
@@ -124,7 +124,7 @@ namespace litecore { namespace repl {
 
             _findExistingConflicts();
 
-            if (_options.push > kC4Passive || _options.pull > kC4Passive) {
+            if (_options->push > kC4Passive || _options->pull > kC4Passive) {
                 // Get the remote DB ID:
                 slice key = _checkpointer.remoteDBIDString();
                 C4RemoteID remoteDBID = _db->lookUpRemoteDBID(key);
@@ -145,7 +145,7 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_findExistingConflicts() {
-        if (_options.pull <= kC4Passive) // only check in pull mode
+        if (_options->pull <= kC4Passive) // only check in pull mode
             return;
 
         Stopwatch st;
@@ -209,9 +209,9 @@ namespace litecore { namespace repl {
 
     // Called after the checkpoint is established.
     void Replicator::startReplicating() {
-        if (_options.push > kC4Passive)
+        if (_options->push > kC4Passive)
             _pusher->start();
-        if (_options.pull > kC4Passive)
+        if (_options->pull > kC4Passive)
             _puller->start(_checkpointer.remoteMinSequence());
     }
 
@@ -224,7 +224,7 @@ namespace litecore { namespace repl {
 
 
     void Replicator::returnForbidden(Retained<blip::MessageIn> request) {
-        if (_options.push != kC4Disabled) {
+        if (_options->push != kC4Disabled) {
             request->respondWithError(Error("HTTP"_sl, 403, "Attempting to push to a pull-only replicator"_sl));
         } else {
             request->respondWithError(Error("HTTP"_sl, 403, "Attempting to pull from a push-only replicator"_sl));
@@ -437,7 +437,7 @@ namespace litecore { namespace repl {
         Signpost::mark(Signpost::replicatorConnect, uintptr_t(this));
         if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
             _connectionState = Connection::kConnected;
-            if (_options.push > kC4Passive || _options.pull > kC4Passive)
+            if (_options->push > kC4Passive || _options->pull > kC4Passive)
                 getRemoteCheckpoint(false);
         }
     }
@@ -460,7 +460,7 @@ namespace litecore { namespace repl {
         if (_puller)
             _puller->connectionClosed();
 
-        if (status.isNormal() && closedByPeer && (_options.push > kC4Passive || _options.pull > kC4Passive)) {
+        if (status.isNormal() && closedByPeer && (_options->push > kC4Passive || _options->pull > kC4Passive)) {
             logInfo("I didn't initiate the close; treating this as code 1001 (GoingAway)");
             status.code = websocket::kCodeGoingAway;
             status.message = alloc_slice("WebSocket connection closed by peer");
@@ -515,7 +515,7 @@ namespace litecore { namespace repl {
                 logInfo("No local checkpoint '%.*s'", SPLAT(_checkpointer.initialCheckpointID()));
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
                 // revisions as an optimization.
-                if (_options.pull > kC4Passive && _puller
+                if (_options->pull > kC4Passive && _puller
                         && _db->useLocked()->getLastSequence() == 0_seq)
                     _puller->setSkipDeleted();
             }

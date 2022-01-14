@@ -47,12 +47,12 @@ namespace litecore { namespace repl {
     ,_provisionallyHandledRevs(this, "provisionallyHandledRevs", &Puller::_revsWereProvisionallyHandled)
     ,_returningRevs(this, "returningRevs", &Puller::_revsFinished)
     {
-        _passive = _options.pull <= kC4Passive;
+        _passive = _options->pull <= kC4Passive;
         registerHandler("rev",              &Puller::handleRev);
         registerHandler("norev",            &Puller::handleNoRev);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
-        _skipDeleted = _options.skipDeleted();
-        if (!passive() && _options.noIncomingConflicts())
+        _skipDeleted = _options->skipDeleted();
+        if (!passive() && _options->noIncomingConflicts())
             warn("noIncomingConflicts mode is not compatible with active pull replications!");
     }
 
@@ -68,19 +68,19 @@ namespace litecore { namespace repl {
         MessageBuilder msg("subChanges"_sl);
         if (sinceStr)
             msg["since"_sl] = sinceStr;
-        if (_options.pull == kC4Continuous)
+        if (_options->pull == kC4Continuous)
             msg["continuous"_sl] = "true"_sl;
         msg["batch"_sl] = tuning::kChangesBatchSize;
         msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
         if (_skipDeleted)
             msg["activeOnly"_sl] = "true"_sl;
-        if (_options.enableAutoPurge() || progressNotificationLevel() > 0) {
+        if (_options->enableAutoPurge() || progressNotificationLevel() > 0) {
             msg["revocations"] = "true";    // Enable revocation notification in "changes" (SG 3.0)
             logInfo("msg[\"revocations\"]=\"true\" due to enableAutoPurge()=%d or progressNotificationLevel()=%d > 0",
-                    _options.enableAutoPurge(), progressNotificationLevel());
+                    _options->enableAutoPurge(), progressNotificationLevel());
         }
 
-        auto channels = _options.channels();
+        auto channels = _options->channels();
         if (channels) {
             stringstream value;
             unsigned n = 0;
@@ -95,15 +95,15 @@ namespace litecore { namespace repl {
             msg["filter"_sl] = "sync_gateway/bychannel"_sl;
             msg["channels"_sl] = value.str();
         } else {
-            slice filter = _options.filter();
+            slice filter = _options->filter();
             if (filter) {
                 msg["filter"_sl] = filter;
-                for (Dict::iterator i(_options.filterParams()); i; ++i)
+                for (Dict::iterator i(_options->filterParams()); i; ++i)
                     msg[i.keyString()] = i.value().asString();
             }
         }
 
-        auto docIDs = _options.docIDs();
+        auto docIDs = _options->docIDs();
         if (docIDs) {
             auto &enc = msg.jsonBody();
             enc.beginDict();
@@ -336,11 +336,6 @@ namespace litecore { namespace repl {
 
 #pragma mark - STATUS / PROGRESS:
 
-    int Puller::progressNotificationLevel() const {
-        const auto repl = const_cast<Puller*>(this)->replicatorIfAny();
-        return repl ? repl->progressNotificationLevel() : 0;
-    }
-
 
     void Puller::_childChangedStatus(Worker *task, Status status) {
         // Combine the IncomingRev's progress into mine:
@@ -359,7 +354,7 @@ namespace litecore { namespace repl {
                 || (!_caughtUp && !passive())
                 || _pendingRevMessages > 0) {
             level = kC4Busy;
-        } else if (_options.pull == kC4Continuous || isOpenServer()) {
+        } else if (_options->pull == kC4Continuous || isOpenServer()) {
             _spareIncomingRevs.clear();
             level = kC4Idle;
         } else {

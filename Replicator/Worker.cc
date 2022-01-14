@@ -76,7 +76,7 @@ namespace litecore { namespace repl {
 
     Worker::Worker(blip::Connection *connection,
                    Worker *parent,
-                   const Options &options,
+                   const Options *options,
                    std::shared_ptr<DBAccess> dbAccess,
                    const char *namePrefix)
     :Actor(SyncLog, string(namePrefix) + connection->name(),
@@ -85,7 +85,6 @@ namespace litecore { namespace repl {
     ,_parent(parent)
     ,_options(options)
     ,_db(dbAccess)
-    ,_progressNotificationLevel(options.progressLevel())
     ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
     ,_loggingID(parent ? parent->replicator()->loggingName() : connection->name())
     { }
@@ -97,7 +96,7 @@ namespace litecore { namespace repl {
 
 
     Worker::~Worker() {
-        if (_important)
+        if (_importance)
             logStats();
         logDebug("destructing (%p); actorName='%s'", this, actorName().c_str());
     }
@@ -257,12 +256,6 @@ namespace litecore { namespace repl {
         }
     }
 
-    void Worker::setProgressNotificationLevel(int level) {
-        if(_progressNotificationLevel.exchange(level) != level) {
-            logVerbose("Set progress notification level to %d", level);
-        }
-    }
-
     Worker::ActivityLevel Worker::computeActivityLevel() const {
         if (eventCount() > 1 || _pendingResponseCount > 0)
             return kC4Busy;
@@ -277,7 +270,7 @@ namespace litecore { namespace repl {
 
         bool changed = _statusChanged;
         _statusChanged = false;
-        if (changed && _important) {
+        if (changed && _importance) {
             logVerbose("progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64 " / %" PRIu64 ", %" PRIu64 " docs",
                        _status.progressDelta.unitsCompleted, _status.progressDelta.unitsTotal,
                        _status.progressDelta.documentCount,
@@ -289,9 +282,9 @@ namespace litecore { namespace repl {
         if (newLevel != _status.level) {
             _status.level = newLevel;
             changed = true;
-            if (_important) {
+            if (_importance) {
                 auto name = kC4ReplicatorActivityLevelNames[newLevel];
-                if (_important > 1)
+                if (_importance > 1)
                     logInfo("now %-s", name);
                 else
                     logVerbose("now %-s", name);

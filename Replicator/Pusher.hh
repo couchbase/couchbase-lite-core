@@ -37,8 +37,6 @@ namespace litecore { namespace repl {
             enqueue(FUNCTION_TO_QUEUE(Pusher::_docRemoteAncestorChanged), docID, remoteAncestorRevID);
         }
 
-        int progressNotificationLevel() const override;
-
         void onError(C4Error err) override;
 
     protected:

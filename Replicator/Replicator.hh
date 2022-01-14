@@ -48,7 +48,7 @@ namespace litecore { namespace repl {
         Replicator(C4Database* NONNULL,
                    websocket::WebSocket* NONNULL,
                    Delegate&,
-                   Options);
+                   Options* NONNULL);
 
         struct BlobProgress {
             Dir         dir;
@@ -117,7 +117,7 @@ namespace litecore { namespace repl {
 
     protected:
         virtual std::string loggingClassName() const override  {
-            return _options.pull >= kC4OneShot || _options.push >= kC4OneShot ? "Repl" : "repl";
+            return _options->pull >= kC4OneShot || _options->push >= kC4OneShot ? "Repl" : "repl";
         }
 
         // BLIP ConnectionDelegate API:

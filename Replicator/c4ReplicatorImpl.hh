@@ -175,10 +175,7 @@ namespace litecore {
 
         virtual void setProperties(AllocedDict properties) {
             LOCK(_mutex);
-            _options.properties = properties;
-            if(properties[kC4ReplicatorOptionProgressLevel]) {
-                _progressLevel = static_cast<C4ReplicatorProgressLevel>(_options.progressLevel());
-            }
+            _options->properties = move(properties);
         }
 
         // Prevents any future client callbacks (called by `c4repl_free`.)
@@ -198,11 +195,8 @@ namespace litecore {
         }
 
         void setProgressLevel(C4ReplicatorProgressLevel level) noexcept override {
-            _progressLevel = level;
-            if(_replicator) {
-                _replicator->setProgressNotificationLevel(static_cast<int>(level));
-            } else {
-                logVerbose("Replicator not yet created, saving progress level value for later...");
+            if(_options->setProgressLevel(level)) {
+                logVerbose("Set progress notification level to %d", level);
             }
         }
 
@@ -224,12 +218,11 @@ namespace litecore {
         C4ReplicatorImpl(C4Database* db NONNULL, const C4ReplicatorParameters &params)
         :Logging(SyncLog)
         ,_database(db)
-        ,_options(params)
+        ,_options(new Options(params))
         ,_onStatusChanged(params.onStatusChanged)
         ,_onDocumentsEnded(params.onDocumentsEnded)
         ,_onBlobProgress(params.onBlobProgress)
         {
-            _progressLevel = static_cast<C4ReplicatorProgressLevel>(_options.progressLevel());
             _status.flags |= kC4HostReachable;
         }
 
@@ -241,9 +234,6 @@ namespace litecore {
             // objects (including C4Databases) to be leaked. [CBL-524]
             if (_replicator)
                 _replicator->terminate();
-
-            // The below contains sensitive information, so zero it before destruction
-            mutable_slice(_options.properties.data()).wipe();
         }
 
 
@@ -253,7 +243,7 @@ namespace litecore {
 
 
         bool continuous() const noexcept {
-            return _options.push == kC4Continuous || _options.pull == kC4Continuous;
+            return _options->push == kC4Continuous || _options->pull == kC4Continuous;
         }
 
         inline bool statusFlag(C4ReplicatorStatusFlags flag) noexcept {
@@ -287,7 +277,7 @@ namespace litecore {
 
 
         unsigned getIntProperty(slice key, unsigned defaultValue) const noexcept {
-            if (auto val = _options.properties[key]; val.type() == kFLNumber)
+            if (auto val = _options->properties[key]; val.type() == kFLNumber)
                 return unsigned(std::max(int64_t(0), std::min(int64_t(UINT_MAX), val.asInt())) );
             else
                 return defaultValue;
@@ -311,7 +301,6 @@ namespace litecore {
                     _replicator = nullptr;
                     return false;
                 }
-                _replicator->setProgressNotificationLevel(static_cast<int>(_progressLevel));
             }
 
             setStatusFlag(kC4Suspended, false);
@@ -426,7 +415,7 @@ namespace litecore {
                     auto onDocsEnded = _onDocumentsEnded.load();
                     if (onDocsEnded)
                         onDocsEnded(this, pushing, docsEnded.size(), docsEnded.data(),
-                                    _options.callbackContext);
+                                    _options->callbackContext);
                 }
             }
         }
@@ -448,7 +437,7 @@ namespace litecore {
                        p.key,
                        p.bytesCompleted, p.bytesTotal,
                        p.error,
-                       _options.callbackContext);
+                       _options->callbackContext);
         }
 
 
@@ -487,7 +476,7 @@ namespace litecore {
 
             auto onStatusChanged = _onStatusChanged.load();
             if (onStatusChanged && status.level != kC4Stopping /* Don't notify about internal state */)
-                onStatusChanged(this, status, _options.callbackContext);
+                onStatusChanged(this, status, _options->callbackContext);
         }
 
 
@@ -548,8 +537,7 @@ namespace litecore {
 
         mutable std::mutex          _mutex;
         Retained<C4Database> const  _database;
-        Replicator::Options         _options;
-        C4ReplicatorProgressLevel   _progressLevel {kC4ReplProgressOverall};
+        Retained<Replicator::Options> _options;
 
         Retained<Replicator>        _replicator;
         C4ReplicatorStatus          _status {kC4Stopped};

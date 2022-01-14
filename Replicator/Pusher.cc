@@ -30,11 +30,11 @@ namespace litecore { namespace repl {
 
     Pusher::Pusher(Replicator *replicator, Checkpointer &checkpointer)
     :Worker(replicator, "Push")
-    ,_continuous(_options.push == kC4Continuous)
+    ,_continuous(_options->push == kC4Continuous)
     ,_checkpointer(checkpointer)
     ,_changesFeed(*this, _options, *_db, &checkpointer)
     {
-        if (_options.push <= kC4Passive) {
+        if (_options->push <= kC4Passive) {
             // Passive replicator always sends "changes"
             _passive = true;
             _proposeChanges = false;
@@ -333,7 +333,7 @@ namespace litecore { namespace repl {
                                                          tuning::kDefaultMaxHistory));
         bool legacyAttachments = !reply->boolProperty("blobs"_sl);
         if (!_deltasOK && reply->boolProperty("deltas"_sl)
-                       && !_options.properties[kC4ReplicatorOptionDisableDeltas].asBool())
+                       && !_options->properties[kC4ReplicatorOptionDisableDeltas].asBool())
             _deltasOK = true;
 
         // The response body consists of an array that parallels the `changes` array I sent:
@@ -399,7 +399,7 @@ namespace litecore { namespace repl {
                 logInfo("Rev '%.*s' #%.*s conflicts with newer server revision",
                         SPLAT(change->docID), SPLAT(change->revID));
             }
-            if (_options.pull <= kC4Passive) {
+            if (_options->pull <= kC4Passive) {
                 C4Error error = C4Error::make(WebSocketDomain, 409,
                                              "conflicts with newer server revision"_sl);
                 finishedDocumentWithError(change, error, false);
@@ -438,7 +438,7 @@ namespace litecore { namespace repl {
     // Check the document's current remote rev, and retry if it's different now.
     bool Pusher::shouldRetryConflictWithNewerAncestor(RevToSend *rev) {
         // None of this is relevant if there's no puller getting stuff from the server
-        DebugAssert(_options.pull > kC4Passive);
+        DebugAssert(_options->pull > kC4Passive);
 
         if (!_proposeChanges)
             return false;
@@ -522,12 +522,6 @@ namespace litecore { namespace repl {
 
 
 #pragma mark - PROGRESS:
-
-
-    int Pusher::progressNotificationLevel() const {
-        const auto repl = const_cast<Pusher*>(this)->replicatorIfAny();
-        return repl ? repl->progressNotificationLevel() : 0;
-    }
 
 
     void Pusher::_connectionClosed() {

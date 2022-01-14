@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
     ,_revsToInsert(this, "revsToInsert", &Inserter::_insertRevisionsNow,
                    tuning::kInsertionDelay, tuning::kInsertionBatchSize)
     {
-        _passive = _options.pull <= kC4Passive;
+        _passive = _options->pull <= kC4Passive;
     }
 
 
@@ -154,7 +154,7 @@ namespace litecore { namespace repl {
                     rev->doc = nullptr;
                     // Preserve rev body as the source of a future delta I may push back:
                     if (bodyForDB.size >= tuning::kMinBodySizeForDelta
-                        && !_options.disableDeltaSupport())
+                        && !_options->disableDeltaSupport())
                         put.revFlags |= kRevKeepBody;
                 }
                 put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};

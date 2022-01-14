@@ -73,8 +73,8 @@ namespace litecore::repl {
         if (root && MayContainPropertiesToEncrypt(doc->getRevisionBody())) {
             logVerbose("Encrypting properties in doc '%.*s'", SPLAT(request->docID));
             encryptedRoot = EncryptDocumentProperties(request->docID, root,
-                                                      _options.propertyEncryptor,
-                                                      _options.callbackContext,
+                                                      _options->propertyEncryptor,
+                                                      _options->callbackContext,
                                                       &c4err);
             if (encryptedRoot)
                 root = encryptedRoot;
@@ -248,7 +248,7 @@ namespace litecore::repl {
     {
         alloc_slice delta;
         if (!request->deltaOK || revisionSize < tuning::kMinBodySizeForDelta
-                              || _options.disableDeltaSupport())
+                              || _options->disableDeltaSupport())
             return delta;
 
         // Find an ancestor revision known to the server:

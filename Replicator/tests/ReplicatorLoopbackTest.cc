@@ -297,27 +297,28 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     }
     _expectedDocumentCount = 50;
 
-    auto pushOpt = Replicator::Options::passive();
-    auto pullOpt = Replicator::Options::passive();
+    optional<Options> pushOpt, pullOpt;
     bool pull = false, skipDeleted = false;
 
     SECTION("Pull") {
         // Pull replication. skipDeleted is automatic because destination is empty.
         pull = true;
-        pullOpt = Replicator::Options::pulling();
+        pullOpt.emplace(Replicator::Options::pulling());
+        pushOpt.emplace(Replicator::Options::passive());
         skipDeleted = true;
         //pullOpt.setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
     }
     SECTION("Push") {
         // Push replication. skipDeleted is not automatic, so test both ways:
-        pushOpt = Replicator::Options::pushing();
+        pushOpt.emplace(Replicator::Options::pushing());
+        pullOpt.emplace(Replicator::Options::passive());
         SECTION("Push + SkipDeleted") {
             skipDeleted = true;
-            pushOpt.setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
+            pushOpt->setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
         }
     }
 
-    runReplicators(pushOpt, pullOpt);
+    runReplicators(*pushOpt, *pullOpt);
     compareDatabases(false, false);
 
     if (pull)

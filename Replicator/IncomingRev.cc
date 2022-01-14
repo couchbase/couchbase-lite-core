@@ -38,8 +38,8 @@ namespace litecore { namespace repl {
     :Worker(puller, "inc")
     ,_puller(puller)
     {
-        _passive = _options.pull <= kC4Passive;
-        _important = false;
+        _passive = _options->pull <= kC4Passive;
+        _importance = false;
         static atomic<uint32_t> sRevSignpostCount {0};
         _serialNumber = ++sRevSignpostCount;
     }
@@ -71,7 +71,7 @@ namespace litecore { namespace repl {
                                _revMessage->property("history"_sl),
                                _revMessage->boolProperty("deleted"_sl),
                                _revMessage->boolProperty("noconflicts"_sl)
-                                   || _options.noIncomingConflicts());
+                                   || _options->noIncomingConflicts());
         _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         slice sequenceStr = _revMessage->property(slice("sequence"));
         _remoteSequence = RemoteSequence(sequenceStr);
@@ -121,11 +121,11 @@ namespace litecore { namespace repl {
             _revMessage = nullptr;
 
         _mayContainBlobs = jsonBody.containsBytes("\"digest\""_sl);
-        _mayContainEncryptedProperties = !_options.disablePropertyDecryption()
+        _mayContainEncryptedProperties = !_options->disablePropertyDecryption()
                                          && MayContainPropertiesToDecrypt(jsonBody);
 
         // Decide whether to continue now (on the Puller thread) or asynchronously on my own:
-        if (_options.pullValidator|| jsonBody.size > kMaxImmediateParseSize
+        if (_options->pullValidator|| jsonBody.size > kMaxImmediateParseSize
                                   || _mayContainBlobs || _mayContainEncryptedProperties)
             enqueue(FUNCTION_TO_QUEUE(IncomingRev::parseAndInsert), move(jsonBody));
         else
@@ -140,13 +140,13 @@ namespace litecore { namespace repl {
         rev->owner = this;
         
         // Do not purge if the auto-purge is not enabled:
-        if (!_options.enableAutoPurge()) {
+        if (!_options->enableAutoPurge()) {
             finish();
             return;
         }
         
         // Call the custom validation function if any:
-        if (_options.pullValidator) {
+        if (_options->pullValidator) {
             // Revoked rev body is empty when sent to the filter:
             auto body = Dict::emptyDict();
             if (!performPullValidation(body))
@@ -168,7 +168,7 @@ namespace litecore { namespace repl {
             if (!fleeceDoc)
                 err = C4Error::make(FleeceDomain, (int)encodeErr, "Incoming rev failed to encode"_sl);
 
-        } else if (_options.pullValidator || _mayContainBlobs || _mayContainEncryptedProperties) {
+        } else if (_options->pullValidator || _mayContainBlobs || _mayContainEncryptedProperties) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, it may contain new blobs to download, or it may
             // have properties to decrypt.
@@ -178,7 +178,7 @@ namespace litecore { namespace repl {
             if (!fleeceDoc) {
                 // Don't have the body of the source revision. This might be because I'm in
                 // no-conflict mode and the peer is trying to push me a now-obsolete revision.
-                if (_options.noIncomingConflicts())
+                if (_options->noIncomingConflicts())
                     err = {WebSocketDomain, 409};
                 else
                     err = C4Error::printf(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
@@ -208,7 +208,7 @@ namespace litecore { namespace repl {
         // no longer accessible (not in any channel the client has access to.)
         if (root["_removed"_sl].asBool()) {
             _rev->flags |= kRevPurged;
-            if (!_options.enableAutoPurge()) {
+            if (!_options->enableAutoPurge()) {
                 finish();
                 return;
             }
@@ -220,8 +220,8 @@ namespace litecore { namespace repl {
             C4Error error;
             decryptedRoot = DecryptDocumentProperties(_rev->docID,
                                                       root,
-                                                      _options.propertyDecryptor,
-                                                      _options.callbackContext,
+                                                      _options->propertyDecryptor,
+                                                      _options->callbackContext,
                                                       &error);
             if (decryptedRoot) {
                 root = decryptedRoot;
@@ -277,10 +277,10 @@ namespace litecore { namespace repl {
 
     // Calls the custom pull validator if available.
     bool IncomingRev::performPullValidation(Dict body) {
-        if (_options.pullValidator) {
-            if (!_options.pullValidator(nullslice,     // TODO: Collection support
+        if (_options->pullValidator) {
+            if (!_options->pullValidator(nullslice,     // TODO: Collection support
                                         _rev->docID, _rev->revID, _rev->flags, body,
-                                        _options.callbackContext)) {
+                                        _options->callbackContext)) {
                 failWithError(WebSocketDomain, 403, "rejected by validation function"_sl);
                 return false;
             }
@@ -370,12 +370,6 @@ namespace litecore { namespace repl {
         _remoteSequence = {};
         _bodySize = 0;
     }
-
-
-    int IncomingRev::progressNotificationLevel() const {
-        return _puller ? _puller->progressNotificationLevel() : 0;
-    }
-
 
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel() const {

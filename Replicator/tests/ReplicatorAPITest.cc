@@ -761,35 +761,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Progress Level vs Options", "[Pull][C]") {
 struct C4TestReplicator : public litecore::C4ReplicatorImpl {
     C4TestReplicator(C4Database* db, C4ReplicatorParameters params)
         : C4ReplicatorImpl(db, params)   { }
-    alloc_slice propertiesMemory() const { return _options.properties.data(); }
+    alloc_slice propertiesMemory() const { return _options->properties.data(); }
     void createReplicator() override     { }
     alloc_slice URL() const override     { return nullslice; }
 };
-
-TEST_CASE_METHOD(ReplicatorAPITest, "c4Replicator Zero Memory", "[C][Replicator]") {
-     {
-         Encoder enc;
-         enc.beginDict();
-         enc.writeKey(kC4ReplicatorOptionAuthentication);
-         enc.beginDict();
-         enc[kC4ReplicatorAuthType] = "basic"_sl;
-         enc[kC4ReplicatorAuthUserName] = "jim"_sl;
-         enc[kC4ReplicatorAuthPassword] = "password"_sl;
-         enc.endDict();
-         enc.endDict();
-         _options = AllocedDict(enc.finish());
-    }
-
-    C4ReplicatorParameters params {};
-    params.optionsDictFleece = _options.data();
-    const auto *repl = new C4TestReplicator(db, params);
-    alloc_slice stored = repl->propertiesMemory();
-    delete repl;
-
-    for(size_t i = 0; i < stored.size; i++) {
-        CHECK(stored[i] == 0);
-    }
-}
 
 #endif
 

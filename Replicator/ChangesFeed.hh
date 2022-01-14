@@ -26,7 +26,7 @@ namespace fleece {
 
 namespace litecore::repl {
     class DBAccess;
-    struct Options;
+    class Options;
     class Checkpointer;
 
     using DocIDSet = std::shared_ptr<std::unordered_set<std::string>>;
@@ -47,7 +47,7 @@ namespace litecore::repl {
             virtual void failedToGetChange(ReplicatedRev *rev, C4Error error, bool transient) =0;
         };
 
-        ChangesFeed(Delegate&, Options&, DBAccess &db, Checkpointer*);
+        ChangesFeed(Delegate&, const Options* NONNULL, DBAccess &db, Checkpointer*);
         ~ChangesFeed();
 
         // Setup:
@@ -94,7 +94,7 @@ namespace litecore::repl {
 
     protected:
         Delegate& _delegate;
-        Options &_options;
+        RetainedConst<Options> _options;
         DBAccess& _db;
         bool _getForeignAncestors {false};                  // True in propose-changes mode
     private:
@@ -114,7 +114,8 @@ namespace litecore::repl {
 
     class ReplicatorChangesFeed final : public ChangesFeed {
     public:
-        ReplicatorChangesFeed(Delegate &delegate, Options &options, DBAccess &db, Checkpointer *cp);
+        ReplicatorChangesFeed(Delegate &delegate, const Options *options,
+                              DBAccess &db, Checkpointer *cp);
 
         void setFindForeignAncestors(bool use)      {_getForeignAncestors = use;}
 

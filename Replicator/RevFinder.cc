@@ -34,8 +34,8 @@ namespace litecore::repl {
     :Worker(replicator, "RevFinder")
     ,_delegate(delegate)
     {
-        _passive = _options.pull <= kC4Passive;
-        _mustBeProposed = _passive && _options.noIncomingConflicts()
+        _passive = _options->pull <= kC4Passive;
+        _mustBeProposed = _passive && _options->noIncomingConflicts()
                                    && !_db->usingVersionVectors();
         registerHandler("changes",          &RevFinder::handleChanges);
         registerHandler("proposeChanges",   &RevFinder::handleChanges);
@@ -129,7 +129,7 @@ namespace litecore::repl {
                 }
                 if (!_db->disableBlobSupport())
                     response["blobs"_sl] = "true"_sl;
-                if ( !_announcedDeltaSupport && !_options.disableDeltaSupport()) {
+                if ( !_announcedDeltaSupport && !_options->disableDeltaSupport()) {
                     response["deltas"_sl] = "true"_sl;
                     _announcedDeltaSupport = true;
                 }
@@ -235,7 +235,7 @@ namespace litecore::repl {
                                                         ->findDocAncestors(
                                                 docIDs, revIDs,
                                                 kMaxPossibleAncestors,
-                                                !_options.disableDeltaSupport(),  // requireBodies
+                                                !_options->disableDeltaSupport(),  // requireBodies
                                                 _db->remoteDBID());
         // Look through the database response:
         unsigned itemsWritten = 0, requested = 0;

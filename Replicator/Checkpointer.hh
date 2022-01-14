@@ -35,7 +35,7 @@ namespace litecore { namespace repl {
     using namespace fleece;
 
     class Checkpoint;
-    struct Options;
+    class Options;
     class RemoteSequence;
 
 
@@ -44,7 +44,7 @@ namespace litecore { namespace repl {
               Replicator, Pusher and Puller. */
     class Checkpointer {
     public:
-        Checkpointer(const Options&, fleece::slice remoteURL);
+        Checkpointer(const Options* NONNULL, fleece::slice remoteURL);
 
         ~Checkpointer();
 
@@ -170,7 +170,7 @@ namespace litecore { namespace repl {
         void saveSoon();
 
         Logging*                        _logger;
-        const Options&                  _options;
+        RetainedConst<Options>          _options;
         alloc_slice const               _remoteURL;
         std::unordered_set<std::string> _docIDs;
 
