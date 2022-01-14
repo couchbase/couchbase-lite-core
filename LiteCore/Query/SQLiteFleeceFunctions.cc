@@ -496,13 +496,14 @@ namespace litecore {
 #pragma mark - REVISION HISTORY:
 
 
-    // fl_callback(docID, revID, body, extra, sequence, callback) -> string
+    // fl_callback(docID, revID, body, extra, sequence, callback, flags) -> string
     static void fl_callback(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         RecordUpdate rec(valueAsSlice(argv[0]), valueAsSlice(argv[2]));
         rec.version = valueAsSlice(argv[1]);
         rec.extra = valueAsSlice(argv[3]);
         rec.sequence = sequence_t(sqlite3_value_int(argv[4]));
-        auto callback = sqlite3_value_pointer(argv[5], kWithDocBodiesCallbackPointerType);
+        rec.flags = (DocumentFlags)sqlite3_value_int(argv[5]);
+        auto callback = sqlite3_value_pointer(argv[6], kWithDocBodiesCallbackPointerType);
         if (!callback || !rec.key) {
             sqlite3_result_error(ctx, "Missing or invalid callback", -1);
             return;
@@ -535,7 +536,7 @@ namespace litecore {
         { "fl_bool",           1, fl_bool },
         { "array_of",         -1, array_of },
         { "dict_of",          -1, dict_of },
-        { "fl_callback",       6, fl_callback },
+        { "fl_callback",       7, fl_callback },
         { }
     };
 
