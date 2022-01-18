@@ -17,69 +17,117 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
 #include "mbedtls/sha1.h"
+#include "mbedtls/sha256.h"
 #pragma clang diagnostic pop
 
 #ifdef __APPLE__
-#define USE_COMMON_CRYPTO
+#  define USE_COMMON_CRYPTO
 #endif
 
 #ifdef USE_COMMON_CRYPTO
     #include <CommonCrypto/CommonDigest.h>
-    #define _CONTEXT ((CC_SHA1_CTX*)_context)
-#else
-    #define _CONTEXT ((mbedtls_sha1_context*)_context)
 #endif
 
 namespace litecore {
 
-    void SHA1::computeFrom(fleece::slice s) {
-        (SHA1Builder() << s).finish(&bytes, sizeof(bytes));
-    }
 
-
-    bool SHA1::setDigest(fleece::slice s) {
-        if (s.size != sizeof(bytes))
+    template <DigestType TYPE, size_t SIZE>
+    bool Digest<TYPE,SIZE>::setDigest(fleece::slice s) {
+        if (s.size != _bytes.size())
             return false;
-        memcpy(bytes, s.buf, sizeof(bytes));
+        s.copyTo(_bytes.data());
         return true;
     }
 
 
-    std::string SHA1::asBase64() const {
+    template <DigestType TYPE, size_t SIZE>
+    std::string Digest<TYPE,SIZE>::asBase64() const {
         return fleece::base64::encode(asSlice());
     }
 
 
-    SHA1Builder::SHA1Builder() {
+#pragma mark - SHA1:
+
+
+    template <>
+    Digest<SHA,1>::Builder::Builder() {
         static_assert(sizeof(_context) >= sizeof(mbedtls_sha1_context));
 #ifdef USE_COMMON_CRYPTO
         static_assert(sizeof(_context) >= sizeof(CC_SHA1_CTX));
-        CC_SHA1_Init(_CONTEXT);
+        CC_SHA1_Init((CC_SHA1_CTX*)_context);
 #else
-        mbedtls_sha1_init(_CONTEXT);
-        mbedtls_sha1_starts(_CONTEXT);
+        mbedtls_sha1_init((mbedtls_sha1_context*)_context);
+        mbedtls_sha1_starts((mbedtls_sha1_context*)_context);
 #endif
     }
 
 
-    SHA1Builder& SHA1Builder::operator<< (fleece::slice s) {
+    template <>
+    Digest<SHA,1>::Builder& Digest<SHA,1>::Builder::operator<< (fleece::slice s) {
 #ifdef USE_COMMON_CRYPTO
-        CC_SHA1_Update(_CONTEXT, s.buf, (CC_LONG)s.size);
+        CC_SHA1_Update((CC_SHA1_CTX*)_context, s.buf, (CC_LONG)s.size);
 #else
-        mbedtls_sha1_update(_CONTEXT, (unsigned char*)s.buf, s.size);
+        mbedtls_sha1_update((mbedtls_sha1_context*)_context, (unsigned char*)s.buf, s.size);
 #endif
         return *this;
     }
 
 
-    void SHA1Builder::finish(void *result, size_t resultSize) {
-        DebugAssert(resultSize == sizeof(SHA1::bytes));
+    template <>
+    void Digest<SHA,1>::Builder::finish(void *result, size_t resultSize) {
+        Assert(resultSize == kSizeInBytes);
 #ifdef USE_COMMON_CRYPTO
-        CC_SHA1_Final((uint8_t*)result, _CONTEXT);
+        CC_SHA1_Final((uint8_t*)result, (CC_SHA1_CTX*)_context);
 #else
-        mbedtls_sha1_finish(_CONTEXT, (uint8_t*)result);
-        mbedtls_sha1_free(_CONTEXT);
+        mbedtls_sha1_finish((mbedtls_sha1_context*)_context, (uint8_t*)result);
+        mbedtls_sha1_free((mbedtls_sha1_context*)_context);
 #endif
     }
+
+    // Force the non-specialized methods to be instantiated:
+    template class Digest<SHA,1>;
+
+
+#pragma mark - SHA256:
+
+
+    template <>
+    Digest<SHA,256>::Builder::Builder() {
+        static_assert(sizeof(_context) >= sizeof(mbedtls_sha256_context));
+#ifdef USE_COMMON_CRYPTO
+        static_assert(sizeof(_context) >= sizeof(CC_SHA256_CTX));
+        CC_SHA256_Init((CC_SHA256_CTX*)_context);
+#else
+        mbedtls_sha256_init((mbedtls_sha256_context*)_context);
+        mbedtls_sha256_starts((mbedtls_sha256_context*)_context, 0);
+#endif
+    }
+
+
+    template <>
+    Digest<SHA,256>::Builder& Digest<SHA,256>::Builder::operator<< (fleece::slice s) {
+#ifdef USE_COMMON_CRYPTO
+        CC_SHA256_Update((CC_SHA256_CTX*)_context, s.buf, (CC_LONG)s.size);
+#else
+        mbedtls_sha256_update((mbedtls_sha256_context*)_context, (unsigned char*)s.buf, s.size);
+#endif
+        return *this;
+    }
+
+
+    template <>
+    void Digest<SHA,256>::Builder::finish(void *result, size_t resultSize) {
+        Assert(resultSize == kSizeInBytes);
+#ifdef USE_COMMON_CRYPTO
+        CC_SHA256_Final((uint8_t*)result, (CC_SHA256_CTX*)_context);
+#else
+        mbedtls_sha256_finish((mbedtls_sha256_context*)_context, (uint8_t*)result);
+        mbedtls_sha256_free((mbedtls_sha256_context*)_context);
+#endif
+    }
+
+
+    // Force the non-specialized methods to be instantiated:
+    template class Digest<SHA,256>;
 
 }

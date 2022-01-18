@@ -12,66 +12,96 @@
 
 #pragma once
 #include "fleece/slice.hh"
+#include <array>
 #include <string>
 
 namespace litecore {
 
-    /// A SHA-1 digest.
-    class SHA1 {
+    enum DigestType {
+        SHA,
+    };
+
+
+    /// A cryptographic digest. Available instantiations are <SHA,1> and <SHA,256>.
+    /// (SHA384 and SHA512 could be added by doing some copy-and-pasting in the .cc file.)
+    template <DigestType TYPE, size_t SIZE>
+    class Digest {
     public:
-        SHA1()                               { memset(bytes, 0, sizeof(bytes)); }
+        class Builder;
 
-        /// Constructs instance with a SHA-1 digest of the data in `s`
-        explicit SHA1(fleece::slice s)       {computeFrom(s);}
+        Digest()                               {_bytes.fill(std::byte{0});}
 
-        /// Computes a SHA-1 digest of the data
-        void computeFrom(fleece::slice);
+        /// Constructs instance with a digest of the data in `s`.
+        explicit Digest(fleece::slice s)       {computeFrom(s);}
 
-        /// Stores a digest; returns false if slice is the wrong size
-        bool setDigest(fleece::slice);
+        inline Digest(Builder&&);
 
-        /// The digest as a slice
-        fleece::slice asSlice() const         {return {bytes, sizeof(bytes)};}
+        /// Computes a digest of the data.
+        void computeFrom(fleece::slice data);
+
+        /// Stores a digest; returns false if slice is the wrong size.
+        bool setDigest(fleece::slice digestData);
+
+        /// The digest as a slice.
+        fleece::slice asSlice() const         {return {_bytes.data(), _bytes.size()};}
         operator fleece::slice() const        {return asSlice();}
 
+        /// The digest encoded in Base64.
         std::string asBase64() const;
 
-        bool operator==(const SHA1 &x) const  {return memcmp(&bytes, &x.bytes, sizeof(bytes)) == 0;}
-        bool operator!= (const SHA1 &x) const {return !(*this == x);}
+        bool operator==(const Digest &x) const   {return _bytes == x._bytes;}
+        bool operator!=(const Digest &x) const   {return _bytes != x._bytes;}
 
     private:
-        char bytes[20];
+        static constexpr size_t kSizeInBytes = ((TYPE == SHA && SIZE == 1) ? 160 : SIZE) / 8;
 
-        friend class SHA1Builder;
+        std::array<std::byte,kSizeInBytes> _bytes;
     };
 
 
-    /// Builder for creating SHA-1 digests from piece-by-piece data.
-    class SHA1Builder {
+    /// Builder for creating digests incrementally from piece-by-piece data.
+    template <DigestType TYPE, size_t SIZE>
+    class Digest<TYPE, SIZE>::Builder {
     public:
-        SHA1Builder();
+        Builder();
 
-        /// Add a single byte
-        SHA1Builder& operator<< (fleece::slice s);
+        /// Adds data.
+        Builder& operator<< (fleece::slice s);
 
-        /// Add data
-        SHA1Builder& operator<< (uint8_t b)     {return *this << fleece::slice(&b, 1);}
+        /// Adds a single byte.
+        Builder& operator<< (uint8_t b)     {return *this << fleece::slice(&b, 1);}
 
-        /// Finish and write the digest to `result`. (Don't reuse the builder.)
+        /// Finishes and writes the digest.
+        /// @warning Don't reuse this builder.
+        /// @param result  The address to write the digest to.
+        /// @param resultSize  Must be equal to the size of a digest.
         void finish(void *result, size_t resultSize);
 
-        /// Finish and return the digest as a SHA1 object. (Don't reuse the builder.)
-        SHA1 finish() {
-            SHA1 result;
-            finish(&result.bytes, sizeof(result.bytes));
-            return result;
-        }
+        /// Finishes and returns the digest as a new object.
+        /// @warning Don't reuse this builder.
+        Digest finish()                     {return Digest(std::move(*this));}
 
     private:
-        uint8_t _context[100];  // big enough to hold any platform's context struct
+        std::byte _context[110];  // big enough to hold any platform's context struct
     };
 
 
+    template<DigestType TYPE, size_t SIZE>
+    Digest<TYPE, SIZE>::Digest(Builder &&builder) {
+        builder.finish(_bytes.data(), _bytes.size());
+    }
+
+    template <DigestType TYPE, size_t SIZE>
+    void Digest<TYPE,SIZE>::computeFrom(fleece::slice s) {
+        (Builder() << s).finish(_bytes.data(), _bytes.size());
+    }
+
+
+    // Shorthand names:
+    using SHA1        = Digest<SHA,1>;
+    using SHA1Builder = Digest<SHA,1>::Builder;
+
+    using SHA256      = Digest<SHA,256>;
 }
 
 
