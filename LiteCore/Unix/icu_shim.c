@@ -26,8 +26,19 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef __ANDROID__
+#define CBL_USE_ICU_SHIM
+#include "unicode/utypes.h"
+#include "unicode/ucol.h"
+#include "unicode/ucasemap.h"
+#include <android/log.h>
+#endif
+
+
 #ifdef CBL_USE_ICU_SHIM
 #define LOCAL_INLINE
+
+#ifndef __ANDROID__
 
 // This is not meant to be absolutely foolproof, but only to cover
 // the triples we support on Linux
@@ -37,6 +48,8 @@
 #define ARCH_FOLDER "aarch64-linux-gnu"
 #elif defined(__ARM_ARCH_7A__)
 #define ARCH_FOLDER "arm-linux-gnueabihf"
+#endif
+
 #endif
 
 
@@ -51,6 +64,77 @@ static void* handle_i18n = NULL;
 static void* handle_common = NULL;
 static void* syms[11];
 
+
+
+#ifdef __ANDROID__
+/* ICU data filename on Android is like 'icudt49l.dat'.
+ *
+ * The following is from ICU code: source/common/unicode/utypes.h:
+ * #define U_ICUDATA_NAME "icudt" U_ICU_VERSION_SHORT U_ICUDATA_TYPE_LETTER
+ *
+ * U_ICUDATA_TYPE_LETTER needs to be 'l' as it's always little-endian on
+ * Android devices.
+ *
+ * U_ICU_VERSION_SHORT is a decimal number between [44, 999].
+ */
+static int filter(const struct dirent* dirp) {
+  const char* name = dirp->d_name;
+  const int len = strlen(name);
+
+  // Valid length of the filename 'icudt...l.dat'
+  if (len < 10 + ICUDATA_VERSION_MIN_LENGTH ||
+      len > 10 + ICUDATA_VERSION_MAX_LENGTH) {
+    return 0;
+  }
+
+  // Valid decimal number in between
+  for (int i = 5; i < len - 5; i++) {
+    if (!isdigit(name[i])) {
+      return 0;
+    }
+  }
+
+  return !strncmp(name, "icudt", 5) && !strncmp(&name[len - 5], "l.dat", 5);
+}
+
+static int init_icudata_platform(void) {
+  memset(icudata_version, 0, ICUDATA_VERSION_MAX_LENGTH + 1);
+  memset(syms, 0, sizeof(syms));
+
+  struct dirent** namelist = NULL;
+  int n = scandir("/system/usr/icu", &namelist, &filter, alphasort);
+  int max_version = -1;
+  while (n--) {
+    char* name = namelist[n]->d_name;
+    const int len = strlen(name);
+    const char* verp = &name[5];
+    name[len - 5] = '\0';
+
+    char* endptr;
+    int ver = (int)strtol(verp, &endptr, 10);
+
+    // We prefer the latest version available.
+    if (ver > max_version) {
+      max_version = ver;
+      icudata_version[0] = '_';
+      strcpy(icudata_version + 1, verp);
+    }
+
+    free(namelist[n]);
+  }
+  free(namelist);
+
+  if (max_version == -1 || max_version < ICUDATA_VERSION_MIN) {
+    __android_log_print(ANDROID_LOG_ERROR, "NDKICU",
+        "Cannot locate ICU data file at /system/usr/icu.");
+    return -1;
+  }
+
+  handle_i18n = dlopen("libicui18n.so", RTLD_LOCAL);
+  handle_common = dlopen("libicuuc.so", RTLD_LOCAL);
+  return max_version;
+}
+#else
 /* The ICU data library from the ICU package is named libicudata.so.## */
 static int filter(const struct dirent* dirp) {
   const char* name = dirp->d_name;
@@ -65,7 +149,7 @@ static int filter(const struct dirent* dirp) {
   return !strncmp(name, "libicudata", 10);
 }
 
-static void init_icudata_version(void) {
+static int init_icudata_platform(void) {
   memset(icudata_version, 0, ICUDATA_VERSION_MAX_LENGTH + 1);
   memset(syms, 0, sizeof(syms));
 
@@ -99,7 +183,7 @@ static void init_icudata_version(void) {
 
   if (max_version == -1 || max_version < ICUDATA_VERSION_MIN) {
     fprintf(stderr, "Cannot locate ICU data file at %s\n", icuDir);
-    return;
+    return -1;
   }
 
   char buffer[128];
@@ -111,56 +195,64 @@ static void init_icudata_version(void) {
   strcat(buffer, icudata_version + 1);
   handle_common = dlopen(buffer, RTLD_LAZY);
 
+  return max_version;
+}
+#endif
+
+static void init_icudata_version(void) {
+  int max_version = init_icudata_platform();
+
   if (!handle_i18n || !handle_common) {
     fprintf(stderr, "Cannot open ICU libraries.\n");
     return;
   }
 
-    printf("Found ICU libraries for version %d\n", max_version);
+  printf("Found ICU libraries for version %d\n", max_version);
 
-    strcpy(buffer, "ucol_open");
-    strcat(buffer, icudata_version);
-    syms[0] = dlsym(handle_i18n, buffer);
+  char buffer[128];
+  strcpy(buffer, "ucol_open");
+  strcat(buffer, icudata_version);
+  syms[0] = dlsym(handle_i18n, buffer);
 
-    strcpy(buffer, "ucol_setAttribute");
-    strcat(buffer, icudata_version);
-    syms[1] = dlsym(handle_i18n, buffer);
+  strcpy(buffer, "ucol_setAttribute");
+  strcat(buffer, icudata_version);
+  syms[1] = dlsym(handle_i18n, buffer);
 
-    strcpy(buffer, "ucol_strcollUTF8");
-    strcat(buffer, icudata_version);
-    syms[2] = dlsym(handle_i18n, buffer);
+  strcpy(buffer, "ucol_strcollUTF8");
+  strcat(buffer, icudata_version);
+  syms[2] = dlsym(handle_i18n, buffer);
 
-    strcpy(buffer, "ucol_close");
-    strcat(buffer, icudata_version);
-    syms[3] = dlsym(handle_i18n, buffer);
+  strcpy(buffer, "ucol_close");
+  strcat(buffer, icudata_version);
+  syms[3] = dlsym(handle_i18n, buffer);
 
-    strcpy(buffer, "ucol_strcoll");
-    strcat(buffer, icudata_version);
-    syms[4] = dlsym(handle_i18n, buffer);
+  strcpy(buffer, "ucol_strcoll");
+  strcat(buffer, icudata_version);
+  syms[4] = dlsym(handle_i18n, buffer);
 
-    strcpy(buffer, "ucasemap_open");
-    strcat(buffer, icudata_version);
-    syms[5] = dlsym(handle_common, buffer);
+  strcpy(buffer, "ucasemap_open");
+  strcat(buffer, icudata_version);
+  syms[5] = dlsym(handle_common, buffer);
 
-    strcpy(buffer, "ucasemap_close");
-    strcat(buffer, icudata_version);
-    syms[6] = dlsym(handle_common, buffer);
+  strcpy(buffer, "ucasemap_close");
+  strcat(buffer, icudata_version);
+  syms[6] = dlsym(handle_common, buffer);
 
-    strcpy(buffer, "ucasemap_utf8ToLower");
-    strcat(buffer, icudata_version);
-    syms[7] = dlsym(handle_common, buffer);
+  strcpy(buffer, "ucasemap_utf8ToLower");
+  strcat(buffer, icudata_version);
+  syms[7] = dlsym(handle_common, buffer);
 
-    strcpy(buffer, "ucasemap_utf8ToUpper");
-    strcat(buffer, icudata_version);
-    syms[8] = dlsym(handle_common, buffer);
+  strcpy(buffer, "ucasemap_utf8ToUpper");
+  strcat(buffer, icudata_version);
+  syms[8] = dlsym(handle_common, buffer);
 
-    strcpy(buffer, "uiter_setUTF8");
-    strcat(buffer, icudata_version);
-    syms[9] = dlsym(handle_common, buffer);
+  strcpy(buffer, "uiter_setUTF8");
+  strcat(buffer, icudata_version);
+  syms[9] = dlsym(handle_common, buffer);
 
-    strcpy(buffer, "ucol_strcollIter");
-    strcat(buffer, icudata_version);
-    syms[10] = dlsym(handle_i18n, buffer);
+  strcpy(buffer, "ucol_strcollIter");
+  strcat(buffer, icudata_version);
+  syms[10] = dlsym(handle_i18n, buffer);
 }
 #else
 #define LOCAL_INLINE inline
