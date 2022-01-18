@@ -13,6 +13,7 @@
 #include "UnicodeCollator.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "icu_shim.h"
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/Exception.h"
@@ -39,12 +40,6 @@
  Of course these changes are temporary and shouldn't be committed!
 */
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdocumentation"
-#include <unicode/uloc.h>
-#include <unicode/ucol.h>
-#pragma clang diagnostic pop
-
 // http://userguide.icu-project.org/collation
 // http://userguide.icu-project.org/collation/api
 // http://icu-project.org/apiref/icu4c/ucol_8h.html
@@ -63,7 +58,7 @@ namespace litecore {
         :CollationContext(collation)
         {
             UErrorCode status = U_ZERO_ERROR;
-            ucoll = ucol_open(collation.localeName.asString().c_str(), &status);
+            ucoll = lc_ucol_open(collation.localeName.asString().c_str(), &status);
             if (U_SUCCESS(status)) {
                 if (status == U_USING_DEFAULT_WARNING)
                     Warn("LiteCore indexer: unknown locale '%.*s', using default collator",
@@ -71,11 +66,11 @@ namespace litecore {
 
                 if (collation.diacriticSensitive) {
                     if (!collation.caseSensitive)
-                        ucol_setAttribute(ucoll, UCOL_STRENGTH, UCOL_SECONDARY, &status);
+                        lc_ucol_setAttribute(ucoll, UCOL_STRENGTH, UCOL_SECONDARY, &status);
                 } else {
-                    ucol_setAttribute(ucoll, UCOL_STRENGTH, UCOL_PRIMARY, &status);
+                    lc_ucol_setAttribute(ucoll, UCOL_STRENGTH, UCOL_PRIMARY, &status);
                     if (collation.caseSensitive)
-                        ucol_setAttribute(ucoll, UCOL_CASE_LEVEL, UCOL_ON, &status);
+                        lc_ucol_setAttribute(ucoll, UCOL_CASE_LEVEL, UCOL_ON, &status);
                 }
             }
             if (U_FAILURE(status))
@@ -85,7 +80,7 @@ namespace litecore {
 
         ~ICUCollationContext() {
             if (ucoll)
-                ucol_close(ucoll);
+                lc_ucol_close(ucoll);
         }
     };
 
@@ -100,16 +95,8 @@ namespace litecore {
                                             int len2, const void *chars2,
                                             const ICUCollationContext &ctx) {
         UErrorCode status = U_ZERO_ERROR;
-#ifdef __ANDROID__
-        // Android 4.1 (API 16-17) comes with ICU 4.8 which does not support `ucol_strcollUTF8(...)`
-        UCharIterator sIter, tIter;
-        uiter_setUTF8(&sIter, (const char *) chars1, len1);
-        uiter_setUTF8(&tIter, (const char *) chars2, len2);
-        int result = ucol_strcollIter(ctx.ucoll, &sIter, &tIter, &status);
-#else
-        int result = ucol_strcollUTF8(ctx.ucoll, (const char*)chars1, len1,
+        int result = lc_ucol_strcollUTF8(ctx.ucoll, (const char*)chars1, len1,
                                                  (const char*)chars2, len2, &status);
-#endif
         if (U_FAILURE(status))
             Warn("Unicode collation failed with ICU status %d", status);
         return result;

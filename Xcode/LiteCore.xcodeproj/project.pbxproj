@@ -198,7 +198,6 @@
 		2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */; };
 		2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
 		2762A01622EB826B00F9AB18 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
-		276301131F2FE960004A1592 /* UnicodeCollator_ICU.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276301121F2FE960004A1592 /* UnicodeCollator_ICU.cc */; };
 		2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2763011A1F32A7FD004A1592 /* UnicodeCollator_Stub.cc */; };
 		2763012B1F3A36BD004A1592 /* StringUtil_Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2763012A1F3A36BD004A1592 /* StringUtil_Apple.mm */; };
 		276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
@@ -1150,7 +1149,6 @@
 		2762A01C22EB933100F9AB18 /* mbedUtils.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mbedUtils.cc; sourceTree = "<group>"; };
 		2762A01F22EF641900F9AB18 /* Defer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Defer.hh; sourceTree = "<group>"; };
 		2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "PublicKey+Apple.mm"; sourceTree = "<group>"; };
-		276301121F2FE960004A1592 /* UnicodeCollator_ICU.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_ICU.cc; sourceTree = "<group>"; };
 		2763011A1F32A7FD004A1592 /* UnicodeCollator_Stub.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_Stub.cc; sourceTree = "<group>"; };
 		2763011E1F338B77004A1592 /* wiki */ = {isa = PBXFileReference; lastKnownFileType = folder; name = wiki; path = ../wiki; sourceTree = "<group>"; };
 		276301261F394407004A1592 /* UnicodeCollator_winapi.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_winapi.cc; sourceTree = "<group>"; };
@@ -2834,7 +2832,6 @@
 				27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */,
 				27ADA7881F2AB6C800D9DE25 /* UnicodeCollator.hh */,
 				27ADA7871F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc */,
-				276301121F2FE960004A1592 /* UnicodeCollator_ICU.cc */,
 				2763011A1F32A7FD004A1592 /* UnicodeCollator_Stub.cc */,
 				276301261F394407004A1592 /* UnicodeCollator_winapi.cc */,
 				2791EA1320326F7100BD813C /* SQLiteChooser.c */,
@@ -4214,7 +4211,6 @@
 				27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */,
 				2744B35B241854F2005A194D /* MessageBuilder.cc in Sources */,
 				2744B356241854F2005A194D /* GCDMailbox.cc in Sources */,
-				276301131F2FE960004A1592 /* UnicodeCollator_ICU.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */,
