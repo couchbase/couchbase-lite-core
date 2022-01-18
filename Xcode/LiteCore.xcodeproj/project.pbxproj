@@ -160,6 +160,7 @@
 		27469D08233D719800A1EE1A /* PublicKey+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */; };
 		27469D09233D719800A1EE1A /* mbedUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01C22EB933100F9AB18 /* mbedUtils.cc */; };
 		2746C8E62639E88700A3B2CC /* ThreadUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2746C8E52639E88700A3B2CC /* ThreadUtil.cc */; };
+		2747A1BE2798847300F286AF /* SignatureTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2747A1BD2798847300F286AF /* SignatureTest.cc */; };
 		27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */; };
 		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		274B36D225B271F7001FC28D /* Version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274B36D125B271F7001FC28D /* Version.cc */; };
@@ -1047,6 +1048,7 @@
 		2747664520190841007B39D1 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2747664720190841007B39D1 /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite3.c; sourceTree = "<group>"; };
 		2747664820190841007B39D1 /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sqlite3.h; sourceTree = "<group>"; };
+		2747A1BD2798847300F286AF /* SignatureTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SignatureTest.cc; sourceTree = "<group>"; };
 		27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VectorRecordTest.cc; sourceTree = "<group>"; };
 		27491C9A1E7B1001001DC54B /* c4Socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Socket.h; sourceTree = "<group>"; };
 		27491C9E1E7B2532001DC54B /* c4Socket.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Socket.cc; sourceTree = "<group>"; };
@@ -2322,6 +2324,7 @@
 			isa = PBXGroup;
 			children = (
 				2762A01422EB7CC800F9AB18 /* CertificateTest.cc */,
+				2747A1BD2798847300F286AF /* SignatureTest.cc */,
 			);
 			name = tests;
 			sourceTree = "<group>";
@@ -3946,6 +3949,7 @@
 				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
 				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
 				27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */,
+				2747A1BE2798847300F286AF /* SignatureTest.cc in Sources */,
 				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				27AFF3BB2303759400B4D6C4 /* ReplicatorSGTest.cc in Sources */,
 				27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */,

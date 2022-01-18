@@ -12,6 +12,7 @@
 
 #include "mbedtls/config.h"
 #include "PublicKey.hh"
+#include "SecureRandomize.hh"
 #include "TLSContext.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -78,9 +79,34 @@ namespace litecore { namespace crypto {
     }
 
 
+#pragma mark - PUBLIC KEY:
+
+
     PublicKey::PublicKey(slice data) {
         parsePEMorDER(data, "public key", context(), &mbedtls_pk_parse_public_key);
     }
+
+
+    static int rngFunction(void *ctx, unsigned char *dst, size_t size) {
+        SecureRandomize({dst, size});
+        return 0;
+    }
+
+
+    bool PublicKey::verifySignature(const SHA256 &inputDigest, slice signature) {
+        int result = mbedtls_pk_verify(context(),
+                                       MBEDTLS_MD_SHA256, // declares that input is a SHA256 digest.
+                                       (const uint8_t*)inputDigest.asSlice().buf,
+                                       inputDigest.asSlice().size,
+                                       (const uint8_t*)signature.buf, signature.size);
+        if (result == MBEDTLS_ERR_RSA_VERIFY_FAILED)
+            return false;
+        TRY(result);        // other error codes throw exceptions
+        return true;
+    }
+
+
+#pragma mark - PRIVATE KEY:
 
 
     PrivateKey::PrivateKey(slice data, slice password) {
@@ -123,7 +149,19 @@ namespace litecore { namespace crypto {
             default:
                 Assert(false, "Invalid key format received (%d)", (int)format);
         }
+    }
 
+
+    alloc_slice PrivateKey::sign(const SHA256 &inputDigest) {
+        alloc_slice signature(MBEDTLS_PK_SIGNATURE_MAX_SIZE);
+        size_t sigLen = 0;
+        TRY(mbedtls_pk_sign(context(),
+                            MBEDTLS_MD_SHA256,  // declares that input is a SHA256 digest.
+                            (const uint8_t*)inputDigest.asSlice().buf, inputDigest.asSlice().size,
+                            (uint8_t*)signature.buf, &sigLen,
+                            rngFunction, nullptr));
+        signature.shorten(sigLen);
+        return signature;
     }
 
 

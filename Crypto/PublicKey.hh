@@ -75,6 +75,16 @@ namespace litecore { namespace crypto {
 
         virtual bool isPrivate() override       {return false;}
 
+        /** Checks whether `signature` is a valid signature, created by my matching private key,
+            of the given SHA256 digest. */
+        virtual bool verifySignature(const SHA256 &inputDigest, fleece::slice signature);
+
+        /** Checks whether `signature` is a valid signature, created by my matching private key,
+            of a SHA256 digest of the input data. */
+        bool verifySignature(fleece::slice inputData, fleece::slice signature) {
+            return verifySignature(SHA256(inputData), signature);
+        }
+
     protected:
         friend class CertBase;
         
@@ -113,6 +123,12 @@ namespace litecore { namespace crypto {
         fleece::Retained<PublicKey> publicKey() {
             return new PublicKey(publicKeyData(KeyFormat::Raw));
         }
+
+        /** Generates a signature of a SHA256 digest. */
+        virtual fleece::alloc_slice sign(const SHA256 &inputDigest);
+
+        /** Generates a signature of a SHA256 digest of the input data. */
+        fleece::alloc_slice sign(fleece::slice inputData)   {return sign(SHA256(inputData));}
 
     protected:
         PrivateKey()                                    =default;
