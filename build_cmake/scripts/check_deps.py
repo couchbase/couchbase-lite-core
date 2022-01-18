@@ -124,7 +124,11 @@ def main(dir: str, branch: str):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Validate submodules for PR')
     parser.add_argument('branch', type=str, help="The branch to check for in non-couchbasedep repos")
-
+    parser.add_argument('--dir', type=str, nargs='?', help="The directory to check for in non-couchbasedep repos")
+    
     args = parser.parse_args()
-    input_dir = os.path.dirname(os.path.realpath(__file__)) + os.sep + ".." + os.sep + ".." + os.sep
+    if args.dir:
+        input_dir = os.path.realpath(args.dir) + os.sep
+    else:
+        input_dir = os.path.dirname(os.path.realpath(__file__)) + os.sep + ".." + os.sep + ".." + os.sep
     sys.exit(main(input_dir, args.branch))
