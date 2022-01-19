@@ -26,4 +26,4 @@ jobs:
       working-directory: ${{github.workspace}}/build_cmake/scripts
       run: |
         pip install termcolor
-        ./check_deps.py -branch $GITHUB_BASE_REF -path ${{github.workspace}}
+        ./check_deps.py -branch $GITHUB_BASE_REF -path ${{github.workspace}}/
