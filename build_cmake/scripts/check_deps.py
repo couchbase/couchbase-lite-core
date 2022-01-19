@@ -124,7 +124,7 @@ def main(dir: str, branch: str):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Validate submodules for PR')
     parser.add_argument('branch', type=str, help="The branch to check for in non-couchbasedep repos")
-    parser.add_argument('--dir', type=str, nargs='?', help="The directory to check for in non-couchbasedep repos")
+    parser.add_argument('--dir', type=str, nargs='?', help="The working directory for the git repo to be evaluated")
     
     args = parser.parse_args()
     if args.dir:
