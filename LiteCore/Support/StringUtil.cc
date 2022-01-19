@@ -263,7 +263,7 @@ namespace litecore {
     }
 
 
-#if !__APPLE__ && !defined(_MSC_VER) && !LITECORE_USES_ICU    // TODO: Full implementation of UTF8ChangeCase for other platforms (see StringUtil_Apple.mm)
+#if !__APPLE__ && !defined(_MSC_VER) && !LITECORE_USES_ICU
 
     // Stub implementation for when case conversion is unavailable
     alloc_slice UTF8ChangeCase(slice str, bool toUppercase) {
