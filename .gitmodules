@@ -22,3 +22,6 @@
 [submodule "vendor/sqlite3-unicodesn"]
 	path = vendor/sqlite3-unicodesn
 	url = https://github.com/couchbasedeps/sqlite3-unicodesn
+[submodule "vendor/monocypher-cpp"]
+	path = vendor/monocypher-cpp
+	url = https://github.com/snej/monocypher-cpp.git

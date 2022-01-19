@@ -11,9 +11,11 @@
 //
 
 #include "PublicKey.hh"
+#include "SignedDict.hh"
 #include "Base64.hh"
 #include "Error.hh"
 #include "LiteCoreTest.hh"
+#include "fleece/Mutable.hh"
 #include <iostream>
 
 
@@ -45,4 +47,62 @@ TEST_CASE("RSA Signatures", "[Signatures]") {
     // Verification fails with altered signature:
     ((uint8_t&)signature[100])++;
     CHECK(!key->publicKey()->verifySignature(kDataToSign, signature));
+}
+
+
+TEST_CASE("Signed Document", "[Signatures]") {
+    bool embedKey = GENERATE(false, true);
+    cout << "---- Embed key in signature = " << embedKey << endl;
+
+    // Create a signed doc and convert to JSON:
+    alloc_slice publicKeyData;
+    string json;
+    {
+        auto priv = Ed25519SigningKey::generate();
+        auto pub  = priv.publicKey();
+        publicKeyData = pub.data();
+
+        MutableDict doc = MutableDict::newDict();
+        doc["name"] = "Oliver Bolliver Butz";
+        doc["age"]  = 6;
+        cout << "Document: " << doc.toJSONString() << endl;
+
+        MutableDict sig = makeSignature(doc, priv, 5 /*minutes*/, embedKey);
+        REQUIRE(sig);
+        string sigJson = sig.toJSONString();
+        cout << "Signature, " << sigJson.size() << " bytes: " << sigJson << endl;
+
+        CHECK(verifySignature(doc, sig, &pub) == VerifyResult::Valid);
+
+        doc["(sig)"] = sig;             // <-- add signature to doc, in "(sig)" property
+        json = doc.toJSONString();
+    }
+    cout << "Signed Document: " << json << endl;
+
+    // Now parse the JSON and verify the signature:
+    {
+        Doc parsedDoc = Doc::fromJSON(json);
+        Dict doc = parsedDoc.asDict();
+        Dict sig = doc["(sig)"].asDict();
+        REQUIRE(sig);
+
+        auto parsedKey = getSignaturePublicKey(sig, "Ed25519");
+        if (embedKey) {
+            REQUIRE(parsedKey);
+            CHECK(parsedKey->data() == publicKeyData);
+        } else {
+            CHECK(!parsedKey);
+            parsedKey = make_unique<Ed25519VerifyingKey>(publicKeyData);
+        }
+
+        MutableDict unsignedDoc = doc.mutableCopy();
+        unsignedDoc.remove("(sig)");    // <-- detach signature to restore doc to signed form
+
+        if (embedKey)
+            CHECK(verifySignature(unsignedDoc, sig) == VerifyResult::Valid);
+        else
+            CHECK(verifySignature(unsignedDoc, sig) == VerifyResult::MissingKey);
+
+        CHECK(verifySignature(unsignedDoc, sig, parsedKey.get()) == VerifyResult::Valid);
+    }
 }

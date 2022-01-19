@@ -160,7 +160,16 @@
 		27469D08233D719800A1EE1A /* PublicKey+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */; };
 		27469D09233D719800A1EE1A /* mbedUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01C22EB933100F9AB18 /* mbedUtils.cc */; };
 		2746C8E62639E88700A3B2CC /* ThreadUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2746C8E52639E88700A3B2CC /* ThreadUtil.cc */; };
+		2747A0A327963F0B00F286AF /* SignedDict.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2747A09E27963F0A00F286AF /* SignedDict.cc */; };
+		2747A1B327975EBE00F286AF /* monocypher-ed25519.c in Sources */ = {isa = PBXBuildFile; fileRef = 2747A18427975EBE00F286AF /* monocypher-ed25519.c */; };
+		2747A1B427975EBE00F286AF /* monocypher.c in Sources */ = {isa = PBXBuildFile; fileRef = 2747A18527975EBE00F286AF /* monocypher.c */; };
+		2747A1B527975EBE00F286AF /* chacha20.c in Sources */ = {isa = PBXBuildFile; fileRef = 2747A18827975EBE00F286AF /* chacha20.c */; };
+		2747A1B627975EBE00F286AF /* aead-incr.c in Sources */ = {isa = PBXBuildFile; fileRef = 2747A18927975EBE00F286AF /* aead-incr.c */; };
+		2747A1BA27975F1C00F286AF /* Monocypher-ed25519.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2747A1B827975F1C00F286AF /* Monocypher-ed25519.cc */; };
+		2747A1BB27975F1C00F286AF /* Monocypher.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2747A1B927975F1C00F286AF /* Monocypher.cc */; };
 		2747A1BE2798847300F286AF /* SignatureTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2747A1BD2798847300F286AF /* SignatureTest.cc */; };
+		2747A1C12798920600F286AF /* Signing.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2747A1C02798920600F286AF /* Signing.cc */; };
+		2747A1C22798920600F286AF /* Signing.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2747A1C02798920600F286AF /* Signing.cc */; };
 		27480E37253A5D9C0091CF37 /* VectorRecordTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */; };
 		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		274B36D225B271F7001FC28D /* Version.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274B36D125B271F7001FC28D /* Version.cc */; };
@@ -1048,7 +1057,25 @@
 		2747664520190841007B39D1 /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2747664720190841007B39D1 /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite3.c; sourceTree = "<group>"; };
 		2747664820190841007B39D1 /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sqlite3.h; sourceTree = "<group>"; };
+		2747A09E27963F0A00F286AF /* SignedDict.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SignedDict.cc; sourceTree = "<group>"; };
+		2747A0A227963F0B00F286AF /* SignedDict.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SignedDict.hh; sourceTree = "<group>"; };
+		2747A0A527975EBD00F286AF /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		2747A0AB27975EBD00F286AF /* Monocypher.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Monocypher.hh; sourceTree = "<group>"; };
+		2747A0AD27975EBD00F286AF /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		2747A18127975EBE00F286AF /* monocypher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = monocypher.h; sourceTree = "<group>"; };
+		2747A18327975EBE00F286AF /* monocypher-ed25519.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "monocypher-ed25519.h"; sourceTree = "<group>"; };
+		2747A18427975EBE00F286AF /* monocypher-ed25519.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "monocypher-ed25519.c"; sourceTree = "<group>"; };
+		2747A18527975EBE00F286AF /* monocypher.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = monocypher.c; sourceTree = "<group>"; };
+		2747A18727975EBE00F286AF /* aead-incr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "aead-incr.h"; sourceTree = "<group>"; };
+		2747A18827975EBE00F286AF /* chacha20.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = chacha20.c; sourceTree = "<group>"; };
+		2747A18927975EBE00F286AF /* aead-incr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "aead-incr.c"; sourceTree = "<group>"; };
+		2747A18A27975EBE00F286AF /* chacha20.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = chacha20.h; sourceTree = "<group>"; };
+		2747A1B827975F1C00F286AF /* Monocypher-ed25519.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "Monocypher-ed25519.cc"; sourceTree = "<group>"; };
+		2747A1B927975F1C00F286AF /* Monocypher.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Monocypher.cc; sourceTree = "<group>"; };
+		2747A1BC27975F9E00F286AF /* Monocypher-ed25519.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = "Monocypher-ed25519.hh"; sourceTree = "<group>"; };
 		2747A1BD2798847300F286AF /* SignatureTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SignatureTest.cc; sourceTree = "<group>"; };
+		2747A1BF2798920600F286AF /* Signing.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Signing.hh; sourceTree = "<group>"; };
+		2747A1C02798920600F286AF /* Signing.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Signing.cc; sourceTree = "<group>"; };
 		27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VectorRecordTest.cc; sourceTree = "<group>"; };
 		27491C9A1E7B1001001DC54B /* c4Socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Socket.h; sourceTree = "<group>"; };
 		27491C9E1E7B2532001DC54B /* c4Socket.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Socket.cc; sourceTree = "<group>"; };
@@ -2132,6 +2159,83 @@
 			path = sqlite3;
 			sourceTree = "<group>";
 		};
+		2747A0A427975EBD00F286AF /* monocypher-cpp */ = {
+			isa = PBXGroup;
+			children = (
+				2747A0AD27975EBD00F286AF /* README.md */,
+				2747A0A527975EBD00F286AF /* CMakeLists.txt */,
+				2747A0AA27975EBD00F286AF /* include */,
+				2747A1B727975F1B00F286AF /* src */,
+				2747A0B327975EBD00F286AF /* vendor */,
+			);
+			path = "monocypher-cpp";
+			sourceTree = "<group>";
+		};
+		2747A0AA27975EBD00F286AF /* include */ = {
+			isa = PBXGroup;
+			children = (
+				2747A0AB27975EBD00F286AF /* Monocypher.hh */,
+				2747A1BC27975F9E00F286AF /* Monocypher-ed25519.hh */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		2747A0B327975EBD00F286AF /* vendor */ = {
+			isa = PBXGroup;
+			children = (
+				2747A0B427975EBD00F286AF /* monocypher */,
+			);
+			path = vendor;
+			sourceTree = "<group>";
+		};
+		2747A0B427975EBD00F286AF /* monocypher */ = {
+			isa = PBXGroup;
+			children = (
+				2747A18027975EBE00F286AF /* src */,
+			);
+			path = monocypher;
+			sourceTree = "<group>";
+		};
+		2747A18027975EBE00F286AF /* src */ = {
+			isa = PBXGroup;
+			children = (
+				2747A18127975EBE00F286AF /* monocypher.h */,
+				2747A18227975EBE00F286AF /* optional */,
+				2747A18527975EBE00F286AF /* monocypher.c */,
+				2747A18627975EBE00F286AF /* deprecated */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		2747A18227975EBE00F286AF /* optional */ = {
+			isa = PBXGroup;
+			children = (
+				2747A18327975EBE00F286AF /* monocypher-ed25519.h */,
+				2747A18427975EBE00F286AF /* monocypher-ed25519.c */,
+			);
+			path = optional;
+			sourceTree = "<group>";
+		};
+		2747A18627975EBE00F286AF /* deprecated */ = {
+			isa = PBXGroup;
+			children = (
+				2747A18727975EBE00F286AF /* aead-incr.h */,
+				2747A18827975EBE00F286AF /* chacha20.c */,
+				2747A18927975EBE00F286AF /* aead-incr.c */,
+				2747A18A27975EBE00F286AF /* chacha20.h */,
+			);
+			path = deprecated;
+			sourceTree = "<group>";
+		};
+		2747A1B727975F1B00F286AF /* src */ = {
+			isa = PBXGroup;
+			children = (
+				2747A1B827975F1C00F286AF /* Monocypher-ed25519.cc */,
+				2747A1B927975F1C00F286AF /* Monocypher.cc */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
 		274D03FF1BA7554700FF7C35 /* tests */ = {
 			isa = PBXGroup;
 			children = (
@@ -2308,6 +2412,10 @@
 				2762A01822EB92B900F9AB18 /* PublicKey.cc */,
 				2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */,
 				2743E31425F81406006F696D /* PublicKey+Windows.cc */,
+				2747A1BF2798920600F286AF /* Signing.hh */,
+				2747A1C02798920600F286AF /* Signing.cc */,
+				2747A0A227963F0B00F286AF /* SignedDict.hh */,
+				2747A09E27963F0A00F286AF /* SignedDict.cc */,
 				2762A01B22EB933100F9AB18 /* mbedUtils.hh */,
 				2762A01C22EB933100F9AB18 /* mbedUtils.cc */,
 				2716F91D248578D000BE21D9 /* mbedSnippets.hh */,
@@ -2848,6 +2956,7 @@
 				277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */,
 				275E6B9C22C2A3860032362A /* ios-cmake */,
 				2771A01F2284EA9F00B18E0A /* mbedtls */,
+				2747A0A427975EBD00F286AF /* monocypher-cpp */,
 				27AFF38F23036A7100B4D6C4 /* socketpp */,
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
 				27D74A731D4D3F0700D806E0 /* SQLiteCpp */,
@@ -3946,6 +4055,7 @@
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
 				2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
+				2747A1C22798920600F286AF /* Signing.cc in Sources */,
 				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
 				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
 				27AFF3BA2303758E00B4D6C4 /* ReplicatorAPITest.cc in Sources */,
@@ -4213,6 +4323,7 @@
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				27FC8DB622135BCE0083B033 /* ChangesFeed.cc in Sources */,
 				27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */,
+				2747A1B327975EBE00F286AF /* monocypher-ed25519.c in Sources */,
 				2744B35B241854F2005A194D /* MessageBuilder.cc in Sources */,
 				2744B356241854F2005A194D /* GCDMailbox.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
@@ -4221,6 +4332,7 @@
 				27469D08233D719800A1EE1A /* PublicKey+Apple.mm in Sources */,
 				274B36D225B271F7001FC28D /* Version.cc in Sources */,
 				2744B351241854F2005A194D /* WebSocketImpl.cc in Sources */,
+				2747A0A327963F0B00F286AF /* SignedDict.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				2744B354241854F2005A194D /* Actor.cc in Sources */,
 				2705154D1D8CBE6C00D62D05 /* c4Query.cc in Sources */,
@@ -4228,6 +4340,7 @@
 				275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */,
 				2746C8E62639E88700A3B2CC /* ThreadUtil.cc in Sources */,
 				2744B34F241854F2005A194D /* Headers.cc in Sources */,
+				2747A1C12798920600F286AF /* Signing.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
 				275E9905238360B200EA516B /* Checkpointer.cc in Sources */,
 				275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */,
@@ -4235,7 +4348,9 @@
 				27FA568424AD0E9300B2F1F8 /* Pusher+Attachments.cc in Sources */,
 				93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */,
 				27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
+				2747A1B527975EBE00F286AF /* chacha20.c in Sources */,
 				2744B350241854F2005A194D /* WebSocketInterface.cc in Sources */,
+				2747A1B627975EBE00F286AF /* aead-incr.c in Sources */,
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 				274D17822177ECCC007FD01A /* QueryParser+Prediction.cc in Sources */,
 				27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */,
@@ -4251,6 +4366,7 @@
 				2743E35625F85F26006F696D /* c4Replicator_CAPI.cc in Sources */,
 				27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */,
 				27E4872B1923F24D007D8940 /* RevTreeRecord.cc in Sources */,
+				2747A1BB27975F1C00F286AF /* Monocypher.cc in Sources */,
 				27229278260D1ADF00A3A41F /* c4Collection.cc in Sources */,
 				276CE6832267991500B681AC /* n1ql.cc in Sources */,
 				93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */,
@@ -4276,6 +4392,7 @@
 				2716F91F248578D000BE21D9 /* mbedSnippets.cc in Sources */,
 				27229215260AB89900A3A41F /* BlobStreams.cc in Sources */,
 				272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */,
+				2747A1BA27975F1C00F286AF /* Monocypher-ed25519.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */,
 				27E3DD581DB8524300F2872D /* DatabaseImpl.cc in Sources */,
@@ -4310,6 +4427,7 @@
 				27F0426C2196264900D7C6FA /* SQLiteDataFile+Indexes.cc in Sources */,
 				27FA568924AD0F8E00B2F1F8 /* Pusher+Revs.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
+				2747A1B427975EBE00F286AF /* monocypher.c in Sources */,
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,
 				93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */,
 				27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */,
