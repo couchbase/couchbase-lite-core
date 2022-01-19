@@ -1,3 +1,5 @@
+#if LITECORE_USES_ICU
+
 #include <unicode/ucol.h>
 #include <unicode/ucasemap.h>
 
@@ -16,4 +18,6 @@ void lc_ucasemap_close(UCaseMap* csm);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

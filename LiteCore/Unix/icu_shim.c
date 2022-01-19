@@ -16,6 +16,8 @@
  * Modified for use on Linux Desktop by Jim Borden <jim.borden@couchbase.com>
  */
 
+#if LITECORE_USES_ICU
+
 #include "icu_shim.h"
 #include <ctype.h>
 #include <dirent.h>
@@ -392,3 +394,4 @@ int32_t lc_ucasemap_utf8ToUpper(const UCaseMap* csm, char* dest, int32_t destCap
 }
 
 #undef LOCAL_INLINE
+#endif
