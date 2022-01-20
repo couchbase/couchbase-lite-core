@@ -260,6 +260,14 @@ void C4Database::clearCookies() {
 #pragma mark - COLLECTIONS:
 
 
+void C4Database::forEachCollection(C4ScopeID inScope, const CollectionCallback &cb) const {
+    forEachCollection([&](slice name, C4ScopeID scope) {
+        if (scope == inScope)
+            cb(name);
+    });
+}
+
+
 #ifndef C4_STRICT_COLLECTION_API
 
 #include "c4Document.hh"

@@ -11,6 +11,7 @@
 //
 
 #include "QueryParserTest.hh"
+#include "c4DatabaseTypes.h"    // for kC4DefaultCollectionName
 #include "FleeceImpl.hh"
 #include "Error.hh"
 #include <vector>
@@ -19,11 +20,10 @@ using namespace std;
 
 
 static constexpr const char* kDefaultTableName = "kv_default";
-static constexpr const char* kDefaultCollectionName = "_default";
 
 
 string QueryParserTest::parse(FLValue val) {
-    QueryParser qp(*this, kDefaultCollectionName, kDefaultTableName);
+    QueryParser qp(*this, string(kC4DefaultCollectionName), kDefaultTableName);
     qp.parse((const fleece::impl::Value*)val);
     usedTableNames = qp.collectionTablesUsed();
     return qp.SQL();
@@ -35,7 +35,7 @@ string QueryParserTest::parse(string json) {
 }
 
 string QueryParserTest::parseWhere(string json) {
-    QueryParser qp(*this, kDefaultCollectionName, kDefaultTableName);
+    QueryParser qp(*this, string(kC4DefaultCollectionName), kDefaultTableName);
     alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
     qp.parseJustExpression(fleece::impl::Value::fromTrustedData(fleece));
     usedTableNames = qp.collectionTablesUsed();
@@ -43,7 +43,7 @@ string QueryParserTest::parseWhere(string json) {
 }
 
 void QueryParserTest::mustFail(string json) {
-    QueryParser qp(*this, kDefaultCollectionName, kDefaultTableName);
+    QueryParser qp(*this, string(kC4DefaultCollectionName), kDefaultTableName);
     alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
     ExpectException(error::LiteCore, error::InvalidQuery, [&]{
         qp.parseJustExpression(fleece::impl::Value::fromTrustedData(fleece));

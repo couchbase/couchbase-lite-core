@@ -13,6 +13,8 @@
 #include "c4Collection.hh"
 #include "c4Database.hh"
 #include "c4Test.hh"
+#include "Delimiter.hh"
+#include <sstream>
 
 using namespace std;
 
@@ -25,6 +27,26 @@ class C4CollectionTest : public C4Test {
 public:
 
     C4CollectionTest(int testOption) :C4Test(testOption) { }
+
+    string getCollectionNames(C4ScopeID inScope) {
+        stringstream result;
+        delimiter delim(", ");
+        db->forEachCollection(inScope, [&](slice name) {
+            result << delim << string_view(name);
+        });
+        return result.str();
+    }
+
+
+    string getScopeNames() {
+        stringstream result;
+        delimiter delim(", ");
+        db->forEachScope([&](slice name) {
+            result << delim << string_view(name);
+        });
+        return result.str();
+    }
+
 
     void addNumberedDocs(C4Collection *coll, unsigned n, unsigned start = 1) {
         for (unsigned i = 0; i < n; i++) {
@@ -48,13 +70,14 @@ public:
 
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Collection][C]") {
-    CHECK(db->getCollectionNames() == (vector<string>{"_default"}));
-    CHECK(db->hasCollection("_default"));
+    CHECK(getScopeNames() == "_default");
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
+    CHECK(db->hasCollection("_default", kC4DefaultScopeID));
 
     C4Collection* dflt = db->getDefaultCollection();
     REQUIRE(dflt);
     CHECK(dflt == db->getDefaultCollection());              // Must be idempotent!
-    CHECK(dflt == db->getCollection("_default"));
+    CHECK(dflt == db->getCollection("_default", kC4DefaultScopeID));
 
     CHECK(dflt->getName() == "_default");
     CHECK(dflt->getDatabase() == db);
@@ -64,31 +87,22 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     // since they call the c4Database C functions which are wrappers that indirect through
     // db->getDefaultCollection().
 
-    vector<C4Collection*> eachCollection;
-    db->forEachCollection([&](C4Collection *coll) { eachCollection.push_back(coll); });
-    CHECK(eachCollection.size() == 1);
-    CHECK(eachCollection[0] == dflt);
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
 }
 
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Collection][C]") {
-    CHECK(!db->hasCollection("guitars"));
-    CHECK(db->getCollection("guitars") == nullptr);
+    CHECK(!db->hasCollection("guitars", kC4DefaultScopeID));
+    CHECK(db->getCollection("guitars", kC4DefaultScopeID) == nullptr);
 
     // Create "guitars" collection:
-    C4Collection* guitars = db->createCollection("guitars");
-    CHECK(guitars == db->getCollection("guitars"));
+    C4Collection* guitars = db->createCollection("guitars", kC4DefaultScopeID);
+    CHECK(guitars == db->getCollection("guitars", kC4DefaultScopeID));
 
-    CHECK(db->getCollectionNames() == (vector<string>{"_default", "guitars"}));
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "_default, guitars");
 
     C4Collection* dflt = db->getDefaultCollection();
     CHECK(dflt != guitars);
-
-    vector<C4Collection*> eachCollection;
-    db->forEachCollection([&](C4Collection *coll) { eachCollection.push_back(coll); });
-    CHECK(eachCollection.size() == 2);
-    CHECK(eachCollection[0] == dflt);
-    CHECK(eachCollection[1] == guitars);
 
     // Put some stuff in the default collection
     createNumberedDocs(100);
@@ -101,16 +115,16 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Lifecycle", "[Database][Col
     CHECK(guitars->getDocumentCount() == 0);
     CHECK(guitars->getLastSequence() == 0_seq);
 
-    db->deleteCollection("guitars");
-    CHECK(!db->hasCollection("guitars"));
-    CHECK(db->getCollection("guitars") == nullptr);
-    CHECK(db->getCollectionNames() == (vector<string>{"_default"}));
+    db->deleteCollection("guitars", kC4DefaultScopeID);
+    CHECK(!db->hasCollection("guitars", kC4DefaultScopeID));
+    CHECK(db->getCollection("guitars", kC4DefaultScopeID) == nullptr);
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
 }
 
 
 N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Collection Create Docs", "[Database][Collection][C]") {
     // Create "guitars" collection:
-    C4Collection* guitars = db->createCollection("guitars");
+    C4Collection* guitars = db->createCollection("guitars", kC4DefaultScopeID);
     C4Collection* dflt = db->getDefaultCollection();
 
     // Add 100 documents to it:

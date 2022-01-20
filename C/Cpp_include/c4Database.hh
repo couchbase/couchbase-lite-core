@@ -85,34 +85,42 @@ public:
     virtual C4UUID getPublicUUID() const =0;
     virtual C4UUID getPrivateUUID() const =0;
 
+    // Scopes:
+
+    using ScopeCallback = fleece::function_ref<void(C4ScopeID)>;
+
+    /// Calls the callback function for each scope ID, in the same order as getScopeIDs().
+    virtual void forEachScope(const ScopeCallback&) const =0;
+
     // Collections:
 
     /// Returns the default collection that exists in every database.
     /// In a pre-existing database, this collection contains all docs that were added to
     /// "the database" before collections existed.
-    /// Its name is "_default".
+    /// Its name is "_default" (`kC4DefaultCollectionName`).
     C4Collection* getDefaultCollection() const              {return _defaultCollection;}
 
     /// Returns true if the collection exists.
-    virtual bool hasCollection(slice name) const =0;
+    virtual bool hasCollection(slice name, C4ScopeID) const =0;
 
     /// Returns the existing collection with the given name, or nullptr if it doesn't exist.
-    virtual C4Collection* getCollection(slice name) const =0;
+    virtual C4Collection* getCollection(slice name, C4ScopeID) const =0;
 
     /// Creates and returns an empty collection with the given name,
     /// or returns an existing collection by that name.
-    virtual C4Collection* createCollection(slice name) =0;
+    virtual C4Collection* createCollection(slice name, C4ScopeID) =0;
 
     /// Deletes the collection with the given name.
-    virtual void deleteCollection(slice name) =0;
+    virtual void deleteCollection(slice name, C4ScopeID) =0;
 
-    /// Returns the names of all existing collections, in the order in which they were created.
-    virtual std::vector<std::string> getCollectionNames() const =0;
+    using CollectionCallback = fleece::function_ref<void(slice)>;
+    using CollectionSpecCallback = fleece::function_ref<void(slice,C4ScopeID)>;
 
-    using CollectionCallback = fleece::function_ref<void(C4Collection*)>;
+    /// Calls the callback function for each collection in the scope, in the order created.
+    void forEachCollection(C4ScopeID, const CollectionCallback&) const;
 
-    /// Calls the callback function for each collection, in the same order as collectionNames().
-    virtual void forEachCollection(const CollectionCallback&) const =0;
+    /// Calls the callback function for each collection _in each scope_.
+    virtual void forEachCollection(const CollectionSpecCallback&) const =0;
 
 #ifndef C4_STRICT_COLLECTION_API
     // Shims to ease the pain of converting to collections. These delegate to the default collection.

@@ -83,6 +83,19 @@ typedef struct C4UUID {
 
 
 /** @} */
+/** \name Scopes and Collections
+    @{ */
+
+
+/** The name of a scope (a namespace of collections.) */
+typedef C4Slice C4ScopeID;
+
+#define kC4DefaultScopeID FLSTR("_default")
+
+#define kC4DefaultCollectionName FLSTR("_default")
+
+
+/** @} */
 /** \name Database Maintenance
     @{ */
 

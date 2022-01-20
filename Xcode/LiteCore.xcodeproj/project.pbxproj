@@ -1227,7 +1227,6 @@
 		279DE3DD24788A030059AE4E /* c4_ee.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = c4_ee.txt; path = scripts/c4_ee.txt; sourceTree = "<group>"; };
 		27A16314201FC2A500C18D9C /* DataFile+Shared.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "DataFile+Shared.hh"; sourceTree = "<group>"; };
 		27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
-		27A83D4F269E35BC002B7EBA /* PropertyEncryption.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PropertyEncryption.cc; path = "../../../../CBL/couchbase-lite-core-EE/Replicator/PropertyEncryption.cc"; sourceTree = "<group>"; };
 		27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PropertyEncryptionTests.cc; sourceTree = "<group>"; };
 		27A83D57269F7DB2002B7EBA /* PropertyEncryption_stub.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PropertyEncryption_stub.cc; sourceTree = "<group>"; };
 		27A83D5C269F7F0E002B7EBA /* PropertyEncryption.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PropertyEncryption.hh; sourceTree = "<group>"; };

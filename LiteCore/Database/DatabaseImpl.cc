@@ -53,8 +53,8 @@ namespace litecore {
     static constexpr uint32_t kDefaultMaxRevTreeDepth = 20;
 
 
-    static string collectionNameToKeyStoreName(slice collectionName);
-    static slice keyStoreNameToCollectionName(slice name);
+    static string collectionNameToKeyStoreName(slice collectionName, C4ScopeID);
+    static DatabaseImpl::CollectionSpec keyStoreNameToCollectionSpec(slice name);
 
 
 #pragma mark - OPENING / CLOSING:
@@ -364,7 +364,7 @@ namespace litecore {
             return true;
         };
 
-        forEachCollection([&](C4Collection *coll) {
+        forAllCollections([&](C4Collection *coll) {
             asInternal(coll)->findBlobReferences(blobCallback);
         });
 
@@ -403,9 +403,9 @@ namespace litecore {
 
     void DatabaseImpl::startBackgroundTasks() {
         for (const string &name : _dataFile->allKeyStoreNames()) {
-            if (slice collName = keyStoreNameToCollectionName(name); collName) {
+            if (CollectionSpec coll = keyStoreNameToCollectionSpec(name); coll) {
                 if (_dataFile->getKeyStore(name).nextExpiration() > C4Timestamp::None) {
-                    asInternal(getCollection(collName))->startHousekeeping();
+                    asInternal(getCollection(coll.collection, coll.scope))->startHousekeeping();
                 }
             }
         }
@@ -414,7 +414,7 @@ namespace litecore {
 
     C4Timestamp DatabaseImpl::nextDocExpiration() const {
         C4Timestamp minTime = C4Timestamp::None;
-        forEachCollection([&](C4Collection *coll) {
+        forAllCollections([&](C4Collection *coll) {
             auto time = coll->nextDocExpiration();
             if (time > minTime || minTime == C4Timestamp::None)
                 minTime = time;
@@ -496,7 +496,7 @@ namespace litecore {
 
     static constexpr const char* kCollectionKeyStorePrefix = "coll_";
 
-    static constexpr const char* kDefaultCollectionName = "_default";
+    static constexpr char kScopeCollectionSeparator = '/';
 
     static constexpr slice kCollectionNameCharacterSet
                             = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_-%";
@@ -504,76 +504,95 @@ namespace litecore {
     MUST_USE_RESULT
     static bool collectionNameIsValid(slice name) {
         // Enforce CBServer collection name restrictions:
+        if (name == kC4DefaultCollectionName)
+            return true;
         return name.size >= 1 && name.size <= 30
             && !name.findByteNotIn(kCollectionNameCharacterSet)
             && name[0] != '_' && name[0] != '%';
     }
 
+    // Scope IDs have the same syntax as collection names.
+    MUST_USE_RESULT
+    static bool scopeIDIsValid(C4ScopeID id) { return collectionNameIsValid(id); }
 
-    static string collectionNameToKeyStoreName(slice collectionName) {
-        if (collectionName == kDefaultCollectionName) {
+
+    /// Given a collection name and scope ID, returns the name of its KeyStore.
+    /// Throws InvalidParameter if either is invalid.
+    static string collectionNameToKeyStoreName(slice collectionName, C4ScopeID scope) {
+        if (collectionName == kC4DefaultCollectionName && scope == kC4DefaultScopeID)
             return DataFile::kDefaultKeyStoreName;
-        } else if (collectionNameIsValid(collectionName)) {
-            // KeyStore name is "coll_" + name; SQLite table name will be "kv_coll_" + name
-            string result = kCollectionKeyStorePrefix;
-            result.append(collectionName);
-            return result;
-        } else {
-            return {};
+
+        if (!collectionNameIsValid(collectionName))
+            C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
+                           "Invalid collection name '%.*s'", SPLAT(collectionName));
+        if (!scopeIDIsValid(scope))
+            C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
+                           "Invalid scope name '%.*s'", SPLAT(scope));
+
+        // If collection ID is not default, it's prepended to the name with a '/' between.
+        // KeyStore name is "coll_" + name; SQLite table name will be "kv_coll_" + name
+        string result = kCollectionKeyStorePrefix;
+        if (scope != kC4DefaultScopeID) {
+            result.append(slice(scope));
+            result.append(1, kScopeCollectionSeparator);
         }
+        result.append(collectionName);
+        return result;
     }
 
 
-    static slice keyStoreNameToCollectionName(slice name) {
+    /// Given a KeyStore name, returns the scope ID and collection name.
+    /// If the KeyStore is not a collection, the collection & scope names will be `nullslice`.
+    static DatabaseImpl::CollectionSpec keyStoreNameToCollectionSpec(slice name) {
         if (name == DataFile::kDefaultKeyStoreName)
-            return kDefaultCollectionName;
+            return {slice(kC4DefaultCollectionName), kC4DefaultScopeID};
         else if (hasPrefix(name, kCollectionKeyStorePrefix)) {
             name.moveStart(strlen(kCollectionKeyStorePrefix));
-            return name;
+            C4ScopeID scope = kC4DefaultScopeID;
+            if (auto slash = name.findByte(kScopeCollectionSeparator)) {
+                scope = slice(name.buf, slash);
+                DebugAssert(scopeIDIsValid(scope));
+                name.setStart(slash + 1);
+            }
+            DebugAssert(collectionNameIsValid(name));
+            return {name, scope};
         } else {
-            return nullslice;
+            return {nullslice, nullslice};
         }
     }
 
 
     void DatabaseImpl::initCollections() {
         LOCK(_collectionsMutex);
-        _defaultCollection = createCollection(kDefaultCollectionName);
+        _defaultCollection = createCollection(kC4DefaultCollectionName, kC4DefaultScopeID);
     }
 
 
-    bool DatabaseImpl::hasCollection(slice name) const {
+    bool DatabaseImpl::hasCollection(slice name, C4ScopeID scope) const {
+        string keyStoreName = collectionNameToKeyStoreName(name, scope);
         LOCK(_collectionsMutex);
-        string keyStoreName = collectionNameToKeyStoreName(name);
-        return !keyStoreName.empty()
-            && (_collections.find(name) != _collections.end()
-                || _dataFile->keyStoreExists(keyStoreName));
+        return _collections.find(CollectionSpec{name,scope}) != _collections.end()
+                    || _dataFile->keyStoreExists(keyStoreName);
     }
 
 
-    C4Collection* DatabaseImpl::getCollection(slice name) const {
-        return const_cast<DatabaseImpl*>(this)->getOrCreateCollection(name, false);
+    C4Collection* DatabaseImpl::getCollection(slice name, C4ScopeID inScope) const {
+        return const_cast<DatabaseImpl*>(this)->getOrCreateCollection(name, inScope, false);
     }
 
-    C4Collection* DatabaseImpl::createCollection(slice name) {
-        return getOrCreateCollection(name, true);
+    C4Collection* DatabaseImpl::createCollection(slice name, C4ScopeID inScope) {
+        return getOrCreateCollection(name, inScope, true);
     }
 
     // This implements both the public getCollection() and createCollection()
-    C4Collection* DatabaseImpl::getOrCreateCollection(slice name, bool canCreate) {
-        LOCK(_collectionsMutex);
-        if (!name)
-            return _defaultCollection;                                      // -> Default coll.
-
+    C4Collection* DatabaseImpl::getOrCreateCollection(slice name, C4ScopeID inScope, bool canCreate) {
         // Is there already a C4Collection object for it in _collections?
-        if (auto i = _collections.find(name); i != _collections.end())
+        LOCK(_collectionsMutex);
+        if (auto i = _collections.find({name, inScope}); i != _collections.end())
             return i->second.get();                                         // -> Existing object
 
-        // Validate the name:
-        string keyStoreName = collectionNameToKeyStoreName(name);
-        if (keyStoreName.empty())
-            C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
-                           "Invalid collection name '%.*s'", SPLAT(name));  //-> THROW
+        // Validate the name (throws if invalid):
+        string keyStoreName = collectionNameToKeyStoreName(name, inScope);
 
         // Validate its existence, if canCreate is false:
         if (!canCreate && !_dataFile->keyStoreExists(keyStoreName))
@@ -581,61 +600,69 @@ namespace litecore {
 
         // Instantiate it, creating the KeyStore on-disk if necessary:
         KeyStore &store = _dataFile->getKeyStore(keyStoreName);
-        auto collection = make_unique<CollectionImpl>(this, name, store);
+        auto collection = make_unique<CollectionImpl>(this, inScope, name, store);
         // Update its state & add it to _collections:
         auto collectionPtr = collection.get();
-        _collections.insert({collection->getName(), move(collection)});
+        _collections.insert({CollectionSpec{collection->getName(), collection->getScope()},
+                             move(collection)});
         if (isInTransaction())
             collectionPtr->transactionBegan();
         return collectionPtr;                                               //-> New object
     }
 
 
-    void DatabaseImpl::deleteCollection(slice name) {
+    void DatabaseImpl::deleteCollection(slice name, C4ScopeID inScope) {
         Transaction t(this);
-
+        
         LOCK(_collectionsMutex);
-        if (auto i = _collections.find(name); i != _collections.end()) {
+        if (auto i = _collections.find({name, inScope}); i != _collections.end()) {
             asInternal(i->second.get())->close();
             _collections.erase(i);
         }
-        _dataFile->deleteKeyStore(collectionNameToKeyStoreName(name));
+        _dataFile->deleteKeyStore(collectionNameToKeyStoreName(name, inScope));
 
         t.commit();
     }
 
 
-    vector<string> DatabaseImpl::getCollectionNames() const {
-        vector<string> names;
+    void DatabaseImpl::forEachCollection(const CollectionSpecCallback &callback) const {
         for (const string &name : _dataFile->allKeyStoreNames()) {
-             if (slice collName = keyStoreNameToCollectionName(name); collName)
-                names.emplace_back(collName);
-        }
-        return names;
-    }
-
-
-    void DatabaseImpl::forEachCollection(const function_ref<void(C4Collection*)> &callback) const {
-        for (const auto &name : getCollectionNames()) {
-            callback(getCollection(name));
+            if (CollectionSpec spec = keyStoreNameToCollectionSpec(name))
+                callback(spec.collection, spec.scope);
         }
     }
 
 
-    void DatabaseImpl::forEachOpenCollection(const function_ref<void(C4Collection*)> &callback) const {
+    void DatabaseImpl::forAllCollections(const function_ref<void(C4Collection*)> &callback) const {
+        forEachCollection([&](slice name, C4ScopeID scope) {
+            callback(getCollection(name, scope));
+        });
+    }
+
+
+    void DatabaseImpl::forAllOpenCollections(const function_ref<void(C4Collection*)> &callback) const {
         LOCK(_collectionsMutex);
         for (auto &entry : _collections)
             callback(entry.second.get());
     }
 
-    
+
+    void DatabaseImpl::forEachScope(const ScopeCallback &callback) const {
+        unordered_set<slice> seenScopes;
+        forEachCollection([&](slice collectionName, C4ScopeID scope) {
+            if (seenScopes.insert(scope).second)
+                callback(scope);
+        });
+    }
+
+
 #pragma mark - TRANSACTIONS:
 
 
     void DatabaseImpl::beginTransaction() {
         if (++_transactionLevel == 1) {
             _transaction = new ExclusiveTransaction(_dataFile.get());
-            forEachOpenCollection([&](C4Collection *coll) {
+            forAllOpenCollections([&](C4Collection *coll) {
                 asInternal(coll)->transactionBegan();
             });
         }
@@ -673,7 +700,7 @@ namespace litecore {
 
     // The cleanup part of endTransaction
     void DatabaseImpl::_cleanupTransaction(bool committed) {
-        forEachOpenCollection([&](C4Collection *coll) {
+        forAllOpenCollections([&](C4Collection *coll) {
             asInternal(coll)->transactionEnding(_transaction, committed);
         });
         delete _transaction;
@@ -684,7 +711,7 @@ namespace litecore {
     void DatabaseImpl::externalTransactionCommitted(const SequenceTracker &srcTracker) {
         // CAREFUL: This may be called on an arbitrary thread
         LOCK(_collectionsMutex);
-        forEachOpenCollection([&](C4Collection *coll) {
+        forAllOpenCollections([&](C4Collection *coll) {
             if (slice(asInternal(coll)->keyStore().name()) == srcTracker.name())
                 asInternal(coll)->externalTransactionCommitted(srcTracker);
         });
@@ -725,7 +752,7 @@ namespace litecore {
 
 
     KeyStore& DatabaseImpl::rawDocStore(slice storeName) {
-        AssertParam(!keyStoreNameToCollectionName(storeName), "Invalid raw-doc store name");
+        AssertParam(!keyStoreNameToCollectionSpec(storeName), "Invalid raw-doc store name");
         return _dataFile->getKeyStore(storeName, KeyStore::noSequences);
     }
 

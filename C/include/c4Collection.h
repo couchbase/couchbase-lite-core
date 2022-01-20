@@ -68,31 +68,39 @@ C4API_BEGIN_DECLS
 /** Returns the default collection that exists in every database.
     In a pre-existing database, this collection contains all docs that were added to
     "the database" before collections existed.
-    Its name is "_default". */
+    Its name is "_default" (`kC4DefaultCollectionName`). */
 C4Collection* c4db_getDefaultCollection(C4Database *db) C4API;
 
 /** Returns true if the collection exists. */
 bool c4db_hasCollection(C4Database *db,
-                        C4String name) C4API;
+                        C4String name,
+                        C4ScopeID inScope) C4API;
 
 /** Returns the existing collection with the given name, or NULL if it doesn't exist. */
 C4Collection* C4NULLABLE c4db_getCollection(C4Database *db,
-                                            C4String name) C4API;
+                                            C4String name,
+                                            C4ScopeID inScope) C4API;
 
 /** Creates and returns an empty collection with the given name,
     or returns an existing collection by that name. */
 C4Collection* c4db_createCollection(C4Database *db,
                                     C4String name,
+                                    C4ScopeID inScope,
                                     C4Error* C4NULLABLE outError) C4API;
 
 /** Deletes the collection with the given name. */
 bool c4db_deleteCollection(C4Database *db,
                            C4String name,
+                           C4ScopeID inScope,
                            C4Error* C4NULLABLE outError) C4API;
 
-/** Returns the names of all existing collections, in the order in which they were created.
-    The result is a string containing the names separated by comma (',') characters. */
-C4StringResult c4db_collectionNames(C4Database *db) C4API;
+/** Returns the names of all existing collections in the given scope,
+    in the order in which they were created. */
+FLMutableArray c4db_collectionNames(C4Database *db,
+                                    C4ScopeID inScope) C4API;
+
+/** Returns the names of all existing scopes, in the order in which they were created. */
+FLMutableArray c4db_scopeNames(C4Database *db) C4API;
 
 
 /** @} */
@@ -103,7 +111,10 @@ C4StringResult c4db_collectionNames(C4Database *db) C4API;
 /** Returns the name of the collection. */
 C4String c4coll_getName(C4Collection*) C4API;
 
-/** Returns the database containing this collection. */
+/** Returns the scope containing the collection. */
+C4ScopeID c4coll_getScope(C4Collection*) C4API;
+
+/** Returns the database containing the collection. */
 C4Database* c4coll_getDatabase(C4Collection*) C4API;
 
 /** Returns the number of (undeleted) documents in the collection. */

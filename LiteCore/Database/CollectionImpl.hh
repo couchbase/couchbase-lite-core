@@ -25,6 +25,7 @@
 #include "KeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "RevTree.hh"
+#include "access_lock.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -36,8 +37,8 @@ namespace litecore {
 
     class CollectionImpl final : public C4Collection, public Logging {
     public:
-        CollectionImpl(C4Database *db, slice name, KeyStore &store)
-        :C4Collection(db, name)
+        CollectionImpl(C4Database *db, C4ScopeID scope, slice name, KeyStore &store)
+        :C4Collection(db, scope, name)
         ,Logging(DBLog)
         ,_keyStore(&store)
         {
