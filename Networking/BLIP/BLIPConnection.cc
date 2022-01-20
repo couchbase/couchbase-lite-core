@@ -356,6 +356,10 @@ namespace litecore { namespace blip {
                     // Ask the MessageOut to write data to fill the buffer:
                     auto prevBytesSent = msg->_bytesSent;
                     msg->nextFrameToSend(_outputCodec, out, frameFlags);
+                    if(frameFlags & kCompressed) {
+                        WarnError("!!! Compression flag enabled on a branch with no compression !!!");
+                    }
+
                     *flagsPos = frameFlags;
                     slice frame = out.output();
                     bytesWritten += frame.size;
