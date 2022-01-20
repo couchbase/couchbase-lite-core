@@ -1076,6 +1076,7 @@
 		2747A1BD2798847300F286AF /* SignatureTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SignatureTest.cc; sourceTree = "<group>"; };
 		2747A1BF2798920600F286AF /* Signing.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Signing.hh; sourceTree = "<group>"; };
 		2747A1C02798920600F286AF /* Signing.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Signing.cc; sourceTree = "<group>"; };
+		2747A1C52798ED3D00F286AF /* Signed Objects.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "Signed Objects.md"; sourceTree = "<group>"; };
 		27480E36253A5D9C0091CF37 /* VectorRecordTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VectorRecordTest.cc; sourceTree = "<group>"; };
 		27491C9A1E7B1001001DC54B /* c4Socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Socket.h; sourceTree = "<group>"; };
 		27491C9E1E7B2532001DC54B /* c4Socket.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Socket.cc; sourceTree = "<group>"; };
@@ -1256,7 +1257,6 @@
 		279DE3DD24788A030059AE4E /* c4_ee.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = c4_ee.txt; path = scripts/c4_ee.txt; sourceTree = "<group>"; };
 		27A16314201FC2A500C18D9C /* DataFile+Shared.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "DataFile+Shared.hh"; sourceTree = "<group>"; };
 		27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
-		27A83D4F269E35BC002B7EBA /* PropertyEncryption.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PropertyEncryption.cc; path = "../../../../CBL/couchbase-lite-core-EE/Replicator/PropertyEncryption.cc"; sourceTree = "<group>"; };
 		27A83D53269E3E69002B7EBA /* PropertyEncryptionTests.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PropertyEncryptionTests.cc; sourceTree = "<group>"; };
 		27A83D57269F7DB2002B7EBA /* PropertyEncryption_stub.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PropertyEncryption_stub.cc; sourceTree = "<group>"; };
 		27A83D5C269F7F0E002B7EBA /* PropertyEncryption.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PropertyEncryption.hh; sourceTree = "<group>"; };
@@ -2145,6 +2145,7 @@
 				2745B7D626825F970012A17A /* Class Diagram.png */,
 				2745B7D026825F970012A17A /* Replicator Diagram.svg */,
 				2745B7CD26825F970012A17A /* Replicator Diagram.t2d */,
+				2747A1C52798ED3D00F286AF /* Signed Objects.md */,
 			);
 			path = overview;
 			sourceTree = "<group>";
