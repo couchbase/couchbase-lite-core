@@ -64,11 +64,6 @@ namespace litecore {
 
         virtual void shareSequencesWith(KeyStore&) =0;
 
-#if ENABLE_DELETE_KEY_STORES
-        virtual void erase() =0;
-        void deleteKeyStore(Transaction&);
-#endif
-
         //////// Keys/values:
 
         /** Reads the rest of a record whose key() or sequence() is already set. */

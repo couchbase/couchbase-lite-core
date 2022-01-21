@@ -445,16 +445,6 @@ namespace litecore {
     }
 
 
-#if ENABLE_DELETE_KEY_STORES
-    void SQLiteKeyStore::erase() {
-        ExclusiveTransaction t(db());
-        db().exec(string("DELETE FROM kv_"+name()));
-        setLastSequence(0_seq);
-        t.commit();
-    }
-#endif
-    
-
     void SQLiteKeyStore::createTrigger(string_view triggerName,
                                        string_view triggerSuffix,
                                        string_view operation,

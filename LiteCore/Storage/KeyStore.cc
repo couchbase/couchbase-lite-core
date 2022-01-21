@@ -37,12 +37,6 @@ namespace litecore {
         return rec;
     }
 
-#if ENABLE_DELETE_KEY_STORES
-    void KeyStore::deleteKeyStore(Transaction& trans) {
-        trans.dataFile().deleteKeyStore(name());
-    }
-#endif
-
     void KeyStore::set(Record &rec, bool updateSequence, ExclusiveTransaction &t) {
         if (auto seq = set(RecordUpdate(rec), updateSequence, t); seq > 0_seq) {
             rec.setExists();

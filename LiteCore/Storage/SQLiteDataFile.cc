@@ -570,12 +570,6 @@ namespace litecore {
     }
 
 
-#if ENABLE_DELETE_KEY_STORES
-    void SQLiteDataFile::deleteKeyStore(const string &name) {
-        execWithLock(string("DROP TABLE IF EXISTS kv_") + name);
-    }
-#endif
-
     void SQLiteDataFile::_beginTransaction(ExclusiveTransaction*) {
         checkOpen();
         _exec("BEGIN");
