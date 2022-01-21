@@ -87,12 +87,15 @@ typedef struct C4UUID {
     @{ */
 
 
-/** The name of a scope (a namespace of collections.) */
-typedef C4Slice C4ScopeID;
-
 #define kC4DefaultScopeID FLSTR("_default")
 
 #define kC4DefaultCollectionName FLSTR("_default")
+
+/** Full identifier of a collection in a database, including its scope. */
+typedef struct C4CollectionSpec {
+    C4String name;
+    C4String scope;
+} C4CollectionSpec;
 
 
 /** @} */

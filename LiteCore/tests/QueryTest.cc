@@ -1870,7 +1870,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     if (GENERATE(false, true)) {
         logSection("secondary collection");
-        store = &db->getKeyStore("coll_secondary");
+        store = &db->getKeyStore("/secondary");
     }
 
     ExclusiveTransaction t(store->dataFile());
@@ -2318,7 +2318,7 @@ TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
             });
         }
 
-        KeyStore &secondary = db->getKeyStore("coll_secondary");
+        KeyStore &secondary = db->getKeyStore("/secondary");
         writeDoc(secondary, "magic"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("theone");
             enc.writeInt(4);

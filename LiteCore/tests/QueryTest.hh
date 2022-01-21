@@ -48,7 +48,7 @@ protected:
                 break;
             case 1:
                 collectionName = "secondary";
-                store = &db->getKeyStore("coll_secondary");
+                store = &db->getKeyStore("/secondary");
                 break;
         }
     }

@@ -53,7 +53,8 @@ namespace litecore {
         sequence_t lastSequence() const override;
         uint64_t purgeCount() const override;
 
-        std::string tableName() const                                       {return "kv_" + name();}
+        const std::string& tableName() const                            {return _tableName;}
+        const std::string& quotedTableName() const                      {return _quotedTableName;}
         std::string collectionName() const;
         
         bool read(Record &rec, ReadBy, ContentOption) const override;
@@ -148,6 +149,7 @@ namespace litecore {
 
         enum Existence : uint8_t { kNonexistent, kUncommitted, kCommitted };
 
+        string _tableName, _quotedTableName;
         mutable std::mutex _stmtMutex;
         mutable StatementCache _stmtCache;
         bool _createdSeqIndex {false}, _createdConflictsIndex {false}, _createdBlobsIndex {false};

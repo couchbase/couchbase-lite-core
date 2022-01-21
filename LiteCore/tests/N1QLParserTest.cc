@@ -292,7 +292,7 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
 // QueryParser does not support "IN SELECT" yet
 //    CHECK(translate("SELECT 17 NOT IN (SELECT value WHERE type='prime')") == "{'WHAT':[['NOT IN',17,['SELECT',{'WHAT':[['.value']],'WHERE':['=',['.type'],'prime']}]]]}");
 
-    tableNames.insert("kv_coll_product");
+    tableNames.insert("kv_/product");
 
     CHECK(translate("SELECT productId, color, categories WHERE categories[0] LIKE 'Bed%' AND test_id='where_func' ORDER BY productId LIMIT 3") == "{'LIMIT':3,'ORDER_BY':[['.productId']],'WHAT':[['.productId'],['.color'],['.categories']],'WHERE':['AND',['LIKE',['.categories[0]'],'Bed%'],['=',['.test_id'],'where_func']]}");
     CHECK(translate("SELECT FLOOR(unitPrice+0.5) as sc FROM product where test_id = \"numberfunc\" ORDER BY sc limit 5") ==
@@ -306,9 +306,9 @@ TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
 }
 
 TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
-    tableNames.insert("kv_coll_db");
-    tableNames.insert("kv_coll_other");
-    tableNames.insert("kv_coll_x");
+    tableNames.insert("kv_/db");
+    tableNames.insert("kv_/other");
+    tableNames.insert("kv_/x");
 
     CHECK(translate("SELECT 0 FROM db") == "{'FROM':[{'COLLECTION':'db'}],'WHAT':[0]}");
     CHECK(translate("SELECT * FROM db") == "{'FROM':[{'COLLECTION':'db'}],'WHAT':[['.']]}");

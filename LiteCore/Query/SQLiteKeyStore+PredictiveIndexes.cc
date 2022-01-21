@@ -66,7 +66,7 @@ namespace litecore {
         auto predTableName = qp.predictiveTableName(expression);
 
         // Create the index table, unless an identical one already exists:
-        string sql = CONCAT("CREATE TABLE \"" << predTableName << "\" "
+        string sql = CONCAT("CREATE TABLE " << sqlIdentifier(predTableName) << " "
                             "(docid INTEGER PRIMARY KEY REFERENCES " << kvTableName << "(rowid), "
                             " body BLOB NOT NULL ON CONFLICT IGNORE) "
                             "WITHOUT ROWID");
@@ -77,7 +77,7 @@ namespace litecore {
 
             // Populate the index-table with data from existing documents:
             string predictExpr = qp.expressionSQL(expression);
-            db().exec(CONCAT("INSERT INTO \"" << predTableName << "\" (docid, body) "
+            db().exec(CONCAT("INSERT INTO " << sqlIdentifier(predTableName) << " (docid, body) "
                              "SELECT rowid, " << predictExpr <<
                              "FROM " << kvTableName << " WHERE (flags & 1) = 0"));
 
@@ -85,8 +85,8 @@ namespace litecore {
             // ...on insertion:
             qp.setBodyColumnName("new.body");
             predictExpr = qp.expressionSQL(expression);
-            string insertTriggerExpr = CONCAT("INSERT INTO \"" << predTableName <<
-                                              "\" (docid, body) "
+            string insertTriggerExpr = CONCAT("INSERT INTO " << sqlIdentifier(predTableName) <<
+                                              " (docid, body) "
                                               "VALUES (new.rowid, " << predictExpr << ")");
             createTrigger(predTableName, "ins",
                           "AFTER INSERT",
@@ -94,7 +94,7 @@ namespace litecore {
                           insertTriggerExpr);
 
             // ...on delete:
-            string deleteTriggerExpr = CONCAT("DELETE FROM \"" << predTableName << "\" "
+            string deleteTriggerExpr = CONCAT("DELETE FROM " << sqlIdentifier(predTableName) << " "
                                               "WHERE docid = old.rowid");
             createTrigger(predTableName, "del",
                           "BEFORE DELETE",

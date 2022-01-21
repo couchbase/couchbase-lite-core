@@ -23,10 +23,10 @@
 using namespace litecore;
 
 
-C4Collection::C4Collection(C4Database *db, C4ScopeID scope, slice name)
+C4Collection::C4Collection(C4Database *db, C4CollectionSpec spec)
 :_database(db)
-,_scope(scope)
-,_name(name)
+,_scope(spec.scope)
+,_name(spec.name)
 { }
 
 

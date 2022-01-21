@@ -15,6 +15,7 @@
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "QueryParser.hh"
+#include "SQLUtil.hh"
 #include "StringUtil.hh"
 #include "Array.hh"
 #include <sstream>
@@ -55,7 +56,7 @@ namespace litecore {
         // Build the SQL that creates an FTS table, including the tokenizer options:
         {
             stringstream sql;
-            sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(" << columns << ", ";
+            sql << "CREATE VIRTUAL TABLE " << sqlIdentifier(ftsTableName) << " USING fts4(" << columns << ", ";
             writeTokenizerOptions(sql, spec.optionsPtr());
             sql << ")";
             if (!db().createIndex(spec, this, ftsTableName, sql.str()))
@@ -63,14 +64,14 @@ namespace litecore {
         }
 
         // Index the existing records:
-        db().exec(CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
-                         "SELECT rowid, " << exprs << " FROM kv_" << name() << " AS new "
+        db().exec(CONCAT("INSERT INTO " << sqlIdentifier(ftsTableName) << " (docid, " << columns << ") "
+                         "SELECT rowid, " << exprs << " FROM " << quotedTableName() << " AS new "
                          << whereNewSQL));
 
         // Set up triggers to keep the FTS table up to date
         // ...on insertion:
-        string insertNewSQL = CONCAT("INSERT INTO \"" << ftsTableName
-                                     << "\" (docid, " << columns << ") "
+        string insertNewSQL = CONCAT("INSERT INTO " << sqlIdentifier(ftsTableName) <<
+                                     " (docid, " << columns << ") "
                                      "VALUES (new.rowid, " << exprs << ")");
         createTrigger(ftsTableName, "ins",
                       "AFTER INSERT",
@@ -78,7 +79,8 @@ namespace litecore {
                       insertNewSQL);
 
         // ...on delete:
-        string deleteOldSQL = CONCAT("DELETE FROM \"" << ftsTableName << "\" WHERE docid = old.rowid");
+        string deleteOldSQL = CONCAT("DELETE FROM " << sqlIdentifier(ftsTableName) <<
+                                     " WHERE docid = old.rowid");
         createTrigger(ftsTableName, "del",
                       "AFTER DELETE",
                       whereOldSQL,

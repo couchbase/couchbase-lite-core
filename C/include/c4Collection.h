@@ -73,31 +73,27 @@ C4Collection* c4db_getDefaultCollection(C4Database *db) C4API;
 
 /** Returns true if the collection exists. */
 bool c4db_hasCollection(C4Database *db,
-                        C4String name,
-                        C4ScopeID inScope) C4API;
+                        C4CollectionSpec spec) C4API;
 
-/** Returns the existing collection with the given name, or NULL if it doesn't exist. */
+/** Returns the existing collection with the given name & scope, or NULL if it doesn't exist. */
 C4Collection* C4NULLABLE c4db_getCollection(C4Database *db,
-                                            C4String name,
-                                            C4ScopeID inScope) C4API;
+                                            C4CollectionSpec spec) C4API;
 
-/** Creates and returns an empty collection with the given name,
+/** Creates and returns an empty collection with the given name & scope,
     or returns an existing collection by that name. */
 C4Collection* c4db_createCollection(C4Database *db,
-                                    C4String name,
-                                    C4ScopeID inScope,
+                                    C4CollectionSpec spec,
                                     C4Error* C4NULLABLE outError) C4API;
 
-/** Deletes the collection with the given name. */
+/** Deletes the collection with the given name & scope. */
 bool c4db_deleteCollection(C4Database *db,
-                           C4String name,
-                           C4ScopeID inScope,
+                           C4CollectionSpec spec,
                            C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the names of all existing collections in the given scope,
     in the order in which they were created. */
 FLMutableArray c4db_collectionNames(C4Database *db,
-                                    C4ScopeID inScope) C4API;
+                                    C4String inScope) C4API;
 
 /** Returns the names of all existing scopes, in the order in which they were created. */
 FLMutableArray c4db_scopeNames(C4Database *db) C4API;
@@ -108,11 +104,8 @@ FLMutableArray c4db_scopeNames(C4Database *db) C4API;
     @{ */
 
 
-/** Returns the name of the collection. */
-C4String c4coll_getName(C4Collection*) C4API;
-
-/** Returns the scope containing the collection. */
-C4ScopeID c4coll_getScope(C4Collection*) C4API;
+/** Returns the name and scope of the collection. */
+C4CollectionSpec c4coll_getSpec(C4Collection*) C4API;
 
 /** Returns the database containing the collection. */
 C4Database* c4coll_getDatabase(C4Collection*) C4API;

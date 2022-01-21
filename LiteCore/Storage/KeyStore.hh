@@ -43,6 +43,9 @@ namespace litecore {
     class KeyStore {
     public:
 
+        /// KeyStore name prefix denoting a (non-default) collection
+        static constexpr slice kCollectionPrefix = "/";
+
         struct Capabilities {
             bool sequences;     ///< Records have sequences & can be enumerated by sequence
         };

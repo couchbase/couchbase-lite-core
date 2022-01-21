@@ -45,6 +45,7 @@ namespace litecore {
         extern const C4Slice kPreviousPrivateUUIDKey;
     }
 
+
     /** The concrete subclass of C4Database that implements its functionality.
         It also has some internal methods used by other components of LiteCore. */
     class DatabaseImpl final : public C4Database,
@@ -92,10 +93,10 @@ namespace litecore {
         void maintenance(C4MaintenanceType) override;
         void forEachScope(const ScopeCallback&) const override;
         void forEachCollection(const CollectionSpecCallback&) const override;
-        bool hasCollection(slice name, C4ScopeID) const override;
-        C4Collection* getCollection(slice name, C4ScopeID) const override;
-        C4Collection* createCollection(slice name, C4ScopeID) override;
-        void deleteCollection(slice name, C4ScopeID) override;
+        bool hasCollection(CollectionSpec) const override;
+        C4Collection* getCollection(CollectionSpec) const override;
+        C4Collection* createCollection(CollectionSpec) override;
+        void deleteCollection(CollectionSpec) override;
         void beginTransaction() override;
         void endTransaction(bool commit) override;
         bool isInTransaction() const noexcept override;
@@ -129,23 +130,6 @@ namespace litecore {
             _dataFile->setDatabaseTag((DatabaseTag)dbTag);
         }
 
-        struct CollectionSpec {
-            slice     collection;
-            C4ScopeID scope;
-
-            explicit operator bool() const {return collection != nullslice;}
-
-            bool operator== (const CollectionSpec &s) const {
-                return collection == s.collection && scope == s.scope;
-            }
-            
-            struct hash {
-                std::size_t operator() (CollectionSpec const& s) const {
-                    return s.collection.hash() ^ slice(s.scope).hash();
-                }
-            };
-        };
-
     private:
         friend struct C4Database;
 
@@ -176,15 +160,14 @@ namespace litecore {
         unique_ptr<C4BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         void garbageCollectBlobs();
 
-        C4Collection* getOrCreateCollection(slice name, C4ScopeID, bool canCreate);
+        C4Collection* getOrCreateCollection(CollectionSpec, bool canCreate);
 
         C4DocumentVersioning checkDocumentVersioning();
         void upgradeDocumentVersioning(C4DocumentVersioning old, C4DocumentVersioning nuu,
                                        ExclusiveTransaction&);
         alloc_slice upgradeRemoteRevsToVersionVectors(RevTreeRecord&, alloc_slice currentVersion);
 
-        using CollectionsMap = std::unordered_map<CollectionSpec, std::unique_ptr<C4Collection>,
-                                                  CollectionSpec::hash>;
+        using CollectionsMap = std::unordered_map<CollectionSpec, std::unique_ptr<C4Collection>>;
 
         unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
         mutable std::recursive_mutex _collectionsMutex;

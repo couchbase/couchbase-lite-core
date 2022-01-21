@@ -232,45 +232,41 @@ C4Collection* c4db_getDefaultCollection(C4Database *db) noexcept {
     return db->getDefaultCollection();
 }
 
-bool c4db_hasCollection(C4Database *db, C4String name, C4ScopeID inScope) noexcept {
-    return db->hasCollection(name, inScope);
+bool c4db_hasCollection(C4Database *db, C4CollectionSpec spec) noexcept {
+    return db->hasCollection(spec);
 }
 
-C4Collection* C4NULLABLE c4db_getCollection(C4Database *db, C4String name, C4ScopeID inScope) noexcept {
-    return tryCatch<C4Collection*>(nullptr, [&]{ return db->getCollection(name, inScope); });
+C4Collection* C4NULLABLE c4db_getCollection(C4Database *db, C4CollectionSpec spec) noexcept {
+    return tryCatch<C4Collection*>(nullptr, [&]{ return db->getCollection(spec); });
 }
 
-C4Collection* c4db_createCollection(C4Database *db, C4String name, C4ScopeID inScope, C4Error* C4NULLABLE outError) noexcept {
-    return tryCatch<C4Collection*>(outError, [&]{ return db->createCollection(name, inScope); });
+C4Collection* c4db_createCollection(C4Database *db, C4CollectionSpec spec, C4Error* C4NULLABLE outError) noexcept {
+    return tryCatch<C4Collection*>(outError, [&]{ return db->createCollection(spec); });
 }
 
-bool c4db_deleteCollection(C4Database *db, C4String name, C4ScopeID inScope, C4Error* C4NULLABLE outError) noexcept {
-    return tryCatch(outError, [&]{ db->deleteCollection(name, inScope); });
+bool c4db_deleteCollection(C4Database *db, C4CollectionSpec spec, C4Error* C4NULLABLE outError) noexcept {
+    return tryCatch(outError, [&]{ db->deleteCollection(spec); });
 }
 
-FLMutableArray c4db_collectionNames(C4Database *db, C4ScopeID inScope) noexcept {
-    auto names = fleece::MutableArray::newArray();
+FLMutableArray c4db_collectionNames(C4Database *db, C4String inScope) noexcept {
+    auto names = FLMutableArray_New();
     db->forEachCollection(inScope, [&](slice collectionName) {
-        names.append(collectionName);
+        FLMutableArray_AppendString(names, collectionName);
     });
-    return FLMutableArray_Retain(FLMutableArray(names));
+    return names;
 }
 
 FLMutableArray c4db_scopeNames(C4Database *db) noexcept {
-    auto names = fleece::MutableArray::newArray();
-    db->forEachScope([&](C4ScopeID scope) {
-        names.append(scope);
+    auto names = FLMutableArray_New();
+    db->forEachScope([&](slice scope) {
+        FLMutableArray_AppendString(names, scope);
     });
-    return FLMutableArray_Retain(FLMutableArray(names));
+    return names;
 }
 
 
-C4String c4coll_getName(C4Collection *coll) noexcept {
-    return coll->getName();
-}
-
-C4ScopeID c4coll_getScope(C4Collection *coll) noexcept {
-    return coll->getScope();
+C4CollectionSpec c4coll_getSpec(C4Collection *coll) noexcept {
+    return coll->getSpec();
 }
 
 C4Database* c4coll_getDatabase(C4Collection *coll) noexcept {
