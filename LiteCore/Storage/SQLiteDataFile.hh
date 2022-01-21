@@ -60,6 +60,8 @@ namespace litecore {
 
         KeyStore& keyStoreFromTable(slice tableName);
 
+        SQLiteKeyStore* asSQLiteKeyStore(KeyStore *ks) const;
+
         static bool tableNameIsCollection(slice tableName);
         static bool keyStoreNameIsCollection(slice ksName);
 

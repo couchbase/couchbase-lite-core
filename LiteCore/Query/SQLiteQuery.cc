@@ -570,7 +570,7 @@ namespace litecore {
     {
         if (!keyStore)
             keyStore = &defaultKeyStore();
-        return new SQLiteQuery(*this, selectorExpression, language, (SQLiteKeyStore*)keyStore);
+        return new SQLiteQuery(*this, selectorExpression, language, asSQLiteKeyStore(keyStore));
     }
 
 

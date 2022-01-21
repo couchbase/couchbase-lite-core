@@ -560,6 +560,16 @@ namespace litecore {
         }
     }
 
+
+    SQLiteKeyStore* SQLiteDataFile::asSQLiteKeyStore(KeyStore *ks) const {
+        if (auto both = dynamic_cast<BothKeyStore*>(ks))
+            ks = both->liveStore();
+        auto sqlks = dynamic_cast<SQLiteKeyStore*>(ks);
+        Assert(sqlks, "Unexpected type of KeyStore");
+        return sqlks;
+    }
+
+
 #if ENABLE_DELETE_KEY_STORES
     void SQLiteDataFile::deleteKeyStore(const string &name) {
         execWithLock(string("DROP TABLE IF EXISTS kv_") + name);
