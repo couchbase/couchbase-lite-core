@@ -87,7 +87,7 @@ namespace litecore {
 
 
         /// Creates a C4Error with a formatted message.
-        __cold
+        __cold __printflike(4,0)
         C4Error vmakeError(C4ErrorDomain domain, int code,
                            const char *format, va_list args,
                            unsigned skipStackFrames =0) noexcept
