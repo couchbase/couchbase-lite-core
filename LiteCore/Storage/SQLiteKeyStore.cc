@@ -27,6 +27,7 @@ using namespace fleece::impl;
 
 namespace litecore {
 
+
     vector<string> SQLiteDataFile::allKeyStoreNames() const {
         checkOpen();
         vector<string> names;
@@ -50,7 +51,7 @@ namespace litecore {
 
 
     KeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
-        Assert(tableName == "kv_default" || tableName.hasPrefix("kv_/"));
+        Assert(tableName == "kv_default" || tableName.hasPrefix("kv_."));
         return getKeyStore(tableName.from(3));
     }
 
@@ -98,18 +99,6 @@ namespace litecore {
     void SQLiteKeyStore::reopen() {
         if (_existence == kNonexistent)
             createTable();
-    }
-
-
-    string SQLiteKeyStore::collectionName() const {
-        if (_name == DataFile::kDefaultKeyStoreName)
-            return "_default";  // kC4DefaultCollectionName
-        else if (hasPrefix(_name, kCollectionPrefix))
-            return _name.substr(kCollectionPrefix.size);
-        else {
-            DebugAssert(false, "KeyStore is not a collection!");
-            return "";
-        }
     }
 
 

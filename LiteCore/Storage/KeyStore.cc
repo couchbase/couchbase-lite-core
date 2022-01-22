@@ -24,6 +24,34 @@ using namespace std;
 
 namespace litecore {
 
+
+    bool KeyStore::isValidCollectionName(slice name) {
+        // Enforce CBServer collection name restrictions:
+        return name.size >= 1 && name.size <= 30
+            && !name.findByteNotIn(KeyStore::kCollectionNameCharacterSet)
+            && name[0] != '_' && name[0] != '%';
+    }
+
+    bool KeyStore::isValidCollectionNameWithScope(slice name) {
+        if (auto dot = name.findByte(kScopeCollectionSeparator); dot) {
+            if (!isValidCollectionName(name.upTo(dot)))     // check the scope name
+                return false;
+            name = name.from(dot + 1);
+        }
+        return isValidCollectionName(name);
+    }
+
+
+    string KeyStore::collectionName() const {
+        if (_name == DataFile::kDefaultKeyStoreName)
+            return string(kDefaultCollectionName);
+        else if (hasPrefix(_name, kCollectionPrefix))
+            return _name.substr(kCollectionPrefix.size);
+        else {
+            Assert(false, "KeyStore %s is not a collection!", name().c_str());
+        }
+    }
+
     Record KeyStore::get(slice key, ContentOption option) const {
         Record rec(key);
         read(rec, ReadBy::Key, option);

@@ -43,9 +43,6 @@ namespace litecore {
     class KeyStore {
     public:
 
-        /// KeyStore name prefix denoting a (non-default) collection
-        static constexpr slice kCollectionPrefix = "/";
-
         struct Capabilities {
             bool sequences;     ///< Records have sequences & can be enumerated by sequence
         };
@@ -63,6 +60,28 @@ namespace litecore {
         virtual uint64_t purgeCount() const =0;
 
         virtual void shareSequencesWith(KeyStore&) =0;
+
+        //////// Collections/Scopes:
+
+        /// Name of the default collection and scope:
+        static constexpr slice kDefaultCollectionName = "_default";
+        static constexpr slice kDefaultScopeName = "_default";
+
+        /// KeyStore name prefix denoting a (non-default) collection
+        static constexpr slice kCollectionPrefix = ".";
+        /// Character separating the scope from the collection name in a KeyStore:
+        static constexpr char kScopeCollectionSeparator = '.';
+        /// Set of characters allowed in a collection or scope name:
+        static constexpr slice kCollectionNameCharacterSet
+                            = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_-%";
+
+        /// Returns true if this is a valid collection name. Does NOT recognize "_default"!
+        MUST_USE_RESULT static bool isValidCollectionName(slice name);
+        /// Returns true if this is a valid collection name, or a scope plus a collection name.
+        MUST_USE_RESULT static bool isValidCollectionNameWithScope(slice name);
+
+        /// This KeyStore's collection name. Throws an exception if it's not a collection.
+        std::string collectionName() const;
 
         //////// Keys/values:
 

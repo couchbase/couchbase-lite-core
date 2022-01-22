@@ -26,7 +26,7 @@ Currently as of 3.0, LiteCore creates and uses three KeyStores:
 
 KeyStores are backed by SQLite tables whose names are prefixed with "`kv_`". So documents live in the table `kv_default`, etc.
 
-In a 3.x database with multiple collections, each other collection has a KeyStore whose name is prefixed with `/`. So the `widgets` collection has a KeyStore named `/widgets`, which has a SQLite table named `kv_/widgets`. In a non-default scope, the scope name goes before the collection name separated by another `/`. So the `chairs` collection in the `inventory` scope has a KeyStore named `/inventory/chairs` and a SQLite table named `kv_/inventory/chairs`.
+In a 3.x database with multiple collections, each other collection has a KeyStore whose name is prefixed with `.`. So the `widgets` collection has a KeyStore named `.widgets`, which has a SQLite table named `kv_.widgets`. In a non-default scope, the scope name goes before the collection name separated by another `.`. So the `chairs` collection in the `inventory` scope has a KeyStore named `.inventory.chairs` and a SQLite table named `kv_.inventory.chairs`.
 
 A KeyStore's table has the following SQL schema:
 

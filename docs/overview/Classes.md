@@ -106,7 +106,7 @@ Most importantly, KeyStores store the documents of Collections; each C4Collectio
 
 The KeyStore of the default collection is named "`default`". 
 
-The concrete subclass `SQLiteKeyStore` owns a single table in the database, whose name is prefixed with “`kv_`”. A database's default KeyStore is a table named "`kv_default`", a collection named "widgets" would have a table named "`kv_/widgets`", etc.
+The concrete subclass `SQLiteKeyStore` owns a single table in the database, whose name is prefixed with “`kv_`”. A database's default KeyStore is a table named "`kv_default`", a collection named "widgets" would have a table named "`kv_.widgets`", etc.
 
 ### Record
 

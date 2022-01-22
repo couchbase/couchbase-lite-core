@@ -30,6 +30,7 @@ public:
 
 protected:
     virtual string collectionTableName(const string &collection, DeletionStatus type) const override {
+        // This is a simplified version of SQLiteDataFile::collectionTableName()
         CHECK(!hasPrefix(collection, "kv_"));   // make sure I didn't get passed a table name
         string table;
         if (type == litecore::QueryParser::kLiveAndDeletedDocs) {
@@ -39,10 +40,10 @@ protected:
             if (type == litecore::QueryParser::kDeletedDocs)
                 table += "del_";
         }
-        if (collection == "_default" || collection == "_")
-            table += "default";
+        if (slice(collection) == KeyStore::kDefaultCollectionName || collection == "_")
+            table += DataFile::kDefaultKeyStoreName;
         else
-            table += "/" + collection;
+            (table += KeyStore::kCollectionPrefix) += collection;
         return table;
     }
     virtual std::string FTSTableName(const string &onTable, const std::string &property) const override {

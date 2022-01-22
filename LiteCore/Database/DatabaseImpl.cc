@@ -494,25 +494,10 @@ namespace litecore {
 #pragma mark - COLLECTIONS:
 
 
-    static constexpr const char* kCollectionKeyStorePrefix = "/";
-
-    static constexpr char kScopeCollectionSeparator = '/';
-
-    static constexpr slice kCollectionNameCharacterSet
-                            = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890_-%";
-
-    MUST_USE_RESULT
-    static bool collectionNameIsValid(slice name) {
-        // Enforce CBServer collection name restrictions:
-        return name.size >= 1 && name.size <= 30
-            && !name.findByteNotIn(kCollectionNameCharacterSet)
-            && name[0] != '_' && name[0] != '%';
-    }
-
     // Scope IDs have the same syntax as collection names.
     MUST_USE_RESULT
-    static bool scopeIDIsValid(slice id) {
-        return collectionNameIsValid(id) || id == kC4DefaultScopeID;
+    static bool isValidScopeNameOrDefault(slice id) {
+        return KeyStore::isValidCollectionName(id) || id == kC4DefaultScopeID;
     }
 
 
@@ -522,20 +507,20 @@ namespace litecore {
         if (spec.name == kC4DefaultCollectionName && spec.scope == kC4DefaultScopeID)
             return DataFile::kDefaultKeyStoreName;
 
-        if (!scopeIDIsValid(spec.scope))
+        if (!isValidScopeNameOrDefault(spec.scope))
             C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
                            "Invalid scope name '%.*s'", SPLAT(spec.scope));
-        if (!collectionNameIsValid(spec.name))
+        if (!KeyStore::isValidCollectionName(spec.name))
             C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
                            "Invalid collection name '%.*s' in scope '%.*s'",
                            SPLAT(spec.name), SPLAT(spec.scope));
 
-        // If scope ID is not "_default", it's prepended to the name with a '/' between.
-        // KeyStore name is "/" + name; SQLite table name will be "kv_/" + name
-        string result = kCollectionKeyStorePrefix;
+        // If scope ID is not "_default", it's prepended to the name with a '.' between.
+        // KeyStore name is "." + name; SQLite table name will be "kv_." + name
+        string result(KeyStore::kCollectionPrefix);
         if (spec.scope != kC4DefaultScopeID) {
             result.append(slice(spec.scope));
-            result.append(1, kScopeCollectionSeparator);
+            result.append(1, KeyStore::kScopeCollectionSeparator);
         }
         result.append(slice(spec.name));
         return result;
@@ -547,16 +532,16 @@ namespace litecore {
     static C4Database::CollectionSpec keyStoreNameToCollectionSpec(slice name) {
         if (name == DataFile::kDefaultKeyStoreName)
             return {kC4DefaultCollectionName, kC4DefaultScopeID};
-        else if (hasPrefix(name, kCollectionKeyStorePrefix)) {
-            name.moveStart(strlen(kCollectionKeyStorePrefix));
+        else if (hasPrefix(name, KeyStore::kCollectionPrefix)) {
+            name.moveStart(KeyStore::kCollectionPrefix.size);
             slice scope = kC4DefaultScopeID;
-            if (auto slash = name.findByte(kScopeCollectionSeparator)) {
+            if (auto slash = name.findByte(KeyStore::kScopeCollectionSeparator)) {
                 scope = slice(name.buf, slash);
-                DebugAssert(scopeIDIsValid(scope));
+                DebugAssert(isValidScopeNameOrDefault(scope));
                 name.setStart(slash + 1);
             }
             DebugAssert((name == kC4DefaultCollectionName && scope == kC4DefaultScopeID)
-                        || collectionNameIsValid(name));
+                        || KeyStore::isValidCollectionName(name));
             return {name, scope};
         } else {
             return {nullslice, nullslice};

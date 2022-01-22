@@ -764,14 +764,17 @@ namespace litecore {
 
 
     // Maps a collection name used in a query (after "FROM..." or "JOIN...") to a table name.
+    // (The name might be of the form "scope.collection", which is fine because that's the same
+    // encoding as used in table names.)
     // We have two special rules:
     // 1. The name "_" refers to the default collection; this is simpler than "_default" and
     //    means we don't have to imply that CBL 3.0 supports collections.
     // 2. The name of the database also refers to the default collection, because people are
     //    used to using "FROM bucket_name" in Server queries.
     string SQLiteDataFile::collectionTableName(const string &collection, DeletionStatus type) const {
-        Assert(!collection.empty());
-        Assert(!hasPrefix(collection, "kv_") && !hasPrefix(collection, KeyStore::kCollectionPrefix));
+        // This is legal, but in unit tests it indicates I was passed a table name by mistake:
+        DebugAssert(!hasPrefix(collection, "kv_"));
+
         string name;
         if (type == QueryParser::kLiveAndDeletedDocs) {
             name = "all_";
@@ -780,7 +783,7 @@ namespace litecore {
             if (type == QueryParser::kDeletedDocs)
                 name += kDeletedKeyStorePrefix;
         }
-        if (collection == "_default" || collection == "_")
+        if (slice(collection) == KeyStore::kDefaultCollectionName || collection == "_")
             name += kDefaultKeyStoreName;
         else {
             string candidate = name + string(KeyStore::kCollectionPrefix) + collection;
@@ -789,6 +792,10 @@ namespace litecore {
                 // _unless_ there is a collection with that name.
                 name += kDefaultKeyStoreName;
             } else {
+                // Validate the collection name, which might be of the form "scope.collection":
+                if (!KeyStore::isValidCollectionNameWithScope(collection))
+                    error::_throw(error::InvalidQuery,
+                                  "\"%s\" is not a valid collection name", collection.c_str());
                 name = candidate;
             }
         }

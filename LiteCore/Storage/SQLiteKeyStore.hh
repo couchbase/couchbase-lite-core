@@ -55,8 +55,7 @@ namespace litecore {
 
         const std::string& tableName() const                            {return _tableName;}
         const std::string& quotedTableName() const                      {return _quotedTableName;}
-        std::string collectionName() const;
-        
+
         bool read(Record &rec, ReadBy, ContentOption) const override;
 
         sequence_t set(const RecordUpdate&, bool updateSequence, ExclusiveTransaction&) override;

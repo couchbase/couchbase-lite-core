@@ -1870,7 +1870,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     if (GENERATE(false, true)) {
         logSection("secondary collection");
-        store = &db->getKeyStore("/secondary");
+        store = &db->getKeyStore(".secondary");
     }
 
     ExclusiveTransaction t(store->dataFile());
@@ -2318,7 +2318,7 @@ TEST_CASE_METHOD(QueryTest, "Query cross-collection JOINs", "[Query]") {
             });
         }
 
-        KeyStore &secondary = db->getKeyStore("/secondary");
+        KeyStore &secondary = db->getKeyStore(".secondary");
         writeDoc(secondary, "magic"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
             enc.writeKey("theone");
             enc.writeInt(4);
@@ -2369,5 +2369,31 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]"
     } else {
         ExpectingExceptions _;
         CHECK_THROWS_WITH(db->compileQuery(queryStr, QueryLanguage::kN1QL), "N1QL error: missing the FROM clause");
+    }
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
+    static const char* kBadCollectionNames[] = {
+        // "_",   <- nope, "_" happens to be legal (synonym for the default collection)
+        "%",
+        "%xx", "_xx", "x y",
+        ".", "xx.", ".xx", "_b.c", "b._c",
+        "in.val.id", "in..val",
+        "_default.foo", "foo._default", "_default._default",
+        "1234567890123456789012345678901",  // max length is 30
+        "z.1234567890123456789012345678901", "1234567890123456789012345678901.z",
+    };
+    for (auto badName : kBadCollectionNames) {
+        INFO("Collection name is " << badName);
+        ExpectingExceptions expect;
+        try {
+            store->compileQuery(json5("{'WHAT': ['.'], 'FROM': [{'COLLECTION':'"s + badName + "'}]}"));
+            FAIL_CHECK("Didn't detect an invalid collection name");
+        } catch (const error &x) {
+            CHECK(x == error::InvalidQuery);
+            if (string(x.what()).find("is not a valid collection") == string::npos)
+                FAIL_CHECK("Wrong error: " << x.what());
+        }
     }
 }

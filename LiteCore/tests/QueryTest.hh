@@ -32,7 +32,7 @@ using namespace fleece::impl;
 
 class QueryTest : public DataFileTestFixture {
 public:
-    static const int numberOfOptions = 2;
+    static const int numberOfOptions = 3;
 
     string collectionName;
 
@@ -41,14 +41,23 @@ protected:
     QueryTest() :QueryTest(0) { }
 
     QueryTest(int option) {
-        logSection(option ? "secondary collection" : "default collection");
+        static const char* kSectionNames[3] = {
+            "default collection",
+            "other collection",
+            "collection in other scope"
+        };
+        logSection(kSectionNames[option]);
         switch (option) {
             case 0:
-                collectionName = "_default";
+                collectionName = KeyStore::kDefaultCollectionName;
                 break;
             case 1:
                 collectionName = "secondary";
-                store = &db->getKeyStore("/secondary");
+                store = &db->getKeyStore(".secondary");
+                break;
+            case 2:
+                collectionName = "scopey.subsidiary";
+                store = &db->getKeyStore(".scopey.subsidiary");
                 break;
         }
     }

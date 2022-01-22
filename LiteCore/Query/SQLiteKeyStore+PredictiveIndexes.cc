@@ -15,6 +15,7 @@
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "QueryParser.hh"
+#include "SQLUtil.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "MutableArray.hh"
