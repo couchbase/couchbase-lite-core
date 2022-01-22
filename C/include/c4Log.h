@@ -171,7 +171,8 @@ void c4log_enableFatalExceptionBacktrace(void) C4API;
 void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt, ...) C4API __printflike(3,4);
 
 /** Same as c4log, for use in calling functions that already take variable args. */
-void c4vlog(C4LogDomain domain, C4LogLevel level, const char *fmt, va_list args) C4API;
+void c4vlog(C4LogDomain domain, C4LogLevel level, const char *fmt, va_list args) C4API
+    __printflike(3, 0);
 
 /** Same as c4log, except it accepts preformatted messages as FLSlices */
 void c4slog(C4LogDomain domain, C4LogLevel level, FLString msg) C4API;

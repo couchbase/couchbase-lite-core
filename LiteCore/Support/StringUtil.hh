@@ -45,7 +45,7 @@ namespace litecore {
     std::string format(const char *fmt NONNULL, ...) __printflike(1, 2);
 
     /** Like vsprintf(), but returns a std::string */
-    std::string vformat(const char *fmt NONNULL, va_list);
+    std::string vformat(const char *fmt NONNULL, va_list) __printflike(1, 0);
 
     void split(std::string_view str,
                std::string_view separator,

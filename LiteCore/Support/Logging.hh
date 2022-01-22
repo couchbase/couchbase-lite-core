@@ -92,12 +92,13 @@ public:
 
     void logNoCallback(LogLevel level, const char* fmt, ...) __printflike(3, 4);
     void log(LogLevel level, const char *fmt, ...) __printflike(3, 4);
-    void vlog(LogLevel level, const char *fmt, va_list);
-    void vlogNoCallback(LogLevel level, const char* fmt, va_list);
+    void vlog(LogLevel level, const char *fmt, va_list) __printflike(3, 0);
+    void vlogNoCallback(LogLevel level, const char* fmt, va_list) __printflike(3, 0);
 
     using Callback_t = void(*)(const LogDomain&, LogLevel, const char *format, va_list);
 
-    static void defaultCallback(const LogDomain&, LogLevel, const char *format, va_list);
+    static void defaultCallback(const LogDomain&, LogLevel, const char *format, va_list)
+        __printflike(3, 0);
     static Callback_t currentCallback();
 
     /** Registers (or unregisters) a callback to be passed log messages.
@@ -128,7 +129,8 @@ private:
     unsigned registerObject(const void *object, const unsigned* val, const std::string &description,
                             const std::string &nickname, LogLevel level);
     void unregisterObject(unsigned obj);
-    void vlog(LogLevel level, unsigned obj, bool callback, const char *fmt, va_list);
+    void vlog(LogLevel level, unsigned obj, bool callback, const char *fmt, va_list)
+        __printflike(5, 0);
 
 private:
     static LogLevel _callbackLogLevel() noexcept;
@@ -136,7 +138,8 @@ private:
     LogLevel levelFromEnvironment() const noexcept;
     static void _invalidateEffectiveLevels() noexcept;
 
-    void dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list);
+    void dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list)
+        __printflike(5, 0);
 
     std::atomic<LogLevel> _effectiveLevel {LogLevel::Uninitialized};
     std::atomic<LogLevel> _level;
@@ -234,7 +237,7 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         bool willLog(LogLevel level =LogLevel::Info) const         {return _domain.willLog(level);}
 
         void _log(LogLevel level, const char *format, ...) const __printflike(3, 4);
-        void _logv(LogLevel level, const char *format, va_list) const;
+        void _logv(LogLevel level, const char *format, va_list) const __printflike(3, 0);
 
         unsigned getObjectRef(LogLevel level = LogLevel::Info) const;
 
