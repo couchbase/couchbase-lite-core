@@ -58,6 +58,8 @@ namespace litecore {
         bool keyStoreExists(const std::string &name) const override;
         void deleteKeyStore(const std::string &name) override;
 
+        SQLiteKeyStore* asSQLiteKeyStore(KeyStore *ks) const;
+
         KeyStore& keyStoreFromTable(slice tableName);
 
         static bool tableNameIsCollection(slice tableName);

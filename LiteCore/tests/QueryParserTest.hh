@@ -60,7 +60,7 @@ protected:
     }
 #endif
 
-    std::set<string> tableNames {"kv_default"};
+    std::set<string> tableNames {"kv_default", "kv_del_default"};
 
     std::set<string> usedTableNames;
 };
