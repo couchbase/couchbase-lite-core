@@ -41,9 +41,18 @@ C4Document::C4Document(C4Collection *collection, alloc_slice docID_)
 :_collection(asInternal(collection))
 ,_docID(move(docID_))
 {
+
+// GCC will (probably falsely) flag the below as a null directive
+// (I guess since docID_.buf could potentially be null?)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-overflow"
+
     // Quick sanity test of the docID, but no need to scan for valid UTF-8 since we're not inserting.
     if (_docID.size < 1 || _docID.size > kMaxDocIDLength)
         error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(docID_));
+
+#pragma GCC diagnostic pop
+
 #if DEBUG
     // Make sure that C4Document and C4Document_C line up so that the same object can serve as both:
     auto asStruct = (C4Document_C*)this;

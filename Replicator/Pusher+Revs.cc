@@ -50,7 +50,7 @@ namespace litecore::repl {
             return;
 
         logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%d/%d]",
-                   SPLAT(request->docID), SPLAT(request->revID), request->sequence,
+                   SPLAT(request->docID), SPLAT(request->revID), (uint64_t)request->sequence,
                    _revisionsInFlight, tuning::kMaxRevsInFlight);
 
         // Get the document & revision:
@@ -179,7 +179,7 @@ namespace litecore::repl {
                 enum {kNoRetry, kRetryLater, kRetryNow} retry = kNoRetry;
                 if (synced) {
                     logVerbose("Completed rev %.*s #%.*s (seq #%" PRIu64 ")",
-                               SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
+                               SPLAT(rev->docID), SPLAT(rev->revID), (uint64_t)rev->sequence);
                     finishedDocument(rev);
                 } else {
                     // Handle an error received from the peer:
@@ -208,7 +208,7 @@ namespace litecore::repl {
 
                     logError("Got %-serror response to rev '%.*s' #%.*s (seq #%" PRIu64 "): %.*s %d '%.*s'",
                              (completed ? "" : "transient "),
-                             SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
+                             SPLAT(rev->docID), SPLAT(rev->revID), (uint64_t)rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
                     finishedDocumentWithError(rev, c4err, !completed);
                     // If this is a permanent failure, like a validation error or conflict,

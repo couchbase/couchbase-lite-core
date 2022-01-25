@@ -428,7 +428,7 @@ namespace litecore { namespace repl {
                     } catch (const exception &x) {
                         C4Error error = C4Error::fromException(x);
                         warn("Unable to mark '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",
-                             SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
+                             SPLAT(rev->docID), SPLAT(rev->revID), (uint64_t)rev->sequence,
                              error.domain, error.code);
                     }
                 }

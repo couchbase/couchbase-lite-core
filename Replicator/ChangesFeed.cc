@@ -109,7 +109,7 @@ namespace litecore { namespace repl {
 
 
     void ChangesFeed::getHistoricalChanges(Changes &changes, unsigned limit) {
-        logVerbose("Reading up to %u local changes since #%" PRIu64, limit, _maxSequence);
+        logVerbose("Reading up to %u local changes since #%" PRIu64, limit, (uint64_t)_maxSequence);
 
         // Run a by-sequence enumerator to find the changed docs:
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
@@ -147,7 +147,7 @@ namespace litecore { namespace repl {
 
     void ChangesFeed::getObservedChanges(Changes &changes, unsigned limit) {
         logVerbose("Asking DB observer for %u new changes since sequence #%" PRIu64 " ...",
-                   limit, _maxSequence);
+                   limit, (uint64_t)_maxSequence);
         static constexpr uint32_t kMaxChanges = 100;
         C4DatabaseObserver::Change c4changes[kMaxChanges];
         bool ext;
@@ -168,14 +168,14 @@ namespace litecore { namespace repl {
                 continue;     // ignore changes I made myself
             }
             logVerbose("Observed %u db changes #%" PRIu64 " ... #%" PRIu64,
-                       nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
+                       nChanges, (uint64_t)c4changes[0].sequence, (uint64_t)c4changes[nChanges-1].sequence);
 
             // Copy the changes into a vector of RevToSend:
             C4DatabaseObserver::Change *c4change = &c4changes[0];
             auto oldChangesCount = changes.revs.size();
             for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
                 // The sequence of a purge change is 0. Therefore the following statement
-                // will effectively, beside other effects, skip the changes due to Purge.
+                // will effectively, beside other effects, skip the changes due to Purge.
                 if (c4change->sequence <= startingMaxSequence)
                     continue;
                 C4DocumentInfo info = {};
