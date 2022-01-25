@@ -133,7 +133,7 @@ namespace litecore {
             string          alias;             // The alias (same as the AliasMap key)
             string          collection;        // Collection name
             string          tableName;         // SQLite table name
-            DeletionStatus  delStatus;         // Match live or deleted docs, or both?
+            DeletionStatus  delStatus {kLiveDocs}; // Match live or deleted docs, or both?
             const Dict  *   dict = nullptr;    // The Dict defining this alias
             const Value *   on = nullptr;      // The 'ON' clause of `dict`, if any
             const Value *   unnest = nullptr;  // The 'UNNEST' clause of `dict`, if any

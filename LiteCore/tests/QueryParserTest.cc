@@ -145,6 +145,16 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Only Deleted Docs", "[Query][Quer
           == "SELECT fl_result(_doc.key) FROM kv_del_default AS _doc WHERE fl_value(_doc.body, 'foo') AND true");
     CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted']}]")
           == "SELECT fl_result(_doc.key) FROM kv_del_default AS _doc WHERE true");
+    CHECK(parse("{WHAT: [['._id']], WHERE: ['._deleted'], FROM: [{AS: 'testdb'}]}")
+          == "SELECT fl_result(testdb.key) FROM kv_del_default AS testdb WHERE true");
+    CHECK(parse("{WHAT: [['._id']], WHERE: ['._deleted'], FROM: [{AS: 'testdb'}]}")
+          == "SELECT fl_result(testdb.key) FROM kv_del_default AS testdb WHERE true");
+    CHECK(parse("{WHAT: [['._id']], WHERE: ['.testdb._deleted'], FROM: [{AS: 'testdb'}]}")
+          == "SELECT fl_result(testdb.key) FROM kv_del_default AS testdb WHERE true");
+    CHECK(parse("{WHAT: ['._id'], WHERE: ['_.', ['META()'], 'deleted'], FROM: [{AS: 'testdb'}]}")
+          == "SELECT fl_result(testdb.key) FROM kv_del_default AS testdb WHERE true");
+    CHECK(parse("{WHAT: ['._id'], WHERE: ['_.', ['META()', 'testdb'], 'deleted'], FROM: [{AS: 'testdb'}]}")
+          == "SELECT fl_result(testdb.key) FROM kv_del_default AS testdb WHERE true");
 }
 
 
@@ -362,6 +372,11 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Join", "[Query][QueryParser]") {
                            {'as':'licence','on':['=',['.','session','licenceID'],['.','licence','id']]}],\
                  'WHERE':['AND',['AND',['=',['.','session','type'],'session'],['=',['.','user','type'],'user']],['=',['.','licence','type'],'licence']]}")
           == "SELECT fl_result(fl_value(session.body, 'appId')), fl_result(fl_value(user.body, 'username')), fl_result(fl_value(session.body, 'emoId')) FROM kv_default AS session INNER JOIN kv_default AS user ON (fl_value(session.body, 'emoId') = fl_value(user.body, 'emoId')) INNER JOIN kv_default AS licence ON (fl_value(session.body, 'licenceID') = fl_value(licence.body, 'id')) WHERE (fl_value(session.body, 'type') = 'session' AND fl_value(user.body, 'type') = 'user') AND fl_value(licence.body, 'type') = 'licence'");
+
+    CHECK(parse("{WHAT: [['.main.number1'], ['.secondary.number2']],"
+                " FROM: [{AS: 'main'}, {AS: 'secondary', JOIN: 'CROSS'}]}")
+          == "SELECT fl_result(fl_value(main.body, 'number1')), fl_result(fl_value(secondary.body, 'number2')) FROM kv_default AS "
+             "main CROSS JOIN kv_default AS secondary");
 }
 
 

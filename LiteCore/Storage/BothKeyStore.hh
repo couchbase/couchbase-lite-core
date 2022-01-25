@@ -19,6 +19,8 @@ namespace litecore {
     public:
         BothKeyStore(KeyStore *liveStore NONNULL, KeyStore *deadStore NONNULL);
 
+        KeyStore* liveStore() const                         {return _liveStore.get();}
+        KeyStore* deadStore() const                         {return _deadStore.get();}
 
         void shareSequencesWith(KeyStore&) override         {Assert(false);}
 
