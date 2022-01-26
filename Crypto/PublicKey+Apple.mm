@@ -702,6 +702,7 @@ namespace litecore { namespace crypto {
                 for (CFIndex i = count - 1; i >= 0; i--) {
                     SecCertificateRef copiedRef = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
                     if (getChildCertCount(copiedRef) < 2) {
+                        // CertRef returned from CopyCertificateChain won't get deleted, so we fetch directly. 
                         NSData* certData = CFBridgingRelease(findInKeychain(@{
                             (id)kSecClass:              (id)kSecClassCertificate,
                             (id)kSecValueRef:           (__bridge id)copiedRef,
