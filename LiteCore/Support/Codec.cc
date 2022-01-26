@@ -131,10 +131,10 @@ namespace litecore { namespace blip {
 
 
     void Deflater::write(slice_istream &input, slice_ostream &output, Mode mode) {
-        if (mode == Mode::Raw)
+        //if (mode == Mode::Raw)
             return _writeRaw(input, output);
 
-        slice origInput = input;
+       /* slice origInput = input;
         size_t origOutputSize = output.capacity();
         logInfo("Compressing %zu bytes into %zu-byte buf", input.size, origOutputSize);
 
@@ -150,7 +150,7 @@ namespace litecore { namespace blip {
         logInfo("    compressed %zu bytes to %zu (%.0f%%), %u unflushed",
             (origInput.size-input.size), (origOutputSize-output.capacity()),
             (origOutputSize-output.capacity()) * 100.0 / (origInput.size-input.size),
-            unflushedBytes());
+            unflushedBytes());*/
     }
 
 
