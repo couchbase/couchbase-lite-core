@@ -595,8 +595,10 @@ namespace litecore { namespace crypto {
             OSStatus err;
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
-                if (!SecTrustEvaluateWithError(trustRef, &cferr))
-                    warnCFError(cferr, "SecTrustEvaluateWithError");
+                if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
+                    auto error = (__bridge NSError*)cferr;
+                    LogTo(TLSLogDomain, "SecTrustEvaluateWithError %s", error.description.UTF8String);
+                }
                 err = SecTrustGetTrustResult(trustRef, &result);
             } else {
 #if TARGET_OS_MACCATALYST
@@ -665,8 +667,10 @@ namespace litecore { namespace crypto {
             OSStatus err;
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
-                if (!SecTrustEvaluateWithError(trustRef, &cferr))
-                    warnCFError(cferr, "SecTrustEvaluateWithError");
+                if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
+                    auto error = (__bridge NSError*)cferr;
+                    LogTo(TLSLogDomain, "SecTrustEvaluateWithError %s", error.description.UTF8String);
+                }
                 err = SecTrustGetTrustResult(trustRef, &result);
             } else {
 #if TARGET_OS_MACCATALYST
@@ -682,16 +686,35 @@ namespace litecore { namespace crypto {
             
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
+            if (count == 1) {
+                NSDictionary* params = @{
+                    (id)kSecClass:              (id)kSecClassCertificate,
+                    (id)kSecValueRef:           (__bridge id)certRef
+                };
+                checkOSStatus(SecItemDelete((CFDictionaryRef)params),
+                              "SecItemDelete",
+                              "Couldn't delete a certificate from the Keychain");
+                return;
+            }
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MAX_REQUIRED >= 150000
             if (@available(macOS 12.0, iOS 15.0, *)) {
                 CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
                 for (CFIndex i = count - 1; i >= 0; i--) {
-                    SecCertificateRef ref = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
-                    if (getChildCertCount(ref) < 2) {
+                    SecCertificateRef copiedRef = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
+                    if (getChildCertCount(copiedRef) < 2) {
+                        NSData* certData = CFBridgingRelease(findInKeychain(@{
+                            (id)kSecClass:              (id)kSecClassCertificate,
+                            (id)kSecValueRef:           (__bridge id)copiedRef,
+                            (id)kSecAttrLabel:          label,
+                            (id)kSecReturnData:         @YES
+                        }));
+                        
                         NSDictionary* params = @{
                             (id)kSecClass:              (id)kSecClassCertificate,
-                            (id)kSecValueRef:           (__bridge id)ref
+                            (id)kSecAttrLabel:          label,
+                            (id)kSecValueData:          certData
                         };
+                        
                         checkOSStatus(SecItemDelete((CFDictionaryRef)params),
                                       "SecItemDelete",
                                       "Couldn't delete a certificate from the Keychain");
@@ -757,8 +780,10 @@ namespace litecore { namespace crypto {
 
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
-                if (!SecTrustEvaluateWithError(trust, &cferr))
-                    warnCFError(cferr, "SecTrustEvaluateWithError");
+                if (!SecTrustEvaluateWithError(trust, &cferr)) {
+                    auto error = (__bridge NSError*)cferr;
+                    LogTo(TLSLogDomain, "SecTrustEvaluateWithError %s", error.description.UTF8String);
+                }
                 err = SecTrustGetTrustResult(trust, &result);
             } else {
 #if TARGET_OS_MACCATALYST
