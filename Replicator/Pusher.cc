@@ -58,7 +58,7 @@ namespace litecore { namespace repl {
     void Pusher::_start() {
         auto sinceSequence = _checkpointer.localMinSequence();
         logInfo("Starting %spush from local seq #%" PRIu64,
-            (_continuous ? "continuous " : ""), sinceSequence+1);
+            (_continuous ? "continuous " : ""), (uint64_t)sinceSequence+1);
         _started = true;
         startSending(sinceSequence);
     }
@@ -85,7 +85,7 @@ namespace litecore { namespace repl {
         _changesFeed.setContinuous(_continuous);
         _changesFeed.setSkipDeletedDocs(req->boolProperty("activeOnly"_sl));
         logInfo("Peer is pulling %schanges from seq #%" PRIu64,
-            (_continuous ? "continuous " : ""), since);
+            (_continuous ? "continuous " : ""), (uint64_t)since);
 
         auto filter = req->property("filter"_sl);
         if (filter) {
@@ -153,7 +153,7 @@ namespace litecore { namespace repl {
         _lastSequenceRead = max(_lastSequenceRead, changes.lastSequence);
 
         if (changes.revs.empty()) {
-            logInfo("Found 0 changes up to #%" PRIu64, changes.lastSequence);
+            logInfo("Found 0 changes up to #%" PRIu64, (uint64_t)changes.lastSequence);
         } else {
             uint64_t bodySize = 0;
             for (auto &change : changes.revs)
@@ -161,9 +161,9 @@ namespace litecore { namespace repl {
             addProgress({0, bodySize});
 
             logInfo("Read %zu local changes up to #%" PRIu64 ": sending '%-s' with sequences #%" PRIu64 " - #%" PRIu64,
-                    changes.revs.size(), changes.lastSequence,
+                    changes.revs.size(), (uint64_t)changes.lastSequence,
                     (_proposeChanges ? "proposeChanges" : "changes"),
-                    changes.revs.front()->sequence, changes.revs.back()->sequence);
+                    (uint64_t)changes.revs.front()->sequence, (uint64_t)changes.revs.back()->sequence);
 #if DEBUG
             if (willLog(LogLevel::Debug)) {
                 for (auto &change : changes.revs)
@@ -181,7 +181,7 @@ namespace litecore { namespace repl {
         if (!changes.askAgain) {
             // ChangesFeed says there are not currently any more changes, i.e. we've caught up.
             if (!_caughtUp) {
-                logInfo("Caught up, at lastSequence #%" PRIu64, changes.lastSequence);
+                logInfo("Caught up, at lastSequence #%" PRIu64, (uint64_t)changes.lastSequence);
                 _caughtUp = true;
                 if (_continuous)
                     _continuousCaughtUp = false;
@@ -292,7 +292,7 @@ namespace litecore { namespace repl {
         // Got reply to the "changes" or "proposeChanges":
         if (!changes.empty()) {
             logInfo("Got response for %zu local changes (sequences from %" PRIu64 ")",
-                changes.size(), changes.front()->sequence);
+                changes.size(), (uint64_t)changes.front()->sequence);
         }
         decrement(_changeListsInFlight);
         _changesFeed.setFindForeignAncestors(getForeignAncestors());
@@ -346,7 +346,7 @@ namespace litecore { namespace repl {
                                           : handleChangeResponse(change, *iResponse);
             if (queued) {
                 logVerbose("Queueing rev '%.*s' #%.*s (seq #%" PRIu64 ") [%zu queued]",
-                           SPLAT(change->docID), SPLAT(change->revID), change->sequence,
+                           SPLAT(change->docID), SPLAT(change->revID), (uint64_t)change->sequence,
                            _revQueue.size());
             }
             if (iResponse)
@@ -511,7 +511,7 @@ namespace litecore { namespace repl {
                 SPLAT(change->docID), SPLAT(change->revID),
                 SPLAT(change->remoteAncestorRevID),
                 (_proposeChanges ? "proposeChanges" : "changes"),
-                change->sequence);
+                (uint64_t)change->sequence);
         _pushingDocs.insert({change->docID, change});
         if (!passive())
             _checkpointer.addPendingSequence(change->sequence);

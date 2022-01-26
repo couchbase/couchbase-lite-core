@@ -94,7 +94,7 @@ namespace litecore {
 
         slice requiredString(const Value *v, const char *what) {
             slice str = required(required(v, what)->asString(), what, "must be a string");
-            require(str.size > 0, what, "must be non-empty");
+            require(str.size > 0, "%s must be non-empty", what);
             return str;
         }
 
@@ -102,7 +102,7 @@ namespace litecore {
             slice str;
             if (v) {
                 str = required(v->asString(), what, "must be a string");
-                require(str.size > 0, what, "must be non-empty");
+                require(str.size > 0, "%s must be non-empty", what);
             }
             return str;
         }

@@ -521,7 +521,8 @@ namespace litecore {
             Logging::rotateLog(level);
         }
     }
-    
+
+    __printflike(3, 4)
     static void invokeCallback(LogDomain &domain, LogLevel level, const char *fmt, ...) {
         va_list args;
         va_start(args, fmt);

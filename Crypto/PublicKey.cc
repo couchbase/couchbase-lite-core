@@ -67,7 +67,7 @@ namespace litecore { namespace crypto {
             case KeyFormat::Raw:
                 return publicKeyRawData();
             default:
-                Assert(false, "Invalid key format received (%d)", format);
+                Assert(false, "Invalid key format received (%d)", (int)format);
         }
     }
 
@@ -121,7 +121,7 @@ namespace litecore { namespace crypto {
             case KeyFormat::Raw:
                 return publicKeyRawData();
             default:
-                Assert(false, "Invalid key format received (%d)", format);
+                Assert(false, "Invalid key format received (%d)", (int)format);
         }
 
     }

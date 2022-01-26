@@ -375,7 +375,7 @@ namespace litecore {
         Assert(key);
         SQLite::Statement *stmt;
         db()._logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %" PRIu64,
-                        _name.c_str(), SPLAT(key), seq);
+                        _name.c_str(), SPLAT(key), (uint64_t)seq);
         if (seq != 0_seq) {
             stmt = &compileCached("DELETE FROM kv_@ WHERE key=? AND sequence=?");
             stmt->bind(2, (long long)seq);
@@ -558,7 +558,7 @@ namespace litecore {
         bool ok = stmt.exec() > 0;
         if (ok)
             db()._logVerbose("SQLiteKeyStore(%s) set expiration of '%.*s' to %" PRId64,
-                            _name.c_str(), SPLAT(key), expTime);
+                            _name.c_str(), SPLAT(key), (uint64_t)expTime);
         return ok;
     }
 
@@ -584,7 +584,7 @@ namespace litecore {
                 return next;
             next = expiration_t(int64_t(stmt.getColumn(0)));
         }
-        db()._logVerbose("Next expiration time is %" PRId64, next);
+        db()._logVerbose("Next expiration time is %" PRId64, (int64_t)next);
         return next;
     }
 
@@ -607,7 +607,7 @@ namespace litecore {
         }
         if (!none) {
             expired = db().exec(format("DELETE FROM kv_%s WHERE expiration <= %" PRId64,
-                                       name().c_str(), t));
+                                       name().c_str(), (int64_t)t));
         }
         db()._logInfo("Purged %u expired documents", expired);
         return expired;

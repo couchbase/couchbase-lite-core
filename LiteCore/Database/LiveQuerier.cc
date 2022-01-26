@@ -194,10 +194,10 @@ namespace litecore {
             if (newQE) {
                 if (_currentEnumerator && !_currentEnumerator->obsoletedBy(newQE)) {
                     logVerbose("Results unchanged at seq %" PRIu64 " (%.3fms)",
-                               newQE->lastSequence(), time);
+                               (uint64_t)newQE->lastSequence(), time);
                     return; // no delegate call
                 }
-                logInfo("Results changed at seq %" PRIu64 " (%.3fms)", newQE->lastSequence(), time);
+                logInfo("Results changed at seq %" PRIu64 " (%.3fms)", (uint64_t)newQE->lastSequence(), time);
                 _currentEnumerator = newQE;
             }
             _currentError = error;
