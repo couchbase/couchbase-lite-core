@@ -31,8 +31,9 @@ public:
     string getCollectionNames(slice inScope) {
         stringstream result;
         delimiter delim(", ");
-        db->forEachCollection(inScope, [&](slice name) {
-            result << delim << string_view(name);
+        db->forEachCollection(inScope, [&](C4CollectionSpec spec) {
+            CHECK(spec.scope == inScope);
+            result << delim << string_view(slice(spec.name));
         });
         return result.str();
     }
@@ -96,6 +97,16 @@ N_WAY_TEST_CASE_METHOD(C4CollectionTest, "Default Collection", "[Database][Colle
     // db->getDefaultCollection().
 
     CHECK(getCollectionNames(kC4DefaultScopeID) == "_default");
+
+    // It is, surprisingly, legal to delete the default collection:
+    db->deleteCollection(kC4DefaultCollectionName);
+    CHECK(db->getDefaultCollection() == nullptr);
+    CHECK(db->getCollection(kC4DefaultCollectionName) == nullptr);
+    CHECK(getCollectionNames(kC4DefaultScopeID) == "");
+    // But you can't recreate it:
+    C4ExpectException(LiteCoreDomain, kC4ErrorInvalidParameter, [&]{
+        db->createCollection(kC4DefaultCollectionName);
+    });
 }
 
 

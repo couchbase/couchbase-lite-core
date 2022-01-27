@@ -82,10 +82,11 @@ C4API_BEGIN_DECLS
     @{ */
 
 
-/** Returns the default collection that exists in every database.
-    In a pre-existing database, this collection contains all documents that were added to
-    "the database" before collections existed.
-    Its name is "_default" (`kC4DefaultCollectionName`). */
+/** Returns the default collection, whose name is "`_default`" (`kC4DefaultCollectionName`).
+    This is the one collection that exists in every newly created database.
+    When a pre-existing database is upgraded to support collections, all its documents are put
+    in the default collection.
+    @note  This function never returns NULL, unless the default collection has been deleted. */
 C4Collection* c4db_getDefaultCollection(C4Database *db) C4API;
 
 /** Returns true if the collection exists. */
@@ -104,7 +105,8 @@ C4Collection* C4NULLABLE c4db_createCollection(C4Database *db,
                                                C4Error* C4NULLABLE outError) C4API;
 
 /** Deletes the collection with the given name & scope.
-    Deleting the last collection from a scope implicitly deletes the scope. */
+    Deleting the last collection from a scope implicitly deletes the scope.
+    @note  It is legal to delete the default collection, but it cannot be re-created. */
 bool c4db_deleteCollection(C4Database *db,
                            C4CollectionSpec spec,
                            C4Error* C4NULLABLE outError) C4API;

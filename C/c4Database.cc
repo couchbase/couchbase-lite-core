@@ -260,10 +260,12 @@ void C4Database::clearCookies() {
 #pragma mark - COLLECTIONS:
 
 
-void C4Database::forEachCollection(slice inScope, const CollectionCallback &cb) const {
+void C4Database::forEachCollection(slice inScope, const CollectionSpecCallback &cb) const {
+    if (!inScope)
+        inScope = kC4DefaultScopeID;
     forEachCollection([&](const CollectionSpec &spec) {
         if (spec.scope == inScope)
-            cb(spec.name);
+            cb(spec);
     });
 }
 

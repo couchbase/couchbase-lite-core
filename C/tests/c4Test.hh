@@ -157,6 +157,12 @@ class TransactionHelper {
 };
 
 
+// Calls the function, catches any exception it throws, and CHECKs that it's a C4Error
+// (or litecore::error) with the expected domain and code.
+// FAILs if no exception is thrown.
+void C4ExpectException(C4ErrorDomain domain, int code, std::function<void()>);
+
+
 #pragma mark - C4TEST BASE CLASS:
 
 #ifndef SkipVersionVectorTest

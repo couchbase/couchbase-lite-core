@@ -21,6 +21,7 @@
 #include "StringUtil.hh"
 #include "Backtrace.hh"
 #include "Benchmark.hh"
+#include "Error.hh"
 #include <csignal>
 #include <iostream>
 #include <fstream>
@@ -108,6 +109,23 @@ void CheckError(C4Error error,
         alloc_slice msg = c4error_getMessage(error);
         CHECK(msg == expectedMessage);
     }
+}
+
+
+void C4ExpectException(C4ErrorDomain domain, int code, std::function<void()> lambda) {
+    try {
+        ExpectingExceptions x;
+        C4Log("NOTE: Expecting an exception to be thrown...");
+        lambda();
+    } catch (const std::exception &x) {
+        auto e = litecore::error::convertException(x).standardized();
+        C4Error err = {C4ErrorDomain(e.domain), e.code};
+        char buffer[256];
+        C4Log("... caught exception %s", c4error_getDescriptionC(err, buffer, sizeof(buffer)));
+        CHECK(err == (C4Error{domain, code}));
+        return;
+    }
+    FAIL("Should have thrown an exception");
 }
 
 

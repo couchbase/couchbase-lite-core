@@ -250,8 +250,8 @@ bool c4db_deleteCollection(C4Database *db, C4CollectionSpec spec, C4Error* C4NUL
 
 FLMutableArray c4db_collectionNames(C4Database *db, C4String inScope) noexcept {
     auto names = FLMutableArray_New();
-    db->forEachCollection(inScope, [&](slice collectionName) {
-        FLMutableArray_AppendString(names, collectionName);
+    db->forEachCollection(inScope, [&](C4CollectionSpec spec) {
+        FLMutableArray_AppendString(names, spec.name);
     });
     return names;
 }

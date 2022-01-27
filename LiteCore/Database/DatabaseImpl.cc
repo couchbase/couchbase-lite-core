@@ -494,19 +494,23 @@ namespace litecore {
 #pragma mark - COLLECTIONS:
 
 
+    static bool isDefaultCollection(slice id)   {return id == kC4DefaultCollectionName;}
+    static bool isDefaultScope(slice id)        {return !id || isDefaultCollection(id);}
+
+    static bool isDefaultCollection(C4CollectionSpec spec) {
+        return isDefaultCollection(spec.name) && isDefaultScope(spec.scope);
+    }
+
     // Scope IDs have the same syntax as collection names.
-    MUST_USE_RESULT
     static bool isValidScopeNameOrDefault(slice id) {
-        return KeyStore::isValidCollectionName(id) || id == kC4DefaultScopeID;
+        return KeyStore::isValidCollectionName(id) || isDefaultScope(id);
     }
 
 
     /// Given a collection name and scope ID, returns the corresponding KeyStore name.
     /// Throws InvalidParameter if either is invalid.
     static string collectionNameToKeyStoreName(C4Database::CollectionSpec spec) {
-        if (!spec.scope)
-            spec.scope = kC4DefaultScopeID;
-        if (spec.name == kC4DefaultCollectionName && spec.scope == kC4DefaultScopeID)
+        if (isDefaultCollection(spec))
             return DataFile::kDefaultKeyStoreName;
 
         if (!isValidScopeNameOrDefault(spec.scope))
@@ -520,7 +524,7 @@ namespace litecore {
         // If scope ID is not "_default", it's prepended to the name with a '.' between.
         // KeyStore name is "." + name; SQLite table name will be "kv_." + name
         string result(KeyStore::kCollectionPrefix);
-        if (spec.scope != kC4DefaultScopeID) {
+        if (!isDefaultScope(spec.scope)) {
             result.append(slice(spec.scope));
             result.append(1, KeyStore::kScopeCollectionSeparator);
         }
@@ -553,7 +557,7 @@ namespace litecore {
 
     void DatabaseImpl::initCollections() {
         LOCK(_collectionsMutex);
-        _defaultCollection = createCollection(kC4DefaultCollectionName);
+        _defaultCollection = getCollection(kC4DefaultCollectionName);
     }
 
 
@@ -584,8 +588,12 @@ namespace litecore {
         string keyStoreName = collectionNameToKeyStoreName(spec);
 
         // Validate its existence, if canCreate is false:
-        if (!canCreate && !_dataFile->keyStoreExists(keyStoreName))
+        if ((!canCreate || isDefaultCollection(spec)) && !_dataFile->keyStoreExists(keyStoreName)) {
+            if (canCreate && isDefaultCollection(spec))
+                C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
+                               "You cannot recreate the default collection");
             return nullptr;                                                 //-> NULL
+        }
 
         // Instantiate it, creating the KeyStore on-disk if necessary:
         KeyStore &store = _dataFile->getKeyStore(keyStoreName);
@@ -601,18 +609,16 @@ namespace litecore {
 
 
     void DatabaseImpl::deleteCollection(CollectionSpec spec) {
-        if (spec.name == kC4DefaultCollectionName && spec.scope == kC4DefaultScopeID)
-            C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter,
-                           "Can't delete the default collection");
-
         Transaction t(this);
-        
+
         LOCK(_collectionsMutex);
         if (auto i = _collections.find(spec); i != _collections.end()) {
             asInternal(i->second.get())->close();
             _collections.erase(i);
         }
         _dataFile->deleteKeyStore(collectionNameToKeyStoreName(spec));
+        if (isDefaultCollection(spec))
+            _defaultCollection = nullptr;
 
         t.commit();
     }

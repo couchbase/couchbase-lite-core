@@ -105,11 +105,8 @@ public:
         CollectionSpec(slice name)                   :C4CollectionSpec{name, kC4DefaultScopeID} { }
     };
 
-    /// Returns the default collection that exists in every database.
-    /// In a pre-existing database, this collection contains all docs that were added to
-    /// "the database" before collections existed.
-    /// Its name is "_default" (`kC4DefaultCollectionName`).
-    C4Collection* getDefaultCollection() const              {return _defaultCollection;}
+    /// Returns the default collection, whose name is "_default" (`kC4DefaultCollectionName`).
+    C4Collection* C4NULLABLE getDefaultCollection() const              {return _defaultCollection;}
 
     /// Returns true if a collection exists with the given name & scope.
     virtual bool hasCollection(CollectionSpec) const =0;
@@ -124,11 +121,10 @@ public:
     /// Deletes the collection with the given name & scope.
     virtual void deleteCollection(CollectionSpec) =0;
 
-    using CollectionCallback = fleece::function_ref<void(slice)>;
     using CollectionSpecCallback = fleece::function_ref<void(CollectionSpec)>;
 
     /// Calls the callback function for each collection in the scope, in the order created.
-    void forEachCollection(slice, const CollectionCallback&) const;
+    void forEachCollection(slice scopeName, const CollectionSpecCallback&) const;
 
     /// Calls the callback function for each collection _in each scope_.
     virtual void forEachCollection(const CollectionSpecCallback&) const =0;
