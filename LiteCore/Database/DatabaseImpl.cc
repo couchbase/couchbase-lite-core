@@ -504,6 +504,8 @@ namespace litecore {
     /// Given a collection name and scope ID, returns the corresponding KeyStore name.
     /// Throws InvalidParameter if either is invalid.
     static string collectionNameToKeyStoreName(C4Database::CollectionSpec spec) {
+        if (!spec.scope)
+            spec.scope = kC4DefaultScopeID;
         if (spec.name == kC4DefaultCollectionName && spec.scope == kC4DefaultScopeID)
             return DataFile::kDefaultKeyStoreName;
 

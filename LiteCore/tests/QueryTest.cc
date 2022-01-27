@@ -2374,15 +2374,16 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Require FROM for N1QL expressions", "[Query]"
 
 
 TEST_CASE_METHOD(QueryTest, "Invalid collection names", "[Query]") {
-    static const char* kBadCollectionNames[] = {
+    string tooLong(252, 'x');
+    string tooLong2 = "a." + tooLong, tooLong3 = tooLong + ".z";
+    const char* kBadCollectionNames[] = {
         // "_",   <- nope, "_" happens to be legal (synonym for the default collection)
         "%",
         "%xx", "_xx", "x y",
         ".", "xx.", ".xx", "_b.c", "b._c",
         "in.val.id", "in..val",
         "_default.foo", "foo._default", "_default._default",
-        "1234567890123456789012345678901",  // max length is 30
-        "z.1234567890123456789012345678901", "1234567890123456789012345678901.z",
+        tooLong.c_str(), tooLong2.c_str(), tooLong3.c_str()
     };
     for (auto badName : kBadCollectionNames) {
         INFO("Collection name is " << badName);

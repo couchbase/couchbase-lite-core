@@ -28,7 +28,7 @@ C4API_BEGIN_DECLS
 */
 
 
-/** \defgroup Collection Collections
+/** \defgroup Collection Collections and Scopes
     @{
     A `C4Collection` represents a **Collection**, a named grouping of documents in a database.
     You can think of them as "folders" or "directories" for documents, or as like tables.
@@ -40,15 +40,20 @@ C4API_BEGIN_DECLS
     - a scope for document enumerators
     - independent sequence numbers
 
-    Every database starts with a **default Collection**, whose name is `_default`. If the database
-    was created by an earlier version of LiteCore, all existing documents will be in the default
-    Collection.
+    Likewise, a **Scope** is a grouping of Collections, like a "parent folder".
+
+    Every database starts with a **default Collection**, whose name is `_default`, which exists in
+    a **default Scope**, also named `_default`. If the database was created by an earlier version
+    of LiteCore, all existing documents will be in the default Collection.
 
     Pre-existing functions that refer to documents / sequences / indexes without referring to
     Collections -- such as \ref c4doc_get and \ref c4db_getLastSequence -- still exist, but implicitly
     operate on the default Collection. In other words, they behave exactly the way they used to,
     but Collection-aware code should avoid them and use the new Collection API instead.
-    These functions will eventually be deprecated, then removed.
+
+    These functions will eventually be deprecated, then removed. As an aid in updating your code,
+    you can define the C preprocessor symbol `C4_STRICT_COLLECTION_API` to suppress the definitions
+    of those functions, which will turn all calls to them into errors.
 
     > **NOTE:** A few Collection functions are documented in other sections of the API docs:
 
@@ -58,6 +63,18 @@ C4API_BEGIN_DECLS
     - Observer-related functions (in `c4Observer.h`):
       - \ref c4dbobs_createOnCollection
       - \ref c4docobs_createWithCollection
+
+     A `C4Collection` reference is valid until its `C4Database` is closed, or until you delete the
+     collection. It does not need to be released or freed.
+
+    In the API, collections are named by a `C4CollectionSpec` struct, which simply contains two
+    `FLString`s, first a collection name and second a scope name. Note that the collection name
+    comes first (unlike in a N1QL query), so that the scope name can be left out if you're
+    referring to the default scope. You can give a collection spec literally as e.g.
+    `{C4STR("mycoll")}`, or with a scope, `{C4STR("mycoll"), C4STR("myscope")}`.
+
+    There are no API calls to create or delete Scopes. A Scope is created implicitly when you create
+    the first Collection inside it, and deleted implicitly when you delete its last Collection.
  */
 
 
@@ -66,7 +83,7 @@ C4API_BEGIN_DECLS
 
 
 /** Returns the default collection that exists in every database.
-    In a pre-existing database, this collection contains all docs that were added to
+    In a pre-existing database, this collection contains all documents that were added to
     "the database" before collections existed.
     Its name is "_default" (`kC4DefaultCollectionName`). */
 C4Collection* c4db_getDefaultCollection(C4Database *db) C4API;
@@ -79,23 +96,27 @@ bool c4db_hasCollection(C4Database *db,
 C4Collection* C4NULLABLE c4db_getCollection(C4Database *db,
                                             C4CollectionSpec spec) C4API;
 
-/** Creates and returns an empty collection with the given name & scope,
-    or returns an existing collection by that name. */
-C4Collection* c4db_createCollection(C4Database *db,
-                                    C4CollectionSpec spec,
-                                    C4Error* C4NULLABLE outError) C4API;
+/** Creates and returns an empty collection with the given name & scope.
+    If the collection already exists, it just returns it.
+    If the scope doesn't exist, it is implicitly created. */
+C4Collection* C4NULLABLE c4db_createCollection(C4Database *db,
+                                               C4CollectionSpec spec,
+                                               C4Error* C4NULLABLE outError) C4API;
 
-/** Deletes the collection with the given name & scope. */
+/** Deletes the collection with the given name & scope.
+    Deleting the last collection from a scope implicitly deletes the scope. */
 bool c4db_deleteCollection(C4Database *db,
                            C4CollectionSpec spec,
                            C4Error* C4NULLABLE outError) C4API;
 
 /** Returns the names of all existing collections in the given scope,
-    in the order in which they were created. */
+    in the order in which they were created.
+    @note  You are responsible for releasing the returned Fleece array. */
 FLMutableArray c4db_collectionNames(C4Database *db,
                                     C4String inScope) C4API;
 
-/** Returns the names of all existing scopes, in the order in which they were created. */
+/** Returns the names of all existing scopes, in the order in which they were created.
+    @note  You are responsible for releasing the returned Fleece array. */
 FLMutableArray c4db_scopeNames(C4Database *db) C4API;
 
 
@@ -124,7 +145,7 @@ C4SequenceNumber c4coll_getLastSequence(C4Collection*) C4API;
 
 /** Gets a document from the collection given its ID.
     The current revision is selected (if the document exists.)
-    You must call \ref c4doc_release when finished with the document.
+    @note  You must call \ref c4doc_release when finished with the document.
     @param collection  The collection to read from.
     @param docID  The document's ID.
     @param mustExist  Governs behavior if no document with that ID exists. If true, the call fails
@@ -132,17 +153,17 @@ C4SequenceNumber c4coll_getLastSequence(C4Collection*) C4API;
     @param content  How much content to retrieve: metadata only, current revision, or all revisions.
     @param outError  On failure, error information is stored here.
     @return  A new C4Document instance (which must be released), or NULL. */
-C4Document* c4coll_getDoc(C4Collection *collection,
-                          C4String docID,
-                          bool mustExist,
-                          C4DocContentLevel content,
-                          C4Error* C4NULLABLE outError) C4API;
+C4Document* C4NULLABLE c4coll_getDoc(C4Collection *collection,
+                                     C4String docID,
+                                     bool mustExist,
+                                     C4DocContentLevel content,
+                                     C4Error* C4NULLABLE outError) C4API;
 
 /** Gets a document from the collection given its sequence number.
- You must call `c4doc_release()` when finished with the document.  */
-C4Document* c4coll_getDocBySequence(C4Collection *collection,
-                                    C4SequenceNumber,
-                                    C4Error* C4NULLABLE outError) C4API;
+    @note  You must call `c4doc_release()` when finished with the document.  */
+C4Document* C4NULLABLE c4coll_getDocBySequence(C4Collection *collection,
+                                               C4SequenceNumber,
+                                               C4Error* C4NULLABLE outError) C4API;
 
 /** A high-level Put operation, to insert a new or downloaded revision.
     - If `request->existingRevision` is true, then request->history must contain the revision's
@@ -150,29 +171,32 @@ C4Document* c4coll_getDocBySequence(C4Collection *collection,
     - Otherwise, a new revision will be created and assigned a revID. The parent revision ID,
       if any, should be given as the single item of request->history.
     Either way, on success the document is returned with the inserted revision selected.
+
     Note that actually saving the document back to the database is optional -- it only happens
     if request->save is true. You can set this to false if you want to review the changes
-    before saving, e.g. to run them through a validation function. */
-C4Document* c4coll_putDoc(C4Collection *collection,
-                          const C4DocPutRequest *request,
-                          size_t * C4NULLABLE outCommonAncestorIndex,
-                          C4Error* C4NULLABLE outError) C4API;
+    before saving, e.g. to run them through a validation function.
+    @note  You must call \ref c4doc_release when finished with the returned document. */
+C4Document* C4NULLABLE c4coll_putDoc(C4Collection *collection,
+                                     const C4DocPutRequest *request,
+                                     size_t * C4NULLABLE outCommonAncestorIndex,
+                                     C4Error* C4NULLABLE outError) C4API;
 
 /** Convenience function to create a new document. This just a wrapper around \ref c4coll_putDoc.
     If the document already exists, it will fail with the error `kC4ErrorConflict`.
+    @note  You must call \ref c4doc_release when finished with the document.
     @param collection  The collection to create the document in
     @param docID  Document ID to create; if null, a UUID will be generated
     @param body  Body of the document
     @param revisionFlags  The flags of the new revision
     @param error Information about any error that occurred
     @return  On success, a new C4Document with the new revision selected; else NULL. */
-C4Document* c4coll_createDoc(C4Collection *collection,
-                             C4String docID,
-                             C4Slice body,
-                             C4RevisionFlags revisionFlags,
-                             C4Error* C4NULLABLE error) C4API;
+C4Document* C4NULLABLE c4coll_createDoc(C4Collection *collection,
+                                        C4String docID,
+                                        C4Slice body,
+                                        C4RevisionFlags revisionFlags,
+                                        C4Error* C4NULLABLE error) C4API;
 
-/** Moves a document to another collection, possibly with a different ID.
+/** Moves a document to another collection, possibly with a different docID.
     @param collection  The document's original collection.
     @param docID  The ID of the document to move.
     @param toCollection  The collection to move to.

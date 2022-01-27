@@ -27,7 +27,8 @@ namespace litecore {
 
     bool KeyStore::isValidCollectionName(slice name) {
         // Enforce CBServer collection name restrictions:
-        return name.size >= 1 && name.size <= 30
+        // <https://docs.couchbase.com/server/current/learn/data/scopes-and-collections.html>
+        return name.size >= 1 && name.size <= 251
             && !name.findByteNotIn(KeyStore::kCollectionNameCharacterSet)
             && name[0] != '_' && name[0] != '%';
     }
