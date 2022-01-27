@@ -264,6 +264,8 @@ public:
                             double timeout =0.0,
                             bool verbose =false);
     bool readFileByLines(std::string path, function_ref<bool(FLSlice)>, size_t maxLines);
+    unsigned importJSONLines(std::string path, C4Collection*, 
+                             double timeout =0.0, bool verbose =false, size_t maxLines =0);
     unsigned importJSONLines(std::string path, double timeout =0.0, bool verbose =false,
                              C4Database* database = nullptr, size_t maxLines =0);
 

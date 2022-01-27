@@ -13,6 +13,7 @@
 #include "c4Test.hh"
 #include "TestsCommon.hh"
 #include "c4BlobStore.h"
+#include "c4Collection.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "fleece/slice.hh"
@@ -598,13 +599,13 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
 
 
 // Read a file that contains a JSON document per line. Every line becomes a document.
-unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Database* database, size_t maxLines) {
+unsigned C4Test::importJSONLines(string path, C4Collection *collection,
+                                 double timeout, bool verbose, size_t maxLines)
+{
     C4Log("Reading %s ...  ", path.c_str());
     fleece::Stopwatch st;
-    if(database == nullptr) {
-        database = db;
-    }
-    
+
+    auto database = c4coll_getDatabase(collection);
     unsigned numDocs = 0;
     bool completed;
     {
@@ -622,7 +623,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             rq.docID = c4str(docID);
             rq.allocedBody = {(void*)body.buf, body.size};
             rq.save = true;
-            C4Document *doc = c4doc_put(database, &rq, nullptr, ERROR_INFO());
+            C4Document *doc = c4coll_putDoc(collection, &rq, nullptr, ERROR_INFO());
             REQUIRE(doc != nullptr);
             c4doc_release(doc);
             ++numDocs;
@@ -638,8 +639,17 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");
     if (completed)
-        CHECK(c4db_getDocumentCount(database) == numDocs);
+        CHECK(c4coll_getDocumentCount(collection) == numDocs);
     return numDocs;
+}
+
+
+unsigned C4Test::importJSONLines(string path, double timeout, bool verbose,
+                                 C4Database* database, size_t maxLines)
+{
+    if(database == nullptr)
+        database = db;
+    return importJSONLines(path, c4db_getDefaultCollection(database), timeout, verbose, maxLines);
 }
 
 
