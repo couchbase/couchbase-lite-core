@@ -410,13 +410,9 @@ namespace litecore {
             case WebSocket:
                 return websocket_errstr(code);
             case MbedTLS: {
-#ifdef LITECORE_IMPL
                 char buf[100];
                 mbedtls_strerror(code, buf, sizeof(buf));
                 return string(buf);
-#else
-                return format("(mbedTLS %s0x%x)", (code < 0 ? "-" : ""), abs(code));
-#endif
             }
             default:
                 return "unknown error domain";

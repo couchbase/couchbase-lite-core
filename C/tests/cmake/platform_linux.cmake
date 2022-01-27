@@ -11,6 +11,11 @@ function(setup_build)
         mbedx509
     )
 
+    target_link_options(
+        C4Tests PRIVATE
+        "-export-dynamic"
+    )
+
     target_include_directories(
         C4Tests PRIVATE
         ${TOP}LiteCore/Unix
