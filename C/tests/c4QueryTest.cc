@@ -1142,6 +1142,39 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query alternative FROM names", "[Query][C
 }
 
 
+class CollectionTest : public C4QueryTest {
+public:
+    CollectionTest() :C4QueryTest(0, "") { }
+
+    void populate(C4CollectionSpec spec, std::string filename) {
+        C4Collection *coll = c4db_createCollection(db, spec, ERROR_INFO());
+        REQUIRE(coll);
+        importJSONLines(sFixturesDir + filename, coll);
+    }
+};
+
+
+TEST_CASE_METHOD(CollectionTest, "C4Query collections", "[Query][C]") {
+    TransactionHelper t(db);
+    populate({"widgets"_sl}, "wikipedia_100.json");
+    populate({"nested"_sl, "small"_sl}, "nested.json");
+
+    compileSelect(json5("{WHAT: ['.widgets.title'], FROM: [{COLLECTION:'widgets'}]}"));
+    CHECK(run().size() == 100);
+
+    compileSelect(json5("{WHAT: ['.nested.shapes'], FROM: [{COLLECTION:'nested', SCOPE:'small'}],"
+                        "WHERE: ['=', ['.nested.shapes[0].color'], 'red']}"));
+    CHECK(run().size() == 2);
+
+    compileSelect(json5("{WHAT: ['.nested.shapes'], FROM: [{COLLECTION:'small.nested'}],"
+                        "WHERE: ['=', ['.nested.shapes[0].color'], 'red']}"));
+    CHECK(run().size() == 2);
+}
+
+
+#pragma mark - OBSERVERS:
+
+
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "Multiple C4Query observers", "[Query][C][!throws]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;

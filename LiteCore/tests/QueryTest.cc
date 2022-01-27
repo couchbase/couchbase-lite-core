@@ -2180,8 +2180,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
         return c == '"' ? '\'' : c;
     });
     CHECK(dictJson == "{'deleted':0,'id':'doc1','sequence':1}");
+
+    string collectionAlias = collectionName;
+    if (auto dot = collectionAlias.find('.'); dot != string::npos)
+        collectionAlias = collectionAlias.substr(dot + 1);
     
-    query = store->compileQuery("SELECT meta(" + collectionName + ") from " + collectionName,
+    query = store->compileQuery("SELECT meta(" + collectionAlias + ") from " + collectionName,
                                 QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);
@@ -2202,7 +2206,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query META", "[Query][N1QL]") {
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "doc2"_sl);
     
-    query = store->compileQuery("SELECT meta(" + collectionName + ").id from " + collectionName,
+    query = store->compileQuery("SELECT meta(" + collectionAlias + ").id from " + collectionName,
                                 QueryLanguage::kN1QL);
     e = query->createEnumerator();
     REQUIRE(e->getRowCount() == 2);

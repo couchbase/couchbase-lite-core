@@ -433,6 +433,8 @@ namespace litecore {
         auto dict = requiredDict(value, "FROM item");
         slice collection = optionalString(getCaseInsensitive(dict, "COLLECTION"_sl),
                                           "COLLECTION in FROM item");
+        slice scope = optionalString(getCaseInsensitive(dict, "SCOPE"_sl),
+                                          "SCOPE in FROM item");
         aliasInfo from;
         from.type = aliasType(-1);
         from.dict = dict;
@@ -440,17 +442,29 @@ namespace litecore {
         from.on = getCaseInsensitive(dict, "ON"_sl);
         from.unnest = getCaseInsensitive(dict, "UNNEST"_sl);
         if (collection) {
-            from.collection = string(collection);
+            if (scope)
+                from.collection = string(scope) + '.';
+            from.collection += string(collection);
             from.tableName = _delegate.collectionTableName(from.collection, kLiveDocs);
             require(_delegate.tableExists(from.tableName),
-                    "no such collection \"%.*s\"", SPLAT(collection));
+                    "no such collection \"%s\"", from.collection.c_str());
+        } else if (scope) {
+            fail("SCOPE in FROM item requires a COLLECTION too");
         } else {
             from.collection = _defaultCollectionName;
             from.tableName = _defaultTableName;
             DebugAssert(_delegate.tableExists(from.tableName));
         }
-        if (from.alias.empty())
-            from.alias = collection ? string(collection) : _defaultCollectionName;
+        if (from.alias.empty()) {
+            if (collection) {
+                if (auto dot = collection.findByte('.'))
+                    collection.setStart(dot + 1);   // skip scope name: a dot in an alias is bad
+                from.alias = string(collection);
+            } else {
+                from.alias = _defaultCollectionName;
+            }
+        }
+        require(from.alias.find('.') == string::npos, "AS in FROM item cannot contain a '.'");
         return from;
     }
 

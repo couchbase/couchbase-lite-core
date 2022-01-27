@@ -519,3 +519,39 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM collection", "[Query][QueryP
           == "SELECT fl_result(fl_value(book.body, 'title')), fl_result(fl_value(library.body, 'name')), fl_result(fl_root(library.body)) FROM kv_default AS book INNER JOIN \"kv_.library\" AS library ON (fl_value(book.body, 'library') = library.key) WHERE fl_value(book.body, 'author') = $_AUTHOR");
     CHECK(usedTableNames == set<string>{"kv_default", "kv_.library"});
 }
+
+
+TEST_CASE_METHOD(QueryParserTest, "QueryParser FROM scope", "[Query][QueryParser]") {
+    tableNames.insert("kv_.banned.books");
+
+    // Query a nonexistent scope:
+    ExpectException(error::LiteCore, error::InvalidQuery, [&]{
+        parse("{WHAT: ['.books.title'], \
+                   FROM: [{scope: 'bestselling', collection: 'books'}],\
+                  WHERE: ['=', ['.books.author'], ['$AUTHOR']]}");
+    });
+    // Query scope w/o collection:
+    ExpectException(error::LiteCore, error::InvalidQuery, [&]{
+        parse("{WHAT: ['.books.title'], \
+                   FROM: [{scope: 'banned'}],\
+                  WHERE: ['=', ['.books.author'], ['$AUTHOR']]}");
+    });
+
+    // Query a collection in a scope:
+    CHECK(parse("{WHAT: ['.books.title'], \
+                  FROM: [{scope: 'banned', collection: 'books'}],\
+                 WHERE: ['=', ['.books.author'], ['$AUTHOR']]}")
+          == "SELECT fl_result(fl_value(books.body, 'title')) "
+               "FROM \"kv_.banned.books\" AS books "
+              "WHERE fl_value(books.body, 'author') = $_AUTHOR");
+    CHECK(usedTableNames == set<string>{"kv_.banned.books"});
+
+    // Put the scope name in the collection string:
+    CHECK(parse("{WHAT: ['.books.title'], \
+                  FROM: [{collection: 'banned.books'}],\
+                 WHERE: ['=', ['.books.author'], ['$AUTHOR']]}")
+          == "SELECT fl_result(fl_value(books.body, 'title')) "
+               "FROM \"kv_.banned.books\" AS books "
+              "WHERE fl_value(books.body, 'author') = $_AUTHOR");
+    CHECK(usedTableNames == set<string>{"kv_.banned.books"});
+}
