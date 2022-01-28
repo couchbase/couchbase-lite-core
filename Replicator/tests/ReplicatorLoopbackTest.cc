@@ -1137,6 +1137,45 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push]
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint Push after Delete", "[Push]") {
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    _ignoreLackOfDocErrors = true;
+    _checkDocsFinished = false;
+
+    slice doc1_id = "doc1"_sl;
+    slice doc2_id = "doc2"_sl;
+
+    createRev(doc1_id, kRevID, kFleeceBody);
+    createRev(doc2_id, kRevID, kFleeceBody);
+    c4::ref<C4Document> doc1 = c4db_getDoc(db, doc1_id, true, kDocGetAll, ERROR_INFO());
+    REQUIRE(doc1);
+
+    REQUIRE(c4db_getDocumentCount(db) == 2);
+    REQUIRE(c4db_getDocumentCount(db2) == 0);
+
+    Log("-------- First Replication: push db->db2 --------");
+    _expectedDocumentCount = 2;
+    runReplicators(Replicator::Options::pushing(), serverOpts);
+
+    REQUIRE(c4db_getDocumentCount(db2) == 2);
+
+    // delete doc1 from local
+    {
+        TransactionHelper t(db);
+        // Delete the doc:
+        c4::ref<C4Document> deletedDoc = c4doc_update(doc1, kC4SliceNull, kRevDeleted, ERROR_INFO());
+        REQUIRE(deletedDoc);
+        REQUIRE(deletedDoc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
+    }
+    REQUIRE(c4db_getDocumentCount(db) == 1);
+
+    _expectedDocumentCount = 1;
+    runReplicators(Replicator::Options::pushing(), serverOpts);
+    c4::ref<C4Document> doc1InDb2 = c4db_getDoc(db2, doc1_id, true, kDocGetMetadata, ERROR_INFO());
+    CHECK( (doc1InDb2 && (doc1InDb2->flags | kDocDeleted)) );
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull][Conflict]") {
     C4Slice docID = C4STR("Khan");
 

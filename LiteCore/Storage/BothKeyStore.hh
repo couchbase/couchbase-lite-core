@@ -50,10 +50,11 @@ namespace litecore {
             _liveStore->setKV(key, version, value, transaction);
         }
 
-        virtual bool del(slice key, ExclusiveTransaction &t, sequence_t replacingSequence) override {
+        virtual bool del(slice key, ExclusiveTransaction &t, sequence_t replacingSequence,
+                         uint64_t replacingSubsequence =-1) override {
             // Always delete from both stores, for safety's sake.
-            bool a = _liveStore->del(key, t, replacingSequence);
-            bool b = _deadStore->del(key, t, replacingSequence);
+            bool a = _liveStore->del(key, t, replacingSequence, replacingSubsequence);
+            bool b = _deadStore->del(key, t, replacingSequence, replacingSubsequence);
             return a || b;
         }
 
