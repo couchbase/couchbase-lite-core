@@ -15,6 +15,11 @@ function(setup_build)
         ${TOP}LiteCore/Unix
     )
 
+    target_link_options(
+        CppTests PRIVATE
+        "-export-dynamic"
+    )
+
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "^armv[67]")
         target_link_libraries(
             CppTests PRIVATE
