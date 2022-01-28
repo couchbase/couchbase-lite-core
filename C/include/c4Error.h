@@ -141,8 +141,10 @@ typedef struct C4Error {
 #ifdef __cplusplus
     // C4Error C++ API:
     static C4Error make(C4ErrorDomain, int code, fleece::slice message ={});
-    static C4Error printf(C4ErrorDomain, int code, const char *format, ...) __printflike(3,4);
-    static C4Error vprintf(C4ErrorDomain, int code, const char *format, va_list args);
+    static C4Error printf(C4ErrorDomain, int code, const char *format, ...)
+        __printflike(3,4);
+    static C4Error vprintf(C4ErrorDomain, int code, const char *format, va_list args)
+        __printflike(3,0);
     static void set(C4Error* C4NULLABLE, C4ErrorDomain, int code, const char *format =nullptr, ...) __printflike(4,5);
     static void set(C4ErrorDomain domain, int code, fleece::slice message, C4Error* C4NULLABLE outError) {
         if (outError) *outError = make(domain, code, message);
@@ -226,7 +228,7 @@ C4Error c4error_printf(C4ErrorDomain domain,
 
 /** Same as \ref c4error_printf, but with a premade `va_list`. */
 C4Error c4error_vprintf(C4ErrorDomain domain, int code,
-                        const char *format, va_list args) C4API;
+                        const char *format, va_list args) C4API __printflike(3,0);
 
 /** Creates and stores a C4Error in `*outError`, if not NULL. Useful in functions that use the
     LiteCore error reporting convention of taking a `C4Error *outError` parameter. */

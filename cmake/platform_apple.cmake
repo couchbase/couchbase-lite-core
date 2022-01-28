@@ -40,6 +40,15 @@ function(setup_litecore_build)
         -DPERSISTENT_PRIVATE_KEY_AVAILABLE
     )
 
+    foreach(platform LiteCoreStatic LiteCoreREST_Static LiteCoreWebSocket BLIPStatic)
+        target_compile_options(
+            ${platform} PRIVATE
+            "-Wformat"
+            "-Wformat-nonliteral"
+            "-Wformat-security"
+        )
+    endforeach()
+
     target_link_libraries(
         LiteCoreStatic INTERFACE
         "-framework Security"

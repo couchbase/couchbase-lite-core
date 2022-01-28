@@ -126,7 +126,8 @@ namespace litecore {
         /** Throws an assertion failure exception. Called by the Assert() macro. */
         [[noreturn]] static void assertionFailed(const char *func, const char *file, unsigned line,
                                                  const char *expr,
-                                                 const char *message =nullptr, ...);
+                                                 const char *message =nullptr, ...)
+                                                 __printflike(5, 6);
 
         static void setNotableExceptionHook(std::function<void()> hook);
 

@@ -138,7 +138,7 @@ namespace litecore {
     void SequenceTracker::beginTransaction() {
         Assert(!inTransaction());
 
-        logInfo("begin transaction at #%" PRIu64, _lastSequence);
+        logInfo("begin transaction at #%" PRIu64, (uint64_t)_lastSequence);
         _transaction = make_unique<CollectionChangeNotifier>(*this, nullptr);
         _preTransactionLastSequence = _lastSequence;
     }
@@ -161,7 +161,7 @@ namespace litecore {
         bool housekeeping = false;
         if (commit) {
             logInfo("commit: sequences #%" PRIu64 " -- #%" PRIu64,
-                    _preTransactionLastSequence + 1, _lastSequence);
+                    (uint64_t)_preTransactionLastSequence + 1, (uint64_t)_lastSequence);
             // Bump their committedSequences:
             for (auto entry = next(_transaction->_placeholder); entry != _changes.end(); ++entry) {
                 if (!entry->isPlaceholder()) {
@@ -171,7 +171,7 @@ namespace litecore {
             }
 
         } else {
-            logInfo("abort: from seq #%" PRIu64 " back to #%" PRIu64, _lastSequence, _preTransactionLastSequence);
+            logInfo("abort: from seq #%" PRIu64 " back to #%" PRIu64, (uint64_t)_lastSequence, (uint64_t)_preTransactionLastSequence);
             _lastSequence = _preTransactionLastSequence;
 
             // Revert their committedSequences:
@@ -516,7 +516,7 @@ namespace litecore {
     ,_placeholder(tracker.addPlaceholderAfter(this, afterSeq))
     {
         if (callback)
-            logInfo("Created, starting after #%" PRIu64, afterSeq);
+            logInfo("Created, starting after #%" PRIu64, (uint64_t)afterSeq);
     }
 
 
