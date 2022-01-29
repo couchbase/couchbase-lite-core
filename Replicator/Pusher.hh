@@ -24,6 +24,8 @@ namespace litecore { namespace repl {
     /** Top-level object managing the push side of replication (sending revisions.) */
     class Pusher final : public Worker, public ChangesFeed::Delegate {
     public:
+        static constexpr const char* kConflictIncludesRevProperty = "conflictIncludesRev";
+
         Pusher(Replicator *replicator NONNULL, Checkpointer&);
 
         // Starts an active push
@@ -67,7 +69,7 @@ namespace litecore { namespace repl {
         void gotChanges(ChangesFeed::Changes);
         void _dbHasNewChanges();
         void sendChangeList(RevToSendList);
-        bool shouldRetryConflictWithNewerAncestor(RevToSend* NONNULL);
+        bool shouldRetryConflictWithNewerAncestor(RevToSend* NONNULL, slice receivedRevID);
         void _docRemoteAncestorChanged(alloc_slice docID, alloc_slice remoteAncestorRevID);
         bool getForeignAncestors() const    {return _proposeChanges || !_proposeChangesKnown;}
 
