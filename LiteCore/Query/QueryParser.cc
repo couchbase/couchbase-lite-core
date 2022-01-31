@@ -838,6 +838,8 @@ namespace litecore {
                     _defaultCollectionName = info.collection;
                     _defaultTableName = info.tableName;
                 }
+                // We altered the table, so re-check its existence.
+                DebugAssert(_delegate.tableExists(info.tableName));
             }
         }
     }

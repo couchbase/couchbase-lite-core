@@ -669,6 +669,10 @@ namespace litecore {
 
 
     bool SQLiteDataFile::tableExists(const string &name) const {
+        if (((string_view)name).substr(0, 4) == "all_") {
+            // "all_xxx" is a TEMP VIEW that is not visible to getSchma.
+            return true;
+        }
         string sql;
         return getSchema(name, "table", name, sql);
     }
