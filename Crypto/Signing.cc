@@ -19,8 +19,8 @@
 #include "Signing.hh"
 #include "Error.hh"
 #include "SecureRandomize.hh"
-#include "Monocypher.hh"
-#include "Monocypher-ed25519.hh"
+#include "monocypher.h"
+#include "monocypher-ed25519.h"
 
 namespace litecore::crypto {
     using namespace std;
@@ -51,7 +51,7 @@ namespace litecore::crypto {
 
     Ed25519VerifyingKey Ed25519SigningKey::publicKey() const{
         Ed25519VerifyingKey pub;
-        monocypher::crypto_ed25519_public_key(pub._bytes.data(), _bytes.data());
+        crypto_ed25519_public_key(pub._bytes.data(), _bytes.data());
         return pub;
     }
 
@@ -62,10 +62,10 @@ namespace litecore::crypto {
 
 
     alloc_slice Ed25519SigningKey::sign(slice data) const {
-        alloc_slice signature(sizeof(monocypher::signature<monocypher::Ed25519>));
-        monocypher::crypto_ed25519_sign((uint8_t*)signature.buf,
-                                        (const uint8_t*)_bytes.data(), nullptr,
-                                        (const uint8_t*)data.buf, data.size);
+        alloc_slice signature(64);
+        crypto_ed25519_sign((uint8_t*)signature.buf,
+                            (const uint8_t*)_bytes.data(), nullptr,
+                            (const uint8_t*)data.buf, data.size);
         return signature;
     }
 
@@ -76,12 +76,10 @@ namespace litecore::crypto {
     }
 
     bool Ed25519VerifyingKey::verifySignature(slice inputData, slice signature) const {
-        return 0 == monocypher::crypto_ed25519_check((const uint8_t*)signature.buf,
-                                                     (const uint8_t*)_bytes.data(),
-                                                     (const uint8_t*)inputData.buf,
-                                                     inputData.size);
+        return 0 == crypto_ed25519_check((const uint8_t*)signature.buf,
+                                         (const uint8_t*)_bytes.data(),
+                                         (const uint8_t*)inputData.buf,
+                                         inputData.size);
     }
-
-
 
 }

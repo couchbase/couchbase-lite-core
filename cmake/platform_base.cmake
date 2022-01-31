@@ -84,8 +84,8 @@ function(set_litecore_source_base)
         LiteCore/Storage/UnicodeCollator.cc
         Networking/Address.cc
         Networking/HTTP/CookieStore.cc
-        vendor/monocypher-cpp/src/Monocypher.cc
-        vendor/monocypher-cpp/src/Monocypher-ed25519.cc
+        vendor/Monocypher/src/monocypher.c
+        vendor/Monocypher/src/optional/monocypher-ed25519.c
         vendor/SQLiteCpp/src/Backup.cpp
         vendor/SQLiteCpp/src/Column.cpp
         vendor/SQLiteCpp/src/Database.cpp
