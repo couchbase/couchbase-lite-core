@@ -11,6 +11,7 @@
 //
 
 #include "DatabaseImpl.hh"
+#include "Defer.hh"
 #include "CollectionImpl.hh"
 #include "c4Document.hh"
 #include "c4Document.h"
@@ -119,6 +120,27 @@ namespace litecore {
 
 
     void DatabaseImpl::open(const FilePath &bundlePath) {
+        bool existentOnEnter = bundlePath.exists();
+        // Note: no explicit return statement shall be in this function!
+        bool success = false;
+        DEFER {
+            if (!success) try {
+                // We want to remove this directory if the function fails and the
+                // bundle directory did not exist on entering.
+                if (!existentOnEnter && bundlePath.exists()) {
+                    // A bundle path refers to a directory. If its textual form does not
+                    // reflect it, make it so.
+                    if (bundlePath.isDir()) {
+                        bundlePath.delRecursive();
+                    } else {
+                        FilePath{bundlePath.path(), ""}.delRecursive();
+                    }
+                }
+            } catch (...) {
+                // ignore.
+            }
+        };
+
         FilePath dataFilePath = findOrCreateBundle(bundlePath,
                                                    (_configV1.flags & kC4DB_Create) != 0,
                                                    _configV1.storageEngine);
@@ -173,6 +195,7 @@ namespace litecore {
         // Start document-expiration tasks for all Collections that need them:
         initCollections();
         startBackgroundTasks();
+        success = true;
     }
 
 
