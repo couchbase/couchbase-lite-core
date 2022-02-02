@@ -636,7 +636,6 @@ namespace litecore { namespace crypto {
         }
     }
 
-
     void Cert::deleteCert(const std::string &persistentID) {
         @autoreleasepool {
             LogTo(TLSLogDomain, "Deleting a certificate chain with the id '%s' from the Keychain",
@@ -702,20 +701,16 @@ namespace litecore { namespace crypto {
                 for (CFIndex i = count - 1; i >= 0; i--) {
                     SecCertificateRef copiedRef = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
                     if (getChildCertCount(copiedRef) < 2) {
-                        // CertRef returned from CopyCertificateChain won't get deleted, so we fetch directly. 
-                        NSData* certData = CFBridgingRelease(findInKeychain(@{
-                            (id)kSecClass:              (id)kSecClassCertificate,
-                            (id)kSecValueRef:           (__bridge id)copiedRef,
-                            (id)kSecAttrLabel:          label,
-                            (id)kSecReturnData:         @YES
-                        }));
+                        // Get public key hash from kSecAttrApplicationLabel attribute:
+                        SecKeyRef publicKeyRef = SecCertificateCopyKey(copiedRef);
+                        NSDictionary* attrs = CFBridgingRelease(SecKeyCopyAttributes(publicKeyRef));
+                        NSData* publicKeyHash = [attrs objectForKey: (id)kSecAttrApplicationLabel];
+                        CFRelease(publicKeyRef);
                         
                         NSDictionary* params = @{
-                            (id)kSecClass:              (id)kSecClassCertificate,
-                            (id)kSecAttrLabel:          label,
-                            (id)kSecValueData:          certData
+                            (id)kSecClass:                  (__bridge id)kSecClassCertificate,
+                            (id)kSecAttrPublicKeyHash:      publicKeyHash
                         };
-                        
                         checkOSStatus(SecItemDelete((CFDictionaryRef)params),
                                       "SecItemDelete",
                                       "Couldn't delete a certificate from the Keychain");
