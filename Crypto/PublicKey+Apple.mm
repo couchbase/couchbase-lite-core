@@ -595,10 +595,8 @@ namespace litecore { namespace crypto {
             OSStatus err;
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
-                if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
-                    auto error = (__bridge NSError*)cferr;
-                    LogTo(TLSLogDomain, "SecTrustEvaluateWithError %s", error.description.UTF8String);
-                }
+                if (!SecTrustEvaluateWithError(trustRef, &cferr))
+                    warnCFError(cferr, "SecTrustEvaluateWithError");
                 err = SecTrustGetTrustResult(trustRef, &result);
             } else {
 #if TARGET_OS_MACCATALYST
@@ -666,10 +664,8 @@ namespace litecore { namespace crypto {
             OSStatus err;
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
-                if (!SecTrustEvaluateWithError(trustRef, &cferr)) {
-                    auto error = (__bridge NSError*)cferr;
-                    LogTo(TLSLogDomain, "SecTrustEvaluateWithError %s", error.description.UTF8String);
-                }
+                if (!SecTrustEvaluateWithError(trustRef, &cferr))
+                    warnCFError(cferr, "SecTrustEvaluateWithError");
                 err = SecTrustGetTrustResult(trustRef, &result);
             } else {
 #if TARGET_OS_MACCATALYST
@@ -776,10 +772,8 @@ namespace litecore { namespace crypto {
 
             if (@available(iOS 12.0, macos 10.14, *)) {
                 CFErrorRef cferr;
-                if (!SecTrustEvaluateWithError(trust, &cferr)) {
-                    auto error = (__bridge NSError*)cferr;
-                    LogTo(TLSLogDomain, "SecTrustEvaluateWithError %s", error.description.UTF8String);
-                }
+                if (!SecTrustEvaluateWithError(trust, &cferr))
+                    warnCFError(cferr, "SecTrustEvaluateWithError");
                 err = SecTrustGetTrustResult(trust, &result);
             } else {
 #if TARGET_OS_MACCATALYST
