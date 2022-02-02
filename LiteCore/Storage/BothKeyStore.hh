@@ -51,7 +51,7 @@ namespace litecore {
         }
 
         virtual bool del(slice key, ExclusiveTransaction &t, sequence_t replacingSequence,
-                         uint64_t replacingSubsequence =-1) override {
+                         std::optional<uint64_t> replacingSubsequence =std::nullopt) override {
             // Always delete from both stores, for safety's sake.
             bool a = _liveStore->del(key, t, replacingSequence, replacingSubsequence);
             bool b = _deadStore->del(key, t, replacingSequence, replacingSubsequence);

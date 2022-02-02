@@ -61,7 +61,7 @@ namespace litecore {
         sequence_t set(const RecordUpdate&, bool updateSequence, ExclusiveTransaction&) override;
         void setKV(slice key, slice version, slice value, ExclusiveTransaction&) override;
 
-        bool del(slice key, ExclusiveTransaction&, sequence_t s = 0_seq, uint64_t subseq = -1) override;
+        bool del(slice key, ExclusiveTransaction&, sequence_t s = 0_seq, std::optional<uint64_t> subseq =std::nullopt) override;
 
         bool setDocumentFlag(slice key, sequence_t, DocumentFlags, ExclusiveTransaction&) override;
 

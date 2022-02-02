@@ -371,16 +371,16 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::del(slice key, ExclusiveTransaction&, sequence_t seq, uint64_t subseq) {
+    bool SQLiteKeyStore::del(slice key, ExclusiveTransaction&, sequence_t seq, std::optional<uint64_t> subseq) {
         Assert(key);
         SQLite::Statement *stmt;
         db()._logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %" PRIu64,
                         _name.c_str(), SPLAT(key), (uint64_t)seq);
         if (seq != 0_seq) {
-            if (subseq != (uint64_t)-1) {
+            if (subseq) {
                 stmt = &compileCached("DELETE FROM kv_@ WHERE key=? AND sequence=?"
                                       " AND (flags >> 16) = ?");
-                stmt->bind(3, (long long)subseq);
+                stmt->bind(3, (long long)*subseq);
             } else {
                 stmt = &compileCached("DELETE FROM kv_@ WHERE key=? AND sequence=?");
             }
