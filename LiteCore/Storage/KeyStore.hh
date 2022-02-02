@@ -122,7 +122,8 @@ namespace litecore {
 
         void setKV(Record&, ExclusiveTransaction&);
 
-        virtual bool del(slice key, ExclusiveTransaction&, sequence_t replacingSequence ={}) =0;
+        virtual bool del(slice key, ExclusiveTransaction&, sequence_t replacingSequence ={},
+                         std::optional<uint64_t> replacingSubsequence =std::nullopt) =0;
         bool del(const Record &rec, ExclusiveTransaction &t)                 {return del(rec.key(), t);}
 
         /** Sets a flag of a record, without having to read/write the Record. */

@@ -60,7 +60,7 @@ namespace litecore {
         if (seq == 0_seq && rec.sequence > 0_seq) {
             // Conflict. Maybe record is currently in the other KeyStore; if so, delete it & retry
             expiration_t expiry = other->getExpiration(rec.key);
-            if (other->del(rec.key, t, rec.sequence)) {
+            if (other->del(rec.key, t, rec.sequence, rec.subsequence)) {
                 auto rec2 = rec;
                 rec2.sequence = 0_seq;
                 seq = target->set(rec2, updateSequence, t);

@@ -165,6 +165,11 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Deleted And Live Docs", "[Query][
           == "SELECT fl_result(dict_of('id', _doc.key, 'sequence', _doc.sequence, 'deleted', (_doc.flags & 1 != 0), 'expiration', _doc.expiration, 'revisionID', fl_version(_doc.version))) FROM all_default AS _doc");
     CHECK(parseWhere("['SELECT', {WHAT: [['_.', ['META()'], 'deleted']]}]")
           == "SELECT fl_result((_doc.flags & 1 != 0)) FROM all_default AS _doc");
+
+    CHECK(parseWhere("['SELECT', {FROM: [{AS: 'base_db'}], WHAT: [['._id'],['._deleted']],"
+                                 "WHERE: ['AND', ['=', ['._id'], 'doc1'], ['=', ['._deleted'], false]]}]")
+          == "SELECT fl_result(base_db.key), fl_result((base_db.flags & 1 != 0)) FROM all_default AS"
+             " base_db WHERE base_db.key = 'doc1' AND (base_db.flags & 1 != 0) = fl_bool(0)");
 }
 
 

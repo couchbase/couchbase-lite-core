@@ -463,7 +463,7 @@ namespace litecore {
             DebugAssert(_delegate.tableExists(from.tableName));
         }
         if (from.alias.empty())
-            from.alias = collection ? string(collection) : _defaultCollectionName;
+            from.alias = from.collection;
         return from;
     }
 
@@ -507,12 +507,25 @@ namespace litecore {
     }
 
 
+
+    static string aliasOfFromEntry(const Value *value, const string& defaultAlias) {
+        auto dict = requiredDict(value, "FROM item");
+        string ret {optionalString(getCaseInsensitive(dict, "AS"_sl), "AS in FROM item")};
+        if (ret.empty()) {
+            ret = string {optionalString(getCaseInsensitive(dict, "COLLECTION"_sl),
+                                         "COLLECTION in FROM item")};
+        }
+        return ret.empty() ? defaultAlias : ret;
+    }
+
+
     void QueryParser::writeFromClause(const Value *from) {
         auto fromArray = (const Array*)from;    // already type-checked by parseFromClause
 
         if (fromArray && !fromArray->empty()) {
             for (Array::iterator i(fromArray); i; ++i) {
-                aliasInfo &entry = _aliases.find(parseFromEntry(i.value()).alias)->second;
+                auto fromAlias = aliasOfFromEntry(i.value(), _defaultCollectionName);
+                aliasInfo &entry = _aliases.find(fromAlias)->second;
                 switch (entry.type) {
                     case kDBAlias: {
                         // The first item is the database alias:
@@ -825,6 +838,8 @@ namespace litecore {
                     _defaultCollectionName = info.collection;
                     _defaultTableName = info.tableName;
                 }
+                // We altered the table, so re-check its existence.
+                DebugAssert(_delegate.tableExists(info.tableName));
             }
         }
     }
