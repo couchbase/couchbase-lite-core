@@ -11,11 +11,12 @@
 //
 
 #include "Actor.hh"
+#include "Async.hh"
 #include "Logging.hh"
 #include <mutex>
 
 
-namespace litecore { namespace actor {
+namespace litecore::actor {
 
     void Actor::caughtException(const std::exception &x) {
         Warn("Caught exception in Actor %s: %s", actorName().c_str(), x.what());
@@ -41,5 +42,9 @@ namespace litecore { namespace actor {
         cond->notify_one();
     }
 
+    void Actor::wakeAsyncContext(AsyncContext *context) {
+        _mailbox.enqueue("wakeAsyncContext", ACTOR_BIND_METHOD0(context, &AsyncContext::_next));
+    }
 
-} }
+
+}

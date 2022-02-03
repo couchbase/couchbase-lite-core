@@ -28,10 +28,6 @@
 #include "Stopwatch.hh"
 #endif
 
-#ifdef ACTORS_SUPPORT_ASYNC
-#include "Async.hh"
-#endif
-
 
 namespace litecore { namespace actor {
     class Actor;
@@ -146,18 +142,9 @@ namespace litecore { namespace actor {
         }
 
 
-#ifdef ACTORS_SUPPORT_ASYNC
-        /** Body of an async method: Creates an Provider from the lambda given,
-            then returns an Async that refers to that provider. */
-        template <class T, class LAMBDA>
-        Async<T> _asyncBody(const LAMBDA &bodyFn) {
-            return Async<T>(this, bodyFn);
-        }
+        Actor* _enclosingActor() {return this;}
 
-        void wakeAsyncContext(AsyncContext *context) {
-            _mailbox.enqueue(ACTOR_BIND_METHOD0(context, &AsyncContext::next));
-        }
-#endif
+        void wakeAsyncContext(AsyncContext *context);
 
     private:
         friend class ThreadedMailbox;

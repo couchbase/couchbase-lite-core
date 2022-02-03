@@ -219,6 +219,8 @@
 		27727C55230F279D0082BCC9 /* HTTPLogic.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27727C53230F279D0082BCC9 /* HTTPLogic.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */; };
+		277C5C4627AB1EB4001BE212 /* ActorTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C5C4527AB1EB4001BE212 /* ActorTest.cc */; };
+		277C5C4727AB1F02001BE212 /* Async.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2744B336241854F2005A194D /* Async.cc */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
 		2787EB271F4C91B000DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
@@ -1198,6 +1200,7 @@
 		2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LegacyAttachments.hh; sourceTree = "<group>"; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
+		277C5C4527AB1EB4001BE212 /* ActorTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ActorTest.cc; sourceTree = "<group>"; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorSGTest.cc; sourceTree = "<group>"; };
@@ -1815,6 +1818,7 @@
 			children = (
 				275FF6D11E4947E1005F90DD /* c4BaseTest.cc */,
 				274D18EC2617DFE40018D39C /* c4DocumentTest_Internal.cc */,
+				277C5C4527AB1EB4001BE212 /* ActorTest.cc */,
 				277015081D523E2E008BADD7 /* DataFileTest.cc */,
 				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
 				272B1BEA1FB1513100F56620 /* FTSTest.cc */,
@@ -2058,20 +2062,20 @@
 		2744B36124185D24005A194D /* Actors */ = {
 			isa = PBXGroup;
 			children = (
-				2744B335241854F2005A194D /* ActorProperty.hh */,
-				2744B336241854F2005A194D /* Async.cc */,
+				2744B340241854F2005A194D /* Actor.hh */,
 				2744B337241854F2005A194D /* Actor.cc */,
 				2744B338241854F2005A194D /* ThreadedMailbox.hh */,
 				2744B339241854F2005A194D /* GCDMailbox.hh */,
 				2744B33A241854F2005A194D /* ThreadedMailbox.cc */,
 				2744B33B241854F2005A194D /* GCDMailbox.cc */,
 				2744B33F241854F2005A194D /* ActorProperty.cc */,
-				2744B340241854F2005A194D /* Actor.hh */,
-				2744B341241854F2005A194D /* Async.hh */,
 				2744B342241854F2005A194D /* Channel.cc */,
 				2744B344241854F2005A194D /* Channel.hh */,
 				274C1DC325C4A79C00B0EEAC /* ChannelManifest.cc */,
 				274C1DC425C4A79C00B0EEAC /* ChannelManifest.hh */,
+				2744B341241854F2005A194D /* Async.hh */,
+				2744B336241854F2005A194D /* Async.cc */,
+				2744B335241854F2005A194D /* ActorProperty.hh */,
 			);
 			name = Actors;
 			sourceTree = "<group>";
@@ -3929,6 +3933,7 @@
 				274D17C22615445B0018D39C /* DBAccessTestWrapper.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
+				277C5C4627AB1EB4001BE212 /* ActorTest.cc in Sources */,
 				27505DDD256335B000123115 /* VersionVectorTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
@@ -4305,6 +4310,7 @@
 				27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */,
 				276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
 				27F0426C2196264900D7C6FA /* SQLiteDataFile+Indexes.cc in Sources */,
+				277C5C4727AB1F02001BE212 /* Async.cc in Sources */,
 				27FA568924AD0F8E00B2F1F8 /* Pusher+Revs.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,
