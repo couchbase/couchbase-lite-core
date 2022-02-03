@@ -75,6 +75,10 @@ if [[ "${ANDROID_ARCH}" == "x86_64" ]] || [[ "${ANDROID_ARCH}" == "arm64-v8a" ]]
     ARCH_VERSION="21"
 fi
 
+#create artifacts dir for publishing to latestbuild
+ARTIFACTS_DIR=${SOURCE_PATH}/artifacts/${VERSION:0:2}/${VERSION}
+mkdir -p ${ARTIFACTS_DIR}
+
 echo "====  Building Android $ARCH_VERSION Release binary  ==="
 cd "${SOURCE_PATH}/${BUILD_REL_TARGET}"
 ${CMAKE_PATH}/cmake \
@@ -118,11 +122,13 @@ do
         cd ${SOURCE_PATH}/${BUILD_DEBUG_TARGET}/install
         ${PKG_CMD} ${SOURCE_PATH}/${PACKAGE_NAME} *
         DEBUG_PKG_NAME=${PACKAGE_NAME}
+        cp ${SOURCE_PATH}/${PACKAGE_NAME} ${ARTIFACTS_DIR}/couchbase-lite-core-android-${ANDROID_ARCH}-${FLAVOR}.${PKG_TYPE}
         cd ${SOURCE_PATH}
     else
         cd ${SOURCE_PATH}/${BUILD_REL_TARGET}/install
         ${PKG_CMD} ${SOURCE_PATH}/${PACKAGE_NAME} *
         RELEASE_PKG_NAME=${PACKAGE_NAME}
+        cp ${SOURCE_PATH}/${PACKAGE_NAME} ${ARTIFACTS_DIR}/couchbase-lite-core-android-${ANDROID_ARCH}-${FLAVOR}.${PKG_TYPE}
         cd ${SOURCE_PATH}
     fi
 done
