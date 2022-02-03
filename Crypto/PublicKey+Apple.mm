@@ -699,13 +699,26 @@ namespace litecore { namespace crypto {
                     if (getChildCertCount(copiedRef) < 2) {
                         // Get public key hash from kSecAttrApplicationLabel attribute:
                         SecKeyRef publicKeyRef = SecCertificateCopyKey(copiedRef);
-                        NSDictionary* attrs = CFBridgingRelease(SecKeyCopyAttributes(publicKeyRef));
-                        NSData* publicKeyHash = [attrs objectForKey: (id)kSecAttrApplicationLabel];
+                        NSDictionary* pubKeyAttrs = CFBridgingRelease(SecKeyCopyAttributes(publicKeyRef));
+                        NSData* publicKeyHash = [pubKeyAttrs objectForKey: (id)kSecAttrApplicationLabel];
                         CFRelease(publicKeyRef);
+                        
+                        // For certs, primary key: issuer + serial-num + cert-type
+                        NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
+                            (id)kSecClass:              (id)kSecClassCertificate,
+                            (id)kSecValueRef:           (__bridge id)copiedRef,
+                            (id)kSecReturnAttributes:   @YES
+                        }));
+                        NSString* issuer = [attrs objectForKey: (id)kSecAttrIssuer];
+                        Assert(issuer);
+                        NSString* serialNum = [attrs objectForKey: (id)kSecAttrSerialNumber];
+                        Assert(serialNum);
                         
                         NSDictionary* params = @{
                             (id)kSecClass:                  (__bridge id)kSecClassCertificate,
-                            (id)kSecAttrPublicKeyHash:      publicKeyHash
+                            (id)kSecAttrPublicKeyHash:      publicKeyHash,
+                            (id)kSecAttrIssuer:             issuer,
+                            (id)kSecAttrSerialNumber:       serialNum,
                         };
                         checkOSStatus(SecItemDelete((CFDictionaryRef)params),
                                       "SecItemDelete",
