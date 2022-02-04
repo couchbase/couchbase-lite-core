@@ -88,7 +88,7 @@ ${CMAKE_PATH}/cmake \
     -DCMAKE_BUILD_TYPE=MinSizeRel \
     ..
 
-${CMAKE_PATH}/ninja install/strip
+${CMAKE_PATH}/ninja install
 
 echo "====  Building Android $ARCH_VERSION Debug binary  ==="
 cd ${SOURCE_PATH}/${BUILD_DEBUG_TARGET}
@@ -103,7 +103,7 @@ ${CMAKE_PATH}/cmake \
     -DCMAKE_BUILD_TYPE=Debug \
     ..
 
-${CMAKE_PATH}/ninja install/strip
+${CMAKE_PATH}/ninja install
 
 # Create zip package
 for FLAVOR in release debug;
