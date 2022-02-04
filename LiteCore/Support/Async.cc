@@ -16,6 +16,28 @@
 
 namespace litecore::actor {
 
+
+    void AsyncState::asyncVoidFn(Actor *actor, std::function<void(AsyncState&)> body) {
+        if (actor && actor != Actor::currentActor()) {
+            // Need to run this on the Actor's queue, so schedule it:
+            auto provider = retained(new AsyncProvider<void>(actor, std::move(body)));
+            provider->_start();
+        } else {
+            // It's OK to call the body synchronously. As an optimization, pass it a plain
+            // stack-based AsyncState instead of a heap-allocated AsyncProvider:
+            AsyncState state;
+            body(state);
+            if (state._awaiting) {
+                // Body didn't finish, is "blocked" in an AWAIT(), so now set up a proper context:
+                auto provider = retained(new AsyncProvider<void>(actor,
+                                                                 std::move(body),
+                                                                 std::move(state)));
+                provider->_wait();
+            }
+        }
+    }
+
+    
     bool AsyncState::_await(const AsyncBase &a, int curLine) {
         _awaiting = a._context;
         _currentLine = curLine;

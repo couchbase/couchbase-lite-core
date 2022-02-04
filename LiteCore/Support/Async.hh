@@ -40,7 +40,7 @@ namespace litecore::actor {
 /// Put this at the top of an async method that returns `void`.
 /// See `BEGIN_ASYNC_RETURNING` for details.
 #define BEGIN_ASYNC() \
-    Async<void>(_thisActor(), [=](AsyncState &_async_state_) mutable -> void { \
+    return AsyncState::asyncVoidFn(_thisActor(), [=](AsyncState &_async_state_) mutable -> void { \
         switch (_async_state_.currentLine()) { \
             default:
 
@@ -76,6 +76,8 @@ namespace litecore::actor {
         bool _await(const AsyncBase &a, int curLine);
         template <class T> Retained<AsyncProvider<T>> awaited();
 
+        static void asyncVoidFn(Actor *actor, std::function<void(AsyncState&)> body);
+
     protected:
         Retained<AsyncContext> _awaiting;           // What my fn body is suspended awaiting
         int                    _currentLine {0};    // label/line# to continue body function at
@@ -97,6 +99,7 @@ namespace litecore::actor {
         template <typename T> T&& extractResult();
 
     protected:
+        friend class AsyncState;
         friend class AsyncBase;
         friend class Actor;
 
@@ -194,6 +197,7 @@ namespace litecore::actor {
 
     private:
         friend class Async<void>;
+        friend class AsyncState;
 
         using Body = std::function<void(AsyncState&)>;
 
@@ -203,6 +207,12 @@ namespace litecore::actor {
         :AsyncContext(actor)
         ,_body(std::move(body))
         { }
+
+        AsyncProvider(Actor *actor, Body &&body, AsyncState &&state)
+        :AsyncProvider(actor, std::move(body))
+        {
+            ((AsyncState&)*this) = std::move(state);
+        }
 
         void _next() override {
             _body(*this);
@@ -239,7 +249,7 @@ namespace litecore::actor {
     protected:
         friend class AsyncState;
         explicit AsyncBase(Retained<AsyncContext> &&context) :_context(std::move(context)) { }
-        explicit AsyncBase(AsyncContext *context, bool);
+        explicit AsyncBase(AsyncContext *context, bool);    // calls context->_start()
 
         Retained<AsyncContext> _context;                    // The AsyncProvider that owns my value
     };
