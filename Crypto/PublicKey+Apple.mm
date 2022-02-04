@@ -634,7 +634,6 @@ namespace litecore { namespace crypto {
         }
     }
 
-
     void Cert::deleteCert(const std::string &persistentID) {
         @autoreleasepool {
             LogTo(TLSLogDomain, "Deleting a certificate chain with the id '%s' from the Keychain",
@@ -682,15 +681,41 @@ namespace litecore { namespace crypto {
             
             CFIndex count = SecTrustGetCertificateCount(trustRef);
             Assert(count > 0);
+            if (count == 1) {
+                NSDictionary* params = @{
+                    (id)kSecClass:              (id)kSecClassCertificate,
+                    (id)kSecValueRef:           (__bridge id)certRef
+                };
+                checkOSStatus(SecItemDelete((CFDictionaryRef)params),
+                              "SecItemDelete",
+                              "Couldn't delete a certificate from the Keychain");
+                return;
+            }
 #if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000 || __IPHONE_OS_VERSION_MAX_REQUIRED >= 150000
             if (@available(macOS 12.0, iOS 15.0, *)) {
                 CFArrayRef certs = SecTrustCopyCertificateChain(trustRef);
                 for (CFIndex i = count - 1; i >= 0; i--) {
-                    SecCertificateRef ref = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
-                    if (getChildCertCount(ref) < 2) {
-                        NSDictionary* params = @{
+                    SecCertificateRef copiedRef = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
+                    if (getChildCertCount(copiedRef) < 2) {
+                        // Cert copied cannot be used directly to delete, so we will use the primary
+                        // key: issuer + serial-num + cert-type
+                        NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
                             (id)kSecClass:              (id)kSecClassCertificate,
-                            (id)kSecValueRef:           (__bridge id)ref
+                            (id)kSecValueRef:           (__bridge id)copiedRef,
+                            (id)kSecReturnAttributes:   @YES
+                        }));
+                        NSString* issuer = [attrs objectForKey: (id)kSecAttrIssuer];
+                        Assert(issuer);
+                        NSString* serialNum = [attrs objectForKey: (id)kSecAttrSerialNumber];
+                        Assert(serialNum);
+                        NSNumber* certType = [attrs objectForKey: (id)kSecAttrCertificateType];
+                        Assert(certType != nil);
+                        
+                        NSDictionary* params = @{
+                            (id)kSecClass:                  (__bridge id)kSecClassCertificate,
+                            (id)kSecAttrCertificateType:    certType,
+                            (id)kSecAttrIssuer:             issuer,
+                            (id)kSecAttrSerialNumber:       serialNum,
                         };
                         checkOSStatus(SecItemDelete((CFDictionaryRef)params),
                                       "SecItemDelete",
