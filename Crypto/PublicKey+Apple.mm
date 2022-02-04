@@ -713,10 +713,13 @@ namespace litecore { namespace crypto {
                         Assert(issuer);
                         NSString* serialNum = [attrs objectForKey: (id)kSecAttrSerialNumber];
                         Assert(serialNum);
+                        NSNumber* certType = [attrs objectForKey: (id)kSecAttrCertificateType];
+                        Assert(certType != nil);
                         
                         NSDictionary* params = @{
                             (id)kSecClass:                  (__bridge id)kSecClassCertificate,
                             (id)kSecAttrPublicKeyHash:      publicKeyHash,
+                            (id)kSecAttrCertificateType:    certType,
                             (id)kSecAttrIssuer:             issuer,
                             (id)kSecAttrSerialNumber:       serialNum,
                         };
