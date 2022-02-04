@@ -697,13 +697,8 @@ namespace litecore { namespace crypto {
                 for (CFIndex i = count - 1; i >= 0; i--) {
                     SecCertificateRef copiedRef = (SecCertificateRef)CFArrayGetValueAtIndex(certs, i);
                     if (getChildCertCount(copiedRef) < 2) {
-                        // Get public key hash from kSecAttrApplicationLabel attribute:
-                        SecKeyRef publicKeyRef = SecCertificateCopyKey(copiedRef);
-                        NSDictionary* pubKeyAttrs = CFBridgingRelease(SecKeyCopyAttributes(publicKeyRef));
-                        NSData* publicKeyHash = [pubKeyAttrs objectForKey: (id)kSecAttrApplicationLabel];
-                        CFRelease(publicKeyRef);
-                        
-                        // For certs, primary key: issuer + serial-num + cert-type
+                        // Cert copied cannot be used directly to delete, so we will use the primary
+                        // key: issuer + serial-num + cert-type
                         NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
                             (id)kSecClass:              (id)kSecClassCertificate,
                             (id)kSecValueRef:           (__bridge id)copiedRef,
@@ -718,7 +713,6 @@ namespace litecore { namespace crypto {
                         
                         NSDictionary* params = @{
                             (id)kSecClass:                  (__bridge id)kSecClassCertificate,
-                            (id)kSecAttrPublicKeyHash:      publicKeyHash,
                             (id)kSecAttrCertificateType:    certType,
                             (id)kSecAttrIssuer:             issuer,
                             (id)kSecAttrSerialNumber:       serialNum,
