@@ -1201,6 +1201,7 @@
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
 		277C5C4527AB1EB4001BE212 /* ActorTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ActorTest.cc; sourceTree = "<group>"; };
+		277C5C4827AC4E0E001BE212 /* Async.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Async.md; sourceTree = "<group>"; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorSGTest.cc; sourceTree = "<group>"; };
@@ -2914,6 +2915,7 @@
 			isa = PBXGroup;
 			children = (
 				27DF3BC326867F2600A57A1E /* Actors.md */,
+				277C5C4827AC4E0E001BE212 /* Async.md */,
 				27DF3BC426867F2600A57A1E /* logo.png */,
 				27DF3BC526867F2600A57A1E /* BLIP Protocol.md */,
 			);

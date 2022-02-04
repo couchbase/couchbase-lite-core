@@ -16,49 +16,51 @@
 
 namespace litecore::actor {
 
-    bool AsyncState::_asyncCall(const AsyncBase &a, int curLine) {
+    bool AsyncState::_await(const AsyncBase &a, int curLine) {
         _awaiting = a._context;
         _currentLine = curLine;
         return !a.ready();
     }
 
 
-#if DEBUG
-    std::atomic_int AsyncContext::gInstanceCount;
-#endif
-
-
-    AsyncContext::AsyncContext(Actor *actor)
-    :_actor(actor)
-    {
-#if DEBUG
-        ++gInstanceCount;
-#endif
-    }
-
-    AsyncContext::~AsyncContext() {
-#if DEBUG
-        --gInstanceCount;
-#endif
-    }
-
     void AsyncContext::setObserver(AsyncContext *p) {
-        assert(!_observer);
+        precondition(!_observer);
         _observer = p;
     }
 
+
     void AsyncContext::_start() {
-        _waitingSelf = this;
+        _waitingSelf = this;                    // Retain myself while waiting
         if (_actor && _actor != Actor::currentActor())
-            _actor->wakeAsyncContext(this);     // Start on my Actor's queue
+            _actor->wakeAsyncContext(this);     // Schedule the body to run on my Actor's queue
         else
-            _next();
+            _next();                            // or run it synchronously
     }
 
+
+    // AsyncProvider<T> overrides this, and calls it last.
+    // Async<T>::AsyncWaiter overrides this and doesn't call it at all.
+    void AsyncContext::_next() {
+        if (_awaiting)
+            _wait();
+        else
+            _gotResult();
+    }
+
+
     void AsyncContext::_wait() {
-        _waitingActor = Actor::currentActor();  // retain my actor while I'm waiting
+        _waitingActor = Actor::currentActor();  // retain the actor that's waiting
         _awaiting->setObserver(this);
     }
+
+
+    void AsyncContext::_waitOn(AsyncContext *context) {
+        assert(!_awaiting);
+        _waitingSelf = this; // retain myself while waiting
+        _awaiting = context;
+        _wait();
+    }
+
 
     void AsyncContext::wakeUp(AsyncContext *async) {
         assert(async == _awaiting);
@@ -70,12 +72,19 @@ namespace litecore::actor {
         }
     }
 
+
     void AsyncContext::_gotResult() {
         _ready = true;
-        auto observer = move(_observer);
-        if (observer)
+        if (auto observer = move(_observer))
             observer->wakeUp(this);
-        _waitingSelf = nullptr;
+        _waitingSelf = nullptr; // release myself now that I'm done
+    }
+
+
+    AsyncBase::AsyncBase(AsyncContext *context, bool)
+    :AsyncBase(context)
+    {
+        _context->_start();
     }
 
 }

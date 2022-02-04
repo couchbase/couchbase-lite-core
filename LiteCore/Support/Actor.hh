@@ -142,7 +142,7 @@ namespace litecore { namespace actor {
         }
 
 
-        Actor* _enclosingActor() {return this;}
+        Actor* _thisActor() {return this;}
 
         void wakeAsyncContext(AsyncContext *context);
 
