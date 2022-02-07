@@ -20,11 +20,18 @@
     The commit SHA that this build was built from
 .PARAMETER Edition
     The edition to build (community vs enterprise)
+.PARAMETER Architectures
+    The architectures to build (default Win32, Win64, ARM)
+.PARAMETER Parallel
+    The number of parallel subjobs to allow during the build (default 8)
 #>
 param(
     [Parameter(Mandatory=$true, HelpMessage="The version number to give to the build (e.g. 2.0.0)")][string]$Version,
     [Parameter(Mandatory=$true, HelpMessage="The commit SHA that this build was built from")][string]$ShaVersion,
-    [Parameter(Mandatory=$true, HelpMessage="The edition to build (community vs enterprise)")][string]$Edition
+    [ValidateSet("community", "enterprise")]
+    [Parameter(Mandatory=$true, HelpMessage="The edition to build (community vs enterprise)")][string]$Edition,
+    [Parameter(HelpMessage="The architectures to build (default Win32, Win32, ARM")][string[]]$Architectures=@("Win32", "Win64", "ARM"),
+    [Parameter(HelpMessage="The number of parallel subjobs to allow during the build (default 8)")][int]$Parallel=8
 )
 
 $RelPkgDir = "MinSizeRel"
@@ -75,7 +82,7 @@ function Build-Store() {
         throw "CMake failed"
     }
 
-    & "C:\Program Files\CMake\bin\cmake.exe" --build . --config $config --target LiteCore
+    & "C:\Program Files\CMake\bin\cmake.exe" --build . --parallel $Parallel --config $config --target LiteCore
     if($LASTEXITCODE -ne 0) {
         throw "Build failed"
     }
@@ -103,7 +110,7 @@ function Build() {
         throw "CMake failed"
     }
 
-    & "C:\Program Files\CMake\bin\cmake.exe" --build . --config $config
+    & "C:\Program Files\CMake\bin\cmake.exe" --build . --parallel $Parallel --config $config
     if($LASTEXITCODE -ne 0) {
         throw "Build failed ($LASTEXITCODE)"
     }
@@ -150,16 +157,22 @@ function Run-UnitTest() {
     Pop-Location
 }
 
-foreach ($arch in @("Win32", "Win64", "ARM")) {
+$ArtifactsDir = "$env:WORKSPACE\artifacts\$($ShaVersion.substring(0, 2))\$ShaVersion"
+New-Item -Type Directory -Path $ArtifactsDir -ErrorAction Ignore
+Write-Host "Building $Architectures using $Parallel parallel subjobs"
+
+foreach ($arch in $Architectures) {
     $Target = "${arch}_Debug"
     $arch_lower = $arch.ToLowerInvariant()
     Build-Store "${env:WORKSPACE}\build_cmake_store_${Target}" $arch "Debug"
     if($arch -ne "ARM") {
         Build "${env:WORKSPACE}\build_${Target}" $arch "Debug"
         Make-Package "${env:WORKSPACE}\build_${Target}\couchbase-lite-core\$DebugPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-debug-$arch_lower.zip" "$arch" "DEBUG"
+        Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-debug-$arch_lower.zip" "$ArtifactsDir\couchbase-lite-core-windows-debug-$arch_lower.zip"
     }
 
     Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\couchbase-lite-core\$DebugPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-debug-${arch_lower}-winstore.zip" "STORE_$arch" "DEBUG"
+    Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-debug-$arch_lower-winstore.zip" "$ArtifactsDir\couchbase-lite-core-windows-debug-$arch_lower-winstore.zip"
 
     $Target = "${arch}_MinSizeRel"
     Build-Store "${env:WORKSPACE}\build_cmake_store_${Target}" $arch "MinSizeRel"
@@ -170,7 +183,9 @@ foreach ($arch in @("Win32", "Win64", "ARM")) {
         }
 
         Make-Package "${env:WORKSPACE}\build_${Target}\couchbase-lite-core\$RelPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$arch" "RELEASE"
+        Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$ArtifactsDir\couchbase-lite-core-windows-$arch_lower.zip"    
     }
 
     Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\couchbase-lite-core\$RelPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-${arch_lower}-winstore.zip" "STORE_$arch" "RELEASE"
+    Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore.zip" "$ArtifactsDir\couchbase-lite-core-windows-$arch_lower-winstore.zip"
 }
