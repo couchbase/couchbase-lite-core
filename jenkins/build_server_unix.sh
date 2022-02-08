@@ -112,8 +112,8 @@ create_pkgs () {
     for FLAVOR in release debug
     do
         PACKAGE_NAME=${PRODUCT}-${OS}-${VERSION}-${FLAVOR}.${PKG_TYPE}
-        SYMBOLS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-${FLAVOR}-'symbols'.${PKG_TYPE}
-        SYMBOLS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-${FLAVOR}-'symbols'.${PKG_TYPE}
+        SYMBOLS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-${FLAVOR}-symbols.${PKG_TYPE}
+        SYMBOLS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-${FLAVOR}-symbols.${PKG_TYPE}
         echo
         echo  "=== Creating ${WORKSPACE}/${PACKAGE_NAME} package ==="
         echo
@@ -151,8 +151,8 @@ create_prop () {
     else
         echo "DEBUG_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-debug.${PKG_TYPE}" >> ${PROP_FILE}
         echo "RELEASE_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE}" >> ${PROP_FILE}
-        echo "SYMBOLS_DEBUG_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-debug-'symbols'.${PKG_TYPE}" >> ${PROP_FILE}
-        echo "SYMBOLS_RELEASE_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-release-'symbols'.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "SYMBOLS_DEBUG_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-debug-symbols.${PKG_TYPE}" >> ${PROP_FILE}
+        echo "SYMBOLS_RELEASE_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-release-symbols.${PKG_TYPE}" >> ${PROP_FILE}
     fi
 
     echo
@@ -174,8 +174,8 @@ prep_artifacts () {
         else
             cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-debug.${PKG_TYPE} ${PRODUCT}-${OS}-debug.${PKG_TYPE}
             cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE} ${PRODUCT}-${OS}-release.${PKG_TYPE}
-            cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-debug-'symbols'.${PKG_TYPE}  ${PRODUCT}-${OS}-debug-'symbols'.${PKG_TYPE}
-            cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-release-'symbols'.${PKG_TYPE} ${PRODUCT}-${OS}-release-'symbols'.${PKG_TYPE}
+            cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-debug-symbols.${PKG_TYPE}  ${PRODUCT}-${OS}-debug-symbols.${PKG_TYPE}
+            cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-release-symbols.${PKG_TYPE} ${PRODUCT}-${OS}-release-symbols.${PKG_TYPE}
         fi
     done
     popd
