@@ -58,7 +58,7 @@ function Make-Package() {
     New-Item -ItemType File -ErrorAction Ignore -Path $PropFile
     Add-Content $PropFile "PRODUCT=couchbase-lite-core"
     Add-Content $PropFile "VERSION=$ShaVersion"
-    Add-Content $PropFile "${config}_PACKAGE_NAME_$architecture=$filename"
+    Add-Content $PropFile "${config}_PKG_NAME_$architecture=$filename"
     Pop-Location
 }
 
@@ -167,12 +167,12 @@ foreach ($arch in $Architectures) {
     Build-Store "${env:WORKSPACE}\build_cmake_store_${Target}" $arch "Debug"
     if($arch -ne "ARM") {
         Build "${env:WORKSPACE}\build_${Target}" $arch "Debug"
-        Make-Package "${env:WORKSPACE}\build_${Target}\couchbase-lite-core\$DebugPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-debug-$arch_lower.zip" "$arch" "DEBUG"
-        Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-debug-$arch_lower.zip" "$ArtifactsDir\couchbase-lite-core-windows-debug-$arch_lower.zip"
+        Make-Package "${env:WORKSPACE}\build_${Target}\couchbase-lite-core\$DebugPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-debug.zip" "$arch" "DEBUG"
+        Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-debug.zip" "$ArtifactsDir\couchbase-lite-core-windows-$arch_lower-debug.zip"
     }
 
-    Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\couchbase-lite-core\$DebugPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-debug-${arch_lower}-winstore.zip" "STORE_$arch" "DEBUG"
-    Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-debug-$arch_lower-winstore.zip" "$ArtifactsDir\couchbase-lite-core-windows-debug-$arch_lower-winstore.zip"
+    Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\couchbase-lite-core\$DebugPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore-debug.zip" "STORE_$arch" "DEBUG"
+    Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore-debug.zip" "$ArtifactsDir\couchbase-lite-core-windows-$arch_lower-store-debug.zip"
 
     $Target = "${arch}_MinSizeRel"
     Build-Store "${env:WORKSPACE}\build_cmake_store_${Target}" $arch "MinSizeRel"
@@ -182,10 +182,10 @@ foreach ($arch in $Architectures) {
             Run-UnitTest "${env:WORKSPACE}\build_${Target}\couchbase-lite-core" $arch
         }
 
-        Make-Package "${env:WORKSPACE}\build_${Target}\couchbase-lite-core\$RelPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$arch" "RELEASE"
-        Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$ArtifactsDir\couchbase-lite-core-windows-$arch_lower.zip"    
+        Make-Package "${env:WORKSPACE}\build_${Target}\couchbase-lite-core\$RelPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "STORE_$arch" "RELEASE"
+        Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$ArtifactsDir\couchbase-lite-core-windows-$arch_lower.zip"
     }
 
     Make-Package "${env:WORKSPACE}\build_cmake_store_${Target}\couchbase-lite-core\$RelPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-${arch_lower}-winstore.zip" "STORE_$arch" "RELEASE"
-    Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore.zip" "$ArtifactsDir\couchbase-lite-core-windows-$arch_lower-winstore.zip"
+    Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower-winstore.zip" "$ArtifactsDir\couchbase-lite-core-windows-$arch_lower-store.zip"
 }

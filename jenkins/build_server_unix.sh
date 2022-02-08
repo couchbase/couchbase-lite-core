@@ -1,4 +1,13 @@
 #!/bin/bash -ex
+
+# Copyright 2020-Present Couchbase, Inc.
+#
+# Use of this software is governed by the Business Source License included in
+# the file licenses/BSL-Couchbase.txt.  As of the Change Date specified in that
+# file, in accordance with the Business Source License, use of this software
+# will be governed by the Apache License, Version 2.0, included in the file
+# licenses/APL2.txt.
+
 set -x
 # Global define
 PRODUCT=${1}
@@ -16,7 +25,7 @@ case "${OSTYPE}" in
               PKG_TYPE='zip'
               PROP_FILE=${WORKSPACE}/publish.prop
               if [[ ${IOS} == 'true' ]]; then
-                  OS="macosx-ios"
+                  OS="ios"
                   PROP_FILE=${WORKSPACE}/publish_ios.prop
                   if [[ ${EDITION} == 'enterprise' ]]; then
                       release_config="Release_EE"
@@ -113,12 +122,11 @@ create_pkgs () {
     do
         PACKAGE_NAME=${PRODUCT}-${OS}-${VERSION}-${FLAVOR}.${PKG_TYPE}
         SYMBOLS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-${FLAVOR}-symbols.${PKG_TYPE}
-        SYMBOLS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-${FLAVOR}-symbols.${PKG_TYPE}
         echo
         echo  "=== Creating ${WORKSPACE}/${PACKAGE_NAME} package ==="
         echo
 
-        if [[ ${OS} == 'macosx-ios' ]]; then
+        if [[ ${OS} == 'ios' ]]; then
             pushd ${WORKSPACE}/build_ios_${FLAVOR}
             ${PKG_CMD} ${WORKSPACE}/${PACKAGE_NAME} LiteCore.framework
             popd
@@ -145,7 +153,7 @@ create_prop () {
     echo "BLD_NUM=${BLD_NUM}"  >> ${PROP_FILE}
     echo "VERSION=${VERSION}" >> ${PROP_FILE}
     echo "PKG_TYPE=${PKG_TYPE}" >> ${PROP_FILE}
-    if [[ ${OS} == 'macosx-ios' ]]; then
+    if [[ ${OS} == 'ios' ]]; then
         echo "DEBUG_IOS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-debug.${PKG_TYPE}" >> ${PROP_FILE}
         echo "RELEASE_IOS_PKG_NAME=${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE}" >> ${PROP_FILE}
     else
@@ -167,23 +175,25 @@ create_prop () {
 prep_artifacts () {
     # Prepare artifact directory for latestbuild publishing
     pushd ${ARTIFACTS_DIR}
-    for FLAVOR in release debug; do
-        if [[ ${OS} == 'macosx-ios' ]]; then
-            cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-debug.${PKG_TYPE} ${PRODUCT}-${OS}-debug.${PKG_TYPE}
-            cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE} ${PRODUCT}-${OS}-release.${PKG_TYPE}
-        else
-            cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-debug.${PKG_TYPE} ${PRODUCT}-${OS}-debug.${PKG_TYPE}
-            cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE} ${PRODUCT}-${OS}-release.${PKG_TYPE}
-            cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-debug-symbols.${PKG_TYPE}  ${PRODUCT}-${OS}-debug-symbols.${PKG_TYPE}
-            cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-release-symbols.${PKG_TYPE} ${PRODUCT}-${OS}-release-symbols.${PKG_TYPE}
-        fi
-    done
+
+    # Nexus strips "release" from ${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE}.  It also transforms
+    # ${PRODUCT}-${OS}-${VERSION}-<debug|release>-symbols.${PKG_TYPE} to 
+    # ${PRODUCT}-${OS}-${VERSION}-symbols-<release|debug>.${PKG_TYPE}.  In order to minic this on
+    # latestbuild, these pkgs are renamed accordingly during copy
+
+    cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-debug.${PKG_TYPE} ${PRODUCT}-${OS}-debug.${PKG_TYPE}
+    cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-release.${PKG_TYPE} ${PRODUCT}-${OS}.${PKG_TYPE}
+
+    if [[ ${OS} != 'ios' ]]; then
+        cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-debug-symbols.${PKG_TYPE}  ${PRODUCT}-${OS}-symbols-debug.${PKG_TYPE}
+        cp ${WORKSPACE}/${PRODUCT}-${OS}-${VERSION}-release-symbols.${PKG_TYPE} ${PRODUCT}-${OS}-symbols-release.${PKG_TYPE}
+    fi
     popd
 }
 
 
 #Main 
-if [[ ${OS} == 'macosx-ios' ]]; then
+if [[ ${OS} == 'ios' ]]; then
     echo "====  Building ios Release binary  ==="
     for FLAVOR in release debug; do
         build_xcode_binaries
