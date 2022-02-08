@@ -168,8 +168,10 @@ namespace litecore { namespace repl {
         } else {
             logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
                      SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);
-            if (_waitingRevMessages.empty())
+            if (_waitingRevMessages.empty()) {
                 Signpost::begin(Signpost::revsBackPressure);
+                logVerbose("Back pressure started for changes messages");
+            }
             _waitingRevMessages.push_back(move(msg));
         }
     }
@@ -227,8 +229,10 @@ namespace litecore { namespace repl {
                && !_waitingRevMessages.empty()) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
-            if (_waitingRevMessages.empty())
+            if (_waitingRevMessages.empty()) {
                 Signpost::end(Signpost::revsBackPressure);
+                logVerbose("Back pressure ended for changes messages");
+            }
             startIncomingRev(msg);
         }
     }
@@ -361,10 +365,14 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.willLog(LogLevel::Info)) {
-            logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
-                kC4ReplicatorActivityLevelNames[level],
-                pendingResponseCount(), _caughtUp,
-                _pendingRevMessages, _activeIncomingRevs);
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d,"
+                    " _pendingRevMessages=%u, _activeIncomingRevs=%u, _waitingRevMessages=%zu,"
+                    " _unfinishedIncomingRevs=%u",
+                    kC4ReplicatorActivityLevelNames[level],
+                    pendingResponseCount(), _caughtUp,
+                    _pendingRevMessages, _activeIncomingRevs,
+                    _waitingRevMessages.size(),
+                    _unfinishedIncomingRevs);
         }
 
         if (level == kC4Stopped)
