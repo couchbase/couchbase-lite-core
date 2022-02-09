@@ -128,7 +128,7 @@ do
         cd ${SOURCE_PATH}/${BUILD_REL_TARGET}/install
         ${PKG_CMD} ${SOURCE_PATH}/${PACKAGE_NAME} *
         RELEASE_PKG_NAME=${PACKAGE_NAME}
-        cp ${SOURCE_PATH}/${PACKAGE_NAME} ${ARTIFACTS_DIR}/couchbase-lite-core-android-${ANDROID_ARCH}-${FLAVOR}.${PKG_TYPE}
+        cp ${SOURCE_PATH}/${PACKAGE_NAME} ${ARTIFACTS_DIR}/couchbase-lite-core-android-${ANDROID_ARCH}.${PKG_TYPE}
         cd ${SOURCE_PATH}
     fi
 done
