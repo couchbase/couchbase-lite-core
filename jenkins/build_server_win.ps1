@@ -182,7 +182,7 @@ foreach ($arch in $Architectures) {
             Run-UnitTest "${env:WORKSPACE}\build_${Target}\couchbase-lite-core" $arch
         }
 
-        Make-Package "${env:WORKSPACE}\build_${Target}\couchbase-lite-core\$RelPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "STORE_$arch" "RELEASE"
+        Make-Package "${env:WORKSPACE}\build_${Target}\couchbase-lite-core\$RelPkgDir" "couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$arch" "RELEASE"
         Copy-Item "${env:WORKSPACE}\couchbase-lite-core-$Version-$ShaVersion-windows-$arch_lower.zip" "$ArtifactsDir\couchbase-lite-core-windows-$arch_lower.zip"
     }
 
