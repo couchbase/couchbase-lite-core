@@ -454,6 +454,18 @@ namespace litecore { namespace websocket {
     // Called when the underlying socket closes.
     void WebSocketImpl::onClose(CloseStatus status) {
         {
+            if (!hasDelegate()) {
+                // CBL-2751
+                // The delegate is assigned when WebSocket::connect(Delegate*) is called,
+                // which is an act of client.
+                // Our assertions are:
+                // (1) client calls WebSocket::connect(Delegate*) to start
+                // (2) therefore, hasDelegate() == true
+                // (3) Otherwise, if hasDelegate() == false, it must not be a client and
+                //     we therefore do not react to this call.
+                return;
+            }
+
             lock_guard<mutex> lock(_mutex);
 
             if (_closed)
