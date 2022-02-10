@@ -19,21 +19,6 @@ using namespace std;
 using namespace litecore::actor;
 
 
-template <typename T>
-static T waitFor(Async<T> &async) {
-    C4Log("Waiting...");
-    optional<T> result;
-    async.then([&](T &&c) {
-        result = c;
-    });
-    while (!result) {
-        this_thread::sleep_for(10ms);
-    }
-    C4Log("...done waiting");
-    return *result;
-}
-
-
 static Async<string> downloader(string url) {
     auto provider = Async<string>::makeProvider();
     std::thread t([=] {
@@ -47,15 +32,27 @@ static Async<string> downloader(string url) {
 
 class AsyncTest {
 public:
-    Retained<AsyncProvider<string>> aProvider = Async<string>::makeProvider();
-    Retained<AsyncProvider<string>> bProvider = Async<string>::makeProvider();
+    Retained<AsyncProvider<string>> _aProvider;
+    Retained<AsyncProvider<string>> _bProvider;
+
+    AsyncProvider<string>* aProvider() {
+        if (!_aProvider)
+            _aProvider = Async<string>::makeProvider();
+        return _aProvider;
+    }
+
+    AsyncProvider<string>* bProvider() {
+        if (!_bProvider)
+            _bProvider = Async<string>::makeProvider();
+        return _bProvider;
+    }
 
     Async<string> provideA() {
-        return aProvider;
+        return aProvider();
     }
 
     Async<string> provideB() {
-        return bProvider;
+        return bProvider();
     }
 
     Async<string> provideSum() {
@@ -78,6 +75,22 @@ public:
         AWAIT(a, provideSum());
         return a + "!";
         END_ASYNC()
+    }
+
+
+    Async<string> XXprovideSumPlus() {
+        string a;
+        return Async<string>(_thisActor(), [=](AsyncFnState &_async_state_) mutable
+                                                    -> std::optional<string> {
+            switch (_async_state_.currentLine()) {
+                default:
+                    if (_async_state_._await(provideSum(), 78)) return {};
+                case 78:
+                    a = _async_state_.awaited<async_result_type<decltype(provideSum())>>()
+                                        ->extractResult();
+                    return a + "!";
+            }
+        });
     }
 
 
@@ -120,9 +133,9 @@ public:
 TEST_CASE_METHOD(AsyncTest, "Async", "[Async]") {
     Async<string> sum = provideSum();
     REQUIRE(!sum.ready());
-    aProvider->setResult("hi");
+    _aProvider->setResult("hi");
     REQUIRE(!sum.ready());
-    bProvider->setResult(" there");
+    _bProvider->setResult(" there");
     REQUIRE(sum.ready());
     REQUIRE(sum.result() == "hi there");
 }
@@ -131,9 +144,9 @@ TEST_CASE_METHOD(AsyncTest, "Async", "[Async]") {
 TEST_CASE_METHOD(AsyncTest, "Async, other order", "[Async]") {
     Async<string> sum = provideSum();
     REQUIRE(!sum.ready());
-    bProvider->setResult(" there");    // this time provideB() finishes first
+    bProvider()->setResult(" there");    // this time provideB() finishes first
     REQUIRE(!sum.ready());
-    aProvider->setResult("hi");
+    aProvider()->setResult("hi");
     REQUIRE(sum.ready());
     REQUIRE(sum.result() == "hi there");
 }
@@ -157,10 +170,10 @@ TEST_CASE_METHOD(AsyncTest, "AsyncWaiter", "[Async]") {
     });
     REQUIRE(!sum.ready());
     REQUIRE(result == "");
-    aProvider->setResult("hi");
+    _aProvider->setResult("hi");
     REQUIRE(!sum.ready());
     REQUIRE(result == "");
-    bProvider->setResult(" there");
+    _bProvider->setResult(" there");
     REQUIRE(sum.ready());
     REQUIRE(result == "hi there");
 }
@@ -169,9 +182,9 @@ TEST_CASE_METHOD(AsyncTest, "AsyncWaiter", "[Async]") {
 TEST_CASE_METHOD(AsyncTest, "Async, 2 levels", "[Async]") {
     Async<string> sum = provideSumPlus();
     REQUIRE(!sum.ready());
-    aProvider->setResult("hi");
+    _aProvider->setResult("hi");
     REQUIRE(!sum.ready());
-    bProvider->setResult(" there");
+    _bProvider->setResult(" there");
     REQUIRE(sum.ready());
     REQUIRE(sum.result() == "hi there!");
 }
@@ -181,11 +194,11 @@ TEST_CASE_METHOD(AsyncTest, "Async, loop", "[Async]") {
     Async<int> sum = provideLoop();
     for (int i = 1; i <= 10; i++) {
         REQUIRE(!sum.ready());
-        aProvider->setResult("hi");
+        _aProvider->setResult("hi");
+        _aProvider = nullptr;
         REQUIRE(!sum.ready());
-        aProvider = Async<string>::makeProvider();
-        bProvider->setResult(" there");
-        bProvider = Async<string>::makeProvider();
+        _bProvider->setResult(" there");
+        _bProvider = nullptr;
     }
     REQUIRE(sum.ready());
     REQUIRE(sum.result() == 360);
@@ -202,9 +215,9 @@ TEST_CASE_METHOD(AsyncTest, "Async, immediately", "[Async]") {
 TEST_CASE_METHOD(AsyncTest, "Async void fn", "[Async]") {
     provideNothing();
     REQUIRE(provideNothingResult == "");
-    aProvider->setResult("hi");
+    _aProvider->setResult("hi");
     REQUIRE(provideNothingResult == "");
-    bProvider->setResult(" there");
+    _bProvider->setResult(" there");
     REQUIRE(provideNothingResult == "hi there");
 }
 
@@ -217,9 +230,9 @@ TEST_CASE_METHOD(AsyncTest, "Async then returning void", "[Async]") {
     });
 
     Log("--Providing aProvider");
-    aProvider->setResult("hi");
+    _aProvider->setResult("hi");
     Log("--Providing bProvider");
-    bProvider->setResult(" there");
+    _bProvider->setResult(" there");
     CHECK(result == "hi there");
 }
 
@@ -231,10 +244,10 @@ TEST_CASE_METHOD(AsyncTest, "Async then returning T", "[Async]") {
     });
 
     Log("--Providing aProvider");
-    aProvider->setResult("hi");
+    _aProvider->setResult("hi");
     Log("--Providing bProvider");
-    bProvider->setResult(" there");
-    CHECK(waitFor(size) == 8);
+    _bProvider->setResult(" there");
+    CHECK(size.blockingResult() == 8);
 }
 
 
@@ -245,10 +258,10 @@ TEST_CASE_METHOD(AsyncTest, "Async then returning async T", "[Async]") {
     });
 
     Log("--Providing aProvider");
-    aProvider->setResult("hi");
+    _aProvider->setResult("hi");
     Log("--Providing bProvider");
-    bProvider->setResult(" there");
-    CHECK(waitFor(dl) == "Contents of hi there");
+    _bProvider->setResult(" there");
+    CHECK(dl.blockingResult() == "Contents of hi there");
 }
 
 
@@ -287,7 +300,7 @@ public:
         BEGIN_ASYNC()
         downloader(url).then([=](string &&s) {
             // When `then` is used inside an Actor method, the lambda must be called on its queue:
-            CHECK(currentActor() == this);
+            assert(currentActor() == this);
             testThenResult = move(s);
             testThenReady = true;
         });
@@ -301,7 +314,7 @@ public:
 
 TEST_CASE("Async on thread", "[Async]") {
     auto asyncContents = downloader("couchbase.com");
-    string contents = waitFor(asyncContents);
+    string contents = asyncContents.blockingResult();
     CHECK(contents == "Contents of couchbase.com");
 }
 
@@ -309,7 +322,7 @@ TEST_CASE("Async on thread", "[Async]") {
 TEST_CASE("Async Actor", "[Async]") {
     auto actor = make_retained<AsyncTestActor>();
     auto asyncContents = actor->download("couchbase.org");
-    string contents = waitFor(asyncContents);
+    string contents = asyncContents.blockingResult();
     CHECK(contents == "Contents of couchbase.org");
 }
 
@@ -317,7 +330,7 @@ TEST_CASE("Async Actor", "[Async]") {
 TEST_CASE("Async Actor Twice", "[Async]") {
     auto actor = make_retained<AsyncTestActor>();
     auto asyncContents = actor->download("couchbase.org", "couchbase.biz");
-    string contents = waitFor(asyncContents);
+    string contents = asyncContents.blockingResult();
     CHECK(contents == "Contents of couchbase.org and Contents of couchbase.biz");
 }
 

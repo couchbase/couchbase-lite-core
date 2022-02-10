@@ -31,7 +31,6 @@
 
 namespace litecore { namespace actor {
     class Actor;
-    class AsyncContext;
 
 
     //// Some support code for asynchronize(), from http://stackoverflow.com/questions/42124866
@@ -144,17 +143,21 @@ namespace litecore { namespace actor {
 
         Actor* _thisActor() {return this;}
 
-        void wakeAsyncContext(AsyncContext *context);
-
     private:
         friend class ThreadedMailbox;
         friend class GCDMailbox;
-        friend class AsyncContext;
+        friend class AsyncObserver;
 
         template <class ACTOR, class ITEM> friend class ActorBatcher;
         template <class ACTOR>             friend class ActorCountBatcher;
 
         void _waitTillCaughtUp(std::mutex*, std::condition_variable*, bool*);
+
+        /** Calls a method on _some other object_ on my mailbox's queue. */
+        template <class Rcvr, class... Args>
+        void enqueueOther(const char* methodName, Rcvr* other, void (Rcvr::*fn)(Args...), Args... args) {
+            _mailbox.enqueue(methodName, ACTOR_BIND_METHOD(other, fn, args));
+        }
 
         Mailbox _mailbox;
     };

@@ -12,101 +12,161 @@
 
 #include "Async.hh"
 #include "Actor.hh"
+#include "Logging.hh"
 #include "betterassert.hh"
 
 namespace litecore::actor {
+    using namespace std;
+
+#pragma mark - ASYNC FN STATE:
 
 
-    void AsyncState::asyncVoidFn(Actor *actor, std::function<void(AsyncState&)> body) {
-        if (actor && actor != Actor::currentActor()) {
+    // Called from `BEGIN_ASYNC()`. This is an optimization for a void-returning function that
+    // avoids allocating an AsyncProvider if the function body never has to block.
+    void AsyncFnState::asyncVoidFn(Actor *thisActor, function<void(AsyncFnState&)> fnBody) {
+        if (thisActor && thisActor != Actor::currentActor()) {
             // Need to run this on the Actor's queue, so schedule it:
-            auto provider = retained(new AsyncProvider<void>(actor, std::move(body)));
-            provider->_start();
+            (new AsyncProvider<void>(thisActor, move(fnBody)))->_start();
         } else {
-            // It's OK to call the body synchronously. As an optimization, pass it a plain
-            // stack-based AsyncState instead of a heap-allocated AsyncProvider:
-            AsyncState state;
-            body(state);
+            // It's OK to call the body synchronously. As an optimization, call it directly with a
+            // stack-based AsyncFnState, instead of from a heap-allocated AsyncProvider:
+            AsyncFnState state(nullptr, thisActor);
+            fnBody(state);
             if (state._awaiting) {
-                // Body didn't finish, is "blocked" in an AWAIT(), so now set up a proper context:
-                auto provider = retained(new AsyncProvider<void>(actor,
-                                                                 std::move(body),
-                                                                 std::move(state)));
-                provider->_wait();
+                // Body didn't finish (is "blocked" in an `AWAIT()`), so set up a proper provider:
+                (new AsyncProvider<void>(thisActor, move(fnBody), move(state)))->_wait();
             }
         }
     }
 
-    
-    bool AsyncState::_await(const AsyncBase &a, int curLine) {
-        _awaiting = a._context;
+
+    // copy state from `other`, except `_owningProvider`
+    void AsyncFnState::updateFrom(AsyncFnState &other) {
+        _owningActor = other._owningActor;
+        _awaiting = move(other._awaiting);
+        _currentLine = other._currentLine;
+    }
+
+
+    // called by `AWAIT()` macro
+    bool AsyncFnState::_await(const AsyncBase &a, int curLine) {
+        _awaiting = a._provider;
         _currentLine = curLine;
         return !a.ready();
     }
 
 
-    void AsyncContext::setObserver(AsyncContext *p) {
-        precondition(!_observer);
-        _observer = p;
-    }
+#pragma mark - ASYNC OBSERVER:
 
 
-    void AsyncContext::_start() {
-        _waitingSelf = this;                    // Retain myself while waiting
-        if (_actor && _actor != Actor::currentActor())
-            _actor->wakeAsyncContext(this);     // Schedule the body to run on my Actor's queue
-        else
-            _next();                            // or run it synchronously
-    }
-
-
-    // AsyncProvider<T> overrides this, and calls it last.
-    // Async<T>::AsyncWaiter overrides this and doesn't call it at all.
-    void AsyncContext::_next() {
-        if (_awaiting)
-            _wait();
-        else
-            _gotResult();
-    }
-
-
-    void AsyncContext::_wait() {
-        _waitingActor = Actor::currentActor();  // retain the actor that's waiting
-        _awaiting->setObserver(this);
-    }
-
-
-    void AsyncContext::_waitOn(AsyncContext *context) {
-        assert(!_awaiting);
-        _waitingSelf = this; // retain myself while waiting
-        _awaiting = context;
-        _wait();
-    }
-
-
-    void AsyncContext::wakeUp(AsyncContext *async) {
-        assert(async == _awaiting);
-        if (_waitingActor) {
-            fleece::Retained<Actor> waitingActor = std::move(_waitingActor);
-            waitingActor->wakeAsyncContext(this);       // queues the next() call on its Mailbox
+    void AsyncObserver::notifyAsyncResultAvailable(AsyncProviderBase *ctx, Actor *actor) {
+        if (actor && actor != Actor::currentActor()) {
+            // Schedule a call on my Actor:
+            actor->enqueueOther("AsyncObserver::asyncResultAvailable", this,
+                                &AsyncObserver::asyncResultAvailable, retained(ctx));
         } else {
-            _next();
+            // ... or call it synchronously:
+            asyncResultAvailable(ctx);
         }
     }
 
 
-    void AsyncContext::_gotResult() {
-        _ready = true;
-        if (auto observer = move(_observer))
-            observer->wakeUp(this);
-        _waitingSelf = nullptr; // release myself now that I'm done
+#pragma mark - ASYNC PROVIDER BASE:
+
+
+    AsyncProviderBase::AsyncProviderBase(Actor *actorOwningFn)
+    :_fnState(new AsyncFnState(this, actorOwningFn))
+    { }
+
+
+    AsyncProviderBase::~AsyncProviderBase() {
+        if (!_ready)
+            WarnError("AsyncProvider %p deleted without ever getting a value!", (void*)this);
     }
 
 
-    AsyncBase::AsyncBase(AsyncContext *context, bool)
+    void AsyncProviderBase::_start() {
+        notifyAsyncResultAvailable(nullptr, _fnState->_owningActor);
+    }
+
+
+    void AsyncProviderBase::_wait() {
+        _fnState->_awaiting->setObserver(this);
+    }
+
+
+    void AsyncProviderBase::setObserver(AsyncObserver *o) {
+        {
+            unique_lock<decltype(_mutex)> _lock(_mutex);
+            precondition(!_observer.observer);
+            // Presumably I wasn't ready when the caller decided to call `setObserver` on me;
+            // but I might have become ready in between then and now, so check for that.
+            if (!_ready) {
+                _observer = {o, Actor::currentActor()};
+                return;
+            }
+        }
+        // if I am ready, call the observer now:
+        o->notifyAsyncResultAvailable(this, Actor::currentActor());
+    }
+
+
+    void AsyncProviderBase::_gotResult() {
+        Observer obs = {};
+        {
+            unique_lock<decltype(_mutex)> _lock(_mutex);
+            precondition(!_ready);
+            _ready = true;
+            swap(obs, _observer);
+        }
+        if (obs.observer)
+            obs.observer->notifyAsyncResultAvailable(this, obs.observerActor);
+
+        // If I am the result of an async fn, it must have finished, so forget its state:
+        _fnState = nullptr;
+    }
+
+
+#pragma mark - ASYNC BASE:
+    
+
+    AsyncBase::AsyncBase(AsyncProviderBase *context, bool)
     :AsyncBase(context)
     {
-        _context->_start();
+        _provider->_start();
+    }
+
+
+    // Simple class that observes an AsyncProvider and can block until it's ready.
+    class BlockingObserver : public AsyncObserver {
+    public:
+        BlockingObserver(AsyncProviderBase *provider)
+        :_provider(provider)
+        { }
+
+        void wait() {
+            unique_lock<decltype(_mutex)> lock(_mutex);
+            _provider->setObserver(this);
+            _cond.wait(lock, [&]{return _provider->ready();});
+        }
+    private:
+        void asyncResultAvailable(Retained<AsyncProviderBase>) override {
+            unique_lock<decltype(_mutex)> lock(_mutex);
+            _cond.notify_one();
+        }
+
+        mutex              _mutex;
+        condition_variable _cond;
+        AsyncProviderBase* _provider;
+    };
+
+
+    void AsyncBase::blockUntilReady() {
+        if (!ready()) {
+            precondition(Actor::currentActor() == nullptr); // would deadlock if called by an Actor
+            BlockingObserver obs(_provider);
+            obs.wait();
+        }
     }
 
 }

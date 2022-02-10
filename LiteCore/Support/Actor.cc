@@ -42,9 +42,4 @@ namespace litecore::actor {
         cond->notify_one();
     }
 
-    void Actor::wakeAsyncContext(AsyncContext *context) {
-        _mailbox.enqueue("wakeAsyncContext", ACTOR_BIND_METHOD0(context, &AsyncContext::_next));
-    }
-
-
 }

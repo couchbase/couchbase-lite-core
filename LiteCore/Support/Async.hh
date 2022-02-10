@@ -15,6 +15,7 @@
 #include "InstanceCounted.hh"
 #include <atomic>
 #include <functional>
+#include <mutex>
 #include <optional>
 #include <utility>
 #include <betterassert.hh>
@@ -33,14 +34,14 @@ namespace litecore::actor {
 /// Put this at the top of an async function/method that returns `Async<T>`,
 /// but below declarations of any variables that need to be in scope for the whole method.
 #define BEGIN_ASYNC_RETURNING(T) \
-    return Async<T>(_thisActor(), [=](AsyncState &_async_state_) mutable -> std::optional<T> { \
+    return Async<T>(_thisActor(), [=](AsyncFnState &_async_state_) mutable -> std::optional<T> { \
         switch (_async_state_.currentLine()) { \
             default:
 
 /// Put this at the top of an async method that returns `void`.
 /// See `BEGIN_ASYNC_RETURNING` for details.
 #define BEGIN_ASYNC() \
-    return AsyncState::asyncVoidFn(_thisActor(), [=](AsyncState &_async_state_) mutable -> void { \
+    return AsyncFnState::asyncVoidFn(_thisActor(), [=](AsyncFnState &_async_state_) mutable -> void { \
         switch (_async_state_.currentLine()) { \
             default:
 
@@ -63,24 +64,45 @@ namespace litecore::actor {
 
 
     class AsyncBase;
-    class AsyncContext;
+    class AsyncProviderBase;
     template <class T> class Async;
     template <class T> class AsyncProvider;
 
 
     // The state data passed to the lambda of an async function. Internal use only.
-    class AsyncState {
+    class AsyncFnState {
     public:
         int currentLine() const                             {return _currentLine;}
-        void reset()                                        {_awaiting = nullptr;}
         bool _await(const AsyncBase &a, int curLine);
         template <class T> Retained<AsyncProvider<T>> awaited();
 
-        static void asyncVoidFn(Actor *actor, std::function<void(AsyncState&)> body);
+        static void asyncVoidFn(Actor *actor, std::function<void(AsyncFnState&)> body);
 
+   protected:
+        friend class AsyncProviderBase;
+        template <typename T> friend class AsyncProvider;
+
+        AsyncFnState(AsyncProviderBase *owningProvider, Actor *owningActor)
+        :_owningProvider(owningProvider)
+        ,_owningActor(owningActor)
+        { }
+
+        void updateFrom(AsyncFnState&);
+
+        Retained<AsyncProviderBase> _owningProvider;  // Provider that I belong to
+        Retained<Actor>             _owningActor;     // Actor (if any) that owns the async method
+        Retained<AsyncProviderBase> _awaiting;        // Provider my fn body is suspended awaiting
+        int                         _currentLine {0}; // label/line# to continue body function at
+    };
+
+
+    // Interface for observing when an Async value becomes available.
+    class AsyncObserver {
+    public:
+        virtual ~AsyncObserver() = default;
+        void notifyAsyncResultAvailable(AsyncProviderBase*, Actor*);
     protected:
-        Retained<AsyncContext> _awaiting;           // What my fn body is suspended awaiting
-        int                    _currentLine {0};    // label/line# to continue body function at
+        virtual void asyncResultAvailable(Retained<AsyncProviderBase>) =0;
     };
 
 
@@ -88,9 +110,10 @@ namespace litecore::actor {
 
 
     // Maintains the context/state of an async operation and its observer.
-    // Abstract base class of AsyncProvider<T> and Async<T>::AsyncWaiter.
-    class AsyncContext : public RefCounted, protected AsyncState,
-                         public fleece::InstanceCountedIn<AsyncContext>
+    // Abstract base class of AsyncProvider<T>
+    class AsyncProviderBase : public RefCounted,
+                              protected AsyncObserver,
+                              public fleece::InstanceCountedIn<AsyncProviderBase>
     {
     public:
         bool ready() const                                  {return _ready;}
@@ -98,128 +121,123 @@ namespace litecore::actor {
         template <typename T> const T& result();
         template <typename T> T&& extractResult();
 
-    protected:
-        friend class AsyncState;
-        friend class AsyncBase;
-        friend class Actor;
+        void setObserver(AsyncObserver*);
 
-        explicit AsyncContext(Actor *actor = nullptr)       :_actor(actor) { }
-        void _start();
+    protected:
+        friend class AsyncBase;
+
+        explicit AsyncProviderBase(bool ready = false)      :_ready(ready) { }
+        explicit AsyncProviderBase(Actor *actorOwningFn);
+        ~AsyncProviderBase();
+       void _start();
         void _wait();
-        void _waitOn(AsyncContext*);
         void _gotResult();
 
-        virtual void _next();    // Overridden by AsyncProvider<T> and Async<T>::AsyncWaiter.
-
-        Retained<AsyncContext> _observer;                   // Dependent context waiting on me
-        Actor*                 _actor;                      // Owning actor, if any
-        Retained<Actor>        _waitingActor;               // Actor that's waiting, if any
-        Retained<AsyncContext> _waitingSelf;                // Keeps `this` from being freed
-        std::atomic<bool>      _ready {false};              // True when result is ready
-
+        std::mutex mutable            _mutex;
+        std::atomic<bool>             _ready {false};         // True when result is ready
+        std::unique_ptr<AsyncFnState> _fnState;               // State of associated async fn
     private:
-        void setObserver(AsyncContext *p);
-        void wakeUp(AsyncContext *async);
+        struct Observer {
+            AsyncObserver*     observer = nullptr;    // AsyncObserver waiting on me
+            Retained<Actor>    observerActor;         // Actor the observer was running on
+        };
+        Observer _observer;
     };
 
 
     /** An asynchronously-provided result, seen from the producer's side. */
     template <class T>
-    class AsyncProvider : public AsyncContext {
+    class AsyncProvider final : public AsyncProviderBase {
     public:
         using ResultType = T;
 
         /// Creates a new empty AsyncProvider.
         static Retained<AsyncProvider> create()            {return new AsyncProvider;}
 
+        /// Creates a new AsyncProvider that already has a result.
         static Retained<AsyncProvider> createReady(T&& r)  {return new AsyncProvider(std::move(r));}
+
+        /// Constructs a new empty AsyncProvider.
+        AsyncProvider() = default;
 
         /// Creates the client-side view of the result.
         Async<T> asyncValue()                               {return Async<T>(this);}
 
-        /// Resolves the value by storing the result and waking any waking clients.
-        void setResult(const T &result)                     {precondition(!_result);
-                                                             _result = result; _gotResult();}
-        /// Resolves the value by move-storing the result and waking any waking clients.
-        void setResult(T &&result)                          {precondition(!_result);
-                                                             _result = std::move(result);
-                                                             _gotResult();}
+        /// Resolves the value by storing the result and waking any waiting clients.
+        void setResult(const T &result) {
+            {
+                std::unique_lock<decltype(_mutex)> _lock(_mutex);
+                precondition(!_result);
+                _result = result;
+            }
+            _gotResult();
+        }
+
+        /// Resolves the value by move-storing the result and waking any waiting clients.
+        void setResult(T &&result) {
+            {
+                std::unique_lock<decltype(_mutex)> _lock(_mutex);
+                precondition(!_result);
+                _result = std::move(result);
+            }
+            _gotResult();
+        }
 
         /// Equivalent to `setResult` but constructs the T value directly inside the provider.
         template <class... Args,
                   class = std::enable_if<std::is_constructible_v<ResultType, Args...>>>
         void emplaceResult(Args&&... args) {
-            precondition(!_result);
-            _result.emplace(args...);
+            {
+                std::unique_lock<decltype(_mutex)> _lock(_mutex);
+                precondition(!_result);
+                _result.emplace(args...);
+            }
             _gotResult();
         }
 
         /// Returns the result, which must be available.
-        const T& result() const &                           {precondition(_result);return *_result;}
-        T&& result() &&                                     {return extractResult();}
+        const T& result() const & {
+            std::unique_lock<decltype(_mutex)> _lock(_mutex);
+            precondition(_result);
+            return *_result;
+        }
+        
+        T&& result() && {
+            return extractResult();
+        }
 
         /// Moves the result to the caller. Result must be available.
-        T&& extractResult()                                 {precondition(_result);
-                                                             return *std::move(_result);}
+        T&& extractResult() {
+            std::unique_lock<decltype(_mutex)> _lock(_mutex);
+            precondition(_result);
+            return *std::move(_result);
+        }
+
     private:
         friend class Async<T>;
 
-        using Body = std::function<std::optional<T>(AsyncState&)>;
-
-        AsyncProvider() = default;
+        using Body = std::function<std::optional<T>(AsyncFnState&)>;
 
         explicit AsyncProvider(T&& result)
-        :_result(std::move(result))
-        {_ready = true;}
+        :AsyncProviderBase(true)
+        ,_result(std::move(result))
+        { }
 
         AsyncProvider(Actor *actor, Body &&body)
-        :AsyncContext(actor)
+        :AsyncProviderBase(actor)
         ,_body(std::move(body))
         { }
 
-        void _next() override {
-            _result = _body(*this);
-            assert(_result || _awaiting);
-            AsyncContext::_next();
+        void asyncResultAvailable(Retained<AsyncProviderBase> async) override {
+            assert(async == _fnState->_awaiting);
+            if (std::optional<T> r = _body(*_fnState))
+                setResult(*std::move(r));
+            else
+                _wait();
         }
 
         Body             _body;     // The async function body
         std::optional<T> _result;   // My result
-    };
-
-
-
-    // Specialization of AsyncProvider for use in functions with no return value (void).
-    template <>
-    class AsyncProvider<void> : public AsyncContext {
-    public:
-        static Retained<AsyncProvider> create()             {return new AsyncProvider;}
-
-    private:
-        friend class Async<void>;
-        friend class AsyncState;
-
-        using Body = std::function<void(AsyncState&)>;
-
-        AsyncProvider()                                     :AsyncContext(nullptr) { }
-
-        AsyncProvider(Actor *actor, Body &&body)
-        :AsyncContext(actor)
-        ,_body(std::move(body))
-        { }
-
-        AsyncProvider(Actor *actor, Body &&body, AsyncState &&state)
-        :AsyncProvider(actor, std::move(body))
-        {
-            ((AsyncState&)*this) = std::move(state);
-        }
-
-        void _next() override {
-            _body(*this);
-            AsyncContext::_next();
-        }
-
-        Body _body;             // The async function body
     };
 
 
@@ -245,13 +263,18 @@ namespace litecore::actor {
     class AsyncBase {
     public:
         /// Returns true once the result is available.
-        bool ready() const                                  {return _context->ready();}
-    protected:
-        friend class AsyncState;
-        explicit AsyncBase(Retained<AsyncContext> &&context) :_context(std::move(context)) { }
-        explicit AsyncBase(AsyncContext *context, bool);    // calls context->_start()
+        bool ready() const                                  {return _provider->ready();}
 
-        Retained<AsyncContext> _context;                    // The AsyncProvider that owns my value
+        /// Blocks the current thread (i.e. doesn't return) until the result is available.
+        /// Please don't use this unless absolutely necessary; use `then()` or `AWAIT()` instead.
+        void blockUntilReady();
+
+    protected:
+        friend class AsyncFnState;
+        explicit AsyncBase(Retained<AsyncProviderBase> &&context) :_provider(std::move(context)) { }
+        explicit AsyncBase(AsyncProviderBase *context, bool);    // calls context->_start()
+
+        Retained<AsyncProviderBase> _provider;                   // The provider that owns my value
     };
 
 
@@ -259,26 +282,29 @@ namespace litecore::actor {
     template <class T>
     class Async : public AsyncBase {
     public:
-        using ResultType = T;
-        using AwaitReturnType = Async<T>;
-
         /// Returns a new AsyncProvider<T>.
         static Retained<AsyncProvider<T>> makeProvider()    {return AsyncProvider<T>::create();}
 
-        Async(T&& t) :AsyncBase(AsyncProvider<T>::createReady(std::move(t))) { }
+        /// Creates an Async value from its provider.
         Async(AsyncProvider<T> *provider)                   :AsyncBase(provider) { }
-        Async(const Retained<AsyncProvider<T>> &provider)   :AsyncBase(provider) { }
+        Async(Retained<AsyncProvider<T>> &&provider)        :AsyncBase(std::move(provider)) { }
 
+        /// Creates an already-resolved Async with a value.
+        explicit Async(T&& t)
+        :AsyncBase(AsyncProvider<T>::createReady(std::move(t)))
+        { }
+
+        // (used by `BEGIN_ASYNC_RETURNING(T)`. Don't call directly.)
         Async(Actor *actor, typename AsyncProvider<T>::Body bodyFn)
         :AsyncBase(new AsyncProvider<T>(actor, std::move(bodyFn)), true)
         { }
 
         /// Returns the result. (Will abort if the result is not yet available.)
-        const T& result() const &                           {return _context->result<T>();}
-        T&& result() const &&                               {return _context->result<T>();}
+        const T& result() const &                           {return _provider->result<T>();}
+        T&& result() const &&                               {return _provider->result<T>();}
 
-        /// Returns the result. (Will abort if the result is not yet available.)
-        T&& extractResult() const                           {return _context->extractResult<T>();}
+        /// Move-returns the result. (Will abort if the result is not yet available.)
+        T&& extractResult() const                           {return _provider->extractResult<T>();}
 
         /// Invokes the callback when the result becomes ready (immediately if it's already ready.)
         /// The callback should take a single parameter of type `T`, `T&` or `T&&`.
@@ -300,21 +326,35 @@ namespace litecore::actor {
             return _then<U>(callback);
         }
 
+        /// Blocks the current thread until the result is available, then returns it.
+        /// Please don't use this unless absolutely necessary; use `then()` or `AWAIT()` instead.
+        const T& blockingResult() {
+            blockUntilReady();
+            return result();
+        }
+
+        using ResultType = T;
+        using AwaitReturnType = Async<T>;
+
     private:
         class AsyncWaiter; // defined below
+
+        AsyncProvider<T>* provider() {
+            return (AsyncProvider<T>*)_provider.get();
+        }
 
         // Implements `then` where the lambda returns a regular type `U`. Returns `Async<U>`.
         template <typename U>
         typename Async<U>::AwaitReturnType _then(std::function<U(T&&)> callback) {
-            auto provider = Async<U>::provider();
+            auto uProvider = Async<U>::makeProvider();
             if (ready()) {
-                provider->setResult(callback(extractResult()));
+                uProvider->setResult(callback(extractResult()));
             } else {
-                (void) new AsyncWaiter(_context, [provider,callback](T&& result) {
-                    provider->setResult(callback(std::move(result)));
+                AsyncWaiter::start(this->provider(), [uProvider,callback](T&& result) {
+                    uProvider->setResult(callback(std::move(result)));
                 });
             }
-            return provider->asyncValue();
+            return uProvider->asyncValue();
         }
 
         // Implements `then` where the lambda returns void. (Specialization of above method.)
@@ -323,7 +363,7 @@ namespace litecore::actor {
             if (ready())
                 callback(extractResult());
             else
-                (void) new AsyncWaiter(_context, std::move(callback));
+                AsyncWaiter::start(provider(), std::move(callback));
         }
 
         // Implements `then` where the lambda returns `Async<U>`.
@@ -334,39 +374,22 @@ namespace litecore::actor {
                 return callback(extractResult());
             } else {
                 // Otherwise wait for my result...
-                auto provider = Async<U>::makeProvider();
-                (void) new AsyncWaiter(_context, [provider,callback](T&& result) {
+                auto uProvider = Async<U>::makeProvider();
+                AsyncWaiter::start(provider(), [uProvider,callback=std::move(callback)](T&& result) {
                     // Invoke the callback, then wait to resolve the Async<U> it returns:
                     Async<U> u = callback(std::move(result));
-                    u.then([=](U &&uresult) {
+                    u.then([uProvider](U &&uresult) {
                         // Then finally resolve the async I returned:
-                        provider->setResult(std::move(uresult));
+                        uProvider->setResult(std::move(uresult));
                     });
                 });
-                return provider->asyncValue();
+                return uProvider->asyncValue();
             }
         }
     };
 
 
-    // Specialization of Async<> for `void` type; not used directly.
-    template <>
-    class Async<void> : public AsyncBase {
-    public:
-        using AwaitReturnType = void;
-
-        static Retained<AsyncProvider<void>> makeProvider()  {return AsyncProvider<void>::create();}
-
-        Async(AsyncProvider<void> *provider)                 :AsyncBase(provider) { }
-        Async(const Retained<AsyncProvider<void>> &provider) :AsyncBase(provider) { }
-
-        Async(Actor *actor, typename AsyncProvider<void>::Body bodyFn)
-        :AsyncBase(new AsyncProvider<void>(actor, std::move(bodyFn)), true)
-        { }
-    };
-
-
-    // Implementation gunk...
+    //---- Implementation gunk...
 
 
     // Used by `BEGIN_ASYNC` macros. Returns the lexically enclosing actor instance, else NULL.
@@ -376,43 +399,103 @@ namespace litecore::actor {
 
 
     template <class T>
-    Retained<AsyncProvider<T>> AsyncState::awaited() {
-        // Downcasts `_awaiting` to the specific type of AsyncProvider, and clears it.
+    Retained<AsyncProvider<T>> AsyncFnState::awaited() {
+        // Move-returns `_awaiting`, downcast to the specific type of AsyncProvider<>.
+        // The dynamic_cast is a safety check: it will throw a `bad_cast` exception on mismatch.
         (void)dynamic_cast<AsyncProvider<T>&>(*_awaiting);  // runtime type-check
         return reinterpret_cast<Retained<AsyncProvider<T>>&&>(_awaiting);
     }
 
     template <typename T>
-    const T& AsyncContext::result() {
+    const T& AsyncProviderBase::result() {
         return dynamic_cast<AsyncProvider<T>*>(this)->result();
     }
 
     template <typename T>
-    T&& AsyncContext::extractResult() {
+    T&& AsyncProviderBase::extractResult() {
         return dynamic_cast<AsyncProvider<T>*>(this)->extractResult();
     }
 
+
     // Internal class used by `Async<T>::then()`, above
     template <typename T>
-    class Async<T>::AsyncWaiter : public AsyncContext {
+    class Async<T>::AsyncWaiter : public AsyncObserver {
     public:
         using Callback = std::function<void(T&&)>;
 
-        AsyncWaiter(AsyncContext *context, Callback &&callback)
-        :AsyncContext(nullptr)
-        ,_callback(std::move(callback))
-        {
-            _waitOn(context);
+        static void start(AsyncProvider<T> *provider, Callback &&callback) {
+            (void) new AsyncWaiter(provider, std::move(callback));
         }
+
     protected:
-        void _next() override {
-            _callback(awaited<T>()->extractResult());
-            _callback = nullptr;
-            _waitingSelf = nullptr; // release myself when done
-            // Does not call inherited method!
+        AsyncWaiter(AsyncProvider<T> *provider, Callback &&callback)
+        :_callback(std::move(callback))
+        {
+            provider->setObserver(this);
+        }
+
+        void asyncResultAvailable(Retained<AsyncProviderBase> ctx) override {
+            auto provider = dynamic_cast<AsyncProvider<T>*>(ctx.get());
+            _callback(provider->extractResult());
+            delete this;            // delete myself when done!
         }
     private:
         Callback _callback;
+    };
+
+
+    // Specialization of AsyncProvider for use in functions with no return value (void).
+    // Not used directly, but it's used as part of the implementation of void-returning async fns.
+    template <>
+    class AsyncProvider<void> : public AsyncProviderBase {
+    public:
+//        static Retained<AsyncProvider> create()             {return new AsyncProvider;}
+//        AsyncProvider() = default;
+
+    private:
+        friend class Async<void>;
+        friend class AsyncFnState;
+
+        using Body = std::function<void(AsyncFnState&)>;
+
+        AsyncProvider(Actor *actor, Body &&body)
+        :AsyncProviderBase(actor)
+        ,_body(std::move(body))
+        { }
+
+        AsyncProvider(Actor *actor, Body &&body, AsyncFnState &&state)
+        :AsyncProvider(actor, std::move(body))
+        {
+            _fnState->updateFrom(state);
+        }
+
+        void asyncResultAvailable(Retained<AsyncProviderBase> async) override {
+            assert(async == _fnState->_awaiting);
+            _body(*_fnState);
+            if (_fnState->_awaiting)
+                _wait();
+            else
+                _gotResult();
+        }
+
+        Body _body;             // The async function body
+    };
+
+
+    // Specialization of Async<> for `void` type; not used directly.
+    template <>
+    class Async<void> : public AsyncBase {
+    public:
+        using AwaitReturnType = void;
+
+//        static Retained<AsyncProvider<void>> makeProvider()  {return AsyncProvider<void>::create();}
+
+        Async(AsyncProvider<void> *provider)                 :AsyncBase(provider) { }
+        Async(const Retained<AsyncProvider<void>> &provider) :AsyncBase(provider) { }
+
+        Async(Actor *actor, typename AsyncProvider<void>::Body bodyFn)
+        :AsyncBase(new AsyncProvider<void>(actor, std::move(bodyFn)), true)
+        { }
     };
 
 }
