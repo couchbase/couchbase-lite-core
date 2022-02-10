@@ -30,7 +30,7 @@ namespace litecore { namespace crypto {
     using namespace fleece;
     using namespace net;
 
-    LogDomain TLSLogDomain("TLS", LogLevel::Warning);
+    LogDomain TLSLogDomain("TLS");
 
 
     Key::Key()                     {_pk = new mbedtls_pk_context; mbedtls_pk_init(_pk);}
