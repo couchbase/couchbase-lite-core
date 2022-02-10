@@ -85,6 +85,9 @@ namespace litecore { namespace websocket {
     }
 
 
+#define CHECK_DELEGATE { if (!hasDelegate()) return; }
+
+
     void WebSocketImpl::connect() {
         logInfo("Connecting...");
         startResponseTimer(chrono::seconds(kConnectTimeoutSecs));
@@ -92,11 +95,13 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::gotHTTPResponse(int status, const websocket::Headers &headersFleece) {
+        CHECK_DELEGATE
         logInfo("Got HTTP response (status %d)", status);
         delegate().onWebSocketGotHTTPResponse(status, headersFleece);
     }
 
     void WebSocketImpl::onConnect() {
+        CHECK_DELEGATE
         if(_closed) {
             // If the WebSocket has already been closed, which only happens in rare cases
             // such as stopping a Replicator during the connecting phase, then don't continue...
@@ -164,6 +169,7 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::onWriteComplete(size_t size) {
+        CHECK_DELEGATE
         bool notify, disconnect;
         {
             lock_guard<mutex> lock(_mutex);
@@ -299,6 +305,7 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::deliverMessageToDelegate(slice data, bool binary) {
+        CHECK_DELEGATE
         logVerbose("Received %zu-byte message", data.size);
         _deliveredBytes += data.size;
         Retained<Message> message(new MessageImpl(this, data, true));
@@ -373,6 +380,7 @@ namespace litecore { namespace websocket {
 
     // Initiates a request to close the connection cleanly.
     void WebSocketImpl::close(int status, fleece::slice message) {
+        CHECK_DELEGATE
         if(!_didConnect && _framing) {
             // The web socket is being requested to close before it's even connected, so just
             // shortcut to the callback and make sure that onConnect does nothing now
@@ -453,19 +461,16 @@ namespace litecore { namespace websocket {
 
     // Called when the underlying socket closes.
     void WebSocketImpl::onClose(CloseStatus status) {
+        CHECK_DELEGATE
+        // CBL-2751
+        // The delegate is assigned when WebSocket::connect(Delegate*) is called,
+        // which is an act of client.
+        // Our assertions are:
+        // (1) client calls WebSocket::connect(Delegate*) to start
+        // (2) therefore, hasDelegate() == true
+        // (3) Otherwise, if hasDelegate() == false, it must not be a client and
+        //     we therefore do not react to this call.
         {
-            if (!hasDelegate()) {
-                // CBL-2751
-                // The delegate is assigned when WebSocket::connect(Delegate*) is called,
-                // which is an act of client.
-                // Our assertions are:
-                // (1) client calls WebSocket::connect(Delegate*) to start
-                // (2) therefore, hasDelegate() == true
-                // (3) Otherwise, if hasDelegate() == false, it must not be a client and
-                //     we therefore do not react to this call.
-                return;
-            }
-
             lock_guard<mutex> lock(_mutex);
 
             if (_closed)

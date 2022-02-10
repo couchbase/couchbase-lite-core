@@ -41,7 +41,7 @@ namespace litecore { namespace websocket {
 
 
     Delegate& WebSocket::delegate() const {
-        DebugAssert(_delegate); return *_delegate;
+        return *_delegate;
     }
 
 
