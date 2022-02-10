@@ -111,19 +111,33 @@ namespace litecore::actor {
     }
 
 
-    void AsyncProviderBase::_gotResult() {
+    void AsyncProviderBase::_gotResult(std::unique_lock<std::mutex>& lock) {
+        precondition(!_ready);
+        _ready = true;
         Observer obs = {};
-        {
-            unique_lock<decltype(_mutex)> _lock(_mutex);
-            precondition(!_ready);
-            _ready = true;
-            swap(obs, _observer);
-        }
+        swap(obs, _observer);
+
+        lock.unlock();
+
         if (obs.observer)
             obs.observer->notifyAsyncResultAvailable(this, obs.observerActor);
 
         // If I am the result of an async fn, it must have finished, so forget its state:
         _fnState = nullptr;
+    }
+
+
+    void AsyncProviderBase::setException(std::exception_ptr x) {
+        unique_lock<decltype(_mutex)> lock(_mutex);
+        precondition(!_exception);
+        _exception = x;
+        _gotResult(lock);
+    }
+
+
+    void AsyncProviderBase::rethrowException() const {
+        if (_exception)
+            rethrow_exception(_exception);
     }
 
 
