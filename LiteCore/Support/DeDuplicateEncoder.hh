@@ -13,6 +13,7 @@
 #pragma once
 #include "Error.hh"
 #include "fleece/Fleece.hh"
+#include "fleece/FLExpert.h"
 #include <unordered_map>
 
 namespace litecore {

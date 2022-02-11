@@ -18,6 +18,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.h"
+#include "fleece/FLExpert.h"
 #include <mutex>
 #include <thread>
 

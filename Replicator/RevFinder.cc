@@ -187,7 +187,7 @@ namespace litecore::repl {
     // Looks through the contents of a "changes" message, encodes the response,
     // adds each entry to `sequences`, and returns the number of new revs.
     int RevFinder::findRevs(Array changes,
-                            Encoder &encoder,
+                            JSONEncoder &encoder,
                             vector<ChangeSequence> &sequences)
     {
         // Compile the docIDs/revIDs into parallel vectors:
@@ -303,7 +303,7 @@ namespace litecore::repl {
 
     // Same as `findOrRequestRevs`, but for "proposeChanges" messages.
     int RevFinder::findProposedRevs(Array changes,
-                                    Encoder &encoder,
+                                    JSONEncoder &encoder,
                                     bool conflictIncludesRev,
                                     vector<ChangeSequence> &sequences)
     {
