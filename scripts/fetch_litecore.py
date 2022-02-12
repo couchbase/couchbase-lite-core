@@ -9,7 +9,24 @@ This script can be extended in the following way:
 Create a file called "platform_fetch.py" with a function subdirectory_for_variant(os: str, abi: str) inside of it.
 This function should examine the os / abi combination and return a relative directory to use that will be appended
 to the output directory when a download occurs.  This file can either be placed in the same directory as this
-script, or the path to its parent directory passed in via the --path argument.
+script, or the path to its parent directory passed in via the --ext-path argument.
+
+Here is a list of the current values you can expect:
+|    OS    |      ABI      |
+| -------- | ------------- |
+| android  | x86_64        |
+| android  | x86           |
+| android  | armeabi-v7a   |
+| android  | arm64-v8a     |
+| centos6  | x86_64        |
+| linux    | x86_64        |
+| macos    | x86_64        |
+| ios      | <empty>       | <-- multiple architectures all in one
+| windows  | arm-store     |
+| windows  | x86           |
+| windows  | x86-store     |
+| windows  | x86_64        |
+| windows  | x86_64-store  |
 """
 
 import argparse
@@ -25,7 +42,16 @@ from urllib.error import HTTPError
 
 from git import Repo
 
+VALID_PLATFORMS = ["android", "android-x86_64", "android-x86", "android-armeabi-v7a", "android-arm64-v8a", "centos6", "java", "linux", "macos", "macosx", "ios", "windows", "windows-arm-store", "windows-win32", "windows-win32-store", "windows-win64", "windows-win64-store"]
+
 has_platform = False
+quiet = False
+
+def conditional_print(msg: str, end: str = '\n') -> None:
+    if quiet:
+        return
+
+    print(msg, end=end)
 
 def calculate_sha(ce: str, ee: str) -> str:
     """Calculates the SHA to use for download based on CE and EE repository path
@@ -125,7 +151,7 @@ def main(variants, debug: bool, dry: bool, sha: str, ce: str, ee: str, output_pa
         sha = calculate_sha(ce, ee)
 
     download_folder = f"http://latestbuilds.service.couchbase.com/builds/latestbuilds/couchbase-lite-core/sha/{sha[0:2]}/{sha}"
-    print(f"--- Using URL {download_folder}/<filename>")
+    conditional_print(f"--- Using URL {download_folder}/<filename>")
     
     failed_count = 0
     for v in variants:
@@ -137,7 +163,9 @@ def main(variants, debug: bool, dry: bool, sha: str, ce: str, ee: str, output_pa
     return failed_count
 
 def resolve_platform_path(path: str) -> Path:
-    """Calculates the absolute path to the folder containins platform extensions file
+    """Calculates the absolute path to the folder containins platform extensions file.  
+
+    Relative paths are considered relative to this script's folder
     
     Parameters
     ----------
@@ -192,8 +220,11 @@ def variant_to_pair(variant: str) -> Sequence[str]:
         A 2 item sequence containing the OS at position 0 and, if applicable, the ABI at position 1 (otherwise empty string)
     """
 
-    if variant == "linux" or variant == "centos6" or variant == "macosx":
+    if variant == "linux" or variant == "centos6":
         return [variant, "x86_64"]
+    
+    if variant == "macosx":
+        return ["macos", "x86_64"]
 
     if variant == "ios":
         return ["ios", ""]
@@ -213,6 +244,8 @@ def variant_to_pair(variant: str) -> Sequence[str]:
 
 def calculate_download_path(variant: str, output_base: str) -> Path:
     """Calculate the path to download the LiteCore artifacts to
+
+    Relative paths will be considered relative to the current working directory.
     
     Parameters
     ----------
@@ -227,9 +260,13 @@ def calculate_download_path(variant: str, output_base: str) -> Path:
         The path of the folder to download the LiteCore artifacts into
     """
 
+    output_base_path = Path(output_base)
+    if not output_base_path.is_absolute():
+        output_base_path = Path(os.getcwd()).joinpath(output_base_path)
+    
     variant_pair = variant_to_pair(variant)
     subdirectory = subdirectory_for_variant(variant_pair[0], variant_pair[1]) if has_platform else f"{variant_pair[0]}/{variant_pair[1]}"
-    return Path(output_base).joinpath(subdirectory).resolve()
+    return output_base_path.joinpath(subdirectory).resolve()
 
 def download_variant(download_folder: str, variant: str, debug: bool, output_base: str) -> int:
     """Performs the download and extraction of LiteCore artifacts
@@ -254,7 +291,7 @@ def download_variant(download_folder: str, variant: str, debug: bool, output_bas
     filename = filename_for_platform(variant, debug)
     download_url = f"{download_folder}/{filename}"
     download_path = calculate_download_path(variant, output_base)
-    print(f"--- Downloading {filename} to {download_path}...")
+    conditional_print(f"--- Downloading {filename} to {download_path}...")
     
     os.makedirs(download_path, exist_ok=True)
 
@@ -265,7 +302,7 @@ def download_variant(download_folder: str, variant: str, debug: bool, output_bas
         print(f"!!! Failed: {e.code}")
         return 0
 
-    print(f"--- Extracting {filename}...")
+    conditional_print(f"--- Extracting {filename}...")
     if filename.endswith("tar.gz"):
         with tarfile.open(full_path, "r:gz") as tar:
             tar.extractall(download_path)
@@ -279,15 +316,16 @@ def download_variant(download_folder: str, variant: str, debug: bool, output_bas
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Fetch a specific prebuilt LiteCore')
-    parser.add_argument('--variants', nargs='+', type=str, help='A space separated list of variants to download', required=True)
-    parser.add_argument('--debug', action='store_true', help='If specified, download debug variants')
-    parser.add_argument('--dry-run', action='store_true', help='Check for existience of indicated artifacts, but do not perform download')
-    parser.add_argument('--sha', type=str, help="The SHA to download.  If not provided, calculated based on the provided CE and (optionally) EE repos.  Required if CE not specified.")
+    parser.add_argument('-v', '--variants', nargs='+', type=str, help='A space separated list of variants to download', required=True, choices=VALID_PLATFORMS, metavar="PLATFORM")
+    parser.add_argument('-d', '--debug', action='store_true', help='If specified, download debug variants')
+    parser.add_argument('-D', '--dry-run', action='store_true', help='Check for existience of indicated artifacts, but do not perform download')
+    parser.add_argument('-s', '--sha', type=str, help="The SHA to download.  If not provided, calculated based on the provided CE and (optionally) EE repos.  Required if CE not specified.")
     parser.add_argument('--ce', type=str, help="The path to the CE LiteCore repo.  Required if SHA not specified.")
     parser.add_argument('--ee', type=str, help="The path to the EE LiteCore repo")
-    parser.add_argument('--path', type=str, help="The path in which the platform specific extensions to this script are defined (platform_fetch.py).  If a relative path is passed, it will be relative to fetch_litecore.py.  By default it is the current working directory.",
+    parser.add_argument('-x', '--ext-path', type=str, help="The path in which the platform specific extensions to this script are defined (platform_fetch.py).  If a relative path is passed, it will be relative to fetch_litecore.py.  By default it is the current working directory.",
         default=os.getcwd())
-    parser.add_argument('--output-dir', type=str, help="The directory in which to save the downloaded artifacts", default=os.getcwd())
+    parser.add_argument('-o', '--output', type=str, help="The directory in which to save the downloaded artifacts", default=os.getcwd())
+    parser.add_argument('-q', '--quiet', action='store_true', help="Suppress all output except during dry run.")
 
     args = parser.parse_args()
 
@@ -296,14 +334,23 @@ if __name__ == '__main__':
         parser.print_usage()
         exit(-1)
 
-    full_path = resolve_platform_path(args.path)
+    full_path = resolve_platform_path(args.ext_path)
     import_platform_extensions(full_path)
 
-    if args.variants[0] == "dotnet":
-        args.variants = ["linux", "android-x86_64", "android-x86", "android-armeabi-v7a", "android-arm64-v8a", "macosx", "ios", "windows-win64", "windows-win64-store", "windows-win32", "windows-win32-store", "windows-arm-store"]
-    elif args.variants[0] == "android":
-        args.variants = ["android-x86_64", "android-x86", "android-armeabi-v7a", "android-arm64-v8a"]
-    elif args.variants[0] == "java":
-        args.variants = ["centos6", "macosx", "windows-win64"]
+    final_variants = set()
+    for v in args.variants:
+        if v == "dotnet":
+            final_variants |= {"linux", "android-x86_64", "android-x86", "android-armeabi-v7a", "android-arm64-v8a", "macosx", "ios", "windows-win64", "windows-win64-store", "windows-win32", "windows-win32-store", "windows-arm-store"}
+        elif v == "android":
+            final_variants |= {"android-x86_64", "android-x86", "android-armeabi-v7a", "android-arm64-v8a"}
+        elif v == "java":
+            final_variants |= {"centos6", "macosx", "windows-win64"}
+        elif v == "windows":
+            final_variants |= {"windows-win64", "windows-win64-store", "windows-win32", "windows-win32-store", "windows-arm-store"}
+        elif v == "macos":
+            final_variants |= {"macosx"}
+        else:
+            final_variants |= {v}
 
-    exit(main(args.variants, args.debug, args.dry_run, args.sha, args.ce, args.ee, args.output_dir))
+    quiet = args.quiet
+    exit(main(final_variants, args.debug, args.dry_run, args.sha, args.ce, args.ee, args.output))
