@@ -4,6 +4,8 @@
 """
 A script for fetching prebuilt LiteCore artifacts from the Couchbase build artifact server.
 
+REQUIREMENTS: Git must be installed on the machine this script is run on
+
 This script can be extended in the following way:
 
 Create a file called "platform_fetch.py" with a function subdirectory_for_variant(os: str, abi: str) inside of it.
@@ -11,22 +13,22 @@ This function should examine the os / abi combination and return a relative dire
 to the output directory when a download occurs.  This file can either be placed in the same directory as this
 script, or the path to its parent directory passed in via the --ext-path argument.
 
-Here is a list of the current values you can expect:
-|    OS    |      ABI      |
-| -------- | ------------- |
-| android  | x86_64        |
-| android  | x86           |
-| android  | armeabi-v7a   |
-| android  | arm64-v8a     |
-| centos6  | x86_64        |
-| linux    | x86_64        |
-| macos    | x86_64        |
-| ios      | <empty>       | <-- multiple architectures all in one
-| windows  | arm-store     |
-| windows  | x86           |
-| windows  | x86-store     |
-| windows  | x86_64        |
-| windows  | x86_64-store  |
+Here is a list of the current values you can expect from each variant:
+|       VARIANT       |    OS    |      ABI      |
+| ------------------- | -------- | ------------- |
+| android-x86_64      | android  | x86_64        |
+| android-x86         | android  | x86           |
+| android-armeabi-v7a | android  | armeabi-v7a   |
+| android-arm64-v8a   | android  | arm64-v8a     |
+| centos6             | centos6  | x86_64        |
+| linux               | linux    | x86_64        |
+| macosx              | macos    | x86_64        |
+| ios                 | ios      | <empty>       | <-- multiple architectures all in one
+| windows-arm-store   | windows  | arm-store     |
+| windows-win32       | windows  | x86           |
+| windows-win32-store | windows  | x86-store     |
+| windows-win64       | windows  | x86_64        |
+| windows-win64-store | windows  | x86_64-store  |
 """
 
 import argparse
