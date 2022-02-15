@@ -19,6 +19,7 @@
 #include "Increment.hh"
 #include "StringUtil.hh"
 #include "c4Document.hh"
+#include "c4DocEnumeratorTypes.h"
 #include "fleece/Mutable.hh"
 #include <cinttypes>
 
@@ -44,22 +45,27 @@ namespace litecore::repl {
     }
 
 
-    // Send a "rev" message containing a revision body.
-    void Pusher::sendRevision(Retained<RevToSend> request) {
-        if (!connected())
-            return;
-
-        logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%d/%d]",
-                   SPLAT(request->docID), SPLAT(request->revID), (uint64_t)request->sequence,
-                   _revisionsInFlight, tuning::kMaxRevsInFlight);
-
+    // Creates a revision message from a RevToSend. Returns a BLIP error code.
+    int Pusher::buildRevisionMessage(RevToSend *request,
+                                     MessageBuilder &msg,
+                                     slice ifNotRevID)
+    {
         // Get the document & revision:
         C4Error c4err = {};
         Dict root;
         Retained<C4Document> doc = _db->getDoc(request->docID, kDocGetAll);
         if (doc) {
-            if (doc->selectRevision(request->revID, true))
+            if (request->revID.empty()) {
+                // When called from `handleGetRev`, all the request has is the docID
+                if (doc->revID() == ifNotRevID)
+                    return 304; // NotChanged
                 root = doc->getProperties();
+                request->setRevID(doc->revID());
+                request->sequence = doc->sequence();
+                request->flags = doc->selectedRev().flags;
+            } else if (doc->selectRevision(request->revID, true)) {
+                root = doc->getProperties();
+            }
             if (root)
                 request->flags = doc->selectedRev().flags;
             else
@@ -88,7 +94,7 @@ namespace litecore::repl {
 
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
         // "norev" and include the error code:
-        MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
+        //MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
         msg.compressed = true;
         msg["id"_sl] = request->docID;
         msg["rev"_sl] = fullRevID;
@@ -131,24 +137,44 @@ namespace litecore::repl {
             }
             logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
                        SPLAT(request->docID), SPLAT(request->revID));
-            sendRequest(msg, [this, request](MessageProgress progress) {
-                onRevProgress(request, progress);
-            });
-            increment(_revisionsInFlight);
+            return 0;
 
         } else {
-            // Send an error if we couldn't get the revision:
-            int blipError;
             if (c4err.domain == WebSocketDomain)
-                blipError = c4err.code;
+                return c4err.code;
             else if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound)
-                blipError = 404;
+                return 404;
             else {
                 warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %s",
                      SPLAT(request->docID), SPLAT(request->revID),
                      c4err.description().c_str());
-                blipError = 500;
+                return 500;
             }
+        }
+    }
+
+
+    // Send a "rev" message containing a revision body.
+    void Pusher::sendRevision(Retained<RevToSend> request) {
+        if (!connected())
+            return;
+
+        logVerbose("Sending rev '%.*s' #%.*s (seq #%" PRIu64 ") [%d/%d]",
+                   SPLAT(request->docID), SPLAT(request->revID), (uint64_t)request->sequence,
+                   _revisionsInFlight, tuning::kMaxRevsInFlight);
+
+        MessageBuilder msg;
+        int blipError = buildRevisionMessage(request, msg);
+        if (blipError == 0) {
+            msg["Profile"] = "rev";
+            logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
+                       SPLAT(request->docID), SPLAT(request->revID));
+            sendRequest(msg, [this, request](MessageProgress progress) {
+                onRevProgress(request, progress);
+            });
+            increment(_revisionsInFlight);
+        } else {
+            msg["Profile"] = "norev";
             msg["error"_sl] = blipError;
             msg.noreply = true;
             sendRequest(msg);
@@ -353,6 +379,27 @@ namespace litecore::repl {
             }
         } else {
             logDebug("Done pushing '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
+        }
+    }
+
+
+    // Handles "getRev", which is sent not by the replicator but by ConnectedClient.
+    void Pusher::handleGetRev(Retained<MessageIn> req) {
+        alloc_slice docID(req->property("id"));
+        slice ifNotRev = req->property("ifNotRev");
+        C4DocumentInfo info = {};
+        info.docID = docID;
+        auto rev = make_retained<RevToSend>(info);
+        MessageBuilder response(req);
+        int blipError = buildRevisionMessage(rev, response, ifNotRev);
+        if (blipError == 0) {
+            logVerbose("Responding to getRev('%.*s') with rev #%.*s",
+                       SPLAT(docID), SPLAT(rev->revID));
+            req->respond(response);
+        } else {
+            logVerbose("Responding to getRev('%.*s') with BLIP err %d",
+                       SPLAT(docID), blipError);
+            req->respondWithError({"BLIP", blipError});
         }
     }
 

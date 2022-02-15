@@ -180,6 +180,8 @@
 		275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
 		275067E2230B6C5400FA23B2 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
+		2752C6B727BC41DC001C1B76 /* ConnectedClient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2752C6B627BC41DC001C1B76 /* ConnectedClient.cc */; };
+		2752C7A727BF18F2001C1B76 /* ConnectedClientTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2752C7A627BF18F2001C1B76 /* ConnectedClientTest.cc */; };
 		275313392065844800463E74 /* RESTSyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */; };
 		2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
@@ -1099,6 +1101,9 @@
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
 		2752C6AC27BC3A2E001C1B76 /* replication-protocol.adoc */ = {isa = PBXFileReference; lastKnownFileType = text; name = "replication-protocol.adoc"; path = "../../modules/docs/pages/replication-protocol.adoc"; sourceTree = "<group>"; };
+		2752C6B527BC41DC001C1B76 /* ConnectedClient.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ConnectedClient.hh; sourceTree = "<group>"; };
+		2752C6B627BC41DC001C1B76 /* ConnectedClient.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ConnectedClient.cc; sourceTree = "<group>"; };
+		2752C7A627BF18F2001C1B76 /* ConnectedClientTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ConnectedClientTest.cc; sourceTree = "<group>"; };
 		2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging_Stub.cc; sourceTree = "<group>"; };
 		2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StringUtil.cc; sourceTree = "<group>"; };
 		2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = StringUtil.hh; sourceTree = "<group>"; };
@@ -2297,6 +2302,15 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		2752C6B127BC417E001C1B76 /* ConnectedClient */ = {
+			isa = PBXGroup;
+			children = (
+				2752C6B527BC41DC001C1B76 /* ConnectedClient.hh */,
+				2752C6B627BC41DC001C1B76 /* ConnectedClient.cc */,
+			);
+			path = ConnectedClient;
+			sourceTree = "<group>";
+		};
 		2754616A22F21F3900DF87B0 /* Crypto */ = {
 			isa = PBXGroup;
 			children = (
@@ -2423,6 +2437,7 @@
 				274D17C02615445B0018D39C /* DBAccessTestWrapper.hh */,
 				274D17C12615445B0018D39C /* DBAccessTestWrapper.cc */,
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
+				2752C7A627BF18F2001C1B76 /* ConnectedClientTest.cc */,
 				273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */,
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
@@ -2804,6 +2819,7 @@
 				27CCC7D71E52613C00CE1989 /* Replicator.hh */,
 				275E98FF238360B200EA516B /* Checkpointer.cc */,
 				275E9904238360B200EA516B /* Checkpointer.hh */,
+				2752C6B127BC417E001C1B76 /* ConnectedClient */,
 				275E4CD22241C701006C5B71 /* Pull */,
 				275E4CD32241C726006C5B71 /* Push */,
 				277B9567224597E1005B7E79 /* Support */,
@@ -3929,6 +3945,7 @@
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
+				2752C7A727BF18F2001C1B76 /* ConnectedClientTest.cc in Sources */,
 				27431BC7258A8AB0009E3EC5 /* QuietReporter.hh in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
 				275067DC230B6AD500FA23B2 /* c4Listener.cc in Sources */,
@@ -4236,6 +4253,7 @@
 				275E9905238360B200EA516B /* Checkpointer.cc in Sources */,
 				275B35A5234E753800FE9CF0 /* Housekeeper.cc in Sources */,
 				271AB0162374AD09007B0319 /* IndexSpec.cc in Sources */,
+				2752C6B727BC41DC001C1B76 /* ConnectedClient.cc in Sources */,
 				27FA568424AD0E9300B2F1F8 /* Pusher+Attachments.cc in Sources */,
 				93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */,
 				27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,

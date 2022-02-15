@@ -83,6 +83,7 @@ namespace litecore { namespace repl {
         // Pusher+Revs.cc:
         void maybeSendMoreRevs();
         void retryRevs(RevToSendList, bool immediate);
+        int buildRevisionMessage(RevToSend*, blip::MessageBuilder&, slice ifNotRevID = {});
         void sendRevision(Retained<RevToSend>);
         void onRevProgress(Retained<RevToSend> rev, const blip::MessageProgress&);
         void couldntSendRevision(RevToSend* NONNULL);
@@ -91,6 +92,7 @@ namespace litecore { namespace repl {
                                         fleece::Dict root, size_t revSize,
                                         bool sendLegacyAttachments);
         void revToSendIsObsolete(const RevToSend &request, C4Error *c4err =nullptr);
+        void handleGetRev(Retained<blip::MessageIn> req);
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>>;
 

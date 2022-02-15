@@ -68,6 +68,7 @@ namespace litecore { namespace repl {
         void addRemoteAncestor(slice revID);
         bool hasRemoteAncestor(slice revID) const;
 
+        void setRevID(slice id);
 
         Dir dir() const override                    {return Dir::kPushing;}
         void trim() override;

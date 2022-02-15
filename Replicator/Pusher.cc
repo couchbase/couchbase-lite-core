@@ -51,6 +51,8 @@ namespace litecore { namespace repl {
         registerHandler("subChanges",      &Pusher::handleSubChanges);
         registerHandler("getAttachment",   &Pusher::handleGetAttachment);
         registerHandler("proveAttachment", &Pusher::handleProveAttachment);
+        if (_passive)
+            registerHandler("getRev",      &Pusher::handleGetRev);
     }
 
 
