@@ -36,7 +36,7 @@ namespace litecore {
 
 namespace litecore { namespace repl {
 
-    LogDomain SyncBusyLog("SyncBusy", LogLevel::Warning);
+    LogDomain SyncBusyLog("SyncBusy");
 
 
     static void writeRedacted(Dict dict, stringstream &s) {

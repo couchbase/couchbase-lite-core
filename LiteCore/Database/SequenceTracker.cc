@@ -63,7 +63,7 @@ namespace litecore {
 
     size_t SequenceTracker::kMinChangesToKeep = 100;
 
-    LogDomain ChangesLog("Changes", LogLevel::Warning);
+    LogDomain ChangesLog("Changes");
 
 
     /** Tracks a document's current sequence. */
