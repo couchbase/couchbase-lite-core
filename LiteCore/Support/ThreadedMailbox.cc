@@ -142,12 +142,17 @@ namespace litecore { namespace actor {
         retain(_actor);
 
 #if ACTORS_USE_MANIFESTS
+        // Either sThreadManifest is set (see below inside of wrappedBlock) or this is a top
+        // level call to enqueue and a new threadManifest needs to be created
         auto threadManifest = sThreadManifest ? sThreadManifest : make_shared<ChannelManifest>();
         threadManifest->addEnqueueCall(_actor, name);
         _localManifest.addEnqueueCall(_actor, name);
         const auto wrappedBlock = [f, threadManifest, name, SELF]
         {
             threadManifest->addExecution(_actor, name);
+
+            // Set the captured thread manifest to be the thread_local manifest so that
+            // any calls to enqueue inside of safelyCall() will use the same one (see above)
             sThreadManifest = threadManifest;
             _localManifest.addExecution(_actor, name);
 #else
@@ -177,6 +182,8 @@ namespace litecore { namespace actor {
         retain(_actor);
 
 #if ACTORS_USE_MANIFESTS
+        // Either sThreadManifest is set (see below inside of wrappedBlock) or this is a top
+        // level call to enqueueAfter and a new threadManifest needs to be created
         auto threadManifest = sThreadManifest ? sThreadManifest : make_shared<ChannelManifest>();
         threadManifest->addEnqueueCall(_actor, name, delay.count());
         _localManifest.addEnqueueCall(_actor, name, delay.count());
@@ -185,6 +192,9 @@ namespace litecore { namespace actor {
             const auto wrappedBlock = [f, threadManifest, name, SELF]
             {
                 threadManifest->addExecution(_actor, name);
+
+                // Set the captured thread manifest to be the thread_local manifest so that
+                // any calls to enqueue inside of safelyCall() will use the same one (see above)
                 sThreadManifest = threadManifest;
                 _localManifest.addExecution(_actor, name);
 #else

@@ -105,6 +105,8 @@ namespace litecore { namespace actor {
         retain(_actor);
 
 #if ACTORS_USE_MANIFESTS
+        // Either sQueueManifest is set (see below inside of wrappedBlock) or this is a top
+        // level call to enqueue and a new queueManifest needs to be created
         auto queueManifest = sQueueManifest ? sQueueManifest : make_shared<ChannelManifest>();
         queueManifest->addEnqueueCall(_actor, name);
         _localManifest.addEnqueueCall(_actor, name);
@@ -113,6 +115,9 @@ namespace litecore { namespace actor {
         auto wrappedBlock = ^{
 #if ACTORS_USE_MANIFESTS
             queueManifest->addExecution(_actor, name);
+
+            // Set the captured queue manifest to be the current queue manifest so that
+            // any calls to enqueue inside of safelyCall() will use the same one (see above)
             sQueueManifest = queueManifest;
             _localManifest.addExecution(_actor, name);
 #endif
@@ -134,6 +139,8 @@ namespace litecore { namespace actor {
         retain(_actor);
 
 #if ACTORS_USE_MANIFESTS
+        // Either sQueueManifest is set (see below inside of wrappedBlock) or this is a top
+        // level call to enqueueAfter and a new queueManifest needs to be created
         auto queueManifest = sQueueManifest ? sQueueManifest : make_shared<ChannelManifest>();
         queueManifest->addEnqueueCall(_actor, name, delay.count());
         _localManifest.addEnqueueCall(_actor, name, delay.count());
@@ -142,6 +149,9 @@ namespace litecore { namespace actor {
         auto wrappedBlock = ^{
 #if ACTORS_USE_MANIFESTS
             queueManifest->addExecution(_actor, name);
+
+            // Set the captured queue manifest to be the queue manifest so that
+            // any calls to enqueue inside of safelyCall() will use the same one (see above)
             sQueueManifest = queueManifest;
             _localManifest.addExecution(_actor, name);
 #endif

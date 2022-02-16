@@ -28,7 +28,7 @@
 
 // Set to 1 to have Actor objects track their calls through manifests to provide an
 // async stack trace on exception
-#define ACTORS_USE_MANIFESTS 0
+#define ACTORS_USE_MANIFESTS 1
 
 namespace litecore { namespace actor {
 
