@@ -39,14 +39,10 @@ string C4Listener::URLNameFromPath(slice pathSlice) {
 }
 
 namespace {
-    bool isEmptyString(const C4String& c4str) {
-        return !c4str || c4str.size == 0;
-    }
-
     std::stringstream& operator<<(std::stringstream& ss, const C4ListenerConfig& config) {
         ss << "{" << "apis: " << (config.apis == kC4RESTAPI ? "REST" : "Sync") << ", "
-        << "networkInterface: " << (isEmptyString(config.networkInterface)
-                                    ? "NULL" : std::string(config.networkInterface)) << ", "
+        << "networkInterface: " << (!config.networkInterface ? "NULL" : config.networkInterface.size == 0
+                                    ? "\"\"" : std::string(config.networkInterface)) << ", "
         << "port: " << config.port << ", "
         << "tlsConfig: " << "{";
         if (config.tlsConfig != nullptr) {
@@ -63,7 +59,8 @@ namespace {
         ss << "}, "
         << "httpAuthCallback: " << (config.httpAuthCallback == nullptr ? "NULL" : "***") << ", "
         << "callbackContext: " << (config.callbackContext == nullptr ? "NULL" : "***") << ", "
-        << "directory: " << (isEmptyString(config.directory) ? "NULL" : std::string(config.directory)) << ", ";
+        << "directory: " << (!config.directory ? "NULL" : config.directory.size == 0
+                             ? "\"\"" : std::string(config.directory)) << ", ";
         if (config.apis == kC4RESTAPI) {
             ss << "allowCreateDBs: " << config.allowCreateDBs << ", "
             << "allowDeleteDBs: " << config.allowDeleteDBs;
