@@ -67,9 +67,8 @@ namespace litecore { namespace repl {
             s << "Push=" << kModeNames[push] << ", ";
         if (pull != kC4Disabled)
             s << "Pull=" << kModeNames[pull] << ", ";
-        s << "Options={";
+        s << "Options=";
         writeRedacted(properties, s);
-        s << "}";
         return s.str();
     }
 
