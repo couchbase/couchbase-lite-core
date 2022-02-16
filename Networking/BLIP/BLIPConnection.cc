@@ -299,7 +299,7 @@ namespace litecore { namespace blip {
                 } while (i != _outbox.begin());
                 ++i;
             }
-            logVerbose("Requeuing %s #%" PRIu64 " at position %d...", kMessageTypeNames[msg->type()], msg->number(), i);
+            logVerbose("Requeuing %s #%" PRIu64 "...", kMessageTypeNames[msg->type()], msg->number());
             _outbox.emplace(i, msg);  // inserts _at_ position i, before message *i
 
             if (andWrite)
@@ -542,7 +542,7 @@ namespace litecore { namespace blip {
                 // Existing request: return it, and remove from _pendingRequests if the last frame:
                 msg = i->second;
                 if (!(flags & kMoreComing)) {
-                    logInfo("REQ #%" PRIu64 " has reached the end of its frames");
+                    logInfo("REQ #%" PRIu64 " has reached the end of its frames", msgNo);
                     _pendingRequests.erase(i);
                 }
             } else if (msgNo == _numRequestsReceived + 1) {
@@ -551,7 +551,7 @@ namespace litecore { namespace blip {
                 msg = new MessageIn(_connection, flags, msgNo);
                 if (flags & kMoreComing) {
                     _pendingRequests.emplace(msgNo, msg);
-                    logInfo("REQ #%" PRIu64 " has more frames coming");
+                    logInfo("REQ #%" PRIu64 " has more frames coming", msgNo);
                 }
             } else {
                 throw runtime_error(format("BLIP protocol error: Bad incoming REQ #%" PRIu64 " (%s)",
@@ -568,7 +568,7 @@ namespace litecore { namespace blip {
             if (i != _pendingResponses.end()) {
                 msg = i->second;
                 if (!(flags & kMoreComing)) {
-                    logVerbose("RES #%" PRIu64 " has reached the end of its frames");
+                    logVerbose("RES #%" PRIu64 " has reached the end of its frames", msgNo);
                     _pendingResponses.erase(i);
                 }
             } else {
@@ -628,7 +628,7 @@ namespace litecore { namespace blip {
                     }
                 }
 
-                logInfo("No handler for profile '%s', falling back to delegate callbacks", profile);
+                logInfo("No handler for profile '%.*s', falling back to delegate callbacks", SPLAT(profile));
                 if (beginning)
                     _connection->delegate().onRequestBeginning(request);
                 else
