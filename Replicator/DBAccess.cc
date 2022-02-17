@@ -22,6 +22,7 @@
 #include "Error.hh"
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
+#include "c4Private.h"
 #include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include "c4DocEnumerator.h"
@@ -57,12 +58,15 @@ namespace litecore { namespace repl {
     access_lock<C4Database*>& DBAccess::insertionDB() {
         if (!_insertionDB) {
             use([&](C4Database *db) {
+                AssertDBOpen(db);
                 if (!_insertionDB) {
                     C4Error error;
                     C4Database *idb = c4db_openAgain(db, &error);
                     if (!idb) {
                         logError("Couldn't open new db connection: %s", c4error_descriptionStr(error));
                         idb = c4db_retain(db);
+                    } else {
+                        c4db_setDatabaseTag(idb, DatabaseTag_DBAccess);
                     }
                     _insertionDB.reset(new access_lock<C4Database*>(move(idb)));
                 }
@@ -73,14 +77,25 @@ namespace litecore { namespace repl {
 
 
     DBAccess::~DBAccess() {
+        close();
+    }
+
+
+    void DBAccess::close() {
         _timer.stop();
-        use([&](C4Database *db) {
+        use([&](C4Database *&db) {
+            // Any use of the class after this will result in a crash that 
+            // should be easily identifiable, so forgo asserting if the pointer 
+            // is null in other areas.
             c4db_release(db);
+            db = nullptr;
         });
         if (_insertionDB) {
             _insertionDB->use([&](C4Database *idb) {
                 c4db_release(idb);
             });
+
+            _insertionDB.reset();
         }
     }
 
@@ -88,6 +103,7 @@ namespace litecore { namespace repl {
     C4RemoteID DBAccess::lookUpRemoteDBID(slice key, C4Error *outError) {
         Assert(_remoteDBID == 0);
         use([&](C4Database *db) {
+            AssertDBOpen(db);
             _remoteDBID = c4db_getRemoteDBID(db, key, true, outError);
         });
         return _remoteDBID;
@@ -146,6 +162,7 @@ namespace litecore { namespace repl {
     C4DocEnumerator* DBAccess::unresolvedDocsEnumerator(bool orderByID, C4Error *outError) {
         C4DocEnumerator* e;
         use([&](C4Database *db) {
+            AssertDBOpen(db);
             C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
             options.flags &= ~kC4IncludeBodies;
             options.flags &= ~kC4IncludeNonConflicted;
@@ -274,6 +291,7 @@ namespace litecore { namespace repl {
         if (!db) db = this;
         SharedKeys result;
         return db->use<SharedKeys>([&](C4Database *idb) {
+            AssertDBOpen(idb);
             SharedKeys dbsk = c4db_getFLSharedKeys(idb);
             lock_guard<mutex> lock(_tempSharedKeysMutex);
             if (!_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count()) {

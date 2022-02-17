@@ -38,6 +38,8 @@ namespace litecore { namespace repl {
             enqueue(&RevFinder::_findOrRequestRevs, retained(msg), incomingDocs, completion);
         }
 
+        void onError(C4Error err) override;
+
     private:
         static const size_t kMaxPossibleAncestors = 10;
 

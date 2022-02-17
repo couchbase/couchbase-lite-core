@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <algorithm>
+#include <sstream>
 #include <thread>
 
 #include "SQLiteDataFile.hh"
@@ -41,7 +42,7 @@ using namespace std;
 namespace litecore {
 
     // How long deleteDataFile() should wait for other threads to close their connections
-    static const unsigned kOtherDBCloseTimeoutSecs = 3;
+    static const unsigned kOtherDBCloseTimeoutSecs = 6;
 
 
     LogDomain DBLog("DB");
@@ -215,11 +216,35 @@ namespace litecore {
         return DataFile::deleteDataFile(nullptr, options, shared, *this);
     }
 
+//#define FAIL_FAST
+
     bool DataFile::deleteDataFile(DataFile *file, const Options *options,
                                   Shared *shared, Factory &factory)
     {
         shared->condemn(true);
         try {
+            // Fail-fast if there is open db connection owned by the external application.
+#ifdef FAIL_FAST
+            shared->forOpenDataFiles(file, [](DataFile* df) {
+                if (df->databaseTag() == kDatabaseTagAppOpened) {
+                    error::_throw(error::Busy, "Can't delete db file while the caller has open connections");
+                }
+            });
+#endif
+
+            // c.f. C4_ENUM(uint32_t, C4DatabaseTag) in DataFile.hh
+            const char* const kDatabaseTags[] = {
+                "appOpened",
+                "dbAccess",
+                "c4RemoteReplicator",
+                "c4IncomingReplicator",
+                "c4LocalReplicator1",
+                "c4LocalReplicator2",
+                "backgroundDB",
+                "RESTListener"
+            };
+            static_assert(sizeof(kDatabaseTags)/sizeof(const char*) == kDatabaseTag_RESTListener + 1);
+
             // Wait for other connections to close -- in multithreaded setups there may be races where
             // another thread takes a bit longer to close its connection.
             int n = 0;
@@ -235,12 +260,24 @@ namespace litecore {
                 if (n++ == 0)
                     LogTo(DBLog, "Waiting for %ld other connection(s) to close before deleting %s",
                           otherConnections, shared->path.c_str());
-                if (st.elapsed() > kOtherDBCloseTimeoutSecs)
-                    error::_throw(error::Busy, "Can't delete db file while other connections are open");
-                else
+                if (st.elapsed() > kOtherDBCloseTimeoutSecs) {
+                    ostringstream ss;
+                    ss << "Can't delete db file while other connections are open. The open connections are tagged ";
+                    bool first = true;
+                    shared->forOpenDataFiles(nullptr, [&](DataFile* df) {
+                        if (!first) {
+                            ss << ", ";
+                        } else {
+                            first = false;
+                        }
+                        ss << kDatabaseTags[df->databaseTag()];
+                    });
+                    error::_throw(error::Busy, "%s.", ss.str().c_str());
+                } else {
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                }
             }
-            
+
             if (file)
                 file->close(true);
             bool result = factory._deleteFile(shared->path, options);

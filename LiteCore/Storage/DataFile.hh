@@ -43,6 +43,17 @@ namespace litecore {
     class Transaction;
     class SequenceTracker;
 
+    // Must match ::C4DatabaseTag, declared in c4Private.h
+    enum DatabaseTag: uint32_t {
+        kDatabaseTag_AppOpened,
+        kDatabaseTag_DBAccess,
+        kDatabaseTag_C4RemoteReplicator,
+        kDatabaseTag_C4IncomingReplicator,
+        kDatabaseTag_C4LocalReplicator1,
+        kDatabaseTag_C4LocalReplicator2,
+        kDatabaseTag_BackgroundDB,
+        kDatabaseTag_RESTListener
+    };
 
     /** A database file, primarily a container of KeyStores which store the actual data.
         This is an abstract class, with concrete subclasses for different database engines. */
@@ -68,6 +79,7 @@ namespace litecore {
             bool                upgradeable    :1;      ///< DB schema can be upgraded
             EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
             alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
+            DatabaseTag         dbTag;
             static const Options defaults;
         };
 
@@ -92,6 +104,14 @@ namespace litecore {
 
         /** Opens another instance on the same file. */
         DataFile* openAnother(Delegate* NONNULL);
+
+        DatabaseTag databaseTag() const {
+            return _options.dbTag;
+        }
+
+        void setDatabaseTag(DatabaseTag dbTag) {
+            _options.dbTag = dbTag;
+        }
 
         virtual uint64_t fileSize();
 

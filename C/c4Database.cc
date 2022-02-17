@@ -261,6 +261,13 @@ void c4db_unlock(C4Database *db) C4API {
     db->unlockClientMutex();
 }
 
+C4DatabaseTag c4db_getDatabaseTag(C4Database *db) C4API {
+    return db->getDatabaseTag();
+}
+
+void c4db_setDatabaseTag(C4Database *db, C4DatabaseTag dbTag) C4API {
+    db->setDatabaseTag(dbTag);
+}
 
 bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexcept {
     try {

@@ -70,6 +70,8 @@ namespace litecore { namespace repl {
             options.flags |= kC4IncludeDeleted;
 
         _db->use([&](C4Database* db) {
+            DBAccess::AssertDBOpen(db);
+
             auto limit = _changesBatchSize;
             c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, _lastSequenceRead, &options, &error);
             if (e) {
@@ -122,6 +124,8 @@ namespace litecore { namespace repl {
             // Copy the changes into a vector of RevToSend:
             C4DatabaseChange *c4change = c4changes;
             _db->use([&](C4Database *db) {
+                DBAccess::AssertDBOpen(db);
+
                 if (updateForeignAncestors) {
                     _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
                     updateForeignAncestors = false;

@@ -373,6 +373,8 @@ namespace litecore { namespace repl {
 
         bool retry = false;
         _db->use([&](C4Database *db) {
+            DBAccess::AssertDBOpen(db);
+
             C4Error error;
             c4::ref<C4Document> doc = c4doc_get(db, rev->docID, true, &error);
             if (doc && doc->revID == rev->revID) {
@@ -431,6 +433,15 @@ namespace litecore { namespace repl {
                 C4Error error = c4error_make(WebSocketDomain, 409, "conflicts with server document"_sl);
                 finishedDocumentWithError(rev, error, false);
             }
+        }
+    }
+
+    void Pusher::onError(C4Error err) {
+        // If the database closes on replication stop, this error might happen
+        // but it is inconsequential so suppress it.  It will still be logged, but
+        // not in the worker's error property.
+        if(err.domain != LiteCoreDomain || err.code != kC4ErrorNotOpen) {
+            Worker::onError(err);
         }
     }
 
