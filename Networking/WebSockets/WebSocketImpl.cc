@@ -19,6 +19,36 @@
 #include <functional>
 #include <string>
 
+#include <thread>
+#include <vector>
+struct C4Socket;
+namespace c4SocketTrace {
+    using namespace std;
+
+    struct Event {
+        C4Socket*   socket;
+        int64_t     timestamp;
+        thread::id  tid;
+        string      func;
+        string      remark;
+
+        Event(const C4Socket* sock, const string& f);
+        Event(const C4Socket* sock, const string& f, const string& rem);
+        operator string();
+    };
+
+    class EventQueue : public vector<Event> {
+    public:
+        void addEvent(const C4Socket* sock, const string& f);
+        void addEvent(const C4Socket* sock, const string& f, const string& rem);
+    private:
+        mutex mut;
+    };
+
+    EventQueue& traces();
+}
+
+
 using namespace std;
 using namespace uWS;
 using namespace fleece;
@@ -523,8 +553,20 @@ namespace litecore { namespace websocket {
 
             _closed = true;
         }
-
+#if 0
         delegate().onWebSocketClose(status);
+#else
+        Delegate* dele = &delegate();
+        if (dele == nullptr) {
+            if (willLog(LogLevel::Error)) {
+                logError("delegate is NULL in WebSocketImpl::onClose, dumping traces: ");
+                for (auto &event : c4SocketTrace::traces()) {
+                    logError("%s", string(event).c_str());
+                }
+            }
+        }
+        dele->onWebSocketClose(status);
+#endif
     }
 
 } }
