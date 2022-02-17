@@ -28,7 +28,7 @@ using namespace fleece;
 
 namespace litecore { namespace websocket {
 
-    LogDomain WSLogDomain("WS");
+    LogDomain WSLogDomain("WS", LogLevel::Warning);
 
 
     WebSocket::WebSocket(const alloc_slice &a, Role role)
