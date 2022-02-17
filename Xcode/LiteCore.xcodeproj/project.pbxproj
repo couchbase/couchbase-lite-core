@@ -495,6 +495,7 @@
 		42030A412498445600283CE8 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
 		42030A422498446000283CE8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		42B6B0E225A6A9D9004B20A7 /* URLTransformer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 42B6B0E125A6A9D9004B20A7 /* URLTransformer.cc */; };
+		42E1561827BDD6CC000B6182 /* ChannelManifest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274C1DC325C4A79C00B0EEAC /* ChannelManifest.cc */; };
 		726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
 		728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
 		72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */; };
@@ -4295,6 +4296,7 @@
 				273D25F62564666A008643D2 /* VectorDocument.cc in Sources */,
 				27CCD4AF2315DB11003DEB99 /* Address.cc in Sources */,
 				279976331E94AAD000B27639 /* IncomingRev+Blobs.cc in Sources */,
+				42E1561827BDD6CC000B6182 /* ChannelManifest.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */,
 				2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */,

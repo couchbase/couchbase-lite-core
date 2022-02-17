@@ -60,7 +60,6 @@ namespace litecore { namespace actor {
         
 #if ACTORS_USE_MANIFESTS
         mutable ChannelManifest _localManifest;
-        static thread_local std::shared_ptr<ChannelManifest> sQueueManifest;
 #endif
         
 #if ACTORS_TRACK_STATS
