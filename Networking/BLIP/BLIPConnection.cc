@@ -46,7 +46,7 @@ namespace litecore { namespace blip {
                                               "ACKREQ", "AKRES", "?6?", "?7?"};
 
     LogDomain BLIPLog("BLIP", LogLevel::Warning);
-    static LogDomain BLIPMessagesLog("BLIPMessages");
+    static LogDomain BLIPMessagesLog("BLIPMessages", LogLevel::None);
 
 
     /** Queue of outgoing messages; each message gets to send one frame in turn. */
