@@ -83,7 +83,9 @@ namespace litecore::repl {
             factory = sRegisteredFactory;
         
         if (factory) {
-            return new C4SocketImpl(url, Role::Client, options, factory, nativeHandle);
+            auto ret = new C4SocketImpl(url, Role::Client, options, factory, nativeHandle);
+            c4SocketTrace::traces().addEvent(ret, "CreateWebSocket", "C4SocketImpl");
+            return ret;
         } else if (sRegisteredInternalFactory) {
             Assert(!nativeHandle);
             return sRegisteredInternalFactory(url, options, database);
@@ -122,6 +124,7 @@ namespace litecore::repl {
     }
 
     C4SocketImpl::~C4SocketImpl() {
+        c4SocketTrace::traces().addEvent(this, "~C4SocketImpl");
         if (_factory.dispose)
             _factory.dispose(this);
     }
@@ -144,6 +147,7 @@ namespace litecore::repl {
 
     void C4SocketImpl::connect() {
         WebSocketImpl::connect();
+        c4SocketTrace::traces().addEvent(this, "connect", std::string("_factory.open is ") + (_factory.open == nullptr ? "null" : "set"));
         if (_factory.open) {
             net::Address c4addr(url());
             _factory.open(this, &c4addr, options().data(), _factory.context);
@@ -151,14 +155,17 @@ namespace litecore::repl {
     }
 
     void C4SocketImpl::requestClose(int status, fleece::slice message) {
+        c4SocketTrace::traces().addEvent(this, "factory.requestClose");
         _factory.requestClose(this, status, message);
     }
 
     void C4SocketImpl::closeSocket() {
+        c4SocketTrace::traces().addEvent(this, "factory.close");
         _factory.close(this);
     }
 
     void C4SocketImpl::closeWithException() {
+        c4SocketTrace::traces().addEvent(this, "closeWithException");
         C4Error error = C4Error::fromCurrentException();
         WarnError("Closing socket due to C++ exception: %s\n%s",
                   error.description().c_str(), error.backtrace().c_str());
@@ -231,4 +238,49 @@ namespace litecore::repl {
         } catch (...) {closeWithException();}
     }
 
+}
+
+
+namespace c4SocketTrace {
+
+    Event::Event(const C4Socket* sock, const string& f)
+    : socket(sock)
+    , tid(this_thread::get_id())
+    , func(f)
+    {
+        timestamp = time_point_cast<microseconds>(system_clock::now()).time_since_epoch().count();
+    }
+
+    Event::Event(const C4Socket* sock, const string& f, const string& rem)
+    : Event(sock, f)
+    {
+        remark = rem;
+    }
+
+    Event::operator string() {
+        stringstream ss;
+        ss << (void*)socket << ", time= " << timestamp << ", tid= " << tid << ", func= "
+        << func;
+        if (!remark.empty()) {
+            ss << ", remark= " << remark;
+        }
+        return ss.str();
+    }
+
+    void EventQueue::addEvent(const C4Socket* sock, const string& f) {
+        lock_guard<mutex> lock(mut);
+        emplace_back(sock, f);
+    }
+    void EventQueue::addEvent(const C4Socket* sock, const string& f, const string& rem) {
+        lock_guard<mutex> lock(mut);
+        emplace_back(sock, f, rem);
+    }
+
+    EventQueue& traces() {
+        static EventQueue* _traces = nullptr;
+        if (_traces == nullptr) {
+            _traces = new EventQueue();
+        }
+        return *_traces;
+    }
 }
