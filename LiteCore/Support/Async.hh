@@ -34,16 +34,16 @@ namespace litecore::actor {
 /// Put this at the top of an async function/method that returns `Async<T>`,
 /// but below declarations of any variables that need to be in scope for the whole method.
 #define BEGIN_ASYNC_RETURNING(T) \
-    return Async<T>(_thisActor(), [=](AsyncFnState &_async_state_) mutable -> std::optional<T> { \
+    return litecore::actor::Async<T>(thisActor(), [=](litecore::actor::AsyncFnState &_async_state_) mutable -> std::optional<T> { \
         switch (_async_state_.currentLine()) { \
-            default:
+            default: {
 
 /// Put this at the top of an async method that returns `void`.
 /// See `BEGIN_ASYNC_RETURNING` for details.
 #define BEGIN_ASYNC() \
-    return AsyncFnState::asyncVoidFn(_thisActor(), [=](AsyncFnState &_async_state_) mutable -> void { \
+    return litecore::actor::AsyncFnState::asyncVoidFn(thisActor(), [=](litecore::actor::AsyncFnState &_async_state_) mutable -> void { \
         switch (_async_state_.currentLine()) { \
-            default:
+            default: {
 
 /// Use this in an async method to resolve an `Async<>` value, blocking until it's available.
 /// `VAR` is the name of the variable to which to assign the result.
@@ -52,13 +52,21 @@ namespace litecore::actor {
 /// If the `Async` value's result is already available, it is immediately assigned to `VAR` and
 /// execution continues.
 /// Otherwise, this method is suspended until the result becomes available.
-#define AWAIT(VAR, EXPR) \
-                if (_async_state_._await(EXPR, __LINE__)) return {}; \
-            case __LINE__: \
+#define AWAIT(T, VAR, EXPR) \
+                if (_async_state_.await<T>(EXPR, __LINE__)) return {}; \
+            }\
+            case __LINE__: {\
+                T VAR = _async_state_.awaited<T>()->extractResult();
+
+#define XAWAIT(VAR, EXPR) \
+                if (_async_state_.await(EXPR, __LINE__)) return {}; \
+            }\
+            case __LINE__: { \
                 VAR = _async_state_.awaited<async_result_type<decltype(EXPR)>>()->extractResult();
 
 /// Put this at the very end of an async function/method.
 #define END_ASYNC() \
+            } \
         } \
     });
 
@@ -73,7 +81,7 @@ namespace litecore::actor {
     class AsyncFnState {
     public:
         int currentLine() const                             {return _currentLine;}
-        bool _await(const AsyncBase &a, int curLine);
+        template <class T> bool await(const Async<T> &a, int curLine);
         template <class T> Retained<AsyncProvider<T>> awaited();
 
         static void asyncVoidFn(Actor *actor, std::function<void(AsyncFnState&)> body);
@@ -82,11 +90,9 @@ namespace litecore::actor {
         friend class AsyncProviderBase;
         template <typename T> friend class AsyncProvider;
 
-        AsyncFnState(AsyncProviderBase *owningProvider, Actor *owningActor)
-        :_owningProvider(owningProvider)
-        ,_owningActor(owningActor)
-        { }
+        AsyncFnState(AsyncProviderBase *owningProvider, Actor *owningActor);
 
+        bool _await(const AsyncBase &a, int curLine);
         void updateFrom(AsyncFnState&);
 
         Retained<AsyncProviderBase> _owningProvider;  // Provider that I belong to
@@ -130,12 +136,12 @@ namespace litecore::actor {
         /// If the result is an exception, re-throws it. Else does nothing.
         void rethrowException() const;
 
-        void setObserver(AsyncObserver*);
+        void setObserver(AsyncObserver*, Actor* =nullptr);
 
     protected:
         friend class AsyncBase;
 
-        explicit AsyncProviderBase(bool ready = false)      :_ready(ready) { }
+        explicit AsyncProviderBase(bool ready = false);
         explicit AsyncProviderBase(Actor *actorOwningFn);
         ~AsyncProviderBase();
        void _start();
@@ -147,11 +153,8 @@ namespace litecore::actor {
         std::exception_ptr            _exception {nullptr};   // Exception if provider failed
         std::unique_ptr<AsyncFnState> _fnState;               // State of associated async fn
     private:
-        struct Observer {
-            AsyncObserver*     observer = nullptr;    // AsyncObserver waiting on me
-            Retained<Actor>    observerActor;         // Actor the observer was running on
-        };
-        Observer _observer;
+        AsyncObserver*     _observer = nullptr;    // AsyncObserver waiting on me
+        Retained<Actor>    _observerActor;         // Actor the observer was running on
     };
 
 
@@ -351,9 +354,15 @@ namespace litecore::actor {
         /// - `Async<X> x = a.then([](T) -> X { ... });`
         /// - `Async<X> x = a.then([](T) -> Async<X> { ... });`
         template <typename LAMBDA>
+        auto then(Actor *onActor, LAMBDA callback) {
+            using U = unwrap_async<std::invoke_result_t<LAMBDA,T&&>>; // return type w/o Async<>
+            return _then<U>(onActor, callback);
+        }
+
+        template <typename LAMBDA>
         auto then(LAMBDA callback) {
-            using U = unwrap_async<std::result_of_t<LAMBDA(T&&)>>; // return type w/o Async<>
-            return _then<U>(callback);
+            using U = unwrap_async<std::invoke_result_t<LAMBDA,T&&>>; // return type w/o Async<>
+            return _then<U>(nullptr, callback);
         }
 
         /// Blocks the current thread until the result is available, then returns it.
@@ -375,7 +384,8 @@ namespace litecore::actor {
 
         // Implements `then` where the lambda returns a regular type `U`. Returns `Async<U>`.
         template <typename U>
-        typename Async<U>::AwaitReturnType _then(std::function<U(T&&)> callback) {
+        typename Async<U>::AwaitReturnType
+        _then(Actor *onActor, std::function<U(T&&)> callback) {
             auto uProvider = Async<U>::makeProvider();
             if (ready()) {
                 // Result is available now, so call the callback:
@@ -385,7 +395,7 @@ namespace litecore::actor {
                     uProvider->setResultFromCallback([&]{return callback(extractResult());});
             } else {
                 // Create an AsyncWaiter to wait on the provider:
-                Waiter::start(this->provider(), [uProvider,callback](T&& result) {
+                Waiter::start(this->provider(), onActor, [uProvider,callback](T&& result) {
                     uProvider->setResultFromCallback([&]{return callback(std::move(result));});
                 });
             }
@@ -394,23 +404,23 @@ namespace litecore::actor {
 
         // Implements `then` where the lambda returns void. (Specialization of above method.)
         template<>
-        void _then<void>(std::function<void(T&&)> callback) {
+        void _then<void>(Actor *onActor, std::function<void(T&&)> callback) {
             if (ready())
                 callback(extractResult());
             else
-                Waiter::start(provider(), std::move(callback));
+                Waiter::start(provider(), onActor, std::move(callback));
         }
 
         // Implements `then` where the lambda returns `Async<U>`.
         template <typename U>
-        Async<U> _then(std::function<Async<U>(T&&)> callback) {
+        Async<U> _then(Actor *onActor, std::function<Async<U>(T&&)> callback) {
             if (ready()) {
                 // If I'm ready, just call the callback and pass on the Async<U> it returns:
                 return callback(extractResult());
             } else {
                 // Otherwise wait for my result...
                 auto uProvider = Async<U>::makeProvider();
-                Waiter::start(provider(), [uProvider,callback=std::move(callback)](T&& result) {
+                Waiter::start(provider(), onActor, [uProvider,callback=std::move(callback)](T&& result) {
                     // Invoke the callback, then wait to resolve the Async<U> it returns:
                     Async<U> u = callback(std::move(result));
                     u.then([uProvider](U &&uresult) {
@@ -427,10 +437,18 @@ namespace litecore::actor {
     //---- Implementation gunk...
 
 
+#ifndef _THISACTOR_DEFINED
+#define _THISACTOR_DEFINED
     // Used by `BEGIN_ASYNC` macros. Returns the lexically enclosing actor instance, else NULL.
-    // (How? Outside of an Actor method, `_thisActor()` refers to the function below.
-    // In an Actor method, it refers to `Actor::_thisActor()`, which returns `this`.)
-    static inline Actor* _thisActor() {return nullptr;}
+    // (How? Outside of an Actor method, `thisActor()` refers to the function below.
+    // In an Actor method, it refers to `Actor::thisActor()`, which returns `this`.)
+    static inline Actor* thisActor() {return nullptr;}
+#endif
+
+    template <class T>
+    bool AsyncFnState::await(const Async<T> &a, int curLine) {
+        return _await(a, curLine);
+    }
 
 
     template <class T>
@@ -458,15 +476,15 @@ namespace litecore::actor {
     public:
         using Callback = std::function<void(T&&)>;
 
-        static void start(AsyncProvider<T> *provider, Callback &&callback) {
-            (void) new Waiter(provider, std::move(callback));
+        static void start(AsyncProvider<T> *provider, Actor *onActor, Callback &&callback) {
+            (void) new Waiter(provider, onActor, std::move(callback));
         }
 
     protected:
-        Waiter(AsyncProvider<T> *provider, Callback &&callback)
+        Waiter(AsyncProvider<T> *provider, Actor *onActor, Callback &&callback)
         :_callback(std::move(callback))
         {
-            provider->setObserver(this);
+            provider->setObserver(this, onActor);
         }
 
         void asyncResultAvailable(Retained<AsyncProviderBase> ctx) override {

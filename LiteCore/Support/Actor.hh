@@ -100,6 +100,14 @@ namespace litecore { namespace actor {
         ,_mailbox(this, name, parentMailbox)
         { }
 
+        /** Within an Actor method, `thisActor` evaluates to `this`.
+            (Outside of one, it calls the static function `thisActor` that returns nullptr.) */
+        Actor* thisActor() {return this;}
+        const Actor* thisActor() const {return this;}
+
+        /** Returns true if `this` is the currently running Actor. */
+        bool isCurrentActor() const                          {return currentActor() == this;}
+
         /** Schedules a call to a method. */
         template <class Rcvr, class... Args>
         void enqueue(const char* methodName, void (Rcvr::*fn)(Args...), Args... args) {
@@ -141,8 +149,6 @@ namespace litecore { namespace actor {
         }
 
 
-        Actor* _thisActor() {return this;}
-
     private:
         friend class ThreadedMailbox;
         friend class GCDMailbox;
@@ -163,7 +169,38 @@ namespace litecore { namespace actor {
     };
 
 
+#ifndef _THISACTOR_DEFINED
+#define _THISACTOR_DEFINED
+    static inline Actor* thisActor() {return nullptr;}
+#endif
+
 #undef ACTOR_BIND_METHOD
 #undef ACTOR_BIND_FN
+
+
+    template<typename Fn> class actor_function;
+
+    template<typename Ret, typename ...Params>
+    class actor_function<Ret(Params...)> {
+    public:
+        template <typename Callable>
+        actor_function(Actor *actor, Callable &&callabl,
+                       typename std::enable_if<
+                                     !std::is_same<typename std::remove_reference<Callable>::type,
+                                                   actor_function>::value>::type * = nullptr)
+        :_fn(std::forward(callabl))
+        { }
+
+        Ret operator()(Params ...params) const {
+            if (_actor == nullptr || _actor == Actor::currentActor())
+                return _fn(std::forward<Params>(params)...);
+            else
+                _actor->enqueueOther("actor_function",
+                                     ACTOR_BIND_FN(_fn, std::forward<Params>(params)...));
+        }
+    private:
+        std::function<Ret(Params...)> _fn;
+        Retained<Actor> _actor;
+    };
 
 } }

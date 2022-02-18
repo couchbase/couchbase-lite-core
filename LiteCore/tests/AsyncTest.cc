@@ -60,9 +60,9 @@ public:
         string a, b;
         BEGIN_ASYNC_RETURNING(string)
         Log("provideSum: awaiting A");
-        AWAIT(a, provideA());
+        XAWAIT(a, provideA());
         Log("provideSum: awaiting B");
-        AWAIT(b, provideB());
+        XAWAIT(b, provideB());
         Log("provideSum: returning");
         return a + b;
         END_ASYNC()
@@ -72,7 +72,7 @@ public:
     Async<string> provideSumPlus() {
         string a;
         BEGIN_ASYNC_RETURNING(string)
-        AWAIT(a, provideSum());
+        XAWAIT(a, provideSum());
         return a + "!";
         END_ASYNC()
     }
@@ -80,11 +80,11 @@ public:
 
     Async<string> XXprovideSumPlus() {
         string a;
-        return Async<string>(_thisActor(), [=](AsyncFnState &_async_state_) mutable
+        return Async<string>(thisActor(), [=](AsyncFnState &_async_state_) mutable
                                                     -> std::optional<string> {
             switch (_async_state_.currentLine()) {
                 default:
-                    if (_async_state_._await(provideSum(), 78)) return {};
+                    if (_async_state_.await(provideSum(), 78)) return {};
                 case 78:
                     a = _async_state_.awaited<async_result_type<decltype(provideSum())>>()
                                         ->extractResult();
@@ -107,7 +107,7 @@ public:
         int i = 0;
         BEGIN_ASYNC_RETURNING(int)
         for (i = 0; i < 10; i++) {
-            AWAIT(n, provideSum());
+            XAWAIT(n, provideSum());
             //fprintf(stderr, "n=%f, i=%d, sum=%f\n", n, i, sum);
             sum += n.size() * i;
         }
@@ -121,8 +121,8 @@ public:
     void provideNothing() {
         string a, b;
         BEGIN_ASYNC()
-        AWAIT(a, provideA());
-        AWAIT(b, provideB());
+        XAWAIT(a, provideA());
+        XAWAIT(b, provideB());
         provideNothingResult = a + b;
         END_ASYNC()
     }
@@ -276,7 +276,7 @@ public:
         string contents;
         BEGIN_ASYNC_RETURNING(string)
         CHECK(currentActor() == this);
-        AWAIT(contents, downloader(url));
+        XAWAIT(contents, downloader(url));
         CHECK(currentActor() == this);
         return contents;
         END_ASYNC()
@@ -289,9 +289,9 @@ public:
         CHECK(currentActor() == this);
         dl1 = download(url1);
         dl2 = download(url2);
-        AWAIT(contents, *dl1);
+        XAWAIT(contents, *dl1);
         CHECK(currentActor() == this);
-        AWAIT(string contents2, *dl2);
+        XAWAIT(string contents2, *dl2);
         return contents + " and " + contents2;
         END_ASYNC()
     }

@@ -40,6 +40,12 @@ namespace litecore::actor {
     }
 
 
+    AsyncFnState::AsyncFnState(AsyncProviderBase *owningProvider, Actor *owningActor)
+    :_owningProvider(owningProvider)
+    ,_owningActor(owningActor)
+    { }
+
+
     // copy state from `other`, except `_owningProvider`
     void AsyncFnState::updateFrom(AsyncFnState &other) {
         _owningActor = other._owningActor;
@@ -79,6 +85,11 @@ namespace litecore::actor {
     { }
 
 
+    AsyncProviderBase::AsyncProviderBase(bool ready)
+    :_ready(ready)
+    { }
+
+
     AsyncProviderBase::~AsyncProviderBase() {
         if (!_ready)
             WarnError("AsyncProvider %p deleted without ever getting a value!", (void*)this);
@@ -95,32 +106,34 @@ namespace litecore::actor {
     }
 
 
-    void AsyncProviderBase::setObserver(AsyncObserver *o) {
+    void AsyncProviderBase::setObserver(AsyncObserver *o, Actor *actor) {
         {
             unique_lock<decltype(_mutex)> _lock(_mutex);
-            precondition(!_observer.observer);
+            precondition(!_observer);
             // Presumably I wasn't ready when the caller decided to call `setObserver` on me;
             // but I might have become ready in between then and now, so check for that.
             if (!_ready) {
-                _observer = {o, Actor::currentActor()};
+                _observer = o;
+                _observerActor = actor ? actor : Actor::currentActor();
                 return;
             }
         }
         // if I am ready, call the observer now:
-        o->notifyAsyncResultAvailable(this, Actor::currentActor());
+        o->notifyAsyncResultAvailable(this, actor);
     }
 
 
     void AsyncProviderBase::_gotResult(std::unique_lock<std::mutex>& lock) {
         precondition(!_ready);
         _ready = true;
-        Observer obs = {};
-        swap(obs, _observer);
+        auto observer = _observer;
+        _observer = nullptr;
+        auto observerActor = std::move(_observerActor);
 
         lock.unlock();
 
-        if (obs.observer)
-            obs.observer->notifyAsyncResultAvailable(this, obs.observerActor);
+        if (observer)
+            observer->notifyAsyncResultAvailable(this, observerActor);
 
         // If I am the result of an async fn, it must have finished, so forget its state:
         _fnState = nullptr;

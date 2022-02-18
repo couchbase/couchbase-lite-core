@@ -257,7 +257,7 @@ If we run this through the preprocessor, we get:
 ```c++
 Async<string> provideSumPlus() {
     string a;
-    return Async<string>(_thisActor(), [=](AsyncState &_async_state_) mutable         // (a)
+    return Async<string>(thisActor(), [=](AsyncState &_async_state_) mutable         // (a)
                                                 -> std::optional<string> {            //
         switch (_async_state_.currentLine()) {                                        //
             default:                                                                  //
@@ -272,9 +272,9 @@ Async<string> provideSumPlus() {
 }
 ```
 
-`BEGIN_ASYNC_RETURNING(string)` turns into `return Async<string>(...)`, where the constructor parameters are `_thisActor()`, and a lambda that contains the rest of the function wrapped in a `switch` statement.
+`BEGIN_ASYNC_RETURNING(string)` turns into `return Async<string>(...)`, where the constructor parameters are `thisActor()`, and a lambda that contains the rest of the function wrapped in a `switch` statement.
 
-`_thisActor()` is simple: within the scope of an Actor method, it’s an inline method that returns `this`. Otherwise, it’s a global function that returns `nullptr`. So this call evaluates to the Actor implementing this function/method, if any.
+`thisActor()` is simple: within the scope of an Actor method, it’s an inline method that returns `this`. Otherwise, it’s a global function that returns `nullptr`. So this call evaluates to the Actor implementing this function/method, if any.
 
 The `Async<string>` constructor either calls the lambda immediately or (if it’s in an Actor method) schedules it to be called on the Actor’s queue. The function ends up returning this Async instance, whether or not it’s been resolved.
 
