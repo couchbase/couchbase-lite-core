@@ -13,3 +13,5 @@ GCC_OPTIMIZATION_LEVEL       = 0
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) DEBUG=1 _LIBCPP_DEBUG=0
 ENABLE_TESTABILITY           = YES
 MTL_ENABLE_DEBUG_INFO        = YES
+
+OTHER_CFLAGS = $(inherited) -fsanitize-ignorelist=$(SRCROOT)/sanitizer-ignore-list.txt
