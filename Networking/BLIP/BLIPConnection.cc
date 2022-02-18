@@ -664,6 +664,22 @@ namespace litecore { namespace blip {
     }
 
 
+    Connection::AsyncResponse Connection::sendAsyncRequest(MessageBuilder& builder) {
+        auto provider = AsyncResponse::makeProvider();
+        builder.onProgress = [provider, oldOnProgress=std::move(builder.onProgress)]
+                             (MessageProgress progress) {
+            if (progress.state >= MessageProgress::kComplete)
+                provider->setResult(progress.reply);
+            if (oldOnProgress)
+                oldOnProgress(progress);
+        };
+        sendRequest(builder);
+        return provider;
+    }
+
+
+
+
     /** Internal API to send an outgoing message (a request, response, or ACK.) */
     void Connection::send(MessageOut *msg) {
         if (_compressionLevel == 0)

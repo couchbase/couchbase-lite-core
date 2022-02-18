@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "Async.hh"
 #include "WebSocketInterface.hh"
 #include "Message.hh"
 #include "Logging.hh"
@@ -65,6 +66,13 @@ namespace litecore { namespace blip {
 
         /** Sends a built message as a new request. */
         void sendRequest(MessageBuilder&);
+
+        using AsyncResponse = actor::Async<Retained<MessageIn>>;
+
+        /** Sends a built message as a new request and returns an async value that can be used
+            to get the response when it arrives.
+            @note  The response will immediately resolve to `nullptr` if the connection closes. */
+        AsyncResponse sendAsyncRequest(MessageBuilder&);
 
         typedef std::function<void(MessageIn*)> RequestHandler;
 

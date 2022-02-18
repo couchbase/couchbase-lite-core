@@ -12,6 +12,7 @@
 
 #pragma once
 #include "Actor.hh"
+#include "Async.hh"
 #include "ReplicatorOptions.hh"
 #include "BLIPConnection.hh"
 #include "Message.hh"
@@ -98,7 +99,7 @@ namespace litecore { namespace repl {
         /// @param namePrefix  Prepended to the Actor name.
         Worker(blip::Connection *connection NONNULL,
                Worker *parent,
-               const Options* options NONNULL,
+               const Options* options,
                std::shared_ptr<DBAccess> db,
                const char *namePrefix NONNULL);
 
@@ -151,6 +152,12 @@ namespace litecore { namespace repl {
         void sendRequest(blip::MessageBuilder& builder,
                          blip::MessageProgressCallback onProgress = nullptr);
 
+        using AsyncResponse = actor::Async<Retained<blip::MessageIn>>;
+
+        /// Sends a BLIP request, like `sendRequest` but returning the response asynchronously.
+        /// Note: The response object will be nullptr if the connection closed.
+        AsyncResponse sendAsyncRequest(blip::MessageBuilder& builder);
+
         /// The number of BLIP responses I'm waiting for.
         int pendingResponseCount() const        {return _pendingResponseCount;}
 
@@ -199,6 +206,8 @@ namespace litecore { namespace repl {
         /// The default implementation returns `kC4Busy` if there are pending BLIP responses,
         /// or this Actor has pending events in its queue, else `kC4Idle`.
         virtual ActivityLevel computeActivityLevel() const;
+
+        void _endAsyncRequest();
 
 #pragma mark - INSTANCE DATA:
     protected:

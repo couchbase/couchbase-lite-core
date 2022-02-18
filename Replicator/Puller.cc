@@ -58,7 +58,8 @@ namespace litecore { namespace repl {
 
 
     // Starting an active pull.
-    void Puller::_start(RemoteSequence sinceSequence) {
+    void Puller::start(RemoteSequence sinceSequence) {
+        BEGIN_ASYNC();
         _lastSequence = sinceSequence;
         _missingSequences.clear(sinceSequence);
         alloc_slice sinceStr = _lastSequence.toJSON();
@@ -111,16 +112,15 @@ namespace litecore { namespace repl {
             enc.writeValue(docIDs);
             enc.endDict();
         }
-        
-        sendRequest(msg, [=](blip::MessageProgress progress) {
-            //... After request is sent:
-            if (progress.reply && progress.reply->isError()) {
-                gotError(progress.reply);
-                _fatalError = true;
-            }
-            if (progress.state == MessageProgress::kComplete)
-                Signpost::end(Signpost::blipSent);
-        });
+
+        AWAIT(Retained<MessageIn>, reply, sendAsyncRequest(msg));
+
+        if (reply && reply->isError()) {
+            gotError(reply);
+            _fatalError = true;
+        }
+        Signpost::end(Signpost::blipSent);
+        END_ASYNC();
     }
 
 

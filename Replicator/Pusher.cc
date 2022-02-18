@@ -176,7 +176,7 @@ namespace litecore { namespace repl {
 
         // Send the "changes" request:
         auto changeCount = changes.revs.size();
-        sendChanges(changes.revs);
+        sendChanges(move(changes.revs));
 
         if (!changes.askAgain) {
             // ChangesFeed says there are not currently any more changes, i.e. we've caught up.
@@ -188,8 +188,7 @@ namespace litecore { namespace repl {
                 if (changeCount > 0 && passive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
                     // one if we didn't already:
-                    RevToSendList empty;
-                    sendChanges(empty);
+                    sendChanges(RevToSendList{});
                 }
             }
         } else if (_continuous) {
@@ -222,23 +221,35 @@ namespace litecore { namespace repl {
 #pragma mark - SENDING A "CHANGES" MESSAGE & HANDLING RESPONSE:
 
 
+    void Pusher::encodeRevID(Encoder &enc, slice revID) {
+        if (_db->usingVersionVectors() && revID.findByte('*'))
+            enc << _db->convertVersionToAbsolute(revID);
+        else
+            enc << revID;
+    }
+
+
     // Sends a "changes" or "proposeChanges" message.
-    void Pusher::sendChanges(RevToSendList &changes) {
-        MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
-        if(_proposeChanges) {
+    void Pusher::sendChanges(RevToSendList &&in_changes) {
+        bool const proposedChanges = _proposeChanges;
+        auto changes = make_shared<RevToSendList>(move(in_changes));
+
+        BEGIN_ASYNC()
+        MessageBuilder req(proposedChanges ? "proposeChanges"_sl : "changes"_sl);
+        if(proposedChanges) {
             req[kConflictIncludesRevProperty] = "true"_sl;
         }
 
         req.urgent = tuning::kChangeMessagesAreUrgent;
-        req.compressed = !changes.empty();
+        req.compressed = !changes->empty();
 
         // Generate the JSON array of changes:
         auto &enc = req.jsonBody();
         enc.beginArray();
-        for (RevToSend *change : changes) {
+        for (RevToSend *change : *changes) {
             // Write the info array for this change:
             enc.beginArray();
-            if (_proposeChanges) {
+            if (proposedChanges) {
                 enc << change->docID;
                 encodeRevID(enc, change->revID);
                 slice remoteAncestorRevID = change->remoteAncestorRevID;
@@ -263,40 +274,24 @@ namespace litecore { namespace repl {
         }
         enc.endArray();
 
-        if (changes.empty()) {
+        if (changes->empty()) {
             // Empty == just announcing 'caught up', so no need to get a reply
             req.noreply = true;
             sendRequest(req);
             return;
         }
 
-        bool proposedChanges = _proposeChanges;
-
         increment(_changeListsInFlight);
-        sendRequest(req, [this,changes=move(changes),proposedChanges](MessageProgress progress) mutable {
-            if (progress.state == MessageProgress::kComplete)
-                handleChangesResponse(changes, progress.reply, proposedChanges);
-        });
-    }
 
+        //---- SEND REQUEST AND WAIT FOR REPLY ----
+        AWAIT(Retained<MessageIn>, reply, sendAsyncRequest(req));
+        if (!reply)
+            return;
 
-    void Pusher::encodeRevID(Encoder &enc, slice revID) {
-        if (_db->usingVersionVectors() && revID.findByte('*'))
-            enc << _db->convertVersionToAbsolute(revID);
-        else
-            enc << revID;
-    }
-
-
-    // Handles the peer's response to a "changes" or "proposeChanges" message:
-    void Pusher::handleChangesResponse(RevToSendList &changes,
-                                        MessageIn *reply,
-                                        bool proposedChanges)
-    {
         // Got reply to the "changes" or "proposeChanges":
-        if (!changes.empty()) {
+        if (!changes->empty()) {
             logInfo("Got response for %zu local changes (sequences from %" PRIu64 ")",
-                changes.size(), (uint64_t)changes.front()->sequence);
+                changes->size(), (uint64_t)changes->front()->sequence);
         }
         decrement(_changeListsInFlight);
         _changesFeed.setFindForeignAncestors(getForeignAncestors());
@@ -308,11 +303,11 @@ namespace litecore { namespace repl {
                     logInfo("Server requires 'proposeChanges'; retrying...");
                     _proposeChanges = true;
                     _changesFeed.setFindForeignAncestors(getForeignAncestors());
-                    sendChanges(changes);
+                    sendChanges(move(*changes));
                 } else {
                     logError("Server does not allow '%s'; giving up",
                              (_proposeChanges ? "proposeChanges" : "changes"));
-                    for(RevToSend* change : changes)
+                    for(RevToSend* change : *changes)
                         doneWithRev(change, false, false);
                     gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError,
                                 "Incompatible with server replication protocol (changes)"_sl));
@@ -326,7 +321,7 @@ namespace litecore { namespace repl {
         maybeGetMoreChanges();
 
         if (reply->isError()) {
-            for(RevToSend* change : changes)
+            for(RevToSend* change : *changes)
                 doneWithRev(change, false, false);
             gotError(reply);
             return;
@@ -342,7 +337,7 @@ namespace litecore { namespace repl {
 
         // The response body consists of an array that parallels the `changes` array I sent:
         Array::iterator iResponse(reply->JSONBody().asArray());
-        for (RevToSend *change : changes) {
+        for (RevToSend *change : *changes) {
             change->maxHistory = maxHistory;
             change->legacyAttachments = legacyAttachments;
             change->deltaOK = _deltasOK;
@@ -357,6 +352,8 @@ namespace litecore { namespace repl {
                 ++iResponse;
         }
         maybeSendMoreRevs();
+
+        END_ASYNC()
     }
 
 
@@ -414,8 +411,7 @@ namespace litecore { namespace repl {
             
             if (shouldRetryConflictWithNewerAncestor(change, serverRevID)) {
                 // I have a newer revision to send in its place:
-                RevToSendList changes = {change};
-                sendChanges(changes);
+                sendChanges(RevToSendList{change});
                 return true;
             } else if (_options->pull <= kC4Passive) {
                 C4Error error = C4Error::make(WebSocketDomain, 409,
@@ -548,8 +544,7 @@ namespace litecore { namespace repl {
         if (!passive())
             _checkpointer.addPendingSequence(change->sequence);
         addProgress({0, change->bodySize});
-        RevToSendList changes = {change};
-        sendChanges(changes);
+        sendChanges(RevToSendList{change});
     }
 
 

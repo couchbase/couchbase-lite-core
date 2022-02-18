@@ -59,8 +59,8 @@ namespace litecore { namespace repl {
         void handleSubChanges(Retained<blip::MessageIn> req);
         void gotOutOfOrderChange(RevToSend* NONNULL);
         void encodeRevID(Encoder &enc, slice revID);
-        void sendChanges(RevToSendList&);
-        void handleChangesResponse(RevToSendList&, blip::MessageIn*, bool proposedChanges);
+        void sendChanges(RevToSendList&&);
+        void handleChangesResponse(const RevToSendList&, blip::MessageIn*, bool proposedChanges);
         bool handleChangeResponse(RevToSend *change, Value response);
         bool handleProposedChangeResponse(RevToSend *change, Value response);
         bool handlePushConflict(RevToSend *change);

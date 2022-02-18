@@ -531,6 +531,8 @@ namespace litecore { namespace repl {
 
     // Get the remote checkpoint, after we've got the local one and the BLIP connection is up.
     void Replicator::getRemoteCheckpoint(bool refresh) {
+        BEGIN_ASYNC()
+
         if (_remoteCheckpointRequested)
             return;     // already in progress
         if (!_remoteCheckpointDocID)
@@ -542,41 +544,6 @@ namespace litecore { namespace repl {
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = _remoteCheckpointDocID;
         Signpost::begin(Signpost::blipSent);
-        sendRequest(msg, [this, refresh](MessageProgress progress) {
-            // ...after the checkpoint is received:
-            if (progress.state != MessageProgress::kComplete)
-                return;
-            Signpost::end(Signpost::blipSent);
-            MessageIn *response = progress.reply;
-            Checkpoint remoteCheckpoint;
-
-            if (response->isError()) {
-                auto err = response->getError();
-                if (!(err.domain == "HTTP"_sl && err.code == 404))
-                    return gotError(response);
-                logInfo("No remote checkpoint '%.*s'", SPLAT(_remoteCheckpointDocID));
-                _remoteCheckpointRevID.reset();
-            } else {
-                remoteCheckpoint.readJSON(response->body());
-                _remoteCheckpointRevID = response->property("rev"_sl);
-                logInfo("Received remote checkpoint (rev='%.*s'): %.*s",
-                        SPLAT(_remoteCheckpointRevID), SPLAT(response->body()));
-            }
-            _remoteCheckpointReceived = true;
-
-            if (!refresh && _hadLocalCheckpoint) {
-                // Compare checkpoints, reset if mismatched:
-                bool valid = _checkpointer.validateWith(remoteCheckpoint);
-                if (!valid && _pusher)
-                    _pusher->checkpointIsInvalid();
-
-                // Now we have the checkpoints! Time to start replicating:
-                startReplicating();
-            }
-
-            if (_checkpointJSONToSave)
-                saveCheckpointNow();    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
-        });
 
         _remoteCheckpointRequested = true;
 
@@ -584,6 +551,42 @@ namespace litecore { namespace repl {
         // wait for the remote one before getting started:
         if (!refresh && !_hadLocalCheckpoint)
             startReplicating();
+
+        AWAIT(Retained<MessageIn>, response, sendAsyncRequest(msg));
+
+        // ...after the checkpoint is received:
+        Signpost::end(Signpost::blipSent);
+        Checkpoint remoteCheckpoint;
+
+        if (!response)
+            return;
+        if (response->isError()) {
+            auto err = response->getError();
+            if (!(err.domain == "HTTP"_sl && err.code == 404))
+                return gotError(response);
+            logInfo("No remote checkpoint '%.*s'", SPLAT(_remoteCheckpointDocID));
+            _remoteCheckpointRevID.reset();
+        } else {
+            remoteCheckpoint.readJSON(response->body());
+            _remoteCheckpointRevID = response->property("rev"_sl);
+            logInfo("Received remote checkpoint (rev='%.*s'): %.*s",
+                    SPLAT(_remoteCheckpointRevID), SPLAT(response->body()));
+        }
+        _remoteCheckpointReceived = true;
+
+        if (!refresh && _hadLocalCheckpoint) {
+            // Compare checkpoints, reset if mismatched:
+            bool valid = _checkpointer.validateWith(remoteCheckpoint);
+            if (!valid && _pusher)
+                _pusher->checkpointIsInvalid();
+
+            // Now we have the checkpoints! Time to start replicating:
+            startReplicating();
+        }
+
+        if (_checkpointJSONToSave)
+            saveCheckpointNow();    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
+        END_ASYNC()
     }
 
 
@@ -598,14 +601,15 @@ namespace litecore { namespace repl {
 
 
     void Replicator::saveCheckpointNow() {
+        alloc_slice json = move(_checkpointJSONToSave);
+        
+        BEGIN_ASYNC()
         // Switch to the permanent checkpoint ID:
         alloc_slice checkpointID = _checkpointer.checkpointID();
         if (checkpointID != _remoteCheckpointDocID) {
             _remoteCheckpointDocID = checkpointID;
             _remoteCheckpointRevID = nullslice;
         }
-
-        alloc_slice json = move(_checkpointJSONToSave);
 
         logVerbose("Saving remote checkpoint '%.*s' over rev='%.*s': %.*s ...",
                    SPLAT(_remoteCheckpointDocID), SPLAT(_remoteCheckpointRevID), SPLAT(json));
@@ -617,44 +621,45 @@ namespace litecore { namespace repl {
         msg["rev"_sl] = _remoteCheckpointRevID;
         msg << json;
         Signpost::begin(Signpost::blipSent);
-        sendRequest(msg, [=](MessageProgress progress) {
-            if (progress.state != MessageProgress::kComplete)
-                return;
-            Signpost::end(Signpost::blipSent);
-            MessageIn *response = progress.reply;
-            if (response->isError()) {
-                Error responseErr = response->getError();
-                if (responseErr.domain == "HTTP"_sl && responseErr.code == 409) {
-                    // On conflict, read the remote checkpoint to get the real revID:
-                    _checkpointJSONToSave = json; // move() has no effect here
-                    _remoteCheckpointRequested = _remoteCheckpointReceived = false;
-                    getRemoteCheckpoint(true);
-                } else {
-                    gotError(response);
-                    warn("Failed to save remote checkpoint!");
-                    // If the checkpoint didn't save, something's wrong; but if we don't mark it as
-                    // saved, the replicator will stay busy (see computeActivityLevel, line 169).
-                    _checkpointer.saveCompleted();
-                }
-            } else {
-                // Remote checkpoint saved, so update local one:
-                _remoteCheckpointRevID = response->property("rev"_sl);
-                logInfo("Saved remote checkpoint '%.*s' as rev='%.*s'",
-                    SPLAT(_remoteCheckpointDocID), SPLAT(_remoteCheckpointRevID));
 
-                try {
-                    _db->useLocked([&](C4Database *db) {
-                        _db->markRevsSyncedNow();
-                        _checkpointer.write(db, json);
-                    });
-                    logInfo("Saved local checkpoint '%.*s': %.*s",
-                            SPLAT(_remoteCheckpointDocID), SPLAT(json));
-                } catch (...) {
-                    gotError(C4Error::fromCurrentException());
-                }
+        AWAIT(Retained<MessageIn>, response, sendAsyncRequest(msg));
+
+        Signpost::end(Signpost::blipSent);
+        if (!response)
+            return;
+        else if (response->isError()) {
+            Error responseErr = response->getError();
+            if (responseErr.domain == "HTTP"_sl && responseErr.code == 409) {
+                // On conflict, read the remote checkpoint to get the real revID:
+                _checkpointJSONToSave = json; // move() has no effect here
+                _remoteCheckpointRequested = _remoteCheckpointReceived = false;
+                getRemoteCheckpoint(true);
+            } else {
+                gotError(response);
+                warn("Failed to save remote checkpoint!");
+                // If the checkpoint didn't save, something's wrong; but if we don't mark it as
+                // saved, the replicator will stay busy (see computeActivityLevel, line 169).
                 _checkpointer.saveCompleted();
             }
-        });
+        } else {
+            // Remote checkpoint saved, so update local one:
+            _remoteCheckpointRevID = response->property("rev"_sl);
+            logInfo("Saved remote checkpoint '%.*s' as rev='%.*s'",
+                SPLAT(_remoteCheckpointDocID), SPLAT(_remoteCheckpointRevID));
+
+            try {
+                _db->useLocked([&](C4Database *db) {
+                    _db->markRevsSyncedNow();
+                    _checkpointer.write(db, json);
+                });
+                logInfo("Saved local checkpoint '%.*s': %.*s",
+                        SPLAT(_remoteCheckpointDocID), SPLAT(json));
+            } catch (...) {
+                gotError(C4Error::fromCurrentException());
+            }
+            _checkpointer.saveCompleted();
+        }
+        END_ASYNC()
     }
 
 

@@ -126,6 +126,22 @@ namespace litecore { namespace repl {
     }
 
 
+    Worker::AsyncResponse Worker::sendAsyncRequest(blip::MessageBuilder& builder) {
+        Assert(isCurrentActor());
+        increment(_pendingResponseCount);
+        builder.onProgress = [=](MessageProgress progress) {
+            if (progress.state >= MessageProgress::kComplete)
+                enqueue(FUNCTION_TO_QUEUE(Worker::_endAsyncRequest));
+        };
+        return connection().sendAsyncRequest(builder);
+    }
+
+
+    void Worker::_endAsyncRequest() {
+        decrement(_pendingResponseCount);
+    }
+
+
 #pragma mark - ERRORS:
 
 

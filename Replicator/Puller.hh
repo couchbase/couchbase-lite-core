@@ -32,7 +32,7 @@ namespace litecore { namespace repl {
         void setSkipDeleted()                       {_skipDeleted = true;}
 
         // Starts an active pull
-        void start(RemoteSequence sinceSequence)    {enqueue(FUNCTION_TO_QUEUE(Puller::_start), sinceSequence);}
+        void start(RemoteSequence sinceSequence);
 
         // Called only by IncomingRev
         void revWasProvisionallyHandled()           {_provisionallyHandledRevs.add(1);}
@@ -54,7 +54,6 @@ namespace litecore { namespace repl {
         void activityLevelChanged(ActivityLevel level);
 
     private:
-        void _start(RemoteSequence sinceSequence);
         void _expectSequences(std::vector<RevFinder::ChangeSequence>);
         void _documentsRevoked(std::vector<Retained<RevToInsert>>);
         void handleRev(Retained<blip::MessageIn>);
