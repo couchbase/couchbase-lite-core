@@ -13,16 +13,23 @@
 
 namespace litecore::client {
 
+    /** Result of a successful `ConnectedClient::getDoc()` call. */
     struct DocResponse {
         alloc_slice docID, revID, body;
         bool deleted;
     };
 
+    /** Result type of `ConnectedClient::getDoc()` -- either a response or an error. */
     using DocResponseOrError = std::variant<DocResponse,C4Error>;
 
+    /** Result type of `ConnectedClient::getBlob()` -- either blob contents or an error. */
     using BlobOrError = std::variant<alloc_slice,C4Error>;
 
 
+
+    /** A live connection to Sync Gateway (or a CBL peer) that can do interactive CRUD operations.
+        No C4Database necessary!
+        Its API is somewhat similar to `Replicator`. */
     class ConnectedClient : public repl::Worker,
                             private blip::ConnectionDelegate
     {
@@ -35,6 +42,7 @@ namespace litecore::client {
                         Delegate&,
                         fleece::AllocedDict options);
 
+        /** ConnectedClient Delegate API. Almost identical to `Replicator::Delegate` */
         class Delegate {
         public:
             virtual void clientGotHTTPResponse(ConnectedClient* NONNULL,
@@ -52,6 +60,8 @@ namespace litecore::client {
         void start();
         void stop();
 
+        //---- CRUD!
+
         /// Gets the current revision of a document from the server.
         /// You can set the `unlessRevID` parameter to avoid getting a redundant copy of a
         /// revision you already have.
@@ -59,11 +69,13 @@ namespace litecore::client {
         /// @param collectionID  The name of the document's collection, or `nullslice` for default.
         /// @param unlessRevID  If non-null, and equal to the current server-side revision ID,
         ///                     the server will return error {WebSocketDomain, 304}.
+        /// @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
         /// @return  An async value that, when resolved, contains either a `DocResponse` struct
         ///          or a C4Error.
         actor::Async<DocResponseOrError> getDoc(alloc_slice docID,
                                                 alloc_slice collectionID,
-                                                alloc_slice unlessRevID);
+                                                alloc_slice unlessRevID,
+                                                bool asFleece = true);
 
         /// Gets the contents of a blob given its digest.
         /// @param docID  The ID of the document referencing this blob.
@@ -76,7 +88,7 @@ namespace litecore::client {
                                           C4BlobKey blobKey,
                                           bool compress);
 
-        /// Pushes a document revision to the server.
+        /// Pushes a new document revision to the server.
         /// @param docID  The document ID.
         /// @param collectionID  The name of the document's collection, or `nullslice` for default.
         /// @param revID  The revision ID you're sending.

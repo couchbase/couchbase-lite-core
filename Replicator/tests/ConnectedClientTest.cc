@@ -36,6 +36,9 @@ class ConnectedClientLoopbackTest : public C4Test,
 public:
 
     void start() {
+        std::unique_lock<std::mutex> lock(_mutex);
+        Assert(!_serverRunning && !_clientRunning);
+
         auto serverOpts = make_retained<repl::Options>(kC4Passive,kC4Passive);
         _server = new repl::Replicator(db,
                                        new LoopbackWebSocket(alloc_slice("ws://srv/"),
@@ -46,16 +49,19 @@ public:
                                                                     Role::Client, {}),
                                               *this,
                                               clientOpts);
+
         Headers headers;
         headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
         LoopbackWebSocket::bind(_server->webSocket(), _client->webSocket(), headers);
 
+        _clientRunning = _serverRunning = true;
         _server->start();
         _client->start();
     }
 
 
     void stop() {
+        std::unique_lock<std::mutex> lock(_mutex);
         if (_server) {
             _server->stop();
             _server = nullptr;
@@ -64,6 +70,34 @@ public:
             _client->stop();
             _client = nullptr;
         }
+
+        Log("Waiting for client & replicator to stop...");
+        _cond.wait(lock, [&]{return !_clientRunning && !_serverRunning;});
+    }
+
+
+    client::DocResponse waitForResponse(actor::Async<client::DocResponseOrError> &asyncResult) {
+        asyncResult.blockUntilReady();
+
+        C4Log("++++ Async response available!");
+        auto &result = asyncResult.result();
+        if (auto err = std::get_if<C4Error>(&result))
+            FAIL("Response returned an error " << *err);
+        auto rev = std::get_if<client::DocResponse>(&result);
+        REQUIRE(rev);
+        return *rev;
+    }
+
+
+    C4Error waitForErrorResponse(actor::Async<client::DocResponseOrError> &asyncResult) {
+        asyncResult.blockUntilReady();
+
+        C4Log("++++ Async response available!");
+        auto &result = asyncResult.result();
+        auto err = std::get_if<C4Error>(&result);
+        if (!err)
+            FAIL("Response unexpectedly didn't fail");
+        return *err;
     }
 
 
@@ -86,6 +120,12 @@ public:
     void clientStatusChanged(client::ConnectedClient* NONNULL,
                              C4ReplicatorActivityLevel level) override {
         C4Log("Client status changed: %d", int(level));
+        if (level == kC4Stopped) {
+            std::unique_lock<std::mutex> lock(_mutex);
+            _clientRunning = false;
+            if (!_clientRunning && !_serverRunning)
+                _cond.notify_all();
+        }
     }
     void clientConnectionClosed(client::ConnectedClient* NONNULL,
                                 const CloseStatus &close) override {
@@ -99,7 +139,14 @@ public:
                                    const websocket::Headers &headers) override { }
     void replicatorGotTLSCertificate(slice certData) override { }
     void replicatorStatusChanged(repl::Replicator* NONNULL,
-                                 const repl::Replicator::Status&) override { }
+                                 const repl::Replicator::Status &status) override {
+        if (status.level == kC4Stopped) {
+            std::unique_lock<std::mutex> lock(_mutex);
+            _serverRunning = false;
+            if (!_clientRunning && !_serverRunning)
+                _cond.notify_all();
+        }
+    }
     void replicatorConnectionClosed(repl::Replicator* NONNULL,
                                     const CloseStatus&) override { }
     void replicatorDocumentsEnded(repl::Replicator* NONNULL,
@@ -110,6 +157,9 @@ public:
 
     Retained<repl::Replicator> _server;
     Retained<client::ConnectedClient> _client;
+    bool _clientRunning = false, _serverRunning = false;
+    mutex _mutex;
+    condition_variable _cond;
 };
 
 
@@ -118,21 +168,29 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev", "[ConnectedClient]") {
     start();
 
     C4Log("++++ Calling ConnectedClient::getDoc()...");
-    auto asyncResult = _client->getDoc(alloc_slice("0000001"), nullslice, nullslice);
-    asyncResult.blockUntilReady();
+    auto asyncResult1 = _client->getDoc(alloc_slice("0000001"), nullslice, nullslice);
+    auto asyncResult99 = _client->getDoc(alloc_slice("0000099"), nullslice, nullslice);
 
-    C4Log("++++ Async value available!");
-    auto &result = asyncResult.result();
-    auto rev = std::get_if<client::DocResponse>(&result);
-    REQUIRE(rev);
-    CHECK(rev->docID == "0000001");
-    CHECK(rev->revID == "1-4cbe54d79c405e368613186b0bc7ac9ee4a50fbb");
-    CHECK(rev->deleted == false);
-    Doc doc(rev->body);
+    auto rev = waitForResponse(asyncResult1);
+    CHECK(rev.docID == "0000001");
+    CHECK(rev.revID == "1-4cbe54d79c405e368613186b0bc7ac9ee4a50fbb");
+    CHECK(rev.deleted == false);
+    Doc doc(rev.body);
     CHECK(doc.asDict()["birthday"].asString() == "1983-09-18");
 
+    rev = waitForResponse(asyncResult99);
+    CHECK(rev.docID == "0000099");
+    CHECK(rev.revID == "1-94baf6e4e4a1442aa6d8e9aab87955b8b7f4817a");
+    CHECK(rev.deleted == false);
+    doc = Doc(rev.body);
+    CHECK(doc.asDict()["birthday"].asString() == "1958-12-20");
+}
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev NotFound", "[ConnectedClient]") {
+    start();
+    auto asyncResultX = _client->getDoc(alloc_slice("bogus"), nullslice, nullslice);
+    CHECK(waitForErrorResponse(asyncResultX) == C4Error{LiteCoreDomain, kC4ErrorNotFound});
     C4Log("++++ Stopping...");
     stop();
-    _server = nullptr;
-    _client = nullptr;
 }

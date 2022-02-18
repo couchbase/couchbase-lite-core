@@ -177,7 +177,8 @@ namespace litecore::client {
 
     Async<DocResponseOrError> ConnectedClient::getDoc(alloc_slice docID,
                                                       alloc_slice collectionID,
-                                                      alloc_slice unlessRevID)
+                                                      alloc_slice unlessRevID,
+                                                      bool asFleece)
     {
         BEGIN_ASYNC_RETURNING(DocResponseOrError)
         logInfo("getDoc(\"%.*s\")", FMTSLICE(docID));
@@ -191,17 +192,20 @@ namespace litecore::client {
         if (C4Error err = responseError(response))
             return err;
 
-        FLError flErr;
-        alloc_slice fleeceBody(FLData_ConvertJSON(response->body(), &flErr));
-        if (!fleeceBody)
-            return C4Error::make(FleeceDomain, flErr);
-
-        return DocResponse {
+        DocResponse docResponse {
             docID,
             alloc_slice(response->property("rev")),
-            fleeceBody,
+            response->body(),
             response->boolProperty("deleted")
         };
+
+        if (asFleece) {
+            FLError flErr;
+            docResponse.body = FLData_ConvertJSON(docResponse.body, &flErr);
+            if (!docResponse.body)
+                return C4Error::make(FleeceDomain, flErr);
+        }
+        return docResponse;
         END_ASYNC()
     }
 

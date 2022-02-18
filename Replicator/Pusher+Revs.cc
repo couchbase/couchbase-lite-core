@@ -46,9 +46,10 @@ namespace litecore::repl {
 
 
     // Creates a revision message from a RevToSend. Returns a BLIP error code.
-    int Pusher::buildRevisionMessage(RevToSend *request,
+    bool Pusher::buildRevisionMessage(RevToSend *request,
                                      MessageBuilder &msg,
-                                     slice ifNotRevID)
+                                     slice ifNotRevID,
+                                     C4Error *outError)
     {
         // Get the document & revision:
         C4Error c4err = {};
@@ -137,19 +138,11 @@ namespace litecore::repl {
             }
             logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
                        SPLAT(request->docID), SPLAT(request->revID));
-            return 0;
+            return true;
 
         } else {
-            if (c4err.domain == WebSocketDomain)
-                return c4err.code;
-            else if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound)
-                return 404;
-            else {
-                warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %s",
-                     SPLAT(request->docID), SPLAT(request->revID),
-                     c4err.description().c_str());
-                return 500;
-            }
+            if (outError) *outError = c4err;
+            return false;
         }
     }
 
@@ -164,8 +157,8 @@ namespace litecore::repl {
                    _revisionsInFlight, tuning::kMaxRevsInFlight);
 
         MessageBuilder msg;
-        int blipError = buildRevisionMessage(request, msg);
-        if (blipError == 0) {
+        C4Error c4err;
+        if (buildRevisionMessage(request, msg, {}, &c4err)) {
             msg["Profile"] = "rev";
             logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
                        SPLAT(request->docID), SPLAT(request->revID));
@@ -174,6 +167,17 @@ namespace litecore::repl {
             });
             increment(_revisionsInFlight);
         } else {
+            int blipError;
+            if (c4err.domain == WebSocketDomain)
+                blipError = c4err.code;
+            else if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound)
+                blipError = 404;
+            else {
+                warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %s",
+                     SPLAT(request->docID), SPLAT(request->revID),
+                     c4err.description().c_str());
+                blipError = 500;
+            }
             msg["Profile"] = "norev";
             msg["error"_sl] = blipError;
             msg.noreply = true;
@@ -391,15 +395,15 @@ namespace litecore::repl {
         info.docID = docID;
         auto rev = make_retained<RevToSend>(info);
         MessageBuilder response(req);
-        int blipError = buildRevisionMessage(rev, response, ifNotRev);
-        if (blipError == 0) {
+        C4Error c4err;
+        if (buildRevisionMessage(rev, response, ifNotRev, &c4err)) {
             logVerbose("Responding to getRev('%.*s') with rev #%.*s",
                        SPLAT(docID), SPLAT(rev->revID));
             req->respond(response);
         } else {
-            logVerbose("Responding to getRev('%.*s') with BLIP err %d",
-                       SPLAT(docID), blipError);
-            req->respondWithError({"BLIP", blipError});
+            logInfo("Responding to getRev('%.*s') with error %s",
+                    SPLAT(docID), c4err.description().c_str());
+            req->respondWithError(c4ToBLIPError(c4err));
         }
     }
 
