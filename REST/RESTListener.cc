@@ -20,6 +20,7 @@
 #include "c4.hh"
 #include "c4Certificate.h"
 #include "c4Database.h"
+#include "c4Private.h"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "Server.hh"
@@ -257,6 +258,7 @@ namespace litecore { namespace REST {
         c4::ref<C4Database> db = c4db_open(slice(path.path()), config, outError);
         if (!db)
             return false;
+        c4db_setDatabaseTag(db, DatabaseTag_RESTListener);
         if (!registerDatabase(db, name)) {
             //FIX: If db didn't exist before the c4db_open call, should delete it
             return returnError(outError, LiteCoreDomain, kC4ErrorConflict, "Database exists");

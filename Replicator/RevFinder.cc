@@ -42,6 +42,16 @@ namespace litecore { namespace repl {
     }
 
 
+    void RevFinder::onError(C4Error err) {
+        // If the database closes on replication stop, this error might happen
+        // but it is inconsequential so suppress it.  It will still be logged, but
+        // not in the worker's error property.
+        if(err.domain != LiteCoreDomain || err.code != kC4ErrorNotOpen) {
+            Worker::onError(err);
+        }
+    }
+
+
     // Called by the Puller; handles a "changes" or "proposeChanges" message by checking which of
     // the changes don't exist locally, and returning a bit-vector indicating them.
     void RevFinder::_findOrRequestRevs(Retained<MessageIn> req,
@@ -68,6 +78,8 @@ namespace litecore { namespace repl {
         MessageBuilder response(req);
         response.compressed = true;
         _db->use([&](C4Database *db) {
+            DBAccess::AssertDBOpen(db);
+
             response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(db);
         });
         if (!_db->disableBlobSupport())

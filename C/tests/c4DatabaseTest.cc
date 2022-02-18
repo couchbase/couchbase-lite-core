@@ -718,6 +718,43 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Datab
     REQUIRE(c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error));
 }
 
+//#define FAIL_FAST
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Test delete while database open", "[Database][C]") {
+    // CBL-2357: Distinguish between internal and external database handles so that
+    // external handles open during a delete will be a fast-fail
+
+    C4Error err;
+    C4Database* otherConnection = c4db_openAgain(db, &err);
+    REQUIRE(otherConnection);
+    c4db_close(otherConnection, &err);
+#ifdef FAIL_FAST
+    auto start = chrono::system_clock::now();
+#endif
+    {
+        ExpectingExceptions e;
+        CHECK(!c4db_delete(otherConnection, &err));
+    }
+#ifdef FAIL_FAST
+    auto end = chrono::system_clock::now();
+#endif
+    c4db_release(otherConnection);
+
+#ifdef FAIL_FAST
+    auto timeTaken = chrono::duration_cast<chrono::seconds>(end - start);
+    CHECK(timeTaken < 2s);
+#endif
+    CHECK(err.code == kC4ErrorBusy);
+
+    C4SliceResult message = c4error_getDescription(err);
+#ifdef FAIL_FAST
+    CHECK(slice(message) == "LiteCore error 16 \"Can't delete db file while the caller has open connections\"");
+#else
+    CHECK(slice(message) == "LiteCore error 16 \"Can't delete db file while other connections are open. The open connections are tagged appOpened.\"");
+#endif
+    FLSliceResult_Release(message);
+}
+
 
 #pragma mark - SCHEMA UPGRADES
 
