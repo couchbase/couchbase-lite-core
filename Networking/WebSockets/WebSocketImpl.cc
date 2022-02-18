@@ -144,6 +144,7 @@ namespace litecore { namespace websocket {
         // called once, so no locking is needed.)
         if (_framing) {
             if (heartbeatInterval() > 0) {
+                logVerbose("Setting ping timer to %d...", heartbeatInterval());
                 _pingTimer.reset(new actor::Timer(bind(&WebSocketImpl::sendPing, this)));
                 schedulePing();
             }
@@ -162,8 +163,11 @@ namespace litecore { namespace websocket {
         bool writeable;
         {
             lock_guard<std::mutex> lock(_mutex);
-            if (_closeSent && opcode != CLOSE)
+            if (_closeSent && opcode != CLOSE) {
+                warn("sendOp refusing to send msg type %d after close", (int)opcode);
                 return false;
+            }
+
             if (_framing) {
                 frame.resize(message.size + 10); // maximum space needed
                 size_t newSize;
@@ -275,8 +279,10 @@ namespace litecore { namespace websocket {
         }
 
         // Body:
-        if (_curMessageLength + length > _curMessage.size)
+        if (_curMessageLength + length > _curMessage.size) {
+            warn("Overflow in WebSocketImpl::handleFragment");
             return false; // overflow!
+        }
 
         // CBL-2169: addressing the 0-th element of 0-length slice will trigger assertion failure.
         if (length > 0) {
@@ -359,8 +365,11 @@ namespace litecore { namespace websocket {
     void WebSocketImpl::sendPing() {
         {
             lock_guard<mutex> lock(_mutex);
-            if (!_pingTimer)
+            if (!_pingTimer) {
+                warn("Ping timer not available, giving up on sendPing...");
                 return;
+            }
+
             schedulePing();
             startResponseTimer(kPongTimeout);
             // exit scope to release the lock -- this is needed before calling sendOp,
@@ -404,6 +413,8 @@ namespace litecore { namespace websocket {
     // Initiates a request to close the connection cleanly.
     void WebSocketImpl::close(int status, fleece::slice message) {
         if(!_didConnect && _framing) {
+            logInfo("Closing socket before connection established...");
+
             // The web socket is being requested to close before it's even connected, so just
             // shortcut to the callback and make sure that onConnect does nothing now
             closeSocket();
@@ -421,8 +432,12 @@ namespace litecore { namespace websocket {
             alloc_slice closeMsg;
             {
                 std::lock_guard<std::mutex> lock(_mutex);
-                if (_closeSent || _closeReceived)
+                if (_closeSent || _closeReceived) {
+                    logVerbose("Close already processed (_closeSent: %d, _closeReceived: %d), exiting WebSocketImpl::close()", 
+                        (int)_closeSent, (int)_closeReceived);
                     return;
+                }
+
                 closeMsg = alloc_slice(2 + message.size);
                 auto size = ClientProtocol::formatClosePayload((char*)closeMsg.buf,
                                                                (uint16_t)status,

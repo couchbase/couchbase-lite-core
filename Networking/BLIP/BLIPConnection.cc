@@ -219,7 +219,11 @@ namespace litecore { namespace blip {
         }
 
         void _closeWithError(const error &x) {
-            if (_webSocket && !_closingWithError) {
+            if(!_webSocket) {
+                warn("_closeWithError received error with null websocket");
+            } else if(_closingWithError) {
+                warn("_closeWithError called more than once (this time with %d / %d)", x.domain, x.code);
+            } else {
                 _webSocket->close(kCodeUnexpectedCondition, "Unexpected exception"_sl);
                 _closingWithError.reset(new error(x));
             }
@@ -244,6 +248,8 @@ namespace litecore { namespace blip {
                 cancelAll(_pendingResponses);
                 _requestHandlers.clear();
                 release(this); // webSocket is done calling delegate now (balances retain in ctor)
+            } else {
+                warn("_closed called on a null connection");
             }
         }
 
@@ -293,6 +299,7 @@ namespace litecore { namespace blip {
                 } while (i != _outbox.begin());
                 ++i;
             }
+            logVerbose("Requeuing %s #%" PRIu64 "...", kMessageTypeNames[msg->type()], msg->number());
             _outbox.emplace(i, msg);  // inserts _at_ position i, before message *i
 
             if (andWrite)
@@ -328,11 +335,13 @@ namespace litecore { namespace blip {
 
         /** Sends the next frame. */
         void writeToWebSocket() {
-            if (!_writeable)
+            if (!_writeable) {
+                warn("writeToWebSocket cannot start, unwritable!");
                 return;
+            }
 
-            //logVerbose("Writing to WebSocket...");
             size_t bytesWritten = 0;
+            logVerbose("Starting writeToWebSocket loop...");
             while (_writeable) {
                 // Get the next message, if any, from the queue:
                 Retained<MessageOut> msg(_outbox.pop());
@@ -400,12 +409,18 @@ namespace litecore { namespace blip {
         /** WebSocketDelegate method -- Received a frame: */
         void _onWebSocketMessages(int gen =actor::AnyGen) {
             auto messages = _incomingFrames.pop(gen);
-            if (!messages)
+            if (!messages) {
+                warn("onWebSocketMessages couldn't find any messages to process");
                 return;
+            }
+
             try {
                 for (auto &wsMessage : *messages) {
-                    if (_closingWithError)
+                    if (_closingWithError) {
+                        warn("Cancelling onWebSocketMessages loop due to closing with error");
                         return;
+                    }
+
                     // Read the frame header:
                     slice_istream payload = wsMessage->data;
                     _totalBytesRead += payload.size;
@@ -499,8 +514,8 @@ namespace litecore { namespace blip {
             if (!msg) {
                 msg = _icebox.findMessage(msgNo, onResponse);
                 if (!msg) {
-                    //logVerbose("Received ACK of non-current message (%s #%" PRIu64 ")",
-                    //      (onResponse ? "RES" : "REQ"), msgNo);
+                    logVerbose("Received ACK of non-current message (%s #%" PRIu64 ")",
+                          (onResponse ? "RES" : "REQ"), msgNo);
                     return;
                 }
                 frozen = true;
@@ -526,14 +541,18 @@ namespace litecore { namespace blip {
             if (i != _pendingRequests.end()) {
                 // Existing request: return it, and remove from _pendingRequests if the last frame:
                 msg = i->second;
-                if (!(flags & kMoreComing))
+                if (!(flags & kMoreComing)) {
+                    logInfo("REQ #%" PRIu64 " has reached the end of its frames", msgNo);
                     _pendingRequests.erase(i);
+                }
             } else if (msgNo == _numRequestsReceived + 1) {
                 // New request: create and add to _pendingRequests unless it's a singleton frame:
                 ++_numRequestsReceived;
                 msg = new MessageIn(_connection, flags, msgNo);
-                if (flags & kMoreComing)
+                if (flags & kMoreComing) {
                     _pendingRequests.emplace(msgNo, msg);
+                    logInfo("REQ #%" PRIu64 " has more frames coming", msgNo);
+                }
             } else {
                 throw runtime_error(format("BLIP protocol error: Bad incoming REQ #%" PRIu64 " (%s)",
                          msgNo, (msgNo <= _numRequestsReceived ? "already finished" : "too high")));
@@ -548,8 +567,10 @@ namespace litecore { namespace blip {
             auto i = _pendingResponses.find(msgNo);
             if (i != _pendingResponses.end()) {
                 msg = i->second;
-                if (!(flags & kMoreComing))
+                if (!(flags & kMoreComing)) {
+                    logVerbose("RES #%" PRIu64 " has reached the end of its frames", msgNo);
                     _pendingResponses.erase(i);
+                }
             } else {
                 throw runtime_error(format("BLIP protocol error: Bad incoming RES #%" PRIu64 " (%s)",
                        msgNo, (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
@@ -592,8 +613,11 @@ namespace litecore { namespace blip {
 
         void handleRequestReceived(MessageIn *request, MessageIn::ReceiveState state) {
             try {
-                if (state == MessageIn::kOther)
+                if (state == MessageIn::kOther) {
+                    warn("handleRequestReceived received a message in a suspicious state (kOther)");
                     return;
+                }
+
                 bool beginning = (state == MessageIn::kBeginning);
                 auto profile = request->property("Profile"_sl);
                 if (profile) {
@@ -603,7 +627,8 @@ namespace litecore { namespace blip {
                         return;
                     }
                 }
-                // No handler; just pass it to the delegate:
+
+                logInfo("No handler for profile '%.*s', falling back to delegate callbacks", SPLAT(profile));
                 if (beginning)
                     _connection->delegate().onRequestBeginning(request);
                 else
