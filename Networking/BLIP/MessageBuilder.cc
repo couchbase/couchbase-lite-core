@@ -66,7 +66,7 @@ namespace litecore { namespace blip {
         DebugAssert(err.domain && err.code);
         type = kErrorType;
         addProperty(kErrorDomainProperty, err.domain);
-        addProperty(kErrorDomainProperty, err.code);
+        addProperty(kErrorCodeProperty, err.code);
         write(err.message);
     }
 
