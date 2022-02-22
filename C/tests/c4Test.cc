@@ -604,7 +604,8 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
     if(database == nullptr) {
         database = db;
     }
-    
+
+    uint64_t docCount = c4db_getDocumentCount(database);
     unsigned numDocs = 0;
     bool completed;
     {
@@ -615,7 +616,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             REQUIRE(body.buf);
 
             char docID[20];
-            sprintf(docID, "%07u", numDocs+1);
+            sprintf(docID, "%07u", unsigned(docCount+1));
 
             // Save document:
             C4DocPutRequest rq = {};
@@ -626,6 +627,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
             REQUIRE(doc != nullptr);
             c4doc_release(doc);
             ++numDocs;
+            ++docCount;
             if (numDocs % 1000 == 0 && timeout > 0.0 && st.elapsed() >= timeout) {
                 C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());
                 return false;
@@ -638,7 +640,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Da
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");
     if (completed)
-        CHECK(c4db_getDocumentCount(database) == numDocs);
+        CHECK(c4db_getDocumentCount(database) == docCount);
     return numDocs;
 }
 
