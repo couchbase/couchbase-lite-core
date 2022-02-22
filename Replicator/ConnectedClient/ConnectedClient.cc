@@ -163,17 +163,21 @@ namespace litecore::client {
 
     // Returns the error status of a response (including a NULL response, i.e. disconnection)
     C4Error ConnectedClient::responseError(MessageIn *response) {
+        C4Error error;
         if (!response) {
             // Disconnected!
-            return status().error ? status().error : C4Error::make(LiteCoreDomain,
-                                                                   kC4ErrorIOError,
-                                                                   "network connection lost");
+            error = status().error;
+            if (!error)
+                error = C4Error::make(LiteCoreDomain, kC4ErrorIOError, "network connection lost");
             // TODO: Use a better default error than the one above
         } else if (response->isError()) {
-            return blipToC4Error(response->getError());
+            error = blipToC4Error(response->getError());
         } else {
-            return {};
+            error = {};
         }
+        if (error)
+            logError("Connected Client got error response %s", error.description().c_str());
+        return error;
     }
 
 
@@ -205,7 +209,7 @@ namespace litecore::client {
             FLError flErr;
             docResponse.body = FLData_ConvertJSON(docResponse.body, &flErr);
             if (!docResponse.body)
-                return C4Error::make(FleeceDomain, flErr);
+                return C4Error::make(FleeceDomain, flErr, "Unparseable JSON response from server");
         }
         return docResponse;
         END_ASYNC()
@@ -312,13 +316,15 @@ namespace litecore::client {
 
         // "changes" expects a response with an array of which items we want "rev" messages for.
         // We don't actually want any. An empty array will indicate that.
-        MessageBuilder response(req);
-        auto &enc = response.jsonBody();
-        enc.beginArray();
-        enc.endArray();
-        req->respond(response);
+        if (!req->noReply()) {
+            MessageBuilder response(req);
+            auto &enc = response.jsonBody();
+            enc.beginArray();
+            enc.endArray();
+            req->respond(response);
+        }
 
-        if (_observer) {
+        if (_observer && !inChanges.empty()) {
             // Convert the JSON change list into a vector:
             vector<C4CollectionObserver::Change> outChanges;
             outChanges.reserve(inChanges.count());

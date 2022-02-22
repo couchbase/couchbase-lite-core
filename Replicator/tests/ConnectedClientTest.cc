@@ -42,7 +42,10 @@ public:
         auto serverOpts = make_retained<repl::Options>(kC4Passive,kC4Passive);
         serverOpts->setProperty(kC4ReplicatorOptionAllowConnectedClient, true);
         serverOpts->setProperty(kC4ReplicatorOptionNoIncomingConflicts, true);
-        _server = new repl::Replicator(db,
+
+        c4::ref<C4Database> serverDB = c4db_openAgain(db, ERROR_INFO());
+        REQUIRE(serverDB);
+        _server = new repl::Replicator(serverDB,
                                        new LoopbackWebSocket(alloc_slice("ws://srv/"),
                                                              Role::Server, {}),
                                        *this, serverOpts);
@@ -73,7 +76,7 @@ public:
             _client = nullptr;
         }
 
-        Log("Waiting for client & replicator to stop...");
+        Log("+++ Waiting for client & replicator to stop...");
         _cond.wait(lock, [&]{return !_clientRunning && !_serverRunning;});
     }
 
@@ -82,7 +85,7 @@ public:
     T waitForResponse(actor::Async<std::variant<T,C4Error>> &asyncResult) {
         asyncResult.blockUntilReady();
 
-        C4Log("++++ Async response available!");
+        Log("++++ Async response available!");
         auto &result = asyncResult.result();
         if (auto err = std::get_if<C4Error>(&result))
             FAIL("Response returned an error " << *err);
@@ -94,7 +97,7 @@ public:
     C4Error waitForErrorResponse(actor::Async<std::variant<T,C4Error>> &asyncResult) {
         asyncResult.blockUntilReady();
 
-        C4Log("++++ Async response available!");
+        Log("++++ Async response available!");
         auto &result = asyncResult.result();
         const C4Error *err = std::get_if<C4Error>(&result);
         if (!*err)
@@ -112,16 +115,16 @@ public:
                                int status,
                                const websocket::Headers &headers) override
     {
-        C4Log("Client got HTTP response");
+        Log("+++ Client got HTTP response");
     }
     void clientGotTLSCertificate(client::ConnectedClient* NONNULL,
                                  slice certData) override
     {
-        C4Log("Client got TLS certificate");
+        Log("+++ Client got TLS certificate");
     }
     void clientStatusChanged(client::ConnectedClient* NONNULL,
                              C4ReplicatorActivityLevel level) override {
-        C4Log("Client status changed: %d", int(level));
+        Log("+++ Client status changed: %d", int(level));
         if (level == kC4Stopped) {
             std::unique_lock<std::mutex> lock(_mutex);
             _clientRunning = false;
@@ -131,7 +134,7 @@ public:
     }
     void clientConnectionClosed(client::ConnectedClient* NONNULL,
                                 const CloseStatus &close) override {
-        C4Log("Client connection closed: reason=%d, code=%d, message=%.*s",
+        Log("+++ Client connection closed: reason=%d, code=%d, message=%.*s",
               int(close.reason), close.code, FMTSLICE(close.message));
     }
 
@@ -172,7 +175,7 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev", "[ConnectedClient]") {
     importJSONLines(sFixturesDir + "names_100.json");
     start();
 
-    C4Log("++++ Calling ConnectedClient::getDoc()...");
+    Log("++++ Calling ConnectedClient::getDoc()...");
     auto asyncResult1 = _client->getDoc(alloc_slice("0000001"), nullslice, nullslice);
     auto asyncResult99 = _client->getDoc(alloc_slice("0000099"), nullslice, nullslice);
 
@@ -298,4 +301,45 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Failure", "[ConnectedClien
                                docBody);
     rq1.blockUntilReady();
     REQUIRE(rq1.result() == C4Error{LiteCoreDomain, kC4ErrorConflict});
+}
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "observeCollection", "[ConnectedClient]") {
+    {
+        // Start with a single doc that should not be sent to the observer
+        TransactionHelper t(db);
+        createFleeceRev(db, "doc1"_sl, "1-1111"_sl, R"({"name":"Puddin' Tane"})"_sl);
+    }
+    start();
+
+    mutex m;
+    condition_variable cond;
+    vector<C4CollectionObserver::Change> allChanges;
+
+    _client->observeCollection(nullslice, [&](vector<C4CollectionObserver::Change> const& changes) {
+        // Observer callback:
+        unique_lock<mutex> lock(m);
+        Log("+++ Observer got %zu changes!", changes.size());
+        allChanges.insert(allChanges.end(), changes.begin(), changes.end());
+        cond.notify_one();
+    }).then([&](C4Error error) {
+        // Async callback when the observer has started:
+        unique_lock<mutex> lock(m);
+        REQUIRE(error == C4Error{});
+        Log("+++ Importing docs...");
+        importJSONLines(sFixturesDir + "names_100.json");
+    });
+
+    Log("+++ Waiting for 100 changes to arrive...");
+    unique_lock<mutex> lock(m);
+    cond.wait(lock, [&]{return allChanges.size() >= 100;});
+
+    Log("+++ Checking the changes");
+    REQUIRE(allChanges.size() == 100);
+    C4SequenceNumber expectedSeq = 2;
+    for (auto &change : allChanges) {
+        CHECK(change.docID.size == 7);
+        CHECK(change.flags == 0);
+        CHECK(change.sequence == expectedSeq++);
+    }
 }
