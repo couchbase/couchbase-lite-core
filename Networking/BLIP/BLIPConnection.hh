@@ -40,7 +40,7 @@ namespace litecore { namespace blip {
 
         using CloseStatus = websocket::CloseStatus;
 
-        /** WebSocket 'protocol' name for BLIP; use as value of kProtocolsOption option. */
+        /** WebSocket 'protocol' name for BLIP; use as value of kC4SocketOptionWSProtocols. */
         static constexpr const char *kWSProtocolName = "BLIP_3";
 
         /** Option to set the 'deflate' compression level. Value must be an integer in the range

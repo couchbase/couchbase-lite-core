@@ -23,7 +23,6 @@ namespace litecore { namespace blip {
     /** A callback to provide data for an outgoing message. When called, it should copy data
         to the location in the `buf` parameter, with a maximum length of `capacity`. It should
         return the number of bytes written, or 0 on EOF, or a negative number on error. */
-    //using MessageDataSource = std::function<int(void* buf, size_t capacity)>;
     class IMessageDataSource {
     public:
         virtual int operator() (void *buf, size_t capacity) =0;
@@ -43,13 +42,13 @@ namespace litecore { namespace blip {
         typedef std::pair<slice, slice> property;
 
         /** Constructs a MessageBuilder for a request, optionally setting its Profile property. */
-        MessageBuilder(slice profile = fleece::nullslice);
+        explicit MessageBuilder(slice profile = fleece::nullslice);
 
         /** Constructs a MessageBuilder for a request, with a list of properties. */
-        MessageBuilder(std::initializer_list<property>);
+        explicit MessageBuilder(std::initializer_list<property>);
 
         /** Constructs a MessageBuilder for a response. */
-        MessageBuilder(MessageIn *inReplyTo);
+        explicit MessageBuilder(MessageIn *inReplyTo);
 
         void setProfile(slice profile);
 

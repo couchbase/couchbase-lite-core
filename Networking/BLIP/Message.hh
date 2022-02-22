@@ -137,7 +137,7 @@ namespace litecore { namespace blip {
         long intProperty(slice property, long defaultValue =0) const;
         bool boolProperty(slice property, bool defaultValue =false) const;
 
-        /** The "Profile" property gives the message type. */
+        /** The "Profile" property gives the message's application-level type name. */
         slice profile() const               {return property(kProfileProperty);}
 
         /** Returns information about an error (if this message is an error.) */
