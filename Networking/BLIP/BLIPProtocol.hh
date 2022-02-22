@@ -40,9 +40,11 @@ namespace litecore { namespace blip {
     };
 
 
+    using messageno_t = uint64_t;
+
     /// A message number. Each peer numbers messages it sends sequentially starting at 1.
     /// Each peer's message numbers are independent.
-    typedef uint64_t MessageNo;
+    enum class MessageNo : messageno_t { };
 
     /// The size of a message.
     typedef uint64_t MessageSize;

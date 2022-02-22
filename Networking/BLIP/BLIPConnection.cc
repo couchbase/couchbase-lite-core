@@ -16,6 +16,7 @@
 #include "WebSocketInterface.hh"
 #include "Actor.hh"
 #include "Batcher.hh"
+#include "c4EnumUtil.hh"
 #include "Codec.hh"
 #include "Error.hh"
 #include "Logging.hh"
@@ -36,6 +37,10 @@ using namespace litecore;
 using namespace litecore::websocket;
 
 namespace litecore { namespace blip {
+
+    // Allow some arithmetic on MessageNo:
+    DEFINE_ENUM_INC_DEC(MessageNo)
+    DEFINE_ENUM_ADD_SUB_INT(MessageNo)
 
     static const size_t kDefaultFrameSize = 4096;       // Default size of frame
     static const size_t kBigFrameSize = 16384;          // Max size of frame
@@ -102,7 +107,7 @@ namespace litecore { namespace blip {
         MessageQueue            _icebox;
         bool                    _writeable {true};
         MessageMap              _pendingRequests, _pendingResponses;
-        atomic<MessageNo>       _lastMessageNo {0};
+        MessageNo               _lastMessageNo {0};
         MessageNo               _numRequestsReceived {0};
         Deflater                _outputCodec;
         Inflater                _inputCodec;
@@ -260,7 +265,7 @@ namespace litecore { namespace blip {
                 msg->disconnected();
                 return;
             }
-            if (msg->_number == 0)
+            if (msg->_number == MessageNo{0})
                 msg->_number = ++_lastMessageNo;
             if (BLIPLog.willLog(LogLevel::Verbose)) {
                 if (!msg->isAck() || BLIPLog.willLog(LogLevel::Debug))
@@ -349,7 +354,7 @@ namespace litecore { namespace blip {
                     if (!_frameBuf)
                         _frameBuf.reset(new uint8_t[kMaxVarintLen64 + 1 + 4 + kBigFrameSize]);
                     slice_ostream out(_frameBuf.get(), maxSize);
-                    out.writeUVarInt(msg->_number);
+                    out.writeUVarInt(messageno_t(msg->_number));
                     auto flagsPos = (FrameFlags*)out.next();
                     out.advance(1);
 
@@ -409,17 +414,17 @@ namespace litecore { namespace blip {
                     // Read the frame header:
                     slice_istream payload = wsMessage->data;
                     _totalBytesRead += payload.size;
-                    uint64_t msgNo;
+                    MessageNo msgNo;
                     FrameFlags flags;
                     {
                         auto pMsgNo = payload.readUVarInt(), pFlags = payload.readUVarInt();
                         if (!pMsgNo || !pFlags)
                             throw runtime_error("Illegal BLIP frame header");
-                        msgNo = *pMsgNo;
+                        msgNo = MessageNo{*pMsgNo};
                         flags = (FrameFlags)*pFlags;
                     }
                     logVerbose("Received frame: %s #%" PRIu64 " %c%c%c%c, length %5ld",
-                               kMessageTypeNames[flags & kTypeMask], msgNo,
+                               kMessageTypeNames[flags & kTypeMask], messageno_t(msgNo),
                                (flags & kMoreComing ? 'M' : '-'),
                                (flags & kUrgent ? 'U' : '-'),
                                (flags & kNoReply ? 'N' : '-'),
@@ -552,7 +557,8 @@ namespace litecore { namespace blip {
                     _pendingResponses.erase(i);
             } else {
                 throw runtime_error(format("BLIP protocol error: Bad incoming RES #%" PRIu64 " (%s)",
-                       msgNo, (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
+                                messageno_t(msgNo),
+                                (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
             }
             return msg;
         }
@@ -658,7 +664,7 @@ namespace litecore { namespace blip {
 
     /** Public API to send a new request. */
     void Connection::sendRequest(MessageBuilder &mb) {
-        Retained<MessageOut> message = new MessageOut(this, mb, 0);
+        Retained<MessageOut> message = new MessageOut(this, mb, MessageNo{0});
         DebugAssert(message->type() == kRequestType);
         send(message);
     }

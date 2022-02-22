@@ -65,7 +65,7 @@ namespace litecore { namespace blip {
 
     void Message::dumpHeader(std::ostream& out) {
         out << kMessageTypeNames[type()];
-        out << " #" << _number << ' ';
+        out << " #" << messageno_t(_number) << ' ';
         if (_flags & kUrgent)  out << 'U';
         if (_flags & kNoReply)  out << 'N';
         if (_flags & kCompressed)  out << 'Z';
@@ -177,7 +177,7 @@ namespace litecore { namespace blip {
             if (!_in) {
                 // First frame!
                 // Update my flags and allocate the Writer:
-                DebugAssert(_number > 0);
+                DebugAssert(messageno_t(_number) > 0);
                 _flags = (FrameFlags)(frameFlags & ~kMoreComing);
                 _in.reset(new fleece::JSONEncoder);
 
