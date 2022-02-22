@@ -8,8 +8,11 @@
 #include "Worker.hh"
 #include "Async.hh"
 #include "BLIPConnection.hh"
+#include "c4Observer.hh"
 #include "c4ReplicatorTypes.h"
+#include <functional>
 #include <variant>
+#include <vector>
 
 namespace litecore::client {
 
@@ -25,6 +28,8 @@ namespace litecore::client {
     /** Result type of `ConnectedClient::getBlob()` -- either blob contents or an error. */
     using BlobOrError = std::variant<alloc_slice,C4Error>;
 
+
+    using CollectionObserver = std::function<void(std::vector<C4CollectionObserver::Change> const&)>;
 
 
     /** A live connection to Sync Gateway (or a CBL peer) that can do interactive CRUD operations.
@@ -100,6 +105,14 @@ namespace litecore::client {
                                      C4RevisionFlags revisionFlags,
                                      alloc_slice fleeceData);
 
+        /// Registers a listener function that will be called when any document is changed.
+        /// @note  To cancel, pass a null callback.
+        /// @param collectionID  The ID of the collection to observe.
+        /// @param callback  The function to call (on an arbitrary background thread!)
+        /// @return  An async value that, when resolved, contains the status as a C4Error.
+        actor::Async<C4Error> observeCollection(alloc_slice collectionID,
+                                                CollectionObserver callback);
+
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection().webSocket();}
         
@@ -111,14 +124,21 @@ namespace litecore::client {
         void onClose(blip::Connection::CloseStatus status, blip::Connection::State state) override;
         void onRequestReceived(blip::MessageIn* request) override;
 
+        void handleChanges(Retained<blip::MessageIn>);
+
     private:
         void setStatus(ActivityLevel);
         C4Error responseError(blip::MessageIn *response);
         void _disconnect(websocket::CloseCode closeCode, slice message);
+        void checkDocAndRevID(slice docID, slice revID);
 
-        Delegate*               _delegate;             // Delegate whom I report progress/errors to
-        ActivityLevel           _status;
-        Retained<ConnectedClient> _selfRetain;
+        Delegate*                   _delegate;         // Delegate whom I report progress/errors to
+        ActivityLevel               _status;
+        Retained<ConnectedClient>   _selfRetain;
+        CollectionObserver          _observer;
+        bool                        _observing = false;
+        bool                        _registeredChangesHandler = false;
+        bool                        _remoteUsesVersionVectors = false;
     };
 
 }

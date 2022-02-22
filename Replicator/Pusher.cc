@@ -83,7 +83,11 @@ namespace litecore { namespace repl {
             return;
         }
 
-        auto since = C4SequenceNumber(max(req->intProperty("since"_sl), 0l));
+        C4SequenceNumber since = {};
+        if (req->property("since") == "NOW")
+            since = _db->useLocked()->getLastSequence();
+        else
+            since = C4SequenceNumber(max(req->intProperty("since"_sl), 0l));
         _continuous = req->boolProperty("continuous"_sl);
         _changesFeed.setContinuous(_continuous);
         _changesFeed.setSkipDeletedDocs(req->boolProperty("activeOnly"_sl));

@@ -18,9 +18,11 @@
 
 #include "ConnectedClient.hh"
 #include "c4BlobStoreTypes.h"
+#include "c4Document.hh"
 #include "c4SocketTypes.h"
 #include "Headers.hh"
 #include "MessageBuilder.hh"
+#include "NumConversion.hh"
 #include "WebSocketInterface.hh"
 
 namespace litecore::client {
@@ -261,6 +263,110 @@ namespace litecore::client {
 
         return responseError(response);
         END_ASYNC()
+    }
+
+
+    Async<C4Error> ConnectedClient::observeCollection(alloc_slice collectionID,
+                                                      CollectionObserver callback)
+    {
+        bool observe = !!callback;
+        BEGIN_ASYNC_RETURNING(C4Error)
+        logInfo("observeCollection(%.*s)", FMTSLICE(collectionID));
+
+        bool sameSubState = (observe == !!_observer);
+        _observer = move(callback);
+        if (sameSubState)
+            return {};
+
+        MessageBuilder req;
+        if (observe) {
+            if (!_registeredChangesHandler) {
+                registerHandler("changes", &ConnectedClient::handleChanges);
+                _registeredChangesHandler = true;
+            }
+            req.setProfile("subChanges");
+            req["since"]      = "NOW";
+            req["continuous"] = true;
+        } else {
+            req.setProfile("unsubChanges");
+        }
+        AWAIT(Retained<MessageIn>, response, sendAsyncRequest(req));
+
+        logInfo("...observeCollection got response");
+        C4Error error = responseError(response);
+        if (!error)
+            _observing = observe;
+        return error;
+        END_ASYNC()
+    }
+
+
+    void ConnectedClient::handleChanges(Retained<blip::MessageIn> req) {
+        // The code below is adapted from RevFinder::handleChangesNow and RevFinder::findRevs.
+        auto inChanges = req->JSONBody().asArray();
+        if (!inChanges && req->body() != "null"_sl) {
+            warn("Invalid body of 'changes' message");
+            req->respondWithError(400, "Invalid JSON body"_sl);
+            return;
+        }
+
+        // "changes" expects a response with an array of which items we want "rev" messages for.
+        // We don't actually want any. An empty array will indicate that.
+        MessageBuilder response(req);
+        auto &enc = response.jsonBody();
+        enc.beginArray();
+        enc.endArray();
+        req->respond(response);
+
+        if (_observer) {
+            // Convert the JSON change list into a vector:
+            vector<C4CollectionObserver::Change> outChanges;
+            outChanges.reserve(inChanges.count());
+            for (auto item : inChanges) {
+                // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
+                auto &outChange = outChanges.emplace_back();
+                auto inChange = item.asArray();
+                outChange.sequence = C4SequenceNumber{inChange[0].asUnsigned()};
+                outChange.docID    = inChange[1].asString();
+                outChange.revID    = inChange[2].asString();
+                outChange.flags    = 0;
+                int64_t deletion   = inChange[3].asInt();
+                outChange.bodySize = fleece::narrow_cast<uint32_t>(inChange[4].asUnsigned());
+
+                checkDocAndRevID(outChange.docID, outChange.revID);
+
+                // In SG 2.x "deletion" is a boolean flag, 0=normal, 1=deleted.
+                // SG 3.x adds 2=revoked, 3=revoked+deleted, 4=removal (from channel)
+                if (deletion & 0b001)
+                    outChange.flags |= kRevDeleted;
+                if (deletion & 0b110)
+                    outChange.flags |= kRevPurged;
+            }
+
+            // Finally call the observer callback:
+            try {
+                _observer(outChanges);
+            } catch (...) {
+                logError("ConnectedClient observer threw exception: %s",
+                         C4Error::fromCurrentException().description().c_str());
+            }
+        }
+    }
+
+
+    void ConnectedClient::checkDocAndRevID(slice docID, slice revID) {
+        bool valid;
+        if (!C4Document::isValidDocID(docID))
+            valid = false;
+        else if (_remoteUsesVersionVectors)
+            valid = revID.findByte('@') && !revID.findByte('*');     // require absolute form
+        else
+            valid = revID.findByte('-');
+        if (!valid) {
+            C4Error::raise(LiteCoreDomain, kC4ErrorRemoteError,
+                           "Invalid docID/revID '%.*s' #%.*s in incoming change list",
+                           FMTSLICE(docID), FMTSLICE(revID));
+        }
     }
 
 }
