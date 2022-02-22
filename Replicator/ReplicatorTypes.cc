@@ -39,8 +39,8 @@ namespace litecore { namespace repl {
 
 
     void RevToSend::setRevID(slice id) {
-        Assert(!revID);
-        ((alloc_slice&)revID) = id;
+        Assert(revID.empty());
+        const_cast<alloc_slice&>(revID) = id;
     }
 
 

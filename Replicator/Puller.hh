@@ -58,6 +58,7 @@ namespace litecore { namespace repl {
         void _documentsRevoked(std::vector<Retained<RevToInsert>>);
         void handleRev(Retained<blip::MessageIn>);
         void handleNoRev(Retained<blip::MessageIn>);
+        void handlePutDoc(Retained<blip::MessageIn>);
         Retained<IncomingRev> makeIncomingRev();
         void startIncomingRev(blip::MessageIn* NONNULL);
         void maybeStartIncomingRevs();

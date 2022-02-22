@@ -199,7 +199,7 @@ namespace litecore::client {
             response->boolProperty("deleted")
         };
 
-        if (asFleece) {
+        if (asFleece && docResponse.body) {
             FLError flErr;
             docResponse.body = FLData_ConvertJSON(docResponse.body, &flErr);
             if (!docResponse.body)
@@ -210,16 +210,14 @@ namespace litecore::client {
     }
 
 
-    Async<BlobOrError> ConnectedClient::getBlob(alloc_slice docID,
-                                                alloc_slice collectionID,
-                                                C4BlobKey blobKey,
-                                                bool compress) {
+    Async<BlobOrError> ConnectedClient::getBlob(C4BlobKey blobKey,
+                                                bool compress)
+    {
         BEGIN_ASYNC_RETURNING(BlobOrError)
         auto digest = blobKey.digestString();
-        logInfo("getAttachment(\"%.*s\", <%s>)", FMTSLICE(docID), digest.c_str());
+        logInfo("getAttachment(<%s>)", digest.c_str());
         MessageBuilder req("getAttachment");
         req["digest"] = digest;
-        req["docID"] = docID;
         if (compress)
             req["compress"] = "true";
 
@@ -242,7 +240,7 @@ namespace litecore::client {
     {
         BEGIN_ASYNC_RETURNING(C4Error)
         logInfo("putDoc(\"%.*s\", \"%.*s\")", FMTSLICE(docID), FMTSLICE(revID));
-        MessageBuilder req("rev");
+        MessageBuilder req("putDoc");
         req.compressed = true;
         req["id"] = docID;
         req["rev"] = revID;
@@ -251,6 +249,7 @@ namespace litecore::client {
             req["deleted"] = "1";
 
         if (fleeceData.size > 0) {
+            // TODO: Encryption!!
             // TODO: Convert blobs to legacy attachments
             req.jsonBody().writeValue(Doc(fleeceData, kFLTrusted).asDict());
         } else {

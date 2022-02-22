@@ -57,9 +57,13 @@ namespace litecore::repl {
         Retained<C4Document> doc = _db->getDoc(request->docID, kDocGetAll);
         if (doc) {
             if (request->revID.empty()) {
-                // When called from `handleGetRev`, all the request has is the docID
-                if (doc->revID() == ifNotRevID)
-                    return 304; // NotChanged
+                // When called from `handleGetRev`, all the request has is the docID.
+                // First check for a conditional get:
+                if (doc->revID() == ifNotRevID) {
+                    c4error_return(WebSocketDomain, 304, "Not Changed"_sl, outError);
+                    return false;
+                }
+                // Populate the request with the revision metadata:
                 root = doc->getProperties();
                 request->setRevID(doc->revID());
                 request->sequence = doc->sequence();
@@ -93,9 +97,7 @@ namespace litecore::repl {
 
         auto fullRevID = alloc_slice(_db->convertVersionToAbsolute(request->revID));
 
-        // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
-        // "norev" and include the error code:
-        //MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
+        // Now populate the BLIP message fields, whether or not this is an error
         msg.compressed = true;
         msg["id"_sl] = request->docID;
         msg["rev"_sl] = fullRevID;

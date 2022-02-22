@@ -78,14 +78,10 @@ namespace litecore::client {
                                                 bool asFleece = true);
 
         /// Gets the contents of a blob given its digest.
-        /// @param docID  The ID of the document referencing this blob.
-        /// @param collectionID  The name of the document's collection, or `nullslice` for default.
         /// @param blobKey  The binary digest of the blob.
         /// @param compress  True if the blob should be downloaded in compressed form.
         /// @return  An async value that, when resolved, contains either the blob body or a C4Error.
-        actor::Async<BlobOrError> getBlob(alloc_slice docID,
-                                          alloc_slice collectionID,
-                                          C4BlobKey blobKey,
+        actor::Async<BlobOrError> getBlob(C4BlobKey blobKey,
                                           bool compress);
 
         /// Pushes a new document revision to the server.

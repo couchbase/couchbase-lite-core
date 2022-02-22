@@ -50,6 +50,8 @@ namespace litecore { namespace repl {
         _passive = _options->pull <= kC4Passive;
         registerHandler("rev",              &Puller::handleRev);
         registerHandler("norev",            &Puller::handleNoRev);
+        if (passive())
+            registerHandler("putDoc",       &Puller::handlePutDoc);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
         _skipDeleted = _options->skipDeleted();
         if (!passive() && _options->noIncomingConflicts())
@@ -188,6 +190,14 @@ namespace litecore { namespace repl {
             MessageBuilder response(msg);
             msg->respond(response);
         }
+    }
+
+
+    // Received a "putDoc" message from a connected client (not part of replication)
+    void Puller::handlePutDoc(Retained<MessageIn> msg) {
+        Retained<IncomingRev> inc = makeIncomingRev();
+        if (inc)
+            inc->handleRev(msg, msg->body().size);  // ... will call _revWasHandled when it's finished
     }
 
 

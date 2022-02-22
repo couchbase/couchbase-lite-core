@@ -78,23 +78,33 @@ namespace litecore::repl {
                                                          slice &digestStr,
                                                          Replicator::BlobProgress &progress)
     {
+        C4Error error = {};
         try {
-            digestStr = req->property("digest"_sl);
-            progress = {Dir::kPushing};
-            if (auto key = C4BlobKey::withDigestString(digestStr); key)
-                progress.key = *key;
-            else
-                C4Error::raise(LiteCoreDomain, kC4ErrorInvalidParameter, "Missing or invalid 'digest'");
             auto blobStore = _db->blobStore();
-            if (int64_t size = blobStore->getSize(progress.key); size >= 0)
-                progress.bytesTotal = size;
-            else
-                C4Error::raise(LiteCoreDomain, kC4ErrorNotFound, "No such blob");
-            return make_unique<C4ReadStream>(*blobStore, progress.key);
+            do {
+                digestStr = req->property("digest"_sl);
+                progress = {Dir::kPushing};
+                if (auto key = C4BlobKey::withDigestString(digestStr); key)
+                    progress.key = *key;
+                else {
+                    error = C4Error::make(LiteCoreDomain, kC4ErrorInvalidParameter,
+                                          "Missing or invalid 'digest'");
+                    break;
+                }
+                if (int64_t size = blobStore->getSize(progress.key); size >= 0)
+                    progress.bytesTotal = size;
+                else {
+                    error = C4Error::make(LiteCoreDomain, kC4ErrorNotFound, "No such blob");
+                    break;
+                }
+            } while (false);
+            if (!error)
+                return make_unique<C4ReadStream>(*blobStore, progress.key);
         } catch (...) {
-            req->respondWithError(c4ToBLIPError(C4Error::fromCurrentException()));
-            return nullptr;
+            error = C4Error::fromCurrentException();
         }
+        req->respondWithError(c4ToBLIPError(error));
+        return nullptr;
     }
 
 

@@ -40,6 +40,7 @@ public:
         Assert(!_serverRunning && !_clientRunning);
 
         auto serverOpts = make_retained<repl::Options>(kC4Passive,kC4Passive);
+        serverOpts->setProperty(kC4ReplicatorOptionNoIncomingConflicts, true);
         _server = new repl::Replicator(db,
                                        new LoopbackWebSocket(alloc_slice("ws://srv/"),
                                                              Role::Server, {}),
@@ -76,26 +77,26 @@ public:
     }
 
 
-    client::DocResponse waitForResponse(actor::Async<client::DocResponseOrError> &asyncResult) {
+    template <class T>
+    T waitForResponse(actor::Async<std::variant<T,C4Error>> &asyncResult) {
         asyncResult.blockUntilReady();
 
         C4Log("++++ Async response available!");
         auto &result = asyncResult.result();
         if (auto err = std::get_if<C4Error>(&result))
             FAIL("Response returned an error " << *err);
-        auto rev = std::get_if<client::DocResponse>(&result);
-        REQUIRE(rev);
-        return *rev;
+        return * std::get_if<T>(&result);
     }
 
 
-    C4Error waitForErrorResponse(actor::Async<client::DocResponseOrError> &asyncResult) {
+    template <class T>
+    C4Error waitForErrorResponse(actor::Async<std::variant<T,C4Error>> &asyncResult) {
         asyncResult.blockUntilReady();
 
         C4Log("++++ Async response available!");
         auto &result = asyncResult.result();
-        auto err = std::get_if<C4Error>(&result);
-        if (!err)
+        const C4Error *err = std::get_if<C4Error>(&result);
+        if (!*err)
             FAIL("Response unexpectedly didn't fail");
         return *err;
     }
@@ -163,6 +164,9 @@ public:
 };
 
 
+#pragma mark - TESTS:
+
+
 TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev", "[ConnectedClient]") {
     importJSONLines(sFixturesDir + "names_100.json");
     start();
@@ -187,10 +191,110 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev", "[ConnectedClient]") {
 }
 
 
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev Conditional Match", "[ConnectedClient]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    start();
+
+    auto match = _client->getDoc(alloc_slice("0000002"), nullslice,
+                                 alloc_slice("1-1fdf9d4bdae09f6651938d9ec1d47177280f5a77"));
+    CHECK(waitForErrorResponse(match) == C4Error{WebSocketDomain, 304});
+}
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev Conditional No Match", "[ConnectedClient]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    start();
+
+    auto match = _client->getDoc(alloc_slice("0000002"), nullslice,
+                                 alloc_slice("1-beefbeefbeefbeefbeefbeefbeefbeefbeefbeef"));
+    auto rev = waitForResponse(match);
+    CHECK(rev.docID == "0000002");
+    CHECK(rev.revID == "1-1fdf9d4bdae09f6651938d9ec1d47177280f5a77");
+    CHECK(rev.deleted == false);
+    auto doc = Doc(rev.body);
+    CHECK(doc.asDict()["birthday"].asString() == "1989-04-29");
+}
+
+
 TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev NotFound", "[ConnectedClient]") {
     start();
     auto asyncResultX = _client->getDoc(alloc_slice("bogus"), nullslice, nullslice);
     CHECK(waitForErrorResponse(asyncResultX) == C4Error{LiteCoreDomain, kC4ErrorNotFound});
-    C4Log("++++ Stopping...");
-    stop();
+}
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getBlob", "[ConnectedClient]") {
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+    }
+    start();
+
+    auto asyncBlob1 = _client->getBlob(blobKeys[0], true);
+    auto asyncBlob2 = _client->getBlob(blobKeys[1], false);
+    auto asyncBadBlob = _client->getBlob(C4BlobKey{}, false);
+
+    alloc_slice blob1 = waitForResponse(asyncBlob1);
+    CHECK(blob1 == slice(attachments[0]));
+
+    alloc_slice blob2 = waitForResponse(asyncBlob2);
+    CHECK(blob2 == slice(attachments[1]));
+
+    CHECK(waitForErrorResponse(asyncBadBlob) == C4Error{LiteCoreDomain, kC4ErrorNotFound});
+}
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc", "[ConnectedClient]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    start();
+
+    Encoder enc;
+    enc.beginDict();
+    enc["connected"] = "client";
+    enc.endDict();
+    auto docBody = enc.finish();
+
+    auto rq1 = _client->putDoc(alloc_slice("0000001"), nullslice,
+                               alloc_slice("2-2222"),
+                               alloc_slice("1-4cbe54d79c405e368613186b0bc7ac9ee4a50fbb"),
+                               C4RevisionFlags{},
+                               docBody);
+    auto rq2 = _client->putDoc(alloc_slice("frob"), nullslice,
+                               alloc_slice("1-1111"),
+                               nullslice,
+                               C4RevisionFlags{},
+                               docBody);
+    rq1.blockUntilReady();
+    REQUIRE(rq1.result() == C4Error());
+    c4::ref<C4Document> doc1 = c4db_getDoc(db, "0000001"_sl, true, kDocGetCurrentRev, ERROR_INFO());
+    REQUIRE(doc1);
+    CHECK(doc1->revID == "2-2222"_sl);
+
+    rq2.blockUntilReady();
+    REQUIRE(rq2.result() == C4Error());
+    c4::ref<C4Document> doc2 = c4db_getDoc(db, "frob"_sl, true, kDocGetCurrentRev, ERROR_INFO());
+    REQUIRE(doc2);
+    CHECK(doc2->revID == "1-1111"_sl);
+}
+
+
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Failure", "[ConnectedClient]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    start();
+
+    Encoder enc;
+    enc.beginDict();
+    enc["connected"] = "client";
+    enc.endDict();
+    auto docBody = enc.finish();
+
+    auto rq1 = _client->putDoc(alloc_slice("0000001"), nullslice,
+                               alloc_slice("2-2222"),
+                               alloc_slice("1-d00d"),
+                               C4RevisionFlags{},
+                               docBody);
+    rq1.blockUntilReady();
+    REQUIRE(rq1.result() == C4Error{LiteCoreDomain, kC4ErrorConflict});
 }
