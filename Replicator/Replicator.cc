@@ -492,7 +492,7 @@ namespace litecore { namespace repl {
     // This only gets called if none of the registered handlers were triggered.
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
         warn("Received unrecognized BLIP request #%" PRIu64 " with Profile '%.*s', %zu bytes",
-                msg->number(), SPLAT(msg->property("Profile"_sl)), msg->body().size);
+                msg->number(), SPLAT(msg->profile()), msg->body().size);
         msg->notHandled();
     }
 
@@ -715,7 +715,7 @@ namespace litecore { namespace repl {
         if (checkpointID)
             logInfo("Request to %s peer checkpoint '%.*s'", whatFor, SPLAT(checkpointID));
         else
-            request->respondWithError({"BLIP"_sl, 400, "missing checkpoint ID"_sl});
+            request->respondWithError(400, "missing checkpoint ID");
         return checkpointID;
     }
 

@@ -73,7 +73,7 @@ namespace litecore { namespace blip {
 
     void Message::writeDescription(slice payload, std::ostream& out) {
         if (type() == kRequestType) {
-            const char *profile = findProperty(payload, "Profile");
+            const char *profile = findProperty(payload, kProfilePropertyStr);
             if (profile)
                 out << "'" << profile << "' ";
         }
@@ -379,7 +379,7 @@ namespace litecore { namespace blip {
 
 
     void MessageIn::notHandled() {
-        respondWithError({"BLIP"_sl, 404, "no handler for message"_sl});
+        respondWithError({kBLIPErrorDomain, 404, "no handler for message"_sl});
     }
 
 
@@ -433,8 +433,8 @@ namespace litecore { namespace blip {
     Error MessageIn::getError() const {
         if (!isError())
             return Error();
-        return Error(property("Error-Domain"_sl),
-                     (int) intProperty("Error-Code"_sl),
+        return Error(property(kErrorDomainProperty),
+                     (int) intProperty(kErrorCodeProperty),
                      body());
     }
 

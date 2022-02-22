@@ -304,7 +304,7 @@ namespace litecore { namespace repl {
         _changesFeed.setFindForeignAncestors(getForeignAncestors());
         if (!proposedChanges && reply->isError()) {
             auto err = reply->getError();
-            if (err.code == 409 && (err.domain == "BLIP"_sl || err.domain == "HTTP"_sl)) {
+            if (err.code == 409 && (err.domain == kBLIPErrorDomain || err.domain == "HTTP"_sl)) {
                 if (!_proposeChanges && !_proposeChangesKnown) {
                     // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
                     logInfo("Server requires 'proposeChanges'; retrying...");

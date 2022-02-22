@@ -51,6 +51,8 @@ namespace litecore { namespace blip {
         /** Constructs a MessageBuilder for a response. */
         MessageBuilder(MessageIn *inReplyTo);
 
+        void setProfile(slice profile);
+
         /** Adds a property. */
         MessageBuilder& addProperty(slice name, slice value);
 

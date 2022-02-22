@@ -161,7 +161,7 @@ namespace litecore::repl {
         MessageBuilder msg;
         C4Error c4err;
         if (buildRevisionMessage(request, msg, {}, &c4err)) {
-            msg["Profile"] = "rev";
+            msg.setProfile("rev");
             logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
                        SPLAT(request->docID), SPLAT(request->revID));
             sendRequest(msg, [this, request](MessageProgress progress) {
@@ -180,7 +180,7 @@ namespace litecore::repl {
                      c4err.description().c_str());
                 blipError = 500;
             }
-            msg["Profile"] = "norev";
+            msg.setProfile("norev");
             msg["error"_sl] = blipError;
             msg.noreply = true;
             sendRequest(msg);

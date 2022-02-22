@@ -153,7 +153,7 @@ namespace litecore::client {
     // This only gets called if none of the registered handlers were triggered.
     void ConnectedClient::onRequestReceived(MessageIn *msg) {
         warn("Received unrecognized BLIP request #%" PRIu64 " with Profile '%.*s', %zu bytes",
-             msg->number(), FMTSLICE(msg->property("Profile"_sl)), msg->body().size);
+             msg->number(), FMTSLICE(msg->profile()), msg->body().size);
         msg->notHandled();
     }
 

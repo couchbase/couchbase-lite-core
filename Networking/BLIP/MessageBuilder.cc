@@ -30,7 +30,7 @@ namespace litecore { namespace blip {
     MessageBuilder::MessageBuilder(slice profile)
     {
         if (profile)
-            addProperty("Profile"_sl, profile);
+            setProfile(profile);
     }
 
 
@@ -50,6 +50,11 @@ namespace litecore { namespace blip {
     }
 
 
+    void MessageBuilder::setProfile(slice profile) {
+        addProperty(kProfileProperty, profile);
+    }
+
+
     MessageBuilder& MessageBuilder::addProperties(initializer_list<property> properties) {
         for (const property &p : properties)
             addProperty(p.first, p.second);
@@ -60,8 +65,8 @@ namespace litecore { namespace blip {
     void MessageBuilder::makeError(Error err) {
         DebugAssert(err.domain && err.code);
         type = kErrorType;
-        addProperty("Error-Domain"_sl, err.domain);
-        addProperty("Error-Code"_sl, err.code);
+        addProperty(kErrorDomainProperty, err.domain);
+        addProperty(kErrorDomainProperty, err.code);
         write(err.message);
     }
 

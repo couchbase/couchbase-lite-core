@@ -57,7 +57,7 @@ namespace litecore::repl {
             handleChangesNow(req);
         } else {
             logVerbose("Queued '%.*s' REQ#%" PRIu64 " (now %zu)",
-                       SPLAT(req->property("Profile"_sl)), req->number(),
+                       SPLAT(req->profile()), req->number(),
                        _waitingChangesMessages.size() + 1);
             Signpost::begin(Signpost::handlingChanges, (uintptr_t)req->number());
             _waitingChangesMessages.push_back(move(req));
@@ -85,7 +85,7 @@ namespace litecore::repl {
     // Actually handle a "changes" (or "proposeChanges") message:
     void RevFinder::handleChangesNow(MessageIn *req) {
         try {
-            slice reqType = req->property("Profile"_sl);
+            slice reqType = req->profile();
             bool proposed = (reqType == "proposeChanges"_sl);
             logVerbose("Handling '%.*s' REQ#%" PRIu64, SPLAT(reqType), req->number());
 
@@ -93,11 +93,11 @@ namespace litecore::repl {
             auto nChanges = changes.count();
             if (!changes && req->body() != "null"_sl) {
                 warn("Invalid body of 'changes' message");
-                req->respondWithError({"BLIP"_sl, 400, "Invalid JSON body"_sl});
+                req->respondWithError(400, "Invalid JSON body"_sl);
             } else if ((!proposed && _mustBeProposed) || (proposed && _db->usingVersionVectors())) {
                 // In conflict-free mode plus rev-trees the protocol requires the pusher send
                 // "proposeChanges" instead. But with version vectors, always use "changes".
-                req->respondWithError({"BLIP"_sl, 409});
+                req->respondWithError({kBLIPErrorDomain, 409});
             } else if (nChanges == 0) {
                 // Empty array indicates we've caught up. (This may have been sent no-reply)
                 logInfo("Caught up with remote changes");
@@ -157,7 +157,7 @@ namespace litecore::repl {
                 req->respond(response);
 
                 logInfo("Responded to '%.*s' REQ#%" PRIu64 " w/request for %u revs in %.6f sec",
-                        SPLAT(req->property("Profile"_sl)), req->number(), requested, st.elapsed());
+                        SPLAT(req->profile()), req->number(), requested, st.elapsed());
             }
         } catch (...) {
             auto error = C4Error::fromCurrentException();

@@ -595,7 +595,7 @@ namespace litecore { namespace blip {
                 if (state == MessageIn::kOther)
                     return;
                 bool beginning = (state == MessageIn::kBeginning);
-                auto profile = request->property("Profile"_sl);
+                auto profile = request->profile();
                 if (profile) {
                     auto i = _requestHandlers.find({profile.asString(), beginning});
                     if (i != _requestHandlers.end()) {
@@ -610,7 +610,7 @@ namespace litecore { namespace blip {
                     _connection->delegate().onRequestReceived(request);
             } catch (...) {
                 logError("Caught exception thrown from BLIP request handler");
-                request->respondWithError({"BLIP"_sl, 501, "unexpected exception"_sl});
+                request->respondWithError({kBLIPErrorDomain, 501, "unexpected exception"_sl});
             }
         }
 

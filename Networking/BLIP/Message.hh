@@ -137,6 +137,9 @@ namespace litecore { namespace blip {
         long intProperty(slice property, long defaultValue =0) const;
         bool boolProperty(slice property, bool defaultValue =false) const;
 
+        /** The "Profile" property gives the message type. */
+        slice profile() const               {return property(kProfileProperty);}
+
         /** Returns information about an error (if this message is an error.) */
         Error getError() const;
 
@@ -162,8 +165,13 @@ namespace litecore { namespace blip {
             (The message must be complete.) */
         void respond();
 
-        /** Sends an error as a response. (The message must be complete.) */
+        /** Sends an error as a response. (The MessageIn must be complete.) */
         void respondWithError(Error);
+
+        /** Sends a BLIP-domain error as a response. (The MessageIn must be complete.) */
+        void respondWithError(int blipErrorCode, slice message) {
+            respondWithError(Error{kBLIPErrorDomain, blipErrorCode, message});
+        }
 
         /** Responds with an error saying that the message went unhandled.
             Call this if you don't know what to do with a request.
