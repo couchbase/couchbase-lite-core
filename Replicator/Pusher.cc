@@ -51,7 +51,8 @@ namespace litecore { namespace repl {
         registerHandler("subChanges",      &Pusher::handleSubChanges);
         registerHandler("getAttachment",   &Pusher::handleGetAttachment);
         registerHandler("proveAttachment", &Pusher::handleProveAttachment);
-        if (_passive)
+
+        if (_options->properties[kC4ReplicatorOptionAllowConnectedClient])
             registerHandler("getRev",      &Pusher::handleGetRev);
     }
 

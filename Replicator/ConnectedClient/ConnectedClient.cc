@@ -240,7 +240,7 @@ namespace litecore::client {
     {
         BEGIN_ASYNC_RETURNING(C4Error)
         logInfo("putDoc(\"%.*s\", \"%.*s\")", FMTSLICE(docID), FMTSLICE(revID));
-        MessageBuilder req("putDoc");
+        MessageBuilder req("putRev");
         req.compressed = true;
         req["id"] = docID;
         req["rev"] = revID;

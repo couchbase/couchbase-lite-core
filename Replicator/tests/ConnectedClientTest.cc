@@ -40,6 +40,7 @@ public:
         Assert(!_serverRunning && !_clientRunning);
 
         auto serverOpts = make_retained<repl::Options>(kC4Passive,kC4Passive);
+        serverOpts->setProperty(kC4ReplicatorOptionAllowConnectedClient, true);
         serverOpts->setProperty(kC4ReplicatorOptionNoIncomingConflicts, true);
         _server = new repl::Replicator(db,
                                        new LoopbackWebSocket(alloc_slice("ws://srv/"),
@@ -246,7 +247,7 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getBlob", "[ConnectedClient]") {
 }
 
 
-TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc", "[ConnectedClient]") {
+TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putRev", "[ConnectedClient]") {
     importJSONLines(sFixturesDir + "names_100.json");
     start();
 
