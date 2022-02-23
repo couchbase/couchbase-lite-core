@@ -165,7 +165,7 @@ TEST_CASE_METHOD(AsyncTest, "Async, emplaceResult") {
 TEST_CASE_METHOD(AsyncTest, "AsyncWaiter", "[Async]") {
     Async<string> sum = provideSum();
     string result;
-    sum.then([&](string &&s) {
+    move(sum).then([&](string &&s) {
         result = s;
     });
     REQUIRE(!sum.ready());

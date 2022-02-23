@@ -23,7 +23,7 @@ namespace litecore::actor {
 
     // Called from `BEGIN_ASYNC()`. This is an optimization for a void-returning function that
     // avoids allocating an AsyncProvider if the function body never has to block.
-    void AsyncFnState::asyncVoidFn(Actor *thisActor, function<void(AsyncFnState&)> fnBody) {
+    void AsyncFnState::asyncVoidFn(Actor *thisActor, function<void(AsyncFnState&)> &&fnBody) {
         if (thisActor && thisActor != Actor::currentActor()) {
             // Need to run this on the Actor's queue, so schedule it:
             (new AsyncProvider<void>(thisActor, move(fnBody)))->_start();
