@@ -77,9 +77,9 @@ namespace litecore::client {
         /// @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
         /// @return  An async value that, when resolved, contains either a `DocResponse` struct
         ///          or a C4Error.
-        actor::Async<DocResponseOrError> getDoc(alloc_slice docID,
-                                                alloc_slice collectionID,
-                                                alloc_slice unlessRevID,
+        actor::Async<DocResponseOrError> getDoc(slice docID,
+                                                slice collectionID,
+                                                slice unlessRevID,
                                                 bool asFleece = true);
 
         /// Gets the contents of a blob given its digest.
@@ -98,19 +98,19 @@ namespace litecore::client {
         /// @param revisionFlags  Flags of this revision.
         /// @param fleeceData  The document body encoded as Fleece (without shared keys!)
         /// @return  An async value that, when resolved, contains the status as a C4Error.
-        actor::Async<C4Error> putDoc(alloc_slice docID,
-                                     alloc_slice collectionID,
-                                     alloc_slice revID,
-                                     alloc_slice parentRevID,
+        actor::Async<C4Error> putDoc(slice docID,
+                                     slice collectionID,
+                                     slice revID,
+                                     slice parentRevID,
                                      C4RevisionFlags revisionFlags,
-                                     alloc_slice fleeceData);
+                                     slice fleeceData);
 
         /// Registers a listener function that will be called when any document is changed.
         /// @note  To cancel, pass a null callback.
         /// @param collectionID  The ID of the collection to observe.
         /// @param callback  The function to call (on an arbitrary background thread!)
         /// @return  An async value that, when resolved, contains the status as a C4Error.
-        actor::Async<C4Error> observeCollection(alloc_slice collectionID,
+        actor::Async<C4Error> observeCollection(slice collectionID,
                                                 CollectionObserver callback);
 
         // exposed for unit tests:
@@ -130,7 +130,7 @@ namespace litecore::client {
         void setStatus(ActivityLevel);
         C4Error responseError(blip::MessageIn *response);
         void _disconnect(websocket::CloseCode closeCode, slice message);
-        void checkDocAndRevID(slice docID, slice revID);
+        bool validateDocAndRevID(slice docID, slice revID);
 
         Delegate*                   _delegate;         // Delegate whom I report progress/errors to
         ActivityLevel               _status;

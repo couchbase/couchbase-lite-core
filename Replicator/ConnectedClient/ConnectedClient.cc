@@ -181,12 +181,17 @@ namespace litecore::client {
     }
 
 
-    Async<DocResponseOrError> ConnectedClient::getDoc(alloc_slice docID,
-                                                      alloc_slice collectionID,
-                                                      alloc_slice unlessRevID,
+    Async<DocResponseOrError> ConnectedClient::getDoc(slice docID_,
+                                                      slice collectionID_,
+                                                      slice unlessRevID_,
                                                       bool asFleece)
     {
-        BEGIN_ASYNC_RETURNING(DocResponseOrError)
+        BEGIN_ASYNC_RETURNING_CAPTURING(DocResponseOrError,
+                                        this,
+                                        docID = alloc_slice(docID_),
+                                        collectionID = alloc_slice(collectionID_),
+                                        unlessRevID = alloc_slice(unlessRevID_),
+                                        asFleece)
         logInfo("getDoc(\"%.*s\")", FMTSLICE(docID));
         MessageBuilder req("getRev");
         req["id"] = docID;
@@ -237,14 +242,21 @@ namespace litecore::client {
     }
 
 
-    Async<C4Error> ConnectedClient::putDoc(alloc_slice docID,
-                                           alloc_slice collectionID,
-                                           alloc_slice revID,
-                                           alloc_slice parentRevID,
+    Async<C4Error> ConnectedClient::putDoc(slice docID_,
+                                           slice collectionID_,
+                                           slice revID_,
+                                           slice parentRevID_,
                                            C4RevisionFlags revisionFlags,
-                                           alloc_slice fleeceData)
+                                           slice fleeceData_)
     {
-        BEGIN_ASYNC_RETURNING(C4Error)
+        BEGIN_ASYNC_RETURNING_CAPTURING(C4Error,
+                                        this,
+                                        docID = alloc_slice(docID_),
+                                        collectionID = alloc_slice(collectionID_),
+                                        revID = alloc_slice(revID_),
+                                        parentRevID = alloc_slice(parentRevID_),
+                                        revisionFlags,
+                                        fleeceData = alloc_slice(fleeceData_))
         logInfo("putDoc(\"%.*s\", \"%.*s\")", FMTSLICE(docID), FMTSLICE(revID));
         MessageBuilder req("putRev");
         req.compressed = true;
@@ -257,7 +269,7 @@ namespace litecore::client {
         if (fleeceData.size > 0) {
             // TODO: Encryption!!
             // TODO: Convert blobs to legacy attachments
-            req.jsonBody().writeValue(Doc(fleeceData, kFLTrusted).asDict());
+            req.jsonBody().writeValue(FLValue_FromData(fleeceData, kFLTrusted));
         } else {
             req.write("{}");
         }
@@ -270,11 +282,14 @@ namespace litecore::client {
     }
 
 
-    Async<C4Error> ConnectedClient::observeCollection(alloc_slice collectionID,
-                                                      CollectionObserver callback)
+    Async<C4Error> ConnectedClient::observeCollection(slice collectionID_,
+                                                      CollectionObserver callback_)
     {
-        bool observe = !!callback;
-        BEGIN_ASYNC_RETURNING(C4Error)
+        BEGIN_ASYNC_RETURNING_CAPTURING(C4Error,
+                                        this,
+                                        collectionID = alloc_slice(collectionID_),
+                                        observe = !!callback_,
+                                        callback = move(callback_))
         logInfo("observeCollection(%.*s)", FMTSLICE(collectionID));
 
         bool sameSubState = (observe == !!_observer);
@@ -325,28 +340,31 @@ namespace litecore::client {
         }
 
         if (_observer && !inChanges.empty()) {
+            logInfo("Received %u doc changes from server", inChanges.count());
             // Convert the JSON change list into a vector:
             vector<C4CollectionObserver::Change> outChanges;
             outChanges.reserve(inChanges.count());
             for (auto item : inChanges) {
                 // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
-                auto &outChange = outChanges.emplace_back();
                 auto inChange = item.asArray();
-                outChange.sequence = C4SequenceNumber{inChange[0].asUnsigned()};
-                outChange.docID    = inChange[1].asString();
-                outChange.revID    = inChange[2].asString();
-                outChange.flags    = 0;
-                int64_t deletion   = inChange[3].asInt();
-                outChange.bodySize = fleece::narrow_cast<uint32_t>(inChange[4].asUnsigned());
+                slice docID = inChange[1].asString();
+                slice revID = inChange[2].asString();
+                if (validateDocAndRevID(docID, revID)) {
+                    auto &outChange = outChanges.emplace_back();
+                    outChange.sequence = C4SequenceNumber{inChange[0].asUnsigned()};
+                    outChange.docID    = docID;
+                    outChange.revID    = revID;
+                    outChange.flags    = 0;
+                    int64_t deletion   = inChange[3].asInt();
+                    outChange.bodySize = fleece::narrow_cast<uint32_t>(inChange[4].asUnsigned());
 
-                checkDocAndRevID(outChange.docID, outChange.revID);
-
-                // In SG 2.x "deletion" is a boolean flag, 0=normal, 1=deleted.
-                // SG 3.x adds 2=revoked, 3=revoked+deleted, 4=removal (from channel)
-                if (deletion & 0b001)
-                    outChange.flags |= kRevDeleted;
-                if (deletion & 0b110)
-                    outChange.flags |= kRevPurged;
+                    // In SG 2.x "deletion" is a boolean flag, 0=normal, 1=deleted.
+                    // SG 3.x adds 2=revoked, 3=revoked+deleted, 4=removal (from channel)
+                    if (deletion & 0b001)
+                        outChange.flags |= kRevDeleted;
+                    if (deletion & 0b110)
+                        outChange.flags |= kRevPurged;
+                }
             }
 
             // Finally call the observer callback:
@@ -360,7 +378,7 @@ namespace litecore::client {
     }
 
 
-    void ConnectedClient::checkDocAndRevID(slice docID, slice revID) {
+    bool ConnectedClient::validateDocAndRevID(slice docID, slice revID) {
         bool valid;
         if (!C4Document::isValidDocID(docID))
             valid = false;
@@ -369,10 +387,10 @@ namespace litecore::client {
         else
             valid = revID.findByte('-');
         if (!valid) {
-            C4Error::raise(LiteCoreDomain, kC4ErrorRemoteError,
-                           "Invalid docID/revID '%.*s' #%.*s in incoming change list",
-                           FMTSLICE(docID), FMTSLICE(revID));
+            warn("Invalid docID/revID '%.*s' #%.*s in incoming change list",
+                 FMTSLICE(docID), FMTSLICE(revID));
         }
+        return valid;
     }
 
 }

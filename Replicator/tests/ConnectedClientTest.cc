@@ -176,8 +176,8 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev", "[ConnectedClient]") {
     start();
 
     Log("++++ Calling ConnectedClient::getDoc()...");
-    auto asyncResult1 = _client->getDoc(alloc_slice("0000001"), nullslice, nullslice);
-    auto asyncResult99 = _client->getDoc(alloc_slice("0000099"), nullslice, nullslice);
+    auto asyncResult1 = _client->getDoc("0000001", nullslice, nullslice);
+    auto asyncResult99 = _client->getDoc("0000099", nullslice, nullslice);
 
     auto rev = waitForResponse(asyncResult1);
     CHECK(rev.docID == "0000001");
@@ -199,8 +199,8 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev Conditional Match", "[Conn
     importJSONLines(sFixturesDir + "names_100.json");
     start();
 
-    auto match = _client->getDoc(alloc_slice("0000002"), nullslice,
-                                 alloc_slice("1-1fdf9d4bdae09f6651938d9ec1d47177280f5a77"));
+    auto match = _client->getDoc("0000002", nullslice,
+                                 "1-1fdf9d4bdae09f6651938d9ec1d47177280f5a77");
     CHECK(waitForErrorResponse(match) == C4Error{WebSocketDomain, 304});
 }
 
@@ -209,8 +209,8 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev Conditional No Match", "[C
     importJSONLines(sFixturesDir + "names_100.json");
     start();
 
-    auto match = _client->getDoc(alloc_slice("0000002"), nullslice,
-                                 alloc_slice("1-beefbeefbeefbeefbeefbeefbeefbeefbeefbeef"));
+    auto match = _client->getDoc("0000002", nullslice,
+                                 "1-beefbeefbeefbeefbeefbeefbeefbeefbeefbeef");
     auto rev = waitForResponse(match);
     CHECK(rev.docID == "0000002");
     CHECK(rev.revID == "1-1fdf9d4bdae09f6651938d9ec1d47177280f5a77");
@@ -222,7 +222,7 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev Conditional No Match", "[C
 
 TEST_CASE_METHOD(ConnectedClientLoopbackTest, "getRev NotFound", "[ConnectedClient]") {
     start();
-    auto asyncResultX = _client->getDoc(alloc_slice("bogus"), nullslice, nullslice);
+    auto asyncResultX = _client->getDoc("bogus", nullslice, nullslice);
     CHECK(waitForErrorResponse(asyncResultX) == C4Error{LiteCoreDomain, kC4ErrorNotFound});
 }
 
@@ -260,13 +260,13 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putRev", "[ConnectedClient]") {
     enc.endDict();
     auto docBody = enc.finish();
 
-    auto rq1 = _client->putDoc(alloc_slice("0000001"), nullslice,
-                               alloc_slice("2-2222"),
-                               alloc_slice("1-4cbe54d79c405e368613186b0bc7ac9ee4a50fbb"),
+    auto rq1 = _client->putDoc("0000001", nullslice,
+                               "2-2222",
+                               "1-4cbe54d79c405e368613186b0bc7ac9ee4a50fbb",
                                C4RevisionFlags{},
                                docBody);
-    auto rq2 = _client->putDoc(alloc_slice("frob"), nullslice,
-                               alloc_slice("1-1111"),
+    auto rq2 = _client->putDoc("frob", nullslice,
+                               "1-1111",
                                nullslice,
                                C4RevisionFlags{},
                                docBody);
@@ -294,9 +294,9 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Failure", "[ConnectedClien
     enc.endDict();
     auto docBody = enc.finish();
 
-    auto rq1 = _client->putDoc(alloc_slice("0000001"), nullslice,
-                               alloc_slice("2-2222"),
-                               alloc_slice("1-d00d"),
+    auto rq1 = _client->putDoc("0000001", nullslice,
+                               "2-2222",
+                               "1-d00d",
                                C4RevisionFlags{},
                                docBody);
     rq1.blockUntilReady();
