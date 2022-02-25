@@ -241,7 +241,6 @@ namespace litecore { namespace repl {
         bool const proposedChanges = _proposeChanges;
         auto changes = make_shared<RevToSendList>(move(in_changes));
 
-        BEGIN_ASYNC()
         MessageBuilder req(proposedChanges ? "proposeChanges"_sl : "changes"_sl);
         if(proposedChanges) {
             req[kConflictIncludesRevProperty] = "true"_sl;
@@ -291,76 +290,75 @@ namespace litecore { namespace repl {
         increment(_changeListsInFlight);
 
         //---- SEND REQUEST AND WAIT FOR REPLY ----
-        AWAIT(Retained<MessageIn>, reply, sendAsyncRequest(req));
-        if (!reply)
-            return;
+        sendAsyncRequest(req).then([=](Retained<MessageIn> reply) {
+            if (!reply)
+                return;
 
-        // Got reply to the "changes" or "proposeChanges":
-        if (!changes->empty()) {
-            logInfo("Got response for %zu local changes (sequences from %" PRIu64 ")",
-                changes->size(), (uint64_t)changes->front()->sequence);
-        }
-        decrement(_changeListsInFlight);
-        _changesFeed.setFindForeignAncestors(getForeignAncestors());
-        if (!proposedChanges && reply->isError()) {
-            auto err = reply->getError();
-            if (err.code == 409 && (err.domain == kBLIPErrorDomain || err.domain == "HTTP"_sl)) {
-                if (!_proposeChanges && !_proposeChangesKnown) {
-                    // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
-                    logInfo("Server requires 'proposeChanges'; retrying...");
-                    _proposeChanges = true;
-                    _changesFeed.setFindForeignAncestors(getForeignAncestors());
-                    sendChanges(move(*changes));
-                } else {
-                    logError("Server does not allow '%s'; giving up",
-                             (_proposeChanges ? "proposeChanges" : "changes"));
-                    for(RevToSend* change : *changes)
-                        doneWithRev(change, false, false);
-                    gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError,
-                                "Incompatible with server replication protocol (changes)"_sl));
+            // Got reply to the "changes" or "proposeChanges":
+            if (!changes->empty()) {
+                logInfo("Got response for %zu local changes (sequences from %" PRIu64 ")",
+                    changes->size(), (uint64_t)changes->front()->sequence);
+            }
+            decrement(_changeListsInFlight);
+            _changesFeed.setFindForeignAncestors(getForeignAncestors());
+            if (!proposedChanges && reply->isError()) {
+                auto err = reply->getError();
+                if (err.code == 409 && (err.domain == kBLIPErrorDomain || err.domain == "HTTP"_sl)) {
+                    if (!_proposeChanges && !_proposeChangesKnown) {
+                        // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
+                        logInfo("Server requires 'proposeChanges'; retrying...");
+                        _proposeChanges = true;
+                        _changesFeed.setFindForeignAncestors(getForeignAncestors());
+                        sendChanges(move(*changes));
+                    } else {
+                        logError("Server does not allow '%s'; giving up",
+                                 (_proposeChanges ? "proposeChanges" : "changes"));
+                        for(RevToSend* change : *changes)
+                            doneWithRev(change, false, false);
+                        gotError(C4Error::make(LiteCoreDomain, kC4ErrorRemoteError,
+                                    "Incompatible with server replication protocol (changes)"_sl));
+                    }
+                    return;
                 }
+            }
+            _proposeChangesKnown = true;
+
+            // Request another batch of changes from the db:
+            maybeGetMoreChanges();
+
+            if (reply->isError()) {
+                for(RevToSend* change : *changes)
+                    doneWithRev(change, false, false);
+                gotError(reply);
                 return;
             }
-        }
-        _proposeChangesKnown = true;
 
-        // Request another batch of changes from the db:
-        maybeGetMoreChanges();
+            // OK, now look at the successful response:
+            int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl,
+                                                             tuning::kDefaultMaxHistory));
+            bool legacyAttachments = !reply->boolProperty("blobs"_sl);
+            if (!_deltasOK && reply->boolProperty("deltas"_sl)
+                           && !_options->properties[kC4ReplicatorOptionDisableDeltas].asBool())
+                _deltasOK = true;
 
-        if (reply->isError()) {
-            for(RevToSend* change : *changes)
-                doneWithRev(change, false, false);
-            gotError(reply);
-            return;
-        }
-
-        // OK, now look at the successful response:
-        int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl,
-                                                         tuning::kDefaultMaxHistory));
-        bool legacyAttachments = !reply->boolProperty("blobs"_sl);
-        if (!_deltasOK && reply->boolProperty("deltas"_sl)
-                       && !_options->properties[kC4ReplicatorOptionDisableDeltas].asBool())
-            _deltasOK = true;
-
-        // The response body consists of an array that parallels the `changes` array I sent:
-        Array::iterator iResponse(reply->JSONBody().asArray());
-        for (RevToSend *change : *changes) {
-            change->maxHistory = maxHistory;
-            change->legacyAttachments = legacyAttachments;
-            change->deltaOK = _deltasOK;
-            bool queued = proposedChanges ? handleProposedChangeResponse(change, *iResponse)
-                                          : handleChangeResponse(change, *iResponse);
-            if (queued) {
-                logVerbose("Queueing rev '%.*s' #%.*s (seq #%" PRIu64 ") [%zu queued]",
-                           SPLAT(change->docID), SPLAT(change->revID), (uint64_t)change->sequence,
-                           _revQueue.size());
+            // The response body consists of an array that parallels the `changes` array I sent:
+            Array::iterator iResponse(reply->JSONBody().asArray());
+            for (RevToSend *change : *changes) {
+                change->maxHistory = maxHistory;
+                change->legacyAttachments = legacyAttachments;
+                change->deltaOK = _deltasOK;
+                bool queued = proposedChanges ? handleProposedChangeResponse(change, *iResponse)
+                                              : handleChangeResponse(change, *iResponse);
+                if (queued) {
+                    logVerbose("Queueing rev '%.*s' #%.*s (seq #%" PRIu64 ") [%zu queued]",
+                               SPLAT(change->docID), SPLAT(change->revID), (uint64_t)change->sequence,
+                               _revQueue.size());
+                }
+                if (iResponse)
+                    ++iResponse;
             }
-            if (iResponse)
-                ++iResponse;
-        }
-        maybeSendMoreRevs();
-
-        END_ASYNC()
+            maybeSendMoreRevs();
+        });
     }
 
 

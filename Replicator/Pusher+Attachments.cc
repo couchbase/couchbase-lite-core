@@ -125,7 +125,7 @@ namespace litecore::repl {
         if (progressNotificationLevel() >= 2)
             repl->onBlobProgress(progress);
 
-        reply.dataSource = make_unique<BlobDataSource>(this, move(blob), progress);
+        reply.dataSource = make_shared<BlobDataSource>(this, move(blob), progress);
         req->respond(reply);
     }
 

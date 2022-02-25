@@ -51,6 +51,7 @@ namespace litecore { namespace blip {
 
 
     void MessageBuilder::setProfile(slice profile) {
+        Assert(!isResponse());
         addProperty(kProfileProperty, profile);
     }
 
@@ -138,5 +139,13 @@ namespace litecore { namespace blip {
         _properties.clear();
         _wroteProperties = false;
     }
+
+
+    BuiltMessage::BuiltMessage(MessageBuilder &builder)
+    :dataSource(std::move(builder.dataSource))
+    ,onProgress(move(builder.onProgress))
+    ,_flags(builder.flags())
+    ,_payload(builder.finish())
+    { }
 
 } }

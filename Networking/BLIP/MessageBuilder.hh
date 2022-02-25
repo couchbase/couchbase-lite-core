@@ -19,6 +19,8 @@
 #include <sstream>
 
 namespace litecore { namespace blip {
+    class BuiltMessage;
+
 
     /** A callback to provide data for an outgoing message. When called, it should copy data
         to the location in the `buf` parameter, with a maximum length of `capacity`. It should
@@ -29,7 +31,7 @@ namespace litecore { namespace blip {
         virtual ~IMessageDataSource() = default;
     };
 
-    using MessageDataSource = std::unique_ptr<IMessageDataSource>;
+    using MessageDataSource = std::shared_ptr<IMessageDataSource>;
 
 
     /** A temporary object used to construct an outgoing message (request or response).
@@ -49,6 +51,8 @@ namespace litecore { namespace blip {
 
         /** Constructs a MessageBuilder for a response. */
         explicit MessageBuilder(MessageIn *inReplyTo);
+
+        bool isResponse() const                     {return type != kRequestType;}
 
         void setProfile(slice profile);
 
@@ -99,7 +103,7 @@ namespace litecore { namespace blip {
 
     protected:
         friend class MessageIn;
-        friend class MessageOut;
+        friend class BuiltMessage;
 
         FrameFlags flags() const;
         alloc_slice finish();
@@ -113,6 +117,24 @@ namespace litecore { namespace blip {
         fleece::JSONEncoder _out;    // Actually using it for the entire msg, not just JSON
         std::stringstream _properties;  // Accumulates encoded properties
         bool _wroteProperties {false};  // Have _properties been written to _out yet?
+    };
+
+
+    /** Intermediate value produced by a MessageBuilder, to be passed to the Connection.
+        (Unlike MessageBuilder this class is copyable, so instances can be captured by
+        `std::function`. That makes it useable by async code.) */
+    class BuiltMessage {
+    public:
+        BuiltMessage(MessageBuilder&);
+
+        MessageDataSource       dataSource;
+        MessageProgressCallback onProgress;
+
+    protected:
+        friend class MessageOut;
+
+        FrameFlags          _flags;
+        fleece::alloc_slice _payload;
     };
 
 } }

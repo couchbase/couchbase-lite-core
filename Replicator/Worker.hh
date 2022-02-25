@@ -155,8 +155,9 @@ namespace litecore { namespace repl {
         using AsyncResponse = actor::Async<Retained<blip::MessageIn>>;
 
         /// Sends a BLIP request, like `sendRequest` but returning the response asynchronously.
+        /// This method does not need to be called on the Worker's thread.
         /// Note: The response object will be nullptr if the connection closed.
-        AsyncResponse sendAsyncRequest(blip::MessageBuilder& builder);
+        AsyncResponse sendAsyncRequest(blip::BuiltMessage&&);
 
         /// The number of BLIP responses I'm waiting for.
         int pendingResponseCount() const        {return _pendingResponseCount;}

@@ -20,6 +20,7 @@
 
 namespace litecore { namespace blip {
     class BLIPIO;
+    class BuiltMessage;
     class ConnectionDelegate;
     class MessageOut;
 
@@ -65,14 +66,14 @@ namespace litecore { namespace blip {
         void terminate();
 
         /** Sends a built message as a new request. */
-        void sendRequest(MessageBuilder&);
+        void sendRequest(BuiltMessage&&);
 
         using AsyncResponse = actor::Async<Retained<MessageIn>>;
 
         /** Sends a built message as a new request and returns an async value that can be used
             to get the response when it arrives.
             @note  The response will immediately resolve to `nullptr` if the connection closes. */
-        AsyncResponse sendAsyncRequest(MessageBuilder&);
+        AsyncResponse sendAsyncRequest(BuiltMessage&&);
 
         typedef std::function<void(MessageIn*)> RequestHandler;
 

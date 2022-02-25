@@ -62,68 +62,68 @@ namespace litecore { namespace repl {
 
     // Starting an active pull.
     void Puller::start(RemoteSequence sinceSequence) {
-        BEGIN_ASYNC();
-        _lastSequence = sinceSequence;
-        _missingSequences.clear(sinceSequence);
-        alloc_slice sinceStr = _lastSequence.toJSON();
-        logInfo("Starting pull from remote seq '%.*s'", SPLAT(sinceStr));
+        asCurrentActor([=]() {
+            _lastSequence = sinceSequence;
+            _missingSequences.clear(sinceSequence);
+            alloc_slice sinceStr = _lastSequence.toJSON();
+            logInfo("Starting pull from remote seq '%.*s'", SPLAT(sinceStr));
 
-        Signpost::begin(Signpost::blipSent);
-        MessageBuilder msg("subChanges"_sl);
-        if (sinceStr)
-            msg["since"_sl] = sinceStr;
-        if (_options->pull == kC4Continuous)
-            msg["continuous"_sl] = "true"_sl;
-        msg["batch"_sl] = tuning::kChangesBatchSize;
-        msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
-        if (_skipDeleted)
-            msg["activeOnly"_sl] = "true"_sl;
-        if (_options->enableAutoPurge() || progressNotificationLevel() > 0) {
-            msg["revocations"] = "true";    // Enable revocation notification in "changes" (SG 3.0)
-            logInfo("msg[\"revocations\"]=\"true\" due to enableAutoPurge()=%d or progressNotificationLevel()=%d > 0",
-                    _options->enableAutoPurge(), progressNotificationLevel());
-        }
+            Signpost::begin(Signpost::blipSent);
+            MessageBuilder msg("subChanges"_sl);
+            if (sinceStr)
+                msg["since"_sl] = sinceStr;
+            if (_options->pull == kC4Continuous)
+                msg["continuous"_sl] = "true"_sl;
+            msg["batch"_sl] = tuning::kChangesBatchSize;
+            msg["versioning"] = _db->usingVersionVectors() ? "version-vectors" : "rev-trees";
+            if (_skipDeleted)
+                msg["activeOnly"_sl] = "true"_sl;
+            if (_options->enableAutoPurge() || progressNotificationLevel() > 0) {
+                msg["revocations"] = "true";    // Enable revocation notification in "changes" (SG 3.0)
+                logInfo("msg[\"revocations\"]=\"true\" due to enableAutoPurge()=%d or progressNotificationLevel()=%d > 0",
+                        _options->enableAutoPurge(), progressNotificationLevel());
+            }
 
-        auto channels = _options->channels();
-        if (channels) {
-            stringstream value;
-            unsigned n = 0;
-            for (Array::iterator i(channels); i; ++i) {
-                slice name = i.value().asString();
-                if (name) {
-                    if (n++)
-                         value << ",";
-                    value << name.asString();
+            auto channels = _options->channels();
+            if (channels) {
+                stringstream value;
+                unsigned n = 0;
+                for (Array::iterator i(channels); i; ++i) {
+                    slice name = i.value().asString();
+                    if (name) {
+                        if (n++)
+                             value << ",";
+                        value << name.asString();
+                    }
+                }
+                msg["filter"_sl] = "sync_gateway/bychannel"_sl;
+                msg["channels"_sl] = value.str();
+            } else {
+                slice filter = _options->filter();
+                if (filter) {
+                    msg["filter"_sl] = filter;
+                    for (Dict::iterator i(_options->filterParams()); i; ++i)
+                        msg[i.keyString()] = i.value().asString();
                 }
             }
-            msg["filter"_sl] = "sync_gateway/bychannel"_sl;
-            msg["channels"_sl] = value.str();
-        } else {
-            slice filter = _options->filter();
-            if (filter) {
-                msg["filter"_sl] = filter;
-                for (Dict::iterator i(_options->filterParams()); i; ++i)
-                    msg[i.keyString()] = i.value().asString();
+
+            auto docIDs = _options->docIDs();
+            if (docIDs) {
+                auto &enc = msg.jsonBody();
+                enc.beginDict();
+                enc.writeKey("docIDs"_sl);
+                enc.writeValue(docIDs);
+                enc.endDict();
             }
-        }
 
-        auto docIDs = _options->docIDs();
-        if (docIDs) {
-            auto &enc = msg.jsonBody();
-            enc.beginDict();
-            enc.writeKey("docIDs"_sl);
-            enc.writeValue(docIDs);
-            enc.endDict();
-        }
-
-        AWAIT(Retained<MessageIn>, reply, sendAsyncRequest(msg));
-
-        if (reply && reply->isError()) {
-            gotError(reply);
-            _fatalError = true;
-        }
-        Signpost::end(Signpost::blipSent);
-        END_ASYNC();
+            sendAsyncRequest(msg).then([this](Retained<MessageIn> reply) {
+                if (reply && reply->isError()) {
+                    gotError(reply);
+                    _fatalError = true;
+                }
+                Signpost::end(Signpost::blipSent);
+            });
+        });
     }
 
 

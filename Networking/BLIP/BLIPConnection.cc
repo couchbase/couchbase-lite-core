@@ -663,27 +663,25 @@ namespace litecore { namespace blip {
 
 
     /** Public API to send a new request. */
-    void Connection::sendRequest(MessageBuilder &mb) {
-        Retained<MessageOut> message = new MessageOut(this, mb, MessageNo{0});
+    void Connection::sendRequest(BuiltMessage &&mb) {
+        Retained<MessageOut> message = new MessageOut(this, move(mb), MessageNo{0});
         DebugAssert(message->type() == kRequestType);
         send(message);
     }
 
 
-    Connection::AsyncResponse Connection::sendAsyncRequest(MessageBuilder& builder) {
-        auto provider = AsyncResponse::makeProvider();
-        builder.onProgress = [provider, oldOnProgress=std::move(builder.onProgress)]
+    Connection::AsyncResponse Connection::sendAsyncRequest(BuiltMessage &&mb) {
+        auto asyncProvider = AsyncResponse::makeProvider();
+        mb.onProgress = [asyncProvider, oldOnProgress=std::move(mb.onProgress)]
                              (MessageProgress progress) {
             if (progress.state >= MessageProgress::kComplete)
-                provider->setResult(progress.reply);
+                asyncProvider->setResult(progress.reply);
             if (oldOnProgress)
                 oldOnProgress(progress);
         };
-        sendRequest(builder);
-        return provider;
+        sendRequest(move(mb));
+        return asyncProvider;
     }
-
-
 
 
     /** Internal API to send an outgoing message (a request, response, or ACK.) */

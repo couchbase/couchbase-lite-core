@@ -47,9 +47,9 @@ namespace litecore::repl {
 
     // Creates a revision message from a RevToSend. Returns a BLIP error code.
     bool Pusher::buildRevisionMessage(RevToSend *request,
-                                     MessageBuilder &msg,
-                                     slice ifNotRevID,
-                                     C4Error *outError)
+                                      MessageBuilder &msg,
+                                      slice ifNotRevID,
+                                      C4Error *outError)
     {
         // Get the document & revision:
         C4Error c4err = {};
@@ -103,6 +103,8 @@ namespace litecore::repl {
         msg["rev"_sl] = fullRevID;
         msg["sequence"_sl] = uint64_t(request->sequence);
         if (root) {
+            if (!msg.isResponse())
+                msg.setProfile("rev");
             if (request->noConflicts)
                 msg["noconflicts"_sl] = true;
             auto revisionFlags = doc->selectedRev().flags;
@@ -161,7 +163,6 @@ namespace litecore::repl {
         MessageBuilder msg;
         C4Error c4err;
         if (buildRevisionMessage(request, msg, {}, &c4err)) {
-            msg.setProfile("rev");
             logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
                        SPLAT(request->docID), SPLAT(request->revID));
             sendRequest(msg, [this, request](MessageProgress progress) {

@@ -31,7 +31,7 @@
 
 namespace litecore { namespace actor {
     class Actor;
-
+    template <typename T> class Async;
 
     //// Some support code for asynchronize(), from http://stackoverflow.com/questions/42124866
     template <class RetVal, class T, class... Args>
@@ -50,15 +50,26 @@ namespace litecore { namespace actor {
     #define ACTOR_BIND_METHOD0(RCVR, METHOD)        ^{ ((RCVR)->*METHOD)(); }
     #define ACTOR_BIND_METHOD(RCVR, METHOD, ARGS)   ^{ ((RCVR)->*METHOD)(ARGS...); }
     #define ACTOR_BIND_FN(FN, ARGS)                 ^{ FN(ARGS...); }
+    #define ACTOR_BIND_FN0(FN)                      ^{ FN(); }
 #else
     using Mailbox = ThreadedMailbox;
     #define ACTOR_BIND_METHOD0(RCVR, METHOD)        std::bind(METHOD, RCVR)
     #define ACTOR_BIND_METHOD(RCVR, METHOD, ARGS)   std::bind(METHOD, RCVR, ARGS...)
     #define ACTOR_BIND_FN(FN, ARGS)                 std::bind(FN, ARGS...)
+    #define ACTOR_BIND_FN0(FN)                      (FN)
 #endif
 
     #define FUNCTION_TO_QUEUE(METHOD) #METHOD, &METHOD
 
+
+    namespace {
+        // Magic template gunk. `unwrap_async<T>` removes a layer of `Async<...>` from a type:
+        // - `unwrap_async<string>` is `string`.
+        // - `unwrap_async<Async<string>> is `string`.
+        template <typename T> T _unwrap_async(T*);
+        template <typename T> T _unwrap_async(Async<T>*);
+        template <typename T> using unwrap_async = decltype(_unwrap_async((T*)nullptr));
+    }
 
     /** Abstract base actor class. Subclasses should implement their public methods as calls to
         `enqueue` that pass the parameter values through, and name a matching private 
@@ -138,12 +149,27 @@ namespace litecore { namespace actor {
             return _asynchronize(methodName, fn);
         }
 
+        /** Schedules a call to `fn` on the actor's thread.
+            The return type depends on `fn`s return type:
+            - `void` -- `asCurrentActor` will return `void`.
+            - `X` -- `asCurrentActor` will return `Async<X>`, which will resolve after `fn` runs.
+            - `Async<X>` -- `asCurrentActor` will return `Async<X>`, which will resolve after `fn`
+                            runs _and_ its returned async value resolves. */
+        template <typename LAMBDA>
+        auto asCurrentActor(LAMBDA &&fn) {
+            using U = unwrap_async<std::invoke_result_t<LAMBDA>>; // return type w/o Async<>
+            return _asCurrentActor<U>(std::forward<LAMBDA>(fn));
+        }
+
+        /** The scheduler calls this after every call to the Actor. */
         virtual void afterEvent()                    { }
 
+        /** Called if an Actor method throws an exception. */
         virtual void caughtException(const std::exception &x);
 
         virtual std::string loggingIdentifier() const { return actorName(); }
 
+        /** Writes statistics to the log. */
         void logStats() {
             _mailbox.logStats();
         }
@@ -165,6 +191,33 @@ namespace litecore { namespace actor {
             _mailbox.enqueue(methodName, ACTOR_BIND_METHOD(other, fn, args));
         }
 
+        // Implementation of `asCurrentActor` where `fn` returns a non-async type `T`.
+        template <typename T>
+        auto _asCurrentActor(std::function<T()> fn) {
+            auto provider = Async<T>::makeProvider();
+            asCurrentActor([fn,provider] { provider->setResultFromFunction(fn); });
+            return provider->asyncValue();
+        }
+
+        // Specialization of `asCurrentActor` where `fn` returns void.
+        template <>
+        auto _asCurrentActor<void>(std::function<void()> fn) {
+            if (currentActor() == this)
+                fn();
+            else
+                _mailbox.enqueue("asCurrentActor", ACTOR_BIND_FN0(fn));
+        }
+
+        // Implementation of `asCurrentActor` where `fn` itself returns an `Async`.
+        template <typename U>
+        Async<U> _asCurrentActor(std::function<Async<U>()> fn) {
+            auto provider = Async<U>::makeProvider();
+            asCurrentActor([fn,provider] {
+                fn().then([=](U result) { provider->setResult(std::move(result)); });
+            });
+            return provider;
+        }
+
         Mailbox _mailbox;
     };
 
@@ -176,31 +229,5 @@ namespace litecore { namespace actor {
 
 #undef ACTOR_BIND_METHOD
 #undef ACTOR_BIND_FN
-
-
-    template<typename Fn> class actor_function;
-
-    template<typename Ret, typename ...Params>
-    class actor_function<Ret(Params...)> {
-    public:
-        template <typename Callable>
-        actor_function(Actor *actor, Callable &&callabl,
-                       typename std::enable_if<
-                                     !std::is_same<typename std::remove_reference<Callable>::type,
-                                                   actor_function>::value>::type * = nullptr)
-        :_fn(std::forward(callabl))
-        { }
-
-        Ret operator()(Params ...params) const {
-            if (_actor == nullptr || _actor == Actor::currentActor())
-                return _fn(std::forward<Params>(params)...);
-            else
-                _actor->enqueueOther("actor_function",
-                                     ACTOR_BIND_FN(_fn, std::forward<Params>(params)...));
-        }
-    private:
-        std::function<Ret(Params...)> _fn;
-        Retained<Actor> _actor;
-    };
 
 } }

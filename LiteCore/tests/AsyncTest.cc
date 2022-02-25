@@ -55,76 +55,48 @@ public:
         return bProvider();
     }
 
-    Async<string> provideSum() {
-        Log("provideSum: entry");
-        string a, b;
-        BEGIN_ASYNC_RETURNING(string)
+    Async<string> provideOne() {
         Log("provideSum: awaiting A");
-        XAWAIT(a, provideA());
-        Log("provideSum: awaiting B");
-        XAWAIT(b, provideB());
-        Log("provideSum: returning");
-        return a + b;
-        END_ASYNC()
+        return provideA().then([=](string a) {
+            Log("provideSum: awaiting B");
+            return a;
+        });
+    }
+
+
+    Async<string> provideSum() {
+        Log("provideSum: awaiting A");
+        return provideA().then([=](string a) {
+            Log("provideSum: awaiting B");
+            return provideB().then([=](string b) {
+                Log("provideSum: returning");
+                return a + b;
+            });
+        });
     }
 
 
     Async<string> provideSumPlus() {
-        string a;
-        BEGIN_ASYNC_RETURNING(string)
-        XAWAIT(a, provideSum());
-        return a + "!";
-        END_ASYNC()
-    }
-
-
-    Async<string> XXprovideSumPlus() {
-        string a;
-        return Async<string>(thisActor(), [=](AsyncFnState &_async_state_) mutable
-                                                    -> std::optional<string> {
-            switch (_async_state_.currentLine()) {
-                default:
-                    if (_async_state_.await(provideSum(), 78)) return {};
-                case 78:
-                    a = _async_state_.awaited<async_result_type<decltype(provideSum())>>()
-                                        ->extractResult();
-                    return a + "!";
-            }
+        return provideSum().then([=](string a) {
+            return a + "!";
         });
     }
 
 
     Async<string> provideImmediately() {
-        BEGIN_ASYNC_RETURNING(string)
-        return "immediately";
-        END_ASYNC()
-    }
-
-
-    Async<int> provideLoop() {
-        string n;
-        int sum = 0;
-        int i = 0;
-        BEGIN_ASYNC_RETURNING(int)
-        for (i = 0; i < 10; i++) {
-            XAWAIT(n, provideSum());
-            //fprintf(stderr, "n=%f, i=%d, sum=%f\n", n, i, sum);
-            sum += n.size() * i;
-        }
-        return sum;
-        END_ASYNC()
+        return string("immediately");
     }
 
 
     string provideNothingResult;
 
     void provideNothing() {
-        string a, b;
-        BEGIN_ASYNC()
-        XAWAIT(a, provideA());
-        XAWAIT(b, provideB());
-        provideNothingResult = a + b;
-        END_ASYNC()
+        provideA().then([=](string a) {
+            Log("provideSum: awaiting B");
+            provideB().then([=](string b) {
+                provideNothingResult = a + b;
+            });
+        });
     }
 
 };
@@ -187,21 +159,6 @@ TEST_CASE_METHOD(AsyncTest, "Async, 2 levels", "[Async]") {
     _bProvider->setResult(" there");
     REQUIRE(sum.ready());
     REQUIRE(sum.result() == "hi there!");
-}
-
-
-TEST_CASE_METHOD(AsyncTest, "Async, loop", "[Async]") {
-    Async<int> sum = provideLoop();
-    for (int i = 1; i <= 10; i++) {
-        REQUIRE(!sum.ready());
-        _aProvider->setResult("hi");
-        _aProvider = nullptr;
-        REQUIRE(!sum.ready());
-        _bProvider->setResult(" there");
-        _bProvider = nullptr;
-    }
-    REQUIRE(sum.ready());
-    REQUIRE(sum.result() == 360);
 }
 
 
@@ -273,38 +230,36 @@ public:
     AsyncTestActor() :Actor(kC4Cpp_DefaultLog) { }
     
     Async<string> download(string url) {
-        string contents;
-        BEGIN_ASYNC_RETURNING(string)
-        CHECK(currentActor() == this);
-        XAWAIT(contents, downloader(url));
-        CHECK(currentActor() == this);
-        return contents;
-        END_ASYNC()
+        return asCurrentActor([=] {
+            CHECK(currentActor() == this);
+            return downloader(url).then([=](string contents) -> string {
+                // When `then` is used inside an Actor method, the lambda is called on its queue:
+                CHECK(currentActor() == this);
+                return contents;
+            });
+        });
     }
 
     Async<string> download(string url1, string url2) {
-        optional<Async<string>> dl1, dl2;
-        string contents;
-        BEGIN_ASYNC_RETURNING(string)
-        CHECK(currentActor() == this);
-        dl1 = download(url1);
-        dl2 = download(url2);
-        XAWAIT(contents, *dl1);
-        CHECK(currentActor() == this);
-        XAWAIT(string contents2, *dl2);
-        return contents + " and " + contents2;
-        END_ASYNC()
+        return asCurrentActor([=] {
+            CHECK(currentActor() == this);
+            return download(url1).then([=](string contents1) {
+                return download(url2).then([=](string contents2) {
+                    CHECK(currentActor() == this);
+                    return contents1 + " and " + contents2;
+                });
+            });
+        });
     }
 
     void testThen(string url) {
-        BEGIN_ASYNC()
-        downloader(url).then([=](string &&s) {
-            // When `then` is used inside an Actor method, the lambda must be called on its queue:
-            assert(currentActor() == this);
-            testThenResult = move(s);
-            testThenReady = true;
+        asCurrentActor([=] {
+            downloader(url).then([=](string &&s) {
+                assert(currentActor() == this);
+                testThenResult = move(s);
+                testThenReady = true;
+            });
         });
-        END_ASYNC()
     }
 
     atomic<bool> testThenReady = false;

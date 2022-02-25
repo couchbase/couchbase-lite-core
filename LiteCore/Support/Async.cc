@@ -18,50 +18,6 @@
 namespace litecore::actor {
     using namespace std;
 
-#pragma mark - ASYNC FN STATE:
-
-
-    // Called from `BEGIN_ASYNC()`. This is an optimization for a void-returning function that
-    // avoids allocating an AsyncProvider if the function body never has to block.
-    void AsyncFnState::asyncVoidFn(Actor *thisActor, function<void(AsyncFnState&)> &&fnBody) {
-        if (thisActor && thisActor != Actor::currentActor()) {
-            // Need to run this on the Actor's queue, so schedule it:
-            (new AsyncProvider<void>(thisActor, move(fnBody)))->_start();
-        } else {
-            // It's OK to call the body synchronously. As an optimization, call it directly with a
-            // stack-based AsyncFnState, instead of from a heap-allocated AsyncProvider:
-            AsyncFnState state(nullptr, thisActor);
-            fnBody(state);
-            if (state._awaiting) {
-                // Body didn't finish (is "blocked" in an `AWAIT()`), so set up a proper provider:
-                (new AsyncProvider<void>(thisActor, move(fnBody), move(state)))->_wait();
-            }
-        }
-    }
-
-
-    AsyncFnState::AsyncFnState(AsyncProviderBase *owningProvider, Actor *owningActor)
-    :_owningProvider(owningProvider)
-    ,_owningActor(owningActor)
-    { }
-
-
-    // copy state from `other`, except `_owningProvider`
-    void AsyncFnState::updateFrom(AsyncFnState &other) {
-        _owningActor = other._owningActor;
-        _awaiting = move(other._awaiting);
-        _currentLine = other._currentLine;
-    }
-
-
-    // called by `AWAIT()` macro
-    bool AsyncFnState::_await(const AsyncBase &a, int curLine) {
-        _awaiting = a._provider;
-        _currentLine = curLine;
-        return !a.ready();
-    }
-
-
 #pragma mark - ASYNC OBSERVER:
 
 
@@ -80,11 +36,6 @@ namespace litecore::actor {
 #pragma mark - ASYNC PROVIDER BASE:
 
 
-    AsyncProviderBase::AsyncProviderBase(Actor *actorOwningFn)
-    :_fnState(new AsyncFnState(this, actorOwningFn))
-    { }
-
-
     AsyncProviderBase::AsyncProviderBase(bool ready)
     :_ready(ready)
     { }
@@ -93,16 +44,6 @@ namespace litecore::actor {
     AsyncProviderBase::~AsyncProviderBase() {
         if (!_ready)
             WarnError("AsyncProvider %p deleted without ever getting a value!", (void*)this);
-    }
-
-
-    void AsyncProviderBase::_start() {
-        notifyAsyncResultAvailable(nullptr, _fnState->_owningActor);
-    }
-
-
-    void AsyncProviderBase::_wait() {
-        _fnState->_awaiting->setObserver(this);
     }
 
 
@@ -124,6 +65,7 @@ namespace litecore::actor {
 
 
     void AsyncProviderBase::_gotResult(std::unique_lock<std::mutex>& lock) {
+        // on entry, `_mutex` is locked by `lock`
         precondition(!_ready);
         _ready = true;
         auto observer = _observer;
@@ -134,9 +76,6 @@ namespace litecore::actor {
 
         if (observer)
             observer->notifyAsyncResultAvailable(this, observerActor);
-
-        // If I am the result of an async fn, it must have finished, so forget its state:
-        _fnState = nullptr;
     }
 
 
@@ -157,10 +96,8 @@ namespace litecore::actor {
 #pragma mark - ASYNC BASE:
     
 
-    AsyncBase::AsyncBase(AsyncProviderBase *context, bool)
-    :AsyncBase(context)
-    {
-        _provider->_start();
+    bool AsyncBase::canCallNow() const {
+        return ready() && (_onActor == nullptr || _onActor == Actor::currentActor());
     }
 
 
