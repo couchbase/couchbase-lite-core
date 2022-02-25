@@ -37,16 +37,6 @@ namespace litecore::actor {
     // *** For full documentation, read Networking/BLIP/docs/Async.md ***
 
 
-    // Interface for observing when an Async value becomes available.
-    class AsyncObserver {
-    public:
-        virtual ~AsyncObserver() = default;
-        void notifyAsyncResultAvailable(AsyncProviderBase*, Actor*);
-    protected:
-        virtual void asyncResultAvailable(Retained<AsyncProviderBase>) =0;
-    };
-
-
 #pragma mark - ASYNCPROVIDER:
 
 
@@ -72,7 +62,9 @@ namespace litecore::actor {
         /// If the result is an error, throws it as an exception. Else does nothing.
         void throwIfError() const;
 
-        void setObserver(AsyncObserver*, Actor* =nullptr);
+        using Observer = std::function<void(AsyncProviderBase&)>;
+
+        void setObserver(Actor*, Observer);
 
     protected:
         friend class AsyncBase;
@@ -81,10 +73,11 @@ namespace litecore::actor {
         explicit AsyncProviderBase(Actor *actorOwningFn, const char *functionName);
         ~AsyncProviderBase();
         void _gotResult(std::unique_lock<std::mutex>&);
+        void notifyObserver(Observer &observer, Actor *actor);
 
         std::mutex mutable            _mutex;
     private:
-        AsyncObserver*                _observer {nullptr};    // AsyncObserver waiting on me
+        Observer                      _observer;
         Retained<Actor>               _observerActor;         // Actor the observer was running on
         std::unique_ptr<litecore::error> _error;             // Error if provider failed
         std::atomic<bool>             _ready {false};         // True when result is ready
@@ -282,11 +275,11 @@ namespace litecore::actor {
         }
 
         void then(std::function<void(T)> callback, std::function<void(C4Error)> errorCallback) && {
-            Waiter::start(provider(), _onActor, [=](auto &provider) {
+            _provider->setObserver(_onActor, [=](AsyncProviderBase &provider) {
                 if (provider.error())
                     errorCallback(provider.c4Error());
                 else
-                    callback(provider.extractResult());
+                    callback(provider.extractResult<T>());
             });
         }
 
@@ -313,8 +306,6 @@ namespace litecore::actor {
         using ThenReturnType = Async<T>;
 
     private:
-        class Waiter; // defined below
-
         AsyncProvider<T>* provider() {
             return (AsyncProvider<T>*)_provider.get();
         }
@@ -332,12 +323,13 @@ namespace litecore::actor {
                 else
                     uProvider->setResultFromCallback([&]{return callback(extractResult());});
             } else {
-                // Create an AsyncWaiter to wait on the provider:
-                Waiter::start(this->provider(), _onActor, [uProvider,callback](auto &provider) {
+                _provider->setObserver(_onActor, [=](AsyncProviderBase &provider) {
                     if (auto x = provider.error())
                         uProvider->setError(x);
                     else {
-                        uProvider->setResultFromCallback([&]{return callback(provider.extractResult());});
+                        uProvider->setResultFromCallback([&]{
+                            return callback(provider.extractResult<U>());
+                        });
                     }
                 });
             }
@@ -347,12 +339,13 @@ namespace litecore::actor {
         // Implements `then` where the lambda returns void. (Specialization of above method.)
         template<>
         void _then<void>(std::function<void(T&&)> &&callback) {
-            if (canCallNow())
+            if (canCallNow()) {
                 callback(extractResult());
-            else
-                Waiter::start(provider(), _onActor, [=](auto &provider) {
-                    callback(provider.extractResult());
+            } else {
+                _provider->setObserver(_onActor, [=](AsyncProviderBase &provider) {
+                    callback(provider.extractResult<T>());
                 });
+            }
         }
 
         // Implements `then` where the lambda returns `Async<U>`.
@@ -365,9 +358,10 @@ namespace litecore::actor {
             } else {
                 // Otherwise wait for my result...
                 auto uProvider = Async<U>::makeProvider();
-                Waiter::start(provider(), _onActor, [=] (auto &provider) mutable {
+                _provider->setObserver(_onActor, [=](AsyncProviderBase &provider) mutable {
                     // Invoke the callback, then wait to resolve the Async<U> it returns:
-                    auto asyncU = provider._now(callback);
+                    auto &tProvider = dynamic_cast<AsyncProvider<T>&>(provider);
+                    auto asyncU = tProvider._now(callback);
                     std::move(asyncU).then([uProvider](U &&uresult) {
                         // Then finally resolve the async I returned:
                         uProvider->setResult(std::forward<U>(uresult));
@@ -396,41 +390,9 @@ namespace litecore::actor {
     }
 
 
-    // Internal class used by `Async<T>::then()`, above
-    template <typename T>
-    class Async<T>::Waiter : public AsyncObserver {
-    public:
-        using Callback = std::function<void(AsyncProvider<T>&)>;
-
-        static void start(AsyncProvider<T> *provider, Actor *onActor, Callback &&callback) {
-            (void) new Waiter(provider, onActor, std::forward<Callback>(callback));
-        }
-
-    protected:
-        Waiter(AsyncProvider<T> *provider, Actor *onActor, Callback &&callback)
-        :_callback(std::move(callback))
-        {
-            provider->setObserver(this, onActor);
-        }
-
-        void asyncResultAvailable(Retained<AsyncProviderBase> ctx) override {
-            auto provider = dynamic_cast<AsyncProvider<T>*>(ctx.get());
-            _callback(*provider);
-            delete this;            // delete myself when done!
-        }
-    private:
-        Callback _callback;
-    };
-
-
     // Specialization of AsyncProvider for use in functions with no return value (void).
-    // Not used directly, but it's used as part of the implementation of void-returning async fns.
     template <>
     class AsyncProvider<void> : public AsyncProviderBase {
-    public:
-//        static Retained<AsyncProvider> create()             {return new AsyncProvider;}
-//        AsyncProvider() = default;
-
     private:
         friend class Async<void>;
 

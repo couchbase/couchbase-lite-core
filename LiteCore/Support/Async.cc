@@ -23,18 +23,6 @@ namespace litecore::actor {
 #pragma mark - ASYNC OBSERVER:
 
 
-    void AsyncObserver::notifyAsyncResultAvailable(AsyncProviderBase *ctx, Actor *actor) {
-        if (actor && actor != Actor::currentActor()) {
-            // Schedule a call on my Actor:
-            actor->enqueueOther("AsyncObserver::asyncResultAvailable", this,
-                                &AsyncObserver::asyncResultAvailable, retained(ctx));
-        } else {
-            // ... or call it synchronously:
-            asyncResultAvailable(ctx);
-        }
-    }
-
-
 #pragma mark - ASYNC PROVIDER BASE:
 
 
@@ -49,20 +37,33 @@ namespace litecore::actor {
     }
 
 
-    void AsyncProviderBase::setObserver(AsyncObserver *o, Actor *actor) {
+    void AsyncProviderBase::setObserver(Actor *actor, Observer observer) {
         {
             unique_lock<decltype(_mutex)> _lock(_mutex);
             precondition(!_observer);
             // Presumably I wasn't ready when the caller decided to call `setObserver` on me;
             // but I might have become ready in between then and now, so check for that.
             if (!_ready) {
-                _observer = o;
+                _observer = move(observer);
                 _observerActor = actor ? actor : Actor::currentActor();
                 return;
             }
         }
         // if I am ready, call the observer now:
-        o->notifyAsyncResultAvailable(this, actor);
+        notifyObserver(observer, actor);
+    }
+
+
+    void AsyncProviderBase::notifyObserver(Observer &observer, Actor *actor) {
+        if (actor && actor != Actor::currentActor()) {
+            // Schedule a call on my Actor:
+            actor->asCurrentActor([observer, provider=fleece::retained(this)] {
+                observer(*provider);
+            });
+        } else {
+            // ... or call it synchronously:
+            observer(*this);
+        }
     }
 
 
@@ -70,14 +71,15 @@ namespace litecore::actor {
         // on entry, `_mutex` is locked by `lock`
         precondition(!_ready);
         _ready = true;
-        auto observer = _observer;
+        auto observer = move(_observer);
         _observer = nullptr;
-        auto observerActor = std::move(_observerActor);
+        auto observerActor = move(_observerActor);
+        _observerActor = nullptr;
 
         lock.unlock();
 
         if (observer)
-            observer->notifyAsyncResultAvailable(this, observerActor);
+            notifyObserver(observer, observerActor);
     }
 
 
@@ -123,35 +125,19 @@ namespace litecore::actor {
     }
 
 
-    // Simple class that observes an AsyncProvider and can block until it's ready.
-    class BlockingObserver : public AsyncObserver {
-    public:
-        BlockingObserver(AsyncProviderBase *provider)
-        :_provider(provider)
-        { }
-
-        void wait() {
-            unique_lock<decltype(_mutex)> lock(_mutex);
-            _provider->setObserver(this);
-            _cond.wait(lock, [&]{return _provider->ready();});
-        }
-    private:
-        void asyncResultAvailable(Retained<AsyncProviderBase>) override {
-            unique_lock<decltype(_mutex)> lock(_mutex);
-            _cond.notify_one();
-        }
-
-        mutex              _mutex;
-        condition_variable _cond;
-        AsyncProviderBase* _provider;
-    };
-
-
     void AsyncBase::blockUntilReady() {
         if (!ready()) {
             precondition(Actor::currentActor() == nullptr); // would deadlock if called by an Actor
-            BlockingObserver obs(_provider);
-            obs.wait();
+            mutex _mutex;
+            condition_variable _cond;
+
+            _provider->setObserver(nullptr, [&](AsyncProviderBase &provider) {
+                unique_lock<decltype(_mutex)> lock(_mutex);
+                _cond.notify_one();
+            });
+
+            unique_lock<decltype(_mutex)> lock(_mutex);
+            _cond.wait(lock, [&]{return ready();});
         }
     }
 

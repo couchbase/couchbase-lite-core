@@ -167,7 +167,7 @@ namespace litecore::actor {
     private:
         friend class ThreadedMailbox;
         friend class GCDMailbox;
-        friend class AsyncObserver;
+        friend class AsyncProviderBase;
 
         template <class ACTOR, class ITEM> friend class ActorBatcher;
         template <class ACTOR>             friend class ActorCountBatcher;
