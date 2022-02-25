@@ -20,6 +20,8 @@
 
 #undef check
 
+struct C4Error;
+
 namespace fleece {
     class Backtrace;
 }
@@ -93,6 +95,7 @@ namespace litecore {
         error (Domain, int code );
         error(error::Domain, int code, const std::string &what);
         explicit error (LiteCoreError e)     :error(LiteCore, e) {}
+        explicit error (const C4Error&);   // This is implemented in c4Error.cc
 
         error& operator= (const error &e);
 

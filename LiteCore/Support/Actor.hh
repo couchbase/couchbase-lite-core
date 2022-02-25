@@ -11,6 +11,7 @@
 //
 
 #pragma once
+#include "AsyncActorCommon.hh"
 #include "ThreadedMailbox.hh"
 #include "Logging.hh"
 #include <chrono>
@@ -29,9 +30,7 @@
 #endif
 
 
-namespace litecore { namespace actor {
-    class Actor;
-    template <typename T> class Async;
+namespace litecore::actor {
 
     //// Some support code for asynchronize(), from http://stackoverflow.com/questions/42124866
     template <class RetVal, class T, class... Args>
@@ -61,15 +60,6 @@ namespace litecore { namespace actor {
 
     #define FUNCTION_TO_QUEUE(METHOD) #METHOD, &METHOD
 
-
-    namespace {
-        // Magic template gunk. `unwrap_async<T>` removes a layer of `Async<...>` from a type:
-        // - `unwrap_async<string>` is `string`.
-        // - `unwrap_async<Async<string>> is `string`.
-        template <typename T> T _unwrap_async(T*);
-        template <typename T> T _unwrap_async(Async<T>*);
-        template <typename T> using unwrap_async = decltype(_unwrap_async((T*)nullptr));
-    }
 
     /** Abstract base actor class. Subclasses should implement their public methods as calls to
         `enqueue` that pass the parameter values through, and name a matching private 
@@ -174,7 +164,6 @@ namespace litecore { namespace actor {
             _mailbox.logStats();
         }
 
-
     private:
         friend class ThreadedMailbox;
         friend class GCDMailbox;
@@ -221,13 +210,9 @@ namespace litecore { namespace actor {
         Mailbox _mailbox;
     };
 
-
-#ifndef _THISACTOR_DEFINED
-#define _THISACTOR_DEFINED
-    static inline Actor* thisActor() {return nullptr;}
-#endif
-
 #undef ACTOR_BIND_METHOD
+#undef ACTOR_BIND_METHOD0
 #undef ACTOR_BIND_FN
+#undef ACTOR_BIND_FN0
 
-} }
+}

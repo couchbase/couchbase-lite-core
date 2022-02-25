@@ -155,16 +155,27 @@ public:
 
 As a bonus, if `asCurrentActor` is called on the Actor’s thread, it just calls the function immediately without enqueuing it, which is faster.
 
-# Exceptions
+# Exceptions & C4Errors
 
-Any Async value (regardless of its type parameter) can hold an exception. If the code producing the value fails with an exception, you can catch it and set it as the result with `setException`.
+### Providing an Error Result
+
+Any Async value (regardless of its type parameter) can resolve to an error instead of a result. You can store one by calling `setError()` on the provider. The parameter can be either a `C4Error` or a `std::exception`.
+
+ If the code producing the value throws an exception, you can catch it and set it as the result with `setError()`.
 
 ```c++
 try {
     ...
     provider->setResult(result);
-} catch (...) {
-    provider->setException(std::current_exception());
+} catch (const std::exception &x) {
+    provider->setError(x));
 }
 ```
 
+> Note: `asCurrentActor()` catches exceptions thrown by its lambda and returns them as an error on the returned Async.
+
+### Handling An Error
+
+On the receiving side, you can check the error in an Async by calling its `error()` or `c4Error()` methods. 
+
+> **Warning:** If you call `result` and there’s an error, it will be thrown as an exception!)

@@ -11,6 +11,8 @@
 //
 
 #pragma once
+#include "AsyncActorCommon.hh"
+#include "Error.hh"
 #include "RefCounted.hh"
 #include "InstanceCounted.hh"
 #include <atomic>
@@ -19,6 +21,8 @@
 #include <optional>
 #include <utility>
 #include <betterassert.hh>
+
+struct C4Error;
 
 namespace litecore::actor {
     using fleece::RefCounted;
@@ -57,14 +61,16 @@ namespace litecore::actor {
         template <typename T> T& result();
         template <typename T> T extractResult();
 
-        /// Returns the exception result, else nullptr.
-        std::exception_ptr exception() const                {return _exception;}
+        /// Returns the error/exception result, else nullptr.
+        litecore::error* error() const                      {return _error.get();}
+        C4Error c4Error() const;
 
-        /// Sets an exception as the result. This will wake up observers.
-        void setException(std::exception_ptr);
+        /// Sets an error as the result. This will wake up observers.
+        void setError(const std::exception&);
+        void setError(const C4Error&);
 
-        /// If the result is an exception, re-throws it. Else does nothing.
-        void rethrowException() const;
+        /// If the result is an error, throws it as an exception. Else does nothing.
+        void throwIfError() const;
 
         void setObserver(AsyncObserver*, Actor* =nullptr);
 
@@ -80,7 +86,7 @@ namespace litecore::actor {
     private:
         AsyncObserver*                _observer {nullptr};    // AsyncObserver waiting on me
         Retained<Actor>               _observerActor;         // Actor the observer was running on
-        std::exception_ptr            _exception {nullptr};   // Exception if provider failed
+        std::unique_ptr<litecore::error> _error;             // Error if provider failed
         std::atomic<bool>             _ready {false};         // True when result is ready
     };
 
@@ -141,7 +147,7 @@ namespace litecore::actor {
             } catch (...) {
                 if (!duringCallback)
                     throw;
-                setException(std::current_exception());
+                setError(std::current_exception());
             }
         }
 
@@ -156,7 +162,7 @@ namespace litecore::actor {
 
         T& result() & {
             std::unique_lock<std::mutex> _lock(_mutex);
-            rethrowException();
+            throwIfError();
             precondition(_result);
             return *_result;
         }
@@ -167,19 +173,19 @@ namespace litecore::actor {
 
         T extractResult() {
             std::unique_lock<std::mutex> _lock(_mutex);
-            rethrowException();
+            throwIfError();
             precondition(_result);
             return *std::move(_result);
         }
 
         template <typename U>
         Async<U> _now(std::function<Async<U>(T&&)> &callback) {
-            if (auto x = exception())
-                return Async<U>(x);
+            if (auto x = error())
+                return Async<U>(*x);
             try {
                 return callback(extractResult());
-            } catch (...) {
-                return Async<U>(std::current_exception());
+            } catch (const std::exception &x) {
+                return Async<U>(error::convertException(x));
             }
         }
 
@@ -188,21 +194,6 @@ namespace litecore::actor {
 
 
 #pragma mark - ASYNC:
-
-
-    /// Compile-time utility that pulls the result type out of an Async type.
-    /// If `T` is `Async<X>`, or a reference thereto, then `async_result_type<T>` is X.
-    template <class T>
-    using async_result_type = typename std::remove_reference_t<T>::ResultType;
-
-    namespace {
-        // Magic template gunk. `unwrap_async<T>` removes a layer of `Async<...>` from a type:
-        // - `unwrap_async<string>` is `string`.
-        // - `unwrap_async<Async<string>> is `string`.
-        template <typename T> T _unwrap_async(T*);
-        template <typename T> T _unwrap_async(Async<T>*);
-        template <typename T> using unwrap_async = decltype(_unwrap_async((T*)nullptr));
-    }
 
 
     // base class of Async<T>
@@ -214,8 +205,10 @@ namespace litecore::actor {
         /// Returns true once the result is available.
         bool ready() const                                  {return _provider->ready();}
 
-        /// Returns the exception result, else nullptr.
-        std::exception_ptr exception() const                {return _provider->exception();}
+        /// Returns the error result, else nullptr.
+        litecore::error* error() const                      {return _provider->error();}
+
+        C4Error c4Error() const;
 
         /// Blocks the current thread (i.e. doesn't return) until the result is available.
         /// \warning  This is intended for use in unit tests. Please don't use it otherwise unless
@@ -247,11 +240,17 @@ namespace litecore::actor {
         :AsyncBase(AsyncProvider<T>::createReady(std::forward<T>(t)))
         { }
 
-        /// Creates an already-resolved Async with an exception.
-        explicit Async(std::exception_ptr x)
+        /// Creates an already-resolved Async with an error.
+        Async(const litecore::error &x)
         :AsyncBase(makeProvider())
         {
-            _provider->setException(x);
+            _provider->setError(x);
+        }
+
+        Async(const C4Error &err)
+        :AsyncBase(makeProvider())
+        {
+            _provider->setError(err);
         }
 
         /// Invokes the callback when the result is ready.
@@ -276,22 +275,33 @@ namespace litecore::actor {
         /// - `Async<X> x = a.then([](T) -> X { ... });`
         /// - `Async<X> x = a.then([](T) -> Async<X> { ... });`
         template <typename LAMBDA>
+        [[nodiscard]]
         auto then(LAMBDA &&callback) && {
             using U = unwrap_async<std::invoke_result_t<LAMBDA,T&&>>; // return type w/o Async<>
             return _then<U>(std::forward<LAMBDA>(callback));
         }
 
+        void then(std::function<void(T)> callback, std::function<void(C4Error)> errorCallback) && {
+            Waiter::start(provider(), _onActor, [=](auto &provider) {
+                if (provider.error())
+                    errorCallback(provider.c4Error());
+                else
+                    callback(provider.extractResult());
+            });
+        }
+
+
         /// Returns the result. (Throws an exception if the result is not yet available.)
-        /// If the result contains an exception, throws that exception.
+        /// If the result contains an error, throws that as an exception.
         T& result() &                               {return _provider->result<T>();}
         T result() &&                               {return _provider->result<T>();}
 
         /// Move-returns the result. (Throws an exception if the result is not yet available.)
-        /// If the result contains an exception, throws that exception.
+        /// If the result contains an error, throws that as an exception.
         T extractResult()                           {return _provider->extractResult<T>();}
 
         /// Blocks the current thread until the result is available, then returns it.
-        /// If the result contains an exception, throws that exception.
+        /// If the result contains an error, throws that as an exception.
         /// \warning  This is intended for use in unit tests. Please don't use it otherwise unless
         ///           absolutely necessary; use `then()` or `AWAIT()` instead.
         T& blockingResult() {
@@ -311,20 +321,21 @@ namespace litecore::actor {
 
         // Implements `then` where the lambda returns a regular type `U`. Returns `Async<U>`.
         template <typename U>
+        [[nodiscard]]
         typename Async<U>::ThenReturnType
         _then(std::function<U(T&&)> &&callback) {
             auto uProvider = Async<U>::makeProvider();
             if (canCallNow()) {
                 // Result is available now, so call the callback:
-                if (auto x = exception())
-                    uProvider->setException(x);
+                if (auto x = error())
+                    uProvider->setError(x);
                 else
                     uProvider->setResultFromCallback([&]{return callback(extractResult());});
             } else {
                 // Create an AsyncWaiter to wait on the provider:
                 Waiter::start(this->provider(), _onActor, [uProvider,callback](auto &provider) {
-                    if (auto x = provider.exception())
-                        uProvider->setException(x);
+                    if (auto x = provider.error())
+                        uProvider->setError(x);
                     else {
                         uProvider->setResultFromCallback([&]{return callback(provider.extractResult());});
                     }
@@ -346,6 +357,7 @@ namespace litecore::actor {
 
         // Implements `then` where the lambda returns `Async<U>`.
         template <typename U>
+        [[nodiscard]]
         Async<U> _then(std::function<Async<U>(T&&)> &&callback) {
             if (canCallNow()) {
                 // If I'm ready, just call the callback and pass on the Async<U> it returns:
@@ -359,6 +371,8 @@ namespace litecore::actor {
                     std::move(asyncU).then([uProvider](U &&uresult) {
                         // Then finally resolve the async I returned:
                         uProvider->setResult(std::forward<U>(uresult));
+                    }, [uProvider](C4Error err) {
+                        uProvider->setError(err);
                     });
                 });
                 return uProvider->asyncValue();
@@ -369,15 +383,6 @@ namespace litecore::actor {
 
 
     //---- Implementation gunk...
-
-
-#ifndef _THISACTOR_DEFINED
-#define _THISACTOR_DEFINED
-    // Used by `BEGIN_ASYNC` macros. Returns the lexically enclosing actor instance, else NULL.
-    // (How? Outside of an Actor method, `thisActor()` refers to the function below.
-    // In an Actor method, it refers to `Actor::thisActor()`, which returns `this`.)
-    static inline Actor* thisActor() {return nullptr;}
-#endif
 
 
     template <typename T>

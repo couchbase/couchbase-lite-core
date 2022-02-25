@@ -241,15 +241,26 @@ C4Error C4Error::fromCurrentException() noexcept {
 }
 
 
+static string getMessage(const C4Error &c4err) {
+    auto info = ErrorTable::instance().copy(c4err);
+    return info ? info->message : "";
+}
+
+
+namespace litecore {
+    // Declared in Error.hh
+    error::error(const C4Error &c4err)
+    :error(error::Domain(c4err.domain), c4err.code, getMessage(c4err))
+    {
+        if (auto info = ErrorTable::instance().copy(c4err))
+            backtrace = info->backtrace;
+    }
+}
+
+
 [[noreturn]] __cold
 void C4Error::raise() const {
-    if (auto info = ErrorTable::instance().copy(*this); info) {
-        error e(error::Domain(domain), code, info->message);
-        e.backtrace = info->backtrace;
-        throw e;
-    } else {
-        error::_throw(error::Domain(domain), code);
-    }
+    throw litecore::error(*this);
 }
 
 

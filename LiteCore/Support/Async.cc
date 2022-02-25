@@ -12,6 +12,8 @@
 
 #include "Async.hh"
 #include "Actor.hh"
+#include "c4Error.h"
+#include "c4Internal.hh"
 #include "Logging.hh"
 #include "betterassert.hh"
 
@@ -79,17 +81,32 @@ namespace litecore::actor {
     }
 
 
-    void AsyncProviderBase::setException(std::exception_ptr x) {
+    C4Error AsyncProviderBase::c4Error() const {
+        return _error ? C4Error::fromException(*_error) : C4Error{};
+    }
+
+
+    void AsyncProviderBase::setError(const C4Error &c4err) {
+        precondition(c4err.code != 0);
         unique_lock<decltype(_mutex)> lock(_mutex);
-        precondition(!_exception);
-        _exception = x;
+        precondition(!_error);
+        _error = make_unique<litecore::error>(c4err);
         _gotResult(lock);
     }
 
 
-    void AsyncProviderBase::rethrowException() const {
-        if (_exception)
-            rethrow_exception(_exception);
+    void AsyncProviderBase::setError(const std::exception &x) {
+        auto e = litecore::error::convertException(x);
+        unique_lock<decltype(_mutex)> lock(_mutex);
+        precondition(!_error);
+        _error = make_unique<litecore::error>(move(e));
+        _gotResult(lock);
+    }
+
+
+    void AsyncProviderBase::throwIfError() const {
+        if (_error)
+            throw *_error;
     }
 
 
@@ -98,6 +115,11 @@ namespace litecore::actor {
 
     bool AsyncBase::canCallNow() const {
         return ready() && (_onActor == nullptr || _onActor == Actor::currentActor());
+    }
+
+
+    C4Error AsyncBase::c4Error() const {
+        return _provider->c4Error();
     }
 
 

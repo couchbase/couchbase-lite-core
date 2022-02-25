@@ -88,6 +88,16 @@ public:
     }
 
 
+    Async<string> provideError() {
+        return provideA().then([](string a) -> Async<string> {
+            if (a.empty())
+                return C4Error::make(LiteCoreDomain, kC4ErrorInvalidParameter, "Empty!");
+            else
+                return a;
+        });
+    }
+
+
     string provideNothingResult;
 
     void provideNothing() {
@@ -219,6 +229,29 @@ TEST_CASE_METHOD(AsyncTest, "Async then returning async T", "[Async]") {
     Log("--Providing bProvider");
     _bProvider->setResult(" there");
     CHECK(dl.blockingResult() == "Contents of hi there");
+}
+
+
+TEST_CASE_METHOD(AsyncTest, "Async Error", "[Async]") {
+    Async<string> r = provideError();
+    REQUIRE(!r.ready());
+    SECTION("no error") {
+        _aProvider->setResult("hi");
+        REQUIRE(r.ready());
+        CHECK(!r.error());
+        CHECK(r.c4Error() == C4Error{});
+        CHECK(r.result() == "hi");
+    }
+    SECTION("error") {
+        _aProvider->setResult("");
+        REQUIRE(r.ready());
+        auto e = r.error();
+        REQUIRE(e);
+        CHECK(e->domain == error::LiteCore);
+        CHECK(e->code == error::InvalidParameter);
+        C4Error c4e = r.c4Error();
+        CHECK(c4e == C4Error{LiteCoreDomain, kC4ErrorInvalidParameter});
+    }
 }
 
 
