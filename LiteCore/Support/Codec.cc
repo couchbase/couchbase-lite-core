@@ -185,20 +185,10 @@ namespace litecore { namespace blip {
 
 
     unsigned Deflater::unflushedBytes() const {
-#ifdef __APPLE__
-        // zlib's deflatePending() is only available in iOS 10+ / macOS 10.12+,
-        // even though <zlib.h> claims it's available in iOS 8 / macOS 10.10. (#471)
-        if (__builtin_available(iOS 10, macOS 10.12, *)) {
-#endif
-            unsigned bytes;
-            int bits;
-            check(deflatePending(&_z, &bytes, &bits));
-            return bytes + (bits > 0);
-#ifdef __APPLE__
-        } else {
-            return 0;
-        }
-#endif
+        unsigned bytes;
+        int bits;
+        check(deflatePending(&_z, &bytes, &bits));
+        return bytes + (bits > 0);
     }
 
 
