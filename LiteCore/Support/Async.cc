@@ -83,33 +83,33 @@ namespace litecore::actor {
     }
 
 
-    C4Error AsyncProviderBase::c4Error() const {
-        return _error ? C4Error::fromException(*_error) : C4Error{};
-    }
-
-
-    void AsyncProviderBase::setError(const C4Error &c4err) {
-        precondition(c4err.code != 0);
-        unique_lock<decltype(_mutex)> lock(_mutex);
-        precondition(!_error);
-        _error = make_unique<litecore::error>(c4err);
-        _gotResult(lock);
-    }
-
-
-    void AsyncProviderBase::setError(const std::exception &x) {
-        auto e = litecore::error::convertException(x);
-        unique_lock<decltype(_mutex)> lock(_mutex);
-        precondition(!_error);
-        _error = make_unique<litecore::error>(move(e));
-        _gotResult(lock);
-    }
-
-
-    void AsyncProviderBase::throwIfError() const {
-        if (_error)
-            throw *_error;
-    }
+//    C4Error AsyncProviderBase::c4Error() const {
+//        return _error ? C4Error::fromException(*_error) : C4Error{};
+//    }
+//
+//
+//    void AsyncProviderBase::setError(const C4Error &c4err) {
+//        precondition(c4err.code != 0);
+//        unique_lock<decltype(_mutex)> lock(_mutex);
+//        precondition(!_error);
+//        _error = make_unique<litecore::error>(c4err);
+//        _gotResult(lock);
+//    }
+//
+//
+//    void AsyncProviderBase::setError(const std::exception &x) {
+//        auto e = litecore::error::convertException(x);
+//        unique_lock<decltype(_mutex)> lock(_mutex);
+//        precondition(!_error);
+//        _error = make_unique<litecore::error>(move(e));
+//        _gotResult(lock);
+//    }
+//
+//
+//    void AsyncProviderBase::throwIfError() const {
+//        if (_error)
+//            throw *_error;
+//    }
 
 
 #pragma mark - ASYNC BASE:
@@ -120,9 +120,9 @@ namespace litecore::actor {
     }
 
 
-    C4Error AsyncBase::c4Error() const {
-        return _provider->c4Error();
-    }
+//    C4Error AsyncBase::c4Error() const {
+//        return _provider->c4Error();
+//    }
 
 
     void AsyncBase::blockUntilReady() {
@@ -139,6 +139,11 @@ namespace litecore::actor {
             unique_lock<decltype(_mutex)> lock(_mutex);
             _cond.wait(lock, [&]{return ready();});
         }
+    }
+
+
+    void assertNoAsyncError(C4Error err) {
+        Assert(!err, "Unexpected error in Async value, %s", err.description().c_str());
     }
 
 }

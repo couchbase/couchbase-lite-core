@@ -82,27 +82,25 @@ public:
 
 
     template <class T>
-    T waitForResponse(actor::Async<std::variant<T,C4Error>> &asyncResult) {
+    auto waitForResponse(actor::Async<T> &asyncResult) {
         asyncResult.blockUntilReady();
 
         Log("++++ Async response available!");
-        auto &result = asyncResult.result();
-        if (auto err = std::get_if<C4Error>(&result))
-            FAIL("Response returned an error " << *err);
-        return * std::get_if<T>(&result);
+        if (auto err = asyncResult.error())
+            FAIL("Response returned an error " << err);
+        return asyncResult.result().get();
     }
 
 
     template <class T>
-    C4Error waitForErrorResponse(actor::Async<std::variant<T,C4Error>> &asyncResult) {
+    C4Error waitForErrorResponse(actor::Async<T> &asyncResult) {
         asyncResult.blockUntilReady();
 
         Log("++++ Async response available!");
-        auto &result = asyncResult.result();
-        const C4Error *err = std::get_if<C4Error>(&result);
-        if (!*err)
-            FAIL("Response unexpectedly didn't fail");
-        return *err;
+        auto err = asyncResult.error();
+        if (!err)
+            FAIL("Response did not return an error");
+        return err;
     }
 
 
@@ -271,13 +269,13 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putRev", "[ConnectedClient]") {
                                C4RevisionFlags{},
                                docBody);
     rq1.blockUntilReady();
-    REQUIRE(rq1.result() == C4Error());
+    REQUIRE(rq1.error() == C4Error());
     c4::ref<C4Document> doc1 = c4db_getDoc(db, "0000001"_sl, true, kDocGetCurrentRev, ERROR_INFO());
     REQUIRE(doc1);
     CHECK(doc1->revID == "2-2222"_sl);
 
     rq2.blockUntilReady();
-    REQUIRE(rq2.result() == C4Error());
+    REQUIRE(rq2.error() == C4Error());
     c4::ref<C4Document> doc2 = c4db_getDoc(db, "frob"_sl, true, kDocGetCurrentRev, ERROR_INFO());
     REQUIRE(doc2);
     CHECK(doc2->revID == "1-1111"_sl);
@@ -300,7 +298,7 @@ TEST_CASE_METHOD(ConnectedClientLoopbackTest, "putDoc Failure", "[ConnectedClien
                                C4RevisionFlags{},
                                docBody);
     rq1.blockUntilReady();
-    REQUIRE(rq1.result() == C4Error{LiteCoreDomain, kC4ErrorConflict});
+    REQUIRE(rq1.error() == C4Error{LiteCoreDomain, kC4ErrorConflict});
 }
 
 

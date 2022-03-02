@@ -583,7 +583,7 @@ namespace litecore { namespace repl {
 
             if (_checkpointJSONToSave)
                 saveCheckpointNow();    // _saveCheckpoint() was waiting for _remoteCheckpointRevID
-        });
+        }, actor::assertNoAsyncError);
     }
 
 
@@ -618,7 +618,7 @@ namespace litecore { namespace repl {
         msg << json;
         Signpost::begin(Signpost::blipSent);
 
-        sendAsyncRequest(msg).then([this,json](Retained<MessageIn> response) {
+        sendAsyncRequest(msg).then([this,json](Retained<MessageIn> response) -> void {
             Signpost::end(Signpost::blipSent);
             if (!response)
                 return;
@@ -654,7 +654,7 @@ namespace litecore { namespace repl {
                 }
                 _checkpointer.saveCompleted();
             }
-        });
+        }, actor::assertNoAsyncError);
     }
 
 

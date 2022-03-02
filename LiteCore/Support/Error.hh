@@ -113,6 +113,7 @@ namespace litecore {
             exception types like SQLite::Exception. */
         static error convertRuntimeError(const std::runtime_error&);
         static error convertException(const std::exception&);
+        static error convertCurrentException();
 
         /** Static version of the standard `what` method. */
         static std::string _what(Domain, int code) noexcept;

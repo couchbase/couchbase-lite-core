@@ -202,7 +202,9 @@ namespace litecore::actor {
         Async<U> _asCurrentActor(std::function<Async<U>()> fn) {
             auto provider = Async<U>::makeProvider();
             asCurrentActor([fn,provider] {
-                fn().then([=](U result) { provider->setResult(std::move(result)); });
+                fn().thenProvider([=](AsyncProvider<U> &fnProvider) {
+                    provider->setResult(std::move(fnProvider).result());
+                });
             });
             return provider;
         }

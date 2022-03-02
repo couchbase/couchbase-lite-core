@@ -26,7 +26,7 @@ static Async<string> downloader(string url) {
         provider->setResult("Contents of " + url);
     });
     t.detach();
-    return provider;
+    return provider->asyncValue();
 }
 
 
@@ -48,11 +48,11 @@ public:
     }
 
     Async<string> provideA() {
-        return aProvider();
+        return aProvider()->asyncValue();
     }
 
     Async<string> provideB() {
-        return bProvider();
+        return bProvider()->asyncValue();
     }
 
     Async<string> provideOne() {
@@ -100,11 +100,13 @@ public:
 
     string provideNothingResult;
 
-    void provideNothing() {
-        provideA().then([=](string a) {
-            Log("provideSum: awaiting B");
-            provideB().then([=](string b) {
+    Async<void> provideNothing() {
+        return provideA().then([=](string a) {
+            Log("provideNothing: awaiting B");
+            return provideB().then([=](string b) -> Async<void> {
+                Log("provideNothing: got B");
                 provideNothingResult = a + b;
+                return C4Error{};
             });
         });
     }
@@ -119,7 +121,7 @@ TEST_CASE_METHOD(AsyncTest, "Async", "[Async]") {
     REQUIRE(!sum.ready());
     _bProvider->setResult(" there");
     REQUIRE(sum.ready());
-    REQUIRE(sum.result() == "hi there");
+    REQUIRE(sum.result().get() == "hi there");
 }
 
 
@@ -130,7 +132,7 @@ TEST_CASE_METHOD(AsyncTest, "Async, other order", "[Async]") {
     REQUIRE(!sum.ready());
     aProvider()->setResult("hi");
     REQUIRE(sum.ready());
-    REQUIRE(sum.result() == "hi there");
+    REQUIRE(sum.result().get() == "hi there");
 }
 
 
@@ -138,18 +140,18 @@ TEST_CASE_METHOD(AsyncTest, "Async, emplaceResult") {
     auto p = Async<string>::makeProvider();
     auto v = p->asyncValue();
     REQUIRE(!v.ready());
-    p->emplaceResult('*', 6);
+    p->setResult("******");
     REQUIRE(v.ready());
-    CHECK(v.result() == "******");
+    CHECK(v.result().get() == "******");
 }
 
 
 TEST_CASE_METHOD(AsyncTest, "AsyncWaiter", "[Async]") {
     Async<string> sum = provideSum();
     string result;
-    move(sum).then([&](string &&s) {
+    move(sum).then([&](string s) {
         result = s;
-    });
+    }, assertNoAsyncError);
     REQUIRE(!sum.ready());
     REQUIRE(result == "");
     _aProvider->setResult("hi");
@@ -168,14 +170,14 @@ TEST_CASE_METHOD(AsyncTest, "Async, 2 levels", "[Async]") {
     REQUIRE(!sum.ready());
     _bProvider->setResult(" there");
     REQUIRE(sum.ready());
-    REQUIRE(sum.result() == "hi there!");
+    REQUIRE(sum.result().get() == "hi there!");
 }
 
 
 TEST_CASE_METHOD(AsyncTest, "Async, immediately", "[Async]") {
     Async<string> im = provideImmediately();
     REQUIRE(im.ready());
-    REQUIRE(im.result() == "immediately");
+    REQUIRE(im.result().get() == "immediately");
 }
 
 
@@ -194,7 +196,7 @@ TEST_CASE_METHOD(AsyncTest, "Async then returning void", "[Async]") {
     provideSum().then([&](string &&s) {
         Log("--Inside then fn; s = \"%s\"", s.c_str());
         result = s;
-    });
+    }, assertNoAsyncError);
 
     Log("--Providing aProvider");
     _aProvider->setResult("hi");
@@ -214,7 +216,7 @@ TEST_CASE_METHOD(AsyncTest, "Async then returning T", "[Async]") {
     _aProvider->setResult("hi");
     Log("--Providing bProvider");
     _bProvider->setResult(" there");
-    CHECK(size.blockingResult() == 8);
+    CHECK(size.blockingResult().get() == 8);
 }
 
 
@@ -228,7 +230,7 @@ TEST_CASE_METHOD(AsyncTest, "Async then returning async T", "[Async]") {
     _aProvider->setResult("hi");
     Log("--Providing bProvider");
     _bProvider->setResult(" there");
-    CHECK(dl.blockingResult() == "Contents of hi there");
+    CHECK(dl.blockingResult().get() == "Contents of hi there");
 }
 
 
@@ -239,18 +241,38 @@ TEST_CASE_METHOD(AsyncTest, "Async Error", "[Async]") {
         _aProvider->setResult("hi");
         REQUIRE(r.ready());
         CHECK(!r.error());
-        CHECK(r.c4Error() == C4Error{});
-        CHECK(r.result() == "hi");
+        CHECK(r.result().get() == "hi");
     }
     SECTION("error") {
         _aProvider->setResult("");
         REQUIRE(r.ready());
-        auto e = r.error();
-        REQUIRE(e);
-        CHECK(e->domain == error::LiteCore);
-        CHECK(e->code == error::InvalidParameter);
-        C4Error c4e = r.c4Error();
-        CHECK(c4e == C4Error{LiteCoreDomain, kC4ErrorInvalidParameter});
+        CHECK(r.error() == C4Error{LiteCoreDomain, kC4ErrorInvalidParameter});
+    }
+}
+
+
+TEST_CASE_METHOD(AsyncTest, "Async Error Then", "[Async]") {
+    optional<string> theStr;
+    optional<C4Error> theError;
+    provideError().then([&](string str) -> void {
+        theStr = str;
+    }).onError([&](C4Error err) {
+        theError = err;
+    });
+    REQUIRE(!theStr);
+    REQUIRE(!theError);
+
+    SECTION("no error") {
+        _aProvider->setResult("hi");
+        CHECK(!theError);
+        REQUIRE(theStr);
+        CHECK(*theStr == "hi");
+    }
+    SECTION("error") {
+        _aProvider->setResult("");
+        CHECK(!theStr);
+        REQUIRE(theError);
+        CHECK(*theError == C4Error{LiteCoreDomain, kC4ErrorInvalidParameter});
     }
 }
 
@@ -291,7 +313,7 @@ public:
                 assert(currentActor() == this);
                 testThenResult = move(s);
                 testThenReady = true;
-            });
+            }, assertNoAsyncError);
         });
     }
 
@@ -302,7 +324,7 @@ public:
 
 TEST_CASE("Async on thread", "[Async]") {
     auto asyncContents = downloader("couchbase.com");
-    string contents = asyncContents.blockingResult();
+    string contents = asyncContents.blockingResult().get();
     CHECK(contents == "Contents of couchbase.com");
 }
 
@@ -310,7 +332,7 @@ TEST_CASE("Async on thread", "[Async]") {
 TEST_CASE("Async Actor", "[Async]") {
     auto actor = make_retained<AsyncTestActor>();
     auto asyncContents = actor->download("couchbase.org");
-    string contents = asyncContents.blockingResult();
+    string contents = asyncContents.blockingResult().get();
     CHECK(contents == "Contents of couchbase.org");
 }
 
@@ -318,7 +340,7 @@ TEST_CASE("Async Actor", "[Async]") {
 TEST_CASE("Async Actor Twice", "[Async]") {
     auto actor = make_retained<AsyncTestActor>();
     auto asyncContents = actor->download("couchbase.org", "couchbase.biz");
-    string contents = asyncContents.blockingResult();
+    string contents = asyncContents.blockingResult().get();
     CHECK(contents == "Contents of couchbase.org and Contents of couchbase.biz");
 }
 

@@ -10,6 +10,7 @@
 namespace litecore::actor {
     class Actor;
     template <typename T> class Async;
+    template <typename T> class AsyncProvider;
 
 
     /** Outside of an Actor method, `thisActor` evaluates to `nullptr`.

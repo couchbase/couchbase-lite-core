@@ -181,7 +181,7 @@ namespace litecore::client {
     }
 
 
-    Async<DocResponseOrError> ConnectedClient::getDoc(slice docID_,
+    Async<DocResponse> ConnectedClient::getDoc(slice docID_,
                                                       slice collectionID_,
                                                       slice unlessRevID_,
                                                       bool asFleece)
@@ -194,7 +194,7 @@ namespace litecore::client {
         req["ifNotRev"] = unlessRevID_;
 
         return sendAsyncRequest(req)
-            .then([=](Retained<blip::MessageIn> response) -> DocResponseOrError {
+            .then([=](Retained<blip::MessageIn> response) -> Async<DocResponse> {
                 logInfo("...getDoc got response");
 
                 if (C4Error err = responseError(response))
@@ -211,14 +211,14 @@ namespace litecore::client {
                     FLError flErr;
                     docResponse.body = FLData_ConvertJSON(docResponse.body, &flErr);
                     if (!docResponse.body)
-                        return C4Error::make(FleeceDomain, flErr, "Unparseable JSON response from server");
+                        C4Error::raise(FleeceDomain, flErr, "Unparseable JSON response from server");
                 }
                 return docResponse;
             });
     }
 
 
-    Async<BlobOrError> ConnectedClient::getBlob(C4BlobKey blobKey,
+    Async<alloc_slice> ConnectedClient::getBlob(C4BlobKey blobKey,
                                                 bool compress)
     {
         // Not yet running on Actor thread...
@@ -230,9 +230,8 @@ namespace litecore::client {
             req["compress"] = "true";
 
         return sendAsyncRequest(req)
-            .then([=](Retained<blip::MessageIn> response) -> BlobOrError {
+            .then([=](Retained<blip::MessageIn> response) -> Async<alloc_slice> {
                 logInfo("...getAttachment got response");
-
                 if (C4Error err = responseError(response))
                     return err;
                 return response->body();
@@ -240,7 +239,7 @@ namespace litecore::client {
     }
 
 
-    Async<C4Error> ConnectedClient::putDoc(slice docID_,
+    Async<void> ConnectedClient::putDoc(slice docID_,
                                            slice collectionID_,
                                            slice revID_,
                                            slice parentRevID_,
@@ -266,20 +265,20 @@ namespace litecore::client {
         }
 
         return sendAsyncRequest(req)
-            .then([=](Retained<blip::MessageIn> response) -> C4Error {
+            .then([=](Retained<blip::MessageIn> response) -> Async<void> {
                 logInfo("...putDoc got response");
-                return responseError(response);
+                return Async<void>(responseError(response));
             });
     }
 
 
-    Async<C4Error> ConnectedClient::observeCollection(slice collectionID_,
+    Async<void> ConnectedClient::observeCollection(slice collectionID_,
                                                       CollectionObserver callback_)
     {
         return asCurrentActor([this,
                                collectionID = alloc_slice(collectionID_),
                                observe = !!callback_,
-                               callback = move(callback_)] () -> Async<C4Error> {
+                               callback = move(callback_)] () -> Async<void> {
             logInfo("observeCollection(%.*s)", FMTSLICE(collectionID));
 
             bool sameSubState = (observe == !!_observer);
@@ -301,12 +300,9 @@ namespace litecore::client {
             }
 
             return sendAsyncRequest(req)
-                .then([=](Retained<blip::MessageIn> response) -> C4Error {
+                .then([=](Retained<blip::MessageIn> response) {
                     logInfo("...observeCollection got response");
-                    C4Error error = responseError(response);
-                    if (!error)
-                        _observing = observe;
-                    return error;
+                    return Async<void>(responseError(response));
                 });
         });
     }

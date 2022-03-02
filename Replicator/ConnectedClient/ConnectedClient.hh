@@ -22,13 +22,8 @@ namespace litecore::client {
         bool deleted;
     };
 
-    /** Result type of `ConnectedClient::getDoc()` -- either a response or an error. */
-    using DocResponseOrError = std::variant<DocResponse,C4Error>;
 
-    /** Result type of `ConnectedClient::getBlob()` -- either blob contents or an error. */
-    using BlobOrError = std::variant<alloc_slice,C4Error>;
-
-
+    /** A callback invoked when one or more documents change on the server. */
     using CollectionObserver = std::function<void(std::vector<C4CollectionObserver::Change> const&)>;
 
 
@@ -77,16 +72,16 @@ namespace litecore::client {
         /// @param asFleece  If true, the response's `body` field is Fleece; if false, it's JSON.
         /// @return  An async value that, when resolved, contains either a `DocResponse` struct
         ///          or a C4Error.
-        actor::Async<DocResponseOrError> getDoc(slice docID,
-                                                slice collectionID,
-                                                slice unlessRevID,
-                                                bool asFleece = true);
+        actor::Async<DocResponse> getDoc(slice docID,
+                                         slice collectionID,
+                                         slice unlessRevID,
+                                         bool asFleece = true);
 
         /// Gets the contents of a blob given its digest.
         /// @param blobKey  The binary digest of the blob.
         /// @param compress  True if the blob should be downloaded in compressed form.
         /// @return  An async value that, when resolved, contains either the blob body or a C4Error.
-        actor::Async<BlobOrError> getBlob(C4BlobKey blobKey,
+        actor::Async<alloc_slice> getBlob(C4BlobKey blobKey,
                                           bool compress);
 
         /// Pushes a new document revision to the server.
@@ -98,20 +93,20 @@ namespace litecore::client {
         /// @param revisionFlags  Flags of this revision.
         /// @param fleeceData  The document body encoded as Fleece (without shared keys!)
         /// @return  An async value that, when resolved, contains the status as a C4Error.
-        actor::Async<C4Error> putDoc(slice docID,
-                                     slice collectionID,
-                                     slice revID,
-                                     slice parentRevID,
-                                     C4RevisionFlags revisionFlags,
-                                     slice fleeceData);
+        actor::Async<void> putDoc(slice docID,
+                                  slice collectionID,
+                                  slice revID,
+                                  slice parentRevID,
+                                  C4RevisionFlags revisionFlags,
+                                  slice fleeceData);
 
         /// Registers a listener function that will be called when any document is changed.
         /// @note  To cancel, pass a null callback.
         /// @param collectionID  The ID of the collection to observe.
         /// @param callback  The function to call (on an arbitrary background thread!)
         /// @return  An async value that, when resolved, contains the status as a C4Error.
-        actor::Async<C4Error> observeCollection(slice collectionID,
-                                                CollectionObserver callback);
+        actor::Async<void> observeCollection(slice collectionID,
+                                             CollectionObserver callback);
 
         // exposed for unit tests:
         websocket::WebSocket* webSocket() const {return connection().webSocket();}

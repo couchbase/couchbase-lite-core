@@ -225,19 +225,7 @@ C4Error C4Error::fromException(const exception &x) noexcept {
 
 __cold
 C4Error C4Error::fromCurrentException() noexcept {
-    // This rigamarole recovers the current exception being thrown...
-    auto xp = std::current_exception();
-    if (xp) {
-        try {
-            std::rethrow_exception(xp);
-        } catch(const std::exception& x) {
-            // Now we have the exception, so we can record it in outError:
-            return C4Error::fromException(x);
-        } catch (...) { }
-    }
-    return ErrorTable::instance().makeError(
-                                            LiteCoreDomain, kC4ErrorUnexpectedError,
-                                            {"Unknown C++ exception", Backtrace::capture(1)});
+    return fromException(error::convertCurrentException());
 }
 
 

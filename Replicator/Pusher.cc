@@ -290,7 +290,7 @@ namespace litecore { namespace repl {
         increment(_changeListsInFlight);
 
         //---- SEND REQUEST AND WAIT FOR REPLY ----
-        sendAsyncRequest(req).then([=](Retained<MessageIn> reply) {
+        sendAsyncRequest(req).then([=](Retained<MessageIn> reply) -> void {
             if (!reply)
                 return;
 
@@ -358,7 +358,7 @@ namespace litecore { namespace repl {
                     ++iResponse;
             }
             maybeSendMoreRevs();
-        });
+        }, actor::assertNoAsyncError);
     }
 
 
