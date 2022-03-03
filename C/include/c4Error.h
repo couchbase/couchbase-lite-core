@@ -186,6 +186,13 @@ typedef struct C4Error {
 } C4Error;
 
 
+#ifdef _MSC_VER
+static const C4Error kC4NoError = { };
+#else
+#define kC4NoError ((C4Error){ })
+#endif
+
+
 // C4Error C API:
 
 
