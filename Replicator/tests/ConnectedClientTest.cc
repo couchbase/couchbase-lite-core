@@ -88,7 +88,7 @@ public:
         Log("++++ Async response available!");
         if (auto err = asyncResult.error())
             FAIL("Response returned an error " << err);
-        return asyncResult.result().get();
+        return asyncResult.result().value();
     }
 
 

@@ -142,7 +142,7 @@ namespace litecore::actor {
     }
 
 
-    void assertNoAsyncError(C4Error err) {
+    void assertNoError(C4Error err) {
         Assert(!err, "Unexpected error in Async value, %s", err.description().c_str());
     }
 

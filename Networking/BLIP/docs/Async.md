@@ -1,6 +1,6 @@
 # The Async API
 
-(Last updated Feb 24 2022 by Jens)
+(Last updated March 2 2022 by Jens)
 
 **Async** is a major extension of LiteCore’s concurrency support, which should help us write clearer and safer multithreaded code in the future. It extends the functionality of Actors: so far, Actor methods have had to return `void` since they’re called asynchronously. Getting a value back from an Actor meant explicitly passing a callback function.
 
@@ -26,7 +26,7 @@ static Retained<AsyncProvider<int>> _curProvider;
 Async<int> getIntFromServer() {
     _curProvider = Async<int>::makeProvider();
     sendServerRequest();
-    return intProvider->asyncValue();
+    return _curProvider->asyncValue();
 }
 ```
 
@@ -64,8 +64,10 @@ So how do you wait for the result? **You don’t.** Instead you let the Async ca
 Async<int> request = getIntFromServer();
 request.then([=](int i) {
     std::cout << "The result is " << i << "!\n";
-});
+}, assertNoError);
 ```
+
+> (What’s that `assertNoError`? Ignore it for now; it’ll be explained in the error handling section.)
 
 What if you need that lambda to return a value? That value won’t be available until later when the lambda runs, so it too is returned as an `Async`:
 
@@ -85,13 +87,40 @@ Async<Status> status = getIntFromServer().then([=](int i) {
 });
 ```
 
-In this situation it can be useful to chain multiple `then` calls:
+In this situation it can be useful to **chain multiple `then` calls:**
 
 ```c++
 Async<string> message = getIntFromServer().then([=](int i) {
     return storeIntOnServer(i + 1);
 }).then([=](Status s) {
     return status == Ok ? "OK!" : "Failure";
+});
+```
+
+### Async with no value (`Async<void>`)
+
+Sometimes an asynchronous operation doesn’t need to return a value, but you still want to use `Async` with it so callers can be notified when it finishes. For that, use `Async<void>`. For example:
+
+```c++
+Async<void> slowOperation() {
+       _curProvider = Async<void>::makeProvider();
+    startOperationInBackground();
+    return _curProvider->asyncValue();
+}
+
+static void operationFinished() {
+    _curProvider.setResult(kC4NoError);
+    _curProvider = nullptr;
+}
+```
+
+Since there’s no actual result, you store a no-error value in the provider to indicate that it’s done.
+
+Similarly with a `then` call — if your callback returns nothing (`void`), the result will be an `Async<void>` that merely indicates the completion of the callback:
+
+```c++
+Async<void> done = getIntFromServer().then([=](int i) {
+    _currentInt = i;
 });
 ```
 
@@ -116,8 +145,8 @@ By default, a `then()` callback is called immediately when the provider’s `set
 But Actors want everything to run on their thread. For that case, `Async` has an `on(Actor*)` method that lets you specify that a subsequent `then()` should schedule its callback on the Actor’s thread.
 
 ```c++
-void MyActor::downloadInt() {
-    getIntFromServer() .on(this) .then([=](int i) {
+Async<void> MyActor::downloadInt() {
+    return getIntFromServer() .on(this) .then([=](int i) {
         // This code runs on the Actor's thread
         _myInt = i;
     });
@@ -159,7 +188,7 @@ As a bonus, if `asCurrentActor` is called on the Actor’s thread, it just calls
 
 ### Providing an Error Result
 
-Any Async value (regardless of its type parameter) can resolve to an error instead of a result. You can store one by calling `setError()` on the provider. The parameter can be either a `C4Error` or a `std::exception`.
+Any Async value (regardless of its type parameter) can resolve to an error instead of a result. You can store one by calling `setError(C4Error)` on the provider. 
 
  If the code producing the value throws an exception, you can catch it and set it as the result with `setError()`.
 
@@ -174,8 +203,97 @@ try {
 
 > Note: `asCurrentActor()` catches exceptions thrown by its lambda and returns them as an error on the returned Async.
 
+### The `Result` class
+
+By the way, as part of implementing this, I added a general purpose `Result<T>` class (see `Result.hh`.) This simply holds either a value of type `T` or a `C4Error`. It’s similar to types found in Swift, Rust, etc.
+
+```c++
+Result<double> squareRoot(double n) {
+    if (n >= 0)
+        return sqrt(n);
+    else
+        return C4Error{LiteCoreDomain, kC4ErrorInvalidParameter};
+}
+
+if (auto root = squareRoot(x); root.ok())
+    cout << "√x = " << root.value() << endl;
+else
+    cerr << "No square root: " << root.error().description() << endl;
+```
+
+
+
 ### Handling An Error
 
-On the receiving side, you can check the error in an Async by calling its `error()` or `c4Error()` methods. 
+The regular `then` methods described earlier can’t tell their callback about an error, because their callbacks take a parameter of type `T`. So what happens if the result is an error? Consider this example from earlier:
 
-> **Warning:** If you call `result` and there’s an error, it will be thrown as an exception!)
+```c++
+Async<Status> incrementIntOnServer() {
+    return getIntFromServer().then([=](int i) {
+    	return storeIntOnServer(i + 1);
+	});
+}
+```
+
+What happens if the async result of `getIntFromServer()` is an error? **The callback lambda is not called.** Instead, the error value is propagated to the `Async<Status>` , basically “passing the buck” to the caller of `incrementIntOnServer`. This is usually what you want.
+
+If you want to handle the result whether or not it’s an error, you can set the callback’s parameter type to `Result<T>`:
+
+```c++
+getIntFromServer().then([=](Result<int> i) {
+    if (i.ok())
+        _latestInt = i.value();
+    else
+        cerr << "Couldn't get int: " << i.error().description() << endl;
+});
+```
+
+Note that this form of `then()` does not return any value, because the callback completely handles the operation.
+
+Another way to do this is to pass **two callbacks** to `then`:
+
+```c++
+getIntFromServer().then([=](int i) {
+        _latestInt = i.value();
+}, [=](C4Error error) {
+    cerr << "Couldn't get int: " << error.description() << endl;
+});
+```
+
+This finally explains the reason for mysterious `assertNoError` in the first example of section 2: that’s a function declared in `Async.hh` that simply takes a `C4Error` and throws an exception if it’s non-zero. That example was calling this two-callback version of `then` but idiomatically asserting that there would be no error.
+
+### Returning an error from a `then` callback
+
+There are two ways that a `then` method’s callback can signal an error.
+
+1. The callback can throw an exception. This will be caught and converted into a `C4Error` result.
+2. The callback can return a `C4Error` directly, by explicitly declaring a return type of `Result<T>`. This works because `Result` can be initialized with either a value or an error.
+
+Here’s an example of the second form:
+
+```c++
+Async<double> squareRootFromServer() {
+    return getIntFromServer().then([=](int i) -> Result<double> { // explicit result type!
+        if (i >= 0)
+            return sqrt(i);
+        else
+            return C4Error{LiteCoreDomain, kC4ErrorRemoteError};
+	});
+}
+```
+
+## Appendix: Design
+
+First off, I’m aware that C++ already has a `std::future` class. However, it uses blocking control flow: 
+
+> The `get` member function waits until the `future` has a valid result and (depending on which template is used) retrieves it. It effectively calls `wait()` in order to wait for the result. ([\*](https://en.cppreference.com/w/cpp/thread/future/get))
+
+`std::future` has no mechanism to observe the result or register a callback. This makes it unusable in our async-oriented concurrency system.
+
+The “async/await” mechanism that’s now available in many languages was an inspiration, but unfortunately it’s not possible to implement something like `await` in C++17 — it changes control flow fundamentally, turning the enclosing function into a coroutine. I did try to implement this using some [weird C(++) tricks](https://www.chiark.greenend.org.uk/~sgtatham/coroutines.html) and macros, but it was too inflexible and had too many broken edge cases. We’ll have to wait until we can move to [C++20](https://en.cppreference.com/w/cpp/language/coroutines).
+
+You *can* do async without `await`; it just needs a “`then({...})`” idiom of chaining callback handlers. JavaScript did this before the `await` syntax was added in 2017.
+
+Two C++ libraries I took design ideas from were [Folly](https://engineering.fb.com/2015/06/19/developer-tools/futures-for-c-11-at-facebook/) (by Facebook) and [Cap’n Proto](https://github.com/capnproto/capnproto/blob/master/kjdoc/tour.md#asynchronous-event-loop). I went with a different class name, though; Folly calls them `future<T>` and Cap’n Proto calls them `Promise<T>`. I just liked `Async<T>` better. `¯\_(ツ)_/¯` 
+
+I didn’t directly use either library because their async code is tied to their own implementations of event loops, while we need to tie in with our existing `Actor` and `Mailbox`.

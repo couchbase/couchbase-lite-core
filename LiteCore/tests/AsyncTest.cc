@@ -121,7 +121,7 @@ TEST_CASE_METHOD(AsyncTest, "Async", "[Async]") {
     REQUIRE(!sum.ready());
     _bProvider->setResult(" there");
     REQUIRE(sum.ready());
-    REQUIRE(sum.result().get() == "hi there");
+    REQUIRE(sum.result().value() == "hi there");
 }
 
 
@@ -132,7 +132,7 @@ TEST_CASE_METHOD(AsyncTest, "Async, other order", "[Async]") {
     REQUIRE(!sum.ready());
     aProvider()->setResult("hi");
     REQUIRE(sum.ready());
-    REQUIRE(sum.result().get() == "hi there");
+    REQUIRE(sum.result().value() == "hi there");
 }
 
 
@@ -142,7 +142,7 @@ TEST_CASE_METHOD(AsyncTest, "Async, emplaceResult") {
     REQUIRE(!v.ready());
     p->setResult("******");
     REQUIRE(v.ready());
-    CHECK(v.result().get() == "******");
+    CHECK(v.result().value() == "******");
 }
 
 
@@ -151,7 +151,7 @@ TEST_CASE_METHOD(AsyncTest, "AsyncWaiter", "[Async]") {
     string result;
     move(sum).then([&](string s) {
         result = s;
-    }, assertNoAsyncError);
+    }, assertNoError);
     REQUIRE(!sum.ready());
     REQUIRE(result == "");
     _aProvider->setResult("hi");
@@ -170,14 +170,14 @@ TEST_CASE_METHOD(AsyncTest, "Async, 2 levels", "[Async]") {
     REQUIRE(!sum.ready());
     _bProvider->setResult(" there");
     REQUIRE(sum.ready());
-    REQUIRE(sum.result().get() == "hi there!");
+    REQUIRE(sum.result().value() == "hi there!");
 }
 
 
 TEST_CASE_METHOD(AsyncTest, "Async, immediately", "[Async]") {
     Async<string> im = provideImmediately();
     REQUIRE(im.ready());
-    REQUIRE(im.result().get() == "immediately");
+    REQUIRE(im.result().value() == "immediately");
 }
 
 
@@ -196,7 +196,7 @@ TEST_CASE_METHOD(AsyncTest, "Async then returning void", "[Async]") {
     provideSum().then([&](string &&s) {
         Log("--Inside then fn; s = \"%s\"", s.c_str());
         result = s;
-    }, assertNoAsyncError);
+    }, assertNoError);
 
     Log("--Providing aProvider");
     _aProvider->setResult("hi");
@@ -216,7 +216,7 @@ TEST_CASE_METHOD(AsyncTest, "Async then returning T", "[Async]") {
     _aProvider->setResult("hi");
     Log("--Providing bProvider");
     _bProvider->setResult(" there");
-    CHECK(size.blockingResult().get() == 8);
+    CHECK(size.blockingResult().value() == 8);
 }
 
 
@@ -230,7 +230,7 @@ TEST_CASE_METHOD(AsyncTest, "Async then returning async T", "[Async]") {
     _aProvider->setResult("hi");
     Log("--Providing bProvider");
     _bProvider->setResult(" there");
-    CHECK(dl.blockingResult().get() == "Contents of hi there");
+    CHECK(dl.blockingResult().value() == "Contents of hi there");
 }
 
 
@@ -241,7 +241,7 @@ TEST_CASE_METHOD(AsyncTest, "Async Error", "[Async]") {
         _aProvider->setResult("hi");
         REQUIRE(r.ready());
         CHECK(!r.error());
-        CHECK(r.result().get() == "hi");
+        CHECK(r.result().value() == "hi");
     }
     SECTION("error") {
         _aProvider->setResult("");
@@ -313,7 +313,7 @@ public:
                 assert(currentActor() == this);
                 testThenResult = move(s);
                 testThenReady = true;
-            }, assertNoAsyncError);
+            }, assertNoError);
         });
     }
 
@@ -324,7 +324,7 @@ public:
 
 TEST_CASE("Async on thread", "[Async]") {
     auto asyncContents = downloader("couchbase.com");
-    string contents = asyncContents.blockingResult().get();
+    string contents = asyncContents.blockingResult().value();
     CHECK(contents == "Contents of couchbase.com");
 }
 
@@ -332,7 +332,7 @@ TEST_CASE("Async on thread", "[Async]") {
 TEST_CASE("Async Actor", "[Async]") {
     auto actor = make_retained<AsyncTestActor>();
     auto asyncContents = actor->download("couchbase.org");
-    string contents = asyncContents.blockingResult().get();
+    string contents = asyncContents.blockingResult().value();
     CHECK(contents == "Contents of couchbase.org");
 }
 
@@ -340,7 +340,7 @@ TEST_CASE("Async Actor", "[Async]") {
 TEST_CASE("Async Actor Twice", "[Async]") {
     auto actor = make_retained<AsyncTestActor>();
     auto asyncContents = actor->download("couchbase.org", "couchbase.biz");
-    string contents = asyncContents.blockingResult().get();
+    string contents = asyncContents.blockingResult().value();
     CHECK(contents == "Contents of couchbase.org and Contents of couchbase.biz");
 }
 

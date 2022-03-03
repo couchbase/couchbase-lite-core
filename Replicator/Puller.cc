@@ -122,7 +122,7 @@ namespace litecore { namespace repl {
                     _fatalError = true;
                 }
                 Signpost::end(Signpost::blipSent);
-            }, actor::assertNoAsyncError);
+            }, actor::assertNoError);
         });
     }
 

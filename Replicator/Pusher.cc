@@ -358,7 +358,7 @@ namespace litecore { namespace repl {
                     ++iResponse;
             }
             maybeSendMoreRevs();
-        }, actor::assertNoAsyncError);
+        }, actor::assertNoError);
     }
 
 

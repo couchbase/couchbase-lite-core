@@ -97,26 +97,26 @@ namespace litecore::actor {
         /// Creates the client-side view of the result.
         Async<T> asyncValue()                               {return Async<T>(this);}
 
-        /// Resolves the value by storing a non-error result and waking any waiting clients.
+        /// Resolves the value by storing a result (value or error) and waking any waiting clients.
         template <typename RESULT,
                   typename = std::enable_if_t<std::is_constructible_v<ResultType,RESULT>>>
         void setResult(RESULT &&result) {
+            emplaceResult(std::forward<RESULT>(result));
+        }
+
+        /// Equivalent to `setResult` but constructs the result directly inside the provider
+        /// from the constructor parameters given.
+        template <class... Args,
+                  class = std::enable_if<std::is_constructible_v<ResultType, Args...>>>
+        void emplaceResult(Args&&... args) {
             std::unique_lock<std::mutex> lock(_mutex);
             precondition(!_result);
-            _result.emplace(std::forward<RESULT>(result));
+            _result.emplace(args...);
             _gotResult(lock);
         }
 
-//        /// Equivalent to `setResult` but constructs the T value directly inside the provider.
-//        template <class... Args,
-//                  class = std::enable_if<std::is_constructible_v<ResultType, Args...>>>
-//        void emplaceResult(Args&&... args) {
-//            std::unique_lock<std::mutex> lock(_mutex);
-//            precondition(!_result);
-//            _result.emplace(args...);
-//            _gotResult(lock);
-//        }
-
+        /// Sets the result to be the `T` return value of the callback.
+        /// If the callback throws an exception, it is caught and stored as an error result.
         template <typename LAMBDA>
         void setResultFromCallback(LAMBDA &&callback) {
             bool duringCallback = true;
@@ -131,27 +131,29 @@ namespace litecore::actor {
             }
         }
 
+        /// Returns the result, a `Result<T>` containing either a value or an error.
+        /// The result must be available, or an exception is thrown.
         ResultType& result() & {
             std::unique_lock<std::mutex> _lock(_mutex);
             precondition(_result);
             return *_result;
         }
 
-        const ResultType& result() const & {
-            return const_cast<AsyncProvider*>(this)->result();
-        }
+        const ResultType& result() const &      {return const_cast<AsyncProvider*>(this)->result();}
+        ResultType result() &&                  {return moveResult();}
 
-        ResultType result() && {
-            return moveResult();
-        }
-
+        /// Extracts the result and returns it as a moveable direct value.
         ResultType moveResult() {
             std::unique_lock<std::mutex> _lock(_mutex);
             precondition(_result);
             return *std::move(_result);
         }
 
-        bool hasError() const {return result().isError();}
+        /// Sets the result to a C4Error.
+        void setError(const C4Error &error)         {setResult(error);}
+        void setException(const std::exception &x)  {setResult(x);}
+
+        bool hasError() const                       {return result().isError();}
 
         C4Error error() const {
             if (auto x = result().errorPtr())
@@ -174,7 +176,7 @@ namespace litecore::actor {
             if (hasError())
                 return Async<U>(error());
             try {
-                return callback(moveResult().get());
+                return callback(moveResult().value());
             } catch (const std::exception &x) {
                 return Async<U>(C4Error::fromException(x));
             }
@@ -286,7 +288,7 @@ namespace litecore::actor {
                 if (provider.hasError())
                     result->setResult(provider.error());
                 else {
-                    callback(provider.moveResult().get());
+                    callback(provider.moveResult().value());
                     result->setResult(Result<void>());
                 }
             });
@@ -430,7 +432,7 @@ namespace litecore::actor {
                 if (provider.hasError())
                     errorCallback(provider.error());
                 else
-                    callback(provider.moveResult().get());
+                    callback(provider.moveResult().value());
             });
         }
 
@@ -439,6 +441,6 @@ namespace litecore::actor {
 
     /// You can use this as the error-handling callback to `void Async<T>::then(onResult,onError)`.
     /// It throws an assertion-failed exception if the C4Error's code is nonzero.
-    void assertNoAsyncError(C4Error);
+    void assertNoError(C4Error);
 
 }
