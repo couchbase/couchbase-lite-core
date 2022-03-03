@@ -49,7 +49,7 @@ namespace {
             ss << "privateKeyRepresentation: " <<
                 (config.tlsConfig->privateKeyRepresentation == kC4PrivateKeyFromCert
                  ? "PrivateKeyFromCert" : "PrivateKeyFromKey") << ", "
-            << "key: " << (config.tlsConfig->key == nullptr ? NULL : "***") << ", "
+            << "key: " << (config.tlsConfig->key == nullptr ? "NULL" : "***") << ", "
             << "certificate: " << (config.tlsConfig->certificate == nullptr ? "NULL" : "***") << ", "
             << "requireClientCerts: " << config.tlsConfig->requireClientCerts << ", "
             << "rootClientCerts: " << (config.tlsConfig->rootClientCerts == nullptr ? "NULL" : "***") << ", "
